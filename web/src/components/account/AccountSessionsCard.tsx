@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { SignOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { DesktopIcon, SignOutIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
   CardContent,
@@ -10,6 +10,10 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
+import { EmptyState } from '@/components/ui/empty-state'
+import { RelativeTime } from '../kit/RelativeTime'
+import { CardError, CardLoading } from './AccountCardStates'
 import { toast } from '@/components/ui/toast'
 import {
   securitySessionsQueryOptions,
@@ -21,13 +25,9 @@ import { SessionDeviceRow } from './SessionDeviceRow'
 
 const SELF = ''
 
-function when(iso: string): string {
-  return iso ? new Date(iso).toLocaleString() : ''
-}
-
 export function AccountSessionsCard() {
   const { t } = useTranslation('settings')
-  const { data, isPending, isError } = useQuery(
+  const { data, isPending, isError, isFetching, refetch } = useQuery(
     securitySessionsQueryOptions(SELF),
   )
   const revoke = useRevokeSession()
@@ -53,63 +53,87 @@ export function AccountSessionsCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {isPending ? (
-          <p className="text-sm text-muted-foreground">
-            {t('accountPage.loading')}
-          </p>
-        ) : null}
+        {isPending ? <CardLoading rows={3} /> : null}
         {isError ? (
-          <p className="text-sm text-destructive">
-            {t('accountPage.loadError')}
-          </p>
+          <CardError
+            retrying={isFetching}
+            onRetry={() => {
+              void refetch()
+            }}
+          />
         ) : null}
         {data ? (
           <>
             <NetworkSummary sessions={data.sessions} />
-            <ul className="divide-y divide-border text-sm">
-              {data.sessions.map((s) => (
-                <SessionDeviceRow
-                  key={s.id}
-                  session={s}
-                  now={now}
-                  busy={revoke.isPending}
-                  onRevoke={() =>
-                    revoke.mutate(
-                      { id: s.id, userId: SELF },
-                      {
-                        onSuccess: () =>
-                          toast.add({
-                            title: t('accountPage.sessions.revoked'),
-                            type: 'success',
-                          }),
-                        onError,
-                      },
-                    )
-                  }
-                />
-              ))}
-            </ul>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={revokeOthers.isPending || data.sessions.length < 2}
-              onClick={() =>
+            {data.sessions.length === 0 ? (
+              <EmptyState
+                compact
+                icon={<DesktopIcon className="size-5" />}
+                title={t('accountPage.sessions.empty')}
+                description={t('accountPage.sessions.emptyBody')}
+              />
+            ) : (
+              <ul className="divide-y divide-border text-sm">
+                {data.sessions.map((s) => (
+                  <SessionDeviceRow
+                    key={s.id}
+                    session={s}
+                    now={now}
+                    busy={revoke.isPending && revoke.variables.id === s.id}
+                    onRevoke={(done) => {
+                      revoke.mutate(
+                        { id: s.id, userId: SELF },
+                        {
+                          onSuccess: () => {
+                            done()
+                            toast.add({
+                              title: t('accountPage.sessions.revoked'),
+                              type: 'success',
+                            })
+                          },
+                          onError,
+                        },
+                      )
+                    }}
+                  />
+                ))}
+              </ul>
+            )}
+            <ConfirmAction
+              trigger={(open) => (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={revokeOthers.isPending || data.sessions.length < 2}
+                  onClick={open}
+                >
+                  <SignOutIcon aria-hidden="true" />
+                  {t('accountPage.sessions.revokeOthers')}
+                </Button>
+              )}
+              title={t('accountPage.sessions.revokeOthersConfirmTitle')}
+              consequences={[
+                t('accountPage.sessions.revokeOthersConsequence'),
+                t('accountPage.sessions.revokeOthersKeep'),
+              ]}
+              confirmLabel={t('accountPage.sessions.revokeOthers')}
+              pending={revokeOthers.isPending}
+              onConfirm={(done) => {
                 revokeOthers.mutate(SELF, {
-                  onSuccess: (res) =>
+                  onSuccess: (res) => {
+                    done()
                     toast.add({
                       title: t('accountPage.sessions.revokedOthers', {
                         count: res.revoked,
                       }),
                       type: 'success',
-                    }),
+                    })
+                  },
                   onError,
                 })
-              }
-            >
-              <SignOutIcon aria-hidden="true" />
-              {t('accountPage.sessions.revokeOthers')}
-            </Button>
+              }}
+            />
             <div className="space-y-2">
               <h3 className="text-sm font-medium">
                 {t('accountPage.sessions.devices')}
@@ -125,27 +149,62 @@ export function AccountSessionsCard() {
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{d.label}</p>
                         <p className="text-xs text-muted-foreground">
-                          {d.ip}, {when(d.last_used_at)}
+                          {d.ip}
+                          {d.last_used_at ? (
+                            <>
+                              {', '}
+                              <RelativeTime at={d.last_used_at} />
+                            </>
+                          ) : null}
                         </p>
                       </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={removeDevice.isPending}
-                        onClick={() =>
+                      <ConfirmAction
+                        trigger={(open) => {
+                          const busy =
+                            removeDevice.isPending &&
+                            removeDevice.variables === d.id
+                          return (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              aria-label={t(
+                                'accountPage.sessions.deviceRemoveLabel',
+                                { device: d.label },
+                              )}
+                              onClick={open}
+                            >
+                              {busy
+                                ? t('accountPage.sessions.deviceRemoving')
+                                : t('accountPage.sessions.deviceRemove')}
+                            </Button>
+                          )
+                        }}
+                        title={t('accountPage.sessions.deviceConfirmTitle', {
+                          device: d.label,
+                        })}
+                        consequences={[
+                          t('accountPage.sessions.deviceConsequence'),
+                        ]}
+                        confirmLabel={t('accountPage.sessions.deviceRemove')}
+                        pending={
+                          removeDevice.isPending &&
+                          removeDevice.variables === d.id
+                        }
+                        onConfirm={(done) => {
                           removeDevice.mutate(d.id, {
-                            onSuccess: () =>
+                            onSuccess: () => {
+                              done()
                               toast.add({
                                 title: t('accountPage.sessions.deviceRemoved'),
                                 type: 'success',
-                              }),
+                              })
+                            },
                             onError,
                           })
-                        }
-                      >
-                        {t('accountPage.sessions.deviceRemove')}
-                      </Button>
+                        }}
+                      />
                     </li>
                   ))}
                 </ul>

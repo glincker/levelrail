@@ -863,13 +863,29 @@
     "banner": {
       "title": "Sign-in relies on a password alone",
       "body": "Turn on two-factor authentication or register a passkey so a leaked password cannot open this dashboard on its own."
+    },
+    "account": {
+      "title": "Your sign-in methods",
+      "description": "Two-factor authentication, passkeys, your password and active sessions live on your Account page.",
+      "open": "Open Account"
+    },
+    "loginProtection": {
+      "title": "Login protection",
+      "body": "Failed sign-in attempts are rate limited per IP address and username, with each additional failure making the next allowed attempt wait longer than the last. A handful of mistyped passwords will never lock you out, but repeated automated guessing gets slower with every try."
     }
   },
   "controlPlaneHealth": {
     "title": "Control plane health",
     "description": "Live saturation of this instance: process, database, reconcile loop and open streams.",
-    "status": { "ok": "Healthy", "warn": "Degraded", "crit": "Saturated" },
-    "severity": { "warn": "Warning", "crit": "Critical" },
+    "status": {
+      "ok": "Healthy",
+      "warn": "Degraded",
+      "crit": "Saturated"
+    },
+    "severity": {
+      "warn": "Warning",
+      "crit": "Critical"
+    },
     "allClear": "Every measurement is under its threshold.",
     "reading": "Now {{value}}, limit {{limit}}.",
     "fixApplied": "Fix applied",
@@ -1272,6 +1288,10 @@
         "title": "Log in",
         "body": "Opens a code here to approve, the same flow gh auth login and aws sso login use: no SSH key, no server port to open. Approval needs a signed-in dashboard session, so it inherits that session's 2FA or passkey."
       }
+    },
+    "setup": {
+      "toggle": "Set up the CLI on a new machine",
+      "hint": "Already have the CLI? Start the device login there and approve the code above. These steps are only for a fresh machine."
     }
   },
   "accountPage": {
@@ -1287,10 +1307,13 @@
       "edit": "Edit display name",
       "save": "Save",
       "cancel": "Cancel",
-      "saved": "Display name updated"
+      "saved": "Display name updated",
+      "saving": "Saving...",
+      "counter": "{{used}} of {{max}} characters",
+      "saveError": "Could not save your display name. Check your connection and try again."
     },
     "loading": "Loading...",
-    "loadError": "Could not load this section. Reload the page to retry.",
+    "loadError": "Could not load this section.",
     "sessions": {
       "title": "Active sessions and trusted devices",
       "description": "Where you are signed in right now. Ending a session signs that browser out.",
@@ -1306,28 +1329,44 @@
       "deviceRemove": "Remove",
       "deviceRemoved": "Trusted device removed",
       "canApprove": "Can approve sign-ins",
-      "signedInAt": "Signed in {{when}}",
+      "signedInAt": "Signed in",
       "networks_one": "{{count}} network",
       "networks_other": "{{count}} networks",
       "tone": {
         "live": "Active now",
         "recent": "Active in the last hour",
         "idle": "Idle"
-      }
+      },
+      "revoking": "Signing out...",
+      "revokeLabel": "Sign out {{device}} ({{ip}})",
+      "revokeConfirmTitle": "Sign out {{device}}?",
+      "revokeConsequence": "That browser is signed out immediately.",
+      "revokeApproverConsequence": "It can currently approve new sign-ins, so you will lose that approver.",
+      "revokeReloginConsequence": "Whoever uses it must sign in again.",
+      "revokeOthersConfirmTitle": "Sign out all other sessions?",
+      "revokeOthersConsequence": "Every other browser and device is signed out immediately.",
+      "revokeOthersKeep": "This browser stays signed in.",
+      "empty": "No active sessions",
+      "emptyBody": "Sessions appear here after you sign in from a browser.",
+      "deviceRemoving": "Removing...",
+      "deviceRemoveLabel": "Remove trusted device {{device}}",
+      "deviceConfirmTitle": "Remove trusted device {{device}}?",
+      "deviceConsequence": "That device must be approved again the next time it signs in."
     },
     "providers": {
       "title": "Linked sign-in providers",
       "description": "Link an identity provider to sign in with it. Linking needs this live session.",
       "none": "No sign-in providers are enabled on this instance.",
       "linked": "Linked",
-      "link": "Link"
+      "link": "Link",
+      "configure": "Set up providers"
     },
     "tokens": {
       "title": "My API tokens",
       "description": "Tokens you created for the CLI, CI or agents.",
-      "count_one": "{{count}} active token",
-      "count_other": "{{count}} active tokens",
-      "manage": "Manage tokens"
+      "manage": "All tokens and history",
+      "emptyTitle": "No active API tokens",
+      "emptyBody": "Create a token for the CLI, CI or an agent. The secret is shown once."
     },
     "access": {
       "title": "My access",
@@ -1352,7 +1391,88 @@
         "sensitive_write": "Change sensitive settings",
         "users_and_access": "Manage users, roles and policies",
         "platform_settings": "Change platform-wide settings"
+      },
+      "colArea": "Capability",
+      "colStatus": "Status",
+      "colAction": "Action",
+      "allowed": "Allowed",
+      "request": "Request access",
+      "requestLabel": "Request access for: {{area}}"
+    },
+    "retry": "Retry",
+    "password": {
+      "titleChange": "Change password",
+      "titleSet": "Set a password",
+      "descChange": "Changing your password signs out every other active session for this account. This browser stays signed in.",
+      "descSet": "This account currently signs in through OAuth only. Setting a password adds a second way to sign in.",
+      "current": "Current password",
+      "currentRequired": "Current password is required",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "tooShort": "New password must be at least {{min}} characters",
+      "mismatch": "Passwords do not match",
+      "minHint": "At least {{min}} characters.",
+      "changed": "Password changed",
+      "changedBody": "Your other sessions have been signed out. This one stays signed in.",
+      "saving": "Saving...",
+      "submitChange": "Change password",
+      "submitSet": "Set password",
+      "strength": {
+        "label": "Password strength",
+        "level0": "Empty",
+        "level1": "Weak",
+        "level2": "Fair",
+        "level3": "Good",
+        "level4": "Strong"
+      },
+      "rules": {
+        "length": "At least {{min}} characters",
+        "mixedCase": "Upper and lower case",
+        "digit": "A number",
+        "symbol": "A symbol",
+        "met": "(met)",
+        "unmet": "(not met)"
       }
+    },
+    "twoFactor": {
+      "title": "Two-factor authentication",
+      "description": "Require a code from an authenticator app in addition to your password when signing in.",
+      "enabled_one": "Enabled. {{count}} recovery code remaining.",
+      "enabled_other": "Enabled. {{count}} recovery codes remaining.",
+      "disabledHint": "Not enabled. Add a second step so a stolen password alone cannot sign in.",
+      "enable": "Enable two-factor authentication",
+      "setupTitle": "Set up two-factor authentication",
+      "setupBody": "Add this to an authenticator app (1Password, Google Authenticator, Authy), then enter the 6-digit code it shows to confirm.",
+      "setupKey": "Setup key",
+      "setupLink": "Or use this link",
+      "codeLabel": "Code from your authenticator app",
+      "codePlaceholder": "123456",
+      "recoveryPlaceholder": "xxxx-xxxx-xxxx-xxxx",
+      "cancel": "Cancel",
+      "verify": "Verify and enable",
+      "verifying": "Verifying...",
+      "enabledTitle": "Two-factor authentication enabled",
+      "recoveryBody": "Save these recovery codes somewhere safe. Each one can be used once to sign in if you lose access to your authenticator app. They will not be shown again.",
+      "saved": "I have saved these codes",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyAll": "Copy all",
+      "regenerate": "Regenerate recovery codes",
+      "regenerateBody": "Every existing recovery code stops working the moment new ones are generated. Enter a current code from your authenticator app to confirm.",
+      "regenerateAction": "Regenerate",
+      "regenerating": "Regenerating...",
+      "regeneratedTitle": "New recovery codes generated",
+      "regeneratedBody": "Save these somewhere safe. The old codes no longer work, and these will not be shown again.",
+      "done": "Done",
+      "disable": "Disable two-factor authentication",
+      "disableTitle": "Disable two-factor authentication?",
+      "disableBody": "Signing in will only require a password afterward. Enter a current code to confirm.",
+      "recoveryCodeLabel": "Recovery code",
+      "authCodeLabel": "Authenticator code",
+      "useAuthCode": "Use authenticator code",
+      "useRecoveryCode": "Use a recovery code",
+      "disableAction": "Disable",
+      "disabling": "Disabling..."
     }
   },
   "apiExplorerPage": {

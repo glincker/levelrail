@@ -12,12 +12,14 @@ import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { myAccessQueryOptions } from '../../queries/myAccess'
 import { publicOAuthProvidersQueryOptions } from '../../queries/oauth'
-import { tokenListQueryOptions } from '../../queries/tokens'
+import { CardError, CardLoading } from './AccountCardStates'
 
 export function LinkedProvidersCard() {
   const { t } = useTranslation('settings')
-  const { data: access } = useQuery(myAccessQueryOptions())
-  const { data: providers } = useQuery(publicOAuthProvidersQueryOptions())
+  const accessQ = useQuery(myAccessQueryOptions())
+  const providersQ = useQuery(publicOAuthProvidersQueryOptions())
+  const access = accessQ.data
+  const providers = providersQ.data
   const linked = new Set(access?.linked_providers ?? [])
   const enabled = (providers ?? []).filter((p) => p.enabled)
   return (
@@ -29,11 +31,30 @@ export function LinkedProvidersCard() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {enabled.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {t('accountPage.providers.none')}
-          </p>
-        ) : (
+        {accessQ.isPending || providersQ.isPending ? <CardLoading /> : null}
+        {accessQ.isError || providersQ.isError ? (
+          <CardError
+            retrying={accessQ.isFetching || providersQ.isFetching}
+            onRetry={() => {
+              void accessQ.refetch()
+              void providersQ.refetch()
+            }}
+          />
+        ) : null}
+        {access && providers && enabled.length === 0 ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-muted-foreground">
+              {t('accountPage.providers.none')}
+            </p>
+            <Link
+              to="/settings/oauth"
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+            >
+              {t('accountPage.providers.configure')}
+            </Link>
+          </div>
+        ) : null}
+        {access && providers && enabled.length > 0 ? (
           <ul className="divide-y divide-border text-sm">
             {enabled.map((p) => (
               <li key={p.provider} className="flex items-center gap-3 py-2">
@@ -58,32 +79,7 @@ export function LinkedProvidersCard() {
               </li>
             ))}
           </ul>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-export function MyTokensCard() {
-  const { t } = useTranslation('settings')
-  const { data: tokens } = useQuery(tokenListQueryOptions())
-  const active = (tokens ?? []).filter((tok) => !tok.revoked_at).length
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('accountPage.tokens.title')}</CardTitle>
-        <CardDescription>{t('accountPage.tokens.description')}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex items-center gap-4">
-        <p className="text-sm">
-          {t('accountPage.tokens.count', { count: active })}
-        </p>
-        <Link
-          to="/settings/tokens"
-          className={buttonVariants({ variant: 'outline', size: 'sm' })}
-        >
-          {t('accountPage.tokens.manage')}
-        </Link>
+        ) : null}
       </CardContent>
     </Card>
   )

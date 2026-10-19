@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { PencilSimpleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
   CardContent,
@@ -8,11 +8,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/toast'
 import { useSession } from '../../queries/security'
 import { useUpdateDisplayName } from '../../queries/myAccess'
+
+const MAX_NAME = 80
 
 export function ProfileCard() {
   const { t } = useTranslation('settings')
@@ -20,19 +24,26 @@ export function ProfileCard() {
   const update = useUpdateDisplayName()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
+  const editRef = useRef<HTMLButtonElement>(null)
+  const inputId = useId()
+
+  const close = () => {
+    setEditing(false)
+    update.reset()
+    window.requestAnimationFrame(() => editRef.current?.focus())
+  }
 
   const save = () => {
     const next = draft.trim()
     if (next === '' || next === session.display_name) {
-      setEditing(false)
+      close()
       return
     }
     update.mutate(next, {
       onSuccess: () => {
-        setEditing(false)
+        close()
         toast.add({ title: t('accountPage.profile.saved'), type: 'success' })
       },
-      onError: (e) => toast.add({ title: e.message, type: 'error' }),
     })
   }
 
@@ -54,10 +65,16 @@ export function ProfileCard() {
           </div>
           <div className="space-y-1">
             <dt className="text-xs font-medium text-muted-foreground">
-              {t('accountPage.profile.displayName')}
+              {editing ? (
+                <Label htmlFor={inputId} className="text-xs">
+                  {t('accountPage.profile.displayName')}
+                </Label>
+              ) : (
+                t('accountPage.profile.displayName')
+              )}
             </dt>
             {editing ? (
-              <dd>
+              <dd className="space-y-2">
                 <form
                   className="flex max-w-md items-center gap-2"
                   onSubmit={(e) => {
@@ -66,28 +83,47 @@ export function ProfileCard() {
                   }}
                 >
                   <Input
+                    id={inputId}
                     value={draft}
-                    maxLength={80}
-                    aria-label={t('accountPage.profile.displayName')}
+                    maxLength={MAX_NAME}
+                    autoFocus
+                    aria-invalid={update.isError}
                     onChange={(e) => setDraft(e.target.value)}
                   />
                   <Button type="submit" size="sm" disabled={update.isPending}>
-                    {t('accountPage.profile.save')}
+                    {update.isPending
+                      ? t('accountPage.profile.saving')
+                      : t('accountPage.profile.save')}
                   </Button>
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => setEditing(false)}
+                    onClick={close}
                   >
                     {t('accountPage.profile.cancel')}
                   </Button>
                 </form>
+                <p className="text-xs text-muted-foreground" aria-live="polite">
+                  {t('accountPage.profile.counter', {
+                    used: draft.length,
+                    max: MAX_NAME,
+                  })}
+                </p>
+                {update.isError ? (
+                  <Alert variant="destructive" className="max-w-md">
+                    <WarningIcon aria-hidden="true" />
+                    <AlertDescription>
+                      {t('accountPage.profile.saveError')}
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
               </dd>
             ) : (
               <dd className="flex items-center gap-2 text-foreground">
                 {session.display_name}
                 <Button
+                  ref={editRef}
                   type="button"
                   size="sm"
                   variant="ghost"

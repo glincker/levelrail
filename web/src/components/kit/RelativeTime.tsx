@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { formatRelative } from './formatRelative'
+import { formatAbsolute } from '../../lib/dateFormat'
 
 export interface RelativeTimeProps {
   at: string | Date
@@ -19,7 +20,7 @@ export function RelativeTime({ at, live = false }: RelativeTimeProps) {
   return (
     <time
       dateTime={valid ? date.toISOString() : undefined}
-      title={valid ? date.toLocaleString() : undefined}
+      title={valid ? formatAbsolute(date) : undefined}
     >
       {formatRelative(at, now)}
     </time>
