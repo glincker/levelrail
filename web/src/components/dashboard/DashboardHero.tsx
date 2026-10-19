@@ -7,9 +7,8 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { SkeletonLine, StatusPill, type Tone } from '@/components/kit'
 import { Button } from '@/components/ui/button'
-import type { AppListEntry } from '../../types/appDetail'
+import type { AppsSummary } from '../../queries/appPages'
 import type { AttentionLevel } from '../../lib/attentionSummary'
-import { countBuckets } from '../../lib/appsListView'
 import { dayPeriod, heroSentence } from '../../lib/dashboardHome'
 import { useAuthUsername } from '../../hooks/useAuthUsername'
 import { useBrand } from '../../hooks/useBrand'
@@ -25,11 +24,11 @@ const LEVEL_TONE: Record<AttentionLevel, Tone> = {
 }
 
 export function DashboardHero({
-  apps,
+  summary,
   banners,
   children,
 }: {
-  apps: AppListEntry[]
+  summary: AppsSummary
   banners?: ReactNode
   children: ReactNode
 }) {
@@ -39,10 +38,9 @@ export function DashboardHero({
   const username = useAuthUsername()
   const now = useMinuteNow()
   const { level, count, isLoading } = useAttentionSummary()
-  const failing = countBuckets(apps).failing
   const sentence = heroSentence({
-    apps: apps.length,
-    failing,
+    apps: summary.total,
+    failing: summary.failing,
     attention: isLoading ? 0 : count,
   })
   const period = dayPeriod(new Date(now).getHours())

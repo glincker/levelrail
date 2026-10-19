@@ -13,6 +13,7 @@
 // rather than breaking the page.
 
 import {
+  infiniteQueryOptions,
   queryOptions,
   useMutation,
   useQuery,
@@ -54,6 +55,43 @@ export async function fetchNodes(): Promise<NodeResource[]> {
     )
   }
   return (await res.json()) as NodeResource[]
+}
+
+export const NODE_PAGE_SIZE = 100
+
+export interface NodePage {
+  items: NodeResource[]
+  total: number
+  offset: number
+}
+
+export function nodePagesQueryOptions() {
+  return infiniteQueryOptions({
+    queryKey: [...nodeKeys.list(), 'pages'] as const,
+    queryFn: async ({ pageParam, signal }): Promise<NodePage> => {
+      const res = await fetch(
+        `/api/v1/nodes?limit=${String(NODE_PAGE_SIZE)}&offset=${String(pageParam)}`,
+        { signal },
+      )
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(
+            res,
+            `fetch nodes failed: ${String(res.status)}`,
+          ),
+        )
+      }
+      const items = (await res.json()) as NodeResource[]
+      const total = Number(res.headers.get('X-Total-Count') ?? items.length)
+      return { items, total, offset: pageParam }
+    },
+    initialPageParam: 0,
+    getNextPageParam: (last) => {
+      const next = last.offset + last.items.length
+      return last.items.length > 0 && next < last.total ? next : undefined
+    },
+  })
 }
 
 export function nodeListQueryOptions() {

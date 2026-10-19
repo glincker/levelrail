@@ -33,8 +33,9 @@ function toKb(bytes) {
 // sets) rather than by output filename, since content-hash suffixes and
 // Rollup's anonymous "chunk-XXXXXXXX" names for shared chunks change every
 // build and aren't otherwise distinguishable from genuine app chunks.
+// Leading path allowed: a symlinked node_modules (agent worktrees) keys modules as ../../x/node_modules/.
 const EXEMPT_MODULE_RE =
-  /^node_modules\/(mermaid|@mermaid-js\/parser|elkjs|cytoscape[^/]*|chevrotain[^/]*|@chevrotain\/|langium|dagre-d3-es|khroma|cose-bilkent|@upsetjs\/venn\.js)\//
+  /(?:^|\/)node_modules\/(mermaid|@mermaid-js\/parser|elkjs|cytoscape[^/]*|chevrotain[^/]*|@chevrotain\/|langium|dagre-d3-es|khroma|cose-bilkent|@upsetjs\/venn\.js)\//
 
 function loadExemptFiles() {
   let manifest

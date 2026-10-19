@@ -67,6 +67,10 @@
   "sessionEnded": {
     "notice": "Se cerró tu sesión porque terminó, por ejemplo tras una actualización o un reinicio. Inicia sesión de nuevo para continuar. Los tokens de API no se ven afectados."
   },
+  "loadMore": {
+    "showing": "Mostrando {{loaded}} de {{total}}",
+    "button": "Cargar más"
+  },
   "appsList": {
     "title": "Aplicaciones",
     "tableLabel": "Aplicaciones",

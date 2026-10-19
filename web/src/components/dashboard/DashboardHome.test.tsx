@@ -90,6 +90,7 @@ function routeFetch(handlers: Record<string, unknown>) {
       return Promise.resolve({
         ok,
         status: ok ? 200 : 404,
+        headers: new Headers(),
         json: () => Promise.resolve(ok ? handlers[key] : { error: 'nf' }),
       } as unknown as Response)
     }),
@@ -101,7 +102,20 @@ function renderHome(apps: AppListEntry[]) {
   return render(
     <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={qc}>
-        <DashboardHome apps={apps} onboarding={ONBOARDING} />
+        <DashboardHome
+          summary={{
+            total: apps.length,
+            running: apps.filter((a) => a.status.variant === 'success').length,
+            failing: apps.filter((a) => a.status.variant === 'destructive')
+              .length,
+            deploying: 0,
+            stopped: 0,
+            attention: 0,
+            by_environment: {},
+          }}
+          sample={apps}
+          onboarding={ONBOARDING}
+        />
       </QueryClientProvider>
     </I18nextProvider>,
   )
@@ -146,7 +160,7 @@ describe('DashboardHome', () => {
   it('populated with no attention shows a healthy pill, tiles and app quick start', async () => {
     const apps = [makeApp('web', true)]
     routeFetch({
-      '=/api/v1/apps': apps,
+      '=/api/v1/apps?status=failing&limit=100': apps,
       '/requests': SERIES,
       deploy: [],
       nodes: [],
@@ -170,7 +184,7 @@ describe('DashboardHome', () => {
   it('puts setup and hardening advice on one quiet line, not in incidents', async () => {
     const apps = [makeApp('web', true)]
     routeFetch({
-      '=/api/v1/apps': apps,
+      '=/api/v1/apps?status=failing&limit=100': apps,
       '/attention/feed': {
         items: [
           {
@@ -237,7 +251,7 @@ describe('DashboardHome', () => {
   it('ranks apps and databases together in Resources', async () => {
     const apps = [makeApp('web', true)]
     routeFetch({
-      '=/api/v1/apps': apps,
+      '=/api/v1/apps?status=failing&limit=100': apps,
       '=/api/v1/apps/resource-usage': [
         { name: 'web', memory_usage_bytes: 200 * 1024 ** 2, cpu_percent: 2 },
       ],
@@ -302,7 +316,7 @@ describe('DashboardHome', () => {
   it('populated with a failing app surfaces it with one-click actions', async () => {
     const apps = [makeApp('web', false)]
     routeFetch({
-      '=/api/v1/apps': apps,
+      '=/api/v1/apps?status=failing&limit=100': apps,
       '/requests': SERIES,
       deploy: [],
       nodes: [],

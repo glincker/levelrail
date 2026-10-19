@@ -84,9 +84,12 @@ function Row({ row, last }: { row: DeployRow; last: boolean }) {
   )
 }
 
-export function RecentActivity({ apps }: { apps: AppListEntry[] }) {
+export function RecentActivity({ sample }: { sample: AppListEntry[] }) {
   const { t } = useTranslation('dashboard')
-  const names = useMemo(() => pickSampleApps(apps, ACTIVITY_APP_CAP), [apps])
+  const names = useMemo(
+    () => pickSampleApps(sample, ACTIVITY_APP_CAP),
+    [sample],
+  )
   const { byApp, isPending } = useFleetDeploys(names)
   const rows = deployRows(byApp, ROWS_SHOWN)
   return (

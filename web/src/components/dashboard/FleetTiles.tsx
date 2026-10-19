@@ -11,7 +11,7 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { MetricTile } from '@/components/kit'
 import type { AppListEntry } from '../../types/appDetail'
-import { countBuckets } from '../../lib/appsListView'
+import type { AppsSummary } from '../../queries/appPages'
 import { useTranslation } from 'react-i18next'
 import { ERROR_RATE_MIN_REQUESTS, errorTone } from '../../lib/fleetThresholds'
 import {
@@ -30,11 +30,17 @@ import { useAppsMetrics } from '../../queries/appsMetrics'
 
 export const SAMPLE_APP_CAP = 8
 
-export function FleetTiles({ apps }: { apps: AppListEntry[] }) {
+export function FleetTiles({
+  summary,
+  sample,
+}: {
+  summary: AppsSummary
+  sample: AppListEntry[]
+}) {
   const navigate = useNavigate()
   const { t: tr } = useTranslation('dashboard')
   const now = useMinuteNow()
-  const names = useMemo(() => pickSampleApps(apps, SAMPLE_APP_CAP), [apps])
+  const names = useMemo(() => pickSampleApps(sample, SAMPLE_APP_CAP), [sample])
   const traffic = useAppsMetrics()
   const deploys = useFleetDeploys(names)
   const nodes = useQuery({
@@ -44,7 +50,7 @@ export function FleetTiles({ apps }: { apps: AppListEntry[] }) {
   })
   const gpus = useGpuNodes()
 
-  const buckets = countBuckets(apps)
+  const buckets = summary
   const t = summarizeTraffic(traffic.data ?? [])
   const d = deploysPerHour(flattenAttempts(deploys.byApp), now)
   const nodeTotals = nodeCounts(nodes.data ?? [])
@@ -61,7 +67,7 @@ export function FleetTiles({ apps }: { apps: AppListEntry[] }) {
         <MetricTile
           label={tr('tiles.appsRunning')}
           icon={<PackageIcon className="size-3.5" />}
-          value={`${buckets.running} / ${apps.length}`}
+          value={`${buckets.running} / ${summary.total}`}
           tone={buckets.failing > 0 ? 'danger' : 'success'}
           onClick={() => void navigate({ to: '/apps' })}
         />

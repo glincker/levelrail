@@ -6,7 +6,7 @@ import { buildWaitingItems, rankAttentionItems } from '../lib/attentionWaiting'
 import { useDeviceActivity, useLiveDeviceAuthRequests } from './deviceAuth'
 import { attentionFeedQueryOptions } from './attentionFeed'
 import { deployApprovalListQueryOptions } from './deployApprovals'
-import { appListQueryOptions } from './apps'
+import { failingAppsQueryOptions } from './appPages'
 import { certificatesQueryOptions } from './certificates'
 import { nodeListQueryOptions } from './nodes'
 import { assessDiskPressure } from '../lib/diskPressure'
@@ -22,7 +22,7 @@ const NOW_TICK_MS = 15_000
 // items instead of blocking the whole view.
 export function useAttentionItems() {
   const opts = { retry: false, refetchInterval: REFRESH_MS } as const
-  const apps = useQuery({ ...appListQueryOptions(), ...opts })
+  const apps = useQuery({ ...failingAppsQueryOptions(), ...opts })
   const nodes = useQuery({ ...nodeListQueryOptions(), ...opts })
   const certs = useQuery({ ...certificatesQueryOptions(), ...opts })
   const doctor = useQuery({ ...systemDoctorQueryOptions(), ...opts })

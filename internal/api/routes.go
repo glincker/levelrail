@@ -78,6 +78,7 @@ func (rt *Router) Handler() http.Handler {
 	h = rt.accountEventMiddleware(h)
 	h = experimentalGateMiddleware(h)
 	h = rt.accessPolicyMiddleware(h)
+	h = compressMiddleware(h)
 	h = csrfOriginMiddleware(h)
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
 	if !rt.hstsEnabled {

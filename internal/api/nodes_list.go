@@ -19,6 +19,10 @@ type nodeFilterStore interface {
 	ListNodesFiltered(ctx context.Context, f store.NodeListFilter) ([]store.Node, int, error)
 }
 
+type nodeResourceCountStore interface {
+	NodeResourceCounts(ctx context.Context) (map[string]int, error)
+}
+
 // parseNodeListFilter reads q, limit and offset off r, the same
 // parameter names and shape parseAppListFilter uses.
 func parseNodeListFilter(r *http.Request) store.NodeListFilter {

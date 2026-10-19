@@ -3,7 +3,10 @@ import { CaretDownIcon, RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
+import { useQuery } from '@tanstack/react-query'
 import type { AppListEntry } from '../../types/appDetail'
+import type { AppsSummary } from '../../queries/appPages'
+import { appListQueryOptions } from '../../queries/apps'
 import { useCompleteOnboarding } from '../../queries/onboarding'
 import type { OnboardingState } from '../../queries/onboarding'
 import { useIsRoot } from '../../hooks/useIsRoot'
@@ -36,7 +39,17 @@ const RecentAlertsCard = lazy(() =>
   import('../RecentAlertsCard').then((m) => ({ default: m.RecentAlertsCard })),
 )
 
-function UsageDetails({ apps }: { apps: AppListEntry[] }) {
+function UsageApps() {
+  const { data: apps = [] } = useQuery(appListQueryOptions())
+  return (
+    <>
+      <TopResourceConsumers apps={apps} />
+      <ReservedUsageCard apps={apps} />
+    </>
+  )
+}
+
+function UsageDetails() {
   const { t } = useTranslation('dashboard')
   const [open, setOpen] = useState(false)
   return (
@@ -61,8 +74,7 @@ function UsageDetails({ apps }: { apps: AppListEntry[] }) {
           <Suspense fallback={null}>
             <FleetResourceChart />
           </Suspense>
-          <TopResourceConsumers apps={apps} />
-          <ReservedUsageCard apps={apps} />
+          <UsageApps />
           <StorageUsageCard />
           <SleepFleetCard />
         </div>
@@ -72,17 +84,19 @@ function UsageDetails({ apps }: { apps: AppListEntry[] }) {
 }
 
 export function DashboardHome({
-  apps,
+  summary,
+  sample,
   onboarding,
 }: {
-  apps: AppListEntry[]
+  summary: AppsSummary
+  sample: AppListEntry[]
   onboarding: OnboardingState
 }) {
   const brand = useBrand()
   const { t } = useTranslation('dashboard')
   const isRoot = useIsRoot()
   const completeOnboarding = useCompleteOnboarding()
-  const hasApps = apps.length > 0
+  const hasApps = summary.total > 0
   const wizardStarted = onboarding.current_step !== ''
   const { mutate: markOnboardingComplete } = completeOnboarding
   useEffect(() => {
@@ -117,12 +131,12 @@ export function DashboardHome({
   }
 
   return (
-    <DashboardHero apps={apps} banners={<DashboardBanners />}>
-      <FleetTiles apps={apps} />
+    <DashboardHero summary={summary} banners={<DashboardBanners />}>
+      <FleetTiles summary={summary} sample={sample} />
       <div className="@container">
         <div className="grid gap-4 @4xl:grid-cols-2">
-          <NextSteps apps={apps} />
-          <RecentActivity apps={apps} />
+          <NextSteps summary={summary} sample={sample} />
+          <RecentActivity sample={sample} />
         </div>
       </div>
       <ResourcesSection />
@@ -131,7 +145,7 @@ export function DashboardHome({
         <RecentAlertsCard />
       </Suspense>
       <RecommendationsLine showSetup={false} />
-      <UsageDetails apps={apps} />
+      <UsageDetails />
     </DashboardHero>
   )
 }

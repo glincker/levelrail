@@ -67,6 +67,10 @@
   "sessionEnded": {
     "notice": "You were signed out because your session ended, for example after an upgrade or restart. Sign in again to continue. API tokens are not affected."
   },
+  "loadMore": {
+    "showing": "Showing {{loaded}} of {{total}}",
+    "button": "Load more"
+  },
   "appsList": {
     "title": "Apps",
     "tableLabel": "Apps",
