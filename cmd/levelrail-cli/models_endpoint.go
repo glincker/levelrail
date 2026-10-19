@@ -76,7 +76,7 @@ func runModelsEndpointAdd(prog string, args []string, stdout, stderr io.Writer, 
 	fs.StringVar(&ext.FallbackModelRef, "fallback-model-id", "", "model id to send to the fallback (default: the fallback model's own id)")
 	fs.DurationVar(&budget, "latency-budget", 0, "with --fallback: time to first byte before falling back, for example 3s (default: no budget)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s models endpoint add --name N --url URL [flags]\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s models endpoint add --name N --url URL [--api ollama] [--credential-from-env VAR] [--domain HOST] [--fallback MODEL] [--fallback-model-id ID] [--latency-budget 3s]\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -128,7 +128,7 @@ func runModelsEndpointTest(prog string, args []string, stdout, stderr io.Writer,
 	fs.StringVar(&apiType, "api", "openai", "with --url: openai or ollama")
 	fs.StringVar(&credEnv, "credential-from-env", "", "with --url: environment variable holding the API key")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s models endpoint test <name>\n  %s models endpoint test --url URL [--api ollama]\n\nCalls the server's list-models route and reports health, latency and the models found.\n\nFlags:\n", prog, prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s models endpoint test <name>\n  %s models endpoint test --url URL [--api ollama] [--credential-from-env VAR]\n\nCalls the server's list-models route and reports health, latency and the models found.\n\nFlags:\n", prog, prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -174,7 +174,7 @@ func runModelsEndpointRouting(prog string, args []string, stdout, stderr io.Writ
 	fs.StringVar(&ref, "fallback-model-id", "", "model id to send to the fallback (default: the fallback model's own id)")
 	fs.DurationVar(&budget, "latency-budget", 0, "time to first byte before falling back, for example 3s")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s models endpoint routing <name> --fallback MODEL [--latency-budget 3s]\n  %s models endpoint routing <name> --off\n\nThe policy is off until you set it.\n\nFlags:\n", prog, prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s models endpoint routing <name> --fallback MODEL [--fallback-model-id ID] [--latency-budget 3s]\n  %s models endpoint routing <name> --off\n\nThe policy is off until you set it.\n\nFlags:\n", prog, prog)
 		fs.PrintDefaults()
 	}
 	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "models endpoint routing", "model name"}, lookupEnv)
