@@ -19,7 +19,7 @@ func TestAppImportPlanFromPastedFiles(t *testing.T) {
 		{"compose maps app and database", map[string]string{"platform": "compose", "url": "file://compose", "snapshot": composeFile}, http.StatusOK, "web"},
 		{"compose needs content", map[string]string{"platform": "compose", "url": "file://compose"}, http.StatusBadRequest, "snapshot is required"},
 		{"compose rejects invalid yaml", map[string]string{"platform": "compose", "url": "file://compose", "snapshot": "services: [oops"}, http.StatusBadGateway, "compose"},
-		{"dokku maps one app", map[string]string{"platform": "dokku", "url": "file://dokku", "app_name": "blog", "snapshot": "FOO=bar\nDOKKU_APP_TYPE=herokuish\n"}, http.StatusOK, "blog"},
+		{"dokku maps one app", map[string]string{"platform": "dokku", "url": "file://dokku", "dokku_app_name": "blog", "snapshot": "FOO=bar\nDOKKU_APP_TYPE=herokuish\n"}, http.StatusOK, "blog"},
 		{"dokku needs app name", map[string]string{"platform": "dokku", "url": "file://dokku", "snapshot": "FOO=bar"}, http.StatusBadRequest, "app_name is required"},
 	}
 	for _, c := range cases {

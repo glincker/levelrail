@@ -30,7 +30,7 @@ type platformImportRequest struct {
 	// dokku env dump) used in place of a URL and token. It holds env, so treat it like Token.
 	Snapshot string `json:"snapshot,omitempty"`
 	// AppName names the one app a dokku env dump describes.
-	AppName       string   `json:"app_name,omitempty"`
+	AppName       string   `json:"dokku_app_name,omitempty"`
 	InsecureTLS   bool     `json:"insecure_tls,omitempty"`
 	AllowPrivate  bool     `json:"allow_private,omitempty"`
 	AllowLoopback bool     `json:"allow_loopback,omitempty"`
@@ -77,7 +77,7 @@ func openFileImportSource(w http.ResponseWriter, platform platformimport.Platfor
 		return platformimport.ComposeSource{Data: []byte(req.Snapshot)}, true
 	case platformimport.Dokku:
 		if strings.TrimSpace(req.AppName) == "" {
-			writeError(w, http.StatusBadRequest, "app_name is required for the dokku platform")
+			writeError(w, http.StatusBadRequest, "dokku_app_name is required for the dokku platform")
 			return nil, false
 		}
 		return platformimport.DokkuEnvSource{AppName: strings.TrimSpace(req.AppName), Data: req.Snapshot}, true

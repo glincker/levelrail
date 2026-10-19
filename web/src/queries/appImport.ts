@@ -160,7 +160,7 @@ export interface AppImportSource {
   // docker, compose and dokku: the pasted file content, used instead of url and token.
   snapshot?: string
   // dokku: the app the env dump belongs to.
-  app_name?: string
+  dokku_app_name?: string
   allow_loopback?: boolean
   allow_private?: boolean
   insecure_tls?: boolean

@@ -52,7 +52,7 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
       url: fileMode ? `file://${fileMode}` : url.trim(),
       token: fileMode ? '' : token,
       snapshot: fileMode ? snapshot : undefined,
-      app_name: mode === 'dokku' ? appName.trim() : undefined,
+      dokku_app_name: mode === 'dokku' ? appName.trim() : undefined,
       allow_loopback: loopback || undefined,
       allow_private: priv || undefined,
       insecure_tls: insecure || undefined,
