@@ -11,7 +11,7 @@ if [ "${#images[@]}" -eq 0 ]; then
 	images=(
 		alpine:3.20 busybox:latest nginx:alpine redis:7 redis:7-alpine postgres:16
 		mysql:8 mariadb:11 mongo:7 clickhouse/clickhouse-server:24.8
-		traefik/whoami:v1.10
+		traefik/whoami:v1.10 public.ecr.aws/zinclabs/openobserve:v0.90.0
 	)
 fi
 

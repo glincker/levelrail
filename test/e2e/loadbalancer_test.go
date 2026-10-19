@@ -33,6 +33,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/test/e2e/testenv"
 )
 
 const (
@@ -50,6 +51,7 @@ const helloLBBodyPrefix = "hello from levelrail e2e lb replica "
 // for the LoadBalancer experimental feature. Skips cleanly if Docker or
 // BuildKit aren't reachable, matching this package's other live tests.
 func TestLoadBalancer_Live_RealTrafficAndDrain(t *testing.T) {
+	testenv.RequireFullLive(t)
 	defer experimental.Reset()
 	experimental.Set(experimental.LoadBalancer)
 

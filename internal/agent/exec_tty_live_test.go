@@ -14,6 +14,7 @@ import (
 	dockerclient "github.com/docker/docker/client"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -23,6 +24,7 @@ const readUntilTimeout = 20 * time.Second
 // Unique container name suffix so concurrent test processes on one daemon never collide.
 func liveRemoteTransport(t *testing.T, containerNamePrefix string) (Transport, string) {
 	t.Helper()
+	dockertest.SkipIfShort(t)
 
 	containerName := fmt.Sprintf("%s-%d", containerNamePrefix, time.Now().UnixNano())
 

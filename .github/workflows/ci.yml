@@ -289,6 +289,11 @@ jobs:
           echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
           sudo systemctl restart docker
 
+      # A registry 429 costs a backoff here, not a re-run of the whole job.
+      - name: Pre-pull live-test images (retry with backoff)
+        if: matrix.lane == 'docker' || startsWith(matrix.lane, 'e2e')
+        run: scripts/prepull-test-images.sh
+
       - name: go test
         env:
           GO_TEST_FLAGS: ${{ matrix.flags }}

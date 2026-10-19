@@ -194,6 +194,56 @@ for `internal/`, a scoped run checks the changed-line gate only, at a
 lower 50% bar (a partial profile makes the aggregate meaningless, same as the
 pre-push hook).
 
+## What runs where
+
+PRs carry a thin live smoke. The full live sweep belongs to nightly and to
+the release gate. Three mechanisms decide it, all already in the pipeline:
+
+- `go test -short` (every PR lane): a live Docker, DB or network test calls
+  `dockertest.SkipIfShort(t)` (or goes through a helper that does, such as
+  `liveClient` and `liveRuntime`) and is skipped. `nightly.yml` runs without
+  `-short`, so it runs there, shuffled, with its images pre-pulled.
+- `testenv.RequireFullLive(t)` (e2e lanes): the test skips in smoke mode, which
+  is every PR whose diff does not touch the area (see `live=full` above).
+  A diff that touches `internal/{docker,agent,ingress,reconcile,...}` or
+  `test/e2e` still runs it, so a change to the code a heavy test covers is
+  checked by that test before merge.
+- The `ci:live` label forces `live=full` on any PR.
+
+| Tier | What | Where |
+| --- | --- | --- |
+| PR, always | Unit tests, fake-runtime and httptest tests (authz, secret-leak, supply chain, migration state machine, envelope-secret env, compose healthcheck gate, scheduled task concurrency, loopback ingress, local-repo git clone and branch listing), the e2e smoke subset | `ci.yml` |
+| PR, when the diff touches the area | Heavy e2e live tests (`RequireFullLive`): load balancer real traffic and drain, point-in-time restore over HTTP, compose healthcheck gate, catalog batches, break-glass, template fleet | `ci.yml` with `live=full` |
+| Nightly and release gate only | Everything skipped by `-short`: DB restore, clone, PITR and volume live tests, docker exec TTY, agent remote build and exec TTY, scheduled task and pipeline live, ACME, the migration runner live test, secret-env live test | `nightly.yml`, and the full run when a release branch merges to `main` |
+| Weekly | Template smoke across the catalog | `template-smoke.yml` |
+
+CI time budget: a PR that touches no live-suite path should finish its Go
+lanes in under 8 minutes of wall time, and the live-heavy lanes (`docker`,
+`e2e*`) should stay under 25 lane-minutes combined in smoke mode. Anything
+that pushes past that moves to nightly.
+
+### Adding a live test
+
+The default is nightly. A new test that needs Docker, a database, the network
+or a real registry starts with `dockertest.SkipIfShort(t)` (unit and package
+tests) or `testenv.RequireFullLive(t)` (`test/e2e`). Promote it to run on every
+PR only when it guards a property that no fake can (and say which one in the
+PR). Write the fake-backed twin first: a logic assertion belongs in an
+httptest or fake-runtime test, and the live test then proves only what the
+fake cannot, the real daemon or real wire behavior.
+
+### Retries
+
+Retry infrastructure errors, never assertion failures. Registry pulls retry
+with backoff in two places: `scripts/prepull-test-images.sh` runs before the
+`docker` and `e2e*` lanes (and nightly) so a 429 from a public registry costs a
+backoff, not a re-run of the job, and `test/e2e/testenv/pull_retry.go` retries
+`Create` on 429, 5xx and timeout errors inside the test. `scripts/ci-go-test.sh`
+reruns a failed test twice on the `docker` and `e2e*` lanes only, where the
+failure can be infrastructure; every other lane (`api-*`, `rest`) has zero
+reruns, so a real failure is red the first time and a test that passes only on
+retry cannot hide there.
+
 ## The kit module
 
 `kit/` is a nested Go module (`github.com/GLINCKER/levelrail/kit`), so
