@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1380 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1383 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1346,6 +1346,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/system/docker-guard", Ability: "AbilityRead", Group: "System", Handler: "handleGetDockerGuard", Description: "Docker API guard status (Security settings page): AbilityRead like system/doctor."},
 	{Method: "PUT", Path: "/api/v1/system/docker-guard", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateDockerGuard", Description: "Switching modes changes the host-protection boundary, so AbilityRoot."},
 	{Method: "GET", Path: "/api/v1/system/doctor", Ability: "AbilityRead", Group: "System", Handler: "handleSystemDoctor", Description: "Doctor (levelrail-cli doctor): a superset preflight bundle of the same individual checks above, plus a few doctor-only ones (data dir writability, ingress port availability, SQLite reachability), AbilityRead like system/status above."},
+	{Method: "GET", Path: "/api/v1/system/encryption-keys", Ability: "AbilityRead", Group: "System", Handler: "handleGetEncryptionKeys", Description: ""},
+	{Method: "PUT", Path: "/api/v1/system/encryption-keys/policy", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateKeyPolicy", Description: "Rotation rewrites every secret of an app, and the policy drives alerts: both AbilityRoot, rotation also needs step-up."},
+	{Method: "POST", Path: "/api/v1/system/encryption-keys/rotate", Ability: "AbilityRoot", Group: "System", Handler: "handleRotateDEK", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/geoip", Ability: "AbilityRead", Group: "System", Handler: "handleGeoIPLookup", Description: "Active country sources and a test lookup for one address."},
 	{Method: "GET", Path: "/api/v1/system/janitor", Ability: "AbilityRead", Group: "System", Handler: "handleGetJanitor", Description: ""},
 	{Method: "PUT", Path: "/api/v1/system/janitor/policy", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateJanitorPolicy", Description: "The policy and a run decide what gets deleted from the host, so AbilityRoot."},

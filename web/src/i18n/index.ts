@@ -77,6 +77,7 @@ export const NAMESPACES = [
   'buildCenter',
   'functions',
   'secretRotation',
+  'encryptionKeys',
   'aiAssistant',
   'demo',
   'secretScan',

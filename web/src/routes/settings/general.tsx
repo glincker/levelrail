@@ -37,6 +37,7 @@ import {
 import { DockerDiskUsageCard } from '@/components/settings/DockerDiskUsageCard'
 import { CertificatesCard } from '@/components/settings/CertificatesCard'
 import { MasterKeyCard } from '@/components/settings/MasterKeyCard'
+import { EncryptionKeysCard } from '@/components/settings/EncryptionKeysCard'
 import { DensityCard } from '@/components/settings/DensityCard'
 import { PageWidthCard } from '@/components/settings/PageWidthCard'
 
@@ -242,6 +243,7 @@ function GeneralSettingsPage() {
         <CertificatesCard />
 
         {status.secrets_configured ? <MasterKeyCard /> : null}
+        {status.secrets_configured ? <EncryptionKeysCard /> : null}
         {status.secrets_configured ? <SecretBindingCard /> : null}
       </div>
     </GeneralPageShell>

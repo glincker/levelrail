@@ -93,6 +93,9 @@ System endpoints for:
 | POST | /api/v1/system/janitor/run | AbilityRoot | handleRunJanitor |
 | GET | /api/v1/system/control-plane-health | AbilityRead | handleGetCPHealth |
 | POST | /api/v1/system/control-plane-health/fix | AbilityRoot | handleCPHealthFix |
+| GET | /api/v1/system/encryption-keys | AbilityRead | handleGetEncryptionKeys |
+| PUT | /api/v1/system/encryption-keys/policy | AbilityRoot | handleUpdateKeyPolicy |
+| POST | /api/v1/system/encryption-keys/rotate | AbilityRoot | handleRotateDEK |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

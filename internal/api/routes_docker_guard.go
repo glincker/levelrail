@@ -12,6 +12,10 @@ func (rt *Router) registerDockerGuardRoutes(mux *http.ServeMux) {
 	// The policy and a run decide what gets deleted from the host, so AbilityRoot.
 	mux.HandleFunc("PUT /api/v1/system/janitor/policy", rt.requireAbility(AbilityRoot, rt.handleUpdateJanitorPolicy))
 	mux.HandleFunc("POST /api/v1/system/janitor/run", rt.requireAbility(AbilityRoot, rt.handleRunJanitor))
+	mux.HandleFunc("GET /api/v1/system/encryption-keys", rt.requireAbility(AbilityRead, rt.handleGetEncryptionKeys))
+	// Rotation rewrites every secret of an app, and the policy drives alerts: both AbilityRoot, rotation also needs step-up.
+	mux.HandleFunc("PUT /api/v1/system/encryption-keys/policy", rt.requireAbility(AbilityRoot, rt.handleUpdateKeyPolicy))
+	mux.HandleFunc("POST /api/v1/system/encryption-keys/rotate", rt.requireAbility(AbilityRoot, rt.handleRotateDEK))
 	mux.HandleFunc("GET /api/v1/system/restart", rt.requireAbility(AbilityRead, rt.handleGetSystemRestart))
 	// Exiting the process drops every in-flight request and node session, so AbilityRoot.
 	mux.HandleFunc("POST /api/v1/system/restart", rt.requireAbility(AbilityRoot, rt.handleSystemRestart))

@@ -82,6 +82,7 @@ import type images from '../locales/en/images.json'
 import type buildCenter from '../locales/en/buildCenter.json'
 import type functions from '../locales/en/functions.json'
 import type secretRotation from '../locales/en/secretRotation.json'
+import type encryptionKeys from '../locales/en/encryptionKeys.json'
 import type templates from '../locales/en/templates.json'
 import type models from '../locales/en/models.json'
 import type aiAssistant from '../locales/en/aiAssistant.json'
@@ -169,6 +170,7 @@ declare module 'i18next' {
       buildCenter: typeof buildCenter
       functions: typeof functions
       secretRotation: typeof secretRotation
+      encryptionKeys: typeof encryptionKeys
       models: typeof models
       templates: typeof templates
       aiAssistant: typeof aiAssistant
