@@ -48,6 +48,7 @@ func (s *bootState) openStore() error {
 	})
 	recordUpgradeHistory(ctx, db, obs, logger)
 	importSelfUpgradeJournal(ctx, db, logger)
+	resolveServerProfile(ctx, db, logger)
 	if err := api.LoadBetaFeatures(ctx, db); err != nil {
 		logger.Warn("beta feature switches not loaded", slog.String("error", err.Error()))
 	}
@@ -199,7 +200,7 @@ func (s *bootState) startAgentServer() error {
 	if err != nil {
 		return fmt.Errorf("build agent grpc credentials: %w", err)
 	}
-	agentListener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", agentAddr())
+	agentListener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", agentListenAddr(ctx, db, readLocalNodeID(agentDataDir)))
 	if err != nil {
 		return fmt.Errorf("start agent grpc listener: %w", err)
 	}

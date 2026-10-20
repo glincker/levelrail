@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/profile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -217,6 +218,13 @@ func evaluatePosture(in postureInput) []postureItem {
 		shieldRule(in),
 		agentsRule(in),
 		anomalyRule(in),
+	}
+	if profile.For(profile.Active()).Recommendations {
+		for i := range items {
+			if items[i].ID == "offbox_backup_off" || items[i].ID == "master_key_rotation" {
+				items[i].Recommended = true
+			}
+		}
 	}
 	sort.SliceStable(items, func(i, j int) bool {
 		if scoring(items[i]) != scoring(items[j]) {

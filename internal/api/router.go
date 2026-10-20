@@ -212,6 +212,7 @@ type Router struct {
 	meshZone               string // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness              ReadinessProbes
 	meshSettings           meshSettingsState                                             // see mesh_settings.go
+	serverProfile          serverProfileState                                            // see server_profile.go
 	fixit                  fixitState                                                    // see fixit.go
 	buildPerf              BuildPerformanceStore                                         // see build_performance.go
 	buildLoad              BuildLoadSource                                               // nil: the build center shows no live slot usage

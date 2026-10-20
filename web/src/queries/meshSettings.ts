@@ -20,7 +20,7 @@ export interface MeshCheck {
 export interface MeshSettings {
   configured: boolean
   effective: boolean
-  source: 'env' | 'settings' | 'default'
+  source: 'env' | 'settings' | 'profile' | 'default'
   env_var: string
   restart_required: boolean
   restart_hint?: string

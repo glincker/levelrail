@@ -6,7 +6,7 @@
 #
 # Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall] [--force] [--purge]
 #                   [--coexist|--no-coexist] [--yes] [--no-cosign] [--http-port N]
-#                   [--https-port N] [--domain HOST]
+#                   [--https-port N] [--domain HOST] [--profile minimal|standard|suite]
 #   install    (default) preflight checks, then install or repair. Safe to re-run.
 #   check      (also --check) read-only server readiness report: who holds ports
 #              80/443, Docker version and isolation, exposed Docker API, disk,
@@ -36,6 +36,14 @@
 #              are then verified by SHA-256 checksum only.
 #   --http-port / --https-port  ingress ports (override the LEVELRAIL_* env).
 #   --domain   your domain, only used to print the exact proxy command.
+#   --profile  server profile (same as LEVELRAIL_PROFILE): minimal keeps the
+#              install as light as possible (single node, mesh, plugins and
+#              experimental features off, short retention), standard is the
+#              default, suite adds the mesh, plugins and every experimental
+#              feature. Written to the drop-in as APP_SERVER_PROFILE, which pins
+#              it: remove that line to change it from Settings. Machines under
+#              LEVELRAIL_LOW_RAM_MB (default 2048) are shown a minimal
+#              recommendation, never switched. See docs/profiles.md.
 #
 # Chosen ports and addresses are written to a systemd drop-in,
 # /etc/systemd/system/levelrail.service.d/10-install.conf, which `upgrade`
@@ -138,6 +146,10 @@ DOMAIN_HINT="${LEVELRAIL_DOMAIN:-}"
 PUBLIC_HOST="${APP_PUBLIC_HOST:-}"
 PUBLIC_HOST_PINNED=0
 [ -z "$PUBLIC_HOST" ] || PUBLIC_HOST_PINNED=1
+SERVER_PROFILE="${LEVELRAIL_PROFILE:-}"
+PROFILE_PINNED=0
+[ -z "$SERVER_PROFILE" ] || PROFILE_PINNED=1
+LOW_RAM_MB="${LEVELRAIL_LOW_RAM_MB:-2048}"
 DROPIN_DIR="/etc/systemd/system/${SERVICE_NAME}.service.d"
 DROPIN_PATH="${DROPIN_DIR}/10-install.conf"
 PROXY_DOCS_URL="https://docs.levelrail.com/behind-an-existing-proxy"
@@ -172,7 +184,7 @@ usage() {
 	cat <<'EOF'
 Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall] [--force] [--purge]
                   [--coexist|--no-coexist] [--yes] [--no-cosign] [--http-port N]
-                  [--https-port N] [--domain HOST]
+                  [--https-port N] [--domain HOST] [--profile minimal|standard|suite]
   install    (default) preflight checks, then install or repair
   check      (also --check) read-only readiness report and recommended mode
   upgrade    replace the binary with a newer release and restart
@@ -186,6 +198,7 @@ Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall] [--for
   --no-coexist  fail preflight instead of switching to coexist mode
   --yes      accepted for scripts, the installer never prompts
   --no-cosign  do not install cosign (checksum-only verification)
+  --profile  minimal, standard (default) or suite: which optional subsystems start
 EOF
 }
 
@@ -196,7 +209,7 @@ while [ "$#" -gt 0 ]; do
 	arg="$1"
 	shift
 	case "$arg" in
-	--http-port | --https-port | --domain)
+	--http-port | --https-port | --domain | --profile)
 		[ "$#" -gt 0 ] || fatal "$arg needs a value"
 		arg="$arg=$1"
 		shift
@@ -223,6 +236,10 @@ while [ "$#" -gt 0 ]; do
 		HTTPS_PORT_PINNED=1
 		;;
 	--domain=*) DOMAIN_HINT="${arg#*=}" ;;
+	--profile=*)
+		SERVER_PROFILE="${arg#*=}"
+		PROFILE_PINNED=1
+		;;
 	-h | --help)
 		usage
 		exit 0
@@ -272,6 +289,10 @@ safe_port LEVELRAIL_COEXIST_HTTP_PORT "$COEXIST_HTTP_PORT"
 safe_port LEVELRAIL_COEXIST_HTTPS_PORT "$COEXIST_HTTPS_PORT"
 safe_host APP_PUBLIC_HOST "$PUBLIC_HOST"
 safe_host --domain "$DOMAIN_HINT"
+case "$SERVER_PROFILE" in
+'' | minimal | standard | suite) ;;
+*) fatal "--profile must be minimal, standard or suite, got: $SERVER_PROFILE" ;;
+esac
 case "${LEVELRAIL_VERSION:-}" in
 *[!A-Za-z0-9._+-]*) fatal "LEVELRAIL_VERSION may only contain letters, digits, dot, dash, plus and underscore" ;;
 esac
@@ -444,6 +465,12 @@ load_settings() {
 		case "$v" in
 		*[!A-Za-z0-9.:-]*) ;;
 		*) PUBLIC_HOST="$v" ;;
+		esac
+	fi
+	if [ "$PROFILE_PINNED" -eq 0 ]; then
+		v="$(setting APP_SERVER_PROFILE)"
+		case "$v" in
+		minimal | standard | suite) SERVER_PROFILE="$v" ;;
 		esac
 	fi
 	if [ "$DASHBOARD_BIND" = "127.0.0.1" ] && [ "$HTTP_PORT" != "80" ] && [ "$HTTPS_PORT" != "443" ]; then
@@ -634,6 +661,9 @@ preflight() {
 	mem_kb="$(awk '/^MemTotal:/ { print $2 }' /proc/meminfo 2>/dev/null || echo 0)"
 	mem_mb=$((${mem_kb:-0} / 1024))
 	if [ "$mem_mb" -ge "$MIN_RAM_MB" ]; then row ram ok "${mem_mb} MB"; else row ram warn "${mem_mb} MB, ${MIN_RAM_MB} MB or more recommended"; fi
+	if [ -z "$SERVER_PROFILE" ] && [ "$mem_mb" -gt 0 ] && [ "$mem_mb" -lt "$LOW_RAM_MB" ]; then
+		row profile ok "standard. This machine has little memory: re-run with --profile minimal for the lightest install"
+	fi
 
 	disk_dir="$(first_existing_dir "$DATA_DIR")"
 	free_kb="$(df -Pk "$disk_dir" 2>/dev/null | awk 'NR == 2 { print $4 }')"
@@ -1009,6 +1039,7 @@ write_dropin() {
 			"Environment=APP_INGRESS_HTTP_ADDR=:${HTTP_PORT}" \
 			"Environment=APP_INGRESS_HTTPS_ADDR=:${HTTPS_PORT}"
 		[ -z "$PUBLIC_HOST" ] || printf 'Environment=APP_PUBLIC_HOST=%s\n' "$PUBLIC_HOST"
+		[ -z "$SERVER_PROFILE" ] || printf 'Environment=APP_SERVER_PROFILE=%s\n' "$SERVER_PROFILE"
 	} >"$DROPIN_PATH"
 }
 
@@ -1017,7 +1048,7 @@ write_dropin() {
 ensure_dropin() {
 	if [ -f "$DROPIN_PATH" ] && [ "$HTTP_PORT_PINNED" -eq 0 ] && [ "$HTTPS_PORT_PINNED" -eq 0 ] &&
 		[ "$DASHBOARD_PORT_PINNED" -eq 0 ] && [ "$PUBLIC_HOST_PINNED" -eq 0 ] && [ "$COEXIST" -eq 0 ] &&
-		[ "$SETTINGS_CHANGED" -eq 0 ]; then
+		[ "$PROFILE_PINNED" -eq 0 ] && [ "$SETTINGS_CHANGED" -eq 0 ]; then
 		return 0
 	fi
 	write_dropin

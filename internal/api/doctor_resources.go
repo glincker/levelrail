@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/profile"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -80,11 +81,14 @@ func (rt *Router) doctorCheckRAM() doctorCheckResource {
 	threshold := rt.doctorMinRAMBytes
 	if threshold <= 0 {
 		threshold = defaultDoctorMinRAMBytes
+		if p := profile.For(profile.Active()).MinRAMBytes; p > 0 {
+			threshold = p
+		}
 	}
 	if total < threshold {
 		return doctorCheckResource{
 			Code: code, Name: name, Status: doctorStatusWarn,
-			Message:  fmt.Sprintf("%d bytes total, below the %d byte recommended minimum", total, threshold),
+			Message:  fmt.Sprintf("%s total, below the %s recommended minimum", humanBytes(total), humanBytes(threshold)),
 			Fix:      "Add more RAM, or reduce the number of apps and replicas running on this box.",
 			DocsPath: "/troubleshooting#below-the-recommended-minimum-ram-or-cpu",
 		}
@@ -103,6 +107,9 @@ func (rt *Router) doctorCheckCPU() doctorCheckResource {
 	threshold := rt.doctorMinCPUCount
 	if threshold <= 0 {
 		threshold = defaultDoctorMinCPUCount
+		if p := profile.For(profile.Active()).MinCPUCount; p > 0 {
+			threshold = p
+		}
 	}
 	if n < threshold {
 		return doctorCheckResource{

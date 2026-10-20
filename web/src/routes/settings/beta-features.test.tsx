@@ -10,6 +10,7 @@ import advisorEn from '../../locales/en/resourceAdvisor.json'
 import commonEn from '../../locales/en/common.json'
 import { bannerFor, groupByMaturity } from '../../lib/betaFeatures'
 import type { BetaFeature } from '../../types/resourceAdvisor'
+import type { ServerProfile } from '../../queries/serverProfile'
 import { Route } from './beta-features'
 
 const push = vi.fn()
@@ -44,6 +45,34 @@ function feature(over: Partial<BetaFeature>): BetaFeature {
   }
 }
 
+const profileInfo = (id: ServerProfile['configured']) => ({
+  id,
+  mesh: id === 'suite',
+  plugins: id === 'suite',
+  experimental_features: id === 'suite' ? 13 : 0,
+  retention_days: id === 'minimal' ? 3 : 15,
+  loopback_agent: id === 'minimal',
+  lazy_loops: id === 'minimal',
+  posture_recommendations: id === 'minimal',
+  sbom_scan: id === 'suite',
+})
+let serverProfile: ServerProfile = {
+  active: 'standard',
+  configured: 'standard',
+  source: 'default',
+  env_var: 'APP_SERVER_PROFILE',
+  pinned_by_env: false,
+  restart_required: false,
+  profiles: [
+    profileInfo('minimal'),
+    profileInfo('standard'),
+    profileInfo('suite'),
+  ],
+  problems: [],
+  needs_confirm: false,
+  saved: false,
+}
+const putProfile = vi.fn()
 let list: BetaFeature[] = []
 const put = vi.fn((id: string, enabled: boolean) => {
   list = list.map((f) => (f.id === id ? { ...f, enabled } : f))
@@ -53,6 +82,13 @@ const put = vi.fn((id: string, enabled: boolean) => {
 beforeEach(() => {
   push.mockClear()
   put.mockClear()
+  putProfile.mockReset()
+  serverProfile = {
+    ...serverProfile,
+    configured: 'standard',
+    pinned_by_env: false,
+    restart_required: false,
+  }
   list = [
     feature({
       id: 'resource-advisor',
@@ -66,6 +102,14 @@ beforeEach(() => {
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string, init?: RequestInit) => {
+      if (url.includes('server-profile')) {
+        if (init?.method === 'PUT') {
+          return Promise.resolve(putProfile(JSON.parse(init.body as string)))
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify(serverProfile), { status: 200 }),
+        )
+      }
       if (init?.method === 'PUT') {
         const id = decodeURIComponent(url.split('/').pop() ?? '')
         const body = JSON.parse(init.body as string) as { enabled: boolean }
@@ -196,5 +240,85 @@ describe('Beta features page', () => {
     renderPage({ feature: 'resource-advisor', from: '//evil.example' })
     await screen.findByText('Resource advisor')
     expect(screen.queryByRole('button', { name: 'Take me there' })).toBeNull()
+  })
+})
+
+describe('Server profile card', () => {
+  it('shows the current profile and what each includes', async () => {
+    renderPage({})
+    expect(await screen.findByText('Server profile')).toBeInTheDocument()
+    expect(screen.getByText('Current')).toBeInTheDocument()
+    expect(screen.getByText('Mesh on')).toBeInTheDocument()
+    expect(
+      screen.getByText('Agent listener on loopback until a node enrolls'),
+    ).toBeInTheDocument()
+  })
+
+  it('saves a chosen profile and asks for a restart', async () => {
+    putProfile.mockImplementation(
+      (body: { profile: ServerProfile['configured'] }) => {
+        serverProfile = {
+          ...serverProfile,
+          configured: body.profile,
+          restart_required: true,
+        }
+        return new Response(JSON.stringify(serverProfile), { status: 200 })
+      },
+    )
+    renderPage({})
+    const buttons = await screen.findAllByRole('button', {
+      name: 'Use this profile',
+    })
+    await userEvent.setup().click(buttons[buttons.length - 1]!)
+    await waitFor(() => {
+      expect(putProfile).toHaveBeenCalledWith({
+        profile: 'suite',
+        confirm: false,
+      })
+    })
+    expect(
+      await screen.findByText('Saved. Restart to apply this change.', {
+        exact: false,
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('shows a refused move and offers confirm for a shorter retention', async () => {
+    putProfile.mockImplementationOnce(
+      () =>
+        new Response(
+          JSON.stringify({
+            ...serverProfile,
+            needs_confirm: true,
+            problems: [
+              {
+                code: 'retention_shorter',
+                message: 'Older samples go.',
+                blocking: false,
+              },
+            ],
+            error: 'Older samples go.',
+          }),
+          { status: 409 },
+        ),
+    )
+    renderPage({})
+    const buttons = await screen.findAllByRole('button', {
+      name: 'Use this profile',
+    })
+    await userEvent.setup().click(buttons[0]!)
+    expect(await screen.findByText('Older samples go.')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Confirm and apply' }),
+    ).toBeInTheDocument()
+  })
+
+  it('hides the choices when the server pins the profile', async () => {
+    serverProfile = { ...serverProfile, pinned_by_env: true, source: 'env' }
+    renderPage({})
+    expect(await screen.findByText('Set by the server')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Use this profile' }),
+    ).toBeNull()
   })
 })

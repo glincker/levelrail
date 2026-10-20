@@ -201,22 +201,24 @@ func (s *bootState) startSchedulers() {
 		scheduler.Verifier = backupVerifyRunner
 		scheduler.Policies, scheduler.GFS = db, db
 		scheduler.Tombstones = db
-		startBackupDrills(ctx, logger, db, newBackupProtection(db, secretsManager, client, backupRunner, logger), alertingEngine)
 		scheduler.BaseBackups = newBaseBackupRunner(db, secretsManager, client, backupRunner, logger)
-		go func() {
-			if err := scheduler.Run(ctx, backupSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
-				logger.Error("backup scheduler stopped", slog.String("error", err.Error()))
-			}
-		}()
 		walShip := newWALShipScheduler(db, client, backupRunner, func(nodeID string) bool {
 			return nodeID == "" || (meshCfg != nil && nodeID == meshCfg.localNodeID)
 		}, logger)
 		apiRouter.SetWALShipStatus(walShip)
-		go func() {
-			if err := walShip.Run(ctx, walShipInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
-				logger.Error("wal ship scheduler stopped", slog.String("error", err.Error()))
-			}
-		}()
+		startWhenWork(ctx, logger, "backups", hasScheduledBackups(db), func() {
+			startBackupDrills(ctx, logger, db, newBackupProtection(db, secretsManager, client, backupRunner, logger), alertingEngine)
+			go func() {
+				if err := scheduler.Run(ctx, backupSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+					logger.Error("backup scheduler stopped", slog.String("error", err.Error()))
+				}
+			}()
+			go func() {
+				if err := walShip.Run(ctx, walShipInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+					logger.Error("wal ship scheduler stopped", slog.String("error", err.Error()))
+				}
+			}()
+		})
 	}
 
 	// Always runs: scheduledTaskRunner needs no master key, so this loop is never gated.

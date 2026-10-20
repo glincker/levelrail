@@ -50,7 +50,7 @@ Open the URL it prints, pick a password, and deploy your first app from the setu
 levelrail-cli import https://github.com/your-org/your-app --deploy
 ```
 
-Prefer containers, a pinned version or a source build? See [Installing](docs/installing.md). Coming from another platform? `levelrail-cli migrate coolify|dokploy|caprover` plans the move and shows a dry-run diff first.
+Prefer containers, a pinned version or a source build? See [Installing](docs/installing.md). Want it as light as Dokku, or everything on? `install.sh --profile minimal|standard|suite`, see [Server profiles](docs/profiles.md). Coming from another platform? `levelrail-cli migrate coolify|dokploy|caprover` plans the move and shows a dry-run diff first.
 
 <table>
   <tr>

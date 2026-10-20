@@ -39,6 +39,25 @@ Latency in ms, p50 / p95:
 
 `GET /system/status` caches Docker disk usage for 30 seconds (errors are never cached), so it does not pay the roughly 370 ms `docker system df` cost on every request. `GET /system/doctor` takes about 220 ms because it runs live checks (Docker, database, and others) by design, and it is not on any polling path.
 
+## Server profiles
+
+`TestFootprint` (`cmd/levelrail/footprint_test.go`) boots the real control plane, with no Docker daemon and no apps, once per server profile (see [Server profiles](/profiles)), waits 20 seconds to settle, then idles for the measuring window and counts goroutines and registered background loops. Machine: Apple M4 Max, 14 cores, 36 GiB RAM, macOS 27.2, Go 1.26.9, dev build, 20 second window, one run per row (2026-10-19).
+
+| Profile | Goroutines | Background loops | Idle RSS | Idle CPU |
+| --- | --- | --- | --- | --- |
+| `minimal` | 116 | 35 | 162.0 MB | 0.13% |
+| `standard` | 118 | 38 | 162.7 MB | 0.13% |
+| `suite` | 128 | 41 | 166.5 MB | 0.15% |
+
+Read this honestly:
+
+- `minimal` runs 2 fewer goroutines and 3 fewer loops than `standard`, and `suite` runs 10 more goroutines and 3 more loops. The test fails if `minimal` ever stops being lighter than `standard`.
+- RSS and CPU are inside the run to run variance (10 to 15%). A profile does not make the process smaller, it makes less of it run.
+- The savings the profile is for do not show up as goroutines: a shorter retention, no listener on a public port, no mesh or plugin runtime, and fewer warnings. The pipeline engine now backs off to a one minute poll with no active run, which cuts wakeups from 30 per minute to 1 but is the same goroutine count.
+- The Linux baseline in `cmd/levelrail/testdata/footprint_baseline.json` has no profile rows yet. Record them on a Linux host with `FOOTPRINT_RECORD=1`.
+
+Reproduce it: `APP_FOOTPRINT_IDLE_SECONDS=20 go test ./cmd/levelrail -run '^TestFootprint$' -v -count=1`. It takes about four minutes and is skipped under `-short`.
+
 ## Caveats
 
 - One machine, one run per configuration. Expect run-to-run variance of roughly 10 to 15% on RSS and CPU.

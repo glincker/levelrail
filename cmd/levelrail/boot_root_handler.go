@@ -400,7 +400,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		modelGateway.SetWakeHook(engine.Nudge)
 	}
 	opts = append(opts, api.WithModels(modelSvc))
-	opts = append(opts, api.WithMeshSettings(db), api.WithFixit(db), api.WithBuildPerformance(db))
+	opts = append(opts, api.WithMeshSettings(db), api.WithServerProfile(db), api.WithFixit(db), api.WithBuildPerformance(db))
 	if client != nil {
 		opts = append(opts, api.WithGPUHostDiagnoser(func(ctx context.Context) gpu.HostDiagnosis {
 			return gpu.DiagnoseHost(ctx, gpu.ExecRunner{}, client, nil)

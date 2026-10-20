@@ -80,7 +80,9 @@
               "what-you-need",
               "installing",
               "getting-started",
-              "quickstart-one-command"
+              "quickstart-one-command",
+              "profiles",
+              "getting-started"
             ],
             "icon": "/assets/icons/download-simple.svg"
           },

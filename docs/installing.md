@@ -71,6 +71,8 @@ The script:
 - Checks that ports 80 and 443 answer on the server's public IP, and prints the `ufw`/`firewalld` commands to open them if not.
 - Prints the dashboard URL, the one-time **setup token** for the first admin, and a reminder to back up `<data dir>/master.key`.
 
+Pass `--profile minimal|standard|suite` to choose how much starts (default `standard`); see [Server profiles](/profiles).
+
 <Note>
 A missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECKSUM=1`. The installer picks the newest stable release; choose explicitly with `LEVELRAIL_CHANNEL=stable|beta`. A release with no binary for your architecture is skipped with a warning. Some providers never route a server's own public IP back to itself, so treat a failed reachability test as a hint, not proof.
 </Note>

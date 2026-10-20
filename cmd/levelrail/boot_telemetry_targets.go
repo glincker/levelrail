@@ -245,13 +245,17 @@ func runLogsRetentionSweep(ctx context.Context, db *telemetry.DB, logger *slog.L
 }
 
 func logsRetention() time.Duration {
+	fallback := defaultLogsRetention
+	if profileRetention > 0 {
+		fallback = profileRetention
+	}
 	raw := os.Getenv("APP_LOGS_RETENTION")
 	if raw == "" {
-		return defaultLogsRetention
+		return fallback
 	}
 	d, err := time.ParseDuration(raw)
 	if err != nil {
-		return defaultLogsRetention
+		return fallback
 	}
 	return d
 }

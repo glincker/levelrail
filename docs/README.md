@@ -172,6 +172,7 @@ noted per-document since these move between draft, proposed, accepted
 | [feature-status.md](/feature-status) | Maturity label and test evidence per feature, and README claims checked against the code |
 | [experimental-features.md](/experimental-features) | The `APP_EXPERIMENTAL` switch, what each gated feature does while off, and how the CLI, MCP, and web read it |
 | [ci.md](/ci) | How the CI lanes, required checks and local hooks fit together |
+| [profiles.md](/profiles) | The minimal, standard and suite server profiles, what each starts, and how to switch without losing data |
 | [performance.md](/performance) | Measured idle CPU, memory, and API latency at 0, 100, and 500 apps, and how to reproduce it |
 
 ## Support and contributing

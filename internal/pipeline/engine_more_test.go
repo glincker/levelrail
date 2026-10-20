@@ -154,7 +154,7 @@ func TestRunLoopCompletesAndStops(t *testing.T) {
 	run := h.start(h.save("version: 1\njobs:\n  t:\n    image: a\n    steps:\n      - run: echo hi\n"), StartOptions{})
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
-	go func() { done <- h.e.Run(ctx, 10*time.Millisecond) }()
+	go func() { done <- h.e.Run(ctx, 10*time.Millisecond, 50*time.Millisecond) }()
 
 	deadline := time.After(10 * time.Second)
 	for {
@@ -178,6 +178,41 @@ func TestRunLoopCompletesAndStops(t *testing.T) {
 	if err := <-done; !errors.Is(err, context.Canceled) {
 		t.Errorf("Run returned %v, want context.Canceled", err)
 	}
+}
+
+func TestRunBacksOffWhenIdleAndWakesOnNudge(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t, okHandler)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- h.e.Run(ctx, 10*time.Millisecond, time.Hour) }()
+	deadline := time.Now().Add(5 * time.Second)
+	for !h.e.idle.Load() && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if !h.e.idle.Load() {
+		t.Fatal("engine never went idle with no runs")
+	}
+	run := h.start(h.save("version: 1\njobs:\n  t:\n    image: a\n    steps:\n      - run: echo hi\n"), StartOptions{})
+	finish := time.Now().Add(10 * time.Second)
+	for {
+		r, err := h.db.GetPipelineRun(context.Background(), run.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if store.IsPipelineTerminal(r.Status) {
+			if r.Status != store.PipelineStatusSucceeded {
+				t.Fatalf("run = %s", r.Status)
+			}
+			break
+		}
+		if time.Now().After(finish) {
+			t.Fatalf("a nudge did not wake the idle engine: %s", r.Status)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	cancel()
+	<-done
 }
 
 func TestParseMemory(t *testing.T) {

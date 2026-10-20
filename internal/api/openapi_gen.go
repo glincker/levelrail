@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1465 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1467 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -510,6 +510,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/settings/push-subscriptions", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreatePushSubscription", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/push-subscriptions/vapid-public-key", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetPushVAPIDPublicKey", Description: "Browser push notification subscriptions (push_subscriptions.go): one admin account's registered browsers, the delivery target for the \"webpush\" notification-channel kind. Self-service like passkeys above, so requireAuth not requireAbility."},
 	{Method: "DELETE", Path: "/api/v1/settings/push-subscriptions/{id}", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeletePushSubscription", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/server-profile", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetServerProfile", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/server-profile", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetServerProfile", Description: ""},
 	{Method: "GET", Path: "/api/v1/users", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListUsers", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/users/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteUser", Description: ""},
 	{Method: "PUT", Path: "/api/v1/users/{id}/abilities", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateUserAbilities", Description: "PUT .../abilities is AbilityRoot like the delete route above, and refuses self-edits inside the handler (self-lockout guard): a root caller may change any other user's abilities, never their own."},

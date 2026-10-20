@@ -13,7 +13,13 @@ import (
 // configureTelemetryTiers applies the APP_METRICS_* tier and retention
 // settings; call before the store is shared with other goroutines.
 func configureTelemetryTiers(db *telemetry.DB) {
-	db.Configure(telemetry.TierConfigFromEnv(os.Getenv))
+	cfg := telemetry.TierConfigFromEnv(os.Getenv)
+	if profileRetention > 0 {
+		if _, err := time.ParseDuration(os.Getenv("APP_METRICS_RETENTION")); err != nil {
+			cfg.RawRetention = profileRetention
+		}
+	}
+	db.Configure(cfg)
 }
 
 // requestSummaryWindow reads APP_REQUESTS_SUMMARY_WINDOW; zero keeps the API default.

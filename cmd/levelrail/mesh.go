@@ -23,6 +23,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/network"
+	"github.com/GLINCKER/levelrail/internal/profile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -44,7 +45,7 @@ func meshEnabled(ctx context.Context, db *store.DB, logger *slog.Logger) bool {
 		}
 		saved = s
 	}
-	on, _ := network.ResolveEnabled(os.LookupEnv, saved.Enabled, saved.Set)
+	on, _ := network.ResolveEnabledWithProfile(os.LookupEnv, saved.Enabled, saved.Set, profile.For(profile.Active()).Mesh)
 	return on
 }
 
