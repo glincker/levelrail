@@ -11,6 +11,10 @@ func (rt *Router) registerTrafficRoutes(mux *http.ServeMux) {
 	// checks with one fix each. Read tier: it only reads and probes, and it
 	// connects only when the domain resolves to this server.
 	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/doctor", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDomainDoctor))
+	// Guided public certificate: preflight, request, progress. Request is root tier.
+	mux.HandleFunc("GET /api/v1/domains/{domain}/cert/preflight", rt.requireAbility(AbilityRead, rt.handleCertPreflight))
+	mux.HandleFunc("GET /api/v1/domains/{domain}/cert/status", rt.requireAbility(AbilityRead, rt.handleCertStatus))
+	mux.HandleFunc("POST /api/v1/domains/{domain}/cert", rt.requireAbility(AbilityRoot, rt.handleGetCert))
 	// Same doctor addressed by domain alone, as one JSON report or a
 	// stream of checks; the owning app is looked up and visibility enforced.
 	mux.HandleFunc("POST /api/v1/domains/{domain}/diagnose", rt.requireAbility(AbilityRead, rt.handleDomainDiagnose))

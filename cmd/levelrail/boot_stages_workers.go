@@ -302,6 +302,8 @@ func (s *bootState) startSchedulers() {
 		}
 	}()
 
+	go apiRouter.RunCertWatchdog(ctx)
+
 	// Only checks when an operator has opted into auto_update_enabled.
 	startUpgradeScheduler(ctx, logger, apiRouter)
 	updateCheckScheduler := updatecheck.NewScheduler(db, logger, b.RepoSlug())

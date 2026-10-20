@@ -21,6 +21,16 @@ export const certificatesKeys = {
 // codebase's TLS automation only drives Caddy's offline internal issuer
 // today, real ACME renewal-error tracking is a real gap but not one this
 // read-only endpoint invents data for.
+// CertKind says who signed the certificate a domain serves.
+export type CertKind =
+  'none' | 'internal' | 'staging' | 'letsencrypt' | 'custom' | 'proxy' | 'other'
+
+export interface CertRenewal {
+  at: string
+  result: 'ok' | 'failed'
+  error?: string
+}
+
 export interface CertificateStatus {
   domain: string
   sans?: string[]
@@ -49,6 +59,13 @@ export interface CertificateStatus {
   // an operator; the server never sets it for internal-CA, proxy-owned or
   // unrouted certificates.
   expiry_class?: 'incident'
+  // kind, days_left, last_renewal and next_retry_at are the certificate
+  // truth shown as a badge: who signed it, how long it has, how the last
+  // renewal went and when the watchdog tries a stuck one again.
+  kind?: CertKind
+  days_left?: number
+  last_renewal?: CertRenewal
+  next_retry_at?: string
 }
 
 export async function fetchCertificates(): Promise<CertificateStatus[]> {

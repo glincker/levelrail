@@ -6,6 +6,7 @@ import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DomainsTable } from './DomainsTable'
 import domainsEn from '../locales/en/domains.json'
+import httpsEn from '../locales/en/https.json'
 import type { Domain } from '../queries/domains'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
@@ -31,9 +32,9 @@ const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['domains'],
+  ns: ['domains', 'https'],
   defaultNS: 'domains',
-  resources: { en: { domains: domainsEn } },
+  resources: { en: { domains: domainsEn, https: httpsEn } },
   interpolation: { escapeValue: false },
 })
 
@@ -206,7 +207,7 @@ describe('DomainsTable rows', () => {
       )
       expect(screen.queryByText(/answers port 80/i)).not.toBeInTheDocument()
       expect(screen.queryByText('Request failed')).not.toBeInTheDocument()
-      expect(screen.getByText('Healthy')).toBeInTheDocument()
+      expect(screen.getByText('Proxy certificate')).toBeInTheDocument()
       expect(screen.getByText(/via your proxy/i)).toBeInTheDocument()
     })
 

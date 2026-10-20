@@ -389,6 +389,39 @@ The API is `GET/PUT /api/v1/settings/ingress`. An account email is required, and
 Real Let's Encrypt issuance, HTTP to HTTPS redirect and trusted-chain handshakes were run on a public VPS (`<dashed-ip>.sslip.io`, ports 80 and 443 open). The recorded run, including what failed before it worked, is in the [ACME verification runbook](/acme-verification-runbook#recorded-run-2026-10-05).
 </Tip>
 
+### Get a real certificate in one step
+
+A domain that still serves the internal certificate shows a browser warning. **Get a real certificate** (on the domain row, the domain's Overview, and the result step after adding a domain) is the one guided action that ends it:
+
+1. **Preflight.** The control plane checks, without calling Let's Encrypt: the name is one a public CA signs, TLS is not terminated by a proxy in front, DNS points at this server, port 80 answers on this server's address, no CAA record blocks Let's Encrypt, a contact email is set, and no Let's Encrypt limit is close. The email defaults to the one already saved, else your admin account's; you can change it. Rate limits (failed validations per hour, duplicate certificates per week) come with a **next safe time**.
+2. **Staging first, optionally.** Tick the staging option to rehearse against Let's Encrypt's test CA, which has no meaningful limits. Its certificates are untrusted by browsers, and the badge says **Staging** so it is never mistaken for the real thing. Run the action again without staging for the trusted one.
+3. **Request and progress.** The action turns public certificates on, clears the domain's internal or wrong-CA certificate and waits with a visible state: challenge pending, issued, or failed with a plain-language reason and the CA's own message. A finished request shows the issuer, expiry, and the date renewal starts (a third of the lifetime before expiry).
+
+Staging is for rehearsal on a domain that has no real certificate yet (still on the internal certificate or on an earlier staging one). The preflight blocks it, and the server refuses it independently, when any working Let's Encrypt certificate exists on the server (switching the CA drops every stored ACME certificate) or the domain has a working uploaded or proxy certificate. An expired or stalled certificate may be replaced. Going from staging to production is always allowed.
+
+Public certificates are a server setting, so the action applies to every domain on this server, not only the one you clicked. A failed port 80 self-check can be acknowledged when you know the port is open (some routers cannot reach themselves); the other checks cannot.
+
+From a terminal:
+
+```bash
+levelrail-cli domains cert shop.example.com --staging --wait
+levelrail-cli domains cert shop.example.com --wait
+levelrail-cli domains cert shop.example.com --preflight
+```
+
+The API is `GET /api/v1/domains/{domain}/cert/preflight`, `POST /api/v1/domains/{domain}/cert` (root ability, audited) and `GET /api/v1/domains/{domain}/cert/status`.
+
+### Where to see certificate status
+
+| Where | What it shows |
+| --- | --- |
+| Domains page, a domain's Overview, the app's domain editor | A badge per domain: **Internal certificate**, **Staging**, **Let's Encrypt** (with days left), **Uploaded certificate**, **Proxy certificate** or **No certificate**, plus the last renewal attempt, its result and the next retry |
+| `levelrail-cli domains certificates` and `GET /api/v1/certificates` | The same facts per certificate: `kind`, `days_left`, `last_renewal`, `next_retry_at` |
+| Doctor, check "Certificate expiry" | Fails when an auto-renewed certificate expired, its renewal stalled or failed, or it has fewer than `APP_CERT_FAIL_DAYS` days left (default 14). The typed fix **Renew now** clears the stored certificate and asks for a new one |
+| Attention center | An item for a failing renewal or a certificate inside the failure window, with the CA's last error |
+
+A renewal watchdog retries stuck or failing renewals on its own with exponential backoff (first retry after `APP_CERT_WATCHDOG_BACKOFF`, default 30 minutes, doubling to at most 12 hours, checked every `APP_CERT_WATCHDOG_INTERVAL`, default 10 minutes). It reuses the normal renewal path (it never runs a second ACME client), leaves a still-valid certificate in place and only asks the ingress to try again, clears a certificate that has already expired, and pauses while a Let's Encrypt rate limit is in the way. The rate-limit ledger lives in memory, so a restart forgets it and the CA's own answer remains the final word. See [Environment variables](/environment-variables#certificates-and-request-thresholds) for the knobs.
+
 ### HSTS (HTTP Strict Transport Security)
 
 Turn on **Enable HSTS** on the Domains page (or `levelrail-cli settings ingress set --hsts-enabled`) to send `Strict-Transport-Security` on every https response, including the dashboard's HTML page, no restart required. It is never sent over plain HTTP. HSTS defaults to off on purpose.

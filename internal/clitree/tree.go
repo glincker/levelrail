@@ -168,6 +168,7 @@ var Tree = map[string]*Node{
 		"summary":              nil,
 		"activity":             nil,
 		"certificates":         nil,
+		"cert":                 nil,
 		"connectivity":         nil,
 		"waf":                  {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"error-pages":          {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},

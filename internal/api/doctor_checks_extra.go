@@ -14,6 +14,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/attention"
+	"github.com/GLINCKER/levelrail/internal/certflow"
 	"github.com/GLINCKER/levelrail/internal/network"
 	"github.com/GLINCKER/levelrail/internal/serverready"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -231,54 +232,38 @@ func (rt *Router) doctorCheckDomainDNS(ctx context.Context) doctorCheckResource 
 
 func (rt *Router) doctorCheckCertExpiry(ctx context.Context) doctorCheckResource {
 	const code, name = "certificates", "Certificate expiry"
-	window := rt.certExpiryWarningWindow
-	if window <= 0 {
-		window = alerting.DefaultCertExpiryWarningWindow
-	}
 	now := time.Now()
-	infos, err := alerting.ListCertificates(ctx, rt.certs, window, now, rt.logger)
+	rows, err := rt.certTruthRows(ctx, now)
 	if err != nil {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: fmt.Sprintf("could not read certificates: %s", err)}
 	}
-	if len(infos) == 0 {
+	if len(rows) == 0 {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "no certificates issued yet"}
 	}
-	var obs []alerting.CertExpiryObservation
-	if rt.certObservations != nil {
-		obs, _ = rt.certObservations.ListAllCertExpiryObservations(ctx)
-	}
-	renewal := alerting.CertRenewalStates(infos, obs, rt.certRenewalStalledThreshold, now)
-	owners, _ := rt.domainOwners(ctx)
-	custom, _ := rt.customTLSCertDomains(ctx)
-	snap := rt.tlsSnapshot(ctx)
 	shortLived := attention.ShortLivedCertLimit()
-	var expired, soon []string
-	for _, in := range infos {
-		source := "acme"
-		if custom[strings.ToLower(in.Domain)] {
-			source = "custom"
-		}
-		class := attention.CertExpiryClass(attention.CertFacts{
-			Issuer: in.Issuer, Source: source, TLSOwner: string(snap.Owner(in.Domain)),
-			Status: in.Status, Renewal: renewal[in.Domain], NotBefore: in.NotBefore, NotAfter: in.NotAfter,
-			Routed: len(owners[strings.ToLower(in.Domain)]) > 0 || strings.EqualFold(in.Domain, rt.publicHost),
-		}, shortLived)
-		if class == "" {
+	var failing, soon []string
+	for _, c := range rows {
+		if attention.CertExpiryClass(certDoctorFacts(c), shortLived) == "" {
 			continue
 		}
-		if in.Status == "expired" {
-			expired = append(expired, in.Domain)
-		} else {
-			soon = append(soon, fmt.Sprintf("%s (%d days)", in.Domain, int(in.NotAfter.Sub(now).Hours()/24)))
+		label := fmt.Sprintf("%s (%d days)", c.Info.Domain, c.DaysLeft)
+		switch {
+		case c.Info.Status == "expired":
+			label = c.Info.Domain + " (expired)"
+			failing = append(failing, label)
+		case c.RenewalFailed() || c.Renewal == "stalled" || c.NearExpiry():
+			failing = append(failing, label+certReasonSuffix(c))
+		default:
+			soon = append(soon, label)
 		}
 	}
 	switch {
-	case len(expired) > 0:
+	case len(failing) > 0:
 		return doctorCheckResource{
 			Code: code, Name: name, Status: doctorStatusFail,
-			Message:  fmt.Sprintf("%d certificate(s) expired", len(expired)),
-			Evidence: strings.Join(append(expired, soon...), ", "),
-			Fix:      "open Certificates, renew the listed domains, and check the ACME reachability check above",
+			Message:  fmt.Sprintf("%d certificate(s) expired, failing to renew or expiring within %d days", len(failing), certflow.FailDays()),
+			Evidence: strings.Join(append(failing, soon...), ", "),
+			Fix:      "use Renew now, and check the ACME reachability check above",
 			DocsPath: "/troubleshooting#certificates",
 		}
 	case len(soon) > 0:
@@ -290,7 +275,17 @@ func (rt *Router) doctorCheckCertExpiry(ctx context.Context) doctorCheckResource
 			DocsPath: "/troubleshooting#certificates",
 		}
 	}
-	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: fmt.Sprintf("%d certificate(s), none need attention", len(infos))}
+	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: fmt.Sprintf("%d certificate(s), none need attention", len(rows))}
+}
+
+func certReasonSuffix(c certTruthRow) string {
+	switch {
+	case c.RenewalFailed():
+		return ", last renewal failed"
+	case c.Renewal == "stalled":
+		return ", renewal stalled"
+	}
+	return ""
 }
 
 func (rt *Router) doctorCheckBackupFreshness(ctx context.Context) doctorCheckResource {

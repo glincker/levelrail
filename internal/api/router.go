@@ -76,6 +76,7 @@ import (
 	"crypto/ecdsa"
 	"github.com/GLINCKER/levelrail/internal/appsleep"
 	"github.com/GLINCKER/levelrail/internal/archive"
+	"github.com/GLINCKER/levelrail/internal/certflow"
 	"github.com/GLINCKER/levelrail/internal/compliance"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/repolist"
@@ -306,6 +307,9 @@ type Router struct {
 	httpsMaxAttemptsPerHour int
 	httpsPendingTimeout     time.Duration
 	acmeDefaultDirectory    string
+	certLedger              certflow.Ledger
+	certWatchdog            *certflow.Watchdog
+	certWatchdogOnce        sync.Once
 	// publicHostSource is how publicHost was found; see WithPublicHostSource.
 	publicHostSource string
 	// hstsEnabled sends Strict-Transport-Security when true. Defaults to
