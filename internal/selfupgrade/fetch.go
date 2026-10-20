@@ -38,6 +38,9 @@ type Fetcher struct {
 	// AllowHTTP permits a plain-http BaseURL, for tests against a local server.
 	AllowHTTP bool
 	MaxBytes  int64
+	// RedirectHosts, when set, limits redirects to these hosts and their
+	// subdomains, so a release asset cannot bounce the server to an internal address.
+	RedirectHosts []string
 }
 
 // Fetch downloads asset, checksums.txt and the signature bundle of tag into
@@ -97,9 +100,22 @@ func (f Fetcher) client() *http.Client {
 		if req.URL.Scheme != "https" && !f.AllowHTTP {
 			return fmt.Errorf("redirect to %s refused: not https", req.URL.Host)
 		}
+		if len(f.RedirectHosts) > 0 && !hostAllowed(req.URL.Hostname(), f.RedirectHosts) {
+			return fmt.Errorf("redirect to %s refused: host not allowed", req.URL.Host)
+		}
 		return nil
 	}
 	return &cp
+}
+
+func hostAllowed(host string, allowed []string) bool {
+	host = strings.ToLower(host)
+	for _, a := range allowed {
+		if host == a || strings.HasSuffix(host, "."+a) {
+			return true
+		}
+	}
+	return false
 }
 
 func get(ctx context.Context, c *http.Client, u, dest string, limit int64, mode os.FileMode) (int, error) {

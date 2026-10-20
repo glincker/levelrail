@@ -398,6 +398,8 @@ type Router struct {
 	releaseHist *releaseHistorySource
 	// upgradeHistory is nil unless WithUpgradeHistory was applied.
 	upgradeHistory UpgradeHistoryStore
+	// schemaSource is nil unless WithReleaseSchemaSource was applied.
+	schemaSource *releaseSchemaSource
 	// selfUpgrade is nil unless WithSelfUpgrade was applied.
 	selfUpgrade *selfUpgradeConfig
 	// upgradeSchedule is nil unless WithUpgradeScheduling was applied;

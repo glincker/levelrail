@@ -65,7 +65,7 @@ export function updatesQueryOptions() {
 export type UpgradeCheckStatus =
   'ok' | 'warn' | 'fail' | 'unknown' | 'pending' | 'skipped'
 
-export type UpgradeFixAction = 'backup_now' | 'recheck'
+export type UpgradeFixAction = 'backup_now' | 'recheck' | 'open_rollback'
 
 export interface UpgradeCheck {
   code: string

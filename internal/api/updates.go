@@ -157,6 +157,9 @@ func (rt *Router) handleGetUpdates(w http.ResponseWriter, r *http.Request) {
 			resp.ReleaseURL = &url
 			resp.PublishedAt = &published
 			resp.UpdateAvailable = upgrade.UpdateAvailable(version.Version, &upgrade.Release{Tag: tag})
+			if resp.UpdateAvailable && rt.schemaRefusesRelease(r.Context(), tag, githubAssetNames(release)) {
+				resp.UpdateAvailable = false
+			}
 			rt.warmTrustRoot(resp.UpdateAvailable)
 		}
 		writeJSON(w, http.StatusOK, resp)
@@ -180,6 +183,9 @@ func (rt *Router) handleGetUpdates(w http.ResponseWriter, r *http.Request) {
 		resp.ReleaseURL = &url
 		resp.PublishedAt = &published
 		resp.UpdateAvailable = upgrade.UpdateAvailable(version.Version, release)
+		if resp.UpdateAvailable && !release.IsEdge() && rt.schemaRefusesRelease(r.Context(), tag, release.AssetNames) {
+			resp.UpdateAvailable = false
+		}
 		rt.warmTrustRoot(resp.UpdateAvailable && !release.IsEdge())
 		resp.ReleaseKind = releaseKind(release)
 		if release.IsEdge() {

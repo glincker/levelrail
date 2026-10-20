@@ -11,6 +11,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
 // Refusals that change nothing on the host.
@@ -21,7 +23,7 @@ var (
 	ErrSignatureRequired = errors.New("signature verification is required but unavailable")
 	ErrSignaturePinned   = errors.New("this host only accepts signed releases")
 	ErrBreakingNotAcked  = errors.New("breaking changes need acknowledgement")
-	ErrDowngrade         = errors.New("target release is older than the database schema")
+	ErrDowngrade         = errors.New(upgrade.DowngradeRefusal)
 	ErrVersionMismatch   = errors.New("downloaded binary reports a different version than requested")
 	ErrMigrationCheck    = errors.New("migration dry-run failed")
 	ErrNotHealthy        = errors.New("new release did not become healthy")

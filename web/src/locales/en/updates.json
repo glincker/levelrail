@@ -37,7 +37,8 @@
       "backupNow": "Back up now",
       "backingUp": "Backing up...",
       "recheck": "Re-check",
-      "rechecking": "Re-checking..."
+      "rechecking": "Re-checking...",
+      "openRollback": "Go to Roll back"
     }
   },
   "history": {
@@ -283,6 +284,7 @@
     "blockedTitle_one": "1 check needs attention before you can upgrade",
     "blockedTitle_other": "{{count}} checks need attention before you can upgrade",
     "waitingTitle": "Waiting for the release to finish publishing",
+    "schemaBlockedTitle": "Not offering {{version}}: it is older than your database",
     "confirmTitle": "Upgrade to {{version}}",
     "confirmDescription": "This server will go from {{current}} to {{target}}. Your apps keep running.",
     "willBackup": "A backup of the control plane database is taken and kept before anything changes.",

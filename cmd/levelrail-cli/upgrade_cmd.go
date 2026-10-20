@@ -105,6 +105,9 @@ func printUpgradeHuman(out io.Writer, p updatePreflight, backupNote string) {
 		if c.Fix != nil && c.Fix.Action == "backup_now" {
 			_, _ = fmt.Fprintln(out, "      fix: run the upgrade backup-now subcommand")
 		}
+		if c.Fix != nil && c.Fix.Action == "open_rollback" {
+			_, _ = fmt.Fprintln(out, "      fix: `upgrade --list` shows the releases your database supports, `upgrade --rollback-plan <version>` previews going back")
+		}
 	}
 	_, _ = fmt.Fprintf(out, "control plane backup: %s\n", backupNote)
 	switch {

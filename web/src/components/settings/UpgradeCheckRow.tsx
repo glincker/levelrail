@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { StatusPill, type Tone } from '@/components/kit'
 import { Button } from '../ui/button'
+import { ROLLBACK_SECTION_ID } from '../../lib/updatesAnchors'
 import type { UpgradeCheck, UpgradeCheckStatus } from '../../queries/updates'
 import {
   useBackupNow,
@@ -73,6 +74,22 @@ export function UpgradeCheckRow({ check }: { check: UpgradeCheck }) {
               {recheck.isPending
                 ? t('preflight.fix.rechecking')
                 : t('preflight.fix.recheck')}
+            </Button>
+          </span>
+        ) : null}
+        {open && fix?.action === 'open_rollback' ? (
+          <span className="block pt-1">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                document
+                  .getElementById(ROLLBACK_SECTION_ID)
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            >
+              {t('preflight.fix.openRollback')}
             </Button>
           </span>
         ) : null}

@@ -56,6 +56,25 @@ const staleBackup: UpdatePreflight = {
   ],
 }
 
+const olderThanDatabase: UpdatePreflight = {
+  ...green,
+  latest_version: 'v0.6.0',
+  update_available: false,
+  blocked: true,
+  checks: [
+    {
+      code: 'schema_compat',
+      name: 'Compatible with your database',
+      status: 'fail',
+      message:
+        'target release is older than the database schema: database is at schema 2160, v0.6.0 supports 1010',
+      kind: 'schema_older',
+      hint: 'This release is older than your database. Stay on your current version, or use Roll back to go to an older release on purpose.',
+      fix: { action: 'open_rollback' },
+    },
+  ],
+}
+
 const publishing: UpdatePreflight = {
   ...green,
   blocked: true,
@@ -181,6 +200,21 @@ afterEach(() => {
 })
 
 describe('UpgradeNow', () => {
+  it('never offers an upgrade the database cannot accept and explains why', async () => {
+    setup({ preflight: olderThanDatabase })
+    expect(
+      await screen.findByText(
+        /Not offering v0.6.0: it is older than your database/,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/supports 1010/)).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Go to Roll back' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Upgrade to/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Upgrade now' })).toBeNull()
+  })
+
   it('explains that the next upgrade verifies and pins, with no command to run', async () => {
     setup({ preflight: green, plan: { ...plan, signature_pinned: false } })
     expect(
