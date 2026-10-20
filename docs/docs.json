@@ -924,6 +924,7 @@
             "group": "Engineering notes",
             "pages": [
               "ci",
+              "first-hour-smoke-test",
               "vps-smoke",
               "i18n",
               "design-tokens",
