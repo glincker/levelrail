@@ -25,7 +25,13 @@ const STATUS_META: Record<
 }
 
 /** DoctorCheckRow is the full-detail rendering of one check: used on the system status page, where showing everything at once is the point. */
-export function DoctorCheckRow({ check }: { check: DoctorCheck }) {
+export function DoctorCheckRow({
+  check,
+  onRecheck,
+}: {
+  check: DoctorCheck
+  onRecheck?: () => Promise<void> | void
+}) {
   const meta = STATUS_META[check.status]
   const StatusIcon = meta.icon
   return (
@@ -36,13 +42,18 @@ export function DoctorCheckRow({ check }: { check: DoctorCheck }) {
           <p className="mt-0.5 text-xs text-muted-foreground">
             {check.message}
           </p>
+          {check.evidence ? (
+            <p className="mt-0.5 break-words font-mono text-xs text-muted-foreground">
+              {check.evidence}
+            </p>
+          ) : null}
         </div>
         <Badge variant={meta.variant} className="shrink-0">
           <StatusIcon />
           {meta.label}
         </Badge>
       </div>
-      <CheckDetail check={check} />
+      <CheckDetail check={check} onRecheck={onRecheck} />
     </div>
   )
 }

@@ -591,8 +591,8 @@
         "description": "Goroutines, database latency, reconcile lag and stream load, with fixes."
       },
       "system-status": {
-        "title": "System status",
-        "description": "Preflight checks: Docker, disk, ports, database, and firewall."
+        "title": "Doctor",
+        "description": "Health checks with fixes: Docker, disk, ports, certificates, backups, nodes."
       },
       "firewall": {
         "title": "Firewall",
@@ -1958,31 +1958,68 @@
     "logArchiveBody": "Ships node-local logs to a destination on a schedule. Apps with their own policy (app Logs, Archive tab) are kept separate.",
     "buildCacheTitle": "Build cache for all apps"
   },
-  "systemStatusPage": {
-    "title": "System status",
-    "description": "Preflight checks: Docker, disk, ports, database, firewall, and outbound network reachability.",
-    "troubleshootingGuide": "Troubleshooting guide",
+  "doctorPage": {
+    "title": "Doctor",
+    "description": "One health check for this server: Docker, disk, ports, certificates, backups, nodes and more. The CLI doctor command runs the same checks.",
+    "guide": "Doctor guide",
     "rerun": "Re-run checks",
     "allPassedTitle": "All checks passed",
-    "allPassedBody": "Docker, disk space, ports, the database, and every other preflight check are all healthy right now.",
-    "failedTitle": "One or more checks failed",
-    "failing": "Failing: {{names}}.",
-    "reviewBelow": "Review the checks below for details.",
+    "allPassedBody": "Nothing needs attention right now.",
+    "failedTitle_one": "{{count}} check failed",
+    "failedTitle_other": "{{count}} checks failed",
+    "warnTitle_one": "{{count}} check needs a look",
+    "warnTitle_other": "{{count}} checks need a look",
+    "reviewBelow": "Each problem below has a fix or a next step, and a Re-check button.",
+    "progress": "{{done}} of {{total}} checks finished",
+    "streamErrorTitle": "The check stream was interrupted",
+    "streamErrorBody": "Results so far are shown. Use Re-run checks to start again.",
+    "counts": {
+      "fail_one": "{{count}} failing",
+      "fail_other": "{{count}} failing",
+      "warn_one": "{{count}} warning",
+      "warn_other": "{{count}} warnings",
+      "ok": "{{count}} passing",
+      "unknown": "{{count}} not checked"
+    },
+    "fixAll_one": "Fix {{count}} safe issue",
+    "fixAll_other": "Fix all {{count}} safe issues",
+    "fixAllTitle_one": "Apply {{count}} safe fix?",
+    "fixAllTitle_other": "Apply {{count}} safe fixes?",
+    "fixAllBody": "Only one-click fixes that are safe are included. Anything that restarts a service or opens access stays a separate, deliberate step. These are the changes:",
+    "fixAllConfirm": "Apply fixes",
+    "fixAllPending": "Applying...",
+    "fixAllCli": "Prefer a terminal? Run this on the server, it prints the same plan and asks first.",
     "ingressTitle": "Ingress is a single point of failure",
     "ingressBody": "Domain-based HTTPS routing runs embedded in this control plane process. If it crashes or restarts, routing is down until it comes back up, even though already-running containers keep serving traffic on their own ports the whole time.",
     "survivesCrash": "What survives a control plane crash",
     "groups": {
-      "infrastructure": {
-        "title": "Infrastructure",
-        "description": "Can this box run and reach what it needs to run containers."
+      "runtime": {
+        "title": "Container runtime",
+        "description": "Docker reachability, version, privileges and leftover data."
       },
-      "security": {
-        "title": "Security",
-        "description": "Hardening checks: firewall status and secret rotation age."
+      "host": {
+        "title": "This server",
+        "description": "Disk, inodes, memory, CPU and the database."
       },
       "network": {
         "title": "Network and reachability",
-        "description": "Outbound network access and whether the internet can reach this box."
+        "description": "Ports, firewall, DNS, certificates and whether the internet can reach this box."
+      },
+      "security": {
+        "title": "Security",
+        "description": "Secret rotation, tokens and release signature checks."
+      },
+      "backups": {
+        "title": "Backups",
+        "description": "Control plane snapshots, database schedules and restore drills."
+      },
+      "nodes": {
+        "title": "Nodes and mesh",
+        "description": "Agent connectivity, agent versions and the WireGuard mesh."
+      },
+      "hardware": {
+        "title": "Hardware",
+        "description": "GPUs and network share client tools."
       },
       "other": {
         "title": "Other checks",
@@ -1992,7 +2029,7 @@
   },
   "firewallRules": {
     "liveStatus": "Live firewall status",
-    "liveStatusNote": "From this host's own preflight check. See Settings, System status for the full hardening checklist.",
+    "liveStatusNote": "From this host's own preflight check. See Settings, Doctor for the full hardening checklist.",
     "emptyTitle": "No firewall rules configured",
     "emptyBody": "Add a rule to allow or deny traffic to a specific port, optionally restricted to a source CIDR.",
     "cols": {

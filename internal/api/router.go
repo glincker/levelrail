@@ -146,7 +146,8 @@ type Router struct {
 	auth                   AuthStore
 	tokens                 TokenStore
 	nodes                  NodeStore
-	agentCAFingerprint     string // empty: join tokens are returned without a CA pin
+	doctorLookupHost       func(ctx context.Context, host string) ([]string, error) // nil uses the system resolver
+	agentCAFingerprint     string                                                   // empty: join tokens are returned without a CA pin
 	nodeCerts              nodeCertConfig
 	packageRegistries      PackageRegistryStore        // always set, private package registry rows and registry credential usage
 	nodeProviderConns      NodeProviderConnectionStore // always set, connection metadata for node providers

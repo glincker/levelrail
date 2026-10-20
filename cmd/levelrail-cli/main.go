@@ -421,7 +421,7 @@ Usage:
   %[1]s bench run --url URL [flags]                           load and failover benchmark: open-loop rate, latency percentiles, ingress overhead
   %[1]s bench soak [flags]                                    churn a control plane and fail on RSS, goroutine, FD or WAL growth
   %[1]s bench chaos <list|run|report|disk|free-space> [flags]              failure scenarios measured on local containers, recorded for the resilience report
-  %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
+  %[1]s doctor [flags]                                        health checks (same as the dashboard Doctor page), --fix applies safe fixes
   %[1]s setup status|next|skip|undo|reset [flags]             the Get started checklist: what is left before production
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
   %[1]s proxy setup|status|apply|verify|disable [flags]       let this server manage its routes in that proxy (Traefik)

@@ -102,6 +102,7 @@
               "multi-node-quickstart",
               "tutorials/self-host-vaultwarden",
               "troubleshooting",
+              "doctor",
               "fix-it"
             ],
             "icon": "/assets/icons/plus-circle.svg"
@@ -146,6 +147,7 @@
             "group": "Essentials",
             "pages": [
               "troubleshooting",
+              "doctor",
               "email-notifications",
               "alert-inbox",
               "event-webhooks",

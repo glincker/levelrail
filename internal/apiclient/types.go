@@ -3073,7 +3073,13 @@ type DoctorCheckResource struct {
 	Fix      string `json:"fix,omitempty"`
 	DocsPath string `json:"docs_path,omitempty"`
 	// Class is "incident" or "recommendation" for a check that is not ok.
-	Class string `json:"class,omitempty"`
+	Class    string `json:"class,omitempty"`
+	Group    string `json:"group,omitempty"`
+	CheckID  string `json:"check_id,omitempty"`
+	Evidence string `json:"evidence,omitempty"`
+	// FixID and FixKind name the typed fix (auto, guided or manual) for a failing check.
+	FixID   string `json:"fix_id,omitempty"`
+	FixKind string `json:"fix_kind,omitempty"`
 }
 
 // SystemDoctorResource mirrors internal/api's systemDoctorResponse
