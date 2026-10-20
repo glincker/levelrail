@@ -3932,18 +3932,49 @@ type UpdateOAuthProviderSettingsRequest struct {
 // /api/v1/settings/email. Credential fields are write-only; the
 // corresponding *Set booleans report presence instead.
 type EmailSettingsResource struct {
-	Backend               string `json:"backend"`
-	SMTPHost              string `json:"smtp_host,omitempty"`
-	SMTPPort              int    `json:"smtp_port,omitempty"`
-	SMTPUsername          string `json:"smtp_username,omitempty"`
-	SMTPFrom              string `json:"smtp_from,omitempty"`
-	SMTPPassword          string `json:"smtp_password,omitempty"`
-	SMTPPasswordSet       bool   `json:"smtp_password_set,omitempty"`
+	Backend string `json:"backend"`
+
+	FromName       string `json:"from_name,omitempty"`
+	FromAddress    string `json:"from_address,omitempty"`
+	ReplyTo        string `json:"reply_to,omitempty"`
+	EnvelopeFrom   string `json:"envelope_from,omitempty"`
+	SendsPerMinute int    `json:"sends_per_minute,omitempty"`
+	SendsPerDay    int    `json:"sends_per_day,omitempty"`
+	TLSMode        string `json:"tls_mode,omitempty"`
+	TLSSkipVerify  bool   `json:"tls_skip_verify,omitempty"`
+
+	SMTPHost        string `json:"smtp_host,omitempty"`
+	SMTPPort        int    `json:"smtp_port,omitempty"`
+	SMTPUsername    string `json:"smtp_username,omitempty"`
+	SMTPFrom        string `json:"smtp_from,omitempty"`
+	SMTPPassword    string `json:"smtp_password,omitempty"`
+	SMTPPasswordSet bool   `json:"smtp_password_set,omitempty"`
+
 	SESRegion             string `json:"ses_region,omitempty"`
 	SESAccessKeyID        string `json:"ses_access_key_id,omitempty"`
 	SESFrom               string `json:"ses_from,omitempty"`
 	SESSecretAccessKey    string `json:"ses_secret_access_key,omitempty"`
 	SESSecretAccessKeySet bool   `json:"ses_secret_access_key_set,omitempty"`
+
+	SESSMTPPort        int    `json:"ses_smtp_port,omitempty"`
+	SESSMTPUsername    string `json:"ses_smtp_username,omitempty"`
+	SESSMTPPassword    string `json:"ses_smtp_password,omitempty"`
+	SESSMTPPasswordSet bool   `json:"ses_smtp_password_set,omitempty"`
+
+	ResendFrom      string `json:"resend_from,omitempty"`
+	ResendAPIKey    string `json:"resend_api_key,omitempty"`
+	ResendAPIKeySet bool   `json:"resend_api_key_set,omitempty"`
+
+	PostmarkServerToken    string `json:"postmark_server_token,omitempty"`
+	PostmarkServerTokenSet bool   `json:"postmark_server_token_set,omitempty"`
+	SendGridAPIKey         string `json:"sendgrid_api_key,omitempty"`
+	SendGridAPIKeySet      bool   `json:"sendgrid_api_key_set,omitempty"`
+	MailgunAPIKey          string `json:"mailgun_api_key,omitempty"`
+	MailgunAPIKeySet       bool   `json:"mailgun_api_key_set,omitempty"`
+	MailgunDomain          string `json:"mailgun_domain,omitempty"`
+	MailgunRegion          string `json:"mailgun_region,omitempty"`
+
+	SESRegions []string `json:"ses_regions,omitempty"`
 }
 
 // IngressSettingsResource mirrors internal/api's ingressSettingsResource

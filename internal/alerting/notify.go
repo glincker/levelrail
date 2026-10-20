@@ -805,6 +805,10 @@ func (n webpushNotifier) Notify(ctx context.Context, ev Event) error {
 
 // Transport failures and SMTP 4xx replies are retried; 5xx replies are permanent, and retrying them only delays the fix.
 func isRetryableEmailError(err error) bool {
+	var sendErr *email.SendError
+	if errors.As(err, &sendErr) && sendErr.Attempts > 0 {
+		return false
+	}
 	var protoErr *textproto.Error
 	if errors.As(err, &protoErr) {
 		return protoErr.Code < 500

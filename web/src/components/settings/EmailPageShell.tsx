@@ -7,12 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { EmailRail } from './SettingsRails'
 import type { EmailSettings } from '../../queries/emailSettings'
 
-const BACKEND_LABEL: Record<Exclude<EmailSettings['backend'], ''>, string> = {
-  smtp: 'SMTP',
-  ses: 'Amazon SES',
-  resend: 'Resend',
-}
-
 export function EmailPageShell({
   settings,
   children,
@@ -37,7 +31,9 @@ export function EmailPageShell({
         backend === '' ? (
           <Badge variant="muted">{t('emailPage.status.none')}</Badge>
         ) : (
-          <Badge variant="success">{BACKEND_LABEL[backend]}</Badge>
+          <Badge variant="success">
+            {t(`emailDelivery.providers.${backend}`)}
+          </Badge>
         )
       }
       banners={

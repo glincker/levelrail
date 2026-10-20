@@ -163,6 +163,7 @@ const editAlertRuleSchema = z
       'slo_burn',
       'version_skew',
       'budget_threshold',
+      'email_delivery_failing',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -191,6 +192,7 @@ const editAlertRuleSchema = z
       data.kind === 'control_plane_backup_stale' ||
       data.kind === 'log_archive_stale' ||
       data.kind === 'version_skew' ||
+      data.kind === 'email_delivery_failing' ||
       data.kind === 'budget_threshold'
     ) {
       return

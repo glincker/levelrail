@@ -982,7 +982,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleCreateDNSRecord |
 | PUT | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleUpdateDNSRecord |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleDeleteDNSRecord |
-| POST | /api/v1/settings/email/test | AbilityWrite | handleTestEmail |
+| POST | /api/v1/settings/email/test | AbilityRoot | handleTestEmail |
 | GET | /api/v1/settings/ingress/https | AbilityRead | handleGetHTTPSStatus |
 | POST | /api/v1/settings/ingress/https | AbilityRoot | handleEnableHTTPS |
 | GET | /api/v1/apps/{name}/domains/{domain}/search-visibility | AbilityRead | handleGetDomainSearchVisibility |
@@ -1029,6 +1029,10 @@ Endpoints for:
 | GET | /api/v1/settings/ingress/edge | AbilityRead | handleGetIngressEdge |
 | PUT | /api/v1/settings/ingress/edge | AbilityRoot | handlePutIngressEdge |
 | POST | /api/v1/settings/ingress/edge/trusted-proxies/apply-detected | AbilityRoot | handleApplyDetectedProxy |
+| GET | /api/v1/settings/email/status | AbilityRead | handleEmailStatus |
+| GET | /api/v1/settings/email/domain-check | AbilityRoot | handleEmailDomainCheck |
+| GET | /api/v1/settings/email/deliveries | AbilityRoot | handleListEmailDeliveries |
+| GET | /api/v1/settings/email/deliveries/{id} | AbilityRoot | handleGetEmailDelivery |
 
 </Accordion>
 

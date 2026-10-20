@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1587 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1591 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -776,7 +776,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/settings/dashboard-url", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateDashboardURL", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/email", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetEmailSettings", Description: "Email settings: same precedent as ingress settings just above. GET is AbilityRead; PUT is AbilityRoot, real infrastructure config."},
 	{Method: "PUT", Path: "/api/v1/settings/email", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateEmailSettings", Description: ""},
-	{Method: "POST", Path: "/api/v1/settings/email/test", Ability: "AbilityWrite", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleTestEmail", Description: "AbilityWrite, not AbilityRoot: same tier notification-channel testing uses, since sending a test doesn't change stored config."},
+	{Method: "GET", Path: "/api/v1/settings/email/deliveries", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleListEmailDeliveries", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/email/deliveries/{id}", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetEmailDelivery", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/email/domain-check", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleEmailDomainCheck", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/email/status", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleEmailStatus", Description: ""},
+	{Method: "POST", Path: "/api/v1/settings/email/test", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleTestEmail", Description: "Root: a test send goes to any address, so it is not open to ordinary write tokens."},
 	{Method: "GET", Path: "/api/v1/settings/ingress", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetIngressSettings", Description: "Ingress settings: GET is AbilityRead. PUT is AbilityRoot, since flipping acme_enabled changes certificate automation fleet-wide on the next reconcile."},
 	{Method: "PUT", Path: "/api/v1/settings/ingress", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateIngressSettings", Description: ""},
 	{Method: "POST", Path: "/api/v1/settings/ingress/apps-base-domain/backfill", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleBackfillBaseDomain", Description: ""},

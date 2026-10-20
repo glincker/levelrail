@@ -25,6 +25,10 @@ func emailUsage(prog string) string {
   %[1]s email groups create <name> [--all] [--role R] [--team T] [--project P] [--domain D] [--inactive-days N] [--add ADDR] [--exclude ADDR]
   %[1]s email groups show <group>                          rules, count and a masked first-20 preview
   %[1]s email groups delete <group>
+  %[1]s email settings get|set [flags]                     delivery provider, sender, limits and security
+  %[1]s email test [--to ADDRESS]                          send one real test email and show the provider response
+  %[1]s email check-domain [--domain D]                    check SPF, DKIM and DMARC for the sender domain
+  %[1]s email log [--status failed] [--provider P] [--kind K] [--q TEXT] [--limit N]   recent deliveries
   %[1]s email send --group G [--to ADDR] --template T [--subject S] [--body B | --body-file F] [--at TIME] [--dry-run] [--yes]
 
 Tokens use {{name}} and are checked when a template is saved. Announcements
@@ -49,6 +53,14 @@ func runEmail(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runEmailTemplates(prog, rest, stdout, stderr, lookupEnv)
 	case "groups":
 		return runEmailGroups(prog, rest, stdout, stderr, lookupEnv)
+	case "settings":
+		return runEmailSettings(prog, rest, stdout, stderr, lookupEnv)
+	case "test":
+		return runEmailTest(prog, rest, stdout, stderr, lookupEnv)
+	case "check-domain":
+		return runEmailCheckDomain(prog, rest, stdout, stderr, lookupEnv)
+	case "log":
+		return runEmailLog(prog, rest, stdout, stderr, lookupEnv)
 	case "send":
 		return runEmailSend(prog, rest, stdout, stderr, lookupEnv)
 	default:

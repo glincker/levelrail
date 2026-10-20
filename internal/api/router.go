@@ -636,6 +636,8 @@ type Router struct {
 	oauthClientFactory           oauthClientFactory           // defaulted to defaultOAuthClientFactory in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches/gitSourceFetch above already use
 	emailSettings                EmailSettingsStore           // always set, same shape as ingressSettings above
 	emailSecrets                 EmailSecretsStore            // nil is valid: PUT /api/v1/settings/email returns 501
+	emailDeliveries              EmailDeliveryStore           // nil is valid: the delivery log endpoints return empty results
+	emailDNS                     email.DNSLookup              // nil means the system resolver; overridable in tests
 	observability                ObservabilityStore           // always set, same shape as emailSettings above
 	cloudflareTunnel             CloudflareTunnelStore        // always set, same shape as emailSettings above
 	cloudflareTunnelSecrets      CloudflareTunnelSecrets      // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-tunnel return 501, same shape as emailSecrets above
@@ -1017,6 +1019,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.dash = newDashboardCache(0, 0)
 	rt.dashboards, _ = s.(DashboardStore)
 	rt.chaosResults, _ = s.(ChaosStore)
+	rt.emailDeliveries, _ = s.(EmailDeliveryStore)
 	for _, opt := range opts {
 		opt(rt)
 	}

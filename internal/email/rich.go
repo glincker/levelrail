@@ -13,7 +13,6 @@ import (
 	"mime/quotedprintable"
 	"net/http"
 	"net/mail"
-	"net/smtp"
 	"net/textproto"
 	"sort"
 	"strings"
@@ -61,35 +60,56 @@ func validateMessage(m Message) error {
 	return nil
 }
 
-// SendMessage implements RichSender through the current settings.
-func (d *DynamicSender) SendMessage(ctx context.Context, m Message) error {
-	if err := validateMessage(m); err != nil {
-		return err
-	}
-	cfg, err := d.load(ctx)
-	if err != nil {
-		return fmt.Errorf("email: load config: %w", err)
-	}
-	sender, err := NewSender(cfg)
-	if err != nil {
-		return err
-	}
-	return SendMessage(ctx, sender, m)
+// idRichSender is implemented by providers that report the provider message id for a rich send.
+type idRichSender interface {
+	sendMessageID(ctx context.Context, m Message) (string, error)
 }
 
-func (s smtpSender) SendMessage(_ context.Context, m Message) error {
-	rcpt, msg, err := buildSMTPMultipart(s.cfg.From, m)
+func sendMessageWithID(ctx context.Context, s Sender, m Message) (string, error) {
+	if is, ok := s.(idRichSender); ok {
+		return is.sendMessageID(ctx, m)
+	}
+	return "", SendMessage(ctx, s, m)
+}
+
+func withReplyTo(m Message, replyTo string) Message {
+	if replyTo == "" {
+		return m
+	}
+	if _, set := m.Headers["Reply-To"]; set {
+		return m
+	}
+	h := make(map[string]string, len(m.Headers)+1)
+	for k, v := range m.Headers {
+		h[k] = v
+	}
+	h["Reply-To"] = replyTo
+	m.Headers = h
+	return m
+}
+
+func (s smtpSender) SendMessage(ctx context.Context, m Message) error {
+	_, err := s.sendMessageID(ctx, m)
+	return err
+}
+
+func (s smtpSender) sendMessageID(ctx context.Context, m Message) (string, error) {
+	rcpt, msg, err := buildSMTPMultipart(s.cfg.From, withReplyTo(m, s.cfg.ReplyTo))
 	if err != nil {
-		return err
+		return "", err
 	}
-	var auth smtp.Auth
-	if s.cfg.Username != "" {
-		auth = smtp.PlainAuth("", s.cfg.Username, s.cfg.Password, s.cfg.Host)
+	envelope := s.cfg.From
+	if s.cfg.EnvelopeFrom != "" {
+		envelope = s.cfg.EnvelopeFrom
 	}
-	if err := smtp.SendMail(s.cfg.Addr, auth, s.cfg.From, []string{rcpt}, msg); err != nil {
-		return fmt.Errorf("send email: %w", err)
+	envAddr, err := mail.ParseAddress(envelope)
+	if err != nil {
+		return "", fmt.Errorf("email: invalid envelope sender: %w", err)
 	}
-	return nil
+	if err := s.deliver(ctx, envAddr.Address, rcpt, msg); err != nil {
+		return "", fmt.Errorf("send email: %w", err)
+	}
+	return "", nil
 }
 
 func buildSMTPMultipart(from string, m Message) (string, []byte, error) {
@@ -154,42 +174,57 @@ type resendRichRequest struct {
 }
 
 func (s resendSender) SendMessage(ctx context.Context, m Message) error {
+	_, err := s.sendMessageID(ctx, m)
+	return err
+}
+
+func (s resendSender) sendMessageID(ctx context.Context, m Message) (string, error) {
 	if err := validateMessage(m); err != nil {
-		return err
+		return "", err
 	}
+	m = withReplyTo(m, s.cfg.ReplyTo)
 	apiURL := s.apiURL
 	if apiURL == "" {
 		apiURL = defaultResendAPIURL
 	}
 	payload, err := json.Marshal(resendRichRequest{From: s.cfg.From, To: []string{m.To}, Subject: m.Subject, Text: m.Text, HTML: m.HTML, Headers: m.Headers})
 	if err != nil {
-		return fmt.Errorf("email: encode resend request: %w", err)
+		return "", fmt.Errorf("email: encode resend request: %w", err)
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL, bytes.NewReader(payload))
 	if err != nil {
-		return fmt.Errorf("email: build resend request: %w", err)
+		return "", fmt.Errorf("email: build resend request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+s.cfg.APIKey)
 	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
 	if err != nil {
-		return fmt.Errorf("email: send via resend: %w", err)
+		return "", fmt.Errorf("email: send via resend: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
-		return fmt.Errorf("email: resend returned status %d: %s", resp.StatusCode, string(msg))
+		return "", &HTTPError{Provider: "resend", Status: resp.StatusCode, Body: string(msg)}
 	}
-	return nil
+	var out struct {
+		ID string `json:"id"`
+	}
+	_ = json.NewDecoder(io.LimitReader(resp.Body, 4096)).Decode(&out)
+	return out.ID, nil
 }
 
 func (s sesSender) SendMessage(ctx context.Context, m Message) error {
+	_, err := s.sendMessageID(ctx, m)
+	return err
+}
+
+func (s sesSender) sendMessageID(ctx context.Context, m Message) (string, error) {
 	if err := validateMessage(m); err != nil {
-		return err
+		return "", err
 	}
 	client, err := s.client(ctx)
 	if err != nil {
-		return fmt.Errorf("email: build ses client: %w", err)
+		return "", fmt.Errorf("email: build ses client: %w", err)
 	}
 	body := &types.Body{Text: &types.Content{Data: aws.String(m.Text), Charset: aws.String("UTF-8")}}
 	if m.HTML != "" {
@@ -204,8 +239,12 @@ func (s sesSender) SendMessage(ctx context.Context, m Message) error {
 		Destination:      &types.Destination{ToAddresses: []string{m.To}},
 		Content:          &types.EmailContent{Simple: msg},
 	}
-	if _, err := client.SendEmail(ctx, input); err != nil {
-		return fmt.Errorf("email: send via ses: %w", err)
+	if s.cfg.ReplyTo != "" {
+		input.ReplyToAddresses = []string{s.cfg.ReplyTo}
 	}
-	return nil
+	out, err := client.SendEmail(ctx, input)
+	if err != nil {
+		return "", fmt.Errorf("email: send via ses: %w", err)
+	}
+	return aws.ToString(out.MessageId), nil
 }

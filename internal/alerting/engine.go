@@ -97,6 +97,8 @@ type Engine struct {
 	versionSkewFetchers upgrade.Fetchers
 	versionSkewCache    *upgrade.Cache
 
+	emailDelivery EmailDeliverySource
+
 	budgets       BudgetSource
 	budgetTracker *budgetTracker
 
@@ -200,10 +202,13 @@ func (e *Engine) SetVersionSkew(settings VersionSkewSettingsSource, fetchers upg
 	e.versionSkewCache = upgrade.NewCache()
 }
 
-// SetBudgets enables kind=budget_threshold rules.
+// SetEmailDelivery enables kind=email_delivery_failing rules.
+func (e *Engine) SetEmailDelivery(src EmailDeliverySource) { e.emailDelivery = src }
+
 // SetDatabaseHealth wires the live probe the database_connections and database_disk rules read.
 func (e *Engine) SetDatabaseHealth(src DatabaseHealthSource) { e.databaseHealth = src }
 
+// SetBudgets enables kind=budget_threshold rules.
 func (e *Engine) SetBudgets(src BudgetSource) {
 	e.budgets = src
 	e.budgetTracker = newBudgetTracker()
@@ -442,6 +447,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				continue
 			}
 			next, versionSkewNotice, err = EvaluateVersionSkew(ctx, e.versionSkewSettings, e.versionSkewFetchers, e.versionSkewCache, r, version.Version, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindEmailDeliveryFailing:
+			if e.emailDelivery == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateEmailDeliveryFailing(ctx, e.emailDelivery, r, now)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue

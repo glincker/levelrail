@@ -265,7 +265,9 @@ func (s *bootState) loadSecretsAndNotifiers() {
 	setupNotificationChannelSecrets(ctx, logger, alertingDB, secretsManager)
 
 	// Always non-nil: email settings resolve on every send, so 'not configured' surfaces at send time.
-	emailSender := email.NewDynamicSender(emailConfigLoader(db, secretsManager, smtpConfigFromEnv()))
+	emailSender := email.NewDynamicSender(emailConfigLoader(db, secretsManager, smtpConfigFromEnv())).
+		WithRecorder(newEmailDeliveryRecorder(db)).
+		WithRetry(emailEnvInt("APP_EMAIL_RETRY_ATTEMPTS"), time.Duration(emailEnvInt("APP_EMAIL_RETRY_BASE_MS"))*time.Millisecond)
 	installGitNetguard()
 	notifyClient := netguard.NewClient()
 

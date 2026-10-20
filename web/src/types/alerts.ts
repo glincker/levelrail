@@ -47,6 +47,7 @@ export type AlertRuleKind =
   | 'log_pattern'
   | 'log_level_rate'
   | 'budget_threshold'
+  | 'email_delivery_failing'
 
 // log_pattern and log_level_rate only (internal/alerting.LogRuleConfig).
 export interface LogRuleConfig {

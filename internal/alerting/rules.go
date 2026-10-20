@@ -57,6 +57,10 @@ const (
 	// team budget is at its warn level, over its limit, or forecast to
 	// overrun (budget_threshold.go).
 	KindBudgetThreshold Kind = "budget_threshold"
+
+	// KindEmailDeliveryFailing is platform-wide: it fires while most recent
+	// outbound emails are failing (email_delivery_failing.go).
+	KindEmailDeliveryFailing Kind = "email_delivery_failing"
 )
 
 // Comparator is how a threshold Rule compares the latest sample value

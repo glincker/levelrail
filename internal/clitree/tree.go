@@ -399,10 +399,14 @@ var Tree = map[string]*Node{
 	"deploy-approvals": {Subs: map[string]*Node{"list": nil, "get": nil, "approve": nil, "reject": nil}},
 	"build":            {Subs: map[string]*Node{"detect": nil, "branches": nil, "frameworks": nil}},
 	"email": {Subs: map[string]*Node{
-		"tokens":    {Subs: map[string]*Node{"list": nil}},
-		"templates": {Subs: map[string]*Node{"list": nil, "get": nil, "set": nil, "preview": nil, "reset": nil}},
-		"groups":    {Subs: map[string]*Node{"list": nil, "create": nil, "show": nil, "delete": nil}},
-		"send":      nil,
+		"tokens":       {Subs: map[string]*Node{"list": nil}},
+		"templates":    {Subs: map[string]*Node{"list": nil, "get": nil, "set": nil, "preview": nil, "reset": nil}},
+		"groups":       {Subs: map[string]*Node{"list": nil, "create": nil, "show": nil, "delete": nil}},
+		"send":         nil,
+		"settings":     {Subs: map[string]*Node{"get": nil, "set": nil}},
+		"test":         nil,
+		"check-domain": nil,
+		"log":          nil,
 	}},
 }
 

@@ -8,9 +8,12 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))
 	mux.HandleFunc("PUT /api/v1/settings/email", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailSettings))
-	// AbilityWrite, not AbilityRoot: same tier notification-channel
-	// testing uses, since sending a test doesn't change stored config.
-	mux.HandleFunc("POST /api/v1/settings/email/test", rt.requireAbility(AbilityWrite, rt.handleTestEmail))
+	// Root: a test send goes to any address, so it is not open to ordinary write tokens.
+	mux.HandleFunc("POST /api/v1/settings/email/test", rt.requireAbility(AbilityRoot, rt.handleTestEmail))
+	mux.HandleFunc("GET /api/v1/settings/email/status", rt.requireAbility(AbilityRead, rt.handleEmailStatus))
+	mux.HandleFunc("GET /api/v1/settings/email/domain-check", rt.requireAbility(AbilityRoot, rt.handleEmailDomainCheck))
+	mux.HandleFunc("GET /api/v1/settings/email/deliveries", rt.requireAbility(AbilityRoot, rt.handleListEmailDeliveries))
+	mux.HandleFunc("GET /api/v1/settings/email/deliveries/{id}", rt.requireAbility(AbilityRoot, rt.handleGetEmailDelivery))
 
 	// Observability settings: the external Grafana/dashboard link,
 	// same precedent as email settings just above. GET is AbilityRead;

@@ -141,11 +141,21 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
 	alertingEngine.SetBudgets(apiRouter)
+	alertingEngine.SetEmailDelivery(db)
 	alertingEngine.SetDatabaseHealth(apiRouter)
 	go runUsageRollup(ctx, apiRouter)
 	go func() {
 		if err := footprint.Every(ctx, "database teardown retry", time.Minute, logger, apiRouter.RetryDatabaseTeardowns); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("database teardown retry stopped", slog.String("error", err.Error()))
+		}
+	}()
+	go func() {
+		prune := func(c context.Context) error {
+			_, err := pruneEmailDeliveries(c, db, emailLogRetention(), time.Now())
+			return err
+		}
+		if err := footprint.Every(ctx, "email delivery log prune", time.Hour, logger, prune); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("email delivery log prune stopped", slog.String("error", err.Error()))
 		}
 	}()
 	go runSpendCaps(ctx, apiRouter)

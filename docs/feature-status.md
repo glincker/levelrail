@@ -110,6 +110,15 @@ Test counts are `*_test.go` files in the named directory. "CLI" and "web" list t
 - Real infra: none found.
 - Label: stable.
 
+### Email delivery
+
+Seven providers behind one registry (`internal/email`): SMTP, AWS SES over the API, AWS SES over SMTP, Resend, Postmark, SendGrid and Mailgun. Settings page groups Sender, Provider, Delivery limits and Security, with a status header, a typed-failure test send, a SPF/DKIM/DMARC sender-domain check, and a searchable delivery log (`/settings/email-log`, retention `APP_EMAIL_LOG_RETENTION_DAYS`). Transient failures retry with backoff. Alert kind `email_delivery_failing` is registered with no default rule.
+
+- Unit: `internal/email/regions_test.go` (region list, SES SMTP host, provider registry, failure classification, retry, caps), `internal/store/email_deliveries_test.go` (retention, recipient privacy), `cmd/levelrail/boot_email_provider_test.go`; web `EmailSettingsSchema.test.ts`.
+- CLI: `email settings get|set`, `email test`, `email check-domain`, `email log`. Docs: `docs/email-notifications.md`.
+- Real infra: none. Provider calls are not exercised against live accounts.
+- Label: beta.
+
 ### Notification channels (all 18)
 
 Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat, webpush. That is 18, matching the README and comparison count. `webpush` (browser push, `internal/webpush/`) is the newest and the only kind whose destination isn't an operator-supplied URL: it fans out to every registered browser subscription instead.
