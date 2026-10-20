@@ -260,7 +260,9 @@ func injectPreviewEnv(env map[string]spec.EnvVar, vars previewEnvVars, previewUR
 	for k, v := range env {
 		out[k] = v
 	}
-	out["PREVIEW_PR_NUMBER"] = spec.EnvVar{Value: strconv.Itoa(vars.PRNumber)}
+	if vars.PRNumber > 0 {
+		out["PREVIEW_PR_NUMBER"] = spec.EnvVar{Value: strconv.Itoa(vars.PRNumber)}
+	}
 	out["PREVIEW_BRANCH"] = spec.EnvVar{Value: vars.Branch}
 	if previewURL != "" {
 		out["PREVIEW_URL"] = spec.EnvVar{Value: previewURL}

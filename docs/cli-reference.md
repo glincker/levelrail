@@ -387,6 +387,9 @@ levelrail-cli apps preview-env clear <name> <key> [flags]
 levelrail-cli apps branch-env list <name> [flags]
 levelrail-cli apps branch-env set <name> <key> --branch PATTERN --value VALUE [--secret] [flags]
 levelrail-cli apps branch-env clear <name> <id> [flags]
+levelrail-cli apps branch-deploys list <name> [flags]
+levelrail-cli apps branch-deploys set <name> --mode off|all|patterns [--branch PATTERN]... [flags]
+levelrail-cli apps branch-deploys delete <name> <slug> [flags]
 ```
 
 - `apps env import` merges a .env file into an app's plain env vars and prints which keys are new, changed or unchanged. Keys that are already secrets are skipped. It reports how many changes are pending, or restarts the app right away with `--apply`.
@@ -395,6 +398,7 @@ levelrail-cli apps branch-env clear <name> <id> [flags]
 - `apps secrets set` sets or rotates one secret's encrypted value and declares the key as secret backed so it is injected; `--apply` restarts the app now. With `--env-file` it bulk imports every key in a .env format file as its own secret. Values are never returned: `list` shows key names and locked state only. `lock` toggles a secret's overwrite guard.
 - `apps vault-env` declares an env var resolved live from the configured external Vault (see [Vault](#vault)); only the reference is stored.
 - `apps preview-env` and `apps branch-env` override an env var for previews only. A branch override applies when the preview's own branch matches PATTERN (an exact name or a glob such as `release/*`); `--secret` stores it envelope encrypted. Neither affects the app's own running deploy.
+- `apps branch-deploys` chooses which branches get a stable per-branch deploy (see [Preview environments](/preview-environments#branch-deploys)), lists the live ones and removes one now.
 
 ### Source, previews and webhooks
 

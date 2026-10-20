@@ -823,6 +823,9 @@ type Router struct {
 	authLib      authLibState // the library engine behind token and device routes
 
 	shutdown shutdownState
+
+	branchDeploys  BranchDeployStore // always set
+	branchDeployMu sync.Mutex
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -909,6 +912,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		resolveBranchSHA:            resolveRemoteBranchSHA,
 		gitCommits:                  newGitCommitsCache(),
 		previewEnvironments:         s,
+		branchDeploys:               s,
 		githubApp:                   s,
 		security:                    s,
 		sec:                         newSecurityState(),

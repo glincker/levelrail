@@ -135,6 +135,10 @@ curl -H "Authorization: Bearer TOKEN" https://levelrail.example.com/api/v1/stati
 
 This shows every site currently served through the embedded ingress, with no build or runtime information: just the site name and its domains. For the full view including recent deployments and settings, use the **Apps** list in the dashboard.
 
+## Previews and branch deploys
+
+A static site you deploy with `--ref` is one deploy of one ref. To get a stable URL per branch with automatic rebuilds on each push, connect the repository as a source-connected app and turn on [branch deploys](/preview-environments#branch-deploys). Pull request previews are separate and need a pull request.
+
 ## Limitations
 
 - **Build toolchain**: the build container is Node based. For other generators (Hugo, Jekyll), set `APP_STATIC_BUILD_IMAGE` to an image that has the tool and a shell, or build in CI and serve the committed output with `build.path`.

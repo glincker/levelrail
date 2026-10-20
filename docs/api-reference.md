@@ -599,6 +599,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/forms/{form}/export | AbilityReadSensitive | handleExportFormSubmissions |
 | PUT | /api/v1/apps/{name}/forms/{form}/submissions/{id}/spam | AbilityDeploy | handleSetFormSubmissionSpam |
 | DELETE | /api/v1/apps/{name}/forms/{form}/submissions/{id} | AbilityDeploy | handleDeleteFormSubmission |
+| GET | /api/v1/apps/{name}/branch-deploys | AbilityRead | handleListBranchDeploys |
+| PUT | /api/v1/apps/{name}/branch-deploys | AbilityWriteSensitive | handleSetBranchDeploySettings |
+| DELETE | /api/v1/apps/{name}/branch-deploys/{slug} | AbilityDeploy | handleDeleteBranchDeploy |
 
 </Accordion>
 

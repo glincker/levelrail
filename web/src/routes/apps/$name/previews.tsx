@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { PreviewEnvironmentsCard } from '../../../components/PreviewEnvironmentsCard'
 import { PreviewPolicyCard } from '../../../components/PreviewPolicyCard'
+import { BranchDeploysCard } from '../../../components/BranchDeploysCard'
 import { PreviewLifecycleCard } from '../../../components/PreviewLifecycleCard'
 
 export const Route = createFileRoute('/apps/$name/previews')({
@@ -15,6 +16,7 @@ function PreviewsSection() {
   return (
     <div className="space-y-6">
       <PreviewEnvironmentsCard app={app} />
+      <BranchDeploysCard appName={name} />
       <PreviewPolicyCard appName={name} />
       <PreviewLifecycleCard appName={name} />
     </div>

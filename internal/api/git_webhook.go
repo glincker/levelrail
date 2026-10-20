@@ -160,6 +160,10 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 	rt.firePipelinePushEvent(ctx, name, ev)
 	ctx = withPushCommitMeta(ctx, ev)
 
+	if status, msg, handled := rt.handleBranchDeployPush(ctx, name, gs, ev); handled {
+		return status, msg
+	}
+
 	triggered, ignoredMsg := gitSourceTriggerMatchesPush(gs, ev.Ref)
 	if !triggered {
 		rt.logger.Info("api: git push webhook: ignoring push", slog.String("name", name), slog.String("ref", ev.Ref), slog.String("trigger_mode", effectiveGitSourceTriggerMode(gs.TriggerMode)))

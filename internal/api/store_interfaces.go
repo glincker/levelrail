@@ -244,6 +244,7 @@ type Store interface {
 	CanaryStore
 	DatabaseQueryStore
 	PreviewEnvironmentStore
+	BranchDeployStore
 	GitHubAppStore
 	GitConnectionsStore
 	OAuthSettingsStore

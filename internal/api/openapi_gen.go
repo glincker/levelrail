@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1547 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1550 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -119,6 +119,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/badge", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetBadgeSettings", Description: "Deploy status badge opt-in (app_badge.go): same GET-is-AbilityRead, PUT-is-AbilityRoot split as exec-access just above, since enabling it hands out an unauthenticated public view of this app's deploy status. GET .../badge.svg itself is registered unauthenticated on purpose (see publicRoutes in authz_matrix_test.go); it 404s on its own when the per-app flag is off, so it never needs this file's own IAM wrapper."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/badge", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetBadgeSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/badge.svg", Ability: "Public", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePublicAppBadge", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/branch-deploys", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListBranchDeploys", Description: "Branch deploys: a stable per-branch deployment (branch_deploys.go), separate from per pull request previews."},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/branch-deploys", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetBranchDeploySettings", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/branch-deploys/{slug}", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteBranchDeploy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/buckets", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppBuckets", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/buckets/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUnbindAppBucket", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/buckets/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBindAppBucket", Description: ""},
