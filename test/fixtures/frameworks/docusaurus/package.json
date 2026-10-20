@@ -1,0 +1,6 @@
+{
+  "name": "docs-site",
+  "private": true,
+  "scripts": { "build": "docusaurus build" },
+  "dependencies": { "@docusaurus/core": "3.5.2", "react": "18.3.1" }
+}

@@ -1817,6 +1817,9 @@ type GitSourceResource struct {
 	BuildPath   string `json:"build_path,omitempty"`
 	// BaseDirectory is the build context, relative to the repository root.
 	BaseDirectory string `json:"base_directory,omitempty"`
+	// BuildCommand and PublishDir build a static site before serving it.
+	BuildCommand string `json:"build_command,omitempty"`
+	PublishDir   string `json:"publish_dir,omitempty"`
 	// ResolvedBuild states what a deploy builds, in plain terms.
 	ResolvedBuild GitSourceResolvedBuild `json:"resolved_build"`
 	// TriggerMode mirrors store.GitSource.TriggerMode: "push" (default)
@@ -1871,6 +1874,8 @@ type SetGitSourceRequest struct {
 	BuildPath string `json:"build_path,omitempty"`
 	// BaseDirectory is the build context, relative to the repository root.
 	BaseDirectory string `json:"base_directory,omitempty"`
+	BuildCommand  string `json:"build_command,omitempty"`
+	PublishDir    string `json:"publish_dir,omitempty"`
 	Token         string `json:"token,omitempty"`
 	TriggerMode   string `json:"trigger_mode,omitempty"`
 }
@@ -1887,6 +1892,16 @@ type SetGitSourceBuildRequest struct {
 	BuildType     string `json:"build_type"`
 	BuildPath     string `json:"build_path"`
 	BaseDirectory string `json:"base_directory"`
+	BuildCommand  string `json:"build_command"`
+	PublishDir    string `json:"publish_dir"`
+}
+
+// StaticBuildSuggestion mirrors internal/repolayout's StaticBuildSuggestion.
+type StaticBuildSuggestion struct {
+	PresetID   string `json:"preset_id"`
+	PresetName string `json:"preset_name"`
+	Command    string `json:"command"`
+	PublishDir string `json:"publish_dir"`
 }
 
 // GitBuildSuggestion mirrors internal/repolayout's Suggestion.
@@ -1911,6 +1926,8 @@ type GitBuildDetection struct {
 	Truncated          bool                 `json:"truncated"`
 	NeedsBuildSettings bool                 `json:"needs_build_settings"`
 	Packages           []WorkspacePackage   `json:"packages"`
+	// StaticBuild prefills a static build when the repository root is a known static-site framework.
+	StaticBuild *StaticBuildSuggestion `json:"static_build,omitempty"`
 }
 
 // WorkspacePackage mirrors internal/repolayout's Package.

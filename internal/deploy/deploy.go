@@ -191,6 +191,9 @@ type Pipeline struct {
 	staticRootDir  string
 	staticRecorder StaticPublishRecorder
 
+	staticExtractor  StaticExtractor // nil is valid: build.command then fails its deploy loudly
+	staticBuildImage string
+
 	apps AppStore // nil is valid: every method except DeploySpec ignores it, see WithAppStore
 
 	loadBalancers LoadBalancerStore // nil is valid: the loadbalancer: block is then ignored

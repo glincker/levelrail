@@ -61,12 +61,23 @@ export interface GitBuildDetection {
   truncated: boolean
   needs_build_settings: boolean
   packages: WorkspacePackage[]
+  static_build?: StaticBuildSuggestion
+}
+
+// StaticBuildSuggestion prefills a static build from the repository's framework preset.
+export interface StaticBuildSuggestion {
+  preset_id: string
+  preset_name: string
+  command: string
+  publish_dir: string
 }
 
 export interface SetGitSourceBuildRequest {
   build_type: GitSourceBuildType
   build_path: string
   base_directory: string
+  build_command?: string
+  publish_dir?: string
 }
 
 export interface GitSourceBuild {
@@ -103,6 +114,9 @@ export interface GitSourceResource {
   // base_directory is the build context relative to the repository root;
   // empty or absent means the root.
   base_directory?: string
+  // build_command and publish_dir build a static site before serving it.
+  build_command?: string
+  publish_dir?: string
   resolved_build?: GitSourceResolvedBuild
   // additional_services fans one push out to sibling services under the
   // same app group (apps_group.go), keyed by the sibling's own service
@@ -196,6 +210,8 @@ export interface SetGitSourceRequest {
   build_type?: GitSourceBuildType
   build_path?: string
   base_directory?: string
+  build_command?: string
+  publish_dir?: string
   token?: string
   additional_services?: Record<string, GitSourceBuild>
   services?: Record<string, GitSourceService>

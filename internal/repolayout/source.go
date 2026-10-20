@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/frameworks"
 )
 
 // maxContentReads bounds how many file bodies one detection fetches.
@@ -47,7 +49,27 @@ func Detect(ctx context.Context, src Source) (Result, error) {
 	}
 	res := Analyze(paths, read)
 	res.Truncated = res.Truncated || truncated
+	res.StaticBuild = suggestStaticBuild(func(rel string) (string, bool) {
+		b, err := read(rel, maxFrameworkRead)
+		return string(b), err == nil && len(b) > 0
+	})
 	return res, nil
+}
+
+const maxFrameworkRead = 64 << 10
+
+// suggestStaticBuild prefills a static build from the repository root's
+// framework preset, or nil when the root is not a known static site.
+func suggestStaticBuild(read frameworks.Reader) *StaticBuildSuggestion {
+	m, ok := frameworks.Detect(read)
+	if !ok {
+		return nil
+	}
+	command, publish, ok := m.Preset.StaticBuild()
+	if !ok {
+		return nil
+	}
+	return &StaticBuildSuggestion{PresetID: m.Preset.ID, PresetName: m.Preset.Name, Command: command, PublishDir: publish}
 }
 
 // Hosts names self-hosted instances so their API base can be inferred from a

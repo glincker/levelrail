@@ -248,6 +248,12 @@ type Build struct {
 	// for image (nothing gets built) or compose (the compose file's own
 	// context: field already scopes each service).
 	BaseDirectory string `yaml:"baseDirectory,omitempty"`
+	// Command is the shell command that builds a static site, run in a
+	// sandboxed build container. Only meaningful for build.type: static.
+	Command string `yaml:"command,omitempty"`
+	// Publish is the directory the build writes the site to, relative to the
+	// base directory. Required with Command; the files in it are what is served.
+	Publish string `yaml:"publish,omitempty"`
 	// Image is a full registry reference (e.g.
 	// "ghcr.io/org/app:v1.2.3"), only meaningful for build.type: image:
 	// a CI pipeline (or anything else) already built and pushed this

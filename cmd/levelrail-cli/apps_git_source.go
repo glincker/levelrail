@@ -54,6 +54,7 @@ func appsGitSourceUsage(prog string) string {
   %[1]s apps git-source commits <name> [--branch B] [flags]             newest commits with deploy status and suggestions
   %[1]s apps git-source set <name> --repo-url URL [flags]              connect (or edit) a repo for auto-deploy-on-push
   %[1]s apps git-source set <name> --build-type T --dockerfile P --base-directory D   change only the build settings
+  %[1]s apps git-source set <name> --build-type static [--build-command C --publish-dir D | --infer-build]   build a static site, then serve it
   %[1]s apps git-source validate <name> [flags]                         check repo access with the deploy credential and show the fix
   %[1]s apps git-source detect <name> [--apply|--package <dir>] [flags] list Dockerfiles, build roots and workspace packages
   %[1]s apps git-source affected <name> --files a,b [flags]             dry run: which packages a change would redeploy
@@ -100,10 +101,14 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 	fs.StringVar(&buildPath, "build-path", "", "Dockerfile path, relative to the repository root")
 	fs.StringVar(&buildPath, "dockerfile", "", "alias for --build-path")
 	fs.StringVar(&baseDirectory, "base-directory", "", "build context directory, relative to the repository root (default: the root)")
+	var static staticBuildFlags
+	fs.StringVar(&static.Command, "build-command", "", "static sites: command that builds the site in a build container, e.g. \"npm run build\"")
+	fs.StringVar(&static.Publish, "publish-dir", "", "static sites: directory the build writes, relative to the base directory, e.g. dist")
+	fs.BoolVar(&static.Infer, "infer-build", false, "static sites: detect the framework and fill the build command and publish directory")
 	fs.StringVar(&token, "token-secret", "", "personal access token for a private repo; empty on an update leaves the stored token unchanged")
 	fs.StringVar(&triggerMode, "trigger-mode", "", "push or release (default: push); release deploys only on a tag push or a published github release")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source set <name> --repo-url URL [flags]\n\nConnects a repo for auto-deploy-on-push, or edits an existing\nconnection. Multi-service fan-out (an app.yaml services: map) is\ndashboard-only; use \"apps deploy-spec\" from the CLI for that case.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source set <name> --repo-url URL [flags]\n\nConnects a repo for auto-deploy-on-push, or edits an existing\nconnection. Multi-service fan-out (an app.yaml services: map) is\ndashboard-only; use \"apps deploy-spec\" from the CLI for that case.\n\nStatic sites can build before serving: --build-command and --publish-dir,\nor --infer-build to detect the framework and fill either one you omit.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
@@ -111,8 +116,8 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 	if !ok {
 		return exitCode
 	}
-	if repoURL == "" && (buildType != "" || buildPath != "" || baseDirectory != "") {
-		gs, err := setGitSourceBuild(context.Background(), client, name, buildType, buildPath, baseDirectory)
+	if repoURL == "" && (buildType != "" || buildPath != "" || baseDirectory != "" || static != (staticBuildFlags{})) {
+		gs, err := setGitSourceBuild(context.Background(), client, name, buildType, buildPath, baseDirectory, static)
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("set git source build for app %q: %w", name, err))
 		}
@@ -128,7 +133,13 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 		return exitUsage
 	}
 
+	if static.Infer {
+		_, _ = fmt.Fprintf(stderr, "%s: --infer-build needs a connected repo, connect first and then run it with the build flags only\n", prog)
+		return exitUsage
+	}
 	gs, err := client.SetGitSource(context.Background(), name, setGitSourceRequest{
+		BuildCommand:  static.Command,
+		PublishDir:    static.Publish,
 		RepoURL:       repoURL,
 		Branch:        branch,
 		BuildType:     buildType,

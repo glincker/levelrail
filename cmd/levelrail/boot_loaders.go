@@ -204,6 +204,8 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithLogger(logger),
 		deploy.WithStaticSiteStore(db),
 		deploy.WithStaticRootDir(staticSitesDir),
+		deploy.WithStaticExtractor(build.NewImageExtractor(rawDockerCli, build.StaticMaxBytesFromEnv(os.LookupEnv))),
+		deploy.WithStaticBuildImage(os.Getenv(deploy.EnvStaticBuildImage)),
 		deploy.WithStaticPublishRecorder(db),
 		deploy.WithAppStore(db),
 		deploy.WithVaultConfigChecker(db),

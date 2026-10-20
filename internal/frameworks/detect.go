@@ -82,6 +82,8 @@ func detectNode(text string, read Reader) (Match, bool) {
 		return match("nuxt", "package.json lists nuxt"), true
 	case has("@sveltejs/kit"):
 		return match("sveltekit", "package.json lists @sveltejs/kit"), true
+	case has("@docusaurus/core"):
+		return match("docusaurus", "package.json lists @docusaurus/core"), true
 	case has("astro"):
 		return match("astro", "package.json lists astro"), true
 	case has("vite"):

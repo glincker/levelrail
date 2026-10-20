@@ -79,6 +79,10 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request, progress func(
 		return "", fmt.Errorf("deploy: service %q: build.type %q needs a static root directory configured (WithStaticRootDir)", req.ServiceName, spec.BuildStatic)
 	}
 
+	if req.Service.Build.RunsStaticBuild() {
+		return p.deployStaticBuilt(ctx, req, progress)
+	}
+
 	buildRoot, err := resolveBuildRoot(req.SourceDir, req.Service.Build.BaseDirectory)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
