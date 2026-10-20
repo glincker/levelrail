@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import { Button } from '../ui/button'
+import { ROLLBACK_SECTION_ID } from '../../lib/updatesAnchors'
 import type { SelfUpgradeAttempt } from '../../queries/selfUpgrade'
 import { UpgradePipeline } from './updates/UpgradePipeline'
 
@@ -10,6 +12,7 @@ interface Props {
   reconnecting: boolean
   releaseUrl: string | null | undefined
   onDismiss?: () => void
+  onRetry?: () => void
 }
 
 // UpgradeProgress is the live run view: a CI-style pipeline over the
@@ -22,6 +25,7 @@ export function UpgradeProgress({
   reconnecting,
   releaseUrl,
   onDismiss,
+  onRetry,
 }: Props) {
   const { t } = useTranslation('updates')
   const done = attempt !== undefined && attempt.outcome !== 'running'
@@ -34,6 +38,29 @@ export function UpgradeProgress({
         startedAt={startedAt}
         reconnecting={reconnecting}
       />
+      {done && attempt?.outcome !== 'succeeded' ? (
+        <div className="flex flex-wrap gap-2">
+          {onRetry ? (
+            <Button type="button" size="sm" onClick={onRetry}>
+              {t('progress.retry')}
+            </Button>
+          ) : null}
+          {attempt?.outcome === 'failed' ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                document
+                  .getElementById(ROLLBACK_SECTION_ID)
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            >
+              {t('progress.rollBack')}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
       <div className="flex flex-wrap gap-3 text-xs">
         {attempt?.outcome === 'succeeded' && releaseUrl ? (
           <a

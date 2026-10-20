@@ -39,7 +39,8 @@
       "recheck": "Re-check",
       "rechecking": "Re-checking...",
       "openRollback": "Go to Roll back"
-    }
+    },
+    "retry": "Try again"
   },
   "history": {
     "title": "Release history and rollback",
@@ -313,7 +314,9 @@
       "rolled_back": "Upgrade to {{version}} was rolled back",
       "refused": "Upgrade to {{version}} was refused",
       "failed": "Upgrade to {{version}} failed"
-    }
+    },
+    "retry": "Retry upgrade",
+    "rollBack": "Roll back"
   },
   "schedule": {
     "button": "Schedule upgrade",
@@ -508,5 +511,25 @@
     "sidebar": {
       "running": "Upgrading"
     }
+  },
+  "stepper": {
+    "label": "Upgrade steps",
+    "step": {
+      "check": "Check",
+      "preflight": "Preflight",
+      "download": "Download",
+      "apply": "Apply",
+      "verify": "Verify"
+    },
+    "status": {
+      "done": "done",
+      "current": "in progress",
+      "failed": "failed",
+      "blocked": "blocked",
+      "upcoming": "not started"
+    }
+  },
+  "cli": {
+    "summary": "Fix via CLI"
   }
 }

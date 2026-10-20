@@ -16,6 +16,7 @@ import {
 } from '../../queries/selfUpgrade'
 import { scheduleQueryOptions } from '../../queries/upgradeSchedule'
 import { ShieldCheck } from '@phosphor-icons/react/dist/ssr'
+import { CliFallback } from './CliFallback'
 import { CopyCommand } from './CopyCommand'
 import { ScheduleUpgradeDialog } from './ScheduleUpgradeDialog'
 import { ScheduledUpgradeBanner } from './ScheduledUpgradeBanner'
@@ -198,6 +199,12 @@ export function UpgradeNow() {
             if (a) setDismissed(a.id)
             setStartedAt(null)
           }}
+          onRetry={() => {
+            const a = finishedAttempt ?? recent
+            if (a) setDismissed(a.id)
+            setStartedAt(null)
+            setConfirmOpen(true)
+          }}
         />
       ) : null}
       {activeSchedule ? (
@@ -246,10 +253,12 @@ export function UpgradeNow() {
               reason: planData.cannot_apply_reason ?? '',
             })}
           </p>
-          <CopyCommand
-            label={t('selfUpgrade.hostCommand')}
-            command={planData.command}
-          />
+          <CliFallback>
+            <CopyCommand
+              label={t('selfUpgrade.hostCommand')}
+              command={planData.command}
+            />
+          </CliFallback>
         </div>
       ) : null}
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
