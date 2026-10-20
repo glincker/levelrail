@@ -12,6 +12,8 @@ description: Automatic TLS, domain routing, WAF, rate limiting, and redirects, a
 
 Levelrail has nothing to install for ingress. The control plane embeds [Caddy](https://caddyserver.com/) as a Go library (`internal/ingress`) and drives it through its admin API, not a hand-written Caddyfile. Config comes from the app specs the reconciler already knows about, so there is no `caddy` binary, no separate proxy container, and no way for ingress config to drift from desired state. The reasoning is in [ADR 005](https://github.com/glincker/levelrail/blob/main/adr/005-caddy-embedded-ingress.md) and the [comparison](/comparison).
 
+New to this? The [Go live checklist](/go-live) walks one app and domain through firewall, DNS, certificate and a final HTTPS check with live status.
+
 ## What this covers
 
 | You want to | Go to |

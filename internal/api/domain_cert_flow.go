@@ -83,12 +83,20 @@ func (rt *Router) certPreflight(r *http.Request, app, domain, email string, stag
 		rt.logger.Error("api: cert preflight: load settings", slog.String("error", err.Error()), slog.String("domain", domain))
 		return certflow.Result{}, http.StatusInternalServerError, "internal error"
 	}
-	rep, status, msg := rt.runDomainDoctorWith(r.Context(), app, domain, nil, func(f *domaindoctor.Facts) {
-		f.ACMEEnabled, f.TLSTerminatedUpstream = true, s.TLSTerminatedUpstream
-	})
+	rep, status, msg := rt.runDomainDoctorWith(r.Context(), app, domain, nil, publicCertDoctorFacts(s))
 	if status != 0 {
 		return certflow.Result{}, status, msg
 	}
+	return rt.certPreflightFromReport(r, domain, email, staging, s, rep)
+}
+
+// publicCertDoctorFacts runs the doctor as if public certificates were on, so the CAA and port checks really run.
+func publicCertDoctorFacts(s store.IngressSettings) func(*domaindoctor.Facts) {
+	return func(f *domaindoctor.Facts) { f.ACMEEnabled, f.TLSTerminatedUpstream = true, s.TLSTerminatedUpstream }
+}
+
+// certPreflightFromReport judges an already-run doctor report.
+func (rt *Router) certPreflightFromReport(r *http.Request, domain, email string, staging bool, s store.IngressSettings, rep domaindoctor.Report) (certflow.Result, int, string) {
 	typed, def := rt.certFlowEmail(r, s, email)
 	rows, rerr := rt.certTruthRows(r.Context(), time.Now())
 	if rerr != nil {

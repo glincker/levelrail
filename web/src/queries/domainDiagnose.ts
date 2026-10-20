@@ -59,6 +59,7 @@ export interface DiagnoseReport {
   checks: DiagnoseCheck[]
   records?: DiagnoseRecord[]
   propagation?: DiagnosePropagation
+  go_live?: string
 }
 
 type DiagnoseMessage =

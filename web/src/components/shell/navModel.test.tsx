@@ -61,6 +61,7 @@ const EXPECTED_APP = [
   'deploy-settings',
   'pipelines',
   'domains',
+  'go-live',
   'loadbalancer',
   'streams',
   'network',

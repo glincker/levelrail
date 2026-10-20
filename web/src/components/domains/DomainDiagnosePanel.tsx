@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { GoLiveLink } from '../golive/GoLiveBadge'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowsClockwiseIcon,
@@ -269,6 +270,7 @@ export function DomainDiagnosePanel({ domain }: { domain: string }) {
           {t('diagnose.recheck')}
         </Button>
       </div>
+      {report?.go_live ? <GoLiveLink href={report.go_live} /> : null}
 
       {report?.propagation ? (
         <PropagationLine

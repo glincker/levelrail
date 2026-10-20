@@ -91,6 +91,7 @@
           {
             "group": "Add to your setup",
             "pages": [
+              "go-live",
               "domains-and-ingress",
               "app-exposure",
               "tutorials/index",

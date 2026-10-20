@@ -513,6 +513,7 @@ type Router struct {
 	appStreams                   AppStreamStore                  // always set, same "core Store interface" shape as firewallRules above
 	firewallRequiredPorts        []int                           // defaults to firewall.DefaultRequiredPorts in NewRouter; WithFirewallRequiredPorts overrides with this instance's actually configured ports
 	hostFirewallRun              firewallCommandRunner
+	checklist                    goLiveChecklistState
 	hostFirewallLookPath         func(string) (string, error)
 	hostFirewallSSHPorts         []int
 	exposure                     *exposure.Manager // nil is valid: /api/v1/firewall/exposure returns 501, see WithExposure

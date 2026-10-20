@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1519 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1522 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -224,6 +224,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/git-remote", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetGitRemoteBranch", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/github-actions", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppGitHubActions", Description: "GitHub Actions deploy action report settings (app_github_actions.go)."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/github-actions", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppGitHubActions", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/go-live/checklist", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGoLiveChecklist", Description: "Go live checklist: app, port, firewall, DNS, certificate and HTTPS in one ordered report, a stream that refreshes it, and stored-state badges. Fixes apply through the existing root routes (fixes, cert, dns-records)."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/go-live/stream", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGoLiveChecklistStream", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/group", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppGroup", Description: "Stage 1 of multi-service apps (migrations/0039_apps.sql, apps_group.go): a service plus its siblings under the same store.App, with a worst-condition-wins rollup status. Additive, read-only; GET /api/v1/apps/{name} above is unchanged."},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/health", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppHealth", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/health", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHealth", Description: ""},
@@ -995,6 +997,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/git-sources/analyze", Ability: "AbilityWrite", Group: "Other", Handler: "handleAnalyzeImport", Description: ""},
 	{Method: "GET", Path: "/api/v1/gitea-app/callback", Ability: "AbilityRoot", Group: "Other", Handler: "handleGitConnectCallback", Description: ""},
 	{Method: "GET", Path: "/api/v1/gitea-app/connect", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartGitConnect", Description: ""},
+	{Method: "GET", Path: "/api/v1/go-live/status", Ability: "AbilityRead", Group: "Other", Handler: "handleLiveBadges", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/image-update/{name}/{token}", Ability: "Public", Group: "Other", Handler: "handleImageUpdateWebhook", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/pipeline/{id}/{token}", Ability: "Public", Group: "Other", Handler: "handlePipelineWebhook", Description: ""},
 	{Method: "GET", Path: "/api/v1/hooks/wake", Ability: "Public", Group: "Other", Handler: "handleWakeHook", Description: ""},

@@ -42,6 +42,7 @@ const APP_SECTION_LABELS: Record<string, string> = {
   overview: 'Overview',
   deploys: 'Deploys',
   domains: 'Domains',
+  'go-live': 'Go live',
   network: 'Network',
   services: 'Services',
   environment: 'Environment',

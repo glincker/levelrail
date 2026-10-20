@@ -104,6 +104,8 @@ type Report struct {
 	// subdomain and this server's address.
 	Records     []Record     `json:"records,omitempty"`
 	Propagation *Propagation `json:"propagation,omitempty"`
+	// GoLive is the dashboard path of the guided checklist for this app and domain.
+	GoLive string `json:"go_live,omitempty"`
 }
 
 // Propagation states.

@@ -18,6 +18,7 @@ import type fixit from '../locales/en/fixit.json'
 import type network from '../locales/en/network.json'
 import type databases from '../locales/en/databases.json'
 import type https from '../locales/en/https.json'
+import type golive from '../locales/en/golive.json'
 import type nodes from '../locales/en/nodes.json'
 import type access from '../locales/en/access.json'
 import type logPipeline from '../locales/en/logPipeline.json'
@@ -115,6 +116,7 @@ declare module 'i18next' {
       network: typeof network
       databases: typeof databases
       https: typeof https
+      golive: typeof golive
       nodes: typeof nodes
       access: typeof access
       logPipeline: typeof logPipeline

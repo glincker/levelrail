@@ -452,6 +452,7 @@ export type AppTo =
   | '/apps/$name/deploy-settings'
   | '/apps/$name/pipelines'
   | '/apps/$name/domains'
+  | '/apps/$name/go-live'
   | '/apps/$name/streams'
   | '/apps/$name/loadbalancer'
   | '/apps/$name/network'
@@ -544,6 +545,7 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
     label: 'Traffic',
     icon: <ShareNetworkIcon />,
     items: [
+      item('go-live', 'Go live', '/apps/$name/go-live', <RocketLaunchIcon />),
       item('domains', 'Domains', '/apps/$name/domains', <GlobeIcon />),
       item('streams', 'Streams', '/apps/$name/streams', <PlugsIcon />),
       item(

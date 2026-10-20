@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { GoLiveCta } from '../golive/GoLiveCta'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowSquareOutIcon,
@@ -76,6 +77,7 @@ export function FirstAppStatus({
             {t('first.status.noAddress')}
           </p>
         )}
+        <GoLiveCta app={app.name} />
         <div className="flex flex-wrap gap-2">
           {appLinks}
           {onDone ? (

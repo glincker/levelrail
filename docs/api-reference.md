@@ -579,6 +579,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/build-limits | AbilityRead | handleGetAppBuildLimits |
 | PUT | /api/v1/apps/{name}/build-limits | AbilityRoot | handleSetAppBuildLimits |
 | DELETE | /api/v1/apps/{name}/build-limits | AbilityRoot | handleResetAppBuildLimits |
+| GET | /api/v1/apps/{name}/go-live/checklist | AbilityRead | handleGoLiveChecklist |
+| GET | /api/v1/apps/{name}/go-live/stream | AbilityRead | handleGoLiveChecklistStream |
 
 </Accordion>
 
@@ -1744,6 +1746,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/diagnose/{kind}/{name} | AbilityRead | handleDiagnoseStuck |
 | GET | /api/v1/alert-defaults | AbilityRead | handleListDefaultAlerts |
 | PUT | /api/v1/alert-defaults/{id} | AbilityWrite | handleSetDefaultAlertEnabled |
+| GET | /api/v1/go-live/status | AbilityRead | handleLiveBadges |
 
 ## See also
 

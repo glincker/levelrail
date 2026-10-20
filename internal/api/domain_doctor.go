@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -161,6 +162,9 @@ func (rt *Router) runDomainDoctorWith(ctx context.Context, name, domain string, 
 		ProbeTimeout:   envDuration(envDomainDoctorProbeTimeout, defaultDomainDoctorProbe),
 		ExpiryWarnDays: envInt(envTrafficCertExpiryDays, defaultTrafficCertDays),
 	}, emit)
+	if target == nil {
+		rep.GoLive = "/apps/" + url.PathEscape(svc.Name) + "/go-live?domain=" + url.QueryEscape(domain)
+	}
 	return rep, 0, ""
 }
 

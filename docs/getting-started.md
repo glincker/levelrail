@@ -204,6 +204,8 @@ For a full diagnosis, run `levelrail-cli apps diagnose web`. See [Deploy failure
 
 </Accordion>
 
+To put it on your own domain with HTTPS, open the app's **Go live** page: one checklist covers the firewall, DNS and the certificate. See [Go live checklist](/go-live).
+
 ### Roll back
 
 Use the deploy history in the dashboard, or run:

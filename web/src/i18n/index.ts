@@ -17,6 +17,7 @@ export const NAMESPACES = [
   'privateNetworks',
   'databases',
   'https',
+  'golive',
   'nodes',
   'access',
   'logPipeline',

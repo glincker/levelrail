@@ -1503,6 +1503,14 @@ levelrail-cli tui [--read-only] [--refresh DURATION] [flags]
 
 Opens an interactive terminal UI over the same API: live apps, databases, deploys, nodes, domains, alerts and backups, a log tail, and confirm-gated restart, deploy, rollback, stop and start. Needs a TTY. See [Terminal UI](/cli-tui) for the key map.
 
+## Go live
+
+```
+levelrail-cli go-live <app> [domain] [--wait] [--timeout 5m] [flags]
+```
+
+Prints the [go live checklist](/go-live) for an app and domain (default: the app's only domain): app health, port, host firewall, DNS, certificate and the final HTTPS check, each with its status and next action. With `--wait` it polls and exits 7 until the domain is live or `--timeout` passes. Supports `--json`.
+
 ## Doctor
 
 ```

@@ -41,6 +41,7 @@ import {
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import { certTruth } from '../lib/certTruth'
 import { CertTruthBadge } from './CertTruthBadge'
+import { GoLiveBadge } from './golive/GoLiveBadge'
 import { GetCertificateButton } from './GetCertificateButton'
 import type { CertificateStatus } from '../queries/certificates'
 import { domainCheckQueryOptions } from '../queries/domainCheck'
@@ -206,6 +207,9 @@ function CertCell({
       {truth.wantsRealCert && domain.tls_owner !== 'proxy' ? (
         <GetCertificateButton domain={domain.domain} />
       ) : null}
+      {isStandaloneDomain(domain) ? null : (
+        <GoLiveBadge app={domain.service_name} domain={domain.domain} />
+      )}
     </span>
   )
 }

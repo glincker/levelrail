@@ -24,6 +24,7 @@ const (
 	exitAPIError      = 4 // the API was reached and returned a non-2xx response
 	exitDeployFailed  = 5 // "apps wait": every API call succeeded, but the deploy itself converged as a failure
 	exitDeployTimeout = 6 // "apps wait": gave up before the deploy converged either way
+	exitNotLive       = 7 // "go-live --wait": every call worked, but the domain is not live yet
 )
 
 // errors.As unwraps wrapped errors, so classification survives any added context.
