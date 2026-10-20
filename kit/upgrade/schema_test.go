@@ -4,8 +4,6 @@ import (
 	"context"
 	"strings"
 	"testing"
-
-	"github.com/GLINCKER/levelrail/kit/semver"
 )
 
 func TestSchemaCheck(t *testing.T) {
@@ -65,9 +63,6 @@ func TestRunIncludesSchemaCheckOnlyWhenGiven(t *testing.T) {
 }
 
 func TestUpdateAvailableForDescribeBuild(t *testing.T) {
-	if cmp, _ := semver.Compare("v0.6.0-138-gabbfcdba5", "v0.6.0"); cmp < 0 {
-		t.Skip("kit/semver still sorts a git-describe build before its tag; remove this skip with that fix")
-	}
 	if UpdateAvailable("v0.6.0-138-gabbfcdba5", &Release{Tag: "v0.6.0"}) {
 		t.Fatal("a build 138 commits after v0.6.0 was offered v0.6.0")
 	}
