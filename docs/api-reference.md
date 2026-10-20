@@ -762,6 +762,8 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/password-rotation | AbilityReadSensitive | handleGetDatabasePasswordRotation |
 | POST | /api/v1/databases/{name}/password-rotation | AbilityWriteSensitive | handleRotateDatabasePassword |
 | PUT | /api/v1/databases/{name}/password-rotation/policy | AbilityRoot | handleSetDatabasePasswordPolicy |
+| PUT | /api/v1/databases/{name}/tls | AbilityRoot | handleSetDatabaseTLSEnabled |
+| GET | /api/v1/databases/{name}/tunnel | AbilityRoot | handleDatabaseTunnel |
 
 ## Projects / Organizations / Environments
 

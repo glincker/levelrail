@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1517 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1519 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -628,6 +628,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/status", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseStatus", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/tables/{schema}/{table}/rows", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseTableRows", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/tables/{schema}/{table}/structure", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseTableStructure", Description: ""},
+	{Method: "PUT", Path: "/api/v1/databases/{name}/tls", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseTLSEnabled", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/tunnel", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseTunnel", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/upgrade-now", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseUpgradeNow", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/upgrade-policy", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handlePutDatabaseUpgradePolicy", Description: "Policy and upgrade-now restart the database, the same tier as PUT .../version."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/upgrades", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseUpgrades", Description: ""},

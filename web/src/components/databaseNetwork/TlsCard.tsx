@@ -5,7 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import type { DatabaseNetwork } from '../../types/databaseAccess'
-import { useSetRequireTls } from '../../queries/databaseAccess'
+import {
+  useSetRequireTls,
+  useSetTlsEnabled,
+} from '../../queries/databaseAccess'
 
 /** TlsCard toggles whether the server refuses connections that are not encrypted. */
 export function TlsCard({
@@ -17,6 +20,7 @@ export function TlsCard({
 }) {
   const { t } = useTranslation('databaseAccess')
   const setTls = useSetRequireTls(databaseName)
+  const switchTls = useSetTlsEnabled(databaseName)
   const { tls } = network
   const always = tls.supported === false && tls.required
   const disabledReason = always
@@ -40,6 +44,19 @@ export function TlsCard({
     })
   }
 
+  function switchEnabled(enabled: boolean) {
+    switchTls.mutate(enabled, {
+      onSuccess: () =>
+        toast.add({ title: t('tls.switchedToast'), type: 'success' }),
+      onError: (err) =>
+        toast.add({
+          title: t('tls.switchFailedToast'),
+          description: err.message,
+          type: 'error',
+        }),
+    })
+  }
+
   return (
     <Card>
       <CardHeader className="space-y-1">
@@ -53,6 +70,22 @@ export function TlsCard({
         <p className="text-xs text-muted-foreground">{t('tls.description')}</p>
       </CardHeader>
       <CardContent className="space-y-2">
+        {tls.toggleable ? (
+          <div className="space-y-1">
+            <label className="flex items-center gap-3 text-sm">
+              <Switch
+                checked={tls.enabled}
+                disabled={switchTls.isPending}
+                onCheckedChange={switchEnabled}
+                aria-label={t('tls.serverTitle')}
+              />
+              <span>{t('tls.serverTitle')}</span>
+            </label>
+            <p className="text-xs text-muted-foreground">
+              {t('tls.serverHint')}
+            </p>
+          </div>
+        ) : null}
         <label className="flex items-center gap-3 text-sm">
           <Switch
             checked={tls.required}

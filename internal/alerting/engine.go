@@ -53,6 +53,7 @@ type Engine struct {
 	domainApps     AppDomainSource
 	domainChecker  DomainCheckSource
 	backups        BackupSource
+	databaseHealth DatabaseHealthSource
 	traffic        trafficKinds
 	newNotifier    func(Rule) Notifier
 	logger         *slog.Logger
@@ -200,6 +201,9 @@ func (e *Engine) SetVersionSkew(settings VersionSkewSettingsSource, fetchers upg
 }
 
 // SetBudgets enables kind=budget_threshold rules.
+// SetDatabaseHealth wires the live probe the database_connections and database_disk rules read.
+func (e *Engine) SetDatabaseHealth(src DatabaseHealthSource) { e.databaseHealth = src }
+
 func (e *Engine) SetBudgets(src BudgetSource) {
 	e.budgets = src
 	e.budgetTracker = newBudgetTracker()
@@ -364,6 +368,12 @@ func (e *Engine) Tick(ctx context.Context) error {
 				continue
 			}
 			next, backupMissingNoticeText, err = EvaluateBackupMissing(ctx, e.backups, r, e.backupMissingGracePeriod, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindDatabaseConnections, KindDatabaseDisk, KindDatabaseBackupFailing:
+			next, backupMissingNoticeText, err = EvaluateDatabaseRule(ctx, e.databaseHealth, e.backups, r, now)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
@@ -585,7 +595,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindRestoreDrillFailed) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindRestoreDrillFailed) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {
