@@ -9,6 +9,11 @@ const addressFix = {
   check_id: 'public_address',
   failing: true,
 } as Fix
+const masterKeyFix = {
+  id: 'settings.master_key.age',
+  check_id: 'master_key_age',
+  failing: true,
+} as Fix
 
 function wrapper({ children }: { children: ReactNode }) {
   const client = new QueryClient({
@@ -27,7 +32,7 @@ describe('useFixForCheck', () => {
       'fetch',
       vi.fn(() =>
         Promise.resolve(
-          new Response(JSON.stringify({ fixes: [addressFix] }), {
+          new Response(JSON.stringify({ fixes: [addressFix, masterKeyFix] }), {
             status: 200,
           }),
         ),
@@ -39,6 +44,25 @@ describe('useFixForCheck', () => {
     )
     await waitFor(() => {
       expect(result.current?.id).toBe('mesh.public_address.set')
+    })
+  })
+
+  it('maps the master key doctor check to its rotation fix', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ fixes: [addressFix, masterKeyFix] }), {
+            status: 200,
+          }),
+        ),
+      ),
+    )
+    const { result } = renderHook(() => useFixForCheck('master_key_rotation'), {
+      wrapper,
+    })
+    await waitFor(() => {
+      expect(result.current?.id).toBe('settings.master_key.age')
     })
   })
 })

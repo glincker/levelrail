@@ -120,6 +120,9 @@ export function useFixes() {
 // Doctor check codes that share a fix registered under another check id.
 const FIX_CHECK_ALIASES: Record<string, string> = {
   agent_advertise_reachability: 'public_address',
+  mesh_hub_endpoint: 'public_address',
+  master_key_rotation: 'master_key_age',
+  docker_root_disk: 'disk_space',
 }
 
 export function useFixForCheck(checkId: string): Fix | undefined {
