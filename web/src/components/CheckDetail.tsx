@@ -14,18 +14,39 @@ import { useFixForCheck } from '../queries/fixit'
 // have one place to render, not two drifting copies.
 
 /** CheckDetail renders a failing check's next step: a typed fix when one exists, else a Re-check button with any command collapsed. Renders nothing otherwise. */
-export function CheckDetail({ check }: { check: DoctorCheck }) {
+export function CheckDetail({
+  check,
+  onRecheck,
+}: {
+  check: DoctorCheck
+  /** Page-level re-check for this row; without it the doctor query is refetched. */
+  onRecheck?: () => Promise<void> | void
+}) {
   const { t } = useTranslation('fixit')
   const cta = getCheckCta(check)
   const engineFix = useFixForCheck(check.code)
   const qc = useQueryClient()
   const [pending, setPending] = useState(false)
-  if (engineFix) return <FixAction fix={engineFix} autoApply />
+  if (engineFix) {
+    return (
+      <FixAction
+        fix={engineFix}
+        autoApply
+        onResult={onRecheck ? () => void onRecheck() : undefined}
+      />
+    )
+  }
   if (!cta && !check.fix) return null
   const fixIsCommand = check.fix ? isShellCommand(check.fix) : false
 
   function recheck() {
     setPending(true)
+    if (onRecheck) {
+      void Promise.resolve(onRecheck()).finally(() => {
+        setPending(false)
+      })
+      return
+    }
     void qc
       .invalidateQueries({ queryKey: systemDoctorKeys.all })
       .finally(() => {

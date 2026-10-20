@@ -722,14 +722,23 @@ func printSystemDoctorHuman(out io.Writer, d systemDoctorResource) {
 func printSystemDoctorFixes(out io.Writer, checks []doctorCheckResource) {
 	var printedHeader bool
 	for _, c := range checks {
-		if c.Fix == "" {
+		if c.Fix == "" && c.FixKind != "auto" {
 			continue
 		}
 		if !printedHeader {
 			_, _ = fmt.Fprintln(out, "\nFixes:")
 			printedHeader = true
 		}
-		_, _ = fmt.Fprintf(out, "  %s:\n    %s\n", c.Name, c.Fix)
+		_, _ = fmt.Fprintf(out, "  %s:\n", c.Name)
+		if c.Evidence != "" {
+			_, _ = fmt.Fprintf(out, "    evidence: %s\n", c.Evidence)
+		}
+		if c.FixKind == "auto" {
+			_, _ = fmt.Fprintf(out, "    automatic fix available (%s), apply with: doctor --fix\n", c.FixID)
+		}
+		if c.Fix != "" {
+			_, _ = fmt.Fprintf(out, "    %s\n", c.Fix)
+		}
 	}
 }
 

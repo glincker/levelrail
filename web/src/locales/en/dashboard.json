@@ -192,7 +192,11 @@
     "updateAction": "View update",
     "httpsTitle": "This dashboard is on plain HTTP",
     "httpsDetail": "Passwords and sessions travel unencrypted. Turn on HTTPS with one click, no DNS needed.",
-    "httpsAction": "Enable HTTPS"
+    "httpsAction": "Enable HTTPS",
+    "doctorTitle_one": "Doctor found {{count}} problem",
+    "doctorTitle_other": "Doctor found {{count}} problems",
+    "doctorDetail": "Each one has a fix or a next step.",
+    "doctorAction": "Open Doctor"
   },
   "nextSteps": {
     "title": "Recommended next steps",

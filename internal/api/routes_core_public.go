@@ -25,6 +25,10 @@ func (rt *Router) registerPublicRoutes(mux *http.ServeMux) {
 	// dir writability, ingress port availability, SQLite reachability),
 	// AbilityRead like system/status above.
 	mux.HandleFunc("GET /api/v1/system/doctor", rt.requireAbility(AbilityRead, rt.handleSystemDoctor))
+	// Same checks as the report: list them, stream results as each finishes, re-run one. Fixes apply through POST /api/v1/fixes/{id}/apply (root, audit-logged).
+	mux.HandleFunc("GET /api/v1/system/doctor/checks", rt.requireAbility(AbilityRead, rt.handleListDoctorChecks))
+	mux.HandleFunc("GET /api/v1/system/doctor/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(doctorStreamResource, rt.handleStreamDoctor)))
+	mux.HandleFunc("POST /api/v1/system/doctor/checks/{id}/run", rt.requireAbility(AbilityRead, rt.handleRunDoctorCheck))
 	mux.HandleFunc("GET /api/v1/system/reverse-proxy", rt.requireAbility(AbilityRead, rt.handleReverseProxyGuide))
 	// Every container on this node, Levelrail-managed or not (containers.go's
 	// own doc comment on why a Managed one stays read-only here),

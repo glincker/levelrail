@@ -104,6 +104,9 @@ System endpoints for:
 | POST | /api/v1/system/integrity/restore | AbilityRoot | handleIntegrityRestore |
 | DELETE | /api/v1/system/integrity/restore | AbilityRoot | handleIntegrityCancelRestore |
 | POST | /api/v1/updates/rollback | AbilityRoot | handleRollbackStart |
+| GET | /api/v1/system/doctor/checks | AbilityRead | handleListDoctorChecks |
+| GET | /api/v1/system/doctor/stream | AbilityRead | handleStreamDoctor |
+| POST | /api/v1/system/doctor/checks/{id}/run | AbilityRead | handleRunDoctorCheck |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
