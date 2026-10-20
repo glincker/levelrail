@@ -6,13 +6,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/attention"
-	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
 // Doctor groups, in display order.
@@ -68,14 +66,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("container_runtime", doctorGroupRuntime, rt.doctorCheckContainerRuntime),
 		one("docker_guard", doctorGroupRuntime, rt.doctorCheckDockerGuard),
 		one("docker_privilege", doctorGroupRuntime, rt.doctorCheckDockerPrivilege),
-		one("container_hardening", doctorGroupRuntime, func(context.Context) doctorCheckResource {
-			info := docker.DetectRuntimeSocket(os.LookupEnv)
-			if reporter, ok := rt.dockerPinger.(runtimeReporter); ok {
-				info = reporter.Runtime()
-			}
-			cfg, err := docker.HardeningFromEnv(info)
-			return doctorCheckContainerHardening(cfg, err)
-		}),
+		one("container_hardening", doctorGroupRuntime, rt.doctorCheckHardeningNow),
 		one("network_pool", doctorGroupRuntime, rt.doctorCheckNetworkPool),
 		one("docker_orphans", doctorGroupRuntime, rt.doctorCheckOrphans),
 

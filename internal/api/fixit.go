@@ -138,7 +138,7 @@ func (rt *Router) fixitFixes() []fixit.Fix {
 	if rt.brand != nil {
 		unit = strings.ToLower(rt.brand.ShortName)
 	}
-	return append(append(rt.settingsFixes(), rt.certRenewFix()), []fixit.Fix{
+	return append(append(append(rt.settingsFixes(), rt.certRenewFix()), rt.housekeepingFixes()...), []fixit.Fix{
 		fixit.PublicAddressFix(fixit.PublicAddressDeps{
 			Check:      rt.meshCheck(network.CheckPublicAddress),
 			Candidates: rt.addressCandidates,

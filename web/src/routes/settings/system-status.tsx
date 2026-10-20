@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -8,12 +9,17 @@ import {
   XCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { HelpLink } from '@/components/HelpLink'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { DoctorFixAll } from '@/components/doctor/DoctorFixAll'
 import { DoctorGroupCard } from '@/components/doctor/DoctorGroupCard'
+import { DoctorToolbar } from '@/components/doctor/DoctorToolbar'
+import {
+  buildDiagnostics,
+  filterGroups,
+  type DoctorFilter,
+} from '../../lib/doctorDiagnostics'
 import { DiskResilienceCard } from '../../components/DiskResilienceCard'
 import { ResilienceReportCard } from '../../components/ResilienceReportCard'
 import { useDoctorStream } from '../../hooks/useDoctorStream'
@@ -63,7 +69,15 @@ function DoctorPage() {
   const { state, rerun, recheck } = useDoctorStream()
   const checks = allChecks(state)
   const counts = countSeverity(checks)
-  const groups = groupChecks(checks)
+  const [filter, setFilter] = useState<DoctorFilter>('all')
+  const [checkedAt, setCheckedAt] = useState<Date | null>(null)
+  const groups = filterGroups(groupChecks(checks), filter)
+
+  const [wasRunning, setWasRunning] = useState(state.running)
+  if (wasRunning !== state.running) {
+    setWasRunning(state.running)
+    if (!state.running && state.total > 0) setCheckedAt(new Date())
+  }
 
   return (
     <div className="space-y-6">
@@ -94,30 +108,23 @@ function DoctorPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2" aria-live="polite">
-        <Badge variant="destructive">
-          {t('doctorPage.counts.fail', { count: counts.fail })}
-        </Badge>
-        <Badge variant="warning">
-          {t('doctorPage.counts.warn', { count: counts.warn })}
-        </Badge>
-        <Badge variant="success">
-          {t('doctorPage.counts.ok', { count: counts.ok })}
-        </Badge>
-        {counts.unknown > 0 ? (
-          <Badge variant="muted">
-            {t('doctorPage.counts.unknown', { count: counts.unknown })}
-          </Badge>
-        ) : null}
-        {state.running ? (
-          <span className="text-xs text-muted-foreground">
-            {t('doctorPage.progress', {
-              done: state.finished,
-              total: state.total,
-            })}
-          </span>
-        ) : null}
-      </div>
+      <DoctorToolbar
+        counts={counts}
+        total={checks.length}
+        filter={filter}
+        onFilter={setFilter}
+        checkedAt={checkedAt}
+        running={state.running}
+        diagnostics={() => buildDiagnostics(checks, checkedAt)}
+      />
+      {state.running ? (
+        <p className="text-xs text-muted-foreground" aria-live="polite">
+          {t('doctorPage.progress', {
+            done: state.finished,
+            total: state.total,
+          })}
+        </p>
+      ) : null}
 
       {state.error ? (
         <Alert variant="destructive">
@@ -148,6 +155,11 @@ function DoctorPage() {
         </AlertDescription>
       </Alert>
 
+      {groups.length === 0 && !state.running ? (
+        <p className="text-sm text-muted-foreground">
+          {t('doctorPage.noMatches')}
+        </p>
+      ) : null}
       {groups.map((g) => (
         <DoctorGroupCard key={g.id} group={g} recheck={recheck} />
       ))}

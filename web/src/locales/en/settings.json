@@ -1976,6 +1976,18 @@
     "description": "One health check for this server: Docker, disk, ports, certificates, backups, nodes and more. The CLI doctor command runs the same checks.",
     "guide": "Doctor guide",
     "rerun": "Re-run checks",
+    "filterLabel": "Filter checks by status",
+    "filter": {
+      "all": "All",
+      "fail": "Failing",
+      "warn": "Warnings"
+    },
+    "lastChecked": "Last checked {{time}}",
+    "checking": "Checking...",
+    "copyDiagnostics": "Copy diagnostics",
+    "copyDone": "Diagnostics copied",
+    "copyFailed": "Could not copy to the clipboard",
+    "noMatches": "No checks match this filter.",
     "allPassedTitle": "All checks passed",
     "allPassedBody": "Nothing needs attention right now.",
     "failedTitle_one": "{{count}} check failed",
