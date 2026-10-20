@@ -122,6 +122,10 @@ Buckets count periods that actually have a backup, so a week with no backups doe
 | `APP_BACKUP_TIMEOUT_MINUTES` | unset | One backup, archive plus upload, is cancelled after this long. |
 | `APP_BACKUP_UPLOAD_ATTEMPTS` | `1` | How many times a failed upload is retried from a fresh archive. |
 | `APP_BACKUP_DRILL_INTERVAL_HOURS` | `168` | Scheduled drill period per resource. `0` disables. |
+| `APP_BACKUP_DRILL_MEMORY_MB` | `1024` | Memory cap for a scratch database container. It also runs with no network. |
+| `APP_BACKUP_DRILL_CPU_MILLI` | `1000` | CPU cap for a scratch container, in thousandths of a core. |
+
+Scratch containers are labelled, and any left by a crash are removed when the control plane starts.
 | `APP_BACKUP_STALE_RUNNING_MINUTES` | `360` | A backup still "running" after this long is settled from the bucket. |
 
 A live volume cannot be re-read from an offset, so a half-uploaded object is aborted and the volume is archived again rather than resumed. If the control plane stops mid-backup, a sweep finishes the row: an object that reached the bucket is checksummed and recorded as succeeded, a missing one is marked failed as interrupted.
