@@ -948,6 +948,8 @@ levelrail-cli domains doctor shop shop.example.com          # prioritised fix li
 levelrail-cli domains doctor shop shop.example.com --json
 ```
 
+Need the fix applied or the exact record? See [Diagnose a domain](/domain-diagnosis).
+
 Each check has a `state` (`pass`, `warn`, `fail`, `skipped`, `unavailable`), a `tier` (1 blocks traffic, 2 blocks the certificate, 3 breaks soon, 4 hygiene) and, when it is not passing, a `fix` with a summary and at most one action (`request` with the API call, `link`, or `copy` with the exact record).
 
 <Accordion title="Every check the doctor runs">

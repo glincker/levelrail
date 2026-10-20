@@ -729,6 +729,8 @@ Per domain settings take `<app> <domain>`, and the domain must already be one of
 levelrail-cli domains list [flags]
 levelrail-cli domains check <app> <domain> [flags]
 levelrail-cli domains doctor <app> <domain> [--json]
+levelrail-cli domains diagnose <domain> [--fix] [--json]
+levelrail-cli domains add <app> <domain>... [--dns auto|off|preview] [--json]
 levelrail-cli domains summary [--json]
 levelrail-cli domains activity <domain> [--limit N] [--before CURSOR] [--actions PREFIXES] [--json]
 levelrail-cli domains certificates [flags]

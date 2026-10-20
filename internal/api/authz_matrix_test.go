@@ -120,6 +120,7 @@ var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/apps/{name}/validate-spec":                     "validates submitted app.yaml, persists nothing",
 	"POST /api/v1/apps/{name}/domains/{domain}/policies/preview": "explains a draft traffic policy, persists nothing",
 	"POST /api/v1/apps/{name}/domains/{domain}/doctor":           "runs read-only diagnostics against this server and public DNS, persists nothing",
+	"POST /api/v1/domains/{domain}/diagnose":                     "same read-only diagnostics addressed by domain, persists nothing",
 	"POST /api/v1/network-shares/{id}/test":                      "reachability dial only, gated by AbilityRead, persists nothing",
 	"DELETE /api/v1/teams/{id}/members/me":                       "self service: removes only the caller's own team membership",
 	"DELETE /api/v1/mobile/devices/{id}":                         "self service: revokes only a phone the caller paired, or any phone for root",

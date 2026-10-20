@@ -292,6 +292,7 @@
       "manage": "Manage on the app",
       "open": "Open {{domain}} in a new tab",
       "dnsRecord": "Show DNS record",
+      "diagnose": "Diagnose",
       "copy": "Copy domain",
       "copied": "Domain copied",
       "recheck": "Re-check DNS",
@@ -879,6 +880,34 @@
     "saving": "Saving...",
     "saved": "Edge settings saved.",
     "loadFailed": "Could not load the edge settings."
+  },
+  "diagnose": {
+    "title": "Diagnose {{domain}}",
+    "description": "Checks DNS, ports, the certificate and the last certificate error, and gives each problem a fix.",
+    "running_one": "Checking... {{count}} result so far",
+    "running_other": "Checking... {{count}} results so far",
+    "status": {
+      "healthy": "Everything checks out.",
+      "warnings": "It works, with things worth fixing.",
+      "problems": "Something is stopping this domain from working."
+    },
+    "propagation": {
+      "settled": "DNS settled",
+      "propagating": "DNS propagating",
+      "waiting": "Waiting for DNS"
+    },
+    "nextCheck": "Checking again in about {{seconds}}s.",
+    "recheck": "Re-check",
+    "tryAgain": "Try again",
+    "applying": "Applying...",
+    "applied": "{{label}}: done. Checking again.",
+    "fixViaCli": "Fix via CLI",
+    "copyRecord": "Copy the {{type}} record for {{name}}",
+    "nothingToFix": "Nothing to fix.",
+    "showPassed": "Show {{count}} other checks",
+    "hidePassed": "Hide other checks",
+    "notFound": "This domain is not attached to an app yet. Add it to an app first, then diagnose it.",
+    "failed": "Could not run the diagnosis: {{message}}"
   },
   "appLimits": {
     "title": "Request size cap",

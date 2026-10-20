@@ -118,8 +118,8 @@ func (rn *run) checkStoredCert(context.Context) Check {
 		if f.Renewal {
 			c.Title = "Certificate renewal is failing"
 		}
-		c.Detail = f.Error
-		c.Fix = acmeFix(f.Action, renew)
+		c.Detail = explainedDetail(f.Error)
+		c.Fix = acmeFix(effectiveACMEAction(f), renew)
 		return c
 	}
 	cert := rn.facts.Cert
@@ -191,6 +191,9 @@ func acmeFix(action string, renew *Action) *Fix {
 		return &Fix{Summary: "Let's Encrypt could not reach port 80. Open port 80 on this server and in any cloud firewall, then renew.", Action: renew}
 	case ACMEActionFixDNS:
 		return &Fix{Summary: "Point the domain's DNS at this server, then renew.", Action: renew}
+	case ACMEActionFixDNSAccess:
+		return &Fix{Summary: "Give the DNS provider token permission to edit DNS (Zone:DNS:Edit for Cloudflare, route53:ChangeResourceRecordSets for Route 53), save it, then renew.",
+			Action: &Action{Kind: ActionLink, Label: "Open DNS provider settings", API: "/domains"}}
 	case ACMEActionFixCAA:
 		return &Fix{Summary: "Allow letsencrypt.org in the domain's CAA records, then renew.", Action: renew}
 	case ACMEActionOtherProxy:
