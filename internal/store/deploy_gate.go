@@ -21,7 +21,11 @@ type DeploySafetySettings struct {
 	WatchErrorRate   *float64
 	WatchMinRequests *int
 	AutoRollback     *bool
-	UpdatedAt        time.Time
+	// WatchMode is off, notify or auto; it wins over AutoRollback.
+	WatchMode         *string
+	WatchLatencyRatio *float64
+	WatchSoftRollback *bool
+	UpdatedAt         time.Time
 }
 
 // GetDeploySafetySettings returns serviceName's overrides, or a value with
@@ -31,14 +35,18 @@ func (db *DB) GetDeploySafetySettings(ctx context.Context, serviceName string) (
 		s                                   = DeploySafetySettings{ServiceName: serviceName}
 		threshold, restarts, minReq, autoRB sql.NullInt64
 		stableMS, drainMS, watchMS          sql.NullInt64
-		errRate                             sql.NullFloat64
+		errRate, latencyRatio               sql.NullFloat64
+		watchMode                           sql.NullString
+		softRB                              sql.NullInt64
 		updatedAt                           string
 	)
 	err := db.QueryRowContext(ctx, `
 		SELECT success_threshold, stable_window_ms, drain_timeout_ms, watch_window_ms,
-		       watch_max_restarts, watch_error_rate, watch_min_requests, auto_rollback, updated_at
+		       watch_max_restarts, watch_error_rate, watch_min_requests, auto_rollback, updated_at,
+		       watch_mode, watch_latency_ratio, watch_soft_rollback
 		FROM deploy_safety_settings WHERE service_name = ?
-	`, serviceName).Scan(&threshold, &stableMS, &drainMS, &watchMS, &restarts, &errRate, &minReq, &autoRB, &updatedAt)
+	`, serviceName).Scan(&threshold, &stableMS, &drainMS, &watchMS, &restarts, &errRate, &minReq, &autoRB, &updatedAt,
+		&watchMode, &latencyRatio, &softRB)
 	if errors.Is(err, sql.ErrNoRows) {
 		return s, nil
 	}
@@ -59,6 +67,18 @@ func (db *DB) GetDeploySafetySettings(ctx context.Context, serviceName string) (
 		v := autoRB.Int64 == 1
 		s.AutoRollback = &v
 	}
+	if watchMode.Valid {
+		v := watchMode.String
+		s.WatchMode = &v
+	}
+	if latencyRatio.Valid {
+		v := latencyRatio.Float64
+		s.WatchLatencyRatio = &v
+	}
+	if softRB.Valid {
+		v := softRB.Int64 == 1
+		s.WatchSoftRollback = &v
+	}
 	s.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)
 	return s, nil
 }
@@ -76,19 +96,36 @@ func (db *DB) SaveDeploySafetySettings(ctx context.Context, s DeploySafetySettin
 	if s.WatchErrorRate != nil {
 		errRate = sql.NullFloat64{Float64: *s.WatchErrorRate, Valid: true}
 	}
+	var softRB sql.NullInt64
+	if s.WatchSoftRollback != nil {
+		softRB = sql.NullInt64{Valid: true}
+		if *s.WatchSoftRollback {
+			softRB.Int64 = 1
+		}
+	}
+	var watchMode sql.NullString
+	if s.WatchMode != nil {
+		watchMode = sql.NullString{String: *s.WatchMode, Valid: true}
+	}
+	var latencyRatio sql.NullFloat64
+	if s.WatchLatencyRatio != nil {
+		latencyRatio = sql.NullFloat64{Float64: *s.WatchLatencyRatio, Valid: true}
+	}
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO deploy_safety_settings (service_name, success_threshold, stable_window_ms, drain_timeout_ms,
-			watch_window_ms, watch_max_restarts, watch_error_rate, watch_min_requests, auto_rollback, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			watch_window_ms, watch_max_restarts, watch_error_rate, watch_min_requests, auto_rollback, updated_at,
+			watch_mode, watch_latency_ratio, watch_soft_rollback)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (service_name) DO UPDATE SET
 			success_threshold = excluded.success_threshold, stable_window_ms = excluded.stable_window_ms,
 			drain_timeout_ms = excluded.drain_timeout_ms, watch_window_ms = excluded.watch_window_ms,
 			watch_max_restarts = excluded.watch_max_restarts, watch_error_rate = excluded.watch_error_rate,
 			watch_min_requests = excluded.watch_min_requests, auto_rollback = excluded.auto_rollback,
-			updated_at = excluded.updated_at
+			updated_at = excluded.updated_at, watch_mode = excluded.watch_mode,
+			watch_latency_ratio = excluded.watch_latency_ratio, watch_soft_rollback = excluded.watch_soft_rollback
 	`, s.ServiceName, intPtrNull(s.SuccessThreshold), msPtrNull(s.StableWindow), msPtrNull(s.DrainTimeout),
 		msPtrNull(s.WatchWindow), intPtrNull(s.WatchMaxRestarts), errRate, intPtrNull(s.WatchMinRequests), autoRB,
-		time.Now().UTC().Format(time.RFC3339Nano))
+		time.Now().UTC().Format(time.RFC3339Nano), watchMode, latencyRatio, softRB)
 	if err != nil {
 		return fmt.Errorf("store: save deploy safety settings for %q: %w", s.ServiceName, err)
 	}

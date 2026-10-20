@@ -77,6 +77,7 @@ var Tree = map[string]*Node{
 		"build-speed":             nil,
 		"build-limits":            {Subs: map[string]*Node{"show": nil, "set": nil, "reset": nil}},
 		"cancel-superseded":       {Subs: map[string]*Node{"enable": nil, "disable": nil, "status": nil}},
+		"watch":                   {Subs: map[string]*Node{"get": nil, "set": nil, "stop": nil}},
 		"deploy-safety":           {Subs: map[string]*Node{"show": nil, "set": nil, "targets": nil}},
 		"promote":                 nil,
 		"network":                 nil,

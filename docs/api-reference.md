@@ -565,6 +565,8 @@ Endpoints for:
 | GET | /api/v1/git/{repo}/info/refs | Public | handleGitInfoRefs |
 | POST | /api/v1/git/{repo}/git-receive-pack | Public | handleGitReceivePack |
 | GET | /api/v1/git/repos | AbilityReadSensitive | handleListGitRepos |
+| GET | /api/v1/apps/{name}/watch | AbilityRead | handleGetAppWatch |
+| POST | /api/v1/apps/{name}/watch/stop | AbilityDeploy | handleStopAppWatch |
 
 </Accordion>
 
