@@ -88,7 +88,7 @@ var tasks = []task{
 	}},
 }
 
-var demoRoutes = map[string]string{
+var demoRoutes = map[string]string{ //nolint:gosec // demo fixture JSON, not a credential
 	"/api/v1/auth/my-access":             `{"kind":"token","abilities":["root"],"policies":[]}`,
 	"/api/v1/auth/whoami":                `{"kind":"token","name":"demo","abilities":["read","root"]}`,
 	"/api/v1/apps":                       `[{"name":"web","image":"nginx:1","port":80,"replicas":1,"strategy":"rolling"}]`,
