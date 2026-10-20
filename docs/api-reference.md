@@ -110,7 +110,7 @@ System endpoints for:
 | GET | /api/v1/updates/restore-points | AbilityRoot | handleRestorePointList |
 | POST | /api/v1/updates/restore-points/{id}/restore | AbilityRoot | handleRestorePointRestore |
 | GET | /api/v1/system/resilience | AbilityRead | handleGetResilience |
-| POST | /api/v1/system/resilience/simulate | AbilityRead | handleSimulateResilience |
+| POST | /api/v1/system/resilience/simulate | AbilityWrite | handleSimulateResilience |
 | POST | /api/v1/system/resilience/snapshot | AbilityRoot | handleResilienceFix |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth

@@ -1507,7 +1507,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/system/prune", Ability: "AbilityRoot", Group: "System", Handler: "handleSystemPrune", Description: "POST /system/prune deletes real Docker resources (stopped containers, dangling images, anonymous volumes, unused build cache) fleet-wide, not scoped to one app: AbilityRoot, the same gate handleDrainNode uses for its own fleet-wide, no-undo action, not AbilityWrite (which a narrower, single-app token could hold)."},
 	{Method: "GET", Path: "/api/v1/system/readiness", Ability: "AbilityRead", Group: "System", Handler: "handleServerReadiness", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/resilience", Ability: "AbilityRead", Group: "System", Handler: "handleGetResilience", Description: "Same checks as the report: list them, stream results as each finishes, re-run one. Fixes apply through POST /api/v1/fixes/{id}/apply (root, audit-logged)."},
-	{Method: "POST", Path: "/api/v1/system/resilience/simulate", Ability: "AbilityRead", Group: "System", Handler: "handleSimulateResilience", Description: ""},
+	{Method: "POST", Path: "/api/v1/system/resilience/simulate", Ability: "AbilityWrite", Group: "System", Handler: "handleSimulateResilience", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/resilience/snapshot", Ability: "AbilityRoot", Group: "System", Handler: "handleResilienceFix", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/restart", Ability: "AbilityRead", Group: "System", Handler: "handleGetSystemRestart", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/restart", Ability: "AbilityRoot", Group: "System", Handler: "handleSystemRestart", Description: "Exiting the process drops every in-flight request and node session, so AbilityRoot."},

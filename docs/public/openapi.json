@@ -112653,7 +112653,7 @@
     },
     "/api/v1/system/resilience/simulate": {
       "post": {
-        "description": "Requires the `read` ability.",
+        "description": "Requires the `write` ability.",
         "operationId": "handleSimulateResilience",
         "requestBody": {
           "content": {
@@ -112719,7 +112719,7 @@
         "security": [
           {
             "bearerAuth": [
-              "read"
+              "write"
             ]
           }
         ],
@@ -112727,7 +112727,7 @@
         "tags": [
           "System"
         ],
-        "x-required-ability": "read"
+        "x-required-ability": "write"
       }
     },
     "/api/v1/system/resilience/snapshot": {
