@@ -5,11 +5,16 @@ CREATE TABLE oauth_provider_settings_new (
     client_id            TEXT,
     allowed_email_domain TEXT,
     issuer_url           TEXT,
-    display_name         TEXT
+    display_name         TEXT,
+    groups_claim         TEXT NOT NULL DEFAULT 'groups',
+    sync_roles           INTEGER NOT NULL DEFAULT 0,
+    default_role_id      TEXT NOT NULL DEFAULT 'role_viewer',
+    jit_provisioning     INTEGER NOT NULL DEFAULT 0,
+    allowed_domains      TEXT NOT NULL DEFAULT '[]'
 );
 
-INSERT INTO oauth_provider_settings_new (provider, enabled, client_id, allowed_email_domain, issuer_url, display_name)
-SELECT provider, enabled, client_id, allowed_email_domain, issuer_url, display_name FROM oauth_provider_settings;
+INSERT INTO oauth_provider_settings_new (provider, enabled, client_id, allowed_email_domain, issuer_url, display_name, groups_claim, sync_roles, default_role_id, jit_provisioning, allowed_domains)
+SELECT provider, enabled, client_id, allowed_email_domain, issuer_url, display_name, groups_claim, sync_roles, default_role_id, jit_provisioning, allowed_domains FROM oauth_provider_settings;
 
 DROP TABLE oauth_provider_settings;
 
