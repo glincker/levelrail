@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
@@ -88,6 +89,8 @@ func (f *fakeGiteaAppSecrets) DeleteAll(_ context.Context, serviceName string) e
 // method's return value set directly on the struct before use, the same
 // convention fakeGitLabAppClient already establishes.
 type fakeGiteaAppClient struct {
+	listCalls      atomic.Int32
+	listResult     gitprovider.ListResult
 	exchangeTokens giteaapp.Tokens
 	exchangeErr    error
 	gotCode        string
@@ -148,8 +151,9 @@ func (f *fakeGiteaAppClient) RefreshToken(_ context.Context, _, _, _, _ string) 
 	return f.refreshTokens, f.refreshErr
 }
 
-func (f *fakeGiteaAppClient) ListRepos(_ context.Context, _, _ string) ([]giteaapp.Repo, error) {
-	return f.repos, f.reposErr
+func (f *fakeGiteaAppClient) ListRepos(_ context.Context, _, _ string, _ gitprovider.ListOptions) ([]giteaapp.Repo, gitprovider.ListResult, error) {
+	f.listCalls.Add(1)
+	return f.repos, f.listResult, f.reposErr
 }
 
 func (f *fakeGiteaAppClient) GetRepo(_ context.Context, _, _, _ string) (giteaapp.Repo, error) {

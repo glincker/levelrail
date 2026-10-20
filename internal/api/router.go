@@ -78,6 +78,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/archive"
 	"github.com/GLINCKER/levelrail/internal/compliance"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
+	"github.com/GLINCKER/levelrail/internal/repolist"
 	"github.com/GLINCKER/levelrail/internal/search"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/sourcecache"
@@ -593,6 +594,7 @@ type Router struct {
 	sec                          *securityState               // always set
 	repoLayoutSource             repoLayoutSourceFunc         // nil uses defaultRepoLayoutSource; tests serve a fake tree
 	gitCommits                   *gitCommitsCache             // brief provider-side cache for the deploy sheet's commits list
+	repoCache                    *repolist.Cache              // always set: per-connection repository list cache behind every git repo picker
 	backupProtection             BackupProtection             // nil is valid: backup health, drill, policy and restore-to routes return 501
 	backupProtectionStore        BackupProtectionStore        // nil is valid, same as backupProtection above
 	cutover                      cutoverService               // in-memory cutover workers, zero value is ready
@@ -996,6 +998,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	if rt.sourceCache == nil {
 		rt.sourceCache = sourcecache.New(sourcecache.ConfigFromEnv(""), logger)
 	}
+	rt.attachRepoCache(s)
 	rt.warmDashboardCaches()
 	// sessions is built after options are applied, not in the struct
 	// literal above, specifically so WithSessionTTL can influence it:

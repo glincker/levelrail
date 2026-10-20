@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
@@ -20,20 +19,9 @@ type bitbucketAppRepoResource struct {
 	WebURL        string `json:"web_url"`
 }
 
-func toBitbucketAppRepoResource(r bitbucketapp.Repo) bitbucketAppRepoResource {
-	return bitbucketAppRepoResource{
-		FullName:      r.FullName,
-		Name:          r.Name,
-		Private:       r.Private,
-		DefaultBranch: r.DefaultBranch,
-		CloneURL:      r.CloneURL,
-		WebURL:        r.WebURL,
-	}
-}
-
 // handleListBitbucketAppRepos handles GET /api/v1/bitbucket-app/repos:
-// every repository the connected account can access, for the
-// frontend's repo picker. AbilityReadSensitive, the same tier
+// every repository the connected account can access, from the shared
+// per-connection cache. AbilityReadSensitive, the same tier
 // handleListGitHubAppRepos/handleListGitLabAppProjects use for the
 // identical reason.
 func (rt *Router) handleListBitbucketAppRepos(w http.ResponseWriter, r *http.Request) {
@@ -41,24 +29,22 @@ func (rt *Router) handleListBitbucketAppRepos(w http.ResponseWriter, r *http.Req
 		writeError(w, http.StatusNotImplemented, errBitbucketMasterKeyRequired)
 		return
 	}
-
-	ctx := r.Context()
-	accessToken, err := rt.bitbucketAccessToken(ctx)
+	accts, err := rt.loadGitRepos(r.Context(), gitProviderBitbucket, isTruthy(r.URL.Query().Get("refresh")))
 	if err != nil {
-		rt.writeBitbucketAppTokenError(w, "api: mint bitbucket access token for repo listing failed", err)
+		rt.writeGitRepoListError(w, gitProviderBitbucket, err)
 		return
 	}
-
-	repos, err := rt.bitbucketAppClient.ListRepos(ctx, accessToken)
-	if err != nil {
-		rt.logger.Error("api: list bitbucket repos failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusBadGateway, "failed to list repositories from bitbucket")
+	flat := flattenRepoAccounts(accts)
+	if flat.Succeeded == 0 && flat.FirstErr != nil {
+		rt.writeGitRepoListError(w, gitProviderBitbucket, flat.FirstErr)
 		return
 	}
-
-	out := make([]bitbucketAppRepoResource, 0, len(repos))
-	for _, repo := range repos {
-		out = append(out, toBitbucketAppRepoResource(repo))
+	out := make([]bitbucketAppRepoResource, 0, len(flat.Repos))
+	for _, repo := range flat.Repos {
+		out = append(out, bitbucketAppRepoResource{
+			FullName: repo.FullName, Name: repo.Name, Private: repo.Private,
+			DefaultBranch: repo.DefaultBranch, CloneURL: repo.CloneURL, WebURL: repo.WebURL,
+		})
 	}
 	writeJSON(w, http.StatusOK, out)
 }

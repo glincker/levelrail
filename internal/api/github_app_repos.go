@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/githubapp"
@@ -151,20 +150,6 @@ type gitHubAppRepoResource struct {
 	PushedAt string `json:"pushed_at,omitempty"`
 }
 
-func toGitHubAppRepoResource(r githubapp.Repo, instanceURL, accountType string) gitHubAppRepoResource {
-	return gitHubAppRepoResource{
-		FullName:      r.FullName,
-		Name:          r.Name,
-		OwnerLogin:    r.OwnerLogin,
-		Private:       r.Private,
-		DefaultBranch: r.DefaultBranch,
-		CloneURL:      instanceURL + "/" + r.FullName + ".git",
-		AccountType:   accountType,
-		Language:      r.Language,
-		PushedAt:      r.PushedAt,
-	}
-}
-
 // gitHubAppRepoListResource is GET /api/v1/github-app/repos's response:
 // repos from every connected installation, plus one error per
 // installation that failed so the frontend can show a per-group error
@@ -181,87 +166,33 @@ type gitHubAppRepoListErrResource struct {
 }
 
 // handleListGitHubAppRepos handles GET /api/v1/github-app/repos: every
-// repository every connected installation can access, for the frontend's
-// repo picker. AbilityReadSensitive, not AbilityRoot: this discloses
-// repo names, not the connection itself. Fans out one call per
-// installation concurrently; a failing installation is captured in
-// Errors rather than failing the other installations' results.
+// repository every connected installation can access, from the shared
+// per-installation cache (see handleListGitRepos for the paged, searchable
+// listing the picker uses). AbilityReadSensitive, not AbilityRoot: this
+// discloses repo names, not the connection itself. A failing installation is
+// captured in Errors rather than failing the others' results.
 func (rt *Router) handleListGitHubAppRepos(w http.ResponseWriter, r *http.Request) {
 	if rt.githubAppSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "the github app connection requires a master key to be configured on this control plane")
 		return
 	}
-
-	ctx := r.Context()
-	installations, err := rt.githubApp.ListGitHubAppInstallations(ctx)
+	accts, err := rt.loadGitRepos(r.Context(), gitProviderGitHub, isTruthy(r.URL.Query().Get("refresh")))
 	if err != nil {
-		rt.logger.Error("api: list github app installations for repo listing failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.writeGitRepoListError(w, gitProviderGitHub, err)
 		return
 	}
-	if len(installations) == 0 {
-		// Legacy fallback: a connection whose single installation_id
-		// predates migrations/0282's backfill condition (shouldn't
-		// happen after that migration runs, kept defensive).
-		instanceURL, token, tokErr := rt.mintGitHubAppInstallationToken(ctx)
-		if tokErr != nil {
-			rt.writeGitHubAppTokenError(w, "api: mint github app installation token for repo listing failed", tokErr)
-			return
-		}
-		repos, listErr := rt.githubAppClient.ListInstallationRepos(ctx, instanceURL, token)
-		if listErr != nil {
-			rt.logger.Error("api: list github app installation repos failed", slog.String("error", listErr.Error()))
-			writeError(w, http.StatusBadGateway, "failed to list repositories from github")
-			return
-		}
-		out := make([]gitHubAppRepoResource, 0, len(repos))
-		for _, repo := range repos {
-			out = append(out, toGitHubAppRepoResource(repo, instanceURL, "organization"))
-		}
-		writeJSON(w, http.StatusOK, gitHubAppRepoListResource{Repos: out})
+	flat := flattenRepoAccounts(accts)
+	if flat.Succeeded == 0 && flat.FirstErr != nil {
+		rt.writeGitRepoListError(w, gitProviderGitHub, flat.FirstErr)
 		return
 	}
-
-	type result struct {
-		accountLogin string
-		accountType  string
-		repos        []gitHubAppRepoResource
-		err          error
-	}
-	results := make([]result, len(installations))
-	var wg sync.WaitGroup
-	for i, inst := range installations {
-		wg.Add(1)
-		go func(i int, inst store.GitHubAppInstallation) {
-			defer wg.Done()
-			instanceURL, token, tokErr := rt.mintGitHubAppInstallationTokenForOwner(ctx, inst.AccountLogin)
-			if tokErr != nil {
-				results[i] = result{accountLogin: inst.AccountLogin, accountType: inst.AccountType, err: tokErr}
-				return
-			}
-			repos, listErr := rt.githubAppClient.ListInstallationRepos(ctx, instanceURL, token)
-			if listErr != nil {
-				results[i] = result{accountLogin: inst.AccountLogin, accountType: inst.AccountType, err: listErr}
-				return
-			}
-			out := make([]gitHubAppRepoResource, 0, len(repos))
-			for _, repo := range repos {
-				out = append(out, toGitHubAppRepoResource(repo, instanceURL, inst.AccountType))
-			}
-			results[i] = result{accountLogin: inst.AccountLogin, accountType: inst.AccountType, repos: out}
-		}(i, inst)
-	}
-	wg.Wait()
-
-	resp := gitHubAppRepoListResource{Repos: []gitHubAppRepoResource{}}
-	for _, res := range results {
-		if res.err != nil {
-			rt.logger.Warn("api: list repos for one github app installation failed",
-				slog.String("account_login", res.accountLogin), slog.String("error", res.err.Error()))
-			resp.Errors = append(resp.Errors, gitHubAppRepoListErrResource{AccountLogin: res.accountLogin, Error: res.err.Error()})
-			continue
-		}
-		resp.Repos = append(resp.Repos, res.repos...)
+	resp := gitHubAppRepoListResource{Repos: make([]gitHubAppRepoResource, 0, len(flat.Repos)), Errors: flat.Errors}
+	for _, repo := range flat.Repos {
+		resp.Repos = append(resp.Repos, gitHubAppRepoResource{
+			FullName: repo.FullName, Name: repo.Name, OwnerLogin: repo.Owner, Private: repo.Private,
+			DefaultBranch: repo.DefaultBranch, CloneURL: repo.CloneURL, AccountType: repo.AccountType,
+			Language: repo.Language, PushedAt: repo.PushedAt,
+		})
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

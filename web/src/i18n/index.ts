@@ -7,6 +7,7 @@ import './resources'
 // New namespace: add here only. lazyBackend loads it on first useTranslation(ns) call.
 export const NAMESPACES = [
   'common',
+  'gitRepos',
   'deploys',
   'settings',
   'dashboard',

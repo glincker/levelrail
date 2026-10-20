@@ -345,6 +345,7 @@ func writeGitHubAppManifestForm(w http.ResponseWriter, instanceURL, owner, state
 // generated (pendingState.consume), rejecting a missing,
 // unknown, expired, or already-used state with a 400, never a panic.
 func (rt *Router) handleGitHubAppCallback(w http.ResponseWriter, r *http.Request) {
+	rt.invalidateGitRepoCache(r.Context(), gitProviderGitHub)
 	if rt.githubAppSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "the github app connection requires a master key to be configured on this control plane")
 		return
@@ -433,6 +434,7 @@ func (rt *Router) handleGitHubAppCallback(w http.ResponseWriter, r *http.Request
 // one; GitHub's redirect itself carries no signature over
 // installation_id that would rule that out on its own.
 func (rt *Router) handleGitHubAppInstalled(w http.ResponseWriter, r *http.Request) {
+	rt.invalidateGitRepoCache(r.Context(), gitProviderGitHub)
 	if rt.githubAppSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "the github app connection requires a master key to be configured on this control plane")
 		return

@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
@@ -20,20 +19,9 @@ type giteaAppRepoResource struct {
 	WebURL        string `json:"web_url"`
 }
 
-func toGiteaAppRepoResource(r giteaapp.Repo) giteaAppRepoResource {
-	return giteaAppRepoResource{
-		FullName:      r.FullName,
-		Name:          r.Name,
-		Private:       r.Private,
-		DefaultBranch: r.DefaultBranch,
-		CloneURL:      r.CloneURL,
-		WebURL:        r.WebURL,
-	}
-}
-
 // handleListGiteaAppRepos handles GET /api/v1/gitea-app/repos: every
-// repository the connected account can access, for the frontend's repo
-// picker. AbilityReadSensitive, the same tier
+// repository the connected account can access, from the shared
+// per-connection cache. AbilityReadSensitive, the same tier
 // handleListGitLabAppProjects/handleListBitbucketAppRepos use for the
 // identical reason.
 func (rt *Router) handleListGiteaAppRepos(w http.ResponseWriter, r *http.Request) {
@@ -41,24 +29,22 @@ func (rt *Router) handleListGiteaAppRepos(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusNotImplemented, errGiteaMasterKeyRequired)
 		return
 	}
-
-	ctx := r.Context()
-	conn, accessToken, err := rt.giteaAccessToken(ctx)
+	accts, err := rt.loadGitRepos(r.Context(), gitProviderGitea, isTruthy(r.URL.Query().Get("refresh")))
 	if err != nil {
-		rt.writeGiteaAppTokenError(w, "api: mint gitea access token for repo listing failed", err)
+		rt.writeGitRepoListError(w, gitProviderGitea, err)
 		return
 	}
-
-	repos, err := rt.giteaAppClient.ListRepos(ctx, conn.InstanceURL, accessToken)
-	if err != nil {
-		rt.logger.Error("api: list gitea repos failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusBadGateway, "failed to list repositories from gitea")
+	flat := flattenRepoAccounts(accts)
+	if flat.Succeeded == 0 && flat.FirstErr != nil {
+		rt.writeGitRepoListError(w, gitProviderGitea, flat.FirstErr)
 		return
 	}
-
-	out := make([]giteaAppRepoResource, 0, len(repos))
-	for _, repo := range repos {
-		out = append(out, toGiteaAppRepoResource(repo))
+	out := make([]giteaAppRepoResource, 0, len(flat.Repos))
+	for _, repo := range flat.Repos {
+		out = append(out, giteaAppRepoResource{
+			FullName: repo.FullName, Name: repo.Name, Private: repo.Private,
+			DefaultBranch: repo.DefaultBranch, CloneURL: repo.CloneURL, WebURL: repo.WebURL,
+		})
 	}
 	writeJSON(w, http.StatusOK, out)
 }

@@ -44,7 +44,7 @@ type GiteaAppSecrets interface {
 type GiteaAppClient interface {
 	ExchangeCode(ctx context.Context, instanceURL, clientID, clientSecret, redirectURI, code string) (giteaapp.Tokens, error)
 	RefreshToken(ctx context.Context, instanceURL, clientID, clientSecret, refreshToken string) (giteaapp.Tokens, error)
-	ListRepos(ctx context.Context, instanceURL, accessToken string) ([]giteaapp.Repo, error)
+	ListRepos(ctx context.Context, instanceURL, accessToken string, opts gitprovider.ListOptions) ([]giteaapp.Repo, gitprovider.ListResult, error)
 	GetRepo(ctx context.Context, instanceURL, accessToken, fullName string) (giteaapp.Repo, error)
 	ListBranches(ctx context.Context, instanceURL, accessToken, fullName string) ([]giteaapp.Branch, error)
 	CreateRepoWebhook(ctx context.Context, instanceURL, accessToken, fullName, hookURL, secret string) error
@@ -129,6 +129,7 @@ type connectGiteaAppRequest struct {
 // separate, real browser navigation, the same two-step "configure, then
 // authorize" shape GitLab App's own connect flow has.
 func (rt *Router) handleConnectGiteaApp(w http.ResponseWriter, r *http.Request) {
+	rt.invalidateGitRepoCache(r.Context(), gitProviderGitea)
 	if rt.giteaAppSecrets == nil {
 		writeError(w, http.StatusNotImplemented, errGiteaMasterKeyRequired)
 		return
@@ -187,6 +188,7 @@ func (rt *Router) handleConnectGiteaApp(w http.ResponseWriter, r *http.Request) 
 // there, the same local-only "stop trusting this connection" scope
 // handleDisconnectGitLabApp's own doc comment documents.
 func (rt *Router) handleDisconnectGiteaApp(w http.ResponseWriter, r *http.Request) {
+	rt.invalidateGitRepoCache(r.Context(), gitProviderGitea)
 	ctx := r.Context()
 	err := rt.giteaApp.DeleteGiteaAppConnection(ctx)
 	if errors.Is(err, store.ErrGiteaAppConnectionNotFound) {

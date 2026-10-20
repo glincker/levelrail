@@ -1754,6 +1754,7 @@ levelrail-cli settings ai-assistant get|set|clear [flags]
 ```
 levelrail-cli git-providers [list] [flags]
 levelrail-cli git-providers validate <github|gitlab|gitea|bitbucket> [flags]
+levelrail-cli git-providers repos <github|gitlab|gitea|bitbucket> [--search Q] [--owner O] [--archived MODE] [--forks MODE] [--limit N] [--offset N] [--all] [--refresh] [flags]
 levelrail-cli github-app status|disconnect|repos [flags]
 levelrail-cli github-app branches <owner> <repo> [flags]
 levelrail-cli github-app use-as-source <owner> <repo> --app-name NAME [flags]
@@ -1772,6 +1773,7 @@ levelrail-cli gitea-app use-as-source <owner> <repo> --app-name NAME [flags]
 ```
 
 - `git-providers` shows connection status and capabilities (list branches, register a webhook, authenticated clone) for GitHub, GitLab, Bitbucket and Gitea in one call.
+- `git-providers repos` lists every repository a provider connection can see from the control plane's cached list, with server-side search, owner, archived and fork filters. `--all` pages through every match, `--refresh` re-lists from the provider first.
 - Connecting a provider is dashboard only, because it is a browser redirect through the provider's own OAuth or manifest flow. Once connected, these commands browse its repos and branches, connect one as an app's git source with `use-as-source`, or check and forget the connection.
 - `disconnect` forgets the stored connection locally; it does not uninstall the App or revoke the token on the provider's side.
 - `github-app register-url` prints the dashboard link that starts GitHub App registration, for your personal account or, with `--owner`, an organization. `--public` lets other accounts and organizations install the App. It makes no request; open the link in a signed-in browser.

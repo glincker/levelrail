@@ -1,0 +1,46 @@
+{
+  "picker": {
+    "repositories": {
+      "searchPlaceholder": "Search repositories...",
+      "empty": "No repositories found.",
+      "noMatch": "No repositories match \"{{search}}\".",
+      "loadFailed": "Could not list repositories."
+    },
+    "projects": {
+      "searchPlaceholder": "Search projects...",
+      "empty": "No projects found.",
+      "noMatch": "No projects match \"{{search}}\".",
+      "loadFailed": "Could not list projects."
+    },
+    "refresh": "Refresh",
+    "refreshing": "Refreshing",
+    "refreshHint": "List the repositories again from the provider instead of using the saved list.",
+    "filters": {
+      "label": "Filters",
+      "allOwners": "All owners",
+      "hideArchived": "Hide archived",
+      "hideForks": "Hide forks"
+    },
+    "status": {
+      "showing": "Showing {{shown}} of {{total}}.",
+      "searchToNarrow": "Search or pick an owner to narrow the list.",
+      "loadedOf": "{{loaded}} loaded in total.",
+      "updated": "Updated {{time}}.",
+      "stale": "Saved list, refreshing in the background.",
+      "truncated": "This account has more than the {{cap}} repositories listed here. Search only covers the first {{cap}}; paste a repository URL to use one beyond that.",
+      "rateLimited": "The provider is rate limiting this control plane, so this is the saved list. Checking again after {{time}}.",
+      "rateLimitedEmpty": "The provider is rate limiting this control plane and there is no saved list yet. Try again after {{time}}.",
+      "rateLimitedNoTime": "The provider is rate limiting this control plane. Try again in a minute."
+    },
+    "loadMore": "Show more",
+    "loadingMore": "Loading",
+    "accountError": "Could not list {{account}}: {{error}}",
+    "badges": {
+      "archived": "Archived",
+      "fork": "Fork",
+      "private": "Private repository",
+      "running": "Running as {{name}}"
+    },
+    "retry": "Try again"
+  }
+}

@@ -60,6 +60,7 @@ func (rt *Router) handleStartBitbucketAppConnect(w http.ResponseWriter, r *http.
 
 // handleBitbucketAppCallback completes the OAuth2 flow from the returned code and state.
 func (rt *Router) handleBitbucketAppCallback(w http.ResponseWriter, r *http.Request) {
+	rt.invalidateGitRepoCache(r.Context(), gitProviderBitbucket)
 	if rt.bitbucketAppSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "the bitbucket app connection requires a master key to be configured on this control plane")
 		return

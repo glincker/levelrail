@@ -145,6 +145,8 @@ type Repo struct {
 	DefaultBranch string
 	CloneURL      string
 	WebURL        string
+	Archived      bool
+	Fork          bool
 }
 
 type repoResponse struct {
@@ -154,6 +156,8 @@ type repoResponse struct {
 	DefaultBranch string `json:"default_branch"`
 	CloneURL      string `json:"clone_url"`
 	HTMLURL       string `json:"html_url"`
+	Archived      bool   `json:"archived"`
+	Fork          bool   `json:"fork"`
 }
 
 func toRepo(r repoResponse) Repo {
@@ -164,6 +168,8 @@ func toRepo(r repoResponse) Repo {
 		DefaultBranch: r.DefaultBranch,
 		CloneURL:      r.CloneURL,
 		WebURL:        r.HTMLURL,
+		Archived:      r.Archived,
+		Fork:          r.Fork,
 	}
 }
 
@@ -175,15 +181,22 @@ const (
 	listPageCap = 20
 )
 
-// ListRepos lists every repository the token's account owns or is a
-// collaborator on, across as many pages as Gitea returns full pages for.
-func (c *Client) ListRepos(ctx context.Context, instanceURL, accessToken string) ([]Repo, error) {
-	var out []Repo
-	for page := 1; page <= listPageCap; page++ {
+// ListRepos lists repositories the token's account owns or collaborates
+// on, page by page until Gitea runs out or the MaxItems cap is reached.
+func (c *Client) ListRepos(ctx context.Context, instanceURL, accessToken string, opts gitprovider.ListOptions) ([]Repo, gitprovider.ListResult, error) {
+	var (
+		out []Repo
+		res gitprovider.ListResult
+	)
+	for page := 1; ; page++ {
 		var resp []repoResponse
 		u := fmt.Sprintf("%s/user/repos?limit=%d&page=%d", apiBaseURL(instanceURL), listPerPage, page)
-		if err := c.do(ctx, http.MethodGet, u, "Bearer "+accessToken, nil, &resp); err != nil {
-			return nil, err
+		err := gitprovider.WithRetry(ctx, opts.Retry, "gitea", func() error {
+			resp = nil
+			return c.do(ctx, http.MethodGet, u, "Bearer "+accessToken, nil, &resp)
+		})
+		if err != nil {
+			return nil, gitprovider.ListResult{}, err
 		}
 		for _, r := range resp {
 			out = append(out, toRepo(r))
@@ -191,8 +204,12 @@ func (c *Client) ListRepos(ctx context.Context, instanceURL, accessToken string)
 		if len(resp) < listPerPage {
 			break
 		}
+		if opts.Reached(len(out)) {
+			res.Truncated = true
+			break
+		}
 	}
-	return out, nil
+	return out, res, nil
 }
 
 // GetRepo looks up a single repository by its "owner/repo" full name.

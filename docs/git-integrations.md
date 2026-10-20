@@ -104,6 +104,31 @@ Register an OAuth2 application in Gitea, then paste its `instance_url`, `client_
 
 To disconnect, call `DELETE /api/v1/github-app` (or `/gitlab-app`, `/bitbucket-app`, `/gitea-app`) removes the connection and its secrets from the control plane only. It does not revoke the token or delete the App on the provider's side. Remove it there yourself, for example from `github.com/settings/apps`.
 
+## Listing repositories
+
+The repository picker, `GET /api/v1/git/repos` and `levelrail-cli git-providers repos <provider>` all read one cached list per connection. Nothing is cut off at a fixed page count: the control plane pages through the provider until it runs out, up to `APP_GIT_REPO_LIST_MAX` repositories per connection (default `10000`). If an account has more than that, the response says `truncated: true` and the picker says so; paste a repository URL for one beyond the cap.
+
+Search, owner, archived and fork filters and paging are applied on the server, so a large account never reaches the browser in one response.
+
+| Parameter | Meaning |
+| --- | --- |
+| `provider` | `github`, `gitlab`, `bitbucket` or `gitea`. |
+| `search` | Words that must all appear in the `owner/name` path. |
+| `owner` | One owner or organization. |
+| `archived`, `forks` | `include` (default), `exclude` or `only`. |
+| `limit`, `offset` | Page size (default 100, at most 500) and start. `next_offset` in the response is the following page. |
+| `refresh=1` | Re-list from the provider now. Throttled to once per `APP_GIT_REPO_REFRESH_MIN` per connection. |
+
+A list is served from the cache for `APP_GIT_REPO_CACHE_TTL` (default `5m`). After that it is still served for up to `APP_GIT_REPO_CACHE_STALE_MAX` (default `24h`) while one background refresh runs, and concurrent requests share a single provider call. GitHub pages are revalidated with ETags, so an unchanged page costs no rate limit budget. Disconnecting a provider, changing its connection or removing a GitHub installation drops its cached list. The dashboard picker has a Refresh button; the CLI has `--refresh`.
+
+When a provider answers 429 or a secondary rate limit, the control plane waits for a short `Retry-After` (at most `APP_GIT_RATE_LIMIT_MAX_WAIT`, default `5s`, up to `APP_GIT_RATE_LIMIT_RETRIES` times, default `2`). A longer wait is not slept on: a saved list is served with a `rate_limit.next_check_at` notice, or, with nothing saved yet, the call returns `429` with a `Retry-After` header and the next check time. `APP_GIT_RATE_LIMIT_BACKOFF` (default `60s`) is the assumed wait when the provider sends no `Retry-After`.
+
+```bash
+levelrail-cli git-providers repos github --search api --archived exclude
+levelrail-cli git-providers repos gitlab --owner platform --all
+levelrail-cli git-providers repos gitea --refresh
+```
+
 ## Use a repository as an app's source
 
 Once a provider is connected, the CLI can list repositories and branches and connect a repository to an app. `use-as-source` also registers the webhook in the same call.
@@ -548,6 +573,7 @@ The TTL sweep covers a pull-request-closed delivery that never arrived. A backgr
 | Method | Path | Ability |
 | --- | --- | --- |
 | `GET` | `/api/v1/git-providers` | `read:sensitive` |
+| `GET` | `/api/v1/git/repos` | `read:sensitive` |
 | `GET`, `DELETE` | `/api/v1/github-app` | `root` |
 | `PUT` | `/api/v1/github-app/manual` | `root` |
 | `GET` | `/api/v1/github-app/register/preview`, `/register/start`, `/callback`, `/installed` | `root` |

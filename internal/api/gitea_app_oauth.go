@@ -70,6 +70,7 @@ func (rt *Router) handleStartGiteaAppConnect(w http.ResponseWriter, r *http.Requ
 // carrying ?code=...&state=.... Mirrors handleGitLabAppCallback's own
 // state/code validation and "never log a credential value" rule.
 func (rt *Router) handleGiteaAppCallback(w http.ResponseWriter, r *http.Request) {
+	rt.invalidateGitRepoCache(r.Context(), gitProviderGitea)
 	if rt.giteaAppSecrets == nil {
 		writeError(w, http.StatusNotImplemented, errGiteaMasterKeyRequired)
 		return

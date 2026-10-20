@@ -149,6 +149,8 @@ type Project struct {
 	DefaultBranch     string
 	Visibility        string
 	WebURL            string
+	Archived          bool
+	Fork              bool
 }
 
 type projectResponse struct {
@@ -159,10 +161,18 @@ type projectResponse struct {
 	DefaultBranch     string `json:"default_branch"`
 	Visibility        string `json:"visibility"`
 	WebURL            string `json:"web_url"`
+	Archived          bool   `json:"archived"`
+	ForkedFrom        *struct {
+		ID int64 `json:"id"`
+	} `json:"forked_from_project"`
 }
 
 func toProject(r projectResponse) Project {
-	return Project(r)
+	return Project{
+		ID: r.ID, Name: r.Name, PathWithNamespace: r.PathWithNamespace, HTTPURLToRepo: r.HTTPURLToRepo,
+		DefaultBranch: r.DefaultBranch, Visibility: r.Visibility, WebURL: r.WebURL,
+		Archived: r.Archived, Fork: r.ForkedFrom != nil,
+	}
 }
 
 // listPerPage and listPageCap mirror internal/githubapp.Client's own
@@ -172,16 +182,23 @@ const (
 	listPageCap = 20
 )
 
-// ListProjects lists every project the token's account is at least a
-// member of, across as many pages as GitLab returns full pages for.
-func (c *Client) ListProjects(ctx context.Context, instanceURL, accessToken string) ([]Project, error) {
-	var out []Project
-	for page := 1; page <= listPageCap; page++ {
+// ListProjects lists projects the token's account is at least a member
+// of, page by page until GitLab runs out or the MaxItems cap is reached.
+func (c *Client) ListProjects(ctx context.Context, instanceURL, accessToken string, opts gitprovider.ListOptions) ([]Project, gitprovider.ListResult, error) {
+	var (
+		out []Project
+		res gitprovider.ListResult
+	)
+	for page := 1; ; page++ {
 		var resp []projectResponse
-		u := fmt.Sprintf("%s/projects?membership=true&simple=true&order_by=last_activity_at&per_page=%d&page=%d",
+		u := fmt.Sprintf("%s/projects?membership=true&order_by=last_activity_at&per_page=%d&page=%d",
 			apiBaseURL(instanceURL), listPerPage, page)
-		if err := c.do(ctx, http.MethodGet, u, "Bearer "+accessToken, nil, &resp); err != nil {
-			return nil, err
+		err := gitprovider.WithRetry(ctx, opts.Retry, "gitlab", func() error {
+			resp = nil
+			return c.do(ctx, http.MethodGet, u, "Bearer "+accessToken, nil, &resp)
+		})
+		if err != nil {
+			return nil, gitprovider.ListResult{}, err
 		}
 		for _, p := range resp {
 			out = append(out, toProject(p))
@@ -189,8 +206,12 @@ func (c *Client) ListProjects(ctx context.Context, instanceURL, accessToken stri
 		if len(resp) < listPerPage {
 			break
 		}
+		if opts.Reached(len(out)) {
+			res.Truncated = true
+			break
+		}
 	}
-	return out, nil
+	return out, res, nil
 }
 
 // GetProject looks up a single project by ID.

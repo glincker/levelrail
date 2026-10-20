@@ -1,0 +1,202 @@
+package api
+
+import (
+	"errors"
+	"log/slog"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
+	"github.com/GLINCKER/levelrail/internal/repolist"
+)
+
+// gitRepoRateLimitResource tells the picker when listing may work again.
+type gitRepoRateLimitResource struct {
+	NextCheckAt       time.Time `json:"next_check_at"`
+	RetryAfterSeconds int       `json:"retry_after_seconds"`
+}
+
+// gitRepoListResource is GET /api/v1/git/repos: one filtered page of a
+// provider's repositories plus how complete and fresh the underlying list is.
+type gitRepoListResource struct {
+	Provider string          `json:"provider"`
+	Items    []repolist.Repo `json:"items"`
+	// Total counts matches for the current filters; Loaded counts every
+	// repository known before filtering.
+	Total      int  `json:"total"`
+	Loaded     int  `json:"loaded"`
+	Limit      int  `json:"limit"`
+	Offset     int  `json:"offset"`
+	NextOffset *int `json:"next_offset"`
+	HasMore    bool `json:"has_more"`
+	// Truncated is true when the account has more repositories than the
+	// cache cap (Cap), so some can only be reached by pasting a URL.
+	Truncated  bool                           `json:"truncated"`
+	Cap        int                            `json:"cap"`
+	CachedAt   time.Time                      `json:"cached_at"`
+	Stale      bool                           `json:"stale"`
+	Refreshing bool                           `json:"refreshing"`
+	Owners     []repolist.OwnerCount          `json:"owners"`
+	Errors     []gitHubAppRepoListErrResource `json:"errors,omitempty"`
+	RateLimit  *gitRepoRateLimitResource      `json:"rate_limit,omitempty"`
+}
+
+// gitRepoRateLimitedError is the 429 body: the provider's rate limit with a
+// concrete next-check time, instead of a generic failure.
+type gitRepoRateLimitedError struct {
+	Error             string    `json:"error"`
+	Code              string    `json:"code"`
+	NextCheckAt       time.Time `json:"next_check_at"`
+	RetryAfterSeconds int       `json:"retry_after_seconds"`
+}
+
+const codeRateLimited = "rate_limited"
+
+func writeGitRateLimited(w http.ResponseWriter, provider string, rl *gitprovider.RateLimitError) {
+	secs := max(int(time.Until(rl.NextCheck).Seconds())+1, 1)
+	w.Header().Set("Retry-After", strconv.Itoa(secs))
+	writeJSON(w, http.StatusTooManyRequests, gitRepoRateLimitedError{
+		Error:             provider + " is rate limiting this control plane; the list will load again after the next check time",
+		Code:              codeRateLimited,
+		NextCheckAt:       rl.NextCheck.UTC(),
+		RetryAfterSeconds: secs,
+	})
+}
+
+func (rt *Router) gitProviderSecretsMissing(provider string) (string, bool) {
+	switch provider {
+	case gitProviderGitHub:
+		return "the github app connection requires a master key to be configured on this control plane", rt.githubAppSecrets == nil
+	case gitProviderGitLab:
+		return "the gitlab app connection requires a master key to be configured on this control plane", rt.gitlabAppSecrets == nil
+	case gitProviderBitbucket:
+		return errBitbucketMasterKeyRequired, rt.bitbucketAppSecrets == nil
+	case gitProviderGitea:
+		return errGiteaMasterKeyRequired, rt.giteaAppSecrets == nil
+	}
+	return "", false
+}
+
+// writeGitRepoListError maps a failed listing to a response: connection
+// problems to their provider's own 409s, a rate limit to a typed 429, and
+// anything else to a 502.
+func (rt *Router) writeGitRepoListError(w http.ResponseWriter, provider string, err error) {
+	var conn *repoListConnError
+	if errors.As(err, &conn) {
+		logMsg := "api: git repo list connection check failed for " + provider
+		switch provider {
+		case gitProviderGitHub:
+			rt.writeGitHubAppTokenError(w, logMsg, conn.err)
+		case gitProviderGitLab:
+			rt.writeGitLabAppTokenError(w, logMsg, conn.err)
+		case gitProviderBitbucket:
+			rt.writeBitbucketAppTokenError(w, logMsg, conn.err)
+		default:
+			rt.writeGiteaAppTokenError(w, logMsg, conn.err)
+		}
+		return
+	}
+	if rl, ok := gitprovider.AsRateLimit(err); ok {
+		writeGitRateLimited(w, provider, rl)
+		return
+	}
+	rt.logger.Error("api: list git repos failed", slog.String("provider", provider), slog.String("error", err.Error()))
+	writeError(w, http.StatusBadGateway, "failed to list repositories from "+provider)
+}
+
+// flatRepoList merges per-source results into one list plus freshness facts.
+type flatRepoList struct {
+	Repos      []repolist.Repo
+	Errors     []gitHubAppRepoListErrResource
+	Truncated  bool
+	Stale      bool
+	Refreshing bool
+	CachedAt   time.Time
+	RateLimit  *gitprovider.RateLimitError
+	FirstErr   error
+	Succeeded  int
+}
+
+func flattenRepoAccounts(accts []repoListAccount) flatRepoList {
+	var f flatRepoList
+	for _, a := range accts {
+		if a.Err != nil {
+			f.Errors = append(f.Errors, gitHubAppRepoListErrResource{AccountLogin: a.Account, Error: a.Err.Error()})
+			if f.FirstErr == nil {
+				f.FirstErr = a.Err
+			}
+			continue
+		}
+		f.Succeeded++
+		f.Repos = append(f.Repos, a.Result.Repos...)
+		f.Truncated = f.Truncated || a.Result.Truncated
+		f.Stale = f.Stale || a.Result.Stale
+		f.Refreshing = f.Refreshing || a.Result.Refreshing
+		if f.CachedAt.IsZero() || a.Result.FetchedAt.Before(f.CachedAt) {
+			f.CachedAt = a.Result.FetchedAt
+		}
+		if rl := a.Result.RateLimit; rl != nil && (f.RateLimit == nil || rl.NextCheck.After(f.RateLimit.NextCheck)) {
+			f.RateLimit = rl
+		}
+	}
+	return f
+}
+
+func parseRepoQuery(r *http.Request) repolist.Query {
+	q := r.URL.Query()
+	limit, _ := strconv.Atoi(q.Get("limit"))
+	offset, _ := strconv.Atoi(q.Get("offset"))
+	return repolist.Query{
+		Search: q.Get("search"), Owner: q.Get("owner"),
+		Archived: repolist.ParseMode(q.Get("archived")), Forks: repolist.ParseMode(q.Get("forks")),
+		Limit: limit, Offset: offset,
+	}
+}
+
+func isTruthy(v string) bool { return v == "1" || v == "true" }
+
+// handleListGitRepos handles GET /api/v1/git/repos: one provider's
+// repositories, searched, filtered and paged on the server from a
+// per-connection cache. AbilityReadSensitive, like the per-provider listings.
+func (rt *Router) handleListGitRepos(w http.ResponseWriter, r *http.Request) {
+	provider := r.URL.Query().Get("provider")
+	switch provider {
+	case gitProviderGitHub, gitProviderGitLab, gitProviderBitbucket, gitProviderGitea:
+	default:
+		writeError(w, http.StatusBadRequest, "provider must be one of github, gitlab, bitbucket, gitea")
+		return
+	}
+	if msg, missing := rt.gitProviderSecretsMissing(provider); missing {
+		writeError(w, http.StatusNotImplemented, msg)
+		return
+	}
+
+	accts, err := rt.loadGitRepos(r.Context(), provider, isTruthy(r.URL.Query().Get("refresh")))
+	if err != nil {
+		rt.writeGitRepoListError(w, provider, err)
+		return
+	}
+	flat := flattenRepoAccounts(accts)
+	if flat.Succeeded == 0 && flat.FirstErr != nil {
+		rt.writeGitRepoListError(w, provider, flat.FirstErr)
+		return
+	}
+
+	page := repolist.Apply(flat.Repos, parseRepoQuery(r))
+	res := gitRepoListResource{
+		Provider: provider, Items: page.Items, Total: page.Total, Loaded: len(flat.Repos),
+		Limit: page.Limit, Offset: page.Offset, HasMore: page.NextOffset >= 0,
+		Truncated: flat.Truncated, Cap: rt.repoCache.Config().MaxItems,
+		CachedAt: flat.CachedAt.UTC(), Stale: flat.Stale, Refreshing: flat.Refreshing,
+		Owners: page.Owners, Errors: flat.Errors,
+	}
+	if page.NextOffset >= 0 {
+		next := page.NextOffset
+		res.NextOffset = &next
+	}
+	if rl := flat.RateLimit; rl != nil {
+		res.RateLimit = &gitRepoRateLimitResource{NextCheckAt: rl.NextCheck.UTC(), RetryAfterSeconds: max(int(time.Until(rl.NextCheck).Seconds())+1, 1)}
+	}
+	writeJSON(w, http.StatusOK, res)
+}

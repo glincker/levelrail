@@ -72,6 +72,7 @@ func (rt *Router) handleStartGitLabAppConnect(w http.ResponseWriter, r *http.Req
 // handleGitHubAppCallback's own state/code validation and "never log a
 // credential value" rule.
 func (rt *Router) handleGitLabAppCallback(w http.ResponseWriter, r *http.Request) {
+	rt.invalidateGitRepoCache(r.Context(), gitProviderGitLab)
 	if rt.gitlabAppSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "the gitlab app connection requires a master key to be configured on this control plane")
 		return
