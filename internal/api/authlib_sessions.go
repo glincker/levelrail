@@ -12,7 +12,6 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
-	"golang.org/x/crypto/bcrypt"
 )
 
 const libMailTimeout = 30 * time.Second
@@ -170,7 +169,7 @@ func (rt *Router) establishLibSession(w http.ResponseWriter, r *http.Request, us
 // The library refuses plain usernames, so those are created by the platform store behind the same setup token.
 func (rt *Router) libRegister(w http.ResponseWriter, r *http.Request, req registerRequest) {
 	ctx := r.Context()
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	hash, err := hashPassword(req.Password)
 	if err != nil {
 		rt.internalError(w, "api: register: hash password failed", err)
 		return
@@ -298,7 +297,7 @@ func (rt *Router) resetLibPassword(w http.ResponseWriter, r *http.Request, req r
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	hash, err := hashPassword(req.NewPassword)
 	if err != nil {
 		rt.internalError(w, "api: reset password: hash new password failed", err)
 		return

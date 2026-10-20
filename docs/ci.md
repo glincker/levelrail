@@ -472,6 +472,12 @@ pre-push bounds every `go test` it runs with `-timeout`, default `30m`,
 overridable with `LEVELRAIL_PUSH_TEST_TIMEOUT`. The default `go test`
 timeout of 10 minutes is shorter than a whole internal/api run.
 
+`scripts/test-fast.sh` runs `go test -short` for internal/api in up to 6
+shards from one binary, with CI's weights and quarantine skips (`-r REGEX`
+narrows tests). pre-push uses it. Failures print test names and keep the
+shard logs. Test builds hash passwords at bcrypt's minimum cost: over 10
+minutes serial became about 3.
+
 ## Expected effect of the lane changes
 
 Estimates from the artifacts of three recent runs, to be compared with the table

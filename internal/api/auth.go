@@ -15,7 +15,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/tokenhash"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // sessionCookieName is deliberately generic, not a brand-derived string:
@@ -738,7 +737,7 @@ func BootstrapAdmin(ctx context.Context, s AuthStore, username, password string)
 		return fmt.Errorf("api: bootstrap admin: no user account exists and no username/password were provided")
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hash, err := hashPassword(password)
 	if err != nil {
 		return fmt.Errorf("api: bootstrap admin: hash password: %w", err)
 	}
