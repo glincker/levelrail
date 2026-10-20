@@ -73,6 +73,18 @@ The script:
 
 Pass `--profile minimal|standard|suite` to choose how much starts (default `standard`); see [Server profiles](/profiles).
 
+<Accordion title="If the install fails">
+
+| Message | What to do |
+| --- | --- |
+| `control plane did not become healthy within 60s` | `systemctl status levelrail` and `journalctl -u levelrail -n 100 --no-pager`. Raise the wait with `LEVELRAIL_HEALTH_WAIT` if the first start is slow on a small server. |
+| `N preflight check(s) failed. Fix them, or re-run with --force to continue anyway.` | Fix each row marked `fail`, or re-run with `--force`. |
+| `could not list releases from GitHub. Set LEVELRAIL_VERSION=vX.Y.Z to pin one.` | Check outbound HTTPS from the server, or pin a release. |
+| `download failed: ...` | The release may not ship a binary for your architecture. Pin another release with `LEVELRAIL_VERSION`. |
+| `checksum mismatch for ...` | Run the installer again. Do not skip verification to get past this. |
+
+</Accordion>
+
 <Note>
 A missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECKSUM=1`. The installer picks the newest stable release; choose explicitly with `LEVELRAIL_CHANNEL=stable|beta`. A release with no binary for your architecture is skipped with a warning. Some providers never route a server's own public IP back to itself, so treat a failed reachability test as a hint, not proof.
 </Note>

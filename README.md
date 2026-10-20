@@ -36,21 +36,63 @@ One Go binary &middot; Docker runtime &middot; agents instead of SSH &middot; ob
 
 Levelrail is an open source (Apache 2.0) **self-hosted PaaS**: a Vercel and Heroku alternative that runs on any Linux server you own, from a $5 VPS to a rack. It turns plain servers into a private cloud with Git deploys, automatic HTTPS, databases with verified backups, metrics, logs and alerts, without Kubernetes and without the monitoring stack you would otherwise bolt on.
 
-## Install in one command
+## Quickstart
 
-Needs a Linux server (`amd64` or `arm64`) with systemd and root. Docker is installed for you if it is missing.
+You need a Linux server (`amd64` or `arm64`) with systemd and root. The installer adds Docker if it is missing.
+
+### 1. Install the server
 
 ```bash
 curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
-Open the URL it prints, pick a password, and deploy your first app from the setup wizard or the CLI:
+The last lines of output include the dashboard address and a one-time setup link:
+
+```text
+Levelrail vX.Y.Z installed and running.
+
+Open the dashboard:
+  http://203.0.113.10:8080/login?setup=<token>
+```
+
+### 2. Create the admin account
+
+Open the setup link, choose a password, and follow the setup wizard. Its HTTPS step turns on a free certificate for `<dashed-ip>.sslip.io` with one click, so no DNS is needed.
+
+### 3. Deploy an app
+
+On the server, the installer already put `levelrail-cli` in `/usr/local/bin`. Sign in once, then import a repository:
 
 ```bash
+levelrail-cli login --device
 levelrail-cli import https://github.com/your-org/your-app --deploy
 ```
 
 Prefer containers, a pinned version or a source build? See [Installing](docs/installing.md). Want it as light as Dokku, or everything on? `install.sh --profile minimal|standard|suite`, see [Server profiles](docs/profiles.md). Coming from another platform? See [Migrate to Levelrail](docs/migrate-to-levelrail.md): Coolify, Dokploy, CapRover, Dokku and compose files each get a dry run first, and the old server keeps serving.
+
+`login --device` prints an approval link and a short code. Open the link in your browser, check that the code matches, and approve. The CLI then saves a token:
+
+```text
+To finish logging in, open:
+  <approval link>
+and confirm this code matches: ABCD-EFGH
+...
+device login approved
+```
+
+Without `--deploy`, `import` only prints the deployment plan. To see the app's address, run `levelrail-cli open your-app`. It prints the custom domain first, then the automatic URL.
+
+### If something fails
+
+| Step | Error you see | Fix |
+| --- | --- | --- |
+| Install | `control plane did not become healthy within 60s` | `systemctl status levelrail` and `journalctl -u levelrail -n 100 --no-pager`. A port already in use is a common cause. |
+| Install | `could not list releases from GitHub. Set LEVELRAIL_VERSION=vX.Y.Z to pin one.` | The server cannot reach GitHub. Check outbound HTTPS, or pin a release. |
+| Install | `checksum mismatch for ...` | Do not continue. Run the installer again. Do not set `LEVELRAIL_SKIP_CHECKSUM=1` to get past it. |
+| Login | `start device login: ... connection refused` | The CLI points at the wrong address. Run `export APP_API_URL=http://127.0.0.1:<dashboard port>` and try again. |
+| Import | `plan import: ... connection refused` | The control plane is not running. Start it with `systemctl start levelrail`. |
+
+More fixes: [Troubleshooting](docs/troubleshooting.md). Full install options (Docker image, pinned version, source build): [Installing](docs/installing.md). Deploy from a local project with `levelrail-cli up`: [One command quickstart](docs/quickstart-one-command.md). Server profiles (`install.sh --profile minimal|standard|suite`): [Server profiles](docs/profiles.md). Migrating from another platform? `levelrail-cli import platform coolify|dokploy|caprover --dry-run` shows what would be created first, and the old server keeps serving. Full guide: [Migrate to Levelrail](docs/migrate-to-levelrail.md).
 
 <table>
   <tr>
