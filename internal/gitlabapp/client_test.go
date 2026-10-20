@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
@@ -103,7 +104,7 @@ func TestClient_ListProjects_Paginates(t *testing.T) {
 	defer srv.Close()
 
 	c := &Client{HTTP: srv.Client()}
-	got, err := c.ListProjects(context.Background(), srv.URL, "at-1")
+	got, _, err := c.ListProjects(context.Background(), srv.URL, "at-1", gitprovider.ListOptions{})
 	if err != nil {
 		t.Fatalf("ListProjects() error = %v", err)
 	}

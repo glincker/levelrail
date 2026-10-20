@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
@@ -89,6 +90,8 @@ func (f *fakeGitLabAppSecrets) DeleteAll(_ context.Context, serviceName string) 
 // method's return value set directly on the struct before use, the same
 // convention fakeGitHubAppClient already establishes.
 type fakeGitLabAppClient struct {
+	listCalls      atomic.Int32
+	listResult     gitprovider.ListResult
 	exchangeTokens gitlabapp.Tokens
 	exchangeErr    error
 	gotCode        string
@@ -148,8 +151,9 @@ func (f *fakeGitLabAppClient) RefreshToken(_ context.Context, _, _, _, _ string)
 	return f.refreshTokens, f.refreshErr
 }
 
-func (f *fakeGitLabAppClient) ListProjects(_ context.Context, _, _ string) ([]gitlabapp.Project, error) {
-	return f.projects, f.projectsErr
+func (f *fakeGitLabAppClient) ListProjects(_ context.Context, _, _ string, _ gitprovider.ListOptions) ([]gitlabapp.Project, gitprovider.ListResult, error) {
+	f.listCalls.Add(1)
+	return f.projects, f.listResult, f.projectsErr
 }
 
 func (f *fakeGitLabAppClient) GetProject(_ context.Context, _, _ string, _ int64) (gitlabapp.Project, error) {

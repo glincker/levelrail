@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
 )
 
 func TestClient_ExchangeCode_UsesBasicAuth(t *testing.T) {
@@ -89,7 +91,7 @@ func TestClient_ListRepos_FollowsCursorPagination(t *testing.T) {
 	})
 
 	c := &Client{HTTP: srv.Client(), APIBaseURL: srv.URL}
-	repos, err := c.ListRepos(context.Background(), "the-token")
+	repos, _, err := c.ListRepos(context.Background(), "the-token", gitprovider.ListOptions{})
 	if err != nil {
 		t.Fatalf("ListRepos() error = %v", err)
 	}

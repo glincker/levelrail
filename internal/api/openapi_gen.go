@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1495 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1496 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -351,6 +351,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/validate-spec", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleValidateSpec", Description: "Live app.yaml validation (apps_validate_spec.go): read-only, same AbilityRead/POST shape as preflight above. Never saves or deploys anything, only runs the submitted body through internal/spec's own Parse-time checks for an editor's earlier, friendlier feedback."},
 	{Method: "GET", Path: "/api/v1/deploys/failed", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListFailedDeploys", Description: ""},
 	{Method: "POST", Path: "/api/v1/git/branches", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListGitBranches", Description: "Branch listing for an arbitrary public git remote (handleListGitBranches's own doc comment): not scoped to an existing app, since the create-app- from-git wizard needs this before an app exists to attach a build to. AbilityDeploy, the same tier the build trigger above requires: listing what a repo could be built from is a strict subset of actually triggering that build."},
+	{Method: "GET", Path: "/api/v1/git/repos", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListGitRepos", Description: "One searchable, filterable, paged repository listing for every provider (git_repo_list.go); the per-provider listings below share its cache."},
 	{Method: "POST", Path: "/api/v1/git/{repo}/git-receive-pack", Ability: "Public", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGitReceivePack", Description: ""},
 	{Method: "GET", Path: "/api/v1/git/{repo}/info/refs", Ability: "Public", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGitInfoRefs", Description: "The push endpoints (git_push_http.go) take HTTP basic auth with the per-app push token (hash compared in constant time, uniform 401, rate limited), not a session. An anonymous request gets the 401 challenge git clients expect."},
 	{Method: "GET", Path: "/api/v1/service-templates", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListServiceTemplates", Description: "Service template catalog (service_templates.go, ADR 015): read-only, static, served straight from internal/catalog.Templates, no store involved. AbilityRead like every other passive view."},

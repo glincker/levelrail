@@ -1,4 +1,5 @@
 import type common from '../locales/en/common.json'
+import type gitRepos from '../locales/en/gitRepos.json'
 import type firewall from '../locales/en/firewall.json'
 import type storageBuckets from '../locales/en/storageBuckets.json'
 import type dashboards from '../locales/en/dashboards.json'
@@ -102,6 +103,7 @@ declare module 'i18next' {
     defaultNS: 'common'
     resources: {
       common: typeof common
+      gitRepos: typeof gitRepos
       deploys: typeof deploys
       settings: typeof settings
       dashboard: typeof dashboard

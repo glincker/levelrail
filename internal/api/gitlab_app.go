@@ -44,7 +44,7 @@ type GitLabAppSecrets interface {
 type GitLabAppClient interface {
 	ExchangeCode(ctx context.Context, instanceURL, clientID, clientSecret, redirectURI, code string) (gitlabapp.Tokens, error)
 	RefreshToken(ctx context.Context, instanceURL, clientID, clientSecret, refreshToken string) (gitlabapp.Tokens, error)
-	ListProjects(ctx context.Context, instanceURL, accessToken string) ([]gitlabapp.Project, error)
+	ListProjects(ctx context.Context, instanceURL, accessToken string, opts gitprovider.ListOptions) ([]gitlabapp.Project, gitprovider.ListResult, error)
 	GetProject(ctx context.Context, instanceURL, accessToken string, projectID int64) (gitlabapp.Project, error)
 	ListBranches(ctx context.Context, instanceURL, accessToken string, projectID int64) ([]gitlabapp.Branch, error)
 	CreateProjectWebhook(ctx context.Context, instanceURL, accessToken string, projectID int64, hookURL, secretToken string) error
@@ -129,6 +129,7 @@ type connectGitLabAppRequest struct {
 // separate, real browser navigation, the same two-step "configure, then
 // authorize" shape GitHub App's manual-connect-then-install flow has.
 func (rt *Router) handleConnectGitLabApp(w http.ResponseWriter, r *http.Request) {
+	rt.invalidateGitRepoCache(r.Context(), gitProviderGitLab)
 	if rt.gitlabAppSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "the gitlab app connection requires a master key to be configured on this control plane")
 		return
@@ -187,6 +188,7 @@ func (rt *Router) handleConnectGitLabApp(w http.ResponseWriter, r *http.Request)
 // there, the same local-only "stop trusting this connection" scope
 // handleDisconnectGitHubApp's own doc comment documents.
 func (rt *Router) handleDisconnectGitLabApp(w http.ResponseWriter, r *http.Request) {
+	rt.invalidateGitRepoCache(r.Context(), gitProviderGitLab)
 	ctx := r.Context()
 	err := rt.gitlabApp.DeleteGitLabAppConnection(ctx)
 	if errors.Is(err, store.ErrGitLabAppConnectionNotFound) {

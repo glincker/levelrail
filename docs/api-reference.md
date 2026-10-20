@@ -564,6 +564,7 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/git-remote | AbilityWriteSensitive | handleDeleteGitRemote |
 | GET | /api/v1/git/{repo}/info/refs | Public | handleGitInfoRefs |
 | POST | /api/v1/git/{repo}/git-receive-pack | Public | handleGitReceivePack |
+| GET | /api/v1/git/repos | AbilityReadSensitive | handleListGitRepos |
 
 </Accordion>
 

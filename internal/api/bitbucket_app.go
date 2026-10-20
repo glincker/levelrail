@@ -44,7 +44,7 @@ type BitbucketAppSecrets interface {
 type BitbucketAppClient interface {
 	ExchangeCode(ctx context.Context, key, secret, code string) (bitbucketapp.Tokens, error)
 	RefreshToken(ctx context.Context, key, secret, refreshToken string) (bitbucketapp.Tokens, error)
-	ListRepos(ctx context.Context, accessToken string) ([]bitbucketapp.Repo, error)
+	ListRepos(ctx context.Context, accessToken string, opts gitprovider.ListOptions) ([]bitbucketapp.Repo, gitprovider.ListResult, error)
 	GetRepo(ctx context.Context, accessToken, fullName string) (bitbucketapp.Repo, error)
 	ListBranches(ctx context.Context, accessToken, fullName string) ([]bitbucketapp.Branch, error)
 	CreateRepoWebhook(ctx context.Context, accessToken, fullName, hookURL, secret string) error
@@ -128,6 +128,7 @@ type connectBitbucketAppRequest struct {
 // real browser navigation, the same two-step "configure, then
 // authorize" shape GitLab's own connect flow has.
 func (rt *Router) handleConnectBitbucketApp(w http.ResponseWriter, r *http.Request) {
+	rt.invalidateGitRepoCache(r.Context(), gitProviderBitbucket)
 	if rt.bitbucketAppSecrets == nil {
 		writeError(w, http.StatusNotImplemented, errBitbucketMasterKeyRequired)
 		return
@@ -176,6 +177,7 @@ func (rt *Router) handleConnectBitbucketApp(w http.ResponseWriter, r *http.Reque
 // scope handleDisconnectGitHubApp/handleDisconnectGitLabApp's own doc
 // comments document.
 func (rt *Router) handleDisconnectBitbucketApp(w http.ResponseWriter, r *http.Request) {
+	rt.invalidateGitRepoCache(r.Context(), gitProviderBitbucket)
 	ctx := r.Context()
 	err := rt.bitbucketApp.DeleteBitbucketAppConnection(ctx)
 	if errors.Is(err, store.ErrBitbucketAppConnectionNotFound) {

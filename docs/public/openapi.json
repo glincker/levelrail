@@ -64273,6 +64273,74 @@
         "x-required-ability": "deploy"
       }
     },
+    "/api/v1/git/repos": {
+      "get": {
+        "description": "One searchable, filterable, paged repository listing for every provider (git_repo_list.go); the per-provider listings below share its cache.\n\nRequires the `read:sensitive` ability.",
+        "operationId": "handleListGitRepos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read:sensitive"
+            ]
+          }
+        ],
+        "summary": "One searchable, filterable, paged repository listing for every provider (git_repo_list.go); the per-provider listings below share its cache.",
+        "tags": [
+          "Apps CRUD / Lifecycle / Deploy"
+        ],
+        "x-required-ability": "read:sensitive"
+      }
+    },
     "/api/v1/git/{repo}/git-receive-pack": {
       "post": {
         "description": "No authentication required.",

@@ -54,6 +54,7 @@ type manualGitHubAppRequest struct {
 // same SaveGitHubAppConnection row, so both paths produce an
 // indistinguishable connected state once saved.
 func (rt *Router) handleConnectGitHubAppManually(w http.ResponseWriter, r *http.Request) {
+	rt.invalidateGitRepoCache(r.Context(), gitProviderGitHub)
 	if rt.githubAppSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "the github app connection requires a master key to be configured on this control plane")
 		return

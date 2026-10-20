@@ -173,6 +173,7 @@ type Repo struct {
 	DefaultBranch string
 	CloneURL      string
 	WebURL        string
+	Fork          bool
 }
 
 type repoLinkHref struct {
@@ -190,6 +191,9 @@ type repoResponse struct {
 		HTML  repoLinkHref `json:"html"`
 		Clone []cloneLink  `json:"clone"`
 	} `json:"links"`
+	Parent *struct {
+		FullName string `json:"full_name"`
+	} `json:"parent"`
 }
 
 type cloneLink struct {
@@ -204,6 +208,7 @@ func toRepo(r repoResponse) Repo {
 		Private:       r.IsPrivate,
 		DefaultBranch: r.MainBranch.Name,
 		WebURL:        r.Links.HTML.Href,
+		Fork:          r.Parent != nil,
 	}
 	for _, link := range r.Links.Clone {
 		if link.Name == "https" {
@@ -234,26 +239,34 @@ type pagedRepoResponse struct {
 	Next   string         `json:"next"`
 }
 
-// ListRepos lists every repository the token's account is at least a
-// member of. Bitbucket paginates by an opaque "next" URL in the
-// response body, not a page number the caller increments (GitHub's and
-// GitLab's own shape): each iteration below follows that URL directly
-// rather than constructing one, until the response omits it or
-// listPageCap is hit.
-func (c *Client) ListRepos(ctx context.Context, accessToken string) ([]Repo, error) {
-	var out []Repo
+// ListRepos lists repositories the token's account is at least a member
+// of. Bitbucket paginates by an opaque "next" URL in the response body:
+// each iteration follows it until it is absent or the MaxItems cap is hit.
+func (c *Client) ListRepos(ctx context.Context, accessToken string, opts gitprovider.ListOptions) ([]Repo, gitprovider.ListResult, error) {
+	var (
+		out []Repo
+		res gitprovider.ListResult
+	)
 	next := c.apiBaseURL() + "/repositories?role=member&pagelen=100"
-	for page := 0; page < listPageCap && next != ""; page++ {
+	for next != "" {
 		var resp pagedRepoResponse
-		if err := c.do(ctx, http.MethodGet, next, bearerPrefix+accessToken, nil, &resp); err != nil {
-			return nil, err
+		err := gitprovider.WithRetry(ctx, opts.Retry, "bitbucket", func() error {
+			resp = pagedRepoResponse{}
+			return c.do(ctx, http.MethodGet, next, bearerPrefix+accessToken, nil, &resp)
+		})
+		if err != nil {
+			return nil, gitprovider.ListResult{}, err
 		}
 		for _, r := range resp.Values {
 			out = append(out, toRepo(r))
 		}
 		next = resp.Next
+		if next != "" && opts.Reached(len(out)) {
+			res.Truncated = true
+			break
+		}
 	}
-	return out, nil
+	return out, res, nil
 }
 
 // GetRepo looks up a single repository by its "workspace/repo_slug"

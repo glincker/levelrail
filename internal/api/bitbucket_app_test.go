@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
@@ -73,6 +74,8 @@ func (f *fakeBitbucketAppSecrets) DeleteAll(_ context.Context, serviceName strin
 // fakeBitbucketAppClient is a hand-written fake for BitbucketAppClient,
 // the same convention fakeGitLabAppClient already establishes.
 type fakeBitbucketAppClient struct {
+	listCalls      atomic.Int32
+	listResult     gitprovider.ListResult
 	exchangeTokens bitbucketapp.Tokens
 	exchangeErr    error
 	gotCode        string
@@ -133,8 +136,9 @@ func (f *fakeBitbucketAppClient) RefreshToken(_ context.Context, _, _, _ string)
 	return f.refreshTokens, f.refreshErr
 }
 
-func (f *fakeBitbucketAppClient) ListRepos(_ context.Context, _ string) ([]bitbucketapp.Repo, error) {
-	return f.repos, f.reposErr
+func (f *fakeBitbucketAppClient) ListRepos(_ context.Context, _ string, _ gitprovider.ListOptions) ([]bitbucketapp.Repo, gitprovider.ListResult, error) {
+	f.listCalls.Add(1)
+	return f.repos, f.listResult, f.reposErr
 }
 
 func (f *fakeBitbucketAppClient) GetRepo(_ context.Context, _, _ string) (bitbucketapp.Repo, error) {

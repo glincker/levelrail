@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/GLINCKER/levelrail/internal/gitlabapp"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
@@ -22,21 +21,9 @@ type gitLabAppProjectResource struct {
 	WebURL            string `json:"web_url"`
 }
 
-func toGitLabAppProjectResource(p gitlabapp.Project) gitLabAppProjectResource {
-	return gitLabAppProjectResource{
-		ID:                p.ID,
-		Name:              p.Name,
-		PathWithNamespace: p.PathWithNamespace,
-		CloneURL:          p.HTTPURLToRepo,
-		DefaultBranch:     p.DefaultBranch,
-		Visibility:        p.Visibility,
-		WebURL:            p.WebURL,
-	}
-}
-
 // handleListGitLabAppProjects handles GET /api/v1/gitlab-app/projects:
-// every project the connected account can access, for the frontend's
-// project picker. AbilityReadSensitive, the same tier
+// every project the connected account can access, from the shared
+// per-connection cache. AbilityReadSensitive, the same tier
 // handleListGitHubAppRepos uses for the identical reason (this discloses
 // real private-project names/paths).
 func (rt *Router) handleListGitLabAppProjects(w http.ResponseWriter, r *http.Request) {
@@ -44,24 +31,26 @@ func (rt *Router) handleListGitLabAppProjects(w http.ResponseWriter, r *http.Req
 		writeError(w, http.StatusNotImplemented, "the gitlab app connection requires a master key to be configured on this control plane")
 		return
 	}
-
-	ctx := r.Context()
-	conn, accessToken, err := rt.gitlabAccessToken(ctx)
+	accts, err := rt.loadGitRepos(r.Context(), gitProviderGitLab, isTruthy(r.URL.Query().Get("refresh")))
 	if err != nil {
-		rt.writeGitLabAppTokenError(w, "api: mint gitlab access token for project listing failed", err)
+		rt.writeGitRepoListError(w, gitProviderGitLab, err)
 		return
 	}
-
-	projects, err := rt.gitlabAppClient.ListProjects(ctx, conn.InstanceURL, accessToken)
-	if err != nil {
-		rt.logger.Error("api: list gitlab projects failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusBadGateway, "failed to list projects from gitlab")
+	flat := flattenRepoAccounts(accts)
+	if flat.Succeeded == 0 && flat.FirstErr != nil {
+		rt.writeGitRepoListError(w, gitProviderGitLab, flat.FirstErr)
 		return
 	}
-
-	out := make([]gitLabAppProjectResource, 0, len(projects))
-	for _, p := range projects {
-		out = append(out, toGitLabAppProjectResource(p))
+	out := make([]gitLabAppProjectResource, 0, len(flat.Repos))
+	for _, p := range flat.Repos {
+		visibility := "private"
+		if !p.Private {
+			visibility = "public"
+		}
+		out = append(out, gitLabAppProjectResource{
+			ID: p.ProjectID, Name: p.Name, PathWithNamespace: p.FullName, CloneURL: p.CloneURL,
+			DefaultBranch: p.DefaultBranch, Visibility: visibility, WebURL: p.WebURL,
+		})
 	}
 	writeJSON(w, http.StatusOK, out)
 }

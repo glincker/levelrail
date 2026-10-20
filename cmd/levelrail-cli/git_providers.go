@@ -12,6 +12,9 @@ func runGitProviders(prog string, args []string, stdout, stderr io.Writer, looku
 	if len(args) > 0 && args[0] == "validate" {
 		return runGitProvidersValidate(prog, args[1:], stdout, stderr, lookupEnv)
 	}
+	if len(args) > 0 && args[0] == "repos" {
+		return runGitProvidersRepos(prog, args[1:], stdout, stderr, lookupEnv)
+	}
 	if len(args) > 0 && args[0] == "list" {
 		args = args[1:]
 	}
@@ -37,6 +40,7 @@ func gitProvidersUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s git-providers [list] [flags]
   %[1]s git-providers validate <github|gitlab|gitea|bitbucket> [flags]
+  %[1]s git-providers repos <github|gitlab|gitea|bitbucket> [--search Q] [--refresh] [flags]
 
 Shows connection status and capabilities (list branches, register a
 webhook, authenticated clone) for github, gitlab, bitbucket, and gitea

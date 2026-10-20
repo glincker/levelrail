@@ -11,6 +11,10 @@ func (rt *Router) registerGitProviderRoutes(mux *http.ServeMux) {
 	// handleListGitProviders's own doc comment.
 	mux.HandleFunc("GET /api/v1/git-providers", rt.requireAbility(AbilityReadSensitive, rt.handleListGitProviders))
 
+	// One searchable, filterable, paged repository listing for every provider
+	// (git_repo_list.go); the per-provider listings below share its cache.
+	mux.HandleFunc("GET /api/v1/git/repos", rt.requireAbility(AbilityReadSensitive, rt.handleListGitRepos))
+
 	// GitHub App connection: routes that read or change the connection are AbilityRoot, since an
 	// installed app can read private repos. register/start, callback and installed are full-page
 	// browser navigations; the session cookie is implicitly root.
