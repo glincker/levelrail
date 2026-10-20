@@ -31,7 +31,6 @@ import {
   RobotIcon,
   ShieldCheckIcon,
   ShieldIcon,
-  SparkleIcon,
   StackIcon,
   TeaBagIcon,
   TerminalWindowIcon,
@@ -71,11 +70,6 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'account',
         to: '/settings/account',
         icon: UserIcon,
-      },
-      {
-        id: 'setup-wizard',
-        to: '/settings/setup-wizard',
-        icon: SparkleIcon,
       },
       {
         id: 'general',

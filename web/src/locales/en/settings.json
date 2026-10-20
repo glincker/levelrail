@@ -578,10 +578,6 @@
         "title": "Import from another platform",
         "description": "Bring apps over from Coolify, Dokploy or CapRover."
       },
-      "setup-wizard": {
-        "title": "Setup wizard",
-        "description": "Server checks, dashboard domain, git, and a first app."
-      },
       "general": {
         "title": "General",
         "description": "System status and configuration."

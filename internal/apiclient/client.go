@@ -14,6 +14,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,6 +44,7 @@ type Client struct {
 	token     string
 	hc        *http.Client
 	userAgent string
+	noAuthFix string
 }
 
 // Option configures a Client at construction time. See WithUserAgent.
@@ -57,6 +59,12 @@ type Option func(*Client)
 // "levelrail-mcp/<version>".
 func WithUserAgent(userAgent string) Option {
 	return func(c *Client) { c.userAgent = userAgent }
+}
+
+// WithNoCredentialsFix replaces the message of a 401 answered to a request
+// that carried no token, so the caller can name the exact command that fixes it.
+func WithNoCredentialsFix(msg string) Option {
+	return func(c *Client) { c.noAuthFix = msg }
 }
 
 // NewClient builds a Client. baseURL should not have a trailing slash
@@ -125,7 +133,12 @@ func (c *Client) doHeaders(ctx context.Context, method, path string, body, out a
 	defer func() { _ = resp.Body.Close() }()
 	TraceRequest(method, c.baseURL+path, resp.Status, time.Since(start), nil)
 
-	return resp.Header, decodeResponse(resp, out)
+	err = decodeResponse(resp, out)
+	var apiErr *APIError
+	if c.token == "" && c.noAuthFix != "" && errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusUnauthorized {
+		apiErr.Message = c.noAuthFix
+	}
+	return resp.Header, err
 }
 
 // decodeResponse reads resp's body, mapping a non-2xx status to

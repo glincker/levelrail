@@ -91,17 +91,15 @@ A missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECK
 
 ### First sign-in
 
-<img src="/assets/screenshots/setup-wizard-light.png" alt="Levelrail setup wizard on a fresh install: server checks with a Continue button" className="block dark:hidden" />
-<img src="/assets/screenshots/setup-wizard.png" alt="Levelrail setup wizard on a fresh install: server checks with a Continue button" className="hidden dark:block" />
 
 <Steps>
 <Step title="Open the setup link">
-Open one of the `http://<ip>:8080/login?setup=<token>` links from the install summary. The public address is printed first, then private addresses. Container bridge addresses are hidden.
+Open one of the `http://<ip>:8080/login#setup=<token>` links from the install summary. The public address is printed first, then private addresses. Container bridge addresses are hidden.
 
 **8080 is only the default.** If that port was taken, `install.sh` picks the next free one (`LEVELRAIL_DASHBOARD_PORT`) and prints the real one. Use the port from your own output.
 </Step>
 <Step title="Create the admin account">
-After you create the admin account, the setup wizard opens and runs the server checks shown above.
+After you create the admin account, the first-run screen opens: enable HTTPS in one click, then deploy your first app.
 </Step>
 <Step title="Enable HTTPS">
 The dashboard shows a "connection is not encrypted" banner until you enable HTTPS. Once you have an `https://` **dashboard URL**, sign-in over plain HTTP is refused, so switch to the https address right after. The certificate contact email defaults to your admin account email; change it if you want notices elsewhere.
@@ -667,5 +665,5 @@ Likely cause: the token is single-use and valid for 15 minutes, or the dashboard
 
 How to confirm: check the original install output for the full URL, or check Settings > Updates > Server readiness to see the current dashboard address.
 
-Fix: on the server, run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` to print a new token, then visit `http://<server>:<port>/login?setup=<token>` with the fresh token.
+Fix: on the server, run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` to print a new token, then visit `http://<server>:<port>/login#setup=<token>` with the fresh token.
 

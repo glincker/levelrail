@@ -26,7 +26,6 @@ export const NAMESPACES = [
   'migrate',
   'domains',
   'attention',
-  'setup',
   'updates',
   'infraCanvas',
   'exposure',

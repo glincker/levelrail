@@ -1322,7 +1322,7 @@ local_ips() {
 dashboard_link() {
 	case "$1" in *:*) host="[$1]" ;; *) host="$1" ;; esac
 	if [ -n "$token" ]; then
-		printf '%s://%s:%s/login?setup=%s' "$DASHBOARD_SCHEME" "$host" "$DASHBOARD_PORT" "$token"
+		printf '%s://%s:%s/login#setup=%s' "$DASHBOARD_SCHEME" "$host" "$DASHBOARD_PORT" "$token"
 	else
 		printf '%s://%s:%s' "$DASHBOARD_SCHEME" "$host" "$DASHBOARD_PORT"
 	fi
@@ -1333,7 +1333,7 @@ dashboard_link() {
 print_coexist_summary() {
 	domain="${DOMAIN_HINT:-<your-domain>}"
 	login="http://127.0.0.1:${DASHBOARD_PORT}"
-	[ -z "$token" ] || login="${login}/login?setup=${token}"
+	[ -z "$token" ] || login="${login}/login#setup=${token}"
 	host="${PUBLIC_IP:-<server-ip>}"
 	cat <<EOF
 

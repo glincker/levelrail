@@ -132,7 +132,7 @@ To see whether renewal is failing, run `levelrail-cli domains certificates`. The
 </Accordion>
 
 
-<Accordion title="My domain won't resolve, or the setup wizard's DNS check stays red" id="my-domain-won-t-resolve-or-the-setup-wizard-s-dns-check-stay">
+<Accordion title="My domain won't resolve, or the DNS check stays red" id="my-domain-won-t-resolve-or-the-setup-wizard-s-dns-check-stay">
 
 Create an A (or AAAA for IPv6) record pointing the domain at your server's public IP, then check it actually propagated: `dig +short yourdomain.com` from your own machine, or [dnschecker.org](https://dnschecker.org/) to see it from multiple regions at once. A record you just created can take a few minutes to show up everywhere. If it never resolves, double check you edited the zone your domain's registrar actually uses, not a leftover one. See [Domains and ingress: setting up DNS](/domains-and-ingress#setting-up-dns). No domain yet? Use the zero-config `sslip.io` URL the dashboard already shows instead.
 

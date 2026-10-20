@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowSquareOutIcon,
   CheckCircleIcon,
@@ -9,17 +10,20 @@ import { Button } from '@/components/ui/button'
 import type { AppListEntry } from '../../types/appDetail'
 import { useAppNetwork } from '../../queries/appNetwork'
 import { useDiagnosis } from '../../queries/diagnosis'
-import { liveUrl } from '../../lib/setupWizard'
-import type { AppPhase } from '../../lib/setupWizard'
+import { liveUrl } from '../../lib/firstApp'
+import type { AppPhase } from '../../lib/firstApp'
 
 /** FirstAppStatus renders the tracked app's deploy progress, its live URL, or its diagnosis. */
 export function FirstAppStatus({
   app,
   phase,
+  onDone,
 }: {
   app: AppListEntry
   phase: AppPhase
+  onDone?: () => void
 }) {
+  const { t } = useTranslation('getStarted')
   const { data: network } = useAppNetwork(app.name)
   const url = liveUrl(app, network, window.location.hostname)
   const failed = phase === 'failed'
@@ -36,14 +40,14 @@ export function FirstAppStatus({
         variant="outline"
         render={<Link to="/apps/$name" params={{ name: app.name }} />}
       >
-        Open app
+        {t('first.status.openApp')}
       </Button>
       <Button
         size="sm"
         variant="outline"
         render={<Link to="/apps/$name/logs" params={{ name: app.name }} />}
       >
-        View logs
+        {t('first.status.viewLogs')}
       </Button>
     </div>
   )
@@ -53,26 +57,33 @@ export function FirstAppStatus({
       <div className="space-y-3 rounded-lg border border-tone-success-border bg-tone-success-soft p-4">
         <p className="flex items-center gap-2 text-base font-semibold text-foreground">
           <CheckCircleIcon className="size-5 text-tone-success" />
-          It&apos;s live
+          {t('first.status.live')}
         </p>
         <p className="text-sm text-muted-foreground">
-          {app.name} passed its health check and is serving traffic.
+          {t('first.status.liveDetail', { name: app.name })}
         </p>
         {url ? (
           <Button
             size="sm"
             render={<a href={url} target="_blank" rel="noreferrer" />}
+            nativeButton={false}
           >
             {url}
             <ArrowSquareOutIcon />
           </Button>
         ) : (
           <p className="text-xs text-muted-foreground">
-            It has no public address yet. Add a domain on the app&apos;s Domains
-            tab to reach it from the internet.
+            {t('first.status.noAddress')}
           </p>
         )}
-        {appLinks}
+        <div className="flex flex-wrap gap-2">
+          {appLinks}
+          {onDone ? (
+            <Button size="sm" variant="ghost" onClick={onDone}>
+              {t('first.status.done')}
+            </Button>
+          ) : null}
+        </div>
       </div>
     )
   }
@@ -82,10 +93,12 @@ export function FirstAppStatus({
       <div className="space-y-3 rounded-lg border border-destructive/40 p-4">
         <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <WarningCircleIcon className="size-5 text-destructive" />
-          {app.name} is not healthy
+          {t('first.status.failed', { name: app.name })}
         </p>
         {diagnosing ? (
-          <p className="text-xs text-muted-foreground">Diagnosing...</p>
+          <p className="text-xs text-muted-foreground">
+            {t('first.status.diagnosing')}
+          </p>
         ) : null}
         {diagnosis ? (
           <div className="space-y-1.5 text-sm">
@@ -103,7 +116,14 @@ export function FirstAppStatus({
             ))}
           </div>
         ) : null}
-        {appLinks}
+        <div className="flex flex-wrap gap-2">
+          {appLinks}
+          {onDone ? (
+            <Button size="sm" variant="ghost" onClick={onDone}>
+              {t('first.status.done')}
+            </Button>
+          ) : null}
+        </div>
       </div>
     )
   }
@@ -112,16 +132,14 @@ export function FirstAppStatus({
     <div className="space-y-3 rounded-lg border border-border p-4">
       <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <CircleNotchIcon className="size-5 animate-spin text-primary motion-reduce:animate-none" />
-        Deploying {app.name}
+        {t('first.status.deploying', { name: app.name })}
       </p>
       <p className="text-sm text-muted-foreground">
-        {app.status.label}. Pulling the image, starting the container, and
-        waiting for the health check to pass.
+        {t('first.status.deployingDetail', { status: app.status.label })}
       </p>
       {phase === 'slow' ? (
         <p className="text-xs text-muted-foreground">
-          This is taking longer than usual. Large images take a while on a slow
-          connection; the logs show what is happening.
+          {t('first.status.slow')}
         </p>
       ) : null}
       {appLinks}

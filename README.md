@@ -57,11 +57,11 @@ Open the dashboard:
 
 ### 2. Create the admin account
 
-Open the setup link, choose a password, and follow the setup wizard. Its HTTPS step turns on a free certificate for `<dashed-ip>.sslip.io` with one click, so no DNS is needed.
+Open the setup link and choose a password. The first sign-in opens one screen that turns on a free certificate for `<dashed-ip>.sslip.io` with one click (no DNS needed) and deploys your first app.
 
 ### 3. Deploy an app
 
-On the server, the installer already put `levelrail-cli` in `/usr/local/bin`. Sign in once, then import a repository:
+On the server, the installer already put `levelrail-cli` in `/usr/local/bin`. Sign in once, then import a repository (`levelrail-cli apps create --interactive` asks for everything step by step):
 
 ```bash
 levelrail-cli login --device

@@ -12,8 +12,8 @@ This page takes you from an empty Linux server to one app that is running, has a
 
 ```mermaid
 flowchart LR
-  A["Install<br/>one command"] --> B["Sign in<br/>setup link"]
-  B --> C["Setup wizard<br/>HTTPS and git"]
+  A["Install<br/>one command"] --> B["Sign in<br/>setup token"]
+  B --> C["First-run screen<br/>HTTPS + first app"]
   C --> D["Deploy an app<br/>dashboard or CLI"]
   D --> E["Running, with logs,<br/>metrics, rollback"]
 ```
@@ -62,22 +62,15 @@ To pin a release, set `LEVELRAIL_VERSION=v0.2.0-beta.14` before the command. You
 
 </Accordion>
 
-## Sign in and finish the setup wizard
+## Sign in and deploy your first app
 
-Open the setup link from the install output and choose an admin password. The first sign-in opens the setup wizard:
+Open the printed setup link, choose a password, and you are the admin. The setup token travels in the link's `#` fragment, so it never reaches the server logs or a referrer header. The first sign-in opens one screen, not an empty app list:
 
-1. **Server check** runs the same checks as `levelrail-cli doctor`. Each failed check shows the command that fixes it. Only a failing Docker, database, or data directory blocks you.
-2. **Topology** (optional). Single node is the default, and you can add servers later.
-3. **Dashboard domain** (recommended). The **Enable HTTPS** button needs no DNS. It gives the dashboard a `<dashed-ip>.sslip.io` address with a real certificate. Your admin email is the certificate contact. After HTTPS is on, sign-in over plain HTTP stops working, so use the `https://` address from then on. To use your own name instead, the step shows the DNS record to create and waits until DNS and the certificate are both ready. Use a name that no app serves, such as `console.example.com`.
-4. **Email** (optional). Saves an SMTP server and sends a test message, so password resets and alert emails work.
-5. **Git provider** (optional). Connects GitHub, GitLab, Bitbucket, or Gitea.
-6. **First app** deploys a sample, a template, or your own repository, and waits until it is healthy.
-7. **Done** links to alerts, backup targets, and team invites.
+1. **Your app's address** is shown before you deploy: with no domain set, an app gets `https://<app>.<dashed-ip>.sslip.io`.
+2. **Enable HTTPS** is one button that needs no DNS. Your admin email is prefilled as the certificate contact, and the dashboard gets a free `<dashed-ip>.sslip.io` address with a real certificate. After HTTPS is on, signing in over plain HTTP stops working, so use the https address from then on. A banner on the dashboard keeps offering it until it is on.
+3. **Deploy** a sample app, a template, or your own repository. The screen waits until the app is healthy and ends on its live link. A failure shows the automatic diagnosis and a link to the logs.
 
-<img src="/assets/screenshots/setup-wizard-light.png" alt="Levelrail setup wizard with the steps from server check to done" className="block dark:hidden" />
-<img src="/assets/screenshots/setup-wizard.png" alt="Levelrail setup wizard with the steps from server check to done" className="hidden dark:block" />
-
-Progress is saved on the server, so you can close the tab and resume from any browser. Reopen the wizard from **Settings, Setup wizard**.
+Everything else (email, git provider, backups, teammates, alerts) is on the **Get started** checklist in the sidebar, which reads your real server state and ticks steps off by itself. `levelrail-cli setup status` shows the same list.
 
 <Accordion title="If the setup link does not work">
 
@@ -89,7 +82,7 @@ sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token
 
 The dashboard port is in the systemd unit: `systemctl cat levelrail | grep APP_HTTP_ADDR`.
 
-If HTTPS fails in step 3 (for example, the `sslip.io` name does not reach this server yet), fix the cause and click **Re-check**. You can also run `levelrail-cli settings ingress https status` from a terminal.
+If HTTPS fails on the first-run screen (for example, the `sslip.io` name does not reach this server yet), fix the cause and click **Re-check**. You can also run `levelrail-cli settings ingress https status` from a terminal.
 
 </Accordion>
 
@@ -236,7 +229,7 @@ levelrail-cli login --device
 
 ## Finish setting up
 
-After you sign in, the dashboard home shows live stats, recent activity, and a **Needs attention** list built from the same checks as the wizard.
+After you sign in, the dashboard home shows live stats, recent activity, and a **Needs attention** list built from the same server checks as `levelrail-cli doctor`.
 
 <img src="/assets/screenshots/dashboard-home-light.png" alt="Levelrail dashboard home with app, request, and deploy stats and a Needs attention list" className="block dark:hidden" />
 <img src="/assets/screenshots/dashboard-home.png" alt="Levelrail dashboard home with app, request, and deploy stats and a Needs attention list" className="hidden dark:block" />
