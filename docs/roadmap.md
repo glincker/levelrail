@@ -72,7 +72,7 @@ The join flow is verified across two real Docker daemons, but not across a real 
 ### Operator surfaces
 
 - Dashboard, `levelrail-cli` (profiles, `--output` and `--query`, shell completion, device login, `doctor`, `apps create --interactive`) and `install.sh`.
-- Migration CLI: `levelrail-cli migrate coolify`, `dokploy` and `caprover`. See [migrating from Coolify, Dokploy and CapRover](/migrating-from-coolify-dokploy-and-caprover).
+- Migration CLI: `levelrail-cli migrate coolify`, `dokploy` and `caprover`. See [migrate to Levelrail](/migrate-to-levelrail).
 - MCP server (`cmd/levelrail-mcp`): 156 tools in full mode, 146 in the default standard mode, 118 in read-only mode. See [MCP tool surface](/mcp-tool-surface) and the [AI assistant](/ai-assistant) page. Tokens are checked against the same abilities as the REST API.
 
 ### Shipped but off by default or beta

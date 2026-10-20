@@ -84,7 +84,7 @@ If SSO, audit logging or fine-grained roles matter to you, check each project's 
 - Docker Swarm is already your model: Dokploy or CapRover.
 - Want an agent-based control plane with built-in observability, IAM and audit on one binary: Levelrail.
 
-To move an existing setup, see [Migrating from Coolify, Dokploy and CapRover](/migrating-from-coolify-dokploy-and-caprover).
+To move an existing setup, see [Migrate to Levelrail](/migrate-to-levelrail).
 
 ## See also
 

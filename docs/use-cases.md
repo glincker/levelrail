@@ -110,7 +110,7 @@ scoped access to only their own app, and keep a record of who deployed what.
 - A read-only importer for onboarding an existing client. Moving a
   client off Coolify, Dokploy, or CapRover runs a dry run first and only
   issues GET requests against the source
-  ([migrating-from-coolify-dokploy-and-caprover.md](/migrating-from-coolify-dokploy-and-caprover)).
+  ([migrate-to-levelrail.md](/migrate-to-levelrail)).
 - Dedicated per-client nodes if you outgrow one box. Cloud node
   provisioning covers five providers (Hetzner, DigitalOcean, AWS, Azure,
   GCP), so a client that needs isolation can get its own node
@@ -151,7 +151,7 @@ avoids.
 - A documented importer for Coolify, Dokploy, and CapRover. It reads the
   source platform's own API, supports a dry run that reports what would be
   created without creating anything, and is read-only against the source
-  ([migrating-from-coolify-dokploy-and-caprover.md](/migrating-from-coolify-dokploy-and-caprover)).
+  ([migrate-to-levelrail.md](/migrate-to-levelrail)).
 - A concept-mapping runbook for Vercel. There is no importer for
   Vercel. [migrating-from-vercel.md](/migrating-from-vercel) is a
   manual runbook with an inventory step, a Vercel-to-Levelrail
@@ -225,6 +225,6 @@ apply to your actual setup.
   Coolify, Dokploy, CapRover, Dokku, and Kamal
 - [Feature status](/feature-status) - the maturity label behind every
   claim on this page
-- [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover)
+- [Migrate to Levelrail](/migrate-to-levelrail)
 - [Migrating from Vercel](/migrating-from-vercel)
 - [Roadmap](/roadmap) - what has shipped and what is open

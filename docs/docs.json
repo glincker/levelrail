@@ -324,8 +324,15 @@
             "icon": "/assets/icons/squares-four.svg"
           },
           {
-            "group": "Migrating from other platforms",
+            "group": "Migrate",
             "pages": [
+              "migrate-to-levelrail",
+              "migrate-from-coolify",
+              "migrate-from-dokploy",
+              "migrate-from-caprover",
+              "migrate-from-dokku",
+              "migrate-from-docker-compose",
+              "migration-reference",
               "migrating-from-coolify-dokploy-and-caprover",
               "migrating-from-vercel",
               "migrating-from-cloud-run"

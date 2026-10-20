@@ -118,7 +118,14 @@ Four main types, plus two Levelrail-specific categories:
 | Doc | Covers |
 | --- | --- |
 | [master-key-rotation.md](/master-key-rotation) | Rotate the envelope-encryption master key without losing access to stored secrets |
-| [migrating-from-coolify-dokploy-and-caprover.md](/migrating-from-coolify-dokploy-and-caprover) | Move apps off a live Coolify, Dokploy, or CapRover instance with `levelrail-cli migrate` |
+| [migrate-to-levelrail.md](/migrate-to-levelrail) | Migration hub: pick your source, the six step flow, the downtime table, checklists and rollback |
+| [migrate-from-coolify.md](/migrate-from-coolify) | Move apps, databases and domains off Coolify with a staged, reversible cutover |
+| [migrate-from-dokploy.md](/migrate-from-dokploy) | Import Dokploy apps and databases, then copy data and switch DNS |
+| [migrate-from-caprover.md](/migrate-from-caprover) | Import CapRover apps. Images need a repo or registry |
+| [migrate-from-dokku.md](/migrate-from-dokku) | Import a Dokku env dump or container snapshot. No live Dokku import |
+| [migrate-from-docker-compose.md](/migrate-from-docker-compose) | Turn a compose file into apps and managed databases |
+| [migration-reference.md](/migration-reference) | Importer flags, mapping tables, database copy, hub and cutover details |
+| [migrating-from-coolify-dokploy-and-caprover.md](/migrating-from-coolify-dokploy-and-caprover) | Moved: points at the migration hub |
 | [feature-flags.md](/feature-flags) | Toggle app behavior at runtime without a redeploy |
 | [platform-as-code.md](/platform-as-code) | Describe projects, environments, apps, domains and databases as YAML, then export, diff, plan and apply them from the CLI, the dashboard, MCP or CI |
 | [terraform-provider.md](/terraform-provider) | Manage projects, environments, apps, domains, databases and shared variables from Terraform or OpenTofu |

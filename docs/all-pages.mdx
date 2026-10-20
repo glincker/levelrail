@@ -14,6 +14,9 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [What you need before you start](/what-you-need): A plain-language checklist for installing Levelrail: a Linux server, a few ports, and optionally a domain. No Kubernetes, no prior DevOps experience.
 - [Installing Levelrail](/installing): Requirements, then every supported way to get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
 - [Getting started](/getting-started): Install Levelrail on a Linux server, sign in, and deploy your first app in about ten minutes, from the dashboard or the CLI.
+- [One command quickstart](/quickstart-one-command): Deploy a project with `levelrail-cli up`, which infers the name, port and build, then keep every advanced flag when you need it.
+- [Server profiles](/profiles): Choose minimal, standard or suite to decide which optional parts of the control plane start, and switch later without losing data.
+- [Getting started](/getting-started): Install Levelrail on a Linux server, sign in, and deploy your first app in about ten minutes, from the dashboard or the CLI.
 
 ### Add to your setup
 
@@ -136,6 +139,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Log pipelines](/log-pipelines): Apply transformations to every log line before storage, export or live tail. Redact secrets, drop noise, parse structured fields.
 - [Log volume budgets](/log-budgets): Cap how much log data one app can store, see which apps are noisiest, and forecast when a budget will be reached.
 - [Data export](/data-export): Send logs, the audit log and metrics to Loki, syslog, a webhook, a bucket, Prometheus or an OTLP collector, with bounded buffers and no effect on deploys.
+- [Audit event schema](/audit-event-schema): The fields of an exported audit event and how Splunk, syslog and OpenTelemetry sinks map them.
 - [Control plane backup and restore](/control-plane-backup): Back up and restore the control plane's database with automatic snapshots and offline restore.
 - [Archives](/archives): Move cold audit events, deploy attempts and pipeline runs into compressed bundles instead of deleting them.
 - [Disaster recovery](/disaster-recovery): Encrypted off-box backups of the control plane database, master key escrow, offline restore and scheduled restore drills, with the threat model.
@@ -151,6 +155,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Pipelines](/pipelines): Define CI/CD pipelines as YAML with triggers, jobs, matrix builds, approvals, and deploys, and run them on your own nodes.
 - [Pipelines: OIDC federation](/pipelines-oidc): Mint short-lived OIDC tokens for pipeline jobs, and wire AWS, GCP, or Vault to trust them without a long-lived credential.
 - [Git integrations](/git-integrations): Connect GitHub, GitLab, Bitbucket or Gitea for automatic git-triggered deploys, per-pull-request preview environments, and webhook history with replay.
+- [Deploy with git push](/git-push-deploy): Push a branch to a git remote on your own server and it builds and deploys that exact commit. A beta feature, off by default, with a per-app token.
 - [Import a repository](/import-a-repo): Go from a git repository to a running app in a few steps, with detection that tells you what it found and why.
 - [Monorepos](/monorepos): Detect workspaces, run one service per package from a single repository, and redeploy only the services a push actually changed.
 
@@ -211,9 +216,16 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Template status](/templates-status): Measured pass rate of the one-click template catalog from the local smoke run
 - [Starter kit templates](/templates): Seven starter-kit templates that show multi-service Compose wiring patterns: web plus database, worker plus queue, reverse proxy plus backends.
 
-### Migrating from other platforms
+### Migrate
 
-- [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover): Import apps, databases, env vars, domains and volumes from Coolify, Dokploy or CapRover with a dry run first, then apply
+- [Migrate to Levelrail](/migrate-to-levelrail): Move from Coolify, Dokploy, CapRover, Dokku or a compose file with the old server kept running, an honest downtime table and a rollback path.
+- [Migrate from Coolify](/migrate-from-coolify): Move Coolify apps, databases, env vars and domains to Levelrail with a read-only plan, staged copies and a reversible cutover. Coolify keeps serving.
+- [Migrate from Dokploy](/migrate-from-dokploy): Import Dokploy applications, databases, env vars and domains into Levelrail with a read-only dry run, then copy data and switch DNS while Dokploy keeps serving.
+- [Migrate from CapRover](/migrate-from-caprover): Import CapRover apps, env vars, domains and volumes into Levelrail with a read-only dry run. CapRover builds locally, so images need a repo or registry.
+- [Migrate from Dokku](/migrate-from-dokku): Move Dokku apps to Levelrail by importing the env dump or a docker inspect snapshot. Live Dokku over SSH is not supported, so some steps are manual.
+- [Migrate from Docker Compose](/migrate-from-docker-compose): Turn a docker-compose.yml into Levelrail apps and managed databases with a plan first, then copy data and switch DNS while the old stack keeps running.
+- [Migration reference](/migration-reference): Flags, mapping tables, database copy and hub details, cutover verdicts and environment variables for the Levelrail migration importer.
+- [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover): This page moved. Start at the Levelrail migration overview, then follow the guide for Coolify, Dokploy, CapRover, Dokku or Docker Compose.
 - [Migrating a Next.js app from Vercel](/migrating-from-vercel): A runbook for moving a Vercel Next.js app to Levelrail: inventory, concept mapping, a DNS cutover and rollback plan, gaps with no equivalent and a shadow run.
 - [Migrating a service from Cloud Run](/migrating-from-cloud-run): A runbook for moving a Google Cloud Run service to Levelrail: concept mapping, deploying the same image, secrets, Cloud SQL, domains, jobs and what you give up.
 

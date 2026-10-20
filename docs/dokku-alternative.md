@@ -60,7 +60,7 @@ Dokku has almost no idle footprint and is hard to beat for simplicity on one ser
 
 <AccordionGroup>
   <Accordion title="Is there an importer for Dokku?">
-    No. You deploy the same repositories and recreate environment variables and domains. The importer covers Coolify, Dokploy and CapRover.
+    Partly. There is no live importer for a Dokku host. You can import an app's `dokku config:export` env dump or a `docker inspect` snapshot, and deploy the same repositories. See [Migrate from Dokku](/migrate-from-dokku).
   </Accordion>
   <Accordion title="Does Levelrail use buildpacks?">
     Not Heroku buildpacks. Levelrail builds a Dockerfile with BuildKit, and when there is none it detects the stack from files such as `package.json` or `go.mod` and builds it with Railpack. See [Importing apps](/importing-apps) for the detection order.

@@ -47,7 +47,7 @@ The control plane measured about 68 MB resident at zero apps, about 83 MB at 100
 
 ## Moving over from Coolify
 
-The platform importer reads a live Coolify instance, shows a dry run, and creates apps only after you confirm. It does not move database contents, volume contents, certificates, or history. Read [migrating from Coolify, Dokploy and CapRover](/migrating-from-coolify-dokploy-and-caprover) before planning a cutover.
+The platform importer reads a live Coolify instance, shows a dry run, and creates apps only after you confirm. Database contents are copied by a separate verified step and volume contents by `rsync` commands it prints. Certificates and history do not move. Read [Migrate from Coolify](/migrate-from-coolify) and the [downtime table](/migrate-to-levelrail#what-stays-online-during-the-move) before planning a cutover.
 
 ## Next steps
 
