@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1493 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1495 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1008,6 +1008,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/instance/identity", Ability: "AbilityRead", Group: "Other", Handler: "handleInstanceIdentity", Description: ""},
 	{Method: "GET", Path: "/api/v1/integrations", Ability: "AbilityRead", Group: "Other", Handler: "handleListIntegrationCatalog", Description: "Integrations (app_integrations.go): the curated internal/integrations catalog (PostHog, Sentry, etc), env-var injection only. The catalog itself is global and read-only (AbilityRead, no store involved, same shape service-templates uses); attach/detach store a field value through the app's own secrets namespace, AbilityWriteSensitive like PUT .../secrets/{key} above."},
 	{Method: "GET", Path: "/api/v1/loadbalancers", Ability: "AbilityRead", Group: "Other", Handler: "handleListLoadBalancers", Description: ""},
+	{Method: "GET", Path: "/api/v1/local-mode", Ability: "AbilityRead", Group: "Other", Handler: "handleGetLocalMode", Description: ""},
+	{Method: "POST", Path: "/api/v1/local-mode/reset", Ability: "AbilityRoot", Group: "Other", Handler: "handleLocalModeReset", Description: "A reset deletes every app, secret and database record of the instance, so AbilityRoot."},
 	{Method: "POST", Path: "/api/v1/log-archive/dump", Ability: "AbilityWrite", Group: "Other", Handler: "handleLogArchiveDump", Description: ""},
 	{Method: "GET", Path: "/api/v1/log-archive/objects", Ability: "AbilityRead", Group: "Other", Handler: "handleListLogArchiveObjects", Description: ""},
 	{Method: "GET", Path: "/api/v1/log-archive/objects/download", Ability: "AbilityRead", Group: "Other", Handler: "handleDownloadLogArchiveObject", Description: ""},

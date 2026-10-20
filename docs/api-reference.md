@@ -1718,6 +1718,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/sso/oidc/{provider}/evaluate | AbilityRoot | handleEvaluateOAuthSSO |
 | GET | /api/v1/sso/oidc/{provider}/test/start | AbilityRoot | handleStartOAuthSSOTest |
 | GET | /api/v1/sso/oidc/{provider}/test/result | AbilityRoot | handleOAuthSSOTestResult |
+| GET | /api/v1/local-mode | AbilityRead | handleGetLocalMode |
+| POST | /api/v1/local-mode/reset | AbilityRoot | handleLocalModeReset |
 
 ## See also
 

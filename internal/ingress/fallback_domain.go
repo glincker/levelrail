@@ -14,6 +14,9 @@ import (
 // already seen before is one less thing to explain.
 const fallbackDomainSuffix = "sslip.io"
 
+// LocalHost as APP_PUBLIC_HOST selects <app>.localhost names, which browsers and most OSes resolve to loopback with no DNS.
+const LocalHost = "localhost"
+
 // FallbackDomain synthesizes the zero-config, publicly resolvable HTTPS
 // hostname a fresh deploy with no domain configured gets routed under:
 // "<app>.<public-ip-dash-encoded>.sslip.io". Real DNS, so Caddy's
@@ -38,6 +41,13 @@ const fallbackDomainSuffix = "sslip.io"
 //     DNS label (lowercased, non-alphanumeric runs collapsed to a
 //     single hyphen, leading/trailing hyphens trimmed)
 func FallbackDomain(publicHost, serviceName string) (domain string, ok bool) {
+	if strings.EqualFold(strings.TrimSpace(publicHost), LocalHost) {
+		label := sanitizeDNSLabel(serviceName)
+		if label == "" {
+			return "", false
+		}
+		return label + "." + LocalHost, true
+	}
 	ip := net.ParseIP(strings.TrimSpace(publicHost))
 	if ip == nil {
 		return "", false

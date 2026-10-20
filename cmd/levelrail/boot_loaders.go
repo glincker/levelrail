@@ -22,6 +22,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/localmode"
 	"github.com/GLINCKER/levelrail/internal/pkgregistry"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
@@ -41,6 +42,9 @@ func loadBrand() (*brand.Brand, error) {
 		path = defaultBrandFile
 	}
 	b, err := brand.Load(path)
+	if err != nil && os.IsNotExist(errors.Unwrap(err)) && localmode.Enabled(os.Getenv) {
+		return brand.LoadEmbedded()
+	}
 	if err != nil && os.IsNotExist(errors.Unwrap(err)) {
 		return nil, fmt.Errorf("%w (running via install.sh sets this up automatically; running the binary directly needs either a brand.yaml file at %q or APP_BRAND_FILE pointing at one)", err, path)
 	}

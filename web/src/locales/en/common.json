@@ -408,6 +408,22 @@
     "signInTab": "Sign in",
     "setupTab": "Set up admin account"
   },
+  "localMode": {
+    "title": "This is a local instance",
+    "body": "Everything here lives on this machine and is only reachable from it. Data directory:",
+    "resetUnavailable": "Reset is available when the instance was started with the dev command.",
+    "reset": "Reset",
+    "failed": "The reset could not be started.",
+    "dialog": {
+      "title": "Reset this local instance?",
+      "description": "All apps, database records, secrets and settings are deleted and the instance starts fresh.",
+      "consequence1": "Containers already created keep running until you remove them.",
+      "consequence2": "A new admin password is generated and printed in the terminal running the dev command.",
+      "confirm": "Reset instance",
+      "resetting": "Resetting...",
+      "cancel": "Cancel"
+    }
+  },
   "controlPlaneRestart": {
     "action": "Restart control plane",
     "title": "Restart the control plane?",

@@ -55,6 +55,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return exitOK
 	case "up":
 		return runUp(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
+	case "dev":
+		return runDev(prog, args[1:], stdout, stderr, lookupEnv)
 	case "open":
 		return runOpen(prog, args[1:], stdout, stderr, lookupEnv)
 	case "login":
@@ -319,6 +321,7 @@ Usage:
   %[1]s up [dir] [--with postgres,redis] [--domain D] [flags]   deploy a directory with one command: infer, create or update, databases, build, domain
   %[1]s login [--device] [flags]     sign in and save a token, same as auth login
   %[1]s open <app> [flags]           print an app's public URLs
+  %[1]s dev [status|stop] [flags]    run a private instance on this machine, apps at <app>.localhost
   %[1]s backup <database> [--target ID] [flags]   back a database up now, same as backups trigger
   %[1]s restore <database> --latest --confirm NAME [flags]   restore a database, same as backups restore
   %[1]s apps create [flags]         create an app

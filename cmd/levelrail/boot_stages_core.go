@@ -127,6 +127,10 @@ func (s *bootState) bootIdentity() error {
 		logger.Warn("dev admin account not bootstrapped", slog.String("error", err.Error()))
 	}
 
+	if err := applyLocalMode(ctx, logger, db); err != nil {
+		return err
+	}
+
 	ensureSetupToken(ctx, logger, db)
 
 	// A missing dev-fixtures file is fine: it is an opt-in layer on dev mode.

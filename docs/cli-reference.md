@@ -133,6 +133,15 @@ levelrail-cli restore <database> (--backup ID | --latest) --confirm NAME [flags]
 ```
 `open` prints the app's public URLs. `login` is `auth login`. `backup` is `backups trigger` and uses the only configured backup target when there is exactly one. `restore` is `backups restore` and `--latest` picks the newest succeeded backup.
 
+## Local instance
+
+```
+levelrail-cli dev [--port N] [--data-dir DIR] [--no-open] [--reset] [--bin PATH]
+levelrail-cli dev status [--json]
+levelrail-cli dev stop
+```
+Run a private control plane on loopback with a generated admin and `<app>.localhost` addresses. See [Run it on your laptop](/local-development).
+
 ## Apps
 
 `apps list` prints every app the caller can read as a bare JSON array. On a fleet large enough that matters, add `--max-items N` to cap the page size; stdout stays a bare array and the paging info goes to stderr as `next_token=N total_count=M`; an empty `next_token` means there is no further page. Pass that `next_token` back in as `--starting-token` to fetch the next page (requires `--max-items`, since the server only pages a result when a limit is set):
