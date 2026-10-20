@@ -23,6 +23,9 @@ const (
 	ExportKindLogsLoki     ExportKind = "logs_loki"
 	ExportKindAuditWebhook ExportKind = "audit_webhook"
 	ExportKindAuditS3      ExportKind = "audit_s3"
+	ExportKindAuditSplunk  ExportKind = "audit_splunk"
+	ExportKindAuditSyslog  ExportKind = "audit_syslog"
+	ExportKindAuditOTLP    ExportKind = "audit_otlp"
 	ExportKindMetricsOTLP  ExportKind = "metrics_otlp"
 	ExportKindLogsOTLP     ExportKind = "logs_otlp"
 
@@ -68,6 +71,18 @@ type ExportOptions struct {
 	HeaderNames []string `json:"header_names,omitempty"`
 	// HasHMACKey reports that a signing key is stored.
 	HasHMACKey bool `json:"has_hmac_key,omitempty"`
+	// Index, Source and SourceType are the Splunk HEC event metadata.
+	Index      string `json:"index,omitempty"`
+	Source     string `json:"source,omitempty"`
+	SourceType string `json:"source_type,omitempty"`
+	// Gzip compresses Splunk and OTLP audit request bodies.
+	Gzip bool `json:"gzip,omitempty"`
+	// InsecureSkipVerify disables TLS certificate verification for the
+	// Splunk, syslog and OTLP audit sinks. Off by default.
+	InsecureSkipVerify bool `json:"insecure_skip_verify,omitempty"`
+	// Facility and AppName are the syslog audit header fields.
+	Facility string `json:"facility,omitempty"`
+	AppName  string `json:"app_name,omitempty"`
 }
 
 // ExportDestination is one outbound export configuration.
@@ -285,7 +300,7 @@ func (db *DB) GetExportStatus(ctx context.Context, id string) (ExportStatus, err
 // order makes the cursor safe across rows sharing a timestamp.
 func (db *DB) ListAuditEntriesAfter(ctx context.Context, afterAt, afterID string, to *time.Time, limit int) ([]AuditEntry, error) {
 	query := `
-		SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client, action, on_behalf_of
+		SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client, action, on_behalf_of, chain_seq, chain_prev, chain_hash, chain_alg
 		FROM audit_log WHERE (created_at > ? OR (created_at = ? AND id > ?))`
 	args := []any{afterAt, afterAt, afterID}
 	if to != nil {
@@ -302,9 +317,11 @@ func (db *DB) ListAuditEntriesAfter(ctx context.Context, afterAt, afterID string
 	var out []AuditEntry
 	for rows.Next() {
 		var e AuditEntry
-		if err := rows.Scan(&e.ID, &e.ActorType, &e.ActorID, &e.ActorName, &e.Ability, &e.Method, &e.Path, &e.StatusCode, &e.RemoteAddr, &e.CreatedAt, &e.ClientKind, &e.AgentName, &e.AgentClient, &e.Action, &e.OnBehalfOf); err != nil {
+		var seq sql.NullInt64
+		if err := rows.Scan(&e.ID, &e.ActorType, &e.ActorID, &e.ActorName, &e.Ability, &e.Method, &e.Path, &e.StatusCode, &e.RemoteAddr, &e.CreatedAt, &e.ClientKind, &e.AgentName, &e.AgentClient, &e.Action, &e.OnBehalfOf, &seq, &e.ChainPrev, &e.ChainHash, &e.ChainAlg); err != nil {
 			return nil, fmt.Errorf("store: scan audit entry row: %w", err)
 		}
+		e.ChainSeq = seq.Int64
 		out = append(out, e)
 	}
 	if err := rows.Err(); err != nil {

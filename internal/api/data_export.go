@@ -60,6 +60,14 @@ type exportOptionsResource struct {
 	Site            string            `json:"site,omitempty"`
 	Dataset         string            `json:"dataset,omitempty"`
 	Username        string            `json:"username,omitempty"`
+	// Audit stream sink settings (audit_splunk, audit_syslog, audit_otlp).
+	Index              string `json:"index,omitempty"`
+	Source             string `json:"source,omitempty"`
+	SourceType         string `json:"source_type,omitempty"`
+	Gzip               bool   `json:"gzip,omitempty"`
+	InsecureSkipVerify bool   `json:"insecure_skip_verify,omitempty"`
+	Facility           string `json:"facility,omitempty"`
+	AppName            string `json:"app_name,omitempty"`
 }
 
 // exportDestinationResource never carries header values or the signing
@@ -83,11 +91,13 @@ type exportDestinationResource struct {
 }
 
 func toExportOptions(o store.ExportOptions) exportOptionsResource {
-	return exportOptionsResource{StorageTargetID: o.StorageTargetID, Prefix: o.Prefix, Labels: o.Labels, IntervalSeconds: o.IntervalSeconds, Backfill: o.Backfill, Region: o.Region, Site: o.Site, Dataset: o.Dataset, Username: o.Username}
+	return exportOptionsResource{StorageTargetID: o.StorageTargetID, Prefix: o.Prefix, Labels: o.Labels, IntervalSeconds: o.IntervalSeconds, Backfill: o.Backfill, Region: o.Region, Site: o.Site, Dataset: o.Dataset, Username: o.Username,
+		Index: o.Index, Source: o.Source, SourceType: o.SourceType, Gzip: o.Gzip, InsecureSkipVerify: o.InsecureSkipVerify, Facility: o.Facility, AppName: o.AppName}
 }
 
 func (o exportOptionsResource) toStore() store.ExportOptions {
-	return store.ExportOptions{StorageTargetID: o.StorageTargetID, Prefix: o.Prefix, Labels: o.Labels, IntervalSeconds: o.IntervalSeconds, Backfill: o.Backfill, Region: o.Region, Site: o.Site, Dataset: o.Dataset, Username: o.Username}
+	return store.ExportOptions{StorageTargetID: o.StorageTargetID, Prefix: o.Prefix, Labels: o.Labels, IntervalSeconds: o.IntervalSeconds, Backfill: o.Backfill, Region: o.Region, Site: o.Site, Dataset: o.Dataset, Username: o.Username,
+		Index: o.Index, Source: o.Source, SourceType: o.SourceType, Gzip: o.Gzip, InsecureSkipVerify: o.InsecureSkipVerify, Facility: o.Facility, AppName: o.AppName}
 }
 
 func toExportDestinationResource(d store.ExportDestination, st store.ExportStatus) exportDestinationResource {
@@ -101,7 +111,7 @@ func toExportDestinationResource(d store.ExportDestination, st store.ExportStatu
 	return exportDestinationResource{
 		ID: d.ID, Name: d.Name, Kind: d.Kind, Endpoint: d.Endpoint, Enabled: d.Enabled, Apps: apps, MinLevel: d.MinLevel,
 		Options: toExportOptions(d.Options), HeaderNames: names, HasHMACKey: d.Options.HasHMACKey,
-		HasAPIKey: (dataexport.IsVendorLogKind(d.Kind) || d.Kind == store.ExportKindMetricsRemoteWrite) && len(names) > 0,
+		HasAPIKey: (dataexport.IsVendorLogKind(d.Kind) || d.Kind == store.ExportKindMetricsRemoteWrite || d.Kind == store.ExportKindAuditSplunk) && len(names) > 0,
 		Status: exportStatusResource{
 			LastSuccessAt: st.LastSuccessAt, LastError: st.LastError, LastErrorAt: st.LastErrorAt, SentTotal: st.SentTotal,
 			DroppedTotal: st.DroppedTotal, FailuresTotal: st.FailuresTotal, QueueDepth: st.QueueDepth,
@@ -260,6 +270,8 @@ func (rt *Router) handleDeleteExportDestination(w http.ResponseWriter, r *http.R
 type exportTestResponse struct {
 	OK    bool   `json:"ok"`
 	Error string `json:"error,omitempty"`
+	// Fix names the remedy the dashboard offers: bad_token, tls_error, unreachable, rejected or private_blocked.
+	Fix string `json:"fix,omitempty"`
 }
 
 // handleTestExportDestination sends one probe. A delivery failure is the
@@ -279,7 +291,7 @@ func (rt *Router) handleTestExportDestination(w http.ResponseWriter, r *http.Req
 		if len(msg) > 300 {
 			msg = msg[:300]
 		}
-		writeJSON(w, http.StatusOK, exportTestResponse{OK: false, Error: msg})
+		writeJSON(w, http.StatusOK, exportTestResponse{OK: false, Error: msg, Fix: string(dataexport.ClassifyTestError(err))})
 		return
 	}
 	writeJSON(w, http.StatusOK, exportTestResponse{OK: true})

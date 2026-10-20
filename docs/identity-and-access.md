@@ -555,6 +555,8 @@ Recording is best-effort and runs after the real request completes. A failed aud
 
 **Tamper evidence.** Every row is chained to the one before it with an HMAC under a random key that is wrapped by the master key, and a signed checkpoint is written every 64 rows. `levelrail-cli audit-verify` (or the badge on the audit log page, or `GET /api/v1/audit-log/verify`) reports rows that were edited, removed or cut off the end, and exits 1 on a failure. Purging keeps a compact link for each removed run, so retention does not break the chain. Rows written before the upgrade are not chained.
 
+**Streaming to a SIEM.** Stream the log to Splunk, syslog or an OpenTelemetry collector with [data export](/data-export#splunk-syslog-and-opentelemetry-sinks). Every event carries `chain_seq`, `chain_prev`, `chain_hash` and `chain_alg`, so a receiver can check that sequence numbers are contiguous and that each `chain_prev` equals the previous row's `chain_hash`. Recomputing a hash needs the wrapped chain key and the full row, so run `levelrail-cli audit-verify` on the control plane for a complete check. Fields are listed in [Audit event schema](/audit-event-schema).
+
 **Secret values.** Values the secrets manager has stored or handed out are masked in audit rows, deploy and build logs, container log storage and the control plane's own log. A value shorter than 8 characters is not masked.
 
 ## API reference

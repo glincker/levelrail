@@ -55,7 +55,8 @@ func exportDestinationsUsage(prog string) string {
   %[1]s export audit [--from T] [--to T] [--format ndjson|csv] [flags]   download the audit log
 
 Kinds: logs_http, logs_loki, logs_otlp, logs_syslog, logs_newrelic, logs_datadog, logs_axiom,
-logs_betterstack, audit_webhook, audit_s3, metrics_otlp, metrics_remote_write.
+logs_betterstack, audit_webhook, audit_s3, audit_splunk, audit_syslog, audit_otlp, metrics_otlp,
+metrics_remote_write.
 Run "%[1]s export destinations create -h" for the create flags.
 `, prog)
 }
@@ -93,8 +94,9 @@ func printExportTable(out io.Writer, dests []apiclient.ExportDestinationResource
 func runExportDestCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var name, kind, endpoint, minLevel, target, prefix, hmacKey string
 	var apiKeyEnv, region, site, dataset, username string
+	var index, source, sourceType, facility, appName string
 	var interval int
-	var backfill, disabled bool
+	var backfill, disabled, gzip, insecure bool
 	var apps csvListFlag
 	headers := stringMapFlag{}
 	labels := stringMapFlag{}
@@ -104,9 +106,17 @@ func runExportDestCreate(prog string, args []string, stdout, stderr io.Writer, l
 Flags:
   --name string          destination name (required)
   --kind string          logs_http, logs_loki, logs_otlp, logs_syslog, logs_newrelic, logs_datadog, logs_axiom,
-                         logs_betterstack, audit_webhook, audit_s3, metrics_otlp or metrics_remote_write (required)
-  --endpoint string      http(s) URL, or tcp://host:port or tls://host:port for syslog; optional for vendor kinds
-  --api-key-env NAME     environment variable holding a vendor key, or the remote write password or token
+                         logs_betterstack, audit_webhook, audit_s3, audit_splunk, audit_syslog, audit_otlp,
+                         metrics_otlp or metrics_remote_write (required)
+  --endpoint string      http(s) URL, or tcp://, tls:// or udp:// host:port for syslog; optional for vendor kinds
+  --api-key-env NAME     environment variable holding a vendor key, the Splunk HEC token, or the remote write password or token
+  --index NAME           audit_splunk: HEC index
+  --source NAME          audit_splunk: HEC source (default: the product short name)
+  --source-type NAME     audit_splunk: HEC sourcetype
+  --facility NAME        audit_syslog: facility such as authpriv (default) or local0
+  --app-name NAME        audit_syslog: RFC 5424 APP-NAME
+  --gzip                 audit_splunk and audit_otlp: gzip request bodies
+  --insecure-skip-verify skip TLS certificate verification (audit_splunk, audit_syslog, audit_otlp), unsafe
   --username string      basic auth user for metrics_remote_write (with --api-key-env; without it the key is sent as a bearer token)
   --region us|eu         New Relic and Axiom region
   --site HOST            Datadog site, for example datadoghq.eu
@@ -141,6 +151,13 @@ Flags:
 		fs.IntVar(&interval, "interval", 0, "metrics push interval in seconds")
 		fs.BoolVar(&backfill, "backfill", false, "start audit export from the oldest row")
 		fs.BoolVar(&disabled, "disabled", false, "create paused")
+		fs.StringVar(&index, "index", "", "Splunk HEC index")
+		fs.StringVar(&source, "source", "", "Splunk HEC source")
+		fs.StringVar(&sourceType, "source-type", "", "Splunk HEC sourcetype")
+		fs.StringVar(&facility, "facility", "", "syslog facility")
+		fs.StringVar(&appName, "app-name", "", "syslog APP-NAME")
+		fs.BoolVar(&gzip, "gzip", false, "gzip request bodies")
+		fs.BoolVar(&insecure, "insecure-skip-verify", false, "skip TLS certificate verification")
 	})
 	if !ok {
 		return code
@@ -151,7 +168,8 @@ Flags:
 	enabled := !disabled
 	req := apiclient.CreateExportDestinationRequest{
 		Name: name, Kind: kind, Endpoint: endpoint, Enabled: &enabled, Apps: apps, MinLevel: minLevel, HMACKey: hmacKey,
-		Options: apiclient.ExportOptions{StorageTargetID: target, Prefix: prefix, IntervalSeconds: interval, Backfill: backfill, Region: region, Site: site, Dataset: dataset, Username: username},
+		Options: apiclient.ExportOptions{StorageTargetID: target, Prefix: prefix, IntervalSeconds: interval, Backfill: backfill, Region: region, Site: site, Dataset: dataset, Username: username,
+			Index: index, Source: source, SourceType: sourceType, Facility: facility, AppName: appName, Gzip: gzip, InsecureSkipVerify: insecure},
 	}
 	if apiKeyEnv != "" {
 		v, found := lookupEnv(apiKeyEnv)
@@ -203,11 +221,30 @@ func runExportDestTest(prog string, args []string, stdout, stderr io.Writer, loo
 			return
 		}
 		_, _ = fmt.Fprintf(stdout, "destination %s failed: %s\n", id, res.Error)
+		if hint := exportFixHint(res.Fix); hint != "" {
+			_, _ = fmt.Fprintf(stdout, "fix: %s\n", hint)
+		}
 	})
 	if status == exitOK && !res.OK {
 		return exitCheckFailed
 	}
 	return status
+}
+
+func exportFixHint(fix string) string {
+	switch fix {
+	case "bad_token":
+		return "the collector rejected the token; create the destination again with a valid token"
+	case "tls_error":
+		return "the certificate is not trusted; use a trusted certificate or, for a self-signed one, recreate with --insecure-skip-verify"
+	case "unreachable":
+		return "the collector could not be reached; check the address, port and firewall"
+	case "rejected":
+		return "the collector refused the request; check the index, source and endpoint path"
+	case "private_blocked":
+		return "internal addresses are blocked; the operator can allow them with the export private network setting"
+	}
+	return ""
 }
 
 func runExportDestStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

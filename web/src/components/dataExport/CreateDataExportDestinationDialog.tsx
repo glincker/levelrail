@@ -26,6 +26,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
 import { BrandIcon } from '../BrandIcon'
 import { VendorFields } from './VendorFields'
+import { AuditSinkFields } from './AuditSinkFields'
+import {
+  applyAuditSink,
+  EMPTY_AUDIT_SINK,
+  isAuditStreamKind,
+  type AuditSinkValues,
+} from '../../lib/auditSink'
 import { KIND_MARKS } from '../../lib/dataExportKinds'
 import { useCreateDataExportDestination } from '../../queries/dataExport'
 import { useStorageDestinationsOptional } from '../../queries/storage'
@@ -45,6 +52,9 @@ const KINDS: DataExportKind[] = [
   'logs_syslog',
   'audit_webhook',
   'audit_s3',
+  'audit_splunk',
+  'audit_syslog',
+  'audit_otlp',
   'metrics_otlp',
   'metrics_remote_write',
 ]
@@ -60,6 +70,9 @@ const KIND_KEYS = {
   logs_betterstack: 'kinds.logs_betterstack',
   audit_webhook: 'kinds.audit_webhook',
   audit_s3: 'kinds.audit_s3',
+  audit_splunk: 'kinds.audit_splunk',
+  audit_syslog: 'kinds.audit_syslog',
+  audit_otlp: 'kinds.audit_otlp',
   metrics_otlp: 'kinds.metrics_otlp',
   metrics_remote_write: 'kinds.metrics_remote_write',
 } as const satisfies Record<DataExportKind, string>
@@ -116,8 +129,10 @@ export function CreateDataExportDestinationDialog() {
   const [site, setSite] = useState('')
   const [dataset, setDataset] = useState('')
   const [username, setUsername] = useState('')
+  const [sink, setSink] = useState<AuditSinkValues>(EMPTY_AUDIT_SINK)
 
   function reset() {
+    setSink(EMPTY_AUDIT_SINK)
     setName('')
     setEndpoint('')
     setApps('')
@@ -160,7 +175,11 @@ export function CreateDataExportDestinationDialog() {
     }
     if (isLogKind(kind) && level !== 'any') req.min_level = level
     const parsed = parseHeaders(headers)
-    if (Object.keys(parsed).length > 0 && kind !== 'logs_syslog') {
+    if (
+      Object.keys(parsed).length > 0 &&
+      kind !== 'logs_syslog' &&
+      kind !== 'audit_syslog'
+    ) {
       req.headers = parsed
     }
     if (kind === 'audit_webhook' && hmacKey) req.hmac_key = hmacKey
@@ -185,6 +204,7 @@ export function CreateDataExportDestinationDialog() {
     if (kind === 'logs_datadog' && site.trim()) options.site = site.trim()
     if (kind === 'logs_axiom') options.dataset = dataset.trim()
     if (Object.keys(options).length > 0) req.options = options
+    applyAuditSink(kind, sink, backfill, req)
 
     create.mutate(req, {
       onSuccess: (created) => {
@@ -209,6 +229,9 @@ export function CreateDataExportDestinationDialog() {
     logs_betterstack: t('form.endpointOverride'),
     audit_webhook: t('form.endpointHttp'),
     audit_s3: '',
+    audit_splunk: t('form.endpointSplunk'),
+    audit_syslog: t('form.endpointAuditSyslog'),
+    audit_otlp: t('form.endpointOtlp'),
     metrics_otlp: t('form.endpointOtlp'),
     metrics_remote_write: t('form.endpointRemoteWrite'),
   }[kind]
@@ -218,10 +241,12 @@ export function CreateDataExportDestinationDialog() {
     name.trim() !== '' &&
     (kind === 'audit_s3'
       ? target !== ''
-      : isVendorKind(kind)
-        ? apiKey.trim() !== '' &&
-          (kind !== 'logs_axiom' || dataset.trim() !== '')
-        : endpoint !== '')
+      : kind === 'audit_splunk'
+        ? sink.token.trim() !== '' && endpoint !== ''
+        : isVendorKind(kind)
+          ? apiKey.trim() !== '' &&
+            (kind !== 'logs_axiom' || dataset.trim() !== '')
+          : endpoint !== '')
 
   return (
     <Dialog
@@ -354,6 +379,16 @@ export function CreateDataExportDestinationDialog() {
             />
           ) : null}
 
+          {isAuditStreamKind(kind) ? (
+            <AuditSinkFields
+              kind={kind}
+              values={sink}
+              onChange={(next) => {
+                setSink((cur) => ({ ...cur, ...next }))
+              }}
+            />
+          ) : null}
+
           {hasAppFilter(kind) ? (
             <Field>
               <FieldLabel htmlFor="export-apps">{t('form.apps')}</FieldLabel>
@@ -397,7 +432,10 @@ export function CreateDataExportDestinationDialog() {
             </>
           ) : null}
 
-          {kind !== 'logs_syslog' && kind !== 'audit_s3' ? (
+          {kind !== 'logs_syslog' &&
+          kind !== 'audit_syslog' &&
+          kind !== 'audit_s3' &&
+          kind !== 'audit_splunk' ? (
             <Field>
               <FieldLabel htmlFor="export-headers">
                 {t('form.headers')}
@@ -485,7 +523,9 @@ export function CreateDataExportDestinationDialog() {
             </Field>
           ) : null}
 
-          {kind === 'audit_s3' || kind === 'audit_webhook' ? (
+          {kind === 'audit_s3' ||
+          kind === 'audit_webhook' ||
+          isAuditStreamKind(kind) ? (
             <label className="flex items-center gap-2 text-sm text-foreground">
               <Switch checked={backfill} onCheckedChange={setBackfill} />
               {t('form.backfill')}

@@ -41,6 +41,8 @@ const (
 
 	// KindLogArchiveStale is platform-wide: it fires when a log archive policy fails or stops succeeding.
 	KindLogArchiveStale Kind = "log_archive_stale"
+	// KindExportBehind is platform-wide: it fires when an export destination (audit or log sink) keeps failing.
+	KindExportBehind Kind = "export_behind"
 	// KindRestoreDrillFailed is platform-wide: it fires while a resource's latest restore drill is failed.
 	KindRestoreDrillFailed Kind = "restore_drill_failed"
 

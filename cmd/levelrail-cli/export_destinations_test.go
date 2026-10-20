@@ -163,3 +163,41 @@ func TestRun_ExportDestinationsCreateVendorReadsKeyFromEnv(t *testing.T) {
 		t.Errorf("the key was echoed: %q", stdout.String())
 	}
 }
+
+func TestRun_ExportDestinationsCreateSplunkSinkFlagsAndTestFix(t *testing.T) {
+	var got apiclient.CreateExportDestinationRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasSuffix(r.URL.Path, "/test") {
+			_ = json.NewEncoder(w).Encode(apiclient.ExportTestResult{OK: false, Error: "x509: unknown authority", Fix: "tls_error"})
+			return
+		}
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(apiclient.ExportDestinationResource{ID: "exp_9", Name: got.Name, Kind: got.Kind})
+	}))
+	defer srv.Close()
+	env := envMap()
+	lookup := func(k string) (string, bool) {
+		if k == "HEC_TOKEN" {
+			return "hec-secret", true
+		}
+		return env(k)
+	}
+	var stdout, stderr bytes.Buffer
+	code := run("levelrail-cli-test", []string{
+		"export", "destinations", "create", "--name", "splunk", "--kind", "audit_splunk", "--endpoint", "https://203.0.113.5:8088",
+		"--api-key-env", "HEC_TOKEN", "--index", "audit", "--source-type", "lr:audit", "--gzip", "--insecure-skip-verify", "--api-url", srv.URL,
+	}, &stdout, &stderr, lookup)
+	if code != exitOK {
+		t.Fatalf("exit = %d stderr=%q", code, stderr.String())
+	}
+	if got.APIKey != "hec-secret" || got.Options.Index != "audit" || got.Options.SourceType != "lr:audit" || !got.Options.Gzip || !got.Options.InsecureSkipVerify {
+		t.Fatalf("request = %+v", got)
+	}
+	stdout.Reset()
+	code = run("levelrail-cli-test", []string{"export", "destinations", "test", "exp_9", "--api-url", srv.URL}, &stdout, &stderr, lookup)
+	if code == exitOK || !strings.Contains(stdout.String(), "fix: ") {
+		t.Fatalf("exit = %d stdout = %q, want a failure with a fix hint", code, stdout.String())
+	}
+}

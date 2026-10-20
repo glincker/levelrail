@@ -20,6 +20,9 @@
     "logs_syslog": "Logs to syslog (RFC 5424)",
     "audit_webhook": "Audit log webhook",
     "audit_s3": "Audit log to a storage bucket",
+    "audit_splunk": "Audit log to Splunk (HEC)",
+    "audit_syslog": "Audit log to syslog (RFC 5424)",
+    "audit_otlp": "Audit log over OTLP/HTTP",
     "metrics_otlp": "Metrics over OTLP/HTTP",
     "metrics_remote_write": "Metrics via Prometheus remote write",
     "logs_newrelic": "Logs to New Relic",
@@ -56,7 +59,22 @@
     "deleteDescription": "Delivery stops and its stored credentials are removed. Data already delivered stays where it is.",
     "deleteConfirm": "Delete destination",
     "deleting": "Deleting",
-    "secretsSet": "Credentials stored (write-only)"
+    "secretsSet": "Credentials stored (write-only)",
+    "behind": "Behind: deliveries are failing, audit rows wait safely in the log"
+  },
+  "fix": {
+    "title": "Test failed",
+    "bad_token": "The collector rejected the token. Paste a valid one and test again.",
+    "tls_error": "The collector's certificate is not trusted. Install a trusted certificate, or accept this one if you control the collector.",
+    "unreachable": "The collector could not be reached. Check the address, the port and any firewall between the two.",
+    "rejected": "The collector refused the request. Check the index, source and endpoint path.",
+    "private_blocked": "This control plane blocks internal addresses. An operator can allow them with APP_EXPORT_ALLOW_PRIVATE_NETWORKS=true, then test again.",
+    "newToken": "New token",
+    "saveToken": "Save and test again",
+    "trustCert": "Accept this certificate and test again",
+    "trustWarning": "Skips certificate verification for this destination. Anyone on the path can read or alter the audit log in transit.",
+    "retest": "Test again",
+    "saving": "Saving"
   },
   "form": {
     "title": "Add export destination",
@@ -96,6 +114,19 @@
     "regionEu": "Europe",
     "site": "Datadog site",
     "dataset": "Axiom dataset",
-    "endpointOverride": "Leave blank to use the vendor endpoint"
+    "endpointOverride": "Leave blank to use the vendor endpoint",
+    "endpointSplunk": "https://splunk.example.com:8088",
+    "endpointAuditSyslog": "udp://logs.example.com:514, tcp:// or tls://",
+    "hecToken": "HEC token",
+    "hecTokenHint": "Stored encrypted and never shown again. Use a token limited to one index.",
+    "index": "Index (optional)",
+    "source": "Source (optional)",
+    "sourceType": "Source type (optional)",
+    "facility": "Facility",
+    "appName": "App name (optional)",
+    "gzip": "Compress request bodies (gzip)",
+    "insecure": "Skip TLS certificate verification",
+    "insecureWarning": "Unsafe: the audit log can be read or altered in transit. Use only for a collector you control.",
+    "auditStreamHint": "Delivery is at least once and resumes from where it stopped. Each event carries the audit hash chain fields so the receiver can verify the log."
   }
 }

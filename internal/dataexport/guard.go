@@ -32,7 +32,39 @@ func allowPrivate() bool {
 // newHTTPClient returns an HTTP client that refuses internal addresses at
 // dial time (including redirects) unless an allow env var is set.
 func newHTTPClient() *http.Client {
-	return netguard.NewClientAllowing(AllowPrivateEnv, netguard.AllowPrivateEnv)
+	c := netguard.NewClientAllowing(AllowPrivateEnv, netguard.AllowPrivateEnv)
+	if tr, ok := c.Transport.(*http.Transport); ok {
+		tr.DialContext = guardedDialer().DialContext
+	}
+	return c
+}
+
+var metadataPrefixes = []netip.Prefix{
+	netip.MustParsePrefix("169.254.0.0/16"),
+	netip.MustParsePrefix("fe80::/10"),
+	netip.MustParsePrefix("fd00:ec2::/32"),
+	netip.MustParsePrefix("100.100.100.200/32"),
+}
+
+// isMetadataAddr reports link-local and cloud metadata addresses, which stay
+// refused even when private destinations are allowed.
+func isMetadataAddr(ip netip.Addr) bool {
+	ip = ip.Unmap()
+	for _, p := range metadataPrefixes {
+		if p.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+func isMetadataHost(host string) bool {
+	h := strings.ToLower(strings.Trim(host, "[]"))
+	if h == "metadata" || h == "metadata.google.internal" {
+		return true
+	}
+	ip, err := netip.ParseAddr(h)
+	return err == nil && isMetadataAddr(ip)
 }
 
 // ValidateHTTPEndpoint rejects, at configuration time, an endpoint that is
@@ -44,6 +76,9 @@ func ValidateHTTPEndpoint(ctx context.Context, raw string) error {
 	}
 	if u.User != nil {
 		return fmt.Errorf("endpoint must not embed credentials, use headers instead")
+	}
+	if isMetadataHost(u.Hostname()) {
+		return fmt.Errorf("%w: cloud metadata and link-local addresses are never allowed", ErrBlockedDestination)
 	}
 	if allowPrivate() {
 		return nil
@@ -81,9 +116,6 @@ func guardedDialer() *net.Dialer {
 		Timeout:   10 * time.Second,
 		KeepAlive: 30 * time.Second,
 		Control: func(_, address string, _ syscall.RawConn) error {
-			if allowPrivate() {
-				return nil
-			}
 			host, _, err := net.SplitHostPort(address)
 			if err != nil {
 				return fmt.Errorf("dataexport: parse dial address %q: %w", address, err)
@@ -91,6 +123,12 @@ func guardedDialer() *net.Dialer {
 			ip, err := netip.ParseAddr(strings.Trim(host, "[]"))
 			if err != nil {
 				return fmt.Errorf("dataexport: parse dial address %q: %w", address, err)
+			}
+			if isMetadataAddr(ip) {
+				return fmt.Errorf("%w: %s", ErrBlockedDestination, ip)
+			}
+			if allowPrivate() {
+				return nil
 			}
 			if netguard.IsBlocked(ip) {
 				return fmt.Errorf("%w: %s", ErrBlockedDestination, ip)

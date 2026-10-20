@@ -43,6 +43,11 @@ type AuditEntry struct {
 	OnBehalfOf string
 	// Detail is optional JSON describing a lifecycle event, empty for plain request rows.
 	Detail string
+	// Chain fields are filled only when rows are read back for export.
+	ChainSeq  int64
+	ChainPrev string
+	ChainHash string
+	ChainAlg  string
 }
 
 // auditTimeLayout formats a CreatedAt value with a fixed 9-digit

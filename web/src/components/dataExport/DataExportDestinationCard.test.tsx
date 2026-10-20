@@ -103,4 +103,44 @@ describe('DataExportDestinationCard', () => {
       )
     })
   })
+
+  it('offers to accept a self-signed certificate after a TLS failure and retests', async () => {
+    const responses = [
+      { ok: false, error: 'x509: unknown authority', fix: 'tls_error' },
+      { ...base, options: { insecure_skip_verify: true } },
+      { ok: true },
+    ]
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify(responses.shift()), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    renderCard({
+      ...base,
+      kind: 'audit_splunk',
+      options: { index: 'audit' },
+      status: { ...base.status, circuit_open: false },
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send test' }))
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'Accept this certificate and test again',
+      }),
+    )
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(3)
+    })
+    const calls = fetchMock.mock.calls as unknown as [string, RequestInit][]
+    expect(calls[1]?.[1].method).toBe('PATCH')
+    expect(JSON.parse(calls[1]?.[1].body as string)).toEqual({
+      options: { index: 'audit', insecure_skip_verify: true },
+    })
+    expect(calls[2]?.[0]).toBe('/api/v1/export/destinations/exp_1/test')
+  })
 })
