@@ -1,0 +1,313 @@
+{
+  "table": {
+    "label": "Deployments",
+    "deploy": "Deployment",
+    "status": "Status",
+    "app": "App",
+    "environment": "Environment",
+    "commit": "Commit",
+    "branch": "Branch",
+    "started": "Started",
+    "by": "By"
+  },
+  "autoRollback": {
+    "title": "Auto-rollback on crashloop",
+    "infoTipLabel": "About auto-rollback on crashloop",
+    "helpLabel": "Auto-rollback guide",
+    "enabledLabel": "Redeploy the last working image automatically",
+    "description": "When a crashloop alert fires for this app, automatically redeploy the most recent successful image older than the one that's crashlooping. Fires at most once per episode; with no older image to fall back to, the app is left to the alert alone.",
+    "switchAriaLabel": "Auto-rollback on crashloop enabled",
+    "toast": {
+      "enabled": "Auto-rollback on crashloop enabled.",
+      "disabled": "Auto-rollback on crashloop disabled.",
+      "errorTitle": "Could not update auto-rollback."
+    }
+  },
+  "autoRollbackSloBurn": {
+    "title": "Auto-rollback on SLO burn",
+    "infoTipLabel": "About auto-rollback on SLO burn",
+    "helpLabel": "Auto-rollback guide",
+    "modeLabel": "Mode",
+    "modeAriaLabel": "Auto-rollback on SLO burn mode",
+    "defaultDescription": "Choose how this app reacts when an SLO burn-rate alert fires.",
+    "modes": {
+      "off": {
+        "label": "Off",
+        "description": "Only alert; never act automatically."
+      },
+      "auto": {
+        "label": "Auto rollback",
+        "description": "Roll back immediately to the most recent successful image older than the one burning the error budget."
+      },
+      "dry_run": {
+        "label": "Dry run",
+        "description": "Log what would have been rolled back, without ever deploying."
+      },
+      "pause_for_human": {
+        "label": "Pause for human",
+        "description": "Open a pending deploy approval for the rollback instead of deploying directly; a teammate approves or rejects it."
+      }
+    },
+    "toast": {
+      "modeSet": "Auto-rollback on SLO burn set to: {{mode}}.",
+      "errorTitle": "Could not update auto-rollback on SLO burn."
+    }
+  },
+  "badgeSettings": {
+    "title": "Deploy status badge",
+    "infoTipLabel": "About the deploy status badge",
+    "enabledLabel": "Public README badge",
+    "description": "Serves a small public SVG showing this app's latest deploy status and when it happened, no authentication required. Leave this off for an app whose deploy status shouldn't be public.",
+    "switchAriaLabel": "Deploy status badge enabled",
+    "embedLabel": "Embed in your README",
+    "toast": {
+      "enabled": "Deploy status badge enabled.",
+      "disabled": "Deploy status badge disabled.",
+      "errorTitle": "Could not update the deploy status badge."
+    }
+  },
+  "releaseLine": {
+    "deployed": "deployed",
+    "from": "from",
+    "source": {
+      "webhook": "a git push",
+      "manual": "the dashboard",
+      "image": "an image deploy",
+      "compose": "a template or compose file",
+      "promote": "a promotion",
+      "clone": "a clone",
+      "schedule": "a schedule",
+      "auto_rollback": "an automatic rollback",
+      "git_push": "a git push to the server"
+    }
+  },
+  "imageAutoUpdate": {
+    "title": "Update when the image changes",
+    "infoTipLabel": "About image auto-update",
+    "description": "Checks this app's image tag against its registry on a schedule and redeploys when the tag points at a new digest. Apps built from source, stopped apps, apps in a deploy freeze and apps in a protected environment are skipped.",
+    "enabledLabel": "Redeploy automatically when the tag moves",
+    "switchAriaLabel": "Image auto-update enabled",
+    "checkNow": "Check now",
+    "checking": "Checking...",
+    "lastCheck": "Last check ({{when}}): {{result}}",
+    "neverChecked": "Not checked yet.",
+    "status": {
+      "updateAvailable": "A newer image is available for this tag.",
+      "upToDate": "Image is up to date.",
+      "updateNow": "Update now",
+      "archMismatch": "This image is built for {{image}} but the node runs {{node}}. It may fail to start."
+    },
+    "toast": {
+      "enabled": "Image auto-update enabled.",
+      "disabled": "Image auto-update disabled.",
+      "errorTitle": "Could not update image auto-update.",
+      "checkFailed": "Image check failed."
+    },
+    "webhookHelp": "Registry push webhook: update on push instead of waiting for the next interval.",
+    "webhookSet": "A registry push webhook is set. Creating a new one replaces it.",
+    "webhookCreate": "Create webhook URL",
+    "webhookRotate": "Replace webhook URL",
+    "webhookUrlLabel": "Registry webhook URL",
+    "webhookShownOnce": "Copy this now, it is not shown again. Paste it as a webhook (POST) in your registry; the URL itself is the secret."
+  },
+  "canary": {
+    "title": "Canary release",
+    "infoTipLabel": "About canary releases",
+    "description": "Run a new image next to the current release and send it a share of requests. Promote it when it looks healthy, or abort and all traffic stays on the current release. A canary that is not ready gets no traffic. Needs a single-replica image app.",
+    "imageLabel": "Canary image",
+    "imagePlaceholder": "registry/app:next",
+    "weightLabel": "Traffic %",
+    "start": "Start canary",
+    "running": "Canary {{image}} is receiving {{weight}}% of requests.",
+    "setWeight": "Set share",
+    "promote": "Promote",
+    "promoteNow": "Promote now",
+    "abort": "Abort",
+    "stagesLabel": "Stages % (optional)",
+    "stagesPlaceholder": "10,25,50,100",
+    "intervalLabel": "Per stage",
+    "maxErrorLabel": "Max error rise (points)",
+    "maxP95Label": "Max p95 ratio",
+    "stageLabel": "Stage {{stage}} of {{count}}",
+    "stageWeights": "{{stages}} %",
+    "compareLabel": "Canary against stable release",
+    "canaryColumn": "Canary",
+    "stableColumn": "Stable",
+    "requests": "Requests this stage",
+    "errorRate": "Error rate (5xx)",
+    "p95": "p95 latency",
+    "next": "{{reason}} ({{elapsed}}s of {{interval}}s). It rolls back automatically if errors or latency rise against the stable release.",
+    "breaching": "Breach: {{reason}}. Rolling back.",
+    "waitingForTraffic": "Waiting for the canary to receive traffic before this stage is judged.",
+    "outcome": {
+      "promoted": "Last canary was promoted",
+      "aborted": "Last canary was aborted",
+      "rolled_back": "Last canary was rolled back automatically"
+    },
+    "outcomeDetail": "{{image}} {{reason}}",
+    "toast": {
+      "started": "Canary started.",
+      "weightSet": "Traffic share updated.",
+      "promoted": "Canary promoted, deploying.",
+      "aborted": "Canary removed.",
+      "errorTitle": "Canary action failed"
+    }
+  },
+  "envCompare": {
+    "title": "Compare env with another app",
+    "pick": "Compare against",
+    "none": "Choose an app",
+    "onlyIn": "Only in {{app}}:",
+    "differs": "Differs:",
+    "secret": "(secret)",
+    "secretOneSide": "(secret on one side only)",
+    "summary": "{{count}} keys identical. Secret values are never read, secrets match by key only."
+  },
+  "appSleep": {
+    "title": "Sleep when idle",
+    "infoTipLabel": "About sleeping apps",
+    "description": "Stop this app after it has had no requests for a while, so it uses no memory or CPU. The next request to its domain starts it and shows a short waking-up page that retries on its own, so the first visitor waits for the cold start.",
+    "enabledLabel": "Sleep when idle",
+    "switchAriaLabel": "Sleep when idle enabled",
+    "minutesLabel": "Custom minutes ({{min}} to {{max}})",
+    "save": "Save",
+    "asleep": "This app is asleep.",
+    "wakeNow": "Wake now",
+    "toast": {
+      "enabled": "Sleep when idle enabled.",
+      "disabled": "Sleep when idle disabled.",
+      "updated": "Idle time updated.",
+      "errorTitle": "Sleep setting failed",
+      "holdUpdated": "Function mode updated.",
+      "portWakeUpdated": "Port wake updated.",
+      "ignoreUpdated": "Ignored paths updated."
+    },
+    "holdLabel": "Hold requests while waking (function mode)",
+    "holdHelp": "A request that arrives while the app is asleep waits for it to start and is then replayed, instead of showing a waking-up page. Use for API callers.",
+    "holdAriaLabel": "Hold requests while waking",
+    "badgeAsleep": "Asleep",
+    "fleetTitle": "Sleeping apps",
+    "fleetSummary": "{{sleeping}} of {{enabled}} apps asleep",
+    "fleetEmpty": "No app sleeps when idle yet. Turn it on from an app's Deploys tab to free its memory while nobody visits.",
+    "sleepNow": "Sleep now",
+    "sleepNowHelp": "Stop the app now instead of waiting for the idle time. The next request starts it.",
+    "fleetEmptyShort": "Nothing sleeps yet",
+    "fleetReclaimedLabel": "memory not in use",
+    "fleetBrowseApps": "Choose apps",
+    "fleetAllAwake": "Every app with sleep on is awake right now.",
+    "fleetMore": "and {{count}} more asleep",
+    "fleetNoLimits": "These apps have no memory limit, so the memory they free cannot be estimated. Set a limit on each app to see it here.",
+    "status": {
+      "ready": "Ready to turn on",
+      "blocked": "Blocked",
+      "awake": "On, awake",
+      "sleeping": "Sleeping now",
+      "waking": "Waking"
+    },
+    "explain": {
+      "generic": "When nobody uses this app for a while it is stopped to free memory and CPU. The next visitor starts it again and waits for a cold start."
+    },
+    "wakeTiming": {
+      "none": "No wakes measured yet, so there is no estimate of how long a wake takes.",
+      "typical": "Usually wakes in about {{typical}}.",
+      "typicalWithP95": "Usually wakes in about {{typical}} (p95 {{p95}}).",
+      "noneShort": "No wake data yet",
+      "short": "Wakes in about {{typical}}",
+      "shortWithP95": "Wakes in about {{typical}} (p95 {{p95}})"
+    },
+    "frees": "Frees about {{size}} while asleep",
+    "checklistLabel": "Sleep eligibility",
+    "blockedPrefix": "Blocks sleep: ",
+    "warnPrefix": "Warning: ",
+    "whatThisMeans": "What this means:",
+    "allClear": "Nothing blocks sleep for this app.",
+    "turnOn": "Turn on sleep when idle",
+    "turnOff": "Turn off sleep when idle",
+    "turnOnHint": "Sleeps after {{minutes}} minutes without use. You can change this afterwards.",
+    "turnOnBlocked": "Fix this first: {{titles}}",
+    "idleTitle": "Sleep after idle for",
+    "presetMinutes_one": "{{count}} minute",
+    "presetMinutes_other": "{{count}} minutes",
+    "activity": {
+      "lastRequest": "Last request",
+      "lastNetwork": "Last network activity",
+      "connections": "Open connections",
+      "sleepsIn": "Sleeps in",
+      "notScheduled": "Not scheduled",
+      "none": "None yet"
+    },
+    "countdown": {
+      "minutes_one": "{{count}} min",
+      "minutes_other": "{{count}} min",
+      "seconds_one": "{{count}} sec",
+      "seconds_other": "{{count}} sec"
+    },
+    "portWake": {
+      "title": "Wake on traffic to published ports",
+      "help": "A connection to port {{ports}} wakes the app, so it can sleep even with a pinned host port.",
+      "aria": "Wake on traffic to published ports"
+    },
+    "ignore": {
+      "title": "Ignored paths",
+      "help": "Requests to these paths never keep the app awake: health checks and uptime monitors.",
+      "remove": "Remove {{path}}",
+      "addLabel": "Path to ignore",
+      "add": "Add"
+    }
+  },
+  "releaseNotes": {
+    "title": "Commits and release notes",
+    "digest": "Image digest",
+    "digestSame": "Same image digest on both sides.",
+    "noCommits": "No commits between these two deploys.",
+    "commitsCount_one": "{{count}} commit between these deploys",
+    "commitsCount_other": "{{count}} commits between these deploys",
+    "generate": "Generate release notes",
+    "generating": "Generating...",
+    "copy": "Copy markdown",
+    "copied": "Release notes copied.",
+    "copyFailed": "Could not copy to the clipboard.",
+    "loadFailed": "Could not generate release notes.",
+    "needsDeploy": "Pick two deploys that recorded a git commit to generate release notes."
+  },
+  "githubActions": {
+    "title": "GitHub Actions reporting",
+    "infoTipLabel": "About GitHub Actions reporting",
+    "description": "When the Levelrail deploy action runs in your workflow, it records a GitHub deployment and a check run on the commit so the result shows on the pull request. A failed report never fails the deploy.",
+    "environmentLabel": "GitHub environment name",
+    "deploymentsLabel": "Record GitHub deployments",
+    "checksLabel": "Post a check run",
+    "snippetHint": "Use glincker/levelrail/integrations/github-action in your workflow, or run levelrail-cli apps github-actions get {{app}}.",
+    "save": "Save",
+    "toast": {
+      "saved": "GitHub Actions reporting saved.",
+      "errorTitle": "Could not save GitHub Actions reporting."
+    }
+  },
+  "ciDeploy": {
+    "title": "Deploy from CI",
+    "infoTipLabel": "About deploying from CI",
+    "description": "Trust a repository and ref, then paste the generated workflow. The job swaps its GitHub identity for a 15 minute token that can only deploy this app, so no long-lived secret is stored. A commit with [skip ci] does not deploy.",
+    "noTrusts": "No repository is trusted to deploy this app yet. Add one below.",
+    "repositoryLabel": "GitHub repository",
+    "repositoryPlaceholder": "owner/name",
+    "refLabel": "Allowed ref",
+    "environmentLabel": "Environment",
+    "environmentPlaceholder": "Any environment",
+    "trust": "Trust",
+    "removeTrust": "Stop trusting {{repository}}",
+    "workflowTitle": "Generated workflow",
+    "copy": "Copy workflow",
+    "needsAddress": "CI tokens are issued for the dashboard address, and none is set yet.",
+    "useThisAddress": "Use {{origin}}",
+    "cliToggle": "Fix via CLI",
+    "toast": {
+      "trusted": "Repository trusted.",
+      "trustError": "Could not add the trust.",
+      "removeError": "Could not remove the trust.",
+      "addressError": "Could not save the dashboard address.",
+      "copied": "Workflow copied.",
+      "copyFailed": "Could not copy to the clipboard."
+    }
+  }
+}

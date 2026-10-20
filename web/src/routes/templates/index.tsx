@@ -1,0 +1,57 @@
+import { useTranslation } from 'react-i18next'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { CreateResourceWizard } from '../../components/CreateResourceWizard'
+import { TemplateMarketplace } from '../../components/TemplateMarketplace'
+import { Button } from '@/components/ui/button'
+import { PageTemplate } from '@/components/shell/PageTemplate'
+import { useDeployTemplateNow } from '../../hooks/useDeployTemplateNow'
+
+// Standalone, shareable "what's in the catalog" page, separate from the
+// in-wizard picker BrowseTemplatesFields owns: this route has no dialog
+// to sit inside, so it's the natural landing target for a template
+// card's name/logo link and for sharing the catalog itself outside the
+// app (no auth-walled dialog to open first). This page gets the full
+// browse/discover treatment (category rail, search, virtualized grid)
+// via TemplateMarketplace; the in-wizard step keeps the compact
+// ServiceTemplateGrid it already had, since a dialog has no room for a
+// sidebar. Only the select/deploy callbacks differ per caller.
+export const Route = createFileRoute('/templates/')({
+  component: TemplatesPage,
+})
+
+function TemplatesPage() {
+  const { t } = useTranslation('templates')
+  const navigate = useNavigate()
+  const deployTemplateNow = useDeployTemplateNow()
+  const newFromTemplate = (
+    <CreateResourceWizard
+      initialSelected="browse-templates"
+      trigger={
+        <Button size="sm" variant="outline">
+          <PlusIcon />
+          {t('page.new')}
+        </Button>
+      }
+    />
+  )
+
+  return (
+    <PageTemplate
+      title={t('page.title')}
+      description={t('page.description')}
+      actions={newFromTemplate}
+    >
+      <TemplateMarketplace
+        onSelect={(id) => {
+          void navigate({ to: '/templates/$id', params: { id } })
+        }}
+        onDeployNow={(template) => {
+          deployTemplateNow.deploy(template.id)
+        }}
+        deployingId={deployTemplateNow.pendingId}
+        emptyAction={newFromTemplate}
+      />
+    </PageTemplate>
+  )
+}

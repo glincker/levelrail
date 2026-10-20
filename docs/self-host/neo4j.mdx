@@ -1,0 +1,67 @@
+---
+title: "Self-host Neo4j with Docker"
+sidebarTitle: "Neo4j"
+description: "A graph database with the Cypher query language, Community Edition, including the browser console."
+"og:url": "https://docs.levelrail.com/self-host/neo4j"
+---
+
+A graph database with the Cypher query language, Community Edition, including the browser console.
+
+This page describes the Levelrail template for Neo4j (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://neo4j.com/docs/.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `neo4j` | `neo4j:5.26-community` | 7474, 7687 | `data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `neo4j` | `NEO4J_AUTH` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`neo4j`): NEO4J_AUTH.
+- Stores data in named volumes (`neo4j`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Neo4j with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Neo4j. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy neo4j --name my-neo4j
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [Baserow](/self-host/baserow)
+- [Bytebase](/self-host/bytebase)
+- [Chroma](/self-host/chroma)
+- [ClickHouse](/self-host/clickhouse)
+
+All templates are listed in the [self-host gallery](/self-host).

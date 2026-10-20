@@ -1,0 +1,12 @@
+{
+  "Status": "failed",
+  "FailingStep": "building",
+  "Error": "deploy: service \"web\": build: process \"/bin/sh -c pip install --no-cache-dir -r requirements.txt\" did not complete successfully: exit code: 1",
+  "LogLines": [
+    "#9 [4/5] RUN pip install --no-cache-dir -r requirements.txt",
+    "#9 1.330 Collecting fastapi==9.9.9",
+    "#9 1.802 ERROR: Could not find a version that satisfies the requirement fastapi==9.9.9 (from versions: 0.1.0, 0.115.0)",
+    "#9 1.803 ERROR: No matching distribution found for fastapi==9.9.9",
+    "#9 ERROR: process \"/bin/sh -c pip install --no-cache-dir -r requirements.txt\" did not complete successfully: exit code: 1"
+  ]
+}

@@ -1,0 +1,492 @@
+package api
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/diskguard"
+	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/cronexpr"
+)
+
+// databaseContainerName mirrors internal/reconcile/database's own
+// containerName ("db-" + dbName), the same duplicate-the-string-format
+// tradeoff databaseControllerName (databases.go) already makes for that
+// package's controller-name convention: a real Go import of
+// internal/reconcile/database from this package would couple the API
+// layer to reconciler internals for the sake of one derived string, and
+// this package's own established pattern is to duplicate a small,
+// stable format instead. If this format ever changes, both copies need
+// updating together; the two existing precedents this mirrors
+// (databaseControllerName here, applicationControllerName for apps) have
+// held stable since this codebase's first release.
+func databaseContainerName(dbName string) string {
+	return "db-" + dbName
+}
+
+// loadDatabaseForRunner looks up name and writes the 404/500 response
+// itself on failure, the shared shape handleTriggerBackup and
+// handleTriggerRestore both need before starting a runner.
+// refuseNoBackups answers 400 for an engine with nothing to back up, so
+// no fake backup is ever offered or recorded. Reports whether it refused.
+func refuseNoBackups(w http.ResponseWriter, engine string) bool {
+	if store.EngineSupportsBackups(engine) {
+		return false
+	}
+	writeError(w, http.StatusBadRequest, "backups are not available for "+engine+" databases: it keeps no data on disk")
+	return true
+}
+
+func (rt *Router) loadDatabaseForRunner(w http.ResponseWriter, r *http.Request, name, logContext string) (*store.DesiredDatabase, bool) {
+	db, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return nil, false
+	}
+	if err != nil {
+		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return nil, false
+	}
+	return db, true
+}
+
+// loadBackupTarget confirms targetID exists, writing the 404/500 response
+// itself on failure, the shared shape handleTriggerBackup and
+// handleSetBackupSchedule both need before using a target.
+func (rt *Router) loadBackupTarget(w http.ResponseWriter, r *http.Request, targetID, logContext string) bool {
+	if _, err := rt.backupTargets.GetBackupTarget(r.Context(), targetID); errors.Is(err, store.ErrBackupTargetNotFound) {
+		writeError(w, http.StatusNotFound, "backup target not found")
+		return false
+	} else if err != nil {
+		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("target_id", targetID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return false
+	}
+	return true
+}
+
+// prepareBackupTrigger validates targetID, confirms the backup target
+// exists, and mints a new backup history ID: the shared steps
+// handleTriggerBackup and handleTriggerVolumeBackup both need before
+// starting their respective runners.
+func (rt *Router) prepareBackupTrigger(w http.ResponseWriter, r *http.Request, targetID, logContext string) (string, bool) {
+	if targetID == "" {
+		writeError(w, http.StatusBadRequest, "target_id is required")
+		return "", false
+	}
+	if !rt.loadBackupTarget(w, r, targetID, logContext+": load backup target failed") {
+		return "", false
+	}
+	if err := backup.CheckWorkDirSpace(); err != nil {
+		writeError(w, http.StatusInsufficientStorage, err.Error())
+		return "", false
+	}
+	historyID, err := randomBackupHistoryID()
+	if err != nil {
+		rt.logger.Error(logContext+": generate id failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return "", false
+	}
+	return historyID, true
+}
+
+// validateBackupScheduleRequest checks the target_id/schedule/retain
+// fields shared by both the database and volume backup-schedule
+// endpoints, writing the appropriate 400 itself on failure.
+func validateBackupScheduleRequest(w http.ResponseWriter, targetID, schedule string, retain, retainDays int) bool {
+	if targetID == "" {
+		writeError(w, http.StatusBadRequest, "target_id is required")
+		return false
+	}
+	if schedule == "" {
+		writeError(w, http.StatusBadRequest, "schedule is required")
+		return false
+	}
+	if _, err := cronexpr.Parse(schedule); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid schedule: %s", err.Error()))
+		return false
+	}
+	if retain < 0 {
+		writeError(w, http.StatusBadRequest, "retain must not be negative")
+		return false
+	}
+	if retainDays < 0 {
+		writeError(w, http.StatusBadRequest, "retain_days must not be negative")
+		return false
+	}
+	return true
+}
+
+// parseBackupHistoryListParams reads and validates the ?limit/?before
+// query parameters shared by every backup-history and verification list
+// endpoint, writing the appropriate 400 itself on failure.
+func parseBackupHistoryListParams(w http.ResponseWriter, r *http.Request) (limit int, before *time.Time, ok bool) {
+	limit = defaultBackupHistoryLimit
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil || n <= 0 {
+			writeError(w, http.StatusBadRequest, "limit must be a positive integer")
+			return 0, nil, false
+		}
+		limit = n
+	}
+	if limit > maxBackupHistoryLimit {
+		limit = maxBackupHistoryLimit
+	}
+
+	if raw := r.URL.Query().Get("before"); raw != "" {
+		t, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "before must be an RFC3339 timestamp")
+			return 0, nil, false
+		}
+		before = &t
+	}
+	return limit, before, true
+}
+
+// BackupHistoryStore is the store surface the backup history handler
+// needs. GetBackupHistory was added for handleTriggerRestore
+// (restore.go): resolving the one backup attempt a restore names, not
+// just listing every attempt for a database, the same "look up one row
+// by ID" need GetBackupTarget already serves for backup targets.
+type BackupHistoryStore interface {
+	ListBackupHistory(ctx context.Context, databaseName string, limit int, before *time.Time) ([]store.BackupHistory, error)
+	ListAllBackupHistory(ctx context.Context, limit int, before *time.Time) ([]store.BackupHistory, error)
+	GetBackupHistory(ctx context.Context, id string) (store.BackupHistory, error)
+}
+
+// BackupRunner is the surface the backup trigger handler needs from
+// internal/backup.Runner: run one backup attempt end to end, from an
+// already-minted history ID through to a finished store.BackupHistory
+// row. *backup.Runner satisfies this structurally; internal/api never
+// imports internal/backup directly (the same reconciler-internals
+// boundary databaseContainerName's own doc comment describes), only this
+// narrow interface, wired in by cmd/levelrail at startup.
+type BackupRunner interface {
+	RunBackup(ctx context.Context, historyID, databaseName, engine, containerName, targetID string) error
+}
+
+// backupHistoryResource is the wire shape for one backup attempt.
+// ResourceKind is always populated (store.BackupResourceKindDatabase or
+// store.BackupResourceKindVolume): a per-resource caller already knows
+// which kind it asked for, but GET /api/v1/backups (handleListAllBackups)
+// aggregates both kinds in one list and needs it to tell rows apart and
+// route each one back to its own per-resource action endpoints.
+type backupHistoryResource struct {
+	ID           string `json:"id"`
+	ResourceKind string `json:"resource_kind"`
+	DatabaseName string `json:"database_name,omitempty"`
+	// ServiceName/VolumeName are set instead of DatabaseName when this
+	// attempt is an app service volume backup
+	// (store.BackupResourceKindVolume), never alongside it: the two
+	// identity shapes are mutually exclusive, mirroring
+	// store.BackupHistory's own doc comment.
+	ServiceName    string `json:"service_name,omitempty"`
+	VolumeName     string `json:"volume_name,omitempty"`
+	TargetID       string `json:"target_id"`
+	ObjectKey      string `json:"object_key"`
+	SizeBytes      int64  `json:"size_bytes"`
+	Status         string `json:"status"`
+	Error          string `json:"error,omitempty"`
+	StartedAt      string `json:"started_at"`
+	FinishedAt     string `json:"finished_at,omitempty"`
+	ChecksumSHA256 string `json:"checksum_sha256,omitempty"`
+}
+
+func toBackupHistoryResource(h store.BackupHistory) backupHistoryResource {
+	kind := h.ResourceKind
+	if kind == "" {
+		kind = store.BackupResourceKindDatabase
+	}
+	return backupHistoryResource{
+		ID:             h.ID,
+		ResourceKind:   kind,
+		DatabaseName:   h.DatabaseName,
+		ServiceName:    h.ServiceName,
+		VolumeName:     h.VolumeName,
+		TargetID:       h.TargetID,
+		ObjectKey:      h.ObjectKey,
+		SizeBytes:      h.SizeBytes,
+		Status:         h.Status,
+		Error:          h.Error,
+		StartedAt:      h.StartedAt,
+		FinishedAt:     h.FinishedAt,
+		ChecksumSHA256: h.ChecksumSHA256,
+	}
+}
+
+type triggerBackupRequest struct {
+	TargetID string `json:"target_id"`
+}
+
+// handleTriggerBackup handles POST /api/v1/databases/{name}/backups:
+// starts a real backup of name to the target named in the request body
+// and returns as soon as the attempt is recorded and under way
+// (StatusAccepted, not StatusCreated: the work Runner does, a real
+// dump plus a real upload, is not done by the time this handler
+// returns, only started), the same "this returns once desired state is
+// saved, not once it has actually converged" shape handleTriggerDeploy
+// establishes for an app deploy. GET .../backups (handleListBackupHistory
+// below) is how a caller finds out whether it actually finished.
+//
+// AbilityWriteSensitive: this triggers real work against a real bucket
+// using a real, previously-stored credential, the same sensitivity
+// class creating or deleting a backup target itself already carries.
+//
+// Runner.RunBackup runs in a goroutine against context.Background(), not
+// r.Context(): r.Context() is cancelled the moment this handler returns,
+// which would abort the dump and upload within microseconds of starting
+// them on every single call, defeating the entire point of returning
+// before they finish.
+func (rt *Router) handleTriggerBackup(w http.ResponseWriter, r *http.Request) {
+	if rt.backupRunner == nil {
+		writeError(w, http.StatusNotImplemented, "backups are not configured on this control plane (no master key set)")
+		return
+	}
+
+	name := r.PathValue("name")
+
+	db, ok := rt.loadDatabaseForRunner(w, r, name, "api: trigger backup: load database failed")
+	if !ok || refuseNoBackups(w, db.Engine) || rt.refuseLowDisk(w, diskguard.OpBackup) {
+		return
+	}
+
+	var req triggerBackupRequest
+	if !decodeReq(w, r, &req) {
+		return
+	}
+
+	historyID, ok := rt.prepareBackupTrigger(w, r, req.TargetID, "api: trigger backup")
+	if !ok {
+		return
+	}
+
+	containerName := databaseContainerName(name)
+	go func() { //nolint:gosec // deliberately not r.Context(): it is cancelled the moment this handler returns, which would abort the backup within microseconds of starting it; see this handler's own doc comment
+		if err := rt.backupRunner.RunBackup(context.Background(), historyID, name, db.Engine, containerName, req.TargetID); err != nil {
+			rt.logger.Error("api: backup run failed", slog.String("error", err.Error()), slog.String("id", historyID), slog.String("database", name))
+		}
+	}()
+
+	writeJSON(w, http.StatusAccepted, backupHistoryResource{
+		ID:           historyID,
+		DatabaseName: name,
+		TargetID:     req.TargetID,
+		Status:       store.BackupStatusRunning,
+	})
+}
+
+const (
+	defaultBackupHistoryLimit = 50
+	maxBackupHistoryLimit     = 200
+)
+
+// handleListBackupHistory handles GET /api/v1/databases/{name}/backups.
+// Cursor-paginated by ?before/?limit, mirroring handleListAuditLog's
+// contract since backup history on a long-lived schedule is unbounded.
+func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	if _, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: list backup history: load database failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	limit, before, ok := parseBackupHistoryListParams(w, r)
+	if !ok {
+		return
+	}
+
+	history, err := rt.backupHistory.ListBackupHistory(r.Context(), name, limit, before)
+	if err != nil {
+		rt.logger.Error("api: list backup history failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	out := make([]backupHistoryResource, 0, len(history))
+	for _, h := range history {
+		out = append(out, toBackupHistoryResource(h))
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// handleListAllBackups handles GET /api/v1/backups: the instance-wide
+// counterpart of handleListBackupHistory/handleListVolumeBackupHistory,
+// merging database and volume backups into one newest-first list rather
+// than requiring a caller to already know every resource name to check.
+// Cursor-paginated by the same ?before/?limit contract those two use.
+func (rt *Router) handleListAllBackups(w http.ResponseWriter, r *http.Request) {
+	limit, before, ok := parseBackupHistoryListParams(w, r)
+	if !ok {
+		return
+	}
+
+	canSeeApp, err := rt.appVisibilityFilter(r)
+	if err != nil {
+		rt.internalError(w, "api: list all backup history: app visibility", err)
+		return
+	}
+	canSeeDB, err := rt.databaseVisibilityFilter(r)
+	if err != nil {
+		rt.internalError(w, "api: list all backup history: database visibility", err)
+		return
+	}
+	history, err := rt.pageBackups(r.Context(), limit, before, canSeeApp, canSeeDB)
+	if err != nil {
+		rt.logger.Error("api: list all backup history failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	out := make([]backupHistoryResource, 0, len(history))
+	for _, h := range history {
+		out = append(out, toBackupHistoryResource(h))
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// backupScheduleResource is the wire shape for a database's scheduled
+// backup config: which target, on what cron schedule, and how many
+// successful backups to retain. Deliberately its own small type, not a
+// reuse of databaseResource: PUT/DELETE here only ever touch these three
+// fields, so echoing back the full database resource (name, engine,
+// version, node, project) would suggest a caller could change those
+// through this endpoint too, which it cannot.
+type backupScheduleResource struct {
+	DatabaseName string `json:"database_name"`
+	TargetID     string `json:"target_id,omitempty"`
+	Schedule     string `json:"schedule,omitempty"`
+	Retain       int    `json:"retain,omitempty"`
+	// RetainDays is a second, independent retention dimension: 0 means
+	// no age limit, mirroring Retain's own zero-means-unlimited meaning.
+	RetainDays int `json:"retain_days,omitempty"`
+}
+
+// setBackupScheduleRequest is handleSetBackupSchedule's request body.
+type setBackupScheduleRequest struct {
+	TargetID   string `json:"target_id"`
+	Schedule   string `json:"schedule"`
+	Retain     int    `json:"retain,omitempty"`
+	RetainDays int    `json:"retain_days,omitempty"`
+}
+
+// handleSetBackupSchedule handles
+// PUT /api/v1/databases/{name}/backup-schedule: the missing link wave-2
+// roadmap item 6 closes. internal/spec.Backup has carried Schedule and
+// Retain since app.yaml's first draft, but nothing ever persisted them;
+// this is where an operator (or, eventually, an app.yaml apply path)
+// actually wires a database to a backup_targets row, a cron expression,
+// and a retention count, so internal/backup.Scheduler has something to
+// evaluate on its own tick.
+//
+// The cron expression is validated synchronously here via
+// cronexpr.Parse, the same "validate everything this handler can,
+// before ever writing state" discipline handleTriggerRestore's own doc
+// comment describes: an operator who fat-fingers a schedule string
+// finds out immediately as a 400, not silently on the next scheduler
+// tick, internal/backup.Scheduler.Tick's own "log and skip" handling of
+// an invalid schedule (see that method's doc comment) exists as a
+// defense-in-depth backstop for this check, not as the primary way a
+// mistake gets caught.
+func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	if d, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set backup schedule: load database failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	} else if refuseNoBackups(w, d.Engine) {
+		return
+	}
+
+	var req setBackupScheduleRequest
+	if !decodeReq(w, r, &req) {
+		return
+	}
+	if !validateBackupScheduleRequest(w, req.TargetID, req.Schedule, req.Retain, req.RetainDays) {
+		return
+	}
+
+	if !rt.loadBackupTarget(w, r, req.TargetID, "api: set backup schedule: load backup target failed") {
+		return
+	}
+
+	if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), name, req.TargetID, req.Schedule, req.Retain, req.RetainDays); errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set backup schedule failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, backupScheduleResource{
+		DatabaseName: name,
+		TargetID:     req.TargetID,
+		Schedule:     req.Schedule,
+		Retain:       req.Retain,
+		RetainDays:   req.RetainDays,
+	})
+}
+
+// handleClearBackupSchedule handles
+// DELETE /api/v1/databases/{name}/backup-schedule: the reverse of
+// handleSetBackupSchedule, returning name to its default "no scheduled
+// backup configured" state (store.SetDatabaseBackupSchedule's own "" /
+// "" / 0 sentinel values). This never touches store.BackupHistory rows
+// already written by past scheduled runs, only the going-forward
+// configuration: a database that stops being scheduled keeps its
+// backup history exactly like one that was only ever backed up
+// manually.
+func (rt *Router) handleClearBackupSchedule(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	if _, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: clear backup schedule: load database failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), name, "", "", 0, 0); errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: clear backup schedule failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// randomBackupHistoryID mirrors randomBackupTargetID's exact shape
+// (backup_targets.go), which itself mirrors randomNodeJoinTokenID
+// (internal/api/nodes.go): 9 random bytes, URL-safe base64, a short type
+// prefix. Duplicated rather than shared, the same "different resource,
+// different ID space" reasoning both of those give.
+func randomBackupHistoryID() (string, error) {
+	buf := make([]byte, 9)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("api: generate backup history id: %w", err)
+	}
+	return "bkh_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}

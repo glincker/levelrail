@@ -1,0 +1,325 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { useTranslation } from 'react-i18next'
+import {
+  ArrowDownIcon,
+  ArrowsInIcon,
+  ArrowsOutIcon,
+  PauseIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import type { LogLine } from '../hooks/useLogStream'
+import {
+  filterLogLines,
+  findFirstErrorIndex,
+  logLinesToText,
+  type LogFilter,
+} from '../lib/logFilter'
+import { LogRow, LOG_ROW_HEIGHT_PX as ROW_HEIGHT_PX } from './LogRow'
+import { LogToolbar } from './LogToolbar'
+import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
+import { LOG_EMPTY_MESSAGE } from '../lib/logMessages'
+
+// How close to the bottom (px) still counts as "at the bottom" for
+// auto-scroll purposes. scrollHeight/clientHeight are subject to
+// sub-pixel rounding, so an exact-zero comparison would flap.
+const BOTTOM_THRESHOLD_PX = 32
+
+// The virtualized terminal window both SSE log views (routes/apps/$name/
+// logs.tsx's live tab and routes/apps/$name/deploys/$deployId/logs.tsx)
+// render, once each already has its own useLogStream(url) connection:
+// same virtualizer setup, same scroll-follow/pause logic, same row
+// rendering, same resume button, originally two separate, near-identical
+// copies of this exact body. Deliberately takes lines/isPaused/pause/
+// resume as props rather than a url and calling useLogStream itself: the
+// two callers' status rows above this component differ in real, not just
+// cosmetic ways (the embedded app-logs panel wants a single line count,
+// the deploy-logs route wants a full page header naming the app and
+// deploy), and both already need the same useLogStream data to build
+// those headers. Owning the hook call here too would mean either a
+// second, wasteful EventSource connection to the same endpoint just for
+// the header, or this component reaching up into its caller's header via
+// a render prop for no real gain. Staying purely presentational (given
+// the stream's data, render and scroll-follow it) is the actual
+// boundary, not "owns everything log-stream-related."
+export function LogTerminal({
+  lines: allLines,
+  isPaused,
+  pause,
+  resume,
+  heightClassName = 'h-[65vh]',
+  emptyStateMessage = LOG_EMPTY_MESSAGE,
+  emptyStatePulse = true,
+  isFinished = false,
+}: {
+  lines: LogLine[]
+  isPaused: boolean
+  pause: () => void
+  resume: () => void
+  heightClassName?: string
+  emptyStateMessage?: string
+  // False for a state that will never resolve into output (e.g. an
+  // image-sourced deploy, which has no build step to wait on): the
+  // pulsing dot otherwise implies output is still coming.
+  emptyStatePulse?: boolean
+  // True once the underlying process (e.g. a deploy attempt) has reached
+  // a terminal state. Stops force-scrolling on new lines even if the
+  // user never manually scrolled away from the bottom, so a user reading
+  // historical output isn't yanked to the bottom after the process is
+  // already done. Live app/database log streams never finish, so callers
+  // for those simply omit this.
+  isFinished?: boolean
+}) {
+  const { t } = useTranslation('observability')
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [filter, setFilter] = useState<LogFilter>({
+    text: '',
+    stderrOnly: false,
+    level: 'all',
+  })
+  const lines = useMemo(
+    () => filterLogLines(allLines, filter),
+    [allLines, filter],
+  )
+  const parentRef = useRef<HTMLDivElement>(null)
+  // The toggle button unmounts and remounts as a fresh DOM node across
+  // the fullscreen transition (the Dialog portals `body` elsewhere
+  // entirely), so the browser's own "what had focus before the popup
+  // opened" tracking loses it: by the time Base UI's focus manager reads
+  // it, the old node is already gone and activeElement has fallen back to
+  // <body>, and its own focus-restore heuristic has nothing to restore
+  // to. This ref plus the effect below own that instead: it always
+  // points at whichever button instance is currently mounted, and gets
+  // focused explicitly on the fullscreen -> non-fullscreen transition.
+  const toggleButtonRef = useRef<HTMLButtonElement>(null)
+  const wasFullscreenRef = useRef(false)
+  useEffect(() => {
+    if (wasFullscreenRef.current && !isFullscreen) {
+      toggleButtonRef.current?.focus()
+    }
+    wasFullscreenRef.current = isFullscreen
+  }, [isFullscreen])
+  // Distinguishes a scroll event caused by the auto-scroll effect below
+  // from one caused by the user dragging the scrollbar/wheel/trackpad,
+  // so the scroll handler does not immediately re-pause right after an
+  // auto-scroll-to-bottom.
+  const isAutoScrollingRef = useRef(false)
+
+  const virtualizer = useVirtualizer({
+    count: lines.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_HEIGHT_PX,
+    overscan: 20,
+  })
+
+  // Auto-scroll to the newest line while live and not paused. Pausing
+  // (set when the user scrolls up manually, see handleScroll) stops this
+  // effect from moving the viewport, but never stops ingestion: lines
+  // keep arriving into the ring buffer via the hook regardless of
+  // isPaused. This is the exact behavior every real log tail (kubectl
+  // logs -f, Railway, Coolify) gives you, and the one most naive
+  // implementations get wrong: scrolling up to read an earlier line
+  // must not get yanked back to the bottom by the next line arriving.
+  useEffect(() => {
+    if (isPaused || isFinished || lines.length === 0) {
+      return
+    }
+    isAutoScrollingRef.current = true
+    virtualizer.scrollToIndex(lines.length - 1, { align: 'end' })
+    const clearGuard = window.setTimeout(() => {
+      isAutoScrollingRef.current = false
+    }, 0)
+    return () => {
+      window.clearTimeout(clearGuard)
+    }
+  }, [lines.length, isPaused, isFinished, virtualizer])
+
+  // Lines keep arriving while paused; the count at pause time lets the
+  // resume pill say how many are waiting.
+  const [pausedAtCount, setPausedAtCount] = useState(0)
+  const pauseTracked = useCallback(() => {
+    setPausedAtCount(lines.length)
+    pause()
+  }, [lines.length, pause])
+
+  const handleScroll = useCallback(() => {
+    if (isAutoScrollingRef.current) {
+      return
+    }
+    const el = parentRef.current
+    if (!el) {
+      return
+    }
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+    const atBottom = distanceFromBottom <= BOTTOM_THRESHOLD_PX
+    if (atBottom && isPaused) {
+      resume()
+    } else if (!atBottom && !isPaused) {
+      pauseTracked()
+    }
+  }, [isPaused, pauseTracked, resume])
+
+  const handleResumeClick = useCallback(() => {
+    resume()
+    if (lines.length > 0) {
+      virtualizer.scrollToIndex(lines.length - 1, { align: 'end' })
+    }
+  }, [resume, lines.length, virtualizer])
+
+  const virtualItems = virtualizer.getVirtualItems()
+
+  const handleJumpToError = useCallback(() => {
+    const idx = findFirstErrorIndex(lines)
+    if (idx < 0) {
+      return
+    }
+    pauseTracked()
+    virtualizer.scrollToIndex(idx, { align: 'center' })
+  }, [lines, pauseTracked, virtualizer])
+
+  const handleCopy = useCallback(
+    () => navigator.clipboard.writeText(logLinesToText(lines)),
+    [lines],
+  )
+  const handleDownload = useCallback(() => {
+    const url = URL.createObjectURL(
+      new Blob([logLinesToText(lines)], { type: 'text/plain' }),
+    )
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `logs-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [lines])
+
+  const body = (
+    <div
+      className={
+        isFullscreen
+          ? 'relative flex min-h-0 flex-1 flex-col gap-2'
+          : 'relative flex flex-1 flex-col gap-2'
+      }
+    >
+      <LogToolbar
+        filter={filter}
+        onFilterChange={setFilter}
+        shown={lines.length}
+        total={allLines.length}
+        onCopy={handleCopy}
+        onDownload={handleDownload}
+        onJumpToError={handleJumpToError}
+      />
+      <div
+        ref={parentRef}
+        onScroll={handleScroll}
+        role="region"
+        aria-label="Log output"
+        tabIndex={0}
+        className={`${isFullscreen ? 'h-full' : heightClassName} overflow-auto rounded-lg border border-neutral-800 bg-neutral-950 font-mono text-xs leading-5 text-neutral-200 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none`}
+      >
+        {lines.length === 0 ? (
+          <p className="flex items-center gap-2 px-3 py-2 text-neutral-400">
+            <span
+              aria-hidden="true"
+              className={`size-1.5 rounded-full bg-neutral-500 ${emptyStatePulse ? 'animate-pulse motion-reduce:animate-none' : ''}`}
+            />
+            {emptyStateMessage}
+          </p>
+        ) : (
+          <div
+            style={{
+              height: virtualizer.getTotalSize(),
+              position: 'relative',
+            }}
+          >
+            {virtualItems.map((virtualRow) => {
+              const logLine = lines[virtualRow.index]
+              if (!logLine) {
+                return null
+              }
+              return (
+                <LogRow
+                  key={virtualRow.key}
+                  logLine={logLine}
+                  index={virtualRow.index}
+                  start={virtualRow.start}
+                  expanded={expandedId === logLine.id}
+                  onToggle={() => {
+                    setExpandedId((prev) =>
+                      prev === logLine.id ? null : logLine.id,
+                    )
+                  }}
+                  measure={virtualizer.measureElement}
+                />
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <button
+        ref={toggleButtonRef}
+        type="button"
+        onClick={() => {
+          setIsFullscreen((prev) => !prev)
+        }}
+        aria-label={isFullscreen ? 'Exit fullscreen' : 'View fullscreen'}
+        className="absolute top-12 right-2 rounded p-2 text-neutral-400 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none hover:bg-neutral-800 hover:text-neutral-100"
+      >
+        {isFullscreen ? (
+          <ArrowsInIcon className="size-3.5" aria-hidden="true" />
+        ) : (
+          <ArrowsOutIcon className="size-3.5" aria-hidden="true" />
+        )}
+      </button>
+
+      {!isPaused && !isFinished && lines.length > 0 && (
+        <button
+          type="button"
+          onClick={pauseTracked}
+          aria-label={t('live.pause')}
+          className="absolute top-12 right-10 rounded p-2 text-neutral-400 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none hover:bg-neutral-800 hover:text-neutral-100"
+        >
+          <PauseIcon className="size-3.5" aria-hidden="true" />
+        </button>
+      )}
+
+      {isPaused && (
+        <button
+          type="button"
+          onClick={handleResumeClick}
+          className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-100 shadow-lg focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:outline-none hover:bg-neutral-700"
+        >
+          <ArrowDownIcon className="size-3.5" aria-hidden="true" />
+          {t('live.resume', {
+            count: Math.max(0, lines.length - pausedAtCount),
+          })}
+        </button>
+      )}
+    </div>
+  )
+
+  if (!isFullscreen) {
+    return body
+  }
+
+  return (
+    <Dialog
+      open
+      onOpenChange={(next) => {
+        if (!next) {
+          setIsFullscreen(false)
+        }
+      }}
+    >
+      <DialogContent
+        size="fullscreen"
+        showCloseButton={false}
+        className="flex flex-col"
+      >
+        <DialogTitle className="sr-only">Log output</DialogTitle>
+        {body}
+      </DialogContent>
+    </Dialog>
+  )
+}

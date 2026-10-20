@@ -1,0 +1,80 @@
+---
+title: "Self-host Snipe-IT with Docker"
+sidebarTitle: "Snipe-IT"
+description: "IT asset management for tracking hardware, licenses, and accessories, and who currently has what."
+"og:url": "https://docs.levelrail.com/self-host/snipe-it"
+---
+
+IT asset management for tracking hardware, licenses, and accessories, and who currently has what.
+
+This page describes the Levelrail template for Snipe-IT (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://snipe-it.readme.io/docs/docker.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `mariadb:11` | none | `snipeit_db_data -&#62; /var/lib/mysql` |
+| `snipeit` | `snipe/snipe-it:v7.1.16` | 80 | `snipeit_data -&#62; /var/lib/snipeit` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `MYSQL_DATABASE` | Preset in the template |
+| `db` | `MYSQL_PASSWORD` | Generated at deploy |
+| `db` | `MYSQL_RANDOM_ROOT_PASSWORD` | Preset in the template |
+| `db` | `MYSQL_USER` | Preset in the template |
+| `snipeit` | `APP_KEY` | Generated at deploy |
+| `snipeit` | `APP_URL` | Preset in the template |
+| `snipeit` | `MYSQL_DATABASE` | Preset in the template |
+| `snipeit` | `MYSQL_PASSWORD` | Generated at deploy |
+| `snipeit` | `MYSQL_PORT_3306_TCP_ADDR` | Preset in the template |
+| `snipeit` | `MYSQL_PORT_3306_TCP_PORT` | Preset in the template |
+| `snipeit` | `MYSQL_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`snipeit`): 8080:80.
+- Passwords and keys are generated at deploy time (`db`, `snipeit`): APP_KEY, MYSQL_PASSWORD, MYSQL_PASSWORD.
+- No health check, so a deploy is judged by the process starting (`db`).
+- Stores data in named volumes (`db`, `snipeit`): snipeit_data, snipeit_db_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Snipe-IT with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Snipe-IT. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy snipe-it --name my-snipe-it
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [AdGuard Home](/self-host/adguard-home)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+- [Consul](/self-host/consul)
+- [Elasticsearch](/self-host/elasticsearch)
+- [etcd](/self-host/etcd)
+
+All templates are listed in the [self-host gallery](/self-host).

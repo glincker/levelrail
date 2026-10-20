@@ -1,0 +1,22 @@
+package mcptools
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+)
+
+func registerCloudflareTools(server *mcp.Server, client *apiclient.Client) {
+	addTool(server, &mcp.Tool{
+		Name:        "get_cloudflare_tunnel_status",
+		Description: "Get this control plane's Cloudflare Tunnel connection status: enabled, whether a token is stored, and the tunnel's current running status. The token itself is never returned.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.CloudflareTunnelResource, error) {
+		status, err := client.GetCloudflareTunnel(ctx)
+		if err != nil {
+			return nil, apiclient.CloudflareTunnelResource{}, fmt.Errorf("get cloudflare tunnel status: %w", err)
+		}
+		return nil, status, nil
+	})
+}

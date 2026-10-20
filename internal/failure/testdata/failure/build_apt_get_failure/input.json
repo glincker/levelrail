@@ -1,0 +1,12 @@
+{
+  "Status": "failed",
+  "FailingStep": "building",
+  "Error": "deploy: service \"web\": build: process \"/bin/sh -c apt-get update && apt-get install -y libpq-devx\" did not complete successfully: exit code: 100",
+  "LogLines": [
+    "#5 [2/6] RUN apt-get update && apt-get install -y libpq-devx",
+    "#5 0.712 Reading package lists...",
+    "#5 1.940 Building dependency tree...",
+    "#5 2.101 E: Unable to locate package libpq-devx",
+    "#5 ERROR: process \"/bin/sh -c apt-get update && apt-get install -y libpq-devx\" did not complete successfully: exit code: 100"
+  ]
+}

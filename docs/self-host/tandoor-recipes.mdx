@@ -1,0 +1,80 @@
+---
+title: "Self-host Tandoor Recipes with Docker"
+sidebarTitle: "Tandoor Recipes"
+description: "A recipe manager and meal planner with shopping lists and shared cookbooks."
+"og:url": "https://docs.levelrail.com/self-host/tandoor-recipes"
+---
+
+A recipe manager and meal planner with shopping lists and shared cookbooks.
+
+This page describes the Levelrail template for Tandoor Recipes (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.tandoor.dev/install/docker/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `tandoor_db_data -&#62; /var/lib/postgresql/data` |
+| `tandoor` | `vabene1111/recipes:2.6.15` | 80 | `tandoor_data -&#62; /opt/recipes/mediafiles`<br />`tandoor_static -&#62; /opt/recipes/staticfiles` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `tandoor` | `ALLOWED_HOSTS` | Preset in the template |
+| `tandoor` | `DB_ENGINE` | Preset in the template |
+| `tandoor` | `POSTGRES_DB` | Preset in the template |
+| `tandoor` | `POSTGRES_HOST` | Preset in the template |
+| `tandoor` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `tandoor` | `POSTGRES_PORT` | Preset in the template |
+| `tandoor` | `POSTGRES_USER` | Preset in the template |
+| `tandoor` | `SECRET_KEY` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`tandoor`): 8080:80.
+- Passwords and keys are generated at deploy time (`db`, `tandoor`): POSTGRES_PASSWORD, POSTGRES_PASSWORD, SECRET_KEY.
+- No health check, so a deploy is judged by the process starting (`db`).
+- Stores data in named volumes (`db`, `tandoor`): tandoor_data, tandoor_db_data, tandoor_static.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Tandoor Recipes with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Tandoor Recipes. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy tandoor-recipes --name my-tandoor-recipes
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BentoPDF](/self-host/bentopdf)
+- [BookStack](/self-host/bookstack)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,1225 @@
+package docker
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"io"
+	"log/slog"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
+	cerrdefs "github.com/containerd/errdefs"
+	dockertypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/events"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/mount"
+	dockernetwork "github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/registry"
+	"github.com/docker/docker/api/types/volume"
+	dockerclient "github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/docker/go-connections/nat"
+)
+
+// Client is the real Runtime implementation, talking to the Docker Engine
+// API over the local socket. It never shells out to the `docker` CLI,
+// per the project's Docker Engine API only rule.
+type Client struct {
+	cli *dockerclient.Client
+	cdi cdiCache
+	// instanceLabelKey/instanceLabelValue, when both set (WithInstanceLabel),
+	// are stamped onto every container and network this Client creates
+	// (Create, EnsureNetwork) and used to scope every by-name lookup this
+	// Client does (InspectByName, ListByPrefix) to resources this same
+	// value created. Empty (the zero value, e.g. every caller before this
+	// field existed and every test built with plain &Client{}) means no
+	// stamping and no scoping: byte-identical to this package's behavior
+	// before instance labeling existed.
+	instanceLabelKey   string
+	instanceLabelValue string
+	// hardening is the policy Create applies; the zero value (plain
+	// &Client{} in tests) has no mode and applies nothing.
+	hardening HardeningConfig
+	// runtime is DetectRuntimeSocket's result at construction time,
+	// exposed via Runtime() for the doctor's container_runtime check.
+	runtime RuntimeInfo
+	// host, when set (WithHost), is dialed instead of runtime.Host.
+	host     string
+	declarer CreateDeclarer
+	// pool, when set, makes EnsureNetwork assign explicit subnets.
+	pool  *NetworkPool
+	alloc poolAllocator
+}
+
+// ClientOption configures optional Client behavior at construction time.
+type ClientOption func(*Client)
+
+// WithInstanceLabel makes every resource this Client creates carry the
+// Docker label key=value, and scopes this Client's own by-name lookups
+// to resources carrying it. Callers pass internal/spec.InstanceLabelKey
+// as key and store.GetOrCreateInstanceID's result as value, following
+// the same "pass the resolved value in, don't import that package here"
+// convention internal/reconcile/application.WithNetworkPrefix already
+// establishes for brand.ShortName: this package stays spec- and store-
+// agnostic. See InstanceLabelKey's own doc comment for why this exists:
+// two control-plane instances can share one Docker daemon, and without
+// this, one's cleanup pass can't tell its own resources from the
+// other's.
+func WithInstanceLabel(key, value string) ClientOption {
+	return func(c *Client) {
+		c.instanceLabelKey = key
+		c.instanceLabelValue = value
+	}
+}
+
+// NewClient builds a Client from the standard Docker environment
+// (DOCKER_HOST, DOCKER_CERT_PATH, etc.), negotiating API version against
+// whatever daemon is actually running rather than pinning one.
+// APP_CONTAINER_RUNTIME_SOCKET, when set, takes precedence over
+// DOCKER_HOST for the connection itself (DetectRuntimeSocket applies the
+// same precedence when only reporting, not connecting).
+func NewClient(opts ...ClientOption) (*Client, error) {
+	runtime := DetectRuntimeSocket(os.LookupEnv)
+	hardening, herr := HardeningFromEnv(runtime)
+	logHardeningEnv(herr)
+	c := &Client{hardening: hardening, runtime: runtime, pool: poolFromEnv(os.LookupEnv)}
+	for _, opt := range opts {
+		opt(c)
+	}
+	dockerOpts := []dockerclient.Opt{dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation()}
+	switch {
+	case c.host != "":
+		dockerOpts = append(dockerOpts, dockerclient.WithHost(c.host))
+	case runtime.Source == envRuntimeSocket:
+		dockerOpts = append(dockerOpts, dockerclient.WithHost(runtime.Host))
+	}
+	cli, err := dockerclient.NewClientWithOpts(dockerOpts...)
+	if err != nil {
+		return nil, fmt.Errorf("docker: new client: %w", err)
+	}
+	c.cli = cli
+	return c, nil
+}
+
+// Runtime reports which container engine and privilege mode this Client
+// is likely talking to. Consumed by GET /api/v1/system/doctor's
+// container_runtime check through a narrow, consumer-defined interface,
+// the same pattern ServerVersion's engineVersioner already establishes in
+// internal/api.
+func (c *Client) Runtime() RuntimeInfo {
+	return c.runtime
+}
+
+// hasInstanceLabel reports whether WithInstanceLabel configured this
+// Client, the guard every stamping/scoping call site below checks first.
+func (c *Client) hasInstanceLabel() bool {
+	return c.instanceLabelKey != "" && c.instanceLabelValue != ""
+}
+
+// instanceLabelFilter adds this Client's own instance label as a Docker
+// Engine API list filter, when configured, scoping f to only resources
+// this instance created. A no-op otherwise, so callers can always call
+// this unconditionally.
+func (c *Client) instanceLabelFilter(f filters.Args) {
+	if c.hasInstanceLabel() {
+		f.Add("label", c.instanceLabelKey+"="+c.instanceLabelValue)
+	}
+}
+
+// withInstanceLabel merges this Client's own instance label into labels,
+// when configured, returning labels unchanged (nil included) otherwise.
+// Used by Create and EnsureNetwork so every resource this Client creates
+// carries it, without every caller of ContainerSpec.Labels needing to
+// know this Client is instance-scoped at all.
+func (c *Client) withInstanceLabel(labels map[string]string) map[string]string {
+	if !c.hasInstanceLabel() {
+		return labels
+	}
+	out := make(map[string]string, len(labels)+1)
+	for k, v := range labels {
+		out[k] = v
+	}
+	out[c.instanceLabelKey] = c.instanceLabelValue
+	return out
+}
+
+// Close releases the underlying HTTP transport.
+func (c *Client) Close() error {
+	return c.cli.Close()
+}
+
+// Ping is a thin liveness check against the Docker daemon, wrapping the
+// underlying SDK client's own Ping. Deliberately a method on the
+// concrete *Client, not a new Runtime method: Runtime has 6+ fake
+// implementations across internal/reconcile's controllers and
+// internal/agent's test files, plus the real client here and the
+// agent-side remote transport, so adding a method there would ripple
+// into all of them for the sake of one read-only health signal that
+// GET /api/v1/system/status needs. internal/api.DockerPinger is the
+// narrow interface that actually consumes this, satisfied structurally
+// by *Client alone.
+func (c *Client) Ping(ctx context.Context) error {
+	if _, err := c.cli.Ping(ctx); err != nil {
+		return fmt.Errorf("docker: ping: %w", err)
+	}
+	return nil
+}
+
+// ServerVersion returns the Docker Engine version string the daemon reports.
+func (c *Client) ServerVersion(ctx context.Context) (string, error) {
+	v, err := c.cli.ServerVersion(ctx)
+	if err != nil {
+		return "", fmt.Errorf("docker: server version: %w", err)
+	}
+	return v.Version, nil
+}
+
+// TestRegistryAuth asks the daemon to authenticate against host with
+// username/password, the daemon's own `docker login`-equivalent check,
+// without pulling anything. Same narrow-interface-on-the-concrete-type
+// reasoning as Ping above: internal/api.RegistryAuthTester is the
+// consumer boundary, satisfied structurally by *Client alone.
+func (c *Client) TestRegistryAuth(ctx context.Context, host, username, password string) error {
+	_, err := c.cli.RegistryLogin(ctx, registry.AuthConfig{
+		ServerAddress: host,
+		Username:      username,
+		Password:      password,
+	})
+	if err != nil {
+		return fmt.Errorf("docker: registry login %q: %w", host, err)
+	}
+	return nil
+}
+
+// InspectByName implements Runtime. Scoped to this Client's own instance
+// label when WithInstanceLabel configured one (every real caller looks
+// up an exact, platform-derived name this same instance's own desired
+// state produced, e.g. application.ContainerName's result, so this never
+// hides a container a legitimate caller actually wants): a name-only
+// match on a Docker daemon shared by more than one control-plane
+// instance could otherwise resolve to another instance's container by
+// the same name and start operating on it (exec, live resource updates,
+// restart-in-place), see internal/spec.InstanceLabelKey's own doc
+// comment.
+func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerState, error) {
+	f := filters.NewArgs()
+	f.Add("name", "^/"+name+"$") // anchored: Docker's name filter is a substring match otherwise
+	c.instanceLabelFilter(f)
+	summaries, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: f})
+	if err != nil {
+		return nil, fmt.Errorf("docker: list containers named %q: %w", name, err)
+	}
+	if len(summaries) == 0 {
+		return nil, nil
+	}
+	state := toContainerState(summaries[0])
+	if !state.Running {
+		state.ConfiguredPorts = c.configuredPorts(ctx, state.ID)
+	}
+	return state, nil
+}
+
+// configuredPorts reads PortBindings from a full inspect. Best-effort: nil
+// means unknown, which callers treat as not drifted.
+func (c *Client) configuredPorts(ctx context.Context, id string) []PortBinding {
+	resp, err := c.cli.ContainerInspect(ctx, id)
+	if err != nil || resp.HostConfig == nil {
+		return nil
+	}
+	var out []PortBinding
+	for port, bindings := range resp.HostConfig.PortBindings {
+		for _, b := range bindings {
+			hp, _ := strconv.Atoi(b.HostPort)
+			out = append(out, PortBinding{ContainerPort: port.Int(), HostPort: hp, HostIP: b.HostIP, Protocol: port.Proto()})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].ContainerPort != out[j].ContainerPort {
+			return out[i].ContainerPort < out[j].ContainerPort
+		}
+		return out[i].HostIP < out[j].HostIP
+	})
+	return out
+}
+
+// InspectExitState implements ExitStateInspector. Unlike InspectByName,
+// this calls the real container-inspect endpoint (ContainerList's
+// Summary shape carries no OOMKilled/ExitCode field at all), so it costs
+// one extra round trip a caller should only pay for when it actually
+// needs to tell "still starting" apart from "already exited or
+// OOM-killed."
+func (c *Client) InspectExitState(ctx context.Context, name string) (*ExitState, error) {
+	resp, err := c.cli.ContainerInspect(ctx, name)
+	if err != nil {
+		if cerrdefs.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("docker: inspect %q: %w", name, err)
+	}
+	if resp.State == nil {
+		return nil, nil
+	}
+	started, _ := time.Parse(time.RFC3339Nano, resp.State.StartedAt)
+	var finished time.Time
+	if !resp.State.Running {
+		finished, _ = time.Parse(time.RFC3339Nano, resp.State.FinishedAt)
+	}
+	return &ExitState{
+		FinishedAt:   finished,
+		Running:      resp.State.Running,
+		OOMKilled:    resp.State.OOMKilled,
+		ExitCode:     resp.State.ExitCode,
+		RestartCount: resp.RestartCount,
+		StartedAt:    started,
+	}, nil
+}
+
+// ListByPrefix implements Runtime. Deliberately NOT scoped to this
+// Client's own instance label, unlike InspectByName: GET
+// /api/v1/system/containers (internal/api's handleListContainers) calls
+// this with an empty prefix specifically to show every container on the
+// box "whether or not Levelrail manages it" (that handler's own doc
+// comment), a legitimate use this method must not break. Every
+// ownership-sensitive caller (internal/reconcile/application's
+// staleContainers) instead reads the returned ContainerState.Labels
+// itself and applies its own instance check on top of the name-prefix
+// match, the same "list broadly, filter narrowly at the call site"
+// split NetworkInfo.Labels/NetworkCleanupController use for networks.
+func (c *Client) ListByPrefix(ctx context.Context, prefix string) ([]ContainerState, error) {
+	f := filters.NewArgs()
+	f.Add("name", "^/"+prefix) // no trailing $: prefix match, not exact
+	summaries, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: f})
+	if err != nil {
+		return nil, fmt.Errorf("docker: list containers with prefix %q: %w", prefix, err)
+	}
+	if len(summaries) == 0 {
+		return nil, nil
+	}
+	out := make([]ContainerState, 0, len(summaries))
+	for _, s := range summaries {
+		out = append(out, *toContainerState(s))
+	}
+	return out, nil
+}
+
+func toContainerState(s container.Summary) *ContainerState {
+	name := ""
+	if len(s.Names) > 0 {
+		name = strings.TrimPrefix(s.Names[0], "/")
+	}
+	var created time.Time
+	if s.Created > 0 {
+		created = time.Unix(s.Created, 0).UTC()
+	}
+	return &ContainerState{
+		ID:       s.ID,
+		Name:     name,
+		Image:    s.Image,
+		ImageID:  s.ImageID,
+		Created:  created,
+		Running:  s.State == "running",
+		Ports:    observedPorts(s.Ports),
+		Labels:   s.Labels,
+		Networks: summaryNetworks(s),
+	}
+}
+
+func summaryNetworks(s container.Summary) []ContainerNetwork {
+	if s.NetworkSettings == nil || len(s.NetworkSettings.Networks) == 0 {
+		return nil
+	}
+	out := make([]ContainerNetwork, 0, len(s.NetworkSettings.Networks))
+	for name, ep := range s.NetworkSettings.Networks {
+		n := ContainerNetwork{Name: name}
+		if ep != nil {
+			n.IPAddress = ep.IPAddress
+		}
+		out = append(out, n)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out
+}
+
+func observedPorts(ports []container.Port) []PortBinding {
+	// Docker reports one entry per (IP, port) combination: a container
+	// created with no explicit HostIP (every container before
+	// migrations/0103_service_bind_address.sql and 0099's own database
+	// counterpart) binds both address families, so it typically appears
+	// twice, once for the IPv4 wildcard and once for IPv6. Kept as
+	// distinct bindings now that HostIP is tracked, not deduped away:
+	// internal/reconcile/database's portsMatch needs the real, complete
+	// set to detect drift when an already-running container's implicit
+	// dual-stack bind no longer matches this platform's new, always-
+	// explicit single-address one.
+	seen := make(map[PortBinding]bool, len(ports))
+	var out []PortBinding
+	for _, p := range ports {
+		if p.PublicPort == 0 {
+			continue // exposed but not published to a host port, nothing for a caller to route to
+		}
+		binding := PortBinding{
+			ContainerPort: int(p.PrivatePort),
+			HostPort:      int(p.PublicPort),
+			HostIP:        p.IP,
+			Protocol:      p.Type,
+		}
+		if seen[binding] {
+			continue
+		}
+		seen[binding] = true
+		out = append(out, binding)
+	}
+	return out
+}
+
+// Create implements Runtime.
+func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error) {
+	if err := c.ensureImage(ctx, spec.Image, spec.RegistryAuth, spec.ForcePull, spec.OnPull); err != nil {
+		return "", err
+	}
+
+	exposedPorts, portBindings, err := toDockerPorts(spec.Ports)
+	if err != nil {
+		return "", fmt.Errorf("docker: create container %q: %w", spec.Name, err)
+	}
+
+	hostConfig := buildHostConfig(spec, portBindings)
+	if spec.GPU != nil {
+		c.attachGPU(ctx, hostConfig, *spec.GPU)
+	}
+	c.hardening.apply(hostConfig, spec)
+
+	release := c.declare(spec)
+	defer release()
+	resp, err := c.cli.ContainerCreate(ctx,
+		&container.Config{
+			Image:        spec.Image,
+			ExposedPorts: exposedPorts,
+			Env:          toDockerEnv(spec.Env),
+			Labels:       c.withInstanceLabel(spec.Labels),
+			Cmd:          spec.Command,
+			Entrypoint:   spec.Entrypoint,
+			User:         spec.User,
+		},
+		hostConfig,
+		toNetworkingConfig(spec.Network), nil,
+		spec.Name,
+	)
+	if err != nil {
+		return "", fmt.Errorf("docker: create container %q: %w", spec.Name, err)
+	}
+	if err := c.chownFreshVolumes(ctx, resp.ID, spec.Image, spec.Volumes); err != nil {
+		slog.Warn("docker: could not fix ownership of a new volume for a non-root image", slog.String("container", spec.Name), slog.String("error", err.Error()))
+	}
+	return resp.ID, nil
+}
+
+// toNetworkingConfig builds the ContainerCreate NetworkingConfig argument
+// from n. nil (Docker's default "bridge" network, byte-identical to
+// every container created before ContainerSpec.Network existed) when n
+// is nil or has no name.
+func toNetworkingConfig(n *NetworkAttachment) *dockernetwork.NetworkingConfig {
+	if n == nil || n.Name == "" {
+		return nil
+	}
+	endpoint := &dockernetwork.EndpointSettings{}
+	if n.Alias != "" {
+		endpoint.Aliases = []string{n.Alias}
+	}
+	return &dockernetwork.NetworkingConfig{
+		EndpointsConfig: map[string]*dockernetwork.EndpointSettings{
+			n.Name: endpoint,
+		},
+	}
+}
+
+// EnsureNetwork implements Runtime.
+func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error) {
+	inspect, err := c.cli.NetworkInspect(ctx, name, dockernetwork.InspectOptions{})
+	if err == nil {
+		return inspect.ID, nil
+	}
+	if !cerrdefs.IsNotFound(err) {
+		return "", fmt.Errorf("docker: inspect network %q: %w", name, err)
+	}
+
+	labels := c.networkLabels(name)
+	if c.pool != nil {
+		id, err := c.alloc.create(ctx, c.cli, *c.pool, name, labels)
+		if err != nil {
+			return "", fmt.Errorf("docker: create network %q: %w", name, err)
+		}
+		return id, nil
+	}
+	resp, err := c.cli.NetworkCreate(ctx, name, dockernetwork.CreateOptions{Driver: "bridge", Labels: labels})
+	if err != nil {
+		if IsPoolExhausted(err) {
+			return "", &PoolExhaustedError{Daemon: true, InUse: c.countNetworks(ctx)}
+		}
+		return "", fmt.Errorf("docker: create network %q: %w", name, err)
+	}
+	return resp.ID, nil
+}
+
+func (c *Client) countNetworks(ctx context.Context) int {
+	nets, err := c.cli.NetworkList(ctx, dockernetwork.ListOptions{})
+	if err != nil {
+		return 0
+	}
+	return len(nets)
+}
+
+// RemoveNetwork implements Runtime. Force-disconnects every still-attached
+// container first: the Engine API refuses to remove a network with live
+// endpoints, and a database container this codebase itself connected
+// (internal/reconcile/application's connectReferencedDatabases) has no
+// other path to get detached once the app that referenced it is gone.
+func (c *Client) RemoveNetwork(ctx context.Context, name string) error {
+	inspect, err := c.cli.NetworkInspect(ctx, name, dockernetwork.InspectOptions{})
+	if err == nil {
+		for containerID := range inspect.Containers {
+			if dErr := c.cli.NetworkDisconnect(ctx, name, containerID, true); dErr != nil && !cerrdefs.IsNotFound(dErr) {
+				return fmt.Errorf("docker: disconnect %q before removing network %q: %w", containerID, name, dErr)
+			}
+		}
+	} else if !cerrdefs.IsNotFound(err) {
+		return fmt.Errorf("docker: inspect network %q before remove: %w", name, err)
+	}
+
+	if err := c.cli.NetworkRemove(ctx, name); err != nil {
+		if cerrdefs.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("docker: remove network %q: %w", name, err)
+	}
+	return nil
+}
+
+// NetworkConnect implements Runtime. Inspects first (the same
+// idempotency shape EnsureNetwork already uses) so a container already
+// attached is a no-op, not an error from Docker's own "endpoint already
+// exists" response. inspect.Containers is keyed by container ID
+// regardless of what identifier the caller passed in (connectReferencedDatabases
+// passes a name), so the membership check matches on both the map key
+// and each entry's own Name field, confirmed live: a name-keyed-only
+// check let a real "already exists" error through on the second call.
+func (c *Client) NetworkConnect(ctx context.Context, name, containerID string) error {
+	inspect, err := c.cli.NetworkInspect(ctx, name, dockernetwork.InspectOptions{})
+	if err != nil {
+		return fmt.Errorf("docker: inspect network %q before connect: %w", name, err)
+	}
+	if alreadyConnected(inspect.Containers, containerID) {
+		return nil
+	}
+	if err := c.cli.NetworkConnect(ctx, name, containerID, nil); err != nil {
+		if cerrdefs.IsConflict(err) || cerrdefs.IsAlreadyExists(err) || strings.Contains(err.Error(), "already exists in network") {
+			return nil
+		}
+		return fmt.Errorf("docker: connect %q to network %q: %w", containerID, name, err)
+	}
+	return nil
+}
+
+// alreadyConnected reports whether id (a container ID or name) appears
+// as either the map key or the Name field of any entry in containers,
+// NetworkInspect's own Containers map.
+func alreadyConnected(containers map[string]dockernetwork.EndpointResource, id string) bool {
+	if _, ok := containers[id]; ok {
+		return true
+	}
+	for containerID, ep := range containers {
+		if containerID == id || ep.Name == id {
+			return true
+		}
+	}
+	return false
+}
+
+// NetworkDisconnect implements Runtime. Not being attached is not an
+// error, the same level-triggered reasoning RemoveNetwork's own doc
+// comment gives. Confirmed live that the daemon's actual "not connected"
+// response isn't classified as cerrdefs.IsNotFound (it comes back as a
+// 403, the same status the "already exists" case on the connect side
+// uses), so this also falls back to a substring match on its exact
+// wording, the same defensive shape NetworkConnect's own fallback uses.
+func (c *Client) NetworkDisconnect(ctx context.Context, name, containerID string, force bool) error {
+	if err := c.cli.NetworkDisconnect(ctx, name, containerID, force); err != nil {
+		if cerrdefs.IsNotFound(err) || strings.Contains(err.Error(), "is not connected to network") {
+			return nil
+		}
+		return fmt.Errorf("docker: disconnect %q from network %q: %w", containerID, name, err)
+	}
+	return nil
+}
+
+// ListNetworksByPrefix implements Runtime. Deliberately NOT scoped to
+// this Client's own instance label, same reasoning ListByPrefix's own
+// doc comment gives for containers: this returns every matching network
+// regardless of who created it, and NetworkCleanupController (the one
+// caller today) applies its own instance check against the returned
+// NetworkInfo.Labels before treating anything as orphaned.
+func (c *Client) ListNetworksByPrefix(ctx context.Context, prefix string) ([]NetworkInfo, error) {
+	f := filters.NewArgs()
+	f.Add("name", prefix) // Docker's network name filter is a substring match; narrowed by the prefix check below
+	networks, err := c.cli.NetworkList(ctx, dockernetwork.ListOptions{Filters: f})
+	if err != nil {
+		return nil, fmt.Errorf("docker: list networks with prefix %q: %w", prefix, err)
+	}
+
+	out := make([]NetworkInfo, 0, len(networks))
+	for _, n := range networks {
+		if !strings.HasPrefix(n.Name, prefix) {
+			continue
+		}
+		out = append(out, NetworkInfo{ID: n.ID, Name: n.Name, Labels: n.Labels})
+	}
+	return out, nil
+}
+
+// buildHostConfig turns spec plus its already-computed port bindings into
+// the container.HostConfig Create passes to the Engine API. Factored out
+// of Create so its own now-linear body isn't cluttered by this
+// construction, and so a future caller (none today) could reuse the same
+// spec-to-HostConfig mapping without duplicating it.
+func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.HostConfig {
+	hostConfig := &container.HostConfig{
+		PortBindings: portBindings,
+		// Explicitly "no": the reconciler, not Docker, decides whether a
+		// dead container comes back. See ContainerSpec's doc comment.
+		RestartPolicy: container.RestartPolicy{Name: container.RestartPolicyDisabled},
+		Mounts:        append(toDockerMounts(spec.Volumes), toDockerBindMounts(spec.BindMounts)...),
+	}
+	if spec.Resources != nil {
+		hostConfig.Resources = container.Resources{
+			Memory:     spec.Resources.MemoryBytes,
+			NanoCPUs:   spec.Resources.NanoCPUs,
+			MemorySwap: spec.Resources.SwapMemoryBytes,
+			CpusetCpus: spec.Resources.CPUSetCPUs,
+		}
+	}
+	if spec.CPUShares > 0 {
+		hostConfig.CPUShares = spec.CPUShares
+	}
+	if spec.OomScoreAdj != 0 {
+		hostConfig.OomScoreAdj = spec.OomScoreAdj
+	}
+	if spec.PidsLimit > 0 {
+		limit := spec.PidsLimit
+		hostConfig.PidsLimit = &limit
+	}
+	if spec.ShmSizeBytes > 0 {
+		hostConfig.ShmSize = spec.ShmSizeBytes
+	}
+	if spec.GPU != nil {
+		hostConfig.DeviceRequests = []container.DeviceRequest{toDeviceRequest(*spec.GPU)}
+	}
+	if len(spec.DNS) > 0 {
+		hostConfig.DNS = spec.DNS
+	}
+	if len(spec.ExtraHosts) > 0 {
+		hostConfig.ExtraHosts = spec.ExtraHosts
+	}
+	if len(spec.CapAdd) > 0 {
+		hostConfig.CapAdd = spec.CapAdd
+	}
+	if spec.NetworkMode != "" {
+		hostConfig.NetworkMode = container.NetworkMode(spec.NetworkMode)
+	}
+	if spec.Hardened {
+		hostConfig.ReadonlyRootfs = true
+		hostConfig.Tmpfs = map[string]string{"/tmp": hardenedTmpfsOpts}
+	}
+	return hostConfig
+}
+
+func toDeviceRequest(g GPURequest) container.DeviceRequest {
+	req := container.DeviceRequest{Driver: "nvidia", Capabilities: [][]string{{"gpu"}}}
+	if len(g.DeviceIDs) > 0 {
+		req.DeviceIDs = g.DeviceIDs
+		return req
+	}
+	req.Count = g.Count
+	if req.Count == 0 {
+		req.Count = -1
+	}
+	return req
+}
+
+// RuntimeNames returns the OCI runtimes the Docker daemon has registered,
+// used to detect whether the nvidia container runtime is installed.
+func (c *Client) RuntimeNames(ctx context.Context) ([]string, error) {
+	info, err := c.cli.Info(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("docker: info: %w", err)
+	}
+	names := make([]string, 0, len(info.Runtimes))
+	for name := range info.Runtimes {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names, nil
+}
+
+// DockerRootDir returns the daemon's storage root, where named volumes live.
+func (c *Client) DockerRootDir(ctx context.Context) (string, error) {
+	info, err := c.cli.Info(ctx)
+	if err != nil {
+		return "", fmt.Errorf("docker: info: %w", err)
+	}
+	return info.DockerRootDir, nil
+}
+
+// BridgeGatewayIP returns the gateway IP of Docker's default "bridge"
+// network: the address from which a container attached to that network
+// (the default whenever Create's NetworkingConfig is nil, which is every
+// container this Client creates) can reach the host. Used by
+// cmd/levelrail/mesh.go's containerDNSAddr to compute a
+// container-reachable address for the mesh DNS server, since no
+// WireGuard mesh IP is bound to anything yet.
+func (c *Client) BridgeGatewayIP(ctx context.Context) (string, error) {
+	inspect, err := c.cli.NetworkInspect(ctx, "bridge", dockernetwork.InspectOptions{})
+	if err != nil {
+		return "", fmt.Errorf("docker: inspect bridge network: %w", err)
+	}
+	return gatewayIPFromNetworkInspect(inspect.IPAM.Config)
+}
+
+// gatewayIPFromNetworkInspect picks the first non-empty gateway out of
+// cfg, split out of BridgeGatewayIP so it can be table-tested against the
+// handful of shapes IPAM.Config can actually take (no entries, one entry
+// with a gateway, one entry without, several) without a live daemon.
+func gatewayIPFromNetworkInspect(cfg []dockernetwork.IPAMConfig) (string, error) {
+	if len(cfg) == 0 {
+		return "", fmt.Errorf("docker: bridge network has no IPAM config")
+	}
+	for _, c := range cfg {
+		if c.Gateway != "" {
+			return c.Gateway, nil
+		}
+	}
+	return "", fmt.Errorf("docker: bridge network IPAM config has no gateway")
+}
+
+func toDockerPorts(ports []PortBinding) (nat.PortSet, nat.PortMap, error) {
+	if len(ports) == 0 {
+		return nil, nil, nil
+	}
+
+	exposed := make(nat.PortSet, len(ports))
+	bindings := make(nat.PortMap, len(ports))
+
+	for _, p := range ports {
+		proto := p.Protocol
+		if proto == "" {
+			proto = "tcp"
+		}
+		natPort, err := nat.NewPort(proto, strconv.Itoa(p.ContainerPort))
+		if err != nil {
+			return nil, nil, fmt.Errorf("port %d/%s: %w", p.ContainerPort, proto, err)
+		}
+
+		exposed[natPort] = struct{}{}
+
+		hostPort := ""
+		if p.HostPort != 0 {
+			hostPort = strconv.Itoa(p.HostPort)
+		}
+		bindings[natPort] = append(bindings[natPort], nat.PortBinding{HostIP: p.HostIP, HostPort: hostPort})
+	}
+
+	return exposed, bindings, nil
+}
+
+func toDockerMounts(volumes []VolumeMount) []mount.Mount {
+	if len(volumes) == 0 {
+		return nil
+	}
+	out := make([]mount.Mount, 0, len(volumes))
+	for _, v := range volumes {
+		out = append(out, mount.Mount{
+			Type:     mount.TypeVolume,
+			Source:   v.Name,
+			Target:   v.ContainerPath,
+			ReadOnly: v.ReadOnly,
+		})
+	}
+	return out
+}
+
+func toDockerBindMounts(mounts []BindMount) []mount.Mount {
+	if len(mounts) == 0 {
+		return nil
+	}
+	out := make([]mount.Mount, 0, len(mounts))
+	for _, m := range mounts {
+		out = append(out, mount.Mount{
+			Type:     mount.TypeBind,
+			Source:   m.HostPath,
+			Target:   m.ContainerPath,
+			ReadOnly: m.ReadOnly,
+		})
+	}
+	return out
+}
+
+func toDockerEnv(env map[string]string) []string {
+	if len(env) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(env))
+	for k, v := range env {
+		out = append(out, k+"="+v)
+	}
+	sort.Strings(out) // deterministic order, mainly so tests aren't flaky
+	return out
+}
+
+// Start implements Runtime.
+func (c *Client) Start(ctx context.Context, id string) error {
+	if err := c.cli.ContainerStart(ctx, id, container.StartOptions{}); err != nil {
+		return fmt.Errorf("docker: start container %s: %w", id, err)
+	}
+	return nil
+}
+
+// Stop implements Runtime.
+func (c *Client) Stop(ctx context.Context, id string, timeout time.Duration) error {
+	opts := container.StopOptions{}
+	if timeout >= 0 {
+		seconds := int(timeout.Seconds())
+		opts.Timeout = &seconds
+	} else {
+		negativeOne := -1
+		opts.Timeout = &negativeOne // Engine API convention: -1 means wait indefinitely
+	}
+	if err := c.cli.ContainerStop(ctx, id, opts); err != nil {
+		return fmt.Errorf("docker: stop container %s: %w", id, err)
+	}
+	return nil
+}
+
+// Remove implements Runtime.
+func (c *Client) Remove(ctx context.Context, id string, force bool) error {
+	if err := c.cli.ContainerRemove(ctx, id, container.RemoveOptions{Force: force}); err != nil {
+		if strings.Contains(err.Error(), "already in progress") && c.waitContainerGone(ctx, id) {
+			return nil
+		}
+		return fmt.Errorf("docker: remove container %s: %w", id, err)
+	}
+	return nil
+}
+
+// waitContainerGone covers a concurrent remover: Docker rejects the second
+// remove, but the container is going away, so wait for that instead of failing.
+func (c *Client) waitContainerGone(ctx context.Context, id string) bool {
+	deadline := time.Now().Add(removeInProgressWait)
+	for time.Now().Before(deadline) {
+		if _, err := c.cli.ContainerInspect(ctx, id); cerrdefs.IsNotFound(err) {
+			return true
+		} else if err != nil && ctx.Err() != nil {
+			return false
+		}
+		select {
+		case <-ctx.Done():
+			return false
+		case <-time.After(200 * time.Millisecond):
+		}
+	}
+	return false
+}
+
+const removeInProgressWait = 30 * time.Second
+
+// UpdateResources implements Runtime, via the Engine API's own
+// ContainerUpdate call. This adjusts the container's cgroup limits in
+// place; it never touches image, env, ports, mounts, or any other part
+// of the container's configuration.
+func (c *Client) UpdateResources(ctx context.Context, id string, resources Resources) error {
+	update := container.UpdateConfig{
+		Resources: container.Resources{
+			Memory:     resources.MemoryBytes,
+			NanoCPUs:   resources.NanoCPUs,
+			MemorySwap: updateMemorySwap(resources.MemoryBytes, resources.SwapMemoryBytes),
+			CpusetCpus: resources.CPUSetCPUs,
+		},
+	}
+	if _, err := c.cli.ContainerUpdate(ctx, id, update); err != nil {
+		return fmt.Errorf("docker: update resources for container %s: %w", id, err)
+	}
+	return nil
+}
+
+// updateMemorySwap resolves the MemorySwap value UpdateResources sends to
+// ContainerUpdate. ContainerCreate treats an omitted MemorySwap as
+// "default to 2x memory", but ContainerUpdate does not: it compares the
+// new memory limit against whatever MemorySwap is already active on the
+// container and rejects the call once memory exceeds it, which made
+// every live memory update fail on a container with no pre-existing swap
+// limit. Mirror ContainerCreate's own default here so a live update
+// converges to the same limits a recreate would produce.
+func updateMemorySwap(memoryBytes, swapMemoryBytes int64) int64 {
+	if memoryBytes > 0 && swapMemoryBytes == 0 {
+		return memoryBytes * 2
+	}
+	return swapMemoryBytes
+}
+
+// EnsureVolume implements Runtime. Docker's VolumeCreate is itself
+// idempotent by name (creating a volume that already exists returns the
+// existing volume, not an error), so this is a thin wrapper, not a
+// check-then-create with its own race window.
+func (c *Client) EnsureVolume(ctx context.Context, name string) error {
+	if _, err := c.cli.VolumeCreate(ctx, volume.CreateOptions{
+		Name:   name,
+		Labels: c.withInstanceLabel(nil),
+	}); err != nil {
+		return fmt.Errorf("docker: ensure volume %q: %w", name, err)
+	}
+	return nil
+}
+
+// execStderrCap bounds how much of a failed exec's stderr Exec captures
+// for the error message it builds. Real diagnostic text from the
+// commands this method is meant for (a bad flag, a rejected connection,
+// an auth failure) is a handful of lines at most; anything beyond this
+// cap almost certainly means the command isn't behaving the way Exec's
+// contract assumes (stdout carries the real payload, stderr is
+// informational only), so capping bounds memory instead of trusting
+// every command to stay well-behaved.
+const execStderrCap = 64 * 1024
+
+// cappedBuffer is a bytes.Buffer that silently drops bytes past limit
+// instead of growing without bound. Used only for the stderr side of
+// Exec's output: losing the tail of an overlong error message is
+// acceptable, the alternative (an unbounded buffer fed by a command this
+// package doesn't control) is not.
+type cappedBuffer struct {
+	buf   bytes.Buffer
+	limit int
+}
+
+func (c *cappedBuffer) Write(p []byte) (int, error) {
+	remaining := c.limit - c.buf.Len()
+	if remaining <= 0 {
+		return len(p), nil // over the cap: report a full write so stdcopy doesn't treat this as a failure, just drop the bytes
+	}
+	if len(p) > remaining {
+		p = p[:remaining]
+	}
+	c.buf.Write(p)
+	return len(p), nil
+}
+
+// Exec implements Runtime. It creates an exec configuration on
+// containerID, attaches to it to actually run cmd, and returns a
+// ReadCloser streaming cmd's stdout back to the caller.
+//
+// Docker's exec attach stream, with no tty (never requested here), is
+// always multiplexed per pkg/stdcopy's frame format even though this
+// call only asks for one logical output: stdout is copied straight
+// through to the pipe this method returns, stderr is captured
+// separately into a capped buffer purely so a non-zero exit has
+// something useful to explain itself with. ContainerExecAttach itself
+// has no notion of exit status, only ContainerExecInspect does, so exit
+// code is checked only after the stream ends, in the background
+// goroutine that drives the copy.
+func (c *Client) Exec(ctx context.Context, containerID string, cmd []string) (io.ReadCloser, error) {
+	execID, attached, err := c.execCreateAttach(ctx, containerID, cmd, false)
+	if err != nil {
+		return nil, err
+	}
+
+	pr, pw := io.Pipe()
+	go c.streamExecOutput(ctx, containerID, execID, cmd, attached, pw)
+	return pr, nil
+}
+
+// ExecWithInput implements Runtime. It is execCreateAttach plus a stdin
+// side: everything Exec does (see Exec's own doc comment for the
+// stdout/stderr/exit-code handling, unchanged here, both methods share
+// streamExecOutput) plus a second goroutine that copies stdin into the
+// exec session's write side and then closes it, the same "close the
+// write half once the reader is exhausted" signal a real pipe or
+// terminal gives a process reading until EOF.
+//
+// The stdin-copy goroutine and streamExecOutput's own stdout-copy
+// goroutine run concurrently, not sequentially: a command that starts
+// producing output before this process has finished writing every byte
+// of stdin (true of psql on a large dump, which echoes NOTICE/COPY
+// progress lines as it goes) would otherwise deadlock, stdin blocked on
+// a full kernel pipe buffer nobody is draining because this method
+// hadn't gotten to the read side yet.
+func (c *Client) ExecWithInput(ctx context.Context, containerID string, cmd []string, stdin io.Reader) (io.ReadCloser, error) {
+	execID, attached, err := c.execCreateAttach(ctx, containerID, cmd, true)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		_, copyErr := io.Copy(attached.Conn, stdin)
+		// CloseWrite, not Close: the read side (stdout/stderr, drained by
+		// streamExecOutput below) is still in use after this goroutine is
+		// done with the write side, and attached itself is only closed
+		// once, by streamExecOutput's own deferred attached.Close(). A
+		// stdin-side copy failure has nowhere to go but here: the caller
+		// finds out about it indirectly, through the exec'd command's own
+		// reaction to a truncated stdin (a non-zero exit, surfaced by
+		// streamExecOutput the same way every other exec failure already
+		// is), not through a second, separate error path this method
+		// would otherwise need to invent.
+		_ = copyErr
+		_ = attached.CloseWrite()
+	}()
+
+	pr, pw := io.Pipe()
+	go c.streamExecOutput(ctx, containerID, execID, cmd, attached, pw)
+	return pr, nil
+}
+
+// execCreateAttach is Exec and ExecWithInput's shared setup: create an
+// exec configuration on containerID for cmd, then attach to it. Factored
+// out so the two methods' only real difference, whether AttachStdin is
+// set, is a single boolean parameter rather than two near-identical
+// copies of ContainerExecCreate/ContainerExecAttach drifting apart over
+// time.
+func (c *Client) execCreateAttach(ctx context.Context, containerID string, cmd []string, attachStdin bool) (execID string, attached dockertypes.HijackedResponse, err error) {
+	created, err := c.cli.ContainerExecCreate(ctx, containerID, container.ExecOptions{
+		Cmd:          cmd,
+		AttachStdin:  attachStdin,
+		AttachStdout: true,
+		AttachStderr: true,
+	})
+	if err != nil {
+		return "", dockertypes.HijackedResponse{}, fmt.Errorf("docker: exec create %v in %s: %w", cmd, containerID, err)
+	}
+
+	attached, err = c.cli.ContainerExecAttach(ctx, created.ID, container.ExecAttachOptions{})
+	if err != nil {
+		return "", dockertypes.HijackedResponse{}, fmt.Errorf("docker: exec attach %v in %s: %w", cmd, containerID, err)
+	}
+	return created.ID, attached, nil
+}
+
+// ExecExitError is the trailing error Exec's and ExecWithInput's
+// returned io.ReadCloser produce, once their stream ends, when cmd
+// exited non-zero inside the container: see Runtime.Exec's own doc
+// comment for why an exit code is folded into the error a later Read
+// returns rather than carried as a second out-of-band field. Every
+// caller before this type existed (internal/backup's Dumper and
+// Restorer) only ever needed "err != nil means the dump/restore
+// failed," so ExitCode and Stderr lived only inside the error's
+// formatted message, unrecoverable except by parsing text. This type
+// keeps that exact message (Error() reproduces streamExecOutput's
+// original format string byte for byte, so nothing that already checks
+// err != nil or matches on message substrings, e.g. client_live_test.go's
+// "exited 7" check, changes behavior) while making ExitCode and Stderr
+// recoverable via errors.As, for a caller like internal/api's exec
+// endpoint that has to report a real exit code and stderr back to an
+// HTTP client instead of only "the command failed."
+type ExecExitError struct {
+	Cmd       []string
+	Container string
+	ExitCode  int
+	Stderr    string
+}
+
+func (e *ExecExitError) Error() string {
+	return fmt.Sprintf("docker: exec %v in %s: exited %d: %s", e.Cmd, e.Container, e.ExitCode, e.Stderr)
+}
+
+// streamExecOutput drives the copy from attached's multiplexed stream
+// into pw (stdout) and a capped stderr buffer, then resolves pw's
+// eventual EOF or error based on the exec's real exit code, not merely
+// whether the copy itself errored: a command that writes nothing and
+// exits 1 (a missing binary, a rejected connection before any output)
+// would otherwise look identical to one that succeeded with an empty
+// dump, and that distinction is exactly what a backup caller needs to
+// tell "empty database" apart from "the dump silently failed."
+func (c *Client) streamExecOutput(ctx context.Context, containerID, execID string, cmd []string, attached dockertypes.HijackedResponse, pw *io.PipeWriter) {
+	defer attached.Close()
+
+	stderr := &cappedBuffer{limit: execStderrCap}
+	if _, err := stdcopy.StdCopy(pw, stderr, attached.Reader); err != nil {
+		_ = pw.CloseWithError(fmt.Errorf("docker: exec %v in %s: read output: %w", cmd, containerID, err))
+		return
+	}
+
+	inspect, err := c.cli.ContainerExecInspect(ctx, execID)
+	if err != nil {
+		_ = pw.CloseWithError(fmt.Errorf("docker: exec %v in %s: inspect after completion: %w", cmd, containerID, err))
+		return
+	}
+	if inspect.ExitCode != 0 {
+		_ = pw.CloseWithError(&ExecExitError{
+			Cmd:       cmd,
+			Container: containerID,
+			ExitCode:  inspect.ExitCode,
+			Stderr:    strings.TrimSpace(stderr.buf.String()),
+		})
+		return
+	}
+	_ = pw.Close()
+}
+
+// ensureImage pulls ref if it isn't already present locally. Reconcile
+// calls happen often (event-driven plus periodic resync); pulling
+// unconditionally on every call would be slow and noisy, so this checks
+// first and only pulls on a genuine local miss. auth is nil for an
+// unauthenticated (public) pull. forcePull (ContainerSpec.ForcePull)
+// skips the local-presence check entirely: the only way a mutable tag
+// like ":latest" gets re-pulled when it hasn't changed on Docker's own
+// terms.
+//
+// onPull, when set, receives the pull's progress; a local hit reports a single
+// Done event with Status "cached".
+func (c *Client) ensureImage(ctx context.Context, ref string, auth *RegistryAuth, forcePull bool, onPull func(PullEvent)) error {
+	if !forcePull {
+		_, err := c.cli.ImageInspect(ctx, ref)
+		if err == nil {
+			if onPull != nil {
+				onPull(PullEvent{Phase: PullPhaseDone, Ref: ref, Status: PullStatusCached, Percent: 100})
+			}
+			return nil
+		}
+		if !cerrdefs.IsNotFound(err) {
+			return fmt.Errorf("docker: inspect image %q: %w", ref, err)
+		}
+	}
+
+	var pullOpts image.PullOptions
+	if auth != nil {
+		encoded, err := registry.EncodeAuthConfig(registry.AuthConfig{Username: auth.Username, Password: auth.Password})
+		if err != nil {
+			return fmt.Errorf("docker: encode registry auth for image %q: %w", ref, err)
+		}
+		pullOpts.RegistryAuth = encoded
+	}
+	rc, err := c.cli.ImagePull(ctx, ref, pullOpts)
+	if err != nil {
+		return fmt.Errorf("docker: pull image %q: %w", ref, err)
+	}
+	defer func() {
+		_ = rc.Close() // read side, fully drained by io.Copy below; nothing actionable on a close error here
+	}()
+	if onPull == nil {
+		if _, err := io.Copy(io.Discard, rc); err != nil {
+			return fmt.Errorf("docker: pull image %q: reading progress stream: %w", ref, err)
+		}
+		return nil
+	}
+	if err := NewPullTracker(ref, PullConfigFromEnv(os.LookupEnv), onPull).Consume(rc); err != nil {
+		return fmt.Errorf("docker: pull image %q: %w", ref, err)
+	}
+	return nil
+}
+
+// ListImages implements Runtime.
+func (c *Client) ListImages(ctx context.Context, repo string) ([]ImageInfo, error) {
+	f := filters.NewArgs()
+	f.Add("reference", repo)
+
+	summaries, err := c.cli.ImageList(ctx, image.ListOptions{Filters: f})
+	if err != nil {
+		return nil, fmt.Errorf("docker: list images for %q: %w", repo, err)
+	}
+
+	var out []ImageInfo
+	for _, s := range summaries {
+		createdAt := time.Unix(s.Created, 0).UTC()
+		for _, tag := range s.RepoTags {
+			out = append(out, ImageInfo{Tag: tag, CreatedAt: createdAt})
+		}
+	}
+
+	sort.Slice(out, func(i, j int) bool { return out[i].CreatedAt.After(out[j].CreatedAt) })
+
+	return out, nil
+}
+
+// Events implements Runtime.
+func (c *Client) Events(ctx context.Context) (<-chan Event, <-chan error) {
+	f := filters.NewArgs()
+	f.Add("type", string(events.ContainerEventType))
+
+	rawEvents, rawErrs := c.cli.Events(ctx, events.ListOptions{Filters: f})
+
+	out := make(chan Event)
+	outErr := make(chan error, 1)
+
+	go func() {
+		defer close(out)
+		defer close(outErr)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case err, ok := <-rawErrs:
+				if !ok {
+					return
+				}
+				if err != nil {
+					outErr <- err
+				}
+				return
+			case msg, ok := <-rawEvents:
+				if !ok {
+					return
+				}
+				action := mapAction(msg.Action)
+				if action == "" {
+					continue // not a lifecycle action a controller needs
+				}
+				select {
+				case out <- Event{
+					Action:        action,
+					ContainerName: msg.Actor.Attributes["name"],
+					Time:          eventTime(msg),
+				}:
+				case <-ctx.Done():
+					return
+				}
+			}
+		}
+	}()
+
+	return out, outErr
+}
+
+// eventTime extracts msg's timestamp, preferring TimeNano (full
+// nanosecond-precision Unix time, not a fractional remainder of Time)
+// when the daemon sets it, falling back to the whole-second Time field
+// for older daemons or event sources that only populate that one.
+// Without this, every Event's Time field silently stayed the zero
+// value: nothing broke loudly (Action/ContainerName, the only fields
+// every other consumer of Events reads, were always populated
+// correctly), but any consumer keyed on Time, like
+// internal/alerting.RestartTracker's restart-window counting, would
+// silently never count anything against a real time window.
+func eventTime(msg events.Message) time.Time {
+	if msg.TimeNano != 0 {
+		return time.Unix(0, msg.TimeNano)
+	}
+	if msg.Time != 0 {
+		return time.Unix(msg.Time, 0)
+	}
+	return time.Time{}
+}
+
+func mapAction(a events.Action) EventAction {
+	switch string(a) {
+	case "start":
+		return EventStart
+	case "die":
+		return EventDie
+	case "stop":
+		return EventStop
+	default:
+		return ""
+	}
+}

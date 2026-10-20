@@ -1,0 +1,27 @@
+version: "3.8"
+services:
+  web:
+    image: myorg/web:2.1.0
+    ports:
+      - "3000:3000"
+    environment:
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+  worker:
+    image: myorg/worker:2.1.0
+    environment:
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - redis
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+volumes:
+  redis-data: {}

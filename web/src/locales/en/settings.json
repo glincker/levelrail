@@ -1,0 +1,2308 @@
+{
+  "email": {
+    "title": "Email",
+    "description": "The backend alert notifications and password-reset emails are sent through. Off by default; a control plane started with APP_SMTP_* env vars still works until this is saved.",
+    "helpLabel": "Email notifications help",
+    "backendLabel": "Backend",
+    "backendNotConfigured": "Not configured",
+    "smtp": {
+      "label": "SMTP",
+      "presetsLabel": "Quick fill for a known provider",
+      "host": "Host",
+      "port": "Port",
+      "username": "Username",
+      "from": "From address",
+      "password": "Password",
+      "passwordSet": "A password is already configured. Leave blank to keep it.",
+      "passwordUnset": "No password set yet."
+    },
+    "ses": {
+      "label": "AWS SES",
+      "region": "Region",
+      "accessKeyId": "Access key ID",
+      "from": "From address",
+      "secretAccessKey": "Secret access key",
+      "secretSet": "A secret key is already configured. Leave blank to keep it.",
+      "secretUnset": "No secret key set yet."
+    },
+    "resend": {
+      "label": "Resend",
+      "from": "From address",
+      "apiKey": "API key",
+      "apiKeySet": "An API key is already configured. Leave blank to keep it.",
+      "apiKeyUnset": "No API key set yet."
+    },
+    "save": "Save",
+    "saving": "Saving...",
+    "saveSuccess": "Email settings saved.",
+    "test": {
+      "title": "Send a test email",
+      "description": "Sends one real email through the saved backend above, the same path alert notifications and password resets use.",
+      "placeholder": "you@yourdomain.com",
+      "send": "Send test email",
+      "sending": "Sending...",
+      "success": "Test email sent to {{to}}."
+    },
+    "comingSoon": "More notification options are coming here: custom email templates, send-rate limiting, and per-alert frequency controls.",
+    "channelsCta": "Looking for Slack, Discord, or webhook notifications instead?",
+    "channelsLink": "Notification channels",
+    "wizard": {
+      "intro": "Password resets and alert emails go out through an SMTP server. Enter yours, save, then send a test to a real inbox before moving on.",
+      "configured": "Saved backend: {{backend}}.",
+      "others": "Using AWS SES or Resend instead?",
+      "othersLink": "Open the full email settings."
+    }
+  },
+  "orphans": {
+    "title": "Leftover resources",
+    "description": "Containers, volumes and certificates that no app or database accounts for. They are removed automatically once they stay orphaned past the grace period. Database data volumes are never removed.",
+    "empty": "Nothing left over. Every container and volume belongs to a live app or database.",
+    "localNode": "this node",
+    "kind": {
+      "container": "Container",
+      "volume": "Volume",
+      "certificate": "Certificate"
+    },
+    "reason": {
+      "service_deleted": "App deleted",
+      "database_deleted": "Database deleted",
+      "misplaced": "App moved to another node",
+      "stale_generation": "Older release of a live app",
+      "unmanaged": "Not created here",
+      "foreign_instance": "Another control plane's",
+      "unrecognized_name": "Unrecognized name",
+      "unreferenced_volume": "No longer referenced",
+      "unserved_certificate": "No longer served"
+    },
+    "status": {
+      "kept": "Kept",
+      "due": "Due",
+      "grace": "In grace period"
+    },
+    "more_one": "And {{count}} more not shown.",
+    "more_other": "And {{count}} more not shown.",
+    "dryRun": "Dry run",
+    "reapNow_one": "Remove {{count}} due now",
+    "reapNow_other": "Remove {{count}} due now",
+    "toast": {
+      "dryRun_one": "Dry run: {{count}} resource would be removed.",
+      "dryRun_other": "Dry run: {{count}} resources would be removed.",
+      "reaped_one": "Removed {{count}} leftover resource.",
+      "reaped_other": "Removed {{count}} leftover resources."
+    }
+  },
+  "authEngine": {
+    "title": "Sign-in engine",
+    "description": "Sign-in, sessions, API tokens, two-factor and passkeys run on the auth library {{version}}.",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "totp": "Two-factor (TOTP)",
+    "passkeys": "Passkeys",
+    "oauth": "OAuth sign-in"
+  },
+  "iamTemplates": {
+    "trigger": "Add from template",
+    "title": "Add a policy from a template",
+    "description": "Pick a ready-made policy. You can attach it to a user or token now, or later from the policy list.",
+    "loading": "Loading templates.",
+    "loadError": "Could not load policy templates.",
+    "templateLabel": "Template",
+    "paramLabel": "{{name}}",
+    "paramPlaceholder": "e.g. env_dev",
+    "effectTitle": "What this policy does",
+    "effectLine": "{{effect}} {{actions}} on {{resources}}",
+    "allow": "Allow",
+    "deny": "Deny",
+    "previewTitle": "Policy document",
+    "attachTitle": "Attach to",
+    "attachNone": "Nothing yet",
+    "attachUser": "A user",
+    "attachToken": "A token",
+    "attachIdLabel": "User or token ID",
+    "attachIdRequired": "Enter the ID to attach to, or choose Nothing yet.",
+    "paramRequired": "{{name}} is required.",
+    "apply": "Create policy",
+    "applying": "Creating.",
+    "cancel": "Cancel",
+    "toastCreated": "Policy \"{{name}}\" created.",
+    "toastCreatedAttached": "Policy \"{{name}}\" created and attached."
+  },
+  "aiControl": {
+    "title": "AI control",
+    "description": "Decide what agents and the built-in assistant may do on this instance. The server enforces this on every request, whatever the token allows.",
+    "navDescription": "Turn agent access off, read-only or on, and limit it to chosen environments.",
+    "modeLabel": "Agent access",
+    "modes": {
+      "off": {
+        "label": "Off",
+        "description": "Every agent request is refused. Humans are not affected."
+      },
+      "observe": {
+        "label": "Observe",
+        "description": "Agents can read apps, logs and metrics, but not secrets, and change nothing."
+      },
+      "operate": {
+        "label": "Operate",
+        "description": "Agents can read, write and deploy in the environments below. They cannot use root, change secrets, backups or instance settings."
+      },
+      "admin": {
+        "label": "Admin",
+        "description": "Agents can use any ability their token holds in the environments below. A person must still approve protected deploys."
+      }
+    },
+    "adminUnavailable": "Admin mode needs the experimental feature ai-control to be enabled on the server.",
+    "envKindsLabel": "Environments agents may act in",
+    "envKindsDescription": "Applies to operate and admin. Apps with no environment count as custom.",
+    "kinds": {
+      "dev": "Dev",
+      "test": "Test",
+      "uat": "UAT",
+      "production": "Production",
+      "preview": "Preview",
+      "custom": "Custom"
+    },
+    "save": "Save changes",
+    "saving": "Saving...",
+    "saved": "AI control saved.",
+    "pause": "Pause all agents",
+    "paused": "All agents paused.",
+    "agentTokens": "Agent tokens",
+    "agentTokensCount_one": "{{count}} agent token exists.",
+    "agentTokensCount_other": "{{count}} agent tokens exist.",
+    "updatedBy": "Last changed by {{name}}.",
+    "viewAudit": "View agent activity in the audit log",
+    "revoke": {
+      "button": "Revoke all agent tokens",
+      "title": "Revoke every agent token?",
+      "description": "Every token with an agent label stops working immediately. This cannot be undone. The built-in assistant keeps working.",
+      "cancel": "Cancel",
+      "confirm": "Revoke tokens",
+      "revoking": "Revoking...",
+      "done_one": "{{count}} agent token revoked.",
+      "done_other": "{{count}} agent tokens revoked."
+    },
+    "loadFailed": "Could not load AI control settings."
+  },
+  "tables": {
+    "users": "Users",
+    "invites": "Pending invites",
+    "organizations": "Organizations",
+    "backupTargets": "Backup targets",
+    "storageDestinations": "Storage destinations",
+    "notificationChannels": "Notification channels",
+    "alertHistory": "Alert history entries"
+  },
+  "tokens": {
+    "tableLabel": "API tokens",
+    "lastIp": "Last IP",
+    "server": "Server",
+    "emptyTitle": "No tokens yet",
+    "emptyBody": "Create a scoped, revocable credential for the CLI, CI, or an MCP integration.",
+    "name": "Name",
+    "agent": "Agent",
+    "abilities": "Abilities",
+    "created": "Created",
+    "lastUsed": "Last used",
+    "expires": "Expires",
+    "status": "Status",
+    "actions": "Actions",
+    "none": "None",
+    "never": "Never",
+    "active": "Active",
+    "activeNow": "Active now",
+    "revoked": "Revoked",
+    "create": {
+      "title": "Create token",
+      "description": "A scoped, revocable credential for the CLI, CI, or an MCP integration.",
+      "submit": "Create token",
+      "submitting": "Creating...",
+      "name": "Name",
+      "namePlaceholder": "e.g. ci-deploy",
+      "nameRequired": "Name is required",
+      "expiration": "Expiration",
+      "never": "Never",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "agent": "Agent name (optional)",
+      "agentPlaceholder": "e.g. Claude Code",
+      "agentTooLong": "At most 64 characters",
+      "agentTipLabel": "About agent names",
+      "agentTip": "Label the token as issued to an AI agent, for example \"Claude Code\". The name is shown here and on every audit log entry the token makes, so you can tell agent changes from human ones.",
+      "abilityRequired": "Select at least one ability",
+      "rootExclusive": "Root cannot be combined with other abilities",
+      "signInApprove": "Approve my sign-ins",
+      "signInApproveHint": "Lets this token show your sign-in codes and approve new browsers from the CLI. Root does not include it and a device login never grants it. It must expire within 30 days and is revoked when you change or reset your password or sign out your other sessions.",
+      "signInApproveExpiry": "A token that approves sign-ins must expire within 30 days",
+      "signInApproveAgent": "A token that approves sign-ins cannot be issued to an agent",
+      "secretsReveal": "Reveal secret values",
+      "secretsRevealHint": "Lets this token read a secret value, but only when the server allows token reveal (APP_SECRET_REVEAL_TOKENS=on) and the request carries your password. Every reveal is audited. Root does not include it.",
+      "secretsRevealNeedsSensitive": "Revealing secrets also needs read:sensitive"
+    }
+  },
+  "hostFirewall": {
+    "title": "Host firewall",
+    "description": "Turns this server's ufw firewall on or off. Turning it on first allows SSH, the control plane ports and HTTP/3, so you cannot lock yourself out.",
+    "statusOn": "On",
+    "statusOff": "Off",
+    "statusMissing": "ufw not installed",
+    "defaultIncoming": "Default for incoming traffic: {{policy}}",
+    "required": "Ports kept open",
+    "turnOn": "Turn on firewall",
+    "turnOff": "Turn off firewall",
+    "confirmOnTitle": "Turn on the firewall?",
+    "confirmOnBody": "These commands will run on this server, in order. SSH is allowed before the firewall is switched on.",
+    "confirmOffTitle": "Turn off the firewall?",
+    "confirmOffBody": "All ports on this server will be reachable again. This runs:",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "enabledToast": "Firewall is on",
+    "disabledToast": "Firewall is off",
+    "failedToast": "Could not change the firewall",
+    "missingHelp": "Install ufw on this server to manage its firewall from here, or use your cloud provider's firewall.",
+    "sshNote": "SSH is on a different port? Set APP_FIREWALL_SSH_PORTS on the control plane before turning this on."
+  },
+  "setupNext": {
+    "heading": "Next steps",
+    "email": {
+      "title": "Set up outgoing email",
+      "description": "Password resets and alert emails need an SMTP server. Pick your provider, then send a test."
+    },
+    "alerts": {
+      "title": "Set up alerts",
+      "description": "Get a Slack, Discord, email, or webhook message when a deploy fails."
+    },
+    "backups": {
+      "title": "Add a backup target",
+      "description": "Point database and volume backups at S3-compatible storage."
+    },
+    "team": {
+      "title": "Invite your team",
+      "description": "Give teammates their own accounts instead of sharing yours."
+    }
+  },
+  "databaseUpgrades": {
+    "title": "Database upgrades",
+    "description": "The default upgrade policy for every database that does not set its own.",
+    "loadFailed": "Could not load the platform upgrade policy: {{error}}",
+    "formTitle": "Platform default policy",
+    "formDescription": "Databases inherit this until you override them on their Upgrades tab. Only the platform owner can change it."
+  },
+  "githubApp": {
+    "manageAccess": "Manage repository access",
+    "manageAccessHint": "Missing a repository? Choose which repositories this app can see on GitHub, then come back.",
+    "personal": "Personal account",
+    "organization": "Organization",
+    "connected": "connected",
+    "owner": {
+      "legend": "Who owns the App on GitHub",
+      "personal": "My personal account",
+      "organization": "An organization",
+      "orgLogin": "Organization login",
+      "orgPlaceholder": "acme-inc",
+      "orgHelp": "The organization you want to deploy from. You need permission to create GitHub Apps there.",
+      "orgInvalid": "Use the organization's login: letters, numbers and hyphens, up to 39 characters.",
+      "allowOthers": "Allow other accounts and organizations to install it",
+      "publicHelp": "Any GitHub account or organization can install this App. Pick this when you deploy from several organizations.",
+      "privatePersonalHelp": "Private: the App can only be installed on your personal account. Choose an organization above, or allow other accounts, to deploy from an organization.",
+      "privateOrgHelp": "Private: the App can only be installed on this organization. Allow other accounts to also install it on your personal account or other organizations."
+    },
+    "preview": {
+      "title": "Review before connecting to GitHub",
+      "description": "GitHub's own confirmation page only lets you rename the App; everything else below is fixed before your browser leaves this page.",
+      "loadError": "Could not load a preview.",
+      "instance": "GitHub instance",
+      "instanceHelp": "Leave blank for github.com. Self-hosted GitHub Enterprise Server instances work too, e.g. https://github.example.com.",
+      "appName": "App name",
+      "appNameHelp": "The one field GitHub itself lets you change on its own confirmation page too.",
+      "homepage": "Homepage",
+      "callback": "Callback",
+      "setup": "Setup",
+      "webhook": "Webhook",
+      "webhookInactive": "declared, not yet active",
+      "permissions": "Permissions requested",
+      "continue": "Continue to GitHub"
+    },
+    "notInstalled": "The App was created but has not been installed on an account or organization yet. Finish installing it on GitHub to pick repositories. A private App can only be installed on the account or organization that owns it."
+  },
+  "dockerGuard": {
+    "title": "Docker API guard",
+    "description": "Every Docker request this control plane makes passes through an allowlist that blocks privileged containers, host namespaces and protected host mounts.",
+    "modeLabel": "Guard mode",
+    "modes": {
+      "enforce": {
+        "label": "Enforce",
+        "description": "Reject requests a rule denies before they reach Docker."
+      },
+      "audit": {
+        "label": "Audit",
+        "description": "Allow everything and record what enforce would deny."
+      },
+      "off": {
+        "label": "Off",
+        "description": "No guard. Takes effect after a restart."
+      }
+    },
+    "notConfigured": "This control plane was started without the guard.",
+    "restartRequired": "The saved mode differs from the running one. Restart the control plane to apply it.",
+    "readyToEnforce": "Audit mode saw no would-be denials in the last {{days}} days. Enforce is likely safe.",
+    "pinned": "The mode is set by APP_DOCKER_GUARD on the server. Unset it to change the mode here.",
+    "windowTitle": "Flagged requests, last {{days}} days",
+    "windowEmpty": "Nothing flagged.",
+    "ruleCounts": "{{wouldDeny}} would deny, {{denied}} denied",
+    "save": "Save mode",
+    "saving": "Saving...",
+    "saved": "Docker guard mode saved",
+    "viewAudit": "View in audit log"
+  },
+  "githubAppOrg": {
+    "addOrg": "Add organization",
+    "addOrgHelp": "GitHub shows the accounts you can install on. Pick the organization. If you are not an owner, GitHub sends the request to its owners.",
+    "privateTitle": "This GitHub App is private, so GitHub only allows it on the account that owns it.",
+    "privateBody": "To add an organization, open the App's Advanced settings, choose Make public (Any account), then come back and press Add organization. Or register a new App owned by the organization.",
+    "makePublic": "Make the App public on GitHub",
+    "noSlug": "This connection was registered before Levelrail could remember the App's install link. Reconnect the App above (or use manual setup) to enable Add organization here."
+  },
+  "nav": {
+    "areas": {
+      "general": {
+        "title": "Workspace",
+        "description": "Profile, organizations, environments and setup."
+      },
+      "access": {
+        "title": "People and access",
+        "description": "Who can sign in and what they can do."
+      },
+      "security": {
+        "title": "Security",
+        "description": "Secrets vault, host firewall and posture."
+      },
+      "developer": {
+        "title": "Developer",
+        "description": "CLI and API access."
+      },
+      "ai": {
+        "title": "AI and agents",
+        "description": "Agent connections, AI control and the assistant."
+      },
+      "domains": {
+        "title": "Domains and TLS",
+        "description": "Platform ingress and certificates."
+      },
+      "backups": {
+        "title": "Backups and storage",
+        "description": "Where backups and artifacts are kept."
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Alert channels, email and the status page."
+      },
+      "integrations": {
+        "title": "Git and registries",
+        "description": "Git provider apps and container registries."
+      },
+      "beta": {
+        "title": "Beta features",
+        "description": "Features that work but are still being tuned."
+      },
+      "updates": {
+        "title": "Updates",
+        "description": "Current version and available releases."
+      },
+      "advanced": {
+        "title": "System",
+        "description": "Providers, containers, observability and low-level controls."
+      }
+    },
+    "items": {
+      "account": {
+        "title": "Account",
+        "description": "Profile and password."
+      },
+      "iam-policies": {
+        "title": "IAM policies",
+        "description": "Resource-scoped Allow/Deny access, layered on top of a token’s own abilities."
+      },
+      "security": {
+        "title": "Security",
+        "description": "Sessions and login protection."
+      },
+      "security-center": {
+        "title": "Security center",
+        "description": "Security score, every session and device, and token policy."
+      },
+      "tokens": {
+        "title": "API tokens",
+        "description": "Scoped, revocable credentials for the CLI, CI, and MCP."
+      },
+      "mobile-devices": {
+        "title": "Mobile devices",
+        "description": "Pair a phone with a QR code and revoke paired phones."
+      },
+      "plugins": {
+        "title": "Plugins",
+        "description": "Install signed plugins, approve what they may do and trust publisher keys."
+      },
+      "agents": {
+        "title": "Agents",
+        "description": "Connect an AI agent over MCP and manage its tokens."
+      },
+      "ai-control": {
+        "title": "AI control",
+        "description": "Turn agent access off, read-only or on, and limit it to chosen environments."
+      },
+      "cli-access": {
+        "title": "CLI access",
+        "description": "Approve or deny logins started with levelrail-cli auth login."
+      },
+      "api-explorer": {
+        "title": "API explorer",
+        "description": "Browse and try real endpoints without leaving the dashboard."
+      },
+      "users": {
+        "title": "Users",
+        "description": "Everyone with access to this platform."
+      },
+      "teams": {
+        "title": "Teams",
+        "description": "Members, roles and invitations for each team."
+      },
+      "roles": {
+        "title": "Roles",
+        "description": "Named ability sets, including the guest role."
+      },
+      "oauth": {
+        "title": "OAuth sign-in",
+        "description": "Let people sign in with Google or GitHub."
+      },
+      "sso": {
+        "title": "Single sign-on",
+        "description": "SAML identity providers, directory sync and group roles."
+      },
+      "session-policy": {
+        "title": "Session policy",
+        "description": "Idle timeout, session age, allowed networks and required MFA per team."
+      },
+      "organizations": {
+        "title": "Organizations",
+        "description": "Group related projects under an organization."
+      },
+      "environments": {
+        "title": "Environments",
+        "description": "Dev, test, UAT and production environments, and which are protected."
+      },
+      "github-app": {
+        "title": "GitHub App",
+        "description": "Private-repository access for git-based deploys."
+      },
+      "gitlab-app": {
+        "title": "GitLab App",
+        "description": "gitlab.com or self-hosted project access for git-based deploys."
+      },
+      "bitbucket-app": {
+        "title": "Bitbucket App",
+        "description": "Bitbucket Cloud repository access for git-based deploys."
+      },
+      "gitea-app": {
+        "title": "Gitea App",
+        "description": "Self-hosted Gitea repository access for git-based deploys."
+      },
+      "notification-channels": {
+        "title": "Notification channels",
+        "description": "Slack, Discord, Telegram, webhook, and email alerts."
+      },
+      "deploy-policies": {
+        "title": "Deploy policies",
+        "description": "Guardrails checked before every deploy: registries, probes, limits, mounts, labels."
+      },
+      "build-performance": {
+        "title": "Build performance",
+        "description": "Build timeout and how many builds run at once."
+      },
+      "maintenance": {
+        "title": "Scheduled maintenance",
+        "description": "Plan downtime, show it on the dashboard and status page, and hold deploys."
+      },
+      "status-page": {
+        "title": "Status page",
+        "description": "Optional public page with component status, uptime and incidents."
+      },
+      "backup-targets": {
+        "title": "Backup targets",
+        "description": "S3-compatible buckets for managed database backups."
+      },
+      "storage": {
+        "title": "Storage destinations",
+        "description": "AWS S3, R2, B2, MinIO, Wasabi buckets for log archives and backups."
+      },
+      "registry-credentials": {
+        "title": "Registry credentials",
+        "description": "Pull private images with build.type: image."
+      },
+      "node-providers": {
+        "title": "Cloud node providers",
+        "description": "Hetzner and DigitalOcean tokens for automatic node provisioning."
+      },
+      "registry": {
+        "title": "Container registry",
+        "description": "Built-in image registry for multi-node build caching."
+      },
+      "email": {
+        "title": "Email",
+        "description": "Outbound SMTP for alerts and password resets."
+      },
+      "cloudflare-tunnel": {
+        "title": "Cloudflare Tunnel",
+        "description": "Expose this control plane without opening an inbound port."
+      },
+      "vault": {
+        "title": "Vault",
+        "description": "Resolve app secrets live from an external HashiCorp Vault instance."
+      },
+      "data-export": {
+        "title": "Data export",
+        "description": "Send logs, audit events and metrics to Loki, syslog, a webhook, a bucket or an OTLP collector."
+      },
+      "event-webhooks": {
+        "title": "Event webhooks",
+        "description": "Signed HTTPS callbacks for platform events, with retries and a delivery log."
+      },
+      "observability": {
+        "title": "Observability",
+        "description": "Remote-read connection info and a link out to your own Grafana."
+      },
+      "ai-assistant": {
+        "title": "AI Assistant",
+        "description": "Bring your own LLM API key for the platform chat assistant."
+      },
+      "import-platform": {
+        "title": "Import from another platform",
+        "description": "Bring apps over from Coolify, Dokploy or CapRover."
+      },
+      "setup-wizard": {
+        "title": "Setup wizard",
+        "description": "Server checks, dashboard domain, git, and a first app."
+      },
+      "general": {
+        "title": "General",
+        "description": "System status and configuration."
+      },
+      "control-plane-backup": {
+        "title": "Control plane backup",
+        "description": "Snapshots, off-box backups, key escrow and restore drills for this instance."
+      },
+      "control-plane-health": {
+        "title": "Control plane health",
+        "description": "Goroutines, database latency, reconcile lag and stream load, with fixes."
+      },
+      "system-status": {
+        "title": "System status",
+        "description": "Preflight checks: Docker, disk, ports, database, and firewall."
+      },
+      "firewall": {
+        "title": "Firewall",
+        "description": "Allow or deny rules by port, protocol, and source, reconciled onto this node."
+      },
+      "containers": {
+        "title": "Containers",
+        "description": "Every container on this node, managed by this platform or not."
+      },
+      "janitor": {
+        "title": "Automatic cleanup",
+        "description": "Reclaim disk from unused images, cache, volumes and old attempts."
+      },
+      "domains": {
+        "title": "Domains",
+        "description": "Platform ingress: dashboard domain and ACME certificates."
+      },
+      "certificates": {
+        "title": "TLS certificates",
+        "description": "Every domain’s certificate in one place: expiry, issuer, renew now, and custom certificate upload."
+      },
+      "infrastructure": {
+        "title": "Infrastructure as code",
+        "description": "Plan and apply YAML resource files, and export live state."
+      },
+      "database-upgrades": {
+        "title": "Database upgrades",
+        "description": "Default upgrade policy and maintenance window."
+      },
+      "updates": {
+        "title": "Updates",
+        "description": "Current version and available releases."
+      },
+      "beta-features": {
+        "title": "Beta features",
+        "description": "Switch on features that work but are still being tuned."
+      },
+      "audit-log": {
+        "title": "Audit log",
+        "description": "Who changed what, across every session and API token."
+      }
+    },
+    "search": "Search settings",
+    "back": "Back",
+    "noMatchTitle": "No settings match \"{{query}}\"",
+    "noMatchDescription": "Try a different word, or clear the search to see every area.",
+    "title": "Settings",
+    "description": "Account, team, and platform configuration.",
+    "jumpTo": "Jump to an area"
+  },
+  "mobileDevices": {
+    "title": "Mobile devices",
+    "description": "Phones paired with this server. Each one holds its own expiring token that can read status and restart, deploy or roll back apps. It can never act as root, reveal secrets or approve sign-ins.",
+    "pair": "Pair a device",
+    "pairFailed": "Could not create a pairing code",
+    "pairingTitle": "Pairing code",
+    "pairingHint": "Enter this code in the mobile app, or open the link on the phone. It works once and expires at {{time}}.",
+    "codeLabel": "Code",
+    "linkLabel": "Pairing link",
+    "serverLabel": "Server address",
+    "copy": "Copy",
+    "copied": "Copied",
+    "done": "Done",
+    "emptyTitle": "No paired phones",
+    "emptyDescription": "Pair a device to check status and restart, deploy or roll back apps from your phone.",
+    "colName": "Name",
+    "colPlatform": "Platform",
+    "colCreated": "Paired",
+    "colLastSeen": "Last seen",
+    "colExpires": "Expires",
+    "never": "Never",
+    "expired": "Expired",
+    "revoke": "Revoke",
+    "revokeTitle": "Revoke {{name}}?",
+    "revokeDescription": "The phone loses access at once and has to be paired again.",
+    "revoked": "{{name}} revoked"
+  },
+  "oauthPage": {
+    "eyebrow": "Sign-in",
+    "title": "OAuth sign-in",
+    "description": "Let people sign in with Google, GitHub, Microsoft, or a self-hosted identity provider instead of a password. What each person can do is set by their team role and any IAM policies.",
+    "connectedCount_one": "{{count}} provider connected",
+    "connectedCount_other": "{{count}} providers connected",
+    "rail": {
+      "label": "Sign-in summary",
+      "summary": "Providers",
+      "connected": "Connected",
+      "connectedOf": "{{connected}} of {{total}}",
+      "callbacks": "Callback URLs",
+      "copyFor": "Copy the {{provider}} callback URL",
+      "docs": "Docs",
+      "docsLink": "Identity and access guide"
+    },
+    "banner": {
+      "title": "Register the callback URL with each provider first",
+      "body": "Every provider asks for a redirect (callback) URL when you create its OAuth app. Copy the URL shown in its row exactly, including the scheme, or sign-in fails with a redirect mismatch."
+    },
+    "providers": {
+      "google": "Google",
+      "github": "GitHub",
+      "microsoft": "Microsoft",
+      "oidc": "OIDC / SSO",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "discord": "Discord",
+      "slack": "Slack",
+      "linkedin": "LinkedIn",
+      "twitch": "Twitch",
+      "facebook": "Facebook",
+      "linear": "Linear",
+      "vercel": "Vercel",
+      "huggingface": "Hugging Face",
+      "figma": "Figma",
+      "salesforce": "Salesforce",
+      "codeberg": "Codeberg",
+      "cognito": "Amazon Cognito"
+    },
+    "state": {
+      "connected": "Connected",
+      "disabled": "Disabled",
+      "unconfigured": "Not set up"
+    },
+    "enable": "Allow sign-in",
+    "saved": "{{provider}} settings saved.",
+    "callbackCopied": "Callback URL copied.",
+    "callbackCopyFailed": "Could not copy. Select the URL and copy it by hand.",
+    "callbackLabel": "Callback URL",
+    "copyCallback": "Copy callback URL",
+    "copyCallbackFor": "Copy {{provider}} callback URL",
+    "configure": "Configure",
+    "sheet": {
+      "title": "Configure {{provider}}",
+      "description": "Credentials and who may sign in with this provider."
+    },
+    "clientId": "Client ID",
+    "credentials": {
+      "title": "Credentials",
+      "description": "Create an OAuth app at {{provider}} and paste its client ID and secret here."
+    },
+    "restrict": {
+      "title": "Who can join",
+      "description": "Only new sign-ins from this email domain get an account created automatically. Leave blank to allow any email.",
+      "label": "Restrict to email domain (optional)"
+    },
+    "issuerUrl": {
+      "label": "Issuer URL",
+      "hint": "Your identity provider's OIDC issuer, the address /.well-known/openid-configuration is served from."
+    },
+    "instanceUrl": {
+      "label": "Instance URL (optional)",
+      "hint": "Leave blank for gitlab.com. For a self-hosted GitLab, enter its https address.",
+      "invalid": "Instance URL must start with https://"
+    },
+    "userPoolId": {
+      "label": "User pool ID",
+      "hint": "Found on the Cognito user pool overview, for example us-east-1_AbC123. The region is read from it.",
+      "invalid": "User pool ID must look like us-east-1_AbC123"
+    },
+    "displayName": {
+      "label": "Display name (optional)",
+      "hint": "Shown on the sign-in button as \"Continue with ...\". Defaults to \"SSO\"."
+    },
+    "clientSecret": {
+      "label": "Client secret",
+      "unchanged": "Unchanged",
+      "stored": "A secret is already stored. Leave blank to keep it.",
+      "neverShown": "Never shown again once saved."
+    },
+    "errors": {
+      "clientId": "Client ID is required to enable this provider",
+      "clientSecret": "Client secret is required the first time this provider is enabled",
+      "issuerUrl": "Issuer URL is required to enable OIDC"
+    }
+  },
+  "gitProviders": {
+    "eyebrow": "Git provider",
+    "github": {
+      "title": "GitHub App",
+      "description": "Connect a GitHub App for private-repository access and installation-based repo browsing when creating an app from git.",
+      "banner": "Once the App is installed, its repositories are available to pick from when you create an app."
+    },
+    "gitlab": {
+      "title": "GitLab App",
+      "description": "Connect a GitLab OAuth Application, gitlab.com or self-hosted, for project browsing and webhook-driven deploys.",
+      "banner": "Once the application is authorized, its projects are available to pick from when you create an app."
+    },
+    "gitea": {
+      "title": "Gitea App",
+      "description": "Connect a self-hosted Gitea OAuth2 application for repository browsing and webhook-driven deploys.",
+      "banner": "Once the application is authorized, its repositories are available to pick from when you create an app."
+    },
+    "bitbucket": {
+      "title": "Bitbucket App",
+      "description": "Connect a Bitbucket Cloud OAuth consumer for repository browsing and webhook-driven deploys.",
+      "banner": "Once the consumer is authorized, its repositories are available to pick from when you create an app."
+    },
+    "rail": {
+      "label": "Connection summary",
+      "connection": "Connection",
+      "status": "Status",
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "account": "Account",
+      "accounts": "Connected accounts",
+      "instance": "Instance",
+      "accessTitle": "What it can access",
+      "docs": "Docs",
+      "docsLink": "Git integrations guide",
+      "access": {
+        "github": [
+          "Repositories the App is installed on",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ],
+        "gitlab": [
+          "Projects your authorized account can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ],
+        "gitea": [
+          "Repositories your authorized account can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ],
+        "bitbucket": [
+          "Repositories your authorized account can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ]
+      }
+    }
+  },
+  "securityPage": {
+    "session": {
+      "title": "Current session",
+      "description": "The account and session this browser is signed in with.",
+      "account": "Signed in as",
+      "accountHelp": "The account every action here is attributed to.",
+      "until": "Signed in until",
+      "untilHelp": "After this time you are asked to sign in again."
+    },
+    "rail": {
+      "label": "Sign-in protection summary",
+      "protection": "Sign-in protection",
+      "twoFactor": "Two-factor authentication",
+      "on": "On",
+      "off": "Off",
+      "passkeys": "Passkeys registered",
+      "signedIn": "Signed in as",
+      "until": "Session expires",
+      "jump": "On this page",
+      "sessionsLink": "Sessions",
+      "twoFactorLink": "Two-factor authentication",
+      "passkeysLink": "Passkeys"
+    },
+    "eyebrow": "Account",
+    "title": "Security",
+    "description": "Sessions, two-factor authentication, passkeys, and login protection for this account.",
+    "help": "Security guide",
+    "status": {
+      "protected": "Second factor on",
+      "open": "Password only"
+    },
+    "banner": {
+      "title": "Sign-in relies on a password alone",
+      "body": "Turn on two-factor authentication or register a passkey so a leaked password cannot open this dashboard on its own."
+    },
+    "account": {
+      "title": "Your sign-in methods",
+      "description": "Two-factor authentication, passkeys, your password and active sessions live on your Account page.",
+      "open": "Open Account"
+    },
+    "loginProtection": {
+      "title": "Login protection",
+      "body": "Failed sign-in attempts are rate limited per IP address and username, with each additional failure making the next allowed attempt wait longer than the last. A handful of mistyped passwords will never lock you out, but repeated automated guessing gets slower with every try."
+    }
+  },
+  "controlPlaneHealth": {
+    "title": "Control plane health",
+    "description": "Live saturation of this instance: process, database, reconcile loop and open streams.",
+    "status": {
+      "ok": "Healthy",
+      "warn": "Degraded",
+      "crit": "Saturated"
+    },
+    "severity": {
+      "warn": "Warning",
+      "crit": "Critical"
+    },
+    "allClear": "Every measurement is under its threshold.",
+    "reading": "Now {{value}}, limit {{limit}}.",
+    "fixApplied": "Fix applied",
+    "fixFailed": "The fix failed",
+    "fixViaCli": "Fix via CLI",
+    "slowQueries": "Slow queries: {{count}} over {{ms}} ms",
+    "noSlowQueries": "No slow queries recorded since start.",
+    "fixes": {
+      "wal_checkpoint": "Checkpoint now",
+      "db_optimize": "Refresh query stats",
+      "reset_slow_log": "Clear slow log",
+      "telemetry_prune": "Prune and compact metrics",
+      "reset_reconcile_guard": "Reset protection and resume",
+      "integrity_check": "Run a full check",
+      "integrity_restore": "Restore the newest verified snapshot"
+    },
+    "integrity": {
+      "title": "Database integrity",
+      "ok": "Intact",
+      "damaged": "Damaged",
+      "notYet": "No check has run since this process started. The first one runs shortly.",
+      "last": "Last check {{when}} ({{mode}}).",
+      "mode": {
+        "quick": "quick",
+        "full": "full"
+      },
+      "checkQuick": "Quick check now",
+      "checkFull": "Full check now",
+      "checkOk": "The database passed its check",
+      "checkBad": "The database failed its check",
+      "snapshots": "Snapshots you can restore",
+      "noSnapshots": "No snapshots exist yet. Create one from the backups page.",
+      "verified": "Verified",
+      "unverified": "Not verified yet",
+      "restore": "Restore",
+      "pending": "Snapshot {{name}} replaces the database at the next start.",
+      "restartNow": "Restart now",
+      "cancelRestore": "Cancel",
+      "staged": "Restore staged. Restart the control plane to apply it.",
+      "confirmTitle": "Restore {{name}}?",
+      "confirmDescription": "The snapshot is verified again before it is staged, and applied during the next start before the database opens.",
+      "consequenceKept": "The current database file is kept beside it, not deleted.",
+      "consequenceRestart": "Changes made after the snapshot was taken are not in it."
+    },
+    "guard": {
+      "title": "Reconcile protection",
+      "summary": "{{deferred}} passes were deferred, {{recent}} limited in the last 5 minutes, {{open}} breakers open.",
+      "none": "No controller has tripped a breaker or hit a rate limit.",
+      "counts": "{{trips}} trips, {{panics}} panics, {{throttled}} throttled",
+      "state": {
+        "closed": "Closed",
+        "open": "Paused",
+        "half_open": "Trial"
+      }
+    },
+    "metrics": {
+      "goroutines": "Goroutines",
+      "heap": "Heap in use",
+      "dbLatency": "Database p95",
+      "dbLatencyHint": "p50 {{p50}} ms, p99 {{p99}} ms",
+      "dbQueue": "Writes that waited",
+      "dbQueueHint": "{{ms}} ms waiting in total",
+      "wal": "Write ahead log",
+      "walHint": "Database file {{size}} MiB",
+      "reconcile": "Last reconcile pass",
+      "reconcileHint": "{{n}} controllers, p95 {{p95}} ms",
+      "eventLag": "Since last reconcile pass",
+      "streams": "Live streams",
+      "rss": "Memory in use (RSS)",
+      "rssHint": "Soft limit {{limit}} MiB",
+      "rssNoLimit": "No soft limit set",
+      "threads": "OS threads",
+      "cpu": "CPU since last check",
+      "telemetry": "Metrics database"
+    },
+    "loops": {
+      "title": "Background loops",
+      "empty": "No background loops have reported yet.",
+      "row": "every {{every}} s, {{runs}} runs, last {{ms}} ms, cost {{cost}} % of one core"
+    },
+    "findings": {
+      "reconcile_breakers": {
+        "title": "A controller keeps failing and was paused",
+        "hint": "Its breaker retries on a growing delay. Fix the cause shown below, then reset protection to retry now."
+      },
+      "reconcile_storm": {
+        "title": "A burst of events hit the rate limit",
+        "hint": "Passes were merged so the host stays responsive. Resetting protection refills the budget."
+      },
+      "db_integrity": {
+        "title": "The control plane database is damaged",
+        "hint": "Restore the newest verified snapshot. It is applied at the next start and the damaged file is kept."
+      },
+      "rss": {
+        "title": "High memory use",
+        "hint": "The process is using a lot of RAM. Lower APP_GOMEMLIMIT_PERCENT or review the loops below."
+      },
+      "threads": {
+        "title": "Many OS threads",
+        "hint": "Usually blocked disk or network calls. Restart the control plane if it keeps climbing."
+      },
+      "telemetry_size": {
+        "title": "Metrics database is large",
+        "hint": "Pruning applies the retention and size cap, then returns free space to the disk."
+      },
+      "goroutines": {
+        "title": "Many goroutines",
+        "hint": "Usually open streams or stuck jobs. Restart the control plane if it keeps climbing."
+      },
+      "heap": {
+        "title": "High memory use",
+        "hint": "Check for very large log or build outputs held in memory."
+      },
+      "db_latency": {
+        "title": "Slow database queries",
+        "hint": "Refreshing query statistics often restores good plans."
+      },
+      "db_queue": {
+        "title": "Writes are queueing",
+        "hint": "The single SQLite writer is busy. Look at the slow query list below."
+      },
+      "wal_size": {
+        "title": "Write ahead log is large",
+        "hint": "A checkpoint folds it back into the database file."
+      },
+      "slow_queries": {
+        "title": "Many slow queries",
+        "hint": "Review the list below, then clear the counter once handled."
+      },
+      "reconcile_pass": {
+        "title": "Reconcile pass is slow",
+        "hint": "A controller is taking long. The slowest one is shown in the metrics."
+      },
+      "event_lag": {
+        "title": "Reconcile loop is lagging",
+        "hint": "No pass finished recently. Restart the control plane if this persists."
+      },
+      "streams": {
+        "title": "Live streams near the cap",
+        "hint": "New log and event streams are refused at the cap. Raise APP_MAX_LIVE_STREAMS if the host has headroom."
+      }
+    }
+  },
+  "generalPage": {
+    "rail": {
+      "label": "Instance summary",
+      "instance": "Instance",
+      "url": "Instance URL",
+      "version": "Version",
+      "health": "Health",
+      "docker": "Docker daemon",
+      "connected": "Connected",
+      "disconnected": "Not connected",
+      "secrets": "Secrets",
+      "configured": "Configured",
+      "notConfigured": "Not configured",
+      "docs": "Docs"
+    },
+    "eyebrow": "Platform",
+    "title": "General",
+    "description": "What this instance is running on, how much disk it has left, and which core features are configured.",
+    "help": "Troubleshooting guide",
+    "density": {
+      "title": "Interface density",
+      "description": "Compact fits more on screen. Comfortable adds spacing. Stored in this browser only.",
+      "compact": "Compact",
+      "comfortable": "Comfortable"
+    },
+    "status": {
+      "healthy": "Healthy",
+      "attention": "Needs attention"
+    },
+    "banner": {
+      "docker": "Docker is not reachable",
+      "dockerBody": "The control plane cannot talk to the Docker engine, so nothing can be deployed or reconciled until it comes back.",
+      "secrets": "Secrets encryption is not configured",
+      "secretsBody": "Environment secrets cannot be stored until a master key is set for this instance."
+    },
+    "width": {
+      "title": "Page width",
+      "description": "How wide page content gets on large screens. Screens under 1024px are not affected. Stored in this browser only.",
+      "comfortable": "Comfortable",
+      "comfortableHint": "Centered column with generous side margins",
+      "wide": "Wide",
+      "wideHint": "Fuller use of big screens",
+      "full": "Full width",
+      "fullHint": "Edge to edge"
+    }
+  },
+  "emailPage": {
+    "rail": {
+      "label": "Email summary",
+      "delivery": "Delivery",
+      "backend": "Backend",
+      "from": "Sender address",
+      "usedFor": "Used for",
+      "usedForBody": "Alert notifications and password-reset links.",
+      "docs": "Docs",
+      "backends": {
+        "smtp": "SMTP",
+        "ses": "Amazon SES",
+        "resend": "Resend"
+      }
+    },
+    "eyebrow": "Notifications",
+    "title": "Email",
+    "description": "The backend that sends alert notifications and password-reset links.",
+    "help": "Email notifications guide",
+    "status": {
+      "none": "Not configured"
+    },
+    "banner": {
+      "title": "No email backend is configured",
+      "body": "Alert emails and password-reset links will not be sent until you pick SMTP, Amazon SES, or Resend below."
+    }
+  },
+  "channelsPage": {
+    "eyebrow": "Notifications",
+    "title": "Notification channels",
+    "description": "Connect Slack, Discord, Telegram, a generic webhook, or email once, then attach it from any app's deploy notifications.",
+    "help": "Notifications guide",
+    "enabledCount_one": "{{count}} channel enabled",
+    "enabledCount_other": "{{count}} channels enabled",
+    "empty": {
+      "title": "No notification channels connected",
+      "body": "Connect Slack, Discord, Telegram, a generic webhook, or email once here, then attach it from any app instead of retyping a URL."
+    },
+    "banner": {
+      "none": "Nobody will hear about a failed deploy",
+      "noneBody": "No notification channel is connected, so deploy results and alerts only show up in the dashboard. Connect one to get them where you already are.",
+      "allOff": "Every channel is disabled",
+      "allOffBody_one": "Your {{count}} connected channel is switched off, so nothing is being delivered. Enable it from its edit dialog.",
+      "allOffBody_other": "Your {{count}} connected channels are switched off, so nothing is being delivered. Enable one from its edit dialog."
+    },
+    "table": {
+      "label": "Notification channels",
+      "name": "Name",
+      "type": "Type",
+      "destination": "Destination",
+      "status": "Status",
+      "connected": "Connected",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "test": "Test",
+      "sending": "Sending...",
+      "testOk": "Test notification sent.",
+      "testFailed": "Test notification failed."
+    }
+  },
+  "registryPage": {
+    "eyebrow": "Builds",
+    "title": "Registry credentials",
+    "description": "Usernames and passwords for pulling private images with build.type: image, referenced by name from app.yaml.",
+    "help": "Registry guide",
+    "count_one": "{{count}} credential",
+    "count_other": "{{count}} credentials",
+    "empty": {
+      "title": "No registry credentials",
+      "body": "Add a username and password (or access token) to pull private images from a container registry, referenced by name from app.yaml's build.registryCredential field."
+    },
+    "banner": {
+      "expired_one": "{{count}} registry credential has expired",
+      "expired_other": "{{count}} registry credentials have expired",
+      "expiredBody": "Private image pulls using an expired credential will fail on the next deploy. Replace it before then.",
+      "expiring_one": "{{count}} registry credential expires soon",
+      "expiring_other": "{{count}} registry credentials expire soon",
+      "expiringBody": "Rotate it at the registry and update it here before the date shown in the table."
+    },
+    "table": {
+      "label": "Registry credentials",
+      "name": "Name",
+      "host": "Registry host",
+      "username": "Username",
+      "added": "Added",
+      "expiryHeader": "Expiry",
+      "noExpiry": "No expiry set",
+      "expiry": {
+        "healthy": "Healthy",
+        "expiring_soon": "Expiring soon",
+        "expired": "Expired"
+      },
+      "expiredOn": "Expired {{date}}",
+      "expiresOn": "Expires {{date}}",
+      "test": "Test connection",
+      "testing": "Testing...",
+      "testOk": "\"{{name}}\" authenticated successfully.",
+      "testFailed": "\"{{name}}\" failed to authenticate.",
+      "usedBy": "Used by",
+      "unused": "Nothing yet",
+      "usedByMany_one": "{{count}} service",
+      "usedByMany_other": "{{count}} services"
+    }
+  },
+  "backupTargetsPage": {
+    "rail": {
+      "label": "Backup targets summary",
+      "targets": "Targets",
+      "count": "Connected targets",
+      "providers": "Providers",
+      "provider": {
+        "aws": "AWS S3",
+        "r2": "Cloudflare R2",
+        "custom": "S3-compatible"
+      },
+      "status": "Backup status",
+      "statusBody": "Runs, coverage and restore drills live on the Backups page.",
+      "statusLink": "Open Backups",
+      "docs": "Docs"
+    },
+    "eyebrow": "Storage",
+    "title": "Backup targets",
+    "description": "S3-compatible buckets connected as backup destinations for managed databases. AWS S3, Cloudflare R2, or any other S3-compatible endpoint.",
+    "help": "Backups guide",
+    "count_one": "{{count}} target",
+    "count_other": "{{count}} targets",
+    "empty": {
+      "title": "No backup targets connected",
+      "body": "Connect an S3-compatible bucket (AWS S3, Cloudflare R2, or any other S3-compatible endpoint) to use as a backup destination for managed databases."
+    },
+    "banner": {
+      "title": "No backup target configured",
+      "body": "Managed databases have nowhere to send backups until you connect an S3-compatible bucket. Add one before you need a restore."
+    },
+    "table": {
+      "label": "Backup targets",
+      "name": "Name",
+      "provider": "Provider",
+      "bucket": "Bucket",
+      "region": "Region / endpoint",
+      "connected": "Connected",
+      "test": "Test connection",
+      "testing": "Testing...",
+      "testOk": "\"{{name}}\" connected successfully.",
+      "testFailed": "\"{{name}}\" failed to connect."
+    }
+  },
+  "certificatesPage": {
+    "eyebrow": "Ingress",
+    "title": "TLS certificates",
+    "description": "Every domain's certificate, automatic or custom, with expiry and a renew action. Use Renew now to force an immediate re-issuance instead of waiting for the next scheduled check.",
+    "help": "Domains and ingress guide",
+    "count_one": "{{count}} domain",
+    "count_other": "{{count}} domains",
+    "empty": {
+      "title": "No domains configured yet",
+      "body": "Add a domain to an app to see its certificate here, automatic or custom."
+    },
+    "banner": {
+      "expired_one": "{{count}} certificate has expired",
+      "expired_other": "{{count}} certificates have expired",
+      "expiredBody": "Visitors to those domains see a browser warning. Use Renew now on the row, or check that the domain still points at this server.",
+      "expiring_one": "{{count}} certificate expires soon",
+      "expiring_other": "{{count}} certificates expire soon",
+      "expiringBody": "Automatic certificates renew on their own. If one stays in this state, force a renewal from its row."
+    },
+    "table": {
+      "noApp": "No app",
+      "notIssued": "Not yet issued",
+      "orphaned": "Certificate remains from a domain no longer configured on any app"
+    }
+  },
+  "tokensPage": {
+    "eyebrow": "Access",
+    "title": "API tokens",
+    "description": "Scoped, revocable credentials for the CLI, CI, and MCP integrations. Session login only mints tokens: a token can never mint or revoke another token on its own behalf.",
+    "help": "API reference",
+    "docsLink": "View API docs",
+    "activeCount_one": "{{count}} active token",
+    "activeCount_other": "{{count}} active tokens",
+    "expiring": {
+      "title_one": "{{count}} token expires within 14 days",
+      "title_other": "{{count}} tokens expire within 14 days",
+      "body": "Create a replacement with the same access, switch your integration over, then revoke the old one."
+    },
+    "banner": {
+      "title_one": "{{count}} root token never expires",
+      "title_other": "{{count}} root tokens never expire",
+      "body": "A leaked root token can change anything on this instance. Revoke it and mint a narrower one with an expiry."
+    }
+  },
+  "usersPage": {
+    "eyebrow": "Access",
+    "title": "Users",
+    "description": "Everyone with access to this platform, and what each account can do.",
+    "help": "Teams and roles guide",
+    "count_one": "{{count}} user",
+    "count_other": "{{count}} users",
+    "pendingInvites": "Pending invites",
+    "empty": {
+      "title": "No users found",
+      "body": "Invite a teammate or create a user from the actions above."
+    },
+    "banner": {
+      "title_one": "{{count}} invite is waiting to be accepted",
+      "title_other": "{{count}} invites are waiting to be accepted",
+      "body": "Invitees have no access until they open their link. Copy it again from the pending invites list below if it got lost."
+    },
+    "table": {
+      "label": "Users",
+      "email": "Email",
+      "displayName": "Display name",
+      "signsInWith": "Signs in with",
+      "role": "Role",
+      "abilities": "Abilities",
+      "lastLogin": "Last login",
+      "never": "Never",
+      "password": "password",
+      "noMethod": "none",
+      "firstUser": "First user",
+      "you": "You",
+      "custom": "Custom",
+      "editAbilities": "Edit abilities",
+      "selfEditHint": "You cannot edit your own abilities",
+      "disabled": "Disabled",
+      "mustChangePassword": "Password change required"
+    },
+    "passwordChange": {
+      "require": "Require password change",
+      "clear": "Clear password requirement",
+      "requireTitle": "Require {{email}} to change their password?",
+      "requireBody": "Their sessions end now. Every sign-in is refused until they set a new password with forgot password on the sign-in page.",
+      "clearTitle": "Clear the password requirement for {{email}}?",
+      "clearBody": "They can sign in with their current password again.",
+      "cancel": "Cancel",
+      "confirmRequire": "Require change",
+      "confirmClear": "Clear requirement",
+      "saving": "Saving...",
+      "required": "{{email}} must change their password.",
+      "cleared": "{{email}} can sign in with their current password."
+    }
+  },
+  "cliAccessPage": {
+    "eyebrow": "Access",
+    "title": "CLI access",
+    "description": "Control this instance from your own computer, like aws or gh, not over SSH.",
+    "help": "CLI reference",
+    "copy": "Copy",
+    "copied": "Copied",
+    "server": {
+      "title": "This server",
+      "body": "The CLI pins this identity at login and refuses to send a token to any other server. Compare the fingerprint with what the CLI prints.",
+      "name": "Name",
+      "id": "Instance",
+      "fingerprint": "Fingerprint",
+      "movedTitle": "This instance was restored onto a new host",
+      "movedBody": "Its identity changed, so CLI tokens issued before the move are refused. If this is the same instance (a restore or migration you made), confirm it to accept those tokens again. If you did not move it, leave it and log in to the CLI again.",
+      "confirmLabel": "Type \"{{phrase}}\" to confirm",
+      "confirmAction": "Confirm same instance",
+      "confirmed": "Instance identity restored. CLI tokens work again."
+    },
+    "tokens": {
+      "title": "CLI tokens",
+      "body": "Each CLI login is a token bound to this server. Revoke one to cut that machine off."
+    },
+    "waitingCount_one": "{{count}} login waiting",
+    "waitingCount_other": "{{count}} logins waiting",
+    "rail": {
+      "label": "CLI summary",
+      "status": "Status",
+      "pending": "Logins waiting",
+      "apiUrl": "API URL",
+      "ci": "CI and scripts",
+      "docs": "Docs"
+    },
+    "ciHint": "Running from CI or a script instead of a person at a keyboard? Use an API token, nothing to approve by hand.",
+    "ciLink": "Create an API token",
+    "banner": {
+      "title_one": "{{count}} CLI login is waiting for approval",
+      "title_other": "{{count}} CLI logins are waiting for approval",
+      "body": "Approve it below only if you started it. If the requesting IP looks wrong, deny it."
+    },
+    "steps": {
+      "install": {
+        "title": "Install the CLI on your computer",
+        "body": "Not the server. This is a small client binary for your laptop or CI runner, separate from the control plane install.",
+        "note": "No root needed, installs to ~/.local/bin. macOS and Linux only today; on Windows, run this from WSL."
+      },
+      "point": {
+        "title": "Point it at this server",
+        "body": "Set this once per shell or in your shell profile. Every command talks to that address, and defaults to localhost otherwise."
+      },
+      "login": {
+        "title": "Log in",
+        "body": "Opens a code here to approve, the same flow gh auth login and aws sso login use: no SSH key, no server port to open. Approval needs a signed-in dashboard session, so it inherits that session's 2FA or passkey."
+      }
+    },
+    "setup": {
+      "toggle": "Set up the CLI on a new machine",
+      "hint": "Already have the CLI? Start the device login there and approve the code above. These steps are only for a fresh machine."
+    }
+  },
+  "accountPage": {
+    "title": "Account",
+    "description": "Your profile, sign-in security, sessions and what you can manage.",
+    "profile": {
+      "title": "Profile",
+      "description": "Your own details. What you can manage is listed under My access below.",
+      "email": "Email",
+      "emailVerified": "Verified",
+      "emailUnverified": "Unverified",
+      "displayName": "Display name",
+      "hasPassword": "This account signs in with a password.",
+      "noPassword": "This account has no password set, only OAuth sign-in.",
+      "edit": "Edit display name",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Display name updated",
+      "saving": "Saving...",
+      "counter": "{{used}} of {{max}} characters",
+      "saveError": "Could not save your display name. Check your connection and try again."
+    },
+    "loading": "Loading...",
+    "loadError": "Could not load this section.",
+    "sessions": {
+      "title": "Active sessions and trusted devices",
+      "description": "Where you are signed in right now. Ending a session signs that browser out.",
+      "current": "This session",
+      "lastSeen": "last seen",
+      "revoke": "Sign out",
+      "revoked": "Session ended",
+      "revokeOthers": "Sign out all other sessions",
+      "revokedOthers_one": "{{count}} other session ended",
+      "revokedOthers_other": "{{count}} other sessions ended",
+      "devices": "Trusted devices",
+      "devicesEmpty": "No trusted devices.",
+      "deviceRemove": "Remove",
+      "deviceRemoved": "Trusted device removed",
+      "canApprove": "Can approve sign-ins",
+      "signedInAt": "Signed in",
+      "networks_one": "{{count}} network",
+      "networks_other": "{{count}} networks",
+      "tone": {
+        "live": "Active now",
+        "recent": "Active in the last hour",
+        "idle": "Idle"
+      },
+      "revoking": "Signing out...",
+      "revokeLabel": "Sign out {{device}} ({{ip}})",
+      "revokeConfirmTitle": "Sign out {{device}}?",
+      "revokeConsequence": "That browser is signed out immediately.",
+      "revokeApproverConsequence": "It can currently approve new sign-ins, so you will lose that approver.",
+      "revokeReloginConsequence": "Whoever uses it must sign in again.",
+      "revokeOthersConfirmTitle": "Sign out all other sessions?",
+      "revokeOthersConsequence": "Every other browser and device is signed out immediately.",
+      "revokeOthersKeep": "This browser stays signed in.",
+      "empty": "No active sessions",
+      "emptyBody": "Sessions appear here after you sign in from a browser.",
+      "deviceRemoving": "Removing...",
+      "deviceRemoveLabel": "Remove trusted device {{device}}",
+      "deviceConfirmTitle": "Remove trusted device {{device}}?",
+      "deviceConsequence": "That device must be approved again the next time it signs in."
+    },
+    "providers": {
+      "title": "Linked sign-in providers",
+      "description": "Link an identity provider to sign in with it. Linking needs this live session.",
+      "none": "No sign-in providers are enabled on this instance.",
+      "linked": "Linked",
+      "link": "Link",
+      "configure": "Set up providers"
+    },
+    "tokens": {
+      "title": "My API tokens",
+      "description": "Tokens you created for the CLI, CI or agents.",
+      "manage": "All tokens and history",
+      "emptyTitle": "No active API tokens",
+      "emptyBody": "Create a token for the CLI, CI or an agent. The secret is shown once."
+    },
+    "access": {
+      "title": "My access",
+      "description": "What this account can and cannot manage, and which permission is missing when it cannot.",
+      "tier": "Access level",
+      "tiers": {
+        "admin": "Administrator",
+        "operator": "Operator",
+        "developer": "Developer",
+        "viewer": "Viewer"
+      },
+      "teams": "Teams",
+      "noTeams": "Not a member of any team.",
+      "policies": "Attached IAM policies",
+      "noPolicies": "No policies attached.",
+      "missing": "Missing permission: {{ability}}",
+      "areas": {
+        "view": "View apps, services and logs",
+        "deploy": "Deploy and roll back",
+        "configure": "Change app and service configuration",
+        "secrets_read": "Reveal secrets and sensitive values",
+        "sensitive_write": "Change sensitive settings",
+        "users_and_access": "Manage users, roles and policies",
+        "platform_settings": "Change platform-wide settings"
+      },
+      "colArea": "Capability",
+      "colStatus": "Status",
+      "colAction": "Action",
+      "allowed": "Allowed",
+      "request": "Request access",
+      "requestLabel": "Request access for: {{area}}"
+    },
+    "retry": "Retry",
+    "password": {
+      "titleChange": "Change password",
+      "titleSet": "Set a password",
+      "descChange": "Changing your password signs out every other active session for this account. This browser stays signed in.",
+      "descSet": "This account currently signs in through OAuth only. Setting a password adds a second way to sign in.",
+      "current": "Current password",
+      "currentRequired": "Current password is required",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "tooShort": "New password must be at least {{min}} characters",
+      "mismatch": "Passwords do not match",
+      "minHint": "At least {{min}} characters.",
+      "changed": "Password changed",
+      "changedBody": "Your other sessions have been signed out. This one stays signed in.",
+      "saving": "Saving...",
+      "submitChange": "Change password",
+      "submitSet": "Set password",
+      "strength": {
+        "label": "Password strength",
+        "level0": "Empty",
+        "level1": "Weak",
+        "level2": "Fair",
+        "level3": "Good",
+        "level4": "Strong"
+      },
+      "rules": {
+        "length": "At least {{min}} characters",
+        "mixedCase": "Upper and lower case",
+        "digit": "A number",
+        "symbol": "A symbol",
+        "met": "(met)",
+        "unmet": "(not met)"
+      }
+    },
+    "twoFactor": {
+      "title": "Two-factor authentication",
+      "description": "Require a code from an authenticator app in addition to your password when signing in.",
+      "enabled_one": "Enabled. {{count}} recovery code remaining.",
+      "enabled_other": "Enabled. {{count}} recovery codes remaining.",
+      "disabledHint": "Not enabled. Add a second step so a stolen password alone cannot sign in.",
+      "enable": "Enable two-factor authentication",
+      "setupTitle": "Set up two-factor authentication",
+      "setupBody": "Add this to an authenticator app (1Password, Google Authenticator, Authy), then enter the 6-digit code it shows to confirm.",
+      "setupKey": "Setup key",
+      "setupLink": "Or use this link",
+      "codeLabel": "Code from your authenticator app",
+      "codePlaceholder": "123456",
+      "recoveryPlaceholder": "xxxx-xxxx-xxxx-xxxx",
+      "cancel": "Cancel",
+      "verify": "Verify and enable",
+      "verifying": "Verifying...",
+      "enabledTitle": "Two-factor authentication enabled",
+      "recoveryBody": "Save these recovery codes somewhere safe. Each one can be used once to sign in if you lose access to your authenticator app. They will not be shown again.",
+      "saved": "I have saved these codes",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyAll": "Copy all",
+      "regenerate": "Regenerate recovery codes",
+      "regenerateBody": "Every existing recovery code stops working the moment new ones are generated. Enter a current code from your authenticator app to confirm.",
+      "regenerateAction": "Regenerate",
+      "regenerating": "Regenerating...",
+      "regeneratedTitle": "New recovery codes generated",
+      "regeneratedBody": "Save these somewhere safe. The old codes no longer work, and these will not be shown again.",
+      "done": "Done",
+      "disable": "Disable two-factor authentication",
+      "disableTitle": "Disable two-factor authentication?",
+      "disableBody": "Signing in will only require a password afterward. Enter a current code to confirm.",
+      "recoveryCodeLabel": "Recovery code",
+      "authCodeLabel": "Authenticator code",
+      "useAuthCode": "Use authenticator code",
+      "useRecoveryCode": "Use a recovery code",
+      "disableAction": "Disable",
+      "disabling": "Disabling..."
+    }
+  },
+  "apiExplorerPage": {
+    "title": "API explorer",
+    "description": "Browse and try every registered HTTP route on this instance, using your current session. Requests fire for real, same as hitting the endpoint with curl.",
+    "filterPlaceholder": "Filter by path, method, ability, or description",
+    "filterLabel": "Filter routes",
+    "summary": "{{count}} routes, {{examples}} with a worked example ({{percent}}%). A route with no description just means its registration has no doc comment above it yet, not that it is unsupported.",
+    "routeCount_one": "{{count}} route",
+    "routeCount_other": "{{count}} routes",
+    "noMatch": "No routes match \"{{filter}}\"."
+  },
+  "importPlatformPage": {
+    "title": "Import from another platform",
+    "description": "Bring apps and databases over from Coolify, Dokploy or CapRover. Databases and volumes start empty, and re-running skips what was already imported.",
+    "checklistLink": "Open the migration checklist"
+  },
+  "builtInRegistryPage": {
+    "title": "Container registry",
+    "description": "The built-in image registry: a build cache and distribution backend for multi-node deployments, with no external registry to sign up for. It is served over TLS through the embedded ingress and enforces its own login even if the published port is reached directly."
+  },
+  "vaultPage": {
+    "title": "Vault",
+    "description": "Resolve an app.yaml env var's value live from an external HashiCorp Vault instance, as an alternative to this platform's own envelope-encrypted secret storage."
+  },
+  "aiAssistantPage": {
+    "title": "AI Assistant",
+    "description": "Bring your own LLM API key to chat with an assistant that reads logs, metrics and deploy history, and always pauses for your approval before any change.",
+    "configured": "Configured",
+    "notConfigured": "Not configured",
+    "reassurance": "Your key never leaves this server and is never shown again.",
+    "rootOnly": "Only the root account can connect providers, change keys or pick models. You can still see what is connected.",
+    "loadError": "Could not load AI providers.",
+    "retry": "Try again",
+    "header": {
+      "ready": "Ready",
+      "attention": "Needs attention"
+    },
+    "pill": {
+      "not_connected": "Not connected",
+      "connected": "Connected",
+      "invalid_key": "Invalid key",
+      "unreachable": "Unreachable",
+      "quota_exhausted": "Out of credits"
+    },
+    "groups": {
+      "hosted": "Hosted providers",
+      "selfHosted": "Self-hosted"
+    },
+    "card": {
+      "open": "Open {{name}} settings",
+      "active": "Active",
+      "manage": "Manage",
+      "connect": "Add a key to connect"
+    },
+    "model": {
+      "loading": "Loading models...",
+      "context": "{{size}} context"
+    },
+    "fallback": {
+      "title": "Fallback order",
+      "hint": "If the active model hits a rate limit or an outage, the next one in this list takes over. A bad key never triggers fallback.",
+      "empty": "No fallback models yet. Open a connected provider and choose Add as fallback.",
+      "moveUp": "Move {{name}} up",
+      "moveDown": "Move {{name}} down",
+      "remove": "Remove {{name}} from fallback"
+    },
+    "usage": {
+      "title": "Usage, last 30 days",
+      "emptyTitle": "No usage yet",
+      "emptyBody": "Token counts show up here after the assistant answers its first question.",
+      "unavailable": "Usage is not available on this server version yet.",
+      "ofBudget": "{{used}} of {{budget}} tokens this month ({{pct}}%)",
+      "total": "{{used}} tokens",
+      "last30": "Last 30 days",
+      "sparkline": "Tokens per day for the last 30 days",
+      "model": "Model",
+      "tokens": "Tokens",
+      "requests": "Requests",
+      "errors": "Errors"
+    },
+    "test": {
+      "ok": "Connection works",
+      "untested": "Not tested yet",
+      "invalid_key": "The provider rejected this key",
+      "unreachable": "Could not reach the provider",
+      "quota_exhausted": "The account is out of credits",
+      "latency": "{{ms}} ms"
+    },
+    "drawer": {
+      "description": "Your key is encrypted on this server and only used to call this provider.",
+      "apiKey": "API key",
+      "keyPlaceholder": "Paste your API key",
+      "keySavedPlaceholder": "Saved. Paste a new key to replace it",
+      "keyKept": "A key is saved and hidden. Leave blank to keep it.",
+      "keyNever": "Stored encrypted. Never shown again after saving.",
+      "showKey": "Show key",
+      "hideKey": "Hide key",
+      "getKey": "Get a key",
+      "baseUrl": "Base URL",
+      "baseUrlNote": "Private and local addresses are allowed for self-hosted endpoints. Changes are recorded in the audit log.",
+      "baseUrlInvalid": "Enter a full http or https URL.",
+      "model": "Model",
+      "modelHelp": "Pick from the list or type any model id.",
+      "modelFree": "Type the model id to use.",
+      "test": "Test connection",
+      "testing": "Testing...",
+      "save": "Save",
+      "saving": "Saving...",
+      "savedShort": "Saved",
+      "saved": "{{name}} saved.",
+      "disconnect": "Disconnect",
+      "disconnected": "{{name}} disconnected.",
+      "disconnectTitle": "Disconnect {{name}}?",
+      "disconnectBody": "The saved key is deleted from this server. If this provider is active, the assistant stops answering until you pick another.",
+      "useModel": "Use this model",
+      "addFallback": "Add as fallback",
+      "nowActive": "{{name}} is now the active provider."
+    }
+  },
+  "observabilityPage": {
+    "title": "Observability",
+    "description": "Connect your own Grafana to this control plane's metrics."
+  },
+  "nodeProvidersPage": {
+    "title": "Cloud node providers",
+    "description": "API tokens for creating servers automatically from the Nodes page. Used only to create and inspect VMs, day to day operation never touches SSH."
+  },
+  "containersPage": {
+    "title": "Containers",
+    "description": "Every container on this node, whether or not it's managed by this platform.",
+    "notAvailable": "Not available",
+    "listFailed": "Couldn't list containers",
+    "emptyTitle": "No containers",
+    "emptyDescription": "Nothing is running on this node's Docker daemon right now."
+  },
+  "networkSharesPage": {
+    "title": "Network shares",
+    "description": "NFS and CIFS/SMB exports, mounted as Docker volumes using Docker's own local-driver network passthrough. Attach one as a volume source when configuring an app's volumes."
+  },
+  "organizationsPage": {
+    "title": "Organizations",
+    "description": "Group related projects under an organization. File a project into one from the project's own detail page."
+  },
+  "agentsPage": {
+    "title": "Agents",
+    "description": "Connect an AI agent to this instance through MCP, and manage the tokens it uses."
+  },
+  "firewallPage": {
+    "title": "Firewall",
+    "description": "Declarative host firewall rules, reconciled onto this node's firewall (ufw)."
+  },
+  "gitConnection": {
+    "fields": {
+      "status": "Connection",
+      "statusHelp": "Whether this control plane can use the App right now.",
+      "instance": "Instance URL",
+      "instanceHelp": "The server this connection talks to."
+    },
+    "notConnected": "Not connected",
+    "primaryDomain": {
+      "title": "Set a primary domain first",
+      "body": "Git providers redirect back to this instance's primary domain for OAuth callbacks and manifest URLs.",
+      "domainLink": "Open domain settings",
+      "label": "Primary domain",
+      "placeholder": "deploy.example.com",
+      "helper": "Saved to ingress settings. ACME and email options stay in domain settings.",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Primary domain set.",
+      "saveFailed": "Could not set the primary domain."
+    },
+    "githubCallback": {
+      "title": "Callback address",
+      "body": "Automated setup registers a callback at {{url}}. GitHub redirects there for the life of the App, so this instance must be publicly reachable at that address before you continue.",
+      "change": "Change it in domain settings",
+      "docs": "Manifest flow docs",
+      "manualHint": "No public address? Use manual setup instead."
+    }
+  },
+  "nodeProviders": {
+    "names": {
+      "hetzner": "Hetzner",
+      "digitalocean": "DigitalOcean",
+      "aws": "AWS",
+      "azure": "Azure",
+      "gcp": "Google Cloud",
+      "custom": "Custom data center"
+    },
+    "methods": {
+      "api_token": {
+        "title": "API token",
+        "description": "A single bearer token from the provider's console."
+      },
+      "access_key": {
+        "title": "Access key",
+        "description": "A long-lived IAM access key id and secret."
+      },
+      "assume_role": {
+        "title": "Assume a role",
+        "description": "Assume an IAM role by ARN, so the base identity needs only sts:AssumeRole."
+      },
+      "ambient": {
+        "title": "Control plane identity",
+        "description": "Use the identity this control plane already runs as, such as an EC2 instance profile."
+      },
+      "workload_identity_federation": {
+        "title": "Workload identity federation",
+        "description": "Exchange a federated token file for a short-lived token, no client secret stored."
+      },
+      "service_account_json": {
+        "title": "Service account JSON",
+        "description": "A service principal or service account key as a JSON document."
+      },
+      "manual": {
+        "title": "Manual",
+        "description": "No cloud API: bare metal, on-prem or any VM that enrolls through a join token."
+      }
+    },
+    "permissions": {
+      "hetzner": "A project API token with Read & Write access. Hetzner has no finer scopes, so use a dedicated project.",
+      "digitalocean": "A personal access token with read and write scope, or a custom scope limited to droplet and ssh_key create, read and delete.",
+      "aws": "ec2:DescribeRegions, ec2:DescribeInstanceTypes, ec2:DescribeInstances, ec2:DescribeImages, ec2:RunInstances, ec2:TerminateInstances, ec2:CreateTags and the security group and VPC actions used to create the node's group.",
+      "awsRole": "With a role, the base identity needs only sts:AssumeRole on that role ARN. Put the actions above on the role.",
+      "azure": "Reader on the subscription, plus Virtual Machine Contributor and Network Contributor on the target resource group.",
+      "gcp": "compute.regions.list, compute.machineTypes.list, compute.instances.create, compute.instances.get and compute.instances.delete on the project.",
+      "custom": "No credential is stored. The node dials out to this control plane with a one-time join token."
+    },
+    "permissionsTitle": "Least privilege",
+    "methodLegend": "Connection method",
+    "credentialJson": "Credential (JSON)",
+    "roleArnRequired": "Role ARN",
+    "storedPlaceholder": "Stored. Paste a new value to replace it.",
+    "dcName": "Data center name",
+    "dcLocation": "Location (optional)",
+    "dcNotes": "Notes (optional)",
+    "saveManual": "Save data center",
+    "testAndConnect": "Test and connect",
+    "testConnection": "Test connection",
+    "testing": "Testing...",
+    "testStored": "Test stored connection",
+    "testFailed": "Test failed",
+    "disconnect": "Disconnect",
+    "confirmDisconnect": "Confirm disconnect",
+    "disconnected": "{{provider}} disconnected.",
+    "connectedBy": "Connected by {{name}}",
+    "lastTested": "last tested",
+    "addNode": "Add a node",
+    "addNodeTitle": "Add a node to {{provider}}",
+    "addNodeDescription": "Run the install command on the machine. It dials out to this control plane, so no inbound port is needed.",
+    "firewallGuidance": "Allow outbound TCP to this control plane's agent port (9443 by default) and outbound HTTPS for image pulls. No inbound rule is required for the agent.",
+    "hints": {
+      "custom": "Bare metal, on-prem or any VM with no cloud API.",
+      "hetzner": "Project API token with read and write access.",
+      "digitalocean": "Personal access token with read and write scope.",
+      "aws": "Access key, or this control plane's own AWS identity.",
+      "azure": "Service principal JSON, or workload identity federation.",
+      "gcp": "Service account key JSON."
+    },
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "connect": "Connect",
+    "update": "Update",
+    "configureFor": "Configure {{provider}}",
+    "sheetTitle": "{{provider}} credentials",
+    "sheetDescription": "Used only to create and inspect servers from the Nodes page. Day to day operation never touches your cloud account.",
+    "apiToken": "API token",
+    "azureCredential": "Service principal (JSON)",
+    "gcpCredential": "Service account key (JSON)",
+    "accessKeyId": "Access key ID",
+    "secretAccessKey": "Secret access key",
+    "sessionToken": "Session token (optional)",
+    "region": "Region (optional)",
+    "roleArn": "Role ARN (optional)",
+    "roleArnHelp": "When set, assumed via STS before use: the credential above then only needs sts:AssumeRole on this role, not direct EC2 permissions.",
+    "useAmbient": "Use this control plane's own AWS identity (env vars, shared config, or an EC2 instance profile) instead of a stored key",
+    "storedReplace": "A credential is already stored. Paste a new one to replace it.",
+    "neverEchoed": "Never shown again once saved.",
+    "azureFederation": "Prefer workload identity federation over a long-lived client secret? Use a \"federated_token_file\" key instead, see",
+    "azureFederationLink": "Azure workload identity federation",
+    "saved": "{{provider}} credential saved.",
+    "saving": "Saving...",
+    "save": "Save",
+    "empty": "No cloud providers are configured on this control plane.",
+    "addNodeDialog": {
+      "cloud": "Create a server at a cloud provider",
+      "own": "Use a machine you already have",
+      "connectFirst": "Connect {{provider}} to create servers there.",
+      "sshTitle": "Connect over SSH",
+      "sshHint": "A VPS, home server or Raspberry Pi. We install the agent for you.",
+      "manualTitle": "Enroll with a join token",
+      "manualHint": "Run one command on the machine yourself. Nothing inbound is opened."
+    }
+  },
+  "builtInRegistry": {
+    "title": "No external registry? Run your own",
+    "titleActive": "Built-in registry",
+    "body": "Levelrail can run a private registry on this server. Builds and remote nodes push and pull images through it, with no outside account.",
+    "activeBody": "Serving images at {{host}}. Apps can pull from it without a credential here.",
+    "setUp": "Set up built-in registry",
+    "manage": "Manage"
+  },
+  "registryVendors": {
+    "heading": "Connect a registry",
+    "subheading": "Pick a vendor to pre-fill the host and see which token scopes the credential needs.",
+    "connect": "Connect",
+    "connectFor": "Connect {{vendor}}",
+    "dialogTitle": "Connect {{vendor}}",
+    "dialogDescription": "The password is encrypted at rest and never shown again.",
+    "name": "Name",
+    "nameHelp": "Referenced by name from app.yaml build.registryCredential.",
+    "host": "Registry host",
+    "username": "Username",
+    "password": "Password or token",
+    "neverShown": "Never shown again once saved.",
+    "expires": "Expires (optional)",
+    "shortLived": "This vendor issues tokens that last about {{hours}} hours. Re-issue and update the credential before the date shown, automatic refresh is not built.",
+    "scopesTitle": "Scopes needed",
+    "test": "Test connection",
+    "testing": "Testing...",
+    "save": "Save credential",
+    "saving": "Saving...",
+    "saved": "Registry credential \"{{name}}\" added.",
+    "auth": {
+      "dockerhub": "Use your Docker Hub username with a personal access token, not your account password.",
+      "ghcr": "Use your GitHub username with a personal access token (classic).",
+      "gitlab": "Use a deploy token or a personal access token as the password.",
+      "ecr": "The username is always AWS. The password is the output of aws ecr get-login-password, valid for 12 hours.",
+      "gar": "The username is _json_key and the password is the service account key JSON.",
+      "acr": "Use a repository scoped token or a service principal: the username is the token name or app id, the password is its secret.",
+      "harbor": "Use a robot account: the username looks like robot$name and the password is its secret.",
+      "quay": "Use a robot account: the username is org+robotname and the password is its token.",
+      "jfrog": "The username is your user and the password is an identity token, not your account password.",
+      "nexus": "Use the username and password of a user with access to the Docker repository.",
+      "generic": "Any registry that speaks the Docker Registry HTTP API v2 with basic authentication."
+    },
+    "scopes": {
+      "dockerhub": "Read-only access is enough to pull. Choose Read & Write only if builds push.",
+      "ghcr": "read:packages to pull, write:packages to push. For an SSO-enforced organization, authorize the token for SSO.",
+      "gitlab": "read_registry to pull, write_registry to push. A deploy token is scoped to one project or group.",
+      "ecr": "ecr:GetAuthorizationToken, ecr:BatchGetImage, ecr:GetDownloadUrlForLayer and ecr:BatchCheckLayerAvailability, from a key or a role.",
+      "gar": "roles/artifactregistry.reader to pull, roles/artifactregistry.writer to push.",
+      "acr": "The AcrPull role (or a token with content/read) to pull, AcrPush to push.",
+      "harbor": "Pull permission on the project the images live in.",
+      "quay": "Read permission on the repository.",
+      "jfrog": "Read permission on the Docker repository.",
+      "nexus": "nx-repository-view-docker-*-read to pull.",
+      "generic": "Pull access to the repositories you deploy."
+    }
+  },
+  "packageRegistries": {
+    "heading": "Package registries for builds",
+    "subheading": "Private npm, PyPI, Maven, NuGet, Cargo, Go and RubyGems registries, mounted into Dockerfile builds as secrets.",
+    "add": "Add package registry",
+    "empty": "No package registries yet. Add one so builds can install private packages.",
+    "dialogTitle": "Add a package registry",
+    "dialogDescription": "The token is encrypted and mounted into builds as a BuildKit secret.",
+    "ecosystems": {
+      "npm": "npm",
+      "pypi": "PyPI",
+      "maven": "Maven",
+      "nuget": "NuGet",
+      "cargo": "Cargo",
+      "go": "Go proxy",
+      "rubygems": "RubyGems"
+    },
+    "scopes": {
+      "instance": "All builds",
+      "project": "One project",
+      "app": "One app"
+    },
+    "name": "Name",
+    "url": "Registry URL",
+    "urlHelp": "No credentials in the URL. Use the username and token fields.",
+    "username": "Username (optional)",
+    "usernameHelp": "Leave empty for a bearer token registry.",
+    "secret": "Token or password",
+    "secretHelp": "Never shown again once saved, never placed in a build arg, image layer or build log.",
+    "patterns": "GOPRIVATE patterns",
+    "scope": "Applies to",
+    "scopeRef": "Project id or app name",
+    "scopeRefPlaceholder": "Project id or app name",
+    "buildNote": "Reference the generated config in your Dockerfile with RUN --mount=type=secret,id=<secret id>, for example id=npmrc with target=/root/.npmrc. Builds on a remote build node do not receive it yet.",
+    "save": "Save registry",
+    "saving": "Saving...",
+    "saved": "Package registry \"{{name}}\" added.",
+    "test": "Test",
+    "remove": "Remove {{name}}",
+    "mountAs": "secret id {{id}}"
+  },
+  "storagePage": {
+    "title": "Storage destinations",
+    "description": "S3-compatible object storage for log archives and backups. AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, or any custom endpoint.",
+    "notConfiguredTitle": "Storage is not configured on this server",
+    "notConfiguredBody": "Set APP_MASTER_KEY and restart the control plane so bucket credentials can be encrypted.",
+    "loadErrorTitle": "Storage destinations could not be loaded",
+    "retry": "Retry",
+    "logArchiveTitle": "Log archive for all apps",
+    "logArchiveBody": "Ships node-local logs to a destination on a schedule. Apps with their own policy (app Logs, Archive tab) are kept separate.",
+    "buildCacheTitle": "Build cache for all apps"
+  },
+  "systemStatusPage": {
+    "title": "System status",
+    "description": "Preflight checks: Docker, disk, ports, database, firewall, and outbound network reachability.",
+    "troubleshootingGuide": "Troubleshooting guide",
+    "rerun": "Re-run checks",
+    "allPassedTitle": "All checks passed",
+    "allPassedBody": "Docker, disk space, ports, the database, and every other preflight check are all healthy right now.",
+    "failedTitle": "One or more checks failed",
+    "failing": "Failing: {{names}}.",
+    "reviewBelow": "Review the checks below for details.",
+    "ingressTitle": "Ingress is a single point of failure",
+    "ingressBody": "Domain-based HTTPS routing runs embedded in this control plane process. If it crashes or restarts, routing is down until it comes back up, even though already-running containers keep serving traffic on their own ports the whole time.",
+    "survivesCrash": "What survives a control plane crash",
+    "groups": {
+      "infrastructure": {
+        "title": "Infrastructure",
+        "description": "Can this box run and reach what it needs to run containers."
+      },
+      "security": {
+        "title": "Security",
+        "description": "Hardening checks: firewall status and secret rotation age."
+      },
+      "network": {
+        "title": "Network and reachability",
+        "description": "Outbound network access and whether the internet can reach this box."
+      },
+      "other": {
+        "title": "Other checks",
+        "description": "Additional checks reported by this control plane."
+      }
+    }
+  },
+  "firewallRules": {
+    "liveStatus": "Live firewall status",
+    "liveStatusNote": "From this host's own preflight check. See Settings, System status for the full hardening checklist.",
+    "emptyTitle": "No firewall rules configured",
+    "emptyBody": "Add a rule to allow or deny traffic to a specific port, optionally restricted to a source CIDR.",
+    "cols": {
+      "action": "Action",
+      "port": "Port",
+      "protocol": "Protocol",
+      "source": "Source",
+      "label": "Label",
+      "added": "Added",
+      "actions": "Actions"
+    },
+    "anywhere": "Anywhere",
+    "none": "None",
+    "allow": "Allow",
+    "deny": "Deny",
+    "closeTitle": "This rule will close a port",
+    "restrictTitle": "This rule restricts a port to one source",
+    "closeBody": "Traffic to this port will be dropped. A rule targeting the management API, agent connections, or ingress is refused automatically.",
+    "restrictBody": "Traffic from outside this CIDR will no longer reach this port. A rule targeting the management API, agent connections, or ingress is refused automatically.",
+    "addRule": "Add rule",
+    "addDeny": "Add deny rule",
+    "adding": "Adding...",
+    "addTitle": "Add firewall rule",
+    "addBody": "Allow or deny traffic to a port, optionally restricted to a source CIDR. Applied on the next reconcile pass.",
+    "createdToast": "Firewall rule for port {{port}} created.",
+    "sourceCidr": "Source CIDR (optional)",
+    "sourceCidrPlaceholder": "10.0.0.0/24 (leave blank for any source)",
+    "labelOptional": "Label (optional)",
+    "labelPlaceholder": "what this rule is for",
+    "cancel": "Cancel",
+    "remove": "Remove",
+    "removing": "Removing...",
+    "removeTitle": "Remove this rule?",
+    "removeAllowBody": "This will stop allowing traffic to port {{port}}/{{protocol}} once the next reconcile pass removes it, unless something else on this host still allows it.",
+    "removeDenyBody": "This will stop denying traffic to port {{port}}/{{protocol}} once the next reconcile pass removes it.",
+    "removedToast": "Firewall rule removed."
+  },
+  "storageDestinations": {
+    "usage": {
+      "header": "Usage",
+      "none": "Empty",
+      "ofQuota": "{{used}} of {{quota}}",
+      "overQuota": "Over quota",
+      "cost": "Est. cost per month",
+      "free": "Free",
+      "defaultFor": "Default for",
+      "noDefault": "None"
+    },
+    "kind": {
+      "agent": "Node directory",
+      "agentLocation": "{{node}}:{{directory}}"
+    },
+    "classes": {
+      "backups": "Backups",
+      "archives": "Log archives",
+      "artifacts": "Pipeline artifacts",
+      "cache": "Build cache",
+      "dumps": "Data dumps"
+    },
+    "defaults": {
+      "title": "Default destination per data class",
+      "description": "Where each kind of data goes when no destination is chosen. Node directories can only hold backups and dumps.",
+      "unset": "Not set",
+      "clear": "Clear",
+      "saved": "{{class}} now go to {{name}}.",
+      "cleared": "Default for {{class}} cleared.",
+      "pick": "Choose a destination"
+    },
+    "node": {
+      "add": "Add node directory",
+      "title": "Add a node directory destination",
+      "description": "Stream backups to a confined directory on an enrolled node over its existing agent connection. No SSH, no shell, no credentials.",
+      "name": "Name",
+      "node": "Node",
+      "nodePlaceholder": "Choose a node",
+      "directory": "Directory",
+      "directoryHint": "Relative to the node's storage root (APP_AGENT_STORAGE_DIR on the agent). Defaults to backups.",
+      "quota": "Soft quota (GB)",
+      "quotaHint": "Flagged when backups exceed it. 0 means no limit.",
+      "verify": "Test the connection before saving (writes and deletes a probe file)",
+      "connect": "Connect",
+      "connecting": "Connecting...",
+      "connected": "Node directory \"{{name}}\" connected.",
+      "noNodes": "Enroll a node first to store data on it."
+    },
+    "test": {
+      "title": "Connection test for \"{{name}}\"",
+      "passed": "\"{{name}}\" is working.",
+      "failedTitle": "\"{{name}}\" failed the connection test",
+      "recheck": "Re-check",
+      "checking": "Checking...",
+      "close": "Close",
+      "step": "{{name}}: {{status}}",
+      "ok": "ok",
+      "failed": "failed"
+    },
+    "fix": {
+      "enable_path_style": {
+        "title": "Turn on path-style addressing",
+        "description": "This endpoint does not answer virtual-hosted bucket URLs. One click switches to https://host/bucket/key and re-checks.",
+        "action": "Enable path style and re-check"
+      },
+      "edit_credentials": {
+        "title": "Enter new credentials",
+        "description": "The endpoint rejected the access key. Paste a working key pair, it is encrypted and never shown again.",
+        "action": "Save credentials and re-check"
+      },
+      "edit_policy": {
+        "title": "Grant the key bucket access",
+        "description": "The key is valid but cannot write, read and delete in this bucket. Allow those actions in the provider's policy, or use another key pair.",
+        "action": "Use another key and re-check"
+      },
+      "edit_bucket": {
+        "title": "Correct the bucket name",
+        "description": "No bucket with this name exists at the endpoint.",
+        "action": "Save bucket and re-check"
+      },
+      "edit_region": {
+        "title": "Correct the region",
+        "description": "The bucket lives in another region.",
+        "action": "Save region and re-check"
+      },
+      "edit_endpoint": {
+        "title": "Correct the endpoint",
+        "description": "The endpoint could not be reached or its certificate failed. Private-network endpoints also need APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true.",
+        "action": "Save endpoint and re-check"
+      },
+      "sync_clock": {
+        "title": "Sync this server's clock",
+        "description": "The storage endpoint reports a large clock difference. Enable NTP on the control plane host, then re-check.",
+        "action": "Re-check"
+      },
+      "reconnect_node": {
+        "title": "Bring the node online",
+        "description": "The node is not connected to the control plane. Start its agent, then re-check.",
+        "action": "Open nodes",
+        "recheck": "Re-check"
+      },
+      "enable_node_storage": {
+        "title": "Give the node a storage directory",
+        "description": "Set APP_AGENT_STORAGE_DIR on the agent to a directory it may write to, restart the agent, then re-check.",
+        "action": "Re-check"
+      },
+      "fields": {
+        "accessKeyId": "Access key ID",
+        "secretAccessKey": "Secret access key",
+        "bucket": "Bucket",
+        "region": "Region",
+        "endpoint": "Endpoint"
+      }
+    },
+    "empty": {
+      "title": "No storage destinations",
+      "description": "Connect AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, any S3-compatible bucket, or an enrolled node to store backups, archives and dumps."
+    }
+  },
+  "controlPlaneDrKeygen": {
+    "trigger": "Generate key pair",
+    "title": "New backup recipient key",
+    "description": "The public key is added to the backup recipients. The private key is shown once and is never stored on this server.",
+    "warning": "Store the private key offline now (a password manager or a safe). Without it the backups cannot be decrypted.",
+    "copy": "Copy private key",
+    "download": "Download private key",
+    "use": "I saved it, add the public key"
+  },
+  "controlPlaneDrRestore": {
+    "title": "Restore plan",
+    "description": "Recovery replaces the control plane database, so it runs on the host with the control plane stopped. These are the steps for this install.",
+    "noBackup": "No complete off-box backup exists yet. Run a backup before you rely on recovery.",
+    "newest": "Newest backup: {{key}} ({{when}})",
+    "viaCli": "Restore command for the host",
+    "copy": "Copy command",
+    "copied": "Copied",
+    "warnings": {
+      "escrow_not_acknowledged": "The master key escrow is not acknowledged: a restore without the master key cannot read stored secrets.",
+      "drill_not_passed": "No restore drill has passed yet, so this plan is untested."
+    },
+    "steps": {
+      "backup_available": {
+        "title": "A complete backup is available",
+        "body": "The newest encrypted backup at the destination has both its data and manifest."
+      },
+      "identity_ready": {
+        "title": "Have a private key ready",
+        "body": "You need the private key that matches one of the backup recipients."
+      },
+      "master_key_escrow": {
+        "title": "Have the master key escrow ready",
+        "body": "The backup does not contain the master key. Restore it from your escrow bundle."
+      },
+      "stop_control_plane": {
+        "title": "Stop the control plane",
+        "body": "Restore refuses to run while the database is in use."
+      },
+      "run_restore": {
+        "title": "Run the restore on the host",
+        "body": "The current database is kept next to the restored one as a pre-restore copy."
+      },
+      "start_and_verify": {
+        "title": "Start the control plane and verify",
+        "body": "Check that apps, domains and nodes are back, then run a fresh backup."
+      }
+    }
+  },
+  "iacPage": {
+    "title": "Infrastructure as code",
+    "description": "Describe projects, environments, apps, domains and databases as YAML, review the plan, then apply it.",
+    "filesTitle": "Resource files",
+    "filesDescription": "One or more YAML documents separated by ---. Documents never hold secret values, reference them with secretRef.",
+    "yamlLabel": "YAML",
+    "upload": "Upload files",
+    "sourceLabel": "Source",
+    "sourcePlaceholder": "infra-repo",
+    "sourceHint": "Tags the apps this apply creates so prune can find them later.",
+    "projectLabel": "Only project",
+    "projectPlaceholder": "shop",
+    "prune": "Prune: delete apps this source created that the files no longer declare",
+    "pruneNeedsSource": "Prune needs a source name.",
+    "noDeploy": "Do not restart running apps to apply env changes",
+    "planning": "Planning...",
+    "plan": "Plan",
+    "apply": "Apply",
+    "confirmTitle": "Apply these changes?",
+    "confirmSummary": "{{create}} to create, {{update}} to update, {{delete}} to delete.",
+    "confirmNote": "The apply only proceeds if live state still matches the plan you reviewed.",
+    "confirmDeletes": "This deletes {{count}} resource(s).",
+    "cancel": "Cancel",
+    "planTitle": "Plan",
+    "resultTitle": "Result",
+    "resultCounts": "{{applied}} applied, {{failed}} failed, {{skipped}} skipped"
+  },
+  "githubManualDialog": {
+    "title": "Connect a GitHub App manually",
+    "descPrefix": "Create the App yourself at",
+    "descSuffix": "(or your GitHub Enterprise Server instance's own /settings/apps/new), then paste the resulting credentials here. No primary domain required to save these: only automated setup needs one.",
+    "instanceLabel": "GitHub instance (optional)",
+    "instanceHint": "Leave blank for github.com. Self-hosted instances work too, e.g. https://github.example.com.",
+    "appId": "App ID",
+    "clientId": "Client ID",
+    "clientSecret": "Client secret",
+    "webhookSecret": "Webhook secret",
+    "webhookHint": "The value you set as the App's own webhook secret on GitHub, not generated here.",
+    "privateKey": "Private key (.pem)",
+    "privateKeyHint": "Generated once on the App's General page on GitHub and downloaded as a .pem file. Paste its full contents.",
+    "installationId": "Installation ID (optional)",
+    "accountLogin": "Account login (optional)",
+    "connect": "Connect",
+    "connecting": "Connecting...",
+    "connected": "GitHub App connected.",
+    "connectFailed": "Could not connect the GitHub App."
+  },
+  "drCard": {
+    "neverRun": "never run",
+    "failed": "failed {{when}}: {{detail}}",
+    "passedPartial": "passed {{when}} (partial: checksum only, decryption untested)",
+    "passed": "passed {{when}} in {{seconds}}s",
+    "started": "{{label}} started.",
+    "labelBackup": "Backup",
+    "labelDrill": "Restore drill",
+    "title": "Disaster recovery",
+    "description": "Encrypted off-box backups, key escrow and restore drills.",
+    "backingUp": "Backing up...",
+    "runNow": "Run now",
+    "runningDrill": "Running drill...",
+    "runDrill": "Run drill",
+    "warnings": "Warnings",
+    "lastBackup": "Last backup",
+    "never": "never",
+    "nextBackup": "next {{when}}",
+    "lastDrill": "Last restore drill",
+    "drillIdentity": "Drill identity",
+    "identityConfigured": "configured, drills decrypt and restore fully",
+    "identityMissing": "not configured, drills verify checksums only (APP_CONTROL_PLANE_DRILL_IDENTITY_FILE)"
+  },
+  "buildCache": {
+    "modeMax": "max (cache every layer, fastest rebuilds)",
+    "modeMin": "min (cache final layers only, smaller bucket)",
+    "checking": "Checking the bucket...",
+    "readFailed": "Could not read the bucket: {{message}}",
+    "objects": "{{count}}{{plus}} objects, {{size}}",
+    "lastExport": ", last export {{when}}",
+    "clearedMore": "Deleted {{deleted}} objects. More remain, clear again.",
+    "cleared": "Cache cleared ({{deleted}} objects).",
+    "deleteLayers": "Delete cached layers",
+    "cancel": "Cancel",
+    "clear": "Clear cache",
+    "saved": "Build cache saved.",
+    "destination": "Destination",
+    "chooseDestination": "Choose a destination",
+    "exportMode": "Export mode",
+    "useRemote": "Use the remote cache",
+    "storedUnder": "Layers are stored under {{prefix}}. Turn this off to opt this app out of the default.",
+    "globalHint": "Applies to every app without its own setting. Each app caches under build-cache/<app>/.",
+    "update": "Update",
+    "save": "Save",
+    "removed": "Build cache setting removed.",
+    "removeSetting": "Remove setting",
+    "notConfiguredTitle": "Build cache is not configured on this server",
+    "loadFailedTitle": "Could not load build cache settings",
+    "notConfiguredBody": "Set APP_MASTER_KEY and restart the control plane to connect object storage.",
+    "unknownError": "Unknown error",
+    "loading": "Loading...",
+    "noDestinationTitle": "No storage destination yet",
+    "noDestinationBody": "Connect a bucket under Settings, Storage destinations, then use it as a build cache here.",
+    "usingDefault": "Using the default build cache for all apps. Save a setting below to override it for this app.",
+    "ranWithout": "Last build ran without the cache",
+    "lastBuild": "Last build with the cache: {{when}}",
+    "title": "Build cache",
+    "titleAll": "Build cache for all apps",
+    "description": "Keep BuildKit layers in a storage destination so rebuilds skip unchanged steps. A cache problem never fails a build, it is reported as a warning."
+  }
+}

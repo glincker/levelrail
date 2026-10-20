@@ -1,0 +1,524 @@
+package api
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"io"
+	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+const (
+	testAdminUsername = "admin"
+	testAdminPassword = "correct-horse-battery-staple"
+)
+
+// openTestDB opens a fresh temp-file SQLite store, the same pattern
+// internal/store's own tests use (internal/store/store_test.go), not a
+// mock: the project favors real behavior under test, and the store
+// package is fast and local enough that a mock buys nothing here.
+// migrationTemplateDB builds one fully-migrated file once per test
+// binary run; openTestDB copies it instead of replaying ~180 migrations
+// per test (store.Open's migrate() already no-ops on an up-to-date
+// schema, so copying one just makes that check cheap instead of slow).
+var (
+	migrationTemplateOnce sync.Once
+	migrationTemplatePath string
+	migrationTemplateErr  error
+)
+
+func migrationTemplateDB(t *testing.T) string {
+	t.Helper()
+	migrationTemplateOnce.Do(func() {
+		dir, err := os.MkdirTemp("", "levelrail-test-template-*")
+		if err != nil {
+			migrationTemplateErr = err
+			return
+		}
+		path := filepath.Join(dir, "template.db")
+		db, err := store.Open(context.Background(), path)
+		if err != nil {
+			migrationTemplateErr = err
+			return
+		}
+		// store.Open uses WAL mode; checkpoint so the single file below
+		// is self-contained, not dependent on a -wal sidecar.
+		if _, err := db.Exec(`PRAGMA wal_checkpoint(TRUNCATE)`); err != nil {
+			_ = db.Close()
+			migrationTemplateErr = err
+			return
+		}
+		if err := db.Close(); err != nil {
+			migrationTemplateErr = err
+			return
+		}
+		migrationTemplatePath = path
+	})
+	if migrationTemplateErr != nil {
+		t.Fatalf("build migration template db: %v", migrationTemplateErr)
+	}
+	return migrationTemplatePath
+}
+
+func openTestDB(t *testing.T) *store.DB {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "levelrail.db")
+	if err := copyFileContents(migrationTemplateDB(t), path); err != nil {
+		t.Fatalf("copy migration template db: %v", err)
+	}
+	db, err := store.Open(context.Background(), path)
+	if err != nil {
+		t.Fatalf("store.Open(%q) error = %v", path, err)
+	}
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("closing test db: %v", err)
+		}
+	})
+	return db
+}
+
+func copyFileContents(src, dst string) error {
+	data, err := os.ReadFile(src) //nolint:gosec // test-only, both paths built from t.TempDir()/os.MkdirTemp, never user input
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(dst, data, 0o600) //nolint:gosec // same: test-only fixed paths
+}
+
+func testBrand() *brand.Brand {
+	return &brand.Brand{Name: "Test Platform", BinaryName: "testplatform"}
+}
+
+// newTestRouter builds a Router over a fresh test store, with no admin
+// bootstrapped yet: tests that need an authenticated session call
+// bootstrapTestAdmin themselves, so tests exercising the "no admin
+// exists" path don't need a workaround.
+func newTestRouter(t *testing.T) (*Router, *store.DB) {
+	t.Helper()
+	db := openTestDB(t)
+	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
+	return NewRouter(logger, testBrand(), db), db
+}
+
+// discardWriter is a minimal io.Writer that throws everything away, so
+// test output isn't cluttered by the router's own request logging.
+type discardWriter struct{}
+
+func (discardWriter) Write(p []byte) (int, error) { return len(p), nil }
+
+// discardLogger is the standalone-logger counterpart to newTestRouter's
+// own inline discardWriter usage, for tests (deploy_attempts_test.go's
+// live-fan-out coverage) that need a *slog.Logger to hand to a component
+// built outside NewRouter, e.g. a *deploylog.Recorder constructed
+// directly by the test.
+func discardLogger() *slog.Logger {
+	return slog.New(slog.NewTextHandler(discardWriter{}, nil))
+}
+
+// routeCase is one method+target pair for assertRoutesRequireAuth.
+type routeCase struct {
+	method string
+	target string
+}
+
+// assertRoutesRequireAuth proves every route in routes rejects an
+// unauthenticated request with 401, the shared shape nearly every
+// "*Routes_RequireAuth" test in this package already establishes
+// individually.
+func assertRoutesRequireAuth(t *testing.T, rt *Router, routes []routeCase) {
+	t.Helper()
+	for _, r := range routes {
+		t.Run(r.method+" "+r.target, func(t *testing.T) {
+			req := httptest.NewRequest(r.method, r.target, nil)
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, req)
+			if rec.Code != http.StatusUnauthorized {
+				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
+			}
+		})
+	}
+}
+
+// seedTriStateConditions upserts a True/"Running" condition for healthy and
+// a False/"CrashLoop" condition for broken, leaving any third, "pending"
+// resource in resourceType untouched: the one-healthy/one-broken/
+// one-pending shape TestHandleListApps_Status and
+// TestHandleListDatabases_Status both need to prove their list endpoint's
+// batched status field categorizes each row independently.
+func seedTriStateConditions(t *testing.T, db *store.DB, resourceType, healthy, broken string) {
+	t.Helper()
+	ctx := context.Background()
+	if err := db.UpsertConditions(ctx, resourceType+"/"+healthy, []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Running"},
+	}); err != nil {
+		t.Fatalf("upsert %s conditions: %v", healthy, err)
+	}
+	if err := db.UpsertConditions(ctx, resourceType+"/"+broken, []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionFalse, Reason: "CrashLoop"},
+	}); err != nil {
+		t.Fatalf("upsert %s conditions: %v", broken, err)
+	}
+}
+
+// seedWebAppForTest seeds a "web" application via SaveDesiredService, the
+// fixture apps_storage_test.go, apps_database_test.go, and
+// apps_log_drain_test.go all need before exercising a handler that
+// operates on an existing app.
+func seedWebAppForTest(t *testing.T, db *store.DB) {
+	t.Helper()
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+}
+
+// seedRedisDatabaseForTest seeds a "main" redis database via
+// SaveDesiredDatabase, the fixture database_public_access_test.go and
+// backups_test.go both repeat before exercising a handler that operates
+// on an existing database.
+func seedRedisDatabaseForTest(t *testing.T, db *store.DB) {
+	t.Helper()
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+}
+
+func bootstrapTestAdmin(t *testing.T, db *store.DB) {
+	t.Helper()
+	if err := BootstrapAdmin(context.Background(), db, testAdminUsername, testAdminPassword); err != nil {
+		t.Fatalf("BootstrapAdmin() error = %v", err)
+	}
+}
+
+// loginTestSession bootstraps the admin account (if not already done by
+// the caller) and logs in through the real handler, returning the
+// session cookie subsequent authenticated requests need. Exercises
+// handleLogin itself rather than reaching into the session store
+// directly, so auth tests cover the real login path, not a shortcut
+// around it.
+func loginTestSession(t *testing.T, rt *Router, db *store.DB) *http.Cookie {
+	t.Helper()
+	bootstrapTestAdmin(t, db)
+
+	body := strings.NewReader(`{"username":"` + testAdminUsername + `","password":"` + testAdminPassword + `"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", body)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("login setup: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	cookies := rec.Result().Cookies()
+	for _, c := range cookies {
+		if c.Name == sessionCookieName {
+			return c
+		}
+	}
+	t.Fatal("login setup: no session cookie returned")
+	return nil
+}
+
+// storeUserForTest inserts a plain, no-password user row directly (not
+// through a handler): the OAuth-only-account, multi-user, and
+// account-linking tests all need a user that didn't come through
+// handleRegister/handleLogin's password path.
+func storeUserForTest(t *testing.T, db *store.DB, email string) store.User {
+	t.Helper()
+	id, err := randomOpaqueID("user_")
+	if err != nil {
+		t.Fatalf("randomOpaqueID() error = %v", err)
+	}
+	u := store.User{ID: id, Email: email, DisplayName: email, CreatedAt: time.Now()}
+	if err := db.CreateUser(context.Background(), u); err != nil {
+		t.Fatalf("CreateUser(%q) error = %v", email, err)
+	}
+	return u
+}
+
+// storeUserWithAbilitiesForTest is storeUserForTest plus an explicit
+// Abilities value, for tests exercising requireAbility's session branch
+// against a user who is deliberately not root.
+func storeUserWithAbilitiesForTest(t *testing.T, db *store.DB, email string, abilities []string) store.User {
+	t.Helper()
+	id, err := randomOpaqueID("user_")
+	if err != nil {
+		t.Fatalf("randomOpaqueID() error = %v", err)
+	}
+	u := store.User{ID: id, Email: email, DisplayName: email, Abilities: abilities, CreatedAt: time.Now()}
+	if err := db.CreateUser(context.Background(), u); err != nil {
+		t.Fatalf("CreateUser(%q) error = %v", email, err)
+	}
+	return u
+}
+
+// sessionCookieForTest mints a real session for userID directly through
+// rt.sessions (not through a login handler, since some test users have
+// no password to log in with) and wraps it as the http.Cookie
+// authedRequest expects.
+func sessionCookieForTest(t *testing.T, rt *Router, userID string) *http.Cookie {
+	t.Helper()
+	user, err := rt.auth.GetUserByID(context.Background(), userID)
+	if err != nil {
+		t.Fatalf("GetUserByID(%q) error = %v", userID, err)
+	}
+	token, err := rt.libSessions.IssueSession(context.Background(), toLibUser(*user), "test", "198.51.100.1")
+	if err != nil {
+		t.Fatalf("IssueSession(%q) error = %v", userID, err)
+	}
+	return &http.Cookie{Name: sessionCookieName, Value: token} //nolint:gosec // request cookie, not a response Set-Cookie
+}
+
+// routeCase is one route an ability/auth test drives, shared across
+// GitHub's, GitLab's, and Bitbucket's own app-connection and
+// use-as-source route tests. body is optional: when non-empty the
+// request carries it with Content-Type: application/json.
+type providerRouteCase struct {
+	method string
+	path   string
+	body   string
+}
+
+// assertRoutesRequireAuth proves every route in routes rejects a
+// completely unauthenticated request, the shared shape each git
+// provider's own RequireAuth test establishes.
+func assertProviderRoutesRequireAuth(t *testing.T, rt *Router, routes []providerRouteCase) {
+	t.Helper()
+	for _, r := range routes {
+		var body io.Reader
+		if r.body != "" {
+			body = strings.NewReader(r.body)
+		}
+		req := httptest.NewRequest(r.method, r.path, body)
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+		if rec.Code != http.StatusUnauthorized {
+			t.Errorf("%s %s: status = %d, want 401 for an unauthenticated request", r.method, r.path, rec.Code)
+		}
+	}
+}
+
+// assertRoutesForbiddenForAbilities seeds a token scoped to abilities and
+// proves every route in routes rejects a request bearing it: the shared
+// "declared ability doesn't reach this route" shape used across GitHub's,
+// GitLab's, and Bitbucket's own app-connection and use-as-source
+// endpoints.
+func assertProviderRoutesForbiddenForAbilities(t *testing.T, rt *Router, db *store.DB, tokenID, plaintext string, abilities []string, routes []providerRouteCase) {
+	t.Helper()
+	if err := db.SaveAPIToken(context.Background(), store.APIToken{
+		ID: tokenID, Name: "test-token", TokenHash: hashToken(plaintext), Abilities: abilities,
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+	for _, r := range routes {
+		var body io.Reader
+		if r.body != "" {
+			body = strings.NewReader(r.body)
+		}
+		req := httptest.NewRequest(r.method, r.path, body)
+		if r.body != "" {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		req.Header.Set("Authorization", "Bearer "+plaintext)
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("%s %s: status = %d, want 403 for a token whose ability doesn't reach this route", r.method, r.path, rec.Code)
+		}
+	}
+}
+
+// assertBodyContainsAll proves body contains every one of want, the
+// shared multi-substring response-shape assertion used throughout the
+// git-provider connect/status handler tests.
+func assertBodyContainsAll(t *testing.T, body string, want ...string) {
+	t.Helper()
+	for _, w := range want {
+		if !strings.Contains(body, w) {
+			t.Errorf("body = %s, want it to contain %s", body, w)
+		}
+	}
+}
+
+// assertProviderStatusNotConnected proves the common "nothing connected
+// yet" shape every per-provider status endpoint (GitHub, GitLab,
+// Bitbucket) shares: a fresh router and session report connected:false.
+func assertProviderStatusNotConnected(t *testing.T, path string) {
+	t.Helper()
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, path, ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
+	}
+	assertBodyContainsAll(t, rec.Body.String(), `"connected":false`)
+}
+
+// assertGitSourceWebhookRegistered proves the common "use repo/project as
+// source" success shape shared by GitHub's, GitLab's, Bitbucket's, and
+// Gitea's own handlers: the fake client's CreateWebhook-equivalent was
+// called with a URL ending in the generic push path, and the hook token
+// it received matches the git source's own stored webhook secret.
+func assertGitSourceWebhookRegistered(t *testing.T, gitSourceSecrets GitSourceSecrets, appName string, hookCalled bool, hookURL, hookToken string) { //nolint:unparam // appName is always "web" today because every one of this helper's four callers seeds the same fixture app, not because the parameter is dead; each caller's own seedApp(t, db, "web") is what fixes the value, not this signature
+	t.Helper()
+	if !hookCalled {
+		t.Fatal("CreateWebhook was not called")
+	}
+	// Exact match, not just a suffix check: every caller here configures
+	// testPrimaryDomain first (setPrimaryDomain), so the registered hook
+	// URL must be that single absolute origin plus the path, never a
+	// doubled-up "https://host https://host/..." from adding a base URL
+	// on top of a WebhookURL that is already absolute.
+	if want := "https://" + testPrimaryDomain + "/api/v1/webhooks/github/" + appName; hookURL != want {
+		t.Errorf("hookURL = %q, want %q", hookURL, want)
+	}
+	storedSecret, err := gitSourceSecrets.Resolve(context.Background(), store.GitSourceSecretsKey(appName), gitSourceSecretKey)
+	if err != nil {
+		t.Fatalf("resolve stored git source webhook secret: %v", err)
+	}
+	if hookToken != storedSecret {
+		t.Errorf("hook token = %q, want it to match the stored git-source webhook secret %q", hookToken, storedSecret)
+	}
+}
+
+// assertGitSourceSurvivesWebhookFailure proves the "web" fixture app's git
+// source stays connected after a webhook registration failure: the shared
+// "connect first, webhook second" shape GitHub's, GitLab's, and
+// Bitbucket's own use-as-source handlers all document. Every current
+// caller seeds its git source under that same app name (seedApp(t, db,
+// "web")).
+func assertGitSourceSurvivesWebhookFailure(t *testing.T, db *store.DB) {
+	t.Helper()
+	if _, err := db.GetGitSource(context.Background(), "web"); err != nil {
+		t.Errorf("GetGitSource() error = %v, want the git source to remain connected despite the webhook failure", err)
+	}
+}
+
+// createResourceViaAPI POSTs body to path, requires the response status
+// to be wantStatus, and (only on a status under 300, where a body is
+// actually expected) decodes the JSON response into a T. Shared by
+// TestHandleCreateApp_AutoPlacement and TestHandleCreateDatabase_AutoPlacement's
+// identical create-then-decode-then-assert shape across their own
+// subtests. The type parameter keeps every call fully statically typed,
+// unlike an `any` parameter would.
+func createResourceViaAPI[T any](t *testing.T, rt *Router, cookie *http.Cookie, path, body string, wantStatus int) T {
+	t.Helper()
+	var out T
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, path, body))
+	if rec.Code != wantStatus {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, wantStatus, rec.Body.String())
+	}
+	if rec.Code < 300 {
+		if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+	}
+	return out
+}
+
+// assertUnreadableBodyRejected proves a POST to path whose body errors on
+// Read is a 400, not a panic or a 500: handleCreateApp/handleCreateDatabase
+// both read the raw body first to probe for an explicit node_id key
+// (nodeIDKeyPresent) before decoding it. Shared by
+// TestHandleCreateApp_UnreadableBody_Returns400 and
+// TestHandleCreateDatabase_UnreadableBody_Returns400.
+func assertUnreadableBodyRejected(t *testing.T, rt *Router, cookie *http.Cookie, path string) {
+	t.Helper()
+	req := authedRequest(t, cookie, http.MethodPost, path, "")
+	req.Body = &errReadCloser{r: strings.NewReader(""), err: errors.New("read failed")}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+// assertAutoPlacementResult checks the NodeID/AutoPlaced fields a create
+// response reported match want, the single repeated assertion every
+// TestHandleCreate{App,Database}_AutoPlacement subtest makes right after
+// creating its resource.
+func assertAutoPlacementResult(t *testing.T, gotNodeID string, gotAutoPlaced bool, wantNodeID string, wantAutoPlaced bool) {
+	t.Helper()
+	if gotNodeID != wantNodeID || gotAutoPlaced != wantAutoPlaced {
+		t.Errorf("got node_id=%q auto_placed=%v, want node_id=%q auto_placed=%v", gotNodeID, gotAutoPlaced, wantNodeID, wantAutoPlaced)
+	}
+}
+
+// erroringNodeStore wraps a real NodeStore, injecting a generic (non-
+// sentinel) error from one chosen method for tests that need
+// validatePlacementTarget/autoPlaceNode to hit their own internal-error
+// branches: a real *store.DB only ever returns store.ErrNodeNotFound or
+// nil from these, so there is no way to reach that branch through it
+// alone.
+type erroringNodeStore struct {
+	NodeStore
+	getNodeErr   error
+	listNodesErr error
+}
+
+func (e *erroringNodeStore) GetNode(ctx context.Context, id string) (*store.Node, error) {
+	if e.getNodeErr != nil {
+		return nil, e.getNodeErr
+	}
+	return e.NodeStore.GetNode(ctx, id)
+}
+
+func (e *erroringNodeStore) ListNodes(ctx context.Context) ([]store.Node, error) {
+	if e.listNodesErr != nil {
+		return nil, e.listNodesErr
+	}
+	return e.NodeStore.ListNodes(ctx)
+}
+
+// erroringAppStore is erroringNodeStore's AppStore counterpart, used to
+// reach handleCreateApp/handleSetAppNode's own internal-error branches
+// (an UpdateServiceNode or GetDesiredService failure) the same way.
+type erroringAppStore struct {
+	AppStore
+	updateServiceNodeErr error
+	getDesiredServiceErr error
+}
+
+func (e *erroringAppStore) UpdateServiceNode(ctx context.Context, name, nodeID string) error {
+	if e.updateServiceNodeErr != nil {
+		return e.updateServiceNodeErr
+	}
+	return e.AppStore.UpdateServiceNode(ctx, name, nodeID)
+}
+
+func (e *erroringAppStore) GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error) {
+	if e.getDesiredServiceErr != nil {
+		return nil, e.getDesiredServiceErr
+	}
+	return e.AppStore.GetDesiredService(ctx, name)
+}
+
+// erroringDatabaseStore is erroringAppStore's DatabaseStore counterpart,
+// used to reach handleSetDatabaseNode's own internal-error branch (a
+// GetDesiredDatabase failure).
+type erroringDatabaseStore struct {
+	DatabaseStore
+	getDesiredDatabaseErr error
+}
+
+func (e *erroringDatabaseStore) GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error) {
+	if e.getDesiredDatabaseErr != nil {
+		return nil, e.getDesiredDatabaseErr
+	}
+	return e.DatabaseStore.GetDesiredDatabase(ctx, name)
+}

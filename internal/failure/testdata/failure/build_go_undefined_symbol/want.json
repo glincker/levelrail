@@ -1,0 +1,7 @@
+{
+  "code": "compile_error",
+  "retryable": false,
+  "excerpt_contains": [
+    "cmd/server/main.go:21:12: undefined: newRouter"
+  ]
+}

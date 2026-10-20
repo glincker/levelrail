@@ -1,0 +1,7 @@
+{
+  "code": "lockfile_out_of_sync",
+  "retryable": false,
+  "excerpt_contains": [
+    "can only install packages when your package.json and package-lock.json"
+  ]
+}

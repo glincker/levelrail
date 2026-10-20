@@ -1,0 +1,4 @@
+{
+  "note": "Docker Engine version prefixes that block an upgrade preflight. Add an entry as {\"prefix\": \"25.0.0\", \"reason\": \"...\"}. Override the whole list with APP_DOCKER_KNOWN_BAD_FILE.",
+  "entries": []
+}

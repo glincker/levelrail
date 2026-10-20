@@ -1,0 +1,66 @@
+---
+title: "Self-host Browserless with Docker"
+sidebarTitle: "Browserless"
+description: "A headless Chrome browser exposed as an HTTP/WebSocket API for scraping and PDF rendering."
+"og:url": "https://docs.levelrail.com/self-host/browserless"
+---
+
+A headless Chrome browser exposed as an HTTP/WebSocket API for scraping and PDF rendering.
+
+This page describes the Levelrail template for Browserless (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.browserless.io.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `browserless` | `ghcr.io/browserless/chromium:v2.8.0` | 3000 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `browserless` | `TOKEN` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`browserless`): 3000:3000.
+- Passwords and keys are generated at deploy time (`browserless`): TOKEN.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Browserless with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Browserless. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy browserless --name my-browserless
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+- [ConvertX](/self-host/convertx)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,1210 @@
+package spec
+
+import (
+	"fmt"
+	"os"
+	"strings"
+	"testing"
+)
+
+func readTestdata(t *testing.T, name string) []byte {
+	t.Helper()
+	// name is always a literal fixture filename from a test case in this
+	// file, never external input.
+	data, err := os.ReadFile("testdata/" + name) //nolint:gosec // fixed test fixture path, not user input
+	if err != nil {
+		t.Fatalf("read testdata/%s: %v", name, err)
+	}
+	return data
+}
+
+func TestParse_ValidFull(t *testing.T) {
+	s, err := Parse(readTestdata(t, "valid_full.yaml"))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	if s.Version != 1 {
+		t.Errorf("Version = %d, want 1", s.Version)
+	}
+
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	if web.Build.Type != BuildDockerfile || web.Build.Path != "./Dockerfile" {
+		t.Errorf("Build = %+v, want type=dockerfile path=./Dockerfile", web.Build)
+	}
+	if len(web.Domains) != 1 || web.Domains[0] != "app.example.com" {
+		t.Errorf("Domains = %v, want [app.example.com]", web.Domains)
+	}
+	if web.Port != 3000 {
+		t.Errorf("Port = %d, want 3000", web.Port)
+	}
+	if web.HostPort != 30001 {
+		t.Errorf("HostPort = %d, want 30001", web.HostPort)
+	}
+	if web.BindAddress != "public" {
+		t.Errorf("BindAddress = %q, want \"public\"", web.BindAddress)
+	}
+	if web.Health == nil || web.Health.Readiness == nil || web.Health.Readiness.Path != "/healthz" {
+		t.Errorf("Health.Readiness = %+v, want Path=/healthz", web.Health)
+	}
+	if web.Health.Liveness == nil || web.Health.Liveness.Failures != 3 {
+		t.Errorf("Health.Liveness = %+v, want Failures=3", web.Health.Liveness)
+	}
+	if web.Health.ReadyTimeout != "90s" {
+		t.Errorf("Health.ReadyTimeout = %q, want \"90s\"", web.Health.ReadyTimeout)
+	}
+	if web.Resources == nil || web.Resources.Memory != "512Mi" || web.Resources.CPU != 0.5 {
+		t.Errorf("Resources = %+v, want Memory=512Mi CPU=0.5", web.Resources)
+	}
+	if web.Resources.SwapMemory != "1Gi" || web.Resources.CPUSet != "0-1" {
+		t.Errorf("Resources = %+v, want SwapMemory=1Gi CPUSet=0-1", web.Resources)
+	}
+	if web.Replicas != 2 {
+		t.Errorf("Replicas = %d, want 2", web.Replicas)
+	}
+	if web.Strategy != StrategyRolling {
+		t.Errorf("Strategy = %q, want %q", web.Strategy, StrategyRolling)
+	}
+	if web.Labels["team"] != "platform" || web.Labels["tier"] != "frontend" || len(web.Labels) != 2 {
+		t.Errorf("Labels = %+v, want map[team:platform tier:frontend]", web.Labels)
+	}
+	if len(web.Volumes) != 2 || web.Volumes[0].Name != "data" || web.Volumes[0].Path != "/var/lib/data" {
+		t.Errorf("Volumes[0] = %+v, want {data  /var/lib/data false}", web.Volumes)
+	}
+	if web.Volumes[1].HostPath != "/srv/web/uploads" || web.Volumes[1].Path != "/uploads" || !web.Volumes[1].ReadOnly {
+		t.Errorf("Volumes[1] = %+v, want {  /srv/web/uploads /uploads true}", web.Volumes[1])
+	}
+	if web.Hooks == nil || web.Hooks.PreDeploy != "rails db:migrate" || web.Hooks.PostDeploy != "curl -f https://hooks.example.com/deployed" {
+		t.Errorf("Hooks = %+v, want PreDeploy=%q PostDeploy=%q", web.Hooks, "rails db:migrate", "curl -f https://hooks.example.com/deployed")
+	}
+	wantCommand := []string{"node", "server.js", "--port", "3000"}
+	if len(web.Command) != len(wantCommand) {
+		t.Errorf("Command = %v, want %v", web.Command, wantCommand)
+	} else {
+		for i, arg := range wantCommand {
+			if web.Command[i] != arg {
+				t.Errorf("Command = %v, want %v", web.Command, wantCommand)
+				break
+			}
+		}
+	}
+
+	dbURL, ok := web.Env["DATABASE_URL"]
+	if !ok || dbURL.From != "postgres.main.url" || dbURL.Value != "" || dbURL.Secret {
+		t.Errorf("Env[DATABASE_URL] = %+v, want From=postgres.main.url only", dbURL)
+	}
+	apiKey, ok := web.Env["API_KEY"]
+	if !ok || !apiKey.Secret || !apiKey.Required || apiKey.From != "" || apiKey.Value != "" {
+		t.Errorf("Env[API_KEY] = %+v, want Secret=true Required=true only", apiKey)
+	}
+
+	main, ok := s.Databases["main"]
+	if !ok {
+		t.Fatal("expected a \"main\" database")
+	}
+	if main.Engine != EnginePostgres || main.Version != "16" {
+		t.Errorf("Databases[main] = %+v, want Engine=postgres Version=16", main)
+	}
+	if main.Backup == nil || main.Backup.Retain != 7 {
+		t.Errorf("Databases[main].Backup = %+v, want Retain=7", main.Backup)
+	}
+	if !main.EphemeralInPreviews {
+		t.Error("Databases[main].EphemeralInPreviews = false, want true")
+	}
+}
+
+// TestParse_DatabaseEphemeralInPreviews_DefaultsFalse covers the zero
+// value for every database saved before this field existed: absent from
+// app.yaml must parse as false, not fail, and must not affect any other
+// database in the same file.
+func TestParse_DatabaseEphemeralInPreviews_DefaultsFalse(t *testing.T) {
+	s, err := Parse([]byte(`
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 3000 }
+databases:
+  main: { engine: postgres, version: "16" }
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if s.Databases["main"].EphemeralInPreviews {
+		t.Error("EphemeralInPreviews = true, want false (field omitted)")
+	}
+}
+
+func TestParse_ValidMySQLDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  orders: { engine: mysql, version: "8" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	orders, ok := s.Databases["orders"]
+	if !ok {
+		t.Fatal("expected an \"orders\" database")
+	}
+	if orders.Engine != EngineMySQL || orders.Version != "8" {
+		t.Errorf("Databases[orders] = %+v, want Engine=mysql Version=8", orders)
+	}
+}
+
+func TestParse_ValidImageBuild(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: image, image: "ghcr.io/org/app:v1.2.3" }, port: 8080 }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	if web.Build.Type != BuildImage || web.Build.Image != "ghcr.io/org/app:v1.2.3" {
+		t.Errorf("Build = %+v, want type=image image=ghcr.io/org/app:v1.2.3", web.Build)
+	}
+	if web.Build.Path != "" {
+		t.Errorf("Build.Path = %q, want empty for build.type: image", web.Build.Path)
+	}
+}
+
+func TestParse_ValidCommand(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, command: ["node", "server.js"] }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	want := []string{"node", "server.js"}
+	if len(web.Command) != len(want) || web.Command[0] != want[0] || web.Command[1] != want[1] {
+		t.Errorf("Command = %v, want %v", web.Command, want)
+	}
+}
+
+func TestParse_ValidEgressAllowlist(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    egress:
+      mode: allowlist
+      allow:
+        - { host: api.anthropic.com, port: 443 }
+        - { host: github.com, port: 443 }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	if web.Egress == nil {
+		t.Fatal("expected Egress to be set")
+	}
+	if web.Egress.Mode != EgressModeAllowlist {
+		t.Errorf("Egress.Mode = %q, want %q", web.Egress.Mode, EgressModeAllowlist)
+	}
+	want := []EgressAllow{{Host: "api.anthropic.com", Port: 443}, {Host: "github.com", Port: 443}}
+	if len(web.Egress.Allow) != len(want) || web.Egress.Allow[0] != want[0] || web.Egress.Allow[1] != want[1] {
+		t.Errorf("Egress.Allow = %+v, want %+v", web.Egress.Allow, want)
+	}
+}
+
+func TestParse_EgressHostMustBeHostnameOrIPv4(t *testing.T) {
+	for _, host := range []string{"'a b'", "'a;reboot'", "'$(id)'", "'*'", "'-x'", "''"} {
+		yaml := "version: 1\nservices:\n  web:\n    build: { type: dockerfile }\n    port: 8080\n    egress:\n      mode: allowlist\n      allow:\n        - { host: " + host + ", port: 443 }\n"
+		if _, err := Parse([]byte(yaml)); err == nil {
+			t.Errorf("Parse accepted egress host %s", host)
+		}
+	}
+}
+
+func TestParse_NoEgressBlock_IsOpenEgressByDefault(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if s.Services["web"].Egress != nil {
+		t.Errorf("Egress = %+v, want nil (open egress, unchanged) when the block is omitted", s.Services["web"].Egress)
+	}
+}
+
+func TestParse_ValidBindMountVolume(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    volumes:
+      - { hostPath: /srv/web/data, path: /data }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	if len(web.Volumes) != 1 || web.Volumes[0].HostPath != "/srv/web/data" || web.Volumes[0].Name != "" || web.Volumes[0].Path != "/data" {
+		t.Errorf("Volumes = %+v, want a single bind mount at /srv/web/data -> /data", web.Volumes)
+	}
+}
+
+func TestParse_ValidBaseDirectory(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile, baseDirectory: "apps/web" }, port: 8080 }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	if web.Build.BaseDirectory != "apps/web" {
+		t.Errorf("Build.BaseDirectory = %q, want apps/web", web.Build.BaseDirectory)
+	}
+}
+
+func TestParse_ValidBuildArgs(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile, args: { VERSION: "1.2.3", DEBUG: "false" } }, port: 8080 }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	want := map[string]string{"VERSION": "1.2.3", "DEBUG": "false"}
+	if len(web.Build.Args) != len(want) || web.Build.Args["VERSION"] != "1.2.3" || web.Build.Args["DEBUG"] != "false" {
+		t.Errorf("Build.Args = %+v, want %+v", web.Build.Args, want)
+	}
+}
+
+func TestParse_ValidMongoDBDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  events: { engine: mongodb, version: "7" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	events, ok := s.Databases["events"]
+	if !ok {
+		t.Fatal("expected an \"events\" database")
+	}
+	if events.Engine != EngineMongoDB || events.Version != "7" {
+		t.Errorf("Databases[events] = %+v, want Engine=mongodb Version=7", events)
+	}
+}
+
+func TestParse_ValidMariaDBDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  orders: { engine: mariadb, version: "11" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	orders, ok := s.Databases["orders"]
+	if !ok {
+		t.Fatal("expected an \"orders\" database")
+	}
+	if orders.Engine != EngineMariaDB || orders.Version != "11" {
+		t.Errorf("Databases[orders] = %+v, want Engine=mariadb Version=11", orders)
+	}
+}
+
+func TestParse_ValidKeyDBDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  cache: { engine: keydb, version: "latest" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	cache, ok := s.Databases["cache"]
+	if !ok {
+		t.Fatal("expected a \"cache\" database")
+	}
+	if cache.Engine != EngineKeyDB || cache.Version != "latest" {
+		t.Errorf("Databases[cache] = %+v, want Engine=keydb Version=latest", cache)
+	}
+}
+
+func TestParse_ValidValkeyDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  cache: { engine: valkey, version: "8" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if got := s.Databases["cache"]; got.Engine != EngineValkey || got.Version != "8" {
+		t.Errorf("Databases[cache] = %+v, want Engine=valkey Version=8", got)
+	}
+}
+
+func TestParse_ValidSearchEngineDatabases(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  search: { engine: meilisearch, version: "v1.55" }
+  vectors: { engine: qdrant, version: "v1.19" }
+  catalog: { engine: typesense, version: "30.2" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	for name, engine := range map[string]string{"search": EngineMeilisearch, "vectors": EngineQdrant, "catalog": EngineTypesense} {
+		if got := s.Databases[name]; got.Engine != engine {
+			t.Errorf("Databases[%s].Engine = %q, want %q", name, got.Engine, engine)
+		}
+	}
+}
+
+func TestParse_MemcachedRefusesBackupBlock(t *testing.T) {
+	base := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  cache: { engine: memcached, version: "1.6"`
+	if _, err := Parse([]byte(base + " }\n")); err != nil {
+		t.Fatalf("plain memcached: %v", err)
+	}
+	_, err := Parse([]byte(base + `, backup: { schedule: "0 3 * * *", retain: 7 } }` + "\n"))
+	if err == nil || !strings.Contains(err.Error(), "no data on disk") {
+		t.Fatalf("memcached with a backup block: err = %v", err)
+	}
+}
+
+func TestParse_ValidClickHouseDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  analytics: { engine: clickhouse, version: "24.8" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	analytics, ok := s.Databases["analytics"]
+	if !ok {
+		t.Fatal("expected an \"analytics\" database")
+	}
+	if analytics.Engine != EngineClickHouse || analytics.Version != "24.8" {
+		t.Errorf("Databases[analytics] = %+v, want Engine=clickhouse Version=24.8", analytics)
+	}
+}
+
+func TestParse_ValidDragonflyDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  hotcache: { engine: dragonfly, version: "v1.27.1" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	hotcache, ok := s.Databases["hotcache"]
+	if !ok {
+		t.Fatal("expected a \"hotcache\" database")
+	}
+	if hotcache.Engine != EngineDragonfly || hotcache.Version != "v1.27.1" {
+		t.Errorf("Databases[hotcache] = %+v, want Engine=dragonfly Version=v1.27.1", hotcache)
+	}
+}
+
+func TestService_EffectiveStrategy(t *testing.T) {
+	t.Run("nil receiver", func(t *testing.T) {
+		var svc *Service
+		if got := svc.EffectiveStrategy(); got != StrategyBlueGreen {
+			t.Errorf("EffectiveStrategy() = %q, want %q", got, StrategyBlueGreen)
+		}
+	})
+
+	t.Run("default when empty", func(t *testing.T) {
+		svc := &Service{}
+		if got := svc.EffectiveStrategy(); got != StrategyBlueGreen {
+			t.Errorf("EffectiveStrategy() = %q, want %q", got, StrategyBlueGreen)
+		}
+	})
+	t.Run("returns configured value", func(t *testing.T) {
+		svc := &Service{Strategy: StrategyRolling}
+		if got := svc.EffectiveStrategy(); got != StrategyRolling {
+			t.Errorf("EffectiveStrategy() = %q, want %q", got, StrategyRolling)
+		}
+	})
+}
+
+func TestParse_ValidMinimal_Defaults(t *testing.T) {
+	s, err := Parse(readTestdata(t, "valid_minimal.yaml"))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web := s.Services["web"]
+	if got := web.EffectiveReplicas(); got != DefaultReplicas {
+		t.Errorf("EffectiveReplicas() = %d, want %d", got, DefaultReplicas)
+	}
+	if got := web.EffectiveStrategy(); got != StrategyBlueGreen {
+		t.Errorf("EffectiveStrategy() = %q, want %q (documented default)", got, StrategyBlueGreen)
+	}
+	if got := web.EffectiveBindAddress(); got != "private" {
+		t.Errorf("EffectiveBindAddress() = %q, want %q (documented default)", got, "private")
+	}
+}
+
+func TestParse_ValidStatic_NoPortRequired(t *testing.T) {
+	s, err := Parse(readTestdata(t, "valid_static.yaml"))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	docs := s.Services["docs"]
+	if docs.Build.Type != BuildStatic {
+		t.Errorf("Build.Type = %q, want %q", docs.Build.Type, BuildStatic)
+	}
+	if docs.Port != 0 {
+		t.Errorf("Port = %d, want 0 (static sites have no container to route to)", docs.Port)
+	}
+}
+
+func TestParse_ValidCompose_NoPortRequired(t *testing.T) {
+	s, err := Parse(readTestdata(t, "valid_compose.yaml"))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	stack := s.Services["stack"]
+	if stack.Build.Type != BuildCompose {
+		t.Errorf("Build.Type = %q, want %q", stack.Build.Type, BuildCompose)
+	}
+	if stack.Port != 0 {
+		t.Errorf("Port = %d, want 0 (a compose wrapper expands into N services, each with its own port, not one to route to itself)", stack.Port)
+	}
+}
+
+// TestParse_Invalid covers errors from both validation layers: schema
+// (structural shape) and Validate (semantic, cross-field/cross-service).
+// Schema error messages come from the library and aren't asserted on
+// beyond "an error occurred"; semantic error messages are ours, and
+// those are checked for the specific reason, not just presence of an
+// error, since a wrong reason failing silently as "some error" would
+// hide a real regression.
+func TestParse_Invalid(t *testing.T) {
+	tests := []struct {
+		name          string
+		yaml          string
+		wantErrSubstr string // empty means "just check it's an error" (schema-layer cases)
+	}{
+		{
+			name: "missing version",
+			yaml: `
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+`,
+		},
+		{
+			name: "wrong version",
+			yaml: `
+version: 2
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+`,
+		},
+		{
+			name: "no services",
+			yaml: `
+version: 1
+services: {}
+`,
+		},
+		{
+			name: "unknown top-level field",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+extra_field: true
+`,
+		},
+		{
+			name: "unknown field within a service",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, made_up_field: 1 }
+`,
+		},
+		{
+			name: "invalid build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: not-a-real-type }, port: 8080 }
+`,
+		},
+		{
+			name: "missing build",
+			yaml: `
+version: 1
+services:
+  web: { port: 8080 }
+`,
+		},
+		{
+			name: "invalid strategy",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, strategy: yolo }
+`,
+		},
+		{
+			name: "port out of range",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 99999 }
+`,
+		},
+		{
+			name: "host_port out of range",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, host_port: 99999 }
+`,
+		},
+		{
+			name: "host_port set for a static build",
+			yaml: `
+version: 1
+services:
+  docs: { build: { type: static }, host_port: 8080 }
+`,
+			wantErrSubstr: "host_port must not be set when build.type is",
+		},
+		{
+			name: "bind_address invalid value",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, bind_address: publik }
+`,
+			wantErrSubstr: "bind_address",
+		},
+		{
+			name: "bind_address set for a static build",
+			yaml: `
+version: 1
+services:
+  docs: { build: { type: static }, bind_address: private }
+`,
+			wantErrSubstr: "bind_address must not be set when build.type is",
+		},
+		{
+			name: "bad memory pattern",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, resources: { memory: "lots" } }
+`,
+		},
+		{
+			name: "bad swapMemory pattern",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, resources: { memory: "512Mi", swapMemory: "lots" } }
+`,
+		},
+		{
+			name: "bad cpuSet pattern",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, resources: { cpuSet: "not-a-cpuset!" } }
+`,
+		},
+		{
+			name: "swapMemory without memory",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, resources: { swapMemory: "1Gi" } }
+`,
+			wantErrSubstr: "resources.swapMemory requires resources.memory to also be set",
+		},
+		{
+			name: "bad interval pattern",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    health: { readiness: { path: /healthz, interval: "five seconds" } }
+`,
+		},
+		{
+			name: "compose build type missing path",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: compose }, port: 8080 }
+`,
+			wantErrSubstr: "build.path is required for build.type: compose",
+		},
+		{
+			name: "image build type missing image",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: image }, port: 8080 }
+`,
+			wantErrSubstr: "build.image is required for build.type: image",
+		},
+		{
+			name: "build.image set for a non-image build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile, image: "ghcr.io/org/app:v1" }, port: 8080 }
+`,
+			wantErrSubstr: "build.image is only meaningful for build.type: image",
+		},
+		{
+			name: "build.path set for an image build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: image, image: "ghcr.io/org/app:v1", path: "./Dockerfile" }, port: 8080 }
+`,
+			wantErrSubstr: "build.path is not meaningful for build.type: image",
+		},
+		{
+			name: "build.baseDirectory set for an image build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: image, image: "ghcr.io/org/app:v1", baseDirectory: "apps/web" }, port: 8080 }
+`,
+			wantErrSubstr: "build.baseDirectory is not meaningful for build.type: image",
+		},
+		{
+			name: "build.baseDirectory set for a compose build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: compose, path: "./docker-compose.yml", baseDirectory: "apps/web" }, port: 8080 }
+`,
+			wantErrSubstr: "build.baseDirectory is not meaningful for build.type: compose",
+		},
+		{
+			name: "build.args set for a railpack build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: railpack, args: { VERSION: "1.2.3" } }, port: 8080 }
+`,
+			wantErrSubstr: `build.args is not meaningful for build.type "railpack"`,
+		},
+		{
+			name: "build.args set for a static build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: static, args: { VERSION: "1.2.3" } } }
+`,
+			wantErrSubstr: `build.args is not meaningful for build.type "static"`,
+		},
+		{
+			name: "build.args set for an image build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: image, image: "ghcr.io/org/app:v1", args: { VERSION: "1.2.3" } }, port: 8080 }
+`,
+			wantErrSubstr: `build.args is not meaningful for build.type "image"`,
+		},
+		{
+			name: "build.baseDirectory is an absolute path",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile, baseDirectory: "/etc/passwd" }, port: 8080 }
+`,
+			wantErrSubstr: "must be a relative path",
+		},
+		{
+			name: "build.baseDirectory escapes the repository root",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile, baseDirectory: "../escape" }, port: 8080 }
+`,
+			wantErrSubstr: "must not escape the repository root",
+		},
+		{
+			name: "port required for non-static build",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile } }
+`,
+			wantErrSubstr: "port is required unless build.type is",
+		},
+		{
+			name: "port must not be set for static build",
+			yaml: `
+version: 1
+services:
+  docs: { build: { type: static }, port: 8080 }
+`,
+			wantErrSubstr: "port must not be set when build.type is",
+		},
+		{
+			name: "port must not be set for compose build",
+			yaml: `
+version: 1
+services:
+  stack: { build: { type: compose, path: docker-compose.yml }, port: 8080 }
+`,
+			wantErrSubstr: "port must not be set when build.type is",
+		},
+		{
+			name: "duplicate domain across services",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, domains: [shared.example.com] }
+  api: { build: { type: dockerfile }, port: 8081, domains: [shared.example.com] }
+`,
+			wantErrSubstr: "is claimed by both service",
+		},
+		{
+			name: "invalid service name",
+			yaml: `
+version: 1
+services:
+  Web: { build: { type: dockerfile }, port: 8080 }
+`,
+			wantErrSubstr: "name must be lowercase alphanumeric",
+		},
+		{
+			name: "label key uses the reserved prefix",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, labels: { "platform-reserved.foo": "x" } }
+`,
+			wantErrSubstr: "uses the reserved prefix",
+		},
+		{
+			name: "duplicate volume name within a service",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    volumes:
+      - { name: data, path: /var/lib/data }
+      - { name: data, path: /var/lib/other }
+`,
+			wantErrSubstr: "duplicate volume name",
+		},
+		{
+			name: "two volumes mount the same path",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    volumes:
+      - { name: data, path: /var/lib/data }
+      - { name: other, path: /var/lib/data }
+`,
+			wantErrSubstr: "both mount",
+		},
+		{
+			name: "bind mount host path is a forbidden system path",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    volumes:
+      - { hostPath: /etc, path: /mnt/etc }
+`,
+			wantErrSubstr: "is not allowed",
+		},
+		{
+			name: "bind mount host path is relative",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    volumes:
+      - { hostPath: "relative/path", path: /mnt/data }
+`,
+			wantErrSubstr: "must be an absolute path",
+		},
+		{
+			// Caught by the schema's own oneOf (name xor hostPath) before
+			// Validate's own redundant check (validateVolumes) ever runs,
+			// same reasoning as the strategy check in Service.validate.
+			name: "volume sets both name and hostPath",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    volumes:
+      - { name: data, hostPath: /srv/data, path: /mnt/data }
+`,
+		},
+		{
+			name: "readOnly set on a named volume",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    volumes:
+      - { name: data, path: /mnt/data, readOnly: true }
+`,
+			wantErrSubstr: "readOnly is only meaningful alongside hostPath",
+		},
+		{
+			name: "too many labels",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    labels: {` + manyLabelsYAML(MaxLabels+1) + `}
+`,
+			wantErrSubstr: "at most",
+		},
+		{
+			// Caught by the schema's engine enum before Validate's own
+			// (currently unreachable while the two stay in sync, kept
+			// anyway per the same reasoning as the strategy check in
+			// Service.validate) redundant check ever runs.
+			name: "unsupported database engine",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  main: { engine: cassandra }
+`,
+		},
+		{
+			name: "hooks on a static build",
+			yaml: `
+version: 1
+services:
+  docs: { build: { type: static }, hooks: { preDeploy: "echo hi" } }
+`,
+			wantErrSubstr: "hooks is not meaningful for build.type \"static\"",
+		},
+		{
+			name: "hooks on a compose build",
+			yaml: `
+version: 1
+services:
+  stack: { build: { type: compose, path: docker-compose.yml }, hooks: { postDeploy: "echo hi" } }
+`,
+			wantErrSubstr: "hooks is not meaningful for build.type \"compose\"",
+		},
+		{
+			name: "empty hooks block",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, hooks: {} }
+`,
+		},
+		{
+			name: "egress missing mode",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, egress: { allow: [{ host: api.example.com, port: 443 }] } }
+`,
+		},
+		{
+			name: "egress unrecognized mode",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, egress: { mode: deny-all, allow: [{ host: api.example.com, port: 443 }] } }
+`,
+		},
+		{
+			name: "egress allowlist with no allow entries",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, egress: { mode: allowlist } }
+`,
+			wantErrSubstr: "egress.mode: allowlist requires at least one entry in egress.allow",
+		},
+		{
+			name: "egress allow entry missing host",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, egress: { mode: allowlist, allow: [{ port: 443 }] } }
+`,
+		},
+		{
+			name: "egress allow entry port out of range",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, egress: { mode: allowlist, allow: [{ host: api.example.com, port: 70000 }] } }
+`,
+		},
+		{
+			name: "egress not meaningful for static build",
+			yaml: `
+version: 1
+services:
+  site: { build: { type: static, path: ./dist }, egress: { mode: allowlist, allow: [{ host: api.example.com, port: 443 }] } }
+`,
+			wantErrSubstr: "egress is not meaningful for build.type \"static\"",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Parse([]byte(tt.yaml))
+			if err == nil {
+				t.Fatal("Parse() error = nil, want an error")
+			}
+			if tt.wantErrSubstr != "" && !strings.Contains(err.Error(), tt.wantErrSubstr) {
+				t.Errorf("Parse() error = %q, want it to contain %q", err.Error(), tt.wantErrSubstr)
+			}
+		})
+	}
+}
+
+func TestParse_InvalidYAML(t *testing.T) {
+	_, err := Parse([]byte("not: valid: yaml: at: all: [[["))
+	if err == nil {
+		t.Fatal("Parse() error = nil for malformed YAML, want an error")
+	}
+}
+
+// manyLabelsYAML builds n "keyN: valueN" YAML flow-map entries, used by
+// TestParse_Invalid's "too many labels" case to exceed MaxLabels without
+// hand-writing dozens of lines.
+func manyLabelsYAML(n int) string {
+	var b strings.Builder
+	for i := 0; i < n; i++ {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		fmt.Fprintf(&b, "key%d: value%d", i, i)
+	}
+	return b.String()
+}
+
+func TestValidateLabels(t *testing.T) {
+	tests := []struct {
+		name          string
+		labels        map[string]string
+		wantErr       bool
+		wantErrSubstr string
+	}{
+		{name: "nil is valid", labels: nil, wantErr: false},
+		{name: "empty is valid", labels: map[string]string{}, wantErr: false},
+		{name: "ordinary labels valid", labels: map[string]string{"team": "platform", "env": "prod"}, wantErr: false},
+		{
+			name:          "empty key rejected",
+			labels:        map[string]string{"": "x"},
+			wantErr:       true,
+			wantErrSubstr: "must not be empty",
+		},
+		{
+			name:          "reserved prefix rejected",
+			labels:        map[string]string{ReservedLabelPrefix + "managed": "true"},
+			wantErr:       true,
+			wantErrSubstr: "reserved prefix",
+		},
+		{
+			name:          "key over the length limit rejected",
+			labels:        map[string]string{strings.Repeat("k", MaxLabelKeyLength+1): "x"},
+			wantErr:       true,
+			wantErrSubstr: "exceeds",
+		},
+		{
+			name:          "value over the length limit rejected",
+			labels:        map[string]string{"key": strings.Repeat("v", MaxLabelValueLength+1)},
+			wantErr:       true,
+			wantErrSubstr: "exceeds",
+		},
+
+		{
+			name: "too many labels rejected",
+			labels: func() map[string]string {
+				m := make(map[string]string)
+				for i := 0; i <= MaxLabels; i++ {
+					m[string(rune('a'+i))] = "val"
+				}
+				return m
+			}(),
+			wantErr:       true,
+			wantErrSubstr: "at most",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateLabels(tt.labels)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ValidateLabels() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErrSubstr != "" && (err == nil || !strings.Contains(err.Error(), tt.wantErrSubstr)) {
+				t.Errorf("ValidateLabels() error = %v, want it to contain %q", err, tt.wantErrSubstr)
+			}
+		})
+	}
+}
+
+// TestValidateLabels_ReservedPrefixNeverOverridable proves the collision
+// scenario this feature exists to prevent can't happen: any custom label
+// key inside ReservedLabelPrefix's namespace, however it's spelled, is
+// rejected outright rather than silently accepted and later colliding
+// with a bookkeeping label this platform might add under that prefix.
+func TestValidateLabels_ReservedPrefixNeverOverridable(t *testing.T) {
+	candidates := []string{
+		ReservedLabelPrefix + "managed",
+		ReservedLabelPrefix + "service",
+		ReservedLabelPrefix + "x",
+	}
+	for _, key := range candidates {
+		t.Run(key, func(t *testing.T) {
+			if err := ValidateLabels(map[string]string{key: "attacker-controlled"}); err == nil {
+				t.Fatalf("ValidateLabels(%q) = nil error, want rejection of a reserved-namespace key", key)
+			}
+		})
+	}
+}
+
+func TestIsPendingImage(t *testing.T) {
+	tests := []struct {
+		image string
+		want  bool
+	}{
+		{"local/web" + PendingImageTag, true},
+		{"web:pending", true},
+		{"local/web:abc123", false},
+		{"local/pending:1", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		if got := IsPendingImage(tt.image); got != tt.want {
+			t.Errorf("IsPendingImage(%q) = %v, want %v", tt.image, got, tt.want)
+		}
+	}
+}
+
+func TestParse_ImageShorthand(t *testing.T) {
+	tests := []struct {
+		name    string
+		svc     string
+		wantErr bool
+	}{
+		{"image with replicas and strategy", `{ image: "traefik/whoami:v1.10", port: 80, replicas: 2, strategy: rolling }`, false},
+		{"image plus matching build", `{ image: "a:1", build: { type: image, image: "a:1" }, port: 80 }`, false},
+		{"image conflicts with dockerfile build", `{ image: "a:1", build: { type: dockerfile }, port: 80 }`, true},
+		{"image conflicts with different build image", `{ image: "a:1", build: { type: image, image: "b:1" }, port: 80 }`, true},
+		{"neither build nor image", `{ port: 80 }`, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s, err := Parse([]byte("version: 1\nservices:\n  web: " + tt.svc + "\n"))
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Parse() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err != nil {
+				return
+			}
+			web := s.Services["web"]
+			if web.Build.Type != BuildImage || web.Build.Image == "" || web.Image != "" {
+				t.Errorf("service = %+v, want image folded into Build", web)
+			}
+		})
+	}
+}

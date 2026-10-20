@@ -1,0 +1,78 @@
+---
+title: "Self-host NocoBase with Docker"
+sidebarTitle: "NocoBase"
+description: "An extensible no-code/low-code platform for building internal tools and databases."
+"og:url": "https://docs.levelrail.com/self-host/nocobase"
+---
+
+An extensible no-code/low-code platform for building internal tools and databases.
+
+This page describes the Levelrail template for NocoBase (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.nocobase.com/.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `nocobase` | `nocobase/nocobase:1.9.33` | 13000 | `nocobase_storage -&#62; /app/nocobase/storage` |
+| `postgres` | `postgres:17-alpine` | none | `nocobase_postgres_data -&#62; /var/lib/postgresql/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `nocobase` | `APP_KEY` | Generated at deploy |
+| `nocobase` | `DB_DATABASE` | Preset in the template |
+| `nocobase` | `DB_DIALECT` | Preset in the template |
+| `nocobase` | `DB_HOST` | Preset in the template |
+| `nocobase` | `DB_PASSWORD` | Generated at deploy |
+| `nocobase` | `DB_PORT` | Preset in the template |
+| `nocobase` | `DB_USER` | Preset in the template |
+| `postgres` | `POSTGRES_DB` | Preset in the template |
+| `postgres` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `postgres` | `POSTGRES_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`nocobase`): 13000:13000.
+- Passwords and keys are generated at deploy time (`nocobase`, `postgres`): APP_KEY, DB_PASSWORD, POSTGRES_PASSWORD.
+- Stores data in named volumes (`nocobase`, `postgres`): nocobase_postgres_data, nocobase_storage.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy NocoBase with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select NocoBase. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy nocobase --name my-nocobase
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host).

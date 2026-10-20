@@ -1,0 +1,62 @@
+---
+title: "Self-host BentoPDF with Docker"
+sidebarTitle: "BentoPDF"
+description: "A privacy-first PDF toolkit that merges, splits, converts and edits files entirely in the browser, with no uploads."
+"og:url": "https://docs.levelrail.com/self-host/bentopdf"
+---
+
+A privacy-first PDF toolkit that merges, splits, converts and edits files entirely in the browser, with no uploads.
+
+This page describes the Levelrail template for BentoPDF (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/alam00000/bentopdf.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `bentopdf` | `ghcr.io/alam00000/bentopdf:v1.16.1` | 8080 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Nothing beyond a standard container: no extra privileges, host mounts or published ports.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy BentoPDF with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select BentoPDF. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy bentopdf --name my-bentopdf
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).

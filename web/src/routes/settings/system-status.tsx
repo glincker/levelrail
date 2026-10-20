@@ -1,0 +1,287 @@
+import { createFileRoute } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
+import {
+  HeartbeatIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowsClockwiseIcon,
+  StackIcon,
+  ShieldCheckIcon,
+  GlobeIcon,
+  InfoIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import type { Icon } from '@phosphor-icons/react'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
+import { HelpLink } from '@/components/HelpLink'
+import { PageHeader } from '@/components/shell/PageHeader'
+import {
+  systemDoctorQueryOptions,
+  useSystemDoctor,
+} from '../../queries/systemDoctor'
+import type { DoctorCheck } from '../../queries/systemDoctor'
+import { DoctorCheckRow } from '@/components/DoctorCheckRow'
+import { DiskResilienceCard } from '../../components/DiskResilienceCard'
+import { ResilienceReportCard } from '../../components/ResilienceReportCard'
+import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
+
+// Web half of "levelrail-cli doctor": that command already runs
+// /api/v1/system/doctor's full preflight bundle (Docker reachability,
+// disk space, data dir writable, ports 80/443, database, master key
+// rotation age, ufw status) with no dashboard equivalent until this
+// route. Dokploy's "Security Audit" page covers the same ground; this
+// is that page here.
+export const Route = createFileRoute('/settings/system-status')({
+  loader: ({ context: { queryClient } }) =>
+    queryClient.ensureQueryData(systemDoctorQueryOptions()),
+  component: SystemStatusPage,
+  pendingComponent: SystemStatusPending,
+})
+
+// Purely presentational grouping: the two categories an operator
+// actually thinks in (can this box run containers at all, versus is it
+// locked down), not a distinction the API itself makes. Any check code
+// the backend adds later that isn't listed here still renders, just
+// under "Other checks" rather than being silently dropped.
+const INFRASTRUCTURE_CODES = [
+  'docker',
+  'disk_space',
+  'disk_io_latency',
+  'data_dir_writable',
+  'ram',
+  'cpu',
+]
+const INFRASTRUCTURE_CODES_AFTER_PORTS = ['database']
+const SECURITY_CODES = [
+  'firewall',
+  'master_key_rotation',
+  'stale_secrets',
+  'notification_channel_secrets',
+  'secret_reveal_policy',
+  'legacy_tokens',
+]
+const NETWORK_CODES = [
+  'public_ip',
+  'acme_reachability',
+  'clock_skew',
+  'agent_advertise_reachability',
+]
+
+// PORT_CHECK_CODE matches port_<n> for whatever ports this instance's
+// ingress is actually configured on (APP_INGRESS_HTTP_ADDR/
+// APP_INGRESS_HTTPS_ADDR), not just the literal port_80/port_443 codes
+// a default-port instance reports.
+const PORT_CHECK_CODE = /^port_\d+$/
+// EXTERNAL_REACHABILITY_CODE matches external_reachability_<n> the same
+// way PORT_CHECK_CODE matches port_<n>, for whatever ports this
+// instance's ingress is configured on.
+const EXTERNAL_REACHABILITY_CODE = /^external_reachability_\d+$/
+// REGISTRY_REACHABILITY_CODE matches registry_reachability_<host> for
+// however many registry hosts this instance has configured (external
+// credentials, the built-in registry, or the Docker Hub default).
+const REGISTRY_REACHABILITY_CODE = /^registry_reachability_/
+
+function groupChecks(checks: DoctorCheck[]) {
+  const byCode = new Map(checks.map((c) => [c.code, c]))
+  const take = (codes: string[]) =>
+    codes
+      .map((code) => byCode.get(code))
+      .filter((c): c is DoctorCheck => Boolean(c))
+  const portChecks = checks.filter((c) => PORT_CHECK_CODE.test(c.code))
+  const externalReachabilityChecks = checks.filter((c) =>
+    EXTERNAL_REACHABILITY_CODE.test(c.code),
+  )
+  const registryReachabilityChecks = checks.filter((c) =>
+    REGISTRY_REACHABILITY_CODE.test(c.code),
+  )
+  const infrastructure = [
+    ...take(INFRASTRUCTURE_CODES),
+    ...portChecks,
+    ...take(INFRASTRUCTURE_CODES_AFTER_PORTS),
+  ]
+  const security = take(SECURITY_CODES)
+  const network = [
+    ...take(['public_ip']),
+    ...externalReachabilityChecks,
+    ...registryReachabilityChecks,
+    ...take([
+      'acme_reachability',
+      'clock_skew',
+      'agent_advertise_reachability',
+    ]),
+  ]
+  const seen = new Set([
+    ...INFRASTRUCTURE_CODES,
+    ...INFRASTRUCTURE_CODES_AFTER_PORTS,
+    ...SECURITY_CODES,
+    ...NETWORK_CODES,
+    ...portChecks.map((c) => c.code),
+    ...externalReachabilityChecks.map((c) => c.code),
+    ...registryReachabilityChecks.map((c) => c.code),
+  ])
+  const other = checks.filter((c) => !seen.has(c.code))
+  return { infrastructure, security, network, other }
+}
+
+function CheckGroupCard({
+  title,
+  description,
+  icon,
+  checks,
+}: {
+  title: string
+  description: string
+  icon: Icon
+  checks: DoctorCheck[]
+}) {
+  if (checks.length === 0) return null
+  const GroupIcon = icon
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-3">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            <GroupIcon className="size-4" />
+          </div>
+          <div>
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>{description}</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="divide-y divide-border">
+        {checks.map((check) => (
+          <DoctorCheckRow key={check.code} check={check} />
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
+function SummaryBanner({ ok, checks }: { ok: boolean; checks: DoctorCheck[] }) {
+  const { t } = useTranslation('settings')
+  if (ok) {
+    return (
+      <Alert>
+        <CheckCircleIcon />
+        <AlertTitle>{t('systemStatusPage.allPassedTitle')}</AlertTitle>
+        <AlertDescription>
+          {t('systemStatusPage.allPassedBody')}
+        </AlertDescription>
+      </Alert>
+    )
+  }
+  const failed = checks.filter((c) => c.status === 'fail')
+  return (
+    <Alert variant="destructive">
+      <XCircleIcon />
+      <AlertTitle>{t('systemStatusPage.failedTitle')}</AlertTitle>
+      <AlertDescription>
+        {failed.length > 0
+          ? t('systemStatusPage.failing', {
+              names: failed.map((c) => c.name).join(', '),
+            })
+          : t('systemStatusPage.reviewBelow')}
+      </AlertDescription>
+    </Alert>
+  )
+}
+
+function SystemStatusPage() {
+  const { t } = useTranslation('settings')
+  const { data, isFetching, refetch } = useSystemDoctor()
+  const { infrastructure, security, network, other } = groupChecks(data.checks)
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <HeartbeatIcon className="size-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <PageHeader
+            title={t('systemStatusPage.title')}
+            description={t('systemStatusPage.description')}
+            helpPath="/troubleshooting"
+            helpLabel={t('systemStatusPage.troubleshootingGuide')}
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  void refetch()
+                }}
+                disabled={isFetching}
+              >
+                <ArrowsClockwiseIcon
+                  className={isFetching ? 'animate-spin' : ''}
+                />
+                {t('systemStatusPage.rerun')}
+              </Button>
+            }
+          />
+        </div>
+      </div>
+
+      <SummaryBanner ok={data.ok} checks={data.checks} />
+
+      <Alert>
+        <InfoIcon />
+        <AlertTitle>{t('systemStatusPage.ingressTitle')}</AlertTitle>
+        <AlertDescription>
+          {t('systemStatusPage.ingressBody')}{' '}
+          <HelpLink
+            path="/resilience"
+            label={t('systemStatusPage.survivesCrash')}
+            variant="inline"
+          />
+          .
+        </AlertDescription>
+      </Alert>
+
+      <CheckGroupCard
+        title={t('systemStatusPage.groups.infrastructure.title')}
+        description={t('systemStatusPage.groups.infrastructure.description')}
+        icon={StackIcon}
+        checks={infrastructure}
+      />
+      <CheckGroupCard
+        title={t('systemStatusPage.groups.security.title')}
+        description={t('systemStatusPage.groups.security.description')}
+        icon={ShieldCheckIcon}
+        checks={security}
+      />
+      <CheckGroupCard
+        title={t('systemStatusPage.groups.network.title')}
+        description={t('systemStatusPage.groups.network.description')}
+        icon={GlobeIcon}
+        checks={network}
+      />
+      <CheckGroupCard
+        title={t('systemStatusPage.groups.other.title')}
+        description={t('systemStatusPage.groups.other.description')}
+        icon={HeartbeatIcon}
+        checks={other}
+      />
+      <DiskResilienceCard />
+      <ResilienceReportCard />
+    </div>
+  )
+}
+
+function SystemStatusPending() {
+  return (
+    <div className="space-y-6">
+      <SettingsPageTitle id="system-status" />
+      <ListSkeleton rows={5} />
+    </div>
+  )
+}

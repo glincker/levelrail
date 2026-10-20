@@ -1,0 +1,39 @@
+{
+  "page": {
+    "title": "Traffic",
+    "description": "Every domain routed through this control plane's embedded ingress, which node actually serves it, and whether it can be reached."
+  },
+  "table": {
+    "label": "Routed domains",
+    "domain": "Domain",
+    "app": "App",
+    "node": "Node",
+    "reachable": "Reachable",
+    "port": "Port",
+    "tls": "TLS"
+  },
+  "reachable": {
+    "yes": "Reachable",
+    "no": "Unreachable"
+  },
+  "unreachableBanner_one": "1 domain is unreachable: its app runs on another node and this control plane's ingress has no usable WireGuard mesh path to it. Check the mesh status on the Network page.",
+  "unreachableBanner_other": "{{count}} domains are unreachable: their apps run on other nodes and this control plane's ingress has no usable WireGuard mesh path to them. Check the mesh status on the Network page.",
+  "fix": {
+    "explanation": "The WireGuard mesh path to this app's node is not usable, so the embedded ingress cannot reach it. Fix the mesh, or move the app back to this node.",
+    "moveHere": "Move to this node"
+  },
+  "tlsSource": {
+    "acme": "ACME",
+    "custom": "Custom"
+  },
+  "empty": {
+    "title": "No domains routed yet",
+    "description": "Connect a domain from an app's Domains tab to see its traffic path here."
+  },
+  "automaticDomain": {
+    "badge": "Automatic",
+    "hint": "Assigned by Levelrail from this server's IP so the app works with no DNS setup. Add your own domain below to replace it.",
+    "open": "Open",
+    "tlsNote": "This automatic URL uses a self-signed certificate until HTTPS is enabled under Domains. Plain http gets a 308 redirect to it."
+  }
+}

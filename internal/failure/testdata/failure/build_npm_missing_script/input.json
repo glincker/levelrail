@@ -1,0 +1,13 @@
+{
+  "Status": "failed",
+  "FailingStep": "building",
+  "Error": "deploy: service \"web\": build: process \"/bin/sh -c npm run build\" did not complete successfully: exit code: 1",
+  "LogLines": [
+    "#9 [5/6] RUN npm run build",
+    "#9 0.611 npm error Missing script: \"build\"",
+    "#9 0.611 npm error",
+    "#9 0.611 npm error To see a list of scripts, run:",
+    "#9 0.611 npm error   npm run",
+    "#9 ERROR: process \"/bin/sh -c npm run build\" did not complete successfully: exit code: 1"
+  ]
+}

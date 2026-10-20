@@ -1,0 +1,1689 @@
+// Package ingress implements the ingress controller: the
+// reconcile.Controller that keeps Caddy's config (internal/ingress, ADR
+// 005) in sync with every service that declares domains.
+//
+// ADR 005's Verified section is the load-bearing finding this controller
+// is built around: caddy.Load (what Driver.Apply calls) replaces Caddy's
+// entire process-wide config on every call, there is no per-app
+// incremental update. So unlike the application controller
+// (internal/reconcile/application), which reconciles one named service
+// at a time, this controller reconciles all of them in a single pass:
+// every Reconcile call lists every desired service, derives a complete
+// desired ingress.Config from whichever of them currently have a running
+// backend, and applies that whole document. This fits the reconciler
+// contract's level-triggered philosophy directly (re-derive from current
+// state every time, assume nothing about a previous call), it just means the
+// unit of reconciliation for ingress is "all routable services," not one
+// resource.
+//
+// A follow-up this package's own doc comment used to flag as open is now
+// closed: real ACME (ADR 005's Verified section names this exact gap,
+// "must be spot-checked against a real domain... not assumed to follow
+// automatically") is available as an opt-in, platform-wide toggle
+// (store.IngressSettings.ACMEEnabled, read fresh every Reconcile via
+// ServiceStore.GetIngressSettings), not the default: Caddy's internal
+// (self-signed, offline) issuer remains what every route gets unless an
+// operator explicitly turns ACME on through PUT /api/v1/settings/ingress
+// (internal/api), so an upgrading deployment's behavior is unchanged
+// until it opts in. When enabled, every currently-routed host shares one
+// automation policy pointed at real ACME instead of the internal issuer;
+// see internal/ingress.BuildRoutesConfig's own doc comment on
+// RoutesOptions.ACMEEnabled for why this pass deliberately does not mix
+// ACME and internal issuers across different hosts in the same reconcile.
+//
+// The platform primary domain (store.IngressSettings.PrimaryDomain) is
+// this same settings row's second, independent field: when set, this
+// controller adds one more reverse-proxy route (WithDashboardDial) for
+// the control plane's own dashboard, sharing the same claimedHosts dedup
+// and the same TLS automation policy as every app/static-site route.
+//
+// Two further gaps this package's own doc comment used to flag as open
+// here are also closed:
+//
+//   - Certificate storage no longer has to stay on Caddy's default
+//     file-system storage module (internal/ingress.FileStorage).
+//     WithCertStore points it at internal/ingress.SQLiteStorage instead,
+//     a certmagic.Storage backed by internal/store's SQLite, so
+//     multiple ingress-driving processes sharing that database share
+//     cert state, per the ingress design's requirement that certificate
+//     storage live in the database rather than each independently
+//     re-obtaining a certificate for a domain another one already has.
+//   - Domain uniqueness across separate deploys over time (not just
+//     within a single app.yaml, which internal/spec's Validate() already
+//     enforced) is now enforced where desired state is actually
+//     written: store.SaveDesiredService rejects a save with
+//     *store.ErrDomainTaken if any domain is already claimed by a
+//     different service (see migrations/0011_service_domains.sql). This
+//     controller also carries a defense-in-depth guard in Reconcile
+//     (firstDuplicateHost) for any pre-existing data written before that
+//     constraint existed: it never builds two routes for the same host
+//     in one pass, logging and skipping whichever service loses the
+//     race within this reconcile.
+package ingress
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"net"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"golang.org/x/crypto/bcrypt"
+
+	"github.com/GLINCKER/levelrail/internal/canary"
+	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/GLINCKER/levelrail/internal/meshpath"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+// ServiceStore is the narrow surface this controller needs from
+// internal/store, so tests can fake it without a real database.
+// *store.DB satisfies this. Unlike application.ServiceStore (one named
+// service), this controller needs every known service in one call: see
+// the package doc comment for why ingress reconciles as a single whole
+// pass rather than per-service.
+//
+// ListStaticSites is the static-site bypass of the
+// container reconciler (migrations/0015_static_sites.sql,
+// internal/store.StaticSite): a static site is never a
+// store.DesiredService (no image, no port, nothing to converge to a
+// running container), so it needs its own listing call, read fresh on
+// every Reconcile exactly like ListDesiredServices, rather than being
+// threaded through the container-service shape as a special case.
+// GetIngressSettings is read fresh on every Reconcile, the same
+// "never cache, re-derive from current state every call" principle
+// ListDesiredServices/ListStaticSites already follow: an operator
+// toggling ACME on or setting a primary domain through PUT
+// /api/v1/settings/ingress (internal/api) must take effect on this
+// controller's very next reconcile pass, not require a restart.
+type ServiceStore interface {
+	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
+	ListStaticSites(ctx context.Context) ([]store.StaticSite, error)
+	GetIngressSettings(ctx context.Context) (store.IngressSettings, error)
+	GetCloudflareDNSSettings(ctx context.Context) (store.CloudflareDNSSettings, error)
+	// GetRoute53DNSSettings returns the Route53 DNS-01 platform-wide
+	// row (migrations/0098), read fresh every Reconcile for the same
+	// reason GetCloudflareDNSSettings is: a second, independent ACME
+	// DNS-01 provider an operator can enable through PUT
+	// /api/v1/settings/route53-dns (internal/api).
+	GetRoute53DNSSettings(ctx context.Context) (store.Route53DNSSettings, error)
+	// ListDomainBasicAuth returns every domain currently protected by
+	// HTTP Basic Auth (store.DomainBasicAuth, migrations/0052), read
+	// fresh every Reconcile like everything else on this interface: an
+	// operator setting or clearing a domain's basic auth through PUT/
+	// DELETE /api/v1/apps/{name}/domains/{domain}/auth (internal/api)
+	// must take effect on this controller's very next pass.
+	ListDomainBasicAuth(ctx context.Context) ([]store.DomainBasicAuth, error)
+	// ListDomainMaintenance returns every domain currently in
+	// maintenance mode (migrations/0080), read fresh every Reconcile
+	// for the same reason ListDomainBasicAuth is: an operator setting
+	// or clearing maintenance mode through PUT/DELETE
+	// /api/v1/apps/{name}/domains/{domain}/maintenance (internal/api)
+	// must take effect on this controller's very next pass.
+	ListDomainMaintenance(ctx context.Context) ([]string, error)
+	// ListDomainTLSCerts returns every domain currently configured with a
+	// BYO TLS certificate (migrations/0084), read fresh every Reconcile
+	// for the same reason ListDomainBasicAuth is: an operator setting or
+	// clearing a domain's certificate through PUT/DELETE
+	// /api/v1/apps/{name}/domains/{domain}/tls-cert (internal/api) must
+	// take effect on this controller's very next pass.
+	ListDomainTLSCerts(ctx context.Context) ([]store.DomainTLSCert, error)
+	// GetRegistrySettings returns the built-in registry's single
+	// platform-wide row (store.RegistrySettings), read fresh every
+	// Reconcile like GetIngressSettings: an operator enabling the
+	// registry or changing its Host through PUT /api/v1/settings/registry
+	// (internal/api) must take effect on this controller's very next
+	// pass.
+	GetRegistrySettings(ctx context.Context) (store.RegistrySettings, error)
+	// ListDomainWAF returns every domain with opt-in WAF and/or rate
+	// limiting configured (migrations/0091), read fresh every Reconcile
+	// for the same reason ListDomainBasicAuth is: an operator setting or
+	// clearing a domain's WAF/rate-limit config through PUT/DELETE
+	// /api/v1/apps/{name}/domains/{domain}/waf (internal/api) must take
+	// effect on this controller's very next pass. Unlike basic auth or
+	// BYO TLS certs, there is no secret material here, so no resolver
+	// option is needed to actually enforce it.
+	ListDomainWAF(ctx context.Context) ([]store.DomainWAF, error)
+	// ListDomainRedirects returns every domain currently configured to
+	// redirect to a target URL (migrations/0102), read fresh every
+	// Reconcile for the same reason ListDomainMaintenance is: an
+	// operator setting or clearing a domain's redirect through PUT/
+	// DELETE /api/v1/apps/{name}/domains/{domain}/redirect (internal/api)
+	// must take effect on this controller's very next pass.
+	ListDomainRedirects(ctx context.Context) ([]store.DomainRedirect, error)
+	// ListAllDomainErrorPages returns every custom error page configured
+	// across every domain (migrations/0105), read fresh every Reconcile
+	// for the same reason ListDomainWAF is: an operator setting or
+	// clearing a domain's error pages through PUT/DELETE
+	// /api/v1/apps/{name}/domains/{domain}/error-pages (internal/api)
+	// must take effect on this controller's very next pass.
+	ListAllDomainErrorPages(ctx context.Context) ([]store.DomainErrorPage, error)
+	// ListHiddenDomains returns domains that ask search engines to stay
+	// away (migrations/0409), read fresh every pass.
+	ListHiddenDomains(ctx context.Context) ([]string, error)
+	// Batched application-controller readiness lookup, used by dialForService.
+	GetConditionsForControllers(ctx context.Context, controllerNames []string) (map[string][]reconcile.Condition, error)
+	// ListAllAppStreams returns every raw TCP stream
+	// (migrations/0279_app_streams.sql) across every service, read
+	// fresh every Reconcile like everything else on this interface: an
+	// operator adding or removing a stream through POST/DELETE
+	// /api/v1/apps/{name}/streams (internal/api) must take effect on
+	// this controller's very next pass.
+	ListAllAppStreams(ctx context.Context) ([]store.AppStream, error)
+	// GetStatusPageSettings returns the status page's single settings
+	// row, read fresh every Reconcile like GetRegistrySettings.
+	GetStatusPageSettings(ctx context.Context) (store.StatusPageSettings, error)
+}
+
+// Applier is the narrow surface this controller needs from
+// internal/ingress.Driver, so tests can fake it without starting a real
+// Caddy instance. *ingress.Driver satisfies this.
+type Applier interface {
+	Apply(ctx context.Context, cfg *ingress.Config) error
+}
+
+// CloudflareDNSTokenResolver is the narrow surface this controller needs
+// from internal/secrets.Manager to resolve the Cloudflare DNS-01 API
+// token, mirroring cloudflaretunnel.TokenResolver's exact shape.
+// *secrets.Manager satisfies this structurally.
+type CloudflareDNSTokenResolver interface {
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+}
+
+// Route53DNSCredentialResolver is the narrow surface this controller
+// needs from internal/secrets.Manager to resolve the Route53 DNS-01
+// access key pair, structurally identical to CloudflareDNSTokenResolver
+// but named separately since the two resolve unrelated credentials
+// under different serviceName namespaces. *secrets.Manager satisfies
+// this structurally.
+type Route53DNSCredentialResolver interface {
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+}
+
+// DomainBasicAuthPasswordResolver is the narrow surface this controller
+// needs from internal/secrets.Manager to resolve a domain's basic-auth
+// password, structurally identical to CloudflareDNSTokenResolver but
+// named separately since the two resolve unrelated credentials under
+// different serviceName namespaces.
+type DomainBasicAuthPasswordResolver interface {
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+}
+
+// DomainTLSCertPEMResolver is the narrow surface this controller needs
+// from internal/secrets.Manager to resolve a domain's BYO certificate
+// and private key PEM text, structurally identical to
+// DomainBasicAuthPasswordResolver but named separately since the two
+// resolve unrelated material under different serviceName namespaces.
+type DomainTLSCertPEMResolver interface {
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+}
+
+const (
+	defaultServerName = "levelrail-ingress"
+	defaultListenAddr = ":443"
+
+	// defaultHTTPListenAddr is the port-80 equivalent WithHTTPListenAddr
+	// overrides. Not itself bound as a listener (see
+	// Server.AutomaticHTTPS's DisableRedir comment); only used to derive
+	// HTTPPort for ingress.RoutesOptions, so an operator running two
+	// instances on one host can still keep their real ACME HTTP-01
+	// challenge off port 80 on the second one.
+	defaultHTTPListenAddr = ":80"
+
+	// defaultAdminListen pins Caddy's admin API to loopback only. Caddy's
+	// own default is already localhost:2019 (see internal/ingress's
+	// AdminConfig doc comment), so this doesn't change behavior; it makes
+	// the choice explicit in code rather than relying on an upstream
+	// default that could change. The admin listener itself is left
+	// enabled (not Disabled: true): local introspection into a running
+	// Caddy instance is genuinely useful for debugging a stuck ingress
+	// reconcile, and binding it to loopback only means it is never
+	// reachable off the machine the control plane runs on, so there is
+	// no real exposure to accept in exchange for that.
+	defaultAdminListen = "localhost:2019"
+
+	// dashboardRouteOwner is the pseudo-owner name the platform primary
+	// domain's route claims in claimedHosts (firstDuplicateHost's
+	// "name" parameter), so a conflict with an app or static site domain
+	// logs something more useful than an empty string. Not a real
+	// service or static site name and never looked up against either
+	// table.
+	dashboardRouteOwner = "platform dashboard"
+
+	// registryRouteOwner is dashboardRouteOwner's exact counterpart for
+	// the built-in registry's route.
+	registryRouteOwner = "builtin registry"
+
+	// statusPageRouteOwner: same process as the dashboard, shares its dial.
+	statusPageRouteOwner = "public status page"
+)
+
+// Controller converges Caddy's config to match every service in
+// ServiceStore that declares Domains and currently has a running
+// container. Desired state is read fresh from ServiceStore on every
+// Reconcile, never cached.
+type Controller struct {
+	store   ServiceStore
+	runtime docker.Runtime
+	driver  Applier
+	logger  *slog.Logger
+
+	// lastDial keeps each service's last resolved backend so a Docker API outage keeps routes instead of dropping them.
+	lastDial sync.Map
+
+	serverName     string
+	requestStats   bool
+	firewall       bool
+	listenAddr     string
+	httpListenAddr string
+	httpRedirect   bool
+	// fallbackCertLifetime feeds ingress.RoutesOptions.FallbackCertLifetime.
+	fallbackCertLifetime time.Duration
+	adminListen          string
+	storageDir           string
+
+	hardening *ingress.Hardening
+	inherited *ingress.InheritedSockets
+	holds     *ingress.HoldTracker
+
+	modelHosts ModelHostSource // nil is valid: no model routes, see WithModelHosts
+
+	// dashboardDial is the control plane's own dashboard bind address
+	// (see WithDashboardDial), reverse-proxied to whenever
+	// store.IngressSettings.PrimaryDomain is set. Empty means "no
+	// dashboard route", the default, matching how every currently
+	// existing deployment has no such route today.
+	dashboardDial string
+
+	// gateSecret authenticates built-in auth gate subrequests to the
+	// dashboard's check endpoint; empty leaves built-in gated hosts unrouted.
+	gateSecret string
+
+	routeCheck *ingress.RouteCheck
+
+	// registryDial is the built-in registry container's loopback dial
+	// address (see WithRegistryDial), reverse-proxied to whenever
+	// store.RegistrySettings.Enabled and .Host are both set. Empty means
+	// "no registry route", the default, the same shape dashboardDial's
+	// own absence already has.
+	registryDial string
+
+	// certStore, if set via WithCertStore, is built into a
+	// *ingress.SQLiteStorage and registered with ingress.SetActiveCertStorage
+	// once, in New, rather than on every Reconcile. certStorage is the
+	// resulting ingress.RoutesOptions.CertStorage value; nil means
+	// "storageDir/file storage instead" (see WithCertStore).
+	certStore   ingress.CertStore
+	certStorage any
+	servedHosts ServedHostsRecorder
+	domainConds DomainConditionsRecorder
+	issues      domainIssues
+
+	// auditRecorder, if set via WithAuditRecorder, is attached to the
+	// same SQLiteStorage certStore builds, so a certificate issuance or
+	// renewal that storage detects gets a system-actor audit_log row
+	// (see ingress.SQLiteStorage.Store). Nil means no such row is ever
+	// written, unchanged from this controller's behavior before this
+	// field existed.
+	auditRecorder ingress.AuditRecorder
+
+	// dnsTokens, if set via WithCloudflareDNSTokens, is resolved fresh
+	// every Reconcile pass whenever store.CloudflareDNSSettings.Enabled
+	// is true, and threaded through to
+	// ingress.RoutesOptions.CloudflareDNSAPIToken. Nil (the default)
+	// means no wildcard domain ever gets Cloudflare DNS-01, unchanged
+	// from this controller's behavior before this field existed.
+	dnsTokens CloudflareDNSTokenResolver
+
+	// route53Creds, if set via WithRoute53DNSCredentials, is resolved
+	// fresh every Reconcile pass whenever store.Route53DNSSettings.
+	// Enabled is true, the same shape dnsTokens has for Cloudflare's own
+	// credential. Nil (the default) means no wildcard domain ever gets
+	// Route53 DNS-01. If both Cloudflare and Route53 are enabled at
+	// once, resolveDNSProvider prefers Cloudflare: exactly one DNS-01
+	// provider is active per reconcile pass, there is no per-domain
+	// provider selection yet.
+	route53Creds Route53DNSCredentialResolver
+
+	// basicAuthSecrets, if set via WithDomainBasicAuthSecrets, is
+	// resolved fresh every Reconcile pass for every domain returned by
+	// ServiceStore.ListDomainBasicAuth. Nil (the default) means no
+	// domain ever gets a basic_auth handler, unchanged from this
+	// controller's behavior before this feature existed.
+	basicAuthSecrets DomainBasicAuthPasswordResolver
+
+	// tlsCertSecrets, if set via WithDomainTLSCertSecrets, is resolved
+	// fresh every Reconcile pass for every domain returned by
+	// ServiceStore.ListDomainTLSCerts. Nil (the default) means no domain
+	// ever gets a BYO certificate loaded, unchanged from this
+	// controller's behavior before this feature existed.
+	tlsCertSecrets DomainTLSCertPEMResolver
+
+	// publicHost is APP_PUBLIC_HOST (see WithPublicHost): this control
+	// plane's own advertised address, the same value internal/api's
+	// domain-check feature already uses. When it's a real, publicly
+	// routable IP literal, a service with no domains configured gets a
+	// zero-config ingress.FallbackDomain route instead of no route at
+	// all. Empty (the default) means no fallback ever gets synthesized,
+	// unchanged from this controller's behavior before this feature
+	// existed.
+	publicHost string
+
+	lbSource      LoadBalancerSource // nil disables load balancing
+	sleepSource   SleepSource        // nil disables wake routes for sleeping apps
+	wakeDial      string
+	wakeToken     string
+	canarySource  CanarySource // nil disables canary traffic splitting
+	canaryDials   *canary.Dials
+	implicitLB    bool // see WithImplicitLoadBalancing
+	lbRegistry    *loadbalancer.Registry
+	nodeUpstreams NodeUpstreamResolver
+	meshPaths     meshpath.Resolver
+
+	// localNodeID is this control plane's own node ID (see WithLocalNodeID).
+	localNodeID string
+
+	// policyTargets caches checked forwarder addresses (controller_policies.go).
+	policyTargets targetCache
+}
+
+// isLocalNode mirrors internal/api's Router.isLocalNode: "" is always local.
+func (c *Controller) isLocalNode(nodeID string) bool {
+	return nodeID == "" || nodeID == c.localNodeID
+}
+
+// Option configures optional Controller behavior.
+type Option func(*Controller)
+
+// WithFirewall puts the instance firewall in front of every route.
+func WithFirewall() Option {
+	return func(ctrl *Controller) { ctrl.firewall = true }
+}
+
+// WithRequestStats makes every proxied route count requests for the
+// per-app request metrics.
+func WithRequestStats() Option {
+	return func(ctrl *Controller) { ctrl.requestStats = true }
+}
+
+// WithHardening applies edge limits, failover defaults and the friendly 503
+// page to every proxied route.
+func WithHardening(h ingress.Hardening) Option {
+	return func(c *Controller) { c.hardening = &h }
+}
+
+// WithInheritedSockets serves ingress from systemd passed listeners.
+func WithInheritedSockets(s *ingress.InheritedSockets) Option {
+	return func(c *Controller) { c.inherited = s }
+}
+
+// WithHoldTracker keeps a host answering a friendly 503 for the tracker's
+// window after its backend disappears. The tracker must outlive this controller.
+func WithHoldTracker(t *ingress.HoldTracker) Option {
+	return func(c *Controller) { c.holds = t }
+}
+
+// WithServerName overrides the name Caddy's config keys the shared server
+// under (apps.http.servers.<name>). Defaults to "levelrail-ingress".
+// Arbitrary, used only for logging/introspection.
+func WithServerName(name string) Option {
+	return func(c *Controller) { c.serverName = name }
+}
+
+// WithListenAddr overrides the Caddy network address the shared HTTPS
+// listener binds. Defaults to ":443".
+func WithListenAddr(addr string) Option {
+	return func(c *Controller) { c.listenAddr = addr }
+}
+
+// WithFallbackCertLifetime sets how long the locally signed certificate that
+// stands in for a failed public issuance lives before ACME is retried.
+func WithFallbackCertLifetime(d time.Duration) Option {
+	return func(c *Controller) { c.fallbackCertLifetime = d }
+}
+
+// WithHTTPRedirect makes Caddy serve the HTTP port and redirect every
+// routed host to https, instead of leaving the port closed.
+func WithHTTPRedirect(on bool) Option {
+	return func(c *Controller) { c.httpRedirect = on }
+}
+
+// WithHTTPListenAddr overrides this instance's HTTP/port-80 equivalent,
+// used to derive ingress.RoutesOptions.HTTPPort (see that field's own
+// doc comment). Defaults to ":80". This package never binds addr itself
+// as a listener; only its port number is used, so a host or scheme
+// prefix, if given, is ignored.
+func WithHTTPListenAddr(addr string) Option {
+	return func(c *Controller) { c.httpListenAddr = addr }
+}
+
+// WithAdminListen overrides Caddy's admin API bind address. Defaults to
+// "localhost:2019"; see defaultAdminListen's doc comment for why that
+// default is loopback-only rather than disabled outright.
+func WithAdminListen(addr string) Option {
+	return func(c *Controller) { c.adminListen = addr }
+}
+
+// WithStorageDir overrides Caddy's certificate/ACME-account storage root
+// (internal/ingress.FileStorage). Empty (the default) keeps Caddy's own
+// OS-specific default location. Production wiring (not
+// yet built) should point this at a path under the control plane's data
+// directory once that constant exists; this package does not invent one,
+// keeping with the repo's brand/path indirection rule (no hardcoded
+// paths outside the shared data-directory constant).
+func WithStorageDir(dir string) Option {
+	return func(c *Controller) { c.storageDir = dir }
+}
+
+// WithCertStore points Caddy's certificate/ACME-account storage at
+// internal/store's SQLite instead of the local
+// filesystem, so multi-node deployments share cert state instead of each
+// node maintaining its own certificate storage. Takes precedence over
+// WithStorageDir if both are set. certStore is typically
+// the same *store.DB already passed to New as the ServiceStore; New
+// builds it into an ingress.SQLiteStorage and registers it via
+// ingress.SetActiveCertStorage exactly once, not on every Reconcile.
+func WithCertStore(certStore ingress.CertStore) Option {
+	return func(c *Controller) { c.certStore = certStore }
+}
+
+// ServedHostsRecorder persists the hostnames an applied config serves.
+type ServedHostsRecorder interface {
+	ReplaceServedHosts(ctx context.Context, hosts []string) error
+}
+
+// WithServedHostsRecorder records every hostname the applied config serves,
+// the evidence the orphan reaper needs before it may drop a certificate.
+func WithServedHostsRecorder(r ServedHostsRecorder) Option {
+	return func(c *Controller) { c.servedHosts = r }
+}
+
+// DomainConditionsRecorder persists each pass's per-domain problems.
+type DomainConditionsRecorder interface {
+	ReplaceDomainConditions(ctx context.Context, conds []store.DomainCondition) error
+}
+
+// WithDomainConditionsRecorder records dropped and downgraded domains so the
+// domain list can show why instead of the pass only logging a warning.
+func WithDomainConditionsRecorder(r DomainConditionsRecorder) Option {
+	return func(c *Controller) { c.domainConds = r }
+}
+
+// WithAuditRecorder records a system-actor audit_log row for every
+// certificate issuance or renewal the SQLiteStorage built from
+// WithCertStore detects (ingress.SQLiteStorage.Store), the only way a
+// background Caddy-driven renewal, with no request behind it, ever shows
+// up in GET /api/v1/audit-log. Has no effect unless WithCertStore is also
+// set: there is no SQLiteStorage to attach it to otherwise. ar is
+// typically the same *store.DB already passed as certStore.
+func WithAuditRecorder(ar ingress.AuditRecorder) Option {
+	return func(c *Controller) { c.auditRecorder = ar }
+}
+
+// WithDashboardDial enables routing the control plane's own dashboard
+// through this controller's shared Caddy server whenever an operator
+// sets a primary domain (store.IngressSettings.PrimaryDomain, PUT
+// /api/v1/settings/ingress). dial is a host:port reverse-proxy target
+// for the dashboard's own existing *http.Server (cmd/levelrail's
+// httpAddr(), normalized to a loopback dial address the same way
+// routeFor already normalizes a service container's published port: the
+// dashboard's own bind address is often ":8080", listen-on-every-
+// interface shorthand that isn't itself a valid dial target, so the
+// caller is expected to pass the loopback-normalized form). Without this
+// option (the default), a configured PrimaryDomain is silently not
+// routed: this mirrors every other optional Controller capability in
+// this file (WithCertStore, and so on) failing closed rather than
+// erroring when its prerequisite wiring is absent.
+func WithDashboardDial(dial string) Option {
+	return func(c *Controller) { c.dashboardDial = dial }
+}
+
+// WithGateSecret sets the shared secret built-in auth gates present to the
+// dashboard's gate check endpoint.
+func WithGateSecret(secret string) Option {
+	return func(c *Controller) { c.gateSecret = secret }
+}
+
+// WithRegistryDial enables routing the built-in container registry
+// (internal/reconcile/registry) through this controller's shared Caddy
+// server whenever an operator enables it with a Host set (PUT
+// /api/v1/settings/registry). dial is the registry container's own
+// loopback dial address (127.0.0.1 plus registry.HostPort), the same
+// "published port, dialed via loopback" shape WithDashboardDial's own
+// doc comment establishes. No basic_auth handler is added here: the
+// registry container enforces its own htpasswd auth
+// (internal/reconcile/registry's own doc comment), so this route is a
+// plain TLS-terminating reverse proxy, the same shape the dashboard
+// route already has. Without this option (the default), an enabled
+// registry with a Host set is silently not routed, matching
+// WithDashboardDial's own "fails closed" absence behavior.
+func WithRegistryDial(dial string) Option {
+	return func(c *Controller) { c.registryDial = dial }
+}
+
+// WithCloudflareDNSTokens enables Cloudflare DNS-01 for wildcard domains
+// (see internal/ingress.IsWildcardDomain) by resolving the API token
+// internal/secrets stores under store.CloudflareDNSSecretsKey(), whenever
+// store.CloudflareDNSSettings.Enabled is true. Without this option (the
+// default), wildcard hosts reconcile exactly as before this feature
+// existed.
+func WithCloudflareDNSTokens(resolver CloudflareDNSTokenResolver) Option {
+	return func(c *Controller) { c.dnsTokens = resolver }
+}
+
+// WithRoute53DNSCredentials enables Route53 DNS-01 for wildcard domains
+// by resolving the access key pair internal/secrets stores under
+// store.Route53DNSSecretsKey(), whenever store.Route53DNSSettings.
+// Enabled is true. Without this option (the default), Route53 is never
+// used, unchanged from this controller's behavior before this feature
+// existed. See dnsTokens/route53Creds's own doc comment for the
+// precedence rule when both providers are enabled at once.
+func WithRoute53DNSCredentials(resolver Route53DNSCredentialResolver) Option {
+	return func(c *Controller) { c.route53Creds = resolver }
+}
+
+// WithDomainBasicAuthSecrets enables HTTP Basic Auth on any domain
+// present in store.DomainBasicAuth by resolving its password through
+// internal/secrets.Manager under store.DomainBasicAuthSecretsKey(domain).
+// Without this option (the default), domain_basic_auth rows exist in
+// the store but are never enforced, the same "fails closed" shape
+// WithCloudflareDNSTokens's own absence already has.
+func WithDomainBasicAuthSecrets(resolver DomainBasicAuthPasswordResolver) Option {
+	return func(c *Controller) { c.basicAuthSecrets = resolver }
+}
+
+// WithDomainTLSCertSecrets enables loading a BYO certificate for any
+// domain present in store.DomainTLSCert by resolving its certificate and
+// private key PEM through internal/secrets.Manager under
+// store.DomainTLSCertSecretsKey(domain). Without this option (the
+// default), domain_tls_cert rows exist in the store but are never
+// loaded, the same "fails closed" shape WithDomainBasicAuthSecrets's own
+// absence already has; unlike that case, failing to resolve a BYO
+// certificate falls back to Caddy's normal automatic ACME/internal
+// issuance for that host rather than leaving it unrouted, since an
+// unloadable certificate is an availability problem, not a security
+// control to fail closed on the way an unresolvable password is.
+func WithDomainTLSCertSecrets(resolver DomainTLSCertPEMResolver) Option {
+	return func(c *Controller) { c.tlsCertSecrets = resolver }
+}
+
+// WithLocalNodeID sets this control plane's own node ID, letting Reconcile
+// tell a locally-placed service apart from one on an unreachable node.
+func WithLocalNodeID(id string) Option {
+	return func(c *Controller) { c.localNodeID = id }
+}
+
+// WithPublicHost sets APP_PUBLIC_HOST for the zero-config fallback
+// domain feature (see the Controller.publicHost field's own doc
+// comment and ingress.FallbackDomain). Passing a hostname instead of an
+// IP literal, or leaving this unset, both mean "never synthesize a
+// fallback," the same as today: FallbackDomain itself is what actually
+// enforces the IP-literal, publicly-routable requirement.
+func WithPublicHost(host string) Option {
+	return func(c *Controller) { c.publicHost = host }
+}
+
+// WithLogger overrides the logger used for per-service skip decisions.
+// Defaults to slog.Default().
+func WithLogger(logger *slog.Logger) Option {
+	return func(c *Controller) { c.logger = logger }
+}
+
+// New builds a Controller.
+func New(svcStore ServiceStore, runtime docker.Runtime, driver Applier, opts ...Option) *Controller {
+	c := &Controller{
+		store:          svcStore,
+		runtime:        runtime,
+		driver:         driver,
+		logger:         slog.Default(),
+		serverName:     defaultServerName,
+		listenAddr:     defaultListenAddr,
+		httpListenAddr: defaultHTTPListenAddr,
+		adminListen:    defaultAdminListen,
+		lbRegistry:     loadbalancer.NewRegistry(),
+	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	if c.certStore != nil {
+		// Built after every Option has run, not inside WithCertStore
+		// itself, so the SQLiteStorage's logger reflects a later
+		// WithLogger call regardless of Option ordering.
+		storage := ingress.NewSQLiteStorage(c.certStore, c.logger)
+		if c.auditRecorder != nil {
+			storage = storage.WithAuditRecorder(c.auditRecorder)
+		}
+		ingress.SetActiveCertStorage(storage)
+		c.certStorage = ingress.NewSQLiteStorageRef()
+	}
+	return c
+}
+
+// Name implements reconcile.Controller.
+func (c *Controller) Name() string { return "ingress" }
+
+// Reconcile implements reconcile.Controller. It lists every desired
+// service and every static site (store.StaticSite, the
+// container-free bypass, migrations/0015_static_sites.sql), builds one
+// reverse-proxy route per service that both declares domains and
+// currently has a running, port-published container, one file_server
+// route per static site that declares domains, and applies the
+// resulting whole Config to Caddy in a single call (see the package doc
+// comment for why this can't be done incrementally). Both kinds of route
+// share one claimedHosts pass so a container service and a static site
+// can never both route the same host within one apply, the same
+// defense-in-depth firstDuplicateHost already gave container services
+// alone before static sites existed.
+//
+// A service with no valid backend right now (mid-deploy, crashed, never
+// deployed) is not a reconcile failure: it's simply left out of this
+// pass's config, logged at debug level, and picked up automatically once
+// a later reconcile finds it running (this controller and the
+// application controller both re-run on every Docker event and resync
+// tick, per the shared Engine). A static site never has this problem:
+// there is no container to wait for, so every static site with domains
+// is routed the moment internal/deploy.Pipeline has saved it, on this
+// controller's very next reconcile. Only a genuine failure to list
+// desired state, build the config, or apply it to Caddy is reported as
+// an error.
+func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
+	c.issues.reset()
+	services, err := c.store.ListDesiredServices(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list desired services: %w", err)
+	}
+	staticSites, err := c.store.ListStaticSites(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list static sites: %w", err)
+	}
+	settings, err := c.store.GetIngressSettings(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: get ingress settings: %w", err)
+	}
+	if settings.TLSTerminatedUpstream {
+		ingress.DefaultACMEFailures().ClearAll()
+	}
+	authByDomain, err := c.domainBasicAuthByDomain(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain basic auth: %w", err)
+	}
+	maintenanceByDomain, err := c.domainMaintenanceSet(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain maintenance: %w", err)
+	}
+	maintenanceSettings, err := c.domainMaintenanceSettings(ctx, time.Now())
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain maintenance settings: %w", err)
+	}
+	tlsCertOverrides, err := c.domainTLSCertOverrides(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain tls certs: %w", err)
+	}
+	registrySettings, err := c.store.GetRegistrySettings(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: get registry settings: %w", err)
+	}
+	statusPageSettings, err := c.store.GetStatusPageSettings(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: get status page settings: %w", err)
+	}
+	wafByDomain, err := c.domainWAFByDomain(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain waf: %w", err)
+	}
+	redirectByDomain, err := c.domainRedirectByDomain(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain redirects: %w", err)
+	}
+	errorPagesByDomain, err := c.domainErrorPagesByDomain(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain error pages: %w", err)
+	}
+	hiddenList, err := c.store.ListHiddenDomains(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list hidden domains: %w", err)
+	}
+	hiddenByDomain := make(map[string]bool, len(hiddenList))
+	for _, d := range hiddenList {
+		hiddenByDomain[d] = true
+	}
+	bodyLimits, err := c.appBodyLimits(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list app body limits: %w", err)
+	}
+	lbConfigs, err := c.loadBalancerConfigs(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancers: %w", err)
+	}
+	lbConfigs = c.withImplicitBalancers(services, lbConfigs)
+	lbAdmin, err := c.lbAdminStates(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancer admin states: %w", err)
+	}
+	readyByService, err := c.applicationReadyByService(ctx, services)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: get application readiness: %w", err)
+	}
+	var lbPlans []lbPlan
+	var remoteBlocks []remoteBlock
+	now := time.Now()
+
+	var routes []ingress.ProxyRoute
+	var maintenanceRoutes []ingress.MaintenanceRoute
+	var redirectRoutes []ingress.RedirectRoute
+	var holdRoutes []ingress.HoldRoute
+	var wakeRoutes []ingress.WakeRoute
+	sleeping := c.sleepingApps(ctx)
+	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
+	canaries := c.activeCanaries(ctx, services)
+	envDomainSets := c.environmentDomainSets(ctx)
+	maintenanceSettings, err = c.applySpendCaps(ctx, services, envDomainSets, settings.FallbackDomainsDisabled, now, maintenanceByDomain, maintenanceSettings, wafByDomain)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: apply spend caps: %w", err)
+	}
+	for _, svc := range services {
+		if store.IsCanaryService(svc.Name) {
+			continue
+		}
+		configuredHosts := routedDomains(svc, envDomainSets)
+		hosts := configuredHosts
+		if len(hosts) == 0 {
+			// No operator-configured domain: fall back to a zero-config
+			// sslip.io URL when this control plane's own APP_PUBLIC_HOST
+			// is a real, publicly routable IP (ingress.FallbackDomain's
+			// own doc comment covers every case this degrades to "no
+			// route" for). Never persisted to svc.Domains: it's
+			// re-derived identically every pass from svc.Name and
+			// c.publicHost, and none of the domain-scoped features below
+			// (basic auth, WAF, BYO TLS, maintenance mode, the DNS-check
+			// endpoint) make sense for a hostname nobody configured.
+			if settings.FallbackDomainsDisabled {
+				continue
+			}
+			fallback, ok := ingress.FallbackDomain(c.publicHost, svc.Name)
+			if !ok {
+				continue
+			}
+			hosts = []string{fallback}
+		}
+		if owner, host, dup := firstDuplicateHost(svc.Name, hosts, claimedHosts); dup {
+			// store.SaveDesiredService now rejects a save
+			// that would create this situation for any service written
+			// after that change landed, so reaching this branch means
+			// either data written before the constraint existed, or a
+			// direct write that bypassed SaveDesiredService. Either way,
+			// this pass must still never build two routes for the same
+			// host: skip the loser and say so loudly, rather than
+			// silently letting Caddy's own last-match-wins matcher
+			// evaluation decide.
+			c.logger.WarnContext(ctx, "ingress: service claims a domain another service already routed this pass, skipping; internal/store's service_domains uniqueness constraint should prevent this for any service saved since that constraint landed, this is a defense-in-depth guard for pre-existing data",
+				slog.String("service", svc.Name),
+				slog.String("domain", host),
+				slog.String("already_routed_to", owner),
+			)
+			continue
+		}
+
+		// A domain in maintenance mode is routed unconditionally, with
+		// no dependency on dialForService: "intentionally unavailable
+		// right now" must hold even for a service with zero running
+		// containers, unlike every other route kind here, which needs a
+		// real backend to dial. Only the remaining, non-maintenance
+		// hosts still go through the ordinary dial-required path below.
+		maintenanceHosts, remainingHosts := splitMaintenanceHosts(hosts, maintenanceByDomain)
+		plainMaintenance, gatedMaintenance := splitMaintenanceBypass(svc, maintenanceHosts, maintenanceSettings)
+		for _, host := range maintenanceHosts {
+			claimedHosts[host] = svc.Name
+		}
+		maintenanceRoutes = append(maintenanceRoutes, maintenancePages(plainMaintenance, maintenanceSettings)...)
+
+		// A redirect, like maintenance mode, needs no running backend:
+		// checked second, after maintenance, so a domain with both
+		// configured stays down for maintenance rather than also
+		// redirecting. This is a deliberate precedence choice, not an
+		// arbitrary one: "temporarily unavailable" is a stronger,
+		// more urgent signal than "permanently moved" (maintenance mode
+		// is something an operator actively flips on to take a domain
+		// out of rotation right now, while a redirect can easily be a
+		// stale leftover from an earlier migration that nobody removed).
+		for _, host := range remainingHosts {
+			redirect, redirected := redirectByDomain[host]
+			if !redirected {
+				continue
+			}
+			claimedHosts[host] = svc.Name
+			redirectRoutes = append(redirectRoutes, ingress.RedirectRoute{
+				Hosts:      []string{host},
+				TargetURL:  redirect.TargetURL,
+				StatusCode: redirect.StatusCode,
+			})
+		}
+		activeHosts := excludeRedirectedHosts(remainingHosts, redirectByDomain)
+		if len(activeHosts) == 0 && len(gatedMaintenance) == 0 {
+			continue
+		}
+
+		if sleeping[svc.Name] && svc.Suspended {
+			maintenanceRoutes = append(maintenanceRoutes, maintenancePages(gatedMaintenance, maintenanceSettings)...)
+			if len(activeHosts) > 0 {
+				for _, host := range activeHosts {
+					claimedHosts[host] = svc.Name
+				}
+				wakeRoutes = append(wakeRoutes, c.wakeRoute(svc.Name, activeHosts))
+			}
+			continue
+		}
+
+		var lb *ingress.LBRoute
+		var dial string
+		var ok bool
+		if lbCfg, balanced := lbConfigs[svc.Name]; balanced {
+			plan := c.planLoadBalancer(ctx, svc, lbCfg, lbAdmin[svc.Name], now)
+			lbPlans = append(lbPlans, plan)
+			if lb, ok = plan.route, plan.route != nil; ok {
+				dial = lb.Upstreams[0]
+			}
+		} else if !c.isLocalNode(svc.NodeID) {
+			var why string
+			if dial, why, ok = c.dialForRemoteService(ctx, svc, readyByService[svc.Name]); !ok && why != "" {
+				remoteBlocks = append(remoteBlocks, remoteBlock{Service: svc.Name, NodeID: svc.NodeID, Hosts: activeHosts, Why: why})
+			}
+		} else {
+			dial, ok = c.dialForService(ctx, svc, readyByService[svc.Name])
+		}
+		if !ok {
+			// No backend to bypass to: the gated hosts still get the page.
+			maintenanceRoutes = append(maintenanceRoutes, maintenancePages(gatedMaintenance, maintenanceSettings)...)
+			if len(configuredHosts) > 0 {
+				var held []string
+				for _, host := range activeHosts {
+					if c.holds.Held(host, now) {
+						held = append(held, host)
+						claimedHosts[host] = svc.Name
+					}
+				}
+				if len(held) > 0 {
+					holdRoutes = append(holdRoutes, ingress.HoldRoute{Hosts: held})
+				}
+			}
+			continue
+		}
+		if lb == nil {
+			lb = c.canaryRoute(ctx, dial, canaries[svc.Name], readyByService)
+		}
+		for _, host := range activeHosts {
+			claimedHosts[host] = svc.Name
+			c.holds.Routed(host, now)
+		}
+		svcRoutes := c.routesForService(ctx, activeHosts, dial, authByDomain, wafByDomain, errorPagesByDomain, hiddenByDomain)
+		gatedRoutes, fallback := c.gatedMaintenanceRoutes(ctx, svc, gatedMaintenance, dial, maintenanceSettings, domainFeatures{
+			auth: authByDomain, waf: wafByDomain, errorPages: errorPagesByDomain, hidden: hiddenByDomain,
+		})
+		maintenanceRoutes = append(maintenanceRoutes, maintenancePages(fallback, maintenanceSettings)...)
+		svcRoutes = append(svcRoutes, gatedRoutes...)
+		for i := range svcRoutes {
+			svcRoutes[i].LB = lb
+			svcRoutes[i].MaxBodyBytes = bodyLimits[svc.Name]
+		}
+		routes = append(routes, svcRoutes...)
+	}
+
+	standalonePlan, err := c.standaloneRoutes(ctx, services, readyByService, claimedHosts, domainFeatures{
+		auth: authByDomain, maintenance: maintenanceByDomain, redirects: redirectByDomain,
+		waf: wafByDomain, errorPages: errorPagesByDomain, hidden: hiddenByDomain,
+		maintenanceSettings: maintenanceSettings,
+	})
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list standalone domains: %w", err)
+	}
+	routes = append(routes, standalonePlan.routes...)
+	maintenanceRoutes = append(maintenanceRoutes, standalonePlan.maintenance...)
+	redirectRoutes = append(redirectRoutes, standalonePlan.redirects...)
+
+	// Per-domain traffic controls (controller_policies.go), after every
+	// app route exists so forwarders can resolve other apps' dials.
+	if routes, err = c.applyTrafficPolicies(ctx, routes, claimedHosts, settings, tlsCertOverrides, sleeping); err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain traffic policies: %w", err)
+	}
+	if routes, err = c.applyAuthGates(ctx, routes); err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain auth gates: %w", err)
+	}
+
+	var staticRoutes []ingress.StaticRoute
+	for _, site := range staticSites {
+		if len(site.Domains) == 0 {
+			continue
+		}
+		if owner, host, dup := firstDuplicateHost(site.Name, site.Domains, claimedHosts); dup {
+			// Mirrors the container-service guard above: store.SaveStaticSite
+			// (migrations/0015) already rejects a save that would create
+			// this situation, this is the same defense-in-depth for
+			// pre-existing data, now covering the cross-table case too (a
+			// static site and a container service claiming the same
+			// host).
+			c.logger.WarnContext(ctx, "ingress: static site claims a domain another service or static site already routed this pass, skipping",
+				slog.String("static_site", site.Name),
+				slog.String("domain", host),
+				slog.String("already_routed_to", owner),
+			)
+			continue
+		}
+		for _, host := range site.Domains {
+			claimedHosts[host] = site.Name
+		}
+		staticRoutes = append(staticRoutes, ingress.StaticRoute{Hosts: site.Domains, RootDir: site.RootDir})
+	}
+
+	// Platform primary domain (store.IngressSettings.PrimaryDomain): one
+	// more reverse-proxy route to the control plane's own dashboard,
+	// participating in the exact same claimedHosts dedup and the exact
+	// same TLS automation policy set as every app/static-site route
+	// above (ACME if enabled, internal issuer otherwise). Requires both
+	// a configured PrimaryDomain and WithDashboardDial having been set;
+	// either missing means no dashboard route this pass, the same
+	// "fails closed, not an error" shape a service with no running
+	// container already has.
+	if settings.PrimaryDomain != "" && c.dashboardDial != "" {
+		if owner, host, dup := firstDuplicateHost(dashboardRouteOwner, []string{settings.PrimaryDomain}, claimedHosts); dup {
+			c.logger.WarnContext(ctx, "ingress: platform primary domain is already routed to a service or static site, skipping the dashboard route",
+				slog.String("domain", host),
+				slog.String("already_routed_to", owner),
+			)
+		} else {
+			claimedHosts[settings.PrimaryDomain] = dashboardRouteOwner
+			routes = append(routes, ingress.ProxyRoute{
+				Hosts:       []string{settings.PrimaryDomain},
+				BackendDial: c.dashboardDial,
+			})
+		}
+	}
+
+	// Built-in registry (store.RegistrySettings): one more reverse-proxy
+	// route, the exact same shape the dashboard route above has (plain
+	// TLS termination, no basic_auth handler, since the registry
+	// container enforces its own htpasswd auth). Requires both a
+	// configured Host and WithRegistryDial having been set; either
+	// missing means no registry route this pass, the same "fails closed"
+	// shape the dashboard route already establishes.
+	if registrySettings.Enabled && registrySettings.Host != "" && c.registryDial != "" {
+		if owner, host, dup := firstDuplicateHost(registryRouteOwner, []string{registrySettings.Host}, claimedHosts); dup {
+			c.logger.WarnContext(ctx, "ingress: built-in registry host is already routed to a service or static site, skipping the registry route",
+				slog.String("domain", host),
+				slog.String("already_routed_to", owner),
+			)
+		} else {
+			claimedHosts[registrySettings.Host] = registryRouteOwner
+			routes = append(routes, ingress.ProxyRoute{
+				Hosts:       []string{registrySettings.Host},
+				BackendDial: c.registryDial,
+			})
+		}
+	}
+
+	// Status page custom domain: dials the dashboard backend, since
+	// StatusHostHandler disambiguates by Host within this same process.
+	if statusPageSettings.Enabled && statusPageSettings.CustomDomain != "" && c.dashboardDial != "" {
+		if owner, host, dup := firstDuplicateHost(statusPageRouteOwner, []string{statusPageSettings.CustomDomain}, claimedHosts); dup {
+			c.logger.WarnContext(ctx, "ingress: status page custom domain is already routed to a service or static site, skipping the status page route",
+				slog.String("domain", host),
+				slog.String("already_routed_to", owner),
+			)
+		} else {
+			claimedHosts[statusPageSettings.CustomDomain] = statusPageRouteOwner
+			routes = append(routes, ingress.ProxyRoute{
+				Hosts:       []string{statusPageSettings.CustomDomain},
+				BackendDial: c.dashboardDial,
+			})
+		}
+	}
+
+	modelRoutes, err := c.modelRoutes(ctx, claimedHosts)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list model hosts: %w", err)
+	}
+	routes = append(routes, modelRoutes...)
+
+	streamRoutes, err := c.streamRoutes(ctx, services)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list app streams: %w", err)
+	}
+
+	dnsProvider := c.resolveDNSProvider(ctx)
+	if dnsProvider == nil && !settings.TLSTerminatedUpstream && settings.EffectiveACMEEnabled() {
+		for host := range claimedHosts {
+			if ingress.IsWildcardDomain(host) {
+				c.issues.note(host, store.DomainCondDNS01Unavailable, store.DomainConditionDegraded,
+					"wildcard certificate needs a DNS provider for DNS-01 and none is enabled, so only HTTP-01 is attempted and will fail for the wildcard")
+			}
+		}
+	}
+	for host, why := range standalonePlan.unrouted {
+		if !c.issues.has(host, store.DomainConditionDropped) {
+			c.issues.note(host, store.DomainCondTargetUnavailable, store.DomainConditionDropped, why)
+		}
+	}
+
+	cfg, err := ingress.BuildRoutesConfig(ingress.RoutesOptions{
+		ServerName:           c.serverName,
+		ListenAddr:           c.listenAddr,
+		HTTPPort:             httpPortFromAddr(c.httpListenAddr),
+		HTTPRedirect:         c.httpRedirect && !settings.TLSTerminatedUpstream,
+		FallbackCertLifetime: fallbackLifetimeString(c.fallbackCertLifetime),
+		PlainHTTP:            settings.TLSTerminatedUpstream,
+		Routes:               routes,
+		StaticRoutes:         staticRoutes,
+		MaintenanceRoutes:    maintenanceRoutes,
+		HoldRoutes:           holdRoutes,
+		WakeRoutes:           wakeRoutes,
+		Inherited:            c.inherited,
+		Hardening:            c.hardening,
+		RedirectRoutes:       redirectRoutes,
+		RouteCheck:           c.routeCheck,
+		TLS:                  true,
+		AdminListen:          c.adminListen,
+		StorageDir:           c.storageDir,
+		CertStorage:          c.certStorage,
+		ACMEEnabled:          settings.EffectiveACMEEnabled(),
+		ACMEEmail:            settings.ACMEEmail,
+		ACMEDirectoryURL:     settings.ACMEDirectoryURL,
+		DNSProvider:          dnsProvider,
+		TLSCertificates:      tlsCertOverrides,
+		RequestStats:         c.requestStats,
+		Firewall:             c.firewall,
+		Streams:              streamRoutes,
+	})
+	if err != nil {
+		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)
+	}
+
+	c.publishRequestHostOwners(claimedHosts)
+	if err := c.driver.Apply(ctx, cfg); err != nil {
+		return notReady("ApplyFailed", err), fmt.Errorf("ingress: apply config: %w", err)
+	}
+
+	if c.servedHosts != nil {
+		if err := c.servedHosts.ReplaceServedHosts(ctx, ingress.ServedHosts(cfg)); err != nil {
+			slog.Warn("ingress: record served hosts failed", slog.String("error", err.Error()))
+		}
+	}
+
+	c.recordLoadBalancers(lbPlans, lbConfigs)
+
+	total := len(routes) + len(staticRoutes) + len(maintenanceRoutes) + len(redirectRoutes)
+	reason := fmt.Sprintf("Routed%dServices", total)
+	message := fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly, %d in maintenance mode, %d redirected)", total, len(routes), len(staticRoutes), len(maintenanceRoutes), len(redirectRoutes))
+	if len(holdRoutes) > 0 {
+		message += fmt.Sprintf(", %d answering 503 while their backend restarts", len(holdRoutes))
+	}
+	conditions := []reconcile.Condition{{
+		Type:    reconcile.ConditionTypeReady,
+		Status:  reconcile.ConditionTrue,
+		Reason:  reason,
+		Message: message,
+	}}
+	c.recordDomainConditions(ctx)
+	if dropped := c.issues.droppedHosts(); len(dropped) > 0 {
+		conditions[0].Status = reconcile.ConditionFalse
+		conditions[0].Reason = reasonDomainsDropped
+		conditions[0].Message = fmt.Sprintf("%d domain(s) are not routed this pass (%s); %s", len(dropped), strings.Join(dropped, ", "), message)
+	}
+	if cond := lbCondition(lbPlans); cond != nil {
+		conditions = append(conditions, *cond)
+	}
+	if cond := crossNodeIngressCondition(remoteBlocks); cond != nil {
+		conditions = append(conditions, *cond)
+	}
+	if cond := standalonePlan.condition(); cond != nil {
+		conditions = append(conditions, *cond)
+	}
+	return reconcile.Result{Conditions: conditions}, nil
+}
+
+// httpPortFromAddr extracts the numeric port from addr (a Caddy-style
+// network address, e.g. ":80" or "0.0.0.0:8080") for
+// ingress.RoutesOptions.HTTPPort. An unparseable addr degrades to 0
+// (ingress.RoutesOptions.HTTPPort's own "keep Caddy's default" zero
+// value) rather than erroring: this is best-effort port derivation, not
+// address validation, which WithHTTPListenAddr's caller already owns.
+func httpPortFromAddr(addr string) int {
+	_, portStr, err := net.SplitHostPort(addr)
+	if err != nil {
+		return 0
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return 0
+	}
+	return port
+}
+
+// firstDuplicateHost reports the first of domains already present in
+// claimed (owned by a resource other than name), if any. Shared by both
+// container services and static sites (Reconcile calls it once per
+// resource kind against the same claimedHosts map), since the conflict
+// it guards against, migrations/0015's own comment explains, is no
+// longer confined to one table: a static site and a container service
+// must never both route the same host either. See Reconcile's own
+// comment for why this check exists as a defense-in-depth guard on top
+// of store.SaveDesiredService's and store.SaveStaticSite's own
+// domain-uniqueness enforcement.
+func firstDuplicateHost(name string, domains []string, claimed map[string]string) (owner, host string, dup bool) {
+	for _, h := range domains {
+		if o, ok := claimed[h]; ok && o != name {
+			return o, h, true
+		}
+	}
+	return "", "", false
+}
+
+// resolveDNSProvider returns the ACME DNS-01 provider wildcard domains
+// should use this reconcile pass, or nil if no provider is both
+// configured and enabled. Cloudflare takes precedence when both are
+// enabled at once: see route53Creds's own doc comment.
+func (c *Controller) resolveDNSProvider(ctx context.Context) ingress.DNS01Provider {
+	if p := c.resolveCloudflareDNSProvider(ctx); p != nil {
+		return p
+	}
+	return c.resolveRoute53DNSProvider(ctx)
+}
+
+// resolveCloudflareDNSProvider returns the Cloudflare DNS-01 provider for
+// this reconcile pass, or nil if WithCloudflareDNSTokens was never set,
+// the operator hasn't enabled it (store.CloudflareDNSSettings.Enabled),
+// or resolving the token fails. Failing to nil rather than returning an
+// error keeps a token problem from blocking the whole ingress reconcile:
+// it only means wildcard hosts fall back to whatever the non-wildcard
+// policy already does with them this pass, exactly as if this feature
+// were never configured.
+func (c *Controller) resolveCloudflareDNSProvider(ctx context.Context) ingress.DNS01Provider {
+	if c.dnsTokens == nil {
+		return nil
+	}
+	dnsSettings, err := c.store.GetCloudflareDNSSettings(ctx)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: get cloudflare dns settings failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
+		return nil
+	}
+	if !dnsSettings.Enabled {
+		return nil
+	}
+	token, err := c.dnsTokens.Resolve(ctx, store.CloudflareDNSSecretsKey(), store.CloudflareDNSTokenEnvKey)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: resolve cloudflare dns token failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
+		return nil
+	}
+	if token == "" {
+		return nil
+	}
+	return ingress.CloudflareDNSProvider{Name: "cloudflare", APIToken: token}
+}
+
+// resolveRoute53DNSProvider returns the Route53 DNS-01 provider for this
+// reconcile pass, or nil if WithRoute53DNSCredentials was never set, the
+// operator hasn't enabled it (store.Route53DNSSettings.Enabled), or
+// resolving either half of the credential pair fails. Mirrors
+// resolveCloudflareDNSProvider's own "fail to nil, never block the whole
+// reconcile" shape.
+func (c *Controller) resolveRoute53DNSProvider(ctx context.Context) ingress.DNS01Provider {
+	if c.route53Creds == nil {
+		return nil
+	}
+	settings, err := c.store.GetRoute53DNSSettings(ctx)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: get route53 dns settings failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
+		return nil
+	}
+	if !settings.Enabled {
+		return nil
+	}
+	key := store.Route53DNSSecretsKey()
+	accessKeyID, err := c.route53Creds.Resolve(ctx, key, store.Route53DNSAccessKeyIDEnvKey)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: resolve route53 dns access key id failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
+		return nil
+	}
+	secretAccessKey, err := c.route53Creds.Resolve(ctx, key, store.Route53DNSSecretAccessKeyEnvKey)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: resolve route53 dns secret access key failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
+		return nil
+	}
+	if accessKeyID == "" || secretAccessKey == "" {
+		return nil
+	}
+	return ingress.Route53DNSProvider{
+		Name:            "route53",
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+		Region:          settings.Region,
+		HostedZoneID:    settings.HostedZoneID,
+	}
+}
+
+// dialForService resolves svc's dial address. targetReady gates the
+// current desired container on the application controller's Ready
+// condition, not just Running+ports (F-002).
+func (c *Controller) dialForService(ctx context.Context, svc store.DesiredService, targetReady bool) (string, bool) {
+	target := application.ContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce)
+
+	state, err := c.runtime.InspectByName(ctx, target)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: inspecting service container failed, keeping the last known backend",
+			slog.String("service", svc.Name), slog.String("container", target), slog.String("error", err.Error()))
+		if dial, ok := c.lastDial.Load(svc.Name); ok {
+			return dial.(string), true //nolint:errcheck,forcetypeassert // only strings are stored
+		}
+	} else if dial, ok := dialAddr(state); ok && targetReady {
+		c.lastDial.Store(svc.Name, dial)
+		return dial, true
+	}
+
+	if dial, ok := c.dialPreviousRelease(ctx, svc.Name, target); ok {
+		c.lastDial.Store(svc.Name, dial)
+		return dial, true
+	}
+
+	c.logger.DebugContext(ctx, "ingress: no ready backend for service, skipping",
+		slog.String("service", svc.Name), slog.String("container", target))
+	return "", false
+}
+
+// streamRoutes builds one ingress.StreamRoute per app stream
+// (store.AppStream) whose owning service currently has a running
+// container publishing the stream's container port. A stream with no
+// such backend yet (mid-deploy, never deployed, or the owning service
+// was deleted without its streams being cleaned up) is left out of this
+// pass, not a reconcile failure, mirroring dialForService's own "skip,
+// pick it up on a later pass" shape for HTTP routes.
+func (c *Controller) streamRoutes(ctx context.Context, services []store.DesiredService) ([]ingress.StreamRoute, error) {
+	streams, err := c.store.ListAllAppStreams(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(streams) == 0 {
+		return nil, nil
+	}
+	byName := make(map[string]*store.DesiredService, len(services))
+	for i := range services {
+		byName[services[i].Name] = &services[i]
+	}
+	var routes []ingress.StreamRoute
+	for _, s := range streams {
+		svc, ok := byName[s.ServiceName]
+		if !ok {
+			c.logger.WarnContext(ctx, "ingress: app stream targets a service that no longer exists, skipping",
+				slog.String("stream_id", s.ID), slog.String("service", s.ServiceName))
+			continue
+		}
+		dial, ok := c.dialForStreamPort(ctx, svc, s.ContainerPort)
+		if !ok {
+			continue
+		}
+		routes = append(routes, ingress.StreamRoute{
+			ListenAddr:  ":" + strconv.Itoa(s.HostPort),
+			BackendDial: dial,
+		})
+	}
+	return routes, nil
+}
+
+// dialForStreamPort resolves svc's currently running container's
+// published host port for containerPort specifically, unlike
+// dialForService, which only ever reads the service's main (first)
+// published port.
+func (c *Controller) dialForStreamPort(ctx context.Context, svc *store.DesiredService, containerPort int) (string, bool) {
+	target := application.ContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce)
+	state, err := c.runtime.InspectByName(ctx, target)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: inspecting service container for a stream failed, skipping for this pass",
+			slog.String("service", svc.Name), slog.String("container", target), slog.String("error", err.Error()))
+		return "", false
+	}
+	if state == nil || !state.Running {
+		return "", false
+	}
+	for _, p := range state.Ports {
+		if p.ContainerPort == containerPort {
+			return "127.0.0.1:" + strconv.Itoa(p.HostPort), true
+		}
+	}
+	return "", false
+}
+
+func dialAddr(state *docker.ContainerState) (string, bool) {
+	if state == nil || !state.Running || len(state.Ports) == 0 {
+		return "", false
+	}
+	return "127.0.0.1:" + strconv.Itoa(state.Ports[0].HostPort), true
+}
+
+// dialPreviousRelease finds another running, ported container for
+// serviceName besides exclude, to keep serving while exclude isn't ready.
+func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName, exclude string) (string, bool) {
+	containers, err := c.runtime.ListByPrefix(ctx, serviceName+"-")
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: list previous release containers failed",
+			slog.String("service", serviceName), slog.String("error", err.Error()))
+		if dial, ok := c.lastDial.Load(serviceName); ok {
+			return dial.(string), true //nolint:errcheck,forcetypeassert // only strings are stored
+		}
+		return "", false
+	}
+	var best *docker.ContainerState
+	for i := range containers {
+		cs := &containers[i]
+		if cs.Name == exclude || !cs.Running || len(cs.Ports) == 0 {
+			continue
+		}
+		if best == nil || cs.Created.After(best.Created) {
+			best = cs
+		}
+	}
+	if best == nil {
+		return "", false
+	}
+	return dialAddr(best)
+}
+
+// applicationReadyByService batches the application controller's Ready
+// condition per service, once per pass rather than once per dial.
+func (c *Controller) applicationReadyByService(ctx context.Context, services []store.DesiredService) (map[string]bool, error) {
+	names := make([]string, len(services))
+	for i, svc := range services {
+		names[i] = application.ControllerName(svc.Name)
+	}
+	conditions, err := c.store.GetConditionsForControllers(ctx, names)
+	if err != nil {
+		return nil, err
+	}
+	ready := make(map[string]bool, len(services))
+	for _, svc := range services {
+		for _, cond := range conditions[application.ControllerName(svc.Name)] {
+			if cond.Type == reconcile.ConditionTypeReady && cond.Status == reconcile.ConditionTrue {
+				ready[svc.Name] = true
+				break
+			}
+		}
+	}
+	return ready, nil
+}
+
+// domainBasicAuthByDomain returns every store.DomainBasicAuth row keyed
+// by domain, for routesForService to look up in O(1) per host.
+func (c *Controller) domainBasicAuthByDomain(ctx context.Context) (map[string]store.DomainBasicAuth, error) {
+	rows, err := c.store.ListDomainBasicAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+	byDomain := make(map[string]store.DomainBasicAuth, len(rows))
+	for _, row := range rows {
+		byDomain[row.Domain] = row
+	}
+	return byDomain, nil
+}
+
+// domainMaintenanceSet returns the set of domains currently in
+// maintenance mode, for the services loop to check per host in O(1),
+// mirroring domainBasicAuthByDomain's identical shape for a different
+// per-domain toggle.
+func (c *Controller) domainMaintenanceSet(ctx context.Context) (map[string]bool, error) {
+	domains, err := c.store.ListDomainMaintenance(ctx)
+	if err != nil {
+		return nil, err
+	}
+	set := make(map[string]bool, len(domains))
+	for _, d := range domains {
+		set[d] = true
+	}
+	return set, nil
+}
+
+// splitMaintenanceHosts partitions domains into the ones currently in
+// maintenance mode and the ones that still need a real backend routed
+// to them.
+func splitMaintenanceHosts(domains []string, maintenanceByDomain map[string]bool) (maintenance, active []string) {
+	for _, host := range domains {
+		if maintenanceByDomain[host] {
+			maintenance = append(maintenance, host)
+		} else {
+			active = append(active, host)
+		}
+	}
+	return maintenance, active
+}
+
+// domainRedirectByDomain returns every store.DomainRedirect row keyed by
+// domain, mirroring domainBasicAuthByDomain's identical shape for a
+// different per-domain toggle.
+func (c *Controller) domainRedirectByDomain(ctx context.Context) (map[string]store.DomainRedirect, error) {
+	rows, err := c.store.ListDomainRedirects(ctx)
+	if err != nil {
+		return nil, err
+	}
+	byDomain := make(map[string]store.DomainRedirect, len(rows))
+	for _, row := range rows {
+		byDomain[row.Domain] = row
+	}
+	return byDomain, nil
+}
+
+// excludeRedirectedHosts returns the subset of hosts with no entry in
+// redirectByDomain: the hosts that still need a real backend dialed,
+// after maintenance and redirect hosts have both been carved out.
+func excludeRedirectedHosts(hosts []string, redirectByDomain map[string]store.DomainRedirect) []string {
+	var out []string
+	for _, host := range hosts {
+		if _, redirected := redirectByDomain[host]; !redirected {
+			out = append(out, host)
+		}
+	}
+	return out
+}
+
+// routesForService builds one ProxyRoute per entry in hosts that has
+// basic auth and/or WAF/rate-limit configured (each needs its own Handle
+// chain, since Caddy has no notion of "this host within a shared route
+// is exempt"), plus one shared ProxyRoute carrying every host that has
+// neither. A service with no customized domains reproduces this
+// controller's behavior before either feature existed exactly: a single
+// route with every host. hosts is the caller's already-filtered subset
+// of the service's own domains (Reconcile excludes any domain in
+// maintenance mode before calling this), not necessarily svc.Domains
+// verbatim.
+func (c *Controller) routesForService(ctx context.Context, hosts []string, dial string, authByDomain map[string]store.DomainBasicAuth, wafByDomain map[string]store.DomainWAF, errorPagesByDomain map[string][]store.DomainErrorPage, hiddenByDomain map[string]bool) []ingress.ProxyRoute {
+	var open []string
+	var routes []ingress.ProxyRoute
+	for _, host := range hosts {
+		var account *ingress.BasicAuthAccount
+		if auth, protected := authByDomain[host]; protected {
+			resolved, ok := c.resolveBasicAuthAccount(ctx, host, auth)
+			if !ok {
+				// A domain configured for basic auth that this pass cannot
+				// resolve a password for (no resolver wired, or the secret
+				// itself failed to resolve) is left unrouted this pass
+				// rather than served unprotected: failing a security
+				// control closed is worse to leave silent than a domain
+				// being briefly unreachable, unlike dialForService's own
+				// "no backend yet" cases above, which fail open to "just
+				// not routed yet."
+				continue
+			}
+			account = resolved
+		}
+
+		waf := domainWAFConfig(wafByDomain[host])
+		errorPages := domainErrorPagesConfig(errorPagesByDomain[host])
+		if account == nil && waf == nil && len(errorPages) == 0 && !hiddenByDomain[host] {
+			open = append(open, host)
+			continue
+		}
+		routes = append(routes, ingress.ProxyRoute{Hosts: []string{host}, BackendDial: dial, BasicAuth: account, WAF: waf, ErrorPages: errorPages, Hidden: hiddenByDomain[host]})
+	}
+	if len(open) > 0 {
+		routes = append(routes, ingress.ProxyRoute{Hosts: open, BackendDial: dial})
+	}
+	return routes
+}
+
+// domainWAFConfig converts row into an ingress.WAFConfig, or nil when
+// row has neither the WAF nor rate limiting turned on: the zero value of
+// store.DomainWAF (what wafByDomain[host] returns for any host with no
+// row at all) always takes this nil branch, reproducing this
+// controller's behavior before this feature existed exactly.
+func domainWAFConfig(row store.DomainWAF) *ingress.WAFConfig {
+	if !row.WAFEnabled && row.RateLimitRPS <= 0 {
+		return nil
+	}
+	return &ingress.WAFConfig{
+		Enabled:        row.WAFEnabled,
+		Blocking:       row.WAFMode == store.DomainWAFModeBlock,
+		RateLimitRPS:   row.RateLimitRPS,
+		RateLimitBurst: row.RateLimitBurst,
+	}
+}
+
+// domainWAFByDomain returns every store.DomainWAF row keyed by domain,
+// mirroring domainBasicAuthByDomain's identical shape for a different
+// per-domain toggle.
+func (c *Controller) domainWAFByDomain(ctx context.Context) (map[string]store.DomainWAF, error) {
+	rows, err := c.store.ListDomainWAF(ctx)
+	if err != nil {
+		return nil, err
+	}
+	byDomain := make(map[string]store.DomainWAF, len(rows))
+	for _, row := range rows {
+		byDomain[row.Domain] = row
+	}
+	return byDomain, nil
+}
+
+// domainErrorPagesConfig converts rows into []ingress.ErrorPage, or nil
+// when rows is empty: the zero value of errorPagesByDomain[host] (what
+// any host with no configured error pages gets) always takes this nil
+// branch, reproducing this controller's behavior before this feature
+// existed exactly.
+func domainErrorPagesConfig(rows []store.DomainErrorPage) []ingress.ErrorPage {
+	if len(rows) == 0 {
+		return nil
+	}
+	pages := make([]ingress.ErrorPage, len(rows))
+	for i, row := range rows {
+		pages[i] = ingress.ErrorPage{StatusCode: row.StatusCode, Body: row.Body}
+	}
+	return pages
+}
+
+// domainErrorPagesByDomain returns every store.DomainErrorPage row
+// grouped by domain, mirroring domainWAFByDomain's shape for a
+// per-domain collection instead of a single row.
+func (c *Controller) domainErrorPagesByDomain(ctx context.Context) (map[string][]store.DomainErrorPage, error) {
+	rows, err := c.store.ListAllDomainErrorPages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	byDomain := make(map[string][]store.DomainErrorPage, len(rows))
+	for _, row := range rows {
+		byDomain[row.Domain] = append(byDomain[row.Domain], row)
+	}
+	return byDomain, nil
+}
+
+// resolveBasicAuthAccount resolves domain's plaintext password through
+// c.basicAuthSecrets and hashes it with bcrypt (the same algorithm
+// internal/api already uses for user login passwords), fresh every
+// call: this controller never persists a hash across reconcile passes,
+// the same "never cache, re-derive from current state" principle every
+// other Reconcile input already follows.
+func (c *Controller) resolveBasicAuthAccount(ctx context.Context, domain string, auth store.DomainBasicAuth) (*ingress.BasicAuthAccount, bool) {
+	const dropMsg = "basic auth password could not be read or hashed, so the domain is not routed rather than served unprotected: set the password again"
+	if c.basicAuthSecrets == nil {
+		c.issues.note(domain, store.DomainCondBasicAuthUnresolved, store.DomainConditionDropped, "basic auth is configured but no master key is set, so the domain is not routed rather than served unprotected")
+		return nil, false
+	}
+	password, err := c.basicAuthSecrets.Resolve(ctx, store.DomainBasicAuthSecretsKey(domain), store.DomainBasicAuthPasswordEnvKey)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: resolve domain basic auth password failed, domain will not be routed this pass",
+			slog.String("domain", domain), slog.String("error", err.Error()))
+		c.issues.note(domain, store.DomainCondBasicAuthUnresolved, store.DomainConditionDropped, dropMsg)
+		return nil, false
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: hash domain basic auth password failed, domain will not be routed this pass",
+			slog.String("domain", domain), slog.String("error", err.Error()))
+		c.issues.note(domain, store.DomainCondBasicAuthUnresolved, store.DomainConditionDropped, dropMsg)
+		return nil, false
+	}
+	return &ingress.BasicAuthAccount{Username: auth.Username, Password: string(hash)}, true
+}
+
+// domainTLSCertOverrides resolves every store.DomainTLSCert row into an
+// ingress.TLSCertificateOverride, fresh every call: this controller
+// never persists decrypted certificate material across reconcile
+// passes, the same "never cache, re-derive from current state" principle
+// resolveBasicAuthAccount already follows. A domain whose certificate or
+// key this pass cannot resolve (no resolver wired, or the secret itself
+// failed to resolve) is simply omitted, not an error: see
+// WithDomainTLSCertSecrets's doc comment for why that's a fail-open
+// choice here, unlike basic auth's fail-closed one.
+func (c *Controller) domainTLSCertOverrides(ctx context.Context) ([]ingress.TLSCertificateOverride, error) {
+	rows, err := c.store.ListDomainTLSCerts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	if c.tlsCertSecrets == nil {
+		for _, row := range rows {
+			c.issues.note(row.Domain, store.DomainCondCustomCertUnresolved, store.DomainConditionDegraded,
+				"a custom certificate is uploaded but no master key is set, so automatic issuance is used instead")
+		}
+		return nil, nil
+	}
+
+	const customCertMsg = "the uploaded certificate or key could not be read, so automatic issuance is used instead: upload the certificate again"
+	overrides := make([]ingress.TLSCertificateOverride, 0, len(rows))
+	for _, row := range rows {
+		key := store.DomainTLSCertSecretsKey(row.Domain)
+		certPEM, err := c.tlsCertSecrets.Resolve(ctx, key, store.DomainTLSCertCertificateEnvKey)
+		if err != nil {
+			c.logger.WarnContext(ctx, "ingress: resolve domain tls certificate failed, domain falls back to automatic issuance this pass",
+				slog.String("domain", row.Domain), slog.String("error", err.Error()))
+			c.issues.note(row.Domain, store.DomainCondCustomCertUnresolved, store.DomainConditionDegraded, customCertMsg)
+			continue
+		}
+		keyPEM, err := c.tlsCertSecrets.Resolve(ctx, key, store.DomainTLSCertPrivateKeyEnvKey)
+		if err != nil {
+			c.logger.WarnContext(ctx, "ingress: resolve domain tls private key failed, domain falls back to automatic issuance this pass",
+				slog.String("domain", row.Domain), slog.String("error", err.Error()))
+			c.issues.note(row.Domain, store.DomainCondCustomCertUnresolved, store.DomainConditionDegraded, customCertMsg)
+			continue
+		}
+		overrides = append(overrides, ingress.TLSCertificateOverride{Host: row.Domain, CertPEM: certPEM, KeyPEM: keyPEM})
+	}
+	return overrides, nil
+}
+
+func notReady(reason string, err error) reconcile.Result {
+	msg := ""
+	if err != nil {
+		msg = err.Error()
+	}
+	return reconcile.Result{Conditions: []reconcile.Condition{{
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
+	}}}
+}
+
+func fallbackLifetimeString(d time.Duration) string {
+	if d <= 0 {
+		return ""
+	}
+	return d.String()
+}

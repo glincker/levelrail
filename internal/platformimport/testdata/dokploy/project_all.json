@@ -1,0 +1,14 @@
+[
+  {
+    "projectId": "p1", "name": "Shop",
+    "applications": [{"applicationId": "a-gh", "name": "storefront"}, {"applicationId": "a-img", "name": "worker"}, {"applicationId": "a-drop", "name": "legacy"}],
+    "compose": [{"composeId": "c1", "name": "monitoring"}],
+    "postgres": [{"postgresId": "pg1", "name": "shop-db", "dockerImage": "postgres:15"}],
+    "mysql": [], "mariadb": [], "mongo": [{"mongoId": "m1", "name": "events", "dockerImage": "mongo:7"}],
+    "redis": [{"redisId": "r1", "name": "sessions", "dockerImage": "redis:7"}]
+  },
+  {
+    "projectId": "p2", "name": "Nested",
+    "environments": [{"applications": [{"applicationId": "a-gh", "name": "storefront-2"}], "compose": [], "postgres": [], "mysql": [], "mariadb": [], "mongo": [], "redis": []}]
+  }
+]

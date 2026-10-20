@@ -1,0 +1,58 @@
+{
+  "darwin/off": {
+    "mode": "off",
+    "rss_mb": 162.56084442138672,
+    "goroutines": 118,
+    "threads": 0,
+    "cpu_percent": 0.14880594068943162,
+    "loops": 38
+  },
+  "darwin/on": {
+    "mode": "on",
+    "rss_mb": 166.71317291259766,
+    "goroutines": 122,
+    "threads": 0,
+    "cpu_percent": 0.14256692576973287,
+    "loops": 40
+  },
+  "darwin/profile-minimal": {
+    "mode": "profile-minimal",
+    "rss_mb": 161.99442291259766,
+    "goroutines": 116,
+    "threads": 0,
+    "cpu_percent": 0.1338431787381025,
+    "loops": 35
+  },
+  "darwin/profile-standard": {
+    "mode": "profile-standard",
+    "rss_mb": 162.72879791259766,
+    "goroutines": 118,
+    "threads": 0,
+    "cpu_percent": 0.12871649859898632,
+    "loops": 38
+  },
+  "darwin/profile-suite": {
+    "mode": "profile-suite",
+    "rss_mb": 166.49442291259766,
+    "goroutines": 128,
+    "threads": 0,
+    "cpu_percent": 0.15038746832352176,
+    "loops": 41
+  },
+  "linux/off": {
+    "mode": "off",
+    "rss_mb": 231.640625,
+    "goroutines": 100,
+    "threads": 8,
+    "cpu_percent": 0.40765964143764116,
+    "loops": 36
+  },
+  "linux/on": {
+    "mode": "on",
+    "rss_mb": 232.93359375,
+    "goroutines": 104,
+    "threads": 8,
+    "cpu_percent": 0.39523258458121,
+    "loops": 38
+  }
+}

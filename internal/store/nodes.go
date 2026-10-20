@@ -1,0 +1,498 @@
+package store
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"time"
+)
+
+// NodeStatus is a node's current lifecycle state.
+type NodeStatus string
+
+// The four states a node can be in. Pending is the state a newly
+// enrolled node starts in (join token exchanged, no heartbeat received
+// yet); Online/Offline track heartbeat presence; Cordoned means
+// "unschedulable for new placements, but not evacuated", a distinct
+// axis from Online/Offline, not a replacement for it: a cordoned node
+// can still be online.
+const (
+	NodeStatusPending NodeStatus = "pending"
+	NodeStatusOnline  NodeStatus = "online"
+	NodeStatusOffline NodeStatus = "offline"
+	// NodeStatusCordoned is currently unused: cordon's real
+	// backing state is the Schedulable field / schedulable column
+	// (migration 0010), a separate axis from Status, exactly matching
+	// this constant's own original doc comment promise that a cordoned
+	// node "can still be online." Left defined rather than removed,
+	// since nothing ever set it and removing an exported
+	// constant is a needless breaking change for zero benefit.
+	NodeStatusCordoned NodeStatus = "cordoned"
+)
+
+// Node is one managed machine in the fleet. A row is
+// created by the join-token enrollment flow, not by this package's own
+// CRUD surface: SaveNode exists as a real, directly testable primitive
+// for that future enrollment code to call, but nothing in
+// internal/api wires an operator-facing "create a node" HTTP route to it
+// yet, deliberately, per this migration's own doc comment.
+type Node struct {
+	ID              string
+	Name            string
+	Address         string
+	Status          NodeStatus
+	CertFingerprint string
+	JoinedAt        *time.Time
+	LastSeenAt      *time.Time
+
+	// Schedulable is cordon's backing state (migration
+	// 0013): false means "unschedulable for new placements, but not
+	// evacuated," an operator-initiated state independent of Status.
+	// New nodes are always schedulable (SaveNode never trusts this
+	// field, matching SaveDesiredService's own "not every field of the
+	// input struct is honored, some have a dedicated mutation method"
+	// convention); the only way to change it is SetNodeSchedulable.
+	Schedulable bool
+
+	// AcceptsAppWorkloads and AcceptsBuildWorkloads are the
+	// node capability flags (migrations/0010_node_workloads.sql): which
+	// kinds of work this node is willing to run, independent of each
+	// other. A node can be either, both, or neither. See the migration's
+	// own doc comment for the default values new and pre-existing nodes
+	// get.
+	AcceptsAppWorkloads   bool
+	AcceptsBuildWorkloads bool
+
+	// MeshPublicKey and MeshAddress are the WireGuard mesh
+	// state (migrations/0014_node_mesh.sql). Both empty means this node
+	// has not joined the mesh yet, which is a normal transient state for
+	// a node that enrolled but has not brought a device up.
+	//
+	// Deliberately plain strings rather than internal/network's Key and
+	// netip.Addr: this package stores rows, and having it import
+	// internal/network to parse and validate them would put the mesh's
+	// own rules (a key is 32 bytes, an address is inside the mesh CIDR)
+	// in two places. internal/network.ValidateInventory is the one place
+	// those rules live; the reconciler that reads these converts and
+	// validates on the way in.
+	MeshPublicKey string
+	MeshAddress   string
+
+	// Certificate lifecycle state (migration 0135, ADR 021).
+	CertNotAfter        *time.Time
+	CertSerial          string
+	CertRenewedAt       *time.Time
+	CertGeneration      int
+	CertKeyOrigin       string
+	PrevCertFingerprint string
+	PrevCertValidUntil  *time.Time
+	CertRevokedAt       *time.Time
+
+	// Agent self-report (migration 0136); empty until an agent that sends
+	// it connects.
+	AgentVersion    string
+	AgentCommit     string
+	AgentOS         string
+	AgentArch       string
+	AgentReportedAt *time.Time
+
+	// Region is an optional, free-text operator-facing location label
+	// (migration 0252, e.g. "hetzner-fsn1", "home-lab"): display and
+	// grouping metadata for the network topology view only, never a
+	// routing or access-control input. "" means unset. Like
+	// AcceptsAppWorkloads, SaveNode never writes this; only
+	// UpdateNodeRegion does.
+	Region string
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// ErrNodeNotFound is returned by GetNode when no node has that ID.
+var ErrNodeNotFound = errors.New("store: node not found")
+
+// ErrNodeNameTaken is returned by SaveNode when name is already used by
+// a different node: node names are operator-facing identifiers (shown
+// in the join command, the node list), so collisions need to surface as
+// a clear error, not a silently overwritten row.
+var ErrNodeNameTaken = errors.New("store: node name already taken")
+
+// SaveNode inserts a new node row. Unlike SaveDesiredService, this is
+// insert-only: a node's identity (ID, name) is fixed at enrollment time,
+// there is no "replace this node's full record" operation, matching how
+// SaveAPIToken (0007) never updates a token in place either. Status
+// transitions go through UpdateNodeStatus, heartbeats through
+// TouchNodeLastSeen, both narrower and safer than a caller re-supplying
+// a whole Node struct on every heartbeat.
+//
+// On an INSERT failure, this re-checks whether name is already taken
+// (via nodeNameExists) to distinguish ErrNodeNameTaken from a genuine,
+// unrelated database error, rather than parsing the driver's own error
+// type: the same "let the constraint decide, then classify by
+// re-checking" shape store.CreateUser's own doc comment already
+// establishes for a different unique-constraint conflict.
+func (db *DB) SaveNode(ctx context.Context, n Node) error {
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO nodes (id, name, address, status, cert_fingerprint, joined_at, last_seen_at, schedulable, accepts_app_workloads, accepts_build_workloads,
+			cert_not_after, cert_serial, cert_key_origin, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)
+	`,
+		n.ID, n.Name, n.Address, string(n.Status), n.CertFingerprint,
+		formatTimePtr(n.JoinedAt), formatTimePtr(n.LastSeenAt),
+		boolToInt(n.AcceptsAppWorkloads), boolToInt(n.AcceptsBuildWorkloads),
+		formatTimePtr(n.CertNotAfter), n.CertSerial, n.CertKeyOrigin,
+		formatTime(n.CreatedAt), formatTime(n.UpdatedAt),
+	)
+	if err == nil {
+		return nil
+	}
+
+	exists, existsErr := db.nodeNameExists(ctx, n.Name)
+	if existsErr == nil && exists {
+		return ErrNodeNameTaken
+	}
+	return fmt.Errorf("store: save node %q: %w", n.ID, err)
+}
+
+func (db *DB) nodeNameExists(ctx context.Context, name string) (bool, error) {
+	var exists int
+	err := db.QueryRowContext(ctx, `SELECT 1 FROM nodes WHERE name = ? LIMIT 1`, name).Scan(&exists)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("store: check node name %q exists: %w", name, err)
+	}
+	return true, nil
+}
+
+// GetNode returns the node with this ID, or ErrNodeNotFound.
+func (db *DB) GetNode(ctx context.Context, id string) (*Node, error) {
+	row := db.QueryRowContext(ctx, nodeSelectColumns+` FROM nodes WHERE id = ?`, id)
+	n, err := scanNode(row.Scan)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNodeNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("store: get node %q: %w", id, err)
+	}
+	return n, nil
+}
+
+// ListNodes returns every node, ordered by name.
+func (db *DB) ListNodes(ctx context.Context) ([]Node, error) {
+	rows, err := db.QueryContext(ctx, nodeSelectColumns+` FROM nodes ORDER BY name`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list nodes: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []Node
+	for rows.Next() {
+		n, err := scanNode(rows.Scan)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan node row: %w", err)
+		}
+		out = append(out, *n)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate node rows: %w", err)
+	}
+	return out, nil
+}
+
+// DeleteNode removes a node by ID. Idempotent, matching
+// DeleteDesiredService's convention: deleting an already-gone node is
+// not an error.
+//
+// Still no placement guard at this layer: internal/api's
+// handleDeleteNode is what refuses to call this at all
+// while ListDesiredServicesByNode/ListDesiredDatabasesByNode report any
+// placements remaining, the same "guard at the API boundary, keep the
+// store primitive unconditional" shape this package already uses
+// elsewhere (e.g. SaveDesiredService's node_id exception is enforced by
+// which method gets called, not by a check inside one shared method).
+func (db *DB) DeleteNode(ctx context.Context, id string) error {
+	if _, err := db.ExecContext(ctx, `DELETE FROM nodes WHERE id = ?`, id); err != nil {
+		return fmt.Errorf("store: delete node %q: %w", id, err)
+	}
+	return db.deleteNodeSecurityData(ctx, id)
+}
+
+// maxNodeStatusEventsPerNode bounds node_status_events so a flapping
+// node cannot grow the table without limit.
+const maxNodeStatusEventsPerNode = 200
+
+// UpdateNodeStatus sets a node's status and, when it actually changed,
+// records the transition in node_status_events. Returns ErrNodeNotFound
+// if no such node exists.
+func (db *DB) UpdateNodeStatus(ctx context.Context, id string, status NodeStatus) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: update status for node %q: begin: %w", id, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var old string
+	if err := tx.QueryRowContext(ctx, `SELECT status FROM nodes WHERE id = ?`, id).Scan(&old); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNodeNotFound
+		}
+		return fmt.Errorf("store: update status for node %q: read current: %w", id, err)
+	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE nodes SET status = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
+	`, string(status), id); err != nil {
+		return fmt.Errorf("store: update status for node %q: %w", id, err)
+	}
+	if old != string(status) {
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO node_status_events (node_id, from_status, to_status) VALUES (?, ?, ?)
+		`, id, old, string(status)); err != nil {
+			return fmt.Errorf("store: record status event for node %q: %w", id, err)
+		}
+		if _, err := tx.ExecContext(ctx, `
+			DELETE FROM node_status_events WHERE node_id = ? AND id NOT IN (
+				SELECT id FROM node_status_events WHERE node_id = ? ORDER BY id DESC LIMIT ?
+			)
+		`, id, id, maxNodeStatusEventsPerNode); err != nil {
+			return fmt.Errorf("store: trim status events for node %q: %w", id, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: update status for node %q: commit: %w", id, err)
+	}
+	return nil
+}
+
+// NodeStatusEvent is one recorded node status transition.
+type NodeStatusEvent struct {
+	ID         int64
+	NodeID     string
+	FromStatus NodeStatus
+	ToStatus   NodeStatus
+	CreatedAt  time.Time
+}
+
+// ListNodeStatusEvents returns a node's most recent status transitions,
+// newest first.
+func (db *DB) ListNodeStatusEvents(ctx context.Context, nodeID string, limit int) ([]NodeStatusEvent, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT id, node_id, from_status, to_status, created_at
+		FROM node_status_events WHERE node_id = ? ORDER BY id DESC LIMIT ?
+	`, nodeID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("store: list status events for node %q: %w", nodeID, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	events := []NodeStatusEvent{}
+	for rows.Next() {
+		var e NodeStatusEvent
+		var from, to, created string
+		if err := rows.Scan(&e.ID, &e.NodeID, &from, &to, &created); err != nil {
+			return nil, fmt.Errorf("store: scan status event for node %q: %w", nodeID, err)
+		}
+		e.FromStatus, e.ToStatus = NodeStatus(from), NodeStatus(to)
+		if e.CreatedAt, err = time.Parse(time.RFC3339Nano, created); err != nil {
+			return nil, fmt.Errorf("store: parse status event time for node %q: %w", nodeID, err)
+		}
+		events = append(events, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: list status events for node %q: %w", nodeID, err)
+	}
+	return events, nil
+}
+
+// UpdateNodeRegion sets a node's operator-facing location label. Its own
+// narrow updater rather than a SaveNode field, matching
+// UpdateNodeWorkloads: SaveNode is insert-only and this changes on its own
+// schedule. Returns ErrNodeNotFound if no such node exists, same rigor as
+// UpdateNodeWorkloads.
+func (db *DB) UpdateNodeRegion(ctx context.Context, id, region string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE nodes SET region = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
+	`, region, id)
+	if err != nil {
+		return fmt.Errorf("store: set region for node %q: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set region for node %q: rows affected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrNodeNotFound
+	}
+	return nil
+}
+
+// UpdateNodeWorkloads sets a node's workload capability flags.
+// Returns ErrNodeNotFound if no such node exists, the
+// same "distinguish real failure from a no-op" rigor UpdateNodeStatus
+// already applies to its own conditional UPDATE.
+func (db *DB) UpdateNodeWorkloads(ctx context.Context, id string, acceptsApp, acceptsBuild bool) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE nodes SET accepts_app_workloads = ?, accepts_build_workloads = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
+	`, boolToInt(acceptsApp), boolToInt(acceptsBuild), id)
+	if err != nil {
+		return fmt.Errorf("store: update workloads for node %q: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update workloads for node %q: rows affected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrNodeNotFound
+	}
+	return nil
+}
+
+// TouchNodeLastSeen updates last_seen_at to now, best-effort by design
+// matching TouchAPITokenLastUsed: a heartbeat recording failure must
+// never block whatever triggered it. Called once at session start
+// (Server.Session) and repeatedly on a fixed
+// interval for as long as that session's stream stays open
+// (Server.heartbeatLoop): a single call at connect time can't
+// distinguish "still connected" from "connected an hour ago, then the
+// process hung," which is exactly the case internal/reconcile/nodehealth
+// needs to detect.
+func (db *DB) TouchNodeLastSeen(ctx context.Context, id string) error {
+	_, err := db.ExecContext(ctx, `
+		UPDATE nodes SET last_seen_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
+	`, id)
+	if err != nil {
+		return fmt.Errorf("store: touch node %q last_seen_at: %w", id, err)
+	}
+	return nil
+}
+
+// SetNodeSchedulable cordons (schedulable=false) or uncordons
+// (schedulable=true) a node. Returns ErrNodeNotFound if
+// no such node exists, the same "distinguish real failure from a no-op"
+// rigor UpdateNodeStatus applies to its own conditional UPDATE. Does not
+// touch Status and does not evacuate anything already running there:
+// cordon on its own only affects new placements (internal/api's
+// handleSetAppNode and handleDrainNode both check Schedulable before
+// accepting a target node), see this package's own Node.Schedulable doc
+// comment for why that's a separate column from Status in the first
+// place.
+func (db *DB) SetNodeSchedulable(ctx context.Context, id string, schedulable bool) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE nodes SET schedulable = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
+	`, boolToInt(schedulable), id)
+	if err != nil {
+		return fmt.Errorf("store: set schedulable for node %q: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set schedulable for node %q: rows affected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrNodeNotFound
+	}
+	return nil
+}
+
+// UpdateNodeMesh records a node's WireGuard identity and assigned mesh
+// address (migrations/0014_node_mesh.sql).
+//
+// Its own narrow updater rather than a field on SaveNode, matching
+// UpdateNodeStatus and TouchNodeLastSeen: SaveNode is insert-only
+// because a node's identity is fixed at enrollment, and mesh state
+// changes on an entirely different schedule (every time the mesh
+// coordinator learns something new about a node) than enrollment does.
+//
+// Returns ErrNodeNotFound if no such node exists, so a coordinator
+// distributing to a node that was deleted mid-pass finds out rather than
+// silently writing nothing.
+func (db *DB) UpdateNodeMesh(ctx context.Context, id, publicKey, address string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE nodes
+		SET mesh_public_key = ?, mesh_address = ?,
+		    updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE id = ?
+	`, publicKey, address, id)
+	if err != nil {
+		return fmt.Errorf("store: update mesh state for node %q: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update mesh state for node %q: rows affected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrNodeNotFound
+	}
+	return nil
+}
+
+// boolToInt and intToBool convert Go's bool to and from SQLite's
+// INTEGER 0/1 convention (SQLite has no native boolean type), the first
+// boolean-shaped columns this package has needed to store: nodes'
+// schedulable (migrations/0013_node_health.sql) and
+// accepts_app_workloads/accepts_build_workloads (migrations/
+// 0010_node_workloads.sql).
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func intToBool(i int) bool {
+	return i != 0
+}
+
+const nodeSelectColumns = `
+	SELECT id, name, address, status, cert_fingerprint, joined_at, last_seen_at, schedulable, accepts_app_workloads, accepts_build_workloads, mesh_public_key, mesh_address,
+		cert_not_after, cert_serial, cert_renewed_at, cert_generation, cert_key_origin, prev_cert_fingerprint, prev_cert_valid_until, cert_revoked_at,
+		agent_version, agent_commit, agent_os, agent_arch, agent_reported_at,
+		region, created_at, updated_at`
+
+func scanNode(scan func(dest ...any) error) (*Node, error) {
+	var (
+		n                                          Node
+		status                                     string
+		joinedAt, lastSeenAt                       sql.NullString
+		schedulable                                int
+		acceptsAppWorkloads, acceptsBuildWorkloads int
+		createdAt, updatedAt                       string
+		certTimes                                  [nodeCertTimeCount]sql.NullString
+	)
+	if err := scan(&n.ID, &n.Name, &n.Address, &status, &n.CertFingerprint,
+		&joinedAt, &lastSeenAt, &schedulable,
+		&acceptsAppWorkloads, &acceptsBuildWorkloads,
+		&n.MeshPublicKey, &n.MeshAddress,
+		&certTimes[0], &n.CertSerial, &certTimes[1], &n.CertGeneration, &n.CertKeyOrigin, &n.PrevCertFingerprint, &certTimes[2], &certTimes[3],
+		&n.AgentVersion, &n.AgentCommit, &n.AgentOS, &n.AgentArch, &certTimes[4],
+		&n.Region, &createdAt, &updatedAt); err != nil {
+		return nil, err
+	}
+	if err := parseNodeCertTimes(&n, certTimes); err != nil {
+		return nil, err
+	}
+	n.Status = NodeStatus(status)
+	n.Schedulable = schedulable != 0
+	n.AcceptsAppWorkloads = intToBool(acceptsAppWorkloads)
+	n.AcceptsBuildWorkloads = intToBool(acceptsBuildWorkloads)
+
+	var err error
+	n.JoinedAt, err = parseTimePtr(joinedAt)
+	if err != nil {
+		return nil, fmt.Errorf("parse joined_at: %w", err)
+	}
+	n.LastSeenAt, err = parseTimePtr(lastSeenAt)
+	if err != nil {
+		return nil, fmt.Errorf("parse last_seen_at: %w", err)
+	}
+	n.CreatedAt, err = time.Parse(time.RFC3339Nano, createdAt)
+	if err != nil {
+		return nil, fmt.Errorf("parse created_at: %w", err)
+	}
+	n.UpdatedAt, err = time.Parse(time.RFC3339Nano, updatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("parse updated_at: %w", err)
+	}
+	return &n, nil
+}

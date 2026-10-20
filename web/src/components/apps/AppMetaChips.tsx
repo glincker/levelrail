@@ -1,0 +1,71 @@
+import { useTranslation } from 'react-i18next'
+import {
+  FlaskIcon,
+  GlobeIcon,
+  MoonIcon,
+  PackageIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import { Badge } from '@/components/ui/badge'
+import { TemplateLogo } from '../TemplateLogo'
+import { logoIdForImage } from '../../lib/imageLogo'
+import { AsleepFor } from '../AsleepFor'
+import type { AppListEntry } from '../../types/appDetail'
+
+export function AppLogo({ image }: { image: string }) {
+  return (
+    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+      <TemplateLogo
+        id={logoIdForImage(image) ?? ''}
+        className="size-4"
+        fallback={<PackageIcon className="size-4" aria-hidden="true" />}
+      />
+    </span>
+  )
+}
+
+export function AppMetaChips({ app }: { app: AppListEntry }) {
+  const { t } = useTranslation('deploys')
+  const domain = app.domains?.[0]
+  const extra = (app.domains?.length ?? 0) - 1
+  return (
+    <span className="flex min-w-0 flex-wrap items-center gap-1">
+      {app.is_trial ? (
+        <Badge variant="accent" className="gap-1 px-1.5 py-0">
+          <FlaskIcon className="size-3 shrink-0" aria-hidden="true" />
+          Trial
+        </Badge>
+      ) : null}
+      {app.sleep?.sleeping ? (
+        <Badge variant="muted" className="gap-1 px-1.5 py-0">
+          <MoonIcon className="size-3 shrink-0" aria-hidden="true" />
+          {app.sleep.since ? (
+            <AsleepFor since={app.sleep.since} />
+          ) : (
+            t('appSleep.badgeAsleep')
+          )}
+        </Badge>
+      ) : null}
+      {app.environment_name ? (
+        <Badge variant="muted" className="px-1.5 py-0">
+          {app.environment_name}
+        </Badge>
+      ) : null}
+      {domain ? (
+        <Badge
+          variant="outline"
+          className="max-w-44 gap-1 px-1.5 py-0 text-muted-foreground"
+        >
+          <GlobeIcon className="size-3 shrink-0" aria-hidden="true" />
+          <span className="truncate">{domain}</span>
+          {extra > 0 ? <span>+{extra}</span> : null}
+        </Badge>
+      ) : null}
+      <span
+        title={app.image}
+        className="max-w-48 truncate font-mono text-xs text-muted-foreground"
+      >
+        {app.image}
+      </span>
+    </span>
+  )
+}

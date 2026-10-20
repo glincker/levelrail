@@ -1,0 +1,126 @@
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useConnectedRepos } from '../../hooks/useConnectedRepos'
+import { sourceFromRepo } from '../../lib/newApp'
+import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
+import { ImportPlanPreview } from '../ImportPlanPreview'
+import type { ImportPlan, ImportPlanRequest } from '../../queries/imports'
+import { FeaturedTemplates } from './FeaturedTemplates'
+import { GitProviderCards } from './GitProviderCards'
+import { GitUrlForm } from './GitUrlForm'
+import { OtherWays } from './OtherWays'
+import { RepoList } from './RepoList'
+
+/**
+ * Step 1, "Where is it from": import from Git (connected repositories or a
+ * pasted URL), start from a featured template, or bring an image, compose
+ * file or docker run command through the existing import front door.
+ */
+export function SourceStep({
+  busy,
+  error,
+  onSource,
+}: {
+  busy: boolean
+  error: string | null
+  onSource: (source: GitRepoSourceValue) => void
+}) {
+  const { t } = useTranslation('newApp')
+  const { repos, connectedProviders, isLoading, hasError, providersReady } =
+    useConnectedRepos()
+  const hasProvider = connectedProviders.length > 0
+  const [otherPlan, setOtherPlan] = useState<{
+    plan: ImportPlan
+    request: ImportPlanRequest
+  } | null>(null)
+
+  function onPlan(plan: ImportPlan, request: ImportPlanRequest) {
+    if (plan.source === 'repo' && plan.repo_url) {
+      onSource({
+        provider: 'manual',
+        repoUrl: plan.repo_url,
+        branch: plan.ref ?? '',
+      })
+      return
+    }
+    setOtherPlan({ plan, request })
+  }
+
+  if (otherPlan) {
+    return (
+      <ImportPlanPreview
+        plan={otherPlan.plan}
+        request={otherPlan.request}
+        onBack={() => {
+          setOtherPlan(null)
+        }}
+        onDeployed={() => {
+          setOtherPlan(null)
+        }}
+      />
+    )
+  }
+
+  return (
+    <div className="space-y-8">
+      {error ? (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      <section aria-labelledby="new-app-git" className="space-y-4">
+        <div>
+          <h2
+            id="new-app-git"
+            className="text-base font-medium text-foreground"
+          >
+            {t('source.git.title')}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t('source.git.description')}
+          </p>
+        </div>
+        {!providersReady ? (
+          <div className="space-y-2" aria-busy="true">
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+          </div>
+        ) : hasProvider ? (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">
+              {t('source.git.pickTitle')}
+            </p>
+            <RepoList
+              repos={repos}
+              loading={isLoading}
+              onPick={(repo) => {
+                if (!busy) onSource(sourceFromRepo(repo))
+              }}
+            />
+            {hasError ? (
+              <p className="text-xs text-muted-foreground">
+                {t('source.repos.partial')}
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <GitProviderCards />
+        )}
+        {providersReady ? (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">
+              {t('source.git.urlTitle')}
+            </p>
+            <GitUrlForm busy={busy} onSource={onSource} />
+          </div>
+        ) : null}
+      </section>
+
+      <FeaturedTemplates />
+      <OtherWays onPlan={onPlan} />
+    </div>
+  )
+}

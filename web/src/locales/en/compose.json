@@ -1,0 +1,96 @@
+{
+  "stack": {
+    "tableLabel": "Compose services",
+    "title": "Compose stack",
+    "open": "Open stack",
+    "description": "{{count}} services deployed from one compose file, reconciled one by one in dependency order.",
+    "revision": "Revision {{revision}}",
+    "deployedAt": "deployed {{when}}",
+    "fromTemplate": "from template {{id}}",
+    "phase": {
+      "running": "Running",
+      "progressing": "Starting",
+      "degraded": "Degraded",
+      "failed": "Failed",
+      "stopped": "Stopped"
+    },
+    "columns": {
+      "service": "Service",
+      "status": "Status",
+      "image": "Image",
+      "dependsOn": "Depends on",
+      "actions": "Actions"
+    },
+    "ready": {
+      "True": "Ready",
+      "False": "Failing",
+      "Unknown": "Waiting"
+    },
+    "healthyDependency": "{{name}} (healthy)",
+    "noDependencies": "None",
+    "logs": "Logs",
+    "redeployService": "Recreate",
+    "redeployServiceLabel": "Recreate {{service}}",
+    "redeployAll": "Recreate all",
+    "redeployStarted": "Recreating {{services}}",
+    "loadFailed": "Could not load the stack status: {{message}}"
+  },
+  "rollback": {
+    "button": "Roll back",
+    "title": "Roll back the stack",
+    "description": "Re-applies an earlier compose file through the normal deploy path and records it as a new revision. Generated passwords stay the same, so data in volumes keeps working.",
+    "revisionLabel": "Revision to restore",
+    "revisionOption": "Revision {{revision}}, {{source}}, {{when}}",
+    "current": "current",
+    "none": "There is no earlier revision to roll back to yet.",
+    "confirm": "Roll back",
+    "working": "Rolling back...",
+    "done": "Rolled back to revision {{revision}}"
+  },
+  "down": {
+    "button": "Tear down",
+    "title": "Tear down {{app}}",
+    "description": "Removes every service and its containers. Named volumes are kept unless you also remove them, so a later deploy under the same name finds its data again.",
+    "removeVolumes": "Also delete the stack's volumes (the data is gone for good)",
+    "confirm": "Tear down",
+    "working": "Tearing down...",
+    "done": "Removed {{count}} services",
+    "volumesKept": "Kept volumes: {{volumes}}",
+    "cancel": "Cancel"
+  },
+  "preview": {
+    "title": "What will deploy",
+    "checking": "Checking the compose file...",
+    "valid": "{{count}} services ready to deploy",
+    "invalid": "Fix these before deploying",
+    "skipped": "Skipped, profile not enabled: {{services}}",
+    "profilesAvailable": "Profiles in this file: {{profiles}}. Pass them on the CLI with --profile-name to include those services.",
+    "needsRoot": "This file bind-mounts host directories, which needs the root ability.",
+    "port": "port {{port}}",
+    "domain": "domain {{domain}}",
+    "volumes": "Volumes",
+    "env": "Environment",
+    "generated": "generated",
+    "required": "needs a value",
+    "secret": "secret",
+    "dependsOn": "waits for {{services}}",
+    "healthcheck": "Health check: {{command}}",
+    "build": "build from source (not supported here, use a git deploy)",
+    "loadFailed": "Could not check the file: {{message}}"
+  },
+  "install": {
+    "title": "Install",
+    "description": "Fill in the settings this template asks for. Generated values are created once, stored encrypted, and reused on every redeploy.",
+    "nameLabel": "App name",
+    "namePlaceholder": "Leave empty to pick one for you",
+    "nameHint": "Lowercase letters, digits and dashes. Prefixes every container and volume of this stack.",
+    "generatedHint": "Generated automatically",
+    "domainLabel": "Domain for {{service}} (port {{port}})",
+    "domainPlaceholder": "app.example.com",
+    "domainHint": "Optional. Point its DNS at this server and HTTPS is set up for you.",
+    "submit": "Install",
+    "working": "Installing...",
+    "success": "Installed {{app}}",
+    "requiredMissing": "{{field}} is required"
+  }
+}

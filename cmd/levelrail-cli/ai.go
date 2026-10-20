@@ -1,0 +1,43 @@
+package main
+
+import (
+	"fmt"
+	"io"
+)
+
+// Gated by the ai-chat experimental flag, independent of BYOK provider config.
+func runAI(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) == 0 {
+		_, _ = fmt.Fprint(stderr, aiUsage(prog))
+		return exitUsage
+	}
+
+	switch args[0] {
+	case "-h", "--help", "help":
+		_, _ = fmt.Fprint(stdout, aiUsage(prog))
+		return exitOK
+	case "chat":
+		return runAIChat(prog, args[1:], stdout, stderr, lookupEnv)
+	case "sessions":
+		return runAISessions(prog, args[1:], stdout, stderr, lookupEnv)
+	default:
+		_, _ = fmt.Fprintf(stderr, "%s: unknown ai subcommand %q\n\n", prog, args[0])
+		_, _ = fmt.Fprint(stderr, aiUsage(prog))
+		return exitUsage
+	}
+}
+
+func aiUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s ai chat "<message>" [--session ID] [flags]
+  %[1]s ai sessions list|get|delete|resolve [flags]
+
+Talks to the in-app AI assistant (read-and-suggest only: it never
+deploys, rolls back, or restarts anything without an explicit approval,
+see "%[1]s ai sessions resolve -h"). Requires the ai-chat experimental
+flag (see "%[1]s settings ai-assistant -h") and a configured provider/
+model/key ("%[1]s settings ai-assistant providers set").
+
+Run "%[1]s ai <subcommand> -h" for a subcommand's own flags.
+`, prog)
+}

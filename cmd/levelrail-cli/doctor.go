@@ -1,0 +1,62 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"io"
+)
+
+// runDoctor implements "doctor": GET /api/v1/system/doctor, an operator
+// preflight bundle a superset of "status" (status.go) bundling several
+// individual local health checks into one report.
+func runDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "doctor", "print the doctor report as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, doctorUsage(prog)) }
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	report, err := client.GetSystemDoctor(context.Background())
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get system doctor report: %w", err))
+	}
+
+	if err := renderResult(stdout, of.Format, of.Query, report, func() { printSystemDoctorHuman(stdout, report) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	if of.Format == outputTable && !report.OK {
+		// Reuses exitUsage's value (1) as the generic not-all-clean exit code.
+		return exitUsage
+	}
+	return exitOK
+}
+
+func doctorUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s doctor [flags]
+
+Runs a local preflight health check: Docker daemon reachability, disk
+space, disk write latency, and write access on the data directory, port
+80/443 availability for the embedded ingress, control plane database
+reachability, RAM/CPU against the recommended minimums, firewall status,
+outbound network reachability (public IP, external port reachability,
+ACME, clock skew, the agent advertise host, image registries), and GPU
+attach checks.
+
+Exit code is 0 if every check is ok or warn, 1 if any check fails.
+
+Flags:
+  --token string          API token (default: %[2]s env var, then the credentials file)
+  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                    print the doctor report as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}

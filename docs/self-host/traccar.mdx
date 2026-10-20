@@ -1,0 +1,73 @@
+---
+title: "Self-host Traccar with Docker"
+sidebarTitle: "Traccar"
+description: "An open-source GPS tracking platform supporting over 170 device protocols."
+"og:url": "https://docs.levelrail.com/self-host/traccar"
+---
+
+An open-source GPS tracking platform supporting over 170 device protocols.
+
+This page describes the Levelrail template for Traccar (IoT). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.traccar.org/documentation/.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `traccar` | `traccar/traccar:6.6` | 8082 | none |
+| `traccar-db` | `postgres:16-alpine` | none | `traccar_postgres_data -&#62; /var/lib/postgresql/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `traccar` | `CONFIG_USE_ENVIRONMENT_VARIABLES` | Preset in the template |
+| `traccar` | `DATABASE_DRIVER` | Preset in the template |
+| `traccar` | `DATABASE_PASSWORD` | Generated at deploy |
+| `traccar` | `DATABASE_URL` | Preset in the template |
+| `traccar` | `DATABASE_USER` | Preset in the template |
+| `traccar-db` | `POSTGRES_DB` | Preset in the template |
+| `traccar-db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `traccar-db` | `POSTGRES_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`traccar`): 8082:8082.
+- Passwords and keys are generated at deploy time (`traccar`, `traccar-db`): DATABASE_PASSWORD, POSTGRES_PASSWORD.
+- Stores data in named volumes (`traccar-db`): traccar_postgres_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Traccar with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Traccar. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy traccar --name my-traccar
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More IoT templates
+
+- [Home Assistant](/self-host/home-assistant)
+- [Eclipse Mosquitto](/self-host/mosquitto)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,941 @@
+// The wire contract for ADR 003's reverse-dialed gRPC
+// agent. Message shapes mirror internal/docker's Go types (ContainerSpec,
+// ContainerState, Event, ImageInfo, VolumeMount, PortBinding, Resources)
+// field for field, deliberately: this is the exact narrow surface
+// internal/agent.Transport already committed to
+// (docker.Runtime's own 9 methods, no more), not a redesign.
+//
+// AgentService is defined from the control plane's perspective (it is
+// the gRPC *server*, since it has the one stable, well-known address
+// every agent dials into) even though the agent is always the one who
+// physically opens the connection (ADR 003: "the agent runs on every
+// managed node and dials out"). Session is the one call an agent makes:
+// a single long-lived bidirectional stream, kept open for the agent
+// process's lifetime. The control plane sends AgentRequest messages down
+// that stream (each carrying a request_id); the agent replies with
+// AgentResponse messages carrying the same request_id, allowing many
+// logical request/response pairs, including one persistently-streaming
+// one (WatchEvents), to share the single physical connection. This is
+// what "reverse-dialed" looks like at the RPC layer: TCP/TLS connection
+// direction and logical request direction are independent.
+syntax = "proto3";
+
+package levelrail.agent.v1;
+
+option go_package = "github.com/GLINCKER/levelrail/internal/agent/agentpb;agentpb";
+
+import "google/protobuf/timestamp.proto";
+
+service AgentService {
+  // Enroll exchanges a one-time join token (internal/store.NodeJoinToken)
+  // for a signed client certificate, over a connection
+  // that does not yet present a client cert (the token itself is the
+  // credential for this one call). Called once per node, before Session
+  // is ever called.
+  rpc Enroll(EnrollRequest) returns (EnrollResponse);
+
+  // Session is the agent's one persistent connection, opened only after
+  // Enroll (using the certificate Enroll returned for mTLS). The agent
+  // never initiates a logical request on this stream, only responds to
+  // AgentRequest messages arriving from the control plane, plus sending
+  // ProxiedEvent messages unprompted (the streaming Docker-event
+  // relay ADR 003 calls out: "the agent streams Docker events up to
+  // the control plane rather than the control plane polling down").
+  rpc Session(stream AgentMessage) returns (stream ControlMessage);
+
+  // Renew issues a fresh certificate for a CSR, authenticated by the
+  // caller's current mTLS certificate (or its previous one inside the
+  // overlap window). See ADR 021.
+  rpc Renew(RenewRequest) returns (RenewResponse);
+
+  // Reenroll exchanges a one-time re-enrollment token bound to an existing
+  // node for a new certificate, keeping the node's identity and history.
+  // Like Enroll, it is called without a client certificate.
+  rpc Reenroll(ReenrollRequest) returns (ReenrollResponse);
+
+  // CheckIdentity confirms the presented client certificate is accepted
+  // for its node, without opening a Session. The agent uses it to test a
+  // renewed certificate before discarding the old one.
+  rpc CheckIdentity(CheckIdentityRequest) returns (CheckIdentityResponse);
+}
+
+message EnrollRequest {
+  string join_token = 1;
+  // NodeName is what the enrolling node wants to be called
+  // (store.Node.Name); the control plane still enforces uniqueness
+  // (store.ErrNodeNameTaken) the same way it would for any other
+  // SaveNode caller.
+  string node_name = 2;
+  // csr_der is a PKCS#10 request for the agent's own key (required). The
+  // control plane signs it and never sees the private key.
+  bytes csr_der = 3;
+  AgentInfo agent = 4;
+  // ca_pin_state is what the agent checked before sending this request:
+  // "pinned" (the control plane CA matched the operator's fingerprint) or
+  // "unpinned" (trust on first use). A mismatch never gets this far.
+  string ca_pin_state = 5;
+}
+
+message EnrollResponse {
+  // NodeID is the store.Node.ID the control plane assigned; the agent
+  // persists this alongside its certificate so subsequent Session
+  // reconnects can identify themselves before the mTLS handshake even
+  // completes (the cert's own CommonName already encodes it too, this
+  // is the same value spelled out for the agent's own local bookkeeping).
+  string node_id = 1;
+  // client_cert_pem is this node's new mTLS certificate. The private key
+  // is generated on the agent and never crosses the wire.
+  reserved 3;
+  reserved "client_key_pem";
+  bytes client_cert_pem = 2;
+  // CACertPEM is the control plane's own CA certificate, so the agent
+  // can verify the control plane's TLS server certificate on every
+  // future connection without trusting the system root store (this is
+  // a private, self-issued PKI for exactly this one relationship, not a
+  // publicly-trusted certificate).
+  bytes ca_cert_pem = 4;
+  // not_after is the issued certificate's expiry.
+  google.protobuf.Timestamp not_after = 5;
+}
+
+// AgentInfo is what an agent reports about its own build and platform.
+message AgentInfo {
+  string version = 1;
+  string commit = 2;
+  string os = 3;
+  string arch = 4;
+}
+
+message RenewRequest {
+  bytes csr_der = 1;
+}
+
+message RenewResponse {
+  bytes client_cert_pem = 1;
+  bytes ca_cert_pem = 2;
+  google.protobuf.Timestamp not_after = 3;
+}
+
+message ReenrollRequest {
+  string reenroll_token = 1;
+  // node_id is optional; when set it must match the node the token is
+  // bound to.
+  string node_id = 2;
+  bytes csr_der = 3;
+  AgentInfo agent = 4;
+  string ca_pin_state = 5;
+}
+
+message ReenrollResponse {
+  string node_id = 1;
+  bytes client_cert_pem = 2;
+  bytes ca_cert_pem = 3;
+  google.protobuf.Timestamp not_after = 4;
+}
+
+message CheckIdentityRequest {}
+
+message CheckIdentityResponse {
+  string node_id = 1;
+  // current is false when the presented certificate is the previous one,
+  // still accepted inside the overlap window.
+  bool current = 2;
+}
+
+// AgentMessage is one frame the agent sends up the Session stream: a
+// reply to an outstanding AgentRequest, an unprompted streamed Docker
+// event, or one frame of an in-flight exec's output or stdin flow
+// control.
+message AgentMessage {
+  oneof payload {
+    AgentResponse response = 1;
+    ProxiedEvent event = 2;
+    ExecOutput exec_output = 3;
+    // ExecCredit here refunds the control plane's stdin window: the
+    // agent has consumed that many ExecInput frames.
+    ExecCredit exec_credit = 4;
+    BuildOutput build_output = 5;
+    // BuildCredit here refunds the control plane's build-context window:
+    // the agent has consumed that many BuildInput frames.
+    BuildCredit build_credit = 6;
+    // Heartbeat is an unprompted liveness signal the agent sends up this
+    // stream at a fixed interval, on its own initiative, independent of
+    // any AgentRequest/AgentResponse traffic. This is deliberately a real
+    // application-level message, not inferred from the stream merely
+    // staying open: internal/agent.Server only refreshes a node's
+    // last_seen_at when this frame actually arrives, so a frozen agent
+    // process (hung, deadlocked, or stopped without exiting) whose TCP/TLS
+    // connection is still technically established stops advancing
+    // last_seen_at the moment it stops actually running, rather than
+    // looking healthy for as long as the transport happens to stay up.
+    Heartbeat heartbeat = 7;
+    GPUReport gpu_report = 8;
+    // Hello is sent once, first, on every Session. Control planes that
+    // predate it ignore the frame.
+    AgentInfo hello = 9;
+    // HostReport is the agent's host memory split, sent periodically.
+    // Control planes that predate it ignore the frame.
+    HostReport host_report = 10;
+    // RenewalReport is the agent's certificate renewal state, sent at
+    // session start and after every renewal attempt.
+    RenewalReport renewal = 11;
+  }
+}
+
+// RenewalReport describes the agent's renewal schedule and last failure.
+// Timestamps are unset when not applicable.
+message RenewalReport {
+  google.protobuf.Timestamp next_renew_at = 1;
+  string last_error = 2;
+  google.protobuf.Timestamp last_failed_at = 3;
+  google.protobuf.Timestamp next_retry_at = 4;
+  int32 consecutive_failures = 5;
+}
+
+// RenewNow asks the agent to renew its certificate immediately.
+message RenewNow {}
+
+// ControlMessage is one frame the control plane sends down the Session
+// stream: a request, or one frame of an in-flight exec's stdin,
+// cancellation, or output flow control.
+message ControlMessage {
+  oneof payload {
+    AgentRequest request = 1;
+    ExecInput exec_input = 2;
+    ExecCancel exec_cancel = 3;
+    // ExecCredit here refunds the agent's output window: the control
+    // plane has consumed that many ExecOutput frames.
+    ExecCredit exec_credit = 4;
+    BuildInput build_input = 5;
+    BuildCancel build_cancel = 6;
+    // BuildCredit here refunds the agent's output window: the control
+    // plane has consumed that many BuildOutput frames.
+    BuildCredit build_credit = 7;
+    ExecResize exec_resize = 8;
+    // GoAway tells the agent the control plane is shutting down this
+    // process and will not answer further requests on this stream: the
+    // agent should close its end now rather than wait to be cut off by
+    // the control plane's own bounded GracefulStop timeout.
+    GoAway go_away = 9;
+    RenewNow renew_now = 10;
+  }
+}
+
+// GoAway carries no data of its own, the same "presence is the message"
+// shape Heartbeat already uses in the opposite direction.
+message GoAway {}
+
+// AgentRequest is one control-plane-issued operation, tagged with
+// request_id so out-of-order AgentResponse frames on the same stream
+// still resolve to the right caller (internal/agent's multiplexer
+// owns matching these).
+message AgentRequest {
+  string request_id = 1;
+  oneof op {
+    InspectByNameRequest inspect_by_name = 2;
+    CreateRequest create = 3;
+    StartRequest start = 4;
+    StopRequest stop = 5;
+    RemoveRequest remove = 6;
+    ListImagesRequest list_images = 7;
+    ListByPrefixRequest list_by_prefix = 8;
+    EnsureVolumeRequest ensure_volume = 9;
+    WatchEventsRequest watch_events = 10;
+    UpdateResourcesRequest update_resources = 11;
+    EnsureNetworkRequest ensure_network = 12;
+    RemoveNetworkRequest remove_network = 13;
+    ListNetworksByPrefixRequest list_networks_by_prefix = 14;
+    ExecRequest exec = 15;
+    BuildRequest build = 16;
+    InspectExitStateRequest inspect_exit_state = 17;
+    // ApplyMesh and RotateMeshKey are dispatched directly by the agent's
+    // own serveSession loop (internal/agent/client.go), not through
+    // Execute: see internal/network.ConfigSink's own doc comment for why
+    // this op exists (the gRPC arm that doc comment says is "deliberately
+    // not in this change" landing here, as its own reviewed diff against
+    // this wire contract) and MeshApplier for the agent-side contract it
+    // is dispatched against. Both carry this node's own mesh identity
+    // only: the private key behind that identity never crosses this wire
+    // in either direction (DeviceConfig.private_key is always unset on
+    // the way down, and there is no field for one on the way back).
+    ApplyMeshRequest apply_mesh = 18;
+    RotateMeshKeyRequest rotate_mesh_key = 19;
+    NetworkConnectRequest network_connect = 20;
+    NetworkDisconnectRequest network_disconnect = 21;
+    // Stats asks for one point-in-time resource-usage snapshot
+    // (internal/docker.Client.Stats), the remote-node half of ADR 008's
+    // federated query: the control plane polls this on an interval per
+    // placed container, the same way it already polls its own local
+    // Docker socket, instead of the agent keeping its own store.
+    StatsRequest stats = 22;
+    // MeshStatus asks for the node's own WireGuard view of its peers, for
+    // node-pair connectivity diagnostics.
+    MeshStatusRequest mesh_status = 23;
+  }
+}
+
+// AgentResponse is the agent's answer to exactly one AgentRequest,
+// carrying the same request_id.
+message AgentResponse {
+  string request_id = 1;
+  // Error is set (and every field below unset) when the underlying
+  // internal/docker.Runtime call itself returned an error: the
+  // multiplexer surfaces this as a real Go error to the caller, never
+  // silently treated as a zero-value success.
+  string error = 2;
+  oneof result {
+    InspectByNameResponse inspect_by_name = 3;
+    CreateResponse create = 4;
+    ListImagesResponse list_images = 5;
+    ListByPrefixResponse list_by_prefix = 6;
+    // Start, Stop, Remove, EnsureVolume, RemoveNetwork, and the
+    // WatchEvents acknowledgment all return nothing but success/Error
+    // above, so none of them needs its own response message.
+    Empty empty = 7;
+    EnsureNetworkResponse ensure_network = 8;
+    ListNetworksByPrefixResponse list_networks_by_prefix = 9;
+    InspectExitStateResponse inspect_exit_state = 10;
+    ApplyMeshResponse apply_mesh = 11;
+    RotateMeshKeyResponse rotate_mesh_key = 12;
+    StatsResponse stats = 13;
+    MeshStatusResponse mesh_status = 14;
+    // ArchiveStat acknowledges a copy-out ExecRequest with the path stat.
+    ArchiveStat archive_stat = 15;
+  }
+}
+
+message Empty {}
+
+// Heartbeat carries no data of its own: the frame's mere arrival on the
+// Session stream is the whole signal, the same "presence is the
+// message" shape WatchEventsRequest's own watch_id establishes for a
+// different unprompted, agent-initiated frame.
+message Heartbeat {}
+
+message PortBinding {
+  int32 container_port = 1;
+  int32 host_port = 2;
+  string protocol = 3;
+  // host_ip mirrors internal/docker.PortBinding.HostIP. Empty means Docker's
+  // default (all interfaces).
+  string host_ip = 4;
+}
+
+message Resources {
+  int64 memory_bytes = 1;
+  int64 nano_cpus = 2;
+  int64 swap_memory_bytes = 3;
+  string cpuset_cpus = 4;
+}
+
+message VolumeMount {
+  string name = 1;
+  string container_path = 2;
+}
+
+message ContainerSpec {
+  string name = 1;
+  string image = 2;
+  repeated PortBinding ports = 3;
+  map<string, string> env = 4;
+  Resources resources = 5; // unset means internal/docker.ContainerSpec.Resources == nil
+  repeated VolumeMount volumes = 6;
+  // DNS mirrors internal/docker.ContainerSpec.DNS. Empty means Docker's
+  // own embedded resolver, unchanged from before this field existed.
+  repeated string dns = 7;
+  // CapAdd mirrors internal/docker.ContainerSpec.CapAdd. Empty means no
+  // added capabilities, unchanged from before this field existed.
+  repeated string cap_add = 8;
+  // NetworkMode mirrors internal/docker.ContainerSpec.NetworkMode. Empty
+  // means Docker's own default networking behavior (the Network field
+  // above, or the default bridge network), unchanged from before this
+  // field existed.
+  string network_mode = 9;
+  // Gpu mirrors internal/docker.ContainerSpec.GPU. Unset means no GPU
+  // device request.
+  GPURequest gpu = 10;
+  // Command mirrors internal/docker.ContainerSpec.Command. Empty means the
+  // image's own default command.
+  repeated string command = 11;
+  // shm_size_bytes mirrors internal/docker.ContainerSpec.ShmSizeBytes. Zero
+  // means Docker's default /dev/shm.
+  int64 shm_size_bytes = 12;
+  // extra_hosts mirrors internal/docker.ContainerSpec.ExtraHosts ("name:ip").
+  repeated string extra_hosts = 13;
+  // labels, network and entrypoint mirror the same internal/docker.ContainerSpec
+  // fields; without them a worker's app never joins its app network.
+  map<string, string> labels = 14;
+  string network_name = 15;
+  string network_alias = 16;
+  repeated string entrypoint = 17;
+}
+
+message GPURequest {
+  // count -1 means every GPU on the node.
+  int32 count = 1;
+  repeated string device_ids = 2;
+}
+
+message GPUDevice {
+  int32 index = 1;
+  string uuid = 2;
+  string name = 3;
+  int64 vram_total_mib = 4;
+  int64 vram_used_mib = 5;
+  int32 utilization_percent = 6;
+}
+
+// GPUReport is the agent's own NVIDIA detection result, sent on connect
+// and periodically after. present=false with no devices is a valid report.
+message GPUReport {
+  bool present = 1;
+  string driver_version = 2;
+  repeated GPUDevice devices = 3;
+  bool runtime_installed = 4;
+}
+
+// UnmanagedContainer is one running container the agent's node hosts that
+// Levelrail does not manage.
+message UnmanagedContainer {
+  string name = 1;
+  uint64 memory_bytes = 2;
+}
+
+// HostReport is the agent's own host memory reading. A zero
+// memory_total_bytes means the host total could not be read. Fields are
+// additive only so old agents and old control planes keep interoperating.
+message HostReport {
+  uint64 memory_total_bytes = 1;
+  uint64 memory_available_bytes = 2;
+  // agent_rss_bytes is the agent process's resident set size.
+  uint64 agent_rss_bytes = 3;
+  // other_containers_memory_bytes sums every unmanaged running container;
+  // other_containers lists only the largest few.
+  uint64 other_containers_memory_bytes = 4;
+  repeated UnmanagedContainer other_containers = 5;
+  // cpu_cores, disk_total_bytes and disk_free_bytes are zero when unreadable.
+  uint32 cpu_cores = 6;
+  uint64 disk_total_bytes = 7;
+  uint64 disk_free_bytes = 8;
+}
+
+message ContainerState {
+  string id = 1;
+  string name = 2;
+  string image = 3;
+  bool running = 4;
+  repeated PortBinding ports = 5;
+}
+
+message ImageInfo {
+  string tag = 1;
+  google.protobuf.Timestamp created_at = 2;
+}
+
+// ProxiedEvent mirrors internal/docker.Event, relayed unprompted as it
+// happens on the agent's own local WatchEvents stream (ADR 003's
+// event-push design), scoped to the one watch_events call currently
+// active (a fresh watch_id per WatchEventsRequest, so a control plane
+// that starts and stops watching doesn't get events crossed between
+// watches).
+message ProxiedEvent {
+  string watch_id = 1;
+  string action = 2; // internal/docker.EventAction: "start" | "die" | "stop"
+  string container_name = 3;
+  google.protobuf.Timestamp time = 4;
+}
+
+message InspectByNameRequest {
+  string name = 1;
+}
+message InspectByNameResponse {
+  // Found is false when internal/docker.Runtime.InspectByName's own
+  // (nil, nil) "not found, not an error" contract applies: state below
+  // is then unset, not a zero-valued ContainerState pretending to be a
+  // real one.
+  bool found = 1;
+  ContainerState state = 2;
+}
+
+message CreateRequest {
+  ContainerSpec spec = 1;
+}
+message CreateResponse {
+  string id = 1;
+}
+
+message StartRequest {
+  string id = 1;
+}
+
+message StopRequest {
+  string id = 1;
+  int64 timeout_ms = 2; // internal/docker.Runtime.Stop's time.Duration, in milliseconds; negative means wait indefinitely
+}
+
+message RemoveRequest {
+  string id = 1;
+  bool force = 2;
+}
+
+// UpdateResourcesRequest applies new memory/CPU/swap/cpuset limits to an
+// already-running container in place, via the Engine API's own
+// ContainerUpdate call, without recreating it.
+message UpdateResourcesRequest {
+  string id = 1;
+  Resources resources = 2;
+}
+
+message ListImagesRequest {
+  string repo = 1;
+}
+message ListImagesResponse {
+  repeated ImageInfo images = 1;
+}
+
+message ListByPrefixRequest {
+  string prefix = 1;
+}
+message ListByPrefixResponse {
+  repeated ContainerState containers = 1;
+}
+
+message EnsureVolumeRequest {
+  string name = 1;
+}
+
+// NetworkInfo mirrors internal/docker.NetworkInfo.
+message NetworkInfo {
+  string id = 1;
+  string name = 2;
+}
+
+message EnsureNetworkRequest {
+  string name = 1;
+}
+message EnsureNetworkResponse {
+  string id = 1;
+}
+
+message RemoveNetworkRequest {
+  string name = 1;
+}
+
+message NetworkConnectRequest {
+  string network = 1;
+  string container_id = 2;
+}
+
+message NetworkDisconnectRequest {
+  string network = 1;
+  string container_id = 2;
+  bool force = 3;
+}
+
+message ListNetworksByPrefixRequest {
+  string prefix = 1;
+}
+message ListNetworksByPrefixResponse {
+  repeated NetworkInfo networks = 1;
+}
+
+// CPUStatsRaw mirrors internal/docker.CPUStatsRaw: the raw counters the
+// control plane's own Collector diffs against its previous sample to
+// compute cpu_percent, rather than trusting this one-shot response's own
+// (sometimes-empty, see docker.ContainerStats' own doc comment)
+// pre-computed CPUPercent.
+message CPUStatsRaw {
+  uint64 total_usage_nanos = 1;
+  uint64 system_usage_nanos = 2;
+  uint32 online_cpus = 3;
+}
+
+// ContainerStats mirrors internal/docker.ContainerStats field for field.
+message ContainerStats {
+  double cpu_percent = 1;
+  CPUStatsRaw cpu_raw = 2;
+  uint64 memory_usage_bytes = 3;
+  uint64 memory_limit_bytes = 4;
+  uint64 network_rx_bytes = 5;
+  uint64 network_tx_bytes = 6;
+  uint64 disk_read_bytes = 7;
+  uint64 disk_write_bytes = 8;
+}
+
+message StatsRequest {
+  string container_id = 1;
+}
+message StatsResponse {
+  ContainerStats stats = 1;
+}
+
+// ExecRequest runs cmd inside an already-running container and streams
+// its stdout back as ExecOutput frames tagged with this request's own
+// request_id. The AgentResponse for this request is only an
+// acknowledgment that the exec attached (or the error that stopped it
+// from attaching); output arrives afterwards, frame by frame, exactly
+// as docker.Runtime.Exec's returned io.ReadCloser produces it locally.
+message ExecRequest {
+  string container_id = 1;
+  repeated string cmd = 2;
+  // AttachStdin selects docker.Runtime.ExecWithInput over Exec: the
+  // control plane then streams ExecInput frames for the same exec_id.
+  bool attach_stdin = 3;
+  // Tty selects docker.TTYRuntime.ExecTTY instead: the command runs on
+  // a real PTY, its output frames carry stdout and stderr already
+  // merged the way a terminal merges them, and the control plane may
+  // send ExecResize frames for the same exec_id. Implies attach_stdin.
+  bool tty = 4;
+  // TtySize is the PTY's initial size, meaningful only when tty is set.
+  ExecTTYSize tty_size = 5;
+  // Env is extra environment for the exec'd process, on top of whatever
+  // the container itself was created with. A terminal needs TERM here.
+  repeated string env = 6;
+  // Archive turns this exec into a tar copy through the container archive
+  // API (no command runs): copy-out streams ExecOutput frames, copy-in
+  // consumes ExecInput frames. Same windowing and cancel as any exec.
+  ArchiveOp archive = 7;
+  // File turns this exec into an object operation inside the agent's
+  // confined storage directory (no command runs, no container involved).
+  FileOp file = 8;
+}
+
+// FileOp is one object operation on a storage destination directory. The
+// agent resolves path under its configured storage root and refuses
+// anything that escapes it. PUT consumes ExecInput frames, GET and LIST
+// stream ExecOutput frames (LIST emits one "<size>\t<path>" line per file).
+message FileOp {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_PUT = 1;
+    KIND_GET = 2;
+    KIND_DELETE = 3;
+    KIND_LIST = 4;
+  }
+  Kind kind = 1;
+  string path = 2;
+  int64 max_bytes = 3;
+}
+
+// ArchiveOp describes a tar copy carried on an exec stream. copy_in sets
+// the direction; path is the container path to read, or the directory to
+// extract into. max_bytes caps the tar stream (0 means no cap).
+message ArchiveOp {
+  bool copy_in = 1;
+  string path = 2;
+  int64 max_bytes = 3;
+}
+
+// ArchiveStat is the path stat Docker returns beside a copy-out stream.
+message ArchiveStat {
+  string name = 1;
+  int64 size = 2;
+  uint32 mode = 3;
+  string link_target = 4;
+}
+
+message ExecTTYSize {
+  uint32 rows = 1;
+  uint32 cols = 2;
+}
+
+// ExecResize tells the agent that a TTY exec's terminal changed size,
+// so the process inside sees a SIGWINCH and redraws. Ignored for an
+// exec that did not ask for a PTY.
+message ExecResize {
+  string exec_id = 1;
+  uint32 rows = 2;
+  uint32 cols = 3;
+}
+
+// ExecInput is one stdin frame for the in-flight exec whose request_id
+// is exec_id. Exactly one of chunk, eof, or error is meaningful per
+// frame: eof ends stdin the way closing a pipe's write half does, error
+// carries a failure reading the control plane's own source reader so
+// the exec fails loudly instead of seeing a silently truncated stdin.
+message ExecInput {
+  string exec_id = 1;
+  bytes chunk = 2;
+  bool eof = 3;
+  string error = 4;
+}
+
+// ExecCancel ends an in-flight exec early, when the control plane's
+// caller closed the stream before the command finished. The agent stops
+// reading and closes its local exec, so the remote process does not
+// outlive the caller that asked for it.
+message ExecCancel {
+  string exec_id = 1;
+}
+
+// ExecCredit refunds flow-control window for one exec, in frames. Both
+// exec directions are windowed: a sender may have at most a fixed
+// number of unacknowledged data frames outstanding, and the receiver
+// credits frames back as it consumes them. Without this, one slow exec
+// consumer would either stall every other logical call sharing the
+// Session stream or force unbounded buffering of a multi-gigabyte dump.
+message ExecCredit {
+  string exec_id = 1;
+  uint32 frames = 2;
+}
+
+// ExecOutput is one stdout frame for an in-flight exec, or that stream's
+// terminal frame. A data frame sets chunk; the terminal frame sets
+// either eof (the command's output ended cleanly) or failure. Exactly
+// one terminal frame is ever sent per exec.
+message ExecOutput {
+  string exec_id = 1;
+  bytes chunk = 2;
+  bool eof = 3;
+  ExecFailure failure = 4;
+}
+
+// ExecFailure is the error that ended an exec's output stream, mirroring
+// the trailing error docker.Runtime.Exec's own io.ReadCloser returns.
+message ExecFailure {
+  string message = 1;
+  // Exit is set when the failure was the command's own non-zero exit
+  // (internal/docker.ExecExitError), so the control plane can rebuild
+  // that typed error rather than a flat string: internal/api's exec
+  // endpoint branches on it with errors.As to report a real exit code.
+  ExecExit exit = 2;
+}
+
+message ExecExit {
+  repeated string cmd = 1;
+  string container = 2;
+  int32 exit_code = 3;
+  string stderr = 4;
+}
+
+// BuildRequest dispatches one image build to this node's own BuildKit
+// instance, so build CPU lands on a dedicated build node instead of the
+// control plane. The control plane streams the build context up as
+// BuildInput frames tagged with this request's request_id, the agent
+// streams progress and the resulting docker-save image tar back as
+// BuildOutput frames under the same ID, and the AgentResponse for this
+// request is only the acknowledgment that the agent accepted the build.
+message BuildRequest {
+  BuildKind kind = 1;
+  // Tag is the image reference the built image is exported under.
+  string tag = 2;
+  // DockerfilePath is relative to the build context root, since the
+  // control plane's own absolute paths mean nothing on this node. Empty
+  // means the context root's own Dockerfile.
+  string dockerfile_path = 3;
+  string target = 4;
+  map<string, string> build_args = 5;
+  bool no_cache = 6;
+  BuildCache cache = 7;
+}
+
+enum BuildKind {
+  BUILD_KIND_UNSPECIFIED = 0;
+  BUILD_KIND_DOCKERFILE = 1;
+  BUILD_KIND_RAILPACK = 2;
+}
+
+// BuildCache carries only internal/build.CacheConfig's registry backend.
+// Its local-directory backend is deliberately not sent: that path names a
+// directory on the control plane's own disk, which this node does not
+// have, while a registry ref is shared by construction.
+message BuildCache {
+  string registry_ref = 1;
+  bool registry_insecure = 2;
+}
+
+// BuildInput is one build-context frame for the in-flight build whose
+// request_id is build_id, carrying a tar stream of the context
+// directory. Exactly one of chunk, eof, or error is meaningful per frame,
+// the same contract ExecInput follows.
+message BuildInput {
+  string build_id = 1;
+  bytes chunk = 2;
+  bool eof = 3;
+  string error = 4;
+}
+
+// BuildCancel ends an in-flight build early, when the control plane's
+// caller gave up before it finished.
+message BuildCancel {
+  string build_id = 1;
+}
+
+// BuildCredit refunds flow-control window for one build, in frames, the
+// same windowing ExecCredit documents for exec.
+message BuildCredit {
+  string build_id = 1;
+  uint32 frames = 2;
+}
+
+// BuildOutput is one frame of an in-flight build: a progress update, a
+// chunk of the resulting image tar, or that stream's terminal frame.
+// Exactly one terminal frame (done or failure) is ever sent per build.
+message BuildOutput {
+  string build_id = 1;
+  oneof frame {
+    BuildProgress progress = 2;
+    bytes image_chunk = 3;
+    BuildDone done = 4;
+    BuildFailure failure = 5;
+  }
+}
+
+// BuildProgress mirrors internal/build.ProgressEvent field for field, so
+// a remote build's log lines reach the control plane's existing SSE
+// stream in the same shape a local build's do.
+message BuildProgress {
+  string step = 1;
+  bool cached = 2;
+  bool completed = 3;
+  string error = 4;
+  string log = 5;
+  string stream = 6;
+}
+
+// BuildDone carries what internal/build.Result holds beyond the tag the
+// control plane already knows.
+message BuildDone {
+  int64 duration_ms = 1;
+  map<string, string> exporter_response = 2;
+}
+
+// BuildFailure is the error that ended a build. unsupported_provider is
+// set when the failure was internal/build.UnsupportedProviderError, so
+// the control plane can rebuild that typed error rather than a flat
+// string: internal/deploy branches on it with errors.As.
+message BuildFailure {
+  string message = 1;
+  bool unsupported_provider = 2;
+  string provider = 3;
+}
+
+// WatchEventsRequest starts (or, sent a second time with the same
+// watch_id, is meaningless and rejected: one watch per Session,
+// matching internal/docker.Runtime.Events' own "until ctx is cancelled"
+// single-stream contract) the agent's relay of its local Docker event
+// stream as ProxiedEvent frames on the same physical Session stream.
+// There is no corresponding "stop watching" request: the watch runs for
+// the Session's own lifetime, ending only when the stream itself closes,
+// the same lifetime Events(ctx) already ties to ctx cancellation.
+message WatchEventsRequest {
+  string watch_id = 1;
+}
+
+// ExitState mirrors internal/docker.ExitState: the fields a real
+// container inspect carries but the container-list summary behind
+// InspectByName does not, so a remote node can tell "still starting"
+// apart from "already exited or OOM-killed" the same way a local one
+// can.
+message ExitState {
+  bool running = 1;
+  bool oom_killed = 2;
+  int32 exit_code = 3;
+}
+
+message InspectExitStateRequest {
+  string name = 1;
+}
+message InspectExitStateResponse {
+  // Found mirrors InspectByNameResponse.found: false carries
+  // internal/docker.ExitStateInspector's own (nil, nil) "no such
+  // container, not an error" contract.
+  bool found = 1;
+  ExitState state = 2;
+}
+
+// PeerConfig mirrors internal/network.PeerConfig: one other node, as seen
+// from the node this DeviceConfig is addressed to.
+message PeerConfig {
+  string node_id = 1;
+  // PublicKey is network.Key.String()'s standard-base64 form, the same
+  // textual form the control plane already stores and ships elsewhere.
+  string public_key = 2;
+  string endpoint = 3;
+  // AllowedIps is each prefix's netip.Prefix.String() form. Exactly one
+  // /32 per peer for a full mesh of single-address nodes; see
+  // network.PeerConfig.AllowedIPs's own doc comment for why never wider.
+  repeated string allowed_ips = 4;
+  // PersistentKeepaliveMs is network.PeerConfig.PersistentKeepalive in
+  // milliseconds, the same unit StopRequest.timeout_ms already uses for a
+  // Go time.Duration crossing this wire. Zero means no keepalive, not
+  // "unset": network.PlanOptions.Keepalive's own doc comment distinguishes
+  // "did not set this" from "explicitly disabled" only on the control
+  // plane's side of that decision; by the time a PeerConfig reaches this
+  // message, the decision is already made and zero is unambiguous.
+  int64 persistent_keepalive_ms = 5;
+}
+
+// DeviceConfig mirrors internal/network.DeviceConfig: the complete desired
+// WireGuard state for exactly one node. PrivateKey is deliberately absent
+// from this message, not merely zero-valued: DeviceConfig's own Go doc
+// comment establishes that a private key must never be logged, serialized
+// to the control plane, or included in any status response, and the
+// wire-contract enforcement of that rule is having no field for one to
+// occupy, the same reasoning that field's own comment gives for why the
+// control plane can never populate it in the first place. The receiving
+// node fills its own private key in locally, from its own key file,
+// immediately before applying this to its device (see MeshApplier).
+message DeviceConfig {
+  string node_id = 1;
+  // Address is netip.Prefix.String() (e.g. "10.181.0.3/16"), the node's
+  // own mesh address with the mesh CIDR's prefix length. Empty means no
+  // address assigned yet (network.DeviceConfig.Address's own "invalid
+  // until assigned" state).
+  string address = 2;
+  int32 listen_port = 3;
+  repeated PeerConfig peers = 4;
+}
+
+// NodeIdentity mirrors internal/network.NodeIdentity: what a node reports
+// back about itself when it applies a mesh config, the half of its
+// configuration only it can know.
+message NodeIdentity {
+  string public_key = 1;
+  int32 listen_port = 2;
+  string endpoint = 3;
+}
+
+// ApplyMeshRequest asks the receiving node to converge its own WireGuard
+// device on config (config.node_id names the node this is addressed to,
+// the same self-addressing InspectByNameRequest's own name field
+// establishes for a different resource). The agent fills in its own
+// private key from its local key file before calling network.Mesh.Apply,
+// per DeviceConfig's own doc comment above.
+message ApplyMeshRequest {
+  DeviceConfig config = 1;
+}
+message ApplyMeshResponse {
+  NodeIdentity identity = 1;
+}
+
+// RotateMeshKeyRequest asks the receiving node to generate a fresh
+// WireGuard keypair, make it that node's live identity immediately, and
+// persist it. Carries no fields: unlike ApplyMeshRequest, this always
+// means "rotate the node holding this Session stream's own key," never
+// another node's, the same restriction network.LocalSink.RotateKey's own
+// nodeID check already enforces one layer down.
+message RotateMeshKeyRequest {}
+
+message MeshStatusRequest {}
+
+// MeshPeerStatus is one WireGuard peer as the reporting node sees it.
+message MeshPeerStatus {
+  string node_id = 1;
+  string public_key = 2;
+  string endpoint = 3;
+  // last_handshake_unix_ms is 0 when no handshake ever completed.
+  int64 last_handshake_unix_ms = 4;
+  int64 rx_bytes = 5;
+  int64 tx_bytes = 6;
+}
+
+message MeshStatusResponse {
+  // address is the node's mesh prefix, empty when its device is down.
+  string address = 1;
+  repeated MeshPeerStatus peers = 2;
+}
+message RotateMeshKeyResponse {
+  string old_public_key = 1;
+  string new_public_key = 2;
+}

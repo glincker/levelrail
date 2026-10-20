@@ -1,0 +1,7 @@
+{
+  "code": "image_pull_failed",
+  "retryable": false,
+  "excerpt_contains": [
+    "docker.io/library/node:99-alpine: not found"
+  ]
+}

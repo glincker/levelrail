@@ -1,0 +1,226 @@
+{
+  "tabs": {
+    "build": "Build",
+    "image": "Image",
+    "rollout": "Roll out",
+    "supply": "Supply chain"
+  },
+  "state": {
+    "title": "Deploy status",
+    "now": "Right now",
+    "next": {
+      "queued": "It starts automatically when the deploy ahead of it finishes.",
+      "held": "Release it from the deploy history, or wait for the freeze window to end.",
+      "building": "When the build succeeds, the new container starts and must pass its health check before it receives traffic.",
+      "buildingStatic": "When the build succeeds, the output is published directly. No container is started.",
+      "failed": "Open the Build tab to read the failing step, fix it, then deploy again.",
+      "rolloutFailed": "The previous version keeps serving. Check the container logs and the health path, then redeploy or roll back.",
+      "rollingOut": "Once the health check passes, traffic cuts over and the old container is removed.",
+      "staticPublished": "Nothing else to wait for. Visit the site to confirm the new files are served."
+    },
+    "label": {
+      "queued": "Queued",
+      "held": "Held",
+      "canceled": "Canceled",
+      "superseded": "Superseded",
+      "failed": "Build failed",
+      "building": "Building",
+      "rolloutFailed": "Roll out failed",
+      "published": "Published",
+      "live": "Live",
+      "rollingOut": "Rolling out",
+      "buildDone": "Build finished"
+    },
+    "headline": {
+      "queued": "This deploy is queued behind another deploy.",
+      "queuedWhy": "This deploy is queued: {{reason}}.",
+      "held": "This deploy is held. {{reason}}",
+      "canceled": "This deploy was canceled before it changed anything.",
+      "superseded": "A newer deploy replaced this one before it was applied.",
+      "failed": "The build failed, so nothing was rolled out.",
+      "failedWhy": "The build failed: {{error}}",
+      "building": "Building for {{elapsed}}.",
+      "rolloutFailed": "The build finished but the roll out failed.",
+      "rolloutFailedWhy": "The build finished but the roll out failed: {{reason}}",
+      "staticPublished": "Static site: published directly by the ingress, no container to health check.",
+      "live": "This deploy is serving traffic.",
+      "rollingOut": "Build finished. Waiting for the new container to pass its first health check, {{elapsed}} so far.",
+      "rollingOutNoImage": "Build finished. The roll out is waiting because no container image exists for this app yet, {{elapsed}} so far.",
+      "untracked": "The build finished. Roll out results are only tracked for the latest deploy.",
+      "untrackedImage": "A pre-built image was deployed. Roll out results are only tracked for the latest deploy."
+    },
+    "mismatch": {
+      "buildOkRolloutPending": "The build finished, but the roll out has not completed. The build status and the roll out status are tracked separately, so both are true at once.",
+      "buildOkRolloutFailed": "The build succeeded, but the new container did not become healthy, so the previous version keeps serving.",
+      "staticChip": "The app status says \"{{chip}}\" because it reports container readiness. A static site has no container, so that chip does not block this deploy."
+    },
+    "stuck": {
+      "title": "This is taking longer than expected",
+      "noImage": "The roll out has run for more than {{limit}} and the app reports that no image has been built for it. The build step produced no runnable image, so there is nothing to start.",
+      "health": "The roll out has run for more than {{limit}}. The new container is probably not answering its health check, or it keeps restarting."
+    },
+    "action": {
+      "containerLogs": "View container logs",
+      "healthPath": "Check the health path",
+      "network": "Open the Network tab",
+      "rollback": "Roll back from history",
+      "redeploy": "Check source and redeploy",
+      "buildTab": "Open the Build tab"
+    }
+  },
+  "live": {
+    "live": "Live",
+    "lastEvent": "last event {{ago}} ago",
+    "noEvents": "no events yet",
+    "reconnecting": "Reconnecting",
+    "reconnectIn": "retry in {{seconds}}s",
+    "retryNow": "Retry now",
+    "polling": "Live stream unavailable, refreshing every 3s",
+    "closed": "Deploy finished, live stream closed",
+    "connecting": "Connecting"
+  },
+  "build": {
+    "source": "Source",
+    "repo": "Repository",
+    "branch": "Branch",
+    "commit": "Commit",
+    "builder": "Builder",
+    "framework": "Detected framework",
+    "image": "Image",
+    "steps": "Build steps ({{count}})",
+    "traceSteps": "Pipeline trace ({{count}})",
+    "download": "Download",
+    "builderValue": {
+      "dockerfile": "Dockerfile",
+      "railpack": "Railpack",
+      "static": "Static files"
+    },
+    "empty": {
+      "noStepTitle": "This deploy had no build step",
+      "noStepBody": "A pre-built image was deployed as is, so there is no build output. The pipeline trace (digest, pull, start, health checks, cutover) appears here as soon as the deploy starts.",
+      "notCapturedTitle": "Build output was not captured",
+      "notCapturedBody": "The build did not record any log lines. The deploy itself completed, so the Roll out tab shows what happened next.",
+      "waitingTitle": "Waiting for build output",
+      "waitingBody": "Lines appear here as soon as the builder starts writing them."
+    }
+  },
+  "trace": {
+    "step": {
+      "resolve_digest": "Resolve tag to digest",
+      "registry_auth": "Registry auth check",
+      "image_pull": "Image pull",
+      "image_pull_layer": "Layer",
+      "image_inspect": "Image inspect",
+      "config_validate": "Config validation",
+      "ensure_network": "Ensure network",
+      "ensure_volume": "Ensure volume",
+      "container_create": "Create container",
+      "container_start": "Start container",
+      "docker_event": "Docker event",
+      "readiness_probe": "Readiness probe",
+      "readiness_gate": "Readiness gate",
+      "stability_gate": "Stability gate",
+      "cutover": "Cutover",
+      "drain_old": "Drain old container",
+      "retain_image": "Retain image for rollback",
+      "compose_parse": "Parse compose file",
+      "compose_plan": "Compose plan",
+      "compose_service": "Compose service",
+      "depends_on": "Dependency order",
+      "deploy_summary": "Deploy result"
+    },
+    "group": {
+      "compose": "Compose",
+      "image": "Image",
+      "prepare": "Prepare",
+      "container": "Container",
+      "readiness": "Readiness",
+      "cutover": "Cutover",
+      "summary": "Result"
+    },
+    "attempts_one": "tried {{count}} time",
+    "attempts_other": "tried {{count}} times",
+    "pullProgress": "Image pull progress",
+    "folded": {
+      "image_pull_layer_one": "{{count}} layer",
+      "image_pull_layer_other": "{{count}} layers",
+      "readiness_probe_one": "{{count}} probe attempt",
+      "readiness_probe_other": "{{count}} probe attempts",
+      "docker_event_one": "{{count}} daemon event",
+      "docker_event_other": "{{count}} daemon events"
+    }
+  },
+  "rollout": {
+    "title": "Roll out timeline",
+    "stageStatus": {
+      "pending": "Pending",
+      "running": "Running",
+      "done": "Done",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "unknown": "Not tracked"
+    },
+    "stage": {
+      "build": "Build",
+      "publish": "Publish",
+      "health-check": "Health check",
+      "cutover": "Cutover",
+      "cleanup": "Cleanup"
+    },
+    "reason": {
+      "pendingHealth": "Starts once the build has produced an image.",
+      "runningHealth": "Waiting for the new container to pass its readiness probe before it gets traffic.",
+      "runningNoImage": "Cannot start: no container image exists for this app yet.",
+      "pendingCutover": "Starts after the health check passes.",
+      "pendingCleanup": "Starts after traffic has moved to the new container.",
+      "doneBuild": "Build finished.",
+      "donePublish": "Files published directly by the ingress.",
+      "skippedBuild": "No build step ran for this deploy.",
+      "stuck": "Running longer than {{limit}}."
+    },
+    "staticNote": "Static site: published directly by the ingress, no container to health check.",
+    "started": "Started {{at}}",
+    "finished": "Finished {{at}}",
+    "duration": "Took {{duration}}",
+    "runningFor": "Running for {{duration}}",
+    "details": "Details",
+    "technical": "Technical details",
+    "gate": "Readiness gate and watch",
+    "probes": "Health probe attempts",
+    "conditionLine": "{{reason}} ({{status}}): {{message}}",
+    "noConditions": "The reconciler has not reported any status for this app yet."
+  },
+  "page": {
+    "notInHistory": "This deploy attempt is not in this app's current history.",
+    "currentChip": "Current"
+  },
+  "drawer": {
+    "whatWentWrong": "What went wrong",
+    "failedAtStep": "Failed at step: {{step}}",
+    "noErrorRecorded": "The deploy failed. No error was recorded.",
+    "lastLogLines": "Last log lines",
+    "tailFailed": "The log tail could not be loaded.",
+    "viewFullLogs": "View full logs",
+    "live": "Live",
+    "timing": "Timing",
+    "started": "Started",
+    "finished": "Finished",
+    "duration": "Duration",
+    "notFinished": "Not finished",
+    "source": "Source",
+    "trigger": "Trigger",
+    "rollbackTo": "Rollback to",
+    "branch": "Branch",
+    "commit": "Commit",
+    "message": "Message",
+    "author": "Author",
+    "pullRequest": "Pull request",
+    "app": "App",
+    "image": "Image",
+    "domains": "Domains",
+    "loadingDomains": "Loading domains",
+    "noDomains": "No domains configured.",
+    "preview": "Preview",
+    "supplyChain": "Supply chain"
+  }
+}

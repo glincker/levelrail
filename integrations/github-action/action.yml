@@ -1,0 +1,160 @@
+name: 'Levelrail Deploy and Report'
+description: 'Deploy an image to a Levelrail app, wait for the rollout, and report a GitHub deployment status and check run on the commit'
+branding:
+  icon: 'upload-cloud'
+  color: 'blue'
+
+inputs:
+  api-url:
+    description: 'Levelrail control plane base URL'
+    required: true
+  api-token:
+    description: 'Levelrail API token with at least the deploy ability. Leave empty with oidc: true to use the job identity instead.'
+    required: false
+    default: ''
+  oidc:
+    description: 'Set to "true" to swap the job OIDC identity for a short-lived deploy token (needs permissions: id-token: write and a CI trust on the app)'
+    required: false
+    default: 'false'
+  rollback-on-failure:
+    description: 'Set to "true" to redeploy the previously running image when the deploy fails or times out'
+    required: false
+    default: 'false'
+  app:
+    description: 'Name of the existing Levelrail app to deploy'
+    required: true
+  image:
+    description: 'Image reference to deploy. Build and push it in an earlier step.'
+    required: true
+  confirm:
+    description: 'Set to "true" to deploy into a protected environment'
+    required: false
+    default: 'false'
+  wait:
+    description: 'Set to "false" to return once the deploy is accepted'
+    required: false
+    default: 'true'
+  timeout:
+    description: 'Max time to wait for the rollout to converge (Go duration)'
+    required: false
+    default: '5m'
+  github-token:
+    description: 'Token used to post the deployment status and check run. Needs deployments: write and checks: write. Empty disables reporting.'
+    required: false
+    default: ${{ github.token }}
+  environment-url:
+    description: 'Public URL of the deployed app, shown on the GitHub deployment'
+    required: false
+    default: ''
+  sha:
+    description: 'Commit to report on. Defaults to the pull request head, or the pushed commit.'
+    required: false
+    default: ${{ github.event.pull_request.head.sha || github.sha }}
+  cli-version:
+    description: 'levelrail-cli release tag to install'
+    required: false
+    default: 'latest'
+
+outputs:
+  status:
+    description: '"succeeded", "failed", "timeout" or "accepted" (wait was "false")'
+    value: ${{ steps.deploy.outputs.status }}
+  report-warnings:
+    description: 'Number of GitHub report calls that failed. The deploy result is unaffected.'
+    value: ${{ steps.deploy.outputs.report-warnings }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install levelrail-cli
+      shell: bash
+      env:
+        REQUESTED_VERSION: ${{ inputs.cli-version }}
+      run: |
+        set -euo pipefail
+        install_dir="${RUNNER_TEMP:-/tmp}/levelrail-cli-bin"
+        if [ "$REQUESTED_VERSION" != "latest" ]; then
+          export LEVELRAIL_VERSION="$REQUESTED_VERSION"
+        fi
+        LEVELRAIL_CLI_INSTALL_DIR="$install_dir" sh "${GITHUB_ACTION_PATH}/../../install-cli.sh"
+        echo "$install_dir" >> "$GITHUB_PATH"
+
+    - name: Deploy and report
+      id: deploy
+      shell: bash
+      env:
+        APP_API_URL: ${{ inputs.api-url }}
+        APP_API_TOKEN: ${{ inputs.api-token }}
+        LR_APP: ${{ inputs.app }}
+        LR_IMAGE: ${{ inputs.image }}
+        LR_CONFIRM: ${{ inputs.confirm }}
+        LR_WAIT: ${{ inputs.wait }}
+        LR_TIMEOUT: ${{ inputs.timeout }}
+        LR_ENV_URL: ${{ inputs.environment-url }}
+        LR_SHA: ${{ inputs.sha }}
+        LR_OIDC: ${{ inputs.oidc }}
+        LR_ROLLBACK: ${{ inputs.rollback-on-failure }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: |
+        set -uo pipefail
+        if [ "$LR_OIDC" = "true" ]; then
+          APP_API_TOKEN=$(levelrail-cli apps github-actions token "$LR_APP") || { echo "::error::OIDC token exchange failed. Add a CI trust for this repository on the app."; exit 1; }
+          export APP_API_TOKEN
+          echo "::add-mask::$APP_API_TOKEN"
+        fi
+        previous_image=""
+        if [ "$LR_ROLLBACK" = "true" ]; then
+          previous_image=$(levelrail-cli apps get "$LR_APP" --json 2>/dev/null | sed -n 's/.*"image": *"\([^"]*\)".*/\1/p' | head -n 1)
+        fi
+        report=true
+        [ -n "${GITHUB_TOKEN:-}" ] || report=false
+        warnings=0
+
+        dep_id=""; check_id=""
+        if [ "$report" = true ]; then
+          start_out=$(levelrail-cli apps github-actions start "$LR_APP" --sha "$LR_SHA" --environment-url "$LR_ENV_URL" 2> >(tee ${RUNNER_TEMP:-/tmp}/lr-start.err >&2)) || start_out=""
+          dep_id=$(printf '%s\n' "$start_out" | sed -n 's/^deployment_id=//p')
+          check_id=$(printf '%s\n' "$start_out" | sed -n 's/^check_run_id=//p')
+          warnings=$((warnings + $(grep -c '^warning:' ${RUNNER_TEMP:-/tmp}/lr-start.err || true)))
+        fi
+
+        outcome=failed
+        confirm_flag=()
+        [ "$LR_CONFIRM" = "true" ] && confirm_flag=(--confirm)
+        if levelrail-cli apps deploy "$LR_APP" --image "$LR_IMAGE" "${confirm_flag[@]}"; then
+          if [ "$LR_WAIT" != "true" ]; then
+            outcome=accepted
+          else
+            levelrail-cli apps wait "$LR_APP" --timeout "$LR_TIMEOUT"
+            case $? in
+              0) outcome=succeeded ;;
+              6) outcome=timeout ;;
+              *) outcome=failed ;;
+            esac
+          fi
+        fi
+
+        case "$outcome" in
+          failed|timeout)
+            if [ -n "$previous_image" ] && [ "$previous_image" != "$LR_IMAGE" ]; then
+              echo "::warning::Deploy $outcome, rolling back to $previous_image"
+              levelrail-cli apps rollback "$LR_APP" --image "$previous_image" "${confirm_flag[@]}" || echo "::error::Rollback request failed"
+            fi
+            ;;
+        esac
+
+        if [ "$report" = true ]; then
+          levelrail-cli apps github-actions finish "$LR_APP" --sha "$LR_SHA" --environment-url "$LR_ENV_URL" \
+            --outcome "$outcome" --deployment-id "${dep_id:-0}" --check-run-id "${check_id:-0}" 2> >(tee ${RUNNER_TEMP:-/tmp}/lr-finish.err >&2) || true
+          warnings=$((warnings + $(grep -c '^warning:' ${RUNNER_TEMP:-/tmp}/lr-finish.err || true)))
+        fi
+
+        echo "status=$outcome" >> "$GITHUB_OUTPUT"
+        echo "report-warnings=$warnings" >> "$GITHUB_OUTPUT"
+        if [ "$warnings" -gt 0 ]; then
+          echo "::warning::$warnings GitHub status report call(s) failed. The deploy result above is unaffected."
+        fi
+        case "$outcome" in
+          succeeded|accepted) exit 0 ;;
+          *) exit 1 ;;
+        esac

@@ -1,0 +1,510 @@
+package api
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+func multiDeployBody() string {
+	return `{
+		"repo_url": "https://example.com/org/app.git",
+		"ref": "main",
+		"services": {
+			"web": {"build": {"type": "dockerfile", "path": "./web/Dockerfile"}, "port": 3000},
+			"worker": {"build": {"type": "dockerfile", "path": "./worker/Dockerfile"}, "port": 4000}
+		}
+	}`
+}
+
+func TestHandleDeploySpec_RequiresAuth(t *testing.T) {
+	rt, _ := newTestRouter(t)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/myapp/deploy-spec", nil)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestHandleDeploySpec_NotConfigured(t *testing.T) {
+	rt, db := newTestRouter(t) // no WithBuilder
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", multiDeployBody()))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotImplemented)
+	}
+}
+
+// Store persistence is covered in internal/deploy; this test checks the HTTP contract with a fake builder.
+func TestHandleDeploySpec_Success_CreatesTwoServicesUnderOneApp(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	fetch := newFakeFetch("/tmp/checkout", nil)
+	rt, db := newTestRouterWithBuilder(t, builder, fetch)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", multiDeployBody()))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var resp deploySpecResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	assertDeploySpecAllSucceeded(t, resp)
+
+	if builder.multiCalls != 1 {
+		t.Fatalf("builder.multiCalls = %d, want 1", builder.multiCalls)
+	}
+	assertMultiRequestFromBody(t, builder.lastMultiReq)
+
+	call := fetch.awaitCall(t)
+	if call.repoURL != "https://example.com/org/app.git" || call.ref != "main" {
+		t.Errorf("fetch call = %+v, want repoURL/ref from the request's repo_url/ref", call)
+	}
+}
+
+// A prebuilt-image service must be accepted alongside sibling services that need a real build.
+func TestHandleDeploySpec_ImageBuildTypeAccepted(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	fetch := newFakeFetch("/tmp/checkout", nil)
+	rt, db := newTestRouterWithBuilder(t, builder, fetch)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{
+		"repo_url": "https://example.com/org/app.git",
+		"ref": "main",
+		"services": {
+			"web": {"build": {"type": "dockerfile", "path": "./web/Dockerfile"}, "port": 3000},
+			"cache-admin": {"build": {"type": "image", "image": "ghcr.io/org/cache-admin:v1"}, "port": 8081}
+		}
+	}`
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if builder.multiCalls != 1 {
+		t.Fatalf("builder.multiCalls = %d, want 1: build.type image must not be rejected before reaching the builder", builder.multiCalls)
+	}
+
+	var resp deploySpecResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !resp.AllSucceeded {
+		t.Errorf("AllSucceeded = false, want true; services = %+v", resp.Services)
+	}
+}
+
+// Compose expansion is covered in internal/deploy; this only checks the request reaches the builder.
+func TestHandleDeploySpec_ComposeBuildTypeAccepted(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	fetch := newFakeFetch("/tmp/checkout", nil)
+	rt, db := newTestRouterWithBuilder(t, builder, fetch)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{
+		"repo_url": "https://example.com/org/app.git",
+		"ref": "main",
+		"services": {
+			"stack": {"build": {"type": "compose", "path": "./docker-compose.yml"}}
+		}
+	}`
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if builder.multiCalls != 1 {
+		t.Fatalf("builder.multiCalls = %d, want 1: build.type compose must not be rejected before reaching the builder", builder.multiCalls)
+	}
+}
+
+func assertDeploySpecAllSucceeded(t *testing.T, resp deploySpecResponse) {
+	t.Helper()
+	if !resp.AllSucceeded {
+		t.Errorf("AllSucceeded = false, want true; services = %+v", resp.Services)
+	}
+	if len(resp.Services) != 2 {
+		t.Fatalf("Services = %+v, want 2", resp.Services)
+	}
+	for _, s := range resp.Services {
+		if s.Error != "" {
+			t.Errorf("service %+v has an error, want none", s)
+		}
+		if s.Image == "" {
+			t.Errorf("service %+v has no image", s)
+		}
+	}
+}
+
+func assertMultiRequestFromBody(t *testing.T, req deploy.MultiRequest) {
+	t.Helper()
+	if req.AppName != "myapp" {
+		t.Errorf("AppName = %q, want %q", req.AppName, "myapp")
+	}
+	if req.ImageRepoBase != "myapp" {
+		t.Errorf("ImageRepoBase = %q, want %q (defaulted from the path segment)", req.ImageRepoBase, "myapp")
+	}
+	if req.CommitSHA != "main" {
+		t.Errorf("CommitSHA = %q, want %q", req.CommitSHA, "main")
+	}
+	if req.SourceDir != "/tmp/checkout" {
+		t.Errorf("SourceDir = %q, want %q (the fetched checkout dir)", req.SourceDir, "/tmp/checkout")
+	}
+	if len(req.Services) != 2 {
+		t.Errorf("Services = %+v, want 2 keys (web, worker)", req.Services)
+	}
+}
+
+// A partial fan-out failure is reported per service, with HTTP 2xx.
+func TestHandleDeploySpec_PartialFailure_StillReturns2xxWithPerServiceErrors(t *testing.T) {
+	builder := &fakeBuilder{
+		multiOutcomes: []deploy.ServiceOutcome{
+			{ServiceKey: "web", ServiceName: "myapp-web", Image: "img:sha"},
+			{ServiceKey: "worker", ServiceName: "myapp-worker", Err: errors.New("worker build failed")},
+		},
+	}
+	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", multiDeployBody()))
+	if rec.Code != http.StatusMultiStatus {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusMultiStatus, rec.Body.String())
+	}
+
+	var resp deploySpecResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if resp.AllSucceeded {
+		t.Error("AllSucceeded = true, want false")
+	}
+
+	var webResult, workerResult deploySpecServiceResult
+	for _, s := range resp.Services {
+		switch s.ServiceKey {
+		case "web":
+			webResult = s
+		case "worker":
+			workerResult = s
+		}
+	}
+	if webResult.Error != "" {
+		t.Errorf("web result = %+v, want no error", webResult)
+	}
+	if workerResult.Error == "" {
+		t.Error("worker result has no error, want the simulated failure surfaced")
+	}
+}
+
+func newTestRouterWithBuilderAndSecrets(t *testing.T, builder Builder, fetch *fakeFetch, setter SecretSetter) (*Router, *store.DB) {
+	t.Helper()
+	db := openTestDB(t)
+	rt := NewRouter(nil, testBrand(), db, WithBuilder(builder), WithSecretSetter(setter))
+	if fetch != nil {
+		rt.fetch = fetch.fetch
+	}
+	return rt, db
+}
+
+// The inline secret must be stored before the builder runs, so validateEnv sees it as set.
+func TestHandleDeploySpec_WithInlineSecret_Success(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithBuilderAndSecrets(t, builder, newFakeFetch("/tmp/checkout", nil), setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{
+		"repo_url": "https://example.com/org/app.git",
+		"ref": "main",
+		"services": {
+			"web": {"build": {"type": "dockerfile"}, "port": 3000, "env": {"API_KEY": {"secret": true, "required": true, "value": "sk-abc"}}}
+		}
+	}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "sk-abc") {
+		t.Errorf("body = %s, must never echo a secret value back", rec.Body.String())
+	}
+	if setter.calls != 1 || setter.lastService != "myapp-web" || setter.lastKey != "API_KEY" || setter.lastValue != "sk-abc" {
+		t.Errorf("setter called with (%q, %q, %q), calls=%d, want (myapp-web, API_KEY, sk-abc), calls=1",
+			setter.lastService, setter.lastKey, setter.lastValue, setter.calls)
+	}
+	if builder.multiCalls != 1 {
+		t.Fatalf("builder.multiCalls = %d, want 1", builder.multiCalls)
+	}
+}
+
+// A declared secret with no inline value still reaches the builder; resolution is Pipeline's job.
+func TestHandleDeploySpec_SecretDeclaredNoValue_BuilderStillRuns(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithBuilderAndSecrets(t, builder, newFakeFetch("/tmp/checkout", nil), setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{
+		"repo_url": "https://example.com/org/app.git",
+		"ref": "main",
+		"services": {
+			"web": {"build": {"type": "dockerfile"}, "port": 3000, "env": {"API_KEY": {"secret": true, "required": true}}}
+		}
+	}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if setter.calls != 0 {
+		t.Errorf("setter.calls = %d, want 0: no value was given", setter.calls)
+	}
+	if builder.multiCalls != 1 {
+		t.Fatalf("builder.multiCalls = %d, want 1", builder.multiCalls)
+	}
+}
+
+// TestHandleDeploySpec_Secrets_NotConfigured_Returns501 covers a control
+// plane with no master key configured: an inline secret value must fail
+// fast, before any git fetch or build work starts.
+func TestHandleDeploySpec_Secrets_NotConfigured_Returns501(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil)) // no WithSecretSetter
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{
+		"repo_url": "https://example.com/org/app.git",
+		"ref": "main",
+		"services": {
+			"web": {"build": {"type": "dockerfile"}, "port": 3000, "env": {"API_KEY": {"secret": true, "value": "sk-abc"}}}
+		}
+	}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", body))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusNotImplemented, rec.Body.String())
+	}
+	if builder.multiCalls != 0 {
+		t.Errorf("builder.multiCalls = %d, want 0: must fail before reaching the builder", builder.multiCalls)
+	}
+}
+
+// TestHandleDeploySpec_Secrets_Locked_Returns409 mirrors
+// TestHandleCreateApp_Secrets_Locked_Returns409 for the fan-out path.
+func TestHandleDeploySpec_Secrets_Locked_Returns409(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	setter := &fakeSecretSetter{locked: true}
+	rt, db := newTestRouterWithBuilderAndSecrets(t, builder, newFakeFetch("/tmp/checkout", nil), setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{
+		"repo_url": "https://example.com/org/app.git",
+		"ref": "main",
+		"services": {
+			"web": {"build": {"type": "dockerfile"}, "port": 3000, "env": {"API_KEY": {"secret": true, "value": "sk-new"}}}
+		}
+	}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", body))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+	}
+	if builder.multiCalls != 0 {
+		t.Errorf("builder.multiCalls = %d, want 0", builder.multiCalls)
+	}
+}
+
+func TestHandleDeploySpec_MissingRepoURL_Rejected(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", `{"ref":"main","services":{"web":{"build":{"type":"dockerfile"}}}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+}
+
+// TestHandleDeploySpec_FetchFails_LogsRedactedRepoURL proves a fetch
+// failure is reported as a 400 and that the error-path log line still
+// runs (it must never leak a credential embedded in repo_url).
+func TestHandleDeploySpec_FetchFails_LogsRedactedRepoURL(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("", errors.New("clone failed")))
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", multiDeployBody()))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if builder.multiCalls != 0 {
+		t.Errorf("builder.multiCalls = %d, want 0: a failed fetch must never reach the builder", builder.multiCalls)
+	}
+}
+
+func TestHandleDeploySpec_NoServices_Rejected(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", `{"repo_url":"https://example.com/x.git","ref":"main","services":{}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+}
+
+// TestHandleDeploySpec_SingleServiceName tables single_service_name's own
+// contract (deploy.MultiRequest.SingleServiceName): accepted and forwarded
+// for exactly one service, rejected outright for more than one.
+func TestHandleDeploySpec_SingleServiceName(t *testing.T) {
+	tests := []struct {
+		name           string
+		body           string
+		wantStatus     int
+		wantSingleName string
+	}{
+		{
+			name:           "forwarded for a single service",
+			body:           `{"repo_url":"https://example.com/x.git","ref":"main","single_service_name":"site","services":{"site":{"build":{"type":"static"}}}}`,
+			wantStatus:     http.StatusCreated,
+			wantSingleName: "site",
+		},
+		{
+			name:       "rejected alongside more than one service",
+			body:       `{"repo_url":"https://example.com/x.git","ref":"main","single_service_name":"site","services":{"web":{"build":{"type":"dockerfile"}},"worker":{"build":{"type":"dockerfile"}}}}`,
+			wantStatus: http.StatusBadRequest,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			builder := &fakeBuilder{tag: "img:sha"}
+			rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))
+			cookie := loginTestSession(t, rt, db)
+
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", tt.body))
+			if rec.Code != tt.wantStatus {
+				t.Fatalf("status = %d, want %d; body = %s", rec.Code, tt.wantStatus, rec.Body.String())
+			}
+			if tt.wantSingleName == "" {
+				return
+			}
+			if builder.lastMultiReq.SingleServiceName != tt.wantSingleName {
+				t.Errorf("MultiRequest.SingleServiceName = %q, want %q", builder.lastMultiReq.SingleServiceName, tt.wantSingleName)
+			}
+		})
+	}
+}
+
+func TestHandleDeploySpec_SingleServiceDeployStillWorks(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"classic","image":"levelrail/classic:1","port":3000}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "classic")
+	if err != nil {
+		t.Fatalf("GetDesiredService(classic): %v", err)
+	}
+	if svc.Image != "levelrail/classic:1" {
+		t.Errorf("Image = %q, want %q", svc.Image, "levelrail/classic:1")
+	}
+	if len(svc.Domains) != 0 {
+		t.Errorf("Domains = %v, want empty (no fan-out fields leaked into a single-service create)", svc.Domains)
+	}
+}
+
+const bindMountDeploySpecBody = `{
+	"repo_url": "https://example.com/org/app.git",
+	"ref": "main",
+	"services": {
+		"web": {"build": {"type": "dockerfile", "path": "./Dockerfile"}, "port": 3000, "volumes": [{"hostPath": "/srv/myapp/data", "path": "/data"}]}
+	}
+}`
+
+// Bind mounts need AbilityRoot on top of AbilityDeploy, as in the compose import path.
+func TestHandleDeploySpec_BindMount_PlainDeployToken_Forbidden(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))
+	ctx := context.Background()
+
+	const plaintext = "deploy-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_deploy", Name: "deployer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityDeploy}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/myapp/deploy-spec", strings.NewReader(bindMountDeploySpecBody))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d: a plain deploy token must not be able to bind-mount a host directory", rec.Code, http.StatusForbidden)
+	}
+	if builder.multiCalls != 0 {
+		t.Errorf("builder.multiCalls = %d, want 0 (rejected before ever reaching the builder)", builder.multiCalls)
+	}
+}
+
+// TestHandleDeploySpec_BindMount_RootCaller_Succeeds is the positive
+// counterpart: a root-ability caller can deploy the exact same
+// bind-mounting app.yaml service.
+func TestHandleDeploySpec_BindMount_RootCaller_Succeeds(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", bindMountDeploySpecBody))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if builder.multiCalls != 1 {
+		t.Fatalf("builder.multiCalls = %d, want 1", builder.multiCalls)
+	}
+}
+
+// Every service is tagged with the resolved commit, so a re-deploy does not move the tag.
+func TestHandleDeploySpec_TagsByResolvedCommit(t *testing.T) {
+	const resolved = "3333333333333333333333333333333333333333"
+	builder := &fakeBuilder{tag: "img:sha"}
+	fetch := newFakeFetchWithCommits("/tmp/checkout", resolved)
+	rt, db := newTestRouterWithBuilder(t, builder, fetch)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", multiDeployBody()))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if builder.lastMultiReq.CommitSHA != resolved {
+		t.Errorf("CommitSHA = %q, want the resolved commit %q, not the ref", builder.lastMultiReq.CommitSHA, resolved)
+	}
+}

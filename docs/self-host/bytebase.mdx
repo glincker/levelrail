@@ -1,0 +1,64 @@
+---
+title: "Self-host Bytebase with Docker"
+sidebarTitle: "Bytebase"
+description: "A database schema change and migration tool with review workflows built in."
+"og:url": "https://docs.levelrail.com/self-host/bytebase"
+---
+
+A database schema change and migration tool with review workflows built in.
+
+This page describes the Levelrail template for Bytebase (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.bytebase.com/get-started/step-by-step/deploy-with-docker.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `bytebase` | `bytebase/bytebase:3.9.2` | 8080 | `bytebase_data -&#62; /var/opt/bytebase` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`bytebase`): 8080:8080.
+- Stores data in named volumes (`bytebase`): bytebase_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Bytebase with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Bytebase. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy bytebase --name my-bytebase
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [Baserow](/self-host/baserow)
+- [Chroma](/self-host/chroma)
+- [ClickHouse](/self-host/clickhouse)
+- [CloudBeaver](/self-host/cloudbeaver)
+
+All templates are listed in the [self-host gallery](/self-host).

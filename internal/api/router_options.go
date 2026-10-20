@@ -1,0 +1,1188 @@
+package api
+
+import (
+	"context"
+	"github.com/GLINCKER/levelrail/internal/secrets"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/authengine"
+	"github.com/GLINCKER/levelrail/internal/changelog"
+	"github.com/GLINCKER/levelrail/internal/deploylog"
+	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/meshpath"
+	"github.com/GLINCKER/levelrail/internal/orphans"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
+)
+
+// Option configures optional Router behavior.
+type Option func(*Router)
+
+// WithDeployMaxConcurrent caps how many deploys run at once across all apps;
+// deploys over the cap wait as queued. Zero or less means unlimited.
+func WithDeployMaxConcurrent(n int) Option {
+	return func(rt *Router) { rt.deployMaxConcurrent = n }
+}
+
+// WithChangelog supplies the entries GET /api/v1/changelog serves,
+// parsed once at startup from the repo's own CHANGELOG.md (see
+// cmd/levelrail's loadChangelog). Without one configured (the default,
+// nil), that route answers an empty entries list rather than failing: a
+// bare, non-Docker install that hasn't shipped CHANGELOG.md next to the
+// binary yet just sees an empty "what's new" panel, not a broken one.
+func WithChangelog(entries []changelog.Entry) Option {
+	return func(rt *Router) { rt.changelogEntries = entries }
+}
+
+// WithSecretSetter enables PUT /api/v1/apps/{name}/secrets/{key}.
+// Without one configured (the default), that route returns 501: an
+// operator running Levelrail without APP_MASTER_KEY set gets a clear
+// "not configured" response instead of the route not existing at all or
+// silently discarding the value.
+func WithSecretSetter(s SecretSetter) Option {
+	return func(rt *Router) { rt.secrets = s }
+}
+
+// WithBackupSecrets enables POST /api/v1/backup-targets. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithSecretSetter's absence produces; listing,
+// getting, and deleting an already-connected backup target work
+// regardless, since none of those need to write a credential.
+func WithBackupSecrets(s BackupSecretsSetter) Option {
+	return func(rt *Router) { rt.backupSecrets = s }
+}
+
+// WithRegistryCredentialSecrets enables POST /api/v1/registry-credentials.
+// Without one configured (the default), that route returns 501; GET and
+// DELETE work regardless, the same shape WithBackupSecrets establishes.
+func WithRegistryCredentialSecrets(s RegistryCredentialSecretsSetter) Option {
+	return func(rt *Router) { rt.registryCredentialSecrets = s }
+}
+
+// WithNetworkShareSecrets enables POST/PUT /api/v1/network-shares for a
+// cifs share. Without one configured (the default), those return 501;
+// GET, DELETE, and an nfs share's create/update work regardless, the
+// same shape WithRegistryCredentialSecrets establishes.
+func WithNetworkShareSecrets(s NetworkShareSecretsSetter) Option {
+	return func(rt *Router) { rt.networkShareSecrets = s }
+}
+
+// WithFirewallRequiredPorts overrides the ports POST
+// /api/v1/firewall-rules refuses to deny or CIDR-restrict, defaulting to
+// firewall.DefaultRequiredPorts. Pass this instance's actually
+// configured management API, agent gRPC, and ingress ports whenever any
+// of them were moved off their default address: a lockout check against
+// the wrong port number is no check at all.
+func WithFirewallRequiredPorts(ports []int) Option {
+	return func(rt *Router) { rt.firewallRequiredPorts = ports }
+}
+
+// WithEmailSecrets enables PUT /api/v1/settings/email. Without one
+// configured (the default), that route returns 501; GET works regardless.
+func WithEmailSecrets(s EmailSecretsStore) Option {
+	return func(rt *Router) { rt.emailSecrets = s }
+}
+
+// WithAIVault enables the routes under /api/v1/settings/ai-assistant.
+func WithAIVault(v AIVault) Option {
+	return func(rt *Router) { rt.aiVault = v }
+}
+
+// WithAIUsage enables GET /api/v1/ai/usage and the monthly token count.
+func WithAIUsage(u AIUsageStore) Option {
+	return func(rt *Router) { rt.aiUsage = u }
+}
+
+// WithAIEngine enables every /api/v1/ai/... chat session route. Without
+// one configured (the default), they all return 501, the same
+// "not configured" shape WithBuilder's absence produces for the build
+// trigger route.
+func WithAIEngine(e AIEngine) Option {
+	return func(rt *Router) { rt.aiEngine = e }
+}
+
+// WithCloudflareTunnelSecrets enables PUT/DELETE
+// /api/v1/settings/cloudflare-tunnel. Without one configured (the
+// default), both return 501; GET works regardless, the same shape
+// WithEmailSecrets establishes.
+func WithCloudflareTunnelSecrets(s CloudflareTunnelSecrets) Option {
+	return func(rt *Router) { rt.cloudflareTunnelSecrets = s }
+}
+
+// WithCloudflareDNSSecrets enables PUT/DELETE
+// /api/v1/settings/cloudflare-dns. Without one configured (the default),
+// both return 501; GET works regardless, the same shape
+// WithCloudflareTunnelSecrets establishes.
+func WithCloudflareDNSSecrets(s CloudflareDNSSecrets) Option {
+	return func(rt *Router) { rt.cloudflareDNSSecrets = s }
+}
+
+// WithRoute53DNSSecrets enables PUT/DELETE /api/v1/settings/route53-dns.
+// Without one configured (the default), both return 501; GET works
+// regardless, the same shape WithCloudflareDNSSecrets establishes for
+// its own, independent ACME DNS-01 provider.
+func WithRoute53DNSSecrets(s Route53DNSSecrets) Option {
+	return func(rt *Router) { rt.route53DNSSecrets = s }
+}
+
+// WithCloudflareDNSTokenResolver enables
+// GET/POST/PUT/DELETE .../dns-records whenever Cloudflare DNS is the
+// configured provider: without one set (the default), those routes
+// return 501 unless Route53 DNS is configured instead. Distinct from
+// WithCloudflareDNSSecrets, which can only check whether a token is
+// stored, not read it back.
+func WithCloudflareDNSTokenResolver(r CloudflareDNSTokenResolver) Option {
+	return func(rt *Router) { rt.cloudflareDNSTokenResolver = r }
+}
+
+// WithRoute53DNSCredentialResolver is the same shape as
+// WithCloudflareDNSTokenResolver for the Route53 access key pair.
+func WithRoute53DNSCredentialResolver(r Route53DNSCredentialResolver) Option {
+	return func(rt *Router) { rt.route53DNSCredentialResolver = r }
+}
+
+// WithRegistrySecrets enables PUT/DELETE /api/v1/settings/registry.
+// Without one configured (the default), both return 501; GET works
+// regardless, the same shape WithCloudflareTunnelSecrets establishes.
+func WithRegistrySecrets(s RegistrySecrets) Option {
+	return func(rt *Router) { rt.registrySecrets = s }
+}
+
+// WithVaultSecrets enables PUT/DELETE /api/v1/settings/vault. Without
+// one configured (the default), both return 501; GET works regardless,
+// the same shape WithCloudflareTunnelSecrets establishes.
+func WithVaultSecrets(s VaultSecrets) Option {
+	return func(rt *Router) { rt.vaultSecrets = s }
+}
+
+// WithRegistryCatalogSecrets enables GET /api/v1/registry/repositories
+// and GET /api/v1/registry/tags. Without one configured (the default),
+// both return 501, the same shape WithRegistrySecrets establishes.
+func WithRegistryCatalogSecrets(s RegistryCatalogSecrets) Option {
+	return func(rt *Router) { rt.registryCatalogSecrets = s }
+}
+
+// WithDomainBasicAuthSecrets enables PUT/DELETE
+// /api/v1/apps/{name}/domains/{domain}/auth. Without one configured
+// (the default), both return 501; GET works regardless, the same shape
+// WithCloudflareTunnelSecrets establishes.
+func WithDomainBasicAuthSecrets(s DomainBasicAuthSecrets) Option {
+	return func(rt *Router) { rt.domainBasicAuthSecrets = s }
+}
+
+// WithDomainTLSCertSecrets enables PUT/DELETE
+// /api/v1/apps/{name}/domains/{domain}/tls-cert. Without one configured
+// (the default), both return 501; GET works regardless, the same shape
+// WithDomainBasicAuthSecrets establishes.
+func WithDomainTLSCertSecrets(s DomainTLSCertSecrets) Option {
+	return func(rt *Router) { rt.domainTLSCertSecrets = s }
+}
+
+// WithComposeSecrets enables POST /api/v1/apps/{name}/compose to
+// resolve a compose file's generatable SERVICE_ magic vars. Without one
+// configured (the default), that endpoint still works for compose files
+// with no such vars, and fails with a clear error for ones that need
+// one.
+func WithComposeSecrets(s ComposeSecretStore) Option {
+	return func(rt *Router) { rt.composeSecrets = s }
+}
+
+// WithEmailSender enables the actual send behind
+// POST /api/v1/auth/forgot-password. Without one, that route still
+// returns its generic success response, it just never sends anything.
+func WithEmailSender(s email.Sender) Option {
+	return func(rt *Router) { rt.emailSender = s }
+}
+
+// WithGitSourceSecrets enables PUT /api/v1/apps/{name}/git-source and
+// the git-push webhook route. Without one configured (the default),
+// both return 501; listing/getting/deleting a git source works
+// regardless, since neither needs to resolve a credential.
+func WithGitSourceSecrets(s GitSourceSecrets) Option {
+	return func(rt *Router) { rt.gitSourceSecrets = s }
+}
+
+// WithGitHubAppSecrets enables the GitHub App routes that read or write
+// a credential (manifest callback, installation callback, repo/branch
+// listing). Without one configured, those return 501; GET/DELETE
+// /api/v1/github-app work regardless.
+func WithGitHubAppSecrets(s GitHubAppSecrets) Option {
+	return func(rt *Router) { rt.githubAppSecrets = s }
+}
+
+// WithGitLabAppSecrets enables the GitLab App routes that read or write
+// a credential (connect, connect-start, callback, project listing,
+// use-as-source). Without one configured, those return 501; GET/DELETE
+// /api/v1/gitlab-app work regardless.
+func WithGitLabAppSecrets(s GitLabAppSecrets) Option {
+	return func(rt *Router) { rt.gitlabAppSecrets = s }
+}
+
+// WithBitbucketAppSecrets enables the Bitbucket App routes that read or
+// write a credential (connect, connect-start, callback, repo/branch
+// listing, use-as-source). Without one configured, those return 501;
+// GET/DELETE /api/v1/bitbucket-app work regardless.
+func WithBitbucketAppSecrets(s BitbucketAppSecrets) Option {
+	return func(rt *Router) { rt.bitbucketAppSecrets = s }
+}
+
+// WithGiteaAppSecrets enables the Gitea App routes that read or write a
+// credential (connect, connect-start, callback, repo/branch listing,
+// use-as-source). Without one configured, those return 501; GET/DELETE
+// /api/v1/gitea-app work regardless.
+func WithGiteaAppSecrets(s GiteaAppSecrets) Option {
+	return func(rt *Router) { rt.giteaAppSecrets = s }
+}
+
+// WithGitHubAppManifestConfig overrides the permissions/events a fresh
+// App registration requests (githubapp.BuildManifest's own doc
+// comment). Without one configured, NewRouter defaults to
+// githubapp.DefaultManifestConfig(), the same request this codebase has
+// always sent.
+func WithGitHubAppManifestConfig(cfg githubapp.ManifestConfig) Option {
+	return func(rt *Router) { rt.githubAppManifestConfig = cfg }
+}
+
+// WithBackupRunner enables POST /api/v1/databases/{name}/backups.
+// Without one configured (the default), that route returns 501, the
+// same "not configured" shape WithBackupSecrets' absence produces;
+// listing backup history (GET .../backups) works regardless, since it
+// only reads store.BackupHistory rows a runner already wrote in the
+// past, nothing about it needs a live runner today.
+func WithBackupRunner(r BackupRunner) Option {
+	return func(rt *Router) { rt.backupRunner = r }
+}
+
+// WithBackupDownloader enables
+// GET /api/v1/databases/{name}/backups/{historyId}/download. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithBackupRunner's absence produces: both need a
+// live secretsManager to resolve a target's credentials, WithBackupRunner
+// to upload with them, this to download with them.
+func WithBackupDownloader(d BackupDownloader) Option {
+	return func(rt *Router) { rt.backupDownloader = d }
+}
+
+// WithBackupDeleter enables
+// DELETE /api/v1/databases/{name}/backups/{historyId} and its app volume
+// counterpart. Without one configured (the default), both routes return
+// 501, the same "not configured" shape WithBackupDownloader's absence
+// produces: deleting the stored object behind a backup needs the same
+// live secretsManager to resolve a target's credentials that downloading
+// or uploading one does.
+func WithBackupDeleter(d BackupDeleter) Option {
+	return func(rt *Router) { rt.backupDeleter = d }
+}
+
+// WithBackupVerifier enables
+// POST /api/v1/databases/{name}/backups/{historyId}/verify. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithBackupRunner's absence produces: verifying
+// needs the identical live secretsManager WithBackupRunner and
+// WithBackupDownloader already depend on, to resolve a target's
+// credentials and re-download the object. Listing past verification
+// attempts (GET .../verifications) works regardless, the same "listing
+// needs no live runner" reasoning WithBackupRunner's own doc comment
+// gives for backup history.
+func WithBackupVerifier(v BackupVerifier) Option {
+	return func(rt *Router) { rt.backupVerifier = v }
+}
+
+// WithBackupTargetTester enables POST /api/v1/backup-targets/{id}/test.
+// Without one configured (the default), that route returns 501, the same
+// "not configured" shape WithRegistryAuthTester's absence produces for
+// registry credentials: both need a live secretsManager to resolve a
+// stored credential before using it.
+func WithBackupTargetTester(t BackupTargetTester) Option {
+	return func(rt *Router) { rt.backupTargetTester = t }
+}
+
+// WithRestoreRunner enables POST /api/v1/databases/{name}/restore.
+// Without one configured (the default), that route returns 501, the same
+// "not configured" shape WithBackupRunner's absence produces; listing
+// restore history (GET .../restores) works regardless, the same
+// "listing needs no live runner" reasoning WithBackupRunner's own doc
+// comment gives for backup history.
+func WithRestoreRunner(r RestoreRunner) Option {
+	return func(rt *Router) { rt.restoreRunner = r }
+}
+
+// WithBaseBackupRunner enables POST /api/v1/databases/{name}/base-backups.
+// Without one configured (the default), that route returns 501, the same
+// "not configured" shape WithBackupRunner's absence produces; listing
+// base backup history (GET .../base-backups) works regardless, the same
+// "listing needs no live runner" reasoning WithBackupRunner's own doc
+// comment gives.
+func WithBaseBackupRunner(r BaseBackupRunner) Option {
+	return func(rt *Router) { rt.baseBackupRunner = r }
+}
+
+// WithPITRRestoreRunner enables POST /api/v1/databases/{name}/pitr-restore
+// and GET /api/v1/databases/{name}/pitr's own live window computation.
+// Without one configured (the default), the restore route returns 501
+// and the status route reports enabled/enabled_at only, no window: the
+// same "not configured" shape WithRestoreRunner's absence produces.
+func WithPITRRestoreRunner(r PITRRestoreRunner) Option {
+	return func(rt *Router) { rt.pitrRestoreRunner = r }
+}
+
+// WithServiceVolumeBackupRunner enables
+// POST /api/v1/apps/{name}/volumes/{volume}/backups. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithBackupRunner's absence produces; listing
+// history and reading the schedule work regardless, the same "no live
+// runner needed" reasoning WithBackupRunner's own doc comment gives.
+func WithServiceVolumeBackupRunner(r ServiceVolumeBackupRunner) Option {
+	return func(rt *Router) { rt.serviceVolumeBackupRunner = r }
+}
+
+// WithServiceVolumeRestoreRunner enables
+// POST /api/v1/apps/{name}/volumes/{volume}/restore. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithRestoreRunner's absence produces.
+func WithServiceVolumeRestoreRunner(r ServiceVolumeRestoreRunner) Option {
+	return func(rt *Router) { rt.serviceVolumeRestoreRunner = r }
+}
+
+// WithCloneRestoreRunner enables
+// POST /api/v1/databases/{name}/restore-as-new. Without one configured
+// (the default), that route returns 501, the same "not configured" shape
+// WithRestoreRunner's absence produces; listing clone-restore history
+// (GET .../clone-restores) works regardless, the same "listing needs no
+// live runner" reasoning WithRestoreRunner's own doc comment gives.
+func WithCloneRestoreRunner(r CloneRestoreRunner) Option {
+	return func(rt *Router) { rt.cloneRestoreRunner = r }
+}
+
+// WithVolumeCloneRestoreRunner enables
+// POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithServiceVolumeRestoreRunner's absence
+// produces; listing clone-restore history (GET .../clone-restores) works
+// regardless, the same "listing needs no live runner" reasoning
+// WithCloneRestoreRunner's own doc comment gives.
+func WithVolumeCloneRestoreRunner(r VolumeCloneRestoreRunner) Option {
+	return func(rt *Router) { rt.volumeCloneRestoreRunner = r }
+}
+
+// WithSessionTTL overrides how long a session cookie stays valid.
+// Without one configured, defaultSessionTTL (24h) applies. The project's
+// "no hardcoded thresholds, use env vars" rule is honored one layer up,
+// at cmd/levelrail/main.go, which reads APP_SESSION_TTL and passes the
+// parsed duration here; this package itself never reads the environment
+// directly (NewRouter takes everything as constructor args, matching
+// every other option here).
+func WithSessionTTL(d time.Duration) Option {
+	return func(rt *Router) { rt.sessionTTL = d }
+}
+
+// WithRequestLogThresholds sets requestLoggingMiddleware's Warn/Error
+// duration bands. Either argument <= 0 keeps that band's own default.
+// cmd/levelrail/main.go resolves APP_SLOW_REQUEST_THRESHOLD/
+// APP_CRITICAL_REQUEST_THRESHOLD and calls this unconditionally, the
+// same "no hardcoded thresholds" convention WithSessionTTL's own doc
+// comment establishes.
+func WithRequestLogThresholds(slow, critical time.Duration) Option {
+	return func(rt *Router) {
+		rt.requestLogThresholds = requestLogThresholds{slow: slow, critical: critical}
+	}
+}
+
+// WithAutoPlacement overrides whether handleCreateApp/handleCreateDatabase
+// auto-place a create request that omits node_id onto the least-loaded
+// registered node (scheduling.go's autoPlaceNode), instead of leaving it
+// on this control plane's own local node. Defaults to true (NewRouter's
+// own struct literal); cmd/levelrail/main.go reads APP_AUTO_PLACEMENT and
+// calls this with false to disable it, the same "this package never
+// reads the environment directly" convention WithSessionTTL's own doc
+// comment establishes. An explicit node_id in a create request always
+// overrides this regardless of its value, on or off.
+func WithAutoPlacement(enabled bool) Option {
+	return func(rt *Router) { rt.autoPlacementEnabled = enabled }
+}
+
+// WithTelemetryQuerier enables GET /api/v1/apps/{name}/metrics and
+// GET /api/v1/apps/{name}/logs. Without one configured,
+// both routes return 501, the same "not configured" shape
+// WithSecretSetter's absence produces, rather than the routes not
+// existing at all or panicking on a nil dereference.
+func WithTelemetryQuerier(q TelemetryQuerier) Option {
+	return func(rt *Router) { rt.telemetry = q }
+}
+
+// WithReconcileNudger lets desired-state-changing handlers (app/database
+// create, stop, start, restart, delete) request an immediate reconcile
+// pass right after they save, instead of every such action waiting up
+// to a full resyncInterval to visibly take effect. Without one
+// configured (the default), those handlers still work exactly as
+// before: the resync ticker and Docker's own event stream are what
+// converge desired and observed state regardless.
+func WithReconcileNudger(n ReconcileNudger) Option {
+	return func(rt *Router) { rt.reconcileNudger = n }
+}
+
+// WithHSTS enables the Strict-Transport-Security response header.
+// Without it (the default), Strict-Transport-Security is never sent, see
+// Router.hstsEnabled's own doc comment for why that's the safe default.
+func WithHSTS(enabled bool) Option {
+	return func(rt *Router) { rt.hstsEnabled = enabled }
+}
+
+// WithAlertRules enables POST/GET /api/v1/apps/{name}/alerts and DELETE
+// /api/v1/apps/{name}/alerts/{id}. Without one
+// configured (the default), all three routes return 501, the same
+// "not configured" shape WithSecretSetter and WithTelemetryQuerier's
+// absence already produce: this control plane still starts and serves
+// everything else without an alerting.DB wired in.
+func WithAlertRules(a AlertRules) Option {
+	return func(rt *Router) { rt.alertRules = a }
+}
+
+// DeployNotifier is the narrow surface recordPlainDeployAttempt
+// (deploys.go) and beginBuildDeployAttempt (deploy_attempts.go) need to
+// fire a deploy-outcome notification once a deploy attempt reaches a
+// terminal state. *alerting.DeployDispatcher satisfies this
+// structurally. resourceID is resourceIDForApp(ev.AppName), computed by
+// the caller (see alerting.DeployDispatcher.Dispatch's own doc comment
+// for why it takes resourceID as a parameter rather than importing
+// resourceIDForApp itself).
+type DeployNotifier interface {
+	Dispatch(ctx context.Context, resourceID string, ev alerting.DeployOutcome)
+}
+
+// WithDeployNotifyTargets enables POST/GET
+// /api/v1/apps/{name}/deploy-notify-targets and DELETE
+// .../deploy-notify-targets/{id}: CRUD for deploy-outcome notification
+// destinations, the sibling surface to WithAlertRules for
+// wave-2 deploy-outcome notifications. Without one configured (the
+// default), all three routes return 501, the same "not configured"
+// shape WithAlertRules' own absence produces.
+func WithDeployNotifyTargets(t DeployNotifyTargets) Option {
+	return func(rt *Router) { rt.deployNotifyTargets = t }
+}
+
+// WithDeployNotifier enables the actual send: without one configured
+// (the default), a deploy attempt still finishes and is still recorded
+// exactly as it is today, it just never dispatches a notification, even
+// if WithDeployNotifyTargets has targets configured. Kept as a separate
+// option from WithDeployNotifyTargets on purpose, the same "listing
+// doesn't need a live runner" split WithBackupRunner/WithRestoreRunner
+// already establish: a control plane can serve deploy-notify-target CRUD
+// without necessarily having a dispatcher wired (e.g. in a test), and
+// vice versa cmd/levelrail/main.go always wires both together from the
+// same *alerting.DeployDispatcher, which itself embeds the
+// *alerting.DB that WithDeployNotifyTargets is given.
+func WithDeployNotifier(n DeployNotifier) Option {
+	return func(rt *Router) { rt.deployNotifier = n }
+}
+
+// WithNotificationChannels enables the notification-channel CRUD routes.
+// Without one configured (the default), they return 501.
+func WithNotificationChannels(c NotificationChannels) Option {
+	return func(rt *Router) { rt.notificationChannels = c }
+}
+
+// WithNotificationChannelTester enables the test-send routes: a real
+// send, not just a format check. Without one, they return 501.
+func WithNotificationChannelTester(t NotificationChannelTester) Option {
+	return func(rt *Router) { rt.notificationChannelTester = t }
+}
+
+// WithNotificationDeliveries enables the delivery-history route and
+// records a delivery row for every existing-channel test-send. Without
+// one, the deliveries route returns 501 and test-send simply skips
+// recording.
+func WithNotificationDeliveries(d NotificationDeliveryStore) Option {
+	return func(rt *Router) { rt.notificationDeliveries = d }
+}
+
+// WithPushVAPIDPublicKey enables browser push notifications: GET
+// .../push-subscriptions/vapid-public-key returns publicKey, and POST
+// .../push-subscriptions accepts new registrations. Without one
+// configured (the default, no master key set), both return 501: the
+// VAPID private key half can only ever be stored through secretsManager.
+func WithPushVAPIDPublicKey(publicKey string) Option {
+	return func(rt *Router) { rt.pushVAPIDPublicKey = publicKey }
+}
+
+// WithApprovalChatNotifier enables posting an interactive Approve/Deny
+// message (deploy_approval_chat_notify.go) when a deploy approval is
+// requested, to every notification channel that opted into
+// InteractiveApprovals. Without one, requestDeployApproval simply
+// doesn't post anything, the same "optional signal" shape as
+// WithDeployNotifier.
+func WithApprovalChatNotifier(n ApprovalChatNotifier) Option {
+	return func(rt *Router) { rt.approvalChatNotifier = n }
+}
+
+// TrustRootProbe reports the Sigstore trust root state without blocking and
+// can start a background refresh.
+type TrustRootProbe interface {
+	State() string
+	Warm()
+}
+
+// WithTrustRoot sets the probe the update preflight uses for release signature verification.
+func WithTrustRoot(p TrustRootProbe) Option {
+	return func(rt *Router) { rt.trustRoot = p }
+}
+
+// WithDataDir enables disk-usage reporting on GET /api/v1/system/status.
+// path should be the same APP_DATA_DIR the control plane itself was
+// started with. Without one configured (the default), the status
+// response simply omits the two data-dir byte fields, the same
+// "optional signal, absence is not an error" shape WithSecretSetter's
+// own absence already has for secret-setting.
+func WithDataDir(path string) Option {
+	return func(rt *Router) { rt.dataDir = path }
+}
+
+// SetLocalNodeID marks which node's row in GET /api/v1/nodes is the one
+// HostDiskCollector/HostMemoryCollector's readings are real for: the
+// node running the control plane process itself. A late setter, not a
+// construction Option, because cmd/levelrail's mesh setup (the only
+// source of this ID) runs after NewRouter is called; safe to call any
+// time before the HTTP server starts accepting requests.
+func (rt *Router) SetLocalNodeID(id string) {
+	rt.localNodeID = id
+	if rt.models != nil {
+		rt.models.SetLocalNodeID(id)
+	}
+}
+
+// SetMeshZone mirrors SetLocalNodeID's own late-setter shape, for the
+// identical reason: cmd/levelrail's mesh setup (the only source of this
+// value, application.WithMeshZone's own call site) runs after NewRouter
+// is called. Empty means mesh DNS resolution is off, the same "not
+// configured, not broken" default application.Controller itself uses.
+func (rt *Router) SetMeshZone(zone string) {
+	rt.meshZone = zone
+}
+
+// SetMesh wires GET /api/v1/mesh and POST /api/v1/nodes/{id}/mesh/rotate-key
+// to this node's live mesh device and coordinator. A late setter for the
+// same reason SetLocalNodeID is: cmd/levelrail's mesh setup runs after
+// NewRouter is called. Either argument may be nil independently (a test
+// or an embedder that wants status but not rotation, or vice versa); both
+// routes check their own dependency and return 501 rather than assuming
+// the other was set too.
+func (rt *Router) SetMesh(mesh MeshStatusProvider, rotator MeshKeyRotator) {
+	rt.mesh = mesh
+	rt.meshRotator = rotator
+}
+
+// SetMeshPaths sets the resolver the doctor and app status use to tell
+// whether a remote node's app can be routed over the WireGuard mesh.
+func (rt *Router) SetMeshPaths(r meshpath.Resolver) {
+	rt.meshPaths = r
+}
+
+// WithMasterKeyRotation enables POST
+// /api/v1/system/master-key/rotate and the doctor's rotation-age check.
+// masterKeyFilePath should be the on-disk path the running control plane
+// loaded its master key from, or "" if it came from APP_MASTER_KEY
+// instead: see MasterKeyRotator's own doc comment for what that
+// distinction changes about a rotation's response. Without this option
+// configured (the default), the route returns 501, the same shape
+// WithSecretSetter's own absence produces.
+func WithMasterKeyRotation(r MasterKeyRotator, masterKeyFilePath string) Option {
+	return func(rt *Router) {
+		rt.masterKeyRotator = r
+		rt.masterKeyFilePath = masterKeyFilePath
+	}
+}
+
+// WithMasterKeyWrapper makes rotation persist the new key wrapped by the external key service.
+func WithMasterKeyWrapper(w secrets.KeyWrapper) Option {
+	return func(rt *Router) { rt.masterKeyWrapper = w }
+}
+
+// WithDoctorMasterKeyRotationWarnAge overrides the age GET
+// /api/v1/system/doctor's master_key_rotation check warns beyond, the
+// same env-var-overridable-threshold shape WithDoctorDiskWarningBytes
+// already establishes for disk_space.
+func WithDoctorMasterKeyRotationWarnAge(d time.Duration) Option {
+	return func(rt *Router) { rt.doctorMasterKeyRotationWarnAge = d }
+}
+
+// WithDockerPinger enables Docker daemon connectivity reporting on
+// GET /api/v1/system/status. Without one configured (the default), the
+// response's DockerConnected field simply stays false, the same
+// "optional signal, absence is not an error" shape WithDataDir and
+// WithSecretSetter's own absence already have.
+func WithDockerPinger(p DockerPinger) Option {
+	return func(rt *Router) { rt.dockerPinger = p }
+}
+
+// WithRegistryAuthTester enables POST
+// /api/v1/registry-credentials/{id}/test. Without one configured (the
+// default), that route returns 501, the same shape WithDockerPinger's
+// own absence produces for GET /api/v1/system/status.
+func WithRegistryAuthTester(t RegistryAuthTester) Option {
+	return func(rt *Router) { rt.registryAuthTester = t }
+}
+
+// WithImageLister enables GET /api/v1/apps/{name}/images. Without one
+// configured (the default), that route returns an empty list rather
+// than 501 or 404: the deploy trigger form's manual text input always
+// works regardless, so a missing image lister is "no suggestions
+// available" (an empty array), not a request error, the same
+// "optional signal, absence is not an error" shape WithDockerPinger's
+// own absence already has.
+func WithImageLister(l ImageLister) Option {
+	return func(rt *Router) { rt.images = l }
+}
+
+// WithContainerLister enables GET /api/v1/system/containers. Without
+// one configured (the default), that route returns 501, the same
+// "not configured" shape WithExecRuntime's own absence already has.
+func WithContainerLister(l ContainerLister) Option {
+	return func(rt *Router) { rt.containers = l }
+}
+
+// WithDockerDiskUsager enables the docker_disk_usage field on
+// GET /api/v1/system/status. Without one configured (the default), that
+// field is simply omitted, the same "optional signal, absence is not an
+// error" shape WithDockerPinger's own absence already has.
+func WithDockerDiskUsager(u DockerDiskUsager) Option {
+	return func(rt *Router) { rt.dockerDiskUsage = newCachedDiskUsager(u, defaultDiskUsageCacheTTL) }
+}
+
+// WithDBPinger enables the database check on GET /api/v1/system/doctor.
+// Without one configured (the default), that check reports unknown, the
+// same "optional signal, absence is not an error" shape WithDockerPinger's
+// own absence already has.
+func WithDBPinger(p DBPinger) Option {
+	return func(rt *Router) { rt.dbPinger = p }
+}
+
+// WithAgentCAFingerprint sets the agent CA fingerprint returned with each
+// new node join token, so the enrollment command can pin it.
+func WithAgentCAFingerprint(fp string) Option {
+	return func(rt *Router) { rt.agentCAFingerprint = fp }
+}
+
+// WithNodeProviderSecrets enables POST /api/v1/node-providers and every
+// node-providers/{provider}/... route. Without it (the default), those
+// routes return 501, the same shape WithCloudflareDNSSecrets establishes
+// for its own credential.
+func WithNodeProviderSecrets(s NodeProviderSecrets) Option {
+	return func(rt *Router) { rt.nodeProviderSecrets = s }
+}
+
+// WithNodeProvisions overrides the node provision store NewRouter
+// otherwise wires to s (the *store.DB passed to NewRouter, which
+// satisfies NodeProvisionStore structurally). This package's own tests
+// use it to inject a store that fails a specific call, for the
+// half-succeeded-write path handleCreateNodeProvision must handle.
+func WithNodeProvisions(s NodeProvisionStore) Option {
+	return func(rt *Router) { rt.nodeProvisions = s }
+}
+
+// WithNodeProvisionerFactory overrides how a NodeProvisioner is built
+// from a provider name and resolved token, for this package's own tests.
+// Production callers leave this unset; NewRouter's default,
+// defaultNodeProvisionerFactory, builds real internal/provision clients.
+func WithNodeProvisionerFactory(f NodeProvisionerFactory) Option {
+	return func(rt *Router) { rt.nodeProvisionerFactory = f }
+}
+
+// WithSSHNodeProvisions overrides the SSH node provision store NewRouter
+// otherwise wires to s (the *store.DB passed to NewRouter, which
+// satisfies SSHNodeProvisionStore structurally), the same "seam for a
+// failing fake" shape WithNodeProvisions establishes for the cloud path.
+func WithSSHNodeProvisions(s SSHNodeProvisionStore) Option {
+	return func(rt *Router) { rt.sshProvisions = s }
+}
+
+// WithSSHProvisioner overrides the SSH provisioner NewRouter otherwise
+// defaults to (sshprovision.New()), for this package's own tests: a fake
+// that never dials a real network.
+func WithSSHProvisioner(p SSHProvisioner) Option {
+	return func(rt *Router) { rt.sshProvisioner = p }
+}
+
+// WithIngressPortOwner lets GET /api/v1/system/doctor's port_<n>
+// checks recognize a bind failure caused by this control plane's own
+// embedded ingress (internal/ingress.Driver) as expected rather than a
+// real problem. Without one configured (the default), a bound port
+// always reports fail, the same behavior this check had before ingress
+// ownership was distinguishable.
+func WithIngressPortOwner(o IngressPortOwner) Option {
+	return func(rt *Router) { rt.ingressPortOwner = o }
+}
+
+// WithDashboardListenAddr tells the reverse proxy guide where the dashboard listens.
+func WithDashboardListenAddr(addr string) Option {
+	return func(rt *Router) { rt.dashboardListenAddr = addr }
+}
+
+// WithDoctorIngressPorts overrides the two ports GET /api/v1/system/
+// doctor's port_<n> checks probe, in place of the literal 80/443
+// defaultDoctorHTTPPort/defaultDoctorHTTPSPort ports. cmd/levelrail/
+// main.go passes the same APP_INGRESS_HTTP_ADDR/APP_INGRESS_HTTPS_ADDR-
+// derived ports already threaded to ingressreconcile.WithHTTPListenAddr/
+// WithListenAddr, so doctor stays accurate for an instance running its
+// ingress on non-default ports. Either argument being 0 keeps that
+// port's own default.
+func WithDoctorIngressPorts(httpPort, httpsPort int) Option {
+	return func(rt *Router) {
+		rt.doctorHTTPPort = httpPort
+		rt.doctorHTTPSPort = httpsPort
+	}
+}
+
+// WithDoctorDiskWarningBytes overrides the free-space floor GET
+// /api/v1/system/doctor's disk_space check warns below. Without one
+// configured (or passed as 0), defaultDoctorDiskWarningBytes (1GiB)
+// applies. Same "no hardcoded thresholds, use env vars" shape as
+// WithCertExpiryWarningWindow: this package never reads the environment
+// directly, cmd/levelrail/main.go reads APP_DOCTOR_DISK_WARNING_BYTES
+// and passes the parsed value here.
+func WithDoctorDiskWarningBytes(n int64) Option {
+	return func(rt *Router) { rt.doctorDiskWarningBytes = n }
+}
+
+// WithDoctorNetworkTimeout overrides the bounded overall timeout GET
+// /api/v1/system/doctor's network checks (public_ip,
+// external_reachability_*, acme_reachability, clock_skew) share, the
+// same "no hardcoded thresholds" shape as WithDoctorDiskWarningBytes.
+// Zero keeps defaultDoctorNetworkTimeout.
+func WithDoctorNetworkTimeout(d time.Duration) Option {
+	return func(rt *Router) { rt.doctorNetworkTimeout = d }
+}
+
+// WithDoctorPublicIPEndpoint overrides the plain-text-IP endpoint the
+// public_ip check queries, in place of defaultDoctorPublicIPEndpoint.
+// Lets an operator behind an egress proxy, or one who simply distrusts a
+// third-party default, point this at their own endpoint.
+func WithDoctorPublicIPEndpoint(url string) Option {
+	return func(rt *Router) { rt.doctorPublicIPEndpoint = url }
+}
+
+// WithDoctorClockSkewWarnAge overrides how far this host's clock may
+// drift from the remote HTTP Date header the clock_skew check compares
+// against before it warns. Zero keeps defaultDoctorClockSkewWarnAge.
+func WithDoctorClockSkewWarnAge(d time.Duration) Option {
+	return func(rt *Router) { rt.doctorClockSkewWarnAge = d }
+}
+
+// WithDoctorMinRAMBytes overrides the recommended-minimum total memory
+// the ram check warns below. Zero keeps defaultDoctorMinRAMBytes.
+func WithDoctorMinRAMBytes(n int64) Option {
+	return func(rt *Router) { rt.doctorMinRAMBytes = n }
+}
+
+// WithDoctorMinCPUCount overrides the recommended-minimum CPU core count
+// the cpu check warns below. Zero keeps defaultDoctorMinCPUCount.
+func WithDoctorMinCPUCount(n int) Option {
+	return func(rt *Router) { rt.doctorMinCPUCount = n }
+}
+
+// WithDoctorAgentAdvertise tells the agent_advertise_reachability check
+// which address a real agent would dial: APP_AGENT_ADVERTISE_HOST and the
+// port cmd/levelrail/main.go's own agentAddr() binds the agent gRPC
+// service on. Empty host or zero port makes that check report unknown.
+func WithDoctorAgentAdvertise(host string, port int) Option {
+	return func(rt *Router) {
+		rt.doctorAgentAdvertiseHost = host
+		rt.doctorAgentAdvertisePort = port
+	}
+}
+
+// WithDoctorDiskIOWarnLatency overrides the write+fsync latency the
+// disk_io_latency check warns above, in place of
+// defaultDoctorDiskIOWarnLatency. Zero keeps that default.
+func WithDoctorDiskIOWarnLatency(d time.Duration) Option {
+	return func(rt *Router) { rt.doctorDiskIOWarnLatency = d }
+}
+
+// WithDockerPruner enables POST /api/v1/system/prune. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithBuilder's own absence produces.
+func WithDockerPruner(p DockerPruner) Option {
+	return func(rt *Router) { rt.dockerPruner = p }
+}
+
+// WithOrphanedVolumeManager enables GET /api/v1/system/volumes/orphaned
+// and POST /api/v1/system/volumes/orphaned/cleanup. Without one
+// configured (the default), both routes return 501, the same
+// "not configured" shape WithDockerPruner's absence produces.
+func WithOrphanedVolumeManager(m OrphanedVolumeManager) Option {
+	return func(rt *Router) { rt.orphanedVolumes = m }
+}
+
+// SetOrphanReaper enables GET /api/v1/system/orphans and POST
+// /api/v1/system/orphans/reap, backed by the same reaper the reconcile loop runs.
+func (rt *Router) SetOrphanReaper(r *orphans.Reaper) { rt.orphanReaper = r }
+
+// WithOrphanedContainerManager enables POST
+// /api/v1/system/containers/{name}/stop and .../remove. Without one
+// configured (the default), both routes return 501, the same
+// "not configured" shape WithOrphanedVolumeManager's absence produces.
+func WithOrphanedContainerManager(m OrphanedContainerManager) Option {
+	return func(rt *Router) { rt.orphanedContainers = m }
+}
+
+// WithExecRuntime enables POST /apps/{name}/exec (exec.go's
+// handleExecApp). Without one configured (the default), that route
+// returns 501, the same "not configured" shape WithDockerPruner's
+// absence produces: a control plane can run every other route with no
+// resolver wired in, exec is the one action that needs live node
+// routing (NodeRuntimeResolver's own doc comment).
+func WithExecRuntime(r NodeRuntimeResolver) Option {
+	return func(rt *Router) { rt.execRuntime = r }
+}
+
+// WithScheduledTaskRunner enables POST
+// /api/v1/apps/{name}/scheduled-tasks/{id}/run. Without one configured
+// (the default), that route returns 501: scheduled task CRUD still
+// works either way (rt.scheduledTasks is always set), only actually
+// running one on demand needs this. r should be the exact same
+// *scheduledtask.Runner instance cmd/levelrail/main.go wires into
+// scheduledtask.NewScheduler, the same "construct once, share by
+// reference" reasoning WithBackupRunner's own doc comment gives for
+// backupRunner.
+func WithScheduledTaskRunner(r ScheduledTaskRunner) Option {
+	return func(rt *Router) { rt.scheduledTaskRunner = r }
+}
+
+// WithCertExpiryWarningWindow overrides how far ahead of a certificate's
+// expiry GET /api/v1/certificates starts reporting "expiring_soon"
+// instead of "healthy" (see alerting.CertExpiryStatus). Without one
+// configured (or passed as 0), alerting.DefaultCertExpiryWarningWindow
+// (14 days) applies. Same "no hardcoded thresholds, use env vars" shape
+// as WithSessionTTL: this package never reads the environment directly,
+// cmd/levelrail/main.go reads APP_CERT_EXPIRY_WARNING_WINDOW and passes
+// the parsed duration here, and to alerting.NewEngine for a
+// kind=cert_expiry rule's own evaluation.
+func WithCertExpiryWarningWindow(d time.Duration) Option {
+	return func(rt *Router) { rt.certExpiryWarningWindow = d }
+}
+
+// WithCertRenewalTracking lets GET /api/v1/certificates report a stalled
+// renewal from the observations kind=cert_expiry rules record. A zero
+// threshold falls back to alerting.DefaultCertRenewalStalledThreshold.
+func WithCertRenewalTracking(src CertObservationSource, stalledThreshold time.Duration) Option {
+	return func(rt *Router) {
+		rt.certObservations = src
+		rt.certRenewalStalledThreshold = stalledThreshold
+	}
+}
+
+// nodeAlertThresholds mirrors the four threshold arguments
+// alerting.NewEngine takes for its node-scoped rules (patch_status,
+// node_disk_space, node_resource_usage's CPU and memory signals), so GET
+// /api/v1/nodes/{id} can pass the identical values into
+// alerting.CheckNodeAlertStatus. 0 on any field means "use that kind's
+// own default".
+type nodeAlertThresholds struct {
+	patchStatus   float64
+	nodeDiskSpace float64
+	nodeCPU       float64
+	nodeMemory    float64
+}
+
+// WithNodeAlertThresholds sets the thresholds GET /api/v1/nodes/{id} uses
+// for its live alert_status section, the same values
+// cmd/levelrail/main.go already resolves (from APP_ALERT_PATCH_STATUS_THRESHOLD,
+// APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT, APP_ALERT_NODE_CPU_THRESHOLD_PERCENT,
+// APP_ALERT_NODE_MEMORY_THRESHOLD_BYTES) and passes to alerting.NewEngine, so
+// a rule's scheduled evaluation and a node's on-demand check never disagree.
+func WithNodeAlertThresholds(patchStatus, nodeDiskSpace, nodeCPU, nodeMemory float64) Option {
+	return func(rt *Router) {
+		rt.nodeAlertThresholds = nodeAlertThresholds{
+			patchStatus:   patchStatus,
+			nodeDiskSpace: nodeDiskSpace,
+			nodeCPU:       nodeCPU,
+			nodeMemory:    nodeMemory,
+		}
+	}
+}
+
+// WithPreviewTTL overrides how long a preview environment can go without
+// a webhook update before SweepStalePreviewEnvironments tears it down.
+// Without one configured (or passed as 0), defaultPreviewTTL (7 days)
+// applies. Same "no hardcoded thresholds, use env vars" shape as
+// WithCertExpiryWarningWindow: this package never reads the environment
+// directly, cmd/levelrail/main.go reads APP_PREVIEW_TTL and passes the
+// parsed duration here.
+func WithPreviewTTL(d time.Duration) Option {
+	return func(rt *Router) { rt.previewTTL = d }
+}
+
+// WithInviteTTL overrides how long a team invite stays acceptable before
+// GetInviteByHash's expiry check rejects it. Without one configured (or
+// passed as 0), defaultInviteTTL (7 days) applies. Same "no hardcoded
+// thresholds, use env vars" shape as WithPreviewTTL: this package never
+// reads the environment directly, cmd/levelrail/main.go reads
+// APP_INVITE_TTL and passes the parsed duration here.
+func WithInviteTTL(d time.Duration) Option {
+	return func(rt *Router) { rt.inviteTTL = d }
+}
+
+// WithAuditLogRetention overrides how long an audit_log row survives
+// before PurgeOldAuditEntries removes it. Without one configured (or
+// passed as 0), defaultAuditLogRetention (90 days) applies. Same "no
+// hardcoded thresholds, use env vars" shape as WithPreviewTTL: this
+// package never reads the environment directly, cmd/levelrail/main.go
+// reads APP_AUDIT_LOG_RETENTION_DAYS and passes the parsed duration here.
+func WithAuditLogRetention(d time.Duration) Option {
+	return func(rt *Router) { rt.auditLogRetention = d }
+}
+
+// WithWebhookDeliveryRetention overrides how long a webhook_deliveries
+// row survives before PurgeOldWebhookDeliveries removes it. Without one
+// configured (or passed as 0), defaultWebhookDeliveryRetention (30 days)
+// applies. Same "no hardcoded thresholds, use env vars" shape as
+// WithAuditLogRetention: this package never reads the environment
+// directly, cmd/levelrail/main.go reads APP_WEBHOOK_DELIVERY_RETENTION_DAYS
+// and passes the parsed duration here.
+func WithWebhookDeliveryRetention(d time.Duration) Option {
+	return func(rt *Router) { rt.webhookDeliveryRetention = d }
+}
+
+// WithWebhookFailedDeliveryLimits sets how many unsigned webhook
+// deliveries are kept per app and how many body bytes each retains. A
+// zero value keeps the default (20 rows, 2048 bytes). cmd/levelrail/main.go
+// reads APP_WEBHOOK_FAILED_DELIVERY_KEEP and APP_WEBHOOK_FAILED_BODY_BYTES.
+func WithWebhookFailedDeliveryLimits(keep, bodyBytes int) Option {
+	return func(rt *Router) {
+		rt.webhookFailedKeep = keep
+		rt.webhookFailedBodyBytes = bodyBytes
+	}
+}
+
+// WithSecretRotationWarnAge overrides how old a secret's last-set value
+// can get before it is flagged as due for rotation (GET
+// /apps/{name}/secrets, GET .../env/all, and the doctor's stale_secrets
+// check). Without one configured (or passed as 0),
+// defaultSecretRotationWarnAge (90 days) applies. Same "no hardcoded
+// thresholds, use env vars" shape as WithAuditLogRetention: this package
+// never reads the environment directly, cmd/levelrail/main.go reads
+// APP_SECRET_ROTATION_WARN_DAYS and passes the parsed duration here.
+func WithSecretRotationWarnAge(d time.Duration) Option {
+	return func(rt *Router) { rt.secretRotationWarnAge = d }
+}
+
+// WithStaleSecretCounter enables the stale_secrets check on GET
+// /api/v1/system/doctor. Without one configured (the default), that
+// check reports unknown, the same "optional signal, absence is not an
+// error" shape WithDBPinger's own absence already has.
+func WithStaleSecretCounter(c StaleSecretCounter) Option {
+	return func(rt *Router) { rt.staleSecretCounter = c }
+}
+
+// WithDeployApprovalTTL overrides how long a pending deploy approval
+// (deploy_approvals.go) stays decidable before it's treated as expired.
+// Without one configured (or passed as 0), defaultDeployApprovalTTL (24
+// hours) applies. Same "no hardcoded thresholds, use env vars" shape as
+// WithAuditLogRetention: this package never reads the environment
+// directly, cmd/levelrail/main.go reads APP_DEPLOY_APPROVAL_TTL and
+// passes the parsed duration here.
+func WithDeployApprovalTTL(d time.Duration) Option {
+	return func(rt *Router) { rt.deployApprovalTTL = d }
+}
+
+// WithResourceRecommendationLookback overrides how far back GET
+// /api/v1/apps/{name}/resource-recommendation looks for usage history
+// (handleAppResourceRecommendation). Without one configured (or passed as
+// 0), defaultResourceRecommendationLookback (7 days) applies. Same "no
+// hardcoded thresholds, use env vars" shape as WithSessionTTL/
+// WithCertExpiryWarningWindow: this package never reads the environment
+// directly, cmd/levelrail/main.go reads APP_RESOURCE_RECOMMENDATION_LOOKBACK
+// and passes the parsed duration here.
+func WithResourceRecommendationLookback(d time.Duration) Option {
+	return func(rt *Router) { rt.resourceRecommendationLookback = d }
+}
+
+// WithCapacityForecastLookback overrides how far back GET
+// /api/v1/nodes/{id}/capacity-forecast looks for disk/memory history
+// (handleNodeCapacityForecast). Without one configured (or passed as
+// 0), defaultCapacityForecastLookback (14 days) applies. Same "no
+// hardcoded thresholds, use env vars" shape as
+// WithResourceRecommendationLookback: this package never reads the
+// environment directly, cmd/levelrail/main.go reads
+// APP_CAPACITY_FORECAST_LOOKBACK and passes the parsed duration here.
+func WithCapacityForecastLookback(d time.Duration) Option {
+	return func(rt *Router) { rt.capacityForecastLookback = d }
+}
+
+// WithPublicHost sets the IP or hostname GET
+// /api/v1/apps/{name}/domains/{domain}/check tells an operator to point
+// their DNS record at (domain_check.go's advertisedHost). Without one
+// configured (the default), that handler falls back to a best-effort
+// guess from the request's own Host header instead of failing: this
+// package never reads the environment directly, cmd/levelrail/main.go
+// reads APP_PUBLIC_HOST and passes it here, the same shape
+// WithCertExpiryWarningWindow already follows for its own env var.
+func WithPublicHost(host string) Option {
+	return func(rt *Router) { rt.publicHost = host }
+}
+
+// WithPublicHostSource records how the public host was found ("env",
+// "detected", "disabled" or "none"), shown on the ingress settings page.
+func WithPublicHostSource(source string) Option {
+	return func(rt *Router) { rt.publicHostSource = source }
+}
+
+// WithBuilder enables POST /api/v1/apps/{name}/builds: a manual build
+// trigger for an operator with no working git webhook configured (see
+// internal/webhook.Config's own doc comment on why that path is
+// deliberately static, single-app configuration). Without one configured
+// (the default), that route returns 501, the same "not configured" shape
+// WithSecretSetter/WithTelemetryQuerier/WithAlertRules absence already
+// share. cmd/levelrail/main.go passes the same *deploy.Pipeline the git
+// webhook receiver uses, when a BuildKit connection was successfully
+// established at startup.
+func WithBuilder(b Builder) Option {
+	return func(rt *Router) { rt.builder = b }
+}
+
+// WithDeployLogQuerier enables a finished deploy attempt's full log replay
+// on GET /api/v1/apps/{name}/deploys/{deployId}/logs. Without one
+// configured (the default), that route returns 501 for an attempt that
+// has already finished; an in-progress attempt's live tail is unaffected
+// (see WithDeployRecorder). cmd/levelrail/main.go passes the same
+// *telemetry.DB internal/deploylog.Recorder writes to.
+func WithDeployLogQuerier(s DeployLogQuerier) Option {
+	return func(rt *Router) { rt.deployLogStore = s }
+}
+
+// WithDeployRecorder enables live build-log fan-out for the manual build
+// trigger (handleTriggerBuild) and the in-progress side of
+// GET /api/v1/apps/{name}/deploys/{deployId}/logs. Without one
+// configured (the default), handleTriggerBuild falls back to
+// build.SlogProgress (no persisted log, matching this package's
+// pre-existing behavior) and the SSE log route returns 501 for any
+// attempt still in progress. r must be the exact same *deploylog.Recorder
+// instance passed to internal/webhook.New when a webhook handler is also
+// wired: see that package's own doc comment for why a shared instance,
+// not two independent ones, is required for a webhook-triggered
+// attempt's live log to be visible through this router's SSE route.
+func WithDeployRecorder(r *deploylog.Recorder) Option {
+	return func(rt *Router) { rt.deployRecorder = r }
+}
+
+// WithLogBroadcaster enables GET /api/v1/apps/{name}/logs/stream, the
+// live-tailing counterpart to WithTelemetryQuerier's historical
+// GET .../logs. Without one configured (the default), that route
+// returns 501, the same "not configured" shape WithDeployRecorder's
+// absence produces for the in-progress side of a deploy attempt's log.
+// Deliberately a separate option from WithTelemetryQuerier even though
+// both are telemetry-flavored and cmd/levelrail/main.go always
+// configures them together in practice: a control plane could in
+// principle want historical log search without live tailing (or the
+// reverse), and keeping them as two options leaves that possible instead
+// of one silently implying the other. b must be the exact same
+// *telemetry.LogBroadcaster instance passed to
+// telemetry.NewLogCollector: see that constructor's own doc comment for
+// why a shared instance, not two independent ones, is required for a
+// line StreamOne receives from Docker to ever reach a viewer connected
+// through this router's SSE route.
+func WithLogBroadcaster(b *telemetry.LogBroadcaster) Option {
+	return func(rt *Router) { rt.logBroadcaster = b }
+}
+
+// WithAPIRateLimit enables a general per-actor rate limit across every
+// requireAbility-gated route (api_rate_limit.go): read-tier (AbilityRead)
+// requests get readPerMinute budget, everything else (write,
+// write:sensitive, deploy, root) gets the stricter writePerMinute
+// budget, keyed per bearer token, per session user, or per client IP for
+// an unauthenticated caller. Either argument <= 0 disables that tier.
+// Without this option (the default), the whole check is skipped:
+// existing tests and any embedder that never opts in see unthrottled
+// behavior, the same "nil is valid" shape WithSecretSetter's own absence
+// already establishes. This package never reads the environment
+// directly: cmd/levelrail/main.go reads APP_API_RATE_LIMIT_READ_RPM /
+// APP_API_RATE_LIMIT_WRITE_RPM and calls this unconditionally with their
+// resolved (env-or-default) values, so the real control plane is always
+// protected even when an operator never sets either env var.
+func WithAPIRateLimit(readPerMinute, writePerMinute int) Option {
+	return func(rt *Router) { rt.apiRateLimit = newAPIRateLimit(readPerMinute, writePerMinute) }
+}
+
+// WithWebhookRateLimit enables a per-(client IP, app name) budget on
+// POST /api/v1/webhooks/github/{name} (git_webhook.go), checked before
+// that route's DB lookup, secret resolution, and delivery-history write:
+// a request rejected here never reaches any of that work. perMinute <= 0
+// disables it, the same "nil is valid" shape WithAPIRateLimit's own
+// absence establishes; without this option (the default), the route is
+// unthrottled. cmd/levelrail/main.go reads
+// APP_WEBHOOK_RATE_LIMIT_RPM and calls this unconditionally with its
+// resolved (env-or-default) value, so the real control plane is always
+// protected even when an operator never sets the env var.
+func WithWebhookRateLimit(perMinute int) Option {
+	return func(rt *Router) { rt.webhookRateLimit = newAPIRateLimiter(perMinute) }
+}
+
+// WithNewDeviceApproval pauses a password login from an untrusted browser
+// until another live session of the account approves it.
+func WithNewDeviceApproval(on bool) Option {
+	return func(rt *Router) { rt.newDeviceApproval = on }
+}
+
+// WithTokenRedeemRateLimit enables a per-client-IP budget on the
+// unauthenticated POST /api/v1/auth/reset-password and
+// POST /api/v1/invites/accept routes. perMinute <= 0 disables it.
+func WithTokenRedeemRateLimit(perMinute int) Option {
+	return func(rt *Router) { rt.tokenRedeemRateLimit = newAPIRateLimiter(perMinute) }
+}
+
+// WithAllowInsecureLogin permits plain-HTTP sign-in even when an https dashboard URL is configured.
+func WithAllowInsecureLogin(allow bool) Option {
+	return func(rt *Router) { rt.allowInsecureLogin = allow }
+}
+
+// WithAppTeardownOptions sets the application options (instance ID, network
+// prefix) used to match containers when an app is deleted, so delete never
+// touches containers another control plane created on a shared daemon.
+func WithAppTeardownOptions(opts ...application.Option) Option {
+	return func(rt *Router) { rt.teardownOpts = opts }
+}
+
+// WithDeleteTeardownTimeout bounds how long DELETE /apps/{name} waits for containers to stop.
+func WithDeleteTeardownTimeout(d time.Duration) Option {
+	return func(rt *Router) { rt.deleteTimeout = d }
+}
+
+// SetAppTeardownOptions is WithAppTeardownOptions for callers that learn
+// the instance ID only after the router is built.
+func (rt *Router) SetAppTeardownOptions(opts ...application.Option) { rt.teardownOpts = opts }
+
+// WithAuthEngine supplies the library auth engine. NewRouter builds a default
+// one over the store database when none is given.
+func WithAuthEngine(e *authengine.Engine) Option {
+	return func(rt *Router) { rt.authEngine = e }
+}
+
+// WithHostFirewallRunner replaces how the host firewall endpoints run and find
+// ufw, so tests never touch the real firewall.
+func WithHostFirewallRunner(run func(ctx context.Context, name string, args ...string) ([]byte, error), lookPath func(string) (string, error)) Option {
+	return func(rt *Router) {
+		rt.hostFirewallRun = run
+		rt.hostFirewallLookPath = lookPath
+	}
+}
+
+// WithDeviceLoginNotifier enables the opt-in notice sent through channels
+// with NotifyDeviceLogin when a CLI device login is waiting.
+func WithDeviceLoginNotifier(n DeviceLoginNotifier) Option {
+	return func(rt *Router) { rt.deviceNotifier = n }
+}
+
+// WithDashboardURL sets the base URL used for links in outbound notices.
+func WithDashboardURL(u string) Option {
+	return func(rt *Router) { rt.publicDashboardURL = u }
+}
+
+// WithBackupProtection enables the backup health, restore drill, volume
+// backup policy and restore-to routes. Without it they return 501.
+func WithBackupProtection(p BackupProtection, st BackupProtectionStore) Option {
+	return func(rt *Router) {
+		rt.backupProtection = p
+		rt.backupProtectionStore = st
+	}
+}

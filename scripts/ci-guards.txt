@@ -1,0 +1,4 @@
+# Packages whose tests scan the whole tree and have no import edge to what
+# they scan. scripts/affected-go-packages.sh selects them (own tests only)
+# whenever a non-test .go file changes. Keep each to seconds.
+test/execgate

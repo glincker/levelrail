@@ -1,0 +1,28 @@
+id: metamcp
+name: MetaMCP
+description: An MCP aggregator and gateway that groups many MCP servers behind one endpoint with auth, namespaces and middleware.
+icon: plug
+category: AI
+documentation_url: https://docs.metamcp.com
+recommended_memory_bytes: 1073741824
+env:
+  - key: DB_PASSWORD
+    label: Database password
+    description: Password for the bundled Postgres database.
+    generate: password
+    length: 32
+    secret: true
+  - key: AUTH_SECRET
+    label: Auth secret
+    description: Signs login sessions. Changing it signs every user out.
+    generate: hex
+    length: 64
+    secret: true
+domains:
+  - service: metamcp
+    port: 12008
+    description: Public address of MetaMCP.
+healthcheck:
+  service: metamcp
+  port: 12008
+  path: /health

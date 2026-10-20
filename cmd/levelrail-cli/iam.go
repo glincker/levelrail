@@ -1,0 +1,108 @@
+package main
+
+import (
+	"fmt"
+	"io"
+)
+
+// Policies are additive on top of flat --abilities lists; policies is the only iam resource today.
+func runIAM(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) == 0 {
+		_, _ = fmt.Fprint(stderr, iamUsage(prog))
+		return exitUsage
+	}
+
+	switch args[0] {
+	case "-h", "--help", "help":
+		_, _ = fmt.Fprint(stdout, iamUsage(prog))
+		return exitOK
+	case "policies":
+		return runIAMPolicies(prog, args[1:], stdout, stderr, lookupEnv)
+	case "templates":
+		return runIAMTemplates(prog, args[1:], stdout, stderr, lookupEnv)
+	case "simulate":
+		return runIAMSimulate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "effective":
+		return runIAMEffective(prog, args[1:], stdout, stderr, lookupEnv)
+	case "suggest":
+		return runIAMSuggest(prog, args[1:], stdout, stderr, lookupEnv)
+	case "analyze":
+		return runIAMAnalyze(prog, args[1:], stdout, stderr, lookupEnv)
+	default:
+		_, _ = fmt.Fprintf(stderr, "%s: unknown iam subcommand %q\n\n", prog, args[0])
+		_, _ = fmt.Fprint(stderr, iamUsage(prog))
+		return exitUsage
+	}
+}
+
+func iamUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s iam policies <verb> [flags]
+
+  %[1]s iam templates list|apply [flags]
+
+  %[1]s iam simulate --principal user:ID|token:ID --action ABILITY --resource RESOURCE
+  %[1]s iam effective --principal user:ID|token:ID
+  %[1]s iam analyze [--json]
+  %[1]s iam suggest [--days N] [--json]
+
+Run "%[1]s iam policies -h" for the full set of policy subcommands.
+`, prog)
+}
+
+// runIAMPolicies dispatches "iam policies <verb> [flags]" to one of
+// create/list/get/update/delete/attach/detach/attachments.
+func runIAMPolicies(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) == 0 {
+		_, _ = fmt.Fprint(stderr, iamPoliciesUsage(prog))
+		return exitUsage
+	}
+
+	switch args[0] {
+	case "-h", "--help", "help":
+		_, _ = fmt.Fprint(stdout, iamPoliciesUsage(prog))
+		return exitOK
+	case "create":
+		return runIAMPoliciesCreate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "list":
+		return runIAMPoliciesList(prog, args[1:], stdout, stderr, lookupEnv)
+	case "get":
+		return runIAMPoliciesGet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "update":
+		return runIAMPoliciesUpdate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "delete":
+		return runIAMPoliciesDelete(prog, args[1:], stdout, stderr, lookupEnv)
+	case "attach":
+		return runIAMPoliciesAttach(prog, args[1:], stdout, stderr, lookupEnv)
+	case "detach":
+		return runIAMPoliciesDetach(prog, args[1:], stdout, stderr, lookupEnv)
+	case "attachments":
+		return runIAMPoliciesAttachments(prog, args[1:], stdout, stderr, lookupEnv)
+	default:
+		_, _ = fmt.Fprintf(stderr, "%s: unknown iam policies subcommand %q\n\n", prog, args[0])
+		_, _ = fmt.Fprint(stderr, iamPoliciesUsage(prog))
+		return exitUsage
+	}
+}
+
+func iamPoliciesUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s iam policies create --name NAME --document DOC [flags]                            create a policy
+  %[1]s iam policies list [flags]                                                                     list policies
+  %[1]s iam policies get <id> [flags]                                                                show one policy
+  %[1]s iam policies update <id> --name NAME --document DOC [flags]                    replace a policy's name/description/document
+  %[1]s iam policies delete <id> [flags]                                                            delete a policy
+  %[1]s iam policies attach <id> --principal-type TYPE --principal-id ID [flags]        attach a policy to a user or token
+  %[1]s iam policies detach <id> --principal-type TYPE --principal-id ID [flags]        detach a policy from a user or token
+  %[1]s iam policies attachments <id> [flags]                                                     list a policy's attached principals
+
+DOC is a policy document JSON string, e.g.:
+  {"Statement":[{"Effect":"Allow","Action":["read"],"Resource":["app:web"]}]}
+Pass it inline, or as file://path/to/policy.json to read it from a file.
+
+--principal-type must be "user" or "token"; --principal-id is the matching
+user or token's own id.
+
+Run "%[1]s iam policies <subcommand> -h" for a subcommand's own flags.
+`, prog)
+}

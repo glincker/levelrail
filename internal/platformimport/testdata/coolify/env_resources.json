@@ -1,0 +1,30 @@
+{
+  "name": "production",
+  "applications": [
+    {
+      "uuid": "app-web", "name": "My Web App", "fqdn": "https://web.example.com,https://www.example.com/",
+      "build_pack": "dockerfile", "git_repository": "acme/web", "git_branch": "main",
+      "dockerfile_location": "/Dockerfile", "base_directory": "/", "ports_exposes": "3000,9000",
+      "health_check_enabled": true, "health_check_path": "/healthz", "health_check_type": "http",
+      "health_check_interval": 10, "health_check_timeout": 3, "health_check_retries": 4,
+      "limits_memory": "512m", "limits_cpus": "0.5"
+    },
+    {
+      "uuid": "app-img", "name": "cache-proxy", "fqdn": "", "build_pack": "dockerimage",
+      "docker_registry_image_name": "ghcr.io/acme/proxy", "docker_registry_image_tag": "v2",
+      "ports_exposes": "8080", "limits_memory": "0", "limits_cpus": "0"
+    },
+    {
+      "uuid": "app-nix", "name": "api", "fqdn": "https://api.example.com", "build_pack": "nixpacks",
+      "git_repository": "https://gitlab.example.org/acme/api.git", "git_branch": "develop",
+      "ports_exposes": "4000", "post_deployment_command": "php artisan migrate"
+    },
+    {
+      "uuid": "app-compose", "name": "stack", "build_pack": "dockercompose"
+    }
+  ],
+  "postgresqls": [{"uuid": "db-pg", "name": "main-db", "image": "postgres:16-alpine"}],
+  "redis": [{"uuid": "db-redis", "name": "cache", "image": "redis:7.2"}],
+  "mongodbs": [], "mysqls": [], "mariadbs": [],
+  "services": [{"uuid": "svc-1", "name": "plausible", "service_type": "plausible"}]
+}

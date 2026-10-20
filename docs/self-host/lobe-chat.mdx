@@ -1,0 +1,68 @@
+---
+title: "Self-host Lobe Chat with Docker"
+sidebarTitle: "Lobe Chat"
+description: "A modern, open-source AI chat framework supporting many model providers."
+"og:url": "https://docs.levelrail.com/self-host/lobe-chat"
+---
+
+A modern, open-source AI chat framework supporting many model providers.
+
+This page describes the Levelrail template for Lobe Chat (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://lobehub.com/docs/self-hosting/start.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `lobe-chat` | `lobehub/lobe-chat:1.135.5` | 3210 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `lobe-chat` | `ACCESS_CODE` | Generated at deploy |
+| `lobe-chat` | `OPENAI_API_KEY` | Preset in the template |
+| `lobe-chat` | `OPENAI_PROXY_URL` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`lobe-chat`): 3210:3210.
+- Passwords and keys are generated at deploy time (`lobe-chat`): ACCESS_CODE.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Lobe Chat with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Lobe Chat. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy lobe-chat --name my-lobe-chat
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+- [Jupyter GPU Notebook](/self-host/jupyter-gpu)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,75 @@
+---
+title: "Self-host Logto with Docker"
+sidebarTitle: "Logto"
+description: "Modern, developer-first customer identity: sign-in experiences, social login, and OIDC without the plumbing."
+"og:url": "https://docs.levelrail.com/self-host/logto"
+---
+
+Modern, developer-first customer identity: sign-in experiences, social login, and OIDC without the plumbing.
+
+This page describes the Levelrail template for Logto (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.logto.io.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `logto_db_data -&#62; /var/lib/postgresql/data` |
+| `logto` | `svhd/logto:1.43.0` | 3001, 3002 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `logto` | `ADMIN_ENDPOINT` | Preset in the template |
+| `logto` | `DB_URL` | Generated at deploy |
+| `logto` | `ENDPOINT` | Preset in the template |
+| `logto` | `TRUST_PROXY_HEADER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`logto`): 3001:3001, 3002:3002.
+- Passwords and keys are generated at deploy time (`db`, `logto`): DB_URL, POSTGRES_PASSWORD.
+- Stores data in named volumes (`db`): logto_db_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Logto with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Logto. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy logto --name my-logto
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [authentik](/self-host/authentik)
+- [Cap](/self-host/cap-captcha)
+- [Cryptgeon](/self-host/cryptgeon)
+- [Infisical](/self-host/infisical)
+
+All templates are listed in the [self-host gallery](/self-host).

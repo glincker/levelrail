@@ -1,0 +1,65 @@
+---
+title: "Self-host Pinchflat with Docker"
+sidebarTitle: "Pinchflat"
+description: "Automatically download and organize YouTube channels and playlists into your media library."
+"og:url": "https://docs.levelrail.com/self-host/pinchflat"
+---
+
+Automatically download and organize YouTube channels and playlists into your media library.
+
+This page describes the Levelrail template for Pinchflat (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/kieraneglin/pinchflat/wiki.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `pinchflat` | `ghcr.io/kieraneglin/pinchflat:latest` | 8945 | `pinchflat_config -&#62; /config`<br />`pinchflat_downloads -&#62; /downloads` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Review before deploying**.
+
+What this template needs:
+
+- Image is not pinned to a version tag, so a redeploy can pull different code (`pinchflat`): ghcr.io/kieraneglin/pinchflat:latest.
+- Publishes ports directly on the host (`pinchflat`): 8945:8945.
+- Stores data in named volumes (`pinchflat`): pinchflat_config, pinchflat_downloads.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Pinchflat with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Pinchflat. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy pinchflat --name my-pinchflat
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre-Web](/self-host/calibre-web)
+- [Castopod](/self-host/castopod)
+- [Emby](/self-host/emby)
+
+All templates are listed in the [self-host gallery](/self-host).

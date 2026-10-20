@@ -1,0 +1,488 @@
+package store
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"time"
+)
+
+// Backup attempt statuses migrations/0018_backup_targets.sql's CHECK
+// constraint accepts. "running" is written first (StartBackupHistory)
+// so a backup that crashes the control plane mid-upload leaves a real,
+// visible "running" row behind rather than no record at all; nothing
+// currently sweeps a stuck "running" row back to "failed", a known,
+// honest gap for the eventual scheduler to close alongside its own
+// retry logic, not invented speculatively here.
+const (
+	BackupStatusRunning   = "running"
+	BackupStatusSucceeded = "succeeded"
+	BackupStatusFailed    = "failed"
+)
+
+// ErrBackupHistoryNotFound is returned by FinishBackupHistory when id
+// doesn't match any row.
+var ErrBackupHistoryNotFound = errors.New("store: backup history record not found")
+
+// Backup resource kinds migrations/0075_service_volume_backups.sql's own
+// CHECK constraint accepts: which of the two things a backup_history row
+// describes. BackupResourceKindDatabase is the zero value's effective
+// meaning for every row written before this constant existed.
+const (
+	BackupResourceKindDatabase = "database"
+	BackupResourceKindVolume   = "volume"
+)
+
+// BackupHistory is one attempted backup to one backup target, of either
+// a managed database (DatabaseName, ResourceKind
+// BackupResourceKindDatabase) or an app service's named volume
+// (ServiceName/VolumeName, ResourceKind BackupResourceKindVolume): the
+// two identity shapes are mutually exclusive, never both populated on
+// the same row. Error is empty unless Status is BackupStatusFailed.
+// ChecksumSHA256 is empty until FinishBackupHistory records a succeeded
+// attempt's dump checksum (empty for a running or failed attempt, and for
+// any row written before migrations/0069_backup_verification.sql).
+type BackupHistory struct {
+	ID           string
+	DatabaseName string
+	// ResourceKind is BackupResourceKindDatabase for every row written
+	// before migrations/0075 added this column: that migration's own
+	// DEFAULT 'database' makes this the real, correct value for those
+	// rows, not a placeholder.
+	ResourceKind   string
+	ServiceName    string
+	VolumeName     string
+	TargetID       string
+	ObjectKey      string
+	SizeBytes      int64
+	Status         string
+	Error          string
+	StartedAt      string
+	FinishedAt     string
+	ChecksumSHA256 string
+	// Codec is "" for a raw legacy object, "zstd" or "zstd+age" for a sealed one.
+	Codec          string
+	ManifestDigest string
+	ManifestFiles  int64
+	ManifestBytes  int64
+}
+
+// StartBackupHistory records a backup attempt beginning, status
+// BackupStatusRunning, before the dump or upload has done any real
+// work: see this file's own status-constants comment for why "running"
+// is written eagerly rather than only recording success/failure after
+// the fact. h.ResourceKind defaults to BackupResourceKindDatabase when
+// empty, so every existing caller (database backups, which never set it)
+// keeps writing the identical row shape it always has.
+func (db *DB) StartBackupHistory(ctx context.Context, h BackupHistory) error {
+	kind := h.ResourceKind
+	if kind == "" {
+		kind = BackupResourceKindDatabase
+	}
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO backup_history (id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, '', ?, '')
+	`, h.ID, h.DatabaseName, kind, h.ServiceName, h.VolumeName, h.TargetID, h.ObjectKey, BackupStatusRunning, h.StartedAt)
+	if err != nil {
+		return fmt.Errorf("store: start backup history %q: %w", h.ID, err)
+	}
+	return nil
+}
+
+// FinishBackupHistory updates a running backup history row to its final
+// status. sizeBytes, checksum, and errMsg are all ignored (left as-is /
+// not applicable) when status is BackupStatusRunning, which callers should
+// never actually pass here since StartBackupHistory already wrote that
+// state; FinishBackupHistory exists specifically for the succeeded/failed
+// transition. checksum is the dump's SHA-256, hex-encoded, computed by
+// Runner while streaming it to the upload target; empty on a failed
+// attempt, since there is no complete dump to have hashed.
+func (db *DB) FinishBackupHistory(ctx context.Context, id, status string, sizeBytes int64, checksum, errMsg, finishedAt string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE backup_history
+		SET status = ?, size_bytes = ?, checksum_sha256 = ?, error = ?, finished_at = ?
+		WHERE id = ?
+	`, status, sizeBytes, checksum, errMsg, finishedAt, id)
+	if err != nil {
+		return fmt.Errorf("store: finish backup history %q: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: finish backup history %q: %w", id, err)
+	}
+	if n == 0 {
+		return ErrBackupHistoryNotFound
+	}
+	return nil
+}
+
+// GetBackupHistory returns the backup attempt with this ID, or
+// ErrBackupHistoryNotFound. Added for the restore path
+// (internal/backup.RestoreRunner): a restore is always initiated by
+// naming a specific past backup attempt, so unlike the forward backup
+// path (which only ever lists history, never looks up one row by ID),
+// restoring needs to resolve exactly one row, including its Status,
+// TargetID, and ObjectKey, before anything else can happen.
+func (db *DB) GetBackupHistory(ctx context.Context, id string) (BackupHistory, error) {
+	var h BackupHistory
+	err := db.QueryRowContext(ctx, `
+		SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
+		FROM backup_history
+		WHERE id = ?
+	`, id).Scan(&h.ID, &h.DatabaseName, &h.ResourceKind, &h.ServiceName, &h.VolumeName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt, &h.ChecksumSHA256, &h.Codec, &h.ManifestDigest, &h.ManifestFiles, &h.ManifestBytes)
+	if errors.Is(err, sql.ErrNoRows) {
+		return BackupHistory{}, ErrBackupHistoryNotFound
+	}
+	if err != nil {
+		return BackupHistory{}, fmt.Errorf("store: get backup history %q: %w", id, err)
+	}
+	return h, nil
+}
+
+// DeleteBackupHistory removes id's backup_history row outright, whatever
+// its status: the on-demand counterpart of PruneBackupHistory's bulk,
+// retention-driven deletion, for an operator who wants to delete one
+// archived backup right now rather than wait for retention to age it
+// out. Callers are responsible for deleting the row's underlying stored
+// object first (internal/backup.DeleteRunner does this); this only ever
+// touches the store row.
+func (db *DB) DeleteBackupHistory(ctx context.Context, id string) error {
+	res, err := db.ExecContext(ctx, `DELETE FROM backup_history WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("store: delete backup history %q: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: delete backup history %q: %w", id, err)
+	}
+	if n == 0 {
+		return ErrBackupHistoryNotFound
+	}
+	return nil
+}
+
+// PrunedBackup is one backup_history row PruneBackupHistory removed:
+// its TargetID and ObjectKey, enough for a caller (internal/backup.
+// Scheduler) to also delete the object those pointed to in the target
+// bucket. PruneBackupHistory itself only removes the store row.
+type PrunedBackup struct {
+	TargetID  string
+	ObjectKey string
+}
+
+// PruneBackupHistory deletes every succeeded backup_history row for
+// databaseName that violates either retention limit: beyond the newest
+// keep (ordered by started_at), or older than olderThan, and returns the
+// TargetID/ObjectKey of every row removed. Only BackupStatusSucceeded
+// rows are ever eligible: a running or failed attempt carries diagnostic
+// value a retention limit was never meant to bound (an operator who sets
+// retain: 7 wants "7 successful backups," not "7 attempts of any kind"),
+// so those are left untouched regardless of how old they are.
+//
+// keep <= 0 disables the count limit; a zero-value olderThan (the usual
+// Go zero value, IsZero()) disables the age limit. Both disabled deletes
+// nothing and returns (nil, nil) without issuing a query: this mirrors
+// store.DesiredDatabase.BackupRetain/BackupRetainDays's own "0 means no
+// limit for that dimension" meaning at the one call site that matters,
+// internal/backup.Scheduler, rather than making every caller remember to
+// guard the zero case itself.
+//
+// Runs as a SELECT of the rows about to be removed followed by a DELETE
+// in the same transaction, rather than a single DELETE ... RETURNING:
+// this codebase's SQLite driver (modernc.org/sqlite) is not used with
+// RETURNING anywhere else, so this avoids relying on unproven support.
+// The transaction ensures the two statements observe the identical row
+// set even though db.SetMaxOpenConns(1) (store.go) already serializes
+// writes against this *sql.DB.
+func (db *DB) PruneBackupHistory(ctx context.Context, databaseName string, keep int, olderThan time.Time) ([]PrunedBackup, error) {
+	countActive := keep > 0
+	ageActive := !olderThan.IsZero()
+	if !countActive && !ageActive {
+		return nil, nil
+	}
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("store: prune backup history for %q: begin transaction: %w", databaseName, err)
+	}
+	defer func() {
+		_ = tx.Rollback() // no-op if Commit already succeeded
+	}()
+
+	// started_at is written by internal/backup.Runner using time.RFC3339
+	// (no fractional seconds, runner.go), so the cutoff below is formatted
+	// identically: mixing formats would break the lexicographic
+	// comparison a TEXT column relies on for chronological ordering.
+	rows, err := tx.QueryContext(ctx, `
+		SELECT id, target_id, object_key FROM backup_history
+		WHERE database_name = ? AND status = ?
+		AND (
+			(? AND id NOT IN (
+				SELECT id FROM backup_history
+				WHERE database_name = ? AND status = ?
+				ORDER BY started_at DESC
+				LIMIT ?
+			))
+			OR (? AND started_at < ?)
+		)
+	`, databaseName, BackupStatusSucceeded,
+		countActive, databaseName, BackupStatusSucceeded, keep,
+		ageActive, olderThan.UTC().Format(time.RFC3339))
+	if err != nil {
+		return nil, fmt.Errorf("store: prune backup history for %q: select stale rows: %w", databaseName, err)
+	}
+
+	type staleRow struct {
+		id     string
+		pruned PrunedBackup
+	}
+	var stale []staleRow
+	for rows.Next() {
+		var s staleRow
+		if err := rows.Scan(&s.id, &s.pruned.TargetID, &s.pruned.ObjectKey); err != nil {
+			_ = rows.Close()
+			return nil, fmt.Errorf("store: prune backup history for %q: scan stale row: %w", databaseName, err)
+		}
+		stale = append(stale, s)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return nil, fmt.Errorf("store: prune backup history for %q: iterate stale rows: %w", databaseName, err)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, fmt.Errorf("store: prune backup history for %q: close stale rows: %w", databaseName, err)
+	}
+
+	for _, s := range stale {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM backup_history WHERE id = ?`, s.id); err != nil {
+			return nil, fmt.Errorf("store: prune backup history for %q: delete %q: %w", databaseName, s.id, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("store: prune backup history for %q: commit: %w", databaseName, err)
+	}
+
+	out := make([]PrunedBackup, len(stale))
+	for i, s := range stale {
+		out[i] = s.pruned
+	}
+	return out, nil
+}
+
+// ListBackupHistory returns up to limit backup attempts for databaseName, newest first.
+// before, when non-nil, cursor-paginates on start time (mirrors ListAuditEntries)
+// so long-lived backup schedules never need a slow OFFSET query.
+func (db *DB) ListBackupHistory(ctx context.Context, databaseName string, limit int, before *time.Time) ([]BackupHistory, error) {
+	var (
+		rows *sql.Rows
+		err  error
+	)
+	if before != nil {
+		rows, err = db.QueryContext(ctx, `
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
+			FROM backup_history
+			WHERE database_name = ? AND started_at < ?
+			ORDER BY started_at DESC
+			LIMIT ?
+		`, databaseName, before.UTC().Format(time.RFC3339), limit)
+	} else {
+		rows, err = db.QueryContext(ctx, `
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
+			FROM backup_history
+			WHERE database_name = ?
+			ORDER BY started_at DESC
+			LIMIT ?
+		`, databaseName, limit)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("store: list backup history for %q: %w", databaseName, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	out, err := scanBackupHistoryRows(rows)
+	if err != nil {
+		return nil, fmt.Errorf("store: list backup history for %q: %w", databaseName, err)
+	}
+	return out, nil
+}
+
+// ListAllBackupHistory returns up to limit backup attempts across every
+// resource, database and volume alike, newest first: the instance-wide
+// counterpart of ListBackupHistory/ListServiceVolumeBackupHistory, for a
+// caller that wants one merged view rather than per-resource lists.
+// before paginates identically to those two (cursor on started_at, no
+// OFFSET query).
+func (db *DB) ListAllBackupHistory(ctx context.Context, limit int, before *time.Time) ([]BackupHistory, error) {
+	var (
+		rows *sql.Rows
+		err  error
+	)
+	if before != nil {
+		rows, err = db.QueryContext(ctx, `
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
+			FROM backup_history
+			WHERE started_at < ?
+			ORDER BY started_at DESC
+			LIMIT ?
+		`, before.UTC().Format(time.RFC3339), limit)
+	} else {
+		rows, err = db.QueryContext(ctx, `
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
+			FROM backup_history
+			ORDER BY started_at DESC
+			LIMIT ?
+		`, limit)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("store: list all backup history: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	out, err := scanBackupHistoryRows(rows)
+	if err != nil {
+		return nil, fmt.Errorf("store: list all backup history: %w", err)
+	}
+	return out, nil
+}
+
+// scanBackupHistoryRows reads every row of an already-executed
+// backup_history query into BackupHistory, the shared scan logic
+// ListBackupHistory and ListServiceVolumeBackupHistory both need so the
+// 13-column shape exists exactly once.
+func scanBackupHistoryRows(rows *sql.Rows) ([]BackupHistory, error) {
+	var out []BackupHistory
+	for rows.Next() {
+		var h BackupHistory
+		if err := rows.Scan(&h.ID, &h.DatabaseName, &h.ResourceKind, &h.ServiceName, &h.VolumeName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt, &h.ChecksumSHA256, &h.Codec, &h.ManifestDigest, &h.ManifestFiles, &h.ManifestBytes); err != nil {
+			return nil, fmt.Errorf("scan backup history row: %w", err)
+		}
+		out = append(out, h)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate backup history rows: %w", err)
+	}
+	return out, nil
+}
+
+// ListServiceVolumeBackupHistory returns up to limit backup attempts for
+// serviceName's volumeName, newest first, the volume counterpart of
+// ListBackupHistory. resource_kind is filtered explicitly (not merely
+// implied by service_name/volume_name being non-empty) so this can never
+// accidentally match a database row, however this schema evolves later.
+func (db *DB) ListServiceVolumeBackupHistory(ctx context.Context, serviceName, volumeName string, limit int, before *time.Time) ([]BackupHistory, error) {
+	var (
+		rows *sql.Rows
+		err  error
+	)
+	if before != nil {
+		rows, err = db.QueryContext(ctx, `
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
+			FROM backup_history
+			WHERE resource_kind = ? AND service_name = ? AND volume_name = ? AND started_at < ?
+			ORDER BY started_at DESC
+			LIMIT ?
+		`, BackupResourceKindVolume, serviceName, volumeName, before.UTC().Format(time.RFC3339), limit)
+	} else {
+		rows, err = db.QueryContext(ctx, `
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
+			FROM backup_history
+			WHERE resource_kind = ? AND service_name = ? AND volume_name = ?
+			ORDER BY started_at DESC
+			LIMIT ?
+		`, BackupResourceKindVolume, serviceName, volumeName, limit)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("store: list backup history for service %q volume %q: %w", serviceName, volumeName, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	out, err := scanBackupHistoryRows(rows)
+	if err != nil {
+		return nil, fmt.Errorf("store: list backup history for service %q volume %q: %w", serviceName, volumeName, err)
+	}
+	return out, nil
+}
+
+// PruneServiceVolumeBackupHistory is PruneBackupHistory's volume
+// counterpart: identical retention logic (see that method's own doc
+// comment for the count/age semantics), scoped to serviceName/volumeName
+// and resource_kind = 'volume' instead of a single database_name.
+func (db *DB) PruneServiceVolumeBackupHistory(ctx context.Context, serviceName, volumeName string, keep int, olderThan time.Time) ([]PrunedBackup, error) {
+	countActive := keep > 0
+	ageActive := !olderThan.IsZero()
+	if !countActive && !ageActive {
+		return nil, nil
+	}
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("store: prune backup history for service %q volume %q: begin transaction: %w", serviceName, volumeName, err)
+	}
+	defer func() {
+		_ = tx.Rollback() // no-op if Commit already succeeded
+	}()
+
+	rows, err := tx.QueryContext(ctx, `
+		SELECT id, target_id, object_key FROM backup_history
+		WHERE resource_kind = ? AND service_name = ? AND volume_name = ? AND status = ?
+		AND (
+			(? AND id NOT IN (
+				SELECT id FROM backup_history
+				WHERE resource_kind = ? AND service_name = ? AND volume_name = ? AND status = ?
+				ORDER BY started_at DESC
+				LIMIT ?
+			))
+			OR (? AND started_at < ?)
+		)
+	`, BackupResourceKindVolume, serviceName, volumeName, BackupStatusSucceeded,
+		countActive, BackupResourceKindVolume, serviceName, volumeName, BackupStatusSucceeded, keep,
+		ageActive, olderThan.UTC().Format(time.RFC3339))
+	if err != nil {
+		return nil, fmt.Errorf("store: prune backup history for service %q volume %q: select stale rows: %w", serviceName, volumeName, err)
+	}
+
+	type staleRow struct {
+		id     string
+		pruned PrunedBackup
+	}
+	var stale []staleRow
+	for rows.Next() {
+		var s staleRow
+		if err := rows.Scan(&s.id, &s.pruned.TargetID, &s.pruned.ObjectKey); err != nil {
+			_ = rows.Close()
+			return nil, fmt.Errorf("store: prune backup history for service %q volume %q: scan stale row: %w", serviceName, volumeName, err)
+		}
+		stale = append(stale, s)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return nil, fmt.Errorf("store: prune backup history for service %q volume %q: iterate stale rows: %w", serviceName, volumeName, err)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, fmt.Errorf("store: prune backup history for service %q volume %q: close stale rows: %w", serviceName, volumeName, err)
+	}
+
+	for _, s := range stale {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM backup_history WHERE id = ?`, s.id); err != nil {
+			return nil, fmt.Errorf("store: prune backup history for service %q volume %q: delete %q: %w", serviceName, volumeName, s.id, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("store: prune backup history for service %q volume %q: commit: %w", serviceName, volumeName, err)
+	}
+
+	out := make([]PrunedBackup, len(stale))
+	for i, s := range stale {
+		out[i] = s.pruned
+	}
+	return out, nil
+}

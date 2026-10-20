@@ -1,0 +1,15 @@
+id: alertmanager
+name: Alertmanager
+description: "Prometheus Alertmanager: groups, deduplicates and routes alerts to email, Slack, webhooks and on-call tools."
+icon: bell
+category: Monitoring
+documentation_url: https://prometheus.io/docs/alerting/latest/alertmanager/
+recommended_memory_bytes: 134217728
+domains:
+  - service: alertmanager
+    port: 9093
+    description: Public address of the Alertmanager UI. It has no login, so restrict access.
+healthcheck:
+  service: alertmanager
+  port: 9093
+  path: /-/healthy

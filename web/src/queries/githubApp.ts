@@ -1,0 +1,347 @@
+// Query-key factory and fetchers for the GitHub App connection resource
+// (internal/api/github_app.go, github_app_register.go,
+// github_app_repos.go), following the same shared-queryOptions pattern
+// queries/backupTargets.ts and queries/domains.ts already established.
+//
+// This only covers what internal/api actually exposes: connection
+// status, disconnect, and repo/branch listing through an already-
+// installed App. The manifest registration flow itself
+// (GET /api/v1/github-app/register/start) is not a fetcher here: it is
+// a real, full-page browser navigation (window.location.href, not
+// fetch), the same way navigating to GitHub's own confirmation page and
+// back has to be. See GitHubAppConnectionCard.tsx for where that
+// navigation actually happens.
+
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query'
+import type {
+  GitHubAppBranch,
+  GitHubAppInstallationListResponse,
+  GitHubAppManifestPreview,
+  GitHubAppManualConnectRequest,
+  GitHubAppRepoListResponse,
+  GitHubAppStatus,
+  GitHubAppUseRepoAsSourceRequest,
+  GitHubAppUseRepoAsSourceResponse,
+} from '../types/githubApp'
+import { ApiError, readErrorMessage } from '../lib/apiError'
+import { gitSourceKeys } from './gitSources'
+
+export const githubAppKeys = {
+  all: ['github-app'] as const,
+  status: () => [...githubAppKeys.all, 'status'] as const,
+  repos: () => [...githubAppKeys.all, 'repos'] as const,
+  installations: () => [...githubAppKeys.all, 'installations'] as const,
+  branches: (owner: string, repo: string) =>
+    [...githubAppKeys.all, 'branches', owner, repo] as const,
+  manifestPreview: (instanceURL: string) =>
+    [...githubAppKeys.all, 'manifest-preview', instanceURL] as const,
+}
+
+// GET /api/v1/github-app/register/preview (handleGetGitHubAppManifestPreview):
+// read-only, safe to fetch just to populate a confirmation dialog. Only
+// fetched while that dialog is open (see useGitHubAppManifestPreview's
+// `enabled`), never on page load: this precondition-checks the same
+// things register/start does (master key, no existing connection,
+// primary domain set), so calling it unconditionally would surface a
+// confusing error before the operator has even clicked "Add GitHub App".
+// instanceURL defaults to github.com on the backend when omitted.
+export async function fetchGitHubAppManifestPreview(
+  instanceURL: string,
+): Promise<GitHubAppManifestPreview> {
+  const params = instanceURL
+    ? `?instance_url=${encodeURIComponent(instanceURL)}`
+    : ''
+  const res = await fetch(`/api/v1/github-app/register/preview${params}`)
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `fetch github app manifest preview failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as GitHubAppManifestPreview
+}
+
+export function useGitHubAppManifestPreview(
+  instanceURL: string,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: githubAppKeys.manifestPreview(instanceURL),
+    queryFn: () => fetchGitHubAppManifestPreview(instanceURL),
+    enabled,
+    retry: false,
+  })
+}
+
+// GET /api/v1/github-app (handleGetGitHubAppStatus). AbilityRoot on the
+// backend, but every session is implicitly root (requireAbility's own
+// doc comment), so the interactive settings page this feeds is not
+// itself gated any differently than any other AbilityRoot-only page in
+// this frontend.
+export async function fetchGitHubAppStatus(): Promise<GitHubAppStatus> {
+  const res = await fetch('/api/v1/github-app')
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `fetch github app status failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as GitHubAppStatus
+}
+
+export function githubAppStatusQueryOptions() {
+  return queryOptions({
+    queryKey: githubAppKeys.status(),
+    queryFn: fetchGitHubAppStatus,
+  })
+}
+
+export function useGitHubAppStatus() {
+  return useSuspenseQuery(githubAppStatusQueryOptions())
+}
+
+// DELETE /api/v1/github-app (handleDisconnectGitHubApp). 204 on
+// success, no body to parse.
+export async function disconnectGitHubApp(): Promise<void> {
+  const res = await fetch('/api/v1/github-app', { method: 'DELETE' })
+  if (res.status === 204) {
+    return
+  }
+  throw new ApiError(
+    res.status,
+    await readErrorMessage(res, `disconnect github app failed: ${res.status}`),
+  )
+}
+
+export function useDisconnectGitHubApp() {
+  const queryClient = useQueryClient()
+  return useMutation<void, ApiError, void>({
+    mutationFn: disconnectGitHubApp,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: githubAppKeys.all })
+    },
+  })
+}
+
+// PUT /api/v1/github-app/manual (handleConnectGitHubAppManually): the
+// alternative to the automated manifest flow (register/start above),
+// for an operator who created the App by hand on github.com, or whose
+// primary domain isn't configured/reachable yet.
+export async function connectGitHubAppManually(
+  req: GitHubAppManualConnectRequest,
+): Promise<GitHubAppStatus> {
+  const res = await fetch('/api/v1/github-app/manual', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `connect github app manually failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as GitHubAppStatus
+}
+
+export function useConnectGitHubAppManually() {
+  const queryClient = useQueryClient()
+  return useMutation<void, ApiError, GitHubAppManualConnectRequest>({
+    mutationFn: async (req) => {
+      await connectGitHubAppManually(req)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: githubAppKeys.all })
+    },
+  })
+}
+
+// GET /api/v1/github-app/repos (handleListGitHubAppRepos). A plain
+// useQuery, not useSuspenseQuery: this is only fetched once a repo
+// picker is actually shown (the App must be connected and installed
+// first), so `enabled` gates it rather than every caller needing a
+// Suspense boundary for a query that often legitimately never runs.
+// 409 (not connected / not installed) and 501 (no master key) are both
+// real, expected states here, not just error noise: callers read
+// error.status to render the right empty state instead of a generic
+// failure message. The response's own `errors` field (one entry per
+// installation that failed to list) is not one of those: it rides along
+// on a 200, for a per-account error badge, not a thrown ApiError.
+export async function fetchGitHubAppRepos(): Promise<GitHubAppRepoListResponse> {
+  const res = await fetch('/api/v1/github-app/repos')
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `fetch github app repos failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as GitHubAppRepoListResponse
+}
+
+export function useGitHubAppRepos(enabled: boolean) {
+  return useQuery({
+    queryKey: githubAppKeys.repos(),
+    queryFn: fetchGitHubAppRepos,
+    enabled,
+  })
+}
+
+// GET /api/v1/github-app/installations (handleListGitHubAppInstallations):
+// every connected account/org, plus the URL to connect another one.
+export async function fetchGitHubAppInstallations(): Promise<GitHubAppInstallationListResponse> {
+  const res = await fetch('/api/v1/github-app/installations')
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `fetch github app installations failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as GitHubAppInstallationListResponse
+}
+
+export function useGitHubAppInstallations(enabled: boolean) {
+  return useQuery({
+    queryKey: githubAppKeys.installations(),
+    queryFn: fetchGitHubAppInstallations,
+    enabled,
+  })
+}
+
+// DELETE /api/v1/github-app/installations/{id}
+// (handleDeleteGitHubAppInstallation): disconnects one account/org. 204
+// on success, 409 with a message naming blocking git sources, 404 if
+// not found. readErrorMessage surfaces that 409 text verbatim through
+// ApiError.message, rather than a generic failure string.
+export async function deleteGitHubAppInstallation(id: number): Promise<void> {
+  const res = await fetch(`/api/v1/github-app/installations/${id}`, {
+    method: 'DELETE',
+  })
+  if (res.status === 204) {
+    return
+  }
+  throw new ApiError(
+    res.status,
+    await readErrorMessage(
+      res,
+      `delete github app installation failed: ${res.status}`,
+    ),
+  )
+}
+
+export function useDeleteGitHubAppInstallation() {
+  const queryClient = useQueryClient()
+  return useMutation<void, ApiError, number>({
+    mutationFn: deleteGitHubAppInstallation,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: githubAppKeys.installations(),
+      })
+      void queryClient.invalidateQueries({ queryKey: githubAppKeys.repos() })
+    },
+  })
+}
+
+// GET /api/v1/github-app/repos/{owner}/{repo}/branches
+// (handleListGitHubAppBranches).
+export async function fetchGitHubAppBranches(
+  owner: string,
+  repo: string,
+): Promise<GitHubAppBranch[]> {
+  const res = await fetch(
+    `/api/v1/github-app/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/branches`,
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `fetch github app branches failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as GitHubAppBranch[]
+}
+
+export function useGitHubAppBranches(
+  owner: string,
+  repo: string,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: githubAppKeys.branches(owner, repo),
+    queryFn: () => fetchGitHubAppBranches(owner, repo),
+    enabled: enabled && owner !== '' && repo !== '',
+  })
+}
+
+// POST /api/v1/github-app/repos/{owner}/{repo}/use-as-source
+// (handleUseGitHubRepoAsSource): connects the repo as appName's git
+// source and registers a push webhook with the installation token,
+// mirroring queries/gitlabApp.ts's connectGitLabProjectAsSource. Unlike
+// that call, the response's webhook_registered may be false (see
+// GitHubAppUseRepoAsSourceResponse's own doc comment): this is not an
+// error, callers read that field rather than treating a resolved
+// promise as "webhook auto-registered".
+export async function connectGitHubRepoAsSource(
+  owner: string,
+  repo: string,
+  req: GitHubAppUseRepoAsSourceRequest,
+): Promise<GitHubAppUseRepoAsSourceResponse> {
+  const res = await fetch(
+    `/api/v1/github-app/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/use-as-source`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `use github repo as source failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as GitHubAppUseRepoAsSourceResponse
+}
+
+export function useConnectGitHubRepoAsSource() {
+  const queryClient = useQueryClient()
+  return useMutation<
+    GitHubAppUseRepoAsSourceResponse,
+    ApiError,
+    { owner: string; repo: string; req: GitHubAppUseRepoAsSourceRequest }
+  >({
+    mutationFn: ({ owner, repo, req }) =>
+      connectGitHubRepoAsSource(owner, repo, req),
+    onSuccess: (resource, variables) => {
+      queryClient.setQueryData(
+        gitSourceKeys.detail(variables.req.app_name),
+        resource,
+      )
+    },
+  })
+}

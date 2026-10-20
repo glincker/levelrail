@@ -1,0 +1,852 @@
+package api
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
+	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+// Hand-written fake for GitSourceSecrets. Unlike the other secret fakes, Resolve and Exists are read back in this package.
+type fakeGitSourceSecrets struct {
+	mu     sync.Mutex
+	values map[string]map[string]string
+
+	setErr, resolveErr, existsErr error
+	setCalls                      int
+}
+
+func newFakeGitSourceSecrets() *fakeGitSourceSecrets {
+	return &fakeGitSourceSecrets{values: map[string]map[string]string{}}
+}
+
+func (f *fakeGitSourceSecrets) SetValue(_ context.Context, serviceName, envKey, plaintext string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.setCalls++
+	if f.setErr != nil {
+		return f.setErr
+	}
+	if f.values[serviceName] == nil {
+		f.values[serviceName] = map[string]string{}
+	}
+	f.values[serviceName][envKey] = plaintext
+	return nil
+}
+
+func (f *fakeGitSourceSecrets) Resolve(_ context.Context, serviceName, envKey string) (string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.resolveErr != nil {
+		return "", f.resolveErr
+	}
+	v, ok := f.values[serviceName][envKey]
+	if !ok {
+		return "", errors.New("fakeGitSourceSecrets: value not found")
+	}
+	return v, nil
+}
+
+func (f *fakeGitSourceSecrets) Exists(_ context.Context, serviceName, envKey string) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.existsErr != nil {
+		return false, f.existsErr
+	}
+	_, ok := f.values[serviceName][envKey]
+	return ok, nil
+}
+
+func newTestRouterWithGitSourceSecrets(t *testing.T, secrets GitSourceSecrets) (*Router, *store.DB) {
+	t.Helper()
+	db := openTestDB(t)
+	return NewRouter(discardLogger(), testBrand(), db, WithGitSourceSecrets(secrets)), db
+}
+
+func TestHandleSetGitSource_NotConfigured(t *testing.T) {
+	rt, db := newTestRouter(t) // no WithGitSourceSecrets
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source", `{"repo_url":"https://github.com/org/web.git"}`))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotImplemented)
+	}
+}
+
+func TestHandleSetGitSource_AppNotFound(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/ghost/git-source", `{"repo_url":"https://github.com/org/web.git"}`))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleSetGitSource_MissingRepoURL(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source", `{}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+}
+
+func TestHandleSetGitSource_RejectsNonHTTPScheme(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source", `{"repo_url":"file:///etc/passwd"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestHandleSetGitSource_RejectsComposeBuildType(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source", `{"repo_url":"https://github.com/org/web.git","build_type":"compose"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+}
+
+// A pinned image has no build to redeploy on push, so connecting a webhook to it must fail loudly.
+func TestHandleSetGitSource_RejectsImageBuildType(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source", `{"repo_url":"https://github.com/org/web.git","build_type":"image"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "/deploys") {
+		t.Errorf("body = %s, want it to point callers at POST .../deploys", rec.Body.String())
+	}
+}
+
+func TestHandleSetGitSource_RejectsAdditionalServiceSelfReference(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","additional_services":{"web":{"build_type":"dockerfile"}}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestHandleSetGitSource_RejectsAdditionalServiceInvalidBuildType(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","additional_services":{"worker":{"build_type":"nonsense"}}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestHandleSetGitSource_AdditionalServices_RoundTrip(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","additional_services":{"worker":{"build_type":"dockerfile","build_path":"./worker/Dockerfile"}}}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var created gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	want := store.GitSourceBuild{BuildType: "dockerfile", BuildPath: "./worker/Dockerfile"}
+	if created.AdditionalServices["worker"] != want {
+		t.Fatalf("create response AdditionalServices[worker] = %+v, want %+v", created.AdditionalServices["worker"], want)
+	}
+
+	getRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/git-source", ""))
+	var got gitSourceResource
+	if err := json.NewDecoder(getRec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode get: %v", err)
+	}
+	if got.AdditionalServices["worker"] != want {
+		t.Fatalf("GET AdditionalServices[worker] = %+v, want %+v", got.AdditionalServices["worker"], want)
+	}
+}
+
+func TestHandleSetGitSource_RejectsInvalidDatabaseName(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","databases":{"Main_DB":{"engine":"postgres","version":"16"}}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestHandleSetGitSource_RejectsUnsupportedDatabaseEngine(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","databases":{"main":{"engine":"oracle","version":"19"}}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+// Databases must persist and read back through the connect route, including EphemeralInPreviews, which the preview feature reads.
+func TestHandleSetGitSource_Databases_RoundTrip(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","databases":{"main":{"engine":"postgres","version":"16","ephemeralInPreviews":true}}}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var created gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	main, ok := created.Databases["main"]
+	if !ok || main.Engine != "postgres" || !main.EphemeralInPreviews {
+		t.Fatalf("create response Databases[main] = %+v, ok=%v, want Engine=postgres EphemeralInPreviews=true", main, ok)
+	}
+
+	getRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/git-source", ""))
+	var got gitSourceResource
+	if err := json.NewDecoder(getRec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode get: %v", err)
+	}
+	if got.Databases["main"].Engine != "postgres" || !got.Databases["main"].EphemeralInPreviews {
+		t.Fatalf("GET Databases[main] = %+v, want Engine=postgres EphemeralInPreviews=true", got.Databases["main"])
+	}
+}
+
+// Setting both services and additionalServices would leave one push with two fan-out targets, so it is a 400, not a silent pick.
+func TestHandleSetGitSource_RejectsServicesAndAdditionalServicesTogether(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git",
+			"services":{"web":{"build":{"type":"dockerfile"}}},
+			"additional_services":{"worker":{"build_type":"dockerfile"}}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+// TestHandleSetGitSource_RejectsServicesInvalidBuildType proves a
+// persisted services: map is validated the same way handleDeploySpec
+// validates its own (validateDeploySpecServiceTypes, shared by both).
+func TestHandleSetGitSource_RejectsServicesInvalidBuildType(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","services":{"web":{"build":{"type":"nonsense"}}}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+// TestHandleSetGitSource_Services_RoundTrip mirrors
+// TestHandleSetGitSource_AdditionalServices_RoundTrip for the newer
+// services field: persisted on create, read back unchanged on GET.
+func TestHandleSetGitSource_Services_RoundTrip(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","services":{
+			"web":{"build":{"type":"dockerfile","path":"./web/Dockerfile"},"port":3000},
+			"worker":{"build":{"type":"dockerfile","path":"./worker/Dockerfile"}}
+		}}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var created gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(created.Services) != 2 {
+		t.Fatalf("create response Services = %+v, want 2 keys", created.Services)
+	}
+
+	getRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/git-source", ""))
+	var got gitSourceResource
+	if err := json.NewDecoder(getRec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode get: %v", err)
+	}
+	if len(got.Services) != 2 || got.Services["web"].Port != 3000 {
+		t.Fatalf("GET Services = %+v, want 2 keys with web.port = 3000", got.Services)
+	}
+}
+
+func TestHandleSetGitSource_Create_Success(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","branch":"main","build_type":"dockerfile"}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.RepoURL != "https://github.com/org/web.git" || got.Branch != "main" || got.BuildType != "dockerfile" {
+		t.Errorf("response = %+v, want fields to match the request", got)
+	}
+	if got.HasToken {
+		t.Errorf("HasToken = true, want false: no token was set")
+	}
+	if got.WebhookURL != "http://example.com/api/v1/webhooks/github/web" {
+		t.Errorf("WebhookURL = %q, want the request-origin absolute URL", got.WebhookURL)
+	}
+	if got.WebhookSecret == "" {
+		t.Errorf("WebhookSecret = %q, want a non-empty generated secret on the create response", got.WebhookSecret)
+	}
+
+	stored, err := db.GetGitSource(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetGitSource() error = %v", err)
+	}
+	if stored.RepoURL != got.RepoURL || stored.Branch != got.Branch {
+		t.Errorf("stored = %+v, want it to match the response", stored)
+	}
+
+	resolved, err := secrets.Resolve(context.Background(), store.GitSourceSecretsKey("web"), gitSourceSecretKey)
+	if err != nil {
+		t.Fatalf("Resolve(webhook_secret) error = %v", err)
+	}
+	if resolved != got.WebhookSecret {
+		t.Errorf("stored webhook secret = %q, want it to match the response's WebhookSecret %q", resolved, got.WebhookSecret)
+	}
+}
+
+// Once a primary domain is configured, create and GET return an absolute webhook URL, not a relative path.
+func TestHandleSetGitSource_WebhookURL_AbsoluteWhenPrimaryDomainConfigured(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	setPrimaryDomain(t, db)
+
+	wantURL := "https://" + testPrimaryDomain + "/api/v1/webhooks/github/web"
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git"}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var created gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	if created.WebhookURL != wantURL {
+		t.Errorf("create WebhookURL = %q, want %q", created.WebhookURL, wantURL)
+	}
+
+	getRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/git-source", ""))
+	var got gitSourceResource
+	if err := json.NewDecoder(getRec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode get response: %v", err)
+	}
+	if got.WebhookURL != wantURL {
+		t.Errorf("GET WebhookURL = %q, want %q", got.WebhookURL, wantURL)
+	}
+}
+
+func TestHandleSetGitSource_Create_WithToken(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","token":"ghp_supersecret"}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	if strings.Contains(rec.Body.String(), "ghp_supersecret") {
+		t.Errorf("response body = %s, the deploy token must never be echoed back", rec.Body.String())
+	}
+
+	var got gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if !got.HasToken {
+		t.Errorf("HasToken = false, want true: a token was set")
+	}
+
+	resolved, err := secrets.Resolve(context.Background(), store.GitSourceSecretsKey("web"), gitSourceTokenKey)
+	if err != nil {
+		t.Fatalf("Resolve(deploy_token) error = %v", err)
+	}
+	if resolved != "ghp_supersecret" {
+		t.Errorf("stored token = %q, want ghp_supersecret: the credential must round-trip through internal/secrets unchanged", resolved)
+	}
+}
+
+func TestHandleSetGitSource_Update_DoesNotReturnOrRotateSecret(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	createRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(createRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source", `{"repo_url":"https://github.com/org/web.git","branch":"main"}`))
+	var created gitSourceResource
+	if err := json.NewDecoder(createRec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	if created.WebhookSecret == "" {
+		t.Fatalf("create response had no webhook secret")
+	}
+
+	updateRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(updateRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source", `{"repo_url":"https://github.com/org/web.git","branch":"release"}`))
+	if updateRec.Code != http.StatusOK {
+		t.Fatalf("update status = %d, want %d, body = %s", updateRec.Code, http.StatusOK, updateRec.Body.String())
+	}
+	var updated gitSourceResource
+	if err := json.NewDecoder(updateRec.Body).Decode(&updated); err != nil {
+		t.Fatalf("decode update response: %v", err)
+	}
+	if updated.WebhookSecret != "" {
+		t.Errorf("WebhookSecret = %q on an update, want empty: it must only ever appear once, on create", updated.WebhookSecret)
+	}
+	if updated.Branch != "release" {
+		t.Errorf("Branch = %q, want release", updated.Branch)
+	}
+
+	resolved, err := secrets.Resolve(context.Background(), store.GitSourceSecretsKey("web"), gitSourceSecretKey)
+	if err != nil {
+		t.Fatalf("Resolve(webhook_secret) error = %v", err)
+	}
+	if resolved != created.WebhookSecret {
+		t.Errorf("webhook secret changed across an unrelated update: got %q, want it to stay %q", resolved, created.WebhookSecret)
+	}
+}
+
+func TestHandleListGitSources_Empty(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/git-sources", ""))
+	var res []gitSourceSummaryResource
+	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &res) != nil {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	if len(res) != 0 {
+		t.Fatalf("res = %+v, want empty", res)
+	}
+}
+
+func TestHandleListGitSources_ReturnsAll(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveGitSource(ctx, store.GitSource{ServiceName: "web", RepoURL: "https://github.com/org/web.git", Branch: "main"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveGitSource(ctx, store.GitSource{ServiceName: "worker", RepoURL: "https://gitlab.com/org/worker.git", Branch: "dev"}); err != nil {
+		t.Fatal(err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/git-sources", ""))
+	var res []gitSourceSummaryResource
+	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &res) != nil {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	if len(res) != 2 {
+		t.Fatalf("res = %+v, want 2 entries", res)
+	}
+}
+
+func TestHandleListGitSources_RespectsIAMDeny(t *testing.T) {
+	rt, db := newTestRouter(t)
+	bootstrapTestAdmin(t, db)
+	ctx := context.Background()
+	if err := db.SaveGitSource(ctx, store.GitSource{ServiceName: "prod-web", RepoURL: "https://github.com/org/prod-web.git", Branch: "main"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveGitSource(ctx, store.GitSource{ServiceName: "staging-web", RepoURL: "https://github.com/org/staging-web.git", Branch: "main"}); err != nil {
+		t.Fatal(err)
+	}
+	reader := storeUserWithAbilitiesForTest(t, db, "reader@example.com", []string{AbilityRead})
+	attachTestPolicy(t, db, "deny-prod-read", "Deny", AbilityRead, "app:prod-web", store.PrincipalTypeUser, reader.ID)
+	cookie := sessionCookieForTest(t, rt, reader.ID)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/git-sources", ""))
+	var res []gitSourceSummaryResource
+	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &res) != nil {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	if len(res) != 1 || res[0].ServiceName != "staging-web" {
+		t.Fatalf("res = %+v, want only staging-web", res)
+	}
+}
+
+func TestHandleGetGitSource_NotFound(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/git-source", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleGetGitSource_NeverReturnsSecretOrToken(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	createRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(createRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source", `{"repo_url":"https://github.com/org/web.git","token":"ghp_supersecret"}`))
+	var created gitSourceResource
+	if err := json.NewDecoder(createRec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+
+	getRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/git-source", ""))
+	if getRec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", getRec.Code, http.StatusOK)
+	}
+	body := getRec.Body.String()
+	if strings.Contains(body, "ghp_supersecret") || strings.Contains(body, created.WebhookSecret) {
+		t.Fatalf("GET response body = %s, must never contain the deploy token or webhook secret", body)
+	}
+	var got gitSourceResource
+	if err := json.NewDecoder(strings.NewReader(body)).Decode(&got); err != nil {
+		t.Fatalf("decode get response: %v", err)
+	}
+	if !got.HasToken {
+		t.Errorf("HasToken = false, want true")
+	}
+	if got.WebhookSecret != "" {
+		t.Errorf("WebhookSecret = %q, want empty on GET", got.WebhookSecret)
+	}
+}
+
+func TestHandleDeleteGitSource(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rt.Handler().ServeHTTP(httptest.NewRecorder(), authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source", `{"repo_url":"https://github.com/org/web.git"}`))
+
+	delRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(delRec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/web/git-source", ""))
+	if delRec.Code != http.StatusNoContent {
+		t.Fatalf("delete status = %d, want %d", delRec.Code, http.StatusNoContent)
+	}
+
+	getRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/git-source", ""))
+	if getRec.Code != http.StatusNotFound {
+		t.Fatalf("get after delete status = %d, want %d", getRec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleDeleteGitSource_NotFound(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/ghost/git-source", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestGitSourceRoutes_RequireAuth(t *testing.T) {
+	rt, _ := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+
+	assertRoutesRequireAuth(t, rt, []routeCase{
+		{http.MethodGet, "/api/v1/apps/web/git-source"},
+		{http.MethodPut, "/api/v1/apps/web/git-source"},
+		{http.MethodDelete, "/api/v1/apps/web/git-source"},
+		{http.MethodPost, "/api/v1/apps/web/git-source/rotate-webhook-secret"},
+	})
+}
+
+func TestHandleRotateGitSourceWebhookSecret_Success(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	createRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(createRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","branch":"main","build_type":"dockerfile"}`))
+	var created gitSourceResource
+	if err := json.NewDecoder(createRec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/git-source/rotate-webhook-secret", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var rotated gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&rotated); err != nil {
+		t.Fatalf("decode rotate response: %v", err)
+	}
+	if rotated.WebhookSecret == "" {
+		t.Fatal("WebhookSecret = \"\", want a non-empty rotated secret in the response")
+	}
+	if rotated.WebhookSecret == created.WebhookSecret {
+		t.Error("rotated WebhookSecret equals the original, want a freshly generated value")
+	}
+	if rotated.RepoURL != created.RepoURL || rotated.Branch != created.Branch || rotated.BuildType != created.BuildType {
+		t.Errorf("rotate changed connection fields: got %+v, want them unchanged from %+v", rotated, created)
+	}
+
+	resolved, err := secrets.Resolve(context.Background(), store.GitSourceSecretsKey("web"), gitSourceSecretKey)
+	if err != nil {
+		t.Fatalf("Resolve(webhook_secret) error = %v", err)
+	}
+	if resolved != rotated.WebhookSecret {
+		t.Errorf("stored webhook secret = %q, want it to match the rotate response %q", resolved, rotated.WebhookSecret)
+	}
+
+	getRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/git-source", ""))
+	var got gitSourceResource
+	if err := json.NewDecoder(getRec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode get response: %v", err)
+	}
+	if got.WebhookSecret != "" {
+		t.Errorf("GET WebhookSecret = %q, want empty: never returned outside create/rotate", got.WebhookSecret)
+	}
+}
+
+func TestHandleRotateGitSourceWebhookSecret_NotFound(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/ghost/git-source/rotate-webhook-secret", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleRotateGitSourceWebhookSecret_NotConfigured(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/git-source/rotate-webhook-secret", ""))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotImplemented)
+	}
+}
+
+func TestNormalizeGitSourceBuildType(t *testing.T) {
+	tests := []struct {
+		name    string
+		in      string
+		want    string
+		wantErr bool
+	}{
+		{name: "empty defaults to dockerfile", in: "", want: "dockerfile"},
+		{name: "dockerfile", in: "dockerfile", want: "dockerfile"},
+		{name: "railpack", in: "railpack", want: "railpack"},
+		{name: "static", in: "static", want: "static"},
+		{name: "compose rejected", in: "compose", wantErr: true},
+		{name: "image rejected", in: "image", wantErr: true},
+		{name: "unrecognized rejected", in: "nixpacks", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := normalizeGitSourceBuildType(tt.in)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("normalizeGitSourceBuildType(%q) error = %v, wantErr %v", tt.in, err, tt.wantErr)
+			}
+			if err == nil && got != tt.want {
+				t.Errorf("normalizeGitSourceBuildType(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNormalizeGitSourceTriggerMode(t *testing.T) {
+	tests := []struct {
+		name    string
+		in      string
+		want    string
+		wantErr bool
+	}{
+		{name: "empty defaults to push", in: "", want: "push"},
+		{name: "push", in: "push", want: "push"},
+		{name: "release", in: "release", want: "release"},
+		{name: "unrecognized rejected", in: "tag", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := normalizeGitSourceTriggerMode(tt.in)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("normalizeGitSourceTriggerMode(%q) error = %v, wantErr %v", tt.in, err, tt.wantErr)
+			}
+			if err == nil && got != tt.want {
+				t.Errorf("normalizeGitSourceTriggerMode(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHandleSetGitSource_TriggerMode_RoundTrip(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.TriggerMode != "release" {
+		t.Errorf("TriggerMode = %q, want release", got.TriggerMode)
+	}
+
+	stored, err := db.GetGitSource(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetGitSource() error = %v", err)
+	}
+	if stored.TriggerMode != "release" {
+		t.Errorf("stored.TriggerMode = %q, want release", stored.TriggerMode)
+	}
+}
+
+func TestHandleSetGitSource_TriggerMode_DefaultsToPush(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","branch":"main"}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.TriggerMode != "push" {
+		t.Errorf("TriggerMode = %q, want push (the pre-trigger-mode default)", got.TriggerMode)
+	}
+}
+
+func TestHandleSetGitSource_RejectsUnrecognizedTriggerMode(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","trigger_mode":"nightly"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestRequireHTTPOrHTTPSScheme(t *testing.T) {
+	tests := []struct {
+		name    string
+		repoURL string
+		wantErr bool
+	}{
+		{name: "https ok", repoURL: "https://github.com/org/web.git"},
+		{name: "http ok", repoURL: "http://example.com/web.git"},
+		{name: "file rejected", repoURL: "file:///etc/passwd", wantErr: true},
+		{name: "ssh rejected", repoURL: "ssh://git@github.com/org/web.git", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := requireHTTPOrHTTPSScheme(tt.repoURL)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("requireHTTPOrHTTPSScheme(%q) error = %v, wantErr %v", tt.repoURL, err, tt.wantErr)
+			}
+		})
+	}
+}

@@ -1,0 +1,245 @@
+package application
+
+import (
+	"context"
+	"errors"
+	"path/filepath"
+	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/docker"
+	appspec "github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+func newFinalizerStore(t *testing.T) *store.DB {
+	t.Helper()
+	db, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "levelrail.db"))
+	if err != nil {
+		t.Fatalf("store.Open() error = %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	return db
+}
+
+func pendingNames(t *testing.T, db *store.DB) []string {
+	t.Helper()
+	list, err := db.ListPendingTeardowns(context.Background())
+	if err != nil {
+		t.Fatalf("ListPendingTeardowns() error = %v", err)
+	}
+	names := make([]string, 0, len(list))
+	for _, p := range list {
+		names = append(names, p.Name)
+	}
+	return names
+}
+
+func TestDeleteFinalizer_RemoveFailsOnceThenSucceeds(t *testing.T) {
+	ctx := context.Background()
+	db := newFinalizerStore(t)
+	rt := newFakeRuntime(0)
+	target := ContainerName("web", "img:v1", "")
+	rt.seed(target, true)
+	rt.removeErr = errors.New("busy")
+	f := NewDeleteFinalizer(db, func(string) (docker.Runtime, error) { return rt, nil }, nil)
+
+	if err := f.Begin(ctx, "web", ""); err != nil {
+		t.Fatalf("Begin() error = %v", err)
+	}
+	if err := f.Finalize(ctx, "web", ""); err == nil {
+		t.Fatal("Finalize() error = nil, want the remove failure surfaced")
+	}
+	list, _ := db.ListPendingTeardowns(ctx)
+	if len(list) != 1 || list[0].Attempts != 1 || list[0].LastError == "" {
+		t.Fatalf("tombstone after failure = %+v, want 1 entry with attempts=1 and an error", list)
+	}
+
+	rt.removeErr = nil
+	if _, err := f.Reconcile(ctx); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if names := rt.names(); len(names) != 0 {
+		t.Errorf("containers after retry = %v, want none", names)
+	}
+	if got := pendingNames(t, db); len(got) != 0 {
+		t.Errorf("tombstones after retry = %v, want none", got)
+	}
+}
+
+func TestDeleteFinalizer_NodeUnreachableThenReturns(t *testing.T) {
+	ctx := context.Background()
+	db := newFinalizerStore(t)
+	rt := newFakeRuntime(0)
+	rt.seed(ContainerName("web", "img:v1", ""), true)
+	if err := db.SaveNode(ctx, store.Node{ID: "node_b", Name: "b", Status: store.NodeStatusOffline}); err != nil {
+		t.Fatal(err)
+	}
+	online := false
+	f := NewDeleteFinalizer(db, func(nodeID string) (docker.Runtime, error) {
+		if nodeID != "node_b" || !online {
+			return nil, errors.New("node not registered")
+		}
+		return rt, nil
+	}, nil)
+
+	if err := f.Begin(ctx, "web", "node_b"); err != nil {
+		t.Fatalf("Begin() error = %v", err)
+	}
+	if _, err := f.Reconcile(ctx); err == nil {
+		t.Fatal("Reconcile() error = nil, want an error while the node is unreachable")
+	}
+	if got := pendingNames(t, db); len(got) != 1 {
+		t.Fatalf("tombstones while offline = %v, want web retained", got)
+	}
+	if len(rt.names()) != 1 {
+		t.Fatal("container must stay until the node returns")
+	}
+
+	online = true
+	if _, err := f.Reconcile(ctx); err != nil {
+		t.Fatalf("Reconcile() after node returned error = %v", err)
+	}
+	if len(rt.names()) != 0 || len(pendingNames(t, db)) != 0 {
+		t.Errorf("after node returned: containers=%v tombstones=%v, want none", rt.names(), pendingNames(t, db))
+	}
+}
+
+func TestDeleteFinalizer_RecreatedAppIsNotTornDown(t *testing.T) {
+	ctx := context.Background()
+	db := newFinalizerStore(t)
+	rt := newFakeRuntime(0)
+	target := ContainerName("web", "img:v2", "")
+	rt.seed(target, true)
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:v2", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	f := NewDeleteFinalizer(db, func(string) (docker.Runtime, error) { return rt, nil }, nil)
+	if err := f.Begin(ctx, "web", ""); err != nil {
+		t.Fatalf("Begin() error = %v", err)
+	}
+
+	if _, err := f.Reconcile(ctx); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if names := rt.names(); len(names) != 1 || names[0] != target {
+		t.Errorf("containers = %v, want the recreated app's container untouched", names)
+	}
+	if got := pendingNames(t, db); len(got) != 0 {
+		t.Errorf("tombstones = %v, want the stale one dropped", got)
+	}
+}
+
+func TestDeleteFinalizer_OnlyRemovesOwnAppContainers(t *testing.T) {
+	ctx := context.Background()
+	db := newFinalizerStore(t)
+	rt := newFakeRuntime(0)
+	mine := ContainerName("web", "img:v1", "")
+	sibling := ContainerName("web-worker", "img:v1", "")
+	other := ContainerName("webby", "img:v1", "")
+	foreign := ContainerName("web", "img:v9", "")
+	rt.seed(mine, true)
+	rt.seed(sibling, true)
+	rt.seed(other, true)
+	rt.seedLabeled(foreign, true, map[string]string{"platform-reserved.instance": "inst-b"})
+	f := NewDeleteFinalizer(db, func(string) (docker.Runtime, error) { return rt, nil }, nil, WithInstanceID("inst-a"))
+
+	if err := f.Begin(ctx, "web", ""); err != nil {
+		t.Fatalf("Begin() error = %v", err)
+	}
+	if err := f.Finalize(ctx, "web", ""); err != nil {
+		t.Fatalf("Finalize() error = %v", err)
+	}
+	got := map[string]bool{}
+	for _, n := range rt.names() {
+		got[n] = true
+	}
+	if got[mine] || !got[sibling] || !got[other] || !got[foreign] {
+		t.Errorf("containers after finalize = %v, want only %q removed", rt.names(), mine)
+	}
+}
+
+func TestDeleteFinalizer_DropsTombstoneForRemovedNode(t *testing.T) {
+	ctx := context.Background()
+	db := newFinalizerStore(t)
+	f := NewDeleteFinalizer(db, func(string) (docker.Runtime, error) { return nil, errors.New("node gone") }, nil)
+	if err := f.Begin(ctx, "web", "dead-node"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Reconcile(ctx); err != nil {
+		t.Fatalf("Reconcile() error = %v, want the removed node's tombstone dropped quietly", err)
+	}
+	if names := pendingNames(t, db); len(names) != 0 {
+		t.Fatalf("tombstones left = %v", names)
+	}
+}
+
+func TestDeleteFinalizer_MovedAppStillGetsOldNodeTornDown(t *testing.T) {
+	ctx := context.Background()
+	db := newFinalizerStore(t)
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:v1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpdateServiceNode(ctx, "web", ""); err != nil {
+		t.Fatal(err)
+	}
+	rt := newFakeRuntime(0)
+	rt.seed(ContainerName("web", "img:v1", ""), true)
+	f := NewDeleteFinalizer(db, func(string) (docker.Runtime, error) { return rt, nil }, nil)
+	if err := f.Begin(ctx, "web", ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Reconcile(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if len(rt.names()) != 1 {
+		t.Fatal("tombstone on the node the app still lives on must not remove its container")
+	}
+}
+
+type netAdminRuntime struct {
+	*fakeRuntime
+	details []docker.NetworkDetail
+	removed []string
+}
+
+func (n *netAdminRuntime) DescribeNetworks(context.Context, string) ([]docker.NetworkDetail, error) {
+	return n.details, nil
+}
+
+func (n *netAdminRuntime) RemoveNetworkIfEmpty(_ context.Context, name string) (bool, error) {
+	n.removed = append(n.removed, name)
+	return true, nil
+}
+
+func (n *netAdminRuntime) NetworkPoolUsage(context.Context) (docker.PoolUsage, error) {
+	return docker.PoolUsage{}, nil
+}
+
+func TestDeleteFinalizer_RemoveAppNetwork(t *testing.T) {
+	name := NetworkName("lr", "shop")
+	own := map[string]string{appspec.InstanceLabelKey: "inst-1"}
+	tests := []struct {
+		name    string
+		detail  docker.NetworkDetail
+		removed bool
+	}{
+		{"own and empty", docker.NetworkDetail{Name: name, Labels: own}, true},
+		{"still attached", docker.NetworkDetail{Name: name, Labels: own, Attached: 1}, false},
+		{"foreign instance", docker.NetworkDetail{Name: name, Labels: map[string]string{appspec.InstanceLabelKey: "other"}}, false},
+		{"unlabeled", docker.NetworkDetail{Name: name}, false},
+		{"prefix sibling", docker.NetworkDetail{Name: name + "-2", Labels: own}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := &netAdminRuntime{fakeRuntime: newFakeRuntime(0), details: []docker.NetworkDetail{tt.detail}}
+			f := NewDeleteFinalizer(newFinalizerStore(t), func(string) (docker.Runtime, error) { return rt, nil }, nil,
+				WithNetworkPrefix("lr"), WithInstanceID("inst-1"))
+			if err := f.RemoveAppNetwork(context.Background(), "shop", ""); err != nil {
+				t.Fatalf("RemoveAppNetwork() error = %v", err)
+			}
+			if got := len(rt.removed) == 1; got != tt.removed {
+				t.Errorf("removed = %v, want removal=%v", rt.removed, tt.removed)
+			}
+		})
+	}
+}

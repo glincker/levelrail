@@ -1,0 +1,73 @@
+---
+title: "Self-host InfluxDB with Docker"
+sidebarTitle: "InfluxDB"
+description: "An open-source time-series database for metrics, events, and IoT analytics."
+"og:url": "https://docs.levelrail.com/self-host/influxdb"
+---
+
+An open-source time-series database for metrics, events, and IoT analytics.
+
+This page describes the Levelrail template for InfluxDB (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.influxdata.com/influxdb/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `influxdb` | `influxdb:2.7-alpine` | 8086 | `influxdb_data -&#62; /var/lib/influxdb2`<br />`influxdb_config -&#62; /etc/influxdb2` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `influxdb` | `INFLUXDB_INIT_ADMIN_TOKEN` | Generated at deploy |
+| `influxdb` | `INFLUXDB_INIT_BUCKET` | Preset in the template |
+| `influxdb` | `INFLUXDB_INIT_MODE` | Preset in the template |
+| `influxdb` | `INFLUXDB_INIT_ORG` | Preset in the template |
+| `influxdb` | `INFLUXDB_INIT_PASSWORD` | Generated at deploy |
+| `influxdb` | `INFLUXDB_INIT_USERNAME` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`influxdb`): 8086:8086.
+- Passwords and keys are generated at deploy time (`influxdb`): INFLUXDB_INIT_ADMIN_TOKEN, INFLUXDB_INIT_PASSWORD, INFLUXDB_INIT_USERNAME.
+- Stores data in named volumes (`influxdb`): influxdb_config, influxdb_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy InfluxDB with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select InfluxDB. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy influxdb --name my-influxdb
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [Baserow](/self-host/baserow)
+- [Bytebase](/self-host/bytebase)
+- [Chroma](/self-host/chroma)
+- [ClickHouse](/self-host/clickhouse)
+
+All templates are listed in the [self-host gallery](/self-host).

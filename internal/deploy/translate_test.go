@@ -1,0 +1,538 @@
+package deploy
+
+import (
+	"reflect"
+	"testing"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+func TestParseMemoryBytes(t *testing.T) {
+	tests := []struct {
+		name    string
+		in      string
+		want    int64
+		wantErr bool
+	}{
+		{name: "512Mi", in: "512Mi", want: 512 * 1024 * 1024},
+		{name: "1Gi", in: "1Gi", want: 1024 * 1024 * 1024},
+		{name: "0Mi", in: "0Mi", want: 0},
+		{name: "empty", in: "", wantErr: true},
+		{name: "no unit", in: "512", wantErr: true},
+		{name: "no digits", in: "Mi", wantErr: true},
+		{name: "unknown unit", in: "512Ki", wantErr: true},
+		{name: "non-numeric prefix", in: "abcMi", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseMemoryBytes(tt.in)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseMemoryBytes(%q) error = %v, wantErr %v", tt.in, err, tt.wantErr)
+			}
+			if !tt.wantErr && got != tt.want {
+				t.Errorf("parseMemoryBytes(%q) = %d, want %d", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestToServiceResources(t *testing.T) {
+	got, err := toServiceResources(spec.Resources{Memory: "512Mi", CPU: 0.5, SwapMemory: "1Gi", CPUSet: "0-1"})
+	if err != nil {
+		t.Fatalf("toServiceResources() error = %v", err)
+	}
+	if got.MemoryBytes != 512*1024*1024 {
+		t.Errorf("MemoryBytes = %d, want %d", got.MemoryBytes, 512*1024*1024)
+	}
+	if got.NanoCPUs != 500_000_000 {
+		t.Errorf("NanoCPUs = %d, want 500000000", got.NanoCPUs)
+	}
+	if got.SwapMemoryBytes != 1024*1024*1024 {
+		t.Errorf("SwapMemoryBytes = %d, want %d", got.SwapMemoryBytes, 1024*1024*1024)
+	}
+	if got.CPUSetCPUs != "0-1" {
+		t.Errorf("CPUSetCPUs = %q, want %q", got.CPUSetCPUs, "0-1")
+	}
+}
+
+func TestToServiceResources_InvalidMemoryPropagatesError(t *testing.T) {
+	_, err := toServiceResources(spec.Resources{Memory: "not-a-size"})
+	if err == nil {
+		t.Fatal("toServiceResources() error = nil, want an error for an invalid memory string")
+	}
+}
+
+func TestToServiceResources_InvalidSwapMemoryPropagatesError(t *testing.T) {
+	_, err := toServiceResources(spec.Resources{Memory: "512Mi", SwapMemory: "not-a-size"})
+	if err == nil {
+		t.Fatal("toServiceResources() error = nil, want an error for an invalid swapMemory string")
+	}
+}
+
+func TestToServiceResources_SwapBelowMemoryRejected(t *testing.T) {
+	// Docker's MemorySwap is memory+swap combined, not swap on top of
+	// memory, so a value below the memory limit is nonsensical.
+	_, err := toServiceResources(spec.Resources{Memory: "512Mi", SwapMemory: "256Mi"})
+	if err == nil {
+		t.Fatal("toServiceResources() error = nil, want an error when swapMemory is below memory")
+	}
+}
+
+func TestToServiceResources_SwapEqualToMemoryAccepted(t *testing.T) {
+	got, err := toServiceResources(spec.Resources{Memory: "512Mi", SwapMemory: "512Mi"})
+	if err != nil {
+		t.Fatalf("toServiceResources() error = %v, want nil (swap equal to memory means no swap, but is valid)", err)
+	}
+	if got.SwapMemoryBytes != 512*1024*1024 {
+		t.Errorf("SwapMemoryBytes = %d, want %d", got.SwapMemoryBytes, 512*1024*1024)
+	}
+}
+
+func TestParseDurationOrZero(t *testing.T) {
+	tests := []struct {
+		name    string
+		in      string
+		want    time.Duration
+		wantErr bool
+	}{
+		{name: "empty means unset", in: "", want: 0},
+		{name: "seconds", in: "5s", want: 5 * time.Second},
+		{name: "minutes", in: "2m", want: 2 * time.Minute},
+		{name: "milliseconds", in: "500ms", want: 500 * time.Millisecond},
+		{name: "invalid", in: "five seconds", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseDurationOrZero(tt.in)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseDurationOrZero(%q) error = %v, wantErr %v", tt.in, err, tt.wantErr)
+			}
+			if !tt.wantErr && got != tt.want {
+				t.Errorf("parseDurationOrZero(%q) = %v, want %v", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestToServiceProbe(t *testing.T) {
+	got, err := toServiceProbe(spec.Probe{Path: "/healthz", Interval: "5s", Timeout: "2s", Failures: 3})
+	if err != nil {
+		t.Fatalf("toServiceProbe() error = %v", err)
+	}
+	want := struct {
+		Path     string
+		Interval time.Duration
+		Timeout  time.Duration
+		Failures int
+	}{"/healthz", 5 * time.Second, 2 * time.Second, 3}
+	if got.Path != want.Path || got.Interval != want.Interval || got.Timeout != want.Timeout || got.Failures != want.Failures {
+		t.Errorf("toServiceProbe() = %+v, want %+v", got, want)
+	}
+}
+
+func TestToServiceProbe_CarriesHTTPSAndExecFields(t *testing.T) {
+	follow := false
+	tests := []struct {
+		name string
+		in   spec.Probe
+		want store.ServiceProbe
+	}{
+		{
+			name: "https",
+			in:   spec.Probe{Path: "/h", Scheme: "https", Host: "a.example.com", TLSSkipVerify: true, FollowRedirects: &follow, ExpectedStatus: "200-399"},
+			want: store.ServiceProbe{Path: "/h", Scheme: "https", Host: "a.example.com", TLSSkipVerify: true, FollowRedirects: &follow, ExpectedStatus: "200-399"},
+		},
+		{
+			name: "exec",
+			in:   spec.Probe{Exec: spec.ExecCommand{"pg_isready"}, Timeout: "5s"},
+			want: store.ServiceProbe{Exec: []string{"pg_isready"}, Timeout: 5 * time.Second},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := toServiceProbe(tt.in)
+			if err != nil {
+				t.Fatalf("toServiceProbe() error = %v", err)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("toServiceProbe() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestToServiceHealth_NilFieldsStayNil(t *testing.T) {
+	got, err := toServiceHealth(spec.Health{})
+	if err != nil {
+		t.Fatalf("toServiceHealth() error = %v", err)
+	}
+	if got.Readiness != nil || got.Liveness != nil {
+		t.Errorf("toServiceHealth(empty) = %+v, want both nil", got)
+	}
+}
+
+func TestToServiceHealth_BothProbesTranslated(t *testing.T) {
+	got, err := toServiceHealth(spec.Health{
+		Readiness: &spec.Probe{Path: "/ready", Interval: "5s"},
+		Liveness:  &spec.Probe{Path: "/live", Failures: 3},
+	})
+	if err != nil {
+		t.Fatalf("toServiceHealth() error = %v", err)
+	}
+	if got.Readiness == nil || got.Readiness.Path != "/ready" {
+		t.Errorf("Readiness = %+v, want Path=/ready", got.Readiness)
+	}
+	if got.Liveness == nil || got.Liveness.Failures != 3 {
+		t.Errorf("Liveness = %+v, want Failures=3", got.Liveness)
+	}
+}
+
+func TestToServiceHealth_ReadyTimeoutTranslated(t *testing.T) {
+	got, err := toServiceHealth(spec.Health{ReadyTimeout: "90s"})
+	if err != nil {
+		t.Fatalf("toServiceHealth() error = %v", err)
+	}
+	if got.ReadyTimeout != 90*time.Second {
+		t.Errorf("ReadyTimeout = %v, want 90s", got.ReadyTimeout)
+	}
+}
+
+func TestToServiceHealth_ReadyTimeoutUnset_StaysZero(t *testing.T) {
+	got, err := toServiceHealth(spec.Health{Readiness: &spec.Probe{Path: "/healthz"}})
+	if err != nil {
+		t.Fatalf("toServiceHealth() error = %v", err)
+	}
+	if got.ReadyTimeout != 0 {
+		t.Errorf("ReadyTimeout = %v, want 0 (unset)", got.ReadyTimeout)
+	}
+}
+
+func TestToServiceHealth_InvalidReadyTimeoutPropagatesError(t *testing.T) {
+	if _, err := toServiceHealth(spec.Health{ReadyTimeout: "not-a-duration"}); err == nil {
+		t.Fatal("toServiceHealth() error = nil, want an error for an invalid readyTimeout")
+	}
+}
+
+func TestLiteralEnv(t *testing.T) {
+	got := literalEnv(map[string]spec.EnvVar{
+		"A": {Value: "1"},
+		"B": {Value: "2"},
+	})
+	if got["A"] != "1" || got["B"] != "2" || len(got) != 2 {
+		t.Errorf("literalEnv() = %+v, want A=1 B=2", got)
+	}
+}
+
+func TestLiteralEnv_Empty(t *testing.T) {
+	if got := literalEnv(nil); got != nil {
+		t.Errorf("literalEnv(nil) = %+v, want nil", got)
+	}
+}
+
+func TestToDesiredService_FullySpecified(t *testing.T) {
+	svc := spec.Service{
+		Port: 3000,
+		Env:  map[string]spec.EnvVar{"NODE_ENV": {Value: "production"}},
+		Resources: &spec.Resources{
+			Memory: "512Mi", CPU: 0.5,
+		},
+		Health: &spec.Health{
+			Readiness: &spec.Probe{Path: "/healthz", Interval: "5s"},
+		},
+	}
+
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.Name != "web" || got.Image != "img:sha" || got.Port != 3000 {
+		t.Errorf("scalar fields = %+v", got)
+	}
+	if got.Env["NODE_ENV"] != "production" {
+		t.Errorf("Env = %+v", got.Env)
+	}
+	if got.Resources == nil || got.Resources.MemoryBytes != 512*1024*1024 {
+		t.Errorf("Resources = %+v", got.Resources)
+	}
+	if got.Health == nil || got.Health.Readiness == nil || got.Health.Readiness.Path != "/healthz" {
+		t.Errorf("Health = %+v", got.Health)
+	}
+}
+
+func TestToDesiredService_HooksPassThrough(t *testing.T) {
+	svc := spec.Service{
+		Port:  3000,
+		Hooks: &spec.Hooks{PreDeploy: "rails db:migrate", PostDeploy: "notify-slack"},
+	}
+
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.Hooks == nil || got.Hooks.PreDeploy != "rails db:migrate" || got.Hooks.PostDeploy != "notify-slack" {
+		t.Errorf("Hooks = %+v, want PreDeploy=%q PostDeploy=%q", got.Hooks, "rails db:migrate", "notify-slack")
+	}
+}
+
+func TestToDesiredService_NoHooks_LeavesNil(t *testing.T) {
+	got, err := toDesiredService("web", "img:sha", spec.Service{Port: 3000})
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.Hooks != nil {
+		t.Errorf("Hooks = %+v, want nil", got.Hooks)
+	}
+}
+
+func TestToDesiredService_EgressPassThrough(t *testing.T) {
+	svc := spec.Service{
+		Port: 3000,
+		Egress: &spec.Egress{
+			Mode: spec.EgressModeAllowlist,
+			Allow: []spec.EgressAllow{
+				{Host: "api.anthropic.com", Port: 443},
+				{Host: "github.com", Port: 443},
+			},
+		},
+	}
+
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.Egress == nil || got.Egress.Mode != store.EgressModeAllowlist {
+		t.Fatalf("Egress = %+v, want Mode=%q", got.Egress, store.EgressModeAllowlist)
+	}
+	want := []store.ServiceEgressAllow{{Host: "api.anthropic.com", Port: 443}, {Host: "github.com", Port: 443}}
+	if len(got.Egress.Allow) != len(want) || got.Egress.Allow[0] != want[0] || got.Egress.Allow[1] != want[1] {
+		t.Errorf("Egress.Allow = %+v, want %+v", got.Egress.Allow, want)
+	}
+}
+
+func TestToDesiredService_NoEgress_LeavesNil(t *testing.T) {
+	got, err := toDesiredService("web", "img:sha", spec.Service{Port: 3000})
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.Egress != nil {
+		t.Errorf("Egress = %+v, want nil", got.Egress)
+	}
+}
+
+func TestToDesiredService_HostPort_PassesThroughAsPointer(t *testing.T) {
+	svc := spec.Service{Port: 8080, HostPort: 30001}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.HostPort == nil || *got.HostPort != 30001 {
+		t.Errorf("HostPort = %v, want a pointer to 30001", got.HostPort)
+	}
+}
+
+// TestToDesiredService_NoHostPort_LeavesNil is the regression-safety
+// counterpart: an app.yaml with no host_port: (every service before this
+// field existed) must produce a nil HostPort, not a pointer to 0.
+func TestToDesiredService_NoHostPort_LeavesNil(t *testing.T) {
+	svc := spec.Service{Port: 8080}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.HostPort != nil {
+		t.Errorf("HostPort = %v, want nil", *got.HostPort)
+	}
+}
+
+// TestToDesiredService_BindAddress_PassesThrough proves an explicit
+// bind_address round-trips as-is.
+func TestToDesiredService_BindAddress_PassesThrough(t *testing.T) {
+	svc := spec.Service{Port: 8080, BindAddress: "public"}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.BindAddress != "public" {
+		t.Errorf("BindAddress = %q, want %q", got.BindAddress, "public")
+	}
+}
+
+// TestToDesiredService_NoBindAddress_DefaultsToPrivate is the
+// regression-safety counterpart: an app.yaml with no bind_address: must
+// resolve to the documented default, not an empty string that some
+// downstream layer might resolve differently.
+func TestToDesiredService_NoBindAddress_DefaultsToPrivate(t *testing.T) {
+	svc := spec.Service{Port: 8080}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.BindAddress != "private" {
+		t.Errorf("BindAddress = %q, want %q", got.BindAddress, "private")
+	}
+}
+
+func TestToDesiredService_LabelsPassThrough(t *testing.T) {
+	svc := spec.Service{Port: 8080, Labels: map[string]string{"team": "platform"}}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.Labels["team"] != "platform" || len(got.Labels) != 1 {
+		t.Errorf("Labels = %+v, want map[team:platform]", got.Labels)
+	}
+}
+
+func TestToDesiredService_VolumesGetPlatformPrefixedNames(t *testing.T) {
+	svc := spec.Service{Port: 8080, Volumes: []spec.Volume{
+		{Name: "data", Path: "/var/lib/data"},
+		{Name: "config", Path: "/etc/app"},
+	}}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	want := []store.ServiceVolume{
+		{Name: "app-web-data", ContainerPath: "/var/lib/data"},
+		{Name: "app-web-config", ContainerPath: "/etc/app"},
+	}
+	if !reflect.DeepEqual(got.Volumes, want) {
+		t.Errorf("Volumes = %+v, want %+v", got.Volumes, want)
+	}
+}
+
+func TestToDesiredService_CommandPassesThrough(t *testing.T) {
+	svc := spec.Service{Port: 8080, Command: []string{"node", "server.js", "--port", "8080"}}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	want := []string{"node", "server.js", "--port", "8080"}
+	if !reflect.DeepEqual(got.Command, want) {
+		t.Errorf("Command = %v, want %v", got.Command, want)
+	}
+}
+
+func TestToDesiredService_NoCommand_LeavesNil(t *testing.T) {
+	svc := spec.Service{Port: 8080}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.Command != nil {
+		t.Errorf("Command = %v, want nil (no command: declared)", got.Command)
+	}
+}
+
+func TestToDesiredService_BindMountsTranslate(t *testing.T) {
+	svc := spec.Service{Port: 8080, Volumes: []spec.Volume{
+		{Name: "data", Path: "/var/lib/data"},
+		{HostPath: "/srv/web/uploads", Path: "/uploads", ReadOnly: true},
+	}}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	wantVolumes := []store.ServiceVolume{{Name: "app-web-data", ContainerPath: "/var/lib/data"}}
+	if !reflect.DeepEqual(got.Volumes, wantVolumes) {
+		t.Errorf("Volumes = %+v, want %+v: a bind mount must never land in the named-volume list", got.Volumes, wantVolumes)
+	}
+	wantBindMounts := []store.ServiceBindMount{{HostPath: "/srv/web/uploads", ContainerPath: "/uploads", ReadOnly: true}}
+	if !reflect.DeepEqual(got.BindMounts, wantBindMounts) {
+		t.Errorf("BindMounts = %+v, want %+v", got.BindMounts, wantBindMounts)
+	}
+}
+
+func TestToDesiredService_MinimalNoResourcesOrHealth(t *testing.T) {
+	got, err := toDesiredService("web", "img:sha", spec.Service{Port: 8080})
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.Resources != nil {
+		t.Errorf("Resources = %+v, want nil", got.Resources)
+	}
+	if got.Health != nil {
+		t.Errorf("Health = %+v, want nil", got.Health)
+	}
+}
+
+func TestToDesiredService_InvalidResourcesPropagatesError(t *testing.T) {
+	svc := spec.Service{Port: 8080, Resources: &spec.Resources{Memory: "not-a-size"}}
+	_, err := toDesiredService("web", "img:sha", svc)
+	if err == nil {
+		t.Fatal("toDesiredService() error = nil, want the resources translation error to propagate")
+	}
+}
+
+func TestToDesiredService_InvalidHealthPropagatesError(t *testing.T) {
+	svc := spec.Service{Port: 8080, Health: &spec.Health{Readiness: &spec.Probe{Path: "/healthz", Interval: "not-a-duration"}}}
+	_, err := toDesiredService("web", "img:sha", svc)
+	if err == nil {
+		t.Fatal("toDesiredService() error = nil, want the health translation error to propagate")
+	}
+}
+
+func TestParseFromRef(t *testing.T) {
+	tests := []struct {
+		name      string
+		in        string
+		wantDB    string
+		wantField string
+		wantErr   bool
+	}{
+		{name: "two segments", in: "main.url", wantDB: "main", wantField: "url"},
+		{name: "three segments, engine hint dropped", in: "postgres.main.url", wantDB: "main", wantField: "url"},
+		{name: "four segments, only last two matter", in: "cluster.postgres.main.host", wantDB: "main", wantField: "host"},
+		{name: "empty", in: "", wantErr: true},
+		{name: "single segment", in: "main", wantErr: true},
+		{name: "empty database segment", in: ".url", wantErr: true},
+		{name: "empty field segment", in: "main.", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotDB, gotField, err := parseFromRef(tt.in)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseFromRef(%q) error = %v, wantErr %v", tt.in, err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if gotDB != tt.wantDB || gotField != tt.wantField {
+				t.Errorf("parseFromRef(%q) = (%q, %q), want (%q, %q)", tt.in, gotDB, gotField, tt.wantDB, tt.wantField)
+			}
+		})
+	}
+}
+
+func TestDatabaseEnvRefs(t *testing.T) {
+	env := map[string]spec.EnvVar{
+		"DATABASE_URL": {From: "postgres.main.url"},
+		"CACHE_HOST":   {From: "cache.host"},
+		"LOG_LEVEL":    {Value: "debug"},
+		"API_KEY":      {Secret: true, Required: true},
+	}
+
+	got, err := databaseEnvRefs(env)
+	if err != nil {
+		t.Fatalf("databaseEnvRefs() error = %v", err)
+	}
+	want := map[string]store.DatabaseEnvRef{
+		"DATABASE_URL": {Database: "main", Field: "url"},
+		"CACHE_HOST":   {Database: "cache", Field: "host"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("databaseEnvRefs() = %+v, want %+v", got, want)
+	}
+}
+
+func TestDatabaseEnvRefs_InvalidFrom(t *testing.T) {
+	env := map[string]spec.EnvVar{"DATABASE_URL": {From: "main"}}
+	if _, err := databaseEnvRefs(env); err == nil {
+		t.Fatal("databaseEnvRefs() error = nil, want a single-segment from to be rejected")
+	}
+}

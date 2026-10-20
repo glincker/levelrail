@@ -1,0 +1,44 @@
+[
+  {
+    "Step": "attempt 1",
+    "Status": 401,
+    "Body": "{\"error\":\"invalid credentials\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "attempt 2",
+    "Status": 401,
+    "Body": "{\"error\":\"invalid credentials\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "attempt 3",
+    "Status": 401,
+    "Body": "{\"error\":\"invalid credentials\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "attempt 4",
+    "Status": 401,
+    "Body": "{\"error\":\"invalid credentials\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "attempt 5",
+    "Status": 429,
+    "Body": "{\"error\":\"too many failed attempts, try again later\"}",
+    "Cookies": null,
+    "Retry": true
+  },
+  {
+    "Step": "attempt 6",
+    "Status": 429,
+    "Body": "{\"error\":\"too many failed attempts, try again later\"}",
+    "Cookies": null,
+    "Retry": true
+  }
+]

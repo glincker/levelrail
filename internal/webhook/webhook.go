@@ -1,0 +1,743 @@
+// Package webhook is the git integration: a GitHub push-webhook
+// receiver that verifies the request signature, extracts the pushed
+// commit SHA, fetches the repository at that SHA to a local checkout, and
+// hands the result to internal/deploy's Pipeline, the same
+// pipeline a manual deploy trigger will use once the HTTP API
+// exists.
+//
+// Handler is an http.Handler, not a standalone server: the
+// HTTP API package mounts it at whatever path it chooses, so this package
+// must never call http.ListenAndServe itself.
+//
+// Scope boundary: Config is deliberately static, single-app configuration
+// (one secret, one repo, one branch, one spec.Service). This phase's
+// exit criterion is a single app, thesvg.org, deploying from a git
+// push; this package does not build a multi-tenant "which repo maps to
+// which app.yaml" registry, since designing that now would be exactly the
+// speculative-ahead-of-a-real-second-app work the project's engineering
+// standards warn against.
+// A second app arriving is the trigger to revisit this, not a hypothesis
+// about one arriving.
+//
+// That second app has now arrived: internal/api's own multi-app git
+// source registry (git_sources.go, git_webhook.go) reuses this package's
+// verified signature/payload logic (VerifySignature, ParsePushEvent,
+// MaxPayloadBytes, Config.TargetRef) rather than duplicating it, but
+// lives in internal/api because turning a stored app back into a full
+// spec.Service already lives there too (specServiceFromDesired). Handler
+// and Config above are unchanged and still back the original single-app,
+// env-var-configured path.
+package webhook
+
+import (
+	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/deploylog"
+	"github.com/GLINCKER/levelrail/internal/envredact"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
+	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+// DefaultBranch is used when Config.Branch is empty.
+const DefaultBranch = "main"
+
+// maxPayloadBytes bounds how much of a request body ServeHTTP will read.
+// GitHub documents 25 MB as its own webhook payload ceiling
+// (docs.github.com/webhooks: "payloads... are limited to 25 MB"), so this
+// mirrors GitHub's own protocol limit rather than being a tunable
+// business threshold: nothing this package does gets more correct by
+// raising or lowering it, it only bounds how much an unauthenticated
+// request can force this handler to buffer before signature
+// verification even runs.
+const maxPayloadBytes = 25 << 20
+
+// MaxPayloadBytes is maxPayloadBytes, exported so a per-app git source
+// webhook receiver outside this package (internal/api's multi-app
+// route, a later follow-up: see that package's own git_webhook.go
+// doc comment for why the multi-app handler lives there instead of here)
+// applies GitHub's own protocol size limit identically, rather than
+// picking its own number.
+const MaxPayloadBytes = maxPayloadBytes
+
+// Provider webhook header names, exported so internal/api's multi-app
+// route (git_webhook.go) reads the identical header names this package
+// uses to route and verify a delivery, rather than a second hardcoded
+// copy that could drift out of sync.
+const (
+	HeaderGitHubEvent       = "X-GitHub-Event"
+	HeaderGitLabEvent       = "X-Gitlab-Event"
+	HeaderGiteaEventType    = "X-Gitea-Event-Type"
+	HeaderBitbucketEventKey = "X-Event-Key"
+	HeaderGitLabToken       = "X-Gitlab-Token" //nolint:gosec // header name, not a credential value
+	HeaderHubSignature256   = "X-Hub-Signature-256"
+	HeaderHubSignature      = "X-Hub-Signature"
+	HeaderGitHubDelivery    = "X-GitHub-Delivery"
+	HeaderGitLabEventUUID   = "X-Gitlab-Event-Uuid"
+	HeaderGiteaDelivery     = "X-Gitea-Delivery"
+	HeaderBitbucketRequest  = "X-Request-Uuid"
+)
+
+const (
+	errWriteResponseBody = "webhook: failed to write response body"
+	errDeployFailed      = "deploy failed"
+)
+
+// Deployer is the narrow surface this package needs from
+// internal/deploy.Pipeline, so tests can fake it without a real BuildKit
+// connection or Docker daemon, the same narrow-interface pattern
+// internal/deploy and internal/reconcile/application already use.
+// *deploy.Pipeline satisfies this.
+type Deployer interface {
+	Deploy(ctx context.Context, req deploy.Request, progress func(build.ProgressEvent)) (string, error)
+	// DeploySpec is the multi-service fan-out entry point, exercised only
+	// when Config.Services is non-empty (see Config's own doc comment).
+	// Same *deploy.Pipeline satisfies both methods.
+	DeploySpec(ctx context.Context, req deploy.MultiRequest, progress func(serviceKey string, ev build.ProgressEvent)) ([]deploy.ServiceOutcome, error)
+}
+
+// ReconcileNudger is *reconcile.Engine's own Nudge method, narrowed the
+// same way internal/api.ReconcileNudger is (that interface can't be
+// imported here: internal/api already imports internal/webhook). A push
+// that just deployed a new image calls it so the reconciler doesn't wait
+// up to a full resyncInterval to notice, the same gap that interface's
+// doc comment describes for create/stop/start/restart.
+type ReconcileNudger interface {
+	Nudge()
+}
+
+// AttemptStore is the narrow store surface Handler needs to record one
+// deploy_attempts row per triggering push: this package is the third,
+// and most important, of the three real deploy-trigger paths this
+// history exists for. An unattended push-to-deploy that fails
+// with no replayable record defeats the point of having a log viewer at
+// all. *store.DB satisfies this structurally.
+type AttemptStore interface {
+	SaveDeployAttempt(ctx context.Context, a store.DeployAttempt) error
+	FinishDeployAttempt(ctx context.Context, id, status string, finishedAt time.Time, errMsg string) error
+}
+
+// DeployNotifier is the narrow surface Handler needs to fire a
+// deploy-outcome notification (Slack/Discord/Telegram/generic-webhook/
+// email, wave-2 roadmap item #5) once a push-triggered deploy reaches a
+// terminal state: distinct from this package's own git-integration
+// concern, this is deliberately just "hand the finished outcome to
+// whatever internal/alerting.DeployDispatcher does with it," the same
+// narrow-consumer-interface shape AttemptStore above already uses.
+// *alerting.DeployDispatcher satisfies this structurally. nil is valid:
+// Handler.notifier's own doc comment covers what a nil value does.
+type DeployNotifier interface {
+	Dispatch(ctx context.Context, resourceID string, ev alerting.DeployOutcome)
+}
+
+// Config is everything needed to map a validated GitHub push into a
+// deploy.Request. See the package doc comment for why this is
+// single-app, not a multi-tenant registry.
+type Config struct {
+	// Secret is the shared HMAC secret configured on the GitHub webhook,
+	// used to verify the X-Hub-Signature-256 header. Required: a Handler
+	// built with an empty Secret rejects every request, since an empty
+	// secret would make the signature check meaningless.
+	Secret []byte
+	// RepoURL is the git remote this handler clones on a triggering
+	// push, e.g. "https://github.com/org/thesvg.org.git". Deliberately
+	// server-side configuration, never taken from the webhook payload:
+	// only the commit SHA (a hash, not a URL) comes from the untrusted
+	// request, so a forged payload cannot redirect a clone at an
+	// attacker-controlled remote.
+	RepoURL string
+	// Branch triggers a deploy on push. Pushes to any other branch are
+	// accepted (200 OK, so GitHub does not retry) but do not deploy.
+	// Defaults to DefaultBranch when empty.
+	Branch string
+	// ServiceName, Service, and ImageRepo are passed straight through to
+	// deploy.Request; see internal/deploy for what each means. Ignored
+	// when Services (below) is non-empty.
+	ServiceName string
+	Service     spec.Service
+	ImageRepo   string
+
+	// Services, when non-empty, switches a triggering push from a
+	// single-service Deploy call to a multi-service DeploySpec fan-out
+	// (deploy.MultiRequest): ServiceName above becomes the app name every
+	// fanned-out service links to, and ImageRepo above becomes the image
+	// repo base every fanned-out service tags under. This is still
+	// single-app, env-var-configured Config, exactly like every other
+	// field here (the package doc comment's own scope boundary): Services
+	// is one more static, operator-configured value, not a per-push
+	// choice, so it does not reopen the "no multi-tenant registry" design
+	// decision that comment already makes.
+	Services map[string]spec.Service
+}
+
+func (c Config) branch() string {
+	if c.Branch == "" {
+		return DefaultBranch
+	}
+	return c.Branch
+}
+
+func (c Config) targetRef() string {
+	return "refs/heads/" + c.branch()
+}
+
+// TargetRef is targetRef, exported so a per-app Config resolved outside
+// this package (internal/api's multi-app webhook route) can compute the
+// identical "refs/heads/<branch>" ref-matching target this package's own
+// ServeHTTP already checks pushes against, without duplicating
+// DefaultBranch's fallback logic a second time.
+func (c Config) TargetRef() string {
+	return c.targetRef()
+}
+
+// fetchFunc fetches repoURL at sha to a local directory, returning the
+// directory and a cleanup func that removes it. progress, if non-nil,
+// receives clone-stage log lines the same shape build.ProgressEvent
+// already carries, so a caller can feed clone output into the same
+// recorder/SSE path build progress already uses. Overridable in tests so
+// dispatch-logic tests don't need real network or git I/O; see
+// Handler.cloneAndCheckout for the real implementation.
+type fetchFunc func(ctx context.Context, repoURL, sha string, progress func(build.ProgressEvent)) (dir string, cleanup func(), err error)
+
+// Handler is an http.Handler that receives GitHub push event payloads,
+// verifies them, and triggers a deploy through Deployer when the push
+// targets Config.Branch.
+type Handler struct {
+	cfg      Config
+	deployer Deployer
+	// attempts and recorder are both nil-valid, together: see
+	// deployAttemptEnabled's own doc comment for why they're gated as a
+	// pair rather than independently. cmd/levelrail/main.go always wires
+	// both (a real *store.DB and a real *deploylog.Recorder shared with
+	// internal/api.Router, see that package's own doc comment for why
+	// the Recorder specifically must be the same instance); nil/nil here
+	// exists mainly so this package's own dispatch-logic tests, which
+	// have nothing to do with attempt tracking, don't need to fake it.
+	attempts AttemptStore
+	recorder *deploylog.Recorder
+	// notifier fires a deploy-outcome notification once beginDeployAttempt's
+	// finish closure has recorded a terminal status. nil (the default,
+	// e.g. this package's own dispatch-logic tests) simply means no
+	// deploy-outcome notification is sent for a push-triggered deploy,
+	// the same "optional signal, absence is not an error" shape every
+	// other optional collaborator in this codebase has, never a panic or
+	// a swallowed error.
+	notifier DeployNotifier
+	// nudger requests an immediate reconcile pass after a successful
+	// deploy; nil (e.g. this package's own dispatch-logic tests) just
+	// means the reconciler waits for its next resyncInterval tick
+	// instead, the same "optional signal, absence is not an error" shape
+	// notifier above has.
+	nudger ReconcileNudger
+	log    *slog.Logger
+	fetch  fetchFunc
+	cache  *sourcecache.Cache
+}
+
+// New builds a Handler. attempts and recorder may both be nil (see
+// Handler.attempts' own doc comment); notifier and nudger may be nil
+// (see their own doc comments); log defaults to slog.Default() if nil.
+func New(cfg Config, deployer Deployer, attempts AttemptStore, recorder *deploylog.Recorder, notifier DeployNotifier, nudger ReconcileNudger, log *slog.Logger) *Handler {
+	if log == nil {
+		log = slog.Default()
+	}
+	h := &Handler{cfg: cfg, deployer: deployer, attempts: attempts, recorder: recorder, notifier: notifier, nudger: nudger, log: log, cache: sourcecache.New(sourcecache.ConfigFromEnv(""), log)}
+	h.fetch = h.cloneAndCheckout
+	return h
+}
+
+// nudgeReconciler calls h.nudger.Nudge() if one is configured, mirroring
+// internal/api.Router's own nudgeReconciler helper.
+func (h *Handler) nudgeReconciler() {
+	if h.nudger != nil {
+		h.nudger.Nudge()
+	}
+}
+
+// deployAttemptEnabled reports whether this Handler should record
+// deploy_attempts history for the push it's about to deploy: attempts and
+// recorder must both be set, or history/log state would be permanently
+// half-populated.
+func (h *Handler) deployAttemptEnabled() bool {
+	return h.attempts != nil && h.recorder != nil
+}
+
+// beginDeployAttempt mints a deploy_attempts row for req and returns the
+// progress/finish funcs for h.deployer.Deploy. Falls back to
+// build.SlogProgress and a no-op finish, logged but not fatal, if
+// deployAttemptEnabled is false or minting/saving the row fails.
+func (h *Handler) beginDeployAttempt(ctx context.Context, req deploy.Request) (progress func(build.ProgressEvent), finish func(tag string, deployErr error)) {
+	noop := func(string, error) {}
+	if !h.deployAttemptEnabled() {
+		return build.SlogProgress(h.log), noop
+	}
+
+	id, err := store.NewDeployAttemptID()
+	if err != nil {
+		h.log.Error("webhook: mint deploy attempt id failed", "error", err)
+		return build.SlogProgress(h.log), noop
+	}
+
+	// Start before SaveDeployAttempt: the row is queryable the instant
+	// SaveDeployAttempt returns, so a racing GET must never see id before
+	// Start has registered it. Finish below cleans up on a failed save.
+	h.recorder.Start(id)
+
+	image := req.ImageRepo + ":" + req.CommitSHA
+
+	// Built from req.Service (h.cfg.Service, this package's static
+	// app-spec config), not a store.DesiredService: this legacy single-app
+	// path has no store lookup for one. A translation error here (e.g. an
+	// unparsable resources.memory) must never block the deploy itself, so
+	// it's logged and the attempt is still recorded, just with a zero-value
+	// snapshot.
+	var snapshot store.DeployAttemptSnapshot
+	if desired, err := deploy.ToDesiredService(req.ServiceName, image, req.Service); err != nil {
+		h.log.Error("webhook: build deploy attempt snapshot failed", "error", err)
+	} else {
+		snapshot = store.NewDeployAttemptSnapshot(desired)
+	}
+
+	if err := h.attempts.SaveDeployAttempt(ctx, store.DeployAttempt{
+		ID: id, ServiceName: req.ServiceName, Image: image,
+		CommitSHA: req.CommitSHA, Source: store.DeployAttemptSourceWebhook,
+		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
+		Snapshot: snapshot,
+	}); err != nil {
+		h.log.Error("webhook: save deploy attempt failed", "attempt_id", id, "error", err)
+		h.recorder.Finish(ctx, id)
+		return build.SlogProgress(h.log), noop
+	}
+
+	progress = h.recorder.Progress(id)
+	if setter, ok := h.attempts.(interface {
+		SetDeployAttemptCacheWarning(ctx context.Context, id, warning string) error
+	}); ok {
+		recorded := progress
+		progress = func(ev build.ProgressEvent) {
+			if ev.CacheWarning != "" {
+				if err := setter.SetDeployAttemptCacheWarning(context.Background(), id, ev.CacheWarning); err != nil {
+					h.log.Warn("webhook: record cache warning failed", "attempt_id", id, "error", err)
+				}
+			}
+			recorded(ev)
+		}
+	}
+	finish = func(_ string, deployErr error) {
+		// Background, not ctx: must still flush and finish even if the
+		// triggering request's own context is on its way out.
+		finishCtx := context.Background()
+		h.recorder.Finish(finishCtx, id)
+
+		status := store.DeployAttemptStatusSucceeded
+		errMsg := ""
+		if deployErr != nil {
+			status = store.DeployAttemptStatusFailed
+			errMsg = deployErr.Error()
+		}
+		if err := h.attempts.FinishDeployAttempt(finishCtx, id, status, time.Now(), errMsg); err != nil {
+			h.log.Error("webhook: finish deploy attempt failed", "attempt_id", id, "error", err)
+			return
+		}
+		// Fires only after FinishDeployAttempt persists the terminal status.
+		if h.notifier != nil {
+			h.notifier.Dispatch(finishCtx, resourceIDForService(req.ServiceName), alerting.DeployOutcome{
+				AppName: req.ServiceName, Image: image, Succeeded: deployErr == nil, Error: errMsg, AttemptID: id,
+			})
+		}
+	}
+	return progress, finish
+}
+
+// resourceIDForService mirrors internal/api's own resourceIDForApp
+// (telemetry.metrics.go): "service:<name>", the same stable identifier
+// convention used to scope both an app's metrics/logs and its alert
+// rules/deploy-notify-targets to one resource ID. Duplicated as a plain
+// string format here rather than imported, the same
+// applicationControllerName-style choice internal/api/deploys.go's own
+// doc comment already makes for that package's identical duplication of
+// internal/reconcile's controller-name convention: importing
+// internal/api here to reuse one string format would pull that whole
+// package's HTTP-handler surface into this one just for a formatting
+// rule, and if the convention ever changes, both call sites need
+// updating together regardless of which one "owns" it.
+func resourceIDForService(name string) string {
+	return "service:" + name
+}
+
+// PushEvent is the subset of GitHub's push event payload this package
+// needs. See
+// https://docs.github.com/en/webhooks/webhook-events-and-payloads#push.
+// Exported (renamed from the pre-existing unexported pushEvent) so
+// internal/api's multi-app webhook route can decode the identical
+// payload shape through ParsePushEvent below, rather than redeclaring
+// it.
+type PushEvent struct {
+	Ref   string `json:"ref"`
+	After string `json:"after"`
+	// Before is the commit the branch moved from, the stale-deploy guard's
+	// strongest ordering signal.
+	Before string `json:"before"`
+	// HeadCommitAt is the pushed head commit's timestamp, zero if unknown.
+	HeadCommitAt time.Time `json:"-"`
+	// HeadMessage and HeadAuthor are the pushed head commit's message and
+	// author name, empty when the payload carries none.
+	HeadMessage string `json:"-"`
+	HeadAuthor  string `json:"-"`
+	// RepoNames and RepoURLs identify the repository the push is for
+	// (full_name, path_with_namespace, clone/ssh/html URLs). Empty when
+	// the payload does not say, which callers must treat as "unknown".
+	RepoNames []string `json:"-"`
+	RepoURLs  []string `json:"-"`
+	// Changed lists the files the pushed commits touched. Nil means the
+	// payload did not say (no commit list, or a list the provider truncates).
+	Changed []string `json:"-"`
+}
+
+// maxPayloadCommits is the commit count at which GitHub, Gitea and GitLab
+// truncate a push payload's commit list, so the file list cannot be trusted.
+const maxPayloadCommits = 20
+
+// pushCommit is one commit entry in a GitHub, Gitea or GitLab push payload.
+type pushCommit struct {
+	ID        string `json:"id"`
+	Timestamp string `json:"timestamp"`
+	Message   string `json:"message"`
+	Author    struct {
+		Name string `json:"name"`
+	} `json:"author"`
+	Added    []string `json:"added"`
+	Modified []string `json:"modified"`
+	Removed  []string `json:"removed"`
+}
+
+// changedFromCommits unions the per-commit file lists, or returns nil when
+// the list may be incomplete.
+func changedFromCommits(commits []pushCommit) []string {
+	if len(commits) == 0 || len(commits) >= maxPayloadCommits {
+		return nil
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, c := range commits {
+		for _, list := range [][]string{c.Added, c.Modified, c.Removed} {
+			for _, f := range list {
+				if !seen[f] {
+					seen[f] = true
+					out = append(out, f)
+				}
+			}
+		}
+	}
+	return out
+}
+
+// pushRepo is the union of the repository/project objects GitHub, Gitea
+// and GitLab put in a push payload.
+type pushRepo struct {
+	FullName          string `json:"full_name"`
+	PathWithNamespace string `json:"path_with_namespace"`
+	CloneURL          string `json:"clone_url"`
+	SSHURL            string `json:"ssh_url"`
+	HTMLURL           string `json:"html_url"`
+	GitHTTPURL        string `json:"git_http_url"`
+	GitSSHURL         string `json:"git_ssh_url"`
+	WebURL            string `json:"web_url"`
+	Homepage          string `json:"homepage"`
+}
+
+func (r *pushRepo) collect(ev *PushEvent) {
+	if r == nil {
+		return
+	}
+	for _, n := range []string{r.FullName, r.PathWithNamespace} {
+		if n != "" {
+			ev.RepoNames = append(ev.RepoNames, n)
+		}
+	}
+	for _, u := range []string{r.CloneURL, r.SSHURL, r.HTMLURL, r.GitHTTPURL, r.GitSSHURL, r.WebURL, r.Homepage} {
+		if u != "" {
+			ev.RepoURLs = append(ev.RepoURLs, u)
+		}
+	}
+}
+
+// ErrPushEventFieldsMissing is returned by ParsePushEvent when body
+// decodes as valid JSON but is missing ref or after, distinct from a
+// json.Unmarshal failure so ServeHTTP (and internal/api's multi-app
+// equivalent) can keep reporting the two cases with their own, more
+// specific messages.
+var ErrPushEventFieldsMissing = errors.New("webhook: payload missing ref or after")
+
+// ParsePushEvent decodes body as a GitHub push event payload, requiring
+// both Ref and After to be non-empty (see ServeHTTP's own doc comment:
+// only the commit SHA and target ref matter to this package, everything
+// else in GitHub's much larger push payload is ignored).
+func ParsePushEvent(body []byte) (PushEvent, error) {
+	var payload struct {
+		PushEvent
+		HeadCommit *pushCommit  `json:"head_commit"`
+		Commits    []pushCommit `json:"commits"`
+		Repository *pushRepo    `json:"repository"`
+		Project    *pushRepo    `json:"project"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return PushEvent{}, fmt.Errorf("webhook: malformed payload: %w", err)
+	}
+	ev := payload.PushEvent
+	if ev.After == "" || ev.Ref == "" {
+		return ev, ErrPushEventFieldsMissing
+	}
+	ev.Changed = changedFromCommits(payload.Commits)
+	for _, r := range []*pushRepo{payload.Repository, payload.Project} {
+		r.collect(&ev)
+	}
+	head := payload.HeadCommit
+	for i := range payload.Commits {
+		if head == nil && payload.Commits[i].ID == ev.After {
+			head = &payload.Commits[i]
+		}
+	}
+	if head != nil {
+		if t, err := time.Parse(time.RFC3339, head.Timestamp); err == nil {
+			ev.HeadCommitAt = t
+		}
+		ev.HeadMessage, ev.HeadAuthor = head.Message, head.Author.Name
+	}
+	return ev, nil
+}
+
+// ServeHTTP implements http.Handler. Response codes: 200 for a
+// successfully triggered or correctly-ignored (wrong branch) push, 400
+// for a malformed payload, 401 for a missing or invalid signature, 500
+// with a non-leaky message if the deploy itself fails. Deploy progress is
+// logged via slog, not streamed in the response: GitHub expects a fast
+// response and does not wait for one, actual progress streaming to a UI
+// is the HTTP API's job.
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Every success/ignored-branch response below is a plain status line
+	// that can embed a webhook-payload field a pusher controls (ev.Ref):
+	// an explicit text/plain content type stops any client from ever
+	// MIME-sniffing one of those bodies as HTML.
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
+	body, err := io.ReadAll(io.LimitReader(r.Body, maxPayloadBytes+1))
+	if err != nil {
+		h.log.Warn("webhook: failed to read request body", "error", err)
+		http.Error(w, "cannot read request body", http.StatusBadRequest)
+		return
+	}
+	if len(body) > maxPayloadBytes {
+		h.log.Warn("webhook: request body exceeds max payload size", "max_bytes", maxPayloadBytes)
+		http.Error(w, "request body too large", http.StatusBadRequest)
+		return
+	}
+
+	if !h.verifySignature(body, r.Header.Get(HeaderHubSignature256)) {
+		h.log.Warn("webhook: signature verification failed", "remote_addr", r.RemoteAddr)
+		http.Error(w, "invalid signature", http.StatusUnauthorized)
+		return
+	}
+
+	ev, err := ParsePushEvent(body)
+	if err != nil {
+		if errors.Is(err, ErrPushEventFieldsMissing) {
+			h.log.Warn("webhook: payload missing ref or after", "ref", ev.Ref, "after", ev.After)
+			http.Error(w, "malformed payload: missing ref or after", http.StatusBadRequest)
+			return
+		}
+		h.log.Warn("webhook: malformed payload", "error", err)
+		http.Error(w, "malformed payload", http.StatusBadRequest)
+		return
+	}
+
+	wantRef := h.cfg.targetRef()
+	if ev.Ref != wantRef {
+		h.log.Info("webhook: ignoring push to non-target branch", "ref", ev.Ref, "want_ref", wantRef)
+		w.WriteHeader(http.StatusOK)
+		if _, err := fmt.Fprintf(w, "ignored: push to %q, deploys trigger on %q only\n", ev.Ref, wantRef); err != nil {
+			h.log.Warn(errWriteResponseBody, "error", err)
+		}
+		return
+	}
+
+	h.log.Info("webhook: push matched target branch, fetching source", "commit", ev.After, "ref", ev.Ref)
+
+	if len(h.cfg.Services) > 0 {
+		h.deployMulti(w, r, ev)
+		return
+	}
+
+	req := deploy.Request{
+		ServiceName: h.cfg.ServiceName,
+		Service:     h.cfg.Service,
+		CommitSHA:   ev.After,
+		ImageRepo:   h.cfg.ImageRepo,
+	}
+
+	// beginDeployAttempt runs before the clone, not after it, so the clone
+	// itself is recorded under the same attempt: a fetch failure now
+	// finishes the attempt as failed instead of never being attributed to
+	// one at all.
+	progress, finishAttempt := h.beginDeployAttempt(r.Context(), req)
+
+	sourceDir, cleanup, err := h.fetch(r.Context(), h.cfg.RepoURL, ev.After, progress)
+	if err != nil {
+		h.log.Error("webhook: fetching source failed", "commit", ev.After, "repo_url", h.cfg.RepoURL, "error", err)
+		finishAttempt("", err)
+		http.Error(w, errDeployFailed, http.StatusInternalServerError)
+		return
+	}
+	defer cleanup()
+	req.SourceDir = sourceDir
+
+	tag, err := h.deployer.Deploy(r.Context(), req, progress)
+	finishAttempt(tag, err)
+	if err != nil {
+		h.log.Error("webhook: deploy failed", "commit", ev.After, "service", h.cfg.ServiceName, "error", err)
+		http.Error(w, errDeployFailed, http.StatusInternalServerError)
+		return
+	}
+
+	h.log.Info("webhook: deploy triggered", "commit", ev.After, "service", h.cfg.ServiceName, "tag", tag)
+	h.nudgeReconciler()
+	w.WriteHeader(http.StatusOK)
+	if _, err := fmt.Fprintf(w, "deploy triggered: %s\n", tag); err != nil {
+		h.log.Warn(errWriteResponseBody, "error", err)
+	}
+}
+
+// deployMulti is ServeHTTP's multi-service branch, taken only when
+// Config.Services is non-empty: fans out to deploy.Pipeline.DeploySpec
+// instead of a single Deploy call. Deliberately does not record
+// deploy_attempts history per service, the same documented gap
+// internal/api's handleDeploySpec doc comment already accepts for the
+// identical reason (a real per-service attempt log is a store-schema-
+// sized follow-up, not something to improvise here); clone and build
+// progress are only logged via slog, matching this method's own existing
+// choice for a plain deploy failure.
+func (h *Handler) deployMulti(w http.ResponseWriter, r *http.Request, ev PushEvent) {
+	cloneProgress := func(e build.ProgressEvent) {
+		if e.Log == "" {
+			return
+		}
+		h.log.Info("webhook: multi-service clone progress", "log", e.Log, "stream", e.Stream)
+	}
+
+	sourceDir, cleanup, err := h.fetch(r.Context(), h.cfg.RepoURL, ev.After, cloneProgress)
+	if err != nil {
+		h.log.Error("webhook: multi-service fetching source failed", "commit", ev.After, "repo_url", h.cfg.RepoURL, "error", err)
+		http.Error(w, errDeployFailed, http.StatusInternalServerError)
+		return
+	}
+	defer cleanup()
+
+	progress := func(serviceKey string, e build.ProgressEvent) {
+		h.log.Info("webhook: multi-service build progress", "service_key", serviceKey, "step", e.Step, "completed", e.Completed)
+	}
+
+	outcomes, err := h.deployer.DeploySpec(r.Context(), deploy.MultiRequest{
+		AppName:       h.cfg.ServiceName,
+		Services:      h.cfg.Services,
+		SourceDir:     sourceDir,
+		CommitSHA:     ev.After,
+		ImageRepoBase: h.cfg.ImageRepo,
+	}, progress)
+	if err != nil {
+		h.log.Error("webhook: multi-service deploy failed", "commit", ev.After, "app", h.cfg.ServiceName, "error", err)
+		http.Error(w, errDeployFailed, http.StatusInternalServerError)
+		return
+	}
+
+	allSucceeded := true
+	for _, o := range outcomes {
+		if o.Err != nil {
+			allSucceeded = false
+			h.log.Error("webhook: multi-service deploy: service failed", "commit", ev.After, "service", o.ServiceName, "error", o.Err.Error())
+			continue
+		}
+		h.log.Info("webhook: multi-service deploy: service triggered", "commit", ev.After, "service", o.ServiceName, "tag", o.Image)
+	}
+	h.nudgeReconciler()
+
+	status := http.StatusOK
+	if !allSucceeded {
+		status = http.StatusMultiStatus
+	}
+	w.WriteHeader(status)
+	if _, err := fmt.Fprintf(w, "multi-service deploy triggered: %d service(s), all_succeeded=%t\n", len(outcomes), allSucceeded); err != nil {
+		h.log.Warn(errWriteResponseBody, "error", err)
+	}
+}
+
+// verifySignature checks header against an HMAC-SHA256 of body keyed by
+// h.cfg.Secret. See VerifySignature's own doc comment for the actual
+// verification logic, extracted as a free function so a per-app secret
+// resolved outside this package (internal/api's multi-app webhook route)
+// can verify without needing a Handler value.
+func (h *Handler) verifySignature(body []byte, header string) bool {
+	return VerifySignature(h.cfg.Secret, body, header)
+}
+
+// VerifySignature checks header against an HMAC-SHA256 of body keyed by
+// secret, GitHub's X-Hub-Signature-256 scheme
+// (docs.github.com/webhooks: "validating-webhook-deliveries"). Comparison
+// uses hmac.Equal, constant-time by construction, rather than a plain
+// byte-slice or string comparison, since a timing-observable comparison
+// here would let an attacker recover a valid signature byte by byte.
+func VerifySignature(secret, body []byte, header string) bool {
+	if len(secret) == 0 {
+		// An empty configured secret can never produce a valid
+		// signature: refuse rather than degrade to "any signature
+		// passes."
+		return false
+	}
+	const prefix = "sha256="
+	sigHex, ok := strings.CutPrefix(header, prefix)
+	if !ok {
+		return false
+	}
+	sig, err := hex.DecodeString(sigHex)
+	if err != nil {
+		return false
+	}
+	mac := hmac.New(sha256.New, secret)
+	mac.Write(body) // hash.Hash.Write never returns an error.
+	expected := mac.Sum(nil)
+	return hmac.Equal(sig, expected)
+}
+
+// UseSourceCache routes this handler's fetches through the shared source
+// mirror, so a known commit needs no git host and an outage fails fast.
+func (h *Handler) UseSourceCache(c *sourcecache.Cache) { h.cache = c }
+
+// cloneAndCheckout checks sha of repoURL out into a temp directory through
+// the source cache and returns a cleanup func that removes it. Callers must
+// call cleanup once done, deploy succeeded or failed.
+func (h *Handler) cloneAndCheckout(ctx context.Context, repoURL, sha string, progress func(build.ProgressEvent)) (dir string, cleanup func(), err error) {
+	if progress == nil {
+		progress = func(build.ProgressEvent) {}
+	}
+	progress(build.ProgressEvent{Log: fmt.Sprintf("Fetching %s...", envredact.URLForLog(repoURL)), Stream: "stdout"})
+	co, err := h.cache.Checkout(ctx, repoURL, sha, "")
+	if err != nil {
+		progress(build.ProgressEvent{Log: fmt.Sprintf("Fetch failed: %s", err), Stream: "stderr"})
+		return "", nil, fmt.Errorf("webhook: fetch %q at %q: %w", envredact.URLForLog(repoURL), sha, err)
+	}
+	progress(build.ProgressEvent{Log: fmt.Sprintf("Checked out %s", sha), Stream: "stdout"})
+	return co.Dir, co.Cleanup, nil
+}

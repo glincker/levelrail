@@ -1,0 +1,160 @@
+[
+  {
+    "Step": "status before enrollment",
+    "Status": 200,
+    "Body": {
+      "enabled": false,
+      "recovery_codes_remaining": 0
+    }
+  },
+  {
+    "Step": "status without a session",
+    "Status": 401,
+    "Body": {
+      "error": "authentication required"
+    }
+  },
+  {
+    "Step": "confirm before setup",
+    "Status": 400,
+    "Body": {
+      "error": "call setup before confirm"
+    }
+  },
+  {
+    "Step": "setup",
+    "Status": 200,
+    "Body": {
+      "provisioning_uri": "\u003credacted\u003e",
+      "secret": "\u003credacted\u003e"
+    }
+  },
+  {
+    "Step": "setup again before confirm",
+    "Status": 200,
+    "Body": {
+      "provisioning_uri": "\u003credacted\u003e",
+      "secret": "\u003credacted\u003e"
+    }
+  },
+  {
+    "Step": "confirm with a bad code",
+    "Status": 400,
+    "Body": {
+      "error": "invalid code"
+    }
+  },
+  {
+    "Step": "confirm with a bad body",
+    "Status": 400,
+    "Body": {
+      "error": "invalid request body"
+    }
+  },
+  {
+    "Step": "confirm",
+    "Status": 200,
+    "Body": {
+      "recovery_codes": "\u003c10 codes\u003e"
+    }
+  },
+  {
+    "Step": "status after enrollment",
+    "Status": 200,
+    "Body": {
+      "enabled": true,
+      "recovery_codes_remaining": 10
+    }
+  },
+  {
+    "Step": "setup when enabled",
+    "Status": 409,
+    "Body": {
+      "error": "two-factor authentication is already enabled"
+    }
+  },
+  {
+    "Step": "confirm when enabled",
+    "Status": 409,
+    "Body": {
+      "error": "two-factor authentication is already enabled"
+    }
+  },
+  {
+    "Step": "regenerate with a bad code",
+    "Status": 400,
+    "Body": {
+      "error": "invalid code"
+    }
+  },
+  {
+    "Step": "regenerate with no code",
+    "Status": 400,
+    "Body": {
+      "error": "invalid code"
+    }
+  },
+  {
+    "Step": "regenerate",
+    "Status": 200,
+    "Body": {
+      "recovery_codes": "\u003c10 codes\u003e"
+    }
+  },
+  {
+    "Step": "status after regeneration",
+    "Status": 200,
+    "Body": {
+      "enabled": true,
+      "recovery_codes_remaining": 10
+    }
+  },
+  {
+    "Step": "disable with a bad code",
+    "Status": 400,
+    "Body": {
+      "error": "invalid code"
+    }
+  },
+  {
+    "Step": "disable with no code",
+    "Status": 400,
+    "Body": {
+      "error": "invalid code"
+    }
+  },
+  {
+    "Step": "disable with a bad body",
+    "Status": 400,
+    "Body": {
+      "error": "invalid request body"
+    }
+  },
+  {
+    "Step": "disable",
+    "Status": 204,
+    "Body": null
+  },
+  {
+    "Step": "status after disable",
+    "Status": 200,
+    "Body": {
+      "enabled": false,
+      "recovery_codes_remaining": 0
+    }
+  },
+  {
+    "Step": "disable when not enabled",
+    "Status": 409,
+    "Body": {
+      "error": "two-factor authentication is not enabled"
+    }
+  },
+  {
+    "Step": "regenerate when not enabled",
+    "Status": 409,
+    "Body": {
+      "error": "two-factor authentication is not enabled"
+    }
+  }
+]

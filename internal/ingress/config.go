@@ -1,0 +1,847 @@
+// Package ingress is the Phase 0 spike for embedding Caddy as a Go
+// library, driven entirely through its in-process admin API. There is
+// no `caddy` binary anywhere in this package and no Caddyfile on disk.
+// Config goes in as a JSON document built from typed Go structs (never a
+// hand-written Caddyfile string), because Phase 1's real requirement is
+// building that document programmatically from app.yaml (the declarative
+// app spec's contract), not editing config by hand.
+//
+// This package intentionally defines its own minimal structs mirroring the
+// slice of Caddy's JSON config schema this spike needs (admin, apps.http,
+// apps.tls), rather than importing caddy's own config types directly.
+// Caddy's own types lean heavily on json.RawMessage for every extension
+// point (module namespaces), which makes them awkward to construct
+// directly from Go; a small hand-rolled struct set that marshals to the
+// same wire shape is both easier to build from app.yaml data later and
+// easier to table-test in isolation, without starting Caddy at all.
+package ingress
+
+import (
+	"fmt"
+	"net/url"
+	"strings"
+)
+
+// Config is the root of a Caddy JSON config document
+// (https://caddyserver.com/docs/json/), scoped to the subset this spike
+// exercises: the admin endpoint, the http app, and the tls app.
+type Config struct {
+	Admin *AdminConfig `json:"admin,omitempty"`
+	// Storage selects the Caddy storage module certificates, ACME
+	// account state, and the internal issuer's local CA are persisted
+	// through. Typed any rather than a single concrete struct for the
+	// same reason Route.Handle and AutomationPolicy.Issuers already are
+	// in this file: it is a Caddy module reference, and Caddy's module
+	// system is inherently polymorphic (any value marshaling to
+	// {"module": "<id>", ...} is valid here). *FileStorage (the local
+	// filesystem, via NewFileStorage) and SQLiteStorageRef
+	// (internal/store's SQLite, via NewSQLiteStorageRef)
+	// are this package's two concrete options as of this writing; a nil
+	// Storage leaves Caddy's own OS-specific default in place.
+	Storage any  `json:"storage,omitempty"`
+	Apps    Apps `json:"apps"`
+	// Logging taps certificate-issuance errors; see newACMELogTap.
+	Logging *LoggingConfig `json:"logging,omitempty"`
+
+	// ownedPorts are ports bound through inherited sockets, which listenPortsOf
+	// cannot read from an fd address.
+	ownedPorts []int
+}
+
+// AdminConfig configures Caddy's admin API endpoint. Leaving Listen empty
+// (the zero value) means "don't set this field" (omitempty), which lets
+// Caddy apply its own default of localhost:2019 rather than us duplicating
+// that default here.
+type AdminConfig struct {
+	// Listen is the admin API bind address. Empty means Caddy's default,
+	// localhost:2019.
+	Listen string `json:"listen,omitempty"`
+	// Disabled, if true, turns the admin listener off entirely. This
+	// spike leaves it false (the real default) so the admin endpoint
+	// actually comes up, since a production driver would want it
+	// reachable for introspection even though this package itself talks
+	// to Caddy via Go function calls (caddy.Load), not HTTP requests to
+	// that listener.
+	Disabled bool `json:"disabled,omitempty"`
+	// Config holds admin-level config-management settings, notably
+	// Persist. See AdminConfigSettings.
+	Config *AdminConfigSettings `json:"config,omitempty"`
+}
+
+// AdminConfigSettings mirrors Caddy's admin.config JSON field.
+type AdminConfigSettings struct {
+	// Persist controls whether Caddy keeps its own on-disk copy of
+	// whatever config was last pushed to it (Caddy's default is true,
+	// written to a fixed OS-level app-data path independent of the
+	// storage module configured for certificates, see FileStorage's doc
+	// comment). This spike found that surprising: it means an embedded
+	// Caddy instance maintains a second, out-of-band record of its own
+	// config on disk even when the storage module is pointed elsewhere,
+	// which is exactly the "second config surface" ADR 005 argues
+	// against embedding Caddy specifically to avoid. This spike's
+	// builder pins it to false: the platform's own reconcile loop and
+	// database are the single source of truth for desired ingress
+	// state, not a file Caddy manages on its own.
+	Persist *bool `json:"persist,omitempty"`
+}
+
+// Apps holds the top-level Caddy apps this package configures.
+type Apps struct {
+	HTTP *HTTPApp `json:"http,omitempty"`
+	TLS  *TLSApp  `json:"tls,omitempty"`
+	PKI  *PKIApp  `json:"pki,omitempty"`
+	// Layer4 carries every raw TCP stream (internal/reconcile/ingress's
+	// StreamRoute), applied in the exact same Config/caddy.Load call as
+	// HTTP/TLS/PKI above: see layer4.go's own package doc comment for why
+	// a stream can't be a second, independently-applied Caddy config.
+	Layer4 *Layer4App `json:"layer4,omitempty"`
+	// Events feeds certificate success and failure events to DefaultACMEFailures.
+	Events *EventsApp `json:"events,omitempty"`
+}
+
+// HTTPApp is Caddy's "http" app: one or more named servers, each with its
+// own listeners and routes.
+type HTTPApp struct {
+	Servers map[string]*Server `json:"servers,omitempty"`
+	// HTTPPort mirrors Caddy's own top-level "http_port" field: the port
+	// automatic-HTTPS features (an enabled redirect, or an ACME HTTP-01
+	// challenge with no AlternatePort set) fall back to. 0 (omitempty)
+	// keeps Caddy's compiled-in default, port 80.
+	HTTPPort int `json:"http_port,omitempty"`
+	// GracePeriod mirrors Caddy's grace_period: how long in-flight requests
+	// get to finish on shutdown or config replacement.
+	GracePeriod string `json:"grace_period,omitempty"`
+}
+
+// Server is a single HTTP(S) listener plus the routes it serves.
+type Server struct {
+	Listen []string `json:"listen,omitempty"`
+	Routes []Route  `json:"routes,omitempty"`
+
+	// AutomaticHTTPS controls Caddy's automatic-HTTPS behavior for this
+	// server specifically. This spike disables the HTTP->HTTPS redirect
+	// (DisableRedir) for the TLS server: automatic redirects bind Caddy's
+	// default HTTP port (80), which needs root and would surprise a local
+	// spike run under a normal user, so the standalone TLS demo makes
+	// that trade-off explicit instead of silently trying to grab port 80.
+	AutomaticHTTPS *AutoHTTPSConfig `json:"automatic_https,omitempty"`
+
+	ReadHeaderTimeout    string                `json:"read_header_timeout,omitempty"`
+	ReadTimeout          string                `json:"read_timeout,omitempty"`
+	WriteTimeout         string                `json:"write_timeout,omitempty"`
+	IdleTimeout          string                `json:"idle_timeout,omitempty"`
+	MaxHeaderBytes       int                   `json:"max_header_bytes,omitempty"`
+	Protocols            []string              `json:"protocols,omitempty"`
+	TrustedProxies       *TrustedProxiesConfig `json:"trusted_proxies,omitempty"`
+	TrustedProxiesStrict int                   `json:"trusted_proxies_strict,omitempty"`
+	ClientIPHeaders      []string              `json:"client_ip_headers,omitempty"`
+	Errors               *ErrorsConfig         `json:"errors,omitempty"`
+}
+
+// AutoHTTPSConfig mirrors Caddy's automatic_https server field. See the
+// Server.AutomaticHTTPS doc comment for why this spike sets DisableRedir.
+type AutoHTTPSConfig struct {
+	Disabled     bool `json:"disable,omitempty"`
+	DisableRedir bool `json:"disable_redirects,omitempty"`
+}
+
+// Route is one matcher-set-plus-handlers pair, in Caddy's route shape.
+type Route struct {
+	Match  []Matcher `json:"match,omitempty"`
+	Handle []any     `json:"handle"`
+}
+
+// Matcher is a single Caddy request matcher set. Host is used by every
+// route this package builds; Expression (a CEL matcher,
+// http.matchers.expression) is used only by error-page routes to match
+// on the {http.error.status_code} placeholder, which no other matcher
+// kind here can express.
+type Matcher struct {
+	Host       []string            `json:"host,omitempty"`
+	Path       []string            `json:"path,omitempty"`
+	Expression *ExpressionMatcher  `json:"expression,omitempty"`
+	Not        []Matcher           `json:"not,omitempty"`
+	Vars       map[string][]string `json:"vars,omitempty"`
+	Header     map[string][]string `json:"header,omitempty"`
+	ClientIP   *ClientIPMatcher    `json:"client_ip,omitempty"`
+}
+
+// ExpressionMatcher mirrors Caddy's http.matchers.expression module: a
+// CEL expression evaluated with Caddy's placeholders expanded first.
+type ExpressionMatcher struct {
+	Expr string `json:"expr"`
+	// Name is always emitted: Caddy 2.11's MatchExpression.UnmarshalJSON
+	// type-asserts it and panics the whole process when it is absent.
+	Name string `json:"name"`
+}
+
+// ReverseProxyHandler is Caddy's "reverse_proxy" handler
+// (http.handlers.reverse_proxy). Handler is always the literal string
+// "reverse_proxy"; it is a field rather than a constant embedded via
+// MarshalJSON so the struct stays a plain, table-testable value.
+type ReverseProxyHandler struct {
+	Handler   string     `json:"handler"`
+	Upstreams []Upstream `json:"upstreams"`
+	// HandleResponse mirrors reverse_proxy's own handle_response field:
+	// routes evaluated against the backend's actual response, ahead of
+	// it being written to the client. Used by error-page routes to
+	// replace a backend-returned status like 404 or 500 with a custom
+	// body while keeping the same status code.
+	HandleResponse []ResponseHandler `json:"handle_response,omitempty"`
+
+	LoadBalancing    *LoadBalancing `json:"load_balancing,omitempty"`
+	HealthChecks     *HealthChecks  `json:"health_checks,omitempty"`
+	Transport        *HTTPTransport `json:"transport,omitempty"`
+	StreamCloseDelay string         `json:"stream_close_delay,omitempty"`
+	Headers          *ProxyHeaders  `json:"headers,omitempty"`
+	Rewrite          *ProxyRewrite  `json:"rewrite,omitempty"`
+}
+
+// ProxyRewrite is reverse_proxy's rewrite block: it changes only the
+// request sent upstream, never the one later handlers see.
+type ProxyRewrite struct {
+	Method string `json:"method,omitempty"`
+	URI    string `json:"uri,omitempty"`
+}
+
+// ResponseMatcher mirrors Caddy's reverse_proxy response matcher: a
+// backend response matches when its status code is in StatusCode.
+type ResponseMatcher struct {
+	StatusCode []int `json:"status_code,omitempty"`
+}
+
+// ResponseHandler mirrors Caddy's http.ResponseHandler: when Match
+// matches the backend's response, Routes runs instead of passing the
+// original response through.
+type ResponseHandler struct {
+	Match  *ResponseMatcher `json:"match,omitempty"`
+	Routes []Route          `json:"routes,omitempty"`
+}
+
+// SubrouteHandler is Caddy's "subroute" handler (http.handlers.subroute):
+// runs Routes, then Errors.Routes if Routes returns an error. Error-page
+// routes use this to catch a real proxy failure (e.g. the container is
+// unreachable, which Caddy itself turns into a 502/504) in addition to
+// ReverseProxyHandler.HandleResponse's own coverage of a status the
+// backend actually returned.
+type SubrouteHandler struct {
+	Handler string        `json:"handler"`
+	Routes  []Route       `json:"routes,omitempty"`
+	Errors  *ErrorsConfig `json:"errors,omitempty"`
+}
+
+// ErrorsConfig mirrors Caddy's per-subroute "errors" field (the JSON
+// shape behind the Caddyfile's handle_errors directive): Routes runs
+// after the primary routes return an error, each matched by its own
+// Matcher against {http.error.status_code}.
+type ErrorsConfig struct {
+	Routes []Route `json:"routes,omitempty"`
+}
+
+// Upstream is a single reverse-proxy backend target.
+type Upstream struct {
+	// Dial is a host:port address, e.g. "127.0.0.1:8080". Caddy's own
+	// docs note this must resolve to exactly one socket, no port ranges.
+	Dial string `json:"dial"`
+}
+
+// NewReverseProxyHandler builds the one handler shape this spike needs:
+// proxy everything matched by the route to a single backend.
+func NewReverseProxyHandler(backendDial string) ReverseProxyHandler {
+	return ReverseProxyHandler{
+		Handler:   "reverse_proxy",
+		Upstreams: []Upstream{{Dial: backendDial}},
+	}
+}
+
+// BasicAuthHandler is Caddy's "authentication" handler
+// (http.handlers.authentication) configured with the http_basic
+// provider (http.authentication.providers.http_basic): per-route HTTP
+// Basic Auth checked against a bcrypt hash. A Route places this ahead
+// of a ReverseProxyHandler in Handle so Caddy's own handler chain
+// short-circuits with 401 before the request ever reaches the backend.
+type BasicAuthHandler struct {
+	Handler   string             `json:"handler"`
+	Providers BasicAuthProviders `json:"providers"`
+}
+
+// BasicAuthProviders holds the one provider this package configures.
+type BasicAuthProviders struct {
+	HTTPBasic *HTTPBasicAuthProvider `json:"http_basic"`
+}
+
+// HTTPBasicAuthProvider mirrors Caddy's caddyauth.HTTPBasicAuth: a
+// fixed account list checked against Hash.
+type HTTPBasicAuthProvider struct {
+	Accounts []BasicAuthAccount `json:"accounts"`
+	Hash     BasicAuthHash      `json:"hash"`
+}
+
+// BasicAuthAccount is one entry in HTTPBasicAuthProvider.Accounts.
+// Password is always a bcrypt hash, never the plaintext credential: see
+// NewBasicAuthHandler.
+type BasicAuthAccount struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// BasicAuthHash selects the password hashing algorithm HTTPBasicAuthProvider
+// checks Accounts against. This package only ever sets "bcrypt", the
+// same algorithm internal/api already uses for user login passwords
+// (golang.org/x/crypto/bcrypt).
+type BasicAuthHash struct {
+	Algorithm string `json:"algorithm"`
+}
+
+// NewBasicAuthHandler builds Caddy's http_basic authentication handler
+// for a single account. bcryptHash must already be a bcrypt hash
+// (bcrypt.GenerateFromPassword); this function never sees or hashes a
+// plaintext password itself.
+func NewBasicAuthHandler(username, bcryptHash string) BasicAuthHandler {
+	return BasicAuthHandler{
+		Handler: "authentication",
+		Providers: BasicAuthProviders{
+			HTTPBasic: &HTTPBasicAuthProvider{
+				Accounts: []BasicAuthAccount{{Username: username, Password: bcryptHash}},
+				Hash:     BasicAuthHash{Algorithm: "bcrypt"},
+			},
+		},
+	}
+}
+
+// StaticResponseHandler is Caddy's "static_response" handler
+// (http.handlers.static_response): a fixed response with no upstream,
+// no container dial, and no filesystem read. This is the handler
+// maintenance-mode routes use (routes.go's MaintenanceRoute): every
+// request to a domain in maintenance mode gets this same fixed
+// response instead of ever reaching a ReverseProxyHandler, so it works
+// identically whether or not the service behind it currently has any
+// running container at all.
+type StaticResponseHandler struct {
+	Handler string `json:"handler"`
+	// StatusCode is an int, not caddyhttp.WeakString's own
+	// string-or-number wire shape: Caddy accepts a plain JSON number
+	// here for a fixed, non-placeholder status code, which is all this
+	// package ever needs.
+	StatusCode int                 `json:"status_code,omitempty"`
+	Body       string              `json:"body,omitempty"`
+	Headers    map[string][]string `json:"headers,omitempty"`
+}
+
+// NewRedirectResponseHandler builds a fixed HTTP redirect: the same
+// StaticResponseHandler shape NewMaintenanceResponseHandler uses, with a
+// Location header and a 3xx status code instead of a fixed body.
+// statusCode is the caller's responsibility to validate (store.
+// DomainRedirectPermanent or store.DomainRedirectTemporary); this
+// function does not itself enforce it is a redirect code.
+func NewRedirectResponseHandler(targetURL string, statusCode int) StaticResponseHandler {
+	return StaticResponseHandler{
+		Handler:    "static_response",
+		StatusCode: statusCode,
+		Headers:    map[string][]string{"Location": {redirectLocation(targetURL)}},
+	}
+}
+
+// redirectLocation carries the request path and query over when the target
+// is a bare origin, so a www to apex redirect keeps deep links working. A
+// target with its own path, query, or fragment stays a fixed Location.
+func redirectLocation(targetURL string) string {
+	u, err := url.Parse(targetURL)
+	if err != nil || (u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" {
+		return escapePlaceholders(targetURL)
+	}
+	return escapePlaceholders(strings.TrimSuffix(targetURL, "/")) + "{http.request.uri}"
+}
+
+// escapePlaceholders makes operator text literal in a Caddy static_response,
+// which expands {env.*} and {file.*} and would otherwise leak control plane secrets.
+func escapePlaceholders(s string) string {
+	return strings.NewReplacer("{", `\{`, "}", `\}`).Replace(s)
+}
+
+// NewErrorPageResponse builds the fixed response for one custom error
+// page: statusCode preserved verbatim (so a custom 404 page still reads
+// as a 404, not a 200), body replaced with the operator's own HTML.
+func NewErrorPageResponse(statusCode int, body string) StaticResponseHandler {
+	return StaticResponseHandler{
+		Handler:    "static_response",
+		StatusCode: statusCode,
+		Body:       escapePlaceholders(body),
+		Headers:    map[string][]string{"Content-Type": {"text/html; charset=utf-8"}},
+	}
+}
+
+// HeadersHandler mirrors Caddy's headers handler, response side only.
+type HeadersHandler struct {
+	Handler  string          `json:"handler"`
+	Request  *HeaderOps      `json:"request,omitempty"`
+	Response *HeaderResponse `json:"response,omitempty"`
+}
+
+// HeaderResponse sets response headers; Deferred applies them after the
+// upstream answered, so they win over the backend's own value.
+type HeaderResponse struct {
+	Set      map[string][]string `json:"set,omitempty"`
+	Deferred bool                `json:"deferred,omitempty"`
+}
+
+const (
+	// NoIndexHeaderValue is what a hidden domain sends on every response.
+	NoIndexHeaderValue = "noindex, nofollow, noarchive, nosnippet"
+	hiddenRobotsBody   = "User-agent: *\nDisallow: /\n"
+)
+
+// NewNoIndexHeadersHandler sets X-Robots-Tag on every response.
+func NewNoIndexHeadersHandler() HeadersHandler {
+	return HeadersHandler{Handler: "headers", Response: &HeaderResponse{
+		Set: map[string][]string{"X-Robots-Tag": {NoIndexHeaderValue}}, Deferred: true,
+	}}
+}
+
+// NewHiddenRobotsResponse answers /robots.txt for a hidden domain.
+func NewHiddenRobotsResponse() StaticResponseHandler {
+	return StaticResponseHandler{
+		Handler:    "static_response",
+		StatusCode: 200,
+		Body:       hiddenRobotsBody,
+		Headers: map[string][]string{
+			"Content-Type": {"text/plain; charset=utf-8"},
+			"X-Robots-Tag": {NoIndexHeaderValue},
+		},
+	}
+}
+
+// TLSApp is Caddy's "tls" app: certificate automation policy plus any
+// manually loaded certificates.
+type TLSApp struct {
+	Automation *Automation `json:"automation,omitempty"`
+	// Certificates mirrors Caddy's tls.certificates field (a
+	// caddy.ModuleMap keyed by loader module name within the
+	// tls.certificates namespace). This package only ever sets the
+	// "load_pem" key (see CertKeyPEMPair), for BYO TLS certificates.
+	Certificates CertificatesConfig `json:"certificates,omitempty"`
+}
+
+// CertificatesConfig is the wire shape for TLSApp.Certificates: each key
+// names a tls.certificates.* loader module, value is that module's own
+// JSON shape (typed any like Route.Handle, for the same reason: Caddy's
+// module system is inherently polymorphic).
+type CertificatesConfig map[string]any
+
+// CertKeyPEMPair mirrors Caddy's caddytls.CertKeyPEMPair
+// (tls.certificates.load_pem's wire shape, verified against
+// modules/caddytls/pemloader.go in the vendored caddyserver/caddy/v2
+// source): a certificate and its private key as inline PEM text, no file
+// on disk for either. Loading a certificate this way is also what makes
+// Caddy skip automatic ACME/internal issuance for a matching hostname on
+// its own (caddyhttp.AutoHTTPSConfig.IgnoreLoadedCerts defaults to
+// false): no separate "skip" list is needed in Server.AutomaticHTTPS.
+type CertKeyPEMPair struct {
+	CertificatePEM string   `json:"certificate"`
+	KeyPEM         string   `json:"key"`
+	Tags           []string `json:"tags,omitempty"`
+}
+
+// TLSCertificateOverride is one domain with an operator-supplied
+// certificate and key (internal/store.DomainTLSCert, BYO TLS), used in
+// place of Caddy's automatic ACME/internal issuance for that host.
+type TLSCertificateOverride struct {
+	Host    string
+	CertPEM string
+	KeyPEM  string
+}
+
+// Automation holds the ordered list of automation policies. The first
+// policy whose Subjects match a given hostname wins.
+type Automation struct {
+	Policies []AutomationPolicy `json:"policies,omitempty"`
+}
+
+// AutomationPolicy binds a set of subjects (hostnames) to the issuer(s)
+// allowed to obtain certificates for them.
+type AutomationPolicy struct {
+	Subjects []string `json:"subjects,omitempty"`
+	Issuers  []any    `json:"issuers,omitempty"`
+}
+
+// InternalIssuer is Caddy's "internal" TLS issuer (tls.issuance.internal):
+// a locally-generated, self-signed CA, meant for exactly the case this
+// spike is in, no public domain and no inbound port 80/443 reachable from
+// the internet for real ACME. It works fully offline, standing in for
+// real ACME here; verifying this against a real domain is still needed.
+type InternalIssuer struct {
+	Module string `json:"module"`
+	// Lifetime bounds the certificate it signs, so a fallback certificate
+	// is replaced (and the public issuer retried) soon after it is issued.
+	Lifetime string `json:"lifetime,omitempty"`
+}
+
+// NewInternalIssuer returns the JSON shape for Caddy's internal issuer
+// module, used as an AutomationPolicy's Issuers entry.
+func NewInternalIssuer() InternalIssuer {
+	return InternalIssuer{Module: "internal"}
+}
+
+// ACMEIssuer is Caddy's "acme" TLS issuer (tls.issuance.acme): real ACME
+// issuance (Let's Encrypt or any RFC 8555-compatible CA), as opposed to
+// InternalIssuer's fully offline, self-signed certificates. Field names
+// and the "module" value ("acme", resolved within the tls.issuance
+// namespace the same way InternalIssuer's "internal" is, per
+// AutomationPolicy.Issuers' inline_key=module tag) are verified against
+// the vendored source for the pinned caddyserver/caddy/v2 version this
+// module uses (modules/caddytls/acmeissuer.go's ACMEIssuer struct and
+// its CaddyModule ID "tls.issuance.acme"), not guessed: this package
+// intentionally hand-rolls the wire-compatible subset of Caddy's own
+// config types rather than importing them directly (see this file's
+// package doc comment), and ACMEIssuer only needs the three fields an
+// operator-facing settings form actually collects (email, an optional
+// directory URL override, and the module discriminator), not the full
+// surface (challenges config, account key, EAB, and so on) Caddy's own
+// struct exposes for cases this codebase doesn't build a UI for yet.
+//
+// ADR 005's Verified section is explicit that only the internal issuer
+// path was proven end to end by that spike; this type exists to close
+// that named, expected gap (see internal/api/certificates.go's own doc
+// comment referencing the same open item), not to introduce a new
+// architecture decision.
+type ACMEIssuer struct {
+	Module string `json:"module"`
+	// Email is the ACME account contact address, Caddy's own "email"
+	// field verbatim. Not technically required by the ACME protocol
+	// itself, but this codebase's own settings validation
+	// (internal/api) requires a non-empty, syntactically valid address
+	// whenever ACME is enabled: an unreachable ACME account is exactly
+	// the kind of "renewal fails silently" risk this project treats as
+	// its central one to catch before it bites a real user.
+	Email string `json:"email,omitempty"`
+	// CA is Caddy's own "ca" field: the ACME directory endpoint URL.
+	// Empty leaves Caddy's compiled-in default in place, Let's Encrypt's
+	// real production directory
+	// (https://acme-v02.api.letsencrypt.org/directory, per
+	// caddytls.ACMEIssuer's own doc comment). An operator who wants to
+	// avoid Let's Encrypt's production rate limits while testing should
+	// set this explicitly to Let's Encrypt's staging directory
+	// (https://acme-staging-v02.api.letsencrypt.org/directory); this
+	// package does not default to staging on its own, since silently
+	// issuing a staging (browser-untrusted) certificate for what an
+	// operator believes is a production toggle would be a worse
+	// surprise than requiring them to opt in explicitly.
+	CA string `json:"ca,omitempty"`
+	// Challenges is non-nil for wildcard subjects (NewDNSACMEIssuer sets
+	// DNS-01 here, RFC 8555 7.1.1 forbids HTTP-01 for a wildcard
+	// identifier) or when a non-default HTTP-01 port is configured
+	// (NewACMEIssuer's altHTTPPort parameter).
+	Challenges *ChallengesConfig `json:"challenges,omitempty"`
+}
+
+// ChallengesConfig mirrors Caddy's caddytls.ChallengesConfig, scoped to
+// the two fields this package sets: DNS and HTTP.
+type ChallengesConfig struct {
+	DNS  *DNSChallengeConfig  `json:"dns,omitempty"`
+	HTTP *HTTPChallengeConfig `json:"http,omitempty"`
+}
+
+// HTTPChallengeConfig mirrors Caddy's caddytls.HTTPChallengeConfig,
+// scoped to the one field this package sets: AlternatePort. Without it,
+// certmagic's HTTP-01 solver binds port 80 directly
+// (github.com/caddyserver/certmagic's own default), independent of
+// HTTPApp.HTTPPort, whenever Caddy's http app has no server already
+// listening on port 80 to serve the challenge through (true here: see
+// Server.AutomaticHTTPS's DisableRedir comment, this package never
+// stands up that server). AlternatePort redirects that bind to whatever
+// port this control plane's own ingress is actually configured for.
+type HTTPChallengeConfig struct {
+	AlternatePort int  `json:"alternate_port,omitempty"`
+	Disabled      bool `json:"disabled,omitempty"`
+}
+
+// DNSChallengeConfig mirrors Caddy's caddytls.DNSChallengeConfig, scoped
+// to the one field this package sets: Provider.
+type DNSChallengeConfig struct {
+	// Provider is a dns.providers.* module reference, typed any like
+	// Route.Handle. Its inline_key is "name", not "module" (per
+	// caddytls.DNSChallengeConfig.ProviderRaw's struct tag).
+	Provider any `json:"provider"`
+}
+
+// DNS01Provider is implemented by every ACME DNS-01 challenge provider's
+// wire-shape type (CloudflareDNSProvider, Route53DNSProvider), letting
+// NewDNSACMEIssuer build a wildcard automation policy from whichever
+// provider an operator has configured without a provider-specific issuer
+// constructor per provider. Cloudflare is this interface's first
+// implementation, not a hardcoded special case: adding another provider
+// is exactly what Route53DNSProvider below does.
+type DNS01Provider interface {
+	// dnsProviderModule returns this provider's own struct value, which
+	// already marshals to the dns.providers.* wire shape
+	// DNSChallengeConfig.Provider expects. Unexported so this interface
+	// can only be satisfied by provider types defined in this package.
+	dnsProviderModule() any
+}
+
+// CloudflareDNSProvider is the wire shape for Caddy's Cloudflare DNS
+// provider module (dns.providers.cloudflare,
+// github.com/caddy-dns/cloudflare wrapping github.com/libdns/cloudflare),
+// used as a DNSChallengeConfig's Provider. APIToken must be a scoped
+// Cloudflare API token (Zone:DNS:Edit), never the global API key.
+type CloudflareDNSProvider struct {
+	Name     string `json:"name"`
+	APIToken string `json:"api_token"`
+}
+
+func (p CloudflareDNSProvider) dnsProviderModule() any { return p }
+
+// Route53DNSProvider is the wire shape for Caddy's Route53 DNS provider
+// module (dns.providers.route53, github.com/caddy-dns/route53 wrapping
+// github.com/libdns/route53), used as a DNSChallengeConfig's Provider.
+// AccessKeyID and SecretAccessKey must be an IAM credential scoped to
+// route53:ChangeResourceRecordSets/route53:ListResourceRecordSets/
+// route53:GetChange on the target hosted zone. Region and HostedZoneID
+// are optional: empty lets libdns/route53 resolve them itself (region
+// from the AWS SDK's own default chain, hosted zone by matching the
+// domain against the account's own zones).
+type Route53DNSProvider struct {
+	Name            string `json:"name"`
+	AccessKeyID     string `json:"access_key_id,omitempty"`
+	SecretAccessKey string `json:"secret_access_key,omitempty"`
+	Region          string `json:"region,omitempty"`
+	HostedZoneID    string `json:"hosted_zone_id,omitempty"`
+}
+
+func (p Route53DNSProvider) dnsProviderModule() any { return p }
+
+// NewDNSACMEIssuer returns the JSON shape for Caddy's real ACME issuer
+// configured to solve the DNS-01 challenge via provider instead of
+// Caddy's default HTTP-01, for wildcard subjects. email and
+// directoryURL pass straight through to the same fields NewACMEIssuer
+// sets. This package performs no validation on provider's credentials;
+// internal/api owns that.
+func NewDNSACMEIssuer(email, directoryURL string, provider DNS01Provider) ACMEIssuer {
+	// altHTTPPort is 0 (irrelevant) here: DNS-01 never solves an HTTP-01
+	// challenge, so there is no HTTP port to redirect.
+	iss := NewACMEIssuer(email, directoryURL, 0)
+	iss.Challenges = &ChallengesConfig{
+		DNS: &DNSChallengeConfig{Provider: provider.dnsProviderModule()},
+	}
+	return iss
+}
+
+// NewACMEIssuer returns the JSON shape for Caddy's real ACME issuer
+// module, used as an AutomationPolicy's Issuers entry in place of
+// NewInternalIssuer when an operator has opted into real ACME
+// (internal/store.IngressSettings.ACMEEnabled). directoryURL empty means
+// "use Caddy's own default" (see ACMEIssuer.CA's doc comment); email
+// empty is accepted by this constructor (it does not itself enforce the
+// non-empty rule), since that validation belongs to the caller that owns
+// the operator-facing form (internal/api), not to this low-level config
+// builder. altHTTPPort, if non-zero and not 80, sets
+// Challenges.HTTP.AlternatePort (see HTTPChallengeConfig's doc comment)
+// so a non-wildcard host's HTTP-01 challenge doesn't reach for port 80
+// on an instance configured to run its ingress on different ports.
+func NewACMEIssuer(email, directoryURL string, altHTTPPort int) ACMEIssuer {
+	iss := ACMEIssuer{Module: "acme", Email: email, CA: directoryURL}
+	if altHTTPPort != 0 && altHTTPPort != 80 {
+		iss.Challenges = &ChallengesConfig{HTTP: &HTTPChallengeConfig{AlternatePort: altHTTPPort}}
+	}
+	return iss
+}
+
+// FileStorage is Caddy's default storage module
+// (caddy.storage.file_system): certificates, ACME account state, and the
+// internal issuer's local CA all live under Root. Caddy's own default,
+// when Storage is left nil, is an OS-specific application-data directory
+// outside the project entirely (e.g. ~/Library/Application Support/Caddy
+// on macOS) which is the right thing for the `caddy` CLI on a developer's
+// own machine, and the wrong thing for an embedded control plane: it
+// scatters state outside the platform's own data directory and, worse, is
+// shared and reused across every unrelated process on the machine that
+// also happens to embed Caddy with default settings.
+type FileStorage struct {
+	Module string `json:"module"`
+	Root   string `json:"root,omitempty"`
+}
+
+// NewFileStorage returns the JSON shape for Caddy's file-system storage
+// module rooted at dir. Module is "file_system", not the fully-qualified
+// "caddy.storage.file_system": the "storage" field resolves modules
+// within the caddy.storage namespace already (see StorageRaw's caddy
+// struct tag in caddy's own Config type), so the namespace prefix here
+// would be doubled up if included, a subtle enough detail to call out
+// explicitly.
+func NewFileStorage(dir string) *FileStorage {
+	return &FileStorage{Module: "file_system", Root: dir}
+}
+
+// PKIApp is Caddy's "pki" app: the certificate authorities available to
+// issuers like InternalIssuer.
+type PKIApp struct {
+	CertificateAuthorities map[string]*CA `json:"certificate_authorities,omitempty"`
+}
+
+// CA configures a single certificate authority managed by the pki app.
+type CA struct {
+	// InstallTrust controls whether Caddy attempts to install this CA's
+	// root certificate into the local OS/browser trust store on first
+	// use. Caddy's own default is true, which on this spike's dev
+	// machine meant an unprompted `sudo` invocation that failed
+	// noisily (no interactive terminal, no `certutil`) but did not
+	// block certificate issuance. That's tolerable on a developer
+	// laptop; it is the wrong default for a headless server process,
+	// which has no desktop trust store to install into and should
+	// never attempt an interactive sudo prompt at startup. This spike's
+	// TLS builder pins it to false explicitly rather than relying on
+	// Caddy's default.
+	InstallTrust *bool `json:"install_trust,omitempty"`
+}
+
+// ProxyOptions is the input to BuildProxyConfig: everything needed to
+// stand up one reverse-proxy route, with or without TLS.
+type ProxyOptions struct {
+	// ServerName keys the server within apps.http.servers. Arbitrary,
+	// used only for logging/introspection.
+	ServerName string
+	// ListenAddr is a Caddy network address, e.g. ":8080" or
+	// "127.0.0.1:8443".
+	ListenAddr string
+	// BackendDial is the reverse-proxy target, e.g. "127.0.0.1:9090".
+	BackendDial string
+	// Hosts, if non-empty, restricts the route to these Host header
+	// values and is also the Subjects list used for TLS automation when
+	// TLS is enabled. Empty means "match every request on this
+	// listener", which is only valid for the plain-HTTP case: Caddy's
+	// automatic HTTPS needs at least one qualifying hostname to know
+	// what to issue a certificate for.
+	Hosts []string
+	// TLS, if true, adds a tls app automation policy scoping the
+	// internal issuer to Hosts, and disables the HTTP->HTTPS redirect
+	// (see Server.AutomaticHTTPS).
+	TLS bool
+	// AdminListen overrides Caddy's admin API bind address. Empty keeps
+	// Caddy's own default (localhost:2019).
+	AdminListen string
+	// StorageDir overrides Caddy's storage root (certificates, ACME
+	// account state, the internal issuer's local CA). Empty keeps
+	// Caddy's own OS-specific default. See FileStorage's doc comment for
+	// why Phase 1 should always set this rather than rely on the
+	// default.
+	StorageDir string
+}
+
+// BuildProxyConfig builds a Config with exactly one server and one route:
+// reverse-proxy every matching request to opts.BackendDial. This is the
+// pure, no-Caddy-required half of the spike, table-tested in
+// config_test.go; driver_test.go covers the half that actually starts
+// Caddy and proxies a real request through it.
+func BuildProxyConfig(opts ProxyOptions) (*Config, error) {
+	if opts.ServerName == "" {
+		return nil, fmt.Errorf("ingress: build proxy config: server name is required")
+	}
+	if opts.ListenAddr == "" {
+		return nil, fmt.Errorf("ingress: build proxy config: listen address is required")
+	}
+	if opts.BackendDial == "" {
+		return nil, fmt.Errorf("ingress: build proxy config: backend dial address is required")
+	}
+	if opts.TLS && len(opts.Hosts) == 0 {
+		return nil, fmt.Errorf("ingress: build proxy config: TLS requires at least one host, automatic HTTPS has no subject to issue a certificate for otherwise")
+	}
+
+	route := Route{
+		Handle: []any{NewReverseProxyHandler(opts.BackendDial)},
+	}
+	if len(opts.Hosts) > 0 {
+		route.Match = []Matcher{{Host: opts.Hosts}}
+	}
+
+	server := &Server{
+		Listen: []string{opts.ListenAddr},
+		Routes: []Route{route},
+	}
+
+	cfg := &Config{
+		Apps: Apps{
+			HTTP: &HTTPApp{
+				Servers: map[string]*Server{
+					opts.ServerName: server,
+				},
+			},
+		},
+	}
+	cfg.Admin = newAdminConfig(opts.AdminListen)
+	if opts.StorageDir != "" {
+		cfg.Storage = NewFileStorage(opts.StorageDir)
+	}
+
+	if opts.TLS {
+		// See Server.AutomaticHTTPS: skip the HTTP->HTTPS redirect,
+		// which would otherwise try to bind Caddy's default HTTP port
+		// (80) and needs root.
+		server.AutomaticHTTPS = &AutoHTTPSConfig{DisableRedir: true}
+		cfg.Apps.TLS = internalIssuerTLSApp(opts.Hosts)
+		cfg.Apps.PKI = newInternalPKIApp()
+	}
+
+	return cfg, nil
+}
+
+// newAdminConfig builds the AdminConfig every builder in this package
+// uses: Persist always disabled (see AdminConfigSettings.Persist), Listen
+// left at Caddy's own default unless the caller overrides it.
+func newAdminConfig(adminListen string) *AdminConfig {
+	noPersist := false
+	admin := &AdminConfig{Config: &AdminConfigSettings{Persist: &noPersist}}
+	if adminListen != "" {
+		admin.Listen = adminListen
+	}
+	return admin
+}
+
+// internalIssuerTLSApp builds a TLSApp with a single automation policy
+// scoping Caddy's internal issuer to hosts. See InternalIssuer's doc
+// comment for why this is the only issuer this package builds; real ACME
+// is explicitly unverified per ADR 005.
+func internalIssuerTLSApp(hosts []string) *TLSApp {
+	return &TLSApp{
+		Automation: &Automation{
+			Policies: []AutomationPolicy{
+				{
+					Subjects: hosts,
+					Issuers:  []any{NewInternalIssuer()},
+				},
+			},
+		},
+	}
+}
+
+// acmeWithFallbackTLSApp scopes real ACME to every host, wildcards through
+// DNS-01 when a provider is set. Every policy ends in the internal issuer, so
+// a rejected contact, an unreachable challenge or a rate limit leaves the host
+// on a locally signed certificate, never on none.
+func acmeWithFallbackTLSApp(opts RoutesOptions, wildcardHosts, regularHosts []string) *TLSApp {
+	acme := NewACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.HTTPPort)
+	if opts.DNSProvider == nil || len(wildcardHosts) == 0 {
+		hosts := append(append([]string{}, wildcardHosts...), regularHosts...)
+		return &TLSApp{Automation: &Automation{Policies: []AutomationPolicy{
+			{Subjects: hosts, Issuers: withInternalFallback(acme, opts.FallbackCertLifetime)},
+		}}}
+	}
+	dns := NewDNSACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.DNSProvider)
+	policies := []AutomationPolicy{{Subjects: wildcardHosts, Issuers: withInternalFallback(dns, opts.FallbackCertLifetime)}}
+	if len(regularHosts) > 0 {
+		policies = append(policies, AutomationPolicy{Subjects: regularHosts, Issuers: withInternalFallback(acme, opts.FallbackCertLifetime)})
+	}
+	return &TLSApp{Automation: &Automation{Policies: policies}}
+}
+
+// newInternalPKIApp builds a PKIApp for the internal issuer's local CA
+// with InstallTrust always disabled. See CA.InstallTrust's doc comment:
+// a headless control plane must never attempt an interactive sudo
+// trust-store install.
+func newInternalPKIApp() *PKIApp {
+	noInstallTrust := false
+	return &PKIApp{
+		CertificateAuthorities: map[string]*CA{
+			"local": {InstallTrust: &noInstallTrust},
+		},
+	}
+}

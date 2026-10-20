@@ -1,0 +1,71 @@
+---
+title: "Self-host Drupal with Docker"
+sidebarTitle: "Drupal"
+description: "A mature, flexible CMS for structured content, multilingual sites, and large editorial teams."
+"og:url": "https://docs.levelrail.com/self-host/drupal"
+---
+
+A mature, flexible CMS for structured content, multilingual sites, and large editorial teams.
+
+This page describes the Levelrail template for Drupal (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.drupal.org/docs.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `drupal_db_data -&#62; /var/lib/postgresql/data` |
+| `drupal` | `drupal:11-apache` | 80 | `drupal_modules -&#62; /var/www/html/modules`<br />`drupal_profiles -&#62; /var/www/html/profiles`<br />`drupal_themes -&#62; /var/www/html/themes`<br />`drupal_sites -&#62; /var/www/html/sites` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`drupal`): 8080:80.
+- Passwords and keys are generated at deploy time (`db`): POSTGRES_PASSWORD.
+- Stores data in named volumes (`db`, `drupal`): drupal_db_data, drupal_modules, drupal_profiles, drupal_sites, drupal_themes.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Drupal with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Drupal. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy drupal --name my-drupal
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [EspoCRM](/self-host/espocrm)
+- [Ghost](/self-host/ghost)
+- [GLPI](/self-host/glpi)
+
+All templates are listed in the [self-host gallery](/self-host).

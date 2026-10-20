@@ -1,0 +1,28 @@
+package mcptools
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/attention"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+)
+
+// attentionOutput wraps the items because MCP structured output must be an object.
+type attentionOutput struct {
+	Items []attention.Item `json:"items"`
+}
+
+func registerAttentionTools(server *mcp.Server, client *apiclient.Client) {
+	addTool(server, &mcp.Tool{
+		Name:        "get_attention",
+		Description: "Everything needing attention now, critical first: failing apps, offline nodes, certificates, doctor warnings, expiring tokens, failed data copies, overdue backups, invitations, and items waiting on a person. Only items the token may read. Decisions stay in the dashboard.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, attentionOutput, error) {
+		items, err := attention.Collect(ctx, client)
+		if err != nil {
+			return nil, attentionOutput{}, fmt.Errorf("get attention items: %w", err)
+		}
+		return nil, attentionOutput{Items: items}, nil
+	})
+}

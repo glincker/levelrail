@@ -1,0 +1,149 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"flag"
+	"fmt"
+	"io"
+	"slices"
+)
+
+// Prints the plaintext token once; it is not retrievable afterwards.
+// Does not write the local credentials file.
+func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
+	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "tokens create", "print the new token resource as JSON to stdout and nothing else", stderr)
+	var name, abilitiesFlag, agentName, agentDescription, presetFlag string
+	var scopeTeam, scopeProject, scopeRole string
+	var expiresInDays int
+	var noExpiry bool
+	fs.StringVar(&name, "name", "", "name for the new token (required)")
+	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list, e.g. \"read,deploy\" (required; valid: read, read:sensitive, write, write:sensitive, deploy, root, signin:approve)")
+	fs.StringVar(&presetFlag, "preset", "", "ability preset instead of --abilities: observer (read), deployer (read, deploy) or operator (everything except root)")
+	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 90)")
+	fs.BoolVar(&noExpiry, "no-expiry", false, "create a token that never expires (root only; refused when the security policy caps token lifetime)")
+	fs.StringVar(&agentName, "agent", "", "label the token as issued to an AI agent with this name; audit entries made with it record the name")
+	fs.StringVar(&agentDescription, "agent-description", "", "optional description of the agent (requires --agent)")
+	fs.StringVar(&scopeTeam, "scope-team", "", "limit the token to this team")
+	fs.StringVar(&scopeProject, "scope-project", "", "limit the token to this project of --scope-team")
+	fs.StringVar(&scopeRole, "scope-role", "", "team role the token acts with, your own or lower (default: your role)")
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensCreateUsage(prog)) }
+
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return exitOK
+		}
+		return exitUsage
+	}
+	jsonOut := *jsonOutP
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	of := outputFlags{format, *queryFlagP}
+
+	if name == "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
+	}
+	abilities := splitAndTrim(abilitiesFlag)
+	if presetFlag != "" {
+		if len(abilities) > 0 {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--preset and --abilities are mutually exclusive"))
+		}
+		preset, ok := agentPresets[presetFlag]
+		if !ok {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--preset must be observer, deployer or operator, got %q", presetFlag))
+		}
+		abilities = append([]string(nil), preset...)
+	}
+	if len(abilities) == 0 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--abilities is required (or use --preset)"))
+	}
+	if len(abilities) > 1 && slices.Contains(abilities, "root") {
+		return reportError(stdout, stderr, jsonOut, newValidationError("root cannot be combined with other abilities"))
+	}
+	if expiresInDays < 0 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--expires-in-days must not be negative"))
+	}
+	if noExpiry && expiresInDays > 0 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--no-expiry and --expires-in-days are mutually exclusive"))
+	}
+	if slices.Contains(abilities, "signin:approve") {
+		if agentName != "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("signin:approve cannot be granted to an agent token"))
+		}
+		if expiresInDays == 0 {
+			return reportError(stdout, stderr, jsonOut, newValidationError("a signin:approve token must expire: set --expires-in-days (30 at most by default)"))
+		}
+	}
+
+	if agentName == "" && agentDescription != "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--agent-description requires --agent"))
+	}
+	var agent *tokenAgent
+	if agentName != "" {
+		agent = &tokenAgent{Name: agentName, Description: agentDescription}
+	}
+
+	ctx := context.Background()
+	sessionClient, _, err := loggedInSessionClient(ctx, sessionFlags{*usernameP, *passwordP, *apiURLFlagP, *profileFlagP}, prog, lookupEnv, stdin, stderr)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
+
+	created, err := sessionClient.CreateToken(ctx, createTokenRequest{Name: name, Abilities: abilities, ExpiresInDays: expiresInDays, NoExpiry: noExpiry, Agent: agent, TeamID: scopeTeam, ProjectID: scopeProject, TeamRole: scopeRole})
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create token %q: %w", name, err))
+	}
+
+	return writeScheduledTaskResult(stdout, stderr, of, created, func() {
+		_, _ = fmt.Fprintf(stdout, "token %q (id %s) created\n", created.Name, created.ID)
+		_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", created.Token)
+	})
+}
+
+// agentPresets mirrors AGENT_PRESETS in web/src/lib/agentConfig.ts.
+var agentPresets = map[string][]string{
+	"observer": {"read"},
+	"deployer": {"read", "deploy"},
+	"operator": {"read", "read:sensitive", "write", "write:sensitive", "deploy"},
+}
+
+func tokensCreateUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s tokens create --name NAME (--abilities LIST | --preset NAME) [flags]
+
+Mints a new API token, printed once (never recoverable from the server
+again after this call). Requires a live session: --username/--password
+(prompted if omitted), not this CLI's own persisted token, see
+"%[1]s tokens -h" for why.
+
+signin:approve is token only: it lets the token show your sign-in codes and
+approve new browsers ("%[1]s auth code", "%[1]s auth approve"). Root does not
+include it and a device login never grants it. A signin:approve token must
+expire (--expires-in-days, 30 at most unless the server sets
+APP_SIGNIN_APPROVE_TOKEN_MAX_DAYS), cannot be an agent token, and is revoked
+when you change or reset your password or sign out your other sessions.
+
+Flags:
+  --name string                 name for the new token (required)
+  --abilities string           comma-separated ability list (required; valid: read, read:sensitive, write, write:sensitive, deploy, root, signin:approve)
+  --preset string              ability preset instead of --abilities: observer (read), deployer (read, deploy) or operator (everything except root)
+  --expires-in-days int      token lifetime in days (default: 90)
+  --no-expiry                create a token that never expires (root only)
+  --agent string                label the token as issued to an AI agent; audit entries record the name
+  --agent-description string  optional description of the agent (requires --agent)
+  --scope-team string         limit the token to this team
+  --scope-project string      limit the token to one project of --scope-team
+  --scope-role string         team role the token acts with, your own or lower
+  --username string          admin username (prompted if omitted)
+  --password string          admin password (prompted without echo if omitted)
+  --api-url string             control plane base URL (default: %[2]s env var, then %[3]s)
+  --profile string             named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                          print the new token resource as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
+`, prog, envAPIURL, defaultAPIURL)
+}

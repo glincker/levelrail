@@ -1,0 +1,377 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://glinr.com/levelrail/schema/app.json",
+  "title": "Levelrail app spec",
+  "description": "The one declarative app spec file a user writes in their repo.",
+  "type": "object",
+  "required": ["version", "services"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "services": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/service" }
+    },
+    "databases": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/database" }
+    }
+  },
+  "$defs": {
+    "service": {
+      "type": "object",
+      "anyOf": [{ "required": ["build"] }, { "required": ["image"] }],
+      "additionalProperties": false,
+      "properties": {
+        "build": { "$ref": "#/$defs/build" },
+        "image": { "type": "string", "minLength": 1 },
+        "domains": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "host_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "bind_address": { "type": "string", "minLength": 1 },
+        "health": { "$ref": "#/$defs/health" },
+        "resources": { "$ref": "#/$defs/resources" },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/envValue" }
+        },
+        "replicas": { "type": "integer", "minimum": 1 },
+        "strategy": { "enum": ["rolling", "recreate", "blue-green", "canary"] },
+        "canary": { "$ref": "#/$defs/canary" },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "volumes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/volume" }
+        },
+        "hooks": { "$ref": "#/$defs/hooks" },
+        "jobs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/job" }
+        },
+        "command": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "egress": { "$ref": "#/$defs/egress" },
+        "loadbalancer": { "$ref": "#/$defs/loadbalancer" },
+        "budget": { "$ref": "#/$defs/budget" },
+        "autoscale": { "$ref": "#/$defs/autoscale" },
+        "dependsOn": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        }
+      }
+    },
+    "canary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stages": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1, "maximum": 100 },
+          "minItems": 1,
+          "maxItems": 10
+        },
+        "interval": { "type": "string", "pattern": "^[0-9]+(s|m|h)$" },
+        "max_error_rate": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "max_p95_ratio": { "type": "number", "exclusiveMinimum": 1 }
+      }
+    },
+    "autoscale": {
+      "type": "object",
+      "required": ["max", "metric", "target"],
+      "additionalProperties": false,
+      "properties": {
+        "min": { "type": "integer", "minimum": 1 },
+        "max": { "type": "integer", "minimum": 1 },
+        "metric": { "enum": ["cpu_percent", "memory_percent", "requests_per_replica"] },
+        "target": { "type": "number", "exclusiveMinimum": 0 },
+        "scale_up_tolerance": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "scale_down_tolerance": { "type": "integer", "minimum": 1, "maximum": 99 },
+        "scale_up_cooldown": { "type": "string", "pattern": "^[0-9]+(s|m|h)$" },
+        "scale_down_cooldown": { "type": "string", "pattern": "^[0-9]+(s|m|h)$" },
+        "stabilization": { "type": "string", "pattern": "^[0-9]+(s|m|h)$" },
+        "max_step_up": { "type": "integer", "minimum": 1 },
+        "max_step_down": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "egress": { "type": "string", "pattern": "^[0-9.]+ ?([kKmMgGtT]i?[bB]?|[bB])?$" },
+        "cost": { "type": "number", "minimum": 0 },
+        "action": { "enum": ["none", "throttle", "pause"] },
+        "thresholds": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1, "maximum": 100 },
+          "maxItems": 8
+        },
+        "throttle_rps": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "loadbalancer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": { "enum": ["round_robin", "least_conn", "ip_hash", "uri_hash", "cookie", "weighted"] },
+        "cookie_name": { "type": "string", "minLength": 1 },
+        "weights": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1, "maximum": 100 }
+        },
+        "active_health": {
+          "type": "object",
+          "required": ["path"],
+          "additionalProperties": false,
+          "properties": {
+            "path": { "type": "string", "pattern": "^/" },
+            "interval": { "type": "string" },
+            "timeout": { "type": "string" },
+            "passes": { "type": "integer", "minimum": 0 },
+            "fails": { "type": "integer", "minimum": 0 },
+            "expect_status": { "type": "integer", "minimum": 100, "maximum": 599 }
+          }
+        },
+        "passive_health": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fail_duration": { "type": "string" },
+            "max_fails": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "retries": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "count": { "type": "integer", "minimum": 0, "maximum": 10 },
+            "try_duration": { "type": "string" },
+            "try_interval": { "type": "string" }
+          }
+        },
+        "slow_start": { "type": "string" },
+        "drain_timeout": { "type": "string" },
+        "request_timeout": { "type": "string" },
+        "rate_limit": {
+          "type": "object",
+          "required": ["rps"],
+          "additionalProperties": false,
+          "properties": {
+            "rps": { "type": "integer", "minimum": 1 },
+            "burst": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "upstream_tls": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "insecure_skip_verify": { "type": "boolean" },
+            "server_name": { "type": "string" }
+          }
+        }
+      }
+    },
+    "egress": {
+      "type": "object",
+      "required": ["mode"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["allowlist"] },
+        "allow": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/egressAllow" }
+        }
+      }
+    },
+    "egressAllow": {
+      "type": "object",
+      "required": ["host", "port"],
+      "additionalProperties": false,
+      "properties": {
+        "host": { "type": "string", "minLength": 1 },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+      }
+    },
+    "job": {
+      "type": "object",
+      "required": ["name", "schedule", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$" },
+        "schedule": { "type": "string", "minLength": 1 },
+        "command": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+        "timezone": { "type": "string", "minLength": 1 },
+        "mode": { "enum": ["fresh", "exec"] },
+        "concurrency": { "enum": ["allow", "forbid", "replace"] },
+        "timeout": { "type": "string", "minLength": 2 },
+        "retries": { "type": "integer", "minimum": 0 },
+        "retryBackoff": { "type": "string", "minLength": 2 },
+        "catchUp": { "enum": ["skip", "run-once"] },
+        "catchUpLookback": { "type": "string", "minLength": 2 },
+        "cpu": { "type": "number", "exclusiveMinimum": 0 },
+        "memory": { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
+        "warnAfter": { "type": "string", "minLength": 2 },
+        "enabled": { "type": "boolean" }
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "preDeploy": { "type": "string", "minLength": 1 },
+        "postDeploy": { "type": "string", "minLength": 1 }
+      }
+    },
+    "volume": {
+      "type": "object",
+      "required": ["path"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "hostPath": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "readOnly": { "type": "boolean" }
+      },
+      "oneOf": [
+        { "required": ["name"] },
+        { "required": ["hostPath"] }
+      ]
+    },
+    "build": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["dockerfile", "compose", "railpack", "static", "image"] },
+        "path": { "type": "string", "minLength": 1 },
+        "baseDirectory": { "type": "string", "minLength": 1 },
+        "image": { "type": "string", "minLength": 1 },
+        "registryCredential": { "type": "string", "minLength": 1 },
+        "args": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "health": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "readiness": { "$ref": "#/$defs/probe" },
+        "liveness": { "$ref": "#/$defs/probe" },
+        "readyTimeout": { "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" }
+      }
+    },
+    "probe": {
+      "type": "object",
+      "anyOf": [{ "required": ["path"] }, { "required": ["exec"] }],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "scheme": { "enum": ["http", "https"] },
+        "host": { "type": "string", "pattern": "^[^/\\s]+$" },
+        "tls_skip_verify": { "type": "boolean" },
+        "follow_redirects": { "type": "boolean" },
+        "expected_status": {
+          "oneOf": [
+            { "$ref": "#/$defs/statusCode" },
+            { "$ref": "#/$defs/statusList" },
+            { "type": "array", "minItems": 1, "items": { "oneOf": [{ "$ref": "#/$defs/statusCode" }, { "$ref": "#/$defs/statusRange" }] } }
+          ]
+        },
+        "exec": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "array", "minItems": 1, "items": { "type": "string" } }
+          ]
+        },
+        "interval": { "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
+        "timeout": { "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
+        "failures": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "statusCode": { "type": "integer", "minimum": 100, "maximum": 599 },
+    "statusRange": { "type": "string", "pattern": "^[1-5][0-9]{2}(-[1-5][0-9]{2})?$" },
+    "statusList": { "type": "string", "pattern": "^[1-5][0-9]{2}(-[1-5][0-9]{2})?([ ,]+[1-5][0-9]{2}(-[1-5][0-9]{2})?)*$" },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "memory": { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
+        "cpu": { "type": "number", "exclusiveMinimum": 0 },
+        "swapMemory": { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
+        "cpuSet": { "type": "string", "pattern": "^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$" },
+        "gpu": {
+          "oneOf": [
+            { "const": "all" },
+            { "type": "integer", "minimum": 1 },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "count": { "oneOf": [{ "const": "all" }, { "type": "integer", "minimum": 1 }] },
+                "devices": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "envValue": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "from": { "type": "string", "minLength": 1 },
+            "secret": { "type": "boolean" },
+            "required": { "type": "boolean" },
+            "vault": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "key"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "key": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "database": {
+      "type": "object",
+      "required": ["engine"],
+      "additionalProperties": false,
+      "properties": {
+        "engine": { "enum": ["postgres", "redis", "mysql", "mongodb", "mariadb", "keydb", "clickhouse", "dragonfly", "valkey", "meilisearch", "qdrant", "typesense", "memcached"] },
+        "version": { "type": "string", "minLength": 1 },
+        "backup": { "$ref": "#/$defs/backup" },
+        "ephemeralInPreviews": { "type": "boolean" },
+        "isolatedInPreviews": { "type": "boolean" }
+      }
+    },
+    "backup": {
+      "type": "object",
+      "required": ["schedule"],
+      "additionalProperties": false,
+      "properties": {
+        "schedule": { "type": "string", "minLength": 1 },
+        "retain": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

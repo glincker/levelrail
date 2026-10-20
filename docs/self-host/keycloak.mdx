@@ -1,0 +1,74 @@
+---
+title: "Self-host Keycloak with Docker"
+sidebarTitle: "Keycloak"
+description: "An open-source identity and access management server with SSO, OAuth2, and SAML support."
+"og:url": "https://docs.levelrail.com/self-host/keycloak"
+---
+
+An open-source identity and access management server with SSO, OAuth2, and SAML support.
+
+This page describes the Levelrail template for Keycloak (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.keycloak.org/documentation.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `keycloak` | `quay.io/keycloak/keycloak:26.1` | 8080 | `keycloak_data -&#62; /opt/keycloak/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `keycloak` | `KC_BOOTSTRAP_ADMIN_PASSWORD` | Generated at deploy |
+| `keycloak` | `KC_BOOTSTRAP_ADMIN_USERNAME` | Generated at deploy |
+| `keycloak` | `KC_HEALTH_ENABLED` | Preset in the template |
+| `keycloak` | `KC_HOSTNAME` | Preset in the template |
+| `keycloak` | `KC_HTTP_ENABLED` | Preset in the template |
+| `keycloak` | `KC_LEGACY_OBSERVABILITY_INTERFACE` | Preset in the template |
+| `keycloak` | `KC_PROXY_HEADERS` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`keycloak`): 8080:8080.
+- Passwords and keys are generated at deploy time (`keycloak`): KC_BOOTSTRAP_ADMIN_PASSWORD, KC_BOOTSTRAP_ADMIN_USERNAME.
+- Stores data in named volumes (`keycloak`): keycloak_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Keycloak with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Keycloak. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy keycloak --name my-keycloak
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [authentik](/self-host/authentik)
+- [Cap](/self-host/cap-captcha)
+- [Cryptgeon](/self-host/cryptgeon)
+- [Infisical](/self-host/infisical)
+
+All templates are listed in the [self-host gallery](/self-host).

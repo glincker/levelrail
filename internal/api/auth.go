@@ -1,0 +1,768 @@
+package api
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/authengine"
+	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/tokenhash"
+	"golang.org/x/crypto/bcrypt"
+)
+
+// sessionCookieName is deliberately generic, not a brand-derived string:
+// the project's naming rule bans product-name strings in source, and a
+// cookie name doesn't need branding to do its job.
+const sessionCookieName = "session_token"
+
+// defaultSessionTTL is the fallback when the control plane isn't given
+// an explicit one (Router.sessionTTL, set via WithSessionTTL). The
+// project's "no hardcoded thresholds, use env vars" rule is honored at
+// cmd/levelrail/main.go, which reads APP_SESSION_TTL and passes it down;
+// this constant is only the value used when that env var is unset, the
+// same "relative default, env override" shape openStore's data
+// directory and loadBrand's file path already use.
+const defaultSessionTTL = 24 * time.Hour
+
+// session is one logged-in session, identified by the real user it
+// belongs to. Multiple distinct users can each hold any number of live
+// sessions; every session grants the same access (see requireAbility).
+//
+// principalType, pinnedAbilities and pinnedDisplayName exist only for a
+// session minted from an API token via a session link (createPinned):
+// an API token has no users row to attach a session to, so its
+// abilities/display name are snapshotted at mint time instead of
+// resolved live the way a normal user session's are. Left zero-valued
+// (principalType == "") for every ordinary login session, which keeps
+// create/lookup/get's existing behavior unchanged.
+type session struct {
+	userID            string
+	expiresAt         time.Time
+	principalType     string
+	pinnedAbilities   []string
+	pinnedDisplayName string
+}
+
+// sessionStore resolves a session cookie to a user through the auth
+// library. Only sessions pinned to an API token (session links minted from a
+// token) live in memory, since the library ties sessions to users.
+type sessionStore struct {
+	mu       sync.Mutex
+	sessions map[string]session
+	ttl      time.Duration
+	lib      *authengine.Sessions
+}
+
+// newSessionStore builds a sessionStore. ttl <= 0 falls back to defaultSessionTTL.
+func newSessionStore(ttl time.Duration) *sessionStore {
+	if ttl <= 0 {
+		ttl = defaultSessionTTL
+	}
+	return &sessionStore{sessions: make(map[string]session), ttl: ttl}
+}
+
+// createPinned mints a session for an API token principal: principalID names
+// the originating token, not a users row, so abilities and displayName are
+// carried on the session instead of resolved from a user record.
+func (s *sessionStore) createPinned(principalID string, abilities []string, displayName string) (string, error) {
+	token, err := randomToken()
+	if err != nil {
+		return "", fmt.Errorf("api: generate session token: %w", err)
+	}
+	s.mu.Lock()
+	s.sessions[token] = session{
+		userID:            principalID,
+		principalType:     store.PrincipalTypeToken,
+		pinnedAbilities:   abilities,
+		pinnedDisplayName: displayName,
+		expiresAt:         time.Now().Add(s.ttl),
+	}
+	s.mu.Unlock()
+	return token, nil
+}
+
+// lookup resolves token to the real user ID it authenticates as. A pinned
+// session has no user row, so it reads as "not signed in" here; getPinned
+// resolves that kind instead.
+func (s *sessionStore) lookup(token string) (string, bool) {
+	info, ok := s.lib.Lookup(context.Background(), token)
+	return info.LegacyUserID, ok
+}
+
+// get returns the session record for token where a caller needs more than
+// the user ID (handleGetSession also wants expiresAt).
+func (s *sessionStore) get(token string) (session, bool) {
+	info, ok := s.lib.Lookup(context.Background(), token)
+	return session{userID: info.LegacyUserID, expiresAt: info.ExpiresAt}, ok
+}
+
+// getPinned is lookup's counterpart for a session minted from an API token.
+func (s *sessionStore) getPinned(token string) (session, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	sess, ok := s.sessions[token]
+	if !ok {
+		return session{}, false
+	}
+	if time.Now().After(sess.expiresAt) {
+		delete(s.sessions, token)
+		return session{}, false
+	}
+	if sess.principalType != store.PrincipalTypeToken {
+		return session{}, false
+	}
+	return sess, true
+}
+
+func (s *sessionStore) revoke(token string) {
+	s.lib.Revoke(context.Background(), token)
+	s.mu.Lock()
+	delete(s.sessions, token)
+	s.mu.Unlock()
+}
+
+// revokeAllExcept ends every session of userID other than keepToken, never
+// touching another user's.
+func (s *sessionStore) revokeAllExcept(userID, keepToken string) {
+	_ = s.lib.RevokeAllExcept(context.Background(), userID, keepToken)
+}
+
+// revokeAll ends every session of userID, library and pinned alike.
+func (s *sessionStore) revokeAll(userID string) {
+	_ = s.lib.RevokeAll(context.Background(), userID)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for token, sess := range s.sessions {
+		if sess.userID == userID {
+			delete(s.sessions, token)
+		}
+	}
+}
+
+func randomToken() (string, error) {
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// randomOpaqueID generates an opaque, URL-safe identifier with the given
+// prefix, the same shape store.NewDeployAttemptID/randomTokenID use.
+// Kept private to this package: only internal/api mints user/identity IDs.
+func randomOpaqueID(prefix string) (string, error) {
+	buf := make([]byte, 9)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("api: generate %sid: %w", prefix, err)
+	}
+	return prefix + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+type loginRequest struct {
+	Email    string `json:"username"`
+	Password string `json:"password"`
+}
+
+// loginResponse is either a completed sign-in (Email/DisplayName set,
+// MFARequired omitted) or a "password checked out, now prove the second
+// factor" signal (MFARequired true, MFAToken set, Email/DisplayName
+// omitted): handleLogin, handleRegister, and the OAuth callbacks only
+// ever produce the former; handleVerifyTwoFactor's own success response
+// is the same struct in the same completed-sign-in shape.
+type loginResponse struct {
+	Email       string `json:"username,omitempty"`
+	DisplayName string `json:"display_name,omitempty"`
+	MFARequired bool   `json:"mfa_required,omitempty"`
+	MFAToken    string `json:"mfa_token,omitempty"`
+	// ApprovalRequired means the password was right but this browser is new
+	// and another session must approve it (login_approval.go).
+	ApprovalRequired  bool       `json:"approval_required,omitempty"`
+	ApprovalID        string     `json:"approval_id,omitempty"`
+	ApprovalExpiresAt *time.Time `json:"approval_expires_at,omitempty"`
+	// ApprovalMatch is the number the approving session must pick.
+	ApprovalMatch int `json:"approval_match,omitempty"`
+}
+
+// handleLogin verifies an email/password against the users table and,
+// on success, sets a session cookie. The wire field stays "username"
+// (loginRequest.Email's json tag) for existing callers; email is simply
+// what it means now. Same generic "invalid credentials" for unknown
+// email or wrong password.
+func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
+	if rt.refuseInsecureLogin(w, r) {
+		return
+	}
+	rt.handleLibLogin(w, r)
+}
+
+// establishSession is the one place a session cookie gets created and
+// last_login_at gets stamped: handleLogin, handleRegister, and the OAuth
+// callback handlers all funnel through this, so every sign-in path
+// shares identical session properties by construction.
+func (rt *Router) establishSession(w http.ResponseWriter, r *http.Request, user store.User) error {
+	return rt.establishLibSession(w, r, user)
+}
+
+// handleLogout revokes the session named by the request's cookie, if
+// any, and clears the cookie client-side. Always succeeds: logging out
+// with no session, or an already-expired one, isn't an error case.
+func (rt *Router) handleLogout(w http.ResponseWriter, r *http.Request) {
+	if c, err := r.Cookie(sessionCookieName); err == nil {
+		rt.sessions.revoke(c.Value)
+	}
+	setSessionCookie(w, r, "", time.Time{})
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// requireAuth wraps a handler so it only runs for a request carrying a
+// valid, unexpired session cookie; on failure it writes 401 itself, so
+// wrapped handlers never need to check auth themselves. Session-only,
+// deliberately: used for routes (token management, logout) where a
+// bearer token must never be able to act on another token's behalf.
+func (rt *Router) requireAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !rt.hasValidSession(r) {
+			writeError(w, http.StatusUnauthorized, "authentication required")
+			return
+		}
+		next(w, r)
+	}
+}
+
+// authzDecision is the pluggable half of requireAbilityDecided: given a
+// resolved principal (its kind, its own ID, and its flat Abilities),
+// decide whether the gate passes. requireAbility's own decision is
+// exactly hasAbility(abilities, required), unchanged from before this
+// was factored out; requireAbilityForResource's decision additionally
+// consults IAM policies (iam.go's authorizeResource) scoped to one
+// resource. A non-nil error means the decision itself couldn't be made
+// (e.g. a policy lookup failed) and the caller must fail closed (500,
+// not "allow"), never silently fall back to treating it as a pass.
+type authzDecision func(ctx context.Context, principalType, principalID string, abilities []string) (bool, error)
+
+// requireAbility wraps a handler so it only runs for a request
+// authenticated either by a valid session whose user's own Abilities
+// grant required, or a bearer token whose stored abilities grant
+// required. See requireAbilityDecided for the shared principal
+// resolution both this and requireAbilityForResource build on.
+func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.HandlerFunc {
+	return rt.requireAbilityDecided(required, func(ctx context.Context, principalType, principalID string, abilities []string) (bool, error) {
+		// Demo visitor reads of root-only routes are decided as plain reads (see demoElevates).
+		if required == AbilityRoot && rt.demoElevates(ctx, principalType, principalID) {
+			return hasAbility(abilities, AbilityRead), nil
+		}
+		return hasAbility(abilities, required), nil
+	}, next)
+}
+
+// requireAbilityForResource is requireAbility's resource-scoped
+// counterpart: resourceFn extracts the resource identifier (e.g.
+// "app:web") from the request, an explicit Deny policy on that
+// resource always overrides even a caller with the base ability
+// (iam.go's authorizeResource own evaluation order), and a caller
+// without the base ability can still be granted access by an explicit
+// Allow policy scoped to that one resource. A principal with no
+// attached IAM policies behaves exactly like requireAbility, unchanged.
+func (rt *Router) requireAbilityForResource(required string, resourceFn func(*http.Request) string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resource := resourceFn(r)
+		var hidden bool
+		decision := func(ctx context.Context, principalType, principalID string, abilities []string) (bool, error) {
+			policies, err := rt.policies.ListPoliciesForPrincipal(ctx, principalType, principalID)
+			if err != nil {
+				return false, err
+			}
+			allowed, notVisible, err := rt.authorizeResourceInEnvironment(ctx, principalType, principalID, abilities, policies, required, resource)
+			hidden = notVisible
+			return allowed, err
+		}
+		hideFromRestricted := func(w http.ResponseWriter, r *http.Request) {
+			if hidden {
+				writeError(w, http.StatusNotFound, hiddenResourceMessage(resource))
+				return
+			}
+			next(w, r)
+		}
+		rt.requireAbilityDecided(required, decision, hideFromRestricted)(w, r)
+	}
+}
+
+// requireAbilityDecided is requireAbility/requireAbilityForResource's
+// shared core: resolve the caller (session cookie or bearer token),
+// rate limit, load its stored abilities, then hand off to decide for
+// the actual pass/fail call. Every other concern (rate limiting, token
+// revoked/expired checks, the audit hook) lives here exactly once, so
+// requireAbilityForResource can never accidentally skip one of them by
+// drifting from a hand-copied duplicate.
+//
+// For any required ability above AbilityRead, this is also the single
+// place an audit_log row gets written (audit.go's recordAudit): every
+// gated route already flows through here to resolve its actor and
+// pass/fail decision, so hooking observation in at this one seam covers
+// every route by construction instead of needing a call added to each
+// handler individually. The hook only ever observes, after the real
+// decision above it already ran; it never influences whether a request
+// passes or fails, and it still records a rejection (a 403 from the
+// ability check below) the same as it records any other status.
+func (rt *Router) requireAbilityDecided(required string, decide authzDecision, next http.HandlerFunc) http.HandlerFunc {
+	next = rt.withTeamGate(required, next)
+	return func(w http.ResponseWriter, r *http.Request) {
+		if pinned, ok := rt.currentPinnedSession(r); ok {
+			if !rt.pinnedOriginUsable(r.Context(), pinned) {
+				rt.sessions.revokeAll(pinned.userID)
+				writeError(w, http.StatusUnauthorized, "session link token revoked or expired")
+				return
+			}
+			if rt.apiRateLimit != nil {
+				if allowed, retryAfter := rt.apiRateLimit.allow(required, "session:"+pinned.userID); !allowed {
+					writeRateLimited(w, retryAfter)
+					return
+				}
+			}
+			gated := func(w http.ResponseWriter, r *http.Request) {
+				if rt.aiControlRejectsPinned(w, r, pinned.userID, required) {
+					return
+				}
+				allowed, err := decide(r.Context(), store.PrincipalTypeToken, pinned.userID, pinned.pinnedAbilities)
+				if err != nil {
+					rt.logger.Error("api: pinned session ability decision failed", slog.String("error", err.Error()))
+					writeError(w, http.StatusInternalServerError, "internal error")
+					return
+				}
+				if !allowed {
+					writeError(w, http.StatusForbidden, "this session link lacks the required ability (needs "+required+")")
+					return
+				}
+				next(w, r)
+			}
+			// actorType "token", not "session": a pinned session's real
+			// identity is the API token it was minted from, and
+			// auditActorName only trusts the passed-in name for that
+			// actorType, using pinnedDisplayName instead of re-resolving a
+			// (nonexistent) user record.
+			rt.callAudited(w, r, required, "token", pinned.userID, pinned.pinnedDisplayName, gated)
+			return
+		}
+
+		if userID, ok := rt.currentSessionUserID(r); ok {
+			if rt.apiRateLimit != nil {
+				if allowed, retryAfter := rt.apiRateLimit.allow(required, "session:"+userID); !allowed {
+					writeRateLimited(w, retryAfter)
+					return
+				}
+			}
+			gated := func(w http.ResponseWriter, r *http.Request) {
+				user, err := rt.auth.GetUserByID(r.Context(), userID)
+				if errors.Is(err, store.ErrUserNotFound) {
+					writeError(w, http.StatusForbidden, "your account lacks the required ability (needs "+required+")")
+					return
+				}
+				if err != nil {
+					rt.logger.Error("api: session ability lookup failed", slog.String("error", err.Error()))
+					writeError(w, http.StatusInternalServerError, "internal error")
+					return
+				}
+				allowed, err := decide(r.Context(), store.PrincipalTypeUser, userID, user.Abilities)
+				if err != nil {
+					rt.logger.Error("api: session ability decision failed", slog.String("error", err.Error()))
+					writeError(w, http.StatusInternalServerError, "internal error")
+					return
+				}
+				if !allowed {
+					writeError(w, http.StatusForbidden, "your account lacks the required ability (needs "+required+")")
+					return
+				}
+				next(w, r)
+			}
+			rt.callAudited(w, r, required, "session", userID, "", gated)
+			return
+		}
+
+		token, ok := bearerToken(r)
+		if !ok {
+			if rt.apiRateLimit != nil {
+				if allowed, retryAfter := rt.apiRateLimit.allow(required, "ip:"+clientIP(r)); !allowed {
+					writeRateLimited(w, retryAfter)
+					return
+				}
+			}
+			writeError(w, http.StatusUnauthorized, "authentication required")
+			return
+		}
+
+		// Keyed by the token's own hash, not its DB record ID: this runs
+		// before the lookup below, so a leaked token gets throttled even
+		// while repeatedly hitting an already-revoked or expired record.
+		if rt.apiRateLimit != nil {
+			if allowed, retryAfter := rt.apiRateLimit.allow(required, "token:"+hashToken(token)); !allowed {
+				writeRateLimited(w, retryAfter)
+				return
+			}
+		}
+
+		rec, err := rt.lookupBearerToken(r.Context(), token)
+		if errors.Is(err, store.ErrAPITokenNotFound) {
+			writeError(w, http.StatusUnauthorized, "invalid token")
+			return
+		}
+		if err != nil {
+			rt.logger.Error("api: token lookup failed", slog.String("error", err.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		if rec.RevokedAt != nil {
+			writeError(w, http.StatusUnauthorized, "token revoked")
+			return
+		}
+		if rec.ExpiresAt != nil && time.Now().After(*rec.ExpiresAt) {
+			writeError(w, http.StatusUnauthorized, "token expired")
+			return
+		}
+		if gone, oerr := rt.tokenOwnerGone(r.Context(), rec); oerr != nil {
+			rt.logger.Error("api: token owner lookup failed", slog.String("error", oerr.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		} else if gone {
+			writeError(w, http.StatusUnauthorized, "invalid token")
+			return
+		}
+		if rt.tokenBindingRejects(w, r, rec) {
+			return
+		}
+		r = rt.noteAITurnRequest(r, rec, required)
+		if rt.aiControlRejects(w, r, rec, required) {
+			return
+		}
+		allowed, err := decide(r.Context(), store.PrincipalTypeToken, rec.ID, rec.Abilities)
+		if err != nil {
+			rt.logger.Error("api: token ability decision failed", slog.String("error", err.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		if !allowed {
+			writeError(w, http.StatusForbidden, "token lacks the required ability (needs "+required+")")
+			return
+		}
+
+		// Best-effort: an observability nicety, must never block or fail
+		// the request it's authenticating.
+		if terr := rt.tokens.TouchAPITokenLastUsed(r.Context(), rec.ID); terr != nil {
+			rt.logger.Warn("api: touch token last_used_at failed", slog.String("error", terr.Error()), slog.String("token_id", rec.ID))
+		}
+
+		r = r.WithContext(withTokenIdentity(withAgentName(r.Context(), rec.AgentName), rec))
+		rt.callAudited(w, r, required, "token", rec.ID, rec.Name, next)
+	}
+}
+
+// tokenOwnerGone reports whether rec belongs to a user who no longer
+// exists. Tokens with no owner (system-minted) are never gone.
+func (rt *Router) tokenOwnerGone(ctx context.Context, rec *store.APIToken) (bool, error) {
+	if rec.OwnerUserID == "" {
+		return false, nil
+	}
+	_, err := rt.auth.GetUserByID(ctx, rec.OwnerUserID)
+	if errors.Is(err, store.ErrUserNotFound) {
+		return true, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("api: load token owner %q: %w", rec.OwnerUserID, err)
+	}
+	return rt.accountDisabled(ctx, rec.OwnerUserID), nil
+}
+
+// pinnedOriginUsable re-checks the API token a pinned session was minted
+// from, so revoking or expiring that token also ends the session.
+func (rt *Router) pinnedOriginUsable(ctx context.Context, pinned session) bool {
+	rec, err := rt.tokens.GetAPITokenByID(ctx, pinned.userID)
+	if err != nil {
+		return false
+	}
+	if rec.RevokedAt != nil || (rec.ExpiresAt != nil && time.Now().After(*rec.ExpiresAt)) {
+		return false
+	}
+	gone, err := rt.tokenOwnerGone(ctx, rec)
+	return err == nil && !gone
+}
+
+// callAudited runs next and, for every ability above AbilityRead
+// (auditWorthy, audit.go), best-effort records who did what once next
+// returns. actorName is the token's own stored Name for a token actor
+// (already resolved by the caller above, no extra lookup needed) or
+// empty for a session actor, resolved from the real user record lazily
+// in auditActorName, only when a request actually needs auditing: a
+// plain AbilityRead request never reaches the auditWorthy branch at
+// all, so it never pays for that lookup.
+func (rt *Router) callAudited(w http.ResponseWriter, r *http.Request, required, actorType, actorID, tokenName string, next http.HandlerFunc) {
+	if !auditWorthy(required) && !sensitiveReadRoute(r) {
+		next(w, r)
+		return
+	}
+
+	rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+	next(rec, r)
+	if rec.status < http.StatusBadRequest {
+		rt.markSearchDirty()
+	}
+
+	actorName := rt.auditActorName(r.Context(), actorType, actorID, tokenName)
+	rt.recordAudit(r.Context(), r, required, actorType, actorID, actorName, rec.status)
+}
+
+// callerHasAbility reports whether r's caller holds ability, the same
+// session-or-token resolution requireAbility uses to gate a whole route,
+// but usable mid-handler to gate one narrower action inside an
+// already-authorized request (e.g. a route gated at AbilityDeploy that
+// wants to additionally require AbilityReadSensitive before disclosing
+// private data). A lookup failure, revoked, or expired token, or a
+// session user lacking ability, all resolve to false: this gates
+// something tighter than the route itself, so it must never fail open.
+func (rt *Router) callerHasAbility(r *http.Request, ability string) bool {
+	if pinned, ok := rt.currentPinnedSession(r); ok {
+		return hasAbility(pinned.pinnedAbilities, ability)
+	}
+	if userID, ok := rt.currentSessionUserID(r); ok {
+		user, err := rt.auth.GetUserByID(r.Context(), userID)
+		if err != nil {
+			return false
+		}
+		return hasAbility(user.Abilities, ability)
+	}
+	token, ok := bearerToken(r)
+	if !ok {
+		return false
+	}
+	rec, err := rt.lookupBearerToken(r.Context(), token)
+	if err != nil {
+		return false
+	}
+	if rec.RevokedAt != nil || (rec.ExpiresAt != nil && time.Now().After(*rec.ExpiresAt)) {
+		return false
+	}
+	if gone, oerr := rt.tokenOwnerGone(r.Context(), rec); oerr != nil || gone {
+		return false
+	}
+	return hasAbility(rec.Abilities, ability)
+}
+
+// callerPrincipal resolves the requesting principal's type, ID and abilities
+// for IAM policy filtering inside a list handler.
+func (rt *Router) callerPrincipal(r *http.Request) (principalType, principalID string, abilities []string, err error) {
+	if pinned, ok := rt.currentPinnedSession(r); ok {
+		return store.PrincipalTypeToken, pinned.userID, pinned.pinnedAbilities, nil
+	}
+	if userID, ok := rt.currentSessionUserID(r); ok {
+		user, err := rt.auth.GetUserByID(r.Context(), userID)
+		if err != nil {
+			return "", "", nil, fmt.Errorf("api: load caller user %q: %w", userID, err)
+		}
+		return store.PrincipalTypeUser, userID, user.Abilities, nil
+	}
+	if token, ok := bearerToken(r); ok {
+		rec, err := rt.lookupBearerToken(r.Context(), token)
+		if err != nil {
+			return "", "", nil, fmt.Errorf("api: load caller token: %w", err)
+		}
+		return store.PrincipalTypeToken, rec.ID, rec.Abilities, nil
+	}
+	return "", "", nil, errors.New("api: no authenticated principal on request")
+}
+
+// hasValidSession reports whether r carries a session cookie that
+// resolves to a live session. Factored out of requireAuth so
+// requireAbility can check it without duplicating the cookie-lookup
+// dance.
+func (rt *Router) hasValidSession(r *http.Request) bool {
+	_, ok := rt.currentSessionUserID(r)
+	return ok
+}
+
+// currentSessionUserID returns the user ID and session token a request's
+// session cookie resolves to, if any. handleChangePassword needs both:
+// the user ID to load the account being changed, and the token so
+// revokeAllExcept can leave this one session alone.
+func (rt *Router) currentSessionUserID(r *http.Request) (userID string, ok bool) {
+	c, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return "", false
+	}
+	userID, ok = rt.sessions.lookup(c.Value)
+	return userID, ok
+}
+
+// currentPinnedSession resolves r's session cookie to a pinned
+// (token-principal) session, if any, the requireAbilityDecided
+// counterpart to currentSessionUserID: the two never both return ok for
+// the same cookie, since sessionStore.lookup and sessionStore.getPinned
+// filter for opposite principalType values.
+func (rt *Router) currentPinnedSession(r *http.Request) (session, bool) {
+	c, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return session{}, false
+	}
+	return rt.sessions.getPinned(c.Value)
+}
+
+// callerAbilities resolves the requesting principal's own resolved
+// abilities: a session's user.Abilities, or a bearer token's stored
+// abilities. Handlers that hand out access to someone else (e.g.
+// handleCreateInvite) use this to cap what they can grant at what they
+// hold themselves. Only meaningful behind requireAbility, which already
+// verified the request is authenticated one way or the other.
+func (rt *Router) callerAbilities(r *http.Request) ([]string, error) {
+	if pinned, ok := rt.currentPinnedSession(r); ok {
+		return pinned.pinnedAbilities, nil
+	}
+	if userID, ok := rt.currentSessionUserID(r); ok {
+		user, err := rt.auth.GetUserByID(r.Context(), userID)
+		if err != nil {
+			return nil, fmt.Errorf("api: load caller user %q: %w", userID, err)
+		}
+		return user.Abilities, nil
+	}
+	if token, ok := bearerToken(r); ok {
+		rec, err := rt.lookupBearerToken(r.Context(), token)
+		if err != nil {
+			return nil, fmt.Errorf("api: load caller token: %w", err)
+		}
+		return rec.Abilities, nil
+	}
+	return nil, errors.New("api: no authenticated principal on request")
+}
+
+// bearerToken extracts the token from a "Bearer <token>" Authorization
+// header, case-insensitively on the scheme per RFC 6750, empty/absent
+// header reported as not-present rather than an error: the caller
+// (requireAbility) treats "no token" and "malformed header" identically,
+// both mean "not authenticated this way, try the next thing" (there is
+// no next thing here, but the shape matches how a future auth method
+// would compose).
+func bearerToken(r *http.Request) (string, bool) {
+	h := r.Header.Get("Authorization")
+	const prefix = "Bearer "
+	if len(h) <= len(prefix) || !strings.EqualFold(h[:len(prefix)], prefix) {
+		return "", false
+	}
+	token := strings.TrimSpace(h[len(prefix):])
+	if token == "" {
+		return "", false
+	}
+	return token, true
+}
+
+// hashToken returns the hex-encoded SHA-256 digest of a plaintext API
+// token, the only form ever persisted (store.APIToken.TokenHash).
+func hashToken(plaintext string) string {
+	return tokenhash.Sum(plaintext)
+}
+
+type registerRequest struct {
+	Email      string `json:"username"`
+	Password   string `json:"password"`
+	SetupToken string `json:"setup_token"`
+}
+
+// handleRegister handles POST /api/v1/auth/register: creates the first
+// user of an empty instance, root-scoped, and only for a caller holding
+// the one-time setup token (EnsureSetupToken). Everyone after that comes
+// from OAuth, invites, or POST /api/v1/auth/users. The single-first-user
+// index (migrations/0035) closes the concurrent-registration race.
+func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
+	var req registerRequest
+	if !decodeReq(w, r, &req) {
+		return
+	}
+	if req.Email == "" || req.Password == "" {
+		writeError(w, http.StatusBadRequest, "username and password are required")
+		return
+	}
+	n, err := rt.auth.CountUsers(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: register: count users failed", err)
+		return
+	}
+	if n > 0 {
+		writeError(w, http.StatusConflict, "an account already exists; sign in instead")
+		return
+	}
+	guessKey := clientIP(r)
+	if allowed, retry := rt.setupTokenGuess.allow(guessKey); !allowed {
+		writeRateLimited(w, retry)
+		return
+	}
+	ok, err := rt.setupTokenValid(req.SetupToken)
+	if err != nil {
+		rt.internalError(w, "api: register: read setup token failed", err)
+		return
+	}
+	if !ok {
+		rt.setupTokenGuess.recordFailure(guessKey)
+		writeError(w, http.StatusForbidden, "a valid setup token is required; print it on the server with the setup-token subcommand")
+		return
+	}
+	if len(req.Password) < minPasswordLength {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("password must be at least %d characters", minPasswordLength))
+		return
+	}
+	rt.libRegister(w, r, req)
+}
+
+// minPasswordLength is a security floor, not a deployment preference,
+// so it stays a constant rather than an env var.
+const minPasswordLength = 8
+
+// BootstrapAdmin ensures at least one user exists, creating one from
+// username/password if none does yet, with AbilityRoot: it's the only
+// user on the instance, so it has to be. No-op once any user exists, so a
+// restart with the same env vars never resets a changed password.
+// username becomes the new user's email verbatim (no "@" required),
+// matching migrations/0035's backfill leniency for a pre-existing
+// admin_user row.
+func BootstrapAdmin(ctx context.Context, s AuthStore, username, password string) error {
+	n, err := s.CountUsers(ctx)
+	if err != nil {
+		return fmt.Errorf("api: bootstrap admin: count existing: %w", err)
+	}
+	if n > 0 {
+		return nil // already bootstrapped
+	}
+	if username == "" || password == "" {
+		return fmt.Errorf("api: bootstrap admin: no user account exists and no username/password were provided")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("api: bootstrap admin: hash password: %w", err)
+	}
+	id, err := randomOpaqueID("user_")
+	if err != nil {
+		return fmt.Errorf("api: bootstrap admin: generate user id: %w", err)
+	}
+	hashStr := string(hash)
+	user := store.User{
+		ID:           id,
+		Email:        username,
+		DisplayName:  username,
+		PasswordHash: &hashStr,
+		Abilities:    []string{AbilityRoot},
+		IsFirstUser:  true,
+		CreatedAt:    time.Now(),
+	}
+	if err := s.CreateUser(ctx, user); err != nil {
+		// Losing a concurrent bootstrap race isn't a real failure: "at
+		// least one user exists" is what this function promises either way.
+		if errors.Is(err, store.ErrFirstUserExists) || errors.Is(err, store.ErrUserEmailExists) {
+			return nil
+		}
+		return fmt.Errorf("api: bootstrap admin: save: %w", err)
+	}
+	return nil
+}

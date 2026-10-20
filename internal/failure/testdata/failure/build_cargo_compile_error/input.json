@@ -1,0 +1,13 @@
+{
+  "Status": "failed",
+  "FailingStep": "building",
+  "Error": "deploy: service \"web\": build: process \"/bin/sh -c cargo build --release\" did not complete successfully: exit code: 101",
+  "LogLines": [
+    "#7 [builder 4/4] RUN cargo build --release",
+    "#7 41.20    Compiling web v0.1.0 (/app)",
+    "#7 43.88 error[E0425]: cannot find value `port` in this scope",
+    "#7 43.88   --> src/main.rs:9:31",
+    "#7 43.90 error: could not compile `web` (bin \"web\") due to 1 previous error",
+    "#7 ERROR: process \"/bin/sh -c cargo build --release\" did not complete successfully: exit code: 101"
+  ]
+}

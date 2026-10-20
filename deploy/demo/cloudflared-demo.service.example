@@ -1,0 +1,19 @@
+[Unit]
+Description=Cloudflare Tunnel for the Levelrail demo
+After=network-online.target levelrail-demo.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=cloudflared-demo
+Group=cloudflared-demo
+ExecStart=/usr/bin/cloudflared --no-autoupdate --config /etc/cloudflared-demo/config.yml tunnel run
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

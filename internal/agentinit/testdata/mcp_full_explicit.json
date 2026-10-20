@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "acme": {
+      "command": "acme-mcp",
+      "args": [
+        "--mode",
+        "full"
+      ],
+      "env": {
+        "APP_API_TOKEN": "${APP_API_TOKEN}",
+        "APP_API_URL": "${APP_API_URL:-http://localhost:8080}"
+      }
+    }
+  }
+}

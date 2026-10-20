@@ -1,0 +1,66 @@
+---
+title: "Self-host LibreSpeed with Docker"
+sidebarTitle: "LibreSpeed"
+description: "A lightweight, self-hosted internet speed test with no ads, tracking, or Flash required."
+"og:url": "https://docs.levelrail.com/self-host/librespeed"
+---
+
+A lightweight, self-hosted internet speed test with no ads, tracking, or Flash required.
+
+This page describes the Levelrail template for LibreSpeed (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/librespeed/speedtest.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `librespeed` | `ghcr.io/librespeed/speedtest:6.3.0` | 82 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `librespeed` | `MODE` | Preset in the template |
+| `librespeed` | `TELEMETRY` | Preset in the template |
+| `librespeed` | `WEBPORT` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`librespeed`): 82:82.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy LibreSpeed with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select LibreSpeed. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy librespeed --name my-librespeed
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Alertmanager](/self-host/alertmanager)
+- [Beszel](/self-host/beszel)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+- [Checkmate](/self-host/checkmate)
+
+All templates are listed in the [self-host gallery](/self-host).

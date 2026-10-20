@@ -1,0 +1,40 @@
+# glinr-bot policy. Always read from the base branch, so a PR cannot loosen
+# its own rules. Start in shadow (comments only), switch to enforce when the
+# comments have matched your own judgement for a while.
+version: 1
+mode: shadow
+
+# A PR touching any of these never gets an automatic approve or merge.
+deny_paths:
+  - ".github/workflows/**"
+  - ".github/glinr-bot.yml"
+  - ".github/CODEOWNERS"
+  - "internal/secrets/**"
+  - "internal/store/migrations/**"
+  - "go.mod"
+  - "go.sum"
+  - "install.sh"
+
+block_labels: [hold, do-not-merge, wip]
+
+rules:
+  # Docs and brand assets by the owner: low blast radius, quick feedback.
+  - name: owner-docs-only
+    authors: [thegdsks]
+    paths_only: ["docs/**", "*.md", "scripts/og/**"]
+    max_changed_lines: 800
+    actions: [approve, automerge]
+
+  # Dependabot already has its own workflow with a security-relevance
+  # filter; the bot only reports its gates here.
+  - name: dependency-bump
+    authors: ["dependabot[bot]"]
+    update_types: [patch, minor]
+    max_changed_lines: 400
+    actions: [comment]
+
+  # Releases are cut by a person. The bot only explains what merging does.
+  - name: release-pr
+    authors: ["glinr-bot[bot]"]
+    title_prefix: "chore: release"
+    actions: [comment]

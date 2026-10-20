@@ -1,0 +1,7 @@
+{
+  "code": "dependency_install_failed",
+  "retryable": false,
+  "excerpt_contains": [
+    "No matching distribution found for fastapi==9.9.9"
+  ]
+}

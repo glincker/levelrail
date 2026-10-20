@@ -1,0 +1,793 @@
+package ingress
+
+// This file: the "many routes on one shared server" API (the
+// real ingress controller, internal/reconcile/ingress) plus its
+// build.type: static (served by the embedded Caddy directly, no
+// container) extension. config.go stays scoped
+// to the Phase 0 spike's single-route BuildProxyConfig and the Caddy
+// JSON config structs both files build; this file is everything a
+// controller tracking many independently host-routed backends, of
+// either kind, needs on top of that.
+
+import (
+	"fmt"
+	"strings"
+)
+
+// FileServerHandler is Caddy's "file_server" handler
+// (http.handlers.file_server): serves files directly from Root, no
+// backend, no container. This is the whole of what this design means
+// by "static sites get served by the embedded Caddy directly with no
+// container": a route whose Handle is this instead of a
+// ReverseProxyHandler. Registered via the same
+// modules/standard blank import driver.go already pulls in for
+// reverse_proxy and the TLS issuers, no separate module wiring needed.
+type FileServerHandler struct {
+	Handler string `json:"handler"`
+	// Root is the local filesystem directory to serve, e.g.
+	// "/var/lib/levelrail-data/static/docs/abc1234". Caddy resolves
+	// requests underneath it directly; there is no upstream to dial and
+	// nothing here to route through Docker.
+	Root string `json:"root,omitempty"`
+}
+
+// NewFileServerHandler builds the one handler shape a static route
+// needs: serve files from root for everything matched by the route.
+func NewFileServerHandler(root string) FileServerHandler {
+	return FileServerHandler{Handler: "file_server", Root: root}
+}
+
+// ProxyRoute is one reverse-proxy backend routed by hostname within a
+// Server potentially shared with other routes. Unlike ProxyOptions
+// (BuildProxyConfig), where Hosts is optional (an empty Hosts list means
+// "match everything on this listener," valid for a single-backend
+// listener), a Route here always requires host matching: hostname is the
+// only thing that disambiguates two different backends sharing one
+// listener.
+type ProxyRoute struct {
+	// Hosts are the Host header values routed to BackendDial. Also
+	// contributes to the Subjects list used for TLS automation when
+	// RoutesOptions.TLS is true.
+	Hosts []string
+	// BackendDial is the reverse-proxy target, e.g. "127.0.0.1:9090".
+	BackendDial string
+	// BasicAuth, if non-nil, adds a BasicAuthHandler ahead of the
+	// reverse-proxy handler so every host in this route requires HTTP
+	// Basic Auth. Nil (the default) reproduces this package's prior
+	// behavior exactly: a plain reverse-proxy route with no
+	// authentication handler.
+	BasicAuth *BasicAuthAccount
+	// WAF, if non-nil, adds a WAF and/or rate-limit handler ahead of
+	// BasicAuth and the reverse-proxy handler. Nil (the default)
+	// reproduces this package's prior behavior exactly: no such handler
+	// at all.
+	WAF *WAFConfig
+	// AuthGate, if non-nil, sends every request to an auth service first.
+	AuthGate *AuthGate
+	// ErrorPages, if non-empty, replaces the response for each listed
+	// status code with the operator's own HTML, covering both a status
+	// the backend itself returns (via ReverseProxyHandler.HandleResponse)
+	// and a real proxy failure Caddy generates on this route's behalf
+	// (via a wrapping SubrouteHandler.Errors). Empty (the default)
+	// reproduces this package's prior behavior exactly.
+	ErrorPages []ErrorPage
+	// Hidden asks search engines to stay away: X-Robots-Tag on every
+	// response and an ingress-served /robots.txt that disallows everything.
+	Hidden bool
+	// MaxBodyBytes, when positive, replaces the instance request body cap for these hosts.
+	MaxBodyBytes int64
+	// LB, if non-nil, replaces BackendDial with a multi-upstream pool.
+	LB *LBRoute
+	// Policy, if non-nil, adds the domain's traffic controls (policy_*.go).
+	Policy *RoutePolicy
+	// Upstream, if non-nil, shapes a standalone domain's single backend.
+	// Ignored when LB is set.
+	Upstream *UpstreamOptions
+	// Maintenance, if non-nil, serves the maintenance page to every request
+	// outside its bypass list, ahead of every other control.
+	Maintenance *MaintenanceGate
+}
+
+// ErrorPage is one status-code-to-body mapping for a domain
+// (store.DomainErrorPage), threaded through from
+// internal/reconcile/ingress into a route's Handle chain.
+type ErrorPage struct {
+	StatusCode int
+	Body       string
+}
+
+// WAFConfig is one domain's opt-in Web Application Firewall and rate
+// limiting settings (store.DomainWAF), threaded through from
+// internal/reconcile/ingress into a route's Handle chain.
+type WAFConfig struct {
+	// Enabled turns on the OWASP Coraza handler (NewCorazaWAFHandler).
+	Enabled bool
+	// Blocking selects Coraza's SecRuleEngine mode: true is "On" (CRS
+	// matches reject the request), false is "DetectionOnly" (CRS runs
+	// and logs but never rejects). Only meaningful when Enabled is true.
+	Blocking bool
+	// RateLimitRPS, if greater than zero, adds a rate-limit handler
+	// (NewRateLimitHandler) independent of Enabled: an operator can rate
+	// limit a domain without also enabling the WAF, or vice versa.
+	RateLimitRPS int
+	// RateLimitBurst is the short-window (1s) cap; values at or below
+	// RateLimitRPS are treated as "no extra burst allowance" by
+	// NewRateLimitHandler.
+	RateLimitBurst int
+}
+
+// CorazaWAFHandler is Caddy's OWASP Coraza WAF handler
+// (http.handlers.waf, github.com/corazawaf/coraza-caddy/v2). Handler is
+// the literal string "waf": the module's own CaddyModule ID, distinct
+// from its Caddyfile directive name "coraza_waf".
+type CorazaWAFHandler struct {
+	Handler string `json:"handler"`
+	// Directives is a ModSecurity/Coraza directives block, evaluated
+	// verbatim. NewCorazaWAFHandler always sets SecRuleEngine plus the
+	// three @-prefixed OWASP CRS includes LoadOWASPCRS makes resolvable.
+	Directives string `json:"directives"`
+	// LoadOWASPCRS makes the coraza-coreruleset ruleset (compiled into
+	// this binary via the blank import in driver.go) resolvable from
+	// Directives' @-prefixed Include paths. NewCorazaWAFHandler always
+	// sets this true; there is no per-domain custom-ruleset authoring in
+	// this package, only the stock OWASP CRS.
+	LoadOWASPCRS bool `json:"load_owasp_crs"`
+}
+
+// corazaWAFDirectives is the fixed OWASP CRS bootstrap Coraza's own
+// README documents (Include order matters: the recommended base config,
+// then the CRS setup file, then every CRS rule file), with only the
+// SecRuleEngine mode varying between detect and block.
+const corazaWAFDirectives = `Include @coraza.conf-recommended
+Include @crs-setup.conf.example
+Include @owasp_crs/*.conf
+SecRuleEngine %s
+`
+
+// NewCorazaWAFHandler builds the OWASP Coraza handler for a domain that
+// opted into the WAF. blocking selects SecRuleEngine On (reject on
+// match) versus DetectionOnly (log on match, never reject); see
+// docs/domains-and-ingress.md for why detection-only is this platform's
+// recommended first-enable default.
+func NewCorazaWAFHandler(blocking bool) CorazaWAFHandler {
+	engine := "DetectionOnly"
+	if blocking {
+		engine = "On"
+	}
+	return CorazaWAFHandler{
+		Handler:      "waf",
+		Directives:   fmt.Sprintf(corazaWAFDirectives, engine),
+		LoadOWASPCRS: true,
+	}
+}
+
+// RateLimitZone is one named zone within a RateLimitHandler
+// (github.com/mholt/caddy-ratelimit's own RateLimit struct, mirrored
+// here the same way this package hand-rolls every other Caddy module's
+// wire shape rather than importing it directly). Window is a Caddy
+// duration string (e.g. "1s", "10s"), not a number of nanoseconds:
+// caddy.Duration's UnmarshalJSON accepts either, this package always
+// emits the string form for readability.
+type RateLimitZone struct {
+	Key       string `json:"key,omitempty"`
+	MaxEvents int    `json:"max_events,omitempty"`
+	Window    string `json:"window,omitempty"`
+}
+
+// RateLimitHandler is Caddy's rate_limit handler (http.handlers.rate_limit,
+// github.com/mholt/caddy-ratelimit).
+type RateLimitHandler struct {
+	Handler    string                   `json:"handler"`
+	RateLimits map[string]RateLimitZone `json:"rate_limits,omitempty"`
+}
+
+// rateLimitKey is the client-identifying placeholder every zone this
+// package builds uses: one rate limiter bucket per remote address.
+const rateLimitKey = "{http.request.remote.host}"
+
+// NewRateLimitHandler builds the rate-limit handler for a domain that
+// opted into rate limiting. zonePrefix must be globally unique across
+// every domain's rate_limit handler in the same Caddy config (the
+// underlying module keys its limiter state by zone name across the
+// whole process, not just within one handler instance); callers pass
+// the domain itself, which service_domains already enforces as unique.
+//
+// Two zones approximate a token-bucket's sustained-rate-plus-burst
+// shape on top of caddy-ratelimit's sliding-window primitive: a 10s
+// window bounds the sustained average at rps, and (only when burst
+// exceeds rps) a 1s window separately allows up to burst requests in
+// any single second. burst at or below rps adds no second zone, since
+// it would never be the tighter constraint.
+func NewRateLimitHandler(zonePrefix string, rps, burst int) RateLimitHandler {
+	const sustainedWindowSeconds = 10
+	zones := map[string]RateLimitZone{
+		zonePrefix + "-sustained": {Key: rateLimitKey, MaxEvents: rps * sustainedWindowSeconds, Window: "10s"},
+	}
+	if burst > rps {
+		zones[zonePrefix+"-burst"] = RateLimitZone{Key: rateLimitKey, MaxEvents: burst, Window: "1s"}
+	}
+	return RateLimitHandler{Handler: "rate_limit", RateLimits: zones}
+}
+
+// errorPageResponseHandlers builds one ResponseHandler per page,
+// matching the backend's own returned status code: covers an
+// application that returns e.g. its own 404 or 500 directly.
+func errorPageResponseHandlers(pages []ErrorPage) []ResponseHandler {
+	handlers := make([]ResponseHandler, 0, len(pages))
+	for _, p := range pages {
+		handlers = append(handlers, ResponseHandler{
+			Match:  &ResponseMatcher{StatusCode: []int{p.StatusCode}},
+			Routes: []Route{{Handle: []any{NewErrorPageResponse(p.StatusCode, p.Body)}}},
+		})
+	}
+	return handlers
+}
+
+// errorPageErrorRoutes builds one error-subroute Route per page,
+// matching {http.error.status_code}: covers a real proxy failure (the
+// container is unreachable), which Caddy turns into an error rather
+// than a normal response, so errorPageResponseHandlers alone can't see
+// it.
+func errorPageErrorRoutes(pages []ErrorPage) []Route {
+	routes := make([]Route, 0, len(pages))
+	for _, p := range pages {
+		routes = append(routes, Route{
+			Match:  []Matcher{{Expression: &ExpressionMatcher{Expr: fmt.Sprintf("{http.error.status_code} == %d", p.StatusCode)}}},
+			Handle: []any{NewErrorPageResponse(p.StatusCode, p.Body)},
+		})
+	}
+	return routes
+}
+
+// StaticRoute is one static site routed by hostname within a Server
+// potentially shared with other routes and with ProxyRoutes: a static
+// site and a container service can be routed by the very same Caddy
+// server, on different hostnames, because both ultimately produce a
+// Route in the same Routes slice, just with a different Handle
+// (FileServerHandler instead of ReverseProxyHandler). This is the
+// shape that lets a static site bypass the container reconciler
+// entirely, not a parallel ingress mechanism.
+type StaticRoute struct {
+	// Hosts are the Host header values served from RootDir. Also
+	// contributes to the Subjects list used for TLS automation when
+	// RoutesOptions.TLS is true.
+	Hosts []string
+	// RootDir is the local filesystem directory to serve.
+	RootDir string
+}
+
+// MaintenanceRoute is one domain currently in maintenance mode: every
+// request gets NewMaintenanceResponseHandler's fixed response instead
+// of ever reaching a backend, container or otherwise. Unlike
+// ProxyRoute and StaticRoute, a MaintenanceRoute needs no backend
+// address or root directory to have ever existed: "this domain is
+// intentionally unavailable right now" is true independent of whether
+// the service behind it has a running container this pass.
+type MaintenanceRoute struct {
+	// Hosts are the Host header values that get the fixed maintenance
+	// response. Also contributes to the Subjects list used for TLS
+	// automation when RoutesOptions.TLS is true, the same as Hosts on
+	// ProxyRoute/StaticRoute: a domain in maintenance mode still needs
+	// a valid certificate, an operator flips this on and off far more
+	// often than they'd want to also manage TLS for.
+	Hosts []string
+	Page  MaintenancePage
+}
+
+// RedirectRoute is one domain currently configured to redirect to an
+// arbitrary target URL: every request gets NewRedirectResponseHandler's
+// fixed response instead of ever reaching a backend, container or
+// otherwise. Mirrors MaintenanceRoute's shape exactly (no backend
+// address needed to have ever existed) for a different per-domain
+// behavior: "this domain has moved" rather than "this domain is
+// intentionally unavailable right now".
+type RedirectRoute struct {
+	// Hosts are the Host header values that get redirected to TargetURL.
+	// Also contributes to the Subjects list used for TLS automation when
+	// RoutesOptions.TLS is true, the same as MaintenanceRoute.Hosts: a
+	// redirected domain still needs a valid certificate to redirect a
+	// browser that arrives over HTTPS in the first place.
+	Hosts []string
+	// TargetURL is the absolute URL every matched request is redirected
+	// to, e.g. "https://example.com" or "https://newapp.example.com/promo".
+	// Validated by the caller (internal/api); this package performs no
+	// validation of its own.
+	TargetURL string
+	// StatusCode is the redirect's HTTP status: store.DomainRedirectPermanent
+	// (301, the default) or store.DomainRedirectTemporary (302).
+	StatusCode int
+}
+
+// StreamRoute is one raw TCP port forward (store.AppStream): every byte
+// received on ListenAddr is proxied unconditionally to BackendDial, no
+// Host-based matching, no TLS termination/re-encryption, no access
+// list. Unlike ProxyRoute, a StreamRoute never shares a listener with
+// anything else: ListenAddr is the operator-chosen host port that
+// disambiguates it, the same role Host plays for a ProxyRoute.
+type StreamRoute struct {
+	// ListenAddr is a Caddy network address, e.g. ":9000". Always a
+	// single stream's own dedicated port; never shared with HTTP's
+	// listener or another stream's.
+	ListenAddr string
+	// BackendDial is the TCP proxy target, e.g. "127.0.0.1:5432".
+	BackendDial string
+}
+
+// RoutesOptions is the input to BuildRoutesConfig: everything needed to
+// stand up one Caddy server carrying many independently host-routed
+// backends on a single shared listener. This is the shape a real ingress
+// controller needs: ADR 005's Verified section found that
+// caddy.Load replaces Caddy's entire process-wide config on every call,
+// so a controller tracking many services builds one complete Config from
+// every currently routable service and applies it whole on every
+// reconcile, rather than incrementally updating a single service's
+// route. BuildProxyConfig, by contrast, only ever builds a single route
+// to a single backend and stays as-is for that narrower spike use case.
+type RoutesOptions struct {
+	// ServerName keys the server within apps.http.servers. Arbitrary,
+	// used only for logging/introspection.
+	ServerName string
+	// ListenAddr is a Caddy network address shared by every route, e.g.
+	// ":443".
+	ListenAddr string
+	// HTTPPort is this control plane's own configured HTTP/port-80
+	// equivalent (see internal/reconcile/ingress.WithHTTPListenAddr).
+	// Threaded to HTTPApp.HTTPPort and, when ACME is enabled for a
+	// non-wildcard host, to the ACME issuer's Challenges.HTTP.
+	// AlternatePort (see NewACMEIssuer), so an instance running its
+	// ingress on non-default ports never reaches for a literal port 80.
+	// 0 keeps Caddy's own default (80) in both places.
+	HTTPPort int
+	// HTTPRedirect, when true, lets Caddy bind the HTTP port and 308
+	// redirect every routed host to https. Off keeps the port unbound
+	// outside ACME challenges (non-root dev runs cannot bind port 80).
+	HTTPRedirect bool
+	// FallbackCertLifetime is how long the internal fallback certificate
+	// served while public ACME issuance fails lives, so the public CA is
+	// retried on that cadence. Empty keeps Caddy's default (12h).
+	FallbackCertLifetime string
+	// PlainHTTP serves the same routes over unencrypted HTTP on HTTPPort,
+	// for a proxy in front that terminates TLS and dials this port.
+	PlainHTTP bool
+	// Routes is every reverse-proxy backend to route on this listener.
+	// Empty is valid: it produces a listener with no routes and no TLS
+	// automation policy, the normal shape for a reconcile pass over zero
+	// currently-routable services, not an error condition.
+	Routes []ProxyRoute
+	// StaticRoutes is every static site to serve directly on this same
+	// listener, alongside Routes: one shared Caddy server can carry both
+	// reverse-proxy and file_server routes, disambiguated by Host the
+	// same way two ProxyRoutes already are. Empty (the default) is valid
+	// for exactly the same reason an empty Routes is.
+	StaticRoutes []StaticRoute
+	// MaintenanceRoutes is every domain currently in maintenance mode,
+	// sharing this same listener the same way StaticRoutes does. A
+	// caller must never put the same host in both Routes/StaticRoutes
+	// and MaintenanceRoutes in one call: BuildRoutesConfig builds
+	// whatever it's given, it does not itself resolve that conflict
+	// (the ingress reconciler's job, splitting a service's hosts before
+	// ever calling this function).
+	MaintenanceRoutes []MaintenanceRoute
+	// RedirectRoutes is every domain currently configured to redirect to
+	// a target URL, sharing this same listener the same way
+	// MaintenanceRoutes does. A caller must never put the same host in
+	// both another route kind and RedirectRoutes in one call, the same
+	// caller-resolves-conflicts contract MaintenanceRoutes documents:
+	// internal/reconcile/ingress resolves maintenance mode ahead of a
+	// redirect for any host with both configured (a domain deliberately
+	// taken down for maintenance stays down, even if it also has a
+	// stale redirect configured from an earlier migration), so a host
+	// never reaches this field and MaintenanceRoutes at once.
+	RedirectRoutes []RedirectRoute
+
+	// RouteCheck, when set, answers a verifier's marker request on every
+	// host, ahead of every other route.
+	RouteCheck *RouteCheck
+	// TLS, if true, adds a tls app automation policy scoped to every
+	// route's Hosts, both Routes and StaticRoutes (skipped if both are
+	// empty, since automatic HTTPS needs at least one subject to issue a
+	// certificate for), and disables the HTTP->HTTPS redirect (see
+	// Server.AutomaticHTTPS).
+	TLS bool
+	// ACMEEnabled, if true (and TLS is true and there's at least one
+	// host), scopes every routed host's single automation policy to a
+	// real ACME issuer (NewACMEIssuer) instead of Caddy's offline
+	// internal issuer. This is the operator-facing toggle
+	// internal/store.IngressSettings.ACMEEnabled drives
+	// (internal/reconcile/ingress reads that row fresh every reconcile
+	// pass and threads it straight through). False, the default,
+	// reproduces this package's original, ADR-005-verified behavior
+	// exactly: every route gets the internal issuer, byte-identical to
+	// before this field existed. There is deliberately no per-host mix
+	// of ACME and internal issuers in this pass: every currently-routed
+	// host shares one automation policy, either all-internal or
+	// all-ACME. Real per-domain granularity is genuine, existing Caddy
+	// capability (AutomationPolicy already supports an ordered list of
+	// policies, "the first policy whose Subjects match a given hostname
+	// wins," see that type's own doc comment) but is an explicit,
+	// deliberately out-of-scope v1 gap, not something this field's
+	// absence of a per-route override quietly forecloses.
+	ACMEEnabled bool
+	// ACMEEmail is the ACME account contact address, passed straight
+	// through to NewACMEIssuer when ACMEEnabled is true. This package
+	// performs no validation on it (empty is accepted structurally);
+	// internal/api's PUT /api/v1/settings/ingress is where "required and
+	// syntactically valid whenever ACME is enabled" is actually
+	// enforced, before a value ever reaches this builder.
+	ACMEEmail string
+	// ACMEDirectoryURL overrides the ACME CA's directory endpoint,
+	// passed straight through to NewACMEIssuer when ACMEEnabled is true.
+	// Empty keeps Caddy's own compiled-in default (Let's Encrypt
+	// production). See ACMEIssuer.CA's own doc comment for why this
+	// package never silently substitutes Let's Encrypt's staging
+	// directory on an operator's behalf.
+	ACMEDirectoryURL string
+	// DNSProvider, if non-nil (and ACMEEnabled is true and at least one
+	// route's host is a wildcard, see IsWildcardDomain), scopes every
+	// wildcard subject to a separate automation policy using DNS-01 via
+	// this provider (NewDNSACMEIssuer) instead of the plain ACME policy
+	// every non-wildcard host still gets: HTTP-01 cannot solve a
+	// wildcard identifier. Nil reproduces this package's prior behavior
+	// exactly, wildcard hosts included, byte-identical to before this
+	// field existed. Exactly one provider is ever active per reconcile
+	// pass; internal/reconcile/ingress resolves which one (and its
+	// credentials) from the operator-facing settings and internal/secrets.
+	DNSProvider DNS01Provider
+	// AdminListen overrides Caddy's admin API bind address. Empty keeps
+	// Caddy's own default (localhost:2019).
+	AdminListen string
+	// StorageDir overrides Caddy's storage root. Empty keeps Caddy's own
+	// OS-specific default. See FileStorage's doc comment. Ignored when
+	// CertStorage is set.
+	StorageDir string
+	// TLSCertificates is every domain currently configured with a BYO TLS
+	// certificate (internal/store.DomainTLSCert), sourced fresh from the
+	// store and internal/secrets every reconcile pass by the caller (no
+	// caching here, matching every other RoutesOptions field). Each
+	// entry's Host must already be present in Routes/StaticRoutes/
+	// MaintenanceRoutes' combined host list for Caddy to ever select the
+	// loaded certificate for a real connection; a host with no route at
+	// all still loads harmlessly, it's just never selected. Empty (the
+	// default) reproduces this package's prior behavior exactly: every
+	// host gets Caddy's automatic ACME/internal issuance as before this
+	// field existed.
+	TLSCertificates []TLSCertificateOverride
+	// CertStorage, if non-nil, overrides StorageDir with an arbitrary
+	// Caddy storage module reference (e.g. NewSQLiteStorageRef()),
+	// letting the caller point Caddy's certificate/ACME-account storage
+	// at internal/store's SQLite instead of the local
+	// filesystem, so certificate storage lives in the database and
+	// multi-node deployments can share cert state. Takes precedence over
+	// StorageDir when both are set, rather than being an error, so a
+	// caller migrating from one to the other doesn't need a separate
+	// code path just to clear the old field.
+	CertStorage any
+	// RequestStats, if true, wraps every proxy and static route in the
+	// request_stats handler (per-app request rate, errors, latency).
+	RequestStats bool
+	// Firewall puts the instance firewall handler in front of every host route.
+	Firewall bool
+	// Hardening, if non-nil, applies server limits, failover defaults and the
+	// friendly 503 page. Nil keeps the legacy bare config.
+	Hardening *Hardening
+	// Inherited, when active, replaces the listen addresses with systemd
+	// passed sockets and serves the HTTP to HTTPS redirect from its own server.
+	Inherited *InheritedSockets
+	// HoldRoutes answer 503 for hosts whose backend is momentarily absent.
+	HoldRoutes []HoldRoute
+	// WakeRoutes serve a "waking up" page for sleeping apps and ask the
+	// control plane to start them.
+	WakeRoutes []WakeRoute
+	// Streams is every raw TCP port forward to proxy, each on its own
+	// dedicated listener (apps.layer4.servers), applied in this same
+	// Config/caddy.Load call: see layer4.go's package doc comment for
+	// why this can't be a second, independently-applied Caddy config.
+	// Empty (the default) adds no layer4 app at all, reproducing this
+	// package's behavior before this field existed exactly.
+	Streams []StreamRoute
+}
+
+// BuildRoutesConfig builds a Config with one server carrying one route
+// per entry in opts.Routes (reverse_proxy), opts.StaticRoutes
+// (file_server), opts.MaintenanceRoutes (static_response), and
+// opts.RedirectRoutes (static_response with a Location header), each
+// matched by its own Hosts. All four kinds share the same listener and
+// the same TLS automation policy; nothing about a static, maintenance,
+// or redirect route requires a different Server or a second Caddy
+// config document. All four being empty is valid and produces a Config
+// with a listener but no routes and no TLS app: this is the normal
+// shape for a reconcile pass over zero currently-routable resources
+// (every known service or static site either declares no domains or,
+// for a container service, has no running container yet, and no domain
+// is in maintenance mode or redirected), not an error.
+func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
+	if opts.ServerName == "" {
+		return nil, fmt.Errorf("ingress: build routes config: server name is required")
+	}
+	if opts.ListenAddr == "" && !opts.Inherited.Active() {
+		return nil, fmt.Errorf("ingress: build routes config: listen address is required")
+	}
+
+	var allHosts []string
+	routes := make([]Route, 0, len(opts.Routes)+len(opts.StaticRoutes)+1)
+	if opts.RouteCheck != nil {
+		check, err := opts.RouteCheck.route()
+		if err != nil {
+			return nil, fmt.Errorf("ingress: build routes config: %w", err)
+		}
+		routes = append(routes, check)
+	}
+	for i, r := range opts.RedirectRoutes {
+		if len(r.Hosts) == 0 {
+			return nil, fmt.Errorf("ingress: build routes config: redirect route %d has no hosts", i)
+		}
+		if r.TargetURL == "" {
+			return nil, fmt.Errorf("ingress: build routes config: redirect route %d has no target url", i)
+		}
+		routes = append(routes, Route{
+			Match:  []Matcher{{Host: r.Hosts}},
+			Handle: []any{NewRedirectResponseHandler(r.TargetURL, r.StatusCode)},
+		})
+		allHosts = append(allHosts, r.Hosts...)
+	}
+	for i, r := range opts.Routes {
+		if len(r.Hosts) == 0 {
+			return nil, fmt.Errorf("ingress: build routes config: route %d has no hosts", i)
+		}
+		if r.BackendDial == "" && (r.LB == nil || len(r.LB.Upstreams) == 0) {
+			return nil, fmt.Errorf("ingress: build routes config: route %d has no backend dial address", i)
+		}
+		handle := []any{NewReverseProxyHandler(r.BackendDial)}
+		if r.LB != nil && len(r.LB.Upstreams) > 0 {
+			handle = []any{NewLBReverseProxyHandler(r.LB)}
+			if r.LB.RateLimitRPS > 0 {
+				handle = append([]any{NewRateLimitHandler("lb-"+strings.Join(r.Hosts, "+"), r.LB.RateLimitRPS, r.LB.RateLimitBurst)}, handle...)
+			}
+		}
+		if opts.Hardening != nil {
+			if rp, ok := handle[len(handle)-1].(ReverseProxyHandler); ok {
+				opts.Hardening.applyProxy(&rp)
+				handle[len(handle)-1] = rp
+			}
+		}
+		if limit := opts.Hardening.bodyLimitFor(r.MaxBodyBytes); limit != nil {
+			handle = append([]any{limit}, handle...)
+		}
+		// Traffic controls, backend side: cache and path forwarders sit
+		// right before the reverse proxy, behind auth and WAF.
+		handle = r.Policy.wrapBackend(r.Hosts[0], handle)
+		if r.Upstream != nil && (r.LB == nil || len(r.LB.Upstreams) == 0) {
+			// After forwarders so their path rules match the original path.
+			handle = r.Upstream.apply(handle)
+		}
+		if r.AuthGate != nil {
+			// After WAF, rate limit and basic auth, before cache and the proxy.
+			gate, err := r.AuthGate.handlers()
+			if err != nil {
+				return nil, fmt.Errorf("ingress: build routes config: route %d auth gate: %w", i, err)
+			}
+			handle = append(gate, handle...)
+		}
+		if r.BasicAuth != nil {
+			// Prepended, not appended: Caddy runs a route's handlers in
+			// order, so authentication must short-circuit with 401 before
+			// reverse_proxy ever dials the backend.
+			handle = append([]any{NewBasicAuthHandler(r.BasicAuth.Username, r.BasicAuth.Password)}, handle...)
+		}
+		if r.WAF != nil {
+			// Prepended ahead of BasicAuth too: a malicious or excessive
+			// request should be rejected or throttled before this route
+			// spends any effort authenticating it. Rate limit runs first
+			// among the two so a client already being throttled never
+			// reaches the (more expensive) WAF rule evaluation either.
+			zonePrefix := strings.Join(r.Hosts, "+")
+			var wafHandle []any
+			if r.WAF.RateLimitRPS > 0 {
+				wafHandle = append(wafHandle, NewRateLimitHandler(zonePrefix, r.WAF.RateLimitRPS, r.WAF.RateLimitBurst))
+			}
+			if r.WAF.Enabled {
+				wafHandle = append(wafHandle, NewCorazaWAFHandler(r.WAF.Blocking))
+			}
+			handle = append(wafHandle, handle...)
+		}
+		if r.Hidden {
+			handle = append([]any{NewNoIndexHeadersHandler()}, handle...)
+			routes = append(routes, Route{
+				Match:  []Matcher{{Host: r.Hosts, Path: []string{"/robots.txt"}}},
+				Handle: []any{NewHiddenRobotsResponse()},
+			})
+		}
+		if len(r.ErrorPages) > 0 {
+			// The reverse_proxy handler is always handle's last element
+			// (BasicAuth/WAF are only ever prepended ahead of it above),
+			// so it's addressed directly here to attach HandleResponse.
+			if rp, ok := handle[len(handle)-1].(ReverseProxyHandler); ok {
+				rp.HandleResponse = errorPageResponseHandlers(r.ErrorPages)
+				handle[len(handle)-1] = rp
+			}
+			handle = []any{SubrouteHandler{
+				Handler: "subroute",
+				Routes:  []Route{{Handle: handle}},
+				Errors:  &ErrorsConfig{Routes: errorPageErrorRoutes(r.ErrorPages)},
+			}}
+		}
+		// Traffic controls, front side: redirects, geo and headers run first.
+		handle = r.Policy.wrapFront(r.Hosts[0], handle)
+		if r.Maintenance != nil {
+			handle = r.Maintenance.wrap(handle)
+		}
+		if opts.RequestStats {
+			handle = append([]any{NewRequestStatsHandler(r.Hosts[0])}, handle...)
+		}
+		routes = append(routes, Route{
+			Match:  []Matcher{{Host: r.Hosts}},
+			Handle: handle,
+		})
+		allHosts = append(allHosts, r.Hosts...)
+	}
+	for i, r := range opts.StaticRoutes {
+		if len(r.Hosts) == 0 {
+			return nil, fmt.Errorf("ingress: build routes config: static route %d has no hosts", i)
+		}
+		if r.RootDir == "" {
+			return nil, fmt.Errorf("ingress: build routes config: static route %d has no root directory", i)
+		}
+		staticHandle := []any{NewFileServerHandler(r.RootDir)}
+		if opts.RequestStats {
+			staticHandle = append([]any{NewRequestStatsHandler(r.Hosts[0])}, staticHandle...)
+		}
+		routes = append(routes, Route{
+			Match:  []Matcher{{Host: r.Hosts}},
+			Handle: staticHandle,
+		})
+		allHosts = append(allHosts, r.Hosts...)
+	}
+	for i, r := range opts.MaintenanceRoutes {
+		if len(r.Hosts) == 0 {
+			return nil, fmt.Errorf("ingress: build routes config: maintenance route %d has no hosts", i)
+		}
+		routes = append(routes, Route{
+			Match:  []Matcher{{Host: r.Hosts}},
+			Handle: maintenanceHandle(r.Page),
+		})
+		allHosts = append(allHosts, r.Hosts...)
+	}
+
+	for i, r := range opts.HoldRoutes {
+		if len(r.Hosts) == 0 {
+			return nil, fmt.Errorf("ingress: build routes config: hold route %d has no hosts", i)
+		}
+		hold := DefaultHardening()
+		if opts.Hardening != nil {
+			hold = *opts.Hardening
+		}
+		routes = append(routes, Route{
+			Match: []Matcher{{Host: r.Hosts}},
+			Handle: []any{SubrouteHandler{
+				Handler: "subroute",
+				Routes: []Route{
+					{Match: []Matcher{{Path: staticAssetPaths}}, Handle: []any{NewAssetUnavailableHandler(hold.retryAfter())}},
+					{Handle: []any{hold.UnavailableResponse("Updating", "This site is being updated and will be back in a moment. This page will retry on its own.")}},
+				},
+			}},
+		})
+		allHosts = append(allHosts, r.Hosts...)
+	}
+
+	for i, r := range opts.WakeRoutes {
+		if len(r.Hosts) == 0 || r.Dial == "" {
+			return nil, fmt.Errorf("ingress: build routes config: wake route %d needs hosts and a dial", i)
+		}
+		routes = append(routes, Route{
+			Match:  []Matcher{{Host: r.Hosts}},
+			Handle: r.handlers(),
+		})
+		allHosts = append(allHosts, r.Hosts...)
+	}
+
+	routes = exactHostsFirst(routes)
+	if opts.Firewall {
+		routes = append([]Route{{Handle: []any{NewFirewallHandler()}}}, routes...)
+	}
+	server := &Server{
+		Listen: []string{opts.ListenAddr},
+		Routes: routes,
+	}
+	if opts.Inherited.Active() {
+		server.Listen = opts.Inherited.listenAddrs()
+	}
+	if opts.Hardening != nil {
+		opts.Hardening.applyServer(server)
+		if opts.Inherited.Active() {
+			server.Protocols = withoutProtocol(server.Protocols, "h3")
+		}
+	}
+
+	cfg := &Config{
+		Apps: Apps{
+			HTTP: &HTTPApp{
+				Servers: map[string]*Server{
+					opts.ServerName: server,
+				},
+				HTTPPort: opts.HTTPPort,
+			},
+		},
+	}
+	if len(opts.Streams) > 0 {
+		servers := make(map[string]*Layer4Server, len(opts.Streams))
+		for i, s := range opts.Streams {
+			if s.ListenAddr == "" {
+				return nil, fmt.Errorf("ingress: build routes config: stream %d has no listen address", i)
+			}
+			if s.BackendDial == "" {
+				return nil, fmt.Errorf("ingress: build routes config: stream %d has no backend dial address", i)
+			}
+			name := fmt.Sprintf("stream-%d", i)
+			servers[name] = &Layer4Server{
+				Listen: []string{s.ListenAddr},
+				Routes: []Layer4Route{{Handle: []any{NewLayer4ProxyHandler(s.BackendDial)}}},
+			}
+		}
+		cfg.Apps.Layer4 = &Layer4App{Servers: servers}
+	}
+
+	if opts.Inherited.Active() {
+		if opts.Inherited.HTTP != 0 {
+			cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = opts.Inherited.redirectServer(opts.HTTPRedirect)
+		}
+		cfg.ownedPorts = []int{opts.Inherited.HTTPSPort, opts.Inherited.HTTPPort}
+	}
+
+	if opts.Hardening != nil && opts.Hardening.GracePeriod > 0 {
+		cfg.Apps.HTTP.GracePeriod = opts.Hardening.GracePeriod.String()
+	}
+
+	cfg.Admin = newAdminConfig(opts.AdminListen)
+	switch {
+	case opts.CertStorage != nil:
+		cfg.Storage = opts.CertStorage
+	case opts.StorageDir != "":
+		cfg.Storage = NewFileStorage(opts.StorageDir)
+	}
+
+	if opts.TLS && len(allHosts) > 0 {
+		// See Server.AutomaticHTTPS: skip the HTTP->HTTPS redirect,
+		// which would otherwise try to bind Caddy's default HTTP port
+		// (80) and needs root.
+		if !opts.HTTPRedirect || opts.Inherited.Active() {
+			server.AutomaticHTTPS = &AutoHTTPSConfig{DisableRedir: true}
+		}
+		wildcardHosts, regularHosts := splitWildcardHosts(allHosts)
+		switch {
+		case opts.ACMEEnabled:
+			cfg.Apps.TLS = acmeWithFallbackTLSApp(opts, wildcardHosts, regularHosts)
+			cfg.Apps.PKI = newInternalPKIApp()
+			cfg.Apps.Events = newACMEEventsApp()
+			cfg.Logging = newACMELogTap()
+		default:
+			cfg.Apps.TLS = internalIssuerTLSApp(allHosts)
+			cfg.Apps.PKI = newInternalPKIApp()
+		}
+
+		if opts.Inherited.Active() {
+			disableHTTPChallenge(cfg.Apps.TLS)
+		}
+
+		if len(opts.TLSCertificates) > 0 {
+			pairs := make([]CertKeyPEMPair, 0, len(opts.TLSCertificates))
+			for _, c := range opts.TLSCertificates {
+				pairs = append(pairs, CertKeyPEMPair{CertificatePEM: c.CertPEM, KeyPEM: c.KeyPEM, Tags: []string{c.Host}})
+			}
+			cfg.Apps.TLS.Certificates = CertificatesConfig{"load_pem": pairs}
+		}
+	}
+
+	if opts.PlainHTTP && opts.HTTPPort != 0 && !opts.Inherited.Active() {
+		plain := *server
+		plain.Listen = []string{fmt.Sprintf(":%d", opts.HTTPPort)}
+		plain.AutomaticHTTPS = &AutoHTTPSConfig{Disabled: true}
+		cfg.Apps.HTTP.Servers[opts.ServerName+"-plain"] = &plain
+	}
+
+	return cfg, nil
+}

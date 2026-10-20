@@ -1,0 +1,8 @@
+{
+  "Status": "failed",
+  "Error": "deploy: service \"web\": build: exit 1",
+  "LogLines": [
+    "npm ERR! code ERESOLVE",
+    "npm ERR! could not resolve"
+  ]
+}

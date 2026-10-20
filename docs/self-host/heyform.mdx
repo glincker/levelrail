@@ -1,0 +1,76 @@
+---
+title: "Self-host HeyForm with Docker"
+sidebarTitle: "HeyForm"
+description: "A form builder for surveys, quizzes and lead capture, with conversational forms and a MongoDB backend."
+"og:url": "https://docs.levelrail.com/self-host/heyform"
+---
+
+A form builder for surveys, quizzes and lead capture, with conversational forms and a MongoDB backend.
+
+This page describes the Levelrail template for HeyForm (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.heyform.net/open-source/installation.
+
+Recommended memory: about 768 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `heyform` | `heyform/community-edition:v3.0.3` | 9157 | `assets -&#62; /app/static/upload` |
+| `mongo` | `mongo:7` | none | `mongo -&#62; /data/db` |
+| `redis` | `redis:7-alpine` | none | `redis -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `heyform` | `APP_HOMEPAGE_URL` | Preset in the template |
+| `heyform` | `FORM_ENCRYPTION_KEY` | Generated at deploy |
+| `heyform` | `MONGO_URI` | Preset in the template |
+| `heyform` | `REDIS_HOST` | Preset in the template |
+| `heyform` | `REDIS_PASSWORD` | Generated at deploy |
+| `heyform` | `REDIS_PORT` | Preset in the template |
+| `heyform` | `SESSION_KEY` | Generated at deploy |
+| `redis` | `REDIS_PASSWORD` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`heyform`, `redis`): FORM_ENCRYPTION_KEY, REDIS_PASSWORD, SESSION_KEY, REDIS_PASSWORD.
+- Stores data in named volumes (`heyform`, `mongo`, `redis`): assets, mongo, redis.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy HeyForm with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select HeyForm. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy heyform --name my-heyform
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BentoPDF](/self-host/bentopdf)
+- [BookStack](/self-host/bookstack)
+
+All templates are listed in the [self-host gallery](/self-host).

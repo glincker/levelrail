@@ -1,0 +1,69 @@
+---
+title: "Self-host Wallabag with Docker"
+sidebarTitle: "Wallabag"
+description: "A read-it-later app that saves web articles in a clean, distraction-free format."
+"og:url": "https://docs.levelrail.com/self-host/wallabag"
+---
+
+A read-it-later app that saves web articles in a clean, distraction-free format.
+
+This page describes the Levelrail template for Wallabag (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://doc.wallabag.org.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `wallabag` | `wallabag/wallabag:2.6.14` | 80 | `wallabag_data -&#62; /var/www/wallabag/data`<br />`wallabag_images -&#62; /var/www/wallabag/web/assets/images` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `wallabag` | `SYMFONY__ENV__DOMAIN_NAME` | Preset in the template |
+| `wallabag` | `SYMFONY__ENV__SECRET` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`wallabag`): 80:80.
+- Passwords and keys are generated at deploy time (`wallabag`): SYMFONY__ENV__SECRET.
+- Stores data in named volumes (`wallabag`): wallabag_data, wallabag_images.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Wallabag with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Wallabag. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy wallabag --name my-wallabag
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BentoPDF](/self-host/bentopdf)
+- [BookStack](/self-host/bookstack)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,20 @@
+lr  profile:default  localhost:9100  server:v0.6.1  mesh:3/3  incidents:1 attention:2  every 2s
+1 Apps(3)  2 Databases(1)  3 Deploys(4)  4 Nodes(1)  5 Domains(1)  6 Alerts(2)  7 Backups(1)
+Keys
+  j/k, up/down      move          g/G   top/bottom      ctrl-d/ctrl-u  half page
+  1-7, tab          switch view   enter drill into row    esc/q          back
+  /                 filter rows   :     command bar       l              logs
+  f (in logs)       follow        c     clear logs      ctrl-c         quit
+  r restart   d deploy   b rollback   x stop   o start   (each asks you to type the app name)
+
+Commands
+  :deploy [app]  :restart [app]  :rollback [app]  :stop [app]  :start [app]
+  :logs [name]   :apps :databases :deploys :nodes :domains :alerts :backups   :q
+
+Secrets and env values are never shown here; use the dashboard to reveal them.
+
+
+
+
+
+any key closes help

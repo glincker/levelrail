@@ -1,0 +1,284 @@
+import { render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { NewAppWizard } from './NewAppWizard'
+import { jsonResponse, nextAnalysis } from '../../test/newAppFixtures'
+import { NewAppI18n } from '../../test/newAppI18n'
+import type { ImportAnalysis } from '../../queries/importAnalyze'
+
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getTotalSize: () => count * 56,
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({
+        index,
+        key: index,
+        start: index * 56,
+      })),
+  }),
+}))
+
+const navigate = vi.fn()
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
+  return {
+    ...actual,
+    useNavigate: () => navigate,
+    Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
+      <a href={to}>{children}</a>
+    ),
+  }
+})
+
+interface ApiOptions {
+  providers?: unknown[]
+  analysis?: ImportAnalysis
+  analyzeStatus?: number
+}
+
+function mockApi(opts: ApiOptions = {}) {
+  const calls: { key: string; body: unknown }[] = []
+  vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+    const method = init?.method ?? 'GET'
+    const url = urlOf(input)
+    const key = `${method} ${url}`
+    const body: unknown =
+      typeof init?.body === 'string' ? JSON.parse(init.body) : undefined
+    calls.push({ key, body })
+    switch (key) {
+      case 'GET /api/v1/git-providers':
+        return Promise.resolve(
+          jsonResponse(
+            opts.providers ?? [
+              {
+                provider: 'github',
+                connected: true,
+                can_list_branches: true,
+                can_register_webhook: true,
+                can_auth_clone: true,
+              },
+            ],
+          ),
+        )
+      case 'GET /api/v1/github-app/repos':
+        return Promise.resolve(
+          jsonResponse({
+            repos: [
+              {
+                full_name: 'acme/shop',
+                name: 'shop',
+                owner_login: 'acme',
+                private: true,
+                default_branch: 'main',
+                clone_url: 'https://github.com/acme/shop.git',
+                account_type: 'organization',
+                language: 'TypeScript',
+                pushed_at: new Date().toISOString(),
+              },
+              {
+                full_name: 'acme/docs',
+                name: 'docs',
+                owner_login: 'acme',
+                private: false,
+                default_branch: 'main',
+                clone_url: 'https://github.com/acme/docs.git',
+                account_type: 'organization',
+                language: 'MDX',
+              },
+            ],
+          }),
+        )
+      case 'POST /api/v1/imports/analyze':
+        return Promise.resolve(
+          jsonResponse(
+            opts.analysis ?? nextAnalysis,
+            opts.analyzeStatus ?? 200,
+          ),
+        )
+      case 'GET /api/v1/databases/shop-postgres':
+        return Promise.resolve(jsonResponse({ error: 'nope' }, 404))
+      case 'POST /api/v1/apps/shop/builds':
+        return Promise.resolve(jsonResponse({ id: 'att9' }, 202))
+      default:
+        return Promise.resolve(jsonResponse(body ?? {}, 201))
+    }
+  })
+  return calls
+}
+
+function renderWizard() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
+  return render(
+    <NewAppI18n>
+      <QueryClientProvider client={client}>
+        <NewAppWizard />
+      </QueryClientProvider>
+    </NewAppI18n>,
+  )
+}
+
+function urlOf(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input
+  return input instanceof URL ? input.href : input.url
+}
+
+afterEach(() => {
+  vi.restoreAllMocks()
+  navigate.mockReset()
+})
+
+describe('NewAppWizard', () => {
+  it('goes from a connected repo to a deployed app in three steps', async () => {
+    const user = userEvent.setup()
+    const calls = mockApi()
+    renderWizard()
+
+    await user.click(await screen.findByRole('button', { name: /acme\/shop/ }))
+
+    expect(await screen.findByLabelText('App name')).toHaveValue('shop')
+    expect(screen.getByLabelText('Port the app listens on')).toHaveValue('3000')
+    expect(screen.getByLabelText('Health check path')).toHaveValue('/')
+    expect(screen.getByLabelText('Domain')).toHaveValue('shop.apps.example.com')
+    expect(screen.getByText('Next.js default port')).toBeInTheDocument()
+    expect(
+      screen.getByText(/pg found in the dependency manifest/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('switch', { name: /Create and attach postgres 16/ }),
+    ).toBeChecked()
+    expect(screen.getByLabelText('NEXTAUTH_SECRET')).toBeInTheDocument()
+    const analyze = calls.find((c) => c.key === 'POST /api/v1/imports/analyze')
+    expect(analyze?.body).toMatchObject({
+      repo_url: 'https://github.com/acme/shop.git',
+      ref: 'main',
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Review' }))
+    const deployButton = screen.getByRole('button', { name: 'Deploy' })
+    expect(deployButton).toBeDisabled()
+    expect(screen.getByText(/Required variables are empty/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+    await user.type(screen.getByLabelText('NEXTAUTH_SECRET'), 'topsecret')
+    await user.click(screen.getByRole('button', { name: 'Review' }))
+    const changes = screen.getByRole('list', { name: 'What will be created' })
+    expect(within(changes).getByText('shop-postgres')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Deploy' }))
+
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith({
+        to: '/apps/$name/deploys/$deployId/logs',
+        params: { name: 'shop', deployId: 'att9' },
+      })
+    })
+    expect(calls.map((c) => c.key)).toEqual(
+      expect.arrayContaining([
+        'POST /api/v1/databases',
+        'POST /api/v1/apps',
+        'POST /api/v1/apps/shop/connections',
+        'POST /api/v1/apps/shop/builds',
+      ]),
+    )
+  })
+
+  it('shows a connect call to action when no provider is connected', async () => {
+    mockApi({ providers: [] })
+    renderWizard()
+    expect(
+      await screen.findByText('Connect a git provider'),
+    ).toBeInTheDocument()
+    const links = screen.getAllByRole('link', { name: 'Connect' })
+    expect(links.map((l) => l.getAttribute('href'))).toEqual([
+      '/settings/github-app',
+      '/settings/gitlab-app',
+      '/settings/bitbucket-app',
+      '/settings/gitea-app',
+    ])
+    expect(screen.getByLabelText('Repository URL')).toBeInTheDocument()
+  })
+
+  it('filters the repository list by search', async () => {
+    const user = userEvent.setup()
+    mockApi()
+    renderWizard()
+    await screen.findByRole('button', { name: /acme\/shop/ })
+    await user.type(
+      screen.getByLabelText('Search repositories or languages'),
+      'mdx',
+    )
+    expect(screen.queryByRole('button', { name: /acme\/shop/ })).toBeNull()
+    expect(
+      screen.getByRole('button', { name: /acme\/docs/ }),
+    ).toBeInTheDocument()
+  })
+
+  it('analyzes a pasted URL and surfaces an analysis error with a way back', async () => {
+    const user = userEvent.setup()
+    mockApi({
+      providers: [],
+      analysis: { error: 'denied' } as never,
+      analyzeStatus: 422,
+    })
+    renderWizard()
+    await user.type(
+      await screen.findByLabelText('Repository URL'),
+      'https://github.com/acme/private',
+    )
+    await user.click(screen.getByRole('button', { name: 'Analyze repository' }))
+    expect(await screen.findByText('denied')).toBeInTheDocument()
+    expect(screen.getByLabelText('Repository URL')).toHaveValue(
+      'https://github.com/acme/private',
+    )
+  })
+
+  it('offers an app picker for a monorepo and re-analyzes with the choice', async () => {
+    const user = userEvent.setup()
+    const mono: ImportAnalysis = {
+      ...nextAnalysis,
+      monorepo: true,
+      build: {
+        type: 'dockerfile',
+        dockerfile_path: 'apps/web/Dockerfile',
+        evidence: 'found Dockerfile at apps/web/Dockerfile: turbo prune',
+        alternatives: [
+          {
+            build_type: 'dockerfile',
+            dockerfile_path: 'apps/web/Dockerfile',
+            reason: 'turbo prune',
+            reason_code: 'turbo_prune',
+            recommended: true,
+          },
+          {
+            build_type: 'dockerfile',
+            dockerfile_path: 'apps/api/Dockerfile',
+            reason: 'turbo prune',
+            reason_code: 'turbo_prune',
+            recommended: false,
+          },
+        ],
+      },
+    }
+    const calls = mockApi({ analysis: mono })
+    renderWizard()
+    await user.click(await screen.findByRole('button', { name: /acme\/shop/ }))
+    expect(
+      await screen.findByText(/found Dockerfile at apps\/web\/Dockerfile/),
+    ).toBeInTheDocument()
+    await user.click(screen.getByLabelText('App in this repository'))
+    await user.click(
+      await screen.findByRole('option', { name: 'apps/api/Dockerfile' }),
+    )
+    await waitFor(() => {
+      const analyzeCalls = calls.filter(
+        (c) => c.key === 'POST /api/v1/imports/analyze',
+      )
+      expect(analyzeCalls.at(-1)?.body).toMatchObject({
+        dockerfile_path: 'apps/api/Dockerfile',
+        build_type: 'dockerfile',
+      })
+    })
+  })
+})

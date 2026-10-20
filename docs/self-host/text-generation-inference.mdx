@@ -1,0 +1,67 @@
+---
+title: "Self-host Text Generation Inference with Docker"
+sidebarTitle: "Text Generation Inference"
+description: "Hugging Face's production inference server for transformer language models, with continuous batching and streaming."
+"og:url": "https://docs.levelrail.com/self-host/text-generation-inference"
+---
+
+Hugging Face's production inference server for transformer language models, with continuous batching and streaming.
+
+This page describes the Levelrail template for Text Generation Inference (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://huggingface.co/docs/text-generation-inference.
+
+Recommended memory: about 8192 MiB.
+
+<Warning>This template reserves an NVIDIA GPU, so it needs a node with a GPU and the NVIDIA container runtime.</Warning>
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `tgi` | `ghcr.io/huggingface/text-generation-inference:3.3.6` | 80 | `tgi_data -&#62; /data` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`tgi`): 8080:80.
+- Stores data in named volumes (`tgi`): tgi_data.
+- Reserves an NVIDIA GPU (`tgi`).
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Text Generation Inference with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Text Generation Inference. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy text-generation-inference --name my-text-generation-inference
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+- [Jupyter GPU Notebook](/self-host/jupyter-gpu)
+
+All templates are listed in the [self-host gallery](/self-host).

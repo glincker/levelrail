@@ -1,0 +1,62 @@
+---
+title: "Self-host draw.io with Docker"
+sidebarTitle: "draw.io"
+description: "A self-hosted diagramming and whiteboarding editor for flowcharts, architecture diagrams, and more."
+"og:url": "https://docs.levelrail.com/self-host/drawio"
+---
+
+A self-hosted diagramming and whiteboarding editor for flowcharts, architecture diagrams, and more.
+
+This page describes the Levelrail template for draw.io (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.drawio.com/doc/faq/docker.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `drawio` | `jgraph/drawio:29.0.3` | 8080 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`drawio`): 8080:8080.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy draw.io with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select draw.io. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy drawio --name my-drawio
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BentoPDF](/self-host/bentopdf)
+- [BookStack](/self-host/bookstack)
+
+All templates are listed in the [self-host gallery](/self-host).

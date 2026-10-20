@@ -1,0 +1,77 @@
+---
+title: "Self-host Joomla with Docker"
+sidebarTitle: "Joomla"
+description: "A long-established CMS with a large extension ecosystem for business sites, portals, and communities."
+"og:url": "https://docs.levelrail.com/self-host/joomla"
+---
+
+A long-established CMS with a large extension ecosystem for business sites, portals, and communities.
+
+This page describes the Levelrail template for Joomla (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.joomla.org.
+
+Recommended memory: about 768 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `mariadb:11` | none | `joomla_db_data -&#62; /var/lib/mysql` |
+| `joomla` | `joomla:5-apache` | 80 | `joomla_data -&#62; /var/www/html` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `MARIADB_DATABASE` | Preset in the template |
+| `db` | `MARIADB_PASSWORD` | Generated at deploy |
+| `db` | `MARIADB_ROOT_PASSWORD` | Generated at deploy |
+| `db` | `MARIADB_USER` | Preset in the template |
+| `joomla` | `JOOMLA_DB_HOST` | Preset in the template |
+| `joomla` | `JOOMLA_DB_NAME` | Preset in the template |
+| `joomla` | `JOOMLA_DB_PASSWORD` | Generated at deploy |
+| `joomla` | `JOOMLA_DB_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`joomla`): 8080:80.
+- Passwords and keys are generated at deploy time (`db`, `joomla`): JOOMLA_DB_PASSWORD, MARIADB_PASSWORD, MARIADB_ROOT_PASSWORD.
+- No health check, so a deploy is judged by the process starting (`db`).
+- Stores data in named volumes (`db`, `joomla`): joomla_data, joomla_db_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Joomla with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Joomla. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy joomla --name my-joomla
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Drupal](/self-host/drupal)
+- [EspoCRM](/self-host/espocrm)
+- [Ghost](/self-host/ghost)
+
+All templates are listed in the [self-host gallery](/self-host).

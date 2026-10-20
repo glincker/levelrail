@@ -1,0 +1,7 @@
+{
+  "code": "build_out_of_memory",
+  "retryable": false,
+  "excerpt_contains": [
+    "did not complete successfully: exit code: 137"
+  ]
+}

@@ -1,0 +1,32 @@
+id: kutt
+name: Kutt
+description: A modern URL shortener with custom domains, link analytics and an API, backed by Postgres and Redis.
+icon: link
+category: Applications
+documentation_url: https://docs.kutt.it/
+recommended_memory_bytes: 402653184
+env:
+  - key: DB_PASSWORD
+    label: Database password
+    description: Password for the bundled Postgres database.
+    generate: password
+    length: 32
+    secret: true
+  - key: JWT_SECRET
+    label: JWT secret
+    description: Signs login tokens. Changing it signs every user out.
+    generate: hex
+    length: 64
+    secret: true
+  - key: DEFAULT_DOMAIN
+    label: Default domain
+    description: Host name used in short links, without a scheme.
+    default: localhost:3000
+domains:
+  - service: kutt
+    port: 3000
+    description: Public address of Kutt.
+healthcheck:
+  service: kutt
+  port: 3000
+  path: /api/v2/health

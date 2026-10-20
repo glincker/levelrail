@@ -1,0 +1,199 @@
+// Wire types for the alert-rule resource, matching
+// internal/api/alerts.go's ruleResource exactly: same field names, same
+// snake_case JSON tags, same "threshold-kind
+// fields ignored for a crashloop rule and vice versa" shape rather than
+// two separate response types, because that's what the server actually
+// sends back for both kinds through one endpoint.
+//
+// cert_expiry watches every certificate on the whole control plane, not
+// just this app's own domains, and patch_status watches every node's
+// pending OS security patches the same way: neither uses any of the
+// threshold/crashloop fields below, matching internal/alerting.Rule's
+// own shape. node_disk_space watches every node's disk usage percentage
+// platform-wide the same way too, and node_resource_usage watches every
+// node's summed CPU and memory usage the same way as well.
+// scheduled_task_failure watches one of this app's scheduled tasks'
+// consecutive-failure count, reusing restart_count_threshold as that
+// count's threshold; see internal/alerting.Rule's own doc comment.
+// domain_health watches every domain configured on this app itself
+// (app-scoped, unlike the four platform-wide kinds above), needing none
+// of the threshold/crashloop fields either, though for_duration
+// optionally debounces a single check. backup_missing watches one
+// database (platform-wide, like cert_expiry) or one of this app's own
+// volumes' scheduled backup cadence, reusing for_duration as its overdue
+// grace period. control_plane_backup_stale is platform-wide too: it watches
+// the control plane's own newest snapshot and reuses for_duration as the
+// maximum allowed age (default 3d).
+import type { Severity } from './alertNoise'
+
+export type AlertRuleKind =
+  | 'threshold'
+  | 'crashloop'
+  | 'cert_expiry'
+  | 'patch_status'
+  | 'scheduled_task_failure'
+  | 'scheduled_task_missed'
+  | 'scheduled_task_running_long'
+  | 'node_disk_space'
+  | 'node_resource_usage'
+  | 'domain_health'
+  | 'backup_missing'
+  | 'control_plane_backup_stale'
+  | 'node_offline'
+  | 'node_cert_expiring'
+  | 'log_archive_stale'
+  | 'slo_burn'
+  | 'version_skew'
+  | 'log_pattern'
+  | 'log_level_rate'
+  | 'budget_threshold'
+
+// log_pattern and log_level_rate only (internal/alerting.LogRuleConfig).
+export interface LogRuleConfig {
+  query?: string
+  regex?: string
+  fields?: string[]
+  level?: string
+  count?: number
+  per_minute?: number
+  window_seconds?: number
+  cooldown_seconds?: number
+}
+
+export type SloObjective = 'availability' | 'latency'
+
+// slo_burn-only: a request-based SLO over the app's ingress request
+// metrics (internal/alerting.SLOConfig). target is a percentage, 99.9.
+export interface SloConfig {
+  objective: SloObjective
+  target: number
+  latency_ms?: number
+}
+
+export type BackupResourceKind = 'database' | 'volume'
+
+export type Comparator = '>' | '<' | '>=' | '<='
+
+export type NotifyKind =
+  | 'generic'
+  | 'slack'
+  | 'discord'
+  | 'telegram'
+  | 'email'
+  | 'pushover'
+  | 'pagerduty'
+  | 'teams'
+  | 'resend'
+  | 'ntfy'
+  | 'gotify'
+  | 'mattermost'
+  | 'lark'
+
+// GET/POST /api/v1/apps/{name}/alerts response shape. `id` and
+// `resource_id` are always server-assigned (ruleResource's doc comment
+// on toRule/handleCreateAlertRule), never something this app sends on
+// create, so they only ever appear on responses, not on
+// CreateAlertRuleRequest below.
+export interface AlertRule {
+  id: string
+  name: string
+  kind: AlertRuleKind
+  resource_id: string
+  // Response-only, non-blocking problems with the saved rule.
+  warnings?: string[]
+
+  // Threshold-kind fields, absent/zero-value for a crashloop rule.
+  metric?: string
+  comparator?: Comparator
+  threshold: number
+  for_duration?: string
+
+  // Crashloop-kind fields, absent/zero-value for a threshold rule.
+  restart_count_threshold: number
+  restart_window?: string
+
+  // scheduled_task_failure-only: which of this app's scheduled tasks the
+  // rule watches. restart_count_threshold above doubles as its
+  // consecutive-failure threshold.
+  scheduled_task_id?: string
+
+  // backup_missing-only: which database or service volume the rule
+  // watches. for_duration above doubles as its overdue grace period.
+  backup_resource_kind?: BackupResourceKind
+  backup_database_name?: string
+  backup_service_name?: string
+  backup_volume_name?: string
+
+  slo?: SloConfig
+  log_rule?: LogRuleConfig
+
+  // notify_url/notify_kind are the *resolved* values: the attached
+  // channel's own when channel_id is set, this rule's legacy columns
+  // otherwise (rules created before notification channels existed).
+  channel_id?: string
+  notify_url?: string
+  notify_kind?: NotifyKind
+  enabled: boolean
+
+  // Noise control (silences, flapping, consecutive failures).
+  severity?: Severity
+  labels?: Record<string, string>
+  consecutive_failures?: number
+  flap_threshold?: number
+  flap_window?: string
+
+  // Response-only: an active silence or maintenance window mutes this rule.
+  silenced?: boolean
+  silenced_by?: string
+
+  // Evaluation state, response-only: only the evaluator ever sets these
+  // (internal/alerting's Engine via UpdateState), a create request never
+  // carries them. See ruleResource's own doc comment for the same
+  // request/response asymmetry on the Go side.
+  firing?: boolean
+  pending_since?: string
+  firing_since?: string
+  last_evaluated_at?: string
+  last_value?: number
+}
+
+// POST /api/v1/apps/{name}/alerts request body. No `id` or
+// `resource_id`: the server mints/derives both itself
+// (alerting.NewRuleID, resourceIDForApp(name)) and discards anything a
+// caller puts in those fields, so this app never sends them in the
+// first place.
+export interface CreateAlertRuleRequest {
+  name: string
+  kind: AlertRuleKind
+  metric?: string
+  comparator?: Comparator
+  threshold?: number
+  for_duration?: string
+  restart_count_threshold?: number
+  restart_window?: string
+  scheduled_task_id?: string
+  backup_resource_kind?: BackupResourceKind
+  backup_database_name?: string
+  backup_service_name?: string
+  backup_volume_name?: string
+  slo?: SloConfig
+  log_rule?: LogRuleConfig
+  channel_id?: string
+  notify_url?: string
+  notify_kind?: NotifyKind
+  enabled: boolean
+  severity?: Severity
+  labels?: Record<string, string>
+  consecutive_failures?: number
+  flap_threshold?: number
+  flap_window?: string
+}
+
+// Kinds that watch one of the app's scheduled jobs through scheduled_task_id.
+export function isScheduledTaskKind(kind: string): boolean {
+  return (
+    kind === 'scheduled_task_failure' ||
+    kind === 'scheduled_task_missed' ||
+    kind === 'scheduled_task_running_long'
+  )
+}

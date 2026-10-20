@@ -1,0 +1,6 @@
+version: 1
+services:
+  stack:
+    build:
+      type: compose
+      path: ./docker-compose.yml

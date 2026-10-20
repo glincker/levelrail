@@ -1,0 +1,266 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"os"
+	"sort"
+	"strings"
+)
+
+func runAppsEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) == 0 {
+		_, _ = fmt.Fprint(stderr, appsEnvUsage(prog))
+		return exitUsage
+	}
+	switch args[0] {
+	case "-h", "--help", "help":
+		_, _ = fmt.Fprint(stdout, appsEnvUsage(prog))
+		return exitOK
+	case "import":
+		return runAppsEnvImport(prog, args[1:], stdout, stderr, lookupEnv)
+	case "export":
+		return runAppsEnvExport(prog, args[1:], stdout, stderr, lookupEnv)
+	case "get":
+		return runAppsEnvGet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "pull":
+		return runEnvPull(prog, args[1:], stdout, stderr, lookupEnv)
+	case "push":
+		return runEnvPush(prog, args[1:], stdout, stderr, lookupEnv)
+	case "diff":
+		return runAppsEnvDiff(prog, args[1:], stdout, stderr, lookupEnv)
+	case "check":
+		return runAppsEnvCheck(prog, args[1:], stdout, stderr, lookupEnv)
+	case "history":
+		return runAppsEnvHistory(prog, args[1:], stdout, stderr, lookupEnv)
+	default:
+		_, _ = fmt.Fprintf(stderr, "%s: unknown apps env subcommand %q\n\n", prog, args[0])
+		_, _ = fmt.Fprint(stderr, appsEnvUsage(prog))
+		return exitUsage
+	}
+}
+
+func appsEnvUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s apps env import <name> --file .env [--dry-run] [--keep-existing] [flags]   merge a .env file into an app's plain env vars
+  %[1]s apps env export <name> [--out FILE] [--reveal] [--format dotenv|json]      write an app's env vars as .env text
+  %[1]s apps env get <name> <KEY> [--reveal] [flags]                              print one variable
+  %[1]s apps env diff <app-a> <app-b> [flags]                                     compare two apps' env vars (secrets by key only)
+  %[1]s apps env check <name> [--fix] [flags]                                     find empty, shadowed, duplicate and missing variables
+  %[1]s apps env history <name> [--limit N] [flags]                               list who added, changed or removed which variable
+
+Sensitive and secret values are masked unless --reveal is given. --reveal
+asks for your password (and authenticator code) at the prompt, needs a token
+with read:sensitive and secrets:reveal, and is audited. Import never writes
+secrets: a key that is already a secret is skipped, use "%[1]s apps secrets
+set" for those, and a masked value in the file keeps the stored one.
+
+Run "%[1]s apps env <subcommand> -h" for a subcommand's own flags.
+`, prog)
+}
+
+// appSecretKeys returns the union of the app's declared secret env names
+// and the keys held in its secret store.
+func appSecretKeys(ctx context.Context, client *Client, name string, declared []string) ([]string, error) {
+	stored, err := client.ListSecrets(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("list secrets for app %q: %w", name, err)
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, k := range declared {
+		if !seen[k] {
+			seen[k] = true
+			out = append(out, k)
+		}
+	}
+	for _, s := range stored {
+		if !seen[s.Key] {
+			seen[s.Key] = true
+			out = append(out, s.Key)
+		}
+	}
+	return out, nil
+}
+
+type envImportResult struct {
+	App     string        `json:"app"`
+	DryRun  bool          `json:"dry_run"`
+	Applied bool          `json:"applied"`
+	Plan    envImportPlan `json:"plan"`
+}
+
+func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps env import", "print the import plan as JSON to stdout and nothing else", stderr)
+	var file string
+	var dryRun, keepExisting, apply bool
+	fs.BoolVar(&apply, "apply", false, "restart the app now so the new env reaches the running container")
+	fs.StringVar(&file, "file", "", "path to the .env file to import (required)")
+	fs.BoolVar(&dryRun, "dry-run", false, "show what would change without saving")
+	fs.BoolVar(&keepExisting, "keep-existing", false, "leave keys that already exist with a different value untouched")
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps env import <name> --file .env [flags]\n\nMerges a .env file into an app's plain env vars. Keys already set as\nsecrets are skipped. Env changes take effect on the next restart,\nor now with --apply.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	name, ok := requireOneArg(fs, stderr, prog, "apps env import", "app name")
+	if !ok {
+		return exitUsage
+	}
+	if file == "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("apps env import requires --file"))
+	}
+	data, err := os.ReadFile(file) //nolint:gosec // operator-supplied local path, same trust boundary as every other --file flag in this CLI
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, newValidationError("read env file %q: %v", file, err))
+	}
+
+	ctx := context.Background()
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	app, err := client.GetApp(ctx, name)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get app %q: %w", name, err))
+	}
+	secretKeys, err := appSecretKeys(ctx, client, name, app.SecretEnv)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
+
+	if bound, err := client.ListBoundEnv(ctx, name); err == nil {
+		for _, b := range bound {
+			secretKeys = append(secretKeys, b.Key)
+		}
+	}
+
+	plan := planEnvImport(app.Env, parseEnvFileBytes(data), secretKeys, keepExisting)
+	result := envImportResult{App: name, DryRun: dryRun, Plan: plan}
+	warnEnvSecrets(ctx, client, stderr, name, plan)
+
+	willChange := len(plan.New) > 0 || (len(plan.Changed) > 0 && !keepExisting)
+	if !dryRun && willChange {
+		app.Env = plan.Merged
+		if _, err := client.UpdateApp(ctx, name, app); err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("update env for app %q: %w", name, err))
+		}
+		result.Applied = true
+	}
+
+	code := writeScheduledTaskResult(stdout, stderr, of, result, func() { printEnvImportHuman(stdout, name, result) })
+	if result.Applied {
+		hintOut := stdout
+		if of.Format == outputJSON || of.Query != "" {
+			hintOut = io.Discard
+		}
+		if applyCode := afterConfigWrite(ctx, client, prog, name, apply, hintOut, stderr); code == exitOK {
+			code = applyCode
+		}
+	}
+	return code
+}
+
+func printEnvImportHuman(w io.Writer, name string, r envImportResult) {
+	rows := []struct {
+		mark string
+		desc string
+		keys []string
+	}{
+		{"+", "new", r.Plan.New},
+		{"~", "changed", r.Plan.Changed},
+		{"=", "unchanged", r.Plan.Unchanged},
+		{"!", "skipped, key is a secret", r.Plan.Secret},
+	}
+	for _, row := range rows {
+		for _, k := range row.keys {
+			_, _ = fmt.Fprintf(w, "%s %s (%s)\n", row.mark, k, row.desc)
+		}
+	}
+	switch {
+	case r.DryRun:
+		_, _ = fmt.Fprintf(w, "dry run: nothing saved for app %q\n", name)
+	case r.Applied:
+		_, _ = fmt.Fprintf(w, "saved env for app %q (%d new, %d changed)\n", name, len(r.Plan.New), len(r.Plan.Changed))
+	default:
+		_, _ = fmt.Fprintf(w, "nothing to change for app %q\n", name)
+	}
+	if keys := buildTimeEnvKeys(r.Plan.New, r.Plan.Changed); len(keys) > 0 {
+		_, _ = fmt.Fprintf(w, "note: build-time keys (%s) are inlined into the frontend bundle at build time, so runtime env does not change the browser code; supply them to the build (build.args with a Dockerfile, or a committed .env.production) and rebuild\n", strings.Join(keys, ", "))
+	}
+}
+
+// buildTimeEnvPrefixes are frontend frameworks' public env prefixes, whose
+// values are compiled into client bundles rather than read at runtime.
+var buildTimeEnvPrefixes = []string{"NEXT_PUBLIC_", "VITE_", "REACT_APP_"}
+
+func buildTimeEnvKeys(groups ...[]string) []string {
+	var out []string
+	for _, keys := range groups {
+		for _, k := range keys {
+			for _, p := range buildTimeEnvPrefixes {
+				if strings.HasPrefix(k, p) {
+					out = append(out, k)
+					break
+				}
+			}
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+func runAppsEnvExport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps env export", "unused for this subcommand", stderr)
+	var out, format string
+	var reveal bool
+	fs.StringVar(&out, "out", "", "write to this file instead of stdout")
+	fs.BoolVar(&reveal, "reveal", false, "include sensitive and secret values; asks for your password (and authenticator code) interactively")
+	fs.StringVar(&format, "format", "dotenv", "dotenv or json (json needs --reveal)")
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps env export <name> [--out FILE] [--reveal] [--format dotenv|json] [flags]\n\nWrites an app's env vars as .env text. Without --reveal, sensitive and\nsecret keys are written empty with a comment.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+	tokenFlag, apiURLFlag, profileFlag, _, _, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	name, ok := requireOneArg(fs, stderr, prog, "apps env export", "app name")
+	if !ok {
+		return exitUsage
+	}
+
+	ctx := context.Background()
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	var text string
+	if reveal {
+		var err error
+		if text, err = exportRevealed(ctx, client, name, format, stderr); err != nil {
+			return reportError(stdout, stderr, false, err)
+		}
+	} else {
+		if format != "dotenv" {
+			return reportError(stdout, stderr, false, newValidationError("--format %s needs --reveal; the masked export is dotenv only", format))
+		}
+		app, err := client.GetApp(ctx, name)
+		if err != nil {
+			return reportError(stdout, stderr, false, fmt.Errorf("get app %q: %w", name, err))
+		}
+		secretKeys, err := appSecretKeys(ctx, client, name, app.SecretEnv)
+		if err != nil {
+			return reportError(stdout, stderr, false, err)
+		}
+		text = renderDotenv(app.Env, secretKeys)
+	}
+
+	if out == "" {
+		_, _ = io.WriteString(stdout, text)
+		return exitOK
+	}
+	if err := os.WriteFile(out, []byte(text), 0o600); err != nil {
+		return reportError(stdout, stderr, false, newValidationError("write %q: %v", out, err))
+	}
+	_, _ = fmt.Fprintf(stdout, "wrote %d line(s) to %s\n", strings.Count(text, "\n"), out)
+	return exitOK
+}

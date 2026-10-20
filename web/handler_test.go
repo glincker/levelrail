@@ -1,0 +1,84 @@
+package web
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"testing/fstest"
+)
+
+func TestHandlerFromFS_NoDist_Returns501(t *testing.T) {
+	h := handlerFromFS(fstest.MapFS{}, nil) // no "dist" entry at all: the stub-build shape
+
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+
+	if rec.Code != http.StatusNotImplemented {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusNotImplemented)
+	}
+}
+
+func TestHandlerFromFS_ServesRealAsset(t *testing.T) {
+	h := handlerFromFS(fstest.MapFS{
+		"dist/index.html":         &fstest.MapFile{Data: []byte("<html>shell</html>")},
+		"dist/assets/app-123.js":  &fstest.MapFile{Data: []byte("console.log(1)")},
+		"dist/assets/app-123.css": &fstest.MapFile{Data: []byte("body{}")},
+	}, nil)
+
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/assets/app-123.js", nil))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+	if got := rec.Body.String(); got != "console.log(1)" {
+		t.Errorf("body = %q, want the real asset content, not the SPA fallback", got)
+	}
+}
+
+func TestHandlerFromFS_UnknownPath_FallsBackToIndex(t *testing.T) {
+	h := handlerFromFS(fstest.MapFS{
+		"dist/index.html": &fstest.MapFile{Data: []byte("<html>shell</html>")},
+	}, nil)
+
+	tests := []string{"/", "/apps", "/apps/myapp/env", "/apps/myapp/deploys/42/logs"}
+	for _, path := range tests {
+		t.Run(path, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want 200 (SPA fallback), for path %q", rec.Code, path)
+			}
+			if got := rec.Body.String(); got != "<html>shell</html>" {
+				t.Errorf("body = %q, want index.html's content for unmatched client-side route %q", got, path)
+			}
+		})
+	}
+}
+
+func TestHandlerFromFS_SetsSecurityHeaders(t *testing.T) {
+	h := handlerFromFS(fstest.MapFS{
+		"dist/index.html":        &fstest.MapFile{Data: []byte("<html>shell</html>")},
+		"dist/assets/app-123.js": &fstest.MapFile{Data: []byte("console.log(1)")},
+	}, nil)
+	want := map[string]string{
+		"X-Content-Type-Options":     "nosniff",
+		"X-Frame-Options":            "DENY",
+		"Referrer-Policy":            "strict-origin-when-cross-origin",
+		"Content-Security-Policy":    dashboardCSP,
+		"Permissions-Policy":         dashboardPermissionsPolicy,
+		"Cross-Origin-Opener-Policy": "same-origin",
+	}
+	for _, path := range []string{"/", "/apps/web", "/apps/web/deploys/7", "/login", "/missing/page", "/assets/app-123.js"} {
+		t.Run(path, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+			for k, v := range want {
+				if got := rec.Header().Get(k); got != v {
+					t.Errorf("%s = %q, want %q", k, got, v)
+				}
+			}
+		})
+	}
+}

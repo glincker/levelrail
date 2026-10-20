@@ -1,0 +1,7 @@
+{
+  "code": "compile_error",
+  "retryable": false,
+  "excerpt_contains": [
+    "error TS2304: Cannot find name 'Request'"
+  ]
+}

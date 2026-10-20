@@ -1,0 +1,15 @@
+id: mage-ai
+name: Mage AI
+description: A data pipeline tool for building, running and monitoring ETL, streaming and dbt workflows in notebooks and a UI.
+icon: workflow
+category: Developer Tools
+documentation_url: https://docs.mage.ai/getting-started/setup
+recommended_memory_bytes: 1073741824
+domains:
+  - service: mage
+    port: 6789
+    description: Public address of Mage AI.
+healthcheck:
+  service: mage
+  port: 6789
+  path: /

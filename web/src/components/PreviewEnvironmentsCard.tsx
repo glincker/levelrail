@@ -1,0 +1,465 @@
+import {
+  ArrowSquareOutIcon,
+  BroomIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  DatabaseIcon,
+  GitForkIcon,
+  GitPullRequestIcon,
+  HandPalmIcon,
+  ProhibitIcon,
+  ShieldCheckIcon,
+  SpinnerIcon,
+  TrashIcon,
+  WarningCircleIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import type { Icon } from '@phosphor-icons/react'
+import type { VariantProps } from 'class-variance-authority'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge, type badgeVariants } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { toast } from '@/components/ui/toast'
+import { InfoTip, RelativeTime } from './kit'
+import { ApprovePreviewDialog } from './ApprovePreviewDialog'
+import { ExtendPreviewButton } from './ExtendPreviewButton'
+import { PreviewLogsLink } from './PreviewLogsLink'
+import { PreviewPrEnvEditor } from './PreviewPrEnvEditor'
+import { useGitSource } from '../queries/gitSources'
+import {
+  useSetPreviewEnabled,
+  useSetPreviewPostPRComments,
+  useSweepStalePreviewEnvironments,
+  useTeardownPreviewEnvironment,
+  usePreviewEnvironments,
+} from '../queries/previewEnvironments'
+import { ApiError } from '../lib/apiError'
+import type { AppDetail } from '../types/appDetail'
+import type {
+  PreviewDatabaseIsolation,
+  PreviewEnvironmentStatus,
+  PreviewEphemeralDatabase,
+} from '../types/previewEnvironment'
+
+// Preview environments per pull request (internal/api/preview_environments.go):
+// the opt-in toggle plus the active-preview list, rendered alongside
+// GitSourceCard on the same overview route since a preview has nothing
+// to build from without a connected git source. Off by default; opening
+// a pull request against the connected repo's target branch deploys one
+// automatically once this toggle is on, closing or merging it tears the
+// preview down automatically too. "Tear down" here is the manual safety
+// net for a stuck build or a retry after a partially-failed automatic
+// teardown, not the primary path.
+
+const STATUS_LABEL: Record<PreviewEnvironmentStatus, string> = {
+  deploying: 'Deploying',
+  active: 'Active',
+  failed: 'Failed',
+  awaiting_approval: 'Awaiting approval',
+  limit_reached: 'Not deployed (limit)',
+}
+
+const STATUS_BADGE_VARIANT: Record<
+  PreviewEnvironmentStatus,
+  VariantProps<typeof badgeVariants>['variant']
+> = {
+  deploying: 'muted',
+  active: 'success',
+  failed: 'destructive',
+  awaiting_approval: 'warning',
+  limit_reached: 'muted',
+}
+
+const STATUS_ICON: Record<PreviewEnvironmentStatus, Icon> = {
+  deploying: SpinnerIcon,
+  active: CheckCircleIcon,
+  failed: WarningCircleIcon,
+  awaiting_approval: HandPalmIcon,
+  limit_reached: ProhibitIcon,
+}
+
+function PreviewStatusBadge({ status }: { status: PreviewEnvironmentStatus }) {
+  const StatusIcon = STATUS_ICON[status]
+  return (
+    <Badge variant={STATUS_BADGE_VARIANT[status]} className="rounded-full">
+      <StatusIcon
+        className={status === 'deploying' ? 'size-3 animate-spin' : 'size-3'}
+        aria-hidden="true"
+      />
+      {STATUS_LABEL[status]}
+    </Badge>
+  )
+}
+
+// EphemeralDatabaseRow renders one preview's own disposable database
+// instance (spec.Database.EphemeralInPreviews): its live container
+// status (`ready`, computed server-side from the same reconcile
+// conditions GET /api/v1/databases uses) plus, when teardown failed and
+// left the row behind for a retry, why. There is no direct action here
+// (no delete/retry button): retrying is exactly what tearing down or
+// re-closing the pull request already does, this is a status display
+// only.
+function EphemeralDatabaseRow({
+  database,
+}: {
+  database: PreviewEphemeralDatabase
+}) {
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1.5">
+      <div className="flex min-w-0 items-center gap-2">
+        <DatabaseIcon
+          className="size-3.5 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <span className="truncate font-mono text-xs text-foreground">
+          {database.database_name}
+        </span>
+        <span className="text-xs text-muted-foreground">{database.engine}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        {database.status === 'teardown_failed' ? (
+          <Badge variant="destructive" className="rounded-full text-[10px]">
+            Teardown failed
+          </Badge>
+        ) : (
+          <Badge
+            variant={database.ready.variant}
+            className="rounded-full text-[10px]"
+          >
+            {database.ready.label}
+          </Badge>
+        )}
+      </div>
+    </li>
+  )
+}
+
+// DatabaseIsolationRow renders one preview's own isolated credential
+// (a Postgres role, or a Redis ACL user) on an existing database
+// (spec.Database.IsolatedInPreviews): its name and provisioning status.
+// The credential's password is never fetched or shown here, only its
+// name and where it lives.
+function DatabaseIsolationRow({
+  isolation,
+}: {
+  isolation: PreviewDatabaseIsolation
+}) {
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1.5">
+      <div className="flex min-w-0 items-center gap-2">
+        <ShieldCheckIcon
+          className="size-3.5 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <span className="truncate font-mono text-xs text-foreground">
+          {isolation.database_name}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          role {isolation.role_name}
+        </span>
+        <InfoTip label="About database isolation">
+          A dedicated Postgres role or Redis ACL user scoped to this preview, on
+          the same database as production. Its generated password is stored
+          encrypted and is never shown or logged in plaintext.
+        </InfoTip>
+      </div>
+      <Badge
+        variant={
+          isolation.status === 'teardown_failed' ? 'destructive' : 'success'
+        }
+        className="rounded-full text-[10px]"
+      >
+        {isolation.status === 'teardown_failed'
+          ? 'Teardown failed'
+          : 'Isolated'}
+      </Badge>
+    </li>
+  )
+}
+
+export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
+  const gitSource = useGitSource(app.name)
+  const setPreviewEnabled = useSetPreviewEnabled(app.name)
+  const setPostPRComments = useSetPreviewPostPRComments(app.name)
+  const teardown = useTeardownPreviewEnvironment(app.name)
+  const sweep = useSweepStalePreviewEnvironments()
+  const previews = usePreviewEnvironments(app.name)
+
+  const connected = !!gitSource.data
+  const enabled = gitSource.data?.preview_enabled ?? false
+  const postPRComments = gitSource.data?.post_pr_comments ?? false
+  const hasStale = previews.data?.some((p) => p.stale) ?? false
+
+  function toggle(next: boolean) {
+    setPreviewEnabled.mutate(next, {
+      onSuccess: () => {
+        toast.add({
+          title: next
+            ? 'Preview environments enabled.'
+            : 'Preview environments disabled.',
+          type: 'success',
+        })
+      },
+      onError: (error) => {
+        toast.add({
+          title: 'Could not update preview environments.',
+          description: error.message,
+          type: 'error',
+        })
+      },
+    })
+  }
+
+  function togglePostPRComments(next: boolean) {
+    setPostPRComments.mutate(next, {
+      onSuccess: () => {
+        toast.add({
+          title: next
+            ? 'PR comments and status checks enabled.'
+            : 'PR comments and status checks disabled.',
+          type: 'success',
+        })
+      },
+      onError: (error) => {
+        toast.add({
+          title: 'Could not update PR comments and status checks.',
+          description: error.message,
+          type: 'error',
+        })
+      },
+    })
+  }
+
+  function tearDown(prNumber: number) {
+    teardown.mutate(prNumber, {
+      onSuccess: () => {
+        toast.add({
+          title: `Preview for PR #${prNumber} torn down.`,
+          type: 'success',
+        })
+      },
+      onError: (error: ApiError) => {
+        toast.add({
+          title: 'Could not tear down preview.',
+          description: error.message,
+          type: 'error',
+        })
+      },
+    })
+  }
+
+  function sweepStale() {
+    sweep.mutate(undefined, {
+      onSuccess: (result) => {
+        toast.add({
+          title: `Swept ${result.swept} stale preview environment(s) across all apps.`,
+          type: 'success',
+        })
+      },
+      onError: (error: ApiError) => {
+        toast.add({
+          title: 'Could not sweep stale previews.',
+          description: error.message,
+          type: 'error',
+        })
+      },
+    })
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <GitPullRequestIcon className="size-4 text-muted-foreground" />
+            Preview environments
+          </CardTitle>
+          {hasStale ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={sweep.isPending}
+              onClick={sweepStale}
+              title="Tears down every stale preview across all apps, not just this one."
+            >
+              <BroomIcon />
+              Sweep stale previews
+            </Button>
+          ) : null}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Enabled</p>
+            <p className="text-sm text-muted-foreground">
+              {connected
+                ? "Deploy an independent preview for every pull request opened against this app's repo, torn down automatically when the pull request closes."
+                : 'Connect a git source above first: a preview has nothing to build from otherwise.'}
+            </p>
+          </div>
+          <Switch
+            checked={enabled}
+            onCheckedChange={toggle}
+            disabled={
+              !connected || setPreviewEnabled.isPending || gitSource.isLoading
+            }
+            aria-label="Preview environments enabled"
+          />
+        </div>
+
+        {enabled ? (
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                PR comments and status checks
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Keep one comment on the pull request up to date (building, ready
+                with the URL, failed, removed) and set a commit status, using
+                the connected GitHub App, GitLab OAuth application, Bitbucket
+                OAuth consumer, or Gitea OAuth2 application. Also explains why a
+                fork pull request was not deployed.
+              </p>
+            </div>
+            <Switch
+              checked={postPRComments}
+              onCheckedChange={togglePostPRComments}
+              disabled={setPostPRComments.isPending || gitSource.isLoading}
+              aria-label="Preview environment PR comments and status checks enabled"
+            />
+          </div>
+        ) : null}
+
+        {enabled ? (
+          previews.isLoading ? (
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <SpinnerIcon className="size-4 animate-spin" />
+              Loading previews...
+            </p>
+          ) : previews.data && previews.data.length > 0 ? (
+            <ul className="divide-y divide-border">
+              {previews.data.map((preview) => (
+                <li
+                  key={preview.pr_number}
+                  className="flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="break-all font-mono text-sm">
+                        PR #{preview.pr_number}
+                      </span>
+                      <PreviewStatusBadge status={preview.status} />
+                      {preview.is_fork ? (
+                        <Badge variant="muted" className="rounded-full">
+                          <GitForkIcon className="size-3" aria-hidden="true" />
+                          Fork
+                        </Badge>
+                      ) : null}
+                      {preview.stale ? (
+                        <Badge variant="warning" className="rounded-full">
+                          <ClockIcon className="size-3" aria-hidden="true" />
+                          Stale
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <p className="truncate text-xs text-muted-foreground">
+                      <span className="break-all font-mono">
+                        {preview.branch}
+                      </span>
+                      {preview.domain ? (
+                        <>
+                          {' · '}
+                          <a
+                            href={`https://${preview.domain}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 font-mono text-foreground hover:underline"
+                          >
+                            {preview.domain}
+                            <ArrowSquareOutIcon className="size-3" />
+                          </a>
+                        </>
+                      ) : null}
+                    </p>
+                    {preview.expires_at ? (
+                      <p className="text-xs text-muted-foreground">
+                        Expires <RelativeTime at={preview.expires_at} live /> if
+                        nothing changes
+                      </p>
+                    ) : null}
+                    {preview.status_reason ? (
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                        {preview.status_reason}
+                      </p>
+                    ) : null}
+                    {preview.ephemeral_databases &&
+                    preview.ephemeral_databases.length > 0 ? (
+                      <ul className="space-y-1 pt-1">
+                        {preview.ephemeral_databases.map((database) => (
+                          <EphemeralDatabaseRow
+                            key={database.source_key}
+                            database={database}
+                          />
+                        ))}
+                      </ul>
+                    ) : null}
+                    {preview.database_isolations &&
+                    preview.database_isolations.length > 0 ? (
+                      <ul className="space-y-1 pt-1">
+                        {preview.database_isolations.map((isolation) => (
+                          <DatabaseIsolationRow
+                            key={isolation.source_key}
+                            isolation={isolation}
+                          />
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {preview.status === 'awaiting_approval' ? (
+                      <ApprovePreviewDialog
+                        appName={app.name}
+                        preview={preview}
+                      />
+                    ) : null}
+                    <PreviewLogsLink previewApp={preview.preview_app_id} />
+                    {preview.status === 'active' ||
+                    preview.status === 'deploying' ? (
+                      <ExtendPreviewButton
+                        appName={app.name}
+                        prNumber={preview.pr_number}
+                      />
+                    ) : null}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={teardown.isPending}
+                      onClick={() => {
+                        tearDown(preview.pr_number)
+                      }}
+                    >
+                      <TrashIcon />
+                      Tear down
+                    </Button>
+                  </div>
+                  <PreviewPrEnvEditor
+                    appName={app.name}
+                    prNumber={preview.pr_number}
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No active previews. Open a pull request against the connected repo
+              to deploy one.
+            </p>
+          )
+        ) : null}
+      </CardContent>
+    </Card>
+  )
+}

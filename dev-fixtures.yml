@@ -1,0 +1,40 @@
+# Optional, dev-mode-only API token fixtures. Only ever read when
+# APP_DEV_MODE=1 (see internal/api/devmode_debug.go / devmode_release.go),
+# never in a real -tags embedweb release build. Path override:
+# APP_DEV_FIXTURES_FILE (default ./dev-fixtures.yml, this file).
+#
+# These fixed plaintexts are deliberately not secret: the same "the
+# build-tag gate is what makes this safe, not credential secrecy"
+# reasoning ADR 013 documents for the dev/dev admin account applies here
+# too. The point is to skip minting a token by hand every time you want
+# to check that a route enforces the ability it claims to, e.g.:
+#
+#   curl -H "Authorization: Bearer dev-read-token" localhost:8080/api/v1/apps
+#   curl -X PUT -H "Authorization: Bearer dev-write-token" \
+#     -d '{"domains":["x.example.com"]}' localhost:8080/api/v1/apps/web
+#
+# A missing or absent file is not an error; dev mode works fine without
+# one, this just removes the "register, log in, mint a token" steps
+# when what you actually want to test is the ability boundary itself.
+# Add or remove entries freely, they reseed automatically on the next
+# startup (idempotent: already-seeded tokens are left alone, not
+# recreated) and only ever live in the local dev-mode SQLite file.
+tokens:
+  - name: dev-read
+    plaintext: dev-read-token
+    abilities: [read]
+  - name: dev-read-sensitive
+    plaintext: dev-read-sensitive-token
+    abilities: [read:sensitive]
+  - name: dev-write
+    plaintext: dev-write-token
+    abilities: [write]
+  - name: dev-write-sensitive
+    plaintext: dev-write-sensitive-token
+    abilities: [write:sensitive]
+  - name: dev-deploy
+    plaintext: dev-deploy-token
+    abilities: [deploy]
+  - name: dev-root
+    plaintext: dev-root-token
+    abilities: [root]

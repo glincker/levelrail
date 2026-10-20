@@ -1,0 +1,13 @@
+{
+  "applicationId": "a-gh", "name": "storefront", "sourceType": "github", "buildType": "nixpacks",
+  "owner": "acme", "repository": "storefront", "branch": "main", "buildPath": "/",
+  "env": "# comment\nNODE_ENV=production\nDATABASE_URL=\"postgres://db/shop\"\nexport LOG_LEVEL=info\n",
+  "replicas": 3, "memoryLimit": "536870912", "cpuLimit": "500000000",
+  "domains": [{"host": "Shop.Example.com", "port": 3000}, {"host": "www.shop.example.com", "port": 3000}],
+  "mounts": [
+    {"type": "volume", "volumeName": "uploads", "mountPath": "/data/uploads"},
+    {"type": "bind", "hostPath": "/srv/shared", "mountPath": "/shared"},
+    {"type": "file", "mountPath": "/etc/x.conf"}
+  ],
+  "healthCheckSwarm": {"Test": ["CMD", "curl", "-f", "http://localhost:3000/health"], "Interval": 15000000000, "Timeout": 5000000000, "Retries": 3}
+}

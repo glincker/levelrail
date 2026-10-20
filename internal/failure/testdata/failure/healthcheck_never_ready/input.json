@@ -1,0 +1,4 @@
+{
+  "Status": "succeeded",
+  "Condition": {"Reason": "ReadinessFailed", "Message": "container web-1 did not become ready within 60s: GET /healthz timed out"}
+}

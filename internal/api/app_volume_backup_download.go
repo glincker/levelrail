@@ -1,0 +1,64 @@
+package api
+
+import (
+	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+	"path"
+	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+// handleDownloadVolumeBackup is handleDownloadBackup for volumes, sharing its streamer and ability tier.
+func (rt *Router) handleDownloadVolumeBackup(w http.ResponseWriter, r *http.Request) {
+	if rt.backupDownloader == nil {
+		writeError(w, http.StatusNotImplemented, "backup downloads are not configured on this control plane (no master key set)")
+		return
+	}
+
+	serviceName := r.PathValue("name")
+	volumeName := r.PathValue("volume")
+	historyID := r.PathValue("historyId")
+
+	if _, ok := rt.loadServiceVolume(w, r, serviceName, volumeName, "api: download volume backup: load service failed"); !ok {
+		return
+	}
+
+	h, ok := rt.loadVolumeBackupHistory(w, r, serviceName, volumeName, historyID, "api: download volume backup: load backup history failed")
+	if !ok {
+		return
+	}
+	if h.Status != store.BackupStatusSucceeded {
+		writeError(w, http.StatusConflict, fmt.Sprintf("backup %q has status %q, only a succeeded backup can be downloaded", historyID, h.Status))
+		return
+	}
+
+	stream, err := rt.backupDownloader.Download(r.Context(), historyID)
+	if err != nil {
+		rt.logger.Error("api: download volume backup failed", slog.String("error", err.Error()), slog.String("backup_id", historyID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	defer func() {
+		_ = stream.Close()
+	}()
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", volumeDownloadFilename(h)))
+	w.WriteHeader(http.StatusOK)
+	if _, err := io.Copy(w, stream); err != nil {
+		rt.logger.Error("api: download volume backup: stream failed", slog.String("error", err.Error()), slog.String("backup_id", historyID))
+	}
+}
+
+// volumeDownloadFilename mirrors downloadFilename's own reasoning
+// (backup_download.go), falling back to service/volume plus timestamp
+// instead of database name.
+func volumeDownloadFilename(h store.BackupHistory) string {
+	if base := path.Base(h.ObjectKey); base != "" && base != "." && base != "/" {
+		return base
+	}
+	return fmt.Sprintf("%s-%s-%s.tar", h.ServiceName, h.VolumeName, strings.ReplaceAll(h.StartedAt, ":", ""))
+}

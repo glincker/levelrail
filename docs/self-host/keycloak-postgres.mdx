@@ -1,0 +1,82 @@
+---
+title: "Self-host Keycloak (Postgres) with Docker"
+sidebarTitle: "Keycloak (Postgres)"
+description: "Keycloak backed by Postgres instead of its default embedded database, for a real multi-instance setup."
+"og:url": "https://docs.levelrail.com/self-host/keycloak-postgres"
+---
+
+Keycloak backed by Postgres instead of its default embedded database, for a real multi-instance setup.
+
+This page describes the Levelrail template for Keycloak (Postgres) (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.keycloak.org/documentation.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `keycloak_postgres_db_data -&#62; /var/lib/postgresql/data` |
+| `keycloak` | `quay.io/keycloak/keycloak:26.1` | 8080 | `keycloak_postgres_data -&#62; /opt/keycloak/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `keycloak` | `KC_BOOTSTRAP_ADMIN_PASSWORD` | Generated at deploy |
+| `keycloak` | `KC_BOOTSTRAP_ADMIN_USERNAME` | Generated at deploy |
+| `keycloak` | `KC_DB` | Preset in the template |
+| `keycloak` | `KC_DB_PASSWORD` | Generated at deploy |
+| `keycloak` | `KC_DB_URL` | Preset in the template |
+| `keycloak` | `KC_DB_USERNAME` | Preset in the template |
+| `keycloak` | `KC_HEALTH_ENABLED` | Preset in the template |
+| `keycloak` | `KC_HOSTNAME` | Preset in the template |
+| `keycloak` | `KC_HTTP_ENABLED` | Preset in the template |
+| `keycloak` | `KC_LEGACY_OBSERVABILITY_INTERFACE` | Preset in the template |
+| `keycloak` | `KC_PROXY_HEADERS` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`keycloak`): 8080:8080.
+- Passwords and keys are generated at deploy time (`db`, `keycloak`): KC_BOOTSTRAP_ADMIN_PASSWORD, KC_BOOTSTRAP_ADMIN_USERNAME, KC_DB_PASSWORD, POSTGRES_PASSWORD.
+- Stores data in named volumes (`db`, `keycloak`): keycloak_postgres_data, keycloak_postgres_db_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Keycloak (Postgres) with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Keycloak (Postgres). Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy keycloak-postgres --name my-keycloak-postgres
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [authentik](/self-host/authentik)
+- [Cap](/self-host/cap-captcha)
+- [Cryptgeon](/self-host/cryptgeon)
+- [Infisical](/self-host/infisical)
+
+All templates are listed in the [self-host gallery](/self-host).

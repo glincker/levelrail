@@ -1,0 +1,77 @@
+name: release-please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    env:
+      # A GitHub App token (or, failing that, a personal one) makes the release
+      # PR run CI and the tag push trigger release.yml by itself. Without
+      # either, the built-in token is used and the dispatch step below chains
+      # the release.
+      HAS_APP: ${{ vars.RELEASE_APP_CLIENT_ID != '' }}
+      HAS_RP_TOKEN: ${{ vars.RELEASE_APP_CLIENT_ID != '' || secrets.RELEASE_PLEASE_TOKEN != '' }}
+    steps:
+      - id: app-token
+        if: ${{ env.HAS_APP == 'true' }}
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ steps.app-token.outputs.token || secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      # release-please has no make_latest option, so a kit/ module release would
+      # take GitHub's Latest badge and shadow the platform release.
+      - name: Keep kit releases off the Latest badge
+        if: ${{ steps.release.outputs['kit--release_created'] == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          KIT_TAG: ${{ steps.release.outputs['kit--tag_name'] }}
+        run: gh release edit "$KIT_TAG" --repo "${{ github.repository }}" --latest=false
+
+      # Off unless the AUTO_RELEASE repo variable is "true". The PR then
+      # merges itself once CI passes, which tags and publishes the release.
+      # Every merge to main updates the PR, so this releases on every
+      # merge; leave the variable unset to merge release PRs by hand.
+      - name: Auto-merge the release PR
+        if: ${{ env.HAS_RP_TOKEN == 'true' && vars.AUTO_RELEASE == 'true' && steps.release.outputs.pr != '' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.RELEASE_PLEASE_TOKEN }}
+          PR_JSON: ${{ steps.release.outputs.pr }}
+        run: |
+          number="$(printf '%s' "$PR_JSON" | jq -r '.number')"
+          gh pr merge "$number" --repo "${{ github.repository }}" --auto --squash
+
+      # A tag pushed by this action's own GITHUB_TOKEN does not trigger
+      # release.yml's "on: push: tags" event (GitHub blocks a token from
+      # triggering further workflow runs, to prevent recursive loops).
+      # An explicit workflow_dispatch call is exempt from that block, so
+      # this is the documented way to chain the two workflows together.
+      # Dispatched against main (not the new tag) because workflow_dispatch
+      # is only available for a ref whose copy of the workflow file already
+      # declares that trigger; the tag input tells release.yml which
+      # version to actually check out and build.
+      - name: Trigger release build
+        if: ${{ steps.release.outputs.release_created == 'true' && env.HAS_RP_TOKEN != 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run release.yml \
+            --repo "${{ github.repository }}" \
+            --ref main \
+            -f tag="${{ steps.release.outputs.tag_name }}"

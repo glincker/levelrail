@@ -1,0 +1,81 @@
+---
+title: "Self-host n8n (Postgres) with Docker"
+sidebarTitle: "n8n (Postgres)"
+description: "n8n backed by Postgres instead of its default SQLite file, for production workflow volumes."
+"og:url": "https://docs.levelrail.com/self-host/n8n-postgres"
+---
+
+n8n backed by Postgres instead of its default SQLite file, for production workflow volumes.
+
+This page describes the Levelrail template for n8n (Postgres) (Automation). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.n8n.io/hosting/installation/server-setups/postgresql/.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `n8n` | `n8nio/n8n:2.10.2` | 5678 | `n8n_postgres_data -&#62; /home/node/.n8n` |
+| `postgres` | `postgres:16-alpine` | none | `n8n_postgres_db_data -&#62; /var/lib/postgresql/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `n8n` | `DB_POSTGRESDB_DATABASE` | Preset in the template |
+| `n8n` | `DB_POSTGRESDB_HOST` | Preset in the template |
+| `n8n` | `DB_POSTGRESDB_PASSWORD` | Generated at deploy |
+| `n8n` | `DB_POSTGRESDB_PORT` | Preset in the template |
+| `n8n` | `DB_POSTGRESDB_USER` | Preset in the template |
+| `n8n` | `DB_TYPE` | Preset in the template |
+| `n8n` | `N8N_ENCRYPTION_KEY` | Generated at deploy |
+| `n8n` | `N8N_PORT` | Preset in the template |
+| `n8n` | `N8N_PROTOCOL` | Preset in the template |
+| `n8n` | `WEBHOOK_URL` | Preset in the template |
+| `postgres` | `POSTGRES_DB` | Preset in the template |
+| `postgres` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `postgres` | `POSTGRES_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`n8n`): 5678:5678.
+- Passwords and keys are generated at deploy time (`n8n`, `postgres`): DB_POSTGRESDB_PASSWORD, N8N_ENCRYPTION_KEY, POSTGRES_PASSWORD.
+- Stores data in named volumes (`n8n`, `postgres`): n8n_postgres_data, n8n_postgres_db_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy n8n (Postgres) with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select n8n (Postgres). Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy n8n-postgres --name my-n8n-postgres
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Automation templates
+
+- [Activepieces](/self-host/activepieces)
+- [autobrr](/self-host/autobrr)
+- [n8n](/self-host/n8n)
+- [Node-RED](/self-host/node-red)
+- [Prefect](/self-host/prefect)
+
+All templates are listed in the [self-host gallery](/self-host).

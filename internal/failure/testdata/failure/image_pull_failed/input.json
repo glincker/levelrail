@@ -1,0 +1,4 @@
+{
+  "Status": "failed",
+  "Error": "pull access denied for acme/web, repository does not exist or may require authorization"
+}

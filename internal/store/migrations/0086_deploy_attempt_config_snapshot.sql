@@ -1,0 +1,14 @@
+-- Closes the gap docs/roadmap.md documents for GET
+-- .../deploys/compare: env, port, domains, and resource limits were
+-- never captured per attempt, only Image/CommitSHA/Source/Status. One
+-- flexible JSON column, not four new ones, matching how
+-- desired_services already stores its own Resources/Health/Env as JSON
+-- (migrations/0002) rather than exploding every nested field into a
+-- column: this shape is written once at trigger time and read back
+-- whole, never queried by a WHERE clause on an individual sub-field.
+--
+-- Env entries never carry a secret's plaintext value (see
+-- store.DeployAttemptSnapshot's own doc comment): a secret- or
+-- database-backed key's Value is always omitted, only its Kind and
+-- presence are recorded.
+ALTER TABLE deploy_attempts ADD COLUMN config_snapshot TEXT NOT NULL DEFAULT '{}';

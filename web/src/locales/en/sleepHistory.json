@@ -1,0 +1,70 @@
+{
+  "title": "Sleep history",
+  "description": "When this app went to sleep, what woke it, and how long the wake took. The last 7 days are drawn below.",
+  "loading": "Loading sleep history",
+  "loadError": "Could not load sleep history.",
+  "retry": "Try again",
+  "asleepNow": "Asleep since {{since}}",
+  "awakeNow": "Awake",
+  "timelineLabel": "Awake and asleep over the last 7 days",
+  "timelineStart": "7 days ago",
+  "timelineEnd": "Now",
+  "legend": {
+    "asleep": "Asleep",
+    "awake": "Awake"
+  },
+  "stats": {
+    "asleep7d": "Asleep, 7 days",
+    "asleep30d": "Asleep, 30 days",
+    "wakes7d": "Wakes, 7 days",
+    "avgLatency": "Average wake",
+    "p95Latency": "Slowest 5% of wakes",
+    "lastSlept": "Last slept",
+    "lastWoke": "Last woke",
+    "memorySaved": "Memory saved, 30 days",
+    "memorySavedValue": "{{value}} GiB-hours",
+    "none": "None yet"
+  },
+  "events": {
+    "title": "Events",
+    "empty": "Nothing recorded yet. Events appear here when the app sleeps or wakes.",
+    "kind": {
+      "slept": "Went to sleep",
+      "woke": "Woke up",
+      "enabled": "Sleep when idle turned on",
+      "disabled": "Sleep when idle turned off",
+      "wake_failed": "Wake failed"
+    },
+    "reason": {
+      "idle_timeout": "Idle timeout",
+      "manual": "Manual",
+      "request": "Request",
+      "schedule": "Schedule",
+      "deploy": "Deploy",
+      "api": "API",
+      "port": "Traffic on a published port"
+    },
+    "columns": {
+      "when": "When",
+      "event": "Event",
+      "reason": "Reason",
+      "measure": "Duration / latency",
+      "detail": "Detail"
+    },
+    "sleptFor": "Slept {{duration}}",
+    "readyIn": "Ready in {{duration}}",
+    "idleAfter": "After {{minutes}} min idle",
+    "fromSource": "from {{source}}",
+    "byActor": "by {{actor}}"
+  },
+  "disabled": {
+    "title": "Sleep when idle is off",
+    "body": "Turn it on to stop this app while nobody uses it and see when it slept and woke here.",
+    "action": "Turn on sleep when idle",
+    "toastError": "Could not turn on sleep when idle"
+  },
+  "badge": {
+    "title": "Asleep, wakes on the next request",
+    "asleepFor": "Asleep {{duration}}"
+  }
+}

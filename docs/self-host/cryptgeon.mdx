@@ -1,0 +1,67 @@
+---
+title: "Self-host Cryptgeon with Docker"
+sidebarTitle: "Cryptgeon"
+description: "A self-destructing note and file sharing service inspired by PrivNote, with end-to-end encryption."
+"og:url": "https://docs.levelrail.com/self-host/cryptgeon"
+---
+
+A self-destructing note and file sharing service inspired by PrivNote, with end-to-end encryption.
+
+This page describes the Levelrail template for Cryptgeon (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/cupcakearmy/cryptgeon.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `cryptgeon` | `cupcakearmy/cryptgeon:2.9.3` | 8000 | none |
+| `redis` | `redis:7-alpine` | none | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `cryptgeon` | `MAX_EXPIRATION` | Preset in the template |
+| `cryptgeon` | `MAX_VIEWS` | Preset in the template |
+| `cryptgeon` | `SIZE_LIMIT` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`cryptgeon`): 8000:8000.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Cryptgeon with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Cryptgeon. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy cryptgeon --name my-cryptgeon
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [authentik](/self-host/authentik)
+- [Cap](/self-host/cap-captcha)
+- [Infisical](/self-host/infisical)
+- [Keycloak](/self-host/keycloak)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,143 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"os"
+	"text/tabwriter"
+)
+
+func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "audit-log", "print audit log entries as a JSON array to stdout and nothing else", stderr)
+	var limitFlag int
+	var failedFlag bool
+	var searchFlag, beforeFlag, pathFlag, methodFlag, clientKindFlag, formatFlag, outputFileFlag, agentFlag, resourceFlag, actionsFlag string
+	fs.StringVar(&resourceFlag, "resource", "", `only show entries for one resource: "domain:<name>", "zone:<name>" or "app:<name>"`)
+	fs.StringVar(&actionsFlag, "actions", "", `comma separated action prefixes, e.g. "dns_record.,proxy_route.,domain."`)
+	fs.IntVar(&limitFlag, "limit", 0, "max entries to return (default: server default)")
+	fs.StringVar(&beforeFlag, "before", "", "only show entries created before this RFC3339 timestamp (page backward using the TIME column of a prior run)")
+	fs.StringVar(&pathFlag, "path", "", "only show entries for this exact request path")
+	fs.StringVar(&methodFlag, "method", "", "only show entries for this exact HTTP method")
+	fs.StringVar(&clientKindFlag, "client-kind", "", `only show entries from this caller surface: "cli", "dashboard", "mcp", or "api"`)
+	fs.StringVar(&searchFlag, "search", "", "case-insensitive substring match across actor, ability, method, path and remote address")
+	fs.StringVar(&agentFlag, "agent", "", "only show entries made with a token labeled with this agent name")
+	fs.BoolVar(&failedFlag, "failed", false, "only show failed requests (status code 400 or higher)")
+	fs.StringVar(&formatFlag, "format", "", `output format: "csv" exports entries as CSV instead of the default table/--json/--output output`)
+	fs.StringVar(&outputFileFlag, "output-file", "", "write the csv export to this file instead of stdout (only meaningful with --format csv; not to be confused with --output, which picks json/table/text rendering)")
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, auditLogUsage(prog)) }
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	if formatFlag != "" && formatFlag != "csv" {
+		_, _ = fmt.Fprintf(stderr, "%s: unsupported --format %q, only \"csv\" is supported\n\n", prog, formatFlag)
+		fs.Usage()
+		return exitUsage
+	}
+	if outputFileFlag != "" && formatFlag != "csv" {
+		_, _ = fmt.Fprintf(stderr, "%s: --output-file requires --format csv\n\n", prog)
+		fs.Usage()
+		return exitUsage
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	opts := listAuditLogOptions{Limit: limitFlag, Before: beforeFlag, Path: pathFlag, Method: methodFlag, ClientKind: clientKindFlag, Search: searchFlag, FailedOnly: failedFlag, Agent: agentFlag, Resource: resourceFlag, Actions: actionsFlag}
+
+	if formatFlag == "csv" {
+		return runAuditLogExportCSV(context.Background(), client, opts, outputFileFlag, stdout, stderr, of)
+	}
+
+	entries, err := client.ListAuditLog(context.Background(), opts)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list audit log: %w", err))
+	}
+
+	if err := renderResult(stdout, of.Format, of.Query, entries, func() { printAuditLogTable(stdout, entries) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+// runAuditLogExportCSV downloads the CSV export and writes it to
+// outputPath, or to stdout when outputPath is empty.
+func runAuditLogExportCSV(ctx context.Context, client *Client, opts listAuditLogOptions, outputPath string, stdout, stderr io.Writer, of outputFlags) int {
+	jsonOut := of.Format == outputJSON
+	data, err := client.DownloadAuditLogCSV(ctx, opts)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("export audit log csv: %w", err))
+	}
+
+	if outputPath == "" {
+		if _, err := stdout.Write(data); err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return exitNetwork
+		}
+		return exitOK
+	}
+
+	if err := os.WriteFile(outputPath, data, 0o600); err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("write %s: %w", outputPath, err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, map[string]string{"file": outputPath}, func() {
+		_, _ = fmt.Fprintf(stdout, "wrote %s\n", outputPath)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+// printAuditLogTable prints a compact, aligned table of audit log
+// entries, the same shape output.go's own list-command helpers already
+// establish.
+func printAuditLogTable(out io.Writer, entries []auditLogEntryResource) {
+	if len(entries) == 0 {
+		_, _ = fmt.Fprintln(out, "no audit log entries")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "ID\tTIME\tACTOR\tAGENT\tCLIENT\tABILITY\tMETHOD\tPATH\tSTATUS")
+	for _, e := range entries {
+		agent := dashIfEmpty(e.AgentName)
+		if e.AgentClient != "" {
+			agent += " via " + e.AgentClient
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s (%s)\t%s\t%s\t%s\t%s\t%s\t%d\n", e.ID, e.CreatedAt, e.ActorName, e.ActorType, agent, e.ClientKind, e.Ability, e.Method, e.Path, e.StatusCode)
+	}
+	_ = tw.Flush()
+}
+
+func auditLogUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s audit-log [flags]
+
+Lists every recorded write/deploy/root-tier request, plus automatic
+certificate renewals, newest first (read-only requests aren't recorded).
+Requires an admin/root-scoped token, the same as the underlying API route.
+
+Flags:
+  --token string          API token (default: %[2]s env var, then the credentials file)
+  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                    print entries as a JSON array to stdout, nothing else
+  --limit int              max entries to return (default: server default)
+  --before string          only show entries created before this RFC3339 timestamp
+  --path string             only show entries for this exact request path
+  --method string          only show entries for this exact HTTP method
+  --client-kind string    only show entries from this caller surface: "cli", "dashboard", "mcp", or "api"
+  --search string          case-insensitive substring match across actor, ability, method, path and remote address
+  --agent string           only show entries made with a token labeled with this agent name
+  --resource string        only show entries for "domain:<name>", "zone:<name>" or "app:<name>"
+  --actions string         comma separated action prefixes, e.g. "dns_record.,proxy_route.,domain."
+  --failed                  only show failed requests (status code 400 or higher)
+  --format string          "csv" exports entries as CSV instead of the default table/--json/--output output
+  --output-file string     write the csv export to this file instead of stdout (requires --format csv)
+  --output string          output format: json, table, or text (default table)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help              show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}

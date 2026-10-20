@@ -1,0 +1,870 @@
+name: CI
+
+# Impact-based: `changes` and Build, vet's plan step decide which work a
+# change needs (scripts/ci-changes.sh, scripts/ci-go-plan.sh). docs/ci.md
+# has the full picture.
+#
+# The six checks branch protection names never skip because of an upstream
+# failure: each runs (and fails) whenever an upstream job failed, and skips
+# only when its area has no work, which GitHub reports as success.
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - 'adr/**'
+      - 'LICENSE'
+  # No paths-ignore: required checks must report on every PR.
+  pull_request:
+    branches:
+      - main
+  merge_group:
+
+# PR runs cancel superseded pushes; main and merge queue runs never cancel.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect changed areas
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    outputs:
+      base: ${{ steps.detect.outputs.base }}
+      full: ${{ steps.detect.outputs.full }}
+      go: ${{ steps.detect.outputs.go }}
+      go_full: ${{ steps.detect.outputs.go_full }}
+      live_smoke: ${{ steps.detect.outputs.live_smoke }}
+      lint: ${{ steps.detect.outputs.lint }}
+      lint_dirs: ${{ steps.detect.outputs.lint_dirs }}
+      tools: ${{ steps.detect.outputs.tools }}
+      kit: ${{ steps.detect.outputs.kit }}
+      tfprovider: ${{ steps.detect.outputs.tfprovider }}
+      web: ${{ steps.detect.outputs.web }}
+      vitest: ${{ steps.detect.outputs.vitest }}
+      installer: ${{ steps.detect.outputs.installer }}
+      workflows: ${{ steps.detect.outputs.workflows }}
+      planner: ${{ steps.detect.outputs.planner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect
+        id: detect
+        env:
+          EVENT: ${{ github.event_name }}
+          MERGE_GROUP_BASE: ${{ github.event.merge_group.base_sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # A PR checkout is the test merge commit: its first parent is the
+          # exact base the diff should be against.
+          case "$EVENT" in
+            pull_request) base="$(git rev-parse HEAD^1)" ;;
+            merge_group) base="$MERGE_GROUP_BASE" ;;
+            *) base="$BEFORE" ;;
+          esac
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" = pull_request ] || [ "$EVENT" = merge_group ]; then
+            scripts/ci-changes.sh "$base" HEAD 2>summary.txt >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT" = push ] && [ -n "$base" ] \
+            && [ "$base" != "0000000000000000000000000000000000000000" ] \
+            && git cat-file -e "$base" 2>/dev/null; then
+            scripts/ci-changes.sh "$base" HEAD 2>summary.txt >> "$GITHUB_OUTPUT"
+          else
+            scripts/ci-changes.sh --full 2>summary.txt >> "$GITHUB_OUTPUT"
+          fi
+          { echo '### Changed areas'; echo '```'; cat summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      # Warn-only here so an overdue quarantine nags every PR without
+      # blocking it; nightly.yml fails on it.
+      - name: Quarantine list (.github/flaky-tests.txt)
+        env:
+          QUARANTINE_AGE: warn
+        run: scripts/check-flaky-tests.sh
+
+  # Planning is its own job so the test lanes start as soon as the plan is
+  # known instead of waiting behind go build and go vet.
+  plan:
+    name: Plan Go work
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.go == 'true') }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    outputs:
+      scope: ${{ steps.plan.outputs.scope }}
+      packages: ${{ steps.plan.outputs.packages }}
+      has_tests: ${{ steps.plan.outputs.has_tests }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      lanes: ${{ steps.plan.outputs.lanes }}
+      api_checks: ${{ steps.plan.outputs.api_checks }}
+      rest_checks: ${{ steps.plan.outputs.rest_checks }}
+      coverage: ${{ steps.plan.outputs.coverage }}
+      quarantine: ${{ steps.plan.outputs.quarantine }}
+      live: ${{ steps.plan.outputs.live }}
+      live_reason: ${{ steps.plan.outputs.live_reason }}
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Change detection passed
+        if: needs.changes.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}"
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Check for duplicate migration versions
+        run: scripts/check-migration-versions.sh
+
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
+        with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
+          cache-prefix: go-build
+
+      # A re-run replays the original event payload, so the label is read
+      # live: add ci:live to the PR, then re-run all jobs.
+      - name: Live-suite label (ci:live)
+        id: label
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAYLOAD_HAS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:live') }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if labels="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/labels" --jq '.[].name')"; then
+            if grep -qxF 'ci:live' <<<"$labels"; then echo "live_label=true" >> "$GITHUB_OUTPUT"; fi
+          else
+            echo "::warning::could not read PR labels, using the event payload"
+            echo "live_label=$PAYLOAD_HAS_LABEL" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Plan affected packages and test lanes
+        id: plan
+        env:
+          GO_FULL: ${{ needs.changes.outputs.go_full }}
+          CI_LIVE_SMOKE: ${{ needs.changes.outputs.live_smoke }}
+          BASE: ${{ needs.changes.outputs.base }}
+          CI_LIVE_LABEL: ${{ steps.label.outputs.live_label }}
+        run: |
+          if [ "$GO_FULL" = true ]; then
+            scripts/ci-go-plan.sh --full 2>summary.txt | tee -a "$GITHUB_OUTPUT"
+          else
+            scripts/ci-go-plan.sh "$BASE" HEAD 2>summary.txt | tee -a "$GITHUB_OUTPUT"
+          fi
+          { echo '### Go plan'; echo '```'; cat summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  build-vet:
+    name: Build, vet
+    needs: [changes, plan]
+    if: ${{ !cancelled() && needs.plan.result != 'skipped' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    steps:
+      - name: Planning passed
+        if: needs.plan.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Plan Go work: ${{ needs.plan.result }}"
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go (cached)
+        if: needs.plan.outputs.scope != 'none' || needs.changes.outputs.tools == 'true' || needs.changes.outputs.planner == 'true'
+        uses: ./.github/actions/setup-go-cached
+        with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
+          cache-prefix: go-build
+          save: ${{ github.event_name == 'push' }}
+
+      - name: Planner table tests
+        if: needs.plan.outputs.scope != 'none' || needs.changes.outputs.planner == 'true'
+        run: |
+          scripts/test-ci-go-plan.sh
+          scripts/test-ci-changes.sh
+
+      - name: go build
+        if: needs.plan.outputs.scope != 'none'
+        env:
+          PACKAGES: ${{ needs.plan.outputs.packages }}
+        run: |
+          read -r -a packages <<<"$PACKAGES"
+          # Test-only packages (test/execgate) are selected to run, but go
+          # build rejects a package with no non-test Go files.
+          mapfile -t buildable < <(go list -f '{{if .GoFiles}}{{.ImportPath}}{{end}}' "${packages[@]}")
+          if [ "${#buildable[@]}" -gt 0 ]; then go build "${buildable[@]}"; fi
+
+      - name: go vet
+        if: needs.plan.outputs.scope != 'none'
+        env:
+          PACKAGES: ${{ needs.plan.outputs.packages }}
+        run: |
+          read -r -a packages <<<"$PACKAGES"
+          go vet "${packages[@]}"
+
+      - name: Fan-in budget
+        if: needs.plan.outputs.scope != 'none'
+        run: scripts/check-fanin.sh
+
+      # release.yml ships the CLI for these targets; a unix-only call in a
+      # shared package otherwise only fails at tag time.
+      - name: Cross-compile CLI (windows, darwin)
+        if: needs.plan.outputs.scope != 'none'
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          GOOS=windows GOARCH=amd64 go build -o /dev/null ./cmd/levelrail-cli
+          GOOS=windows GOARCH=arm64 go build -o /dev/null ./cmd/levelrail-cli
+          GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/levelrail-cli
+
+      # tools/ is its own module, so the package list above never reaches it.
+      - name: Release notes generator
+        if: needs.changes.outputs.tools == 'true'
+        run: go -C tools vet ./releasenotes/ && go -C tools test ./releasenotes/
+
+  # Lanes come from scripts/ci-go-plan.sh: internal/api sharded by test
+  # name when it is affected, Docker-backed packages with bounded -p, the
+  # rest in one lane, and a single merged lane when few packages are
+  # affected. PR/push runs use -short without -race; nightly.yml has the
+  # thorough run. scripts/ci-go-test.sh reruns failed tests at most twice.
+  test-go:
+    name: Test (${{ matrix.lane }})
+    needs: [changes, plan]
+    # Also runs on push to main (no merge queue verifies the tree first),
+    # scoped by the same impact detection as a PR. See docs/ci.md.
+    if: >-
+      needs.plan.result == 'success'
+      && needs.plan.outputs.has_tests == 'true'
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    # 5 min above the docker/rest lanes' own -timeout=27m (scripts/ci-go-plan.sh):
+    # enough slack for checkout/setup/teardown/upload around go test's own budget.
+    timeout-minutes: 32
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
+        with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
+          cache-prefix: go-test-${{ matrix.cache }}
+          save: ${{ github.event_name == 'push' && matrix.save_cache }}
+
+      # Version and checksums locked by tools/go.mod and tools/go.sum.
+      - name: Install gotestsum
+        run: go -C tools install gotest.tools/gotestsum
+
+      # BuildKit's docker exporter needs the daemon on containerd-backed
+      # storage, off by default on the runner's stock Docker install.
+      - name: Enable containerd image store for BuildKit's docker exporter
+        run: |
+          sudo mkdir -p /etc/docker
+          echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+      # A registry 429 costs a backoff here, not a re-run of the whole job.
+      - name: Pre-pull live-test images (retry with backoff)
+        if: matrix.lane == 'docker' || startsWith(matrix.lane, 'e2e')
+        run: scripts/prepull-test-images.sh
+
+      - name: go test
+        env:
+          GO_TEST_FLAGS: ${{ matrix.flags }}
+          SHARD: ${{ matrix.shard }}
+          TEST_NAME_FILTER: ${{ matrix.name_filter }}
+          TEST_NAME_SKIP: ${{ matrix.name_skip }}
+          LEVELRAIL_LIVE_SUITE: ${{ matrix.live }}
+          COVERPROFILE: coverage-${{ matrix.lane }}.out
+          LANE: ${{ matrix.lane }}
+          PACKAGES: ${{ matrix.packages }}
+        run: |
+          read -r -a packages <<<"$PACKAGES"
+          scripts/ci-go-test.sh "$LANE" "${packages[@]}"
+
+      # overwrite: a re-run of this job replaces its own artifact instead of
+      # failing on the name. 7 days: "re-run failed jobs" reuses sibling
+      # jobs' artifacts from the first attempt, which a 1-day retention lost.
+      - name: Upload coverage profile
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-${{ matrix.lane }}
+          path: coverage-${{ matrix.lane }}.out
+          retention-days: 7
+          overwrite: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-${{ matrix.lane }}
+          path: test-results/
+          retention-days: 7
+          overwrite: true
+
+  # Required check names from before the lanes were split: each passes only
+  # if its planned lanes passed.
+  test-api:
+    name: Test (internal/api)
+    needs: [changes, plan, test-go]
+    if: >-
+      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      && (needs.plan.result != 'success' || contains(needs.plan.outputs.api_checks, 'Test ('))))
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    permissions:
+      actions: read
+      contents: read
+    timeout-minutes: 3
+    steps:
+      - name: Upstream jobs passed
+        if: needs.changes.result != 'success' || needs.plan.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Plan Go work: ${{ needs.plan.result }}"
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check lanes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHECKS: ${{ needs.plan.outputs.api_checks }}
+        run: |
+          mapfile -t names < <(jq -r '.[]' <<<"$CHECKS")
+          scripts/check-lane-results.sh "${names[@]}"
+
+  test-rest:
+    name: Test (everything else)
+    needs: [changes, plan, test-go]
+    if: >-
+      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      && (needs.plan.result != 'success' || contains(needs.plan.outputs.rest_checks, 'Test ('))))
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    permissions:
+      actions: read
+      contents: read
+    timeout-minutes: 3
+    steps:
+      - name: Upstream jobs passed
+        if: needs.changes.result != 'success' || needs.plan.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Plan Go work: ${{ needs.plan.result }}"
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check lanes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHECKS: ${{ needs.plan.outputs.rest_checks }}
+        run: |
+          mapfile -t names < <(jq -r '.[]' <<<"$CHECKS")
+          scripts/check-lane-results.sh "${names[@]}"
+
+  # Non-blocking: runs only the tests in .github/flaky-tests.txt, and only
+  # when one of their packages is affected.
+  test-quarantined:
+    name: Test (quarantined, non-blocking)
+    needs: [changes, plan]
+    # Not a required check, but still a real test run.
+    if: >-
+      needs.plan.result == 'success'
+      && needs.plan.outputs.quarantine == 'true'
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    continue-on-error: true
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
+        with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
+          cache-prefix: go-test-all
+
+      # Version and checksums locked by tools/go.mod and tools/go.sum.
+      - name: Install gotestsum
+        run: go -C tools install gotest.tools/gotestsum
+
+      - name: go test (quarantined only)
+        env:
+          GO_TEST_FLAGS: -short -timeout=10m
+          QUARANTINE: only
+          RERUNS: '0'
+        run: scripts/ci-go-test.sh quarantined ./...
+
+  coverage-gate:
+    name: Coverage gate
+    needs: [changes, plan, test-go]
+    if: >-
+      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      && (needs.plan.result != 'success' || needs.plan.outputs.has_tests == 'true')))
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    env:
+      COVERAGE: ${{ needs.plan.outputs.coverage }}
+      LANES: ${{ needs.plan.outputs.lanes }}
+      BASE: ${{ needs.changes.outputs.base }}
+    steps:
+      - name: Upstream jobs passed
+        if: needs.changes.result != 'success' || needs.plan.result != 'success' || needs.test-go.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Plan Go work: ${{ needs.plan.result }}, test lanes: ${{ needs.test-go.result }}"
+          exit 1
+
+      # Full history: the changed-line gate needs a real merge-base.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Download coverage profiles
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: coverage-*
+          path: coverage-artifacts
+          merge-multiple: true
+
+      - name: Merge coverage profiles
+        run: |
+          missing=0
+          for lane in $LANES; do
+            if [ ! -f "coverage-artifacts/coverage-$lane.out" ]; then
+              echo "::error::coverage-$lane.out missing (artifact expired or its job never uploaded); re-run all jobs"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+          scripts/merge-coverprofiles.sh coverage.out coverage-artifacts/coverage-*.out
+
+      # Only a full run has a profile for every package under internal/.
+      - name: Coverage gate (70% for /internal)
+        if: env.COVERAGE == 'full'
+        run: scripts/check-coverage.sh coverage.out internal/ 70
+
+      # A lower bar than the aggregate gate's 70%: new code only reachable
+      # through a live daemon or a real external process (see
+      # scripts/check-changed-file-coverage.sh's own comment) can't hit
+      # 70% without disproportionate test-harness-building for the risk
+      # involved, when a live test plus nightly.yml's full sweep already
+      # cover it. 50% still catches genuinely untested new code.
+      - name: Changed-line coverage gate (50% for /internal)
+        if: env.COVERAGE != 'full'
+        run: scripts/check-changed-file-coverage.sh coverage.out "$BASE" internal/ 50
+
+  # Go lint and, when a workflow file changed, actionlint: one check line
+  # instead of two.
+  lint:
+    name: Lint
+    needs: changes
+    if: >-
+      ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.lint != 'none'
+      || needs.changes.outputs.workflows == 'true') }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    env:
+      LINT: ${{ needs.changes.outputs.lint }}
+      WORKFLOWS: ${{ needs.changes.outputs.workflows }}
+      BASE: ${{ needs.changes.outputs.base }}
+      ACTIONLINT_VERSION: 1.7.12
+      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+    steps:
+      - name: Change detection passed
+        if: needs.changes.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}"
+          exit 1
+
+      # Full history: --new-from-rev and the workflow diff need the base commit.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # Only the workflow files this diff touched: release.yml carries
+      # shellcheck warnings that predate this step.
+      - name: actionlint (changed workflows)
+        if: env.WORKFLOWS == 'true'
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "No base to diff against, skipping."
+            exit 0
+          fi
+          mapfile -t files < <(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- '.github/workflows/*.yml' '.github/workflows/*.yaml')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No workflow files changed."
+            exit 0
+          fi
+          tarball="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLO "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${tarball}"
+          echo "${ACTIONLINT_SHA256}  ${tarball}" | sha256sum -c -
+          tar -xzf "$tarball" actionlint
+          ./actionlint -color "${files[@]}"
+
+      - name: Set up Go (cached)
+        if: env.LINT != 'none'
+        uses: ./.github/actions/setup-go-cached
+        with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
+          cache-prefix: go-lint
+          save: ${{ github.event_name == 'push' }}
+
+      # changed: only the packages holding a changed .go file, and only
+      # issues on lines this diff touched. all: go.mod, .golangci.yml or
+      # the pipeline changed, or a push to main.
+      - name: golangci-lint
+        if: env.LINT != 'none'
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.12
+          args: ${{ env.LINT == 'changed' && format('--new-from-rev={0} {1}', needs.changes.outputs.base, needs.changes.outputs.lint_dirs) || '' }}
+          skip-save-cache: ${{ github.event_name != 'push' }}
+
+  # kit/ is its own module, so none of the root package lists reach it.
+  # Root packages that import a changed kit package are re-tested through
+  # scripts/affected-go-packages.sh, not here.
+  kit:
+    name: Kit (vet, lint, test)
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.kit == 'true') }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    env:
+      BASE: ${{ needs.changes.outputs.base }}
+    steps:
+      - name: Change detection passed
+        if: needs.changes.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}"
+          exit 1
+
+      # Full history: the changed-line gate needs a real merge-base.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
+        with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
+          cache-prefix: go-kit
+          save: ${{ github.event_name == 'push' }}
+
+      - name: No product name in kit source
+        run: scripts/check-brand-strings.sh
+
+      - name: go vet
+        run: go -C kit vet ./...
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.12
+          working-directory: kit
+          skip-save-cache: ${{ github.event_name != 'push' }}
+
+      - name: go test
+        run: go -C kit test -short -timeout=5m -coverprofile="$GITHUB_WORKSPACE/kit-coverage.out" ./...
+
+      - name: Coverage gate (70% for kit/)
+        run: scripts/check-coverage.sh kit-coverage.out kit/ 70
+
+      - name: Changed-line coverage gate (50% for kit/)
+        if: env.BASE != '' && env.BASE != '0000000000000000000000000000000000000000'
+        run: scripts/check-changed-file-coverage.sh kit-coverage.out "$BASE" kit/ 50
+
+  # terraform-provider/ is its own module: vet and unit tests only. The
+  # acceptance tests need a live control plane and run by hand (its README).
+  tfprovider:
+    name: Terraform provider (vet, test)
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.tfprovider == 'true') }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    steps:
+      - name: Change detection passed
+        if: needs.changes.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}"
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
+        with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
+          cache-prefix: go-tfprovider
+          save: ${{ github.event_name == 'push' }}
+
+      - name: No product name in provider source
+        run: scripts/check-brand-strings.sh
+
+      - name: go vet
+        run: go -C terraform-provider vet ./...
+
+      - name: go test
+        run: go -C terraform-provider test -short -timeout=5m ./...
+
+  web-check:
+    name: Web (tsc, eslint)
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.web != 'none') }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 30
+    env:
+      WEB: ${{ needs.changes.outputs.web }}
+      VITEST: ${{ needs.changes.outputs.vitest }}
+      BASE: ${{ needs.changes.outputs.base }}
+      # Only this job's build needs a manifest, for the mermaid-chunk
+      # exemption in scripts/check-bundle-size.js; release.yml's build
+      # leaves it unset so nothing extra gets embedded into the binary.
+      BUNDLE_MANIFEST: 'true'
+    steps:
+      - name: Change detection passed
+        if: needs.changes.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}"
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci --ignore-scripts
+
+      # tsc validates a restored build info by file hash, so a stale one is
+      # safe; saved on main pushes only, like the Go caches.
+      - name: Restore tsc build info
+        id: tsbuild
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: web/node_modules/.tmp
+          key: tsbuildinfo-${{ hashFiles('web/package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            tsbuildinfo-${{ hashFiles('web/package-lock.json') }}-
+            tsbuildinfo-
+
+      # Same command release.yml runs: vite build (which also generates
+      # routeTree.gen.ts) then `tsc -b`, which type-checks test files too.
+      - name: Build (vite build && tsc -b)
+        if: env.WEB == 'full'
+        working-directory: web
+        run: npm run build
+
+      # docs/ only feeds the /help manifest, so a docs-only change needs the
+      # bundle, not a type check.
+      - name: Build help manifest (vite build)
+        if: env.WEB == 'docs'
+        working-directory: web
+        run: npm exec --no -- vite build
+
+      - name: Bundle size budget
+        working-directory: web
+        run: npm run check-bundle-size
+
+      # eslint on the full tree still has a pre-existing backlog (mostly
+      # routeTree.gen.ts-related no-unsafe-* noise), so scope to changed
+      # files only, same as the pre-commit hook does.
+      - name: eslint (changed files)
+        if: env.WEB == 'full'
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            files=$(git -C web ls-files '*.ts' '*.tsx')
+          else
+            files=$(git diff --name-only --diff-filter=ACM "$BASE" HEAD -- 'web/*.ts' 'web/*.tsx' | sed 's#^web/##')
+          fi
+          if [ -n "$files" ]; then
+            cd web && echo "$files" | xargs npm exec --no -- eslint
+          else
+            echo "no changed web/*.ts(x) files"
+          fi
+
+      # Tests whose module graph reaches a changed file. Config, lockfile
+      # and setup changes force the full run above instead.
+      - name: vitest (related to changed files)
+        if: env.WEB == 'full' && env.VITEST == 'changed'
+        working-directory: web
+        run: npm exec --no -- vitest run --changed "$BASE" --passWithNoTests
+
+      - name: vitest (help pages)
+        if: env.WEB == 'docs'
+        working-directory: web
+        run: |
+          mapfile -t sources < <(git grep -l 'virtual:docs' -- src)
+          if [ "${#sources[@]}" -eq 0 ]; then
+            echo "no sources import the docs manifest"
+            exit 0
+          fi
+          npm exec --no -- vitest related --run --passWithNoTests "${sources[@]}"
+
+      - name: Save tsc build info
+        if: github.event_name == 'push' && env.WEB == 'full' && steps.tsbuild.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: web/node_modules/.tmp
+          key: ${{ steps.tsbuild.outputs.cache-primary-key }}
+
+  # The full vitest suite, sharded: vitest runs files serially (see
+  # web/vitest.config.ts), so one job is the whole suite's wall time.
+  web-test:
+    name: Web tests (${{ matrix.shard }}/4)
+    needs: changes
+    if: >-
+      ${{ !cancelled() && needs.changes.result == 'success'
+      && needs.changes.outputs.web == 'full' && needs.changes.outputs.vitest == 'full' }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci --ignore-scripts
+
+      - name: vitest (shard)
+        working-directory: web
+        run: npm exec --no -- vitest run --shard=${{ matrix.shard }}/4
+
+  # Runs install.sh end to end (install, re-run, upgrade, uninstall) in
+  # systemd containers against a binary built from this commit.
+  install-sh:
+    name: install.sh (${{ matrix.image }})
+    needs: changes
+    if: needs.changes.outputs.installer == 'true'
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['ubuntu:24.04', 'debian:12']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
+        with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
+          cache-prefix: go-build
+
+      - name: Build control plane binary
+        run: CGO_ENABLED=0 go build -o levelrail-linux-amd64 ./cmd/levelrail
+
+      - name: Build CLI binary
+        run: CGO_ENABLED=0 go build -o levelrail-cli-linux-amd64 ./cmd/levelrail-cli
+
+      - name: shellcheck
+        run: shellcheck -s sh install.sh install-cli.sh scripts/test-install-sh.sh scripts/test-install-cli.sh
+
+      - name: Run install.sh in a systemd container
+        run: scripts/test-install-sh.sh '${{ matrix.image }}' ./levelrail-linux-amd64
+
+      - name: Run install-cli.sh in a container
+        run: scripts/test-install-cli.sh '${{ matrix.image }}' ./levelrail-cli-linux-amd64
+
+  # The single check to require in branch protection (docs/ci.md): always
+  # runs, and fails if change detection did not succeed or any job it needs
+  # failed or was cancelled. A skipped job had no work for this change.
+  ci-required:
+    name: CI required
+    needs: [changes, plan, build-vet, lint, kit, tfprovider, test-go, test-api, test-rest, coverage-gate, web-check, web-test, install-sh]
+    if: always()
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 3
+    steps:
+      - name: Evaluate required jobs
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<<"$NEEDS"
+          fail=0
+          if [ "$(jq -r '.changes.result' <<<"$NEEDS")" != success ]; then
+            echo "::error::changes: change detection did not succeed"
+            fail=1
+          fi
+          bad="$(jq -r 'to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | .key' <<<"$NEEDS")"
+          if [ -n "$bad" ]; then
+            echo "::error::failed or cancelled: $(echo "$bad" | paste -sd' ' -)"
+            fail=1
+          fi
+          [ "$fail" -eq 0 ] || exit 1
+          echo "all required jobs for this change passed"

@@ -1,0 +1,188 @@
+import { describe, expect, it } from 'vitest'
+import {
+  CERT_RENEWAL_STALLED_HINT,
+  certAttentionRank,
+  certExpiryLabel,
+  certRenewalBadge,
+  isInternalCert,
+  proxyCertStatus,
+  sortByCertAttention,
+} from './certStatus'
+import type { CertificateStatus } from '../queries/certificates'
+
+describe('certRenewalBadge', () => {
+  it('flags a stalled renewal with the hint', () => {
+    expect(certRenewalBadge({ renewal: 'stalled' })).toEqual({
+      label: 'Renewal stalled',
+      hint: CERT_RENEWAL_STALLED_HINT,
+    })
+  })
+  it.each([['ok' as const], [undefined]])('is null for %s', (renewal) => {
+    expect(certRenewalBadge({ renewal })).toBeNull()
+  })
+})
+
+const now = new Date('2026-09-23T12:00:00Z')
+
+describe('certExpiryLabel', () => {
+  it.each([
+    ['2026-10-23T12:00:00Z', 'expires in 30 days'],
+    ['2026-09-24T18:00:00Z', 'expires in 1 day'],
+    ['2026-09-23T20:00:00Z', 'expires today'],
+    ['2026-09-20T12:00:00Z', 'expired 3 days ago'],
+    ['2026-09-22T06:00:00Z', 'expired 1 day ago'],
+    ['2026-09-23T06:00:00Z', 'expired today'],
+    ['garbage', ''],
+  ])('%s -> %s', (notAfter, want) => {
+    expect(certExpiryLabel(notAfter, now)).toBe(want)
+  })
+})
+
+function cert(
+  overrides: Partial<CertificateStatus> & { domain: string },
+): CertificateStatus {
+  return {
+    not_before: '2026-01-01T00:00:00Z',
+    not_after: '2026-12-01T00:00:00Z',
+    status: 'healthy',
+    source: 'acme',
+    ...overrides,
+  }
+}
+
+describe('certAttentionRank', () => {
+  it('ranks stalled renewals first', () => {
+    expect(
+      certAttentionRank(
+        cert({ domain: 'a', status: 'expired', renewal: 'stalled' }),
+      ),
+    ).toBe(0)
+  })
+  it('ranks other non-healthy statuses second', () => {
+    expect(certAttentionRank(cert({ domain: 'a', status: 'expired' }))).toBe(1)
+    expect(
+      certAttentionRank(cert({ domain: 'a', status: 'expiring_soon' })),
+    ).toBe(1)
+  })
+  it('ranks healthy or missing certs last', () => {
+    expect(certAttentionRank(cert({ domain: 'a', status: 'healthy' }))).toBe(2)
+    expect(certAttentionRank(undefined)).toBe(2)
+  })
+})
+
+describe('sortByCertAttention', () => {
+  it('puts stalled renewals first, then soonest expiry, then leaves the rest in order', () => {
+    const certs: Record<string, CertificateStatus> = {
+      healthy: cert({ domain: 'healthy', status: 'healthy' }),
+      expiringLater: cert({
+        domain: 'expiringLater',
+        status: 'expiring_soon',
+        not_after: '2026-10-20T00:00:00Z',
+      }),
+      expiringSoon: cert({
+        domain: 'expiringSoon',
+        status: 'expiring_soon',
+        not_after: '2026-10-01T00:00:00Z',
+      }),
+      stalled: cert({
+        domain: 'stalled',
+        status: 'expired',
+        renewal: 'stalled',
+        not_after: '2026-09-01T00:00:00Z',
+      }),
+    }
+    const domains = [
+      'healthy',
+      'expiringLater',
+      'nocert',
+      'stalled',
+      'expiringSoon',
+    ]
+    const sorted = sortByCertAttention(domains, (d) => certs[d])
+    expect(sorted).toEqual([
+      'stalled',
+      'expiringSoon',
+      'expiringLater',
+      'healthy',
+      'nocert',
+    ])
+  })
+})
+
+describe('isInternalCert', () => {
+  it("flags the built-in CA but not Let's Encrypt or custom uploads", () => {
+    const base = { not_before: '', not_after: '', status: 'healthy' as const }
+    expect(
+      isInternalCert({
+        ...base,
+        issuer: 'CN=Caddy Local Authority - ECC Intermediate',
+        source: 'acme',
+      }),
+    ).toBe(true)
+    expect(
+      isInternalCert({
+        ...base,
+        issuer: "CN=R11,O=Let's Encrypt",
+        source: 'acme',
+      }),
+    ).toBe(false)
+    expect(
+      isInternalCert({
+        ...base,
+        issuer: 'CN=Caddy Local Authority',
+        source: 'custom',
+      }),
+    ).toBe(false)
+  })
+
+  it('does not rank an expiring internal certificate as needing attention', () => {
+    expect(
+      certAttentionRank({
+        domain: 'a.example',
+        not_before: '',
+        not_after: '',
+        status: 'expiring_soon',
+        issuer: 'CN=Caddy Local Authority',
+        source: 'acme',
+      }),
+    ).toBe(2)
+  })
+})
+
+describe('proxyCertStatus', () => {
+  const now = new Date('2026-10-11T00:00:00Z')
+  const cert = (notAfter: string, valid = true) => ({
+    issuer: "Let's Encrypt",
+    not_after: notAfter,
+    valid,
+  })
+
+  it.each([
+    ['ninety days left is healthy', '2027-01-09T00:00:00Z', true, 'healthy'],
+    [
+      'ten days left is expiring soon',
+      '2026-10-21T00:00:00Z',
+      true,
+      'expiring_soon',
+    ],
+    ['past date is expired', '2026-10-01T00:00:00Z', true, 'expired'],
+  ])('%s', (_name, notAfter, valid, want) => {
+    const got = proxyCertStatus('a.example.com', cert(notAfter, valid), now)
+    expect(got?.status).toBe(want)
+    expect(got?.managed_by).toBe('proxy')
+  })
+
+  it('returns undefined for an untrusted certificate', () => {
+    expect(
+      proxyCertStatus(
+        'a.example.com',
+        cert('2027-01-09T00:00:00Z', false),
+        now,
+      ),
+    ).toBeUndefined()
+  })
+
+  it('returns undefined for an unparseable date', () => {
+    expect(proxyCertStatus('a.example.com', cert('nope'), now)).toBeUndefined()
+  })
+})

@@ -1,0 +1,112 @@
+---
+title: "Self-host Budibase with Docker"
+sidebarTitle: "Budibase"
+description: "An open-source low-code platform for building internal tools, forms, and admin panels."
+"og:url": "https://docs.levelrail.com/self-host/budibase"
+---
+
+An open-source low-code platform for building internal tools, forms, and admin panels.
+
+This page describes the Levelrail template for Budibase (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.budibase.com/docs/docker-compose.
+
+Recommended memory: about 2048 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `app-service` | `budibase.docker.scarf.sh/budibase/apps:latest` | none | none |
+| `couchdb-service` | `budibase/couchdb:latest` | none | `budibase_couchdb_data -&#62; /opt/couchdb/data` |
+| `minio-service` | `ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z` | none | `budibase_minio_data -&#62; /data` |
+| `proxy-service` | `budibase/proxy:latest` | 10000 | none |
+| `redis-service` | `redis:7-alpine` | none | `budibase_redis_data -&#62; /data` |
+| `worker-service` | `budibase.docker.scarf.sh/budibase/worker:latest` | none | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `app-service` | `API_ENCRYPTION_KEY` | Generated at deploy |
+| `app-service` | `BUDIBASE_ENVIRONMENT` | Preset in the template |
+| `app-service` | `COUCH_DB_URL` | Generated at deploy |
+| `app-service` | `ENCRYPTION_KEY` | Generated at deploy |
+| `app-service` | `INTERNAL_API_KEY` | Generated at deploy |
+| `app-service` | `JWT_SECRET` | Generated at deploy |
+| `app-service` | `LOG_LEVEL` | Preset in the template |
+| `app-service` | `MINIO_ACCESS_KEY` | Generated at deploy |
+| `app-service` | `MINIO_SECRET_KEY` | Generated at deploy |
+| `app-service` | `MINIO_URL` | Preset in the template |
+| `app-service` | `PORT` | Preset in the template |
+| `app-service` | `REDIS_URL` | Preset in the template |
+| `app-service` | `SELF_HOSTED` | Preset in the template |
+| `app-service` | `WORKER_URL` | Preset in the template |
+| `couchdb-service` | `COUCHDB_PASSWORD` | Generated at deploy |
+| `couchdb-service` | `COUCHDB_USER` | Generated at deploy |
+| `couchdb-service` | `TARGETBUILD` | Preset in the template |
+| `minio-service` | `MINIO_BROWSER` | Preset in the template |
+| `minio-service` | `MINIO_ROOT_PASSWORD` | Generated at deploy |
+| `minio-service` | `MINIO_ROOT_USER` | Generated at deploy |
+| `proxy-service` | `APPS_UPSTREAM_URL` | Preset in the template |
+| `proxy-service` | `COUCHDB_UPSTREAM_URL` | Preset in the template |
+| `proxy-service` | `MINIO_UPSTREAM_URL` | Preset in the template |
+| `proxy-service` | `RESOLVER` | Preset in the template |
+| `proxy-service` | `WORKER_UPSTREAM_URL` | Preset in the template |
+| `worker-service` | `API_ENCRYPTION_KEY` | Generated at deploy |
+| `worker-service` | `APPS_URL` | Preset in the template |
+| `worker-service` | `CLUSTER_PORT` | Preset in the template |
+| `worker-service` | `COUCH_DB_PASSWORD` | Generated at deploy |
+| `worker-service` | `COUCH_DB_URL` | Generated at deploy |
+| `worker-service` | `COUCH_DB_USERNAME` | Generated at deploy |
+| `worker-service` | `INTERNAL_API_KEY` | Generated at deploy |
+| `worker-service` | `JWT_SECRET` | Generated at deploy |
+| `worker-service` | `MINIO_ACCESS_KEY` | Generated at deploy |
+| `worker-service` | `MINIO_SECRET_KEY` | Generated at deploy |
+| `worker-service` | `MINIO_URL` | Preset in the template |
+| `worker-service` | `PORT` | Preset in the template |
+| `worker-service` | `REDIS_URL` | Preset in the template |
+| `worker-service` | `SELF_HOSTED` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Review before deploying**.
+
+What this template needs:
+
+- Image is not pinned to a version tag, so a redeploy can pull different code (`app-service`, `couchdb-service`, `proxy-service`, `worker-service`): budibase.docker.scarf.sh/budibase/apps:latest, budibase.docker.scarf.sh/budibase/worker:latest, budibase/couchdb:latest, budibase/proxy:latest.
+- Publishes ports directly on the host (`proxy-service`): 10000:10000.
+- Passwords and keys are generated at deploy time (`app-service`, `couchdb-service`, `minio-service`, `worker-service`): API_ENCRYPTION_KEY, COUCH_DB_PASSWORD, COUCH_DB_URL, COUCH_DB_USERNAME, INTERNAL_API_KEY, JWT_SECRET, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, API_ENCRYPTION_KEY, COUCH_DB_URL, ENCRYPTION_KEY, INTERNAL_API_KEY, JWT_SECRET, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, COUCHDB_PASSWORD, COUCHDB_USER, MINIO_ROOT_PASSWORD, MINIO_ROOT_USER.
+- Stores data in named volumes (`couchdb-service`, `minio-service`, `redis-service`): budibase_couchdb_data, budibase_minio_data, budibase_redis_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Budibase with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Budibase. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy budibase --name my-budibase
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Drupal](/self-host/drupal)
+- [EspoCRM](/self-host/espocrm)
+- [Ghost](/self-host/ghost)
+- [GLPI](/self-host/glpi)
+
+All templates are listed in the [self-host gallery](/self-host).

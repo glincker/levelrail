@@ -1,0 +1,25 @@
+[
+  {
+    "Step": "logout",
+    "Status": 204,
+    "Body": "",
+    "Cookies": [
+      "session_token=cleared path=/ httponly=true secure=false samesite=2 expires=false maxage_neg=true"
+    ],
+    "Retry": false
+  },
+  {
+    "Step": "session after logout",
+    "Status": 401,
+    "Body": "{\"error\":\"authentication required\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "logout again",
+    "Status": 401,
+    "Body": "{\"error\":\"authentication required\"}",
+    "Cookies": null,
+    "Retry": false
+  }
+]

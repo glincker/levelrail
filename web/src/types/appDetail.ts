@@ -1,0 +1,300 @@
+// Wire type for the app resource, GET/PUT /api/v1/apps/{name} and GET
+// /api/v1/apps (internal/api/apps.go's appResource). Field names mirror
+// the JSON wire shape directly (snake_case for ServiceResources,
+// matching appResource's own struct tags) rather than being remapped to
+// camelCase: this is an internal admin dashboard talking to one frozen
+// backend contract, not a public SDK, and a remapping layer would just
+// be one more place for the two shapes to silently drift apart.
+
+import type { EnvVarMeta } from '../lib/envRows'
+
+export interface ServiceResources {
+  memory_bytes?: number
+  nano_cpus?: number
+  swap_memory_bytes?: number
+  cpuset_cpus?: string
+}
+
+// An HTTP probe sets path (plus the optional HTTP fields); an exec probe
+// sets exec (argv run inside the container) and leaves path empty.
+export interface ServiceProbe {
+  path: string
+  scheme?: 'http' | 'https'
+  host?: string
+  tls_skip_verify?: boolean
+  follow_redirects?: boolean
+  expected_status?: string
+  exec?: string[]
+  interval?: number
+  timeout?: number
+  failures?: number
+}
+
+export interface ServiceHealth {
+  readiness?: ServiceProbe | null
+  liveness?: ServiceProbe | null
+  // Nanoseconds; overrides how long a deploy waits for readiness.
+  ready_timeout?: number
+}
+
+// Matches internal/api/apps.go's appResource.Hooks exactly
+// (store.ServiceHooks' JSON encoding): commands the reconciler runs
+// inside the service's own container at defined points in a deploy. See
+// internal/reconcile/application.Controller's own doc comment for the
+// full timing and failure-handling contract.
+export interface ServiceHooks {
+  pre_deploy?: string
+  post_deploy?: string
+}
+
+// The three deploy strategy values internal/spec.Service.Strategy
+// accepts (internal/spec/spec.go's StrategyRolling/StrategyRecreate/
+// StrategyBlueGreen), all three reconciler-backed.
+export type DeployStrategy = 'rolling' | 'recreate' | 'blue-green'
+
+// Matches internal/store's LogDrainType exactly: the two sink protocols
+// internal/telemetry.DrainForwarder knows how to build.
+export type LogDrainType = 'http' | 'syslog'
+
+// Matches internal/store's LogDrain exactly (internal/api/apps.go's
+// appResource.LogDrain, JSON-tagged the same way).
+export interface LogDrain {
+  type: LogDrainType
+  target: string
+  enabled: boolean
+}
+
+// Matches internal/api/apps.go's appResource exactly. `domains` and
+// `env` carry `omitempty` on the Go side, so an app with neither set may
+// omit them from the response entirely; callers should treat both as
+// possibly undefined, not assume an empty array/object.
+//
+// node_id carries `omitempty` on the Go side and is response-only:
+// appResource's own doc comment is explicit it is a placement field,
+// set via PUT /api/v1/apps/{name}/node
+// (handleSetAppNode) rather than through this type, the same
+// response-only convention databaseDetail.ts's DatabaseResource
+// documents for the equivalent field.
+//
+// strategy/replicas carry no `omitempty` on the Go side (appResource's
+// own comment explains why: a real read is always the store's resolved,
+// never-empty/zero value), so both are required here too, not optional.
+export interface AppDetail {
+  name: string
+  image: string
+  /** The content image is pinned to; absent for a legacy unpinned tag. */
+  image_digest?: string
+  port: number
+  // host_port pins the host-side port Docker binds `port` to
+  // (internal/api/apps.go's appResource.HostPort). undefined/null means
+  // "let Docker assign one", the ordinary case. Settable on create and
+  // update, like `port` itself, not response-only.
+  host_port?: number | null
+  // bind_address picks which network interface `port` (and `host_port`,
+  // if pinned) binds to on the host (internal/api/apps.go's
+  // appResource.BindAddress): "private" (loopback only, the default),
+  // "public" (every interface), or a literal IP. No `omitempty` on the
+  // Go side, same always-resolved reasoning as strategy/replicas below.
+  bind_address: string
+  domains?: string[]
+  env?: Record<string, string>
+  /** Per-variable sensitivity; a sensitive value in env reads back masked. */
+  env_meta?: Record<string, EnvVarMeta>
+  secrets_write_only?: boolean
+  /** Names of env vars backed by encrypted secret storage (values never returned). */
+  secret_env?: string[]
+  resources?: ServiceResources | null
+  // resources_applied_live is response-only (internal/api/apps.go's
+  // handleUpdateApp): whether the resources value just saved was already
+  // pushed onto a running container via a live Docker resource update,
+  // rather than waiting for the next deploy or restart.
+  resources_applied_live?: boolean
+  health?: ServiceHealth | null
+  // hooks carries `omitempty` on the Go side: undefined means neither a
+  // pre-deploy nor a post-deploy command is configured. Settable on
+  // create and update, like health/resources above.
+  hooks?: ServiceHooks | null
+  strategy: DeployStrategy
+  replicas: number
+  // Response-only on GET: why a template pinned the strategy, and whether the
+  // memory limit is the template's recommendation.
+  strategy_reason?: string
+  memory_from_template?: boolean
+  // Custom Docker labels applied to the container at create time
+  // (internal/api/apps.go's appResource.Labels), an escape hatch for
+  // external tooling that keys off container labels. Carries
+  // `omitempty` on the Go side, same optional-map convention `env`
+  // already establishes above.
+  labels?: Record<string, string>
+  // node_id carries `omitempty` on the Go side and is response-only on
+  // update: appResource's own doc comment is explicit an existing app's
+  // placement changes via PUT /api/v1/apps/{name}/node (handleSetAppNode)
+  // rather than through this type. POST /api/v1/apps (create) is the one
+  // exception: an explicit node_id there overrides simple spread
+  // scheduling, see CreateAppRequest's own doc comment (queries/apps.ts).
+  node_id?: string
+  node_name?: string
+  node_is_local?: boolean
+  // auto_placed carries `omitempty` on the Go side and is response-only,
+  // set only by POST /api/v1/apps: true when the create request omitted
+  // node_id and simple spread scheduling picked a non-local node for it.
+  auto_placed?: boolean
+  // project_id carries `omitempty` on the Go side and is response-only
+  // on PUT (internal/api/apps.go's appResource own doc comment): set an
+  // existing app's project via PUT /api/v1/apps/{name}/project
+  // (useSetAppProject), the same node_id shape just above. The one
+  // exception is POST /api/v1/apps (create): that handler accepts
+  // project_id directly in the request body, see its own doc comment
+  // for why a brand-new app is safe to assign a project to at create
+  // time in a way an ordinary update is not.
+  project_id?: string
+  // environment_id carries `omitempty` on the Go side and is
+  // response-only, the same node_id/project_id shape above: set via
+  // PUT /api/v1/apps/{name}/environment (useSetAppEnvironment).
+  environment_id?: string
+  // storage_target_id carries `omitempty` on the Go side and is
+  // response-only (internal/api/apps.go's appResource own doc comment):
+  // which connected backup target (queries/backupTargets.ts) this app's
+  // object-storage credentials resolve from, empty meaning none
+  // attached. Set it via PUT/DELETE /api/v1/apps/{name}/storage
+  // (useSetAppStorage/useClearAppStorage), the same node_id/project_id
+  // shape just above.
+  storage_target_id?: string
+  // database_env carries `omitempty` on the Go side and is read-only on
+  // this endpoint (an ordinary PUT /api/v1/apps/{name} would silently
+  // drop it, the same appDatabaseResource/appVaultEnvRef boundary every
+  // other map-shaped field here has): app.yaml's own
+  // { from: "<database>.<field>" } syntax populates it, and so does
+  // POST/DELETE /api/v1/apps/{name}/connections[/{env_var}]
+  // (queries/appConnections.ts), the settable multi-connection
+  // counterpart to database_attachment's single-slot shape below.
+  database_env?: Record<string, { database: string; field: string }>
+  // vault_env carries `omitempty` on the Go side: every env var this app
+  // resolves live from an external HashiCorp Vault instance
+  // (internal/spec's own { vault: { path, key } } syntax), keyed by env
+  // var name. Unlike database_env, this IS settable here: PUT/DELETE
+  // /api/v1/apps/{name}/vault-env/{key} (queries/appVaultEnv.ts) declares
+  // or removes one entry without touching any other field, since there
+  // is no value to round-trip, only a reference.
+  vault_env?: Record<string, { path: string; key: string }>
+  // preview_env_overrides carries `omitempty` on the Go side: for a
+  // subset of this app's own env vars, a preview-specific value that
+  // replaces this app's own value only when a preview environment is
+  // next created from it (internal/spec's own preview-env-override
+  // concept has no app.yaml syntax; this is API/CLI/UI-only), keyed by
+  // env var name. Settable here: PUT/DELETE
+  // /api/v1/apps/{name}/preview-env/{key} (queries/appPreviewEnv.ts)
+  // declares or removes one entry without touching any other field or
+  // this app's own running deploy.
+  preview_env_overrides?: Record<string, string>
+  // database_attachment carries `omitempty` on the Go side and is
+  // response-only, the same node_id/project_id/storage_target_id shape
+  // above: which managed database this app resolves one connection env
+  // var from, undefined meaning none attached. Set it via PUT/DELETE
+  // /api/v1/apps/{name}/database (useSetAppDatabase/useClearAppDatabase).
+  database_attachment?: {
+    app_name?: string
+    database_name: string
+    env_var: string
+    field: string
+  }
+  // suspended is response-only (internal/api/apps.go's appResource own
+  // doc comment): set it via POST /api/v1/apps/{name}/stop and .../start
+  // (useStopApp/useStartApp), the same node_id/project_id shape above.
+  // No omitempty on the Go side (always present, never ambiguous).
+  suspended: boolean
+  // is_trial carries `omitempty` on the Go side: true only for a service
+  // deployed through the template catalog's one-click "Deploy now" path
+  // (internal/api/service_templates.go's handleDeployServiceTemplateNow).
+  // Response-only and never flips after create, drives TrialAppBanner.
+  is_trial?: boolean
+  // log_drain carries `omitempty` on the Go side and is response-only
+  // (internal/api/apps.go's appResource own doc comment): forwards this
+  // app's container logs to an external HTTP or syslog sink, additive
+  // to the built-in node-local log store. undefined means none
+  // configured. Set it via PUT/DELETE /api/v1/apps/{name}/log-drain
+  // (useSetLogDrain/useClearLogDrain), the same node_id/project_id/
+  // storage_target_id shape above.
+  log_drain?: LogDrain | null
+  // env_dirty is response-only (internal/api/apps.go's appResource own
+  // doc comment): true means env vars were saved via PUT
+  // /api/v1/apps/{name} since the running container was last actually
+  // recreated, so the change is not live yet. No omitempty on the Go
+  // side, same always-present shape as suspended.
+  env_dirty: boolean
+  // volumes carries `omitempty` on the Go side and is response-only
+  // (internal/api/apps.go's appResource own doc comment): this app's
+  // named Docker volumes, declared through app.yaml's volumes: field,
+  // undefined meaning none declared. See queries/volumeBackupHistory.ts
+  // and AppVolumeBackupsSection for the backup/restore/schedule
+  // endpoints each one supports.
+  volumes?: AppVolume[]
+  // bind_mounts is volumes' bind-mount counterpart
+  // (internal/api/app_volumes.go's appBindMountResource), response-only
+  // for the identical reason: only ever set via the compose-import path
+  // (POST /apps/{name}/compose, root-ability-gated when the file
+  // carries one), undefined meaning none declared.
+  bind_mounts?: AppBindMount[]
+  // pull_policy is response-only (internal/api/apps.go's appResource own
+  // doc comment): "always" forces a fresh image pull on every deploy,
+  // undefined/empty means the default pull-if-absent behavior. Only ever
+  // set via the compose-import path's pull_policy: (POST
+  // /apps/{name}/compose).
+  pull_policy?: string
+  // tags names every store.Tag attached to this app
+  // (internal/api/apps.go's appResource.Tags), response-only: set via
+  // POST/DELETE /api/v1/apps/{name}/tags (queries/tags.ts's
+  // useAttachAppTag/useDetachAppTag), never through this endpoint's PUT.
+  tags?: string[]
+  // depends_on names sibling service keys (within the same app group)
+  // this service waits on before the reconciler starts its own
+  // containers (internal/api/apps.go's appResource.DependsOn),
+  // response-only like pull_policy above: set via app.yaml's
+  // dependsOn: or a compose file's depends_on:, never through this
+  // endpoint's PUT.
+  depends_on?: string[]
+}
+
+// Matches internal/api/apps.go's appVolumeResource exactly: one of an
+// app's named Docker volumes. `name` is the logical name an operator
+// wrote in app.yaml, not the resolved, platform-prefixed Docker volume
+// name.
+export interface AppVolume {
+  name: string
+  container_path: string
+}
+
+// Matches internal/api/app_volumes.go's appBindMountResource exactly:
+// one of an app's bind-mounted host directories. host_path is a real
+// path on whichever node the service runs on, not a Docker volume name.
+export interface AppBindMount {
+  host_path: string
+  container_path: string
+  read_only?: boolean
+}
+
+// GET /api/v1/apps' own wire shape (internal/api/apps.go's
+// appListResource): AppDetail plus a batched status summary computed
+// from one query across every listed app's conditions
+// (store.GetConditionsForControllers), not present on the detail
+// endpoint's AppDetail. Deliberately its own type rather than an
+// optional field bolted onto AppDetail: GET /api/v1/apps/{name} never
+// sends `status`, so callers of that endpoint should never see it typed
+// as possibly-present.
+export interface AppListEntry extends AppDetail {
+  status: AppStatusSummary
+  // Resolved name of environment_id, empty when the app has none.
+  environment_name?: string
+  // Present only when sleep-when-idle is on for the app.
+  sleep?: { idle_minutes: number; sleeping: boolean; since?: string }
+}
+
+// Mirrors internal/api/apps.go's appStatusSummary exactly. `variant`
+// matches the same three categories web/src/lib/appStatus.ts's
+// summarizeAppStatus already returns for the detail page's status
+// badge, so a list-row dot and the detail-page badge for the same app
+// read as the same status by construction, not by coincidence.
+export interface AppStatusSummary {
+  label: string
+  variant: 'muted' | 'destructive' | 'success'
+}

@@ -1,0 +1,30 @@
+# Loaded by internal/githubapp.LoadManifestConfig at the moment an
+# operator starts the GitHub App connect flow (Settings > GitHub App >
+# Add GitHub App). Optional: if this file is absent, the values below
+# are exactly what's used anyway (internal/githubapp.DefaultManifestConfig).
+# Override with APP_GITHUB_APP_MANIFEST_FILE to point at a different path.
+#
+# Only these two fields are configurable. Everything else about the App
+# (its name, and every URL) is derived from this control plane's own
+# routes and primary domain at request time, not something a file could
+# safely override without breaking the actual connect flow.
+#
+# default_permissions: what the App requests when GitHub first creates
+# it. contents:read is clone access and branch listing (the two things
+# this control plane actually uses the App for today); metadata:read is
+# GitHub's own baseline permission most other scopes implicitly need.
+# Add more here only once a feature actually calls for it, e.g.
+# "issues: read" for a future feature that lists GitHub issues -
+# requesting a permission nothing uses is just a bigger attack surface
+# for no benefit.
+default_permissions:
+  contents: read
+  metadata: read
+
+# default_events: webhook event types the App would subscribe to. Empty
+# on purpose: this control plane has no route that handles a webhook
+# delivery yet (internal/githubapp's own package doc comment), so the
+# hook stays registered-but-inactive regardless of what's listed here.
+# Safe to populate ahead of that work landing; it has no effect on its
+# own until the receiving route exists too.
+default_events: []

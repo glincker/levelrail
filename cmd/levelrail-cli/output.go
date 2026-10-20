@@ -1,0 +1,865 @@
+package main
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"sort"
+	"strconv"
+	"strings"
+	"text/tabwriter"
+	"time"
+
+	"github.com/jmespath/go-jmespath"
+)
+
+// Distinct exit codes so scripts and agents can branch on why a call failed without parsing stderr.
+const (
+	exitOK            = 0
+	exitUsage         = 1 // unknown command, missing positional argument, bad flag syntax
+	exitCheckFailed   = 1 // "control-plane-backups verify": the call worked but a check failed
+	exitValidation    = 2 // well-formed flags/file, but the request they describe is invalid
+	exitNetwork       = 3 // could not reach the API at all (connection refused, DNS, timeout)
+	exitAPIError      = 4 // the API was reached and returned a non-2xx response
+	exitDeployFailed  = 5 // "apps wait": every API call succeeded, but the deploy itself converged as a failure
+	exitDeployTimeout = 6 // "apps wait": gave up before the deploy converged either way
+)
+
+// errors.As unwraps wrapped errors, so classification survives any added context.
+func exitCodeForError(err error) int {
+	var apiErr *apiError
+	if errors.As(err, &apiErr) {
+		return exitAPIError
+	}
+	var valErr *validationError
+	if errors.As(err, &valErr) {
+		return exitValidation
+	}
+	return exitNetwork
+}
+
+// A usage mistake, not a network or API failure.
+type validationError struct{ msg string }
+
+func (e *validationError) Error() string { return e.msg }
+
+func newValidationError(format string, args ...any) error {
+	return &validationError{msg: fmt.Sprintf(format, args...)}
+}
+
+// writeJSONValue marshals v as indented JSON to out, the CLI's --json
+// mode contract: this is the only thing written to stdout in that mode.
+func writeJSONValue(out io.Writer, v any) error {
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode json output: %w", err)
+	}
+	_, err = fmt.Fprintln(out, string(data))
+	return err
+}
+
+// One unindented line per value, for live streams with no complete result set.
+func writeJSONLine(out io.Writer, v any) error {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Errorf("encode json line: %w", err)
+	}
+	_, err = fmt.Fprintln(out, string(data))
+	return err
+}
+
+// outputFormat is the resolved --output value.
+type outputFormat string
+
+const (
+	outputTable outputFormat = "table"
+	outputJSON  outputFormat = "json"
+	outputText  outputFormat = "text"
+)
+
+// --json is shorthand for --output json; a contradicting pair is a usage error, not a silent pick.
+func resolveOutputFormat(jsonOut bool, outputFlag string) (outputFormat, error) {
+	switch outputFlag {
+	case "":
+		if jsonOut {
+			return outputJSON, nil
+		}
+		return outputTable, nil
+	case string(outputJSON), string(outputTable), string(outputText):
+		if jsonOut && outputFlag != string(outputJSON) {
+			return "", newValidationError("--json conflicts with --output %s, use one or the other", outputFlag)
+		}
+		return outputFormat(outputFlag), nil
+	default:
+		return "", newValidationError("invalid --output %q, want json, table, or text", outputFlag)
+	}
+}
+
+// Normalizes to generic JSON values so jmespath and the generic renderers see one shape.
+func toGenericJSON(v any) (any, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, fmt.Errorf("encode value: %w", err)
+	}
+	var generic any
+	if err := json.Unmarshal(data, &generic); err != nil {
+		return nil, fmt.Errorf("decode value: %w", err)
+	}
+	return generic, nil
+}
+
+// applyQuery runs a JMESPath expression against v, AWS CLI's --query
+// feature: lets a caller project or filter a response (e.g.
+// "[?status=='running'].name") without piping through jq.
+func applyQuery(query string, v any) (any, error) {
+	generic, err := toGenericJSON(v)
+	if err != nil {
+		return nil, err
+	}
+	result, err := jmespath.Search(query, generic)
+	if err != nil {
+		return nil, newValidationError("--query %q: %s", query, err)
+	}
+	return result, nil
+}
+
+// The default table path stays on each command's own printer; --query and --output use the generic renderers.
+func renderResult(stdout io.Writer, format outputFormat, query string, data any, renderTable func()) error {
+	value := data
+	switch {
+	case query != "":
+		projected, err := applyQuery(query, data)
+		if err != nil {
+			return err
+		}
+		value = projected
+	case format == outputText:
+		generic, err := toGenericJSON(data)
+		if err != nil {
+			return err
+		}
+		value = generic
+	}
+
+	switch {
+	case format == outputTable && query == "":
+		renderTable()
+		return nil
+	case format == outputTable:
+		return writeQueriedTable(stdout, value)
+	case format == outputText:
+		return writeTextValue(stdout, value)
+	default:
+		return writeJSONValue(stdout, value)
+	}
+}
+
+// Raw tab-separated rows for piping through awk or cut; no headers.
+func writeTextValue(out io.Writer, v any) error {
+	rows, ok := v.([]any)
+	if !ok {
+		rows = []any{v}
+	}
+	for _, row := range rows {
+		var fields []string
+		flattenText(row, &fields)
+		if _, err := fmt.Fprintln(out, strings.Join(fields, "\t")); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// flattenText appends v's scalar leaves to out in depth-first order:
+// object values by sorted key (for deterministic output), array elements
+// in order, so a nested JSON value becomes one flat tab-separated row.
+func flattenText(v any, out *[]string) {
+	switch t := v.(type) {
+	case map[string]any:
+		keys := make([]string, 0, len(t))
+		for k := range t {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			flattenText(t[k], out)
+		}
+	case []any:
+		for _, item := range t {
+			flattenText(item, out)
+		}
+	case nil:
+		*out = append(*out, "None")
+	default:
+		*out = append(*out, scalarText(t))
+	}
+}
+
+// Strings unquoted, and whole floats printed without a trailing .0.
+func scalarText(v any) string {
+	switch t := v.(type) {
+	case nil:
+		return "None"
+	case string:
+		return t
+	case bool:
+		return strconv.FormatBool(t)
+	case float64:
+		if t == float64(int64(t)) {
+			return strconv.FormatInt(int64(t), 10)
+		}
+		return strconv.FormatFloat(t, 'g', -1, 64)
+	case map[string]any, []any:
+		var fields []string
+		flattenText(t, &fields)
+		return strings.Join(fields, ",")
+	default:
+		return fmt.Sprintf("%v", t)
+	}
+}
+
+// Falls back to JSON for non-table shapes rather than guessing a layout.
+func writeQueriedTable(out io.Writer, v any) error {
+	rows, ok := v.([]any)
+	if !ok || len(rows) == 0 {
+		return writeJSONValue(out, v)
+	}
+	cols, ok := tableColumns(rows)
+	if !ok {
+		return writeJSONValue(out, v)
+	}
+
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	header := make([]string, len(cols))
+	for i, c := range cols {
+		header[i] = strings.ToUpper(c)
+	}
+	_, _ = fmt.Fprintln(tw, strings.Join(header, "\t"))
+	for _, r := range rows {
+		// tableColumns already verified every row is a map[string]any.
+		obj, _ := r.(map[string]any)
+		cells := make([]string, len(cols))
+		for i, c := range cols {
+			cells[i] = scalarText(obj[c])
+		}
+		_, _ = fmt.Fprintln(tw, strings.Join(cells, "\t"))
+	}
+	return tw.Flush()
+}
+
+// tableColumns returns rows' shared, sorted column names, or false if
+// rows isn't a uniform list of objects (any element not a
+// map[string]any, or with a different key count than the first).
+func tableColumns(rows []any) ([]string, bool) {
+	first, ok := rows[0].(map[string]any)
+	if !ok {
+		return nil, false
+	}
+	cols := make([]string, 0, len(first))
+	for k := range first {
+		cols = append(cols, k)
+	}
+	sort.Strings(cols)
+	for _, r := range rows[1:] {
+		obj, ok := r.(map[string]any)
+		if !ok || len(obj) != len(cols) {
+			return nil, false
+		}
+	}
+	return cols, true
+}
+
+// printAppHuman prints one app resource in a human-readable, non-JSON
+// form.
+func printAppHuman(out io.Writer, a appResource) {
+	_, _ = fmt.Fprintf(out, "name:     %s\n", a.Name)
+	_, _ = fmt.Fprintf(out, "image:    %s\n", a.Image)
+	_, _ = fmt.Fprintf(out, "port:     %d\n", a.Port)
+	if a.HostPort != nil {
+		_, _ = fmt.Fprintf(out, "host port: %d (pinned)\n", *a.HostPort)
+	}
+	if len(a.Domains) > 0 {
+		_, _ = fmt.Fprintf(out, "domains:  %v\n", a.Domains)
+	}
+	if a.FallbackURL != "" {
+		_, _ = fmt.Fprintf(out, "auto url: %s\n", a.FallbackURL)
+	}
+	if a.NodeID != "" {
+		_, _ = fmt.Fprintf(out, "node:     %s\n", a.NodeID)
+	}
+	if a.EnvDirty {
+		_, _ = fmt.Fprintln(out, "env:      pending restart (env vars saved since the running container was last recreated)")
+	}
+	if a.Health != nil {
+		printHealthHuman(out, a.Health)
+	}
+	if a.Hooks != nil {
+		if a.Hooks.PreDeploy != "" {
+			_, _ = fmt.Fprintf(out, "pre-deploy hook:  %s\n", a.Hooks.PreDeploy)
+		}
+		if a.Hooks.PostDeploy != "" {
+			_, _ = fmt.Fprintf(out, "post-deploy hook: %s\n", a.Hooks.PostDeploy)
+		}
+	}
+	if len(a.Command) > 0 {
+		_, _ = fmt.Fprintf(out, "command:  %v\n", a.Command)
+	}
+	if a.PullPolicy != "" {
+		_, _ = fmt.Fprintf(out, "pull policy: %s\n", a.PullPolicy)
+	}
+	if a.StrategyReason != "" {
+		_, _ = fmt.Fprintf(out, "strategy: %s (set by the template: %s)\n", a.Strategy, a.StrategyReason)
+	}
+	if a.MemoryFromTemplate && a.Resources != nil {
+		_, _ = fmt.Fprintf(out, "memory:   %s (the template's recommended limit)\n", formatRecommendedMemory(a.Resources.MemoryBytes))
+	}
+	for _, v := range a.Volumes {
+		_, _ = fmt.Fprintf(out, "volume:   %s -> %s\n", v.Name, v.ContainerPath)
+	}
+	for _, m := range a.BindMounts {
+		ro := ""
+		if m.ReadOnly {
+			ro = " (read-only)"
+		}
+		_, _ = fmt.Fprintf(out, "bind mount: %s -> %s%s\n", m.HostPath, m.ContainerPath, ro)
+	}
+}
+
+// printAppsTable prints a compact, aligned table of apps: list output's
+// human-readable form.
+func printAppsTable(out io.Writer, apps []appResource) {
+	if len(apps) == 0 {
+		_, _ = fmt.Fprintln(out, "no apps")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "NAME\tIMAGE\tPORT\tNODE\tENV")
+	for _, a := range apps {
+		node := a.NodeID
+		if node == "" {
+			node = "(local)"
+		}
+		env := "-"
+		if a.EnvDirty {
+			env = "pending restart"
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\t%s\n", a.Name, a.Image, a.Port, node, env)
+	}
+	_ = tw.Flush()
+}
+
+// printConditionsHuman prints an app's or database's current reconcile
+// conditions ("apps status"/"databases status" output): current status,
+// not a history log, matching what GetConditions itself returns.
+func printConditionsHuman(out io.Writer, conditions []conditionResource) {
+	if len(conditions) == 0 {
+		_, _ = fmt.Fprintln(out, "no conditions reported yet")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "TYPE\tSTATUS\tREASON\tMESSAGE\tLAST TRANSITION")
+	for _, c := range conditions {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", c.Type, c.Status, c.Reason, c.Message, c.LastTransitionTime.Format(time.RFC3339))
+	}
+	_ = tw.Flush()
+}
+
+// printDeployAttemptsHuman prints "apps deploys list" output.
+func printDeployAttemptsHuman(out io.Writer, attempts []deployAttemptResource) {
+	if len(attempts) == 0 {
+		_, _ = fmt.Fprintln(out, "no deploy attempts recorded yet")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "ID\tIMAGE\tDIGEST\tSOURCE\tSTATUS\tROLLOUT\tREASON\tFRAMEWORK\tSTARTED\tFINISHED\tTRIGGER\tBRANCH\tAUTHOR\tERROR")
+	for _, a := range attempts {
+		finished := "-"
+		if a.FinishedAt != nil {
+			finished = a.FinishedAt.Format(time.RFC3339)
+		}
+		framework := a.DetectedFramework
+		if framework == "" {
+			framework = "-"
+		}
+		reason := a.Reason
+		if a.WaitReason != "" {
+			reason = a.WaitReason
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			a.ID, unpinnedImage(a.Image), shortDigest(a.ImageDigest, a.DigestReason), a.Source, a.Status, dashIfEmpty(a.RolloutState), dashIfEmpty(reason), framework, a.StartedAt.Format(time.RFC3339), finished, dashIfEmpty(a.Trigger), dashIfEmpty(a.Branch), dashIfEmpty(a.Author), a.Error)
+	}
+	_ = tw.Flush()
+}
+
+// printDiagnosisHuman prints "apps diagnose" output.
+func printDiagnosisHuman(out io.Writer, d diagnosisResource) {
+	_, _ = fmt.Fprintf(out, "confidence:  %s\n", d.Confidence)
+	if d.DeployAttemptID != "" {
+		_, _ = fmt.Fprintf(out, "deploy id:   %s\n", d.DeployAttemptID)
+	}
+	_, _ = fmt.Fprintf(out, "\n%s\n", d.Explanation)
+	_, _ = fmt.Fprintf(out, "\nsuggested next step:\n  %s\n", d.Suggestion)
+	if len(d.MatchedSignals) > 0 {
+		_, _ = fmt.Fprintln(out, "\nmatched signals:")
+		for _, s := range d.MatchedSignals {
+			_, _ = fmt.Fprintf(out, "  [%s] %s\n", s.Source, s.Excerpt)
+		}
+	}
+	printDiagnosisCauses(out, d)
+	if d.Failure != nil {
+		_, _ = fmt.Fprintln(out)
+		printDeployFailure(out, d.Failure)
+	}
+	if d.RecentChanges != nil {
+		_, _ = fmt.Fprintln(out)
+		printRecentChanges(out, d.RecentChanges, "")
+	}
+}
+
+// printResourceRecommendationHuman prints "apps resource-recommendation"
+// and "databases resource-recommendation" output; label distinguishes the
+// two ("app" or "database") since the wire type itself is shared.
+func printResourceRecommendationHuman(out io.Writer, label string, r resourceRecommendationResource) {
+	_, _ = fmt.Fprintf(out, "%s:      %s\n", label, r.ServiceName)
+	lookback := r.LookbackLabel
+	if lookback == "" {
+		lookback = r.LookbackWindow
+	}
+	_, _ = fmt.Fprintf(out, "lookback: %s\n", lookback)
+	if r.OOMDetectedAt != "" {
+		_, _ = fmt.Fprintf(out, "\nOOM signal: killed on %s\n  %s\n", r.OOMDetectedAt, r.OOMExcerpt)
+	}
+	_, _ = fmt.Fprintln(out, "\nmemory:")
+	printDimensionRecommendationHuman(out, r.Memory, formatRecommendationBytes)
+	_, _ = fmt.Fprintln(out, "\ncpu:")
+	printDimensionRecommendationHuman(out, r.CPU, formatRecommendationNanoCPUs)
+}
+
+func printDimensionRecommendationHuman(out io.Writer, d dimensionRecommendationResource, format func(int64) string) {
+	_, _ = fmt.Fprintf(out, "  current limit:    %s\n", format(d.CurrentLimit))
+	_, _ = fmt.Fprintf(out, "  samples:          %d (confidence: %s)\n", d.SampleCount, d.Confidence)
+	if d.SampleCount > 0 {
+		_, _ = fmt.Fprintf(out, "  p95 / p99 usage:  %s / %s\n", format(int64(d.P95Usage)), format(int64(d.P99Usage)))
+	}
+	if d.Action != "" {
+		_, _ = fmt.Fprintf(out, "  suggested action: %s to roughly %s\n", d.Action, format(d.SuggestedLimit))
+	}
+	_, _ = fmt.Fprintf(out, "  reason:           %s\n", d.Reason)
+}
+
+func formatRecommendationBytes(bytes int64) string {
+	if bytes <= 0 {
+		return "not set"
+	}
+	return fmt.Sprintf("%d MiB", bytes/1_048_576)
+}
+
+func formatRecommendationNanoCPUs(nanoCPUs int64) string {
+	if nanoCPUs <= 0 {
+		return "not set"
+	}
+	return fmt.Sprintf("%.2f cores", float64(nanoCPUs)/1e9)
+}
+
+// Empty or unparseable timestamps render as '-'.
+func formatSecretAge(iso string) string {
+	if iso == "" {
+		return "-"
+	}
+	then, err := time.Parse(time.RFC3339, iso)
+	if err != nil {
+		return "-"
+	}
+
+	d := time.Since(then)
+	switch {
+	case d < time.Minute:
+		return "just now"
+	case d < time.Hour:
+		return pluralize(int(d/time.Minute), "minute") + " ago"
+	case d < 24*time.Hour:
+		return pluralize(int(d/time.Hour), "hour") + " ago"
+	case d < 30*24*time.Hour:
+		return pluralize(int(d/(24*time.Hour)), "day") + " ago"
+	case d < 365*24*time.Hour:
+		return pluralize(int(d/(30*24*time.Hour)), "month") + " ago"
+	default:
+		return pluralize(int(d/(365*24*time.Hour)), "year") + " ago"
+	}
+}
+
+// pluralize formats n and unit as "1 day" or "3 days".
+func pluralize(n int, unit string) string {
+	if n == 1 {
+		return fmt.Sprintf("%d %s", n, unit)
+	}
+	return fmt.Sprintf("%d %ss", n, unit)
+}
+
+// printAppNetworkHuman prints "apps network" output: the live traffic
+// path, container's declared port plus whatever host port Docker
+// currently has bound.
+func printAppNetworkHuman(out io.Writer, n networkResource) {
+	_, _ = fmt.Fprintf(out, "container port:  %d\n", n.ContainerPort)
+	if n.Running && n.HostPort > 0 {
+		_, _ = fmt.Fprintf(out, "host port:       %d\n", n.HostPort)
+	} else {
+		_, _ = fmt.Fprintln(out, "host port:       (not running)")
+	}
+	_, _ = fmt.Fprintf(out, "running:         %t\n", n.Running)
+	switch {
+	case n.FallbackURL != "":
+		_, _ = fmt.Fprintf(out, "fallback url:    %s\n", n.FallbackURL)
+	case !n.FallbackEnabled:
+		_, _ = fmt.Fprintln(out, "fallback url:    (automatic hostnames are off: settings ingress set --fallback-domains)")
+	case n.PublicHost == "":
+		_, _ = fmt.Fprintln(out, "fallback url:    (no public IP known: set APP_PUBLIC_HOST on the server)")
+	}
+}
+
+// Oldest first, as the store returns them.
+func printLogEntriesHuman(out io.Writer, entries []logEntryResource) {
+	if len(entries) == 0 {
+		_, _ = fmt.Fprintln(out, "no log entries in range")
+		return
+	}
+	for _, e := range entries {
+		_, _ = fmt.Fprintf(out, "%s %s %s\n", e.Timestamp.Format(time.RFC3339), e.Stream, e.Message)
+	}
+}
+
+// Rows are oldest first, the order telemetry.Aggregate returns them.
+func printMetricPointsHuman(out io.Writer, metric string, points []metricPointResource) {
+	_, _ = fmt.Fprintf(out, "metric: %s\n", metric)
+	if len(points) == 0 {
+		_, _ = fmt.Fprintln(out, "no data points in range")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "TIMESTAMP\tVALUE\tCOUNT")
+	for _, p := range points {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\n", p.Timestamp.Format(time.RFC3339), strconv.FormatFloat(p.Value, 'g', -1, 64), p.Count)
+	}
+	_ = tw.Flush()
+}
+
+// Long queries are truncated here; --output json or --query returns the full text.
+func printSlowQueryEntriesHuman(out io.Writer, entries []slowQueryEntryResource, total int) {
+	if len(entries) == 0 {
+		_, _ = fmt.Fprintln(out, "no slow query entries in range")
+		return
+	}
+	_, _ = fmt.Fprintf(out, "showing %d of %d\n", len(entries), total)
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "TIMESTAMP\tDURATION_MS\tROWS_EXAMINED\tQUERY")
+	for _, e := range entries {
+		query := e.Query
+		const maxQueryLen = 80
+		if len(query) > maxQueryLen {
+			query = query[:maxQueryLen] + "..."
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\n", e.Timestamp.Format(time.RFC3339), strconv.FormatFloat(e.DurationMs, 'f', -1, 64), e.RowsExamined, query)
+	}
+	_ = tw.Flush()
+}
+
+// printAppHookRunsHuman prints "apps hook-runs" output: each configured
+// hook's most recent outcome, including its output, or a plain "never
+// run" line when a hook type has no recorded run yet.
+func printAppHookRunsHuman(out io.Writer, r appHookRunsResource) {
+	printOneHookRun := func(label string, run *hookRunResource) {
+		if run == nil {
+			_, _ = fmt.Fprintf(out, "%s: never run\n", label)
+			return
+		}
+		status := "success"
+		if !run.Success {
+			status = "failed"
+		}
+		_, _ = fmt.Fprintf(out, "%s: %s (exit %d, %s)\n", label, status, run.ExitCode, run.RanAt.Format(time.RFC3339))
+		_, _ = fmt.Fprintf(out, "  command: %s\n", run.Command)
+		if run.Output != "" {
+			_, _ = fmt.Fprintf(out, "  output:\n%s\n", indentLines(run.Output, "    "))
+		}
+	}
+	printOneHookRun("pre-deploy", r.PreDeploy)
+	printOneHookRun("post-deploy", r.PostDeploy)
+}
+
+// indentLines prefixes every line of s with prefix, for
+// printAppHookRunsHuman's own multi-line hook output block.
+func indentLines(s, prefix string) string {
+	lines := strings.Split(strings.TrimRight(s, "\n"), "\n")
+	for i, line := range lines {
+		lines[i] = prefix + line
+	}
+	return strings.Join(lines, "\n")
+}
+
+// printAppGroupHuman prints "apps group" output: name's sibling services
+// under the same app, plus the group's own rollup status.
+func printAppGroupHuman(out io.Writer, g appGroupResource) {
+	if g.AppID != "" {
+		_, _ = fmt.Fprintf(out, "app_id:  %s\n", g.AppID)
+	}
+	_, _ = fmt.Fprintf(out, "status:  %s\n", g.Status.Label)
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "NAME\tIMAGE\tPORT")
+	for _, s := range g.Services {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\n", s.Name, s.Image, s.Port)
+	}
+	_ = tw.Flush()
+}
+
+// printDeploySpecResultHuman prints "apps deploy-spec" output: one line
+// per service key's own outcome, error inline when that key's build or
+// deploy failed.
+func printDeploySpecResultHuman(out io.Writer, r deploySpecResult) {
+	_, _ = fmt.Fprintf(out, "app_id: %s\n", r.AppID)
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "SERVICE\tIMAGE\tERROR")
+	for _, s := range r.Services {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", s.ServiceKey, s.Image, s.Error)
+	}
+	_ = tw.Flush()
+	if !r.AllSucceeded {
+		_, _ = fmt.Fprintln(out, "one or more services failed, see the ERROR column above")
+	}
+}
+
+// printDatabaseHuman prints one database resource in a human-readable,
+// non-JSON form ("databases get" output).
+func printDatabaseHuman(out io.Writer, d databaseResource) {
+	_, _ = fmt.Fprintf(out, "name:     %s\n", d.Name)
+	_, _ = fmt.Fprintf(out, "engine:   %s\n", d.Engine)
+	_, _ = fmt.Fprintf(out, "version:  %s\n", d.Version)
+	if d.NodeID != "" {
+		_, _ = fmt.Fprintf(out, "node:     %s\n", d.NodeID)
+	}
+	tls := "no"
+	if d.TLSEnabled {
+		tls = "yes"
+	}
+	_, _ = fmt.Fprintf(out, "tls:      %s\n", tls)
+	if d.Resources != nil {
+		if d.Resources.MemoryBytes > 0 {
+			_, _ = fmt.Fprintf(out, "memory:   %d bytes\n", d.Resources.MemoryBytes)
+		}
+		if d.Resources.NanoCPUs > 0 {
+			_, _ = fmt.Fprintf(out, "cpu:      %.2f cores\n", float64(d.Resources.NanoCPUs)/1e9)
+		}
+	}
+	if d.PubliclyAccessible {
+		_, _ = fmt.Fprintf(out, "public:   yes (port %d)\n", d.PublicPort)
+	}
+	if d.BackupSchedule != "" {
+		_, _ = fmt.Fprintf(out, "backup:   %s (target %s)\n", d.BackupSchedule, d.BackupTargetID)
+	}
+}
+
+// printDatabasesTable prints a compact, aligned table of databases
+// ("databases list" output), the same shape printAppsTable uses for apps.
+func printDatabasesTable(out io.Writer, dbs []databaseResource) {
+	if len(dbs) == 0 {
+		_, _ = fmt.Fprintln(out, "no databases")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "NAME\tENGINE\tVERSION\tNODE\tTLS")
+	for _, d := range dbs {
+		node := d.NodeID
+		if node == "" {
+			node = "(local)"
+		}
+		tls := "no"
+		if d.TLSEnabled {
+			tls = "yes"
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", d.Name, d.Engine, d.Version, node, tls)
+	}
+	_ = tw.Flush()
+}
+
+// Docker is printed first: it is the one prerequisite everything else depends on.
+func printSystemStatusHuman(out io.Writer, s systemStatusResource) {
+	if s.DockerConnected {
+		_, _ = fmt.Fprintln(out, "docker:              connected")
+	} else if s.DockerError != "" {
+		_, _ = fmt.Fprintf(out, "docker:              UNREACHABLE (%s)\n", s.DockerError)
+	} else {
+		_, _ = fmt.Fprintln(out, "docker:              unknown (no Docker reachability check configured)")
+	}
+	_, _ = fmt.Fprintf(out, "secrets configured:  %t\n", s.SecretsConfigured)
+	_, _ = fmt.Fprintf(out, "telemetry configured: %t\n", s.TelemetryConfigured)
+	_, _ = fmt.Fprintf(out, "alerts configured:   %t\n", s.AlertsConfigured)
+	if s.DataDirTotalBytes > 0 {
+		_, _ = fmt.Fprintf(out, "data dir:            %d free of %d bytes\n", s.DataDirFreeBytes, s.DataDirTotalBytes)
+	}
+}
+
+// printSystemDoctorHuman prints "doctor" output: one row per check, no
+// color, the same plain-text convention printSystemStatusHuman's own
+// UNREACHABLE line above already uses instead of ANSI codes.
+func printSystemDoctorHuman(out io.Writer, d systemDoctorResource) {
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "STATUS\tCHECK\tMESSAGE")
+	for _, c := range d.Checks {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", doctorStatusLabel(c.Status), c.Name, c.Message)
+	}
+	_ = tw.Flush()
+
+	printSystemDoctorFixes(out, d.Checks)
+
+	if d.OK {
+		_, _ = fmt.Fprintln(out, "\nAll checks passed.")
+	} else {
+		_, _ = fmt.Fprintln(out, "\nOne or more checks failed. See above.")
+	}
+}
+
+// Headless operators have no dashboard, so fixes print here too.
+func printSystemDoctorFixes(out io.Writer, checks []doctorCheckResource) {
+	var printedHeader bool
+	for _, c := range checks {
+		if c.Fix == "" {
+			continue
+		}
+		if !printedHeader {
+			_, _ = fmt.Fprintln(out, "\nFixes:")
+			printedHeader = true
+		}
+		_, _ = fmt.Fprintf(out, "  %s:\n    %s\n", c.Name, c.Fix)
+	}
+}
+
+// doctorStatusLabel upper-cases a check's status for the human table,
+// the same emphasis-through-caps convention printSystemStatusHuman's
+// own "UNREACHABLE" already uses in place of color.
+func doctorStatusLabel(status string) string {
+	switch status {
+	case "ok":
+		return "OK"
+	case "warn":
+		return "WARN"
+	case "fail":
+		return "FAIL"
+	default:
+		return "UNKNOWN"
+	}
+}
+
+// printUpdatesHuman prints "version" output.
+func printUpdatesHuman(out io.Writer, u updatesResource) {
+	_, _ = fmt.Fprintf(out, "running version:    %s\n", u.CurrentVersion)
+	if u.LatestVersion == nil {
+		_, _ = fmt.Fprintln(out, "latest release:      none published yet")
+		return
+	}
+	_, _ = fmt.Fprintf(out, "latest release:      %s\n", *u.LatestVersion)
+	if u.UpdateAvailable {
+		_, _ = fmt.Fprintln(out, "update available:   yes")
+		if u.ReleaseURL != nil {
+			label := "release url:          %s\n"
+			if u.ReleaseKind == "edge_image" {
+				label = "commit url:           %s\n"
+			}
+			_, _ = fmt.Fprintf(out, label, *u.ReleaseURL)
+		}
+		if u.Image != nil {
+			_, _ = fmt.Fprintf(out, "container image:      %s\n", *u.Image)
+		}
+	} else {
+		_, _ = fmt.Fprintln(out, "update available:   no, up to date")
+	}
+}
+
+// printChangelogHuman prints "changelog" output.
+func printChangelogHuman(out io.Writer, c changelogResource) {
+	_, _ = fmt.Fprintf(out, "running version: %s\n\n", c.CurrentVersion)
+	if len(c.Entries) == 0 {
+		_, _ = fmt.Fprintln(out, "no changelog entries available")
+		return
+	}
+	for _, e := range c.Entries {
+		_, _ = fmt.Fprintf(out, "%s (%s)\n", e.Version, e.Date)
+		for _, b := range e.Bullets {
+			_, _ = fmt.Fprintf(out, "  - %s\n", b)
+		}
+		_, _ = fmt.Fprintln(out)
+	}
+}
+
+// printNodeHuman prints one node resource in a human-readable, non-JSON
+// form ("nodes get" output).
+func printNodeHuman(out io.Writer, n nodeResource) {
+	_, _ = fmt.Fprintf(out, "id:                      %s\n", n.ID)
+	_, _ = fmt.Fprintf(out, "name:                    %s\n", n.Name)
+	if n.Address != "" {
+		_, _ = fmt.Fprintf(out, "address:                 %s\n", n.Address)
+	}
+	_, _ = fmt.Fprintf(out, "status:                  %s\n", n.Status)
+	if n.IsLocal {
+		_, _ = fmt.Fprintf(out, "local:                   true (disk/memory host metrics are real for this node)\n")
+	}
+	if n.CertFingerprint != "" {
+		_, _ = fmt.Fprintf(out, "cert fingerprint:        %s\n", n.CertFingerprint)
+	}
+	if n.JoinedAt != nil {
+		_, _ = fmt.Fprintf(out, "joined at:               %s\n", n.JoinedAt.Format(time.RFC3339))
+	}
+	if n.LastSeenAt != nil {
+		_, _ = fmt.Fprintf(out, "last seen at:            %s\n", n.LastSeenAt.Format(time.RFC3339))
+	}
+	_, _ = fmt.Fprintf(out, "schedulable:             %t\n", n.Schedulable)
+	_, _ = fmt.Fprintf(out, "accepts app workloads:   %t\n", n.AcceptsAppWorkloads)
+	_, _ = fmt.Fprintf(out, "accepts build workloads: %t\n", n.AcceptsBuildWorkloads)
+	_, _ = fmt.Fprintf(out, "created at:              %s\n", n.CreatedAt.Format(time.RFC3339))
+	printNodeCertHuman(out, n)
+	if n.AlertStatus != nil {
+		_, _ = fmt.Fprintf(out, "alert status:\n")
+		_, _ = fmt.Fprintf(out, "  patch status:          %s\n", n.AlertStatus.PatchStatus)
+		_, _ = fmt.Fprintf(out, "  node disk space:       %s\n", n.AlertStatus.NodeDiskSpace)
+		_, _ = fmt.Fprintf(out, "  node resource usage:   %s\n", n.AlertStatus.NodeResourceUsage)
+	}
+	printNodeGPUHuman(out, n.GPU)
+}
+
+// printNodesTable prints a compact, aligned table of nodes ("nodes list"
+// output), the same shape printAppsTable/printDatabasesTable use.
+func printNodesTable(out io.Writer, nodes []nodeResource) {
+	if len(nodes) == 0 {
+		_, _ = fmt.Fprintln(out, "no nodes")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tADDRESS\tSTATUS\tSCHEDULABLE\tGPU\tCERT\tAGENT\tCREATED")
+	for _, n := range nodes {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%t\t%s\t%s\t%s\t%s\n", n.ID, n.Name, n.Address, nodeStatusColumn(n), n.Schedulable, nodeGPUColumn(n.GPU), nodeCertColumn(n.Cert), nodeAgentColumn(n.Agent), n.CreatedAt.Format(time.RFC3339))
+	}
+	_ = tw.Flush()
+	for _, n := range nodes {
+		if hint := nodeStatusHint(n); hint != "" {
+			_, _ = fmt.Fprintf(out, "%s: %s\n", n.Name, hint)
+		}
+	}
+}
+
+// nodeReasonEnrolledNeverConnected mirrors internal/api's status reason code.
+const nodeReasonEnrolledNeverConnected = "enrolled_never_connected"
+
+// nodeStatusColumn appends the reason to the status when one is set.
+func nodeStatusColumn(n nodeResource) string {
+	if n.StatusReason == nodeReasonEnrolledNeverConnected {
+		return n.Status + " (never connected)"
+	}
+	return n.Status
+}
+
+// nodeStatusHint is the next action for a node with a status reason.
+func nodeStatusHint(n nodeResource) string {
+	if n.StatusReason == nodeReasonEnrolledNeverConnected {
+		return "enrolled but its agent never connected (the join token is already used). Run `nodes delete " + n.ID + "`, then re-enrol with a new join token; check the agent logs on the host."
+	}
+	return ""
+}

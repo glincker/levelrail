@@ -1,0 +1,65 @@
+{
+  "trend": {
+    "title": "Build performance",
+    "loadError": "Could not load build stats.",
+    "empty": "No builds recorded yet. Stats appear after the next build.",
+    "p50": "Median build",
+    "p95": "Slowest 5% (p95)",
+    "cacheHit": "Cache hits",
+    "failures": "Failed or timed out",
+    "none": "n/a",
+    "chartLabel_one": "Duration of the last build",
+    "chartLabel_other": "Durations of the last {{count}} builds, oldest first",
+    "footnote_one": "Based on the last build. Timings count successful builds only.",
+    "footnote_other": "Based on the last {{count}} builds. Timings count successful builds only.",
+    "skewed_one": "1 build had a negative duration (clock skew) and is left out of the timings.",
+    "skewed_other": "{{count}} builds had a negative duration (clock skew) and are left out of the timings."
+  },
+  "speed": {
+    "title": "Make builds faster",
+    "saved": "Cache saved about {{saved}} across {{count}} builds (cold build {{cold}}, cached build {{warm}}).",
+    "none": "No speedups to suggest.",
+    "loadError": "Could not load build speed suggestions.",
+    "fixing": "Applying...",
+    "fixed": "Build cache enabled.",
+    "fixError": "Could not apply the fix",
+    "fix": {
+      "auto": "Enable cache",
+      "guided": "Set up cache"
+    },
+    "findings": {
+      "cache_disabled": {
+        "title": "The remote build cache is turned off",
+        "body": "A cache destination is configured but disabled, so every build starts from scratch."
+      },
+      "cache_unconfigured": {
+        "title": "No remote build cache is configured",
+        "body": "Most build steps run again each time. Pick a storage destination so steps are reused across builds and nodes."
+      },
+      "low_cache_hit": {
+        "title": "Few build steps are reused",
+        "body": "Put rarely changing steps first in the Dockerfile (copy the lockfile and install dependencies before copying the source), and add a .dockerignore for node_modules, .git and build output so unrelated files do not invalidate layers."
+      },
+      "slower_recently": {
+        "title": "Builds got slower recently",
+        "body": "The recent median build is at least 30% slower than the earlier one. Compare the latest deploys for new dependencies, a larger build context or a cache that stopped hitting."
+      }
+    }
+  },
+  "settings": {
+    "title": "Build performance",
+    "description": "Cap how long a build may run and how many builds run at once. Extra builds wait in a queue.",
+    "loadError": "Could not load build limits.",
+    "timeoutLabel": "Build timeout (minutes)",
+    "timeoutHelp": "A build running longer than this is stopped and marked as timed out. 0 means no limit.",
+    "concurrentLabel": "Concurrent builds",
+    "concurrentHelp": "Builds past this number wait for a free slot. 0 means no limit.",
+    "defaultsNote": "Defaults come from APP_BUILD_TIMEOUT and APP_BUILD_MAX_CONCURRENT: {{timeout}} minutes and {{concurrent}} builds.",
+    "overridden": "Overridden",
+    "save": "Save limits",
+    "reset": "Use defaults",
+    "saved": "Build limits saved.",
+    "resetDone": "Build limits reset to the defaults.",
+    "rootOnly": "Only a root account can change build limits."
+  }
+}

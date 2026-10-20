@@ -1,0 +1,20 @@
+{
+  "status": 100, "description": "OK",
+  "data": {
+    "rootDomain": "apps.example.com",
+    "appDefinitions": [
+      {
+        "appName": "blog", "instanceCount": 2, "notExposeAsWebApp": false, "containerHttpPort": 2368, "hasPersistentData": true,
+        "envVars": [{"key": "url", "value": "https://blog.example.com"}, {"key": "DB_PASSWORD", "value": "pw-fixture"}],
+        "volumes": [{"containerPath": "/var/lib/ghost", "volumeName": "blog-content"}, {"containerPath": "/host", "hostPath": "/srv/blog"}],
+        "ports": [{"hostPort": 2222, "containerPort": 22}],
+        "customDomain": [{"publicDomain": "blog.example.com", "hasSsl": true}],
+        "appPushWebhook": {"repoInfo": {"repo": "github.com/acme/blog", "branch": "prod"}}
+      },
+      {
+        "appName": "internal-job", "instanceCount": 0, "notExposeAsWebApp": true, "containerHttpPort": 0, "hasPersistentData": true,
+        "envVars": [], "volumes": [], "ports": [], "customDomain": []
+      }
+    ]
+  }
+}

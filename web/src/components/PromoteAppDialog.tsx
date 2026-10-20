@@ -1,0 +1,318 @@
+import { useState } from 'react'
+import type { DialogControl } from './dialogControl'
+import { RocketLaunchIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Field, FieldHint, FieldLabel } from '@/components/ui/field'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { toast } from '@/components/ui/toast'
+import { useEnvironmentListOptional } from '../queries/environments'
+import { useAppListOptional } from '../queries/apps'
+import {
+  isPendingPromoteApproval,
+  usePromoteApp,
+  usePromotePreview,
+} from '../queries/promote'
+import { ApiError } from '../lib/apiError'
+import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
+import { PromotePlan } from './PromotePlan'
+import {
+  EMPTY_PROMOTE_OPTIONS,
+  promoteOptionsReady,
+  type PromoteOptions,
+} from '../lib/promoteOptions'
+
+// Sentinel for "let the server auto-detect the target app", the same
+// reasoning PlacementFields.tsx's LOCAL_NODE_VALUE/NO_PROJECT_VALUE give:
+// base-ui's Select can't use "" as a real item value, but the promote
+// request treats an empty target as "auto-detect".
+const AUTO_DETECT_VALUE = '__auto__'
+
+// PromoteAppDialog is "apps promote" (cmd/levelrail-cli/apps_promote.go)
+// and POST/GET /api/v1/apps/{name}/promote[/preview]
+// (internal/api/promote.go) surfaced on the dashboard: pick a sibling
+// environment in this app's project, see which app there would receive
+// this app's current image and what would change, then confirm. Target
+// app is auto-discovered when exactly one app in the picked environment
+// belongs to the project; the optional field below only matters when
+// that's ambiguous (internal/api/promote.go's resolvePromotion), the
+// same disambiguation the CLI's own --target flag offers.
+export function PromoteAppDialog({
+  appName,
+  projectId,
+  control,
+}: {
+  appName: string
+  projectId?: string
+  control?: DialogControl
+}) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = control?.open ?? internalOpen
+  const setOpen = (next: boolean) => {
+    setInternalOpen(next)
+    control?.onOpenChange?.(next)
+  }
+  const [environmentId, setEnvironmentId] = useState('')
+  const [target, setTarget] = useState('')
+  const [ackProtected, setAckProtected] = useState(false)
+  const [options, setOptions] = useState<PromoteOptions>(EMPTY_PROMOTE_OPTIONS)
+
+  const environmentList = useEnvironmentListOptional(projectId ?? '')
+  const environments = environmentList.data ?? []
+  const appList = useAppListOptional()
+  const preview = usePromotePreview(appName, environmentId, target)
+  const promote = usePromoteApp(appName)
+  const selectedEnvironment = environments.find((e) => e.id === environmentId)
+
+  // The same disambiguation set resolvePromotion itself uses when target
+  // is left blank (internal/api/promote.go): siblings in this app's
+  // project tagged with the picked environment, excluding appName since
+  // it can't promote onto itself.
+  const candidateApps = (appList.data ?? []).filter(
+    (a) =>
+      a.name !== appName &&
+      a.project_id === projectId &&
+      a.environment_id === environmentId,
+  )
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    if (!next) {
+      setEnvironmentId('')
+      setTarget('')
+      setAckProtected(false)
+      setOptions(EMPTY_PROMOTE_OPTIONS)
+      promote.reset()
+    }
+  }
+
+  function handlePromote() {
+    promote.mutate(
+      { to: environmentId, target, confirm: ackProtected, ...options },
+      {
+        onSuccess: (result) => {
+          setOpen(false)
+          if (isPendingPromoteApproval(result)) {
+            toast.add({
+              title: 'Promotion is pending approval.',
+              description:
+                'The target environment is protected: a different, sufficiently privileged user must approve it before it runs.',
+              type: 'info',
+            })
+            return
+          }
+          toast.add({
+            title: `Promoted "${appName}" onto "${result.name}".`,
+            description: `Now running ${result.image}.`,
+            type: 'success',
+          })
+        },
+      },
+    )
+  }
+
+  const previewErrorMessage =
+    preview.error instanceof ApiError ? preview.error.message : undefined
+  const isNoop = preview.data ? preview.data.changes.length === 0 : false
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {control?.hideTrigger ? null : (
+        <DialogTrigger
+          render={<Button type="button" variant="outline" size="sm" />}
+        >
+          <RocketLaunchIcon className="size-3.5" aria-hidden="true" />
+          Promote to...
+        </DialogTrigger>
+      )}
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Promote &ldquo;{appName}&rdquo;</DialogTitle>
+          <DialogDescription>
+            Points a sibling app in another environment at this app&apos;s
+            current image and redeploys it, the same mechanism a deploy trigger
+            uses. Scoped to apps within one project.
+          </DialogDescription>
+        </DialogHeader>
+
+        {!projectId ? (
+          <p className="text-sm text-muted-foreground">
+            Assign this app to a project first: promotion moves an image between
+            apps in the same project.
+          </p>
+        ) : environments.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No environments yet for this app&apos;s project. Create one from the
+            project&apos;s own detail page first.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            <Field>
+              <FieldLabel htmlFor="promote-target-environment">
+                Environment
+              </FieldLabel>
+              <Select
+                value={environmentId}
+                onValueChange={(value) => {
+                  setEnvironmentId(value ?? '')
+                  setTarget('')
+                  setAckProtected(false)
+                }}
+              >
+                <SelectTrigger
+                  id="promote-target-environment"
+                  className="w-full"
+                >
+                  <SelectValue placeholder="Choose an environment..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {environments.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="promote-target-app">
+                Target app (optional)
+              </FieldLabel>
+              <Select
+                value={target || AUTO_DETECT_VALUE}
+                onValueChange={(value) => {
+                  setTarget(value === AUTO_DETECT_VALUE ? '' : (value ?? ''))
+                }}
+              >
+                <SelectTrigger id="promote-target-app" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={AUTO_DETECT_VALUE}>
+                    Auto-detect (only app tagged with this environment)
+                  </SelectItem>
+                  {candidateApps.map((a) => (
+                    <SelectItem key={a.name} value={a.name}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {environmentId && candidateApps.length === 0 ? (
+                <FieldHint>
+                  No other apps in this project are tagged with that environment
+                  yet. Auto-detect only works when exactly one is.
+                </FieldHint>
+              ) : null}
+            </Field>
+
+            {environmentId && preview.isPending ? (
+              <p className="text-sm text-muted-foreground">
+                Loading preview...
+              </p>
+            ) : null}
+
+            {environmentId && previewErrorMessage ? (
+              <p className="flex items-start gap-1.5 text-sm text-destructive">
+                <WarningIcon
+                  className="mt-0.5 size-4 shrink-0"
+                  aria-hidden="true"
+                />
+                {previewErrorMessage}
+              </p>
+            ) : null}
+
+            {preview.data ? (
+              <div className="space-y-2 rounded-md border border-border p-3 text-sm">
+                <p className="text-muted-foreground">
+                  Target:{' '}
+                  <span className="text-foreground">
+                    {preview.data.target_app}
+                  </span>
+                </p>
+                {isNoop ? (
+                  <p className="text-muted-foreground">
+                    No change: target already runs this image.
+                  </p>
+                ) : (
+                  <p className="flex flex-wrap items-center gap-1.5 font-mono text-xs">
+                    <span className="text-muted-foreground">
+                      {preview.data.to.image || '(none)'}
+                    </span>
+                    <span aria-hidden="true">&rarr;</span>
+                    <span className="text-foreground">
+                      {preview.data.from.image}
+                    </span>
+                  </p>
+                )}
+                <PromotePlan
+                  preview={preview.data}
+                  options={options}
+                  onChange={setOptions}
+                />
+              </div>
+            ) : null}
+
+            {selectedEnvironment?.protected ? (
+              <ProtectedEnvironmentNotice
+                id="promote-ack-protected"
+                environmentName={selectedEnvironment.name}
+                acknowledged={ackProtected}
+                onAcknowledgedChange={setAckProtected}
+              />
+            ) : null}
+          </div>
+        )}
+
+        {promote.isError ? (
+          <Alert variant="destructive">
+            <WarningIcon className="size-4" />
+            <AlertDescription>{promote.error.message}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              handleOpenChange(false)
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={
+              !environmentId ||
+              !preview.data ||
+              (isNoop && !options.includeEnv) ||
+              !promoteOptionsReady(preview.data, options) ||
+              promote.isPending ||
+              (selectedEnvironment?.protected && !ackProtected)
+            }
+            onClick={handlePromote}
+          >
+            {promote.isPending ? 'Promoting...' : 'Promote'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

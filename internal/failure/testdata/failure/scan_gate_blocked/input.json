@@ -1,0 +1,4 @@
+{
+  "Status": "failed",
+  "Error": "supply chain gate blocked this release: 2 critical vulnerabilities"
+}

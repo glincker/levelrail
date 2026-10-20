@@ -1,0 +1,69 @@
+---
+title: "Self-host Meilisearch with Docker"
+sidebarTitle: "Meilisearch"
+description: "A fast, typo-tolerant search engine API you can drop into any app's search bar."
+"og:url": "https://docs.levelrail.com/self-host/meilisearch"
+---
+
+A fast, typo-tolerant search engine API you can drop into any app's search bar.
+
+This page describes the Levelrail template for Meilisearch (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.meilisearch.com/docs.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `meilisearch` | `getmeili/meilisearch:v1.11.1` | 7700 | `meilisearch_data -&#62; /meili_data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `meilisearch` | `MEILI_MASTER_KEY` | Generated at deploy |
+| `meilisearch` | `MEILI_NO_ANALYTICS` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`meilisearch`): 7700:7700.
+- Passwords and keys are generated at deploy time (`meilisearch`): MEILI_MASTER_KEY.
+- Stores data in named volumes (`meilisearch`): meilisearch_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Meilisearch with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Meilisearch. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy meilisearch --name my-meilisearch
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host).

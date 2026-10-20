@@ -1,0 +1,11 @@
+{
+  "Status": "failed",
+  "FailingStep": "building",
+  "Error": "deploy: service \"web\": build: process \"/bin/sh -c npm run build\" did not complete successfully: exit code: 137",
+  "LogLines": [
+    "#10 [builder 4/4] RUN npm run build",
+    "#10 12.50 > next build",
+    "#10 13.90    Creating an optimized production build ...",
+    "#10 ERROR: process \"/bin/sh -c npm run build\" did not complete successfully: exit code: 137"
+  ]
+}

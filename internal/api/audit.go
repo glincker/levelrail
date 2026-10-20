@@ -1,0 +1,341 @@
+package api
+
+import (
+	"bufio"
+	"context"
+	"encoding/csv"
+	"encoding/json"
+	"log/slog"
+	"net"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+// statusRecorder wraps http.ResponseWriter to capture the status code a
+// handler eventually writes, so requireAbility's audit hook (auth.go)
+// can record it after next returns. Both WriteHeader and Write are
+// overridden: a handler that never calls WriteHeader explicitly (just
+// Write) still implicitly sends 200, and that path has to be captured
+// too, not just the explicit one. Flush delegates to the underlying
+// writer when it supports http.Flusher, so a route later added at an
+// audited ability tier can still stream SSE through this wrapper
+// without losing that capability.
+type statusRecorder struct {
+	http.ResponseWriter
+	status      int
+	wroteHeader bool
+	// hijacked is set by Hijack: a WebSocket upgrade (the terminal
+	// route) bypasses WriteHeader/Write entirely, so requestLoggingMiddleware
+	// (request_logging.go) checks this to avoid grading an interactive
+	// session's lifetime as request latency.
+	hijacked bool
+}
+
+func (s *statusRecorder) WriteHeader(status int) {
+	if s.wroteHeader {
+		return
+	}
+	s.status = status
+	s.wroteHeader = true
+	s.ResponseWriter.WriteHeader(status)
+}
+
+func (s *statusRecorder) Write(b []byte) (int, error) {
+	if !s.wroteHeader {
+		s.WriteHeader(http.StatusOK)
+	}
+	return s.ResponseWriter.Write(b)
+}
+
+func (s *statusRecorder) Flush() {
+	if f, ok := s.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
+// Hijack keeps the connection reachable through this wrapper, which the
+// terminal route's WebSocket upgrade needs and which wrapping an
+// http.ResponseWriter would otherwise hide.
+func (s *statusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := s.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, http.ErrNotSupported
+	}
+	s.hijacked = true
+	return h.Hijack()
+}
+
+// auditWorthy reports whether required is sensitive enough to record in
+// the audit log: everything except AbilityRead. An audit log answers
+// "who changed what," not a full read-access log, so a plain read stays
+// unlogged; AbilityReadSensitive is included deliberately, since reading
+// a private credential is not an ordinary read.
+func auditWorthy(required string) bool {
+	return required != AbilityRead
+}
+
+// AuditActionSensitiveRead marks a GET that returned value-bearing env or secret metadata.
+const AuditActionSensitiveRead = "sensitive_read"
+
+var sensitiveReadPath = regexp.MustCompile(`^/api/v1/(apps|organizations|environments)/[^/]+(/previews/[^/]+)?/(env(/(bound|secrets|all))?|secrets|branch-env)$`)
+
+func sensitiveReadRoute(r *http.Request) bool {
+	return r.Method == http.MethodGet && sensitiveReadPath.MatchString(r.URL.Path)
+}
+
+// auditActorName resolves the real display name behind an audited
+// request's actor: tokenName (already known to every requireAbility
+// caller, no extra lookup) for a token actor, or the session's own user
+// record for a session actor. A lookup failure degrades to actorID
+// rather than blocking the write: this runs after next(w, r) has
+// already returned, so there's no request left to protect by failing
+// loudly, the same best-effort contract recordAudit's own doc comment
+// describes.
+func (rt *Router) auditActorName(ctx context.Context, actorType, actorID, tokenName string) string {
+	if actorType != "session" {
+		return tokenName
+	}
+	user, err := rt.auth.GetUserByID(ctx, actorID)
+	if err != nil {
+		rt.logger.Warn("api: resolve audit actor name failed", slog.String("error", err.Error()), slog.String("user_id", actorID))
+		return actorID
+	}
+	return user.DisplayName
+}
+
+// recordAudit writes one audit_log row for a completed request.
+// Best-effort: log a warning on failure, never block or fail the
+// request, the same contract TouchAPITokenLastUsed already established
+// a few lines above every caller of this function in auth.go. By the
+// time this runs, next(w, r) has already returned, so there is no
+// request left to fail even if this one does.
+func (rt *Router) recordAudit(ctx context.Context, r *http.Request, required, actorType, actorID, actorName string, status int) {
+	id, err := store.NewAuditEntryID()
+	if err != nil {
+		rt.logger.Warn("api: generate audit entry id failed", slog.String("error", err.Error()))
+		return
+	}
+	entry := store.AuditEntry{
+		ID:         id,
+		ActorType:  actorType,
+		ActorID:    actorID,
+		ActorName:  actorName,
+		Ability:    required,
+		Method:     r.Method,
+		Path:       r.URL.Path,
+		StatusCode: status,
+		RemoteAddr: clientIP(r),
+		CreatedAt:  store.FormatAuditTime(time.Now()),
+		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
+	}
+	if required == AbilityRead && sensitiveReadRoute(r) {
+		entry.Action = AuditActionSensitiveRead
+	}
+	if actorType == "token" {
+		entry.AgentName = agentNameFrom(ctx)
+		entry.AgentClient = sanitizeAgentClient(r.Header.Get(AgentClientHeader))
+		entry.OnBehalfOf = onBehalfOfFrom(ctx)
+	}
+	if err := rt.auditLog.SaveAuditEntry(ctx, entry); err != nil {
+		rt.logger.Warn("api: save audit entry failed", slog.String("error", err.Error()), slog.String("path", r.URL.Path))
+		return
+	}
+	rt.emitAuditEvent(entry)
+}
+
+// auditLogEntryResource is GET /api/v1/audit-log's wire shape, mirroring
+// store.AuditEntry field-for-field.
+type auditLogEntryResource struct {
+	ID         string `json:"id"`
+	ActorType  string `json:"actor_type"`
+	ActorID    string `json:"actor_id"`
+	ActorName  string `json:"actor_name"`
+	Ability    string `json:"ability"`
+	Method     string `json:"method"`
+	Path       string `json:"path"`
+	StatusCode int    `json:"status_code"`
+	RemoteAddr string `json:"remote_addr"`
+	CreatedAt  string `json:"created_at"`
+	ClientKind string `json:"client_kind"`
+	// AgentName labels the AI agent behind a token; AgentClient is the
+	// self-reported MCP client name and version.
+	AgentName   string `json:"agent_name,omitempty"`
+	AgentClient string `json:"agent_client,omitempty"`
+	// Action is the stable event name for lifecycle rows such as
+	// device_login.expired, empty for plain request rows.
+	Action string `json:"action,omitempty"`
+	// OnBehalfOf is the human principal an AI assistant turn acted for.
+	OnBehalfOf string `json:"on_behalf_of,omitempty"`
+	// Detail is the lifecycle row's JSON detail, absent for plain request rows.
+	Detail json.RawMessage `json:"detail,omitempty"`
+}
+
+func toAuditLogEntryResource(e store.AuditEntry) auditLogEntryResource {
+	return auditLogEntryResource{
+		ID:         e.ID,
+		ActorType:  e.ActorType,
+		ActorID:    e.ActorID,
+		ActorName:  e.ActorName,
+		Ability:    e.Ability,
+		Method:     e.Method,
+		Path:       e.Path,
+		StatusCode: e.StatusCode,
+		RemoteAddr: e.RemoteAddr,
+		CreatedAt:  e.CreatedAt,
+		ClientKind: e.ClientKind,
+		AgentName:  e.AgentName, AgentClient: e.AgentClient, Action: e.Action, OnBehalfOf: e.OnBehalfOf,
+		Detail: auditDetail(e.Detail),
+	}
+}
+
+func auditDetail(raw string) json.RawMessage {
+	if raw == "" || !json.Valid([]byte(raw)) {
+		return nil
+	}
+	return json.RawMessage(raw)
+}
+
+const (
+	defaultAuditLogLimit = 50
+	maxAuditLogLimit     = 200
+)
+
+// parseAuditLogQuery reads handleListAuditLog's shared ?limit/?before/
+// ?path/?method/?client_kind params, writing the request's own 400 response and
+// returning ok=false on the first invalid one so the handler can bail
+// out without duplicating that response shape per format.
+func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, before *time.Time, filter store.AuditEntryFilter, ok bool) {
+	limit = defaultAuditLogLimit
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil || n <= 0 {
+			writeError(w, http.StatusBadRequest, "limit must be a positive integer")
+			return 0, nil, store.AuditEntryFilter{}, false
+		}
+		limit = n
+	}
+	if limit > maxAuditLogLimit {
+		limit = maxAuditLogLimit
+	}
+
+	if raw := r.URL.Query().Get("before"); raw != "" {
+		t, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "before must be an RFC3339 timestamp")
+			return 0, nil, store.AuditEntryFilter{}, false
+		}
+		before = &t
+	}
+
+	filter = store.AuditEntryFilter{
+		Path:       r.URL.Query().Get("path"),
+		Method:     r.URL.Query().Get("method"),
+		ClientKind: r.URL.Query().Get("client_kind"),
+		Search:     strings.TrimSpace(r.URL.Query().Get("q")),
+		AgentName:  strings.TrimSpace(r.URL.Query().Get("agent")),
+		Action:     strings.TrimSpace(r.URL.Query().Get("action")),
+	}
+	switch status := r.URL.Query().Get("status"); status {
+	case "":
+	case "failed":
+		filter.FailedOnly = true
+	default:
+		writeError(w, http.StatusBadRequest, `status must be "failed"`)
+		return 0, nil, store.AuditEntryFilter{}, false
+	}
+	if err := applyAuditResourceFilter(&filter, r.URL.Query()); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return 0, nil, store.AuditEntryFilter{}, false
+	}
+	return limit, before, filter, true
+}
+
+// handleListAuditLog handles GET /api/v1/audit-log: every recorded
+// write/deploy/root-tier request, plus a certificate issuance/renewal
+// internal/ingress's SQLiteStorage detected (actor_type "system", no
+// request behind it), newest first, cursor-paginated by
+// ?before (an RFC3339 timestamp) so a large table never needs offset
+// pagination. ?limit defaults to defaultAuditLogLimit, capped at
+// maxAuditLogLimit. ?path and ?method narrow to one resource's own
+// trail (e.g. an app's config-change history), both exact match.
+// ?client_kind narrows to one caller surface (cli/dashboard/mcp/api), also
+// exact match. ?q is a case-insensitive substring search across actor
+// name, ability, method, path and remote address; ?status=failed keeps only
+// status_code >= 400. ?format=csv returns the same rows as a CSV download instead of JSON,
+// for compliance/record-keeping export; the row shape is identical to
+// auditLogEntryResource, so it can never leak a field the JSON view
+// doesn't already expose.
+func (rt *Router) handleListAuditLog(w http.ResponseWriter, r *http.Request) {
+	limit, before, filter, ok := parseAuditLogQuery(w, r)
+	if !ok {
+		return
+	}
+
+	entries, err := rt.auditLog.ListAuditEntries(r.Context(), limit, before, filter)
+	if err != nil {
+		rt.internalError(w, "api: list audit log failed", err)
+		return
+	}
+
+	if r.URL.Query().Get("format") == "csv" {
+		rt.writeAuditLogCSV(w, entries)
+		return
+	}
+
+	out := make([]auditLogEntryResource, len(entries))
+	for i, e := range entries {
+		out[i] = toAuditLogEntryResource(e)
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// auditLogCSVHeader is the CSV export's column order, field-for-field
+// with auditLogEntryResource's own JSON keys.
+var auditLogCSVHeader = []string{
+	"id", "actor_type", "actor_id", "actor_name", "ability",
+	"method", "path", "status_code", "remote_addr", "created_at", "client_kind",
+}
+
+// writeAuditLogCSV writes entries as a CSV file attachment. limit
+// already caps the row count (maxAuditLogLimit), so this writes directly
+// to w through csv.Writer rather than buffering the whole body into a
+// byte slice first; the status line is committed before any row is
+// written, so a mid-write failure can only be logged, not turned into an
+// error response.
+func (rt *Router) writeAuditLogCSV(w http.ResponseWriter, entries []store.AuditEntry) {
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="audit-log.csv"`)
+	w.WriteHeader(http.StatusOK)
+
+	cw := csv.NewWriter(w)
+	_ = cw.Write(auditLogCSVHeader)
+	for _, e := range entries {
+		_ = cw.Write([]string{
+			e.ID, csvSafe(e.ActorType), csvSafe(e.ActorID), csvSafe(e.ActorName), csvSafe(e.Ability),
+			csvSafe(e.Method), csvSafe(e.Path), strconv.Itoa(e.StatusCode), e.RemoteAddr, e.CreatedAt, e.ClientKind,
+		})
+	}
+	cw.Flush()
+	if err := cw.Error(); err != nil {
+		rt.logger.Warn("api: write audit log csv failed", slog.String("error", err.Error()))
+	}
+}
+
+// csvSafe defuses spreadsheet formula injection: a cell starting with = + -
+// @ or a control character would be evaluated by Excel or Sheets, and token
+// names and display names are caller-chosen.
+func csvSafe(v string) string {
+	if v == "" {
+		return v
+	}
+	switch v[0] {
+	case '=', '+', '-', '@', '\t', '\r', '\n':
+		return "'" + v
+	}
+	return v
+}

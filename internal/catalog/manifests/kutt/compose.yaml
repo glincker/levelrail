@@ -1,0 +1,54 @@
+services:
+  kutt:
+    image: kutt/kutt:v3.2.6
+    ports: ["3000"]
+    environment:
+      DEFAULT_DOMAIN: ${DEFAULT_DOMAIN}
+      JWT_SECRET: ${JWT_SECRET}
+      DB_CLIENT: pg
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: kutt
+      DB_USER: kutt
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_ENABLED: "true"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      TRUST_PROXY: "true"
+      DISALLOW_REGISTRATION: "false"
+      DISALLOW_ANONYMOUS_LINKS: "true"
+    volumes:
+      - uploads:/kutt/custom
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/api/v2/health || wget -q -O /dev/null http://127.0.0.1:3000/api/v2/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: kutt
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: kutt
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kutt -d kutt"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

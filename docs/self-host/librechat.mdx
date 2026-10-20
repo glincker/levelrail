@@ -1,0 +1,84 @@
+---
+title: "Self-host LibreChat with Docker"
+sidebarTitle: "LibreChat"
+description: "A self-hosted ChatGPT-style interface for many model providers, with agents, search, and multi-user login."
+"og:url": "https://docs.levelrail.com/self-host/librechat"
+---
+
+A self-hosted ChatGPT-style interface for many model providers, with agents, search, and multi-user login.
+
+This page describes the Levelrail template for LibreChat (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.librechat.ai/docs.
+
+Recommended memory: about 2048 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `librechat` | `ghcr.io/danny-avila/librechat:v0.8.7` | 3080 | `librechat_images -&#62; /app/client/public/images` |
+| `meilisearch` | `getmeili/meilisearch:v1.54.0` | none | `librechat_meili_data -&#62; /meili_data` |
+| `mongo` | `mongo:7` | none | `librechat_mongo_data -&#62; /data/db` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `librechat` | `ALLOW_REGISTRATION` | Preset in the template |
+| `librechat` | `CREDS_IV` | Generated at deploy |
+| `librechat` | `CREDS_KEY` | Generated at deploy |
+| `librechat` | `DOMAIN_CLIENT` | Preset in the template |
+| `librechat` | `DOMAIN_SERVER` | Preset in the template |
+| `librechat` | `HOST` | Preset in the template |
+| `librechat` | `JWT_REFRESH_SECRET` | Generated at deploy |
+| `librechat` | `JWT_SECRET` | Generated at deploy |
+| `librechat` | `MEILI_HOST` | Preset in the template |
+| `librechat` | `MEILI_MASTER_KEY` | Generated at deploy |
+| `librechat` | `MONGO_URI` | Preset in the template |
+| `librechat` | `PORT` | Preset in the template |
+| `meilisearch` | `MEILI_MASTER_KEY` | Generated at deploy |
+| `meilisearch` | `MEILI_NO_ANALYTICS` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`librechat`): 3080:3080.
+- Passwords and keys are generated at deploy time (`librechat`, `meilisearch`): CREDS_IV, CREDS_KEY, JWT_REFRESH_SECRET, JWT_SECRET, MEILI_MASTER_KEY, MEILI_MASTER_KEY.
+- No health check, so a deploy is judged by the process starting (`meilisearch`, `mongo`).
+- Stores data in named volumes (`librechat`, `meilisearch`, `mongo`): librechat_images, librechat_meili_data, librechat_mongo_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy LibreChat with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select LibreChat. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy librechat --name my-librechat
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+- [Jupyter GPU Notebook](/self-host/jupyter-gpu)
+
+All templates are listed in the [self-host gallery](/self-host).

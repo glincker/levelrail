@@ -1,0 +1,63 @@
+{
+  "banner": {
+    "label": "Read-only demo with sample data",
+    "resets": "Resets {{time}}",
+    "install": "Install",
+    "copyInstall": "Copy install command",
+    "copied": "Copied",
+    "github": "GitHub",
+    "docs": "Docs",
+    "tour": "Take the tour"
+  },
+  "readOnly": {
+    "tooltip": "Read-only in the demo. Install {{brand}} to try this for real.",
+    "toastTitle": "Read-only demo",
+    "toastBody": "This action is not available in the demo. Install {{brand}} to try it for real."
+  },
+  "login": {
+    "title": "Explore the demo",
+    "description": "Sign in as a read-only visitor to look around a seeded instance. Nothing you do is saved.",
+    "button": "Explore the demo",
+    "pending": "Starting the demo",
+    "humanCheckFailed": "Human verification failed. Reload the page and try again.",
+    "rateLimited": "Too many demo sessions from your network. Wait a minute and try again.",
+    "failed": "Could not start the demo. Try again in a moment.",
+    "credentials": "Or sign in with {{username}} and {{password}}."
+  },
+  "unavailable": {
+    "title": "Not available in the demo",
+    "terminal": "The terminal and command execution run commands on a real host, so they are switched off in the demo.",
+    "database": "The database explorer and SQL console connect to a live database, so they are switched off in the demo.",
+    "generic": "This feature needs a real host, so it is switched off in the demo.",
+    "installHint": "Install {{brand}} on your own server to use it.",
+    "install": "See how to install"
+  },
+  "empty": {
+    "title": "Nothing here in the demo",
+    "description": "This area is intentionally empty in the demo data. On a real instance it fills in as you use {{brand}}."
+  },
+  "tour": {
+    "step": "Step {{current}} of {{total}}",
+    "next": "Next",
+    "back": "Back",
+    "done": "Done",
+    "skip": "Skip tour",
+    "open": "Open this page",
+    "apps": {
+      "title": "Your apps",
+      "body": "Every app, its status and its latest deploy in one list. Open one to see its logs, domains and settings."
+    },
+    "deploys": {
+      "title": "Deploy history and rollback",
+      "body": "Each deploy is recorded with its source and result. Any earlier version can be rolled back to in one click."
+    },
+    "metrics": {
+      "title": "Metrics with deploy markers",
+      "body": "Open an app and choose Metrics. Deploys are drawn on the charts, so you can see which release changed the numbers."
+    },
+    "nodes": {
+      "title": "Nodes",
+      "body": "See every server in your fleet, its capacity and what runs on it."
+    }
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "persistent_storages": [{"name": "web-uploads", "mount_path": "/app/uploads", "host_path": null}],
+  "file_storages": [{"fs_path": "/data/conf", "mount_path": "/etc/app.conf"}]
+}

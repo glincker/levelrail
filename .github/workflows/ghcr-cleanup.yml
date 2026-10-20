@@ -1,0 +1,40 @@
+name: GHCR image cleanup
+
+# Untagged versions here are orphaned per-arch digest pushes from
+# release.yml's buildx multi-arch merge step, never referenced by any
+# tag once the manifest list is assembled. Tagged versions (every real
+# :vX.Y.Z, plus whatever :edge/:beta currently point at) are never
+# touched: rollback pinning depends on every stable release staying
+# available forever. docs-local/research/self-update-and-image-channels.md
+# has the full design.
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (report only, delete nothing)'
+        type: boolean
+        default: false
+
+jobs:
+  cleanup:
+    name: Clean up ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      packages: write
+    strategy:
+      matrix:
+        package: [levelrail, levelrail-agent]
+    steps:
+      - name: Delete orphaned untagged versions
+        uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
+        with:
+          package: ${{ matrix.package }}
+          delete-untagged: true
+          # Grace period past any in-flight buildx merge job's runtime,
+          # so a not-yet-tagged digest from a running build can't be
+          # deleted out from under it.
+          older-than: '3 days'
+          dry-run: ${{ inputs.dry_run || false }}

@@ -1,0 +1,2150 @@
+package api
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/agent"
+	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+// intPtr is a small test-only helper for populating appResource.HostPort
+// (*int) inline in a struct literal.
+func intPtr(v int) *int { return &v }
+
+func TestValidateAppResource(t *testing.T) {
+	tests := []struct {
+		name    string
+		app     appResource
+		wantErr bool
+	}{
+		{name: "valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000}, wantErr: false},
+		{name: "missing name", app: appResource{Image: "levelrail/web:abc123", Port: 3000}, wantErr: true},
+		{name: "missing image", app: appResource{Name: "web", Port: 3000}, wantErr: true},
+		{name: "zero port", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 0}, wantErr: true},
+		{name: "negative port", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: -1}, wantErr: true},
+		{name: "empty strategy falls through to store default", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Strategy: ""}, wantErr: false},
+		{name: "recreate strategy valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Strategy: "recreate"}, wantErr: false},
+		{name: "blue-green strategy valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Strategy: "blue-green"}, wantErr: false},
+		{name: "rolling strategy valid (real spec constant, reconciler-unsupported but not an API validation concern)", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Strategy: "rolling"}, wantErr: false},
+		{name: "unknown strategy rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Strategy: "bogus"}, wantErr: true},
+		{name: "zero replicas falls through to store default", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Replicas: 0}, wantErr: false},
+		{name: "positive replicas valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Replicas: 3}, wantErr: false},
+		{name: "negative replicas rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Replicas: -1}, wantErr: true},
+		{name: "custom labels valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Labels: map[string]string{"team": "platform"}}, wantErr: false},
+		{name: "reserved-prefix label rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Labels: map[string]string{spec.ReservedLabelPrefix + "managed": "true"}}, wantErr: true},
+		{name: "empty label key rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Labels: map[string]string{"": "x"}}, wantErr: true},
+		{name: "valid wildcard domain", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Domains: []string{"*.example.com"}}, wantErr: false},
+		{name: "wildcard mixed with plain domain", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Domains: []string{"*.example.com", "example.com"}}, wantErr: false},
+		{name: "malformed wildcard rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Domains: []string{"sub.*.example.com"}}, wantErr: true},
+		{name: "wildcard with no base domain rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Domains: []string{"*.internal"}}, wantErr: true},
+		{name: "nil host_port valid (auto-assign)", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000}, wantErr: false},
+		{name: "pinned host_port valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, HostPort: intPtr(8080)}, wantErr: false},
+		{name: "host_port zero rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, HostPort: intPtr(0)}, wantErr: true},
+		{name: "host_port out of range rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, HostPort: intPtr(99999)}, wantErr: true},
+		{name: "host_port negative rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, HostPort: intPtr(-1)}, wantErr: true},
+		{name: "empty bind_address valid (falls through to store default)", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000}, wantErr: false},
+		{name: "private bind_address valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, BindAddress: "private"}, wantErr: false},
+		{name: "public bind_address valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, BindAddress: "public"}, wantErr: false},
+		{name: "literal IP bind_address valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, BindAddress: "10.0.0.5"}, wantErr: false},
+		{name: "typo'd bind_address rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, BindAddress: "publik"}, wantErr: true},
+		{name: "vault env valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, VaultEnv: map[string]appVaultEnvRef{"API_KEY": {Path: "myapp/config", Key: "api_key"}}}, wantErr: false},
+		{name: "vault env missing path rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, VaultEnv: map[string]appVaultEnvRef{"API_KEY": {Key: "api_key"}}}, wantErr: true},
+		{name: "vault env missing key rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, VaultEnv: map[string]appVaultEnvRef{"API_KEY": {Path: "myapp/config"}}}, wantErr: true},
+		{name: "vault env and secret env on same key rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, SecretEnv: []string{"API_KEY"}, VaultEnv: map[string]appVaultEnvRef{"API_KEY": {Path: "myapp/config", Key: "api_key"}}}, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateAppResource(tt.app)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateAppResource(%+v) error = %v, wantErr %v", tt.app, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// authedRequest builds a request carrying a valid session cookie, so
+// each apps-CRUD test can focus on its own scenario instead of repeating
+// login setup.
+func authedRequest(t *testing.T, cookie *http.Cookie, method, target, body string) *http.Request {
+	t.Helper()
+	var r *http.Request
+	if body == "" {
+		r = httptest.NewRequest(method, target, nil)
+	} else {
+		r = httptest.NewRequest(method, target, strings.NewReader(body))
+	}
+	r.AddCookie(cookie)
+	return r
+}
+
+func TestAppsRoutes_RequireAuth(t *testing.T) {
+	rt, _ := newTestRouter(t)
+
+	assertRoutesRequireAuth(t, rt, []routeCase{
+		{http.MethodGet, "/api/v1/apps"},
+		{http.MethodPost, "/api/v1/apps"},
+		{http.MethodGet, "/api/v1/apps/web"},
+		{http.MethodPut, "/api/v1/apps/web"},
+		{http.MethodDelete, "/api/v1/apps/web"},
+		{http.MethodPost, "/api/v1/apps/web/deploys"},
+		{http.MethodGet, "/api/v1/apps/web/deploys"},
+	})
+}
+
+func TestHandleListApps(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	// Empty first.
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	var empty []appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &empty); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(empty) != 0 {
+		t.Fatalf("expected no apps yet, got %d", len(empty))
+	}
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed SaveDesiredService: %v", err)
+	}
+
+	rec2 := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec2, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps", ""))
+	var got []appResource
+	if err := json.Unmarshal(rec2.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 1 || got[0].Name != "web" {
+		t.Fatalf("got %+v, want one app named web", got)
+	}
+}
+
+// TestHandleListApps_Status checks each row gets its own status, not the first controller's.
+func TestHandleListApps_Status(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	for _, name := range []string{"healthy-app", "broken-app", "pending-app"} {
+		if err := db.SaveDesiredService(ctx, store.DesiredService{
+			Name: name, Image: "levelrail/" + name + ":1", Port: 3000,
+		}); err != nil {
+			t.Fatalf("seed %s: %v", name, err)
+		}
+	}
+	seedTriStateConditions(t, db, "application", "healthy-app", "broken-app")
+	// pending-app deliberately gets no UpsertConditions call at all.
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got []appListResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("got %d apps, want 3", len(got))
+	}
+
+	byName := map[string]appListResource{}
+	for _, a := range got {
+		byName[a.Name] = a
+	}
+
+	if s := byName["healthy-app"].Status; s.Label != "Healthy" || s.Variant != "success" {
+		t.Errorf("healthy-app status = %+v, want Healthy/success", s)
+	}
+	if s := byName["broken-app"].Status; s.Label != "Attention needed" || s.Variant != "destructive" {
+		t.Errorf("broken-app status = %+v, want Attention needed/destructive", s)
+	}
+	if s := byName["pending-app"].Status; s.Label != "No status yet" || s.Variant != "muted" {
+		t.Errorf("pending-app status = %+v, want No status yet/muted", s)
+	}
+}
+
+// Both list endpoints downgrade a domain-bearing app placed off this node from Healthy, since its domain is unreachable.
+func TestHandleListAppsAndSummary_CrossNodeDomainApp_NotHealthy(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveNode(ctx, store.Node{ID: "node-2", Name: "worker-1", Status: store.NodeStatusOnline, Schedulable: true}); err != nil {
+		t.Fatalf("SaveNode() error = %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, store.DesiredService{
+		Name: "static-test", Image: "nginx:1.27-alpine", Port: 80,
+		Domains: []string{"levelrail-test-2.levelrail.com"},
+	}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "static-test", "node-2"); err != nil {
+		t.Fatalf("UpdateServiceNode() error = %v", err)
+	}
+	if err := db.UpsertConditions(ctx, applicationControllerName("static-test"), []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Running"},
+	}); err != nil {
+		t.Fatalf("seed conditions: %v", err)
+	}
+
+	recList := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recList, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps", ""))
+	if recList.Code != http.StatusOK {
+		t.Fatalf("list status = %d, want %d; body = %s", recList.Code, http.StatusOK, recList.Body.String())
+	}
+	var list []appListResource
+	if err := json.Unmarshal(recList.Body.Bytes(), &list); err != nil {
+		t.Fatalf("decode list: %v", err)
+	}
+	if len(list) != 1 || list[0].Status.Label != "Attention needed" {
+		t.Fatalf("list = %+v, want one app with status Attention needed", list)
+	}
+
+	recSummary := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recSummary, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps-summary", ""))
+	if recSummary.Code != http.StatusOK {
+		t.Fatalf("summary status = %d, want %d; body = %s", recSummary.Code, http.StatusOK, recSummary.Body.String())
+	}
+	var sum appsSummaryResource
+	if err := json.Unmarshal(recSummary.Body.Bytes(), &sum); err != nil {
+		t.Fatalf("decode summary: %v", err)
+	}
+	if sum.Running != 0 || sum.Failing != 1 {
+		t.Errorf("summary = %+v, want Running=0 Failing=1", sum)
+	}
+}
+
+func TestHandleCreateApp(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	valid := `{"name":"web","image":"levelrail/web:1","port":3000}`
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", valid))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after create: %v", err)
+	}
+	if svc.Image != "levelrail/web:1" || svc.Port != 3000 {
+		t.Errorf("saved service = %+v, want image levelrail/web:1 port 3000", svc)
+	}
+
+	// Same name again must conflict, not silently overwrite.
+	recDup := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recDup, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", valid))
+	if recDup.Code != http.StatusConflict {
+		t.Fatalf("duplicate create status = %d, want %d", recDup.Code, http.StatusConflict)
+	}
+
+	// Invalid body (missing image): half-succeeded input must not
+	// reach the store at all.
+	recInvalid := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recInvalid, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"broken","port":80}`))
+	if recInvalid.Code != http.StatusBadRequest {
+		t.Fatalf("invalid create status = %d, want %d", recInvalid.Code, http.StatusBadRequest)
+	}
+	if _, err := db.GetDesiredService(context.Background(), "broken"); err == nil {
+		t.Error("invalid create must not have saved a partial app")
+	}
+
+	// Malformed JSON body.
+	recMalformed := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recMalformed, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{not json`))
+	if recMalformed.Code != http.StatusBadRequest {
+		t.Fatalf("malformed body status = %d, want %d", recMalformed.Code, http.StatusBadRequest)
+	}
+}
+
+// TestHandleCreateApp_Command proves command: (store.DesiredService.
+// Command) actually reaches the saved desired state through this
+// endpoint, not silently dropped by appResource.toDesiredService.
+func TestHandleCreateApp_Command(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"command":["node","server.js","--flag"]}`
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after create: %v", err)
+	}
+	want := []string{"node", "server.js", "--flag"}
+	if !reflect.DeepEqual(svc.Command, want) {
+		t.Errorf("saved Command = %v, want %v", svc.Command, want)
+	}
+}
+
+// TestHandleCreateApp_WithSecrets_Success checks inline secret values are stored and never echoed back.
+func TestHandleCreateApp_WithSecrets_Success(t *testing.T) {
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"secret_env":["API_KEY"],"secrets":{"API_KEY":"sk-abc","DB_PASSWORD":"hunter2"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "sk-abc") || strings.Contains(rec.Body.String(), "hunter2") {
+		t.Errorf("body = %s, must never echo a secret value back", rec.Body.String())
+	}
+
+	if setter.calls != 2 {
+		t.Fatalf("setter.calls = %d, want 2", setter.calls)
+	}
+	got := map[string]string{}
+	for _, c := range setter.sets {
+		if c.service != "web" {
+			t.Errorf("set call service = %q, want %q", c.service, "web")
+		}
+		got[c.key] = c.value
+	}
+	want := map[string]string{"API_KEY": "sk-abc", "DB_PASSWORD": "hunter2"}
+	if len(got) != len(want) || got["API_KEY"] != want["API_KEY"] || got["DB_PASSWORD"] != want["DB_PASSWORD"] {
+		t.Errorf("secrets set = %v, want %v", got, want)
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after create: %v", err)
+	}
+	wantSecretEnv := map[string]bool{"API_KEY": true, "DB_PASSWORD": true}
+	if len(svc.SecretEnv) != len(wantSecretEnv) {
+		t.Fatalf("SecretEnv = %v, want %v", svc.SecretEnv, wantSecretEnv)
+	}
+	for _, ref := range svc.SecretEnv {
+		if !wantSecretEnv[ref.Name] {
+			t.Errorf("SecretEnv = %v, want only %v", svc.SecretEnv, wantSecretEnv)
+		}
+		if ref.Required {
+			t.Errorf("SecretEnv[%q].Required = true, want false: this endpoint has no required flag to carry over", ref.Name)
+		}
+	}
+}
+
+// TestHandleCreateApp_WithVaultEnv_Success checks a vault-backed env var round-trips as a reference, with no secret write.
+func TestHandleCreateApp_WithVaultEnv_Success(t *testing.T) {
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"vault_env":{"API_KEY":{"path":"myapp/config","key":"api_key"}}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if setter.calls != 0 {
+		t.Errorf("setter.calls = %d, want 0: a vault-backed var has no local value to store", setter.calls)
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after create: %v", err)
+	}
+	want := store.VaultEnvRef{Path: "myapp/config", Key: "api_key"}
+	if svc.VaultEnv["API_KEY"] != want {
+		t.Errorf("VaultEnv[%q] = %+v, want %+v", "API_KEY", svc.VaultEnv["API_KEY"], want)
+	}
+
+	var resp appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	if resp.VaultEnv["API_KEY"] != (appVaultEnvRef{Path: "myapp/config", Key: "api_key"}) {
+		t.Errorf("response VaultEnv[%q] = %+v, want %+v", "API_KEY", resp.VaultEnv["API_KEY"], want)
+	}
+}
+
+// TestHandleCreateApp_SecretEnvNoValue_StillCreates checks a declared secret name with no value still creates the app.
+func TestHandleCreateApp_SecretEnvNoValue_StillCreates(t *testing.T) {
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"secret_env":["API_KEY"]}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if setter.calls != 0 {
+		t.Errorf("setter.calls = %d, want 0: no value was given", setter.calls)
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after create: %v", err)
+	}
+	if len(svc.SecretEnv) != 1 || svc.SecretEnv[0].Name != "API_KEY" {
+		t.Errorf("SecretEnv = %v, want [API_KEY]", svc.SecretEnv)
+	}
+}
+
+// TestHandleCreateApp_Secrets_NotConfigured_Returns501 covers a control
+// plane with no master key configured: the request must fail fast (no
+// app row created) rather than silently dropping the secret values.
+func TestHandleCreateApp_Secrets_NotConfigured_Returns501(t *testing.T) {
+	rt, db := newTestRouter(t) // no WithSecretSetter
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"secrets":{"API_KEY":"sk-abc"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusNotImplemented, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("app must not have been created when secrets aren't configured")
+	}
+}
+
+// TestHandleCreateApp_Secrets_EmptyValueRejected covers validateAppResource's
+// own guard: an empty secret value is a 400 before anything is stored.
+func TestHandleCreateApp_Secrets_EmptyValueRejected(t *testing.T) {
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"secrets":{"API_KEY":""}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if setter.calls != 0 {
+		t.Errorf("setter.calls = %d, want 0", setter.calls)
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("app must not have been created for an invalid request")
+	}
+}
+
+// TestHandleCreateApp_Secrets_Locked_Returns409 covers the same reversible
+// overwrite guard PUT .../secrets/{key} already enforces, reached this
+// time through create: a locked key refuses even a brand-new app's own
+// first SetValueGuarded call (only meaningful if a same-named app existed
+// before and was deleted without its secrets being cleared).
+func TestHandleCreateApp_Secrets_Locked_Returns409(t *testing.T) {
+	setter := &fakeSecretSetter{locked: true}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"secrets":{"API_KEY":"sk-abc"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("app must not have been created when a secret value is locked")
+	}
+}
+
+// TestHandleCreateApp_AutoPlacement covers handleCreateApp's own node_id
+// resolution: omitted picks the least-loaded registered node, an
+// explicit node_id (including an explicit "") is always honored as an
+// override and never auto-placed, and a single-node install (no other
+// nodes registered) keeps today's local-node behavior unchanged.
+func TestHandleCreateApp_AutoPlacement(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("no other nodes registered: stays local, not auto-placed", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`, http.StatusCreated)
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "", false)
+	})
+
+	t.Run("node_id omitted with multiple nodes registered: auto-placed on the least-loaded one", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_a", "alpha", true)
+		seedOnlineNode(t, db, "node_b", "bravo", true)
+		// Give node_a a head start so node_b is the unambiguous
+		// least-loaded pick.
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "existing", Image: "img:1", Port: 80}); err != nil {
+			t.Fatalf("seed existing service: %v", err)
+		}
+		if err := db.UpdateServiceNode(ctx, "existing", "node_a"); err != nil {
+			t.Fatalf("place existing service: %v", err)
+		}
+
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`, http.StatusCreated)
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_b", true)
+
+		saved, err := db.GetDesiredService(ctx, "web")
+		if err != nil {
+			t.Fatalf("GetDesiredService: %v", err)
+		}
+		if saved.NodeID != "node_b" {
+			t.Errorf("persisted NodeID = %q, want %q", saved.NodeID, "node_b")
+		}
+	})
+
+	// A domain-bearing app must not spread onto a worker node: ingress
+	// (Caddy) only ever routes locally, no mesh path exists yet
+	// (CrossNodeIngress, internal/reconcile/ingress/cross_node.go).
+	t.Run("domain set, node_id omitted: placed on the control-plane node despite more load", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.localNodeID = "node_local"
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_local", "control-plane", true)
+		seedOnlineNode(t, db, "node_worker", "worker", true)
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "existing", Image: "img:1", Port: 80}); err != nil {
+			t.Fatalf("seed existing service: %v", err)
+		}
+		if err := db.UpdateServiceNode(ctx, "existing", "node_local"); err != nil {
+			t.Fatalf("place existing service: %v", err)
+		}
+
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"domains":["web.example.com"]}`, http.StatusCreated)
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_local", true)
+	})
+
+	// No domains: ordinary spread scheduling applies, the same as before
+	// ingress-aware placement existed.
+	t.Run("no domain, node_id omitted: ordinary spread still applies", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.localNodeID = "node_local"
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_local", "control-plane", true)
+		seedOnlineNode(t, db, "node_worker", "worker", true)
+		reports := agent.NewHostReportStore()
+		reports.SetNodeHostReport("node_worker", agent.HostReport{CPUCores: 2, MemoryTotalBytes: 1 << 30, DiskTotalBytes: 100 << 30, DiskFreeBytes: 100 << 30})
+		rt.SetNodeHostReports(reports)
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "existing", Image: "img:1", Port: 80}); err != nil {
+			t.Fatalf("seed existing service: %v", err)
+		}
+		if err := db.UpdateServiceNode(ctx, "existing", "node_local"); err != nil {
+			t.Fatalf("place existing service: %v", err)
+		}
+
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`, http.StatusCreated)
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_worker", true)
+	})
+
+	// An explicit node_id is the operator's call; ingress preference is a
+	// default, never a forced override.
+	t.Run("domain set but node_id explicit: the explicit worker is respected", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.localNodeID = "node_local"
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_local", "control-plane", true)
+		seedOnlineNode(t, db, "node_worker", "worker", true)
+
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"domains":["web.example.com"],"node_id":"node_worker"}`, http.StatusCreated)
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_worker", false)
+	})
+
+	t.Run("explicit node_id overrides auto-placement", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_a", "alpha", true)
+		seedOnlineNode(t, db, "node_b", "bravo", true)
+
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"node_a"}`, http.StatusCreated)
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_a", false)
+	})
+
+	t.Run("explicit empty node_id overrides auto-placement, stays local", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_a", "alpha", true)
+		seedOnlineNode(t, db, "node_b", "bravo", true)
+
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":""}`, http.StatusCreated)
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "", false)
+	})
+
+	t.Run("explicit node_id for an unknown node is rejected", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+
+		createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"does-not-exist"}`, http.StatusBadRequest)
+		if _, err := db.GetDesiredService(ctx, "web"); err == nil {
+			t.Error("a rejected node_id must not have saved the app")
+		}
+	})
+
+	t.Run("auto-placement disabled: stays local even with other nodes registered", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.autoPlacementEnabled = false
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_a", "alpha", true)
+
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`, http.StatusCreated)
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "", false)
+	})
+}
+
+// TestHandleCreateApp_UnreadableBody_Returns400 covers the io.ReadAll
+// error path handleCreateApp needs to probe the raw body for an explicit
+// node_id key (nodeIDKeyPresent) before decoding it: a request whose body
+// can't even be read must be a 400, not a panic or a 500.
+func TestHandleCreateApp_UnreadableBody_Returns400(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	assertUnreadableBodyRejected(t, rt, cookie, "/api/v1/apps")
+}
+
+// TestHandleCreateApp_CordonedNode_Rejected covers handleCreateApp's own
+// cordon check on an explicit node_id, the create-time counterpart to
+// TestHandleSetAppNode_CordonedNode_Rejected.
+func TestHandleCreateApp_CordonedNode_Rejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	seedNode(t, db, "node_1", "worker-1")
+	if err := db.SetNodeSchedulable(ctx, "node_1", false); err != nil {
+		t.Fatalf("cordon node: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"node_1"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(ctx, "web"); err == nil {
+		t.Error("a cordoned node_id must not have saved the app")
+	}
+}
+
+// TestHandleCreateApp_ValidateNodeGenericError_Returns500 covers
+// validatePlacementTarget's default branch: a failure that is neither
+// store.ErrNodeNotFound nor errNodeCordoned, which a real *store.DB has
+// no way to produce on demand, so this uses erroringNodeStore instead.
+func TestHandleCreateApp_ValidateNodeGenericError_Returns500(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rt.nodes = &erroringNodeStore{NodeStore: rt.nodes, getNodeErr: errors.New("node lookup exploded")}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"node_1"}`))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("a validate-node failure must not have saved the app")
+	}
+}
+
+// TestHandleCreateApp_AutoPlaceNodeError_Returns500 covers autoPlaceNode
+// itself failing (its own ListNodes call errored), distinct from a
+// rejected explicit node_id.
+func TestHandleCreateApp_AutoPlaceNodeError_Returns500(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rt.nodes = &erroringNodeStore{NodeStore: rt.nodes, listNodesErr: errors.New("list nodes exploded")}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("an auto-place failure must not have saved the app")
+	}
+}
+
+// TestHandleCreateApp_AssignNodeFails_Returns500 covers the trailing
+// UpdateServiceNode call handleCreateApp makes after SaveDesiredService
+// succeeds for a non-local placement (SaveDesiredService itself never
+// writes node_id, see toDesiredService): a failure there must still
+// report 500, using erroringAppStore since a real *store.DB has no way to
+// fail this call on demand for a service it just successfully created.
+func TestHandleCreateApp_AssignNodeFails_Returns500(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedOnlineNode(t, db, "node_1", "worker-1", true)
+	rt.apps = &erroringAppStore{AppStore: rt.apps, updateServiceNodeErr: errors.New("assign node exploded")}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"node_1"}`))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
+	}
+}
+
+// TestHandleCreateApp_RecordsDeployAttempt covers the gap found via live
+// testing: the existing-image path deserves a deploy_attempts row for
+// history just like any later redeploy (handleTriggerDeploy already
+// gets this via recordPlainDeployAttempt); before this, an app's very
+// first deploy was invisible in its own deploy history forever.
+func TestHandleCreateApp_RecordsDeployAttempt(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	attempts, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 1 {
+		t.Fatalf("expected 1 deploy attempt recorded, got %d", len(attempts))
+	}
+	if attempts[0].Image != "levelrail/web:1" {
+		t.Errorf("Image = %q, want %q", attempts[0].Image, "levelrail/web:1")
+	}
+	if attempts[0].Status != store.DeployAttemptStatusSucceeded {
+		t.Errorf("Status = %q, want %q", attempts[0].Status, store.DeployAttemptStatusSucceeded)
+	}
+}
+
+// TestHandleCreateApp_PendingPlaceholder_NoDeployAttemptRecorded covers
+// the git-build path: cmd/levelrail-cli's pendingImageTag creates with
+// an image_repo + ":pending" placeholder that was never actually
+// running, replaced by the follow-up POST .../builds call, whose own
+// beginBuildDeployAttempt records the real history entry. Recording
+// here too would add a second, misleading "succeeded" row.
+func TestHandleCreateApp_PendingPlaceholder_NoDeployAttemptRecorded(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:pending","port":3000}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	attempts, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 0 {
+		t.Errorf("expected 0 deploy attempts recorded for a :pending placeholder, got %d", len(attempts))
+	}
+}
+
+// TestHandleCreateApp_StrategyAndReplicas covers both an explicit value
+// and the omitted-field case, which must resolve to store.DefaultDeployStrategy/
+// store.DefaultReplicas exactly like a service saved without these fields
+// always has (store.SaveDesiredService's own defense, not something this
+// handler re-implements).
+func TestHandleCreateApp_StrategyAndReplicas(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	explicit := `{"name":"web","image":"levelrail/web:1","port":3000,"strategy":"recreate","replicas":3}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", explicit))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after create: %v", err)
+	}
+	if svc.Strategy != "recreate" || svc.Replicas != 3 {
+		t.Errorf("saved service = %+v, want strategy=recreate replicas=3", svc)
+	}
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Strategy != "recreate" || got.Replicas != 3 {
+		t.Errorf("response = %+v, want strategy=recreate replicas=3", got)
+	}
+
+	// Omitted strategy/replicas must resolve to the store's own defaults,
+	// the same as any other app.yaml-less create today.
+	implicit := `{"name":"web-defaults","image":"levelrail/web:1","port":3000}`
+	recImplicit := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recImplicit, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", implicit))
+	if recImplicit.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", recImplicit.Code, http.StatusCreated, recImplicit.Body.String())
+	}
+	svcDefault, err := db.GetDesiredService(context.Background(), "web-defaults")
+	if err != nil {
+		t.Fatalf("GetDesiredService after implicit create: %v", err)
+	}
+	if svcDefault.Strategy != store.DefaultDeployStrategy || svcDefault.Replicas != store.DefaultReplicas {
+		t.Errorf("saved service = %+v, want strategy=%s replicas=%d", svcDefault, store.DefaultDeployStrategy, store.DefaultReplicas)
+	}
+}
+
+func TestHandleCreateApp_Labels(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"labels":{"team":"platform","tier":"frontend"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after create: %v", err)
+	}
+	if svc.Labels["team"] != "platform" || svc.Labels["tier"] != "frontend" || len(svc.Labels) != 2 {
+		t.Errorf("saved labels = %+v, want map[team:platform tier:frontend]", svc.Labels)
+	}
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Labels["team"] != "platform" || got.Labels["tier"] != "frontend" {
+		t.Errorf("response labels = %+v, want map[team:platform tier:frontend]", got.Labels)
+	}
+}
+
+// TestHandleCreateApp_ReservedLabelPrefix_Rejected proves the collision-
+// prevention rule is enforced through the general create endpoint too,
+// not only through app.yaml parsing: a custom label under
+// spec.ReservedLabelPrefix must never be accepted, since it's this
+// platform's own reserved namespace.
+func TestHandleCreateApp_ReservedLabelPrefix_Rejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"labels":{"` + spec.ReservedLabelPrefix + `managed":"true"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("a reserved-prefix label must not have saved a service")
+	}
+}
+
+// TestHandleCreateApp_InvalidStrategy_Rejected: a typo'd strategy value
+// must be a 400, not silently coerced to a default or saved verbatim.
+func TestHandleCreateApp_InvalidStrategy_Rejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps",
+		`{"name":"web","image":"levelrail/web:1","port":3000,"strategy":"canary"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("an invalid strategy must not have saved a service")
+	}
+}
+
+func TestHandleUpdateApp_StrategyAndReplicas(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	update := `{"name":"web","image":"levelrail/web:1","port":3000,"strategy":"blue-green","replicas":5}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after update: %v", err)
+	}
+	if svc.Strategy != "blue-green" || svc.Replicas != 5 {
+		t.Errorf("updated service = %+v, want strategy=blue-green replicas=5", svc)
+	}
+}
+
+func TestHandleGetApp_StrategyAndReplicasRoundTrip(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:1", Port: 3000,
+		Strategy: "recreate", Replicas: 2,
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web", ""))
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Strategy != "recreate" || got.Replicas != 2 {
+		t.Errorf("got = %+v, want strategy=recreate replicas=2", got)
+	}
+
+	// A service saved without an explicit strategy/replicas still comes
+	// back with the store's resolved defaults, never empty/zero: see
+	// store.DesiredService's own doc comment on why these two fields are
+	// always resolved.
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "bare", Image: "levelrail/bare:1", Port: 3000}); err != nil {
+		t.Fatalf("seed bare: %v", err)
+	}
+	recBare := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recBare, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/bare", ""))
+	var gotBare appResource
+	if err := json.Unmarshal(recBare.Body.Bytes(), &gotBare); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if gotBare.Strategy != store.DefaultDeployStrategy || gotBare.Replicas != store.DefaultReplicas {
+		t.Errorf("got = %+v, want strategy=%s replicas=%d", gotBare, store.DefaultDeployStrategy, store.DefaultReplicas)
+	}
+}
+
+// TestHandleGetApp_HostPortRoundTrip proves a pinned host_port survives
+// GetDesiredService -> appResource -> JSON, and that a service saved with
+// no HostPort (nil, the ordinary case) comes back with no host_port key
+// at all (json:"host_port,omitempty" on a nil *int), not a literal 0.
+func TestHandleGetApp_HostPortRoundTrip(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	hostPort := 30001
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:1", Port: 3000, HostPort: &hostPort,
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web", ""))
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.HostPort == nil || *got.HostPort != 30001 {
+		t.Errorf("HostPort = %v, want a pointer to 30001", got.HostPort)
+	}
+	if strings.Contains(rec.Body.String(), "host_port") == false {
+		t.Errorf("body = %s, want a host_port key present", rec.Body.String())
+	}
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "bare", Image: "levelrail/bare:1", Port: 3000}); err != nil {
+		t.Fatalf("seed bare: %v", err)
+	}
+	recBare := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recBare, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/bare", ""))
+	if strings.Contains(recBare.Body.String(), "host_port") {
+		t.Errorf("body = %s, want no host_port key for an unpinned service", recBare.Body.String())
+	}
+}
+
+// TestHandleUpdateApp_HostPort proves an update through the general PUT
+// endpoint both sets and clears a pinned host_port, the same
+// full-record-replace semantics Port itself already has (HostPort is an
+// ordinary field, not excluded from SaveDesiredService the way
+// NodeID/ProjectID/LogDrain are).
+func TestHandleUpdateApp_HostPort(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web",
+		`{"name":"web","image":"levelrail/web:1","port":3000,"host_port":30001}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after update: %v", err)
+	}
+	if svc.HostPort == nil || *svc.HostPort != 30001 {
+		t.Errorf("HostPort after pin = %v, want a pointer to 30001", svc.HostPort)
+	}
+
+	recClear := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recClear, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web",
+		`{"name":"web","image":"levelrail/web:1","port":3000}`))
+	if recClear.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d, body = %s", recClear.Code, recClear.Body.String())
+	}
+
+	svc, err = db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after clearing update: %v", err)
+	}
+	if svc.HostPort != nil {
+		t.Errorf("HostPort after clearing update = %v, want nil", *svc.HostPort)
+	}
+}
+
+// TestHandleGetApp_BindAddressDefaultsToPrivate proves a service created
+// with no bind_address comes back with the resolved default, never an
+// empty string: appResource.BindAddress has no omitempty, the same
+// always-resolved contract Strategy/Replicas already have.
+func TestHandleGetApp_BindAddressDefaultsToPrivate(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web", ""))
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.BindAddress != "private" {
+		t.Errorf("BindAddress = %q, want %q", got.BindAddress, "private")
+	}
+}
+
+// TestHandleUpdateApp_BindAddress proves an update through the general
+// PUT endpoint sets an explicit bind_address, and that omitting it again
+// falls back to the default, the same full-record-replace semantics
+// TestHandleUpdateApp_HostPort already establishes for host_port.
+func TestHandleUpdateApp_BindAddress(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web",
+		`{"name":"web","image":"levelrail/web:1","port":3000,"bind_address":"public"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after update: %v", err)
+	}
+	if svc.BindAddress != "public" {
+		t.Errorf("BindAddress after update = %q, want %q", svc.BindAddress, "public")
+	}
+
+	recClear := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recClear, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web",
+		`{"name":"web","image":"levelrail/web:1","port":3000}`))
+	if recClear.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d, body = %s", recClear.Code, recClear.Body.String())
+	}
+
+	svc, err = db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after clearing update: %v", err)
+	}
+	if svc.BindAddress != "private" {
+		t.Errorf("BindAddress after clearing update = %q, want default %q", svc.BindAddress, "private")
+	}
+}
+
+func TestHandleCreateApp_DomainAlreadyTaken(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:1", Port: 3000,
+		Domains: []string{"app.example.com"},
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps",
+		`{"name":"web2","image":"levelrail/web2:1","port":3000,"domains":["app.example.com"]}`))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "app.example.com") {
+		t.Errorf("body = %s, want it to name the conflicting domain", rec.Body.String())
+	}
+
+	if _, err := db.GetDesiredService(context.Background(), "web2"); err == nil {
+		t.Error("a create rejected for a domain conflict must not have saved a service")
+	}
+}
+
+func TestHandleUpdateApp_DomainAlreadyTaken(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:1", Port: 3000,
+		Domains: []string{"app.example.com"},
+	}); err != nil {
+		t.Fatalf("seed web: %v", err)
+	}
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web2", Image: "levelrail/web2:1", Port: 3000,
+	}); err != nil {
+		t.Fatalf("seed web2: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web2",
+		`{"name":"web2","image":"levelrail/web2:1","port":3000,"domains":["app.example.com"]}`))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "app.example.com") {
+		t.Errorf("body = %s, want it to name the conflicting domain", rec.Body.String())
+	}
+
+	web2, err := db.GetDesiredService(context.Background(), "web2")
+	if err != nil {
+		t.Fatalf("GetDesiredService(web2): %v", err)
+	}
+	if len(web2.Domains) != 0 {
+		t.Errorf("web2.Domains = %v, want unchanged (empty), an update rejected for a domain conflict must not partially apply", web2.Domains)
+	}
+}
+
+func TestHandleGetApp(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Name != "web" || got.Image != "levelrail/web:1" {
+		t.Errorf("got %+v", got)
+	}
+
+	recMissing := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recMissing, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/does-not-exist", ""))
+	if recMissing.Code != http.StatusNotFound {
+		t.Fatalf("status for missing app = %d, want %d", recMissing.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleGetApp_DomainsRoundTrip(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:1", Port: 3000,
+		Domains: []string{"web.example.com", "www.example.com"},
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web", ""))
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got.Domains) != 2 || got.Domains[0] != "web.example.com" || got.Domains[1] != "www.example.com" {
+		t.Errorf("got.Domains = %v, want [web.example.com www.example.com]", got.Domains)
+	}
+}
+
+func TestHandleUpdateApp(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	update := `{"name":"ignored-by-server","image":"levelrail/web:2","port":4000}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after update: %v", err)
+	}
+	if svc.Image != "levelrail/web:2" || svc.Port != 4000 {
+		t.Errorf("updated service = %+v, want image levelrail/web:2 port 4000", svc)
+	}
+
+	// Updating a nonexistent app is 404, not a silent create.
+	recMissing := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recMissing, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/ghost", update))
+	if recMissing.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", recMissing.Code, http.StatusNotFound)
+	}
+
+	// Invalid body against an existing app.
+	recInvalid := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recInvalid, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", `{"port":0}`))
+	if recInvalid.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", recInvalid.Code, http.StatusBadRequest)
+	}
+}
+
+// TestHandleUpdateApp_DoesNotClearEgressPolicy proves Egress is
+// deliberately excluded from appResource.toDesiredService() (apps.go's
+// own doc comment on that field): a general PUT whose body was built
+// before this feature existed (or simply doesn't mention egress) must
+// never silently wipe out a policy set via the dedicated
+// PUT /api/v1/apps/{name}/egress-policy endpoint or app.yaml's own
+// egress: block.
+func TestHandleUpdateApp_DoesNotClearEgressPolicy(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	if err := db.UpdateServiceEgressPolicy(context.Background(), "web", &store.ServiceEgressPolicy{
+		Mode: store.EgressModeAllowlist, Allow: []store.ServiceEgressAllow{{Host: "api.example.com", Port: 443}},
+	}); err != nil {
+		t.Fatalf("seed egress policy: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", `{"image":"levelrail/web:2","port":4000}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after update: %v", err)
+	}
+	if svc.Egress == nil || svc.Egress.Mode != store.EgressModeAllowlist || len(svc.Egress.Allow) != 1 {
+		t.Errorf("Egress = %+v, want the seeded policy to survive an unrelated general PUT", svc.Egress)
+	}
+}
+
+// TestHandleUpdateApp_DoesNotClearDependsOn is DependsOn's own
+// counterpart to TestHandleUpdateApp_DoesNotClearEgressPolicy: DependsOn
+// is response-only on this endpoint (like PullPolicy, set only through
+// app.yaml's dependsOn: or a compose import), so an ordinary PUT must
+// not silently wipe it.
+func TestHandleUpdateApp_DoesNotClearDependsOn(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "myapp-web", Image: "levelrail/web:1", Port: 3000, DependsOn: []string{"db"},
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/myapp-web", `{"image":"levelrail/web:2","port":4000}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "myapp-web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after update: %v", err)
+	}
+	if len(svc.DependsOn) != 1 || svc.DependsOn[0] != "db" {
+		t.Errorf("DependsOn = %v, want [db] to survive an unrelated general PUT", svc.DependsOn)
+	}
+}
+
+// TestHandleGetApp_SurfacesDependsOn proves toAppResource carries
+// DependsOn through for display, the read half of the
+// display-only/set-elsewhere split
+// TestHandleUpdateApp_DoesNotClearDependsOn proves for writes.
+func TestHandleGetApp_SurfacesDependsOn(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "myapp-web", Image: "levelrail/web:1", Port: 3000, DependsOn: []string{"db"},
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/myapp-web", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got appResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(got.DependsOn) != 1 || got.DependsOn[0] != "db" {
+		t.Errorf("DependsOn = %v, want [db] surfaced in GET", got.DependsOn)
+	}
+}
+
+// TestHandleGetApp_SurfacesEgressPolicy proves toAppResource carries
+// Egress through for display, the read half of the
+// display-only/dedicated-write-endpoint split
+// TestHandleUpdateApp_DoesNotClearEgressPolicy proves for writes.
+func TestHandleGetApp_SurfacesEgressPolicy(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:1", Port: 3000,
+		Egress: &store.ServiceEgressPolicy{Mode: store.EgressModeAllowlist, Allow: []store.ServiceEgressAllow{{Host: "api.example.com", Port: 443}}},
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got appResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.Egress == nil || got.Egress.Mode != store.EgressModeAllowlist || len(got.Egress.Allow) != 1 {
+		t.Errorf("Egress = %+v, want the seeded policy surfaced in GET", got.Egress)
+	}
+}
+
+// TestHandleUpdateApp_ImageChange_RecordsDeployAttempt covers the same
+// gap as TestHandleCreateApp_RecordsDeployAttempt for the update path: an
+// ordinary PUT that happens to change Image is functionally a redeploy
+// and must show up in deploy history the same way handleTriggerDeploy's
+// own image-tag redeploy already does.
+func TestHandleUpdateApp_ImageChange_RecordsDeployAttempt(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", `{"image":"levelrail/web:2","port":3000}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	attempts, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 1 {
+		t.Fatalf("expected 1 deploy attempt recorded, got %d", len(attempts))
+	}
+	if attempts[0].Image != "levelrail/web:2" {
+		t.Errorf("Image = %q, want %q", attempts[0].Image, "levelrail/web:2")
+	}
+	if attempts[0].Source != store.DeployAttemptSourceImage {
+		t.Errorf("Source = %q, want %q", attempts[0].Source, store.DeployAttemptSourceImage)
+	}
+	if attempts[0].Status != store.DeployAttemptStatusSucceeded {
+		t.Errorf("Status = %q, want %q", attempts[0].Status, store.DeployAttemptStatusSucceeded)
+	}
+}
+
+// TestHandleUpdateApp_SameImage_NoDeployAttemptRecorded covers the
+// converse of TestHandleUpdateApp_ImageChange_RecordsDeployAttempt: an
+// update that leaves Image unchanged (e.g. editing only Port or Labels)
+// is not a redeploy and must not add a misleading history row.
+func TestHandleUpdateApp_SameImage_NoDeployAttemptRecorded(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", `{"image":"levelrail/web:1","port":4000}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	attempts, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 0 {
+		t.Errorf("expected 0 deploy attempts recorded for an image-unchanged update, got %d", len(attempts))
+	}
+}
+
+// TestHandleUpdateApp_ResourcesAppliedLive covers the live-resource-
+// update fast path (docs/roadmap.md's "Live, in-place resource-limit
+// application without a restart"): saving new resource limits pushes
+// them onto a running container immediately via UpdateResources and
+// reports resources_applied_live true, but falls back to false (still
+// saving successfully) when there's no running container to push onto,
+// docs/roadmap.md's own "In progress" wording for that fallback case.
+func TestHandleUpdateApp_ResourcesAppliedLive(t *testing.T) {
+	const update = `{"name":"web","image":"levelrail/web:1","port":3000,"resources":{"memory_bytes":268435456}}`
+
+	newRunningRouter := func(t *testing.T) (*Router, *store.DB, *fakeExecAppRuntime) {
+		t.Helper()
+		fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}}
+		rt, db := newTestRouterWithExecRuntime(t, fake)
+		return rt, db, fake
+	}
+	newIdleRouter := func(t *testing.T) (*Router, *store.DB, *fakeExecAppRuntime) {
+		t.Helper()
+		rt, db := newTestRouter(t) // no WithExecRuntime configured
+		return rt, db, nil
+	}
+
+	tests := []struct {
+		name        string
+		newRouter   func(t *testing.T) (*Router, *store.DB, *fakeExecAppRuntime)
+		wantApplied bool
+	}{
+		{name: "running container", newRouter: newRunningRouter, wantApplied: true},
+		{name: "no running container", newRouter: newIdleRouter, wantApplied: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, db, fake := tt.newRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+				t.Fatalf("seed: %v", err)
+			}
+
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+			}
+			var resp appResource
+			if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+				t.Fatalf("decode response: %v", err)
+			}
+			if resp.ResourcesAppliedLive != tt.wantApplied {
+				t.Errorf("resources_applied_live = %v, want %v", resp.ResourcesAppliedLive, tt.wantApplied)
+			}
+
+			// Saving must succeed either way: a live-apply miss only
+			// means the value takes effect on the next deploy/restart
+			// instead of immediately, never a save failure.
+			svc, err := db.GetDesiredService(context.Background(), "web")
+			if err != nil {
+				t.Fatalf("GetDesiredService after update: %v", err)
+			}
+			if svc.Resources == nil || svc.Resources.MemoryBytes != 268435456 {
+				t.Errorf("saved resources = %+v, want MemoryBytes 268435456", svc.Resources)
+			}
+			if tt.wantApplied && (fake.updateResourcesCalls != 1 || fake.updateResourcesID != "c1") {
+				t.Errorf("updateResourcesCalls=%d updateResourcesID=%q, want 1/c1", fake.updateResourcesCalls, fake.updateResourcesID)
+			}
+		})
+	}
+}
+
+// TestHandleUpdateApp_EnvDirty covers the restart-required signal an
+// env-var save must set: unlike a health check or resource limit save,
+// there is no live-apply path for env vars (a container's environment is
+// immutable after creation), so the save must at least make the pending
+// state honest and persistent instead of silently doing nothing.
+func TestHandleUpdateApp_EnvDirty(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	// Saving an env change sets env_dirty true, both in the response and
+	// in the store.
+	update := `{"name":"web","image":"levelrail/web:1","port":3000,"env":{"FOO":"bar"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var resp appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if !resp.EnvDirty {
+		t.Error("env_dirty = false in response, want true after an env change")
+	}
+	saved, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !saved.EnvDirty {
+		t.Error("EnvDirty = false in store, want true after an env change")
+	}
+
+	// A later save that leaves Env untouched (e.g. a health check edit
+	// sent through the same PUT) must not clear the flag: it stays
+	// pending until a real restart or redeploy.
+	updateHealth := `{"name":"web","image":"levelrail/web:1","port":3000,"env":{"FOO":"bar"},"health":{"readiness":{"path":"/healthz"}}}`
+	rec2 := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec2, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", updateHealth))
+	if rec2.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec2.Code, http.StatusOK, rec2.Body.String())
+	}
+	saved, err = db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !saved.EnvDirty {
+		t.Error("EnvDirty = false after an unrelated save, want it to stay true")
+	}
+}
+
+// TestHandleUpdateApp_EnvDirty_ImageChangeClears covers the case where
+// this same PUT also changes Image: that is functionally the same
+// redeploy action as handleTriggerDeploy (see this handler's own doc
+// comment on imageChanged), so the fresh container it creates picks up
+// whatever Env is being saved right now, and env_dirty must not be left
+// set.
+func TestHandleUpdateApp_EnvDirty_ImageChangeClears(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, EnvDirty: true}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	update := `{"name":"web","image":"levelrail/web:2","port":3000,"env":{"FOO":"bar"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var resp appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if resp.EnvDirty {
+		t.Error("env_dirty = true in response, want false when this save also redeploys a new image")
+	}
+	saved, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if saved.EnvDirty {
+		t.Error("EnvDirty = true in store, want false when this save also redeploys a new image")
+	}
+}
+
+// TestHandleCreateApp_EnvDirty_AlwaysFalse guards against a client lying
+// about a brand-new app's env_dirty: toDesiredService never carries it
+// into the INSERT, so the response must never echo anything but false.
+func TestHandleCreateApp_EnvDirty_AlwaysFalse(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	create := `{"name":"web","image":"levelrail/web:1","port":3000,"env_dirty":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", create))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var resp appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if resp.EnvDirty {
+		t.Error("env_dirty = true in create response, want false regardless of client input")
+	}
+	saved, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if saved.EnvDirty {
+		t.Error("EnvDirty = true in store, want false for a brand-new app")
+	}
+}
+
+// TestHandleRestartApp_ClearsEnvDirty covers RestartService's own clearing
+// of env_dirty at the HTTP layer: a restart is a real container
+// recreation, so it must clear the restart-required flag that an earlier
+// env save set.
+// newEnvDirtyAppTestRouter seeds a "web" app with EnvDirty already set,
+// the starting point every TestHandle*EnvDirty case below shares before
+// exercising its own action against it.
+func newEnvDirtyAppTestRouter(t *testing.T) (*Router, *store.DB, *http.Cookie) {
+	t.Helper()
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, EnvDirty: true}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	return rt, db, cookie
+}
+
+// assertAppEnvDirty proves the "web" app's persisted EnvDirty flag matches want.
+func assertAppEnvDirty(t *testing.T, db *store.DB, want bool) {
+	t.Helper()
+	got, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.EnvDirty != want {
+		t.Errorf("EnvDirty = %v, want %v", got.EnvDirty, want)
+	}
+}
+
+func TestHandleRestartApp_ClearsEnvDirty(t *testing.T) {
+	rt, db, cookie := newEnvDirtyAppTestRouter(t)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/restart", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	assertAppEnvDirty(t, db, false)
+}
+
+// TestHandleTriggerDeploy_ClearsEnvDirty covers handleTriggerDeploy's own
+// clearing of env_dirty: rollback runs through this same endpoint (see
+// its own doc comment), and both a forward redeploy and a rollback
+// create a fresh container that picks up whatever Env is currently saved.
+func TestHandleTriggerDeploy_ClearsEnvDirty(t *testing.T) {
+	rt, db, cookie := newEnvDirtyAppTestRouter(t)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"levelrail/web:2"}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+
+	assertAppEnvDirty(t, db, false)
+}
+
+// TestHandleStartApp_ClearsEnvDirty covers UpdateServiceSuspended(false)'s
+// own clearing of env_dirty: resuming a stopped app makes the reconciler
+// create brand new containers (every replica was torn down while
+// suspended), the same fresh-container moment restart/redeploy clear it
+// on.
+func TestHandleStartApp_ClearsEnvDirty(t *testing.T) {
+	rt, db, cookie := newEnvDirtyAppTestRouter(t)
+	if err := db.UpdateServiceSuspended(context.Background(), "web", true); err != nil {
+		t.Fatalf("seed suspended: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/start", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	assertAppEnvDirty(t, db, false)
+}
+
+// TestHandleStopApp_DoesNotClearEnvDirty: unlike start, stopping an app
+// does not recreate anything, so a pending env edit must stay flagged.
+func TestHandleStopApp_DoesNotClearEnvDirty(t *testing.T) {
+	rt, db, cookie := newEnvDirtyAppTestRouter(t)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/stop", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	assertAppEnvDirty(t, db, true)
+}
+
+// seedAndDeleteApp seeds a "web" desired service, deletes it through the
+// HTTP handler, and asserts the delete itself returned 204. Shared by
+// every handleDeleteApp test so each can focus its own assertions on
+// what's distinctive about that case.
+func seedAndDeleteApp(t *testing.T, rt *Router, db *store.DB, cookie *http.Cookie) {
+	t.Helper()
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/web", ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNoContent)
+	}
+}
+
+func TestHandleDeleteApp(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedAndDeleteApp(t, rt, db, cookie)
+
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("expected app to be gone from the store after delete")
+	}
+
+	recAgain := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recAgain, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/web", ""))
+	if recAgain.Code != http.StatusNotFound {
+		t.Fatalf("deleting an already-deleted app: status = %d, want %d", recAgain.Code, http.StatusNotFound)
+	}
+}
+
+// TestHandleDeleteApp_TeardownDispatchesContainerRemoval proves
+// handleDeleteApp's teardownServiceContainers call actually reaches the
+// resolved node runtime in the background goroutine, not just that the
+// desired-state row is gone (TestHandleDeleteApp already covers that).
+func TestHandleDeleteApp_TeardownDispatchesContainerRemoval(t *testing.T) {
+	fake := &fakeExecAppRuntime{listByPrefixCalls: make(chan struct{}, 4)}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+	seedAndDeleteApp(t, rt, db, cookie)
+
+	select {
+	case <-fake.listByPrefixCalls:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for the background teardown to list containers")
+	}
+}
+
+// TestHandleDeleteApp_TeardownResolveFailure_ReturnsPendingAndTombstones
+// proves a node runtime that can't be resolved (e.g. an offline agent)
+// deletes desired state but is not reported as a clean success: the
+// response is 202 and a tombstone keeps the teardown retryable.
+func TestHandleDeleteApp_TeardownResolveFailure_ReturnsPendingAndTombstones(t *testing.T) {
+	db := openTestDB(t)
+	resolver := func(string) (docker.Runtime, error) { return nil, errors.New("node offline") }
+	rt := NewRouter(discardLogger(), testBrand(), db, WithExecRuntime(resolver))
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/web", ""))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "teardown_pending") || !strings.Contains(rec.Body.String(), "node offline") {
+		t.Errorf("body = %s, want teardown_pending with the cause", rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("expected app to be gone from the store even when its node runtime can't be resolved")
+	}
+	pending, err := db.ListPendingTeardowns(context.Background())
+	if err != nil || len(pending) != 1 || pending[0].Name != "web" {
+		t.Errorf("pending teardowns = %v (err %v), want a tombstone for web", pending, err)
+	}
+}
+
+// TestHandleDeleteApp_TeardownSuccess_ClearsTombstone is the happy path: 204
+// and no tombstone left behind.
+func TestHandleDeleteApp_TeardownSuccess_ClearsTombstone(t *testing.T) {
+	fake := &fakeExecAppRuntime{listByPrefixCalls: make(chan struct{}, 4)}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+	seedAndDeleteApp(t, rt, db, cookie)
+
+	pending, err := db.ListPendingTeardowns(context.Background())
+	if err != nil || len(pending) != 0 {
+		t.Errorf("pending teardowns = %v (err %v), want none after a clean delete", pending, err)
+	}
+}
+
+// seedAppAndMoveToNode seeds "web" and nodeID, then PUTs node_id to
+// /api/v1/apps/web/node and requires a 200 OK, returning the response
+// for the caller's own assertions. Shared by TestHandleSetAppNode_Success
+// and TestHandleSetAppNode_TeardownDispatchesOnOldNode's identical seed-
+// then-move setup.
+func seedAppAndMoveToNode(t *testing.T, rt *Router, db *store.DB, cookie *http.Cookie, nodeID string) *httptest.ResponseRecorder {
+	t.Helper()
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	seedNode(t, db, nodeID, "worker-1")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":"`+nodeID+`"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	return rec
+}
+
+func TestHandleSetAppNode_Success(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	rec := seedAppAndMoveToNode(t, rt, db, cookie, "node_1")
+
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.NodeID != "node_1" {
+		t.Errorf("NodeID = %q, want node_1", got.NodeID)
+	}
+
+	svc, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if svc.NodeID != "node_1" {
+		t.Errorf("stored NodeID = %q, want node_1", svc.NodeID)
+	}
+}
+
+func TestHandleSetAppNode_EmptyMovesToLocal(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "web", "node_1"); err != nil {
+		t.Fatalf("seed placement: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":""}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if svc.NodeID != "" {
+		t.Errorf("stored NodeID = %q, want empty (moved back to local)", svc.NodeID)
+	}
+}
+
+// TestHandleSetAppNode_TeardownDispatchesOnOldNode proves moving an app
+// to a different node tears down the container left running on the OLD
+// node, the same background-dispatch shape
+// TestHandleDeleteApp_TeardownDispatchesContainerRemoval already proves
+// for delete.
+func TestHandleSetAppNode_TeardownDispatchesOnOldNode(t *testing.T) {
+	fake := &fakeExecAppRuntime{listByPrefixCalls: make(chan struct{}, 4)}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+
+	seedAppAndMoveToNode(t, rt, db, cookie, "node_1")
+
+	select {
+	case <-fake.listByPrefixCalls:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for the background teardown to list containers on the old node")
+	}
+}
+
+// TestHandleSetAppNode_SameNode_NoTeardown proves setting the same
+// node_id an app already has does not dispatch a teardown: there is no
+// "old node" to clean up when nothing actually moved.
+func TestHandleSetAppNode_SameNode_NoTeardown(t *testing.T) {
+	fake := &fakeExecAppRuntime{listByPrefixCalls: make(chan struct{}, 4)}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":""}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	select {
+	case <-fake.listByPrefixCalls:
+		t.Fatal("teardown dispatched for a no-op node move")
+	case <-time.After(200 * time.Millisecond):
+	}
+}
+
+func TestHandleSetAppNode_UnknownNode_Rejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":"nonexistent"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if svc.NodeID != "" {
+		t.Errorf("stored NodeID = %q, want unchanged (empty): a rejected request must not partially apply", svc.NodeID)
+	}
+}
+
+func TestHandleSetAppNode_UnknownApp_NotFound(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/ghost/node", `{"node_id":""}`))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+// TestHandleSetAppNode_LoadExistingGenericError_Returns500 covers the
+// non-ErrServiceNotFound branch of handleSetAppNode's own GetDesiredService
+// call, using erroringAppStore since a real *store.DB has no way to fail
+// this lookup on demand for a service that genuinely exists.
+func TestHandleSetAppNode_LoadExistingGenericError_Returns500(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	rt.apps = &erroringAppStore{AppStore: rt.apps, getDesiredServiceErr: errors.New("load existing exploded")}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":""}`))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
+	}
+}
+
+// TestHandleSetAppNode_CordonedNode_Rejected is the cordon
+// enforcement point: a cordoned node must refuse new placements while
+// leaving whatever's already running there untouched (store.Node.
+// Schedulable's own doc comment).
+func TestHandleSetAppNode_CordonedNode_Rejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	seedNode(t, db, "node_1", "worker-1")
+	if err := db.SetNodeSchedulable(ctx, "node_1", false); err != nil {
+		t.Fatalf("cordon node: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":"node_1"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if svc.NodeID != "" {
+		t.Errorf("stored NodeID = %q, want unchanged (empty): a rejected request must not partially apply", svc.NodeID)
+	}
+}
+
+// assertPlainWriteTokenForbidden seeds a "web" app and a write-scoped API
+// token, then proves that token gets a 403 against method+target: the
+// shared shape TestHandleSetAppNode_PlainWriteToken_Forbidden,
+// TestHandleRestartApp_PlainWriteToken_Forbidden, and
+// TestHandleStopApp_PlainWriteToken_Forbidden each need to prove their
+// own route sits behind a fleet/deploy-level ability, not AbilityWrite.
+func assertPlainWriteTokenForbidden(t *testing.T, method, target, body, tokenID, plaintext, reason string) {
+	t.Helper()
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: tokenID, Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(method, target, strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d: %s", rec.Code, http.StatusForbidden, reason)
+	}
+}
+
+func TestHandleSetAppNode_PlainWriteToken_Forbidden(t *testing.T) {
+	assertPlainWriteTokenForbidden(t, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":""}`,
+		"tok_write", "write-scoped-token", //nolint:gosec // fake fixture, not a real credential
+		"placement is fleet-level, a plain write token must not reach it")
+}
+
+func TestHandleRestartApp_Success(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	before, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/restart", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	after, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if after.RestartNonce == before.RestartNonce {
+		t.Errorf("RestartNonce unchanged by the restart endpoint: %q", after.RestartNonce)
+	}
+	if after.Image != before.Image {
+		t.Errorf("Image changed by a restart: %q, want unchanged %q", after.Image, before.Image)
+	}
+}
+
+func TestHandleRestartApp_UnknownApp_NotFound(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/nonexistent/restart", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+// TestHandleRestartApp_PlainWriteToken_Forbidden: restart is a
+// deploy-adjacent action (it forces a real container recreation), the
+// same ability boundary POST .../deploys and POST .../builds already
+// draw (AbilityDeploy, not AbilityWrite): see router.go's registration
+// of this route for why.
+func TestHandleRestartApp_PlainWriteToken_Forbidden(t *testing.T) {
+	assertPlainWriteTokenForbidden(t, http.MethodPost, "/api/v1/apps/web/restart", "",
+		"tok_write", "write-scoped-token", //nolint:gosec // fake fixture, not a real credential
+		"a plain write token must not be able to force a container recreation")
+}
+
+func TestHandleStopApp_Success(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/stop", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.Suspended {
+		t.Error("Suspended = false, want true after POST .../stop")
+	}
+}
+
+func TestHandleStopApp_UnknownApp_NotFound(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/nonexistent/stop", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleStartApp_Success(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := db.UpdateServiceSuspended(ctx, "web", true); err != nil {
+		t.Fatalf("seed suspended: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/start", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Suspended {
+		t.Error("Suspended = true, want false after POST .../start")
+	}
+}
+
+// TestHandleStopApp_PlainWriteToken_Forbidden checks the same
+// AbilityDeploy boundary as restart (see router.go's registration of
+// this route).
+func TestHandleStopApp_PlainWriteToken_Forbidden(t *testing.T) {
+	assertPlainWriteTokenForbidden(t, http.MethodPost, "/api/v1/apps/web/stop", "",
+		"tok_write_stop", "write-scoped-token-stop", //nolint:gosec // fake fixture, not a real credential
+		"a plain write token must not be able to stop an app")
+}

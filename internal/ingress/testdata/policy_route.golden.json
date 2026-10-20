@@ -1,0 +1,361 @@
+[
+  {
+    "match": [
+      {
+        "host": [
+          "app.example.com"
+        ]
+      }
+    ],
+    "handle": [
+      {
+        "handler": "request_stats",
+        "key": "app.example.com"
+      },
+      {
+        "handler": "levelrail_redirects",
+        "force_https": true,
+        "status": 308,
+        "https_port": 443,
+        "trailing_slash": "add",
+        "lowercase_host": true
+      },
+      {
+        "handler": "levelrail_geo",
+        "rule": {
+          "mode": "allow",
+          "countries": [
+            "US",
+            "CA"
+          ],
+          "action": "block",
+          "exempt": [
+            "198.51.100.0/24"
+          ]
+        }
+      },
+      {
+        "handler": "headers",
+        "request": {
+          "set": {
+            "X-Forwarded-Prefix": [
+              "/app"
+            ]
+          }
+        }
+      },
+      {
+        "handler": "headers",
+        "request": {
+          "set": {
+            "X-Env": [
+              "prod"
+            ]
+          }
+        }
+      },
+      {
+        "handler": "subroute",
+        "routes": [
+          {
+            "match": [
+              {
+                "method": [
+                  "OPTIONS"
+                ],
+                "expression": {
+                  "expr": "{http.request.header.Origin} in ['https://ui.example.com'] \u0026\u0026 {http.request.header.Access-Control-Request-Method} != ''",
+                  "name": ""
+                }
+              }
+            ],
+            "handle": [
+              {
+                "handler": "static_response",
+                "status_code": 204,
+                "headers": {
+                  "Access-Control-Allow-Headers": [
+                    "{http.request.header.Access-Control-Request-Headers}"
+                  ],
+                  "Access-Control-Allow-Methods": [
+                    "GET, HEAD, POST"
+                  ],
+                  "Access-Control-Allow-Origin": [
+                    "{http.request.header.Origin}"
+                  ],
+                  "Vary": [
+                    "Origin"
+                  ]
+                }
+              }
+            ],
+            "terminal": true
+          },
+          {
+            "match": [
+              {
+                "expression": {
+                  "expr": "{http.request.header.Origin} in ['https://ui.example.com']",
+                  "name": ""
+                }
+              }
+            ],
+            "handle": [
+              {
+                "handler": "headers",
+                "response": {
+                  "add": {
+                    "Vary": [
+                      "Origin"
+                    ]
+                  },
+                  "set": {
+                    "Access-Control-Allow-Origin": [
+                      "{http.request.header.Origin}"
+                    ]
+                  },
+                  "deferred": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "handler": "headers",
+        "response": {
+          "delete": [
+            "X-Debug"
+          ],
+          "deferred": true
+        }
+      },
+      {
+        "handler": "headers",
+        "response": {
+          "add": {
+            "X-One": [
+              "1"
+            ]
+          },
+          "deferred": true
+        }
+      },
+      {
+        "handler": "headers",
+        "response": {
+          "set": {
+            "X-Content-Type-Options": [
+              "nosniff"
+            ],
+            "X-Frame-Options": [
+              "SAMEORIGIN"
+            ]
+          },
+          "deferred": true
+        }
+      },
+      {
+        "handler": "subroute",
+        "routes": [
+          {
+            "match": [
+              {
+                "expression": {
+                  "expr": "{http.request.scheme} == 'https'",
+                  "name": ""
+                }
+              }
+            ],
+            "handle": [
+              {
+                "handler": "headers",
+                "response": {
+                  "set": {
+                    "Strict-Transport-Security": [
+                      "max-age=31536000"
+                    ]
+                  },
+                  "deferred": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "handler": "headers",
+        "response": {
+          "delete": [
+            "Server",
+            "X-Powered-By"
+          ],
+          "deferred": true
+        }
+      },
+      {
+        "handler": "authentication",
+        "providers": {
+          "http_basic": {
+            "accounts": [
+              {
+                "username": "u",
+                "password": "$2a$10$hash"
+              }
+            ],
+            "hash": {
+              "algorithm": "bcrypt"
+            }
+          }
+        }
+      },
+      {
+        "handler": "levelrail_cache",
+        "key": "app.example.com",
+        "rules": [
+          {
+            "match": {
+              "kind": "prefix",
+              "path": "/assets"
+            },
+            "ttl_seconds": 300
+          }
+        ],
+        "max_object_bytes": 2097152,
+        "max_ttl_seconds": 604800
+      },
+      {
+        "handler": "subroute",
+        "routes": [
+          {
+            "match": [
+              {
+                "path": [
+                  "/api",
+                  "/api/*"
+                ],
+                "method": [
+                  "GET",
+                  "POST"
+                ]
+              }
+            ],
+            "handle": [
+              {
+                "handler": "rewrite",
+                "strip_path_prefix": "/api"
+              },
+              {
+                "handler": "reverse_proxy",
+                "upstreams": [
+                  {
+                    "dial": "127.0.0.1:9001"
+                  }
+                ],
+                "transport": {
+                  "protocol": "http",
+                  "dial_timeout": "5s",
+                  "response_header_timeout": "30s"
+                }
+              }
+            ],
+            "terminal": true
+          },
+          {
+            "match": [
+              {
+                "path_regexp": {
+                  "pattern": "^/v[0-9]+/"
+                }
+              }
+            ],
+            "handle": [
+              {
+                "handler": "rewrite",
+                "uri": "/base{http.request.uri}"
+              },
+              {
+                "handler": "reverse_proxy",
+                "upstreams": [
+                  {
+                    "dial": "93.184.216.34:443"
+                  }
+                ],
+                "transport": {
+                  "protocol": "http",
+                  "tls": {
+                    "server_name": "docs.example.org"
+                  },
+                  "dial_timeout": "5s",
+                  "response_header_timeout": "30s"
+                },
+                "headers": {
+                  "request": {
+                    "set": {
+                      "Host": [
+                        "docs.example.org"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "terminal": true
+          },
+          {
+            "match": [
+              {
+                "path": [
+                  "/old"
+                ]
+              }
+            ],
+            "handle": [
+              {
+                "handler": "static_response",
+                "status_code": 308,
+                "headers": {
+                  "Location": [
+                    "https://example.com{http.request.uri}"
+                  ]
+                }
+              }
+            ],
+            "terminal": true
+          },
+          {
+            "match": [
+              {
+                "path": [
+                  "/gone",
+                  "/gone/*"
+                ]
+              }
+            ],
+            "handle": [
+              {
+                "handler": "static_response",
+                "status_code": 502,
+                "body": "The app stopped this path forwards to is not running.\n",
+                "headers": {
+                  "Content-Type": [
+                    "text/plain; charset=utf-8"
+                  ]
+                }
+              }
+            ],
+            "terminal": true
+          }
+        ]
+      },
+      {
+        "handler": "reverse_proxy",
+        "upstreams": [
+          {
+            "dial": "127.0.0.1:9000"
+          }
+        ]
+      }
+    ]
+  }
+]

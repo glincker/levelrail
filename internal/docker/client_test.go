@@ -1,0 +1,707 @@
+package docker
+
+import (
+	"reflect"
+	"testing"
+	"time"
+
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/events"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/mount"
+	dockernetwork "github.com/docker/docker/api/types/network"
+	"github.com/docker/go-connections/nat"
+)
+
+func TestToDockerPorts(t *testing.T) {
+	tests := []struct {
+		name    string
+		ports   []PortBinding
+		wantErr bool
+	}{
+		{name: "empty", ports: nil},
+		{
+			name: "single port, auto host port",
+			ports: []PortBinding{
+				{ContainerPort: 3000},
+			},
+		},
+		{
+			name: "single port, explicit host port",
+			ports: []PortBinding{
+				{ContainerPort: 3000, HostPort: 8080},
+			},
+		},
+		{
+			name: "protocol defaults to tcp when empty",
+			ports: []PortBinding{
+				{ContainerPort: 53, Protocol: ""},
+			},
+		},
+		{
+			name: "udp respected when set",
+			ports: []PortBinding{
+				{ContainerPort: 53, Protocol: "udp"},
+			},
+		},
+		{
+			name: "invalid port number",
+			ports: []PortBinding{
+				{ContainerPort: -1},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			exposed, bindings, err := toDockerPorts(tt.ports)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("toDockerPorts() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if len(tt.ports) == 0 {
+				if exposed != nil || bindings != nil {
+					t.Errorf("expected nil/nil for no ports, got %v / %v", exposed, bindings)
+				}
+				return
+			}
+			if len(exposed) != len(tt.ports) {
+				t.Errorf("exposed has %d entries, want %d", len(exposed), len(tt.ports))
+			}
+			if len(bindings) != len(tt.ports) {
+				t.Errorf("bindings has %d entries, want %d", len(bindings), len(tt.ports))
+			}
+		})
+	}
+}
+
+func TestToDockerPorts_HostPortZeroMeansAutoAssign(t *testing.T) {
+	_, bindings, err := toDockerPorts([]PortBinding{{ContainerPort: 3000, HostPort: 0}})
+	if err != nil {
+		t.Fatalf("toDockerPorts() error = %v", err)
+	}
+	for _, bs := range bindings {
+		for _, b := range bs {
+			if b.HostPort != "" {
+				t.Errorf("HostPort = %q, want empty string (auto-assign) when spec HostPort is 0", b.HostPort)
+			}
+		}
+	}
+}
+
+func TestToDockerPorts_HostIPPassedThrough(t *testing.T) {
+	_, bindings, err := toDockerPorts([]PortBinding{{ContainerPort: 3000, HostPort: 8080, HostIP: "127.0.0.1"}})
+	if err != nil {
+		t.Fatalf("toDockerPorts() error = %v", err)
+	}
+	found := false
+	for _, bs := range bindings {
+		for _, b := range bs {
+			if b.HostIP == "127.0.0.1" {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Error("expected a binding with HostIP 127.0.0.1")
+	}
+}
+
+func TestToDockerPorts_HostIPEmptyMeansEveryInterface(t *testing.T) {
+	_, bindings, err := toDockerPorts([]PortBinding{{ContainerPort: 3000}})
+	if err != nil {
+		t.Fatalf("toDockerPorts() error = %v", err)
+	}
+	for _, bs := range bindings {
+		for _, b := range bs {
+			if b.HostIP != "" {
+				t.Errorf("HostIP = %q, want empty (Docker defaults to every interface)", b.HostIP)
+			}
+		}
+	}
+}
+
+func TestToDockerPorts_HostPortSetIsPassedThrough(t *testing.T) {
+	_, bindings, err := toDockerPorts([]PortBinding{{ContainerPort: 3000, HostPort: 8080}})
+	if err != nil {
+		t.Fatalf("toDockerPorts() error = %v", err)
+	}
+	found := false
+	for _, bs := range bindings {
+		for _, b := range bs {
+			if b.HostPort == "8080" {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Error("expected a binding with HostPort=8080")
+	}
+}
+
+func TestToDockerEnv(t *testing.T) {
+	tests := []struct {
+		name string
+		env  map[string]string
+		want []string
+	}{
+		{name: "empty", env: nil, want: nil},
+		{
+			name: "single var",
+			env:  map[string]string{"FOO": "bar"},
+			want: []string{"FOO=bar"},
+		},
+		{
+			name: "multiple vars, sorted for determinism",
+			env:  map[string]string{"ZOO": "z", "AAA": "a"},
+			want: []string{"AAA=a", "ZOO=z"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toDockerEnv(tt.env)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("toDockerEnv() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestToDockerMounts(t *testing.T) {
+	tests := []struct {
+		name    string
+		volumes []VolumeMount
+		want    []mount.Mount
+	}{
+		{name: "empty", volumes: nil, want: nil},
+		{
+			name:    "single volume",
+			volumes: []VolumeMount{{Name: "db-main-data", ContainerPath: "/var/lib/postgresql/data"}},
+			want: []mount.Mount{
+				{Type: mount.TypeVolume, Source: "db-main-data", Target: "/var/lib/postgresql/data"},
+			},
+		},
+		{
+			name: "multiple volumes preserve order",
+			volumes: []VolumeMount{
+				{Name: "a", ContainerPath: "/a"},
+				{Name: "b", ContainerPath: "/b"},
+			},
+			want: []mount.Mount{
+				{Type: mount.TypeVolume, Source: "a", Target: "/a"},
+				{Type: mount.TypeVolume, Source: "b", Target: "/b"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toDockerMounts(tt.volumes)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("toDockerMounts() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestToDockerBindMounts(t *testing.T) {
+	tests := []struct {
+		name   string
+		mounts []BindMount
+		want   []mount.Mount
+	}{
+		{name: "empty", mounts: nil, want: nil},
+		{
+			name:   "single bind mount",
+			mounts: []BindMount{{HostPath: "/srv/data", ContainerPath: "/data"}},
+			want: []mount.Mount{
+				{Type: mount.TypeBind, Source: "/srv/data", Target: "/data"},
+			},
+		},
+		{
+			name:   "read-only bind mount",
+			mounts: []BindMount{{HostPath: "/srv/config", ContainerPath: "/config", ReadOnly: true}},
+			want: []mount.Mount{
+				{Type: mount.TypeBind, Source: "/srv/config", Target: "/config", ReadOnly: true},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toDockerBindMounts(tt.mounts)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("toDockerBindMounts() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBuildHostConfig_MergesVolumesAndBindMounts(t *testing.T) {
+	spec := ContainerSpec{
+		Name:       "web",
+		Volumes:    []VolumeMount{{Name: "web-data", ContainerPath: "/data"}},
+		BindMounts: []BindMount{{HostPath: "/srv/uploads", ContainerPath: "/uploads", ReadOnly: true}},
+	}
+	want := []mount.Mount{
+		{Type: mount.TypeVolume, Source: "web-data", Target: "/data"},
+		{Type: mount.TypeBind, Source: "/srv/uploads", Target: "/uploads", ReadOnly: true},
+	}
+
+	got := buildHostConfig(spec, nat.PortMap{})
+	if !reflect.DeepEqual(got.Mounts, want) {
+		t.Errorf("buildHostConfig().Mounts = %+v, want %+v", got.Mounts, want)
+	}
+}
+
+func TestBuildHostConfig_DNS(t *testing.T) {
+	tests := []struct {
+		name    string
+		spec    ContainerSpec
+		wantDNS []string
+	}{
+		{
+			name:    "no dns set: omitted, byte-identical to before the field existed",
+			spec:    ContainerSpec{Name: "web"},
+			wantDNS: nil,
+		},
+		{
+			name:    "nil dns: omitted",
+			spec:    ContainerSpec{Name: "web", DNS: nil},
+			wantDNS: nil,
+		},
+		{
+			name:    "empty dns slice: omitted",
+			spec:    ContainerSpec{Name: "web", DNS: []string{}},
+			wantDNS: nil,
+		},
+		{
+			name:    "dns set: passed straight through",
+			spec:    ContainerSpec{Name: "web", DNS: []string{"172.17.0.1"}},
+			wantDNS: []string{"172.17.0.1"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hostConfig := buildHostConfig(tt.spec, nat.PortMap{})
+			if !reflect.DeepEqual(hostConfig.DNS, tt.wantDNS) {
+				t.Errorf("buildHostConfig(%+v).DNS = %+v, want %+v", tt.spec, hostConfig.DNS, tt.wantDNS)
+			}
+			// Every other field buildHostConfig sets must keep behaving
+			// the same regardless of DNS, proving this is additive, not a
+			// rewrite of the existing shape.
+			if hostConfig.RestartPolicy.Name != container.RestartPolicyDisabled {
+				t.Errorf("RestartPolicy = %+v, want disabled", hostConfig.RestartPolicy)
+			}
+		})
+	}
+}
+
+func TestBuildHostConfig_CapAddAndNetworkMode(t *testing.T) {
+	tests := []struct {
+		name            string
+		spec            ContainerSpec
+		wantCapAdd      []string
+		wantNetworkMode container.NetworkMode
+	}{
+		{
+			name:            "neither set: omitted, byte-identical to before these fields existed",
+			spec:            ContainerSpec{Name: "web"},
+			wantCapAdd:      nil,
+			wantNetworkMode: "",
+		},
+		{
+			name:            "empty cap add slice: omitted",
+			spec:            ContainerSpec{Name: "web", CapAdd: []string{}},
+			wantCapAdd:      nil,
+			wantNetworkMode: "",
+		},
+		{
+			name:            "cap add set: passed straight through",
+			spec:            ContainerSpec{Name: "web", CapAdd: []string{"NET_ADMIN"}},
+			wantCapAdd:      []string{"NET_ADMIN"},
+			wantNetworkMode: "",
+		},
+		{
+			name:            "network mode set: joins another container's netns",
+			spec:            ContainerSpec{Name: "web", NetworkMode: "container:abc123"},
+			wantCapAdd:      nil,
+			wantNetworkMode: "container:abc123",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hostConfig := buildHostConfig(tt.spec, nat.PortMap{})
+			if !reflect.DeepEqual([]string(hostConfig.CapAdd), tt.wantCapAdd) {
+				t.Errorf("buildHostConfig(%+v).CapAdd = %+v, want %+v", tt.spec, hostConfig.CapAdd, tt.wantCapAdd)
+			}
+			if hostConfig.NetworkMode != tt.wantNetworkMode {
+				t.Errorf("buildHostConfig(%+v).NetworkMode = %q, want %q", tt.spec, hostConfig.NetworkMode, tt.wantNetworkMode)
+			}
+		})
+	}
+}
+
+func TestBuildHostConfig_Resources(t *testing.T) {
+	tests := []struct {
+		name           string
+		resources      *Resources
+		wantMemory     int64
+		wantNanoCPUs   int64
+		wantMemorySwap int64
+		wantCpusetCpus string
+	}{
+		{name: "nil resources: everything zero"},
+		{
+			name:         "memory and cpu only, no swap or cpuset",
+			resources:    &Resources{MemoryBytes: 512 * 1024 * 1024, NanoCPUs: 500_000_000},
+			wantMemory:   512 * 1024 * 1024,
+			wantNanoCPUs: 500_000_000,
+		},
+		{
+			name: "swap and cpuset set alongside memory and cpu",
+			resources: &Resources{
+				MemoryBytes:     512 * 1024 * 1024,
+				NanoCPUs:        500_000_000,
+				SwapMemoryBytes: 1024 * 1024 * 1024,
+				CPUSetCPUs:      "0-1",
+			},
+			wantMemory:     512 * 1024 * 1024,
+			wantNanoCPUs:   500_000_000,
+			wantMemorySwap: 1024 * 1024 * 1024,
+			wantCpusetCpus: "0-1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hostConfig := buildHostConfig(ContainerSpec{Name: "web", Resources: tt.resources}, nat.PortMap{})
+			if hostConfig.Memory != tt.wantMemory {
+				t.Errorf("Resources.Memory = %d, want %d", hostConfig.Memory, tt.wantMemory)
+			}
+			if hostConfig.NanoCPUs != tt.wantNanoCPUs {
+				t.Errorf("Resources.NanoCPUs = %d, want %d", hostConfig.NanoCPUs, tt.wantNanoCPUs)
+			}
+			if hostConfig.MemorySwap != tt.wantMemorySwap {
+				t.Errorf("Resources.MemorySwap = %d, want %d", hostConfig.MemorySwap, tt.wantMemorySwap)
+			}
+			if hostConfig.CpusetCpus != tt.wantCpusetCpus {
+				t.Errorf("Resources.CpusetCpus = %q, want %q", hostConfig.CpusetCpus, tt.wantCpusetCpus)
+			}
+		})
+	}
+}
+
+func TestGatewayIPFromNetworkInspect(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     []dockernetwork.IPAMConfig
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "no entries",
+			cfg:     nil,
+			wantErr: true,
+		},
+		{
+			name:    "one entry with a gateway",
+			cfg:     []dockernetwork.IPAMConfig{{Subnet: "172.17.0.0/16", Gateway: "172.17.0.1"}},
+			want:    "172.17.0.1",
+			wantErr: false,
+		},
+		{
+			name:    "one entry without a gateway",
+			cfg:     []dockernetwork.IPAMConfig{{Subnet: "172.17.0.0/16"}},
+			wantErr: true,
+		},
+		{
+			name: "multiple entries: first with a gateway wins",
+			cfg: []dockernetwork.IPAMConfig{
+				{Subnet: "172.17.0.0/16", Gateway: "172.17.0.1"},
+				{Subnet: "fd00::/64", Gateway: "fd00::1"},
+			},
+			want:    "172.17.0.1",
+			wantErr: false,
+		},
+		{
+			name: "first entry has no gateway, second does",
+			cfg: []dockernetwork.IPAMConfig{
+				{Subnet: "fd00::/64"},
+				{Subnet: "172.17.0.0/16", Gateway: "172.17.0.1"},
+			},
+			want:    "172.17.0.1",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := gatewayIPFromNetworkInspect(tt.cfg)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("gatewayIPFromNetworkInspect() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("gatewayIPFromNetworkInspect() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestToContainerState(t *testing.T) {
+	tests := []struct {
+		name    string
+		summary container.Summary
+		want    ContainerState
+	}{
+		{
+			name: "leading slash trimmed from name",
+			summary: container.Summary{
+				ID: "abc123", Names: []string{"/web-a1b2c3d4"}, Image: "myapp:sha", State: "running",
+			},
+			want: ContainerState{ID: "abc123", Name: "web-a1b2c3d4", Image: "myapp:sha", Running: true},
+		},
+		{
+			name:    "no names at all: empty name, not a panic",
+			summary: container.Summary{ID: "abc123", Names: nil, State: "exited"},
+			want:    ContainerState{ID: "abc123", Name: "", Running: false},
+		},
+		{
+			name: "labels carried through verbatim, for staleContainers' own instance-ownership check",
+			summary: container.Summary{
+				ID: "abc123", Names: []string{"/web-a1b2c3d4"}, State: "running",
+				Labels: map[string]string{"platform-reserved.instance": "inst_a"},
+			},
+			want: ContainerState{
+				ID: "abc123", Name: "web-a1b2c3d4", Running: true,
+				Labels: map[string]string{"platform-reserved.instance": "inst_a"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toContainerState(tt.summary)
+			if got.ID != tt.want.ID || got.Name != tt.want.Name || got.Image != tt.want.Image || got.Running != tt.want.Running {
+				t.Errorf("toContainerState() = %+v, want %+v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got.Labels, tt.want.Labels) {
+				t.Errorf("toContainerState().Labels = %+v, want %+v", got.Labels, tt.want.Labels)
+			}
+		})
+	}
+}
+
+func TestClient_WithInstanceLabel_MergesIntoLabels(t *testing.T) {
+	unconfigured := &Client{}
+	if got := unconfigured.withInstanceLabel(map[string]string{"a": "b"}); !reflect.DeepEqual(got, map[string]string{"a": "b"}) {
+		t.Errorf("withInstanceLabel() on an unconfigured Client = %+v, want the input unchanged", got)
+	}
+	if got := unconfigured.withInstanceLabel(nil); got != nil {
+		t.Errorf("withInstanceLabel(nil) on an unconfigured Client = %+v, want nil", got)
+	}
+
+	c := &Client{}
+	WithInstanceLabel("platform-reserved.instance", "inst_a")(c)
+
+	got := c.withInstanceLabel(map[string]string{"custom": "operator-set"})
+	want := map[string]string{"custom": "operator-set", "platform-reserved.instance": "inst_a"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("withInstanceLabel() = %+v, want %+v", got, want)
+	}
+
+	// Original map must be left untouched: Create's spec.Labels is
+	// caller-owned data, not something this method should mutate.
+	original := map[string]string{"custom": "operator-set"}
+	_ = c.withInstanceLabel(original)
+	if _, ok := original["platform-reserved.instance"]; ok {
+		t.Error("withInstanceLabel() mutated the caller's own labels map")
+	}
+
+	if got := c.withInstanceLabel(nil); !reflect.DeepEqual(got, map[string]string{"platform-reserved.instance": "inst_a"}) {
+		t.Errorf("withInstanceLabel(nil) on a configured Client = %+v, want just the instance label", got)
+	}
+}
+
+func TestClient_InstanceLabelFilter(t *testing.T) {
+	unconfigured := &Client{}
+	f := filters.NewArgs()
+	unconfigured.instanceLabelFilter(f)
+	if f.Len() != 0 {
+		t.Errorf("instanceLabelFilter() on an unconfigured Client added a filter, want none: %+v", f)
+	}
+
+	c := &Client{}
+	WithInstanceLabel("platform-reserved.instance", "inst_a")(c)
+	f2 := filters.NewArgs()
+	c.instanceLabelFilter(f2)
+	got := f2.Get("label")
+	want := []string{"platform-reserved.instance=inst_a"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("instanceLabelFilter() label filter = %+v, want %+v", got, want)
+	}
+}
+
+func TestMapAction(t *testing.T) {
+	tests := []struct {
+		name string
+		in   events.Action
+		want EventAction
+	}{
+		{name: "start", in: "start", want: EventStart},
+		{name: "die", in: "die", want: EventDie},
+		{name: "stop", in: "stop", want: EventStop},
+		{name: "unrecognized action mapped to empty, filtered out by caller", in: "exec_create", want: ""},
+		{name: "empty input", in: "", want: ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := mapAction(tt.in); got != tt.want {
+				t.Errorf("mapAction(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEventTime(t *testing.T) {
+	tests := []struct {
+		name string
+		msg  events.Message
+		want time.Time
+	}{
+		{
+			name: "TimeNano set: preferred over Time",
+			msg:  events.Message{Time: 1_700_000_000, TimeNano: 1_700_000_000_123_456_789},
+			want: time.Unix(0, 1_700_000_000_123_456_789),
+		},
+		{
+			name: "only Time set: falls back to whole-second precision",
+			msg:  events.Message{Time: 1_700_000_000},
+			want: time.Unix(1_700_000_000, 0),
+		},
+		{
+			name: "neither set: zero value, not a fabricated time",
+			msg:  events.Message{},
+			want: time.Time{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := eventTime(tt.msg); !got.Equal(tt.want) {
+				t.Errorf("eventTime(%+v) = %v, want %v", tt.msg, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestObservedPorts(t *testing.T) {
+	tests := []struct {
+		name  string
+		ports []container.Port
+		want  []PortBinding
+	}{
+		{name: "no ports", ports: nil, want: nil},
+		{
+			name: "exposed but not published, skipped",
+			ports: []container.Port{
+				{PrivatePort: 3000, PublicPort: 0, Type: "tcp"},
+			},
+			want: nil,
+		},
+		{
+			name: "published port kept",
+			ports: []container.Port{
+				{PrivatePort: 3000, PublicPort: 32768, Type: "tcp"},
+			},
+			want: []PortBinding{
+				{ContainerPort: 3000, HostPort: 32768, Protocol: "tcp"},
+			},
+		},
+		{
+			name: "mix of published and unpublished",
+			ports: []container.Port{
+				{PrivatePort: 3000, PublicPort: 32768, Type: "tcp"},
+				{PrivatePort: 9000, PublicPort: 0, Type: "tcp"},
+			},
+			want: []PortBinding{
+				{ContainerPort: 3000, HostPort: 32768, Protocol: "tcp"},
+			},
+		},
+		{
+			name: "bind IP carried through",
+			ports: []container.Port{
+				{PrivatePort: 3000, PublicPort: 32768, Type: "tcp", IP: "127.0.0.1"},
+			},
+			want: []PortBinding{
+				{ContainerPort: 3000, HostPort: 32768, Protocol: "tcp", HostIP: "127.0.0.1"},
+			},
+		},
+		{
+			name: "dual-stack wildcard kept as two distinct bindings, not deduped away",
+			ports: []container.Port{
+				{PrivatePort: 3000, PublicPort: 32768, Type: "tcp", IP: "0.0.0.0"},
+				{PrivatePort: 3000, PublicPort: 32768, Type: "tcp", IP: "::"},
+			},
+			want: []PortBinding{
+				{ContainerPort: 3000, HostPort: 32768, Protocol: "tcp", HostIP: "0.0.0.0"},
+				{ContainerPort: 3000, HostPort: 32768, Protocol: "tcp", HostIP: "::"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := observedPorts(tt.ports)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("observedPorts() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestUpdateMemorySwap(t *testing.T) {
+	tests := []struct {
+		name            string
+		memoryBytes     int64
+		swapMemoryBytes int64
+		wantMemorySwap  int64
+	}{
+		{name: "no memory limit: swap passed through unchanged", memoryBytes: 0, swapMemoryBytes: 0, wantMemorySwap: 0},
+		{name: "memory set, swap unset: defaults to 2x memory", memoryBytes: 512 << 20, swapMemoryBytes: 0, wantMemorySwap: 1024 << 20},
+		{name: "memory and swap both set: swap passed through unchanged", memoryBytes: 512 << 20, swapMemoryBytes: 768 << 20, wantMemorySwap: 768 << 20},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := updateMemorySwap(tt.memoryBytes, tt.swapMemoryBytes); got != tt.wantMemorySwap {
+				t.Errorf("updateMemorySwap(%d, %d) = %d, want %d", tt.memoryBytes, tt.swapMemoryBytes, got, tt.wantMemorySwap)
+			}
+		})
+	}
+}
+
+func TestBuildHostConfig_CPUGuardrails(t *testing.T) {
+	spec := ContainerSpec{
+		Resources: &Resources{MemoryBytes: 4 << 30, SwapMemoryBytes: 4 << 30, NanoCPUs: 2_000_000_000},
+		CPUShares: 128, OomScoreAdj: 800, PidsLimit: 256,
+	}
+	got := buildHostConfig(spec, nat.PortMap{})
+	if got.CPUShares != 128 || got.OomScoreAdj != 800 || got.PidsLimit == nil || *got.PidsLimit != 256 {
+		t.Errorf("shares/oom/pids = %d/%d/%v", got.CPUShares, got.OomScoreAdj, got.PidsLimit)
+	}
+	if got.Memory != 4<<30 || got.MemorySwap != got.Memory || got.NanoCPUs != 2_000_000_000 {
+		t.Errorf("resources = %+v", got.Resources)
+	}
+	plain := buildHostConfig(ContainerSpec{}, nat.PortMap{})
+	if plain.CPUShares != 0 || plain.OomScoreAdj != 0 || plain.PidsLimit != nil {
+		t.Errorf("a spec without guardrails must not set them: %+v", plain)
+	}
+}

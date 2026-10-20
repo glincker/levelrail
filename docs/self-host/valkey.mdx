@@ -1,0 +1,67 @@
+---
+title: "Self-host Valkey with Docker"
+sidebarTitle: "Valkey"
+description: "A Redis-compatible in-memory key-value store under the Linux Foundation, with password auth and append-only persistence."
+"og:url": "https://docs.levelrail.com/self-host/valkey"
+---
+
+A Redis-compatible in-memory key-value store under the Linux Foundation, with password auth and append-only persistence.
+
+This page describes the Levelrail template for Valkey (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://valkey.io/docs/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `valkey` | `valkey/valkey:8.0-alpine` | 6379 | `valkey_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `valkey` | `VALKEY_PASSWORD` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`valkey`): VALKEY_PASSWORD.
+- Stores data in named volumes (`valkey`): valkey_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Valkey with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Valkey. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy valkey --name my-valkey
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [Baserow](/self-host/baserow)
+- [Bytebase](/self-host/bytebase)
+- [Chroma](/self-host/chroma)
+- [ClickHouse](/self-host/clickhouse)
+
+All templates are listed in the [self-host gallery](/self-host).

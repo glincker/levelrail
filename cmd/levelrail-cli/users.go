@@ -1,0 +1,55 @@
+package main
+
+import (
+	"fmt"
+	"io"
+)
+
+// Dispatches list/create/set-abilities/delete/roles; the bearer token must carry the route's required ability.
+func runUsers(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) == 0 {
+		_, _ = fmt.Fprint(stderr, usersUsage(prog))
+		return exitUsage
+	}
+
+	switch args[0] {
+	case "-h", "--help", "help":
+		_, _ = fmt.Fprint(stdout, usersUsage(prog))
+		return exitOK
+	case "list":
+		return runUsersList(prog, args[1:], stdout, stderr, lookupEnv)
+	case "create":
+		return runUsersCreate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "set-abilities":
+		return runUsersSetAbilities(prog, args[1:], stdout, stderr, lookupEnv)
+	case "delete":
+		return runUsersDelete(prog, args[1:], stdout, stderr, lookupEnv)
+	case "roles":
+		return runUsersRoles(prog, args[1:], stdout, stderr, lookupEnv)
+	case "role":
+		return runUsersRole(prog, args[1:], stdout, stderr, lookupEnv)
+	case "grants":
+		return runUsersGrants(prog, args[1:], stdout, stderr, lookupEnv)
+	case "require-password-change":
+		return runUsersRequirePasswordChange(prog, args[1:], stdout, stderr, lookupEnv)
+	default:
+		_, _ = fmt.Fprintf(stderr, "%s: unknown users subcommand %q\n\n", prog, args[0])
+		_, _ = fmt.Fprint(stderr, usersUsage(prog))
+		return exitUsage
+	}
+}
+
+func usersUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s users list [flags]                                          list every user
+  %[1]s users create --email EMAIL --password PASSWORD (--role ROLE | --abilities LIST) [flags]   create a user
+  %[1]s users set-abilities <id> (--role ROLE | --abilities LIST) [flags]                          replace a user's abilities, directly or via a curated role
+  %[1]s users delete <id> [flags]                                    remove a user
+  %[1]s users roles [flags]                                          list the curated role presets --role accepts
+  %[1]s users role set <user> <role> [flags]                         assign a stored role (id or name)
+  %[1]s users grants get|set <user> [--environment ID ...] [flags]   read or replace a guest's environment grants
+  %[1]s users require-password-change <id> [--off] [flags]           make a user choose a new password before signing in again
+
+Run "%[1]s users <subcommand> -h" for a subcommand's own flags.
+`, prog)
+}

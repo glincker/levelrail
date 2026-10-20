@@ -1,0 +1,2305 @@
+package store
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"path/filepath"
+	"reflect"
+	"testing"
+	"time"
+)
+
+func TestSaveAndGetDesiredService(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredService{
+		Name:    "web",
+		Image:   "levelrail/thesvg:abc1234",
+		Port:    3000,
+		Domains: []string{"app.example.com", "www.app.example.com"},
+		Env:     map[string]string{"NODE_ENV": "production"},
+		Resources: &ServiceResources{
+			MemoryBytes:     512 * 1024 * 1024,
+			NanoCPUs:        500_000_000,
+			SwapMemoryBytes: 1024 * 1024 * 1024,
+			CPUSetCPUs:      "0-1",
+		},
+		Health: &ServiceHealth{
+			Readiness:    &ServiceProbe{Path: "/healthz", Interval: 5 * time.Second, Timeout: 2 * time.Second},
+			Liveness:     &ServiceProbe{Path: "/healthz", Interval: 30 * time.Second, Failures: 3},
+			ReadyTimeout: 90 * time.Second,
+		},
+		Volumes: []ServiceVolume{
+			{Name: "app-web-data", ContainerPath: "/var/lib/data"},
+		},
+		BindMounts: []ServiceBindMount{
+			{HostPath: "/srv/web/uploads", ContainerPath: "/uploads"},
+			{HostPath: "/srv/web/config", ContainerPath: "/config", ReadOnly: true},
+		},
+		Hooks: &ServiceHooks{PreDeploy: "rails db:migrate", PostDeploy: "curl -f https://hooks.example.com/deployed"},
+	}
+
+	if err := db.SaveDesiredService(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+
+	if got.Name != want.Name || got.Image != want.Image || got.Port != want.Port {
+		t.Errorf("scalar fields = %+v, want %+v", got, want)
+	}
+	if !reflect.DeepEqual(got.Domains, want.Domains) {
+		t.Errorf("Domains = %+v, want %+v", got.Domains, want.Domains)
+	}
+	if !reflect.DeepEqual(got.Env, want.Env) {
+		t.Errorf("Env = %+v, want %+v", got.Env, want.Env)
+	}
+	if got.Resources == nil || *got.Resources != *want.Resources {
+		t.Errorf("Resources = %+v, want %+v", got.Resources, want.Resources)
+	}
+	if got.Health == nil || got.Health.Readiness == nil || !reflect.DeepEqual(*got.Health.Readiness, *want.Health.Readiness) {
+		t.Errorf("Health.Readiness = %+v, want %+v", got.Health, want.Health)
+	}
+	if got.Health.Liveness == nil || !reflect.DeepEqual(*got.Health.Liveness, *want.Health.Liveness) {
+		t.Errorf("Health.Liveness = %+v, want %+v", got.Health.Liveness, want.Health.Liveness)
+	}
+	if got.Health.ReadyTimeout != want.Health.ReadyTimeout {
+		t.Errorf("Health.ReadyTimeout = %v, want %v", got.Health.ReadyTimeout, want.Health.ReadyTimeout)
+	}
+	if !reflect.DeepEqual(got.Volumes, want.Volumes) {
+		t.Errorf("Volumes = %+v, want %+v", got.Volumes, want.Volumes)
+	}
+	if !reflect.DeepEqual(got.BindMounts, want.BindMounts) {
+		t.Errorf("BindMounts = %+v, want %+v", got.BindMounts, want.BindMounts)
+	}
+	if got.Hooks == nil || *got.Hooks != *want.Hooks {
+		t.Errorf("Hooks = %+v, want %+v", got.Hooks, want.Hooks)
+	}
+}
+
+// TestSaveDesiredService_Hooks_NilByDefault is Hooks' counterpart to
+// HostPort's own "nil by default" regression test: a service saved
+// without a hooks: block (every service before this field existed, and
+// every service that never declares one) must read back Hooks == nil,
+// not a zero-value *ServiceHooks a caller might mistake for "hooks
+// configured but empty."
+func TestSaveDesiredService_Hooks_NilByDefault(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Hooks != nil {
+		t.Errorf("Hooks = %+v, want nil", got.Hooks)
+	}
+}
+
+func TestSaveDesiredService_Egress_NilByDefault(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Egress != nil {
+		t.Errorf("Egress = %+v, want nil (unrestricted egress, unchanged) when never set", got.Egress)
+	}
+}
+
+func TestSaveDesiredService_EgressRoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	policy := &ServiceEgressPolicy{
+		Mode: EgressModeAllowlist,
+		Allow: []ServiceEgressAllow{
+			{Host: "api.anthropic.com", Port: 443},
+			{Host: "github.com", Port: 443},
+		},
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, Egress: policy}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Egress == nil || got.Egress.Mode != policy.Mode || len(got.Egress.Allow) != len(policy.Allow) {
+		t.Fatalf("Egress = %+v, want %+v", got.Egress, policy)
+	}
+	for i, allow := range policy.Allow {
+		if got.Egress.Allow[i] != allow {
+			t.Errorf("Egress.Allow[%d] = %+v, want %+v", i, got.Egress.Allow[i], allow)
+		}
+	}
+}
+
+// TestSaveDesiredService_EgressClearedByRedeploy proves Egress follows
+// Health/Hooks's own full-record-replace semantics, not
+// StorageTargetID's: an app.yaml redeploy that drops the egress: block
+// must actually clear the policy, since (unlike storage attachment)
+// app.yaml is a real source of truth for this field.
+func TestSaveDesiredService_EgressClearedByRedeploy(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	policy := &ServiceEgressPolicy{Mode: EgressModeAllowlist, Allow: []ServiceEgressAllow{{Host: "api.example.com", Port: 443}}}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, Egress: policy}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() redeploy error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Egress != nil {
+		t.Errorf("Egress = %+v, want nil after a redeploy that omits egress:", got.Egress)
+	}
+}
+
+func TestSaveDesiredService_MinimalFieldsRoundTrip(t *testing.T) {
+	// No Env, no Resources, no Health: the common case for a service
+	// with nothing but an image and a port. Must round-trip cleanly,
+	// not error on the way in or produce nil-pointer surprises on the
+	// way out.
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "minimal", Image: "img:tag", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "minimal")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Resources != nil {
+		t.Errorf("Resources = %+v, want nil", got.Resources)
+	}
+	if got.Health != nil {
+		t.Errorf("Health = %+v, want nil", got.Health)
+	}
+	if got.Env == nil {
+		t.Error("Env = nil, want a non-nil (possibly empty) map")
+	}
+	if len(got.Env) != 0 {
+		t.Errorf("Env = %+v, want empty", got.Env)
+	}
+	if got.Domains == nil {
+		t.Error("Domains = nil, want a non-nil (possibly empty) slice")
+	}
+	if len(got.Domains) != 0 {
+		t.Errorf("Domains = %+v, want empty", got.Domains)
+	}
+}
+
+func TestSaveDesiredService_HostPort_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	hostPort := 8080
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000, HostPort: &hostPort}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.HostPort == nil || *got.HostPort != 8080 {
+		t.Errorf("HostPort = %v, want a pointer to 8080", got.HostPort)
+	}
+}
+
+// TestSaveDesiredService_HostPort_NilByDefault is the regression-safety
+// counterpart: a service that never sets HostPort (every service before
+// this field existed, and the ordinary case going forward) must keep
+// reading back nil, not a spurious zero value, since 0 is not a valid
+// TCP port and must never be mistaken for "pinned to port 0".
+func TestSaveDesiredService_HostPort_NilByDefault(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.HostPort != nil {
+		t.Errorf("HostPort = %v, want nil", *got.HostPort)
+	}
+}
+
+// TestSaveDesiredService_HostPort_ClearedByRedeploy proves HostPort is an
+// ordinary desired-state field, full-record-replace like Port itself
+// (not excluded from SaveDesiredService the way NodeID/ProjectID/
+// LogDrain are): a redeploy that omits it must clear a previously pinned
+// value, the same way an app.yaml edit that drops host_port: is expected
+// to.
+func TestSaveDesiredService_HostPort_ClearedByRedeploy(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	hostPort := 8080
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000, HostPort: &hostPort}); err != nil {
+		t.Fatalf("first save: %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 3000}); err != nil {
+		t.Fatalf("second save: %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.HostPort != nil {
+		t.Errorf("HostPort = %v, want nil after a redeploy that omitted it", *got.HostPort)
+	}
+}
+
+func TestSaveDesiredService_UpsertReplacesNotAccumulates(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("first save: %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 4000}); err != nil {
+		t.Fatalf("second save: %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Image != "img:v2" || got.Port != 4000 {
+		t.Errorf("got %+v, want the second save's values, not a merge of both", got)
+	}
+
+	all, err := db.ListDesiredServices(ctx)
+	if err != nil {
+		t.Fatalf("ListDesiredServices() error = %v", err)
+	}
+	if len(all) != 1 {
+		t.Errorf("expected exactly 1 row after two saves to the same name, got %d", len(all))
+	}
+}
+
+func TestGetDesiredService_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	_, err := db.GetDesiredService(context.Background(), "never-saved")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+func TestListDesiredServices_OrderedByName(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	for _, name := range []string{"worker", "api", "web"} {
+		if err := db.SaveDesiredService(ctx, DesiredService{Name: name, Image: "img:tag", Port: 8080}); err != nil {
+			t.Fatalf("save %q: %v", name, err)
+		}
+	}
+
+	got, err := db.ListDesiredServices(ctx)
+	if err != nil {
+		t.Fatalf("ListDesiredServices() error = %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("expected 3 services, got %d", len(got))
+	}
+	want := []string{"api", "web", "worker"}
+	for i, name := range want {
+		if got[i].Name != name {
+			t.Errorf("position %d: got %q, want %q (expected alphabetical order)", i, got[i].Name, name)
+		}
+	}
+}
+
+func TestDeleteDesiredService(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:tag", Port: 8080}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	if err := db.DeleteDesiredService(ctx, "web"); err != nil {
+		t.Fatalf("DeleteDesiredService() error = %v", err)
+	}
+
+	if _, err := db.GetDesiredService(ctx, "web"); !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("GetDesiredService after delete: error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+func TestDeleteDesiredService_NotFound(t *testing.T) {
+	db := openTestDB(t)
+
+	err := db.DeleteDesiredService(context.Background(), "never-saved")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+func TestDeleteDesiredService_DoesNotAffectOtherServices(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	for _, name := range []string{"api", "web"} {
+		if err := db.SaveDesiredService(ctx, DesiredService{Name: name, Image: "img:tag", Port: 8080}); err != nil {
+			t.Fatalf("seed %q: %v", name, err)
+		}
+	}
+
+	if err := db.DeleteDesiredService(ctx, "web"); err != nil {
+		t.Fatalf("DeleteDesiredService() error = %v", err)
+	}
+
+	if _, err := db.GetDesiredService(ctx, "api"); err != nil {
+		t.Errorf("unrelated service api should be untouched, got error = %v", err)
+	}
+}
+
+func TestSaveDesiredService_NewService_DefaultsToLocalNode(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.NodeID != "" {
+		t.Errorf("NodeID = %q, want empty (local node) for a brand new service", got.NodeID)
+	}
+}
+
+func TestUpdateServiceNode(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "web", "node-1"); err != nil {
+		t.Fatalf("UpdateServiceNode() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.NodeID != "node-1" {
+		t.Errorf("NodeID = %q, want node-1", got.NodeID)
+	}
+}
+
+func TestUpdateServiceNode_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateServiceNode(context.Background(), "nonexistent", "node-1")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceNode() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetNodeID is the real
+// regression this task exists to prevent: internal/deploy.Pipeline
+// calls SaveDesiredService on every ordinary redeploy with no opinion
+// on placement at all. If that silently reset node_id back to local,
+// every redeploy of a service an operator had explicitly moved to a
+// remote node would move it back without anyone asking for that.
+func TestSaveDesiredService_RedeployDoesNotResetNodeID(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "web", "node-1"); err != nil {
+		t.Fatalf("UpdateServiceNode() error = %v", err)
+	}
+
+	// A redeploy: a new image, same service, no NodeID opinion at all
+	// (the zero value), exactly what internal/deploy.Pipeline sends.
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Image != "img:v2" {
+		t.Errorf("Image = %q, want img:v2 (the redeploy itself must still take effect)", got.Image)
+	}
+	if got.NodeID != "node-1" {
+		t.Errorf("NodeID = %q, want node-1 (a redeploy must not silently un-assign a placed service)", got.NodeID)
+	}
+}
+
+func TestSaveDesiredService_NewService_DefaultsToNoProject(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.ProjectID != "" {
+		t.Errorf("ProjectID = %q, want empty (no project) for a brand new service", got.ProjectID)
+	}
+}
+
+// seedServiceWithProject saves a "web" service, a "proj_1" project, and
+// attaches one to the other: the shared setup every project-attachment test
+// below starts from.
+func seedServiceWithProject(ctx context.Context, t *testing.T, db *DB) {
+	t.Helper()
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.SaveProject(ctx, Project{ID: "proj_1", Name: "my-saas", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveProject() error = %v", err)
+	}
+	if err := db.UpdateServiceProject(ctx, "web", "proj_1"); err != nil {
+		t.Fatalf("UpdateServiceProject() error = %v", err)
+	}
+}
+
+func TestUpdateServiceProject(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	seedServiceWithProject(ctx, t, db)
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.ProjectID != "proj_1" {
+		t.Errorf("ProjectID = %q, want proj_1", got.ProjectID)
+	}
+}
+
+func TestUpdateServiceProject_BackToNoProject(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	seedServiceWithProject(ctx, t, db)
+	if err := db.UpdateServiceProject(ctx, "web", ""); err != nil {
+		t.Fatalf("UpdateServiceProject(\"\") error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.ProjectID != "" {
+		t.Errorf("ProjectID = %q, want empty after moving back to no project", got.ProjectID)
+	}
+}
+
+func TestUpdateServiceProject_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateServiceProject(context.Background(), "nonexistent", "proj_1")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceProject() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestUpdateServiceStorageTarget mirrors TestUpdateServiceProject exactly,
+// for the app-to-bucket attachment column added alongside it
+// (migrations/0030_service_storage_target.sql): same nullable,
+// FK-backed, non-unique column shape, just pointed at backup_targets
+// instead of projects.
+// seedServiceWithStorageTarget saves a "web" service, a "bkt_1" backup
+// target, and attaches one to the other: the shared setup every
+// storage-target test below starts from.
+func seedServiceWithStorageTarget(ctx context.Context, t *testing.T, db *DB) {
+	t.Helper()
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.SaveBackupTarget(ctx, BackupTarget{ID: "bkt_1", Name: "main-bucket", Provider: BackupProviderR2, Endpoint: "https://r2.example.com", Bucket: "app-data", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveBackupTarget() error = %v", err)
+	}
+	if err := db.UpdateServiceStorageTarget(ctx, "web", "bkt_1"); err != nil {
+		t.Fatalf("UpdateServiceStorageTarget() error = %v", err)
+	}
+}
+
+func TestUpdateServiceStorageTarget(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	seedServiceWithStorageTarget(ctx, t, db)
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.StorageTargetID != "bkt_1" {
+		t.Errorf("StorageTargetID = %q, want bkt_1", got.StorageTargetID)
+	}
+}
+
+// TestUpdateServiceStorageTarget_MultipleAppsShareOneTarget proves the
+// deliberate "no uniqueness constraint" decision
+// (migrations/0030_service_storage_target.sql's own comment): a bucket is
+// not a scarce host resource the way public_port is, so two apps
+// attaching the same backup target must both succeed.
+func TestUpdateServiceStorageTarget_MultipleAppsShareOneTarget(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveBackupTarget(ctx, BackupTarget{ID: "bkt_1", Name: "shared-bucket", Provider: BackupProviderR2, Endpoint: "https://r2.example.com", Bucket: "shared", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveBackupTarget() error = %v", err)
+	}
+	for _, name := range []string{"web", "worker"} {
+		if err := db.SaveDesiredService(ctx, DesiredService{Name: name, Image: "img:v1", Port: 8080}); err != nil {
+			t.Fatalf("SaveDesiredService(%s) error = %v", name, err)
+		}
+		if err := db.UpdateServiceStorageTarget(ctx, name, "bkt_1"); err != nil {
+			t.Fatalf("UpdateServiceStorageTarget(%s) error = %v, want both apps to attach the same target successfully", name, err)
+		}
+	}
+
+	for _, name := range []string{"web", "worker"} {
+		got, err := db.GetDesiredService(ctx, name)
+		if err != nil {
+			t.Fatalf("GetDesiredService(%s) error = %v", name, err)
+		}
+		if got.StorageTargetID != "bkt_1" {
+			t.Errorf("%s StorageTargetID = %q, want bkt_1", name, got.StorageTargetID)
+		}
+	}
+}
+
+func TestUpdateServiceStorageTarget_BackToNoStorage(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	seedServiceWithStorageTarget(ctx, t, db)
+	if err := db.UpdateServiceStorageTarget(ctx, "web", ""); err != nil {
+		t.Fatalf("UpdateServiceStorageTarget(\"\") error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.StorageTargetID != "" {
+		t.Errorf("StorageTargetID = %q, want empty after detaching", got.StorageTargetID)
+	}
+}
+
+func TestUpdateServiceEgressPolicy(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	policy := &ServiceEgressPolicy{Mode: EgressModeAllowlist, Allow: []ServiceEgressAllow{{Host: "api.example.com", Port: 443}}}
+	if err := db.UpdateServiceEgressPolicy(ctx, "web", policy); err != nil {
+		t.Fatalf("UpdateServiceEgressPolicy() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Egress == nil || got.Egress.Mode != EgressModeAllowlist || len(got.Egress.Allow) != 1 || got.Egress.Allow[0] != policy.Allow[0] {
+		t.Errorf("Egress = %+v, want %+v", got.Egress, policy)
+	}
+}
+
+// TestUpdateServiceEgressPolicy_DoesNotTouchOtherFields proves this is
+// the narrow single-column write UpdateServiceStorageTarget's own doc
+// comment establishes, not a SaveDesiredService-shaped full replace: an
+// unrelated field (Image) written earlier must survive a later
+// UpdateServiceEgressPolicy call untouched.
+func TestUpdateServiceEgressPolicy_DoesNotTouchOtherFields(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, Env: map[string]string{"FOO": "bar"}}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.UpdateServiceEgressPolicy(ctx, "web", &ServiceEgressPolicy{Mode: EgressModeAllowlist, Allow: []ServiceEgressAllow{{Host: "api.example.com", Port: 443}}}); err != nil {
+		t.Fatalf("UpdateServiceEgressPolicy() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Image != "img:v1" || got.Env["FOO"] != "bar" {
+		t.Errorf("UpdateServiceEgressPolicy() clobbered unrelated fields: Image = %q, Env = %+v", got.Image, got.Env)
+	}
+}
+
+func TestUpdateServiceEgressPolicy_ClearBackToUnrestricted(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, Egress: &ServiceEgressPolicy{Mode: EgressModeAllowlist, Allow: []ServiceEgressAllow{{Host: "api.example.com", Port: 443}}}}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.UpdateServiceEgressPolicy(ctx, "web", nil); err != nil {
+		t.Fatalf("UpdateServiceEgressPolicy(nil) error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Egress != nil {
+		t.Errorf("Egress = %+v, want nil after clearing", got.Egress)
+	}
+}
+
+func TestUpdateServiceEgressPolicy_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateServiceEgressPolicy(context.Background(), "nonexistent", &ServiceEgressPolicy{Mode: EgressModeAllowlist, Allow: []ServiceEgressAllow{{Host: "api.example.com", Port: 443}}})
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceEgressPolicy() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+func TestUpdateServiceVolumes(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	volumes := []ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}}
+	if err := db.UpdateServiceVolumes(ctx, "web", volumes); err != nil {
+		t.Fatalf("UpdateServiceVolumes() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if len(got.Volumes) != 1 || got.Volumes[0] != volumes[0] {
+		t.Errorf("Volumes = %+v, want %+v", got.Volumes, volumes)
+	}
+}
+
+// TestUpdateServiceVolumes_DoesNotTouchOtherFields mirrors
+// TestUpdateServiceEgressPolicy_DoesNotTouchOtherFields: this is a
+// narrow single-column write, not a SaveDesiredService-shaped full
+// replace.
+func TestUpdateServiceVolumes_DoesNotTouchOtherFields(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, Env: map[string]string{"FOO": "bar"}}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.UpdateServiceVolumes(ctx, "web", []ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}}); err != nil {
+		t.Fatalf("UpdateServiceVolumes() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Image != "img:v1" || got.Env["FOO"] != "bar" {
+		t.Errorf("UpdateServiceVolumes() clobbered unrelated fields: Image = %q, Env = %+v", got.Image, got.Env)
+	}
+}
+
+func TestUpdateServiceVolumes_EmptyClearsAll(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{
+		Name: "web", Image: "img:v1", Port: 8080,
+		Volumes: []ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}},
+	}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.UpdateServiceVolumes(ctx, "web", nil); err != nil {
+		t.Fatalf("UpdateServiceVolumes(nil) error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if len(got.Volumes) != 0 {
+		t.Errorf("Volumes = %+v, want none after clearing", got.Volumes)
+	}
+}
+
+func TestUpdateServiceVolumes_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateServiceVolumes(context.Background(), "nonexistent", []ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}})
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceVolumes() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+func TestUpdateServiceStorageTarget_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateServiceStorageTarget(context.Background(), "nonexistent", "bkt_1")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceStorageTarget() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestUpdateServiceStorageTarget_TargetDeletedClearsColumn proves the FK
+// ON DELETE SET NULL actually behaves the way
+// migrations/0030_service_storage_target.sql's own comment claims: an
+// operator deleting a connected bucket must not leave an app silently
+// pointing at a storage_target_id that no longer resolves to anything.
+func TestUpdateServiceStorageTarget_TargetDeletedClearsColumn(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	seedServiceWithStorageTarget(ctx, t, db)
+	if err := db.DeleteBackupTarget(ctx, "bkt_1"); err != nil {
+		t.Fatalf("DeleteBackupTarget() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.StorageTargetID != "" {
+		t.Errorf("StorageTargetID = %q, want empty after the target it pointed at was deleted", got.StorageTargetID)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetStorageTargetID mirrors
+// TestSaveDesiredService_RedeployDoesNotResetProjectID exactly, for the
+// same reason: an ordinary redeploy must never silently detach an app's
+// object storage.
+func TestSaveDesiredService_RedeployDoesNotResetStorageTargetID(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	seedServiceWithStorageTarget(ctx, t, db)
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.StorageTargetID != "bkt_1" {
+		t.Errorf("StorageTargetID = %q, want bkt_1 (a redeploy must not silently detach storage)", got.StorageTargetID)
+	}
+}
+
+func TestSaveDesiredService_DatabaseEnvRoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	svc := DesiredService{
+		Name: "web", Image: "img:v1", Port: 8080,
+		DatabaseEnv: map[string]DatabaseEnvRef{
+			"DATABASE_URL": {Database: "main", Field: "url"},
+		},
+	}
+	if err := db.SaveDesiredService(ctx, svc); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	want := DatabaseEnvRef{Database: "main", Field: "url"}
+	if got.DatabaseEnv["DATABASE_URL"] != want {
+		t.Errorf("DatabaseEnv[%q] = %+v, want %+v", "DATABASE_URL", got.DatabaseEnv["DATABASE_URL"], want)
+	}
+}
+
+func TestSaveDesiredService_VaultEnvRoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	svc := DesiredService{
+		Name: "web", Image: "img:v1", Port: 8080,
+		VaultEnv: map[string]VaultEnvRef{
+			"API_KEY": {Path: "myapp/config", Key: "api_key"},
+		},
+	}
+	if err := db.SaveDesiredService(ctx, svc); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	want := VaultEnvRef{Path: "myapp/config", Key: "api_key"}
+	if got.VaultEnv["API_KEY"] != want {
+		t.Errorf("VaultEnv[%q] = %+v, want %+v", "API_KEY", got.VaultEnv["API_KEY"], want)
+	}
+}
+
+func TestSetServiceVaultEnvVar(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	svc := DesiredService{Name: "web", Image: "img:v1", Port: 8080}
+	if err := db.SaveDesiredService(ctx, svc); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.SetServiceVaultEnvVar(ctx, "web", "API_KEY", &VaultEnvRef{Path: "myapp/config", Key: "api_key"}); err != nil {
+		t.Fatalf("SetServiceVaultEnvVar() error = %v", err)
+	}
+	if err := db.SetServiceVaultEnvVar(ctx, "web", "DB_TOKEN", &VaultEnvRef{Path: "myapp/db", Key: "token"}); err != nil {
+		t.Fatalf("SetServiceVaultEnvVar() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if len(got.VaultEnv) != 2 {
+		t.Fatalf("VaultEnv = %+v, want 2 entries", got.VaultEnv)
+	}
+	if got.VaultEnv["API_KEY"] != (VaultEnvRef{Path: "myapp/config", Key: "api_key"}) {
+		t.Errorf("VaultEnv[API_KEY] = %+v", got.VaultEnv["API_KEY"])
+	}
+
+	// Removing one key leaves the other untouched: this is a narrow,
+	// single-key mutation, not a full-record replace.
+	if err := db.SetServiceVaultEnvVar(ctx, "web", "API_KEY", nil); err != nil {
+		t.Fatalf("SetServiceVaultEnvVar(nil) error = %v", err)
+	}
+	got, err = db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if len(got.VaultEnv) != 1 {
+		t.Fatalf("VaultEnv = %+v, want 1 entry after removal", got.VaultEnv)
+	}
+	if _, ok := got.VaultEnv["DB_TOKEN"]; !ok {
+		t.Errorf("VaultEnv = %+v, want DB_TOKEN to remain", got.VaultEnv)
+	}
+	if got.Image != "img:v1" || got.Port != 8080 {
+		t.Errorf("SetServiceVaultEnvVar must not touch other fields: got Image=%q Port=%d", got.Image, got.Port)
+	}
+}
+
+func TestSetServiceVaultEnvVar_UnknownService(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetServiceVaultEnvVar(context.Background(), "missing", "API_KEY", &VaultEnvRef{Path: "p", Key: "k"})
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+func TestSetServiceDatabaseEnvVar(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	svc := DesiredService{Name: "web", Image: "img:v1", Port: 8080}
+	if err := db.SaveDesiredService(ctx, svc); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.SetServiceDatabaseEnvVar(ctx, "web", "DATABASE_URL", &DatabaseEnvRef{Database: "main", Field: "url"}); err != nil {
+		t.Fatalf("SetServiceDatabaseEnvVar() error = %v", err)
+	}
+	if err := db.SetServiceDatabaseEnvVar(ctx, "web", "CACHE_URL", &DatabaseEnvRef{Database: "cache", Field: "url"}); err != nil {
+		t.Fatalf("SetServiceDatabaseEnvVar() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if len(got.DatabaseEnv) != 2 {
+		t.Fatalf("DatabaseEnv = %+v, want 2 entries", got.DatabaseEnv)
+	}
+	if got.DatabaseEnv["DATABASE_URL"] != (DatabaseEnvRef{Database: "main", Field: "url"}) {
+		t.Errorf("DatabaseEnv[DATABASE_URL] = %+v", got.DatabaseEnv["DATABASE_URL"])
+	}
+
+	// Removing one key leaves the other untouched: this is a narrow,
+	// single-key mutation, not a full-record replace.
+	if err := db.SetServiceDatabaseEnvVar(ctx, "web", "DATABASE_URL", nil); err != nil {
+		t.Fatalf("SetServiceDatabaseEnvVar(nil) error = %v", err)
+	}
+	got, err = db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if len(got.DatabaseEnv) != 1 {
+		t.Fatalf("DatabaseEnv = %+v, want 1 entry after removal", got.DatabaseEnv)
+	}
+	if _, ok := got.DatabaseEnv["CACHE_URL"]; !ok {
+		t.Errorf("DatabaseEnv = %+v, want CACHE_URL to remain", got.DatabaseEnv)
+	}
+	if got.Image != "img:v1" || got.Port != 8080 {
+		t.Errorf("SetServiceDatabaseEnvVar must not touch other fields: got Image=%q Port=%d", got.Image, got.Port)
+	}
+}
+
+func TestSetServiceDatabaseEnvVar_UnknownService(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetServiceDatabaseEnvVar(context.Background(), "missing", "DATABASE_URL", &DatabaseEnvRef{Database: "main", Field: "url"})
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+func TestUpdateServiceDatabaseAttachment(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	att := &DatabaseAttachment{DatabaseName: "main", EnvVar: "DATABASE_URL", Field: "url"}
+	if err := db.UpdateServiceDatabaseAttachment(ctx, "web", att); err != nil {
+		t.Fatalf("UpdateServiceDatabaseAttachment() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.DatabaseAttachment == nil || *got.DatabaseAttachment != *att {
+		t.Errorf("DatabaseAttachment = %+v, want %+v", got.DatabaseAttachment, att)
+	}
+}
+
+func TestUpdateServiceDatabaseAttachment_Clear(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.UpdateServiceDatabaseAttachment(ctx, "web", &DatabaseAttachment{DatabaseName: "main", EnvVar: "DATABASE_URL", Field: "url"}); err != nil {
+		t.Fatalf("UpdateServiceDatabaseAttachment(set) error = %v", err)
+	}
+	if err := db.UpdateServiceDatabaseAttachment(ctx, "web", nil); err != nil {
+		t.Fatalf("UpdateServiceDatabaseAttachment(clear) error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.DatabaseAttachment != nil {
+		t.Errorf("DatabaseAttachment = %+v, want nil after clearing", got.DatabaseAttachment)
+	}
+}
+
+func TestUpdateServiceDatabaseAttachment_NotFound(t *testing.T) {
+	err := openTestDB(t).UpdateServiceDatabaseAttachment(context.Background(), "nonexistent", &DatabaseAttachment{DatabaseName: "main", EnvVar: "DATABASE_URL", Field: "url"})
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceDatabaseAttachment() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+func TestSaveDesiredService_RedeployDoesNotResetDatabaseAttachment(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+	att := &DatabaseAttachment{DatabaseName: "main", EnvVar: "DATABASE_URL", Field: "url"}
+	if err := db.UpdateServiceDatabaseAttachment(ctx, "web", att); err != nil {
+		t.Fatalf("UpdateServiceDatabaseAttachment() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.DatabaseAttachment == nil || *got.DatabaseAttachment != *att {
+		t.Errorf("DatabaseAttachment = %+v, want %+v (a redeploy must not silently detach it)", got.DatabaseAttachment, att)
+	}
+}
+
+func TestUpdateServiceApp(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	app := newTestApp()
+	if err := db.SaveApp(ctx, app); err != nil {
+		t.Fatalf("SaveApp() error = %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.UpdateServiceApp(ctx, "web", app.ID); err != nil {
+		t.Fatalf("UpdateServiceApp() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.AppID != app.ID {
+		t.Errorf("AppID = %q, want %q", got.AppID, app.ID)
+	}
+}
+
+func TestUpdateServiceApp_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateServiceApp(context.Background(), "nonexistent", "app_1")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceApp() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+func TestUpdateServiceSuspended(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.UpdateServiceSuspended(ctx, "web", true); err != nil {
+		t.Fatalf("UpdateServiceSuspended(true) error = %v", err)
+	}
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.Suspended {
+		t.Error("Suspended = false, want true")
+	}
+
+	if err := db.UpdateServiceSuspended(ctx, "web", false); err != nil {
+		t.Fatalf("UpdateServiceSuspended(false) error = %v", err)
+	}
+	got, err = db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Suspended {
+		t.Error("Suspended = true, want false")
+	}
+}
+
+func TestUpdateServiceSuspended_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateServiceSuspended(context.Background(), "nonexistent", true)
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceSuspended() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetSuspended mirrors
+// TestSaveDesiredService_RedeployDoesNotResetStorageTargetID: an
+// ordinary redeploy must not silently un-stop a stopped app.
+func TestSaveDesiredService_RedeployDoesNotResetSuspended(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+	if err := db.UpdateServiceSuspended(ctx, "web", true); err != nil {
+		t.Fatalf("UpdateServiceSuspended() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.Suspended {
+		t.Error("Suspended = false, want true (a redeploy must not silently resume a stopped app)")
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetProjectID mirrors
+// TestSaveDesiredService_RedeployDoesNotResetNodeID exactly, for the
+// same reason: internal/deploy.Pipeline calls SaveDesiredService on
+// every ordinary redeploy with no opinion on project membership at all,
+// and that must never silently un-assign a service an operator had
+// explicitly filed under a project.
+func TestSaveDesiredService_RedeployDoesNotResetProjectID(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	seedServiceWithProject(ctx, t, db)
+
+	// A redeploy: a new image, same service, no ProjectID opinion at
+	// all (the zero value), exactly what internal/deploy.Pipeline sends.
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Image != "img:v2" {
+		t.Errorf("Image = %q, want img:v2 (the redeploy itself must still take effect)", got.Image)
+	}
+	if got.ProjectID != "proj_1" {
+		t.Errorf("ProjectID = %q, want proj_1 (a redeploy must not silently un-assign a project)", got.ProjectID)
+	}
+}
+
+func TestSaveDesiredService_AppID_WrittenOnInsert(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveApp(ctx, App{ID: "myapp", Name: "myapp", CreatedAt: "2026-08-16T00:00:00Z", UpdatedAt: "2026-08-16T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveApp() error = %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "myapp-web", Image: "img:v1", AppID: "myapp"}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "myapp-web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.AppID != "myapp" {
+		t.Errorf("AppID = %q, want myapp", got.AppID)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetAppID mirrors
+// TestSaveDesiredService_RedeployDoesNotResetProjectID: AppID is fixed
+// at creation, an ordinary redeploy carries no opinion on it at all.
+func TestSaveDesiredService_RedeployDoesNotResetAppID(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveApp(ctx, App{ID: "myapp", Name: "myapp", CreatedAt: "2026-08-16T00:00:00Z", UpdatedAt: "2026-08-16T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveApp() error = %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "myapp-web", Image: "img:v1", AppID: "myapp"}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "myapp-web", Image: "img:v2"}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "myapp-web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Image != "img:v2" {
+		t.Errorf("Image = %q, want img:v2 (the redeploy itself must still take effect)", got.Image)
+	}
+	if got.AppID != "myapp" {
+		t.Errorf("AppID = %q, want myapp (a redeploy must not silently un-assign an app)", got.AppID)
+	}
+}
+
+func TestSaveDesiredService_IsTrial_WrittenOnInsert(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "myapp-web", Image: "img:v1", IsTrial: true}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "myapp-web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.IsTrial {
+		t.Errorf("IsTrial = false, want true")
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetIsTrial mirrors
+// TestSaveDesiredService_RedeployDoesNotResetAppID: IsTrial is fixed at
+// creation, an ordinary redeploy carries no opinion on it at all.
+func TestSaveDesiredService_RedeployDoesNotResetIsTrial(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "myapp-web", Image: "img:v1", IsTrial: true}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "myapp-web", Image: "img:v2"}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "myapp-web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Image != "img:v2" {
+		t.Errorf("Image = %q, want img:v2 (the redeploy itself must still take effect)", got.Image)
+	}
+	if !got.IsTrial {
+		t.Errorf("IsTrial = false, want true (a redeploy must not silently clear trial status)")
+	}
+}
+
+// TestListDesiredServicesByNode is the drain and
+// delete-guard primitive: find what's placed on a node without
+// listing every service and filtering client-side.
+func TestListDesiredServicesByNode(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	for _, svc := range []DesiredService{
+		{Name: "web", Image: "img:v1", Port: 8080},
+		{Name: "worker", Image: "img:v1", Port: 8081},
+		{Name: "api", Image: "img:v1", Port: 8082},
+	} {
+		if err := db.SaveDesiredService(ctx, svc); err != nil {
+			t.Fatalf("SaveDesiredService(%s) error = %v", svc.Name, err)
+		}
+	}
+	if err := db.UpdateServiceNode(ctx, "web", "node-1"); err != nil {
+		t.Fatalf("UpdateServiceNode(web) error = %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "worker", "node-1"); err != nil {
+		t.Fatalf("UpdateServiceNode(worker) error = %v", err)
+	}
+	// api stays on the local node ("").
+
+	got, err := db.ListDesiredServicesByNode(ctx, "node-1")
+	if err != nil {
+		t.Fatalf("ListDesiredServicesByNode(node-1) error = %v", err)
+	}
+	if len(got) != 2 || got[0].Name != "web" || got[1].Name != "worker" {
+		t.Fatalf("ListDesiredServicesByNode(node-1) = %+v, want [web worker] ordered by name", got)
+	}
+
+	gotLocal, err := db.ListDesiredServicesByNode(ctx, "")
+	if err != nil {
+		t.Fatalf("ListDesiredServicesByNode(\"\") error = %v", err)
+	}
+	if len(gotLocal) != 1 || gotLocal[0].Name != "api" {
+		t.Fatalf("ListDesiredServicesByNode(\"\") = %+v, want [api]", gotLocal)
+	}
+
+	gotEmpty, err := db.ListDesiredServicesByNode(ctx, "node-2")
+	if err != nil {
+		t.Fatalf("ListDesiredServicesByNode(node-2) error = %v", err)
+	}
+	if len(gotEmpty) != 0 {
+		t.Errorf("ListDesiredServicesByNode(node-2) = %+v, want empty", gotEmpty)
+	}
+}
+
+func TestListDesiredServicesByProject(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	for _, p := range []Project{{ID: "proj-1", Name: "one"}, {ID: "proj-2", Name: "two"}} {
+		if err := db.SaveProject(ctx, p); err != nil {
+			t.Fatalf("SaveProject(%s) error = %v", p.ID, err)
+		}
+	}
+	for _, svc := range []struct {
+		name      string
+		port      int
+		projectID string
+	}{
+		{"web", 8080, "proj-1"},
+		{"worker", 8081, "proj-1"},
+		{"api", 8082, "proj-2"},
+	} {
+		if err := db.SaveDesiredService(ctx, DesiredService{Name: svc.name, Image: "img:v1", Port: svc.port}); err != nil {
+			t.Fatalf("SaveDesiredService(%s) error = %v", svc.name, err)
+		}
+		if err := db.UpdateServiceProject(ctx, svc.name, svc.projectID); err != nil {
+			t.Fatalf("UpdateServiceProject(%s) error = %v", svc.name, err)
+		}
+	}
+
+	tests := []struct {
+		name      string
+		projectID string
+		want      []string
+	}{
+		{name: "project with two services", projectID: "proj-1", want: []string{"web", "worker"}},
+		{name: "project with one service", projectID: "proj-2", want: []string{"api"}},
+		{name: "unknown project", projectID: "proj-none", want: nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := db.ListDesiredServicesByProject(ctx, tt.projectID)
+			if err != nil {
+				t.Fatalf("ListDesiredServicesByProject(%q) error = %v", tt.projectID, err)
+			}
+			var names []string
+			for _, svc := range got {
+				names = append(names, svc.Name)
+			}
+			if !reflect.DeepEqual(names, tt.want) {
+				t.Errorf("ListDesiredServicesByProject(%q) = %v, want %v", tt.projectID, names, tt.want)
+			}
+		})
+	}
+}
+
+func TestListDesiredServicesByEnvironment(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveProject(ctx, Project{ID: "proj-1", Name: "one"}); err != nil {
+		t.Fatalf("SaveProject error = %v", err)
+	}
+	for _, e := range []Environment{
+		{ID: "env-1", ProjectID: "proj-1", Name: "staging"},
+		{ID: "env-2", ProjectID: "proj-1", Name: "production"},
+	} {
+		if err := db.SaveEnvironment(ctx, e); err != nil {
+			t.Fatalf("SaveEnvironment(%s) error = %v", e.ID, err)
+		}
+	}
+	for _, svc := range []struct {
+		name string
+		port int
+		env  string
+	}{
+		{"web", 8080, "env-1"},
+		{"worker", 8081, "env-1"},
+		{"api", 8082, "env-2"},
+		{"untagged", 8083, ""},
+	} {
+		if err := db.SaveDesiredService(ctx, DesiredService{Name: svc.name, Image: "img:v1", Port: svc.port}); err != nil {
+			t.Fatalf("SaveDesiredService(%s) error = %v", svc.name, err)
+		}
+		if svc.env != "" {
+			if err := db.SetServiceEnvironment(ctx, svc.name, svc.env); err != nil {
+				t.Fatalf("SetServiceEnvironment(%s) error = %v", svc.name, err)
+			}
+		}
+	}
+
+	tests := []struct {
+		name          string
+		environmentID string
+		want          []string
+	}{
+		{name: "environment with two services", environmentID: "env-1", want: []string{"web", "worker"}},
+		{name: "environment with one service", environmentID: "env-2", want: []string{"api"}},
+		{name: "unknown environment", environmentID: "env-none", want: nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := db.ListDesiredServicesByEnvironment(ctx, tt.environmentID)
+			if err != nil {
+				t.Fatalf("ListDesiredServicesByEnvironment(%q) error = %v", tt.environmentID, err)
+			}
+			var names []string
+			for _, svc := range got {
+				names = append(names, svc.Name)
+			}
+			if !reflect.DeepEqual(names, tt.want) {
+				t.Errorf("ListDesiredServicesByEnvironment(%q) = %v, want %v", tt.environmentID, names, tt.want)
+			}
+		})
+	}
+}
+
+func TestSaveDesiredService_StrategyAndReplicas_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredService{Name: "web", Image: "img:v1", Port: 3000, Strategy: "recreate", Replicas: 3}
+	if err := db.SaveDesiredService(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Strategy != "recreate" {
+		t.Errorf("Strategy = %q, want %q", got.Strategy, "recreate")
+	}
+	if got.Replicas != 3 {
+		t.Errorf("Replicas = %d, want 3", got.Replicas)
+	}
+}
+
+func TestSaveDesiredService_Labels_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredService{
+		Name: "web", Image: "img:v1", Port: 3000,
+		Labels: map[string]string{"team": "platform", "tier": "frontend"},
+	}
+	if err := db.SaveDesiredService(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !reflect.DeepEqual(got.Labels, want.Labels) {
+		t.Errorf("Labels = %+v, want %+v", got.Labels, want.Labels)
+	}
+}
+
+func TestSaveDesiredService_NilLabels_RoundTripsToEmptyNonNilMap(t *testing.T) {
+	// Mirrors nonNilMap's Env guarantee: a service saved with no labels
+	// at all reads back a non-nil (if empty) map, one less nil-check for
+	// every caller (internal/api's appResource, the frontend editor).
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Labels == nil {
+		t.Fatal("Labels = nil, want a non-nil empty map")
+	}
+	if len(got.Labels) != 0 {
+		t.Errorf("Labels = %+v, want empty", got.Labels)
+	}
+}
+
+func TestSaveDesiredService_Command_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredService{
+		Name: "minio", Image: "minio/minio:latest", Port: 9000,
+		Command: []string{"server", "/data", "--console-address", ":9001"},
+	}
+	if err := db.SaveDesiredService(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "minio")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !reflect.DeepEqual(got.Command, want.Command) {
+		t.Errorf("Command = %+v, want %+v", got.Command, want.Command)
+	}
+}
+
+// TestSaveDesiredService_NilCommand_RoundTripsToEmptyNonNilSlice mirrors
+// nonNilSlice's Domains guarantee: a service saved with no command:
+// override reads back a non-nil (if empty) slice, one less nil-check for
+// every caller.
+func TestSaveDesiredService_NilCommand_RoundTripsToEmptyNonNilSlice(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Command == nil {
+		t.Fatal("Command = nil, want a non-nil empty slice")
+	}
+	if len(got.Command) != 0 {
+		t.Errorf("Command = %+v, want empty", got.Command)
+	}
+}
+
+func TestSaveDesiredService_Entrypoint_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredService{
+		Name: "postgres", Image: "postgres:16", Port: 5432,
+		Entrypoint: []string{"docker-entrypoint.sh", "-c", "config_file=/etc/postgresql.conf"},
+	}
+	if err := db.SaveDesiredService(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "postgres")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !reflect.DeepEqual(got.Entrypoint, want.Entrypoint) {
+		t.Errorf("Entrypoint = %+v, want %+v", got.Entrypoint, want.Entrypoint)
+	}
+}
+
+// TestSaveDesiredService_NilEntrypoint_RoundTripsToEmptyNonNilSlice
+// mirrors TestSaveDesiredService_NilCommand_RoundTripsToEmptyNonNilSlice
+// above for the entrypoint column.
+func TestSaveDesiredService_NilEntrypoint_RoundTripsToEmptyNonNilSlice(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Entrypoint == nil {
+		t.Fatal("Entrypoint = nil, want a non-nil empty slice")
+	}
+	if len(got.Entrypoint) != 0 {
+		t.Errorf("Entrypoint = %+v, want empty", got.Entrypoint)
+	}
+}
+
+func TestSaveDesiredService_PullPolicy_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredService{Name: "web", Image: "nginx:latest", Port: 80, PullPolicy: PullPolicyAlways}
+	if err := db.SaveDesiredService(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.PullPolicy != PullPolicyAlways {
+		t.Errorf("PullPolicy = %q, want %q", got.PullPolicy, PullPolicyAlways)
+	}
+}
+
+// TestSaveDesiredService_EmptyPullPolicy_RoundTripsToEmpty mirrors
+// TestSaveDesiredService_NilCommand_RoundTripsToEmptyNonNilSlice's
+// "unset stays the documented zero value" check, for PullPolicy's own
+// plain-string (not JSON) storage shape.
+func TestSaveDesiredService_EmptyPullPolicy_RoundTripsToEmpty(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.PullPolicy != "" {
+		t.Errorf("PullPolicy = %q, want empty", got.PullPolicy)
+	}
+}
+
+func TestSaveDesiredService_EmptyStrategyAndZeroReplicas_DefaultsPersisted(t *testing.T) {
+	// A caller that never sets these two fields (every caller before
+	// this migration existed, and internal/api's direct-image-registration
+	// path today, which has no strategy/replicas concept yet) must
+	// persist DefaultDeployStrategy/DefaultReplicas, not an empty string
+	// or a zero replica count: DesiredService's own doc comment on these
+	// fields requires them to always be the resolved value, and this is
+	// the store layer's independent defense of that guarantee for any
+	// caller, not just internal/deploy's.
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Strategy != DefaultDeployStrategy {
+		t.Errorf("Strategy = %q, want default %q", got.Strategy, DefaultDeployStrategy)
+	}
+	if got.Replicas != DefaultReplicas {
+		t.Errorf("Replicas = %d, want default %d", got.Replicas, DefaultReplicas)
+	}
+	if got.BindAddress != DefaultBindAddress {
+		t.Errorf("BindAddress = %q, want default %q", got.BindAddress, DefaultBindAddress)
+	}
+}
+
+// TestSaveDesiredService_BindAddress_RoundTrip proves an explicit
+// BindAddress round-trips as-is, the counterpart to the empty-value
+// default-fill test above.
+func TestSaveDesiredService_BindAddress_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000, BindAddress: "public"}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.BindAddress != "public" {
+		t.Errorf("BindAddress = %q, want %q", got.BindAddress, "public")
+	}
+}
+
+// TestSaveDesiredService_SecretEnvRequired_RoundTrip proves
+// SecretEnvRef.Required survives a save/load round trip, the field this
+// bug fix adds: before it existed, secret_env only ever persisted a
+// name, so a build-triggered redeploy reconstructed from stored desired
+// state (internal/api/builds.go's specServiceFromDesired) could never
+// tell a required secret apart from an optional one.
+func TestSaveDesiredService_SecretEnvRequired_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{
+		Name: "web", Image: "img:v1", Port: 3000,
+		SecretEnv: []SecretEnvRef{
+			{Name: "API_KEY", Required: true},
+			{Name: "OPTIONAL_FLAG", Required: false},
+		},
+	}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	want := map[string]bool{"API_KEY": true, "OPTIONAL_FLAG": false}
+	if len(got.SecretEnv) != len(want) {
+		t.Fatalf("SecretEnv = %+v, want %d entries", got.SecretEnv, len(want))
+	}
+	for _, ref := range got.SecretEnv {
+		required, known := want[ref.Name]
+		if !known {
+			t.Errorf("SecretEnv contains unexpected name %q", ref.Name)
+			continue
+		}
+		if ref.Required != required {
+			t.Errorf("SecretEnv[%q].Required = %v, want %v", ref.Name, ref.Required, required)
+		}
+	}
+}
+
+// TestGetDesiredService_SecretEnv_LegacyStringArrayShape_StillDecodes
+// proves an on-disk secret_env value written before Required existed
+// (a plain JSON string array of names, e.g. ["API_KEY"], the only shape
+// every row saved before this fix ever had) still decodes cleanly after
+// upgrade, with Required defaulting to false for each name: secret_env
+// is a JSON blob column (migrations/0006_service_secrets.sql), not a
+// structured one, so reshaping it is a decode-time compatibility concern
+// (unmarshalSecretEnv), not something a SQL migration needs to backfill.
+func TestGetDesiredService_SecretEnv_LegacyStringArrayShape_StillDecodes(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if _, err := db.ExecContext(ctx, `UPDATE desired_services SET secret_env = ? WHERE name = ?`, `["API_KEY","LEGACY_VAR"]`, "web"); err != nil {
+		t.Fatalf("write legacy-shaped secret_env: %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if len(got.SecretEnv) != 2 {
+		t.Fatalf("SecretEnv = %+v, want 2 entries", got.SecretEnv)
+	}
+	for _, ref := range got.SecretEnv {
+		if ref.Name != "API_KEY" && ref.Name != "LEGACY_VAR" {
+			t.Errorf("SecretEnv contains unexpected name %q", ref.Name)
+		}
+		if ref.Required {
+			t.Errorf("SecretEnv[%q].Required = true, want false: a legacy row has no Required bit to recover, must default permissive", ref.Name)
+		}
+	}
+}
+
+// TestServiceBindAddressMigration_BackfillsExistingRowsToPublic mirrors
+// TestAppsMigration_BackfillsExistingServices' own technique (apps_test.go):
+// applies every migration up to, but not including,
+// 0103_service_bind_address by hand, inserts a desired_services row the
+// way a pre-0098 database would have one (no bind_address column touched
+// yet), then applies 0098 and checks the backfill. This is the
+// "existing rows keep their current, already-relied-on 0.0.0.0 exposure
+// until their next deploy" half of the migration's design; a brand new
+// row inserted after 0098 gets DefaultBindAddress ("private") instead,
+// covered separately by TestSaveDesiredService_EmptyStrategyAndZeroReplicas_DefaultsPersisted's
+// own bind_address assertion.
+func TestServiceBindAddressMigration_BackfillsExistingRowsToPublic(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "levelrail.db")
+
+	sqlDB, err := sql.Open("sqlite", dsn(path))
+	if err != nil {
+		t.Fatalf("sql.Open() error = %v", err)
+	}
+	sqlDB.SetMaxOpenConns(1)
+	db := &DB{DB: sqlDB}
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("closing test db: %v", err)
+		}
+	})
+
+	if _, err := db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version    INTEGER PRIMARY KEY,
+			name       TEXT NOT NULL,
+			applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		)
+	`); err != nil {
+		t.Fatalf("create schema_migrations: %v", err)
+	}
+
+	migrations, err := loadMigrations()
+	if err != nil {
+		t.Fatalf("loadMigrations() error = %v", err)
+	}
+
+	var bindAddressMigration *migration
+	for i, m := range migrations {
+		if m.name == "service_bind_address" {
+			bindAddressMigration = &migrations[i]
+			continue
+		}
+		if err := db.applyMigration(ctx, m); err != nil {
+			t.Fatalf("apply migration %04d_%s: %v", m.version, m.name, err)
+		}
+	}
+	if bindAddressMigration == nil {
+		t.Fatal("service_bind_address migration not found among embedded migrations")
+	}
+
+	if _, err := db.ExecContext(ctx, `
+		INSERT INTO desired_services (name, image, port, updated_at)
+		VALUES ('legacy-web', 'img:v1', 8080, '2026-08-01T00:00:00Z')
+	`); err != nil {
+		t.Fatalf("insert pre-migration desired_services row: %v", err)
+	}
+
+	if err := db.applyMigration(ctx, *bindAddressMigration); err != nil {
+		t.Fatalf("apply service_bind_address migration: %v", err)
+	}
+
+	svc, err := db.GetDesiredService(ctx, "legacy-web")
+	if err != nil {
+		t.Fatalf("GetDesiredService(legacy-web) after backfill error = %v", err)
+	}
+	if svc.BindAddress != "public" {
+		t.Errorf("backfilled BindAddress = %q, want %q (preserve pre-existing exposure)", svc.BindAddress, "public")
+	}
+}
+
+func TestRestartService_SetsNonNilNonce(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	before, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if before.RestartNonce != "" {
+		t.Fatalf("RestartNonce before restart = %q, want empty", before.RestartNonce)
+	}
+
+	if err := db.RestartService(ctx, "web"); err != nil {
+		t.Fatalf("RestartService() error = %v", err)
+	}
+
+	after, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if after.RestartNonce == "" {
+		t.Error("RestartNonce after restart is empty, want a generated value")
+	}
+}
+
+func TestRestartService_EachCallGeneratesADifferentNonce(t *testing.T) {
+	// The reconciler treats a changed nonce as the signal to recreate a
+	// container (internal/reconcile/application.ContainerName): two
+	// restarts in a row must produce two different nonces, or the second
+	// restart would be indistinguishable from a no-op.
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.RestartService(ctx, "web"); err != nil {
+		t.Fatalf("first RestartService() error = %v", err)
+	}
+	first, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+
+	if err := db.RestartService(ctx, "web"); err != nil {
+		t.Fatalf("second RestartService() error = %v", err)
+	}
+	second, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+
+	if first.RestartNonce == second.RestartNonce {
+		t.Errorf("RestartNonce unchanged across two restarts: %q", first.RestartNonce)
+	}
+}
+
+func TestRestartService_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.RestartService(context.Background(), "nonexistent")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("RestartService() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetRestartNonce mirrors
+// TestSaveDesiredService_RedeployDoesNotResetNodeID exactly, for the
+// same reason: internal/deploy.Pipeline calls SaveDesiredService on
+// every ordinary redeploy with no opinion on RestartNonce at all
+// (DesiredService{} zero value). If that silently reset restart_nonce,
+// it would be indistinguishable from a real container recreation from
+// the reconciler's point of view, which is harmless here (a redeploy
+// already changes the image, which already forces a new container name
+// on its own) but would still be the wrong general contract for a field
+// that's deliberately excluded from full-record-replace semantics.
+func TestSaveDesiredService_RedeployDoesNotResetRestartNonce(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+	if err := db.RestartService(ctx, "web"); err != nil {
+		t.Fatalf("RestartService() error = %v", err)
+	}
+	beforeRedeploy, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.RestartNonce != beforeRedeploy.RestartNonce {
+		t.Errorf("RestartNonce = %q, want unchanged %q", got.RestartNonce, beforeRedeploy.RestartNonce)
+	}
+}
+
+// TestSaveDesiredService_EnvDirty_RoundTrip covers the opposite contract
+// from RestartNonce/Suspended above: EnvDirty is ordinary desired state,
+// written on every SaveDesiredService call like Env itself, not excluded
+// from full-record-replace semantics.
+func TestSaveDesiredService_EnvDirty_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, EnvDirty: true}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.EnvDirty {
+		t.Error("EnvDirty = false, want true")
+	}
+}
+
+// TestSaveDesiredService_OrdinaryRedeployClearsEnvDirty is the deliberate
+// opposite of TestSaveDesiredService_RedeployDoesNotResetSuspended: an
+// ordinary redeploy (internal/deploy.Pipeline, apps_compose.go, and every
+// other caller that builds a fresh DesiredService from scratch) must
+// clear a stale EnvDirty, since the fresh container it creates picks up
+// whatever Env is being saved right now.
+func TestSaveDesiredService_OrdinaryRedeployClearsEnvDirty(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, EnvDirty: true}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.EnvDirty {
+		t.Error("EnvDirty = true, want false (a fresh desired-state save must clear it)")
+	}
+}
+
+// TestRestartService_ClearsEnvDirty covers RestartService's explicit
+// env_dirty = 0, the fresh-container-creation moment DesiredService.
+// EnvDirty's own doc comment says clears it, needed because RestartService
+// bypasses SaveDesiredService's own ordinary-write clearing entirely.
+func TestRestartService_ClearsEnvDirty(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, EnvDirty: true}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.RestartService(ctx, "web"); err != nil {
+		t.Fatalf("RestartService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.EnvDirty {
+		t.Error("EnvDirty = true after restart, want false")
+	}
+}
+
+// TestUpdateServiceSuspended_ResumeClearsEnvDirty covers
+// UpdateServiceSuspended(false)'s explicit env_dirty = 0: resuming a
+// stopped app makes the reconciler create brand new containers (every
+// replica was torn down while suspended), the same fresh-container
+// moment RestartService already clears EnvDirty on.
+func TestUpdateServiceSuspended_ResumeClearsEnvDirty(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, EnvDirty: true}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.UpdateServiceSuspended(ctx, "web", false); err != nil {
+		t.Fatalf("UpdateServiceSuspended(false) error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.EnvDirty {
+		t.Error("EnvDirty = true after resume, want false")
+	}
+}
+
+// TestUpdateServiceSuspended_StopDoesNotClearEnvDirty: unlike resuming,
+// stopping an app does not recreate anything, so a pending env edit must
+// stay flagged until the app is actually restarted or resumed.
+func TestUpdateServiceSuspended_StopDoesNotClearEnvDirty(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, EnvDirty: true}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.UpdateServiceSuspended(ctx, "web", true); err != nil {
+		t.Fatalf("UpdateServiceSuspended(true) error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.EnvDirty {
+		t.Error("EnvDirty = false after stop, want true (stopping does not recreate a container)")
+	}
+}
+
+// TestSaveDesiredService_ExecEnabled_DefaultsToTrue is the one place
+// this feature deliberately differs from AutoRollbackOnCrashloop's own
+// default: a service that never touches exec_enabled must still behave
+// as if exec/terminal access is on, so a fresh install and every
+// pre-existing app see no regression.
+func TestSaveDesiredService_ExecEnabled_DefaultsToTrue(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.ExecEnabled {
+		t.Error("ExecEnabled = false for a row that never set it, want true")
+	}
+}
+
+func TestSetServiceExecEnabled(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.SetServiceExecEnabled(ctx, "web", false); err != nil {
+		t.Fatalf("SetServiceExecEnabled(false) error = %v", err)
+	}
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.ExecEnabled {
+		t.Error("ExecEnabled = true, want false")
+	}
+
+	if err := db.SetServiceExecEnabled(ctx, "web", true); err != nil {
+		t.Fatalf("SetServiceExecEnabled(true) error = %v", err)
+	}
+	got, err = db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.ExecEnabled {
+		t.Error("ExecEnabled = false, want true")
+	}
+}
+
+func TestSetServiceExecEnabled_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetServiceExecEnabled(context.Background(), "nonexistent", false)
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("SetServiceExecEnabled() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestSaveDesiredService_BadgeEnabled_DefaultsToFalse: unlike
+// ExecEnabled, a service that never touches badge_enabled must stay
+// unexposed, since the public badge.svg route reads this flag to decide
+// whether to serve anything at all for that app.
+func TestSaveDesiredService_BadgeEnabled_DefaultsToFalse(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.BadgeEnabled {
+		t.Error("BadgeEnabled = true for a row that never set it, want false")
+	}
+}
+
+func TestSetServiceBadgeEnabled(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.SetServiceBadgeEnabled(ctx, "web", true); err != nil {
+		t.Fatalf("SetServiceBadgeEnabled(true) error = %v", err)
+	}
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.BadgeEnabled {
+		t.Error("BadgeEnabled = false, want true")
+	}
+
+	if err := db.SetServiceBadgeEnabled(ctx, "web", false); err != nil {
+		t.Fatalf("SetServiceBadgeEnabled(false) error = %v", err)
+	}
+	got, err = db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.BadgeEnabled {
+		t.Error("BadgeEnabled = true, want false")
+	}
+}
+
+func TestSetServiceBadgeEnabled_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetServiceBadgeEnabled(context.Background(), "nonexistent", false)
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("SetServiceBadgeEnabled() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestSaveDesiredService_AutoRollbackOnSLOBurn_DefaultsToOff mirrors
+// TestSaveDesiredService_ExecEnabled_DefaultsToTrue: a service that
+// never touches this column must read back as "off", not an empty
+// string a caller has to special-case.
+func TestSaveDesiredService_AutoRollbackOnSLOBurn_DefaultsToOff(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.AutoRollbackOnSLOBurn != AutoRollbackSLOBurnOff {
+		t.Errorf("AutoRollbackOnSLOBurn = %q, want %q", got.AutoRollbackOnSLOBurn, AutoRollbackSLOBurnOff)
+	}
+}
+
+func TestSetServiceAutoRollbackOnSLOBurn(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	for _, mode := range []string{AutoRollbackSLOBurnAuto, AutoRollbackSLOBurnDryRun, AutoRollbackSLOBurnPauseForHuman, AutoRollbackSLOBurnOff} {
+		if err := db.SetServiceAutoRollbackOnSLOBurn(ctx, "web", mode); err != nil {
+			t.Fatalf("SetServiceAutoRollbackOnSLOBurn(%q) error = %v", mode, err)
+		}
+		got, err := db.GetDesiredService(ctx, "web")
+		if err != nil {
+			t.Fatalf("GetDesiredService() error = %v", err)
+		}
+		if got.AutoRollbackOnSLOBurn != mode {
+			t.Errorf("AutoRollbackOnSLOBurn = %q, want %q", got.AutoRollbackOnSLOBurn, mode)
+		}
+	}
+}
+
+func TestSetServiceAutoRollbackOnSLOBurn_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetServiceAutoRollbackOnSLOBurn(context.Background(), "nonexistent", AutoRollbackSLOBurnAuto)
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("SetServiceAutoRollbackOnSLOBurn() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetAutoRollbackOnSLOBurn mirrors
+// TestSaveDesiredService_RedeployDoesNotResetExecEnabled: SaveDesiredService
+// never writes auto_rollback_on_slo_burn, so a plain redeploy must never
+// silently reset an operator's chosen mode back to off.
+func TestSaveDesiredService_RedeployDoesNotResetAutoRollbackOnSLOBurn(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.SetServiceAutoRollbackOnSLOBurn(ctx, "web", AutoRollbackSLOBurnPauseForHuman); err != nil {
+		t.Fatalf("SetServiceAutoRollbackOnSLOBurn() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() redeploy error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.AutoRollbackOnSLOBurn != AutoRollbackSLOBurnPauseForHuman {
+		t.Errorf("AutoRollbackOnSLOBurn = %q after redeploy, want %q", got.AutoRollbackOnSLOBurn, AutoRollbackSLOBurnPauseForHuman)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetExecEnabled mirrors
+// TestSaveDesiredService_RedeployDoesNotResetSuspended: SaveDesiredService
+// never writes exec_enabled, so a plain redeploy must never silently
+// re-enable exec access an operator explicitly turned off.
+func TestSaveDesiredService_RedeployDoesNotResetExecEnabled(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.SetServiceExecEnabled(ctx, "web", false); err != nil {
+		t.Fatalf("SetServiceExecEnabled(false) error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() redeploy error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.ExecEnabled {
+		t.Error("ExecEnabled = true after redeploy, want false (redeploy must not silently re-enable exec)")
+	}
+}

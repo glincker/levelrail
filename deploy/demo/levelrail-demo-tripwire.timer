@@ -1,0 +1,10 @@
+[Unit]
+Description=Hourly Levelrail demo tripwire
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=60
+Persistent=true
+
+[Install]
+WantedBy=timers.target

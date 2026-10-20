@@ -1,0 +1,85 @@
+---
+title: "Self-host Kutt with Docker"
+sidebarTitle: "Kutt"
+description: "A modern URL shortener with custom domains, link analytics and an API, backed by Postgres and Redis."
+"og:url": "https://docs.levelrail.com/self-host/kutt"
+---
+
+A modern URL shortener with custom domains, link analytics and an API, backed by Postgres and Redis.
+
+This page describes the Levelrail template for Kutt (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.kutt.it/.
+
+Recommended memory: about 384 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `pgdata -&#62; /var/lib/postgresql/data` |
+| `kutt` | `kutt/kutt:v3.2.6` | 3000 | `uploads -&#62; /kutt/custom` |
+| `redis` | `redis:7-alpine` | none | `redis -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `kutt` | `DB_CLIENT` | Preset in the template |
+| `kutt` | `DB_HOST` | Preset in the template |
+| `kutt` | `DB_NAME` | Preset in the template |
+| `kutt` | `DB_PASSWORD` | Generated at deploy |
+| `kutt` | `DB_PORT` | Preset in the template |
+| `kutt` | `DB_USER` | Preset in the template |
+| `kutt` | `DEFAULT_DOMAIN` | Preset in the template |
+| `kutt` | `DISALLOW_ANONYMOUS_LINKS` | Preset in the template |
+| `kutt` | `DISALLOW_REGISTRATION` | Preset in the template |
+| `kutt` | `JWT_SECRET` | Generated at deploy |
+| `kutt` | `REDIS_ENABLED` | Preset in the template |
+| `kutt` | `REDIS_HOST` | Preset in the template |
+| `kutt` | `REDIS_PORT` | Preset in the template |
+| `kutt` | `TRUST_PROXY` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`db`, `kutt`): DB_PASSWORD, JWT_SECRET, POSTGRES_PASSWORD.
+- Stores data in named volumes (`db`, `kutt`, `redis`): pgdata, redis, uploads.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Kutt with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Kutt. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy kutt --name my-kutt
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Drupal](/self-host/drupal)
+- [EspoCRM](/self-host/espocrm)
+- [Ghost](/self-host/ghost)
+
+All templates are listed in the [self-host gallery](/self-host).

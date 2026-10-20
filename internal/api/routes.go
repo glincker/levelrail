@@ -1,0 +1,101 @@
+package api
+
+import "net/http"
+
+// Handler builds the *http.ServeMux with every route registered. Called
+// once at startup; the returned handler is what gets wrapped in an
+// *http.Server. Registration is split per domain across routes_core_*.go
+// and routes_platform_*.go purely to keep each file readable.
+func (rt *Router) Handler() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /healthz", rt.handleHealthz)
+	mux.HandleFunc("GET /readyz", rt.handleReadyz)
+	mux.HandleFunc("GET /.well-known/jwks.json", rt.handleOIDCJWKS)
+	mux.Handle(rt.authEngine.Prefix()+"/", rt.authEngine.Handler())
+	rt.registerCoreRoutes(mux)
+	rt.registerAuthEngineStatusRoute(mux)
+	rt.registerPlatformRoutes(mux)
+	rt.registerStorageRoutes(mux)
+	rt.registerBackupCoverageRoutes(mux)
+	rt.registerPipelineRoutes(mux)
+	rt.registerSearchRoutes(mux)
+	rt.registerPipelineOverviewRoutes(mux)
+	rt.registerModelRoutes(mux)
+	rt.registerDataExportRoutes(mux)
+	rt.registerEventWebhookRoutes(mux)
+	rt.registerScheduledMaintenanceRoutes(mux)
+	rt.registerDeployPolicyRoutes(mux)
+	rt.registerComplianceRoutes(mux)
+	rt.registerLoadBalancerRoutes(mux)
+	rt.registerPlatformImportRoutes(mux)
+	rt.registerAppImportRoutes(mux)
+	rt.registerDeployGateRoutes(mux)
+	rt.registerImageRoutes(mux)
+	rt.registerIaCRoutes(mux)
+	rt.registerDockerGuardRoutes(mux)
+	rt.registerDockerIntegrationRoutes(mux)
+	rt.registerPluginRoutes(mux)
+	rt.registerFixitRoutes(mux)
+	rt.registerProjectTemplateRoutes(mux)
+	rt.registerBuildPerformanceRoutes(mux)
+	rt.registerAlertNoiseRoutes(mux)
+	rt.registerStatusPageRoutes(mux)
+	rt.registerResourceAdvisorRoutes(mux)
+	rt.registerUsageCostRoutes(mux)
+	rt.registerResourceConsoleRoutes(mux)
+	rt.registerCustomDashboardRoutes(mux)
+	rt.registerChaosRoutes(mux)
+	rt.registerArchiveRoutes(mux)
+	rt.registerSpendCapRoutes(mux)
+	rt.registerIngressEdgeRoutes(mux)
+	rt.registerCostExplorerRoutes(mux)
+	rt.registerAutoscaleRoutes(mux)
+	rt.registerPreviewRoutes(mux)
+	rt.registerSupplyChainRoutes(mux)
+	rt.registerSecretScanRoutes(mux)
+	rt.registerIAMTemplateRoutes(mux)
+	rt.registerDatabaseAccessRoutes(mux)
+	rt.registerPrivateNetworkRoutes(mux)
+	rt.registerIAMBuilderRoutes(mux)
+	rt.registerSecurityRoutes(mux)
+	rt.registerSSORoutes(mux)
+	rt.registerProxyIntegrationRoutes(mux)
+	rt.registerSetupGuideRoutes(mux)
+	rt.registerDNSZoneRoutes(mux)
+	rt.registerTrafficRoutes(mux)
+	rt.registerDatabaseUpgradeRoutes(mux)
+	rt.registerTeamRoutes(mux)
+	rt.registerComposeRoutes(mux)
+	rt.registerEnvProtectionRoutes(mux)
+	rt.registerStandaloneDomainRoutes(mux)
+	rt.registerLogExplorerRoutes(mux)
+	rt.registerMobileRoutes(mux)
+	rt.registerAccountSelfRoutes(mux)
+
+	var h http.Handler = mux
+	h = rt.bodyLimitMiddleware(h)
+	h = rt.streamDrainMiddleware(h)
+	h = rt.accountEventMiddleware(h)
+	h = experimentalGateMiddleware(h)
+	h = rt.accessPolicyMiddleware(h)
+	h = compressMiddleware(h)
+	h = csrfOriginMiddleware(h)
+	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
+	if !rt.hstsEnabled {
+		h = hstsDBOverrideMiddleware(rt)(h)
+	}
+	h = panicRecoveryMiddleware(rt.logger)(h)
+	h = requestLoggingMiddleware(rt.logger, rt.requestLogThresholds)(h)
+	h = requestIDMiddleware(h)
+	if rt.demo != nil {
+		h = rt.demoGate(h)
+	}
+	return h
+}
+
+func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
+	rt.registerPublicRoutes(mux)
+	rt.registerAuthRoutes(mux)
+	rt.registerAppRoutes(mux)
+	rt.registerDatabaseRoutes(mux)
+}

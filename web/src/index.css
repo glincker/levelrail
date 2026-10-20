@@ -1,0 +1,504 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import './styles/glinui-tokens.css';
+@import './styles/glinr-fonts.css';
+@import './styles/glinr-tokens.css';
+@import './styles/glinr-theme.css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Tailwind skips node_modules and a file-path @source duplicated the whole sheet, so list the
+   classes of the published Skeleton variants we map to (see components/ui/skeleton.tsx). */
+@source inline("relative isolate overflow-hidden rounded-xl border border-black/[0.06] bg-[linear-gradient(180deg,rgb(244_244_246),rgb(232_232_236))] dark:border-white/[0.1] dark:bg-[linear-gradient(180deg,rgb(40_42_48),rgb(30_32_36))] bg-neutral-200/80 dark:bg-neutral-800/80 border-neutral-300 bg-transparent dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800/50 pointer-events-none absolute inset-0 motion-safe:animate-skeleton-shimmer motion-reduce:hidden bg-gradient-to-r from-transparent to-transparent via-white/50 via-white/60 via-white/70 via-neutral-200/60 dark:via-white/[0.08] dark:via-white/[0.06]");
+
+@theme {
+  --animate-skeleton-shimmer: skeleton-shimmer 1.6s ease-in-out infinite;
+  @keyframes skeleton-shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, Consolas, monospace;
+}
+
+:root {
+  color-scheme: light dark;
+  /* Overwritten by BrandProvider from the live /api/v1/brand response
+     (adr/024); these are just the pre-hydration/test fallback, matching
+     brand.yaml's own default values. Wired into --ring and links only;
+     --primary stays neutral ink. */
+  --brand-accent: #107292;
+  --brand-accent-dark: #2fb3dc;
+  --status-info: #e3f4fa;
+  --status-info-foreground: #0b5c75;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.52 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: var(--brand-accent);
+  --brand-link: var(--brand-accent);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --chart-series-1: oklch(0.52 0.12 215);
+  --chart-series-2: oklch(0.72 0.16 75);
+  --chart-series-3: oklch(0.6 0.15 150);
+  --chart-series-4: oklch(0.5 0.04 250);
+  --chart-series-5: oklch(0.62 0.1 190);
+  --chart-series-6: oklch(0.55 0.1 40);
+  --chart-danger: oklch(0.577 0.245 27.325);
+  --chart-muted: oklch(0.62 0.01 250);
+  --radius: var(--glinr-radius);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: var(--brand-accent);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  @apply bg-white text-neutral-800 antialiased dark:bg-neutral-950 dark:text-neutral-200;
+}
+
+@theme inline {
+  /* shadcn's Nova preset pins --font-sans to the Geist Variable webfont
+     here; deliberately not adopted so this init stays additive. The
+     original @theme block above already sets --font-sans to the repo's
+     system-ui stack, and every existing hand-rolled component
+     (AppOverview.tsx, DomainEditor.tsx, etc.) renders against that
+     today. Overriding it here would silently reflow every existing
+     screen's typography before any shadcn component actually ships,
+     which is exactly the "index.css overwrite changes how existing
+     components look" regression this task is required to avoid. */
+  --color-status-info: var(--status-info);
+  --color-status-info-foreground: var(--status-info-foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-brand: var(--brand-link);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+.dark {
+  --status-info: rgb(47 179 220 / 0.18);
+  --status-info-foreground: #7fd3ee;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: var(--brand-accent-dark);
+  --brand-link: var(--brand-accent-dark);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --chart-series-1: oklch(0.78 0.12 215);
+  --chart-series-2: oklch(0.8 0.15 80);
+  --chart-series-3: oklch(0.75 0.15 150);
+  --chart-series-4: oklch(0.72 0.04 250);
+  --chart-series-5: oklch(0.78 0.1 190);
+  --chart-series-6: oklch(0.74 0.1 45);
+  --chart-danger: oklch(0.704 0.191 22.216);
+  --chart-muted: oklch(0.65 0.01 250);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: var(--brand-accent-dark);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: var(--brand-accent-dark);
+}
+
+/* Kit tokens. Tones: success, warning, danger, info, accent, neutral, each with
+   fg (text/icon), soft (tinted surface), border, solid (dots, bars).
+   Spacing: 8px scale (gap-2/4/6). Radii: rounded-xl (12) and rounded-2xl (16). */
+:root {
+  --tone-neutral-fg: oklch(0.44 0.015 260);
+  --tone-neutral-soft: oklch(0.965 0.004 260);
+  --tone-neutral-border: oklch(0.91 0.006 260);
+  --tone-neutral-solid: oklch(0.62 0.015 260);
+  --tone-success-fg: oklch(0.42 0.11 155);
+  --tone-success-soft: oklch(0.965 0.03 155);
+  --tone-success-border: oklch(0.9 0.06 155);
+  --tone-success-solid: oklch(0.62 0.15 155);
+  --tone-warning-fg: oklch(0.48 0.11 75);
+  --tone-warning-soft: oklch(0.97 0.04 75);
+  --tone-warning-border: oklch(0.9 0.08 75);
+  --tone-warning-solid: oklch(0.75 0.15 75);
+  --tone-danger-fg: oklch(0.48 0.19 25);
+  --tone-danger-soft: oklch(0.97 0.02 25);
+  --tone-danger-border: oklch(0.9 0.07 25);
+  --tone-danger-solid: oklch(0.62 0.21 25);
+  --tone-info-fg: oklch(0.46 0.14 240);
+  --tone-info-soft: oklch(0.965 0.025 240);
+  --tone-info-border: oklch(0.9 0.06 240);
+  --tone-info-solid: oklch(0.62 0.15 240);
+  --tone-accent-fg: oklch(0.46 0.19 227);
+  --tone-accent-soft: oklch(0.965 0.025 227);
+  --tone-accent-border: oklch(0.9 0.06 227);
+  --tone-accent-solid: oklch(0.58 0.21 227);
+  --elev-1:
+    0 1px 2px oklch(0.2 0.01 260 / 6%), 0 1px 1px oklch(0.2 0.01 260 / 4%);
+  --elev-2:
+    0 8px 24px oklch(0.2 0.01 260 / 10%), 0 2px 6px oklch(0.2 0.01 260 / 6%);
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --motion-slow: 250ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dark {
+  --tone-neutral-fg: oklch(0.8 0.012 260);
+  --tone-neutral-soft: oklch(0.27 0.006 260);
+  --tone-neutral-border: oklch(0.36 0.008 260);
+  --tone-neutral-solid: oklch(0.68 0.012 260);
+  --tone-success-fg: oklch(0.82 0.14 155);
+  --tone-success-soft: oklch(0.26 0.05 155);
+  --tone-success-border: oklch(0.37 0.07 155);
+  --tone-success-solid: oklch(0.72 0.16 155);
+  --tone-warning-fg: oklch(0.85 0.13 75);
+  --tone-warning-soft: oklch(0.28 0.05 75);
+  --tone-warning-border: oklch(0.4 0.08 75);
+  --tone-warning-solid: oklch(0.8 0.15 75);
+  --tone-danger-fg: oklch(0.8 0.13 25);
+  --tone-danger-soft: oklch(0.27 0.07 25);
+  --tone-danger-border: oklch(0.4 0.12 25);
+  --tone-danger-solid: oklch(0.7 0.19 25);
+  --tone-info-fg: oklch(0.82 0.1 240);
+  --tone-info-soft: oklch(0.26 0.05 240);
+  --tone-info-border: oklch(0.38 0.09 240);
+  --tone-info-solid: oklch(0.72 0.13 240);
+  --tone-accent-fg: oklch(0.82 0.11 227);
+  --tone-accent-soft: oklch(0.27 0.07 227);
+  --tone-accent-border: oklch(0.4 0.13 227);
+  --tone-accent-solid: oklch(0.7 0.17 227);
+  --elev-1: 0 1px 2px oklch(0 0 0 / 40%);
+  --elev-2: 0 8px 24px oklch(0 0 0 / 50%), 0 0 0 1px oklch(1 0 0 / 6%);
+}
+
+@theme inline {
+  --color-tone-neutral: var(--tone-neutral-fg);
+  --color-tone-neutral-soft: var(--tone-neutral-soft);
+  --color-tone-neutral-border: var(--tone-neutral-border);
+  --color-tone-neutral-solid: var(--tone-neutral-solid);
+  --color-tone-success: var(--tone-success-fg);
+  --color-tone-success-soft: var(--tone-success-soft);
+  --color-tone-success-border: var(--tone-success-border);
+  --color-tone-success-solid: var(--tone-success-solid);
+  --color-tone-warning: var(--tone-warning-fg);
+  --color-tone-warning-soft: var(--tone-warning-soft);
+  --color-tone-warning-border: var(--tone-warning-border);
+  --color-tone-warning-solid: var(--tone-warning-solid);
+  --color-tone-danger: var(--tone-danger-fg);
+  --color-tone-danger-soft: var(--tone-danger-soft);
+  --color-tone-danger-border: var(--tone-danger-border);
+  --color-tone-danger-solid: var(--tone-danger-solid);
+  --color-tone-info: var(--tone-info-fg);
+  --color-tone-info-soft: var(--tone-info-soft);
+  --color-tone-info-border: var(--tone-info-border);
+  --color-tone-info-solid: var(--tone-info-solid);
+  --color-tone-accent: var(--tone-accent-fg);
+  --color-tone-accent-soft: var(--tone-accent-soft);
+  --color-tone-accent-border: var(--tone-accent-border);
+  --color-tone-accent-solid: var(--tone-accent-solid);
+  --shadow-raised: var(--elev-1);
+  --shadow-floating: var(--elev-2);
+}
+
+@keyframes kit-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes kit-pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@keyframes kit-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes kit-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.kit-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklch, var(--foreground) 7%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: kit-shimmer 1.6s linear infinite;
+}
+
+@keyframes setup-glow {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.setup-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--foreground) 5%, var(--card)),
+    var(--card) 65%
+  );
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--foreground) 14%, transparent),
+    inset 0 0 0 1px color-mix(in oklch, var(--foreground) 6%, transparent),
+    var(--elev-2);
+}
+
+.setup-hero::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -3rem;
+  top: 50%;
+  width: 16rem;
+  height: 16rem;
+  translate: 0 -50%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklch, var(--tone-accent-solid) 18%, transparent),
+    transparent
+  );
+  z-index: -1;
+  animation: setup-glow 4s ease-in-out infinite alternate;
+}
+
+.dark .setup-hero::before {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklch, var(--tone-accent-solid) 34%, transparent),
+    transparent
+  );
+}
+
+.setup-hero::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, var(--foreground) 28%, transparent),
+    transparent
+  );
+}
+
+.kit-pulse-ring {
+  animation: kit-pulse-ring 1.8s var(--motion-ease) infinite;
+}
+.kit-enter {
+  animation: kit-enter var(--motion-slow) var(--motion-ease) both;
+}
+.kit-exit {
+  animation: kit-exit var(--motion-base) var(--motion-ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kit-shimmer,
+  .kit-pulse-ring,
+  .kit-enter,
+  .kit-exit,
+  .setup-hero::before {
+    animation: none !important;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Density: compact is the :root default in glinr-tokens.css; comfortable swaps in the paired tokens. */
+[data-density='comfortable'] {
+  --glinr-hero-tile-size: var(--glinr-hero-tile-size-comfortable);
+  --glinr-page-gap: var(--glinr-page-gap-comfortable);
+  --glinr-card-pad: var(--glinr-card-pad-comfortable);
+  --glinr-section-pad: var(--glinr-section-pad-comfortable);
+  --glinr-banner-pad: var(--glinr-banner-pad-comfortable);
+}
+
+/* Page width: PageTemplate reads these two tokens, so one attribute retunes every page. */
+:root,
+:root[data-width='comfortable'] {
+  --glinr-content-max: 72rem;
+  --glinr-content-max-wide: 96rem;
+}
+:root[data-width='wide'] {
+  --glinr-content-max: 80rem;
+  --glinr-content-max-wide: 120rem;
+}
+:root[data-width='full'] {
+  --glinr-content-max: none;
+  --glinr-content-max-wide: none;
+}
+
+/* Brand glow: the login panel's lavender/teal/yellow wash, plus the same wash masked by fractal noise so it reads as grain. */
+.brand-glow,
+.brand-glow-grain {
+  background:
+    radial-gradient(
+      54% 92% at 50% 0%,
+      rgba(182, 171, 255, 0.5),
+      transparent 72%
+    ),
+    radial-gradient(
+      38% 78% at 10% 0%,
+      rgba(0, 203, 170, 0.42),
+      transparent 72%
+    ),
+    radial-gradient(
+      36% 70% at 92% 0%,
+      rgba(238, 243, 95, 0.34),
+      transparent 72%
+    );
+}
+.brand-glow {
+  opacity: 0.42;
+}
+.brand-glow-grain {
+  filter: saturate(1.2) brightness(1.25);
+  mask-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9 0 0 0 -4.3'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
+    linear-gradient(to bottom, #000 0%, transparent 88%);
+  mask-size:
+    220px 220px,
+    100% 100%;
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+}

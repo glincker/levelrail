@@ -1,0 +1,700 @@
+package alerting
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/changes"
+	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/GLINCKER/levelrail/kit/upgrade"
+)
+
+// LogsSource is the narrow surface Engine needs to attach log lines to
+// a firing crashloop event. *telemetry.Federator satisfies this
+// structurally, the same as MetricsSource in evaluate.go.
+type LogsSource interface {
+	QueryLogs(ctx context.Context, resourceID string, from, to time.Time, query string) ([]telemetry.LogEntry, error)
+}
+
+// RuleStore is the narrow store surface Engine needs; *DB satisfies it structurally.
+type RuleStore interface {
+	ListEnabledRules(ctx context.Context) ([]Rule, error)
+	UpdateState(ctx context.Context, id string, pendingSince, firingSince *time.Time, firing bool, evaluatedAt time.Time, value *float64) error
+	RecordNotificationDelivery(ctx context.Context, d NotificationDelivery) error
+	UpsertCertExpiryObservation(ctx context.Context, o CertExpiryObservation) error
+	ListCertExpiryObservations(ctx context.Context, ruleID string) ([]CertExpiryObservation, error)
+}
+
+// crashloopLogLines surfaces the last 200 lines of a crashlooping
+// container's logs.
+const crashloopLogLines = 200
+
+// crashloopLogLookback is 15 minutes, so the tail comes from this incident and not an earlier unrelated one.
+const crashloopLogLookback = 15 * time.Minute
+
+// Engine evaluates enabled rules each tick and notifies only on firing or resolved transitions, never on repeats.
+type Engine struct {
+	rules          RuleStore
+	metrics        MetricsSource
+	logs           LogsSource
+	tracker        *RestartTracker
+	certs          CertSource
+	nodes          NodeSource
+	nodeServices   NodeServiceSource
+	scheduledTasks ScheduledTaskSource
+	domainApps     AppDomainSource
+	domainChecker  DomainCheckSource
+	backups        BackupSource
+	traffic        trafficKinds
+	newNotifier    func(Rule) Notifier
+	logger         *slog.Logger
+
+	// Both nil (the default) disables crashloop auto-rollback platform-wide.
+	autoRollback        AutoRollbackStore
+	autoRollbackNudger  deploy.ReconcileNudger
+	autoRollbackTracker *AutoRollbackTracker
+
+	// Kept separate from autoRollbackTracker: the two opt-ins are independent, so one must not suppress the other.
+	sloAutoRollback        SLOAutoRollbackStore
+	sloAutoRollbackNudger  deploy.ReconcileNudger
+	sloAutoRollbackHistory SLOBurnHistoryRecorder
+	sloAutoRollbackTracker *AutoRollbackTracker
+
+	certExpiryWarningWindow     time.Duration
+	certRenewalStalledThreshold time.Duration
+	patchStatusThreshold        float64
+	nodeDiskSpaceThreshold      float64
+	nodeCPUThreshold            float64
+	nodeMemoryThreshold         float64
+	domainHealthCheckInterval   time.Duration
+	domainHealthThrottle        *domainHealthThrottle
+	backupMissingGracePeriod    time.Duration
+
+	cpBackups      ControlPlaneBackupSource
+	cpBackupMaxAge time.Duration
+
+	logArchive LogArchiveSource
+
+	restoreDrills RestoreDrillSource
+
+	nodeCertWarning, nodeCertCritical time.Duration
+
+	// versionSkew* back kind=version_skew rules, set via SetVersionSkew.
+	// nil versionSkewSettings (the default) means the feature is off, the
+	// same "absence degrades, never errors" shape logArchive above follows.
+	versionSkewSettings VersionSkewSettingsSource
+	versionSkewFetchers upgrade.Fetchers
+	versionSkewCache    *upgrade.Cache
+
+	budgets       BudgetSource
+	budgetTracker *budgetTracker
+
+	noise *NoiseControl
+
+	changes     ChangeSource
+	changesLink func(app string) string
+
+	slo         SLOPolicy
+	sloThrottle *domainHealthThrottle
+
+	sloMu       sync.Mutex
+	sloSeverity map[string]string
+
+	logRule logRuleRuntime
+}
+
+// NewEngine builds an Engine; a nil optional dependency disables only the rule kinds that need it.
+// Zero thresholds fall back to their Default constants.
+func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, certs CertSource, scheduledTasks ScheduledTaskSource, certExpiryWarningWindow, certRenewalStalledThreshold time.Duration, nodes NodeSource, patchStatusThreshold, nodeDiskSpaceThreshold float64, nodeServices NodeServiceSource, nodeCPUThreshold, nodeMemoryThreshold float64, domainApps AppDomainSource, domainChecker DomainCheckSource, domainHealthCheckInterval time.Duration, backups BackupSource, backupMissingGracePeriod time.Duration, newNotifier func(Rule) Notifier, logger *slog.Logger) *Engine {
+	if newNotifier == nil {
+		newNotifier = func(r Rule) Notifier { return NewNotifier(nil, nil, nil, r) }
+	}
+	if logger == nil {
+		logger = slog.Default()
+	}
+	if certExpiryWarningWindow <= 0 {
+		certExpiryWarningWindow = DefaultCertExpiryWarningWindow
+	}
+	if certRenewalStalledThreshold <= 0 {
+		certRenewalStalledThreshold = DefaultCertRenewalStalledThreshold
+	}
+	if patchStatusThreshold <= 0 {
+		patchStatusThreshold = DefaultPatchStatusThreshold
+	}
+	if nodeDiskSpaceThreshold <= 0 {
+		nodeDiskSpaceThreshold = DefaultNodeDiskSpaceThresholdPercent
+	}
+	if nodeCPUThreshold <= 0 {
+		nodeCPUThreshold = DefaultNodeCPUThresholdPercent
+	}
+	if nodeMemoryThreshold <= 0 {
+		nodeMemoryThreshold = DefaultNodeMemoryThresholdBytes
+	}
+	if domainHealthCheckInterval <= 0 {
+		domainHealthCheckInterval = DefaultDomainHealthCheckInterval
+	}
+	if backupMissingGracePeriod <= 0 {
+		backupMissingGracePeriod = DefaultBackupMissingGracePeriod
+	}
+	return &Engine{
+		rules: rules, metrics: metrics, logs: logs, tracker: tracker, certs: certs, nodes: nodes, nodeServices: nodeServices, scheduledTasks: scheduledTasks,
+		domainApps: domainApps, domainChecker: domainChecker, backups: backups,
+		autoRollbackTracker:    NewAutoRollbackTracker(),
+		sloAutoRollbackTracker: NewAutoRollbackTracker(),
+		newNotifier:            newNotifier, logger: logger,
+		certExpiryWarningWindow: certExpiryWarningWindow, certRenewalStalledThreshold: certRenewalStalledThreshold,
+		patchStatusThreshold: patchStatusThreshold, nodeDiskSpaceThreshold: nodeDiskSpaceThreshold,
+		nodeCPUThreshold: nodeCPUThreshold, nodeMemoryThreshold: nodeMemoryThreshold,
+		domainHealthCheckInterval: domainHealthCheckInterval, domainHealthThrottle: newDomainHealthThrottle(),
+		backupMissingGracePeriod: backupMissingGracePeriod,
+		slo:                      SLOPolicyFromEnv(), sloThrottle: newDomainHealthThrottle(), sloSeverity: make(map[string]string),
+		logRule: newLogRuleRuntime(),
+	}
+}
+
+// SetAutoRollback enables crashloop auto-rollback; a setter so optional wiring leaves NewEngine's signature alone.
+func (e *Engine) SetAutoRollback(st AutoRollbackStore, nudger deploy.ReconcileNudger) {
+	e.autoRollback = st
+	e.autoRollbackNudger = nudger
+}
+
+// SetSLOBurnAutoRollback enables SLO-burn auto-rollback; history must be a separate *DB from st.
+func (e *Engine) SetSLOBurnAutoRollback(st SLOAutoRollbackStore, nudger deploy.ReconcileNudger, history SLOBurnHistoryRecorder) {
+	e.sloAutoRollback = st
+	e.sloAutoRollbackNudger = nudger
+	e.sloAutoRollbackHistory = history
+}
+
+// SetControlPlaneBackups enables kind=control_plane_backup_stale rules. It is
+// left unset when scheduled control plane backups are disabled, so those
+// rules stay quiet. maxAge <= 0 falls back to DefaultControlPlaneBackupMaxAge.
+func (e *Engine) SetControlPlaneBackups(src ControlPlaneBackupSource, maxAge time.Duration) {
+	e.cpBackups = src
+	e.cpBackupMaxAge = maxAge
+}
+
+// SetLogArchive enables kind=log_archive_stale rules.
+func (e *Engine) SetLogArchive(src LogArchiveSource) { e.logArchive = src }
+
+// SetRestoreDrills enables kind=restore_drill_failed rules.
+func (e *Engine) SetRestoreDrills(src RestoreDrillSource) { e.restoreDrills = src }
+
+// SetVersionSkew enables kind=version_skew rules using the shared GitHub update lookup.
+func (e *Engine) SetVersionSkew(settings VersionSkewSettingsSource, fetchers upgrade.Fetchers) {
+	e.versionSkewSettings = settings
+	e.versionSkewFetchers = fetchers
+	e.versionSkewCache = upgrade.NewCache()
+}
+
+// SetBudgets enables kind=budget_threshold rules.
+func (e *Engine) SetBudgets(src BudgetSource) {
+	e.budgets = src
+	e.budgetTracker = newBudgetTracker()
+}
+
+// SetNodeCertThresholds sets the default warning window and critical
+// threshold for kind=node_cert_expiring rules. Zero keeps the defaults.
+func (e *Engine) SetNodeCertThresholds(warning, critical time.Duration) {
+	e.nodeCertWarning, e.nodeCertCritical = warning, critical
+}
+
+// ChangeSource reports what changed on an app before an alert fired.
+// *changes.Aggregator satisfies it.
+type ChangeSource interface {
+	Collect(ctx context.Context, app string, until time.Time) changes.Result
+}
+
+// SetChanges attaches a "recent changes" section to firing app alerts. link,
+// when non-nil, maps an app name to its dashboard URL.
+func (e *Engine) SetChanges(src ChangeSource, link func(app string) string) {
+	e.changes, e.changesLink = src, link
+}
+
+// SetNoiseControl enables silences, grouping, flapping control and alert
+// history. Unset, every transition notifies directly.
+func (e *Engine) SetNoiseControl(n *NoiseControl) { e.noise = n }
+
+// Tick evaluates every enabled rule once; one rule's error is joined into the result and never stops the others.
+func (e *Engine) Tick(ctx context.Context) error {
+	rules, err := e.rules.ListEnabledRules(ctx)
+	if err != nil {
+		return fmt.Errorf("alerting: list enabled rules: %w", err)
+	}
+
+	now := time.Now()
+	var errs []error
+	if e.noise != nil {
+		defer e.noise.Sweep(ctx, now, e.sendEvent)
+	}
+
+	for _, r := range rules {
+		var next Rule
+		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string
+		var taskFailureNotice, backupMissingNoticeText, sloNotice, versionSkewNotice string
+		var budgetKeys []string
+		switch r.Kind {
+		case KindThreshold:
+			next, err = EvaluateThreshold(ctx, e.metrics, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindCrashloop:
+			next = EvaluateCrashloop(e.tracker, r, now)
+		case KindCertExpiry:
+			if e.certs == nil {
+				e.logger.Warn("alerting: cert_expiry rule found but no cert source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, certNotices, err = EvaluateCertExpiry(ctx, e.certs, e.rules, r, e.certExpiryWarningWindow, e.certRenewalStalledThreshold, now, e.logger)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindPatchStatus:
+			if e.nodes == nil {
+				e.logger.Warn("alerting: patch_status rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, patchNotices, err = EvaluatePatchStatus(ctx, e.nodes, e.metrics, r, e.patchStatusThreshold, now, e.logger)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindScheduledTaskFailure:
+			if e.scheduledTasks == nil {
+				e.logger.Warn("alerting: scheduled_task_failure rule found but no scheduled task source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, taskFailureNotice, err = EvaluateScheduledTaskFailure(ctx, e.scheduledTasks, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindScheduledTaskMissed, KindScheduledTaskRunningLong:
+			if e.scheduledTasks == nil {
+				e.logger.Warn("alerting: scheduled task health rule found but no scheduled task source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, taskFailureNotice, err = EvaluateScheduledTaskHealth(ctx, e.scheduledTasks, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindNodeDiskSpace:
+			if e.nodes == nil {
+				e.logger.Warn("alerting: node_disk_space rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, diskSpaceNotices, err = EvaluateNodeDiskSpace(ctx, e.nodes, e.metrics, r, e.nodeDiskSpaceThreshold, now, e.logger)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindNodeOffline:
+			if e.nodes == nil {
+				e.logger.Warn("alerting: node_offline rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, nodeNotices, err = EvaluateNodeOffline(ctx, e.nodes, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindNodeCertExpiring:
+			if e.nodes == nil {
+				e.logger.Warn("alerting: node_cert_expiring rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			warning, critical := e.nodeCertWarning, e.nodeCertCritical
+			if warning <= 0 {
+				warning = DefaultNodeCertWarning
+			}
+			if critical <= 0 {
+				critical = DefaultNodeCertCritical
+			}
+			next, nodeNotices, err = EvaluateNodeCertExpiring(ctx, e.nodes, r, warning, critical, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindNodeResourceUsage:
+			if e.nodes == nil || e.nodeServices == nil {
+				e.logger.Warn("alerting: node_resource_usage rule found but no node/service source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, resourceUsageNotices, err = EvaluateNodeResourceUsage(ctx, e.nodes, e.nodeServices, e.metrics, r, e.nodeCPUThreshold, e.nodeMemoryThreshold, now, e.logger)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindDomainHealth:
+			if e.domainApps == nil || e.domainChecker == nil {
+				e.logger.Warn("alerting: domain_health rule found but no app/domain check source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			if !e.domainHealthThrottle.ready(r.ID, e.domainHealthCheckInterval, now) {
+				continue
+			}
+			next, domainHealthNotices, err = EvaluateDomainHealth(ctx, e.domainApps, e.domainChecker, r, now, e.logger)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindBackupMissing:
+			if e.backups == nil {
+				e.logger.Warn("alerting: backup_missing rule found but no backup source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateBackupMissing(ctx, e.backups, r, e.backupMissingGracePeriod, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindSLOBurn:
+			if !e.sloThrottle.ready(r.ID, e.slo.EvalEvery, now) {
+				continue
+			}
+			next, sloNotice, err = EvaluateSLOBurn(ctx, e.metrics, r, e.slo, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindLogPattern, KindLogLevelRate:
+			if e.logs == nil {
+				continue
+			}
+			var skip bool
+			next, skip, err = e.evaluateLogRule(ctx, r, now)
+			if skip {
+				continue
+			}
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindControlPlaneBackupStale:
+			if e.cpBackups == nil {
+				// Scheduled backups are disabled: nothing to be stale.
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateControlPlaneBackupStale(e.cpBackups, r, e.cpBackupMaxAge, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindLogArchiveStale:
+			if e.logArchive == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateLogArchiveStale(ctx, e.logArchive, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindRestoreDrillFailed:
+			if e.restoreDrills == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateRestoreDrillFailed(ctx, e.restoreDrills, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindVersionSkew:
+			if e.versionSkewSettings == nil {
+				continue
+			}
+			next, versionSkewNotice, err = EvaluateVersionSkew(ctx, e.versionSkewSettings, e.versionSkewFetchers, e.versionSkewCache, r, version.Version, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindBudgetThreshold:
+			if e.budgets == nil {
+				continue
+			}
+			next, nodeNotices, budgetKeys, err = EvaluateBudgetThreshold(ctx, e.budgets, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindCertExpiring, KindCertRenewalStalled, KindDomainNotResolving:
+			var skip bool
+			var notices []string
+			next, notices, skip, err = e.evaluateTrafficKind(ctx, r, now)
+			if skip {
+				continue
+			}
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+			if r.Kind == KindDomainNotResolving {
+				domainHealthNotices = notices
+			} else {
+				certNotices = notices
+			}
+		default:
+			e.logger.Warn("alerting: rule has unknown kind, skipping", slog.String("rule_id", r.ID), slog.String("kind", string(r.Kind)))
+			continue
+		}
+
+		if e.noise != nil {
+			next = e.noise.ApplyStreak(r, next, now)
+		}
+		becameFiring := next.Firing && !r.Firing
+		becameResolved := !next.Firing && r.Firing
+		stillFiring := next.Firing && r.Firing
+
+		if err := e.rules.UpdateState(ctx, r.ID, next.PendingSince, next.FiringSince, next.Firing, now, next.LastValue); err != nil {
+			errs = append(errs, fmt.Errorf("rule %q: persist state: %w", r.ID, err))
+			continue
+		}
+
+		switch {
+		case becameFiring:
+			if r.Kind == KindSLOBurn {
+				e.sloEscalated(r.ID, next.Severity)
+			}
+			if r.Kind == KindBudgetThreshold {
+				e.budgetTracker.forget(r.ID)
+				e.budgetTracker.record(r.ID, budgetKeys)
+			}
+			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices, taskFailureNotice, backupMissingNoticeText, sloNotice, versionSkewNotice)
+			if r.Kind == KindCrashloop && e.autoRollback != nil {
+				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, e.autoRollbackTracker, next.ResourceID, e.logger)
+			}
+			if r.Kind == KindSLOBurn && e.sloAutoRollback != nil {
+				MaybeAutoRollbackOnSLOBurn(ctx, e.sloAutoRollback, e.sloAutoRollbackHistory, e.sloAutoRollbackNudger, e.sloAutoRollbackTracker, next, sloNotice, e.logger)
+			}
+		case becameResolved:
+			if r.Kind == KindSLOBurn {
+				e.sloForget(r.ID)
+			}
+			if r.Kind == KindBudgetThreshold {
+				e.budgetTracker.forget(r.ID)
+			}
+			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, nil, "", "", "", "")
+		case stillFiring:
+			if r.Kind == KindBudgetThreshold && e.budgetTracker.record(r.ID, budgetKeys) {
+				e.dispatch(ctx, next, false, nil, nil, nil, nil, nil, nodeNotices, "", "", "", "")
+			}
+			// A ticket-level SLO burn that worsens into a page-level one must
+			// notify again: the operator only heard a warning so far.
+			if r.Kind == KindSLOBurn && e.sloEscalated(r.ID, next.Severity) {
+				e.dispatch(ctx, next, false, nil, nil, nil, nil, nil, nil, "", "", sloNotice, "")
+			}
+			// A still-firing rule sends no repeat notification, so re-check auto-rollback each tick for a new bad deploy.
+			// Gated on an existing autoRollbackTracker entry to skip a store round trip for other rules.
+			if r.Kind == KindCrashloop && e.autoRollback != nil && e.autoRollbackTracker.armed(next.ResourceID) {
+				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, e.autoRollbackTracker, next.ResourceID, e.logger)
+			}
+			// Same as the crashloop check above, for SLO-burn rules.
+			if r.Kind == KindSLOBurn && e.sloAutoRollback != nil && e.sloAutoRollbackTracker.armed(next.ResourceID) {
+				MaybeAutoRollbackOnSLOBurn(ctx, e.sloAutoRollback, e.sloAutoRollbackHistory, e.sloAutoRollbackNudger, e.sloAutoRollbackTracker, next, sloNotice, e.logger)
+			}
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+// sloEscalated records severity as the last one seen for rule id and reports
+// whether it just rose from a non-critical level to critical. A rule seen for
+// the first time (for example after a restart) is recorded without escalating.
+func (e *Engine) sloEscalated(id, severity string) bool {
+	e.sloMu.Lock()
+	defer e.sloMu.Unlock()
+	prev, seen := e.sloSeverity[id]
+	e.sloSeverity[id] = severity
+	return seen && prev != SeverityCritical && severity == SeverityCritical
+}
+
+func (e *Engine) sloForget(id string) {
+	e.sloMu.Lock()
+	defer e.sloMu.Unlock()
+	delete(e.sloSeverity, id)
+}
+
+// dispatch logs send failures rather than returning them, so one failed notification never stops other rules.
+func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string, taskFailureNotice, backupMissingNotice, sloNotice, versionSkewNotice string) {
+	// r.Enabled is already resolved against its attached channel
+	// (scanRule): a disabled channel silences the rule the same way
+	// DeployDispatcher.Dispatch skips a target with a disabled channel.
+	if !r.Enabled {
+		if e.noise != nil {
+			e.noise.RecordSkipped(ctx, r, resolved, time.Now())
+		}
+		return
+	}
+
+	ev := Event{Rule: r, Resolved: resolved}
+	if r.Kind == KindCrashloop && !resolved {
+		ev.LogLines = e.fetchRecentLogLines(ctx, r.ResourceID)
+	}
+	if (r.Kind == KindCertExpiry || r.Kind == KindCertExpiring || r.Kind == KindCertRenewalStalled) && !resolved {
+		ev.CertNotices = certNotices
+	}
+	if r.Kind == KindPatchStatus && !resolved {
+		ev.PatchNotices = patchNotices
+	}
+	if r.Kind == KindNodeDiskSpace && !resolved {
+		ev.DiskSpaceNotices = diskSpaceNotices
+	}
+	if r.Kind == KindNodeOffline && !resolved {
+		ev.NodeOfflineNotices = nodeNotices
+	}
+	if r.Kind == KindNodeCertExpiring && !resolved {
+		ev.NodeCertNotices = nodeNotices
+	}
+	if r.Kind == KindNodeResourceUsage && !resolved {
+		ev.ResourceUsageNotices = resourceUsageNotices
+	}
+	if (r.Kind == KindScheduledTaskFailure || r.Kind == KindScheduledTaskMissed || r.Kind == KindScheduledTaskRunningLong) && !resolved {
+		ev.TaskFailureNotice = taskFailureNotice
+	}
+	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving) && !resolved {
+		ev.DomainHealthNotices = domainHealthNotices
+	}
+	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindRestoreDrillFailed) && !resolved {
+		ev.BackupMissingNotice = backupMissingNotice
+	}
+	if r.Kind == KindVersionSkew && !resolved {
+		ev.VersionSkewNotice = versionSkewNotice
+	}
+	if r.Kind == KindBudgetThreshold && !resolved {
+		ev.BudgetNotices = nodeNotices
+	}
+
+	if r.Kind == KindSLOBurn && !resolved {
+		ev.SLONotice = sloNotice
+	}
+	if (r.Kind == KindLogPattern || r.Kind == KindLogLevelRate) && !resolved {
+		ev.LogNotice, ev.LogLines = e.logRule.take(r.ID)
+	}
+
+	if !resolved {
+		e.attachChanges(ctx, &ev)
+	}
+
+	if e.noise != nil {
+		e.noise.Route(ctx, ev, time.Now(), e.sendEvent)
+		return
+	}
+	_ = e.sendEvent(ctx, ev)
+}
+
+func (e *Engine) attachChanges(ctx context.Context, ev *Event) {
+	if e.changes == nil {
+		return
+	}
+	app, ok := strings.CutPrefix(ev.Rule.ResourceID, "service:")
+	if !ok || app == "" {
+		return
+	}
+	res := e.changes.Collect(ctx, app, time.Now())
+	ev.Changes = &res
+	if e.changesLink != nil {
+		ev.ChangesLink = e.changesLink(app)
+	}
+}
+
+// sendEvent delivers ev and records the channel delivery. The error is
+// returned so NoiseControl can record the outcome; it is already logged.
+func (e *Engine) sendEvent(ctx context.Context, ev Event) error {
+	r := ev.Rule
+	sendErr := e.revealRuleTarget(ctx, &r)
+	if sendErr == nil {
+		sendErr = e.newNotifier(r).Notify(ctx, ev)
+	}
+	if sendErr != nil {
+		e.logger.Error("alerting: notification failed",
+			slog.String("rule_id", r.ID), slog.String("resource_id", r.ResourceID),
+			slog.Bool("resolved", ev.Resolved), slog.String("error", sendErr.Error()))
+	}
+
+	trigger := "alert-fired"
+	if ev.Resolved {
+		trigger = "alert-resolved"
+	}
+	recordDelivery(ctx, e.rules, e.logger, r.ChannelID, trigger, sendErr)
+	return sendErr
+}
+
+// channelTargetRevealer is the optional RuleStore surface that decrypts
+// a sealed channel's destination at send time.
+type channelTargetRevealer interface {
+	RevealChannelTarget(ctx context.Context, channelID, target string) (string, error)
+}
+
+func (e *Engine) revealRuleTarget(ctx context.Context, r *Rule) error {
+	if rv, ok := e.rules.(channelTargetRevealer); ok {
+		target, err := rv.RevealChannelTarget(ctx, r.ChannelID, r.NotifyURL)
+		if err != nil {
+			return err
+		}
+		r.NotifyURL = target
+	}
+	if IsMaskedNotifyTarget(r.NotifyURL) && r.NotifyKind != NotifyEmail {
+		return ErrChannelSecretNotRevealed
+	}
+	return nil
+}
+
+// A query failure returns nil and is logged: a firing notification without log lines still beats none.
+func (e *Engine) fetchRecentLogLines(ctx context.Context, resourceID string) []string {
+	now := time.Now()
+	entries, err := e.logs.QueryLogs(ctx, resourceID, now.Add(-crashloopLogLookback), now, "")
+	if err != nil {
+		e.logger.Error("alerting: fetch crashloop log lines failed",
+			slog.String("resource_id", resourceID), slog.String("error", err.Error()))
+		return nil
+	}
+
+	if len(entries) > crashloopLogLines {
+		entries = entries[len(entries)-crashloopLogLines:]
+	}
+	lines := make([]string, len(entries))
+	for i, entry := range entries {
+		lines[i] = entry.Message
+	}
+	return lines
+}
+
+// Run calls Tick on interval until ctx is done, matching the shape of
+// every other periodic loop in this codebase
+// (telemetry.Collector.Run, cmd/levelrail's retention sweeps).
+func (e *Engine) Run(ctx context.Context, interval time.Duration) error {
+	loop := footprint.Track("alerting evaluation", interval)
+	defer loop.Active()()
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			if e.noise != nil {
+				flushCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+				e.noise.FlushAll(flushCtx, time.Now(), e.sendEvent)
+				cancel()
+			}
+			return ctx.Err()
+		case <-ticker.C:
+			start := time.Now()
+			err := e.Tick(ctx)
+			loop.Observe(start, err)
+			if err != nil {
+				e.logger.Warn("alerting: evaluation tick had errors", slog.String("error", err.Error()))
+			}
+		}
+	}
+}

@@ -1,0 +1,843 @@
+import { useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import {
+  Controller,
+  useForm,
+  type Control,
+  type FieldErrors,
+} from 'react-hook-form'
+import { z } from 'zod'
+import {
+  GaugeIcon,
+  PencilSimpleIcon,
+  ArrowCounterClockwiseIcon,
+  ShieldWarningIcon,
+  ClockCountdownIcon,
+  WrenchIcon,
+  HardDriveIcon,
+  CpuIcon,
+  GlobeIcon,
+  ArchiveIcon,
+  RocketLaunchIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '@/components/ui/field'
+import { DurationInput } from '@/components/ui/duration-input'
+import { toast } from '@/components/ui/toast'
+import { useUpdateAlertRule } from '../queries/alerts'
+import { useNotificationChannelsOptional } from '../queries/notificationChannels'
+import { useScheduledTasks } from '../queries/scheduledTasks'
+import { useDatabases } from '../queries/databases'
+import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
+import { METRIC_NAME_LABEL, METRIC_NAME_OPTIONS } from './metricName'
+import {
+  BackupMissingFields,
+  type BackupMissingFormShape,
+} from './BackupMissingFields'
+import type {
+  AlertRule,
+  AlertRuleKind,
+  Comparator,
+  CreateAlertRuleRequest,
+} from '../types/alerts'
+import { isScheduledTaskKind } from '../types/alerts'
+import { SloRuleFields, type SloFormShape } from './SloRuleFields'
+import { sloConfigFromForm } from '../queries/sloPreview'
+import type { AppVolume } from '../types/appDetail'
+
+// Same sanity-check regex CreateAlertRuleDialog uses: not a real
+// time.Duration parser, just catches an obviously wrong value before a
+// round trip.
+const GO_DURATION_REGEX = /^-?(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/
+
+const KIND_OPTIONS: {
+  value: AlertRuleKind
+  label: string
+  Icon: typeof GaugeIcon
+}[] = [
+  { value: 'threshold', label: 'Threshold', Icon: GaugeIcon },
+  { value: 'crashloop', label: 'Crashloop', Icon: ArrowCounterClockwiseIcon },
+  {
+    value: 'cert_expiry',
+    label: 'Certificate expiry',
+    Icon: ShieldWarningIcon,
+  },
+  { value: 'patch_status', label: 'Node patch status', Icon: WrenchIcon },
+  {
+    value: 'scheduled_task_failure',
+    label: 'Job failure',
+    Icon: ClockCountdownIcon,
+  },
+  {
+    value: 'scheduled_task_missed',
+    label: 'Job missed a run',
+    Icon: ClockCountdownIcon,
+  },
+  {
+    value: 'scheduled_task_running_long',
+    label: 'Job running too long',
+    Icon: ClockCountdownIcon,
+  },
+  { value: 'node_disk_space', label: 'Node disk space', Icon: HardDriveIcon },
+  {
+    value: 'node_resource_usage',
+    label: 'Node CPU/memory usage',
+    Icon: CpuIcon,
+  },
+  { value: 'domain_health', label: 'Domain health', Icon: GlobeIcon },
+  { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
+  { value: 'node_offline', label: 'Node offline', Icon: HardDriveIcon },
+  {
+    value: 'node_cert_expiring',
+    label: 'Node agent certificate expiring',
+    Icon: HardDriveIcon,
+  },
+  {
+    value: 'control_plane_backup_stale',
+    label: 'Control plane backup stale',
+    Icon: ArchiveIcon,
+  },
+  { value: 'log_archive_stale', label: 'Log archive stale', Icon: ArchiveIcon },
+  { value: 'slo_burn', label: 'SLO burn rate', Icon: GaugeIcon },
+  {
+    value: 'version_skew',
+    label: 'Version update available',
+    Icon: RocketLaunchIcon,
+  },
+  { value: 'budget_threshold', label: 'Budget threshold', Icon: GaugeIcon },
+]
+
+const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
+  { value: '>', label: '> (greater than)' },
+  { value: '<', label: '< (less than)' },
+  { value: '>=', label: '>= (greater or equal)' },
+  { value: '<=', label: '<= (less or equal)' },
+]
+
+// Same flat-form-plus-superRefine shape CreateAlertRuleDialog uses: kept
+// identical field-for-field so the two forms validate the same way, the
+// only difference being where defaultValues come from (an existing rule
+// here, fixed defaults there).
+const editAlertRuleSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Name is required'),
+    kind: z.enum([
+      'threshold',
+      'crashloop',
+      'cert_expiry',
+      'patch_status',
+      'scheduled_task_failure',
+      'scheduled_task_missed',
+      'scheduled_task_running_long',
+      'node_disk_space',
+      'node_resource_usage',
+      'domain_health',
+      'backup_missing',
+      'node_offline',
+      'node_cert_expiring',
+      'control_plane_backup_stale',
+      'log_archive_stale',
+      'slo_burn',
+      'version_skew',
+      'budget_threshold',
+    ]),
+    metric: z.string().trim(),
+    comparator: z.enum(['>', '<', '>=', '<=']),
+    threshold: z.coerce.number({ error: 'Must be a number' }),
+    forDuration: z.string().trim(),
+    restartCountThreshold: z.coerce.number({ error: 'Must be a number' }),
+    restartWindow: z.string().trim(),
+    scheduledTaskId: z.string(),
+    backupResourceKind: z.enum(['database', 'volume', '']),
+    backupDatabaseName: z.string(),
+    backupVolumeName: z.string(),
+    sloObjective: z.enum(['availability', 'latency']),
+    sloTarget: z.coerce.number({ error: 'Must be a number' }),
+    sloLatencyMs: z.coerce.number({ error: 'Must be a number' }),
+    channelId: z.string(),
+    enabled: z.boolean(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.kind === 'cert_expiry' ||
+      data.kind === 'patch_status' ||
+      data.kind === 'node_disk_space' ||
+      data.kind === 'node_resource_usage' ||
+      data.kind === 'node_offline' ||
+      data.kind === 'node_cert_expiring' ||
+      data.kind === 'control_plane_backup_stale' ||
+      data.kind === 'log_archive_stale' ||
+      data.kind === 'version_skew' ||
+      data.kind === 'budget_threshold'
+    ) {
+      return
+    }
+
+    if (data.kind === 'threshold') {
+      if (!data.metric) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Metric is required',
+          path: ['metric'],
+        })
+      }
+      if (data.forDuration && !GO_DURATION_REGEX.test(data.forDuration)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must look like a duration, e.g. "2m" or "30s"',
+          path: ['forDuration'],
+        })
+      }
+      return
+    }
+
+    if (data.kind === 'domain_health') {
+      if (data.forDuration && !GO_DURATION_REGEX.test(data.forDuration)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must look like a duration, e.g. "2m" or "30s"',
+          path: ['forDuration'],
+        })
+      }
+      return
+    }
+
+    if (data.kind === 'slo_burn') {
+      if (!(data.sloTarget >= 50 && data.sloTarget < 100)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be at least 50 and below 100, e.g. 99.9',
+          path: ['sloTarget'],
+        })
+      }
+      if (data.sloObjective === 'latency' && !(data.sloLatencyMs >= 5)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be at least 5 ms',
+          path: ['sloLatencyMs'],
+        })
+      }
+      return
+    }
+
+    if (isScheduledTaskKind(data.kind)) {
+      if (!data.scheduledTaskId) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose which scheduled task to watch',
+          path: ['scheduledTaskId'],
+        })
+      }
+      if (
+        !Number.isInteger(data.restartCountThreshold) ||
+        data.restartCountThreshold <= 0
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be a positive whole number',
+          path: ['restartCountThreshold'],
+        })
+      }
+      return
+    }
+
+    if (data.kind === 'backup_missing') {
+      if (!data.backupResourceKind) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose what this rule watches',
+          path: ['backupResourceKind'],
+        })
+      } else if (
+        data.backupResourceKind === 'database' &&
+        !data.backupDatabaseName
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose which database to watch',
+          path: ['backupDatabaseName'],
+        })
+      } else if (
+        data.backupResourceKind === 'volume' &&
+        !data.backupVolumeName
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose which volume to watch',
+          path: ['backupVolumeName'],
+        })
+      }
+      if (data.forDuration && !GO_DURATION_REGEX.test(data.forDuration)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must look like a duration, e.g. "6h"',
+          path: ['forDuration'],
+        })
+      }
+      return
+    }
+
+    if (
+      !Number.isInteger(data.restartCountThreshold) ||
+      data.restartCountThreshold <= 0
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Must be a positive whole number',
+        path: ['restartCountThreshold'],
+      })
+    }
+    if (!data.restartWindow) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Restart window is required',
+        path: ['restartWindow'],
+      })
+    } else if (!GO_DURATION_REGEX.test(data.restartWindow)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Must look like a duration, e.g. "5m"',
+        path: ['restartWindow'],
+      })
+    }
+  })
+
+type EditAlertRuleFormInput = z.input<typeof editAlertRuleSchema>
+type EditAlertRuleFormOutput = z.output<typeof editAlertRuleSchema>
+
+// defaultsFromRule seeds the form from the rule being edited: PUT
+// /api/v1/apps/{name}/alerts/{id} is a full replace
+// (handleUpdateAlertRule's own doc comment), so every field the operator
+// doesn't touch still needs to round-trip through this form unchanged.
+function defaultsFromRule(rule: AlertRule): EditAlertRuleFormInput {
+  return {
+    name: rule.name,
+    kind: rule.kind as EditAlertRuleFormInput['kind'],
+    metric: rule.metric ?? '',
+    comparator: rule.comparator ?? '>',
+    threshold: rule.threshold,
+    forDuration: rule.for_duration ?? '',
+    restartCountThreshold: rule.restart_count_threshold,
+    restartWindow: rule.restart_window ?? '',
+    scheduledTaskId: rule.scheduled_task_id ?? '',
+    backupResourceKind: rule.backup_resource_kind ?? '',
+    backupDatabaseName: rule.backup_database_name ?? '',
+    backupVolumeName: rule.backup_volume_name ?? '',
+    sloObjective: rule.slo?.objective ?? 'availability',
+    sloTarget: rule.slo?.target ?? 99.9,
+    sloLatencyMs: rule.slo?.latency_ms ?? 300,
+    channelId: rule.channel_id ?? '',
+    enabled: rule.enabled,
+  }
+}
+
+// Edit-via-dialog flow for an existing alert rule, mirroring
+// CreateAlertRuleDialog's own shape and validation with two differences:
+// the form starts pre-filled from rule (defaultsFromRule) instead of
+// fixed defaults, and submit calls PUT through useUpdateAlertRule instead
+// of POST. This is what turns "delete and recreate to fix a typo'd
+// threshold" into a single edit, without losing the rule's id or its
+// evaluation state (SaveRule never touches firing/pending_since on an
+// update, see internal/alerting/rules.go's own doc comment).
+export function EditAlertRuleDialog({
+  appName,
+  rule,
+  volumes,
+}: {
+  appName: string
+  rule: AlertRule
+  volumes?: AppVolume[]
+}) {
+  const [open, setOpen] = useState(false)
+  const updateRule = useUpdateAlertRule(appName)
+  const channelsQuery = useNotificationChannelsOptional()
+  const channels = channelsQuery.data ?? []
+  const scheduledTasksQuery = useScheduledTasks(appName)
+  const scheduledTasks = scheduledTasksQuery.data ?? []
+  const databasesQuery = useDatabases()
+  const databases = databasesQuery.data ?? []
+  const defaultValues = defaultsFromRule(rule)
+  const { control, register, handleSubmit, formState, reset, watch } = useForm<
+    EditAlertRuleFormInput,
+    unknown,
+    EditAlertRuleFormOutput
+  >({
+    resolver: zodResolver(editAlertRuleSchema),
+    defaultValues,
+  })
+  const kind = watch('kind')
+  const backupResourceKind = watch('backupResourceKind')
+  const sloObjective = watch('sloObjective')
+  const sloTarget = watch('sloTarget')
+  const sloLatencyMs = watch('sloLatencyMs')
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    if (!next) {
+      reset(defaultValues)
+      updateRule.reset()
+    }
+  }
+
+  const onSubmit = handleSubmit((values) => {
+    const req: CreateAlertRuleRequest = {
+      name: values.name.trim(),
+      kind: values.kind,
+      channel_id: values.channelId || undefined,
+      enabled: values.enabled,
+      // A PUT replaces the whole rule: carry the noise settings this
+      // form does not edit (see RuleNoiseDialog) so saving never resets them.
+      severity: rule.severity,
+      labels: rule.labels,
+      consecutive_failures: rule.consecutive_failures,
+      flap_threshold: rule.flap_threshold,
+      flap_window: rule.flap_window,
+    }
+    if (values.kind === 'threshold') {
+      req.metric = values.metric.trim()
+      req.comparator = values.comparator
+      req.threshold = values.threshold
+      req.for_duration = values.forDuration.trim() || undefined
+    } else if (values.kind === 'crashloop') {
+      req.restart_count_threshold = values.restartCountThreshold
+      req.restart_window = values.restartWindow.trim()
+    } else if (isScheduledTaskKind(values.kind)) {
+      req.scheduled_task_id = values.scheduledTaskId
+      req.restart_count_threshold = values.restartCountThreshold
+    } else if (
+      values.kind === 'domain_health' ||
+      values.kind === 'control_plane_backup_stale' ||
+      values.kind === 'log_archive_stale'
+    ) {
+      req.for_duration = values.forDuration.trim() || undefined
+    } else if (values.kind === 'slo_burn') {
+      req.slo = sloConfigFromForm(
+        values.sloObjective,
+        values.sloTarget,
+        values.sloLatencyMs,
+      )
+    } else if (values.kind === 'backup_missing') {
+      req.backup_resource_kind = values.backupResourceKind || undefined
+      req.for_duration = values.forDuration.trim() || undefined
+      if (values.backupResourceKind === 'database') {
+        req.backup_database_name = values.backupDatabaseName
+      } else if (values.backupResourceKind === 'volume') {
+        req.backup_service_name = appName
+        req.backup_volume_name = values.backupVolumeName
+      }
+    }
+    updateRule.mutate(
+      { id: rule.id, req },
+      {
+        onSuccess: () => {
+          handleOpenChange(false)
+          toast.add({
+            title: `Alert rule "${req.name}" updated.`,
+            type: 'success',
+          })
+        },
+      },
+    )
+  })
+
+  return (
+    <Sheet open={open} onOpenChange={handleOpenChange}>
+      <SheetTrigger render={<Button variant="outline" size="sm" />}>
+        <PencilSimpleIcon className="size-3.5" aria-hidden="true" />
+        Edit
+      </SheetTrigger>
+      <SheetContent className="overflow-y-auto sm:max-w-lg">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-1.5">
+            <PencilSimpleIcon
+              className="size-4 text-muted-foreground"
+              aria-hidden="true"
+            />
+            Edit alert rule
+          </SheetTitle>
+          <SheetDescription>
+            Fully replaces this rule&apos;s configuration. Its notification
+            delivery history stays attached to the same rule id.
+          </SheetDescription>
+        </SheetHeader>
+        <form
+          onSubmit={(e) => {
+            void onSubmit(e)
+          }}
+          className="space-y-4 px-4 pb-4"
+        >
+          <Field>
+            <FieldLabel htmlFor="edit-rule-name">Name</FieldLabel>
+            <Input
+              id="edit-rule-name"
+              placeholder="e.g. high-cpu"
+              {...register('name')}
+            />
+            <FieldError errors={[formState.errors.name]} />
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="edit-rule-kind">Kind</FieldLabel>
+            <Controller
+              control={control}
+              name="kind"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id="edit-rule-kind" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {KIND_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <option.Icon
+                          className="size-3.5 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </Field>
+
+          {kind === 'cert_expiry' ||
+          kind === 'patch_status' ||
+          kind === 'node_disk_space' ||
+          kind === 'node_resource_usage' ||
+          kind === 'node_offline' ||
+          kind === 'node_cert_expiring' ||
+          kind === 'budget_threshold' ||
+          kind === 'version_skew' ? (
+            <p className="text-sm text-muted-foreground">
+              This kind watches every certificate or node on the whole control
+              plane platform-wide, needing no metric or threshold of its own.
+            </p>
+          ) : kind === 'control_plane_backup_stale' ||
+            kind === 'log_archive_stale' ? (
+            <Field>
+              <FieldLabel htmlFor="edit-rule-cp-backup-max-age">
+                Maximum age (optional)
+              </FieldLabel>
+              <Controller
+                control={control}
+                name="forDuration"
+                render={({ field }) => (
+                  <DurationInput
+                    id="edit-rule-cp-backup-max-age"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
+                )}
+              />
+              <FieldError errors={[formState.errors.forDuration]} />
+            </Field>
+          ) : kind === 'domain_health' ? (
+            <Field>
+              <FieldLabel htmlFor="edit-rule-domain-health-for-duration">
+                For duration (optional)
+              </FieldLabel>
+              <Controller
+                control={control}
+                name="forDuration"
+                render={({ field }) => (
+                  <DurationInput
+                    id="edit-rule-domain-health-for-duration"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
+                )}
+              />
+              <FieldError errors={[formState.errors.forDuration]} />
+            </Field>
+          ) : kind === 'slo_burn' ? (
+            <SloRuleFields
+              idPrefix="edit-rule"
+              app={appName}
+              control={control as unknown as Control<SloFormShape>}
+              errors={formState.errors as FieldErrors<SloFormShape>}
+              objective={sloObjective}
+              target={sloTarget as string | number}
+              latencyMs={sloLatencyMs as string | number}
+            />
+          ) : kind === 'threshold' ? (
+            <>
+              <Field>
+                <FieldLabel htmlFor="edit-rule-metric">Metric</FieldLabel>
+                <Controller
+                  control={control}
+                  name="metric"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="edit-rule-metric" className="w-full">
+                        <SelectValue placeholder="Choose a metric" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {METRIC_NAME_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {METRIC_NAME_LABEL[option]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <FieldError errors={[formState.errors.metric]} />
+              </Field>
+
+              <div className="flex gap-2">
+                <Field className="w-40 shrink-0">
+                  <FieldLabel htmlFor="edit-rule-comparator">
+                    Comparator
+                  </FieldLabel>
+                  <Controller
+                    control={control}
+                    name="comparator"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger
+                          id="edit-rule-comparator"
+                          className="w-full"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COMPARATOR_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="edit-rule-threshold">
+                    Threshold
+                  </FieldLabel>
+                  <Input
+                    id="edit-rule-threshold"
+                    type="number"
+                    step="any"
+                    {...register('threshold')}
+                  />
+                  <FieldError errors={[formState.errors.threshold]} />
+                </Field>
+              </div>
+
+              <Field>
+                <FieldLabel htmlFor="edit-rule-for-duration">
+                  For duration (optional)
+                </FieldLabel>
+                <Controller
+                  control={control}
+                  name="forDuration"
+                  render={({ field }) => (
+                    <DurationInput
+                      id="edit-rule-for-duration"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+                <FieldError errors={[formState.errors.forDuration]} />
+              </Field>
+            </>
+          ) : isScheduledTaskKind(kind) ? (
+            <>
+              <Field>
+                <FieldLabel htmlFor="edit-rule-scheduled-task">
+                  Scheduled task
+                </FieldLabel>
+                {scheduledTasks.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    This app has no scheduled tasks yet. Create one from the
+                    Jobs section first.
+                  </p>
+                ) : (
+                  <Controller
+                    control={control}
+                    name="scheduledTaskId"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger
+                          id="edit-rule-scheduled-task"
+                          className="w-full"
+                        >
+                          <SelectValue placeholder="Choose a scheduled task" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {scheduledTasks.map((task) => (
+                            <SelectItem key={task.id} value={task.id}>
+                              {task.name || task.command.join(' ')}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                )}
+                <FieldError errors={[formState.errors.scheduledTaskId]} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="edit-rule-scheduled-task-failures">
+                  Consecutive failures threshold
+                </FieldLabel>
+                <Input
+                  id="edit-rule-scheduled-task-failures"
+                  type="number"
+                  step="1"
+                  min="1"
+                  {...register('restartCountThreshold')}
+                />
+                <FieldError errors={[formState.errors.restartCountThreshold]} />
+              </Field>
+            </>
+          ) : kind === 'backup_missing' ? (
+            <BackupMissingFields
+              idPrefix="edit-rule"
+              control={control as unknown as Control<BackupMissingFormShape>}
+              errors={formState.errors}
+              backupResourceKind={backupResourceKind}
+              databases={databases}
+              volumes={volumes}
+            />
+          ) : (
+            <>
+              <Field>
+                <FieldLabel htmlFor="edit-rule-restart-count">
+                  Restart count threshold
+                </FieldLabel>
+                <Input
+                  id="edit-rule-restart-count"
+                  type="number"
+                  step="1"
+                  min="1"
+                  {...register('restartCountThreshold')}
+                />
+                <FieldError errors={[formState.errors.restartCountThreshold]} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="edit-rule-restart-window">
+                  Restart window
+                </FieldLabel>
+                <Controller
+                  control={control}
+                  name="restartWindow"
+                  render={({ field }) => (
+                    <DurationInput
+                      id="edit-rule-restart-window"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+                <FieldError errors={[formState.errors.restartWindow]} />
+              </Field>
+            </>
+          )}
+
+          <Field>
+            <FieldLabel htmlFor="edit-rule-channel">
+              Notify channel (optional)
+            </FieldLabel>
+            {channels.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No channels connected yet. Connect one from Settings &rarr;
+                Notification channels first.
+              </p>
+            ) : (
+              <>
+                <Controller
+                  control={control}
+                  name="channelId"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="edit-rule-channel" className="w-full">
+                        <SelectValue placeholder="Choose a connected channel" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {channels.map((channel) => (
+                          <SelectItem key={channel.id} value={channel.id}>
+                            {channel.name} ({CHANNEL_KIND_LABEL[channel.kind]})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <FieldDescription>
+                  Reuses a channel connection from Settings &rarr; Notification
+                  channels; leave unset to remove the rule&apos;s notify
+                  destination.
+                </FieldDescription>
+              </>
+            )}
+          </Field>
+
+          <Field orientation="horizontal">
+            <Controller
+              control={control}
+              name="enabled"
+              render={({ field }) => (
+                <Switch
+                  id="edit-rule-enabled"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
+            />
+            <FieldLabel htmlFor="edit-rule-enabled">Enabled</FieldLabel>
+          </Field>
+
+          {updateRule.isError ? (
+            <p className="text-sm text-destructive">
+              {updateRule.error.message}
+            </p>
+          ) : null}
+
+          <SheetFooter>
+            <Button type="submit" disabled={updateRule.isPending}>
+              {updateRule.isPending ? 'Saving...' : 'Save changes'}
+            </Button>
+          </SheetFooter>
+        </form>
+      </SheetContent>
+    </Sheet>
+  )
+}

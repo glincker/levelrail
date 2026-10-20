@@ -1,0 +1,76 @@
+---
+title: "Self-host HedgeDoc with Docker"
+sidebarTitle: "HedgeDoc"
+description: "Real-time collaborative markdown notes you can host yourself."
+"og:url": "https://docs.levelrail.com/self-host/hedgedoc"
+---
+
+Real-time collaborative markdown notes you can host yourself.
+
+This page describes the Levelrail template for HedgeDoc (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.hedgedoc.org.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `hedgedoc_db_data -&#62; /var/lib/postgresql/data` |
+| `hedgedoc` | `quay.io/hedgedoc/hedgedoc:1.9.9` | 3000 | `hedgedoc_uploads -&#62; /hedgedoc/public/uploads` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Generated at deploy |
+| `hedgedoc` | `CMD_DB_URL` | Generated at deploy |
+| `hedgedoc` | `CMD_DOMAIN` | Preset in the template |
+| `hedgedoc` | `CMD_SESSION_SECRET` | Generated at deploy |
+| `hedgedoc` | `CMD_URL_ADDPORT` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`hedgedoc`): 3000:3000.
+- Passwords and keys are generated at deploy time (`db`, `hedgedoc`): CMD_DB_URL, CMD_SESSION_SECRET, POSTGRES_PASSWORD, POSTGRES_USER.
+- No health check, so a deploy is judged by the process starting (`db`).
+- Stores data in named volumes (`db`, `hedgedoc`): hedgedoc_db_data, hedgedoc_uploads.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy HedgeDoc with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select HedgeDoc. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy hedgedoc --name my-hedgedoc
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BentoPDF](/self-host/bentopdf)
+- [BookStack](/self-host/bookstack)
+
+All templates are listed in the [self-host gallery](/self-host).

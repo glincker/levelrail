@@ -1,0 +1,5 @@
+{
+  "code": "lockfile_out_of_sync",
+  "retryable": false,
+  "excerpt_contains": ["ERR_PNPM_NO_LOCKFILE"]
+}

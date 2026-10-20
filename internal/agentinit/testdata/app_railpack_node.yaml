@@ -1,0 +1,8 @@
+version: 1
+services:
+  site:
+    build:
+      type: railpack
+    port: 3000
+    health:
+      readiness: { path: /, interval: 5s, timeout: 2s }

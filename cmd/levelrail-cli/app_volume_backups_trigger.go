@@ -1,0 +1,68 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"io"
+)
+
+// Asynchronous: returns once the attempt is recorded, not when the upload finishes.
+// Use "app-volume-backups list" to check the outcome.
+func runAppVolumeBackupsTrigger(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups trigger", "print the started backup attempt as JSON to stdout and nothing else", stderr)
+	var targetID string
+	fs.StringVar(&targetID, "target", "", "backup target id to back up to (required; see the backup target the control plane's own UI or store already has configured)")
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsTriggerUsage(prog)) }
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	rest, ok := requireArgs(fs, stderr, prog, "app-volume-backups trigger", "an app name and a volume name", 2)
+	if !ok {
+		return exitUsage
+	}
+	name, volume := rest[0], rest[1]
+
+	if targetID == "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--target is required"))
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	started, err := client.TriggerVolumeBackup(context.Background(), name, volume, targetID)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("trigger backup for %s/%s: %w", name, volume, err))
+	}
+
+	if err := renderResult(stdout, of.Format, of.Query, started, func() {
+		_, _ = fmt.Fprintf(stdout, "backup %q for %s/%s started; check \"%s app-volume-backups list %s %s\" for status\n", started.ID, name, volume, prog, name, volume)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+func appVolumeBackupsTriggerUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s app-volume-backups trigger <app> <volume> --target ID [flags]
+
+Starts a manual backup of an app's named volume and returns as soon as
+the attempt is recorded and under way (asynchronous; the real archive
+and upload have not necessarily finished by the time this returns).
+Check "%[1]s app-volume-backups list <app> <volume>" to see whether it
+succeeded.
+
+Flags:
+  --target string          backup target id to back up to (required)
+  --token string           API token (default: %[2]s env var, then the credentials file)
+  --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                     print the started backup attempt as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}

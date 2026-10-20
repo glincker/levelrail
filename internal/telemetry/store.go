@@ -1,0 +1,186 @@
+package telemetry
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"time"
+)
+
+// Sample is one metric reading at one point in time for one resource
+// (e.g. resource_id "service:web", metric "cpu_percent").
+type Sample struct {
+	ResourceID string
+	Metric     string
+	Timestamp  time.Time
+	Value      float64
+}
+
+// WriteSamples inserts every sample in one transaction: a collection
+// tick writes many samples (several metrics per running container) and
+// they should land atomically, not partially, if the process is
+// interrupted mid-write. Writing the same (resource, metric, timestamp)
+// twice replaces the value rather than erroring, since a collector that
+// retries a tick after a transient failure should be safe to just run
+// again, not required to first check what already landed.
+func (db *DB) WriteSamples(ctx context.Context, samples []Sample) error {
+	if len(samples) == 0 {
+		return nil
+	}
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("telemetry: begin write: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback() // no-op if Commit already succeeded
+	}()
+
+	type jsonSample struct {
+		R string  `json:"r"`
+		M string  `json:"m"`
+		T int64   `json:"t"`
+		V float64 `json:"v"`
+	}
+
+	js := make([]jsonSample, len(samples))
+	for i, s := range samples {
+		js[i] = jsonSample{
+			R: s.ResourceID,
+			M: s.Metric,
+			T: s.Timestamp.Unix(),
+			V: s.Value,
+		}
+	}
+
+	data, err := json.Marshal(js)
+	if err != nil {
+		return fmt.Errorf("telemetry: marshal samples: %w", err)
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO metric_samples (resource_id, metric, ts, value)
+		SELECT
+			json_extract(value, '$.r'),
+			json_extract(value, '$.m'),
+			json_extract(value, '$.t'),
+			json_extract(value, '$.v')
+		FROM json_each(?)
+		WHERE 1
+		ON CONFLICT (resource_id, metric, ts) DO UPDATE SET value = excluded.value
+	`, string(data))
+	if err != nil {
+		return fmt.Errorf("telemetry: write samples batch: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("telemetry: commit write: %w", err)
+	}
+	return nil
+}
+
+// queryRaw returns every raw sample for resourceID/metric with a timestamp in
+// [from, to], oldest first. An empty (nil) result and a nil error both
+// mean "no samples in this range," not an error: a resource with no
+// activity yet, or a range before collection started, is a valid
+// observed state, the same convention docker.InspectByName's "not
+// found is not an error" doc comment already establishes elsewhere in
+// this codebase.
+func (db *DB) queryRaw(ctx context.Context, resourceID, metric string, from, to time.Time) ([]Sample, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT ts, value FROM metric_samples
+		WHERE resource_id = ? AND metric = ? AND ts BETWEEN ? AND ?
+		ORDER BY ts ASC
+	`, resourceID, metric, from.Unix(), to.Unix())
+	if err != nil {
+		return nil, fmt.Errorf("telemetry: query %s/%s: %w", resourceID, metric, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []Sample
+	for rows.Next() {
+		var tsUnix int64
+		var value float64
+		if err := rows.Scan(&tsUnix, &value); err != nil {
+			return nil, fmt.Errorf("telemetry: scan sample row: %w", err)
+		}
+		out = append(out, Sample{
+			ResourceID: resourceID,
+			Metric:     metric,
+			Timestamp:  time.Unix(tsUnix, 0).UTC(),
+			Value:      value,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("telemetry: iterate sample rows: %w", err)
+	}
+	return out, nil
+}
+
+// LatestByMetric returns the most recent sample for every resource_id
+// that has ever recorded metric, one row per resource: the "what is
+// everything doing right now" read a dashboard-wide ranking needs
+// (e.g. "which app is using the most CPU"), where fetching each
+// resource's own time series one at a time would mean one query per
+// app instead of one query total. An empty (nil) result and a nil
+// error mean "no resource has recorded this metric yet," the same
+// convention Query's own doc comment establishes.
+func (db *DB) LatestByMetric(ctx context.Context, metric string) ([]Sample, error) {
+	// Loose index scan: hop distinct resource_ids through the primary key,
+	// then seek each (resource_id, metric) newest row. Scanning every row
+	// of the metric grew with retention times resource count.
+	rows, err := db.QueryContext(ctx, `
+		WITH RECURSIVE r(rid) AS (
+			SELECT MIN(resource_id) FROM metric_samples
+			UNION ALL
+			SELECT (SELECT MIN(resource_id) FROM metric_samples WHERE resource_id > r.rid)
+			FROM r WHERE r.rid IS NOT NULL
+		)
+		SELECT m.resource_id, m.ts, m.value
+		FROM r JOIN metric_samples m
+		  ON m.resource_id = r.rid AND m.metric = ?1
+		 AND m.ts = (SELECT MAX(ts) FROM metric_samples WHERE resource_id = r.rid AND metric = ?1)
+		WHERE r.rid IS NOT NULL
+	`, metric)
+	if err != nil {
+		return nil, fmt.Errorf("telemetry: latest by metric %s: %w", metric, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []Sample
+	for rows.Next() {
+		var resourceID string
+		var tsUnix int64
+		var value float64
+		if err := rows.Scan(&resourceID, &tsUnix, &value); err != nil {
+			return nil, fmt.Errorf("telemetry: scan latest-by-metric row: %w", err)
+		}
+		out = append(out, Sample{
+			ResourceID: resourceID,
+			Metric:     metric,
+			Timestamp:  time.Unix(tsUnix, 0).UTC(),
+			Value:      value,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("telemetry: iterate latest-by-metric rows: %w", err)
+	}
+	return out, nil
+}
+
+// Retain deletes every sample older than the given cutoff, returning how
+// many rows were removed. The documented default retention (15 days) is
+// a caller concern (the collector or a scheduled sweep decides the
+// cutoff), not hardcoded here, per the house "no hardcoded thresholds"
+// rule.
+func (db *DB) Retain(ctx context.Context, cutoff time.Time) (deleted int64, err error) {
+	res, err := db.ExecContext(ctx, `DELETE FROM metric_samples WHERE ts < ?`, cutoff.Unix())
+	if err != nil {
+		return 0, fmt.Errorf("telemetry: retention sweep: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("telemetry: retention sweep rows affected: %w", err)
+	}
+	return n, nil
+}

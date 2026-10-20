@@ -1,0 +1,190 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
+
+// TestRun_AppsRollback checks the wire request matches a deploy's, since rollback posts to /deploys too.
+func TestRun_AppsRollback(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody deployTriggerRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`[]`))
+			return
+		}
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(appResource{Name: "web", Image: gotBody.Image, Port: 3000})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "rollback", "web", "--image", "levelrail/web:old", "--api-url", srv.URL, "--json"}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotPath != "/api/v1/apps/web/deploys" {
+		t.Errorf("path = %q, want /api/v1/apps/web/deploys (the same endpoint apps deploy uses)", gotPath)
+	}
+	if gotBody.Image != "levelrail/web:old" {
+		t.Errorf("request body Image = %q, want %q", gotBody.Image, "levelrail/web:old")
+	}
+	if !strings.Contains(stdout.String(), `"image": "levelrail/web:old"`) {
+		t.Errorf("stdout = %q, want the rolled-back app as JSON", stdout.String())
+	}
+}
+
+func TestRun_AppsRollback_Human(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(appResource{Name: "web", Image: "levelrail/web:old", Port: 3000})
+	}))
+	defer srv.Close()
+
+	stdout, stderr := runCLIExpectOK(t, []string{"apps", "rollback", "web", "--image", "levelrail/web:old", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "name:     web") {
+		t.Errorf("stdout = %q, want the human app summary", stdout)
+	}
+	if !strings.Contains(strings.ToLower(stderr), "roll") {
+		t.Errorf("stderr = %q, want a rollback-framed diagnostic message", stderr)
+	}
+}
+
+func TestRun_AppsRollback_MissingImage(t *testing.T) {
+	srv := routeServer(t, map[string]any{
+		"GET /api/v1/apps/web":                 appResource{Name: "web", Image: "x:1"},
+		"GET /api/v1/apps/web/deploy-attempts": []deployAttemptResource{},
+	}, nil)
+	stderr := runCLIExpectValidationError(t, cliArgs(srv, "apps", "rollback", "web"))
+	if !strings.Contains(stderr, "no earlier successful deploy") {
+		t.Errorf("stderr = %q, want a no previous deploy error", stderr)
+	}
+}
+
+func TestRun_AppsRollback_NoName(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "rollback", "--image", "levelrail/web:old"}, &stdout, &stderr, envMap())
+	if got != exitUsage {
+		t.Fatalf("exit = %d, want %d", got, exitUsage)
+	}
+	if !strings.Contains(stderr.String(), "requires exactly one") {
+		t.Errorf("stderr = %q, want a missing-name usage error", stderr.String())
+	}
+}
+
+func TestRun_AppsRollback_APIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"app not found"}`))
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "rollback", "ghost", "--image", "levelrail/web:old", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitAPIError {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitAPIError, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "app not found") {
+		t.Errorf("stderr = %q, want the server's error message", stderr.String())
+	}
+}
+
+func TestRun_AppsRollback_ProtectedEnvironment_InteractivePromptConfirms(t *testing.T) {
+	srv, calls := protectedEnvironmentDeployServer(t)
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := runAppsRollback("levelrail-cli-test", []string{"web", "--image", "levelrail/web:old", "--api-url", srv.URL}, &stdout, &stderr, envMap(), strings.NewReader("yes\n"))
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if *calls != 2 {
+		t.Errorf("calls = %d, want 2 (blocked, then confirmed retry)", *calls)
+	}
+}
+
+func TestRun_AppsRollback_ProtectedEnvironment_ConfirmFlagSkipsPrompt(t *testing.T) {
+	srv, calls := protectedEnvironmentDeployServer(t)
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := runAppsRollback("levelrail-cli-test", []string{"web", "--image", "levelrail/web:old", "--confirm", "--api-url", srv.URL}, &stdout, &stderr, envMap(), strings.NewReader(""))
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if *calls != 1 {
+		t.Errorf("calls = %d, want 1 (no retry needed)", *calls)
+	}
+}
+
+func TestRun_AppsRollback_Help(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "rollback", "-h"}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d", got, exitOK)
+	}
+	if !strings.Contains(stderr.String(), "apps rollback") {
+		t.Errorf("stderr = %q, want usage text", stderr.String())
+	}
+}
+
+func TestRun_AppsRollback_KnownImagesOnly(t *testing.T) {
+	tests := []struct {
+		name       string
+		images     string
+		image      string
+		wantExit   int
+		wantDeploy bool
+		wantStderr string
+	}{
+		{"known tag", `[{"tag":"shop/web:aaa"},{"tag":"shop/web:bbb"}]`, "shop/web:bbb", exitOK, true, ""},
+		{"known tag pinned by digest", `[{"tag":"shop/web:aaa"}]`, "shop/web:aaa@sha256:abc", exitOK, true, ""},
+		{"typo in same repo is refused", `[{"tag":"shop/web:aaa"}]`, "shop/web:doesnotexist", exitValidation, false, "apps deploys rollback-to web"},
+		{"other repo is let through", `[{"tag":"shop/web:aaa"}]`, "registry.example.com/shop/web:old", exitOK, true, ""},
+		{"registry port repo compared without tag", `[{"tag":"host:5000/web:aaa"}]`, "host:5000/web:zzz", exitValidation, false, "host:5000/web:aaa"},
+		{"no local images is let through", `[]`, "shop/web:old", exitOK, true, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			deployed := false
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				if r.Method == http.MethodGet {
+					_, _ = w.Write([]byte(tt.images))
+					return
+				}
+				deployed = true
+				_ = json.NewEncoder(w).Encode(appResource{Name: "web", Image: tt.image, Port: 3000})
+			}))
+			defer srv.Close()
+
+			var stdout, stderr bytes.Buffer
+			got := run("levelrail-cli-test", []string{"apps", "rollback", "web", "--image", tt.image, "--api-url", srv.URL}, &stdout, &stderr, envMap())
+			if got != tt.wantExit {
+				t.Fatalf("exit = %d, want %d (stderr=%q)", got, tt.wantExit, stderr.String())
+			}
+			if deployed != tt.wantDeploy {
+				t.Errorf("deploy sent = %v, want %v", deployed, tt.wantDeploy)
+			}
+			if tt.wantStderr != "" && !strings.Contains(stderr.String(), tt.wantStderr) {
+				t.Errorf("stderr = %q, want it to contain %q", stderr.String(), tt.wantStderr)
+			}
+		})
+	}
+}

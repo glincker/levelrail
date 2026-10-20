@@ -1,0 +1,76 @@
+---
+title: "Self-host Hasura with Docker"
+sidebarTitle: "Hasura"
+description: "An instant GraphQL and REST API on top of Postgres with permissions, subscriptions and an admin console."
+"og:url": "https://docs.levelrail.com/self-host/hasura"
+---
+
+An instant GraphQL and REST API on top of Postgres with permissions, subscriptions and an admin console.
+
+This page describes the Levelrail template for Hasura (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://hasura.io/docs/2.0/deployment/docker/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `pgdata -&#62; /var/lib/postgresql/data` |
+| `hasura` | `hasura/graphql-engine:v2.51.0` | 8080 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `hasura` | `HASURA_GRAPHQL_ADMIN_SECRET` | Generated at deploy |
+| `hasura` | `HASURA_GRAPHQL_DEV_MODE` | Preset in the template |
+| `hasura` | `HASURA_GRAPHQL_ENABLED_LOG_TYPES` | Preset in the template |
+| `hasura` | `HASURA_GRAPHQL_ENABLE_CONSOLE` | Preset in the template |
+| `hasura` | `HASURA_GRAPHQL_METADATA_DATABASE_URL` | Generated at deploy |
+| `hasura` | `PG_DATABASE_URL` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`db`, `hasura`): HASURA_GRAPHQL_ADMIN_SECRET, HASURA_GRAPHQL_METADATA_DATABASE_URL, PG_DATABASE_URL, POSTGRES_PASSWORD.
+- Stores data in named volumes (`db`): pgdata.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Hasura with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Hasura. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy hasura --name my-hasura
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host).

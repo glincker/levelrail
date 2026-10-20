@@ -1,0 +1,85 @@
+---
+title: "Self-host Seafile with Docker"
+sidebarTitle: "Seafile"
+description: "Self-hosted file sync and share with real file-level versioning and client-side encryption options."
+"og:url": "https://docs.levelrail.com/self-host/seafile"
+---
+
+Self-hosted file sync and share with real file-level versioning and client-side encryption options.
+
+This page describes the Levelrail template for Seafile (Storage). It deploys the services below as one Docker Compose app on your own server. Project site: https://manual.seafile.com.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `mariadb` | `mariadb:11` | none | `seafile_mariadb_data -&#62; /var/lib/mysql` |
+| `memcached` | `memcached:latest` | none | none |
+| `seafile` | `seafileltd/seafile-mc:13.0.28` | 80 | `seafile_data -&#62; /shared` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `mariadb` | `MYSQL_DATABASE` | Preset in the template |
+| `mariadb` | `MYSQL_PASSWORD` | Generated at deploy |
+| `mariadb` | `MYSQL_ROOT_PASSWORD` | Generated at deploy |
+| `mariadb` | `MYSQL_USER` | Generated at deploy |
+| `seafile` | `DB_HOST` | Preset in the template |
+| `seafile` | `DB_PASSWORD` | Generated at deploy |
+| `seafile` | `DB_PORT` | Preset in the template |
+| `seafile` | `DB_ROOT_PASSWD` | Generated at deploy |
+| `seafile` | `DB_USER` | Generated at deploy |
+| `seafile` | `INIT_SEAFILE_ADMIN_EMAIL` | Preset in the template |
+| `seafile` | `INIT_SEAFILE_ADMIN_PASSWORD` | Generated at deploy |
+| `seafile` | `JWT_PRIVATE_KEY` | Generated at deploy |
+| `seafile` | `SEAFILE_SERVER_HOSTNAME` | Preset in the template |
+| `seafile` | `SEAFILE_SERVER_PROTOCOL` | Preset in the template |
+| `seafile` | `TIME_ZONE` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Review before deploying**.
+
+What this template needs:
+
+- Image is not pinned to a version tag, so a redeploy can pull different code (`memcached`): memcached:latest.
+- Publishes ports directly on the host (`seafile`): 8080:80.
+- Passwords and keys are generated at deploy time (`mariadb`, `seafile`): DB_PASSWORD, DB_ROOT_PASSWD, DB_USER, INIT_SEAFILE_ADMIN_PASSWORD, JWT_PRIVATE_KEY, MYSQL_PASSWORD, MYSQL_ROOT_PASSWORD, MYSQL_USER.
+- Stores data in named volumes (`mariadb`, `seafile`): seafile_data, seafile_mariadb_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Seafile with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Seafile. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy seafile --name my-seafile
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Storage templates
+
+- [Chibisafe](/self-host/chibisafe)
+- [Cloudreve](/self-host/cloudreve)
+- [copyparty](/self-host/copyparty)
+- [Duplicati](/self-host/duplicati)
+- [File Browser](/self-host/filebrowser)
+
+All templates are listed in the [self-host gallery](/self-host).

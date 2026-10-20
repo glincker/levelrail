@@ -1,0 +1,18 @@
+version: "3.8"
+services:
+  web:
+    image: myorg/web:1.0.0
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+    secrets:
+      - api_key
+    configs:
+      - app_config
+secrets:
+  api_key:
+    external: true
+configs:
+  app_config:
+    file: ./config.yaml

@@ -1,0 +1,26 @@
+# syntax=docker/dockerfile:1
+ARG VERSION=dev
+
+FROM golang:1.26-alpine AS build
+ARG VERSION
+WORKDIR /src
+COPY go.mod go.sum ./
+COPY kit/go.mod ./kit/
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build \
+    -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=${VERSION}" \
+    -o /levelrail-agent ./cmd/levelrail-agent
+# Data dir pre-created so a fresh named volume inherits it.
+RUN mkdir -p /data/levelrail-agent
+
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=build /levelrail-agent /levelrail-agent
+COPY --from=build /data/levelrail-agent /var/lib/levelrail-agent
+COPY --from=build /src/brand.yaml /brand.yaml
+# Root on purpose: the agent drives /var/run/docker.sock (root-equivalent anyway)
+# and creates the WireGuard TUN device; a bind-mounted host dir is root-owned.
+USER 0:0
+WORKDIR /
+ENTRYPOINT ["/levelrail-agent"]

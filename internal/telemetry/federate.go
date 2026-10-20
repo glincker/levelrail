@@ -1,0 +1,243 @@
+package telemetry
+
+import (
+	"context"
+	"errors"
+	"math"
+	"sort"
+	"sync"
+	"time"
+)
+
+// MetricsSource is what the query layer needs from one agent, local or
+// remote, to answer a metrics query. *DB satisfies this today (the
+// single-node, in-process "agent"); a Phase 3 gRPC client would satisfy
+// it too without Federator's callers (internal/api) ever changing. This
+// mirrors the same precedent already set for the reconcile agent
+// transport: it must also work in single-node mode, communicating over
+// an in-memory transport that implements the same interface.
+type MetricsSource interface {
+	Query(ctx context.Context, resourceID, metric string, from, to time.Time) ([]Sample, error)
+	LatestByMetric(ctx context.Context, metric string) ([]Sample, error)
+}
+
+// LogsSource is the log-query equivalent of MetricsSource.
+type LogsSource interface {
+	QueryLogs(ctx context.Context, resourceID string, from, to time.Time, query string) ([]LogEntry, error)
+}
+
+// Federator fans a query out to every configured source and merges
+// results, per ADR 008: "the control plane fans queries out to agents
+// and merges results at query time; query is pull, not push." Today
+// there is exactly one source (this node's own local DB), so federation
+// is a merge-of-one; the shape is what Phase 3 fills in with real
+// per-node sources.
+type Federator struct {
+	metrics []MetricsSource
+	logs    []LogsSource
+}
+
+// NewFederator builds a Federator over an explicit source list, for
+// Phase 3 once real per-node sources exist alongside (or instead of) the
+// local one.
+func NewFederator(metrics []MetricsSource, logs []LogsSource) *Federator {
+	return &Federator{metrics: metrics, logs: logs}
+}
+
+// NewLocalFederator builds a Federator with exactly one source: this
+// process's own local DB. The single-node shape every control plane
+// runs today, until Phase 3 adds real remote agents.
+func NewLocalFederator(db *DB) *Federator {
+	return NewFederator([]MetricsSource{db}, []LogsSource{db})
+}
+
+// QueryMetrics fans out to every metrics source and merges results,
+// sorted by timestamp ascending. A source erroring doesn't fail the
+// whole query: ADR 008's Consequences require the query layer to
+// "handle partial results gracefully... deciding what the dashboard
+// shows when [an agent is unreachable]," so this returns whatever the
+// healthy sources answered, plus the errors as a joined error the
+// caller can log or surface as a partial-result warning, not use to
+// discard everything.
+func (f *Federator) QueryMetrics(ctx context.Context, resourceID, metric string, from, to time.Time) ([]Sample, error) {
+	n := len(f.metrics)
+	if n == 0 {
+		return nil, nil
+	}
+
+	results := make([][]Sample, n)
+	errs := make([]error, n)
+
+	var wg sync.WaitGroup
+	wg.Add(n)
+	for i, src := range f.metrics {
+		go func(i int, src MetricsSource) {
+			defer wg.Done()
+			results[i], errs[i] = src.Query(ctx, resourceID, metric, from, to)
+		}(i, src)
+	}
+	wg.Wait()
+
+	var all []Sample
+	var finalErrs []error
+	for i := 0; i < n; i++ {
+		if errs[i] != nil {
+			finalErrs = append(finalErrs, errs[i])
+			continue
+		}
+		all = append(all, results[i]...)
+	}
+
+	sort.Slice(all, func(i, j int) bool { return all[i].Timestamp.Before(all[j].Timestamp) })
+	return all, errors.Join(finalErrs...)
+}
+
+// QueryLogs is QueryMetrics' log-query equivalent, merged and sorted by
+// timestamp ascending the same way.
+func (f *Federator) QueryLogs(ctx context.Context, resourceID string, from, to time.Time, query string) ([]LogEntry, error) {
+	n := len(f.logs)
+	if n == 0 {
+		return nil, nil
+	}
+
+	results := make([][]LogEntry, n)
+	errs := make([]error, n)
+
+	var wg sync.WaitGroup
+	wg.Add(n)
+	for i, src := range f.logs {
+		go func(i int, src LogsSource) {
+			defer wg.Done()
+			results[i], errs[i] = src.QueryLogs(ctx, resourceID, from, to, query)
+		}(i, src)
+	}
+	wg.Wait()
+
+	var all []LogEntry
+	var finalErrs []error
+	for i := 0; i < n; i++ {
+		if errs[i] != nil {
+			finalErrs = append(finalErrs, errs[i])
+			continue
+		}
+		all = append(all, results[i]...)
+	}
+
+	sort.Slice(all, func(i, j int) bool { return all[i].Timestamp.Before(all[j].Timestamp) })
+	return all, errors.Join(finalErrs...)
+}
+
+// LatestByMetric is LatestByMetric's federated equivalent: fans out to
+// every source and keeps, per resource_id, whichever source reported
+// the newest sample. A resource split across sources (not possible
+// today, single-node only, but Phase 3's per-node agents could each
+// report a same-named resource) should never happen in practice, so
+// "newest wins" is a defensive tie-break, not a real merge strategy.
+func (f *Federator) LatestByMetric(ctx context.Context, metric string) ([]Sample, error) {
+	n := len(f.metrics)
+	if n == 0 {
+		return nil, nil
+	}
+
+	results := make([][]Sample, n)
+	errs := make([]error, n)
+
+	var wg sync.WaitGroup
+	wg.Add(n)
+	for i, src := range f.metrics {
+		go func(i int, src MetricsSource) {
+			defer wg.Done()
+			results[i], errs[i] = src.LatestByMetric(ctx, metric)
+		}(i, src)
+	}
+	wg.Wait()
+
+	latest := make(map[string]Sample)
+	var finalErrs []error
+
+	for i := 0; i < n; i++ {
+		if errs[i] != nil {
+			finalErrs = append(finalErrs, errs[i])
+			continue
+		}
+		for _, s := range results[i] {
+			if existing, ok := latest[s.ResourceID]; !ok || s.Timestamp.After(existing.Timestamp) {
+				latest[s.ResourceID] = s
+			}
+		}
+	}
+
+	out := make([]Sample, 0, len(latest))
+	for _, s := range latest {
+		out = append(out, s)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ResourceID < out[j].ResourceID })
+	return out, errors.Join(finalErrs...)
+}
+
+// AggregatedPoint is one bucketed value from Aggregate.
+type AggregatedPoint struct {
+	// Timestamp is the bucket's start, not a sample's own timestamp.
+	Timestamp time.Time
+	// Value is the average of every sample that fell in this bucket.
+	Value float64
+	// Count is how many raw samples contributed, so a caller (or a
+	// future frontend) can tell a bucket built from one sample from one
+	// built from sixty, without a separate query.
+	Count int
+	// Max is the largest sample in the bucket, so a spike survives
+	// downsampling even though Value is an average.
+	Max float64
+}
+
+// Aggregate buckets samples (assumed already timestamp-ascending, which
+// Federator.QueryMetrics already guarantees) into fixed-width windows
+// starting at from, each bucket's value the average of the samples
+// inside it. step <= 0 means "no aggregation," one point per sample.
+// An empty bucket is omitted, not returned as a zero: a sparse series
+// (a container that stopped reporting for an hour) should read as a gap
+// in the chart, not a real reading of zero.
+func Aggregate(samples []Sample, from time.Time, step time.Duration) []AggregatedPoint {
+	if step <= 0 {
+		out := make([]AggregatedPoint, len(samples))
+		for i, s := range samples {
+			out[i] = AggregatedPoint{Timestamp: s.Timestamp, Value: s.Value, Count: 1, Max: s.Value}
+		}
+		return out
+	}
+
+	type bucket struct {
+		sum   float64
+		max   float64
+		count int
+	}
+	buckets := make(map[int64]*bucket)
+	var order []int64
+
+	for _, s := range samples {
+		idx := int64(s.Timestamp.Sub(from) / step)
+		b, ok := buckets[idx]
+		if !ok {
+			b = &bucket{max: s.Value}
+			buckets[idx] = b
+			order = append(order, idx)
+		}
+		b.sum += s.Value
+		b.max = math.Max(b.max, s.Value)
+		b.count++
+	}
+
+	sort.Slice(order, func(i, j int) bool { return order[i] < order[j] })
+
+	out := make([]AggregatedPoint, len(order))
+	for i, idx := range order {
+		b := buckets[idx]
+		out[i] = AggregatedPoint{
+			Timestamp: from.Add(time.Duration(idx) * step),
+			Value:     b.sum / float64(b.count),
+			Count:     b.count,
+			Max:       b.max,
+		}
+	}
+	return out
+}

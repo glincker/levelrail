@@ -1,0 +1,105 @@
+---
+description: "Estimated model context cost of the MCP tool list, by toolset."
+"og:url": "https://docs.levelrail.com/mcp-tool-surface"
+---
+
+# MCP tool surface
+
+Estimated model context cost of the MCP tool list. Tokens are estimated as characters divided by 4 over each tool's name, description and input schema JSON.
+
+Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-surface`.
+
+## By toolset
+
+| Toolset | Tools | Est. tokens |
+| --- | ---: | ---: |
+| account | 5 | 393 |
+| alerts | 10 | 1259 |
+| apps | 16 | 2106 |
+| audit | 1 | 326 |
+| backups | 13 | 1134 |
+| builds | 5 | 477 |
+| canary | 4 | 565 |
+| dashboards | 2 | 133 |
+| databases | 11 | 886 |
+| deploys | 22 | 3040 |
+| diagnostics | 5 | 595 |
+| domains | 12 | 1150 |
+| environments | 3 | 454 |
+| flags | 2 | 139 |
+| functions | 1 | 99 |
+| global-environments | 2 | 203 |
+| iac | 2 | 800 |
+| iam | 8 | 589 |
+| images | 3 | 368 |
+| imports | 2 | 325 |
+| loadbalancer | 9 | 1336 |
+| logs | 13 | 1786 |
+| metrics | 9 | 1042 |
+| models | 15 | 2222 |
+| nodes | 6 | 464 |
+| notifications | 3 | 287 |
+| orgs | 2 | 145 |
+| pipelines | 3 | 432 |
+| plugins | 3 | 279 |
+| previews | 2 | 202 |
+| registry | 3 | 309 |
+| scheduled | 4 | 331 |
+| search | 2 | 279 |
+| settings | 3 | 208 |
+| storage | 5 | 558 |
+| system | 13 | 776 |
+| teams | 2 | 88 |
+| templates | 2 | 126 |
+| webhooks | 1 | 145 |
+| **total** | **229** | **26056** |
+
+## Default session (progressive disclosure)
+
+`levelrail-mcp` lists only a small core plus `list_toolsets`, `enable_toolset` and `disable_toolset`. Enabling a toolset adds its tools for the rest of the session and sends `tools/list_changed`; the table above is what each toolset costs. `--all` (or `APP_MCP_ALL=1`), `--toolsets` and `--tool-profile` keep the static listing for clients without `list_changed` support. The mode and the token's abilities bound every call either way.
+
+21 tools, 2347 estimated tokens (ratchet 3400, ceiling per toolset 4000).
+
+- `cancel_deploy`
+- `deploy_app`
+- `diagnose_app_failure`
+- `disable_toolset`
+- `enable_toolset`
+- `get_app`
+- `get_app_env`
+- `get_app_status`
+- `get_attention`
+- `list_apps`
+- `list_deploys`
+- `list_toolsets`
+- `preflight_app`
+- `query_logs`
+- `rollback_app`
+- `search`
+- `set_app_domains`
+- `set_app_env`
+- `unset_app_env`
+- `wait_for_deploy`
+- `whoami`
+
+## agent-core profile
+
+Select with `--tool-profile agent-core` or `APP_MCP_TOOL_PROFILE=agent-core`. It is an allowlist independent of the read-only, standard and full modes; the API token's abilities still apply.
+
+15 tools, 1947 estimated tokens (cap 4000).
+
+- `cancel_deploy`
+- `deploy_app`
+- `diagnose_app_failure`
+- `get_app_env`
+- `get_app_status`
+- `get_attention`
+- `list_apps`
+- `list_deploys`
+- `preflight_app`
+- `query_logs`
+- `rollback_app`
+- `set_app_domains`
+- `set_app_env`
+- `unset_app_env`
+- `wait_for_deploy`

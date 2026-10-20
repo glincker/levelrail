@@ -1,0 +1,29 @@
+runtime: container
+build:
+  dockerfile: Dockerfile.levelrail-mcp
+  dockerBuildPath: .
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    required:
+      - apiUrl
+      - apiToken
+    properties:
+      apiUrl:
+        type: string
+        description: Base URL of your Levelrail control plane, for example https://console.example.com
+      apiToken:
+        type: string
+        description: Levelrail API token. A read-only token is recommended.
+      mode:
+        type: string
+        enum: [agent-core, read-only, standard, full]
+        default: read-only
+        description: Which tools to expose. Write tools stay off unless you opt in.
+  commandFunction: |-
+    (config) => ({
+      command: '/levelrail-mcp',
+      args: ['--mode', config.mode || 'read-only'],
+      env: { APP_API_URL: config.apiUrl, APP_API_TOKEN: config.apiToken }
+    })

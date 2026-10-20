@@ -1,0 +1,115 @@
+package main
+
+import (
+	"errors"
+	"flag"
+	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/mcptools"
+)
+
+// parseFlagsTestCase is TestParseFlags' table type, named (rather than
+// anonymous) so assertParseFlagsCase can take it as a plain parameter.
+type parseFlagsTestCase struct {
+	name          string
+	args          []string
+	wantToken     string
+	wantAPIURL    string
+	wantProfile   string
+	wantTransport string
+	wantListen    string
+	wantErr       bool
+	wantErrIsHelp bool
+}
+
+func TestParseFlags(t *testing.T) {
+	tests := []parseFlagsTestCase{
+		{name: "no flags", args: nil, wantToken: "", wantAPIURL: ""},
+		{name: "token and api-url", args: []string{"--token", "t", "--api-url", "http://x:1"}, wantToken: "t", wantAPIURL: "http://x:1"},
+		{name: "profile", args: []string{"--profile", "work"}, wantProfile: "work"},
+		{name: "transport and listen", args: []string{"--transport", "http", "--listen", "0.0.0.0:9000"}, wantTransport: "http", wantListen: "0.0.0.0:9000"},
+		{name: "unknown flag", args: []string{"--nope"}, wantErr: true},
+		{name: "help", args: []string{"-h"}, wantErr: true, wantErrIsHelp: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) { assertParseFlagsCase(t, tt) })
+	}
+}
+
+// assertParseFlagsCase runs parseFlags for tt and checks its result,
+// split out of TestParseFlags itself so the table-driven for/t.Run
+// nesting doesn't stack on top of this assertion logic's own branching.
+func assertParseFlagsCase(t *testing.T, tt parseFlagsTestCase) {
+	t.Helper()
+	f, err := parseAllFlags("levelrail-mcp", tt.args)
+	token, apiURL, profile, transport, listen := f.token, f.apiURL, f.profile, f.transport, f.listen
+	if tt.wantErr {
+		if err == nil {
+			t.Fatalf("parseFlags() error = nil, want an error")
+		}
+		if tt.wantErrIsHelp && !errors.Is(err, flag.ErrHelp) {
+			t.Errorf("parseFlags() error = %v, want flag.ErrHelp", err)
+		}
+		return
+	}
+	if err != nil {
+		t.Fatalf("parseFlags() error = %v", err)
+	}
+	if token != tt.wantToken {
+		t.Errorf("token = %q, want %q", token, tt.wantToken)
+	}
+	if apiURL != tt.wantAPIURL {
+		t.Errorf("apiURL = %q, want %q", apiURL, tt.wantAPIURL)
+	}
+	if profile != tt.wantProfile {
+		t.Errorf("profile = %q, want %q", profile, tt.wantProfile)
+	}
+	if transport != tt.wantTransport {
+		t.Errorf("transport = %q, want %q", transport, tt.wantTransport)
+	}
+	if listen != tt.wantListen {
+		t.Errorf("listen = %q, want %q", listen, tt.wantListen)
+	}
+}
+
+func TestNewServer_RegistersEveryTool(t *testing.T) {
+	server := mcptools.NewServer(nil)
+	if server == nil {
+		t.Fatal("mcptools.NewServer() = nil")
+	}
+	// Full tool-call behavior (schema, dispatch, error mapping) is
+	// covered end-to-end in tools_test.go via the in-memory transport;
+	// this just confirms newServer builds without a live client.
+}
+
+func TestResolveOptions(t *testing.T) {
+	env := func(m map[string]string) func(string) (string, bool) {
+		return func(k string) (string, bool) { v, ok := m[k]; return v, ok }
+	}
+	opts, err := resolveOptions("", "", "", env(map[string]string{"APP_MCP_MODE": "read-only", "APP_MCP_TOOLSETS": "nodes,apps"}))
+	if err != nil || opts.Mode != "read-only" || len(opts.Toolsets) != 2 {
+		t.Fatalf("env resolution = %+v, %v", opts, err)
+	}
+	opts, err = resolveOptions("full", "", "", env(map[string]string{"APP_MCP_MODE": "read-only"}))
+	if err != nil || opts.Mode != "full" {
+		t.Fatalf("flag must win over env: %+v, %v", opts, err)
+	}
+	opts, err = resolveOptions("", "", "", env(nil))
+	if err != nil || opts.Mode != "standard" {
+		t.Fatalf("default mode = %+v, %v", opts, err)
+	}
+	if _, err = resolveOptions("bogus", "", "", env(nil)); err == nil {
+		t.Fatal("bogus mode must error")
+	}
+	opts, err = resolveOptions("", "", "", env(map[string]string{"APP_MCP_TOOL_PROFILE": "agent-core"}))
+	if err != nil || opts.Profile != "agent-core" {
+		t.Fatalf("env profile = %+v, %v", opts, err)
+	}
+	opts, err = resolveOptions("", "", "agent-core", env(nil))
+	if err != nil || opts.Profile != "agent-core" {
+		t.Fatalf("flag profile = %+v, %v", opts, err)
+	}
+	if _, err = resolveOptions("", "", "bogus", env(nil)); err == nil {
+		t.Fatal("bogus profile must error")
+	}
+}

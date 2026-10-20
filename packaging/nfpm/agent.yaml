@@ -1,0 +1,23 @@
+name: levelrail-agent
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+section: admin
+maintainer: Levelrail <support@levelrail.com>
+description: Node agent for Levelrail, a self-hosted deployment platform
+homepage: https://levelrail.com
+license: Apache-2.0
+contents:
+  - src: pkg/levelrail-agent
+    dst: /usr/bin/levelrail-agent
+    file_info:
+      mode: 0755
+  - src: packaging/systemd/levelrail-agent.service
+    dst: /lib/systemd/system/levelrail-agent.service
+  - src: packaging/nfpm/agent.env
+    dst: /etc/levelrail-agent/agent.env
+    type: config|noreplace
+    file_info:
+      mode: 0600
+scripts:
+  postinstall: packaging/nfpm/postinstall.sh

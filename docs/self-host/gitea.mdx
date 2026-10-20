@@ -1,0 +1,78 @@
+---
+title: "Self-host Gitea with Docker"
+sidebarTitle: "Gitea"
+description: "A lightweight, self-hosted Git service with issues, pull requests, and a package registry."
+"og:url": "https://docs.levelrail.com/self-host/gitea"
+---
+
+A lightweight, self-hosted Git service with issues, pull requests, and a package registry.
+
+This page describes the Levelrail template for Gitea (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.gitea.com.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `mariadb:11` | none | `gitea_db_data -&#62; /var/lib/mysql` |
+| `gitea` | `gitea/gitea:1.23.1` | 3000, 22 | `gitea_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `MYSQL_DATABASE` | Preset in the template |
+| `db` | `MYSQL_PASSWORD` | Generated at deploy |
+| `db` | `MYSQL_ROOT_PASSWORD` | Generated at deploy |
+| `db` | `MYSQL_USER` | Preset in the template |
+| `gitea` | `GITEA__database__DB_TYPE` | Preset in the template |
+| `gitea` | `GITEA__database__HOST` | Preset in the template |
+| `gitea` | `GITEA__database__NAME` | Preset in the template |
+| `gitea` | `GITEA__database__PASSWD` | Generated at deploy |
+| `gitea` | `GITEA__database__USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`gitea`): 2222:22, 3000:3000.
+- Passwords and keys are generated at deploy time (`db`, `gitea`): GITEA__database__PASSWD, MYSQL_PASSWORD, MYSQL_ROOT_PASSWORD.
+- No health check, so a deploy is judged by the process starting (`db`).
+- Stores data in named volumes (`db`, `gitea`): gitea_data, gitea_db_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Gitea with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Gitea. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy gitea --name my-gitea
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host).

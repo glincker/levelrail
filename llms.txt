@@ -1,0 +1,30 @@
+# Levelrail
+
+> Open source, self-hosted deployment platform and lightweight Coolify alternative. Push to git and get a running app with HTTPS, logs, traces, metrics, previews and one-click rollback on your own Linux servers. Single Go binary, Docker runtime, built-in observability, scale to zero. Apache 2.0.
+
+## Start here
+
+- [Docs](https://docs.levelrail.com): hosted documentation
+- [Getting started](https://docs.levelrail.com/getting-started): install and first deploy
+- [Feature status](https://docs.levelrail.com/feature-status): what is stable and what is beta
+- [Comparison](https://docs.levelrail.com/comparison): Levelrail against Coolify, Dokploy, CapRover, Dokku and Kamal
+
+## Identity and access
+
+- Sign-in: password, passkeys (WebAuthn), TOTP two-factor, OAuth with 17 providers (Google, GitHub, Microsoft, GitLab and more) and generic OpenID Connect.
+- SAML 2.0 single sign-on and SCIM 2.0 provisioning exist but are beta and off by default behind the `saml-scim` feature toggle. [SAML and SCIM](https://docs.levelrail.com/sso-saml)
+- Authorization: IAM Allow and Deny policies, roles, teams, scoped API tokens. Audit log with a verifiable hash chain and CSV export. [Identity and access](https://docs.levelrail.com/identity-and-access)
+- Template catalog: 300+ one-click services. [Catalog](https://docs.levelrail.com/template-catalog)
+
+## For agents
+
+- [Agent skill](skills/levelrail/SKILL.md): deploy, wait, diagnose and roll back with the CLI or MCP
+- [MCP server](https://docs.levelrail.com/mcp): tools, modes and token budget
+- [CLI reference](https://docs.levelrail.com/cli-reference)
+- [App spec reference](https://docs.levelrail.com/app-spec-reference)
+- [Repo guide](AGENTS.md)
+
+## Machine readable docs
+
+- [llms.txt](https://docs.levelrail.com/llms.txt)
+- [llms-full.txt](https://docs.levelrail.com/llms-full.txt)

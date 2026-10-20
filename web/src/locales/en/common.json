@@ -1,0 +1,591 @@
+{
+  "deployHistory": {
+    "filters": {
+      "search": "Search message, commit, author",
+      "branch": "Branch",
+      "author": "Author",
+      "status": "Status",
+      "all": "All ({{label}})",
+      "clear": "Clear filters",
+      "noMatch": "No deploys match these filters",
+      "noMatchHint": "Clear the filters to see every deploy."
+    },
+    "visit": "Visit",
+    "visitLabel": "Visit {{url}}",
+    "promote": "Promote to production",
+    "promoteHint": "Makes this exact build the live release, pinned by digest",
+    "promoted": "Promotion triggered.",
+    "promotedPending": "Promotion is waiting for approval.",
+    "promoteFailed": "Could not promote."
+  },
+  "actions": {
+    "copy": "Copy",
+    "copied": "Copied",
+    "retry": "Retry",
+    "backToApps": "Back to apps",
+    "viewOverview": "View overview",
+    "viewApp": "View app",
+    "viewDatabase": "View database",
+    "closeToast": "Close notification"
+  },
+  "tableLabels": {
+    "appServices": "App services",
+    "bindMounts": "Bind mounts",
+    "modelKeys": "API keys",
+    "agentTokens": "Agent tokens",
+    "approvals": "Deploy approvals",
+    "registryCredentials": "Registry credentials",
+    "networkShares": "Network shares",
+    "deployNotifyTargets": "Deploy notification targets",
+    "statusComponents": "Status page components",
+    "alertRules": "Alert rules",
+    "alertSilences": "Alert silences",
+    "maintenanceWindows": "Maintenance windows",
+    "featureFlags": "Feature flags"
+  },
+  "healthScore": {
+    "title": "Health & readiness",
+    "notFound": "\"{{appName}}\" couldn't be found. It may have been deleted, or belong to a different instance than the one you're signed into.",
+    "loadFailed": "Couldn't load health & readiness. {{message}}",
+    "status": {
+      "pass": "Ready",
+      "warn": "Review",
+      "fail": "Needs attention"
+    },
+    "summary": "{{pass}} of {{total}} checks pass",
+    "allClear": "All checks pass. Nothing needs your attention.",
+    "needsAction": "Needs action"
+  },
+  "logs": {
+    "previousContainerEnded": "Previous container instance ended"
+  },
+  "sessionLink": {
+    "signingIn": "Signing you in...",
+    "invalid": "This sign-in link is invalid or has expired. Request a new one.",
+    "backToSignIn": "Back to sign in"
+  },
+  "sessionEnded": {
+    "notice": "You were signed out because your session ended, for example after an upgrade or restart. Sign in again to continue. API tokens are not affected."
+  },
+  "loadMore": {
+    "showing": "Showing {{loaded}} of {{total}}",
+    "button": "Load more"
+  },
+  "appsList": {
+    "title": "Apps",
+    "tableLabel": "Apps",
+    "colName": "Name",
+    "colTraffic": "Traffic 1h",
+    "colP95": "p95",
+    "colErrors": "Errors",
+    "colDeployed": "Deployed",
+    "selectApp": "Select {{name}}",
+    "count_one": "{{count}} app",
+    "count_other": "{{count}} apps",
+    "count_filtered_one": "{{count}} of {{total}} app",
+    "count_filtered_other": "{{count}} of {{total}} apps",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "newDatabase": "New database",
+    "newApp": "New app",
+    "import": "Import",
+    "connectGit": "Connect Git",
+    "emptyTitle": "No apps yet",
+    "emptyBody": "Deploy from a git repository or a container image, or import apps from another platform.",
+    "noMatchTitle": "No apps match",
+    "noMatchBody": "No app fits the current status and search. Clear the filters to see all {{total}}.",
+    "clearFilters": "Clear filters",
+    "errorBody": "The app list could not be loaded. {{message}}",
+    "retry": "Retry"
+  },
+  "appSectionHelp": "Read the guide for this page",
+  "appActions": {
+    "deploy": "Deploy",
+    "restart": "Restart",
+    "restarting": "Restarting...",
+    "more": "More actions",
+    "redeploy": "Redeploy current",
+    "redeploying": "Redeploying...",
+    "start": "Start",
+    "stop": "Stop",
+    "promote": "Promote...",
+    "clone": "Clone...",
+    "delete": "Delete...",
+    "wake": "Wake now"
+  },
+  "paletteAction": {
+    "restartTitle": "Restart {{name}}?",
+    "restartDescription": "The running containers are replaced with fresh ones.",
+    "restartConsequence": "Requests may fail briefly while the app comes back.",
+    "restartConfirm": "Restart",
+    "stopTitle": "Stop {{name}}?",
+    "stopDescription": "The app stops serving traffic until you start it again.",
+    "stopConsequence": "Config, env and domains are kept.",
+    "stopConfirm": "Stop",
+    "rollbackTitle": "Roll back {{name}}?",
+    "rollbackDescription": "Redeploys the previous release: {{image}}.",
+    "rollbackConsequence": "The current release stops serving once the previous one is healthy.",
+    "rollbackConfirm": "Roll back",
+    "rollbackNone": "{{name}} has no previous release to roll back to.",
+    "rollbackFailed": "Rollback failed",
+    "rollbackStarted": "Rolling back \"{{name}}\".",
+    "pending": "Working...",
+    "alreadyStopped": "{{name}} is already stopped."
+  },
+  "confirmDialog": {
+    "cancel": "Cancel",
+    "typePrompt": "Type {{value}} to confirm"
+  },
+  "deleteApp": {
+    "trigger": "Delete",
+    "title": "Delete \"{{name}}\"?",
+    "description": "This stops and removes the app's containers, then deletes the app. If its node is unreachable the app is still deleted and cleanup retries until it succeeds. This cannot be undone.",
+    "cancel": "Cancel",
+    "confirm": "Delete {{name}}",
+    "deleting": "Deleting...",
+    "deleted": "App \"{{name}}\" deleted.",
+    "pendingTitle": "App \"{{name}}\" deleted, cleanup pending.",
+    "pendingDescription": "Its containers are not removed yet ({{reason}}). Cleanup retries automatically."
+  },
+  "cascadeDelete": {
+    "label": "Also delete everything inside",
+    "hint": "Removes every app and database in it and their containers. Volumes are kept. If something cannot be removed, nothing else is lost and you can run this again."
+  },
+  "loginHelp": {
+    "lockedOut": "Locked out? On the server, run",
+    "emergencyDocs": "Emergency access"
+  },
+  "shell": {
+    "locked": {
+      "badge": "Beta",
+      "description": "This is a beta feature and it is turned off. Open it to go to Beta features and turn it on.",
+      "paletteSubtitle": "Locked beta feature. Enable it in Beta features"
+    },
+    "skipToContent": "Skip to content",
+    "topBar": "Top bar",
+    "toggleSidebar": "Toggle sidebar",
+    "search": {
+      "label": "Search or run a command",
+      "placeholder": "Search or jump to..."
+    },
+    "dashboardTitle": "Dashboard",
+    "status": {
+      "ok": "All good",
+      "issues_one": "{{count}} issue",
+      "issues_other": "{{count}} issues",
+      "triggerLabel": "Platform status: {{label}}",
+      "title": "Platform status",
+      "healthy": "Docker, disk, nodes and certificates look fine.",
+      "view": "View",
+      "snooze": "Snooze",
+      "snoozeItem": "Snooze {{title}}",
+      "snoozedCount": "{{count}} snoozed",
+      "showAgain": "Show again",
+      "insecureTitle": "Dashboard is not on HTTPS",
+      "insecureDetail": "Sessions travel unencrypted"
+    },
+    "snoozeFor": {
+      "1h": "1 hour",
+      "1d": "1 day",
+      "forever": "Forever"
+    },
+    "theme": {
+      "label": "Theme: {{theme}}",
+      "menu": "Choose theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "help": {
+      "label": "Help",
+      "forPage": "Help for this page",
+      "docs": "Documentation",
+      "troubleshooting": "Troubleshooting",
+      "systemStatus": "System status",
+      "report": "Report an issue",
+      "community": "Ask the community"
+    },
+    "account": {
+      "controlPlane": "Control plane",
+      "signOut": "Sign out"
+    },
+    "breadcrumb": {
+      "label": "Breadcrumb",
+      "home": "Home"
+    },
+    "navGroup": {
+      "home": "Home",
+      "apps": "Apps",
+      "data": "Data",
+      "traffic": "Networking",
+      "infrastructure": "Fleet",
+      "access": "Security",
+      "ai": "AI",
+      "automation": "Automation"
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "status": "Status",
+      "apps": "Apps",
+      "deployments": "Deployments",
+      "projects": "Projects",
+      "databases": "Databases",
+      "backups": "Backups",
+      "domains": "Domains",
+      "dns": "DNS",
+      "proxy": "Proxy",
+      "loadbalancers": "Load balancers",
+      "firewall": "Firewall",
+      "private-networks": "Private networks",
+      "nodes": "Nodes",
+      "network": "Topology",
+      "cdn": "CDN and caches",
+      "registry": "Container registry",
+      "registry-credentials": "Credentials",
+      "network-shares": "Network shares",
+      "node-providers": "Cloud providers",
+      "iam-policies": "IAM policies",
+      "models": "AI models",
+      "pipelines": "Pipelines",
+      "approvals": "Deploy approvals",
+      "alerts": "Alerts",
+      "assistant": "AI assistant",
+      "settings": "Settings",
+      "help": "Help"
+    },
+    "quickNav": {
+      "label": "Quick navigation (hold L)"
+    },
+    "newApp": "New app",
+    "pageWidth": {
+      "comfortable": "Comfortable width",
+      "wide": "Wide",
+      "full": "Full width"
+    }
+  },
+  "cliConsole": {
+    "title": "Console",
+    "description": "Runs the CLI as you. Every command is audited.",
+    "navLabel": "Console",
+    "terminalLabel": "CLI console terminal",
+    "pressEnter": "Press Enter to connect. A fresh confirmation is required.",
+    "connecting": "Connecting...",
+    "connected": "Connected to {{server}}. Type help to list commands.",
+    "disconnected": "Disconnected, press Enter to reconnect",
+    "connectFailed": "Could not connect, press Enter to try again",
+    "connectFailedWith": "Could not connect: {{message}}",
+    "reconnectHint": "Press Enter to try again",
+    "stepUpCancelled": "Confirmation cancelled.",
+    "exitCode": "exit code {{code}}",
+    "genericError": "Something went wrong.",
+    "unknownCommand": "Unknown command: {{name}}",
+    "helpIntro": "Available commands (Tab completes, help <command> lists subcommands):",
+    "helpLocal": "Also: help, clear. Ctrl+C cancels a running command, Ctrl+L clears the screen.",
+    "state": {
+      "idle": "Not connected",
+      "connecting": "Connecting",
+      "open": "Connected",
+      "closed": "Disconnected"
+    },
+    "quick": {
+      "title": "Quick actions",
+      "connectFirst": "Connect the console to see quick actions.",
+      "groups": {
+        "overview": "Overview",
+        "apps": "Apps",
+        "platform": "Platform"
+      },
+      "params": {
+        "app": "App",
+        "node": "Node",
+        "image": "Image to roll back to"
+      },
+      "pick": "Choose...",
+      "willRun": "Will run",
+      "incomplete": "Fill in the fields above",
+      "run": "Run",
+      "review": "Review",
+      "stop": "Stop",
+      "selectedApp": "Selected app",
+      "clearSelected": "Clear selected app",
+      "confirmTitle": "Run this command?",
+      "actions": {
+        "status": {
+          "label": "Status"
+        },
+        "version": {
+          "label": "Version"
+        },
+        "appsList": {
+          "label": "List apps"
+        },
+        "deploysList": {
+          "label": "List deploys"
+        },
+        "nodesList": {
+          "label": "List nodes"
+        },
+        "databasesList": {
+          "label": "List databases"
+        },
+        "appStatus": {
+          "label": "App status"
+        },
+        "appLogs": {
+          "label": "App logs"
+        },
+        "appDeploys": {
+          "label": "App deploys"
+        },
+        "nodeGet": {
+          "label": "Node details"
+        },
+        "appRestart": {
+          "label": "Restart app"
+        },
+        "appRedeploy": {
+          "label": "Redeploy app"
+        },
+        "appRollback": {
+          "label": "Roll back app",
+          "consequence": "The app is pointed back at an older image and its container is replaced."
+        },
+        "systemRestart": {
+          "label": "Restart platform",
+          "consequence": "The control plane restarts and the dashboard is unavailable until it is back."
+        }
+      }
+    },
+    "dock": {
+      "offTitle": "Console is turned off",
+      "offDescription": "The CLI console is a beta feature and is off by default. An administrator can turn it on in Settings, Beta features."
+    }
+  },
+  "dock": {
+    "region": "Assistant dock",
+    "regionSide": "Assistant dock side panel",
+    "header": "Dock header",
+    "moveHint": "Arrow keys move the dock, Shift for larger steps, Home resets its position.",
+    "toggle": "Toggle assistant dock",
+    "toggleHint": "Assistant dock (Ctrl+J, Ctrl+Shift+M changes layout)",
+    "launcher": "Open assistant dock",
+    "launcherUnread": "Open assistant dock, new reply",
+    "unread": "New reply",
+    "close": "Close dock",
+    "minimize": "Minimize to launcher",
+    "maximize": "Maximize dock",
+    "restore": "Restore dock size",
+    "menu": "Dock layout and options",
+    "tabsLabel": "Dock tabs",
+    "resizeWidth": "Resize dock width",
+    "resizeHeight": "Resize dock height",
+    "sheetHandle": "Drag down to minimize",
+    "mode": {
+      "float": "Floating window",
+      "bottom": "Bottom panel",
+      "side": "Right side panel"
+    },
+    "push": "Push page content",
+    "reset": "Reset position and size",
+    "tabs": {
+      "aiChat": "AI chat",
+      "console": "Console"
+    },
+    "ai": {
+      "notConfiguredTitle": "No AI provider configured",
+      "notConfiguredDescription": "Add a BYOK API key in Settings to start chatting.",
+      "configure": "Configure AI Assistant",
+      "experimentalOffTitle": "AI chat is turned off",
+      "experimentalOffDescription": "AI chat is a beta feature and is off by default. An administrator can turn it on in Settings, Beta features, no server access needed.",
+      "enableInSettings": "Turn on in Settings"
+    }
+  },
+  "login": {
+    "signInTitle": "Sign in",
+    "signInHint": "Enter your credentials to continue.",
+    "setupTitle": "Set up the admin account",
+    "setupHint": "Create the first account for this instance. Registration is for the first account only.",
+    "signInTab": "Sign in",
+    "setupTab": "Set up admin account"
+  },
+  "controlPlaneRestart": {
+    "action": "Restart control plane",
+    "title": "Restart the control plane?",
+    "description": "The dashboard and API go offline for a few seconds while the process restarts. Running apps and databases keep running.",
+    "consequence1": "Open deploys and log streams are interrupted and resume afterwards.",
+    "consequence2": "Connected nodes reconnect on their own.",
+    "unsupported": "Automatic restart is unavailable here: nothing would relaunch the process.",
+    "stopping": "Restarting: the control plane is shutting down...",
+    "waiting": "Restarting: waiting for the control plane to come back...",
+    "back": "The control plane is back online.",
+    "timeout": "The control plane has not come back after two minutes. Check the service on the server.",
+    "keepWaiting": "Keep waiting",
+    "dismiss": "Dismiss"
+  },
+  "foundation": {
+    "signIn": {
+      "eyebrowSignIn": "Sign in",
+      "eyebrowSetup": "First run",
+      "titleSignIn": "Sign in",
+      "titleSetup": "Set up the admin account",
+      "subtitleSignIn": "Enter your credentials to continue.",
+      "subtitleSetup": "Create the first account for this instance. Registration is for the first account only.",
+      "tabSignIn": "Sign in",
+      "tabSetup": "Set up admin account",
+      "or": "or",
+      "continueWith": "Continue with {{provider}}",
+      "sso": "SSO",
+      "errors": {
+        "generic": "Sign-in failed. Try again.",
+        "provider_denied": "Sign-in was cancelled.",
+        "invalid_state": "That sign-in link expired or was already used. Try again.",
+        "exchange_failed": "Sign-in with the provider failed. Try again.",
+        "userinfo_failed": "Could not read your account details from the provider.",
+        "domain_not_allowed": "Sign-in is restricted to specific email domains, and your account does not match them.",
+        "email_in_use": "An account with this email already exists. Sign in with your password, then connect this provider from Settings.",
+        "already_linked": "That identity is already linked to a different user.",
+        "rate_limited": "Too many sign-in attempts. Wait a minute and try again.",
+        "saml_unavailable": "Single sign-on is not available right now. Ask an administrator to check the SAML connection.",
+        "saml_invalid": "Your identity provider's response could not be verified. Try again, or ask an administrator to check the SAML settings.",
+        "saml_replayed": "That sign-in response was already used. Start the sign-in again.",
+        "sso_not_provisioned": "Your account has not been set up here yet. Ask an administrator to invite you or turn on automatic account creation.",
+        "sso_no_role": "Your identity provider groups do not grant access here. Ask an administrator to map one of your groups to a role.",
+        "sso_no_email": "Your identity provider did not send an email address, so no account could be matched.",
+        "account_disabled": "This account is disabled. Ask an administrator to restore access."
+      }
+    },
+    "banner": {
+      "dismiss": "Dismiss"
+    },
+    "saveBar": {
+      "label": "Unsaved changes",
+      "unsaved": "You have unsaved changes.",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "discard": "Discard"
+    },
+    "table": {
+      "actions": "Actions",
+      "select": "Select",
+      "rowActions": "Actions for {{name}}"
+    }
+  },
+  "confirmAction": {
+    "token": {
+      "trigger": "Revoke",
+      "title": "Revoke \"{{name}}\"?",
+      "consequence0": "Anything using this token loses access immediately.",
+      "consequence1": "This cannot be undone.",
+      "abilities": "Abilities: {{abilities}}",
+      "confirm": "Revoke token",
+      "pending": "Revoking...",
+      "success": "Token \"{{name}}\" revoked."
+    },
+    "alertRule": {
+      "trigger": "Delete",
+      "title": "Delete \"{{name}}\"?",
+      "confirm": "Delete rule",
+      "pending": "Deleting...",
+      "success": "Alert rule \"{{name}}\" deleted.",
+      "consequence0": "The rule stops evaluating and notifying immediately.",
+      "consequence1": "This cannot be undone."
+    },
+    "backupTarget": {
+      "trigger": "Delete",
+      "title": "Delete \"{{name}}\"?",
+      "confirm": "Delete",
+      "pending": "Deleting...",
+      "success": "Backup target \"{{name}}\" deleted.",
+      "consequence0": "The connection to this bucket is removed.",
+      "consequence1": "Nothing already backed up there is deleted.",
+      "consequence2": "This cannot be undone.",
+      "error": "Could not delete \"{{name}}\"."
+    },
+    "networkShare": {
+      "trigger": "Delete",
+      "title": "Delete \"{{name}}\"?",
+      "confirm": "Delete",
+      "pending": "Deleting...",
+      "success": "Network share \"{{name}}\" deleted.",
+      "consequence0": "Any app volume still mounting this share fails to start on its next deploy.",
+      "consequence1": "This cannot be undone.",
+      "error": "Could not delete \"{{name}}\"."
+    },
+    "registryCredential": {
+      "trigger": "Delete",
+      "title": "Delete \"{{name}}\"?",
+      "confirm": "Delete",
+      "pending": "Deleting...",
+      "success": "Registry credential \"{{name}}\" deleted.",
+      "consequence0": "Any service referencing this credential fails to pull a private image on its next deploy.",
+      "consequence1": "This cannot be undone.",
+      "error": "Could not delete \"{{name}}\"."
+    },
+    "model": {
+      "trigger": "Delete",
+      "title": "Delete \"{{name}}\"?",
+      "confirm": "Delete",
+      "pending": "Deleting...",
+      "success": "Model \"{{name}}\" deleted.",
+      "consequence0": "The engine container is removed and the API key stops working.",
+      "consequence1": "Downloaded weights are kept, so deploying the same model again does not download them twice."
+    },
+    "featureFlag": {
+      "trigger": "Delete",
+      "title": "Delete \"{{name}}\"?",
+      "confirm": "Delete flag",
+      "pending": "Deleting...",
+      "success": "Feature flag deleted.",
+      "consequence0": "The flag stops resolving immediately.",
+      "consequence1": "Any app still calling the evaluate endpoint for it starts getting a 404.",
+      "consequence2": "This cannot be undone."
+    }
+  },
+  "lockedOut": {
+    "link": "Locked out?",
+    "title": "Get back in from the server",
+    "description": "These run on the machine that hosts the control plane, as a user that can read its data directory. Nothing here needs email or another signed-in browser.",
+    "copy": "Copy command",
+    "footer": "If the data directory is not the default, set APP_DATA_DIR in front of the command.",
+    "routes": {
+      "password": {
+        "title": "Reset the admin password",
+        "body": "Prints a new password once, signs that account out everywhere and clears the lockout."
+      },
+      "token": {
+        "title": "Get a short lived root token",
+        "body": "For fixing settings from the CLI when the dashboard cannot be used. It expires on its own."
+      },
+      "approve": {
+        "title": "Approve a waiting sign-in",
+        "body": "Use the request id and the number shown on the new browser's approval screen."
+      }
+    }
+  },
+  "pages": {
+    "title": "Pages",
+    "count_one": "{{count}} page",
+    "count_other": "{{count}} pages",
+    "noDomain": "no domain"
+  },
+  "gitAccess": {
+    "validate": "Validate access",
+    "validating": "Validating...",
+    "recheck": "Check again",
+    "ok": "Access works.",
+    "fix": "Fix",
+    "checks": {
+      "repo_url": "Repository URL",
+      "credential": "Credential",
+      "access": "Repository access",
+      "connection": "Connection",
+      "installation": "Installation",
+      "credentials": "App credentials"
+    }
+  },
+  "templateDefaults": {
+    "strategyReason": "Set by the template: {{reason}}",
+    "recreateDowntime": "Recreate stops the old container before the new one starts, so each deploy has a brief downtime. A deploy that fails its readiness check rolls back to the previous image.",
+    "memoryNote": "This limit came from the template's recommendation. Edit it here to change it."
+  }
+}

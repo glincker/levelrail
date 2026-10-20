@@ -1,0 +1,88 @@
+{
+  "kind": {
+    "dev": "Development",
+    "test": "Test",
+    "uat": "UAT",
+    "production": "Production",
+    "preview": "Preview",
+    "custom": "Custom"
+  },
+  "settings": {
+    "title": "Environments",
+    "description": "Instance-wide environments for apps and databases. Mark one protected to require a second person's approval before anything moves into or out of it.",
+    "create": "Create environment",
+    "empty": {
+      "title": "No environments yet",
+      "description": "Create the first one to start grouping apps and databases."
+    },
+    "columns": {
+      "name": "Name",
+      "kind": "Kind",
+      "protected": "Protected",
+      "apps": "Apps",
+      "databases": "Databases",
+      "actions": "Actions"
+    },
+    "builtIn": "Built in",
+    "scopeProject": "Project",
+    "protectedToggle": "Protected, {{name}}",
+    "protectedOn": "Environment \"{{name}}\" is now protected.",
+    "protectedOff": "Environment \"{{name}}\" is no longer protected.",
+    "updateFailed": "Could not update the environment.",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "form": {
+    "createTitle": "Create environment",
+    "editTitle": "Edit environment",
+    "description": "Name it and pick the kind that describes its role.",
+    "name": "Name",
+    "namePlaceholder": "Staging EU",
+    "kind": "Kind",
+    "protected": "Protected",
+    "protectedHint": "A move into or out of this environment waits for another person to approve it.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving",
+    "created": "Environment \"{{name}}\" created.",
+    "updated": "Environment \"{{name}}\" updated.",
+    "failed": "Could not save the environment."
+  },
+  "delete": {
+    "title": "Delete \"{{name}}\"",
+    "description": "This cannot be undone.",
+    "inUse": "{{apps}} app(s) and {{databases}} database(s) are tagged with this environment. Choose where they go before deleting.",
+    "moveTo": "Move them to",
+    "moveToNone": "Choose an environment",
+    "cancel": "Cancel",
+    "confirm": "Delete environment",
+    "deleting": "Deleting",
+    "deleted": "Environment \"{{name}}\" deleted.",
+    "failed": "Could not delete the environment.",
+    "reserved": "Built-in environments cannot be deleted.",
+    "protectedBlock": "A protected environment cannot take part in a bulk move. Unprotect it first, or move items one at a time."
+  },
+  "switcher": {
+    "label": "Environment",
+    "all": "All environments",
+    "aria": "Filter the dashboard by environment"
+  },
+  "move": {
+    "trigger": "Change",
+    "title": "Move \"{{name}}\" to an environment",
+    "description": "Pick the environment this belongs to.",
+    "field": "Environment",
+    "none": "No environment",
+    "current": "(current)",
+    "protectedNotice": "This move touches the protected environment \"{{environment}}\". It will not apply right away: it becomes a pending approval that another person must approve.",
+    "confirmLabel": "I understand this needs approval",
+    "request": "Request move",
+    "save": "Save",
+    "saving": "Saving",
+    "cancel": "Cancel",
+    "moved": "\"{{name}}\" moved.",
+    "pending": "Move of \"{{name}}\" is waiting for approval.",
+    "failed": "Could not move \"{{name}}\".",
+    "frozen": "A deploy freeze is active. Try again when it ends."
+  }
+}

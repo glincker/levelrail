@@ -1,0 +1,7 @@
+{
+  "code": "dependency_install_failed",
+  "retryable": false,
+  "excerpt_contains": [
+    "getaddrinfo EAI_AGAIN registry.yarnpkg.com"
+  ]
+}

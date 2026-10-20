@@ -1,0 +1,86 @@
+---
+title: "Self-host Directus with Docker"
+sidebarTitle: "Directus"
+description: "An open-source headless CMS and instant REST/GraphQL API layer over your own database."
+"og:url": "https://docs.levelrail.com/self-host/directus"
+---
+
+An open-source headless CMS and instant REST/GraphQL API layer over your own database.
+
+This page describes the Levelrail template for Directus (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.directus.io.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `directus_db_data -&#62; /var/lib/postgresql/data` |
+| `directus` | `directus/directus:11` | 8055 | `directus_uploads -&#62; /directus/uploads` |
+| `redis` | `redis:7-alpine` | none | `directus_redis_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `directus` | `ADMIN_EMAIL` | Preset in the template |
+| `directus` | `ADMIN_PASSWORD` | Generated at deploy |
+| `directus` | `CACHE_ENABLED` | Preset in the template |
+| `directus` | `CACHE_STORE` | Preset in the template |
+| `directus` | `DB_CLIENT` | Preset in the template |
+| `directus` | `DB_DATABASE` | Preset in the template |
+| `directus` | `DB_HOST` | Preset in the template |
+| `directus` | `DB_PASSWORD` | Generated at deploy |
+| `directus` | `DB_PORT` | Preset in the template |
+| `directus` | `DB_USER` | Preset in the template |
+| `directus` | `KEY` | Generated at deploy |
+| `directus` | `REDIS` | Preset in the template |
+| `directus` | `SECRET` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`directus`): 8055:8055.
+- Passwords and keys are generated at deploy time (`db`, `directus`): ADMIN_PASSWORD, DB_PASSWORD, KEY, SECRET, POSTGRES_PASSWORD.
+- No health check, so a deploy is judged by the process starting (`redis`).
+- Stores data in named volumes (`db`, `directus`, `redis`): directus_db_data, directus_redis_data, directus_uploads.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Directus with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Directus. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy directus --name my-directus
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host).

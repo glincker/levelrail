@@ -1,0 +1,77 @@
+---
+title: "Self-host WordPress with Docker"
+sidebarTitle: "WordPress"
+description: "The world's most widely used content management system, self-hosted with its own database."
+"og:url": "https://docs.levelrail.com/self-host/wordpress"
+---
+
+The world's most widely used content management system, self-hosted with its own database.
+
+This page describes the Levelrail template for WordPress (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://wordpress.org/documentation/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `mysql:8.4` | none | `wordpress_db_data -&#62; /var/lib/mysql` |
+| `wordpress` | `wordpress:6.6-apache` | 80 | `wordpress_data -&#62; /var/www/html` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `MYSQL_DATABASE` | Preset in the template |
+| `db` | `MYSQL_PASSWORD` | Generated at deploy |
+| `db` | `MYSQL_ROOT_PASSWORD` | Generated at deploy |
+| `db` | `MYSQL_USER` | Preset in the template |
+| `wordpress` | `WORDPRESS_DB_HOST` | Preset in the template |
+| `wordpress` | `WORDPRESS_DB_NAME` | Preset in the template |
+| `wordpress` | `WORDPRESS_DB_PASSWORD` | Generated at deploy |
+| `wordpress` | `WORDPRESS_DB_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`wordpress`): 8080:80.
+- Passwords and keys are generated at deploy time (`db`, `wordpress`): MYSQL_PASSWORD, MYSQL_ROOT_PASSWORD, WORDPRESS_DB_PASSWORD.
+- No health check, so a deploy is judged by the process starting (`db`).
+- Stores data in named volumes (`db`, `wordpress`): wordpress_data, wordpress_db_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy WordPress with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select WordPress. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy wordpress --name my-wordpress
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Drupal](/self-host/drupal)
+- [EspoCRM](/self-host/espocrm)
+- [Ghost](/self-host/ghost)
+
+All templates are listed in the [self-host gallery](/self-host).

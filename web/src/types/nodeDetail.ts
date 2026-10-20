@@ -1,0 +1,157 @@
+import type { NodeAgentResource, NodeCertResource } from './nodeCert'
+
+// Wire type for a node, GET /api/v1/nodes and GET /api/v1/nodes/{id}
+// (internal/api/nodes.go's nodeResource). Same snake_case-matches-wire-
+// shape convention appDetail.ts and databaseDetail.ts document: an
+// internal admin dashboard talking to one frozen backend contract, not
+// a public SDK.
+
+// 'cordoned' is kept here purely because it's a real value NodeStatus's
+// Go type (internal/store/nodes.go's NodeStatus) can hold, not because
+// anything currently produces it: that file's own doc comment on
+// NodeStatusCordoned says it is currently unused, and the only
+// two real callers of UpdateNodeStatus (internal/reconcile/nodehealth's
+// controller and internal/agent/server.go's heartbeat handling) only
+// ever write NodeStatusOnline or NodeStatusOffline. Cordon's real,
+// currently-live signal is the separate `schedulable` field below
+// (nodeResource's own doc comment in internal/api/nodes.go is explicit
+// that Schedulable is "a separate field from Status rather than folded
+// into it"), so UI code must drive cordon/uncordon display off
+// `schedulable`, not off `status === 'cordoned'`, which nothing sets.
+export type NodeStatus = 'pending' | 'online' | 'offline' | 'cordoned'
+
+export interface NodeResource {
+  id: string
+  name: string
+  address?: string
+  status: NodeStatus
+  cert_fingerprint?: string
+  joined_at?: string
+  last_seen_at?: string
+  // Schedulable is cordon's real backing state (see the NodeStatus
+  // comment above): false means the node refuses new placements but
+  // keeps running whatever's already on it. Toggled by
+  // POST /api/v1/nodes/{id}/cordon and /uncordon.
+  schedulable: boolean
+  // AcceptsAppWorkloads/AcceptsBuildWorkloads are independent capability
+  // flags (internal/store.Node's own doc comment: "a node can be either,
+  // both, or neither"), full-replaced together via
+  // PUT /api/v1/nodes/{id}/workloads, never patched individually.
+  accepts_app_workloads: boolean
+  accepts_build_workloads: boolean
+  // Region is an optional, free-text operator-facing location label
+  // (internal/store.Node.Region), e.g. "hetzner-fsn1" or "home-lab":
+  // display/grouping metadata for the network topology view, not a
+  // routing or access-control input. Set via PUT /api/v1/nodes/{id}/region.
+  region?: string
+  created_at: string
+  // AlertStatus is only present on GET /api/v1/nodes/{id} (the single-
+  // node fetch), never the list response, and is absent when telemetry
+  // isn't configured on this control plane. It's a live re-evaluation of
+  // this node's own standing for each node-scoped, platform-wide alert
+  // kind, not a rule's stored aggregate value (which only ever names the
+  // worst node across the whole fleet, never which one).
+  alert_status?: NodeAlertStatusResource
+  // IsLocal is true for the one node running the control plane process
+  // itself, the only node with real disk_used_bytes/disk_total_bytes/
+  // memory_total_bytes/memory_available_bytes host metrics.
+  is_local: boolean
+  // Apps plus databases placed here; the list endpoint only.
+  resource_count?: number
+  // Machine-readable reason a status needs action, e.g. a pending node
+  // whose agent never connected after its join token was spent.
+  status_reason?: 'enrolled_never_connected'
+  // Present only when the node reported an NVIDIA GPU.
+  gpu?: NodeGpuResource
+  // Absent from control planes that predate ADR 021.
+  cert?: NodeCertResource
+  agent?: NodeAgentResource
+}
+
+// GPU summary on a node (internal/api/gpu_placement.go's nodeGPUResource).
+// reservations name the apps ("app:x") and models ("model:y") holding GPUs.
+export interface NodeGpuResource {
+  present: boolean
+  runtime_installed: boolean
+  driver_version?: string
+  gpu_count: number
+  reserved_gpus: number
+  free_gpus: number
+  total_vram_mib: number
+  used_vram_mib: number
+  reservations: string[]
+}
+
+// Each field is 'ok' (no recent breach), 'firing' (this node is over
+// threshold right now), or 'unknown' (no recent sample to judge, e.g. the
+// collector hasn't run yet): 'unknown' must never be treated the same as
+// 'ok' by UI code, the same "don't silently confirm what you can't see"
+// stance the backend evaluators already take.
+export type NodeAlertState = 'ok' | 'firing' | 'unknown'
+
+export interface NodeAlertStatusResource {
+  patch_status: NodeAlertState
+  node_disk_space: NodeAlertState
+  node_resource_usage: NodeAlertState
+}
+
+// Response body for POST /api/v1/nodes/join-tokens
+// (internal/api/nodes.go's createNodeJoinTokenResponse): the token's one
+// and only appearance in plaintext, the same "shown once" shape a
+// created API token already has (see queries/auth.ts's own token
+// handling).
+export interface NodeJoinTokenResponse {
+  token: string
+  expires_at: string
+  // SHA-256 of the agent CA, pinned by the agent during enrollment.
+  ca_fingerprint?: string
+  control_plane_addr?: string
+  // Present when the server knows or was given the control plane address.
+  join_commands?: NodeJoinCommands
+}
+
+export interface NodeJoinCommands {
+  docker: string
+  binary: string
+}
+
+// Response body for GET /api/v1/nodes/{id}/patch-status
+// (internal/api/node_patch_status.go's nodePatchStatusResponse): the
+// latest OS-patch reading HostPatchCollector wrote for this node.
+// `checked` distinguishes "never checked" (no supported package manager,
+// or the collector hasn't run yet) from a checked, genuinely empty
+// `total`; UI code must branch on `checked` first, never infer "unknown"
+// from `total === 0`.
+export interface NodePatchStatusResource {
+  checked: boolean
+  total: number
+  security: number
+  checked_at?: string
+}
+
+// Response body for GET /api/v1/nodes/{id}/capacity-forecast
+// (internal/api/node_capacity_forecast.go's
+// nodeCapacityForecastResponse): a rough "days until full at the
+// current trend" projection, from a deterministic linear fit over
+// recent disk/memory history, never from an external model. `disk` and
+// `memory` are absent (not a zero-value object) whenever the fitted
+// trend is flat or improving, or there isn't enough history yet: UI
+// code must treat absence as "nothing to warn about," never render a
+// 0-day countdown for a missing field.
+export interface CapacityForecastMetric {
+  current_used_bytes: number
+  total_bytes: number
+  slope_bytes_per_day: number
+  days_until_full: number
+  projected_full_at: string
+  sample_count: number
+  coverage_window: string
+}
+
+export interface NodeCapacityForecastResource {
+  node_id: string
+  lookback_window: string
+  disk?: CapacityForecastMetric
+  memory?: CapacityForecastMetric
+  note: string
+}

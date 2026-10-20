@@ -1,0 +1,10 @@
+{
+  "Status": "failed",
+  "FailingStep": "building",
+  "Error": "deploy: service \"api\": build: failed to solve: failed to authorize: failed to fetch anonymous token",
+  "LogLines": [
+    "#3 [internal] load metadata for registry.acme.io/base/node:20",
+    "#3 ERROR: failed to authorize: rpc error: code = Unknown desc = no basic auth credentials",
+    "ERROR: failed to solve: registry.acme.io/base/node:20: failed to authorize"
+  ]
+}

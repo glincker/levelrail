@@ -1,0 +1,68 @@
+---
+title: "Self-host Tautulli with Docker"
+sidebarTitle: "Tautulli"
+description: "Monitors your Plex server and shows who watched what, with history, stats, and notifications."
+"og:url": "https://docs.levelrail.com/self-host/tautulli"
+---
+
+Monitors your Plex server and shows who watched what, with history, stats, and notifications.
+
+This page describes the Levelrail template for Tautulli (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.tautulli.com.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `tautulli` | `lscr.io/linuxserver/tautulli:2.15.0` | 8181 | `tautulli_config -&#62; /config` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `tautulli` | `PGID` | Preset in the template |
+| `tautulli` | `PUID` | Preset in the template |
+| `tautulli` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`tautulli`): 8181:8181.
+- Stores data in named volumes (`tautulli`): tautulli_config.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Tautulli with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Tautulli. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy tautulli --name my-tautulli
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Alertmanager](/self-host/alertmanager)
+- [Beszel](/self-host/beszel)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+- [Checkmate](/self-host/checkmate)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,0 +1,1367 @@
+import { useMemo, useState } from 'react'
+import {
+  CheckIcon,
+  CopyIcon,
+  GitBranchIcon,
+  PlusIcon,
+  SpinnerIcon,
+  TrashIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '@/components/ui/field'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { toast } from '@/components/ui/toast'
+import { BrandIcon, type BrandIconName } from '@/components/BrandIcon'
+import {
+  gitSourceKeys,
+  setGitSource,
+  useDeleteGitSource,
+  useGitSource,
+} from '../queries/gitSources'
+import { useSpecValidation } from '../queries/specValidation'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { connectGitHubRepoAsSource } from '../queries/githubApp'
+import { connectGitLabProjectAsSource } from '../queries/gitlabApp'
+import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
+import { connectGiteaRepoAsSource } from '../queries/giteaApp'
+import {
+  GitRepoSourcePicker,
+  type GitRepoSourceValue,
+} from './GitRepoSourcePicker'
+import { RotateWebhookSecretDialog } from './RotateWebhookSecretDialog'
+import { GitAccessValidate } from './GitAccessValidate'
+import { GitBuildSettings } from './GitBuildSettings'
+import { ApiError } from '../lib/apiError'
+import type { AppDetail } from '../types/appDetail'
+import type {
+  GitSourceBuild,
+  GitSourceBuildType,
+  GitSourceResource,
+  GitSourceService,
+  GitSourceTriggerMode,
+} from '../types/gitSource'
+
+// Git source connect/manage card, PUT/GET/DELETE
+// /api/v1/apps/{name}/git-source (internal/api/git_sources.go): the
+// missing UI half of that endpoint's own deferred follow-up. Rendered
+// from routes/apps/$name/overview.tsx, the same section route
+// DeployStrategyEditor already lives on, mirroring
+// DatabasePublicAccessCard.tsx's Card shape (a toggle-style connect/
+// disconnect action plus a warning banner once connected) and
+// AddNodeDialog.tsx's "mint a secret, show it exactly once" pattern for
+// the generated webhook secret specifically: it never comes back from
+// GET (gitSourceResource's own doc comment, internal/api/git_sources.go),
+// so this component's only chance to show it is the connect response the
+// instant a repo is first connected.
+//
+// Repo/branch selection is GitRepoSourcePicker (also used by
+// CreateAppFromGitFields.tsx's app-creation wizard): this card no longer
+// hand-rolls its own URL/branch inputs, so picking a connected
+// GitHub/GitLab/Bitbucket repo here registers a push webhook automatically
+// the same way the wizard does, instead of only ever producing a manual,
+// paste-the-webhook-by-hand connection.
+const BUILD_PACKS: { value: GitSourceBuildType; label: string }[] = [
+  { value: 'railpack', label: 'Auto-detect (Railpack)' },
+  { value: 'dockerfile', label: 'Dockerfile' },
+  { value: 'static', label: 'Static site' },
+]
+
+const TRIGGER_MODES: {
+  value: GitSourceTriggerMode
+  label: string
+  description: string
+}[] = [
+  {
+    value: 'push',
+    label: 'Every push',
+    description: 'Deploy on every push to the target branch.',
+  },
+  {
+    value: 'release',
+    label: 'Tags & releases',
+    description:
+      'Deploy only on a tag push, or (GitHub only) a published release. Branch pushes never deploy.',
+  },
+]
+
+// Frameworks/languages the auto-detect build pack actually supports,
+// shown next to the "Auto-detect" tab so this is a guided picker rather
+// than a dropdown asking the operator to already know what Railpack is.
+// Mirrors internal/build/railpack.go's supportedRailpackProviders
+// exactly: node covers React and Next.js (both are the node provider,
+// no separate entry), golang is go, and java covers Spring Boot, the
+// framework this list exists to name.
+const AUTO_DETECT_STACKS: { icon: BrandIconName; label: string }[] = [
+  { icon: 'node', label: 'Node.js (React, Next.js, ...)' },
+  { icon: 'go', label: 'Go' },
+  { icon: 'java', label: 'Java (Spring Boot)' },
+]
+
+// AdditionalServiceRow is one editable row of FormState.additionalServices:
+// an array, not a Record, so a service name can be edited mid-typing
+// without colliding with another row that momentarily shares the same
+// (incomplete) key.
+interface AdditionalServiceRow {
+  serviceName: string
+  buildType: GitSourceBuildType
+  buildPath: string
+}
+
+// ServiceSpecRow is one editable row of FormState.services: an
+// app.yaml-style services: map entry, keyed here by serviceName the
+// same way AdditionalServiceRow is, plus port since a services: map
+// entry (unlike an additional_services one) is meant to fully describe
+// a real service, not just a rebuild config for one that already
+// exists.
+interface ServiceSpecRow {
+  serviceName: string
+  buildType: GitSourceBuildType
+  buildPath: string
+  port: string
+}
+
+// FanoutMode picks which persisted fan-out mechanism submit() writes:
+// 'additional' is the older GitSource.AdditionalServices flat rebuild
+// list, 'services' is the newer GitSource.Services app.yaml-style map
+// that routes a push through the same DeploySpec fan-out
+// POST .../deploy-spec uses (internal/api/git_webhook.go's
+// handleGitPushWebhook). The two are mutually exclusive server-side
+// (validateGitSourceServices), so the form only ever submits one.
+type FanoutMode = 'additional' | 'services'
+
+interface FormState {
+  repoUrl: string
+  branch: string
+  buildType: GitSourceBuildType
+  buildPath: string
+  baseDirectory: string
+  triggerMode: GitSourceTriggerMode
+  token: string
+  // Set only by a fresh GitRepoSourcePicker pick from a connected
+  // provider row, cleared on every startEdit/cancelEdit: see
+  // connectGitSource's own doc comment for how this decides which
+  // endpoint submit() calls.
+  providerRef?: GitRepoSourceValue['providerRef']
+  fanoutMode: FanoutMode
+  additionalServices: AdditionalServiceRow[]
+  services: ServiceSpecRow[]
+}
+
+// Auto-detect is the default and recommended choice: most repos need no
+// build configuration at all beyond picking their language, so a blank
+// connect form should not default to the manual Dockerfile path.
+function emptyForm(): FormState {
+  return {
+    repoUrl: '',
+    branch: '',
+    buildType: 'railpack',
+    buildPath: '',
+    baseDirectory: '',
+    triggerMode: 'push',
+    token: '',
+    providerRef: undefined,
+    fanoutMode: 'additional',
+    additionalServices: [],
+    services: [],
+  }
+}
+
+function formFromResource(g: GitSourceResource): FormState {
+  const hasServices = Object.keys(g.services ?? {}).length > 0
+  return {
+    repoUrl: g.repo_url,
+    branch: g.branch,
+    buildType: g.build_type,
+    buildPath: g.build_path ?? '',
+    baseDirectory: g.base_directory ?? '',
+    triggerMode: g.trigger_mode,
+    token: '',
+    providerRef: undefined,
+    fanoutMode: hasServices ? 'services' : 'additional',
+    additionalServices: Object.entries(g.additional_services ?? {}).map(
+      ([serviceName, build]) => ({
+        serviceName,
+        buildType: build.build_type,
+        buildPath: build.build_path ?? '',
+      }),
+    ),
+    services: Object.entries(g.services ?? {}).map(([serviceName, svc]) => ({
+      serviceName,
+      buildType: isGitSourceBuildType(svc.build.type)
+        ? svc.build.type
+        : 'dockerfile',
+      buildPath: svc.build.path ?? '',
+      port: svc.port ? String(svc.port) : '',
+    })),
+  }
+}
+
+// isGitSourceBuildType narrows a services: map entry's build.type
+// (which also allows 'image'/'compose', see GitSourceServiceBuild) down
+// to the three this compact form actually offers a picker for, the same
+// three BUILD_PACKS already lists.
+function isGitSourceBuildType(value: string): value is GitSourceBuildType {
+  return value === 'dockerfile' || value === 'railpack' || value === 'static'
+}
+
+// A row only counts as "incomplete" once the operator has actually put
+// something into it: a brand new row's buildType already defaults to
+// 'dockerfile' with an empty buildPath, so an untouched blank row is not
+// flagged, only one where buildPath or buildType diverges from that
+// default while the name is still empty.
+function incompleteRowIndexes(rows: AdditionalServiceRow[]): number[] {
+  return rows
+    .map((row, index) => ({ row, index }))
+    .filter(
+      ({ row }) =>
+        !row.serviceName.trim() &&
+        (row.buildPath.trim() !== '' || row.buildType !== 'dockerfile'),
+    )
+    .map(({ index }) => index)
+}
+
+function additionalServicesPayload(
+  rows: AdditionalServiceRow[],
+): Record<string, GitSourceBuild> | undefined {
+  const entries = rows
+    .filter((row) => row.serviceName.trim())
+    .map((row): [string, GitSourceBuild] => [
+      row.serviceName.trim(),
+      {
+        build_type: row.buildType,
+        build_path: row.buildPath.trim() || undefined,
+      },
+    ])
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined
+}
+
+// servicesPayload mirrors additionalServicesPayload's own shape for
+// FormState.services, the newer app.yaml-style map: a filled-in port
+// becomes a number (the wire shape's own field, like
+// DeploySpecServiceInput's build in appGroup.ts), an empty one is
+// omitted rather than sent as 0.
+function servicesPayload(
+  rows: ServiceSpecRow[],
+): Record<string, GitSourceService> | undefined {
+  const entries = rows
+    .filter((row) => row.serviceName.trim())
+    .map((row): [string, GitSourceService] => [
+      row.serviceName.trim(),
+      {
+        build: { type: row.buildType, path: row.buildPath.trim() || undefined },
+        port: row.port.trim() ? Number(row.port.trim()) : undefined,
+      },
+    ])
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined
+}
+
+// duplicateServiceNames returns every trimmed service name used by more
+// than one row: caught here, client-side, before a live-validation call
+// goes out, since two rows sharing a name would otherwise collapse into
+// one YAML mapping key and silently validate whichever row won, instead
+// of surfacing the collision itself.
+function duplicateServiceNames(rows: ServiceSpecRow[]): Set<string> {
+  const counts = new Map<string, number>()
+  for (const row of rows) {
+    const name = row.serviceName.trim()
+    if (!name) continue
+    counts.set(name, (counts.get(name) ?? 0) + 1)
+  }
+  return new Set([...counts].filter(([, n]) => n > 1).map(([name]) => name))
+}
+
+// servicesSpecYaml renders FormState.services as a minimal app.yaml
+// document (just the fields this compact form actually collects) for
+// useSpecValidation (queries/specValidation.ts) to check live: the same
+// POST .../validate-spec body a full app.yaml editor would send, built
+// here instead of asking the operator to write YAML by hand. Returns ''
+// when there's nothing named yet, or when two rows collide on name
+// (duplicateServiceNames already reports that locally, no need to also
+// spend a request on a document the server would just as usefully
+// reject for the same reason).
+function servicesSpecYaml(rows: ServiceSpecRow[]): string {
+  const named = rows.filter((row) => row.serviceName.trim())
+  if (named.length === 0 || duplicateServiceNames(rows).size > 0) return ''
+  const lines = ['version: 1', 'services:']
+  for (const row of named) {
+    lines.push(`  ${JSON.stringify(row.serviceName.trim())}:`)
+    lines.push('    build:')
+    lines.push(`      type: ${JSON.stringify(row.buildType)}`)
+    if (row.buildPath.trim()) {
+      lines.push(`      path: ${JSON.stringify(row.buildPath.trim())}`)
+    }
+    if (row.port.trim()) {
+      lines.push(`    port: ${Number(row.port.trim()) || 0}`)
+    }
+  }
+  return lines.join('\n')
+}
+
+interface ConnectGitSourceResult {
+  resource: GitSourceResource
+  autoRegistered: boolean
+  webhookError?: string
+}
+
+// connectGitSource mirrors CreateAppFromGitFields.tsx's own
+// connectGitSourceFor: a fresh provider pick (form.providerRef) uses that
+// provider's use-as-source endpoint, which registers a push webhook
+// automatically, otherwise it falls back to the generic PUT
+// .../git-source endpoint this card always used before. A provider pick
+// combined with additional services (or a services: map) also falls
+// back: none of the three use-as-source endpoints accept either (only
+// the generic endpoint does), so a monorepo fan-out connect always
+// takes the manual path, trading away auto webhook registration for
+// that one case.
+async function connectGitSource(
+  appName: string,
+  form: FormState,
+): Promise<ConnectGitSourceResult> {
+  const branch = form.branch.trim() || undefined
+  const buildPath = form.buildPath.trim() || undefined
+  const additionalServices =
+    form.fanoutMode === 'additional'
+      ? additionalServicesPayload(form.additionalServices)
+      : undefined
+  const services =
+    form.fanoutMode === 'services' ? servicesPayload(form.services) : undefined
+
+  if (form.providerRef && !additionalServices && !services) {
+    if (form.providerRef.kind === 'github') {
+      const {
+        webhook_registered: autoRegistered,
+        webhook_error: webhookError,
+        ...resource
+      } = await connectGitHubRepoAsSource(
+        form.providerRef.owner,
+        form.providerRef.repo,
+        {
+          app_name: appName,
+          branch,
+          build_type: form.buildType,
+          build_path: buildPath,
+          trigger_mode: form.triggerMode,
+        },
+      )
+      return { resource, autoRegistered, webhookError }
+    }
+    if (form.providerRef.kind === 'gitlab') {
+      const resource = await connectGitLabProjectAsSource(
+        form.providerRef.projectId,
+        {
+          app_name: appName,
+          branch,
+          build_type: form.buildType,
+          build_path: buildPath,
+          trigger_mode: form.triggerMode,
+        },
+      )
+      return { resource, autoRegistered: true }
+    }
+    if (form.providerRef.kind === 'bitbucket') {
+      const resource = await connectBitbucketRepoAsSource(
+        form.providerRef.workspace,
+        form.providerRef.repoSlug,
+        {
+          app_name: appName,
+          branch,
+          build_type: form.buildType,
+          build_path: buildPath,
+          trigger_mode: form.triggerMode,
+        },
+      )
+      return { resource, autoRegistered: true }
+    }
+    const resource = await connectGiteaRepoAsSource(
+      form.providerRef.owner,
+      form.providerRef.repo,
+      {
+        app_name: appName,
+        branch,
+        build_type: form.buildType,
+        build_path: buildPath,
+        trigger_mode: form.triggerMode,
+      },
+    )
+    return { resource, autoRegistered: true }
+  }
+
+  const resource = await setGitSource(appName, {
+    repo_url: form.repoUrl.trim(),
+    branch,
+    build_type: form.buildType,
+    build_path: buildPath,
+    base_directory: form.baseDirectory.trim() || undefined,
+    token: form.token.trim() || undefined,
+    additional_services: additionalServices,
+    services,
+    trigger_mode: form.triggerMode,
+  })
+  return { resource, autoRegistered: false }
+}
+
+export function GitSourceCard({ app }: { app: AppDetail }) {
+  const query = useGitSource(app.name)
+  const queryClient = useQueryClient()
+  const connectMutation = useMutation({
+    mutationFn: ({ appName, form }: { appName: string; form: FormState }) =>
+      connectGitSource(appName, form),
+    onSuccess: (result) => {
+      queryClient.setQueryData(gitSourceKeys.detail(app.name), result.resource)
+    },
+  })
+  const deleteGitSource = useDeleteGitSource(app.name)
+
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState<FormState>(emptyForm)
+  // The one and only place the generated webhook secret is ever held:
+  // set from connectGitSource's own result (only present on the create
+  // path, gitSourceResource's own doc comment), cleared the moment this
+  // card unmounts a connect/edit form. Never re-derived from query.data,
+  // which never carries it.
+  const [justConnected, setJustConnected] = useState<GitSourceResource | null>(
+    null,
+  )
+  const [webhookAutoRegistered, setWebhookAutoRegistered] = useState(false)
+  const [webhookError, setWebhookError] = useState<string | undefined>(
+    undefined,
+  )
+  const [secretCopied, setSecretCopied] = useState(false)
+  const [urlCopied, setUrlCopied] = useState(false)
+  const [additionalServicesError, setAdditionalServicesError] = useState<
+    string | null
+  >(null)
+
+  // Live validation for the "Services (app.yaml-style)" rows below: the
+  // same checks POST .../deploy-spec and a real app.yaml would hit at
+  // deploy time, surfaced here while the operator is still editing.
+  // Debounced so it fires once typing settles, not on every keystroke
+  // (LogSearchPanel.tsx's own debounce-then-query shape).
+  const servicesYaml = useMemo(
+    () =>
+      form.fanoutMode === 'services' ? servicesSpecYaml(form.services) : '',
+    [form.fanoutMode, form.services],
+  )
+  const debouncedServicesYaml = useDebouncedValue(servicesYaml, 500)
+  const specValidation = useSpecValidation(app.name, debouncedServicesYaml)
+  const specIssues = specValidation.data?.issues ?? []
+  const duplicateNames = duplicateServiceNames(form.services)
+  const namedServiceRows = new Set(
+    form.services.map((row) => row.serviceName.trim()).filter(Boolean),
+  )
+  const issuesForService = (name: string) =>
+    specIssues.filter(
+      (issue) =>
+        issue.path === `services.${name}` ||
+        issue.path.startsWith(`services.${name}.`),
+    )
+  // Anything the schema flagged above the per-service level (a bad
+  // top-level version, for instance) has no row of its own to render
+  // under, so it's shown once, separately.
+  const unmatchedSpecIssues = specIssues.filter(
+    (issue) =>
+      ![...namedServiceRows].some(
+        (name) =>
+          issue.path === `services.${name}` ||
+          issue.path.startsWith(`services.${name}.`),
+      ),
+  )
+
+  const notConnected =
+    query.error instanceof ApiError && query.error.status === 404
+  const otherError = query.error && !notConnected ? query.error : null
+
+  function startEdit(prefill: FormState) {
+    setForm(prefill)
+    setEditing(true)
+    setJustConnected(null)
+    setAdditionalServicesError(null)
+  }
+
+  function cancelEdit() {
+    setEditing(false)
+    setForm(emptyForm())
+    setAdditionalServicesError(null)
+  }
+
+  function submit() {
+    if (!form.repoUrl.trim()) {
+      toast.add({
+        title: 'Pick a repository or paste a URL first.',
+        type: 'error',
+      })
+      return
+    }
+    if (form.fanoutMode === 'services') {
+      if (
+        form.services.length === 0 ||
+        !form.services.some((row) => row.serviceName.trim())
+      ) {
+        setAdditionalServicesError(
+          'Add at least one service, or switch back to single service.',
+        )
+        return
+      }
+      const incomplete = incompleteRowIndexes(form.services)
+      if (incomplete.length > 0) {
+        const rowLabel = incomplete.length === 1 ? 'Row' : 'Rows'
+        const rowNumbers = incomplete.map((index) => index + 1).join(', ')
+        setAdditionalServicesError(
+          `${rowLabel} ${rowNumbers} ${incomplete.length === 1 ? 'is' : 'are'} missing a service name.`,
+        )
+        return
+      }
+    } else {
+      const incomplete = incompleteRowIndexes(form.additionalServices)
+      if (incomplete.length > 0) {
+        const rowLabel = incomplete.length === 1 ? 'Row' : 'Rows'
+        const rowNumbers = incomplete.map((index) => index + 1).join(', ')
+        setAdditionalServicesError(
+          `${rowLabel} ${rowNumbers} ${incomplete.length === 1 ? 'is' : 'are'} missing a service name.`,
+        )
+        return
+      }
+    }
+    setAdditionalServicesError(null)
+    connectMutation.mutate(
+      { appName: app.name, form },
+      {
+        onSuccess: (result) => {
+          setEditing(false)
+          setForm(emptyForm())
+          setSecretCopied(false)
+          setUrlCopied(false)
+          if (result.resource.webhook_secret) {
+            setJustConnected(result.resource)
+            setWebhookAutoRegistered(result.autoRegistered)
+            setWebhookError(result.webhookError)
+          } else {
+            toast.add({ title: 'Git source updated.', type: 'success' })
+          }
+        },
+        onError: (error) => {
+          toast.add({
+            title: 'Could not save git source.',
+            description: error.message,
+            type: 'error',
+          })
+        },
+      },
+    )
+  }
+
+  function disconnect() {
+    deleteGitSource.mutate(undefined, {
+      onSuccess: () => {
+        setJustConnected(null)
+        toast.add({ title: 'Git source disconnected.', type: 'success' })
+      },
+      onError: (error) => {
+        toast.add({
+          title: 'Could not disconnect git source.',
+          description: error.message,
+          type: 'error',
+        })
+      },
+    })
+  }
+
+  function copyText(text: string, mark: (v: boolean) => void) {
+    void navigator.clipboard.writeText(text).then(() => {
+      mark(true)
+    })
+  }
+
+  const webhookFullURL = (path: string) => `${window.location.origin}${path}`
+
+  function addAdditionalServiceRow() {
+    setForm({
+      ...form,
+      additionalServices: [
+        ...form.additionalServices,
+        { serviceName: '', buildType: 'dockerfile', buildPath: '' },
+      ],
+    })
+  }
+
+  function updateAdditionalServiceRow(
+    index: number,
+    patch: Partial<AdditionalServiceRow>,
+  ) {
+    setForm({
+      ...form,
+      additionalServices: form.additionalServices.map((row, i) =>
+        i === index ? { ...row, ...patch } : row,
+      ),
+    })
+    setAdditionalServicesError(null)
+  }
+
+  function removeAdditionalServiceRow(index: number) {
+    setForm({
+      ...form,
+      additionalServices: form.additionalServices.filter((_, i) => i !== index),
+    })
+    setAdditionalServicesError(null)
+  }
+
+  function addServiceRow() {
+    setForm({
+      ...form,
+      services: [
+        ...form.services,
+        { serviceName: '', buildType: 'dockerfile', buildPath: '', port: '' },
+      ],
+    })
+  }
+
+  function updateServiceRow(index: number, patch: Partial<ServiceSpecRow>) {
+    setForm({
+      ...form,
+      services: form.services.map((row, i) =>
+        i === index ? { ...row, ...patch } : row,
+      ),
+    })
+    setAdditionalServicesError(null)
+  }
+
+  function removeServiceRow(index: number) {
+    setForm({
+      ...form,
+      services: form.services.filter((_, i) => i !== index),
+    })
+    setAdditionalServicesError(null)
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <GitBranchIcon className="size-4 text-muted-foreground" />
+          Git source
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {query.isLoading ? (
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <SpinnerIcon className="size-4 animate-spin" />
+            Loading...
+          </p>
+        ) : null}
+
+        {otherError ? (
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-2.5 text-destructive">
+            <WarningIcon className="mt-0.5 size-4 shrink-0" />
+            <p className="text-sm">{otherError.message}</p>
+          </div>
+        ) : null}
+
+        {justConnected ? (
+          <div className="space-y-3">
+            {webhookAutoRegistered ? (
+              <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-200">
+                <CheckIcon className="mt-0.5 size-4 shrink-0" />
+                <p className="text-sm">
+                  Git source connected. A push webhook was registered
+                  automatically, no manual setup needed.
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+                <WarningIcon className="mt-0.5 size-4 shrink-0" />
+                <p className="text-sm">
+                  {webhookError ? (
+                    webhookError
+                  ) : (
+                    <>
+                      This webhook secret will not be shown again. Paste both
+                      values into the repository&apos;s webhook settings now.
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
+
+            {!webhookAutoRegistered ? (
+              <>
+                <Field>
+                  <FieldLabel htmlFor="git-source-webhook-url">
+                    Webhook URL
+                  </FieldLabel>
+                  <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
+                    <code
+                      id="git-source-webhook-url"
+                      className="min-w-0 flex-1 overflow-x-auto text-xs break-all"
+                    >
+                      {webhookFullURL(justConnected.webhook_url)}
+                    </code>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        copyText(
+                          webhookFullURL(justConnected.webhook_url),
+                          setUrlCopied,
+                        )
+                      }}
+                    >
+                      {urlCopied ? <CheckIcon /> : <CopyIcon />}
+                      {urlCopied ? 'Copied' : 'Copy'}
+                    </Button>
+                  </div>
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="git-source-webhook-secret">
+                    Webhook secret
+                  </FieldLabel>
+                  <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
+                    <code
+                      id="git-source-webhook-secret"
+                      className="min-w-0 flex-1 overflow-x-auto text-xs break-all"
+                    >
+                      {justConnected.webhook_secret}
+                    </code>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (justConnected.webhook_secret) {
+                          copyText(
+                            justConnected.webhook_secret,
+                            setSecretCopied,
+                          )
+                        }
+                      }}
+                    >
+                      {secretCopied ? <CheckIcon /> : <CopyIcon />}
+                      {secretCopied ? 'Copied' : 'Copy'}
+                    </Button>
+                  </div>
+                  <FieldDescription>
+                    Set this as the secret on a GitHub &quot;Push&quot; webhook
+                    pointed at the URL above, content type application/json.
+                  </FieldDescription>
+                </Field>
+              </>
+            ) : null}
+
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setJustConnected(null)
+              }}
+            >
+              Done
+            </Button>
+          </div>
+        ) : editing || notConnected ? (
+          <div className="space-y-4">
+            {!notConnected ? (
+              <p className="text-sm text-muted-foreground">
+                Currently connected to{' '}
+                <span className="font-mono">{form.repoUrl}</span> @{' '}
+                <span className="font-mono">{form.branch}</span>. Pick a
+                different repository below to re-point it, or leave it as is to
+                only update the build settings.
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Connect a repository so a push to its target branch auto-deploys
+                this app.
+              </p>
+            )}
+
+            <GitRepoSourcePicker
+              disabled={connectMutation.isPending}
+              onSelect={(value) => {
+                setForm((current) => ({
+                  ...current,
+                  repoUrl: value.repoUrl,
+                  branch: value.branch,
+                  token: value.token ?? '',
+                  providerRef: value.providerRef,
+                }))
+              }}
+            />
+
+            <Field>
+              <FieldLabel htmlFor="git-source-build-type">
+                Build pack
+              </FieldLabel>
+              <Tabs
+                value={form.buildType}
+                onValueChange={(v: unknown) => {
+                  if (
+                    v === 'railpack' ||
+                    v === 'dockerfile' ||
+                    v === 'static'
+                  ) {
+                    setForm({ ...form, buildType: v })
+                  }
+                }}
+              >
+                <TabsList
+                  id="git-source-build-type"
+                  className="grid w-full grid-cols-3"
+                >
+                  <TabsTrigger
+                    value="railpack"
+                    disabled={connectMutation.isPending}
+                  >
+                    Auto-detect
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="dockerfile"
+                    disabled={connectMutation.isPending}
+                  >
+                    Dockerfile
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="static"
+                    disabled={connectMutation.isPending}
+                  >
+                    Static site
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="railpack" className="space-y-2 pt-2">
+                  <FieldDescription>
+                    Recommended. Levelrail detects your framework from the
+                    repository and builds it automatically, no Dockerfile
+                    needed.
+                  </FieldDescription>
+                  <div className="flex flex-wrap gap-2">
+                    {AUTO_DETECT_STACKS.map((stack) => (
+                      <span
+                        key={stack.icon}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-input bg-muted/50 px-2 py-1 text-xs text-muted-foreground"
+                      >
+                        <BrandIcon name={stack.icon} className="size-3.5" />
+                        {stack.label}
+                      </span>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="dockerfile" className="pt-2">
+                  <Field>
+                    <FieldLabel htmlFor="git-source-build-path">
+                      Dockerfile path (optional)
+                    </FieldLabel>
+                    <Input
+                      id="git-source-build-path"
+                      className="font-mono"
+                      placeholder="./Dockerfile"
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={form.buildPath}
+                      onChange={(e) => {
+                        setForm({ ...form, buildPath: e.target.value })
+                      }}
+                      disabled={connectMutation.isPending}
+                    />
+                  </Field>
+                </TabsContent>
+
+                <TabsContent value="static" className="pt-2">
+                  <FieldDescription>
+                    Served directly by the embedded Caddy ingress, no container.
+                  </FieldDescription>
+                </TabsContent>
+              </Tabs>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="git-source-trigger-mode">
+                Deploy trigger
+              </FieldLabel>
+              <Select
+                value={form.triggerMode}
+                onValueChange={(v) => {
+                  if (v === 'push' || v === 'release') {
+                    setForm({ ...form, triggerMode: v })
+                  }
+                }}
+              >
+                <SelectTrigger id="git-source-trigger-mode" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TRIGGER_MODES.map((mode) => (
+                    <SelectItem key={mode.value} value={mode.value}>
+                      {mode.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldDescription>
+                {
+                  TRIGGER_MODES.find((mode) => mode.value === form.triggerMode)
+                    ?.description
+                }
+              </FieldDescription>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="git-source-fanout-mode">
+                Multi-service fan-out
+              </FieldLabel>
+              <Tabs
+                value={form.fanoutMode}
+                onValueChange={(v: unknown) => {
+                  if (v === 'additional' || v === 'services') {
+                    setForm({ ...form, fanoutMode: v })
+                    setAdditionalServicesError(null)
+                  }
+                }}
+              >
+                <TabsList
+                  id="git-source-fanout-mode"
+                  className="grid w-full grid-cols-2"
+                >
+                  <TabsTrigger
+                    value="additional"
+                    disabled={connectMutation.isPending}
+                  >
+                    Additional services
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="services"
+                    disabled={connectMutation.isPending}
+                  >
+                    Services map
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </Field>
+
+            {form.fanoutMode === 'additional' ? (
+              <Field>
+                <FieldLabel>Additional services (optional)</FieldLabel>
+                <FieldDescription>
+                  Also rebuild these sibling services from the same push, for a
+                  monorepo with more than one service. Each needs its own
+                  already-existing service name and build config. Saving with
+                  any row filled in always uses the direct git-source
+                  connection, even for a picked provider repo, since automatic
+                  webhook registration doesn&apos;t support monorepo fan-out
+                  yet.
+                </FieldDescription>
+                <div className="space-y-2">
+                  {form.additionalServices.map((row, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <Input
+                        className="font-mono"
+                        placeholder="worker"
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={row.serviceName}
+                        onChange={(e) => {
+                          updateAdditionalServiceRow(index, {
+                            serviceName: e.target.value,
+                          })
+                        }}
+                        disabled={connectMutation.isPending}
+                        aria-label="Service name"
+                      />
+                      <Select
+                        value={row.buildType}
+                        onValueChange={(v) => {
+                          if (
+                            v === 'railpack' ||
+                            v === 'dockerfile' ||
+                            v === 'static'
+                          ) {
+                            updateAdditionalServiceRow(index, { buildType: v })
+                          }
+                        }}
+                      >
+                        <SelectTrigger
+                          className="w-40 shrink-0"
+                          aria-label="Build type"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {BUILD_PACKS.map((pack) => (
+                            <SelectItem key={pack.value} value={pack.value}>
+                              {pack.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        className="font-mono"
+                        placeholder="./worker/Dockerfile"
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={row.buildPath}
+                        onChange={(e) => {
+                          updateAdditionalServiceRow(index, {
+                            buildPath: e.target.value,
+                          })
+                        }}
+                        disabled={
+                          connectMutation.isPending ||
+                          row.buildType === 'railpack'
+                        }
+                        aria-label="Build path"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={connectMutation.isPending}
+                        onClick={() => {
+                          removeAdditionalServiceRow(index)
+                        }}
+                        aria-label="Remove additional service"
+                      >
+                        <TrashIcon />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={connectMutation.isPending}
+                    onClick={addAdditionalServiceRow}
+                  >
+                    <PlusIcon />
+                    Add service
+                  </Button>
+                </div>
+                <FieldError
+                  errors={
+                    additionalServicesError
+                      ? [{ message: additionalServicesError }]
+                      : undefined
+                  }
+                />
+              </Field>
+            ) : (
+              <Field>
+                <FieldLabel>Services (app.yaml-style)</FieldLabel>
+                <FieldDescription>
+                  Every push fans out into an independent build and deploy per
+                  service, the same POST .../deploy-spec fan-out a manual
+                  multi-service deploy uses, under one app named{' '}
+                  <span className="font-mono">{app.name}</span>. Replaces the
+                  single-service build above; each service key becomes its own
+                  real service named{' '}
+                  <span className="font-mono">{app.name}-&lt;key&gt;</span>.
+                </FieldDescription>
+                <div className="space-y-2">
+                  {form.services.map((row, index) => {
+                    const rowName = row.serviceName.trim()
+                    const rowIssues = rowName ? issuesForService(rowName) : []
+                    const isDuplicate =
+                      rowName !== '' && duplicateNames.has(rowName)
+                    const hasRowProblem = isDuplicate || rowIssues.length > 0
+                    const rowErrorId = `service-row-error-${index}`
+                    return (
+                      <div key={index} className="space-y-1">
+                        <div className="flex items-start gap-2">
+                          <Input
+                            className="font-mono"
+                            placeholder="web"
+                            autoComplete="off"
+                            spellCheck={false}
+                            value={row.serviceName}
+                            onChange={(e) => {
+                              updateServiceRow(index, {
+                                serviceName: e.target.value,
+                              })
+                            }}
+                            disabled={connectMutation.isPending}
+                            aria-label="Service name"
+                            aria-invalid={hasRowProblem}
+                            aria-describedby={
+                              hasRowProblem ? rowErrorId : undefined
+                            }
+                          />
+                          <Select
+                            value={row.buildType}
+                            onValueChange={(v) => {
+                              if (
+                                v === 'railpack' ||
+                                v === 'dockerfile' ||
+                                v === 'static'
+                              ) {
+                                updateServiceRow(index, { buildType: v })
+                              }
+                            }}
+                          >
+                            <SelectTrigger
+                              className="w-40 shrink-0"
+                              aria-label="Build type"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {BUILD_PACKS.map((pack) => (
+                                <SelectItem key={pack.value} value={pack.value}>
+                                  {pack.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            className="font-mono"
+                            placeholder="./web/Dockerfile"
+                            autoComplete="off"
+                            spellCheck={false}
+                            value={row.buildPath}
+                            onChange={(e) => {
+                              updateServiceRow(index, {
+                                buildPath: e.target.value,
+                              })
+                            }}
+                            disabled={
+                              connectMutation.isPending ||
+                              row.buildType === 'railpack'
+                            }
+                            aria-label="Build path"
+                          />
+                          <Input
+                            className="w-24 shrink-0 font-mono"
+                            type="number"
+                            placeholder="3000"
+                            value={row.port}
+                            onChange={(e) => {
+                              updateServiceRow(index, { port: e.target.value })
+                            }}
+                            disabled={connectMutation.isPending}
+                            aria-label="Port"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={connectMutation.isPending}
+                            onClick={() => {
+                              removeServiceRow(index)
+                            }}
+                            aria-label="Remove service"
+                          >
+                            <TrashIcon />
+                          </Button>
+                        </div>
+                        {isDuplicate ? (
+                          <p
+                            id={rowErrorId}
+                            role="alert"
+                            className="text-xs text-destructive"
+                          >
+                            Another row already uses this service name.
+                          </p>
+                        ) : rowIssues.length > 0 ? (
+                          <ul
+                            id={rowErrorId}
+                            role="alert"
+                            className="space-y-0.5"
+                          >
+                            {rowIssues.map((issue, i) => (
+                              <li key={i} className="text-xs text-destructive">
+                                {issue.message}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </div>
+                    )
+                  })}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={connectMutation.isPending}
+                    onClick={addServiceRow}
+                  >
+                    <PlusIcon />
+                    Add service
+                  </Button>
+                  {specValidation.isFetching ? (
+                    <p
+                      className="text-xs text-muted-foreground"
+                      aria-live="polite"
+                    >
+                      Checking against the app spec schema...
+                    </p>
+                  ) : null}
+                  {unmatchedSpecIssues.length > 0 ? (
+                    <ul className="space-y-0.5" role="alert">
+                      {unmatchedSpecIssues.map((issue, i) => (
+                        <li key={i} className="text-xs text-destructive">
+                          {issue.path ? `${issue.path}: ` : ''}
+                          {issue.message}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+                <FieldError
+                  errors={
+                    additionalServicesError
+                      ? [{ message: additionalServicesError }]
+                      : undefined
+                  }
+                />
+              </Field>
+            )}
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                disabled={connectMutation.isPending}
+                onClick={submit}
+              >
+                {connectMutation.isPending ? (
+                  <SpinnerIcon className="size-4 animate-spin" />
+                ) : null}
+                {notConnected ? 'Connect' : 'Save'}
+              </Button>
+              {!notConnected ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={connectMutation.isPending}
+                  onClick={cancelEdit}
+                >
+                  Cancel
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        ) : query.data ? (
+          <div className="space-y-3">
+            <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-sm">
+              <dt className="text-muted-foreground">Repository</dt>
+              <dd className="min-w-0 truncate font-mono">
+                {query.data.repo_url}
+              </dd>
+              <dt className="text-muted-foreground">Branch</dt>
+              <dd className="font-mono">{query.data.branch}</dd>
+              <dt className="text-muted-foreground">Deploy trigger</dt>
+              <dd>
+                {TRIGGER_MODES.find((m) => m.value === query.data.trigger_mode)
+                  ?.label ?? query.data.trigger_mode}
+              </dd>
+              <dt className="text-muted-foreground">Deploy token</dt>
+              <dd>
+                {query.data.has_token ? 'Configured' : 'Not set (public repo)'}
+              </dd>
+              {Object.keys(query.data.additional_services ?? {}).length > 0 ? (
+                <>
+                  <dt className="text-muted-foreground">Also deploys</dt>
+                  <dd className="font-mono">
+                    {Object.keys(query.data.additional_services ?? {}).join(
+                      ', ',
+                    )}
+                  </dd>
+                </>
+              ) : null}
+              {Object.keys(query.data.services ?? {}).length > 0 ? (
+                <>
+                  <dt className="text-muted-foreground">Services fan-out</dt>
+                  <dd className="font-mono">
+                    {Object.keys(query.data.services ?? {}).join(', ')}
+                  </dd>
+                </>
+              ) : null}
+            </dl>
+
+            <GitBuildSettings appName={app.name} source={query.data} />
+
+            <Field>
+              <FieldLabel htmlFor="git-source-webhook-url-connected">
+                Webhook URL
+              </FieldLabel>
+              <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
+                <code
+                  id="git-source-webhook-url-connected"
+                  className="min-w-0 flex-1 overflow-x-auto text-xs break-all"
+                >
+                  {webhookFullURL(query.data.webhook_url)}
+                </code>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (query.data) {
+                      copyText(
+                        webhookFullURL(query.data.webhook_url),
+                        setUrlCopied,
+                      )
+                    }
+                  }}
+                >
+                  {urlCopied ? <CheckIcon /> : <CopyIcon />}
+                  {urlCopied ? 'Copied' : 'Copy'}
+                </Button>
+              </div>
+              <FieldDescription>
+                The webhook secret was only ever shown once, at connect time.
+                Rotate it below to mint a new one, or disconnect and reconnect
+                to also change the repository or branch.
+              </FieldDescription>
+            </Field>
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  startEdit(formFromResource(query.data))
+                }}
+              >
+                Edit
+              </Button>
+              <RotateWebhookSecretDialog appName={app.name} />
+              <Button
+                type="button"
+                size="sm"
+                variant="destructive"
+                disabled={deleteGitSource.isPending}
+                onClick={disconnect}
+              >
+                {deleteGitSource.isPending ? (
+                  <SpinnerIcon className="size-4 animate-spin" />
+                ) : null}
+                Disconnect
+              </Button>
+            </div>
+            <GitAccessValidate
+              path={`/api/v1/apps/${encodeURIComponent(app.name)}/git-source/validate`}
+            />
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  )
+}

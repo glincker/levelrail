@@ -1,0 +1,961 @@
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { zodResolver } from '@hookform/resolvers/zod'
+import {
+  Controller,
+  useForm,
+  type Control,
+  type FieldErrors,
+} from 'react-hook-form'
+import { z } from 'zod'
+import {
+  GaugeIcon,
+  PlusCircleIcon,
+  ArrowCounterClockwiseIcon,
+  ShieldWarningIcon,
+  ClockCountdownIcon,
+  WrenchIcon,
+  HardDriveIcon,
+  CpuIcon,
+  GlobeIcon,
+  ArchiveIcon,
+  RocketLaunchIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '@/components/ui/field'
+import { DurationInput } from '@/components/ui/duration-input'
+import { toast } from '@/components/ui/toast'
+import { useCreateAlertRule } from '../queries/alerts'
+import { useNotificationChannelsOptional } from '../queries/notificationChannels'
+import { useScheduledTasks } from '../queries/scheduledTasks'
+import { useDatabases } from '../queries/databases'
+import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
+import { METRIC_NAME_LABEL, METRIC_NAME_OPTIONS } from './metricName'
+import {
+  BackupMissingFields,
+  type BackupMissingFormShape,
+} from './BackupMissingFields'
+import type {
+  AlertRuleKind,
+  Comparator,
+  CreateAlertRuleRequest,
+} from '../types/alerts'
+import { isScheduledTaskKind } from '../types/alerts'
+import { SloRuleFields, type SloFormShape } from './SloRuleFields'
+import { sloConfigFromForm } from '../queries/sloPreview'
+import type { AppVolume } from '../types/appDetail'
+
+// Sanity-check regex for a Go `time.Duration` string ("2m", "30s",
+// "1h30m", "500ms"), not a real parser: `time.ParseDuration` only runs
+// server-side (internal/api/alerts.go's parseOptionalDuration), so this
+// is the same class of "catch the obviously wrong input before a round
+// trip" check the task asked for, not a guarantee the server will
+// accept it. The server's own error message is still surfaced on submit
+// failure below for whatever this regex lets through that the server
+// rejects anyway.
+const GO_DURATION_REGEX = /^-?(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/
+
+// DEFAULT_PATCH_STATUS_THRESHOLD mirrors
+// internal/alerting.DefaultPatchStatusThreshold: display-only copy for
+// the patch_status description below, since a patch_status rule has no
+// per-rule threshold field to show instead (the real, enforced value
+// lives engine-wide, set by APP_ALERT_PATCH_STATUS_THRESHOLD).
+const DEFAULT_PATCH_STATUS_THRESHOLD = 1
+
+// DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT mirrors
+// internal/alerting.DefaultNodeDiskSpaceThresholdPercent the same way,
+// for the node_disk_space description below (the real, enforced value
+// lives engine-wide, set by APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT).
+const DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT = 90
+
+// DEFAULT_NODE_CPU_THRESHOLD_PERCENT/DEFAULT_NODE_MEMORY_THRESHOLD_GIB
+// mirror internal/alerting.DefaultNodeCPUThresholdPercent/
+// DefaultNodeMemoryThresholdBytes for the node_resource_usage
+// description below (the real, enforced values live engine-wide, set by
+// APP_ALERT_NODE_CPU_THRESHOLD_PERCENT/
+// APP_ALERT_NODE_MEMORY_THRESHOLD_BYTES). Memory is shown in GiB, not
+// raw bytes, purely for readability here; the env var itself is bytes.
+const DEFAULT_NODE_CPU_THRESHOLD_PERCENT = 80
+const DEFAULT_NODE_MEMORY_THRESHOLD_GIB = 4
+
+const KIND_OPTIONS: {
+  value: AlertRuleKind
+  label: string
+  Icon: typeof GaugeIcon
+}[] = [
+  { value: 'threshold', label: 'Threshold', Icon: GaugeIcon },
+  { value: 'crashloop', label: 'Crashloop', Icon: ArrowCounterClockwiseIcon },
+  {
+    value: 'cert_expiry',
+    label: 'Certificate expiry',
+    Icon: ShieldWarningIcon,
+  },
+  { value: 'patch_status', label: 'Node patch status', Icon: WrenchIcon },
+  {
+    value: 'scheduled_task_failure',
+    label: 'Job failure',
+    Icon: ClockCountdownIcon,
+  },
+  {
+    value: 'scheduled_task_missed',
+    label: 'Job missed a run',
+    Icon: ClockCountdownIcon,
+  },
+  {
+    value: 'scheduled_task_running_long',
+    label: 'Job running too long',
+    Icon: ClockCountdownIcon,
+  },
+  { value: 'node_disk_space', label: 'Node disk space', Icon: HardDriveIcon },
+  {
+    value: 'node_resource_usage',
+    label: 'Node CPU/memory usage',
+    Icon: CpuIcon,
+  },
+  { value: 'domain_health', label: 'Domain health', Icon: GlobeIcon },
+  { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
+  { value: 'node_offline', label: 'Node offline', Icon: HardDriveIcon },
+  {
+    value: 'node_cert_expiring',
+    label: 'Node agent certificate expiring',
+    Icon: HardDriveIcon,
+  },
+  {
+    value: 'control_plane_backup_stale',
+    label: 'Control plane backup stale',
+    Icon: ArchiveIcon,
+  },
+  { value: 'log_archive_stale', label: 'Log archive stale', Icon: ArchiveIcon },
+  { value: 'slo_burn', label: 'SLO burn rate', Icon: GaugeIcon },
+  {
+    value: 'version_skew',
+    label: 'Version update available',
+    Icon: RocketLaunchIcon,
+  },
+  { value: 'budget_threshold', label: 'Budget threshold', Icon: GaugeIcon },
+]
+
+const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
+  { value: '>', label: '> (greater than)' },
+  { value: '<', label: '< (less than)' },
+  { value: '>=', label: '>= (greater or equal)' },
+  { value: '<=', label: '<= (less or equal)' },
+]
+
+// One flat form model covering both rule kinds rather than a
+// zod.discriminatedUnion, so every field stays registered regardless of
+// the selected kind (matching EnvEditor's plain-object-plus-superRefine
+// shape): the kind-specific fields simply aren't rendered or validated
+// when the other kind is selected, and onSubmit below picks which of
+// them actually go into the request body.
+const createAlertRuleSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Name is required'),
+    kind: z.enum([
+      'threshold',
+      'crashloop',
+      'cert_expiry',
+      'patch_status',
+      'scheduled_task_failure',
+      'scheduled_task_missed',
+      'scheduled_task_running_long',
+      'node_disk_space',
+      'node_resource_usage',
+      'domain_health',
+      'backup_missing',
+      'node_offline',
+      'node_cert_expiring',
+      'control_plane_backup_stale',
+      'log_archive_stale',
+      'slo_burn',
+      'version_skew',
+      'budget_threshold',
+    ]),
+    metric: z.string().trim(),
+    comparator: z.enum(['>', '<', '>=', '<=']),
+    threshold: z.coerce.number({ error: 'Must be a number' }),
+    forDuration: z.string().trim(),
+    restartCountThreshold: z.coerce.number({ error: 'Must be a number' }),
+    restartWindow: z.string().trim(),
+    scheduledTaskId: z.string(),
+    backupResourceKind: z.enum(['database', 'volume', '']),
+    backupDatabaseName: z.string(),
+    backupVolumeName: z.string(),
+    sloObjective: z.enum(['availability', 'latency']),
+    sloTarget: z.coerce.number({ error: 'Must be a number' }),
+    sloLatencyMs: z.coerce.number({ error: 'Must be a number' }),
+    channelId: z.string(),
+    enabled: z.boolean(),
+  })
+  .superRefine((data, ctx) => {
+    // cert_expiry, patch_status, node_disk_space, and node_resource_usage
+    // need none of the threshold/crashloop fields: they watch every
+    // certificate, every node's patch status, every node's disk usage, or
+    // every node's CPU/memory usage, on the control plane platform-wide,
+    // not a metric or a restart count.
+    if (
+      data.kind === 'cert_expiry' ||
+      data.kind === 'patch_status' ||
+      data.kind === 'node_disk_space' ||
+      data.kind === 'node_resource_usage' ||
+      data.kind === 'node_offline' ||
+      data.kind === 'node_cert_expiring' ||
+      data.kind === 'control_plane_backup_stale' ||
+      data.kind === 'log_archive_stale' ||
+      data.kind === 'version_skew' ||
+      data.kind === 'budget_threshold'
+    ) {
+      return
+    }
+
+    if (data.kind === 'threshold') {
+      if (!data.metric) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Metric is required',
+          path: ['metric'],
+        })
+      }
+      if (data.forDuration && !GO_DURATION_REGEX.test(data.forDuration)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must look like a duration, e.g. "2m" or "30s"',
+          path: ['forDuration'],
+        })
+      }
+      return
+    }
+
+    // domain_health needs no required fields either: it watches every
+    // domain already configured on this app. for_duration is still
+    // optional here, the same debounce threshold's own uses.
+    if (data.kind === 'domain_health') {
+      if (data.forDuration && !GO_DURATION_REGEX.test(data.forDuration)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must look like a duration, e.g. "2m" or "30s"',
+          path: ['forDuration'],
+        })
+      }
+      return
+    }
+
+    if (data.kind === 'slo_burn') {
+      if (!(data.sloTarget >= 50 && data.sloTarget < 100)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be at least 50 and below 100, e.g. 99.9',
+          path: ['sloTarget'],
+        })
+      }
+      if (data.sloObjective === 'latency' && !(data.sloLatencyMs >= 5)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be at least 5 ms',
+          path: ['sloLatencyMs'],
+        })
+      }
+      return
+    }
+
+    if (isScheduledTaskKind(data.kind)) {
+      if (!data.scheduledTaskId) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose which scheduled task to watch',
+          path: ['scheduledTaskId'],
+        })
+      }
+      if (
+        !Number.isInteger(data.restartCountThreshold) ||
+        data.restartCountThreshold <= 0
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be a positive whole number',
+          path: ['restartCountThreshold'],
+        })
+      }
+      return
+    }
+
+    if (data.kind === 'backup_missing') {
+      if (!data.backupResourceKind) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose what this rule watches',
+          path: ['backupResourceKind'],
+        })
+      } else if (
+        data.backupResourceKind === 'database' &&
+        !data.backupDatabaseName
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose which database to watch',
+          path: ['backupDatabaseName'],
+        })
+      } else if (
+        data.backupResourceKind === 'volume' &&
+        !data.backupVolumeName
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose which volume to watch',
+          path: ['backupVolumeName'],
+        })
+      }
+      if (data.forDuration && !GO_DURATION_REGEX.test(data.forDuration)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must look like a duration, e.g. "6h"',
+          path: ['forDuration'],
+        })
+      }
+      return
+    }
+
+    if (
+      !Number.isInteger(data.restartCountThreshold) ||
+      data.restartCountThreshold <= 0
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Must be a positive whole number',
+        path: ['restartCountThreshold'],
+      })
+    }
+    if (!data.restartWindow) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Restart window is required',
+        path: ['restartWindow'],
+      })
+    } else if (!GO_DURATION_REGEX.test(data.restartWindow)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Must look like a duration, e.g. "5m"',
+        path: ['restartWindow'],
+      })
+    }
+  })
+
+// z.coerce.number() has a wider input type (unknown, since it accepts
+// whatever a raw <input type="number"> gives it) than output type
+// (number), so the form's field-value type (what register/defaultValues
+// bind to) and its post-validation submit type have to be declared
+// separately: z.input for the former, z.output for the latter. Passing
+// only z.infer (the output type) to useForm's generic, which is what
+// every other form in this codebase does, does not typecheck here
+// because none of those other forms coerce a string input to a number.
+type CreateAlertRuleFormInput = z.input<typeof createAlertRuleSchema>
+type CreateAlertRuleFormOutput = z.output<typeof createAlertRuleSchema>
+
+const DEFAULT_VALUES: CreateAlertRuleFormInput = {
+  name: '',
+  kind: 'threshold',
+  metric: '',
+  comparator: '>',
+  threshold: 80,
+  forDuration: '2m',
+  restartCountThreshold: 5,
+  restartWindow: '5m',
+  scheduledTaskId: '',
+  backupResourceKind: '',
+  backupDatabaseName: '',
+  backupVolumeName: '',
+  sloObjective: 'availability',
+  sloTarget: 99.9,
+  sloLatencyMs: 300,
+  channelId: '',
+  enabled: true,
+}
+
+// Create-via-dialog flow for a new alert rule, following
+// CreateTokenDialog's shape: a trigger button, a form inside
+// DialogContent, mutate on submit, close on success. Unlike
+// CreateTokenDialog there is no one-time-secret reveal step here, POST
+// /api/v1/apps/{name}/alerts's response has nothing sensitive in it, so
+// the dialog just closes on success rather than swapping to a second
+// view.
+export function CreateAlertRuleDialog({
+  appName,
+  volumes,
+}: {
+  appName: string
+  volumes?: AppVolume[]
+}) {
+  const [open, setOpen] = useState(false)
+  const createRule = useCreateAlertRule(appName)
+  const channelsQuery = useNotificationChannelsOptional()
+  const channels = channelsQuery.data ?? []
+  const { t } = useTranslation('observability')
+  const scheduledTasksQuery = useScheduledTasks(appName)
+  const scheduledTasks = scheduledTasksQuery.data ?? []
+  const databasesQuery = useDatabases()
+  const databases = databasesQuery.data ?? []
+  const { control, register, handleSubmit, formState, reset, watch, setValue } =
+    useForm<CreateAlertRuleFormInput, unknown, CreateAlertRuleFormOutput>({
+      resolver: zodResolver(createAlertRuleSchema),
+      defaultValues: DEFAULT_VALUES,
+    })
+  const kind = watch('kind')
+  const selectedChannelId = watch('channelId')
+  const backupResourceKind = watch('backupResourceKind')
+  const sloObjective = watch('sloObjective')
+  const sloTarget = watch('sloTarget')
+  const sloLatencyMs = watch('sloLatencyMs')
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    if (!next) {
+      reset(DEFAULT_VALUES)
+      createRule.reset()
+    }
+  }
+
+  const onSubmit = handleSubmit((values) => {
+    const req: CreateAlertRuleRequest = {
+      name: values.name.trim(),
+      kind: values.kind,
+      channel_id: values.channelId || undefined,
+      enabled: values.enabled,
+    }
+    if (values.kind === 'threshold') {
+      req.metric = values.metric.trim()
+      req.comparator = values.comparator
+      req.threshold = values.threshold
+      req.for_duration = values.forDuration.trim() || undefined
+    } else if (values.kind === 'crashloop') {
+      req.restart_count_threshold = values.restartCountThreshold
+      req.restart_window = values.restartWindow.trim()
+    } else if (isScheduledTaskKind(values.kind)) {
+      req.scheduled_task_id = values.scheduledTaskId
+      req.restart_count_threshold = values.restartCountThreshold
+    } else if (
+      values.kind === 'domain_health' ||
+      values.kind === 'control_plane_backup_stale' ||
+      values.kind === 'log_archive_stale'
+    ) {
+      req.for_duration = values.forDuration.trim() || undefined
+    } else if (values.kind === 'slo_burn') {
+      req.slo = sloConfigFromForm(
+        values.sloObjective,
+        values.sloTarget,
+        values.sloLatencyMs,
+      )
+    } else if (values.kind === 'backup_missing') {
+      req.backup_resource_kind = values.backupResourceKind || undefined
+      req.for_duration = values.forDuration.trim() || undefined
+      if (values.backupResourceKind === 'database') {
+        req.backup_database_name = values.backupDatabaseName
+      } else if (values.backupResourceKind === 'volume') {
+        // A volume's owning service is always this same app in this
+        // codebase's single-service-per-app model, so backup_service_name
+        // is set here rather than exposed as its own form field.
+        req.backup_service_name = appName
+        req.backup_volume_name = values.backupVolumeName
+      }
+    }
+    // cert_expiry, patch_status, node_disk_space, and node_resource_usage
+    // send no kind-specific fields at all.
+    createRule.mutate(req, {
+      onSuccess: () => {
+        handleOpenChange(false)
+        toast.add({
+          title: `Alert rule "${req.name}" created.`,
+          type: 'success',
+        })
+      },
+    })
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger render={<Button size="sm" />}>Create rule</DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-1.5">
+            <PlusCircleIcon
+              className="size-4 text-muted-foreground"
+              aria-hidden="true"
+            />
+            Create alert rule
+          </DialogTitle>
+          <DialogDescription>
+            A threshold rule watches a metric; a crashloop rule watches
+            container restarts; a certificate expiry rule watches every
+            certificate on the control plane; a node patch status rule watches
+            every node&apos;s pending OS security patches; a node disk space
+            rule watches every node&apos;s disk usage percentage; a node
+            CPU/memory usage rule watches every node&apos;s summed CPU and
+            memory usage; a scheduled task failure rule watches one of this
+            app&apos;s scheduled tasks; a domain health rule watches every
+            domain configured on this app; a backup missing rule watches a
+            database or one of this app&apos;s volumes for a scheduled backup
+            that stopped running. All nine notify the same way once they fire.
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          onSubmit={(e) => {
+            void onSubmit(e)
+          }}
+          className="space-y-4"
+        >
+          <Field>
+            <FieldLabel htmlFor="rule-name">Name</FieldLabel>
+            <Input
+              id="rule-name"
+              placeholder="e.g. high-cpu"
+              {...register('name')}
+            />
+            <FieldError errors={[formState.errors.name]} />
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="rule-kind">Kind</FieldLabel>
+            <Controller
+              control={control}
+              name="kind"
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(next) => {
+                    field.onChange(next)
+                    if (next === 'control_plane_backup_stale') {
+                      setValue('forDuration', '72h')
+                    }
+                  }}
+                >
+                  <SelectTrigger id="rule-kind" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {KIND_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <option.Icon
+                          className="size-3.5 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </Field>
+
+          {kind === 'cert_expiry' ? (
+            <p className="text-sm text-muted-foreground">
+              Watches every certificate on the whole control plane, not just
+              this app&apos;s own domains, and fires as soon as any of them is
+              expiring soon or already expired.
+            </p>
+          ) : kind === 'patch_status' ? (
+            <p className="text-sm text-muted-foreground">
+              Watches every node on the whole control plane, not just the ones
+              this app happens to run on, and fires as soon as any node has at
+              least {DEFAULT_PATCH_STATUS_THRESHOLD} pending OS security patch
+              (the control plane&apos;s configured threshold, overridable via
+              APP_ALERT_PATCH_STATUS_THRESHOLD).
+            </p>
+          ) : kind === 'node_disk_space' ? (
+            <p className="text-sm text-muted-foreground">
+              Watches every node&apos;s disk usage on the whole control plane,
+              not just the ones this app happens to run on, and fires as soon as
+              any node&apos;s disk is at least{' '}
+              {DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT}% used (the control
+              plane&apos;s configured threshold, overridable via
+              APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT).
+            </p>
+          ) : kind === 'node_cert_expiring' ? (
+            <p className="text-sm text-muted-foreground">
+              Watches every node&apos;s agent certificate and fires when one is
+              inside the control plane&apos;s warning window
+              (APP_NODE_CERT_EXPIRY_WARNING, 21 days by default) or already
+              expired. Healthy agents renew well before that, so this means
+              renewal is failing or the node needs re-enrolling.
+            </p>
+          ) : kind === 'node_offline' ? (
+            <p className="text-sm text-muted-foreground">
+              Watches every node on the whole control plane and fires as soon as
+              any node is marked offline (its agent stopped heartbeating). It
+              resolves when every node is back online.
+            </p>
+          ) : kind === 'node_resource_usage' ? (
+            <p className="text-sm text-muted-foreground">
+              Watches every node&apos;s summed CPU and memory usage across its
+              placed containers, on the whole control plane, and fires as soon
+              as either crosses its threshold: CPU at{' '}
+              {DEFAULT_NODE_CPU_THRESHOLD_PERCENT}% (overridable via
+              APP_ALERT_NODE_CPU_THRESHOLD_PERCENT), memory at{' '}
+              {DEFAULT_NODE_MEMORY_THRESHOLD_GIB} GiB (overridable via
+              APP_ALERT_NODE_MEMORY_THRESHOLD_BYTES). Memory has no honest
+              node-capacity percentage to compare against today, so unlike CPU
+              it&apos;s an absolute floor, not a proportion.
+            </p>
+          ) : kind === 'control_plane_backup_stale' ||
+            kind === 'log_archive_stale' ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                {kind === 'log_archive_stale'
+                  ? 'Watches every log archive policy and fires when one fails or has not shipped logs successfully within its age limit.'
+                  : 'Watches the newest control plane self-backup snapshot and fires when it gets too old. Stays quiet when scheduled control plane backups are disabled (APP_CONTROL_PLANE_BACKUP_INTERVAL=0).'}
+              </p>
+              <Field>
+                <FieldLabel htmlFor="rule-cp-backup-max-age">
+                  Maximum age (optional)
+                </FieldLabel>
+                <Controller
+                  control={control}
+                  name="forDuration"
+                  render={({ field }) => (
+                    <DurationInput
+                      id="rule-cp-backup-max-age"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+                <FieldDescription>
+                  {kind === 'log_archive_stale'
+                    ? 'Fire once a policy has gone this long without a successful archive. Leave blank for three intervals (at least 2 hours).'
+                    : 'Fire once the newest snapshot is older than this. Leave blank for 3 days.'}
+                </FieldDescription>
+                <FieldError errors={[formState.errors.forDuration]} />
+              </Field>
+            </>
+          ) : kind === 'domain_health' ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Watches every domain currently configured on this app (unlike
+                cert_expiry above, scoped to this app&apos;s own domains, not
+                the whole control plane) and fires if any of them stops
+                resolving to this control plane or starts pointing elsewhere,
+                e.g. a CNAME silently repointed away.
+              </p>
+              <Field>
+                <FieldLabel htmlFor="rule-domain-health-for-duration">
+                  For duration (optional)
+                </FieldLabel>
+                <Controller
+                  control={control}
+                  name="forDuration"
+                  render={({ field }) => (
+                    <DurationInput
+                      id="rule-domain-health-for-duration"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+                <FieldDescription>
+                  Require a bad DNS check to persist this long before firing, so
+                  one transient lookup blip doesn&apos;t page anyone. Leave
+                  blank to fire on the first bad check.
+                </FieldDescription>
+                <FieldError errors={[formState.errors.forDuration]} />
+              </Field>
+            </>
+          ) : kind === 'slo_burn' ? (
+            <SloRuleFields
+              idPrefix="rule"
+              app={appName}
+              control={control as unknown as Control<SloFormShape>}
+              errors={formState.errors as FieldErrors<SloFormShape>}
+              objective={sloObjective}
+              target={sloTarget as string | number}
+              latencyMs={sloLatencyMs as string | number}
+            />
+          ) : kind === 'threshold' ? (
+            <>
+              <Field>
+                <FieldLabel htmlFor="rule-metric">Metric</FieldLabel>
+                <Controller
+                  control={control}
+                  name="metric"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="rule-metric" className="w-full">
+                        <SelectValue placeholder="Choose a metric" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {METRIC_NAME_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {METRIC_NAME_LABEL[option]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <FieldError errors={[formState.errors.metric]} />
+              </Field>
+
+              <div className="flex gap-2">
+                <Field className="w-40 shrink-0">
+                  <FieldLabel htmlFor="rule-comparator">Comparator</FieldLabel>
+                  <Controller
+                    control={control}
+                    name="comparator"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger id="rule-comparator" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COMPARATOR_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="rule-threshold">Threshold</FieldLabel>
+                  <Input
+                    id="rule-threshold"
+                    type="number"
+                    step="any"
+                    {...register('threshold')}
+                  />
+                  <FieldError errors={[formState.errors.threshold]} />
+                </Field>
+              </div>
+
+              <Field>
+                <FieldLabel htmlFor="rule-for-duration">
+                  For duration (optional)
+                </FieldLabel>
+                <Controller
+                  control={control}
+                  name="forDuration"
+                  render={({ field }) => (
+                    <DurationInput
+                      id="rule-for-duration"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+                <FieldError errors={[formState.errors.forDuration]} />
+              </Field>
+            </>
+          ) : isScheduledTaskKind(kind) ? (
+            <>
+              <Field>
+                <FieldLabel htmlFor="rule-scheduled-task">
+                  Scheduled task
+                </FieldLabel>
+                {scheduledTasks.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    This app has no scheduled tasks yet. Create one from the
+                    Jobs section first.
+                  </p>
+                ) : (
+                  <Controller
+                    control={control}
+                    name="scheduledTaskId"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger
+                          id="rule-scheduled-task"
+                          className="w-full"
+                        >
+                          <SelectValue placeholder="Choose a scheduled task" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {scheduledTasks.map((task) => (
+                            <SelectItem key={task.id} value={task.id}>
+                              {task.name || task.command.join(' ')}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                )}
+                <FieldError errors={[formState.errors.scheduledTaskId]} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="rule-scheduled-task-failures">
+                  Consecutive failures threshold
+                </FieldLabel>
+                <Input
+                  id="rule-scheduled-task-failures"
+                  type="number"
+                  step="1"
+                  min="1"
+                  {...register('restartCountThreshold')}
+                />
+                <FieldError errors={[formState.errors.restartCountThreshold]} />
+              </Field>
+            </>
+          ) : kind === 'backup_missing' ? (
+            <BackupMissingFields
+              idPrefix="rule"
+              control={control as unknown as Control<BackupMissingFormShape>}
+              errors={formState.errors}
+              backupResourceKind={backupResourceKind}
+              databases={databases}
+              volumes={volumes}
+            />
+          ) : kind === 'budget_threshold' ? (
+            <p className="text-sm text-muted-foreground">
+              {t('budgetThreshold.hint')}
+            </p>
+          ) : kind === 'version_skew' ? (
+            <p className="text-sm text-muted-foreground">
+              Fires while the running control plane is behind the latest release
+              on its configured update channel (Settings &gt; Updates). Resolves
+              once you upgrade.
+            </p>
+          ) : (
+            <>
+              <Field>
+                <FieldLabel htmlFor="rule-restart-count">
+                  Restart count threshold
+                </FieldLabel>
+                <Input
+                  id="rule-restart-count"
+                  type="number"
+                  step="1"
+                  min="1"
+                  {...register('restartCountThreshold')}
+                />
+                <FieldError errors={[formState.errors.restartCountThreshold]} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="rule-restart-window">
+                  Restart window
+                </FieldLabel>
+                <Controller
+                  control={control}
+                  name="restartWindow"
+                  render={({ field }) => (
+                    <DurationInput
+                      id="rule-restart-window"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+                <FieldError errors={[formState.errors.restartWindow]} />
+              </Field>
+            </>
+          )}
+
+          <Field>
+            <FieldLabel htmlFor="rule-channel">
+              Notify channel (optional)
+            </FieldLabel>
+            {channels.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No channels connected yet. Connect one from Settings &rarr;
+                Notification channels first.
+              </p>
+            ) : (
+              <>
+                <Controller
+                  control={control}
+                  name="channelId"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="rule-channel" className="w-full">
+                        <SelectValue placeholder="Choose a connected channel" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {channels.map((channel) => (
+                          <SelectItem key={channel.id} value={channel.id}>
+                            {channel.name} ({CHANNEL_KIND_LABEL[channel.kind]})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <FieldDescription>
+                  Reuses a channel connection from Settings &rarr; Notification
+                  channels; leave unset to create the rule without a notify
+                  destination.
+                </FieldDescription>
+              </>
+            )}
+            {!selectedChannelId ? (
+              <p
+                role="status"
+                className="text-sm text-amber-700 dark:text-amber-400"
+              >
+                {t('alerts.noChannelWarning')}
+              </p>
+            ) : null}
+          </Field>
+
+          <Field orientation="horizontal">
+            <Controller
+              control={control}
+              name="enabled"
+              render={({ field }) => (
+                <Switch
+                  id="rule-enabled"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
+            />
+            <FieldLabel htmlFor="rule-enabled">Enabled</FieldLabel>
+          </Field>
+
+          {createRule.isError ? (
+            <p className="text-sm text-destructive">
+              {createRule.error.message}
+            </p>
+          ) : null}
+
+          <DialogFooter>
+            <Button type="submit" disabled={createRule.isPending}>
+              {createRule.isPending ? 'Creating...' : 'Create rule'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}

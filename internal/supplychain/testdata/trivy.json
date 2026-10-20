@@ -1,0 +1,18 @@
+{
+  "SchemaVersion": 2,
+  "Results": [
+    {
+      "Target": "sbom",
+      "Vulnerabilities": [
+        {"VulnerabilityID": "CVE-2024-0001", "PkgName": "openssl", "InstalledVersion": "3.1.4", "FixedVersion": "3.1.5", "Severity": "CRITICAL", "Title": "openssl: remote code execution"},
+        {"VulnerabilityID": "CVE-2024-0002", "PkgName": "busybox", "InstalledVersion": "1.36.1", "FixedVersion": "", "Severity": "CRITICAL", "Title": "busybox: no fix yet"},
+        {"VulnerabilityID": "CVE-2024-0003", "PkgName": "express", "InstalledVersion": "4.19.2", "FixedVersion": "4.19.3", "Severity": "HIGH", "Title": "express: open redirect"},
+        {"VulnerabilityID": "CVE-2024-0004", "PkgName": "musl", "InstalledVersion": "1.2.4", "FixedVersion": "1.2.5", "Severity": "MEDIUM", "Title": "musl: overflow"},
+        {"VulnerabilityID": "CVE-2024-0004", "PkgName": "musl", "InstalledVersion": "1.2.4", "FixedVersion": "1.2.5", "Severity": "MEDIUM", "Title": "duplicate row"},
+        {"VulnerabilityID": "CVE-2024-0005", "PkgName": "zlib", "InstalledVersion": "1.3", "Severity": "LOW"},
+        {"VulnerabilityID": "CVE-2024-0006", "PkgName": "tzdata", "InstalledVersion": "2024a", "Severity": "SOMETHING"}
+      ]
+    },
+    {"Target": "empty"}
+  ]
+}

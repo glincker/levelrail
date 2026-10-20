@@ -1,0 +1,11 @@
+{
+  "Status": "failed",
+  "FailingStep": "building",
+  "Error": "deploy: service \"web\": build: process \"/bin/sh -c go build -o /app/server ./cmd/server\" did not complete successfully: exit code: 1",
+  "LogLines": [
+    "#12 [build 5/5] RUN go build -o /app/server ./cmd/server",
+    "#12 8.214 # example.com/web/cmd/server",
+    "#12 8.214 cmd/server/main.go:21:12: undefined: newRouter",
+    "#12 ERROR: process \"/bin/sh -c go build -o /app/server ./cmd/server\" did not complete successfully: exit code: 1"
+  ]
+}

@@ -1,0 +1,141 @@
+import { useState } from 'react'
+import { createFileRoute } from '@tanstack/react-router'
+import { CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { deployAttemptsQueryOptions } from '../../../../queries/deployAttempts'
+import { autoRollbackQueryOptions } from '../../../../queries/autoRollback'
+import { autoRollbackSLOBurnQueryOptions } from '../../../../queries/autoRollbackSLOBurn'
+import { imageAutoUpdateQueryOptions } from '../../../../queries/imageAutoUpdate'
+import { appSleepQueryOptions } from '../../../../queries/appSleep'
+import { canaryQueryOptions } from '../../../../queries/canary'
+import { badgeQueryOptions } from '../../../../queries/badge'
+import { useDeployProgress } from '../../../../hooks/useDeployProgress'
+import { DeployAttemptsList } from '../../../../components/DeployAttemptsList'
+import { AutoRollbackCard } from '../../../../components/AutoRollbackCard'
+import { AutoRollbackSLOBurnCard } from '../../../../components/AutoRollbackSLOBurnCard'
+import { ImageAutoUpdateCard } from '../../../../components/ImageAutoUpdateCard'
+import { AppSleepCard } from '../../../../components/AppSleepCard'
+import { AppAutoscaleCard } from '../../../../components/AppAutoscaleCard'
+import { AppBudgetCard } from '../../../../components/AppBudgetCard'
+import { SleepHistoryCard } from '../../../../components/SleepHistoryCard'
+import { CanaryCard } from '../../../../components/CanaryCard'
+import { BadgeSettingsCard } from '../../../../components/BadgeSettingsCard'
+import { GitHubActionsCard } from '../../../../components/GitHubActionsCard'
+import { CIDeployCard } from '../../../../components/CIDeployCard'
+import { BuildTrendCard } from '../../../../components/BuildTrendCard'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
+  DeploySheet,
+  type DeployTab,
+} from '../../../../components/overview/DeploySheet'
+
+// A 9th app-scoped section, matching the 8 existing ones' "own loader,
+// own deep-linkable route" shape (see routes/apps/$name.tsx's own doc
+// comment): deploy history is a first-class, non-trivial concern (real
+// row-per-attempt history, a log viewer per attempt, a rollback action),
+// not something to squeeze onto Overview alongside the current-status
+// ConditionsPanel it already renders. AppScopedSidebar.tsx links here.
+//
+// $name/deploys/$deployId/logs.tsx already exists one directory deeper
+// as a real nested route; this index route is this task's own fix for
+// that route's own doc comment ("There is no in-app link to this route
+// yet: the backend has no deploy-history/attempt-listing endpoint to
+// source a deployId from"): this page is exactly that source.
+export const Route = createFileRoute('/apps/$name/deploys/')({
+  loader: async ({ context: { queryClient }, params: { name } }) => {
+    await Promise.all([
+      queryClient.ensureQueryData(deployAttemptsQueryOptions(name)),
+      queryClient.ensureQueryData(autoRollbackQueryOptions(name)),
+      queryClient.ensureQueryData(autoRollbackSLOBurnQueryOptions(name)),
+      queryClient.ensureQueryData(imageAutoUpdateQueryOptions(name)),
+      queryClient.ensureQueryData(appSleepQueryOptions(name)),
+      queryClient.ensureQueryData(canaryQueryOptions(name)),
+      queryClient.ensureQueryData(badgeQueryOptions(name)),
+    ])
+  },
+  component: DeploysSection,
+  pendingComponent: DeploysSectionPending,
+})
+
+function DeploysSection() {
+  const { name } = Route.useParams()
+  const { attempts, conditions } = useDeployProgress(name)
+  const [tab, setTab] = useState<DeployTab | null>(null)
+
+  return (
+    <div className="space-y-6">
+      <DeployAttemptsList
+        appName={name}
+        attempts={attempts}
+        conditions={conditions}
+        onDeploy={() => {
+          setTab('existing-image')
+        }}
+      />
+      <BuildTrendCard appName={name} />
+      <AppSleepCard appName={name} />
+      <SleepHistoryCard appName={name} hideWhenOff />
+      <AppAutoscaleCard appName={name} />
+      <AppBudgetCard appName={name} />
+      <Collapsible>
+        <CollapsibleTrigger className="group/deploy-settings flex items-center gap-2 text-sm font-medium text-foreground">
+          <CaretRightIcon
+            aria-hidden="true"
+            className="size-4 transition-transform group-data-panel-open/deploy-settings:rotate-90 motion-reduce:transition-none"
+          />
+          Deploy settings
+          <span className="text-xs font-normal text-muted-foreground">
+            Rollback, canary, auto update, badge
+          </span>
+        </CollapsibleTrigger>
+        <CollapsiblePanel>
+          <div className="space-y-4 pt-4">
+            <AutoRollbackCard appName={name} />
+            <AutoRollbackSLOBurnCard appName={name} />
+            <CanaryCard appName={name} />
+            <ImageAutoUpdateCard appName={name} />
+            <BadgeSettingsCard appName={name} />
+            <GitHubActionsCard appName={name} />
+            <CIDeployCard appName={name} />
+          </div>
+        </CollapsiblePanel>
+      </Collapsible>
+      <DeploySheet
+        appName={name}
+        tab={tab}
+        onClose={() => {
+          setTab(null)
+        }}
+      />
+    </div>
+  )
+}
+
+// Route-level fallback for the loader's pending phase, matching
+// DeployAttemptsList's own Card chrome so the skeleton doesn't jump when
+// real rows swap in.
+function DeploysSectionPending() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Deploy history</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4" aria-hidden="true">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="flex items-start gap-3">
+            <Skeleton className="mt-0.5 h-5 w-20 shrink-0 rounded-full" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-3 w-1/3" />
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}

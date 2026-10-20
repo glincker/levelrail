@@ -1,0 +1,321 @@
+package api
+
+import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+type matrixRoute struct {
+	method  string
+	pattern string
+}
+
+func (m matrixRoute) key() string { return m.method + " " + m.pattern }
+
+var (
+	matrixRouteRe = regexp.MustCompile(`mux\.HandleFunc\("([A-Z]+) ([^"]+)"`)
+	matrixParamRe = regexp.MustCompile(`\{[^}]+\}`)
+)
+
+// libraryOnlyRoutes are registered only when the library engine serves their
+// area, so the default-mode probes skip them. TestAuthzMatrix_LibraryOnlyRoutesAreProtected
+// checks the same guarantees in library mode.
+var libraryOnlyRoutes = map[string]string{
+	"PATCH /api/v1/auth/passkeys/{id}": "passkey rename, added by the library MFA area (authlib_mfa_passkeys.go)",
+}
+
+// publicRoutes are the only routes allowed to answer an anonymous caller
+// with something other than 401. Adding a route here needs a reason a
+// reviewer can challenge.
+var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credentials
+	"GET /healthz":                                   "liveness probe for systemd and load balancers",
+	"GET /readyz":                                    "readiness probe, no data beyond ready/not ready",
+	"GET /api/v1/brand":                              "login screen needs branding before a session exists",
+	"GET /api/v1/instance":                           "CLI verifies which server it reached before sending a token; id and HMAC fingerprint only, rate limited",
+	"GET /api/v1/demo":                               "demo banner, boolean only on a real instance",
+	"POST /api/v1/demo/session":                      "demo sign-in, only registered when the instance runs in demo mode",
+	"POST /api/v1/demo/cta":                          "demo click beacon, only registered in demo mode, enum only",
+	"GET /api/v1/dev-mode":                           "login screen banner, boolean only",
+	"GET /api/v1/gate/check":                         "ingress forward auth, 404 without the per-process gate secret",
+	"GET /gate/login":                                "app sign-in handoff, mints a token only for a signed-in dashboard session",
+	"POST /api/v1/auth/login":                        "credential exchange, rate limited",
+	"POST /api/v1/auth/register":                     "first-run setup, refuses once an admin exists",
+	"GET /api/v1/auth/setup-status":                  "tells the SPA whether to show first-run setup",
+	"POST /api/v1/auth/2fa/verify":                   "step two of login, gated by an MFA pending token and rate limit",
+	"POST /api/v1/auth/passkey-login/begin":          "passkey sign-in ceremony start, rate limited, same shape as /auth/login",
+	"POST /api/v1/auth/passkey-login/finish":         "passkey sign-in ceremony finish, authenticated by the signed WebAuthn assertion",
+	"POST /api/v1/invites/accept":                    "authenticated by the single-use invite token in the body",
+	"POST /api/v1/team-invites/accept":               "authenticated by the single-use team invite token in the body, rate limited",
+	"GET /api/v1/auth/login-options":                 "login screen asks whether codes are offered at all, nothing per account",
+	"POST /api/v1/auth/login-code/request":           "always the same generic answer and timing, rate limited per IP, account and globally",
+	"POST /api/v1/auth/login-code/redeem":            "authenticated by the browser binding cookie plus the code, attempt capped and rate limited",
+	"POST /api/v1/auth/login-approval/poll":          "authenticated by the browser binding cookie of a paused password login",
+	"POST /api/v1/auth/sign-in-alert/disown":         "authenticated by the signed single-use link from the owner's new-sign-in email, rate limited per IP",
+	"POST /api/v1/auth/device/start":                 "CLI device login start, rate limited",
+	"POST /api/v1/auth/device/token":                 "CLI device login poll, authenticated by the device code",
+	"POST /api/v1/mobile/pair":                       "phone pairing, authenticated by the one-time pairing code, rate limited per IP and code",
+	"GET /api/v1/auth/oauth/providers":               "login screen lists enabled providers",
+	"GET /api/v1/auth/saml/providers":                "login screen lists enabled SAML connections, id and name only",
+	"GET /api/v1/auth/saml/{id}/metadata":            "SP metadata the IdP administrator imports, public certificate only",
+	"GET /api/v1/auth/saml/{id}/login":               "SAML sign-in redirect, rate limited per IP",
+	"POST /api/v1/auth/saml/{id}/acs":                "SAML assertion consumer, authenticated by the signed assertion plus the browser-bound request",
+	"GET /api/v1/auth/oauth/{provider}/start":        "OAuth sign-in redirect",
+	"GET /api/v1/auth/oauth/{provider}/callback":     "OAuth sign-in callback, authenticated by state and code",
+	"POST /api/v1/auth/forgot-password":              "always generic response, rate limited",
+	"POST /api/v1/auth/reset-password":               "authenticated by the single-use reset token",
+	"POST /api/v1/auth/session-links/consume":        "authenticated by the single-use session-link token in the body, rate limited",
+	"GET /api/v1/auth/session-links/{token}/consume": "retired form, always answers 405",
+	"GET /.well-known/jwks.json":                     "pipeline OIDC verification key set, meant to be fetched by AWS/GCP/Vault with no session; answers 404 rather than 401 when OIDC is unconfigured (router.go's oidcJWKS is nil), which leaks nothing either",
+	"POST /api/v1/webhooks/github/{name}":            "authenticated by the HMAC signature of the app's webhook secret",
+	"POST /api/v1/hooks/pipeline/{id}/{token}":       "authenticated by the per-pipeline secret URL token (sha256 compared in constant time, uniform 404 on any mismatch), optionally plus a body HMAC, rate limited",
+	"POST /api/v1/ci/oidc-exchange":                  "authenticated by a CI provider OIDC identity token (signature, issuer, audience and expiry verified) that must match a per-app trust, rate limited",
+	"POST /api/v1/hooks/image-update/{name}/{token}": "authenticated by the per-app secret token in the path (hash compared in constant time); any mismatch answers a uniform 404",
+	"POST /api/v1/otlp/v1/traces":                    "OTLP exporters send a per-app ingest key as a bearer token; a missing or wrong key answers 401",
+	"POST /api/v1/sentry/api/{project}/envelope/":    "Sentry SDKs send the app's DSN public key in X-Sentry-Auth; a missing or wrong key answers 401, rate limited per app",
+	"POST /api/v1/sentry/api/{project}/store/":       "legacy Sentry store endpoint, same DSN key auth and per-app rate limit as the envelope route",
+	"OPTIONS /api/v1/sentry/api/{project}/envelope/": "CORS preflight for browser Sentry SDKs, answers headers only",
+	"OPTIONS /api/v1/sentry/api/{project}/store/":    "CORS preflight for browser Sentry SDKs, answers headers only",
+	"GET /api/v1/hooks/wake":                         "called by the ingress wake route with a per-process secret header; any mismatch answers 404",
+	"POST /api/v1/webhooks/slack/interactions":       "authenticated by the X-Slack-Signature HMAC of the channel's own interactive secret",
+	"POST /api/v1/webhooks/discord/interactions":     "authenticated by the Ed25519 signature of the channel's own Discord application public key",
+	"GET /public/status":                             "opt-in public status page, serves only operator-chosen names and statuses, rate limited and cacheable",
+	"GET /public/status.json":                        "JSON form of the opt-in public status page, same whitelisted view",
+	"GET /public/status.rss":                         "RSS feed of operator-authored incidents on the opt-in public status page",
+	"GET /api/v1/apps/{name}/badge.svg":              "opt-in per-app deploy status badge for READMEs, serves only status and timestamp, 404s like an unknown route when the app's own badge flag is off",
+}
+
+// readOnlyMayMutate lists mutating routes a read-only token may call:
+// public routes (not token-gated at all) and pure computations that
+// change no state.
+var readOnlyMayMutate = map[string]string{
+	"POST /api/v1/fixes/{id}/preview":                            "re-runs the originating check and lists the changes an apply would make, persists nothing",
+	"POST /api/v1/pipelines/validate":                            "validates YAML, persists nothing",
+	"POST /api/v1/pipelines/filters":                             "rewrites submitted YAML with path filters, persists nothing",
+	"POST /api/v1/apps/{name}/log-pipeline/preview":              "runs submitted rules over submitted sample lines, persists nothing",
+	"POST /api/v1/apps/{name}/exposure/preview":                  "computes the changes an exposure edit would make, persists nothing",
+	"POST /api/v1/apps/{name}/exposure/check":                    "probes reachability from the control plane host, persists nothing",
+	"POST /api/v1/apps/{name}/preflight":                         "read-only probes of the stored app config, persists nothing",
+	"POST /api/v1/models/preflight":                              "queries the public Hugging Face Hub with a caller-supplied token, persists nothing",
+	"POST /api/v1/models/fit":                                    "estimates VRAM fit from submitted specs and node facts, persists nothing",
+	"POST /api/v1/apply/plan":                                    "computes a plan from live reads, persists nothing",
+	"POST /api/v1/prometheus/read":                               "Prometheus remote read is a POST but only queries, gated by AbilityRead",
+	"POST /api/v1/iam/resources/match":                           "counts what resource patterns select, persists nothing",
+	"POST /api/v1/iam/policies/validate":                         "validates a submitted policy document, persists nothing",
+	"POST /api/v1/maintenance/preview":                           "renders the maintenance page for given text, persists nothing",
+	"POST /api/v1/iam/preview":                                   "computes a before and after of a hypothetical policy change, persists nothing",
+	"POST /api/v1/iam/policy-templates/{id}/render":              "expands template parameters into a document, persists nothing",
+	"POST /api/v1/deploy-policies/check":                         "dry run of the rules against current apps, persists nothing",
+	"POST /api/v1/apps/{name}/git-source/affected":               "dry run of which services a changed file list would redeploy, persists nothing",
+	"POST /api/v1/apps/{name}/validate-spec":                     "validates submitted app.yaml, persists nothing",
+	"POST /api/v1/apps/{name}/domains/{domain}/policies/preview": "explains a draft traffic policy, persists nothing",
+	"POST /api/v1/apps/{name}/domains/{domain}/doctor":           "runs read-only diagnostics against this server and public DNS, persists nothing",
+	"POST /api/v1/network-shares/{id}/test":                      "reachability dial only, gated by AbilityRead, persists nothing",
+	"DELETE /api/v1/teams/{id}/members/me":                       "self service: removes only the caller's own team membership",
+	"DELETE /api/v1/mobile/devices/{id}":                         "self service: revokes only a phone the caller paired, or any phone for root",
+	"POST /api/v1/project-templates/{id}/render":                 "renders starter files from submitted parameters, persists nothing",
+	"POST /api/v1/apps/{name}/health/discover":                   "active HTTP probes of a running container, gated by AbilityRead, persists nothing",
+}
+
+// denyExempt lists /apps/{name}/... routes that legitimately do not
+// honour a per-app IAM Deny, with the reason.
+var denyExempt = map[string]string{
+	"GET /api/v1/apps/{name}/badge.svg": "deliberately unauthenticated (see publicRoutes); a per-app IAM Deny has no principal to apply to here, the badge_enabled flag is the only gate",
+}
+
+func loadMatrixRoutes(t *testing.T) []matrixRoute {
+	t.Helper()
+	files, err := filepath.Glob("routes*.go")
+	if err != nil || len(files) == 0 {
+		t.Fatalf("no routes files found: %v", err)
+	}
+	var out []matrixRoute
+	for _, f := range files {
+		src, err := os.ReadFile(f) //nolint:gosec // globbed routes files in the package dir
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, m := range matrixRouteRe.FindAllStringSubmatch(string(src), -1) {
+			out = append(out, matrixRoute{method: m[1], pattern: m[2]})
+		}
+	}
+	if len(out) < 100 {
+		t.Fatalf("parsed only %d routes, the route regex has drifted", len(out))
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].key() < out[j].key() })
+	return out
+}
+
+// concretePath fills a route pattern's path parameters. The resource
+// name segment for /apps, /databases and /models becomes name so a
+// resource-scoped Deny can target it.
+func concretePath(pattern, name string) string {
+	first := true
+	return matrixParamRe.ReplaceAllStringFunc(pattern, func(p string) string {
+		if p == "{name}" && first {
+			first = false
+			return name
+		}
+		return "x1"
+	})
+}
+
+func matrixDo(rt *Router, method, path string, mutate func(*http.Request)) int {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	req := httptest.NewRequestWithContext(ctx, method, path, nil)
+	if mutate != nil {
+		mutate(req)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	return rec.Code
+}
+
+func bearer(token string) func(*http.Request) {
+	return func(r *http.Request) { r.Header.Set("Authorization", "Bearer "+token) }
+}
+
+func seedMatrixToken(t *testing.T, db *store.DB, id string, abilities []string) string {
+	t.Helper()
+	plain := "matrix-secret-" + id
+	if err := db.SaveAPIToken(context.Background(), store.APIToken{
+		ID: id, Name: id, TokenHash: hashToken(plain), Abilities: abilities,
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+	return plain
+}
+
+func TestAuthzMatrix_PublicAllowlistIsCurrent(t *testing.T) {
+	registered := map[string]bool{}
+	for _, r := range loadMatrixRoutes(t) {
+		registered[r.key()] = true
+	}
+	for k := range publicRoutes {
+		if !registered[k] {
+			t.Errorf("public allowlist entry %q is not a registered route, remove it", k)
+		}
+	}
+	for k := range readOnlyMayMutate {
+		if !registered[k] {
+			t.Errorf("readOnlyMayMutate entry %q is not a registered route, remove it", k)
+		}
+	}
+}
+
+func TestAuthzMatrix_UnauthenticatedGets401(t *testing.T) {
+	rt, _, _ := newPipelineRouter(t)
+	var bad []string
+	for _, r := range loadMatrixRoutes(t) {
+		if _, public := publicRoutes[r.key()]; public {
+			continue
+		}
+		if _, lib := libraryOnlyRoutes[r.key()]; lib {
+			continue
+		}
+		if got := matrixDo(rt, r.method, concretePath(r.pattern, "web"), nil); got != http.StatusUnauthorized {
+			bad = append(bad, r.key()+" -> "+http.StatusText(got))
+		}
+	}
+	if len(bad) > 0 {
+		t.Errorf("routes that do not answer an anonymous request with 401 (add auth or a reasoned publicRoutes entry):\n%s", strings.Join(bad, "\n"))
+	}
+}
+
+func TestAuthzMatrix_ReadOnlyTokenCannotMutate(t *testing.T) {
+	rt, db, _ := newPipelineRouter(t)
+	tok := seedMatrixToken(t, db, "ro", []string{AbilityRead})
+	var bad []string
+	for _, r := range loadMatrixRoutes(t) {
+		switch r.method {
+		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+		default:
+			continue
+		}
+		if _, ok := publicRoutes[r.key()]; ok {
+			continue
+		}
+		if _, ok := readOnlyMayMutate[r.key()]; ok {
+			continue
+		}
+		if _, lib := libraryOnlyRoutes[r.key()]; lib {
+			continue
+		}
+		// Session-only routes (requireAuth) answer a bearer token 401, not 403.
+		got := matrixDo(rt, r.method, concretePath(r.pattern, "web"), bearer(tok))
+		if got != http.StatusForbidden && got != http.StatusUnauthorized {
+			bad = append(bad, r.key()+" -> "+http.StatusText(got))
+		}
+	}
+	if len(bad) > 0 {
+		t.Errorf("mutating routes reachable with a read-only token:\n%s", strings.Join(bad, "\n"))
+	}
+}
+
+// resourceKinds maps a path prefix to the IAM resource prefix its routes
+// are scoped by.
+var resourceKinds = []struct {
+	pathPrefix string
+	iamPrefix  string
+	label      string
+}{
+	{"/api/v1/apps/{name}", "app:", "app"},
+	{"/api/v1/databases/{name}", "database:", "database"},
+	{"/api/v1/models/{name}", "model:", "model"},
+}
+
+func TestAuthzMatrix_ResourceDenyReturns403(t *testing.T) {
+	rt, db, _ := newPipelineRouter(t)
+	bootstrapTestAdmin(t, db)
+	user := storeUserWithAbilitiesForTest(t, db, "deny-matrix@example.com", []string{AbilityRoot})
+	cookie := sessionCookieForTest(t, rt, user.ID)
+	tokPlain := seedMatrixToken(t, db, "deny-tok", []string{AbilityRoot})
+
+	for _, k := range resourceKinds {
+		attachTestPolicy(t, db, "deny-u-"+k.label, "Deny", "*", k.iamPrefix+"victim", store.PrincipalTypeUser, user.ID)
+		attachTestPolicy(t, db, "deny-t-"+k.label, "Deny", "*", k.iamPrefix+"victim", store.PrincipalTypeToken, "deny-tok")
+	}
+
+	for _, k := range resourceKinds {
+		t.Run(k.label, func(t *testing.T) {
+			var bad []string
+			checked := 0
+			for _, r := range loadMatrixRoutes(t) {
+				if !strings.Contains(r.pattern, k.pathPrefix) {
+					continue
+				}
+				if _, ok := denyExempt[r.key()]; ok {
+					continue
+				}
+				checked++
+				victim := concretePath(r.pattern, "victim")
+				for name, mutate := range map[string]func(*http.Request){
+					"session": func(req *http.Request) { req.AddCookie(cookie) },
+					"token":   bearer(tokPlain),
+				} {
+					got := matrixDo(rt, r.method, victim, mutate)
+					if got == http.StatusForbidden {
+						continue
+					}
+					bad = append(bad, r.key()+" ("+name+") -> "+http.StatusText(got))
+				}
+			}
+			if checked == 0 {
+				t.Fatalf("no %s routes checked", k.label)
+			}
+			if len(bad) > 0 {
+				t.Errorf("%s routes that ignore a per-resource IAM Deny:\n%s", k.label, strings.Join(bad, "\n"))
+			}
+		})
+	}
+}

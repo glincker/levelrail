@@ -1,0 +1,9 @@
+version: 1
+services:
+  web:
+    build:
+      type: dockerfile
+      path: ./Dockerfile
+    port: 9000
+    health:
+      readiness: { path: /, interval: 5s, timeout: 2s }

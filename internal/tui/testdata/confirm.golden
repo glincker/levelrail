@@ -1,0 +1,20 @@
+lr  profile:default  localhost:9100  server:v0.6.1  mesh:3/3  incidents:1 attention:2  every 2s
+1 Apps(3)  2 Databases(1)  3 Deploys(4)  4 Nodes(1)  5 Domains(1)  6 Alerts(2)  7 Backups(1)
+NAME    STATUS            REPLICAS  IMAGE         NODE  DOMAINS
+api     Healthy           2         reg/api:1.4   -     api.example.com +1                          
+web     Attention needed  1         reg/web:2.0   n1    -
+worker  Stopped           1         reg/worker:3  -     -
+
+
+
+
+
+
+
+
+
+
+
+
+restart api: type "api" to confirm (enter runs, esc cancels) > ap_
+j/k move  enter open  / filter  : command  l logs  r d b x o actions  ? help  q quit

@@ -1,0 +1,15 @@
+{
+  "Status": "failed",
+  "FailingStep": "building",
+  "Error": "deploy: service \"web\": build: process \"/bin/sh -c npm run build\" did not complete successfully: exit code: 1",
+  "LogLines": [
+    "#11 [builder 4/4] RUN npm run build",
+    "#11 2.410    Creating an optimized production build ...",
+    "#11 14.83 Failed to compile.",
+    "#11 14.83 ",
+    "#11 14.83 ./src/app/page.tsx:8:23",
+    "#11 14.83 Type error: Property 'title' does not exist on type '{ name: string; }'.",
+    "#11 15.02 Next.js build worker exited with code: 1 and signal: null",
+    "#11 ERROR: process \"/bin/sh -c npm run build\" did not complete successfully: exit code: 1"
+  ]
+}

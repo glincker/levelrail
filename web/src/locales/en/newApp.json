@@ -1,0 +1,277 @@
+{
+  "title": "New app",
+  "description": "Pick where it comes from. We read the repository, suggest everything, and you confirm.",
+  "steps": {
+    "label": "New app steps",
+    "source": "Where is it from",
+    "findings": "What we found",
+    "review": "Review and deploy"
+  },
+  "nav": {
+    "back": "Back",
+    "review": "Review"
+  },
+  "source": {
+    "analyzing": "Reading the repository...",
+    "analyze": "Analyze repository",
+    "repos": {
+      "search": "Search repositories or languages",
+      "listLabel": "Connected repositories",
+      "noMatch": "No repository matches \"{{query}}\". Try another name or paste its URL.",
+      "private": "Private repository",
+      "pushed": "pushed {{when}}",
+      "partial": "Some connected accounts could not be listed. Paste a URL for anything missing.",
+      "emptyTitle": "No git provider is connected yet",
+      "emptyBody": "Connect GitHub to pick a repository from a list. You can also paste any public git URL.",
+      "connect": "Connect GitHub"
+    },
+    "url": {
+      "label": "Repository URL",
+      "hint": "GitHub, GitLab, Gitea or Bitbucket. Files are read through the provider API, nothing is cloned yet.",
+      "advanced": "Private repository or a specific branch?",
+      "branch": "Branch",
+      "token": "Access token",
+      "tokenHint": "Used once to read files and to build. Leave empty for a public repository."
+    },
+    "git": {
+      "title": "Import from Git",
+      "description": "Pick a repository and its files are read through the provider API. Nothing is cloned or created until you deploy.",
+      "connectTitle": "Connect a git provider",
+      "connectBody": "Connect an account to choose from your repositories, or paste a repository URL below.",
+      "connect": "Connect",
+      "connectLabel": "Connect {{provider}}",
+      "connected": "Connected",
+      "pickTitle": "Your repositories",
+      "urlTitle": "Paste a repository URL"
+    },
+    "templates": {
+      "title": "Start from a template",
+      "description": "Ready-made services with sane defaults. Open one to see what it deploys.",
+      "seeAll": "See all {{count}} templates",
+      "browse": "Browse the template catalog",
+      "loading": "Loading templates",
+      "unavailable": "The template list is not available right now. The full catalog is one click away.",
+      "gridLabel": "Featured templates"
+    },
+    "other": {
+      "title": "Other ways to start",
+      "description": "Bring a container image, a compose file or a docker run command.",
+      "image": "Container image",
+      "imageHint": "Deploy a prebuilt image from a registry.",
+      "compose": "Docker Compose",
+      "composeHint": "Paste or upload a compose file.",
+      "run": "docker run command",
+      "runHint": "Turn a command into a managed app.",
+      "hide": "Hide"
+    }
+  },
+  "findings": {
+    "warnings": {
+      "nothing_detected": "No Dockerfile, compose file or known framework was found. Pick the build type under Advanced.",
+      "read_budget": "The file read budget was reached, so some findings may be missing.",
+      "tree_truncated": "This repository is large and its file listing was cut short.",
+      "monorepo_choose_app": "This looks like a monorepo with several apps. Check the app directory below.",
+      "directory_missing": "That directory does not exist in this repository at this branch. Pick one from the list above or fix the path.",
+      "port_unknown": "No listening port could be detected. Set the port the app listens on."
+    },
+    "app": {
+      "title": "App",
+      "name": "App name",
+      "domain": "Domain"
+    },
+    "build": {
+      "title": "Build and run",
+      "app": "App in this repository",
+      "appHint": "Several buildable apps were found. Choose the one to deploy."
+    },
+    "port": {
+      "label": "Port the app listens on"
+    },
+    "health": {
+      "label": "Health check path"
+    },
+    "databases": {
+      "title": "Databases it appears to need",
+      "attach": "Create and attach {{engine}} {{version}}",
+      "name": "Database name",
+      "envVar": "Connection variable"
+    },
+    "env": {
+      "title": "Environment variables",
+      "none": "No environment variables were declared in the repository.",
+      "required": "Required",
+      "secret": "Secret",
+      "provided": "Filled in automatically from {{source}}.",
+      "placeholder": "Enter a value",
+      "hasDefault": "Leave empty to use the app's own default",
+      "source": "Found in {{source}}",
+      "optional": "{{count}} optional variables",
+      "noValues": "Only variable names are read from the repository. Values are never imported."
+    },
+    "advanced": {
+      "title": "Advanced options",
+      "buildType": "Build type",
+      "dockerfile": "Dockerfile path",
+      "baseDirectory": "Build context directory",
+      "validateDirectory": "Validate directory",
+      "memory": "Memory limit (MiB)",
+      "types": {
+        "railpack": "Auto-detect (Railpack)",
+        "dockerfile": "Dockerfile",
+        "static": "Static site"
+      }
+    }
+  },
+  "review": {
+    "summary": "This will create {{name}} from a {{framework}} repository with {{databases}} database(s), served at {{domain}}, and start its first build.",
+    "noDomain": "no domain yet",
+    "changesLabel": "What will be created",
+    "willCreate": "Will be created",
+    "kinds": {
+      "app": "App",
+      "source": "Repository",
+      "database": "Database",
+      "domain": "Domain",
+      "env": "Environment variable"
+    },
+    "missingTitle": "Required variables are empty",
+    "missingBody": "Go back and fill in: {{keys}}",
+    "deploy": "Deploy",
+    "deploying": "Creating and deploying...",
+    "failed": {
+      "generic": "Deploy did not finish",
+      "database": "Could not create the database",
+      "app": "Could not create the app",
+      "connection": "Could not attach the database",
+      "source": "Could not connect the repository",
+      "build": "Could not start the build"
+    },
+    "failedResume": "The app record exists, press Deploy to continue from where it stopped."
+  },
+  "toast": {
+    "created": "Creating \"{{name}}\".",
+    "watching": "Watching the first build now."
+  },
+  "deployLink": {
+    "title": "Prefilled from a link: review before deploying",
+    "fromSource": "This form was filled in by a link from {{host}}. Nothing is created until you press Deploy.",
+    "fromUnknown": "This form was filled in by a link. Nothing is created until you press Deploy.",
+    "ignoredTitle": "Some link parameters were ignored",
+    "ignoredBody": "These were missing or invalid: {{params}}.",
+    "name": "Name",
+    "image": "Image",
+    "port": "Port",
+    "portHint": "The port the app listens on inside its container.",
+    "health": "Health check path",
+    "healthHint": "Leave empty to skip the health check.",
+    "envTitle": "Environment variables",
+    "envHint": "The link names these variables. Enter your own values; they are stored as secrets.",
+    "envValue": "Value for {{key}}",
+    "deploy": "Deploy",
+    "deploying": "Creating...",
+    "missingImage": "The link did not include a valid image, so choose where this app comes from below.",
+    "errors": {
+      "name": "Use lowercase letters, digits and hyphens.",
+      "image": "Enter an image such as ghcr.io/you/app:latest.",
+      "port": "Enter a port from 1 to 65535.",
+      "health": "The path must start with a single slash."
+    }
+  },
+  "detection": {
+    "title": "How we read this repository",
+    "why": "Why",
+    "whyFor": "Why {{field}} was detected",
+    "fromFramework": "Default for {{framework}}",
+    "framework": "Framework and language",
+    "buildType": "Build type",
+    "port": "Port",
+    "start": "Start command",
+    "buildCommand": "Build command",
+    "output": "Output directory",
+    "runtime": "Runtime version",
+    "health": "Health check path",
+    "confidence": {
+      "high": "High confidence",
+      "medium": "Medium confidence",
+      "low": "Low confidence"
+    },
+    "warnings": {
+      "no_lockfile": {
+        "text": "No lockfile was found, so installs are not reproducible.",
+        "fix": "Commit your lockfile and analyze again."
+      },
+      "multiple_dockerfiles": {
+        "text": "Several Dockerfiles were found.",
+        "fix": "Pick the right one under Advanced if the choice is wrong."
+      },
+      "malformed_manifest": {
+        "text": "A manifest could not be parsed, so this is a best guess.",
+        "fix": "Fix the JSON or TOML syntax and analyze again."
+      },
+      "dockerfile_no_expose": {
+        "text": "The Dockerfile has no EXPOSE line.",
+        "fix": "Add EXPOSE with your port, or set the port yourself below."
+      },
+      "monorepo_no_root_app": {
+        "text": "This is a monorepo with no app at its root.",
+        "fix": "Create one app per package below."
+      },
+      "railpack_unsupported": {
+        "text": "Automatic builds do not cover this language yet.",
+        "fix": "Add a Dockerfile to the repository and analyze again."
+      }
+    }
+  },
+  "starter": {
+    "open": "Start from a template",
+    "title": "Starter templates",
+    "description": "Pick a starting point, answer a few questions, and get validated files to commit to your repository.",
+    "generate": "Generate files",
+    "generating": "Generating...",
+    "copy": "Copy",
+    "copied": "Copied {{path}}",
+    "next": "Commit these files to your repository, then deploy it from the Where is it from step.",
+    "viaCli": "Generate with the CLI instead"
+  },
+  "packages": {
+    "title": "Workspace packages",
+    "hint": "This repository holds several packages. Create one app per package, each built from its own directory and redeployed only when it changes.",
+    "dockerfile": "Dockerfile",
+    "configure": "Configure this one",
+    "creating": "Creating the app and starting its first build...",
+    "open": "Open {{name}} build",
+    "creatingAll": "Creating apps...",
+    "createSelected_one": "Create an app for the selected package",
+    "createSelected_other": "Create an app for each selected package ({{count}})",
+    "createSelected_zero": "Create an app for each selected package",
+    "envNote": "Required environment variables are not asked here. Add them on each app, then redeploy."
+  },
+  "fields": {
+    "basics": "Basics",
+    "name": "Name",
+    "namePlaceholder": "e.g. marketing-site",
+    "image": "Image",
+    "imagePlaceholder": "e.g. ghcr.io/you/app:latest",
+    "imageHint": "The image to run, including a tag. Don't have one built yet? Pick the git option in step 1 instead and we'll build it for you.",
+    "networking": "Networking",
+    "port": "Port",
+    "portPlaceholder": "e.g. 3000",
+    "portHint": "The port your app listens on inside its container, e.g. 3000 for a typical Next.js app.",
+    "healthCheck": "Health check",
+    "healthEnable": "Enable a health check",
+    "healthPath": "Path",
+    "healthHint": "Checked before cutting traffic to a new container, and to detect a crashed one afterward. Change or turn this off if your app doesn't serve this path.",
+    "hideAdvanced": "Hide advanced options",
+    "showAdvanced": "Show advanced options",
+    "strategy": "Deploy strategy",
+    "strategyDefault": "Default (blue-green)",
+    "strategyRecreate": "Recreate",
+    "strategyBlueGreen": "Blue-green",
+    "strategyRolling": "Rolling",
+    "strategyHint": "How new versions roll out. Blue-green starts the new version alongside the old one and switches traffic over once it's healthy.",
+    "replicas": "Replicas",
+    "replicasHint": "How many copies of your app run at once. Leave blank to run just one.",
+    "creating": "Creating...",
+    "create": "Create app"
+  }
+}

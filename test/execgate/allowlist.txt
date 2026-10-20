@@ -1,0 +1,24 @@
+# Non-test Go files allowed to run host processes (os/exec, os.StartProcess,
+# syscall.Exec). One entry per line: <repo-relative path> | <reason>.
+# Docker and BuildKit are driven through their APIs and must never appear here.
+# A new entry needs a reviewer to confirm no user-influenced string (app name,
+# env value, branch, git URL, domain, file name) reaches the argv, and that no
+# shell (sh -c) is involved.
+internal/gpu/gpu.go | nvidia-smi probe, binary name and args are literals from internal/gpu
+internal/network/link.go | ifconfig and ip on the node's own TUN device, args are the mesh CIDR and device name, argv form, no shell
+internal/telemetry/hostpatch.go | read-only package manager upgrade count, literal binary names and args, argv form
+internal/api/doctor_firewall.go | read-only ufw/firewalld status check, literal binary names and args, argv form
+internal/api/doctor_nas.go | exec.LookPath presence check for mount.nfs/mount.cifs, literal binary names, no args
+kit/firewall/firewall.go | ufw has no Go-native API, exec.CommandContext with literal "ufw" and validated argv, no shell
+internal/api/firewall_host.go | host ufw allow/enable/disable for the firewall switch, literal "ufw", args are fixed verbs plus port numbers from config and the validated SSH port setting, argv form, no shell
+internal/api/router.go | exec.LookPath default for the ufw presence check, literal binary name, no args, nothing is run
+cmd/levelrail/release_cmds.go | host rollback subcommand run by the root operator: systemctl show/stop/start with this executable's own name, or the operator's --stop-cmd/--start-cmd run directly as argv with no shell; not reachable from the API or MCP
+internal/exposure/manager.go | iptables for DOCKER-USER restrictions, literal binary name, args are validated ports, canonical CIDRs and a brand-prefixed tag, argv form, no shell
+cmd/levelrail/self_upgrade.go | host self-upgrade run by the root operator: systemctl with this executable's own file name, the operator's --stop-cmd/--start-cmd as argv with no shell, and the checksum-verified downloaded binary run with fixed subcommands (version, migrate-check); not reachable from the API or MCP
+internal/api/self_upgrade.go | systemd-run launcher for the dashboard upgrade: literal "systemd-run", argv is this executable's resolved path plus fixed flags, a target version from the release plan, a sanitized initiator and the comma-joined breaking-change ack ids as single argv values, argv form, no shell; gated by root and systemd presence
+internal/selfupgrade/verify.go | cosign verify-blob on the downloaded release asset, literal binary name (or the operator-set cosign path), argv built from fixed flags and local file paths, argv form, no shell
+internal/serverready/collect.go | read-only readiness probes (ss, ufw status, firewall-cmd list/state, docker presence check), literal program names and literal args, nothing user-influenced reaches argv, argv form, no shell
+internal/cliconsole/runner.go | web CLI console: runs the levelrail-cli binary (located next to this executable or APP_CLI_BINARY, never PATH) with argv from the signed-in root user's typed line. This is the one entry where user-typed strings reach argv: they pass internal/cliconsole policy first (command tree allowlist, denied subcommands and path-reading flags, no pipes, redirects, backticks, substitutions or env assignments), exec.CommandContext in argv form with no shell, scrubbed env, per-session token carrying only the caller's abilities, dropped to an unprivileged user when root, output cap and timeout. Gated by root ability, beta flag, origin check, step-up and rate limit; every line audited
+internal/cliconsole/proc_unix.go | process group and credential drop for the console child (SysProcAttr only, starts nothing itself), same reviewed path as runner.go
+internal/cliconsole/proc_other.go | non-unix stub of proc_unix.go for the console child, starts nothing itself
+scripts/template-smoke/run.go | dev-only template smoke tool, never built into a shipped binary, runs the docker CLI with a fixed binary name and argv built from catalog data, no shell; the product itself uses the Engine API

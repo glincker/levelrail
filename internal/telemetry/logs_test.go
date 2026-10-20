@@ -1,0 +1,737 @@
+package telemetry
+
+import (
+	"context"
+	"errors"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/docker"
+)
+
+func TestClassifyLine(t *testing.T) {
+	tests := []struct {
+		name           string
+		raw            string
+		wantStructured bool
+		wantFields     string
+	}{
+		{
+			name:           "plain text line",
+			raw:            "starting server on :8080",
+			wantStructured: false,
+			wantFields:     "",
+		},
+		{
+			name:           "valid JSON object",
+			raw:            `{"level":"info","msg":"ready"}`,
+			wantStructured: true,
+			wantFields:     `{"level":"info","msg":"ready"}`,
+		},
+		{
+			name:           "JSON object with leading/trailing whitespace",
+			raw:            `  {"level":"error","msg":"boom"}  `,
+			wantStructured: true,
+			wantFields:     `{"level":"error","msg":"boom"}`,
+		},
+		{
+			name:           "bare JSON number is not structured, it's not what app-emits-JSON logging means",
+			raw:            "42",
+			wantStructured: false,
+			wantFields:     "",
+		},
+		{
+			name:           "bare JSON string is not structured",
+			raw:            `"just a string"`,
+			wantStructured: false,
+			wantFields:     "",
+		},
+		{
+			name:           "JSON array is not structured",
+			raw:            `["a","b"]`,
+			wantStructured: false,
+			wantFields:     "",
+		},
+		{
+			name:           "malformed JSON object",
+			raw:            `{"level":"info"`,
+			wantStructured: false,
+			wantFields:     "",
+		},
+		{
+			name:           "empty line",
+			raw:            "",
+			wantStructured: false,
+			wantFields:     "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotStructured, gotFields := classifyLine(tt.raw)
+			if gotStructured != tt.wantStructured {
+				t.Errorf("classifyLine() structured = %v, want %v", gotStructured, tt.wantStructured)
+			}
+			if gotFields != tt.wantFields {
+				t.Errorf("classifyLine() fields = %q, want %q", gotFields, tt.wantFields)
+			}
+		})
+	}
+}
+
+func TestCompileLogSearch(t *testing.T) {
+	tests := []struct {
+		name    string
+		query   string
+		want    string
+		wantErr bool
+	}{
+		{name: "empty", query: "  ", want: ""},
+		{name: "plain word", query: "error", want: `"error"`},
+		{name: "implicit and", query: "connection refused", want: `"connection" AND "refused"`},
+		{name: "quoted phrase", query: `"connection refused"`, want: `"connection refused"`},
+		{name: "embedded quote doubled", query: `"say ""hi"""`, want: `"say ""hi"""`},
+		{name: "prefix", query: "err*", want: `"err"*`},
+		{name: "quoted prefix", query: `"conn ref"*`, want: `"conn ref"*`},
+		{name: "or", query: "error OR panic", want: `"error" OR "panic"`},
+		{name: "not", query: "error NOT timeout", want: `"error" NOT "timeout"`},
+		{name: "dash negation", query: "error -timeout", want: `"error" NOT "timeout"`},
+		{name: "parens", query: "(a OR b) c", want: `( "a" OR "b" ) AND "c"`},
+		{name: "special chars stay literal", query: "error:500", want: `"error:500"`},
+		{name: "lowercase or is a term", query: "this or that", want: `"this" AND "or" AND "that"`},
+		{name: "unbalanced quote", query: `"abc`, wantErr: true},
+		{name: "unbalanced paren", query: "(a OR b", wantErr: true},
+		{name: "leading not", query: "NOT a", wantErr: true},
+		{name: "leading dash only", query: "-a", wantErr: true},
+		{name: "trailing operator", query: "a OR", wantErr: true},
+		{name: "double operator", query: "a OR AND b", wantErr: true},
+		{name: "lone star", query: "*", wantErr: true},
+		{name: "only operators", query: "()", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := compileLogSearch(tt.query)
+			if tt.wantErr {
+				if !errors.Is(err, ErrInvalidLogSearch) {
+					t.Fatalf("compileLogSearch(%q) error = %v, want ErrInvalidLogSearch", tt.query, err)
+				}
+				return
+			}
+			if err != nil || got != tt.want {
+				t.Errorf("compileLogSearch(%q) = %q, %v, want %q", tt.query, got, err, tt.want)
+			}
+		})
+	}
+}
+
+func TestQueryLogs_SearchSyntax(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+	base := time.Now().Add(-time.Minute).UTC()
+	msgs := []string{"connection refused by upstream", "connection reset", "error timeout reading", "error parsing body"}
+	var entries []LogEntry
+	for i, m := range msgs {
+		entries = append(entries, LogEntry{ResourceID: "service:q", ContainerID: "c", Stream: "stdout", Timestamp: base.Add(time.Duration(i) * time.Second), Message: m})
+	}
+	if err := db.WriteLogBatch(ctx, entries); err != nil {
+		t.Fatalf("WriteLogBatch() error = %v", err)
+	}
+	cases := []struct {
+		q    string
+		want int
+	}{
+		{"connection", 2},
+		{"conn*", 2},
+		{`"connection refused"`, 1},
+		{"error NOT timeout", 1},
+		{"error -timeout", 1},
+		{"refused OR parsing", 2},
+		{"(refused OR reset) connection", 2},
+		{"missing", 0},
+	}
+	for _, c := range cases {
+		got, err := db.QueryLogs(ctx, "service:q", base.Add(-time.Hour), time.Now(), c.q)
+		if err != nil || len(got) != c.want {
+			t.Errorf("QueryLogs(%q) = %d entries, %v, want %d", c.q, len(got), err, c.want)
+		}
+	}
+	if _, err := db.QueryLogs(ctx, "service:q", base.Add(-time.Hour), time.Now(), "(oops"); !errors.Is(err, ErrInvalidLogSearch) {
+		t.Errorf("QueryLogs(bad) error = %v, want ErrInvalidLogSearch", err)
+	}
+}
+
+func TestWriteLogBatch_EmptyIsNoop(t *testing.T) {
+	db := newTestDB(t)
+	if err := db.WriteLogBatch(context.Background(), nil); err != nil {
+		t.Errorf("WriteLogBatch(nil) error = %v, want nil", err)
+	}
+}
+
+func TestWriteLogBatchAndQuery_RoundTrip(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+
+	base := time.Unix(1_700_000_000, 0).UTC()
+	entries := []LogEntry{
+		{ResourceID: "service:web", Stream: "stdout", Timestamp: base, Message: "server started"},
+		{ResourceID: "service:web", Stream: "stderr", Timestamp: base.Add(time.Second), Message: "warning: slow query"},
+		{ResourceID: "service:worker", Stream: "stdout", Timestamp: base, Message: "unrelated resource, must not leak into service:web's results"},
+	}
+	if err := db.WriteLogBatch(ctx, entries); err != nil {
+		t.Fatalf("WriteLogBatch() error = %v", err)
+	}
+
+	got, err := db.QueryLogs(ctx, "service:web", base.Add(-time.Minute), base.Add(time.Minute), "")
+	if err != nil {
+		t.Fatalf("QueryLogs() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("QueryLogs() returned %d entries, want 2", len(got))
+	}
+	if got[0].Message != "server started" || got[1].Message != "warning: slow query" {
+		t.Errorf("QueryLogs() messages = [%q, %q], want in timestamp order", got[0].Message, got[1].Message)
+	}
+	if got[0].Stream != "stdout" || got[1].Stream != "stderr" {
+		t.Errorf("QueryLogs() streams = [%q, %q], want [stdout, stderr]", got[0].Stream, got[1].Stream)
+	}
+	if !got[0].Timestamp.Equal(base) {
+		t.Errorf("QueryLogs()[0].Timestamp = %v, want %v", got[0].Timestamp, base)
+	}
+}
+
+func TestQueryLogs_NoEntries_ReturnsEmptyNotError(t *testing.T) {
+	db := newTestDB(t)
+	got, err := db.QueryLogs(context.Background(), "service:nonexistent", time.Unix(0, 0), time.Now(), "")
+	if err != nil {
+		t.Fatalf("QueryLogs() error = %v, want nil (no entries is a valid observed state)", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("QueryLogs() = %d entries, want 0", len(got))
+	}
+}
+
+func TestQueryLogs_RespectsTimeRange(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+	base := time.Unix(1_700_000_000, 0).UTC()
+
+	err := db.WriteLogBatch(ctx, []LogEntry{
+		{ResourceID: "service:web", Stream: "stdout", Timestamp: base.Add(-time.Hour), Message: "too early"},
+		{ResourceID: "service:web", Stream: "stdout", Timestamp: base, Message: "in range"},
+		{ResourceID: "service:web", Stream: "stdout", Timestamp: base.Add(time.Hour), Message: "too late"},
+	})
+	if err != nil {
+		t.Fatalf("WriteLogBatch() error = %v", err)
+	}
+
+	got, err := db.QueryLogs(ctx, "service:web", base.Add(-time.Minute), base.Add(time.Minute), "")
+	if err != nil {
+		t.Fatalf("QueryLogs() error = %v", err)
+	}
+	if len(got) != 1 || got[0].Message != "in range" {
+		t.Errorf("QueryLogs() with a tight range = %+v, want exactly the one entry inside [from, to]", got)
+	}
+}
+
+func TestQueryLogs_FullTextSearch(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+	base := time.Unix(1_700_000_000, 0).UTC()
+
+	err := db.WriteLogBatch(ctx, []LogEntry{
+		{ResourceID: "service:web", Stream: "stdout", Timestamp: base, Message: "connection refused to database"},
+		{ResourceID: "service:web", Stream: "stdout", Timestamp: base.Add(time.Second), Message: "request completed in 12ms"},
+		{ResourceID: "service:web", Stream: "stderr", Timestamp: base.Add(2 * time.Second), Message: "panic: nil pointer dereference"},
+	})
+	if err != nil {
+		t.Fatalf("WriteLogBatch() error = %v", err)
+	}
+
+	got, err := db.QueryLogs(ctx, "service:web", base.Add(-time.Minute), base.Add(time.Minute), "connection")
+	if err != nil {
+		t.Fatalf("QueryLogs() with query error = %v", err)
+	}
+	if len(got) != 1 || got[0].Message != "connection refused to database" {
+		t.Errorf("QueryLogs(query=\"connection\") = %+v, want exactly the one matching entry", got)
+	}
+
+	gotPanic, err := db.QueryLogs(ctx, "service:web", base.Add(-time.Minute), base.Add(time.Minute), "panic")
+	if err != nil {
+		t.Fatalf("QueryLogs() with query error = %v", err)
+	}
+	if len(gotPanic) != 1 || gotPanic[0].Message != "panic: nil pointer dereference" {
+		t.Errorf("QueryLogs(query=\"panic\") = %+v, want exactly the one matching entry", gotPanic)
+	}
+
+	gotNone, err := db.QueryLogs(ctx, "service:web", base.Add(-time.Minute), base.Add(time.Minute), "nonexistentword")
+	if err != nil {
+		t.Fatalf("QueryLogs() with query error = %v", err)
+	}
+	if len(gotNone) != 0 {
+		t.Errorf("QueryLogs(query=\"nonexistentword\") = %+v, want 0 matches", gotNone)
+	}
+}
+
+func TestQueryLogs_StructuredLinesRoundTrip(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+	base := time.Unix(1_700_000_000, 0).UTC()
+
+	err := db.WriteLogBatch(ctx, []LogEntry{
+		{ResourceID: "service:web", Stream: "stdout", Timestamp: base, Message: `{"level":"info","msg":"ready"}`, Structured: true, FieldsJSON: `{"level":"info","msg":"ready"}`},
+		{ResourceID: "service:web", Stream: "stdout", Timestamp: base.Add(time.Second), Message: "plain text line"},
+	})
+	if err != nil {
+		t.Fatalf("WriteLogBatch() error = %v", err)
+	}
+
+	got, err := db.QueryLogs(ctx, "service:web", base.Add(-time.Minute), base.Add(time.Minute), "")
+	if err != nil {
+		t.Fatalf("QueryLogs() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("QueryLogs() = %d entries, want 2", len(got))
+	}
+	if !got[0].Structured || got[0].FieldsJSON != `{"level":"info","msg":"ready"}` {
+		t.Errorf("got[0] = %+v, want Structured=true with FieldsJSON preserved", got[0])
+	}
+	if got[1].Structured || got[1].FieldsJSON != "" {
+		t.Errorf("got[1] = %+v, want Structured=false with empty FieldsJSON", got[1])
+	}
+}
+
+func TestRetainLogs_DeletesOnlyOlderThanCutoff(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+	base := time.Unix(1_700_000_000, 0).UTC()
+
+	err := db.WriteLogBatch(ctx, []LogEntry{
+		{ResourceID: "service:web", Stream: "stdout", Timestamp: base.Add(-48 * time.Hour), Message: "old, should go"},
+		{ResourceID: "service:web", Stream: "stdout", Timestamp: base.Add(-1 * time.Hour), Message: "recent, should stay"},
+	})
+	if err != nil {
+		t.Fatalf("WriteLogBatch() error = %v", err)
+	}
+
+	deleted, err := db.RetainLogs(ctx, base.Add(-24*time.Hour))
+	if err != nil {
+		t.Fatalf("RetainLogs() error = %v", err)
+	}
+	if deleted != 1 {
+		t.Errorf("RetainLogs() deleted = %d, want 1", deleted)
+	}
+
+	remaining, err := db.QueryLogs(ctx, "service:web", base.Add(-72*time.Hour), base, "")
+	if err != nil {
+		t.Fatalf("QueryLogs() error = %v", err)
+	}
+	if len(remaining) != 1 || remaining[0].Message != "recent, should stay" {
+		t.Errorf("remaining entries after RetainLogs() = %+v, want exactly the recent one", remaining)
+	}
+}
+
+func TestRetainLogs_KeepsFTSIndexInSync(t *testing.T) {
+	// A deleted row must not leave a stale, still-matchable entry behind
+	// in log_entries_fts: proves the log_entries_ad trigger
+	// (migrations/0002_log_entries.sql) actually fires, not just that
+	// RetainLogs deletes from log_entries itself.
+	db := newTestDB(t)
+	ctx := context.Background()
+	base := time.Unix(1_700_000_000, 0).UTC()
+
+	if err := db.WriteLogBatch(ctx, []LogEntry{
+		{ResourceID: "service:web", Stream: "stdout", Timestamp: base.Add(-48 * time.Hour), Message: "uniquetoken-for-retention-test"},
+	}); err != nil {
+		t.Fatalf("WriteLogBatch() error = %v", err)
+	}
+
+	if _, err := db.RetainLogs(ctx, base.Add(-24*time.Hour)); err != nil {
+		t.Fatalf("RetainLogs() error = %v", err)
+	}
+
+	got, err := db.QueryLogs(ctx, "service:web", base.Add(-72*time.Hour), base, "uniquetoken-for-retention-test")
+	if err != nil {
+		t.Fatalf("QueryLogs() error = %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("QueryLogs() found %d matches for a deleted row's text, want 0 (stale FTS entry left behind)", len(got))
+	}
+}
+
+// fakeLogSource is a scriptable LogSource: each container ID maps to a
+// fixed slice of lines delivered once, then the channel closes, mirroring
+// a container that produced some output and stopped.
+type fakeLogSource struct {
+	lines map[string][]docker.LogLine
+}
+
+func (f *fakeLogSource) Logs(ctx context.Context, containerID string, _ bool, _ time.Time) (<-chan docker.LogLine, <-chan error) {
+	out := make(chan docker.LogLine)
+	errCh := make(chan error, 1)
+	go func() {
+		defer close(out)
+		defer close(errCh)
+		for _, l := range f.lines[containerID] {
+			select {
+			case out <- l:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return out, errCh
+}
+
+func TestStreamOne_WritesAllLinesAfterStreamCloses(t *testing.T) {
+	db := newTestDB(t)
+	source := &fakeLogSource{
+		lines: map[string][]docker.LogLine{
+			"c1": {
+				{Stream: "stdout", Message: "line one"},
+				{Stream: "stdout", Message: "line two"},
+				{Stream: "stderr", Message: "line three"},
+			},
+		},
+	}
+	lc := NewLogCollector(source, db, nil, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := lc.StreamOne(ctx, LogTarget{ResourceID: "service:web", ContainerID: "c1"})
+	if err != nil {
+		t.Fatalf("StreamOne() error = %v, want nil (a clean stream end)", err)
+	}
+
+	got, err := db.QueryLogs(context.Background(), "service:web", time.Now().Add(-time.Minute), time.Now().Add(time.Minute), "")
+	if err != nil {
+		t.Fatalf("QueryLogs() error = %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("QueryLogs() = %d entries, want 3 (the batch must flush when the stream closes, even under logBatchMaxLines)", len(got))
+	}
+}
+
+func TestStreamOne_PublishesEachLineToBroadcasterAsItArrives(t *testing.T) {
+	db := newTestDB(t)
+	source := &fakeLogSource{
+		lines: map[string][]docker.LogLine{
+			"c1": {
+				{Stream: "stdout", Message: "line one"},
+				{Stream: "stderr", Message: "line two"},
+			},
+		},
+	}
+	broadcaster := NewLogBroadcaster()
+	live, unsubscribe := broadcaster.Subscribe("service:web")
+	defer unsubscribe()
+
+	lc := NewLogCollector(source, db, broadcaster, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	done := make(chan error, 1)
+	go func() { done <- lc.StreamOne(ctx, LogTarget{ResourceID: "service:web", ContainerID: "c1"}) }()
+
+	var got []LogEntry
+	for len(got) < 2 {
+		select {
+		case entry := <-live:
+			got = append(got, entry)
+		case <-time.After(2 * time.Second):
+			t.Fatalf("timed out waiting for live entries, got %d of 2 so far", len(got))
+		}
+	}
+	if got[0].Message != "line one" || got[0].Stream != "stdout" {
+		t.Errorf("got[0] = %+v, want {line one stdout}", got[0])
+	}
+	if got[1].Message != "line two" || got[1].Stream != "stderr" {
+		t.Errorf("got[1] = %+v, want {line two stderr}", got[1])
+	}
+
+	if err := <-done; err != nil {
+		t.Fatalf("StreamOne() error = %v, want nil", err)
+	}
+}
+
+func TestStreamOne_NilBroadcasterIsTolerated(t *testing.T) {
+	db := newTestDB(t)
+	source := &fakeLogSource{
+		lines: map[string][]docker.LogLine{"c1": {{Stream: "stdout", Message: "line"}}},
+	}
+	lc := NewLogCollector(source, db, nil, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := lc.StreamOne(ctx, LogTarget{ResourceID: "service:web", ContainerID: "c1"}); err != nil {
+		t.Fatalf("StreamOne() error = %v, want nil (no broadcaster configured must not be an error)", err)
+	}
+}
+
+func TestStreamOne_FlushesOnLineCountThreshold(t *testing.T) {
+	db := newTestDB(t)
+	lines := make([]docker.LogLine, logBatchMaxLines+5)
+	for i := range lines {
+		lines[i] = docker.LogLine{Stream: "stdout", Message: "line"}
+	}
+	source := &fakeLogSource{lines: map[string][]docker.LogLine{"c1": lines}}
+	lc := NewLogCollector(source, db, nil, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := lc.StreamOne(ctx, LogTarget{ResourceID: "service:web", ContainerID: "c1"}); err != nil {
+		t.Fatalf("StreamOne() error = %v", err)
+	}
+
+	got, err := db.QueryLogs(context.Background(), "service:web", time.Now().Add(-time.Minute), time.Now().Add(time.Minute), "")
+	if err != nil {
+		t.Fatalf("QueryLogs() error = %v", err)
+	}
+	if len(got) != len(lines) {
+		t.Fatalf("QueryLogs() = %d entries, want %d (a mid-stream flush at logBatchMaxLines must not drop the tail batch)", len(got), len(lines))
+	}
+}
+
+func TestStreamOne_ContextCancelled_FlushesPartialBatch(t *testing.T) {
+	db := newTestDB(t)
+	// A source whose channel never closes on its own: StreamOne must be
+	// the one to notice ctx cancellation and flush what it has so far,
+	// not wait forever for the stream to end.
+	lines := make(chan docker.LogLine)
+	errs := make(chan error)
+	source := &blockingLogSource{lines: lines, errs: errs}
+	lc := NewLogCollector(source, db, nil, nil)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan error, 1)
+	go func() { done <- lc.StreamOne(ctx, LogTarget{ResourceID: "service:web", ContainerID: "c1"}) }()
+
+	lines <- docker.LogLine{Stream: "stdout", Message: "buffered before cancel"}
+	cancel()
+
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("StreamOne() error = %v, want context.Canceled", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("StreamOne() did not return after ctx cancellation")
+	}
+
+	got, err := db.QueryLogs(context.Background(), "service:web", time.Now().Add(-time.Minute), time.Now().Add(time.Minute), "")
+	if err != nil {
+		t.Fatalf("QueryLogs() error = %v", err)
+	}
+	if len(got) != 1 || got[0].Message != "buffered before cancel" {
+		t.Errorf("QueryLogs() = %+v, want the one line buffered before cancellation to have been flushed", got)
+	}
+}
+
+type blockingLogSource struct {
+	lines chan docker.LogLine
+	errs  chan error
+}
+
+func (b *blockingLogSource) Logs(context.Context, string, bool, time.Time) (<-chan docker.LogLine, <-chan error) {
+	return b.lines, b.errs
+}
+
+func TestLogCollectorRun_StartsAndStopsStreamsAsTargetsChange(t *testing.T) {
+	db := newTestDB(t)
+	source := &fakeLogSource{
+		lines: map[string][]docker.LogLine{
+			"c1": {{Stream: "stdout", Message: "from c1"}},
+		},
+	}
+	lc := NewLogCollector(source, db, nil, nil)
+
+	var call int
+	targetsFunc := func(context.Context) ([]LogTarget, error) {
+		call++
+		if call == 1 {
+			return []LogTarget{{ResourceID: "service:web", ContainerID: "c1"}}, nil
+		}
+		return nil, nil // second resync: target gone, e.g. the container was removed
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	err := lc.Run(ctx, 20*time.Millisecond, targetsFunc)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("Run() error = %v, want context.DeadlineExceeded", err)
+	}
+	if call < 2 {
+		t.Errorf("targetsFunc called %d times, want at least 2 (fresh lookup every resync)", call)
+	}
+
+	got, err := db.QueryLogs(context.Background(), "service:web", time.Now().Add(-time.Minute), time.Now().Add(time.Minute), "")
+	if err != nil {
+		t.Fatalf("QueryLogs() error = %v", err)
+	}
+	if len(got) != 1 || got[0].Message != "from c1" {
+		t.Errorf("QueryLogs() = %+v, want the one line c1's short-lived stream produced", got)
+	}
+}
+
+func TestLogCollectorRun_TargetsFuncError_ContinuesToNextResync(t *testing.T) {
+	db := newTestDB(t)
+	lc := NewLogCollector(&fakeLogSource{}, db, nil, nil)
+
+	var call int
+	targetsFunc := func(context.Context) ([]LogTarget, error) {
+		call++
+		return nil, errors.New("store unreachable")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 55*time.Millisecond)
+	defer cancel()
+
+	err := lc.Run(ctx, 10*time.Millisecond, targetsFunc)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("Run() error = %v, want context.DeadlineExceeded (a targetsFunc error must not stop the loop)", err)
+	}
+	if call < 2 {
+		t.Errorf("targetsFunc called %d times, want at least 2: a failing resync must not stop future attempts", call)
+	}
+}
+
+// sinceLogSource replays a fixed history but honors the resume point, like
+// Docker's own "since" option.
+type sinceLogSource struct {
+	lines []docker.LogLine
+	since []time.Time
+}
+
+func (f *sinceLogSource) Logs(_ context.Context, _ string, _ bool, since time.Time) (<-chan docker.LogLine, <-chan error) {
+	f.since = append(f.since, since)
+	out := make(chan docker.LogLine, len(f.lines))
+	errCh := make(chan error)
+	for _, l := range f.lines {
+		if since.IsZero() || !l.Timestamp.Before(since) {
+			out <- l
+		}
+	}
+	close(out)
+	close(errCh)
+	return out, errCh
+}
+
+func TestStreamOne_ResubscribeDoesNotDuplicateLines(t *testing.T) {
+	base := time.Now().Add(-time.Hour).Truncate(time.Millisecond)
+	history := []docker.LogLine{
+		{Stream: "stdout", Timestamp: base, Message: "one"},
+		{Stream: "stdout", Timestamp: base.Add(time.Second), Message: "two"},
+	}
+	target := LogTarget{ResourceID: "service:web", ContainerID: "c1"}
+	count := func(db *DB) int {
+		got, err := db.QueryLogs(context.Background(), "service:web", base.Add(-time.Minute), base.Add(time.Minute), "")
+		if err != nil {
+			t.Fatalf("QueryLogs: %v", err)
+		}
+		return len(got)
+	}
+
+	tests := []struct {
+		name     string
+		sameProc bool
+	}{
+		{"same process reconnect uses the in-memory cursor", true},
+		{"control plane restart resumes from the stored newest line", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newTestDB(t)
+			src := &sinceLogSource{lines: history}
+			lc := NewLogCollector(src, db, nil, nil)
+			if err := lc.StreamOne(context.Background(), target); err != nil {
+				t.Fatalf("first StreamOne: %v", err)
+			}
+			if tt.sameProc {
+				src.lines = append(src.lines, docker.LogLine{Stream: "stdout", Timestamp: base.Add(2 * time.Second), Message: "three"})
+			} else {
+				lc = NewLogCollector(src, db, nil, nil)
+				src.lines = append(src.lines, docker.LogLine{Stream: "stdout", Timestamp: base.Add(2 * time.Second), Message: "three"})
+			}
+			if err := lc.StreamOne(context.Background(), target); err != nil {
+				t.Fatalf("second StreamOne: %v", err)
+			}
+			if got := count(db); got != 3 {
+				t.Errorf("stored %d lines after resubscribing, want 3 (no duplicates, new line kept)", got)
+			}
+			if !src.since[0].IsZero() || src.since[1].IsZero() {
+				t.Errorf("since args = %v, want zero then non-zero", src.since)
+			}
+		})
+	}
+}
+
+type recordingLogSource struct {
+	mu      sync.Mutex
+	follows map[string][]bool
+	lines   map[string][]docker.LogLine
+}
+
+func (s *recordingLogSource) Logs(_ context.Context, id string, follow bool, since time.Time) (<-chan docker.LogLine, <-chan error) {
+	s.mu.Lock()
+	s.follows[id] = append(s.follows[id], follow)
+	ls := s.lines[id]
+	s.mu.Unlock()
+	out := make(chan docker.LogLine, len(ls))
+	for _, l := range ls {
+		if !l.Timestamp.Before(since) {
+			out <- l
+		}
+	}
+	close(out)
+	errs := make(chan error)
+	close(errs)
+	return out, errs
+}
+
+func TestLogCollector_StoppedContainerFetchedOnceNonFollow(t *testing.T) {
+	db := newTestDB(t)
+	src := &recordingLogSource{
+		follows: map[string][]bool{},
+		lines:   map[string][]docker.LogLine{"c1": {{Stream: "stderr", Message: "edge-boom", Timestamp: time.Now()}}},
+	}
+	lc := NewLogCollector(src, db, nil, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	targets := func(context.Context) ([]LogTarget, error) {
+		return []LogTarget{{ResourceID: "service:web", ContainerID: "c1", Stopped: true}}, nil
+	}
+	go func() { _ = lc.Run(ctx, 20*time.Millisecond, targets) }()
+
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		got, err := db.QueryLogs(ctx, "service:web", time.Now().Add(-time.Hour), time.Now().Add(time.Hour), "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(got) == 1 {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	got, _ := db.QueryLogs(ctx, "service:web", time.Now().Add(-time.Hour), time.Now().Add(time.Hour), "")
+	if len(got) != 1 || got[0].Message != "edge-boom" {
+		t.Fatalf("stored logs = %+v, want the crashed container's one line", got)
+	}
+	time.Sleep(200 * time.Millisecond)
+	src.mu.Lock()
+	defer src.mu.Unlock()
+	if n := len(src.follows["c1"]); n > stoppedIdleFetches+1 {
+		t.Fatalf("stopped container fetched %d times, want bounded by %d", n, stoppedIdleFetches+1)
+	}
+	for _, f := range src.follows["c1"] {
+		if f {
+			t.Fatal("stopped container subscribed with follow=true")
+		}
+	}
+}

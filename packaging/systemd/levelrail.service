@@ -1,0 +1,18 @@
+# Reference copy. install.sh writes this same unit (with paths
+# substituted) to /etc/systemd/system/levelrail.service; keep the two in
+# sync if either changes.
+[Unit]
+Description=Levelrail control plane
+After=network-online.target docker.service
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/levelrail
+WorkingDirectory=/var/lib/levelrail-data
+Environment=APP_DATA_DIR=/var/lib/levelrail-data
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

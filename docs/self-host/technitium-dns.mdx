@@ -1,0 +1,69 @@
+---
+title: "Self-host Technitium DNS Server with Docker"
+sidebarTitle: "Technitium DNS Server"
+description: "A full-featured authoritative and recursive DNS server with DNS-over-HTTPS/TLS and a web console."
+"og:url": "https://docs.levelrail.com/self-host/technitium-dns"
+---
+
+A full-featured authoritative and recursive DNS server with DNS-over-HTTPS/TLS and a web console.
+
+This page describes the Levelrail template for Technitium DNS Server (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://technitium.com/dns/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `technitium-dns` | `technitium/dns-server:15.5.1` | 5380 | `technitium_config -&#62; /etc/dns` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `technitium-dns` | `DNS_SERVER_ADMIN_PASSWORD` | Generated at deploy |
+| `technitium-dns` | `DNS_SERVER_DOMAIN` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`technitium-dns`): 5380:5380.
+- Passwords and keys are generated at deploy time (`technitium-dns`): DNS_SERVER_ADMIN_PASSWORD.
+- Stores data in named volumes (`technitium-dns`): technitium_config.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Technitium DNS Server with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Technitium DNS Server. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy technitium-dns --name my-technitium-dns
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [AdGuard Home](/self-host/adguard-home)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+- [Consul](/self-host/consul)
+- [Elasticsearch](/self-host/elasticsearch)
+- [etcd](/self-host/etcd)
+
+All templates are listed in the [self-host gallery](/self-host).

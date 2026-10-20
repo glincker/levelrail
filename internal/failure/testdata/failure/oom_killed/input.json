@@ -1,0 +1,6 @@
+{
+  "Condition": {
+    "Reason": "OOMKilledDuringReadiness",
+    "Message": "container was OOM killed"
+  }
+}

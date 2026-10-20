@@ -1,0 +1,48 @@
+import { Duration, Stack, StackProps } from 'aws-cdk-lib';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import { Construct } from 'constructs';
+
+export interface ApiLbProps extends StackProps {
+  vpc: ec2.IVpc;
+}
+
+export class ApiLbStack extends Stack {
+  constructor(scope: Construct, id: string, props: ApiLbProps) {
+    super(scope, id, props);
+
+    const lb = new elbv2.ApplicationLoadBalancer(this, 'ApiLb', {
+      vpc: props.vpc,
+      internetFacing: true,
+      idleTimeout: Duration.seconds(30),
+    });
+
+    const targetGroup = new elbv2.ApplicationTargetGroup(this, 'ApiTargets', {
+      vpc: props.vpc,
+      port: 8080,
+      protocol: elbv2.ApplicationProtocol.HTTPS,
+      targetType: elbv2.TargetType.IP,
+      loadBalancingAlgorithmType: elbv2.TargetGroupLoadBalancingAlgorithmType.LEAST_OUTSTANDING_REQUESTS,
+      deregistrationDelay: Duration.seconds(20),
+      slowStart: Duration.seconds(60),
+      healthCheck: {
+        path: '/healthz',
+        interval: Duration.seconds(10),
+        timeout: Duration.seconds(3),
+        healthyThresholdCount: 3,
+        unhealthyThresholdCount: 2,
+        healthyHttpCodes: '204',
+      },
+    });
+
+    lb.addListener('ApiHttp', {
+      port: 80,
+      defaultAction: elbv2.ListenerAction.forward([targetGroup]),
+    });
+  }
+}
+
+# warnings
+# passive_health has no ALB equivalent, ALB only uses active health checks
+# retries have no ALB equivalent
+# rate_limit has no ALB equivalent, use an AWS WAF rate-based rule
