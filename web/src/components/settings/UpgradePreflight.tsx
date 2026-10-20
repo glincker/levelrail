@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { preflightQueryOptions } from '../../queries/updates'
 import { useRecheckPreflight } from '../../queries/upgradeSchedule'
 import { Button } from '../ui/button'
+import { CliFallback } from './CliFallback'
 import { CopyCommand } from './CopyCommand'
 import { ReleaseNotes } from './ReleaseNotes'
 import { UpgradeCheckRow } from './UpgradeCheckRow'
@@ -14,7 +15,9 @@ export function UpgradePreflight({
   hideEdgeGuidance?: boolean
 }) {
   const { t } = useTranslation('updates')
-  const { data, isPending, isError } = useQuery(preflightQueryOptions())
+  const { data, isPending, isError, refetch } = useQuery(
+    preflightQueryOptions(),
+  )
   const recheck = useRecheckPreflight()
   if (isPending) {
     return (
@@ -23,9 +26,19 @@ export function UpgradePreflight({
   }
   if (isError) {
     return (
-      <p className="text-sm text-muted-foreground">
-        {t('preflight.unavailable')}
-      </p>
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          {t('preflight.unavailable')}
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => void refetch()}
+        >
+          {t('preflight.retry')}
+        </Button>
+      </div>
     )
   }
   return (
@@ -59,7 +72,7 @@ export function UpgradePreflight({
           />
         )
       ) : data.update_available ? (
-        <div className="space-y-3">
+        <CliFallback>
           <CopyCommand
             label={t('preflight.upgradeCommand')}
             command={data.upgrade_command}
@@ -68,7 +81,7 @@ export function UpgradePreflight({
             label={t('preflight.rollbackCommand')}
             command={data.rollback_command}
           />
-        </div>
+        </CliFallback>
       ) : null}
       <Button
         type="button"
