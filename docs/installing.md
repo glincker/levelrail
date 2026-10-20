@@ -402,11 +402,7 @@ npm run dev       # Vite dev server
 npm run build     # type-check and production build
 ```
 
-The control plane listens on `:8080` by default. For a throwaway local instance, start it with `APP_DEV_MODE=1`: it creates a fixed `dev`/`dev` admin and fixed API tokens from `test/fixtures/dev-fixtures.yml` so you can skip sign-up.
-
-<Warning>
-Dev mode is for local use only. A release build (`-tags embedweb`) ignores `APP_DEV_MODE`, so it can never run this way in production.
-</Warning>
+The control plane listens on `:8080` by default. For a throwaway instance on your laptop, see [Run it on your laptop](/local-development).
 
 ## Installing just the CLI
 

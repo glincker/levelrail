@@ -1077,6 +1077,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		HTTPRedirect:         c.httpRedirect && !settings.TLSTerminatedUpstream,
 		FallbackCertLifetime: fallbackLifetimeString(c.fallbackCertLifetime),
 		PlainHTTP:            settings.TLSTerminatedUpstream,
+		HTTPBindHost:         hostFromAddr(c.httpListenAddr),
 		Routes:               routes,
 		StaticRoutes:         staticRoutes,
 		MaintenanceRoutes:    maintenanceRoutes,
@@ -1144,6 +1145,15 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		conditions = append(conditions, *cond)
 	}
 	return reconcile.Result{Conditions: conditions}, nil
+}
+
+// hostFromAddr is addr's host part, empty for ":80" or an unparseable addr.
+func hostFromAddr(addr string) string {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return ""
+	}
+	return host
 }
 
 // httpPortFromAddr extracts the numeric port from addr (a Caddy-style

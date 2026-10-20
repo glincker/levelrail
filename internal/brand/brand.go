@@ -79,6 +79,22 @@ func Load(path string) (*Brand, error) {
 	return &b, nil
 }
 
+// LoadEmbedded is Load for the compiled-in defaults, for a run with no brand file on disk.
+func LoadEmbedded() (*Brand, error) {
+	var b Brand
+	if err := yaml.Unmarshal(defaultsYAML, &b); err != nil {
+		return nil, fmt.Errorf("brand: parse embedded defaults: %w", err)
+	}
+	b.applyEnvOverrides()
+	if b.PrimaryColorDark == "" {
+		b.PrimaryColorDark = b.PrimaryColor
+	}
+	if err := b.validate(); err != nil {
+		return nil, fmt.Errorf("brand: %w", err)
+	}
+	return &b, nil
+}
+
 // applyVisualDefaults fills an empty logo and colors from the embedded default
 // brand, only while the name is still the default one: a rebranded deployment
 // must never inherit another identity's mark.

@@ -24,7 +24,7 @@ flowchart LR
 - Ports 80 and 443 reachable from the internet. Let's Encrypt uses port 80 to issue certificates.
 - Optional: a domain you can point at the server. You can skip this and use a free `sslip.io` address.
 
-The full requirements, with what the installer checks, are in [Installing](/installing#requirements).
+The full requirements, with what the installer checks, is in [Installing](/installing#requirements). No server yet? [Try it on your laptop](/local-development) first.
 
 ## Install
 

@@ -79,6 +79,7 @@
               "index",
               "what-you-need",
               "installing",
+              "local-development",
               "getting-started",
               "quickstart-one-command",
               "tutorials/deploy-a-docker-app",

@@ -11,6 +11,8 @@ package ingress
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 	"strings"
 )
 
@@ -349,6 +351,8 @@ type RoutesOptions struct {
 	// PlainHTTP serves the same routes over unencrypted HTTP on HTTPPort,
 	// for a proxy in front that terminates TLS and dials this port.
 	PlainHTTP bool
+	// HTTPBindHost is the interface the PlainHTTP listener binds; empty means every interface.
+	HTTPBindHost string
 	// Routes is every reverse-proxy backend to route on this listener.
 	// Empty is valid: it produces a listener with no routes and no TLS
 	// automation policy, the normal shape for a reconcile pass over zero
@@ -784,7 +788,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 
 	if opts.PlainHTTP && opts.HTTPPort != 0 && !opts.Inherited.Active() {
 		plain := *server
-		plain.Listen = []string{fmt.Sprintf(":%d", opts.HTTPPort)}
+		plain.Listen = []string{net.JoinHostPort(opts.HTTPBindHost, strconv.Itoa(opts.HTTPPort))}
 		plain.AutomaticHTTPS = &AutoHTTPSConfig{Disabled: true}
 		cfg.Apps.HTTP.Servers[opts.ServerName+"-plain"] = &plain
 	}
