@@ -1,4 +1,21 @@
 {
+  "defaults": {
+    "tab": "Defaults",
+    "description": "Alerts that ship turned on: certificate expiry at escalating lead times, failed restore drills, offline nodes and more. Turning one off keeps it off; edits are never overwritten.",
+    "loadError": "Could not load the default alerts.",
+    "emptyTitle": "No default alerts",
+    "emptyBody": "Default alerts are created on first boot. Any you deleted stay deleted.",
+    "toggleLabel": "Enable {{name}}",
+    "enabledToast": "{{name}} is on",
+    "disabledToast": "{{name}} is off",
+    "toggleError": "Could not update {{name}}.",
+    "firing": "Firing",
+    "severity": {
+      "info": "Info",
+      "warning": "Warning",
+      "critical": "Critical"
+    }
+  },
   "tab": "Inbox",
   "title": "Alert inbox",
   "description": "Alerts that reached you, newest first. Silenced, grouped and rate limited noise is hidden. Read state follows your account.",

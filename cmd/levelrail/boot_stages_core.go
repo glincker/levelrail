@@ -174,6 +174,7 @@ func (s *bootState) openTelemetryStores() error {
 	s.deployRecorder = deployRecorder
 	s.logBroadcaster = logBroadcaster
 	s.alertingDB = alertingDB
+	seedDefaultAlerts(ctx, logger, alertingDB)
 	return nil
 }
 

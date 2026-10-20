@@ -104,6 +104,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithRequestSummaryWindow(requestSummaryWindow()),
 		api.WithAlertRules(alertingDB),
 		api.WithAlertNoise(alertingDB),
+		api.WithAlertDefaults(alertingDB),
 		api.WithInbox(alertingDB),
 		api.WithStatusPage(db, statusPageConfig(logger), statusPageRateLimit(logger)),
 		api.WithDeployNotifyTargets(alertingDB),

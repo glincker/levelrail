@@ -259,7 +259,11 @@ func (e *Engine) Tick(ctx context.Context) error {
 				e.logger.Warn("alerting: cert_expiry rule found but no cert source configured, skipping", slog.String("rule_id", r.ID))
 				continue
 			}
-			next, certNotices, err = EvaluateCertExpiry(ctx, e.certs, e.rules, r, e.certExpiryWarningWindow, e.certRenewalStalledThreshold, now, e.logger)
+			window := e.certExpiryWarningWindow
+			if r.ForDuration > 0 {
+				window = r.ForDuration // per-rule lead time, so escalating cert rules each warn at their own day count
+			}
+			next, certNotices, err = EvaluateCertExpiry(ctx, e.certs, e.rules, r, window, e.certRenewalStalledThreshold, now, e.logger)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue

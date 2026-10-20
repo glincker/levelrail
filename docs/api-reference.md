@@ -1735,6 +1735,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/git-connections/{id}/branches | AbilityReadSensitive | handleListGitConnectionBranches |
 | POST | /api/v1/git-connections/{id}/use-as-source | AbilityWriteSensitive | handleUseGitConnectionRepoAsSource |
 | GET | /api/v1/diagnose/{kind}/{name} | AbilityRead | handleDiagnoseStuck |
+| GET | /api/v1/alert-defaults | AbilityRead | handleListDefaultAlerts |
+| PUT | /api/v1/alert-defaults/{id} | AbilityWrite | handleSetDefaultAlertEnabled |
 
 ## See also
 
