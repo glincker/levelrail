@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1537 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1547 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -225,6 +225,14 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/exposure/check", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCheckAppExposure", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/exposure/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePreviewAppExposure", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/failure-context", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleFailureContext", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/forms", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListForms", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/forms", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateForm", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/forms/{form}", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteForm", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/forms/{form}", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUpdateForm", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/forms/{form}/export", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleExportFormSubmissions", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/forms/{form}/submissions", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListFormSubmissions", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/forms/{form}/submissions/{id}", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteFormSubmission", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/forms/{form}/submissions/{id}/spam", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetFormSubmissionSpam", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/git-remote", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteGitRemote", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/git-remote", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetGitRemote", Description: "Git push deploy remote (git_push_remote.go): token management for the beta push remote, GET=Read, everything else WriteSensitive like git-source."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/git-remote", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleIssueGitRemote", Description: ""},
@@ -989,6 +997,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/fixes/{id}/preview", Ability: "AbilityRead", Group: "Other", Handler: "handlePreviewFix", Description: ""},
 	{Method: "GET", Path: "/api/v1/forgejo-app/callback", Ability: "AbilityRoot", Group: "Other", Handler: "handleGitConnectCallback", Description: ""},
 	{Method: "GET", Path: "/api/v1/forgejo-app/connect", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartGitConnect", Description: ""},
+	{Method: "OPTIONS", Path: "/api/v1/forms/{app}/{name}", Ability: "Public", Group: "Other", Handler: "handleFormPreflight", Description: ""},
+	{Method: "POST", Path: "/api/v1/forms/{app}/{name}", Ability: "Public", Group: "Other", Handler: "handleFormSubmit", Description: ""},
 	{Method: "GET", Path: "/api/v1/frameworks", Ability: "AbilityRead", Group: "Other", Handler: "handleListFrameworks", Description: ""},
 	{Method: "GET", Path: "/api/v1/frameworks/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFramework", Description: ""},
 	{Method: "GET", Path: "/api/v1/frameworks/{id}/dockerfile", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFrameworkDockerfile", Description: ""},

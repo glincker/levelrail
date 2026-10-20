@@ -48,6 +48,7 @@ import type trialApp from '../locales/en/trialApp.json'
 import type previews from '../locales/en/previews.json'
 import type backups from '../locales/en/backups.json'
 import type sleepHistory from '../locales/en/sleepHistory.json'
+import type forms from '../locales/en/forms.json'
 import type gitBuild from '../locales/en/gitBuild.json'
 import type frameworks from '../locales/en/frameworks.json'
 import type teams from '../locales/en/teams.json'
@@ -145,6 +146,7 @@ declare module 'i18next' {
       previews: typeof previews
       backups: typeof backups
       sleepHistory: typeof sleepHistory
+      forms: typeof forms
       gitBuild: typeof gitBuild
       frameworks: typeof frameworks
       teams: typeof teams

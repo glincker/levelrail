@@ -206,6 +206,7 @@
               "domain-diagnosis",
               "domain-traffic-controls",
               "cdn-and-caching",
+              "forms",
               "firewall",
               "acme-verification-runbook",
               "multi-node",

@@ -118,6 +118,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Diagnose a domain](/domain-diagnosis): Find out why a domain is not working, see the exact DNS record to create, and fix it from the dashboard, the CLI or the API.
 - [Domain traffic controls](/domain-traffic-controls): Per-domain traffic controls in the embedded ingress: header rules, path forwarders, country rules, caching, redirects and raw ports, from the UI, CLI or API.
 - [CDN and caching](/cdn-and-caching): The response cache in the ingress: what it stores and what it never does, cache rules, purge by URL, prefix, tag or all, hit rate and bandwidth saved, and how to put a third party CDN in front.
+- [Forms](/forms): Collect submissions from the HTML forms on a static site with a public endpoint, a spam trap, per-address rate limits, an inbox with CSV export and notifications through your existing alert channels.
 - [Firewall](/firewall): Filter web requests at the embedded ingress: ordered rules, IP lists, automatic bans, a browser challenge, bot and AI crawler handling, attack mode, and a live view of what was blocked.
 - [Verifying real ACME issuance against a live domain](/acme-verification-runbook): Verify real ACME certificate issuance against a live public domain with Let's Encrypt or another RFC 8555 CA: what to check, common failures, a recorded run.
 - [Multi-node: adding and managing nodes](/multi-node): Enroll additional nodes, manage placement and health, migrate apps with their volumes, and configure the WireGuard mesh.
@@ -330,6 +331,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### Engineering notes
 
 - [CI](/ci): How the GitHub Actions checks on a pull request are chosen, what they cost, and which ones branch protection relies on.
+- [First-hour smoke test](/first-hour-smoke-test): Run the install-to-rollback journey in a Docker container to prove the first hour works, and wire it into a nightly job.
 - [VPS smoke test](/vps-smoke): scripts/vps-smoke.sh checks a real install end to end on a VPS you already have, without creating or deleting cloud resources.
 - [Internationalization (i18n)](/i18n): How the dashboard's i18n works for contributors: where strings live, how to add one to a component, and how TypeScript catches a mistyped key.
 - [GLINR design tokens](/design-tokens): The single source of truth for color, space, radius, elevation, type and motion in the Levelrail dashboard, and how to add or change a token.

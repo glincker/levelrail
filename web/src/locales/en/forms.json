@@ -1,0 +1,74 @@
+{
+  "title": "Forms",
+  "description": "Collect submissions from the HTML forms on your static site. Each form gets a public endpoint to post to.",
+  "loading": "Loading forms",
+  "loadError": "Could not load forms.",
+  "retry": "Try again",
+  "new": "New form",
+  "create": {
+    "title": "New form",
+    "description": "Pick a short name. It becomes part of the endpoint address and cannot be changed later.",
+    "name": "Form name",
+    "namePlaceholder": "contact",
+    "submit": "Create form",
+    "submitting": "Creating"
+  },
+  "empty": {
+    "title": "No forms yet",
+    "description": "Create a form, paste the HTML snippet into your site, and submissions land here."
+  },
+  "endpoint": "Endpoint",
+  "snippet": "HTML snippet",
+  "copy": "Copy",
+  "copied": "Copied",
+  "copyFailed": "Could not copy",
+  "counts": "{{total}} submissions, {{spam}} spam",
+  "settings": {
+    "title": "Settings",
+    "redirect": "Redirect after submit",
+    "redirectHint": "Browsers are sent here after a post. Leave empty to show a plain thank-you page.",
+    "honeypot": "Spam trap field",
+    "honeypotHint": "A hidden field real visitors leave empty. Posts that fill it are kept as spam and never notify you.",
+    "channels": "Notify on new submissions",
+    "noChannels": "No notification channels are set up yet. Add one under Alerts to be told about new submissions.",
+    "save": "Save settings",
+    "saving": "Saving",
+    "saved": "Form settings saved."
+  },
+  "delete": {
+    "button": "Delete form",
+    "title": "Delete this form?",
+    "description": "The endpoint stops accepting posts right away.",
+    "consequence": "All stored submissions for this form are deleted and cannot be recovered.",
+    "confirm": "Delete form",
+    "pending": "Deleting"
+  },
+  "retention": "Submissions are deleted after {{days}} days. Only a salted hash of the sender address is stored, never the address.",
+  "inbox": {
+    "title": "Inbox",
+    "search": "Search submissions",
+    "filterAll": "All",
+    "filterInbox": "Not spam",
+    "filterSpam": "Spam",
+    "export": "Export CSV",
+    "loading": "Loading submissions",
+    "loadError": "Could not load submissions.",
+    "emptyTitle": "No submissions yet",
+    "emptyDescription": "Post to the endpoint above, or send a test from your site, and it appears here.",
+    "noMatchTitle": "Nothing matches",
+    "noMatchDescription": "Try a different search or filter.",
+    "spamBadge": "Spam",
+    "markSpam": "Mark as spam",
+    "markNotSpam": "Not spam",
+    "remove": "Delete",
+    "removeConfirm": "Delete this submission?",
+    "actionFailed": "That change did not save.",
+    "loadMore": "Load more",
+    "reason": {
+      "honeypot": "Filled the spam trap",
+      "too_many_links": "Too many links",
+      "empty": "No fields",
+      "manual": "Marked by you"
+    }
+  }
+}

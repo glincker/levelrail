@@ -1,6 +1,7 @@
 import type * as React from 'react'
 import {
   ArrowsSplitIcon,
+  ClipboardTextIcon,
   BellIcon,
   BookOpenIcon,
   BracketsCurlyIcon,
@@ -457,6 +458,7 @@ export type AppTo =
   | '/apps/$name/loadbalancer'
   | '/apps/$name/network'
   | '/apps/$name/cache'
+  | '/apps/$name/forms'
   | '/apps/$name/environment'
   | '/apps/$name/services'
   | '/apps/$name/resources'
@@ -557,6 +559,7 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
       ),
       item('network', 'Network', '/apps/$name/network', <ShareNetworkIcon />),
       item('cache', 'Cache', '/apps/$name/cache', <LightningIcon />),
+      item('forms', 'Forms', '/apps/$name/forms', <ClipboardTextIcon />),
     ],
   },
   {

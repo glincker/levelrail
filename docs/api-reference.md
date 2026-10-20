@@ -591,6 +591,14 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/build-hooks | AbilityWriteSensitive | handleCreateBuildHook |
 | POST | /api/v1/apps/{name}/build-hooks/{id}/rotate | AbilityWriteSensitive | handleRotateBuildHook |
 | DELETE | /api/v1/apps/{name}/build-hooks/{id} | AbilityWriteSensitive | handleRevokeBuildHook |
+| GET | /api/v1/apps/{name}/forms | AbilityRead | handleListForms |
+| POST | /api/v1/apps/{name}/forms | AbilityDeploy | handleCreateForm |
+| PUT | /api/v1/apps/{name}/forms/{form} | AbilityDeploy | handleUpdateForm |
+| DELETE | /api/v1/apps/{name}/forms/{form} | AbilityDeploy | handleDeleteForm |
+| GET | /api/v1/apps/{name}/forms/{form}/submissions | AbilityReadSensitive | handleListFormSubmissions |
+| GET | /api/v1/apps/{name}/forms/{form}/export | AbilityReadSensitive | handleExportFormSubmissions |
+| PUT | /api/v1/apps/{name}/forms/{form}/submissions/{id}/spam | AbilityDeploy | handleSetFormSubmissionSpam |
+| DELETE | /api/v1/apps/{name}/forms/{form}/submissions/{id} | AbilityDeploy | handleDeleteFormSubmission |
 
 </Accordion>
 
@@ -1762,6 +1770,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/forgejo-app/connect | AbilityRoot | handleStartGitConnect |
 | GET | /api/v1/forgejo-app/callback | AbilityRoot | handleGitConnectCallback |
 | POST | /api/v1/hooks/deploy/{id}/{token} | Public | handleBuildHookTrigger |
+| POST | /api/v1/forms/{app}/{name} | Public | handleFormSubmit |
+| OPTIONS | /api/v1/forms/{app}/{name} | Public | handleFormPreflight |
 
 ## See also
 

@@ -575,7 +575,9 @@ type Router struct {
 	gitSources                   GitSourceStore                   // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does
 	buildHooks                   BuildHookStore                   // always set, incoming build hook URLs
 	buildHookLimiters            buildHookLimiters
-	imageAutoUpdates             ImageAutoUpdateStore                                  // always set, per-app registry auto-update opt-in
+	imageAutoUpdates             ImageAutoUpdateStore // always set, per-app registry auto-update opt-in
+	forms                        FormsStore           // nil is valid: form routes return 501
+	formsRT                      *formsRuntime
 	appSleep                     AppSleepStore                                         // always set, sleep-when-idle settings
 	dataImports                  DataImportStore                                       // always set, live data copy status
 	migrationHub                 MigrationHubStore                                     // always set, server migration hub sessions
@@ -891,6 +893,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		ciTrusts:                    s,
 		imageAutoUpdates:            s,
 		buildHooks:                  s,
+		forms:                       formsStoreOf(s),
+		formsRT:                     &formsRuntime{},
 		appSleep:                    s,
 		dataImports:                 s,
 		migrationHub:                s,

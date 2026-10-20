@@ -87,6 +87,8 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/sentry/api/{project}/store/":       "legacy Sentry store endpoint, same DSN key auth and per-app rate limit as the envelope route",
 	"OPTIONS /api/v1/sentry/api/{project}/envelope/": "CORS preflight for browser Sentry SDKs, answers headers only",
 	"OPTIONS /api/v1/sentry/api/{project}/store/":    "CORS preflight for browser Sentry SDKs, answers headers only",
+	"POST /api/v1/forms/{app}/{name}":                "public form capture for static sites: write-only, per-IP and per-form rate limited, size capped, unknown forms answer 404, never returns stored data",
+	"OPTIONS /api/v1/forms/{app}/{name}":             "CORS preflight for browser form posts, answers headers only",
 	"GET /api/v1/hooks/wake":                         "called by the ingress wake route with a per-process secret header; any mismatch answers 404",
 	"POST /api/v1/webhooks/slack/interactions":       "authenticated by the X-Slack-Signature HMAC of the channel's own interactive secret",
 	"POST /api/v1/webhooks/discord/interactions":     "authenticated by the Ed25519 signature of the channel's own Discord application public key",
