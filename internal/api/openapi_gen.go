@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1473 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1478 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1070,6 +1070,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/migration/hub/sessions/{id}/step", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handlePutHubStep", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/import", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMigrationImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/plan", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMigrationPlan", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/takeover/plan", Ability: "AbilityRoot", Group: "Other", Handler: "handleTakeoverPlan", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/takeover/runs", Ability: "AbilityRoot", Group: "Other", Handler: "handleListTakeoverRuns", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/takeover/runs", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartTakeover", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/takeover/runs/{run}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetTakeoverRun", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/takeover/runs/{run}/rollback", Ability: "AbilityRoot", Group: "Other", Handler: "handleRollbackTakeover", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/volumes", Ability: "AbilityRead", Group: "Other", Handler: "handleVolumeGuide", Description: ""},
 	{Method: "GET", Path: "/api/v1/mobile/devices", Ability: "AbilityRead", Group: "Other", Handler: "handleListMobileDevices", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/mobile/devices/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleRevokeMobileDevice", Description: "Read tier so a device owner (or the phone itself) can revoke; root or owner is checked inside."},

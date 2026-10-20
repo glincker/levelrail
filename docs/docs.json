@@ -334,6 +334,7 @@
               "migrate-from-docker-compose",
               "migration-reference",
               "migrating-from-coolify-dokploy-and-caprover",
+              "migrate-same-server",
               "migrating-from-vercel",
               "migrating-from-cloud-run"
             ],

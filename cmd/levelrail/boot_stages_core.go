@@ -47,6 +47,7 @@ func (s *bootState) openStore() error {
 		}
 	})
 	recordUpgradeHistory(ctx, db, obs, logger)
+	applyTakeoverBoot(ctx, db, logger)
 	importSelfUpgradeJournal(ctx, db, logger)
 	resolveServerProfile(ctx, db, logger)
 	if err := api.LoadBetaFeatures(ctx, db); err != nil {

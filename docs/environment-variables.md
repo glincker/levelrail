@@ -184,6 +184,8 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS` | `365` | Age of the master key, in whole days, after which doctor suggests rotating it. See [Master key rotation](/master-key-rotation). Control plane. |
 | `APP_DOCTOR_NETWORK_TIMEOUT` | `5s` | Shared time limit for the network checks in the doctor endpoint. Control plane. |
 | `APP_PROXY_ROUTER_PRIORITY` | `100000` | Traefik router priority written into managed route files, 1 to 1000000000. High so the managed router wins over label routers (for example ones left over from Coolify) for the same host. Changing it rewrites every managed file, so run **Verify** again afterwards. Control plane. |
+| `APP_TAKEOVER_WINDOW` / `APP_TAKEOVER_VERIFY_INTERVAL` | `5m` / `10s` | How long a same-server port takeover may stay unverified before it rolls back by itself, and the pause between checks. Control plane. See [Migrate on the same server](/migrate-same-server). |
+| `APP_TAKEOVER_MIN_DISK_GB` / `APP_TAKEOVER_MIN_MEMORY_MB` | `2` / `256` | Free disk (GB) and total memory (MB) below which the takeover preflight blocks. Control plane. |
 | `APP_PROXY_VERIFY_TIMEOUT` | `8s` | Time limit for each managed proxy route check (TLS handshake and request through the proxy) and for the DNS checks of the proxy setup checklist. Control plane. |
 | `APP_DOCTOR_PUBLIC_IP_ENDPOINT` | `https://api.ipify.org` | URL that returns the caller's public IP as plain text, used by the `public_ip` doctor check and by deploy preflight. Control plane. |
 | `APP_DIAGNOSE_PROBE_TIMEOUT` | `4s` | Time limit for each live probe (container state and container logs) when diagnosing an app. Zero or invalid values use the default. Control plane. |

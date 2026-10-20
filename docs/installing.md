@@ -223,6 +223,8 @@ It reports who holds ports 80 and 443 (Traefik, nginx, Caddy, Apache, HAProxy, a
 
 ### Server already runs a proxy
 
+After coexist mode, [Migrate on the same server](/migrate-same-server) covers staging your apps and moving ports 80 and 443 to Levelrail with a rollback.
+
 Coolify, Traefik, nginx or Caddy on the same box already hold ports 80 and 443, so a default install would start but never serve or issue certificates. The installer checks this before it changes anything (`ss`, and `docker ps --filter publish=<port>` to name a container and image):
 
 ```text

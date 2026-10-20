@@ -1698,6 +1698,11 @@ Routes that do not fit an existing group.
 | POST | /api/v1/images/signature-policy/validate | AbilityWrite | handleValidateImageSignaturePolicy |
 | POST | /api/v1/plugins/{name}/test | AbilityRoot | handleTestPlugin |
 | POST | /api/v1/model-endpoints/test | AbilityWrite | handleTestEndpointInput |
+| GET | /api/v1/migration/takeover/plan | AbilityRoot | handleTakeoverPlan |
+| GET | /api/v1/migration/takeover/runs | AbilityRoot | handleListTakeoverRuns |
+| POST | /api/v1/migration/takeover/runs | AbilityRoot | handleStartTakeover |
+| GET | /api/v1/migration/takeover/runs/{run} | AbilityRoot | handleGetTakeoverRun |
+| POST | /api/v1/migration/takeover/runs/{run}/rollback | AbilityRoot | handleRollbackTakeover |
 
 ## See also
 

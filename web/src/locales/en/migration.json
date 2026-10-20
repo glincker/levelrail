@@ -200,7 +200,8 @@
       "images": "Move images",
       "verify": "Build and verify",
       "volumes": "Volumes",
-      "cutover": "Cutover"
+      "cutover": "Cutover",
+      "takeover": "Take over ports"
     },
     "safe": {
       "title": "What this does and does not do",
@@ -448,7 +449,8 @@
           "rollback": "Restore",
           "manual_dns": "Manual DNS"
         }
-      }
+      },
+      "next": "Next: take over ports"
     },
     "images": {
       "title": "Move images built on the source host",
@@ -533,5 +535,88 @@
     "back": "Back",
     "deploying": "Deploying...",
     "deploy": "Deploy"
+  },
+  "takeover": {
+    "title": "Take over this server's ports",
+    "description": "Move ports 80 and 443 from your old platform's proxy to this server's own ingress, with a recorded way back. Do this last, after every app is staged, verified and its data copied.",
+    "rootOnly": "Only the root account can take over ports. You can read the preflight, but the Run button stays off.",
+    "loadError": "Could not read the preflight.",
+    "recheck": "Re-check",
+    "rechecking": "Checking",
+    "ports": "Listening on {{from}} now, {{to}} after.",
+    "verdict": {
+      "ready": "Ready",
+      "warnings": "Ready with warnings",
+      "blocked": "Blocked",
+      "done": "Done"
+    },
+    "status": {
+      "pass": "Pass",
+      "warn": "Warning",
+      "block": "Blocked"
+    },
+    "domainsTitle": "Domains this server will serve",
+    "healthy": "Healthy",
+    "unhealthy": "Not healthy",
+    "dns": {
+      "ok": "DNS here",
+      "elsewhere": "DNS elsewhere",
+      "unresolved": "No DNS"
+    },
+    "cert": {
+      "custom": "Uploaded certificate",
+      "acme": "Issued on first use"
+    },
+    "stepsTitle": "What the run does",
+    "rollbackTitle": "How it is undone",
+    "acceptUnmanaged": "I accept that the domains listed above go offline when the old proxy stops.",
+    "alreadyDone": "This server already listens on ports 80 and 443. Nothing is left to do.",
+    "copyCommand": "Copy command",
+    "copied": "Copied",
+    "runTitle": "Takeover run",
+    "state": {
+      "preparing": "Preparing",
+      "applying": "Restarting",
+      "verifying": "Verifying",
+      "done": "Done",
+      "rolling_back": "Rolling back",
+      "rolled_back": "Rolled back",
+      "failed": "Needs attention"
+    },
+    "step": {
+      "rollback_record": "Way back recorded",
+      "stop_old_proxy": "Old proxy stopped",
+      "tls_settings": "TLS handled here",
+      "listen_addresses": "New addresses stored",
+      "restart": "Restart",
+      "verify": "Verify over HTTPS",
+      "rollback": "Rollback"
+    },
+    "hint": {
+      "applying": "The control plane is restarting. This page reconnects by itself.",
+      "verifying": "Checking every domain. If this does not succeed within {{seconds}} seconds it rolls back by itself.",
+      "done": "This server now serves ports 80 and 443. The old proxy container is stopped, not removed. Roll back any time.",
+      "rolling_back": "Restoring the previous addresses and starting the old proxy again.",
+      "rolled_back": "The previous addresses are back and the old proxy is running again.",
+      "failed": "Something did not finish. Read the message above, then fix it and re-check."
+    },
+    "run": {
+      "button": "Take over ports",
+      "note": "A failed verification rolls back by itself after {{seconds}} seconds.",
+      "dialogTitle": "Take over ports 80 and 443?",
+      "dialogDescription": "Visitors see a short pause while the proxy stops and this server starts answering.",
+      "consequenceStop": "The old proxy container is stopped, not removed.",
+      "consequenceRestart": "The control plane restarts once to listen on the new ports.",
+      "consequenceRollback": "If any domain fails verification the takeover rolls back by itself.",
+      "confirm": "Take over",
+      "pending": "Starting"
+    },
+    "rollback": {
+      "button": "Roll back",
+      "title": "Roll back the takeover?",
+      "description": "The previous listen addresses and TLS settings come back after a restart, and the old proxy starts again.",
+      "confirm": "Roll back",
+      "pending": "Rolling back"
+    }
   }
 }

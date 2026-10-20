@@ -145,6 +145,7 @@ If something fails, the plan says why and what to do by hand. Tell us what broke
 ## See also
 
 - [Migrate from Coolify](/migrate-from-coolify), [Dokploy](/migrate-from-dokploy), [CapRover](/migrate-from-caprover), [Dokku](/migrate-from-dokku), [Docker Compose](/migrate-from-docker-compose)
+- [Move to the same server](/migrate-same-server) and [import over SSH](/migrate-over-ssh)
 - [Managing databases](/managing-databases) and [Backups and storage](/backups-and-storage)
 - [Domains and ingress](/domains-and-ingress)
 - [Comparison](/comparison)

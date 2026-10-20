@@ -29,6 +29,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerLoadBalancerRoutes(mux)
 	rt.registerPlatformImportRoutes(mux)
 	rt.registerAppImportRoutes(mux)
+	rt.registerTakeoverRoutes(mux)
 	rt.registerDeployGateRoutes(mux)
 	rt.registerImageRoutes(mux)
 	rt.registerIaCRoutes(mux)

@@ -61,6 +61,8 @@ func runImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			return runImportApps(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
 		case "cutover":
 			return runImportCutover(prog, args[1:], stdout, stderr, lookupEnv)
+		case "takeover":
+			return runImportTakeover(prog, args[1:], stdout, stderr, lookupEnv)
 		}
 	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "import", "print the plan as JSON to stdout and nothing else", stderr)

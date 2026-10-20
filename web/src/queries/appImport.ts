@@ -25,6 +25,7 @@ export type AppImportStep =
   | 'verify'
   | 'volumes'
   | 'cutover'
+  | 'takeover'
 
 export interface AppImportFinding {
   reason: string

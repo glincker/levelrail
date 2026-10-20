@@ -593,6 +593,7 @@ type Router struct {
 	backupProtection             BackupProtection             // nil is valid: backup health, drill, policy and restore-to routes return 501
 	backupProtectionStore        BackupProtectionStore        // nil is valid, same as backupProtection above
 	cutover                      cutoverService               // in-memory cutover workers, zero value is ready
+	takeover                     takeoverService              // port takeover test seams, zero value is ready
 	githubAppSecrets             GitHubAppSecrets             // nil is valid: every github-app route that needs it (register/start, callback, installed, repos, branches) returns 501, same shape as backupSecrets above
 	githubAppClient              GitHubAppClient              // always set (NewRouter defaults it to a real *githubapp.Client, which needs no configuration to construct), overridable in this package's own tests the same way fetch is
 	githubAppState               *pendingState                // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see pendingState's own doc comment

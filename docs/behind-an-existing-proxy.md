@@ -8,6 +8,8 @@ On a server that already runs Coolify, Dokploy or your own nginx, something else
 owns ports 80 and 443. Levelrail doesn't fight it. It detects what holds the ports
 and generates the configuration to put the dashboard behind it.
 
+When the apps are staged and verified, [take over this server's ports](/migrate-same-server#4-take-over-this-servers-ports) in one guided, reversible step.
+
 ## One step setup (Traefik, including Coolify)
 
 When the proxy is Traefik with a file provider directory, Levelrail can manage

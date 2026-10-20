@@ -50,6 +50,9 @@ type LocalContainer struct {
 	NetworkMode string
 	Args        []string
 	ExtraHosts  []string
+	Labels      map[string]string
+	// RestartPolicy is only filled by InspectLocalContainer.
+	RestartPolicy string
 }
 
 // ListLocalContainers returns every container on the daemon, running or not.
@@ -66,7 +69,7 @@ func (c *Client) ListLocalContainers(ctx context.Context) ([]LocalContainer, err
 }
 
 func localFromSummary(s container.Summary) LocalContainer {
-	lc := LocalContainer{Image: s.Image, Running: s.State == "running", NetworkMode: s.HostConfig.NetworkMode}
+	lc := LocalContainer{Image: s.Image, Running: s.State == "running", NetworkMode: s.HostConfig.NetworkMode, Labels: s.Labels}
 	if len(s.Names) > 0 {
 		lc.Name = strings.TrimPrefix(s.Names[0], "/")
 	}
@@ -107,6 +110,7 @@ func localFromInspect(resp container.InspectResponse) LocalContainer {
 	var lc LocalContainer
 	if resp.Config != nil {
 		lc.Image = resp.Config.Image
+		lc.Labels = resp.Config.Labels
 		lc.Args = append(lc.Args, resp.Config.Entrypoint...)
 		lc.Args = append(lc.Args, resp.Config.Cmd...)
 	}
@@ -119,6 +123,7 @@ func localFromInspect(resp container.InspectResponse) LocalContainer {
 		if resp.HostConfig != nil {
 			lc.ExtraHosts = append(lc.ExtraHosts, resp.HostConfig.ExtraHosts...)
 			lc.NetworkMode = string(resp.HostConfig.NetworkMode)
+			lc.RestartPolicy = string(resp.HostConfig.RestartPolicy.Name)
 		}
 	}
 	for _, m := range resp.Mounts {

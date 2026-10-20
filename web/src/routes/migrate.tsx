@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MigrateChecklistCard } from '../components/migrate/MigrateChecklistCard'
 import { MigratePlan } from '../components/migrate/MigratePlan'
+import { PortTakeoverPanel } from '../components/PortTakeoverPanel'
 import { useMigrateChecklists } from '../queries/migrateWizard'
 
 export const Route = createFileRoute('/migrate')({
@@ -57,12 +58,16 @@ function MigratePage() {
         <TabsList>
           <TabsTrigger value="plan">{t('tabs.plan')}</TabsTrigger>
           <TabsTrigger value="cutover">{t('tabs.cutover')}</TabsTrigger>
+          <TabsTrigger value="takeover">{t('tabs.takeover')}</TabsTrigger>
         </TabsList>
         <TabsContent value="plan">
           <MigratePlan onOpenCutover={() => setTab('cutover')} />
         </TabsContent>
         <TabsContent value="cutover">
           <CutoverTab />
+        </TabsContent>
+        <TabsContent value="takeover">
+          <PortTakeoverPanel />
         </TabsContent>
       </Tabs>
     </PageTemplate>
