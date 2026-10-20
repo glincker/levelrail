@@ -65,3 +65,7 @@ The dashboard and CLI deploy by calling the existing endpoints in order: `POST /
 - Compose files with several services are imported through the existing import plan, not analysed here.
 - Env values are never discovered. Secrets still have to be typed in.
 - Health path and port are guesses from files, not from running the app. The first deploy's readiness probe is the check.
+
+## Deploy from a URL
+
+`levelrail-cli deploy <git-url>` runs the same analysis and `--apply` in one step. A positional argument that is a git URL (https, ssh, or `git@host:owner/repo`) selects it; a directory path still uploads that directory. Pasted `.git` suffixes, `git@` forms and `/tree/<branch>/<dir>` links are normalized to the repository, branch and app directory. Use `--dry-run` to print the plan only, and `--branch`, `--name`, `--port`, `--env`, `--base-directory` to override.

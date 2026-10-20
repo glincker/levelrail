@@ -27,7 +27,7 @@
     },
     "url": {
       "label": "Repository URL",
-      "hint": "GitHub, GitLab, Gitea or Bitbucket. Files are read through the provider API, nothing is cloned yet.",
+      "hint": "Paste any GitHub, GitLab, Gitea or Bitbucket URL (https, git@ or a /tree/branch link). Files are read through the provider API, nothing is cloned yet.",
       "advanced": "Private repository or a specific branch?",
       "branch": "Branch",
       "token": "Access token",

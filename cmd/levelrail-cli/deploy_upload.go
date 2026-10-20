@@ -396,6 +396,7 @@ later deploys update it. Files matching .gitignore, plus node_modules, .git,
 build caches and .env or key files, are never uploaded unless --include names
 them. The file count and the largest files are shown before anything is sent.
 
+To deploy a git repository by URL, use "%[1]s deploy <git-url>".
 To deploy an image or a git commit instead, use "%[1]s deploy APP --image IMAGE"
 or "--latest".
 

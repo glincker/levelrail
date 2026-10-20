@@ -44,6 +44,14 @@ func (rt *Router) handleAnalyzeImport(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "repo_url is required")
 		return
 	}
+	pinnedURL, pinnedRef, pinnedDir := normalizePastedRepoURL(req.RepoURL)
+	req.RepoURL = pinnedURL
+	if req.Ref == "" {
+		req.Ref = pinnedRef
+	}
+	if req.BaseDirectory == "" && req.Directory == "" {
+		req.BaseDirectory = pinnedDir
+	}
 	if err := requireHTTPOrHTTPSScheme(req.RepoURL); err != nil {
 		writeError(w, http.StatusBadRequest, "repo_url must be a public http or https git URL")
 		return
