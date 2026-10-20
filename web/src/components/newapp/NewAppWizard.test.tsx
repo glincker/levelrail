@@ -6,6 +6,22 @@ import { NewAppWizard } from './NewAppWizard'
 import { jsonResponse, nextAnalysis } from '../../test/newAppFixtures'
 import { NewAppI18n } from '../../test/newAppI18n'
 import type { ImportAnalysis } from '../../queries/importAnalyze'
+import type { Brand } from '../../types/brand'
+
+vi.mock('../../hooks/useBrand', () => ({
+  useBrand: (): Brand => ({
+    Name: 'Test Brand',
+    ShortName: 'testbrand',
+    BinaryName: 'testbrand',
+    Domain: 'test.example',
+    SupportURL: '',
+    PrimaryColor: '#000000',
+    LogoSVG: '',
+    DocsURL: '',
+    DiscussionsURL: '',
+    RepoURL: '',
+  }),
+}))
 
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: ({ count }: { count: number }) => ({

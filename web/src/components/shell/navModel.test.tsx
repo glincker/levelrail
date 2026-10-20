@@ -68,6 +68,7 @@ const EXPECTED_APP = [
   'network',
   'cache',
   'static-routes',
+  'forms',
   'environment',
   'services',
   'resources',
