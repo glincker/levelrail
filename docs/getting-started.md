@@ -249,6 +249,8 @@ Waiting up to 3m0s. Press Ctrl+C to cancel.
 
 On a desktop terminal the CLI opens that page for you (`--open`, or `--open=false` to turn it off); over SSH and in scripts it does not. In a script it stops at once with the same instructions on one line, unless you pass `--wait`. Change the wait with `--approval-timeout` or `APP_LOGIN_APPROVAL_TIMEOUT`. `login --device` still works when you prefer to start from the CLI and approve in the dashboard. For CI, create an API token under **Settings, API tokens** and set it as `APP_API_TOKEN`.
 
+No git remote yet? Run `levelrail-cli deploy` in the project folder to upload and deploy it directly, see [Deploy from your computer](/deploy-from-cli).
+
 ## Finish setting up
 
 After you sign in, the dashboard home shows live stats, recent activity, and a **Needs attention** list built from the same server checks as `levelrail-cli doctor`.

@@ -86,12 +86,19 @@ func (rt *Router) runManualBuild(m manualBuildRun) {
 	buildReq, id, name := m.buildReq, m.id, m.name
 	if m.buildType != spec.BuildImage {
 		rt.emitStep(id, "detecting", "running")
-		token := rt.tokenForRepo(ctx, name, m.repoURL, m.allowPrivateRepoAuth)
-		fetchCtx := ctx
-		if m.fromCache {
-			fetchCtx = sourcecache.WithOffline(ctx)
+		var sourceDir, commit string
+		var cleanup func()
+		var err error
+		if strings.HasPrefix(m.repoURL, uploadURLPrefix) {
+			sourceDir, commit, cleanup, err = rt.fetchUpload(name, m.repoURL)
+		} else {
+			token := rt.tokenForRepo(ctx, name, m.repoURL, m.allowPrivateRepoAuth)
+			fetchCtx := ctx
+			if m.fromCache {
+				fetchCtx = sourcecache.WithOffline(ctx)
+			}
+			sourceDir, commit, cleanup, err = rt.fetch(fetchCtx, m.repoURL, m.ref, token)
 		}
-		sourceDir, commit, cleanup, err := rt.fetch(fetchCtx, m.repoURL, m.ref, token)
 		if err != nil {
 			rt.logger.Error("api: trigger build: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", redactURLCredentials(m.repoURL)), slog.String("ref", m.ref))
 			rt.emitStep(id, "detecting", "failed")

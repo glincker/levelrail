@@ -118,80 +118,25 @@ func TestClient_DisconnectGitHubApp(t *testing.T) {
 	}
 }
 
-func TestClient_GetGitLabAppStatus(t *testing.T) {
-	var gotMethod, gotPath string
+func TestClient_GitConnections(t *testing.T) {
+	var seen []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotMethod, gotPath = r.Method, r.URL.Path
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(GitLabAppStatusResource{Connected: true, Authorized: true})
+		seen = append(seen, r.Method+" "+r.URL.RequestURI())
+		_ = json.NewEncoder(w).Encode([]GitProviderConnectionResource{{ID: "gc_1", Provider: "gitlab"}})
 	}))
 	defer srv.Close()
-
-	client := NewClient(srv.URL, "test-token")
-	got, err := client.GetGitLabAppStatus(context.Background())
-	if err != nil {
-		t.Fatalf("GetGitLabAppStatus() error = %v", err)
+	client := NewClient(srv.URL, "tok")
+	ctx := context.Background()
+	if got, err := client.ListGitConnections(ctx, "gitlab"); err != nil || len(got) != 1 || got[0].ID != "gc_1" {
+		t.Fatalf("ListGitConnections = %+v, %v", got, err)
 	}
-	if gotMethod != http.MethodGet || gotPath != "/api/v1/gitlab-app" {
-		t.Errorf("method/path = %s %s, want GET /api/v1/gitlab-app", gotMethod, gotPath)
+	if _, err := client.DisconnectGitConnection(ctx, "gc_1"); err == nil {
+		t.Log("decode of a list into an object is allowed to fail; only the request shape matters here")
 	}
-	if !got.Connected || !got.Authorized {
-		t.Errorf("GetGitLabAppStatus() = %+v, want Connected=true Authorized=true", got)
-	}
-}
-
-func TestClient_DisconnectGitLabApp(t *testing.T) {
-	var gotMethod, gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotMethod, gotPath = r.Method, r.URL.Path
-		w.WriteHeader(http.StatusNoContent)
-	}))
-	defer srv.Close()
-
-	client := NewClient(srv.URL, "test-token")
-	if err := client.DisconnectGitLabApp(context.Background()); err != nil {
-		t.Fatalf("DisconnectGitLabApp() error = %v", err)
-	}
-	if gotMethod != http.MethodDelete || gotPath != "/api/v1/gitlab-app" {
-		t.Errorf("method/path = %s %s, want DELETE /api/v1/gitlab-app", gotMethod, gotPath)
-	}
-}
-
-func TestClient_GetBitbucketAppStatus(t *testing.T) {
-	var gotMethod, gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotMethod, gotPath = r.Method, r.URL.Path
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(BitbucketAppStatusResource{Connected: true, Authorized: true, Key: "abc123"})
-	}))
-	defer srv.Close()
-
-	client := NewClient(srv.URL, "test-token")
-	got, err := client.GetBitbucketAppStatus(context.Background())
-	if err != nil {
-		t.Fatalf("GetBitbucketAppStatus() error = %v", err)
-	}
-	if gotMethod != http.MethodGet || gotPath != "/api/v1/bitbucket-app" {
-		t.Errorf("method/path = %s %s, want GET /api/v1/bitbucket-app", gotMethod, gotPath)
-	}
-	if !got.Connected || got.Key != "abc123" {
-		t.Errorf("GetBitbucketAppStatus() = %+v, want Connected=true Key=abc123", got)
-	}
-}
-
-func TestClient_DisconnectBitbucketApp(t *testing.T) {
-	var gotMethod, gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotMethod, gotPath = r.Method, r.URL.Path
-		w.WriteHeader(http.StatusNoContent)
-	}))
-	defer srv.Close()
-
-	client := NewClient(srv.URL, "test-token")
-	if err := client.DisconnectBitbucketApp(context.Background()); err != nil {
-		t.Fatalf("DisconnectBitbucketApp() error = %v", err)
-	}
-	if gotMethod != http.MethodDelete || gotPath != "/api/v1/bitbucket-app" {
-		t.Errorf("method/path = %s %s, want DELETE /api/v1/bitbucket-app", gotMethod, gotPath)
+	want := []string{"GET /api/v1/git-connections?provider=gitlab", "DELETE /api/v1/git-connections/gc_1"}
+	for i, w := range want {
+		if i >= len(seen) || seen[i] != w {
+			t.Errorf("request %d = %v, want %q", i, seen, w)
+		}
 	}
 }

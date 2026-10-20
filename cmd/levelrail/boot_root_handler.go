@@ -23,6 +23,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/nodefailure"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -136,6 +137,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
 		api.WithArchives(archive.New(db.DB, dataDir), db),
 		multiNodeOption(db),
+		api.WithNodeFailure(db, nodefailure.ConfigFromEnv(os.LookupEnv)),
 		api.WithNodeJoinTokenTTL(nodeJoinTokenTTL(logger)),
 		api.WithControlPlaneBackupScheduleDisabled(controlPlaneBackupInterval(logger) == 0),
 		api.WithDockerPinger(client),
@@ -356,18 +358,9 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			}),
 			// Reads and writes through secretsManager directly, so no separate runner type is needed.
 			api.WithGitHubAppSecrets(secretsManager),
-			// GitLab App connection: same secretsManager, same
-			// nil-interface hazard, the OAuth-Application counterpart of
-			// the GitHub App connection just above.
-			api.WithGitLabAppSecrets(secretsManager),
-			// Gitea App connection: same secretsManager, same
-			// nil-interface hazard, the GitLab-shaped self-hosted
-			// counterpart just above.
-			api.WithGiteaAppSecrets(secretsManager),
-			// Bitbucket App connection: same secretsManager, same
-			// nil-interface hazard, the third OAuth-consumer counterpart
-			// alongside the GitHub and GitLab App connections above.
-			api.WithBitbucketAppSecrets(secretsManager),
+			// GitLab, Bitbucket and Gitea connections share the secrets manager, same
+			// nil-interface hazard as the GitHub App connection just above.
+			api.WithGitConnectionSecrets(secretsManager),
 			api.WithAIVault(ai.NewVault(db, secretsManager, logger)),
 			api.WithAIUsage(db),
 			// Point-in-time restore (baseBackupRunner/pitrRunner just

@@ -2340,5 +2340,79 @@
     "title": "Build cache",
     "titleAll": "Build cache for all apps",
     "description": "Keep BuildKit layers in a storage destination so rebuilds skip unchanged steps. A cache problem never fails a build, it is reported as a warning."
+  },
+  "gitConnections": {
+    "empty": {
+      "title": "No account connected",
+      "description": {
+        "gitlab": "Register a GitLab OAuth application, then authorize it. gitlab.com and self-managed instances can be connected side by side.",
+        "bitbucket": "Register a Bitbucket OAuth consumer, then authorize it. Add a second consumer later for another workspace.",
+        "gitea": "Register a Gitea OAuth application, then authorize it. Each Gitea or Forgejo server is its own connection."
+      }
+    },
+    "default": "Default",
+    "account": "Signed in as {{name}}",
+    "accountUnknown": "Account not read yet",
+    "sources_one": "{{count}} git source",
+    "sources_other": "{{count}} git sources",
+    "scopeNote": "Connections belong to this control plane and are managed by admins. Anyone allowed to read repositories can browse what an account can see.",
+    "state": {
+      "ok": "Connected",
+      "notAuthorized": "Not authorized",
+      "needsReconnect": "Needs reconnect",
+      "rateLimited": "Rate limited"
+    },
+    "authorize": "Authorize",
+    "reconnect": "Reconnect",
+    "setDefault": "Set default",
+    "rename": {
+      "action": "Rename",
+      "label": "Connection label",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "disconnect": {
+      "action": "Disconnect",
+      "pending": "Disconnecting",
+      "title": "Disconnect {{label}}?",
+      "description": "This control plane stops using this account and revokes its token at the provider where that is supported. Other connected accounts are not touched.",
+      "sources_one": "{{count}} git source uses this account. It stays, shows needs reconnect, and works again once you connect an account on the same host.",
+      "sources_other": "{{count}} git sources use this account. They stay, show needs reconnect, and work again once you connect an account on the same host."
+    },
+    "add": {
+      "first": "Add an account",
+      "another": "Add another account",
+      "title": {
+        "gitlab": "Add a GitLab account",
+        "bitbucket": "Add a Bitbucket account",
+        "gitea": "Add a Gitea account"
+      },
+      "description": "Create the OAuth application on the provider with redirect URI {{callback}}, then enter it here. You will be sent to the provider to authorize it.",
+      "application": "OAuth application",
+      "newApplication": "Register a new OAuth application",
+      "reuse": "Reuse the application of {{label}}",
+      "applicationHelp": "Reuse the same application to sign in with a different account on the same instance.",
+      "instanceUrl": "Instance URL",
+      "instanceHelp": "gitlab.com or a self-managed address, for example https://git.example.com.",
+      "clientId": {
+        "gitlab": "Application ID",
+        "bitbucket": "Consumer key",
+        "gitea": "Client ID"
+      },
+      "clientSecret": "Secret",
+      "label": "Label (optional)",
+      "labelHelp": "Defaults to the account name once you authorize. You can rename it later.",
+      "cancel": "Cancel",
+      "submit": "Save and authorize",
+      "saving": "Saving"
+    },
+    "toast": {
+      "added": "Account saved",
+      "addedBody": "Authorize it with the provider to finish.",
+      "disconnected": "Account disconnected",
+      "renameFailed": "Could not rename the account",
+      "authorized": "Account authorized",
+      "authorizedBody": "Its repositories are now available to pick from."
+    }
   }
 }

@@ -181,22 +181,19 @@ func (rt *Router) pollGitSourcesOnce(ctx context.Context, cfg gitPollConfig, sta
 }
 
 // gitPollProviderRateLimited reports a provider connection that is rate limited right now.
-func (rt *Router) gitPollProviderRateLimited(ctx context.Context, repoURL string) (time.Duration, bool) {
-	host, _ := repoHostAndPath(repoURL)
-	for provider, base := range map[string]func(context.Context) string{
-		gitProviderGitHub: func(c context.Context) string { return rt.githubInstanceHost(c) },
-		gitProviderGitLab: func(c context.Context) string { return rt.gitlabInstanceHost(c) },
-		gitProviderGitea:  func(c context.Context) string { return rt.giteaInstanceHost(c) },
-	} {
-		if base(ctx) != host {
-			continue
-		}
-		if h := rt.gitConnHealth(ctx, provider); h.Status == store.GitConnRateLimited && h.NextCheckAt != nil {
-			return time.Until(*h.NextCheckAt), true
+func (rt *Router) gitPollProviderRateLimited(ctx context.Context, gs store.GitSource) (time.Duration, bool) {
+	host, _ := repoHostAndPath(gs.RepoURL)
+	var keys []string
+	if rt.githubInstanceHost(ctx) == host {
+		keys = append(keys, gitProviderGitHub)
+	}
+	for _, p := range []string{gitProviderGitLab, gitProviderBitbucket, gitProviderGitea} {
+		if c, err := rt.gitConnForRepo(ctx, p, gs.RepoURL, gs.ConnectionID); err == nil {
+			keys = append(keys, c.ID)
 		}
 	}
-	if host == "bitbucket.org" {
-		if h := rt.gitConnHealth(ctx, gitProviderBitbucket); h.Status == store.GitConnRateLimited && h.NextCheckAt != nil {
+	for _, k := range keys {
+		if h := rt.gitConnHealth(ctx, k); h.Status == store.GitConnRateLimited && h.NextCheckAt != nil {
 			return time.Until(*h.NextCheckAt), true
 		}
 	}
@@ -214,22 +211,6 @@ func (rt *Router) githubInstanceHost(ctx context.Context) string {
 	return repoURLHost(conn.InstanceURL)
 }
 
-func (rt *Router) gitlabInstanceHost(ctx context.Context) string {
-	conn, err := rt.gitlabApp.GetGitLabAppConnection(ctx)
-	if err != nil {
-		return ""
-	}
-	return repoURLHost(conn.InstanceURL)
-}
-
-func (rt *Router) giteaInstanceHost(ctx context.Context) string {
-	conn, err := rt.giteaApp.GetGiteaAppConnection(ctx)
-	if err != nil {
-		return ""
-	}
-	return repoURLHost(conn.InstanceURL)
-}
-
 // pollGitSource looks at one source's remote head. It never polls a source
 // whose auto-deploy is off (release mode), and records the poll either way.
 func (rt *Router) pollGitSource(ctx context.Context, cfg gitPollConfig, state *gitPollState, name string) {
@@ -241,7 +222,7 @@ func (rt *Router) pollGitSource(ctx context.Context, cfg gitPollConfig, state *g
 		return
 	}
 	now := time.Now()
-	if wait, limited := rt.gitPollProviderRateLimited(ctx, gs.RepoURL); limited {
+	if wait, limited := rt.gitPollProviderRateLimited(ctx, *gs); limited {
 		state.schedule(name, now.Add(cfg.backoff(0, wait)))
 		return
 	}

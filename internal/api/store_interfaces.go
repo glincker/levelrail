@@ -244,9 +244,7 @@ type Store interface {
 	DatabaseQueryStore
 	PreviewEnvironmentStore
 	GitHubAppStore
-	GitLabAppStore
-	BitbucketAppStore
-	GiteaAppStore
+	GitConnectionsStore
 	OAuthSettingsStore
 	OAuthIdentityStore
 	EmailSettingsStore

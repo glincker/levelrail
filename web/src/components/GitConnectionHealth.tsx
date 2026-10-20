@@ -9,12 +9,10 @@ import { clock } from '../lib/clockTime'
 import { useGitProviders } from '../queries/gitProviders'
 import type { GitProviderName, GitProviderStatus } from '../types/gitProviders'
 
-// Where Reconnect leads: the provider's OAuth consent for GitLab, Bitbucket
-// and Gitea, the App settings page (install again) for GitHub.
+// Where Reconnect leads: the provider's settings page, where each connected
+// account has its own Reconnect button (GitHub installs the App again).
 function reconnectUrl(provider: GitProviderName): string {
-  return provider === 'github'
-    ? '/settings/github-app'
-    : `/api/v1/${provider}-app/connect`
+  return `/settings/${provider}-app`
 }
 
 // A banner with a primary Reconnect button when a connection needs the

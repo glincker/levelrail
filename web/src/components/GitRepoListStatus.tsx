@@ -40,10 +40,10 @@ export function GitRepoListStatus({
       ) : null}
       {(page.errors ?? []).map((e) => (
         <Banner
-          key={e.account_login}
+          key={e.connection_id || e.account_login}
           variant="warning"
           title={t('picker.accountError', {
-            account: e.account_login,
+            account: e.connection_label || e.account_login,
             error: e.error,
           })}
         />

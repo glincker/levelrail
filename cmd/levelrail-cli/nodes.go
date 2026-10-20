@@ -97,6 +97,12 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesSimulate(prog, rest, stdout, stderr, lookupEnv)
 	case "failure":
 		return runNodesFailure(prog, rest, stdout, stderr, lookupEnv)
+	case "failure-policy":
+		return runNodesFailurePolicy(prog, rest, stdout, stderr, lookupEnv)
+	case "lost":
+		return runNodesLost(prog, rest, stdout, stderr, lookupEnv)
+	case "failure-resolve":
+		return runNodesFailureResolve(prog, rest, stdout, stderr, lookupEnv)
 	case "allocations":
 		return runNodesAllocations(prog, rest, stdout, stderr, lookupEnv)
 	case "placement":
@@ -130,6 +136,9 @@ func nodesUsage(prog string) string {
   %[1]s nodes zones [flags]                                          failure domains with their nodes and workloads
   %[1]s nodes simulate [--cpu M] [--memory MiB] [--count N]          dry run: where new apps would land and why
   %[1]s nodes failure --zone Z | --node ID                           dry run: where workloads go if a zone or node dies
+  %[1]s nodes failure-policy get|set <id> [--mode M] [--grace S]    what happens when a node stays unreachable
+  %[1]s nodes lost <id> [--dry-run] [--yes]                          declare a node lost, showing the plan first
+  %[1]s nodes failure-resolve <id> <kind> <name> --wait|--restore    decide for an app or database with node-local data
   %[1]s nodes allocations [flags]                                requested versus allocatable CPU, memory and disk per node
   %[1]s nodes connectivity [flags]                                   WireGuard health of every node pair
   %[1]s nodes workloads <id> --accepts-app --accepts-build [flags]   set a node's accepted workload kinds

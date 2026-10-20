@@ -7,6 +7,7 @@ import { sourceFromRepo } from '../../lib/newApp'
 import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
 import { ImportPlanPreview } from '../ImportPlanPreview'
 import type { ImportPlan, ImportPlanRequest } from '../../queries/imports'
+import { DeployFromComputer } from './DeployFromComputer'
 import { FeaturedTemplates } from './FeaturedTemplates'
 import { GitProviderCards } from './GitProviderCards'
 import { GitUrlForm } from './GitUrlForm'
@@ -121,6 +122,7 @@ export function SourceStep({
 
       <FeaturedTemplates />
       <OtherWays onPlan={onPlan} />
+      <DeployFromComputer />
     </div>
   )
 }

@@ -1,18 +1,17 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { gitProvidersQueryOptions } from '../queries/gitProviders'
-import { useGitHubAppRepos } from '../queries/githubApp'
-import { useGitLabAppProjects } from '../queries/gitlabApp'
-import { useBitbucketAppRepos } from '../queries/bitbucketApp'
-import { useGiteaAppRepos } from '../queries/giteaApp'
+import { useGitRepoList } from '../queries/gitRepos'
 import {
-  fromBitbucketRepo,
-  fromGiteaRepo,
-  fromGitHubRepo,
-  fromGitLabProject,
+  fromGitRepoItem,
   type NormalizedRepoOption,
 } from '../lib/gitRepoOptions'
 import type { GitProviderName } from '../types/gitProviders'
+import type { GitRepoItem, GitRepoProvider } from '../types/gitRepos'
+
+// A merged list is paged on the server; the new-app list pulls pages until
+// this many pages are loaded, then leaves the rest to search.
+const MAX_PAGES = 10
 
 export interface ConnectedRepos {
   repos: NormalizedRepoOption[]
@@ -20,43 +19,53 @@ export interface ConnectedRepos {
   isLoading: boolean
   /** False until the provider list itself has loaded. */
   providersReady: boolean
-  /** True when at least one connected provider failed to list. */
+  /** True when a connected account failed to list. */
   hasError: boolean
 }
 
-/** Every repository the connected provider apps can see, as one list. */
+/** Every repository every connected account can see, from the per-connection aggregated listing. */
 export function useConnectedRepos(): ConnectedRepos {
   const providers = useQuery(gitProvidersQueryOptions())
   const connected = useMemo(
     () =>
-      new Set(
-        (providers.data ?? [])
-          .filter((p) => p.connected)
-          .map((p) => p.provider),
-      ),
+      (providers.data ?? []).filter((p) => p.connected).map((p) => p.provider),
     [providers.data],
   )
-  const github = useGitHubAppRepos(connected.has('github'))
-  const gitlab = useGitLabAppProjects(connected.has('gitlab'))
-  const bitbucket = useBitbucketAppRepos(connected.has('bitbucket'))
-  const gitea = useGiteaAppRepos(connected.has('gitea'))
+  const list = useGitRepoList('', {}, connected.length > 0)
+  const { fetchNextPage, hasNextPage, isFetchingNextPage } = list
+  const pageCount = list.data?.pages.length ?? 0
+  useEffect(() => {
+    if (hasNextPage && !isFetchingNextPage && pageCount < MAX_PAGES) {
+      void fetchNextPage()
+    }
+  }, [hasNextPage, isFetchingNextPage, pageCount, fetchNextPage])
 
   const repos = useMemo(() => {
     const out: NormalizedRepoOption[] = []
-    for (const r of github.data?.repos ?? []) out.push(fromGitHubRepo(r))
-    for (const p of gitlab.data ?? []) out.push(fromGitLabProject(p))
-    for (const r of bitbucket.data ?? []) out.push(fromBitbucketRepo(r))
-    for (const r of gitea.data ?? []) out.push(fromGiteaRepo(r))
+    for (const page of list.data?.pages ?? []) {
+      for (const item of page.items) {
+        out.push(fromGitRepoItem(providerOf(item), item))
+      }
+    }
     return out
-  }, [github.data, gitlab.data, bitbucket.data, gitea.data])
+  }, [list.data])
 
-  const queries = [github, gitlab, bitbucket, gitea]
+  const first = list.data?.pages[0]
   return {
     repos,
-    connectedProviders: [...connected],
+    connectedProviders: connected,
     providersReady: !providers.isLoading,
-    isLoading: providers.isLoading || queries.some((q) => q.isLoading),
+    isLoading:
+      providers.isLoading ||
+      list.isLoading ||
+      (hasNextPage && pageCount < MAX_PAGES),
     hasError:
-      queries.some((q) => q.isError) || (github.data?.errors?.length ?? 0) > 0,
+      list.isError ||
+      (first?.errors?.length ?? 0) > 0 ||
+      (first?.connections ?? []).some((c) => c.failed),
   }
+}
+
+function providerOf(item: GitRepoItem): GitRepoProvider {
+  return item.provider ?? 'github'
 }

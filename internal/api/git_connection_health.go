@@ -31,7 +31,10 @@ const (
 // was revoked or expired, or the installation is gone. Handlers answer it
 // with a 409 and a stable code instead of a generic 500.
 type gitConnError struct {
-	Provider  string
+	Provider string
+	// Key identifies the connection the state belongs to: a connection id,
+	// or the provider name for GitHub.
+	Key       string
 	Status    string
 	Detail    string
 	NextCheck time.Time
@@ -46,9 +49,9 @@ func (e *gitConnError) Unwrap() error { return e.Err }
 
 // classifyGitConnErr maps a provider failure on the credential path (token
 // refresh, installation token mint, repository listing) to a connection state.
-func classifyGitConnErr(provider string, err error, now time.Time, removedOn404 bool) *gitConnError {
+func classifyGitConnErr(provider, key string, err error, now time.Time, removedOn404 bool) *gitConnError {
 	if rl, ok := gitprovider.AsRateLimit(err); ok {
-		return &gitConnError{Provider: provider, Status: store.GitConnRateLimited, Detail: "the provider is rate limiting this control plane", NextCheck: rl.NextCheck, Err: err}
+		return &gitConnError{Provider: provider, Key: key, Status: store.GitConnRateLimited, Detail: "the provider is rate limiting this control plane", NextCheck: rl.NextCheck, Err: err}
 	}
 	var apiErr *gitprovider.APIError
 	if !errors.As(err, &apiErr) {
@@ -56,15 +59,15 @@ func classifyGitConnErr(provider string, err error, now time.Time, removedOn404 
 	}
 	switch {
 	case apiErr.RateLimited:
-		return &gitConnError{Provider: provider, Status: store.GitConnRateLimited, Detail: "the provider is rate limiting this control plane", NextCheck: now.Add(time.Minute), Err: err}
+		return &gitConnError{Provider: provider, Key: key, Status: store.GitConnRateLimited, Detail: "the provider is rate limiting this control plane", NextCheck: now.Add(time.Minute), Err: err}
 	case apiErr.StatusCode == http.StatusUnauthorized:
-		return &gitConnError{Provider: provider, Status: store.GitConnNeedsReauthorize, Detail: "the provider rejected the stored credential", Err: err}
+		return &gitConnError{Provider: provider, Key: key, Status: store.GitConnNeedsReauthorize, Detail: "the provider rejected the stored credential", Err: err}
 	case apiErr.StatusCode == http.StatusBadRequest && strings.Contains(strings.ToLower(apiErr.Body), "invalid_grant"):
-		return &gitConnError{Provider: provider, Status: store.GitConnNeedsReauthorize, Detail: "the authorization was revoked or has expired", Err: err}
+		return &gitConnError{Provider: provider, Key: key, Status: store.GitConnNeedsReauthorize, Detail: "the authorization was revoked or has expired", Err: err}
 	case apiErr.StatusCode == http.StatusForbidden:
-		return &gitConnError{Provider: provider, Status: store.GitConnNeedsReauthorize, Detail: "the provider denied access with the stored credential", Err: err}
+		return &gitConnError{Provider: provider, Key: key, Status: store.GitConnNeedsReauthorize, Detail: "the provider denied access with the stored credential", Err: err}
 	case apiErr.StatusCode == http.StatusNotFound && removedOn404:
-		return &gitConnError{Provider: provider, Status: store.GitConnRevoked, Detail: "the installation or authorization no longer exists on the provider", Err: err}
+		return &gitConnError{Provider: provider, Key: key, Status: store.GitConnRevoked, Detail: "the installation or authorization no longer exists on the provider", Err: err}
 	}
 	return nil
 }
@@ -74,7 +77,7 @@ func (rt *Router) recordGitConn(ctx context.Context, e *gitConnError) {
 		return
 	}
 	err := rt.gitConn.SetGitConnectionStatus(ctx, store.GitConnectionStatus{
-		Provider: e.Provider, Status: e.Status, Detail: e.Detail, NextCheckAt: e.NextCheck, UpdatedAt: time.Now(),
+		Provider: e.Key, Status: e.Status, Detail: e.Detail, NextCheckAt: e.NextCheck, UpdatedAt: time.Now(),
 	})
 	if err != nil {
 		rt.logger.Warn("api: record git connection status failed", slog.String("provider", e.Provider), slog.String("error", err.Error()))
@@ -82,24 +85,24 @@ func (rt *Router) recordGitConn(ctx context.Context, e *gitConnError) {
 }
 
 // markGitConnOK clears a recorded problem after a call that proves the connection works.
-func (rt *Router) markGitConnOK(ctx context.Context, provider string) {
+func (rt *Router) markGitConnOK(ctx context.Context, key string) {
 	if rt.gitConn == nil {
 		return
 	}
-	cur, ok, err := rt.gitConn.GetGitConnectionStatus(ctx, provider)
+	cur, ok, err := rt.gitConn.GetGitConnectionStatus(ctx, key)
 	if err != nil || !ok {
 		return
 	}
-	if err := rt.gitConn.DeleteGitConnectionStatus(ctx, provider); err != nil {
-		rt.logger.Warn("api: clear git connection status failed", slog.String("provider", provider), slog.String("was", cur.Status), slog.String("error", err.Error()))
+	if err := rt.gitConn.DeleteGitConnectionStatus(ctx, key); err != nil {
+		rt.logger.Warn("api: clear git connection status failed", slog.String("connection", key), slog.String("was", cur.Status), slog.String("error", err.Error()))
 	}
 }
 
 // gitConnRecordFailure classifies err on the credential path, records the
 // state and returns the typed error, or err unchanged when it is not a
 // connection problem.
-func (rt *Router) gitConnRecordFailure(ctx context.Context, provider string, err error, removedOn404 bool) error {
-	if ce := classifyGitConnErr(provider, err, time.Now(), removedOn404); ce != nil {
+func (rt *Router) gitConnRecordFailure(ctx context.Context, provider, key string, err error, removedOn404 bool) error {
+	if ce := classifyGitConnErr(provider, key, err, time.Now(), removedOn404); ce != nil {
 		rt.recordGitConn(ctx, ce)
 		return ce
 	}
@@ -113,12 +116,12 @@ type gitConnResource struct {
 	NextCheckAt *time.Time `json:"next_check_at,omitempty"`
 }
 
-func (rt *Router) gitConnHealth(ctx context.Context, provider string) gitConnResource {
+func (rt *Router) gitConnHealth(ctx context.Context, key string) gitConnResource {
 	res := gitConnResource{Status: store.GitConnOK}
 	if rt.gitConn == nil {
 		return res
 	}
-	s, ok, err := rt.gitConn.GetGitConnectionStatus(ctx, provider)
+	s, ok, err := rt.gitConn.GetGitConnectionStatus(ctx, key)
 	if err != nil || !ok {
 		return res
 	}
@@ -164,11 +167,12 @@ func (rt *Router) writeGitConnError(w http.ResponseWriter, err error) bool {
 	return true
 }
 
-// gitOAuthLocks serializes token refresh per provider connection.
+// gitOAuthLocks serializes token refresh per connection, so refreshing one
+// account never waits on another.
 type gitOAuthLocks struct{ m sync.Map }
 
-func (l *gitOAuthLocks) lock(provider string) func() {
-	v, _ := l.m.LoadOrStore(provider, &sync.Mutex{})
+func (l *gitOAuthLocks) lock(key string) func() {
+	v, _ := l.m.LoadOrStore(key, &sync.Mutex{})
 	mu, ok := v.(*sync.Mutex)
 	if !ok {
 		return func() {}
@@ -192,6 +196,7 @@ type gitOAuthTokens struct {
 // gitOAuthSpec is the provider-specific half of a token refresh.
 type gitOAuthSpec struct {
 	provider string
+	key      string
 	read     func(ctx context.Context) (gitOAuthState, error)
 	exchange func(ctx context.Context, refresh string) (gitOAuthTokens, error)
 	save     func(ctx context.Context, t gitOAuthTokens) error
@@ -205,7 +210,7 @@ const gitOAuthRefreshMargin = 60 * time.Second
 // that was spent is compared with the stored one so a rotating refresh
 // token is never used twice and a reconnect in between is not overwritten.
 func (rt *Router) refreshGitOAuth(ctx context.Context, spec gitOAuthSpec) (string, error) {
-	unlock := rt.gitOAuthLocks.lock(spec.provider)
+	unlock := rt.gitOAuthLocks.lock(spec.key)
 	defer unlock()
 
 	state, err := spec.read(ctx)
@@ -218,7 +223,7 @@ func (rt *Router) refreshGitOAuth(ctx context.Context, spec gitOAuthSpec) (strin
 
 	tokens, err := spec.exchange(ctx, state.Refresh)
 	if err != nil {
-		return "", rt.gitConnRecordFailure(ctx, spec.provider, fmt.Errorf("refresh %s access token: %w", spec.provider, err), false)
+		return "", rt.gitConnRecordFailure(ctx, spec.provider, spec.key, fmt.Errorf("refresh %s access token: %w", spec.provider, err), false)
 	}
 	if tokens.Refresh == "" {
 		tokens.Refresh = state.Refresh
@@ -232,14 +237,14 @@ func (rt *Router) refreshGitOAuth(ctx context.Context, spec gitOAuthSpec) (strin
 		if time.Now().Add(gitOAuthRefreshMargin).Before(time.Unix(current.ExpiresUnix, 0)) {
 			return current.Access, nil
 		}
-		ce := &gitConnError{Provider: spec.provider, Status: store.GitConnNeedsReauthorize, Detail: "the connection changed while refreshing", Err: errors.New("refresh token changed during refresh")}
+		ce := &gitConnError{Provider: spec.provider, Key: spec.key, Status: store.GitConnNeedsReauthorize, Detail: "the connection changed while refreshing", Err: errors.New("refresh token changed during refresh")}
 		rt.recordGitConn(ctx, ce)
 		return "", ce
 	}
 	if err := spec.save(ctx, tokens); err != nil {
 		return "", fmt.Errorf("save refreshed %s tokens: %w", spec.provider, err)
 	}
-	rt.markGitConnOK(ctx, spec.provider)
+	rt.markGitConnOK(ctx, spec.key)
 	return tokens.Access, nil
 }
 
@@ -281,15 +286,17 @@ type gitDisconnectResource struct {
 	// TokenRevoked is true only when the provider's own revocation call succeeded.
 	TokenRevoked bool   `json:"token_revoked"`
 	Note         string `json:"note"`
+	// AffectedSources names git sources that used the connection; they stay and need a reconnect.
+	AffectedSources []string `json:"affected_sources,omitempty"`
 }
 
-func (rt *Router) finishGitDisconnect(ctx context.Context, w http.ResponseWriter, provider string, revoked bool, note string) {
+func (rt *Router) finishGitDisconnect(ctx context.Context, w http.ResponseWriter, key string, revoked bool, note string, sources []string) {
 	if rt.gitConn != nil {
-		if err := rt.gitConn.DeleteGitConnectionStatus(ctx, provider); err != nil {
-			rt.logger.Warn("api: clear git connection status on disconnect failed", slog.String("provider", provider), slog.String("error", err.Error()))
+		if err := rt.gitConn.DeleteGitConnectionStatus(ctx, key); err != nil {
+			rt.logger.Warn("api: clear git connection status on disconnect failed", slog.String("connection", key), slog.String("error", err.Error()))
 		}
 	}
-	writeJSON(w, http.StatusOK, gitDisconnectResource{Disconnected: true, TokenRevoked: revoked, Note: note})
+	writeJSON(w, http.StatusOK, gitDisconnectResource{Disconnected: true, TokenRevoked: revoked, Note: note, AffectedSources: sources})
 }
 
 const gitRevokeTimeout = 10 * time.Second

@@ -138,6 +138,18 @@ export interface GitSourceResource {
     last_seen_head?: string
     error?: string
   }
+  /** The provider connection the repository was picked from; absent for a pasted URL. */
+  connection_id?: string
+  connection?: {
+    id: string
+    provider?: 'gitlab' | 'bitbucket' | 'gitea'
+    label?: string
+    account_name?: string
+    host?: string
+    /** ok, needs_reauthorize, revoked, rate_limited, or needs_reconnect once the account was disconnected. */
+    state: string
+    detail?: string
+  }
   webhook_secret?: string
   // preview_enabled mirrors store.GitSource.PreviewEnabled: read-only
   // here, set via PUT /api/v1/apps/{name}/preview-settings

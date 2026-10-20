@@ -21,9 +21,9 @@ import (
 // key prefixes their connections live under.
 const (
 	gitProviderGitHub    = "github"
-	gitProviderGitLab    = "gitlab"
-	gitProviderBitbucket = "bitbucket"
-	gitProviderGitea     = "gitea"
+	gitProviderGitLab    = store.GitProviderGitLab
+	gitProviderBitbucket = store.GitProviderBitbucket
+	gitProviderGitea     = store.GitProviderGitea
 )
 
 // repoListConnError marks a failure to reach the connection itself (not
@@ -36,17 +36,22 @@ func (e *repoListConnError) Unwrap() error { return e.err }
 // repoListSource is one cache key's worth of repositories: a whole
 // connection, or one GitHub installation.
 type repoListSource struct {
-	key         string
-	account     string
-	accountType string
-	fetch       repolist.FetchFunc
+	key             string
+	account         string
+	accountType     string
+	connectionID    string
+	connectionLabel string
+	fetch           repolist.FetchFunc
 }
 
 // repoListAccount is one source's outcome.
 type repoListAccount struct {
-	Account string
-	Result  repolist.Result
-	Err     error
+	Provider        string
+	ConnectionID    string
+	ConnectionLabel string
+	Account         string
+	Result          repolist.Result
+	Err             error
 }
 
 func (rt *Router) invalidateGitRepoCache(ctx context.Context, prefix string) {
@@ -59,35 +64,27 @@ func (rt *Router) invalidateGitRepoCache(ctx context.Context, prefix string) {
 }
 
 func (rt *Router) gitRepoSources(ctx context.Context, provider string) ([]repoListSource, error) {
-	switch provider {
-	case gitProviderGitHub:
+	if provider == gitProviderGitHub {
 		return rt.githubRepoSources(ctx)
-	case gitProviderGitLab:
-		if _, err := rt.gitlabApp.GetGitLabAppConnection(ctx); err != nil {
-			if errors.Is(err, store.ErrGitLabAppConnectionNotFound) {
-				return nil, &repoListConnError{errGitLabAppNotConnected}
-			}
-			return nil, fmt.Errorf("get gitlab app connection: %w", err)
-		}
-		return []repoListSource{{key: gitProviderGitLab, fetch: rt.gitlabRepoFetch}}, nil
-	case gitProviderBitbucket:
-		if _, err := rt.bitbucketApp.GetBitbucketAppConnection(ctx); err != nil {
-			if errors.Is(err, store.ErrBitbucketAppConnectionNotFound) {
-				return nil, &repoListConnError{errBitbucketAppNotConnected}
-			}
-			return nil, fmt.Errorf("get bitbucket app connection: %w", err)
-		}
-		return []repoListSource{{key: gitProviderBitbucket, fetch: rt.bitbucketRepoFetch}}, nil
-	case gitProviderGitea:
-		if _, err := rt.giteaApp.GetGiteaAppConnection(ctx); err != nil {
-			if errors.Is(err, store.ErrGiteaAppConnectionNotFound) {
-				return nil, &repoListConnError{errGiteaAppNotConnected}
-			}
-			return nil, fmt.Errorf("get gitea app connection: %w", err)
-		}
-		return []repoListSource{{key: gitProviderGitea, fetch: rt.giteaRepoFetch}}, nil
 	}
-	return nil, fmt.Errorf("unknown git provider %q", provider)
+	if !validGitProvider(provider) {
+		return nil, fmt.Errorf("unknown git provider %q", provider)
+	}
+	conns, err := rt.gitConns.ListGitConnections(ctx, provider)
+	if err != nil {
+		return nil, fmt.Errorf("list %s connections: %w", provider, err)
+	}
+	if len(conns) == 0 {
+		return nil, &repoListConnError{errGitConnNone}
+	}
+	out := make([]repoListSource, 0, len(conns))
+	for _, c := range conns {
+		out = append(out, repoListSource{
+			key: gitRepoCacheKey(provider, c.ID), account: c.AccountName, connectionID: c.ID, connectionLabel: c.Label,
+			fetch: rt.connectionRepoFetch(c),
+		})
+	}
+	return out, nil
 }
 
 func (rt *Router) githubRepoSources(ctx context.Context) ([]repoListSource, error) {
@@ -97,7 +94,7 @@ func (rt *Router) githubRepoSources(ctx context.Context) ([]repoListSource, erro
 	}
 	if len(installations) == 0 {
 		return []repoListSource{{
-			key: gitProviderGitHub + ":legacy", accountType: "organization",
+			key: gitProviderGitHub + ":legacy", accountType: "organization", connectionID: gitProviderGitHub + ":legacy", connectionLabel: "GitHub",
 			fetch: func(ctx context.Context, prior *repolist.Snapshot) (repolist.Snapshot, error) {
 				instanceURL, token, tokErr := rt.mintGitHubAppInstallationToken(ctx)
 				if tokErr != nil {
@@ -109,10 +106,13 @@ func (rt *Router) githubRepoSources(ctx context.Context) ([]repoListSource, erro
 	}
 	out := make([]repoListSource, 0, len(installations))
 	for _, inst := range installations {
+		id := strconv.FormatInt(inst.InstallationID, 10)
 		out = append(out, repoListSource{
-			key:         gitProviderGitHub + ":" + strconv.FormatInt(inst.InstallationID, 10),
-			account:     inst.AccountLogin,
-			accountType: inst.AccountType,
+			key:             gitProviderGitHub + ":" + id,
+			account:         inst.AccountLogin,
+			accountType:     inst.AccountType,
+			connectionID:    gitProviderGitHub + ":" + id,
+			connectionLabel: inst.AccountLogin,
 			fetch: func(ctx context.Context, prior *repolist.Snapshot) (repolist.Snapshot, error) {
 				instanceURL, token, tokErr := rt.mintGitHubAppInstallationTokenForOwner(ctx, inst.AccountLogin)
 				if tokErr != nil {
@@ -123,6 +123,50 @@ func (rt *Router) githubRepoSources(ctx context.Context) ([]repoListSource, erro
 		})
 	}
 	return out, nil
+}
+
+// connectionRepoFetch lists one connection's repositories with that
+// connection's own token, recording its health under its own id.
+func (rt *Router) connectionRepoFetch(c store.GitConnection) repolist.FetchFunc {
+	return func(ctx context.Context, _ *repolist.Snapshot) (repolist.Snapshot, error) {
+		conn, token, err := rt.gitConnToken(ctx, c.ID)
+		if err != nil {
+			return repolist.Snapshot{}, &repoListConnError{err}
+		}
+		var repos []repolist.Repo
+		var res gitprovider.ListResult
+		switch conn.Provider {
+		case gitProviderGitLab:
+			var projects []gitlabapp.Project
+			projects, res, err = rt.gitlabAppClient.ListProjects(ctx, conn.InstanceURL, token, rt.repoListOptions())
+			for _, p := range projects {
+				repos = append(repos, gitlabProjectToRepo(p))
+			}
+		case gitProviderBitbucket:
+			var list []bitbucketapp.Repo
+			list, res, err = rt.bitbucketAppClient.ListRepos(ctx, token, rt.repoListOptions())
+			for _, r := range list {
+				repos = append(repos, bitbucketRepoToRepo(r))
+			}
+		default:
+			var list []giteaapp.Repo
+			list, res, err = rt.giteaAppClient.ListRepos(ctx, conn.InstanceURL, token, rt.repoListOptions())
+			for _, r := range list {
+				repos = append(repos, giteaRepoToRepo(r))
+			}
+		}
+		if err != nil {
+			return repolist.Snapshot{}, rt.gitConnRecordFailure(ctx, conn.Provider, conn.ID, fmt.Errorf("list %s repos: %w", conn.Provider, err), false)
+		}
+		rt.markGitConnOK(ctx, conn.ID)
+		return repolist.Snapshot{Repos: repos, Truncated: res.Truncated}, nil
+	}
+}
+
+// loadConnectionRepos returns one connection's cached-or-fetched list.
+func (rt *Router) loadConnectionRepos(ctx context.Context, c store.GitConnection, refresh bool) repoListAccount {
+	res, err := rt.repoCache.Get(ctx, gitRepoCacheKey(c.Provider, c.ID), c.Provider, refresh, rt.connectionRepoFetch(c))
+	return repoListAccount{Provider: c.Provider, ConnectionID: c.ID, ConnectionLabel: c.Label, Account: c.AccountName, Result: res, Err: err}
 }
 
 func (rt *Router) repoListOptions() gitprovider.ListOptions {
@@ -140,7 +184,7 @@ func (rt *Router) githubListSnapshot(ctx context.Context, instanceURL, token, ac
 	}
 	repos, res, err := rt.githubAppClient.ListInstallationRepos(ctx, instanceURL, token, opts)
 	if err != nil {
-		return repolist.Snapshot{}, rt.gitConnRecordFailure(ctx, gitProviderGitHub, fmt.Errorf("list github installation repos: %w", err), false)
+		return repolist.Snapshot{}, rt.gitConnRecordFailure(ctx, gitProviderGitHub, gitProviderGitHub, fmt.Errorf("list github installation repos: %w", err), false)
 	}
 	rt.markGitConnOK(ctx, gitProviderGitHub)
 	meta, err := json.Marshal(res.ETags)
@@ -171,23 +215,6 @@ func githubReposFromNeutral(repos []repolist.Repo) []githubapp.Repo {
 	return out
 }
 
-func (rt *Router) gitlabRepoFetch(ctx context.Context, _ *repolist.Snapshot) (repolist.Snapshot, error) {
-	conn, accessToken, err := rt.gitlabAccessToken(ctx)
-	if err != nil {
-		return repolist.Snapshot{}, &repoListConnError{err}
-	}
-	projects, res, err := rt.gitlabAppClient.ListProjects(ctx, conn.InstanceURL, accessToken, rt.repoListOptions())
-	if err != nil {
-		return repolist.Snapshot{}, rt.gitConnRecordFailure(ctx, gitProviderGitLab, fmt.Errorf("list gitlab projects: %w", err), false)
-	}
-	rt.markGitConnOK(ctx, gitProviderGitLab)
-	out := make([]repolist.Repo, 0, len(projects))
-	for _, p := range projects {
-		out = append(out, gitlabProjectToRepo(p))
-	}
-	return repolist.Snapshot{Repos: out, Truncated: res.Truncated}, nil
-}
-
 func gitlabProjectToRepo(p gitlabapp.Project) repolist.Repo {
 	return repolist.Repo{
 		Key: strconv.FormatInt(p.ID, 10), FullName: p.PathWithNamespace, Name: p.Name,
@@ -196,45 +223,11 @@ func gitlabProjectToRepo(p gitlabapp.Project) repolist.Repo {
 	}
 }
 
-func (rt *Router) bitbucketRepoFetch(ctx context.Context, _ *repolist.Snapshot) (repolist.Snapshot, error) {
-	accessToken, err := rt.bitbucketAccessToken(ctx)
-	if err != nil {
-		return repolist.Snapshot{}, &repoListConnError{err}
-	}
-	repos, res, err := rt.bitbucketAppClient.ListRepos(ctx, accessToken, rt.repoListOptions())
-	if err != nil {
-		return repolist.Snapshot{}, rt.gitConnRecordFailure(ctx, gitProviderBitbucket, fmt.Errorf("list bitbucket repos: %w", err), false)
-	}
-	rt.markGitConnOK(ctx, gitProviderBitbucket)
-	out := make([]repolist.Repo, 0, len(repos))
-	for _, r := range repos {
-		out = append(out, bitbucketRepoToRepo(r))
-	}
-	return repolist.Snapshot{Repos: out, Truncated: res.Truncated}, nil
-}
-
 func bitbucketRepoToRepo(r bitbucketapp.Repo) repolist.Repo {
 	return repolist.Repo{
 		Key: r.FullName, FullName: r.FullName, Name: r.Name, Owner: ownerOf(r.FullName), Private: r.Private,
 		Fork: r.Fork, DefaultBranch: r.DefaultBranch, CloneURL: r.CloneURL, WebURL: r.WebURL,
 	}
-}
-
-func (rt *Router) giteaRepoFetch(ctx context.Context, _ *repolist.Snapshot) (repolist.Snapshot, error) {
-	conn, accessToken, err := rt.giteaAccessToken(ctx)
-	if err != nil {
-		return repolist.Snapshot{}, &repoListConnError{err}
-	}
-	repos, res, err := rt.giteaAppClient.ListRepos(ctx, conn.InstanceURL, accessToken, rt.repoListOptions())
-	if err != nil {
-		return repolist.Snapshot{}, rt.gitConnRecordFailure(ctx, gitProviderGitea, fmt.Errorf("list gitea repos: %w", err), false)
-	}
-	rt.markGitConnOK(ctx, gitProviderGitea)
-	out := make([]repolist.Repo, 0, len(repos))
-	for _, r := range repos {
-		out = append(out, giteaRepoToRepo(r))
-	}
-	return repolist.Snapshot{Repos: out, Truncated: res.Truncated}, nil
 }
 
 func giteaRepoToRepo(r giteaapp.Repo) repolist.Repo {
@@ -266,7 +259,7 @@ func (rt *Router) loadGitRepos(ctx context.Context, provider string, refresh boo
 		go func() {
 			defer func() { done <- struct{}{} }()
 			res, getErr := rt.repoCache.Get(ctx, src.key, provider, refresh, src.fetch)
-			out[i] = repoListAccount{Account: src.account, Result: res, Err: getErr}
+			out[i] = repoListAccount{Provider: provider, ConnectionID: src.connectionID, ConnectionLabel: src.connectionLabel, Account: src.account, Result: res, Err: getErr}
 		}()
 	}
 	for range sources {

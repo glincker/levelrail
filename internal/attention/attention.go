@@ -73,6 +73,7 @@ type Input struct {
 // same severity.
 const (
 	KindNodeReenroll            = "node_reenroll"
+	KindNodeFailure             = "node_failure"
 	KindDeviceLogin             = "device_login"
 	KindDeviceLoginResolved     = "device_login_resolved"
 	KindApproval                = "approval"
@@ -255,6 +256,9 @@ func Build(in Input) []Item {
 				detail = "last seen " + n.LastSeenAt.Format("2006-01-02 15:04 MST")
 			}
 			items = append(items, newItem(Critical, "node", n.Name, detail))
+		}
+		if f := n.Failure; f != nil {
+			items = append(items, nodeFailureItem(n, f))
 		}
 		items = append(items, nodeAgentItems(n, now)...)
 	}

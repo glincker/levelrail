@@ -79,6 +79,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/certflow"
 	"github.com/GLINCKER/levelrail/internal/compliance"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
+	"github.com/GLINCKER/levelrail/internal/nodefailure"
 	"github.com/GLINCKER/levelrail/internal/repolist"
 	"github.com/GLINCKER/levelrail/internal/search"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -613,10 +614,11 @@ type Router struct {
 	githubAppClient              GitHubAppClient              // always set (NewRouter defaults it to a real *githubapp.Client, which needs no configuration to construct), overridable in this package's own tests the same way fetch is
 	githubAppState               *pendingState                // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see pendingState's own doc comment
 	githubAppManifestConfig      githubapp.ManifestConfig     // always set, defaulted to githubapp.DefaultManifestConfig() in NewRouter, overridable via WithGitHubAppManifestConfig: the permissions/events a fresh App registration requests
-	gitlabApp                    GitLabAppStore               // always set, same "core Store interface" shape as githubApp above
-	gitlabAppSecrets             GitLabAppSecrets             // nil is valid: every gitlab-app route that needs it returns 501, same shape as githubAppSecrets above
+	gitConns                     GitConnectionsStore          // always set: GitLab, Bitbucket and Gitea connections, many per provider
+	gitConnSecrets               GitConnSecrets               // nil is valid: every git connection route that needs it returns 501
+	gitConnState                 *pendingState                // always set; in-memory OAuth CSRF state carrying the connection id of each attempt
+	gitAccountTried              sync.Map                     // connection ids whose account lookup was already attempted this process
 	gitlabAppClient              GitLabAppClient              // always set (NewRouter defaults it to a real *gitlabapp.Client), overridable in this package's own tests
-	gitlabAppState               *pendingState                // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
 	oauthSettings                OAuthSettingsStore           // always set, same "core Store interface" shape as ingressSettings above: both provider rows always exist (migrations/0035's own seeded rows)
 	oauthIdentities              OAuthIdentityStore           // always set, same shape as oauthSettings above
 	oauthSecrets                 OAuthSecrets                 // nil is valid: every /auth/oauth/... sign-in route and PUT /settings/oauth/{provider} return 501/501, same "not configured" shape as gitSourceSecrets above
@@ -677,14 +679,8 @@ type Router struct {
 	searchSvc                    *search.Service      // built lazily by searchService, see search.go
 	tags                         TagStore             // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
 	appIntegrations              AppIntegrationStore  // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)
-	bitbucketApp                 BitbucketAppStore    // always set, same "core Store interface" shape as gitlabApp above
-	bitbucketAppSecrets          BitbucketAppSecrets  // nil is valid: every bitbucket-app route that needs it returns 501, same shape as gitlabAppSecrets above
 	bitbucketAppClient           BitbucketAppClient   // always set (NewRouter defaults it to a real *bitbucketapp.Client), overridable in this package's own tests
-	bitbucketAppState            *pendingState        // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
-	giteaApp                     GiteaAppStore        // always set, same "core Store interface" shape as gitlabApp above
-	giteaAppSecrets              GiteaAppSecrets      // nil is valid: every gitea-app route that needs it returns 501, same shape as gitlabAppSecrets above
 	giteaAppClient               GiteaAppClient       // always set (NewRouter defaults it to a real *giteaapp.Client), overridable in this package's own tests
-	giteaAppState                *pendingState        // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
 	setupGuide                   SetupGuideStore      // nil unless the store implements it: /api/v1/setup/guide routes return 501
 	onboarding                   OnboardingStore      // always set, same "core Store interface, not an optional plug-in" shape as ingressSettings above: the row always exists (migrations/0067's own seeded row)
 	dbPinger                     DBPinger             // nil is valid: GET /system/doctor reports its database check as unknown, same shape as dockerPinger above
@@ -751,6 +747,8 @@ type Router struct {
 	meshPaths meshpath.Resolver
 	// multiNode holds node moves, drains, labels and selectors; nil means 501.
 	multiNode *multiNodeState
+	// nodeFailure is nil unless WithNodeFailure was applied.
+	nodeFailure *nodefailure.Controller
 	// joinTokenTTL overrides nodeJoinTokenTTL, see WithNodeJoinTokenTTL.
 	joinTokenTTL time.Duration
 	// meshRotator is the same node's *network.Coordinator, narrowed to
@@ -904,9 +902,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		githubAppClient:             githubapp.NewClient(),
 		githubAppState:              newPendingState(),
 		githubAppManifestConfig:     githubapp.DefaultManifestConfig(),
-		gitlabApp:                   s,
+		gitConns:                    s,
+		gitConnState:                newPendingState(),
 		gitlabAppClient:             gitlabapp.NewClient(),
-		gitlabAppState:              newPendingState(),
 		listBranches:                listRemoteBranches,
 		detect:                      build.Detect,
 		importFiles:                 func() importplan.FileSource { return importplan.NewHTTPFiles() },
@@ -956,12 +954,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		featureFlags:                s,
 		tags:                        s,
 		appIntegrations:             s,
-		bitbucketApp:                s,
 		bitbucketAppClient:          bitbucketapp.NewClient(),
-		bitbucketAppState:           newPendingState(),
-		giteaApp:                    s,
 		giteaAppClient:              giteaapp.NewClient(),
-		giteaAppState:               newPendingState(),
 		onboarding:                  s,
 		webhookDeliveries:           s,
 		cloneRestoreHistory:         s,
