@@ -61,6 +61,8 @@ If this keeps happening on every deploy of a given app, turn on "Auto-rollback o
 
 [Deploying apps](/deploying-apps#deploy-and-watch-a-rollout) explains what a rollout does and how it fails, and `levelrail-cli apps diagnose <name>` runs the cause detection described under [Deploy preflight and failure diagnosis](#deploy-preflight-and-failure-diagnosis).
 
+For anything that is not ready, `levelrail-cli diagnose <app|database|domain|node> <name>` (or `GET /api/v1/diagnose/{kind}/{name}`) says how long it has been that way, the ranked likely causes with their evidence, and the next actions. The app, database and domain pages show the same thing as a "Why is this not running?" panel, expanded once a resource has been not ready for longer than `APP_STUCK_THRESHOLD` (default `5m`).
+
 </Step>
 </Steps>
 

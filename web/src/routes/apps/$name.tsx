@@ -1,3 +1,4 @@
+import { StuckPanel } from '../../components/StuckPanel'
 import { useState } from 'react'
 import {
   createFileRoute,
@@ -137,6 +138,7 @@ function AppDetailLayout() {
         }}
       />
       <AppPaletteActions app={app} action={action} onDeploy={setDeployTab} />
+      <StuckPanel kind="app" name={app.name} />
       <Outlet />
     </>
   )

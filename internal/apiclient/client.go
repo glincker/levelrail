@@ -776,6 +776,52 @@ func (c *Client) DiagnoseApp(ctx context.Context, name, deployID string) (Diagno
 	return out, err
 }
 
+// StuckAction is one typed next step in a StuckReport cause.
+type StuckAction struct {
+	Type  string `json:"type"`
+	Label string `json:"label"`
+	FixID string `json:"fix_id,omitempty"`
+	Href  string `json:"href,omitempty"`
+}
+
+// StuckCause is one ranked likely reason a resource is not ready.
+type StuckCause struct {
+	Code        string        `json:"code"`
+	Title       string        `json:"title"`
+	Explanation string        `json:"explanation"`
+	Confidence  string        `json:"confidence"`
+	Evidence    []string      `json:"evidence"`
+	Actions     []StuckAction `json:"actions"`
+}
+
+// StuckCondition is one entry of the condition timeline.
+type StuckCondition struct {
+	Type    string    `json:"type"`
+	Status  string    `json:"status"`
+	Reason  string    `json:"reason"`
+	Message string    `json:"message,omitempty"`
+	Since   time.Time `json:"since"`
+}
+
+// StuckReport is GET /api/v1/diagnose/{kind}/{name}.
+type StuckReport struct {
+	Kind            string           `json:"kind"`
+	Name            string           `json:"name"`
+	Ready           bool             `json:"ready"`
+	Stuck           bool             `json:"stuck"`
+	NotReadySeconds int64            `json:"not_ready_seconds"`
+	ThresholdSecs   int64            `json:"threshold_seconds"`
+	Timeline        []StuckCondition `json:"timeline"`
+	Causes          []StuckCause     `json:"causes"`
+}
+
+// DiagnoseStuck calls GET /api/v1/diagnose/{kind}/{name}.
+func (c *Client) DiagnoseStuck(ctx context.Context, kind, name string) (StuckReport, error) {
+	var out StuckReport
+	err := c.do(ctx, http.MethodGet, "/api/v1/diagnose/"+PathEscape(kind)+"/"+PathEscape(name), nil, &out)
+	return out, err
+}
+
 // GetAppResourceRecommendation calls GET
 // /api/v1/apps/{name}/resource-recommendation
 // (internal/api/resource_recommendation.go's handleAppResourceRecommendation):

@@ -248,6 +248,9 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// anything.
 	mux.HandleFunc("GET /api/v1/apps/{name}/diagnose", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDiagnoseApp))
 
+	// Deterministic "why is this not running" for any reconciled resource.
+	mux.HandleFunc("GET /api/v1/diagnose/{kind}/{name}", rt.requireAbilityForResource(AbilityRead, stuckResourceFromPath, rt.handleDiagnoseStuck))
+
 	// Preflight checks (preflight.go): read-only probes of an existing
 	// app's stored config (AbilityRead, resource-scoped), or of a not yet
 	// created app described in the body (AbilityWrite, since the body

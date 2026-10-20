@@ -205,6 +205,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAuditVerify(prog, args[1:], stdout, stderr, lookupEnv)
 	case "audit-purge":
 		return runAuditPurge(prog, args[1:], stdout, stderr, lookupEnv)
+	case "diagnose":
+		return runDiagnose(prog, args[1:], stdout, stderr, lookupEnv)
 	case "attention":
 		return runAttention(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tui":
@@ -408,6 +410,7 @@ Usage:
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
   %[1]s audit-verify [flags]                                  check the audit log for edited, removed or cut-off entries
   %[1]s audit-purge [flags]                                 delete audit log entries past the retention window now
+  %[1]s diagnose <app|database|domain|node> <name> [flags]    why isn't this running: ranked causes, evidence and next actions
   %[1]s attention [flags]                                     everything failing right now: apps, nodes, certificates, doctor checks
   %[1]s tui [--read-only] [flags]                             interactive terminal UI: apps, databases, deploys, logs, restart
   %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning

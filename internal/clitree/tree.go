@@ -289,6 +289,7 @@ var Tree = map[string]*Node{
 	"audit-purge":              nil,
 	"audit-verify":             nil,
 	"attention":                nil,
+	"diagnose":                 nil,
 	"tui":                      nil,
 	"advisor":                  {Subs: map[string]*Node{"findings": nil, "summary": nil, "apply": nil, "dismiss": nil, "snooze": nil, "restore": nil, "enable": nil, "disable": nil}},
 	"ingress-limits":           {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},
