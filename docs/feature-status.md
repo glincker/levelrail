@@ -36,7 +36,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Pipelines | stable | Live Docker test (`internal/pipeline/live_test.go`) and a live e2e run (`test/e2e/pipeline_run_test.go`). |
 | Deploy freeze | stable | Live e2e proves a freeze blocks then allows a real deploy (`test/e2e/deploy_freeze_test.go`), documented in `docs/deploy-safety.md`. |
 | Feature flags | beta | Unit, API, CLI, MCP tests and a doc page, no e2e. |
-| Templates | beta | 300+ catalog entries. Unit tests check shape and a floor of 180, and live e2e tests deploy samples (a 16-template fleet plus batch boot tests), not the whole catalog. |
+| Templates | beta | About 360 catalog entries (generated count in the [catalog](/template-catalog)). Unit tests check shape and a floor of 180, and live e2e tests deploy samples (a 16-template fleet plus batch boot tests), not the whole catalog. |
 | Log archive | beta | Unit and e2e tests (`test/e2e/log_archive_test.go`), dedicated doc page (`docs/log-archive.md`). |
 | Automatic cleanup (janitor) | beta | Unit tests for every stage and safety rule, API test, CLI, MCP read tool, doc page (`docs/janitor.md`). No live disk-fill run yet; other nodes are not covered. |
 | Supply chain | stable | Live e2e proves the gate blocks and an override works through the real API (`test/e2e/supply_chain_test.go`). SBOM and scan stay off by default (`docs/supply-chain.md`). |
@@ -196,7 +196,7 @@ Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic,
 - E2E: `test/e2e/template_fleet_test.go` (`TestTemplateFleet_Live_DeploysAndTearsDownCleanly`) deploys a diverse sample of 16 templates through the real one-click route and a real application controller, then tears them down and checks nothing leaks. Batch boot tests (`catalog_batch*_live_test.go`, `catalog_devtools_batch_live_test.go`) cover more, but not the whole catalog. `test/e2e/compose_healthcheck_test.go` covers Compose readiness generally.
 - Docs: `docs/templates-and-registry.md`.
 - Real infra: none found. Only the 16 sampled templates have deploy evidence, so "works" is unverified for the rest. `docs/templates-and-registry.md` also notes GPU passthrough is not translated for GPU templates.
-- Count: 300+ entries in `internal/catalog.Templates` (359 in this build, see [Template catalog](/template-catalog)). ADR 015 cites a 339-template goal, which is not yet the shipped catalog.
+- Count: about 360 entries in `internal/catalog.Templates` (359 in this build, see [Template catalog](/template-catalog)). ADR 015 cites a 339-template goal, which is not yet the shipped catalog.
 - Label: beta.
 
 ### IAM
@@ -242,7 +242,7 @@ These counts appear in the README, the landing page, and several guides. Re-chec
 | Notification channel kinds | 18 | `NotifyKind` constants in `internal/alerting/rules.go` |
 | Alert rule kinds | 25 | `Kind` constants in `internal/alerting` |
 | Managed database engines | 9 supported; 4 more built but not yet live-verified | `internal/store/database.go`, [Managing databases](/managing-databases) |
-| Service templates | 300+ | `len(catalog.Templates)`, listed in [Template catalog](/template-catalog) |
+| Service templates | about 360 | `len(catalog.Templates)`, listed in [Template catalog](/template-catalog) |
 | Latest release | See the [releases page](https://github.com/glincker/levelrail/releases) | `.github/release-please/.release-please-manifest.json` |
 
-Two caveats still hold. Idle footprint is measured only on an Apple M4 Max dev build (58 to 96 MB RSS from 0 to 500 apps, see [Performance](/performance)), with no Linux release-build number yet. Real public ACME issuance has one recorded live run ([the verification runbook](/acme-verification-runbook), 2026-10-05); renewal and DNS-01 wildcards are still unproven.
+Two caveats still hold. The headline idle footprint is about 200 MB RSS and 1.5 percent CPU on one 2 vCPU, 8 GB Linux test box with no apps under load ([Benchmarks](/benchmarks#control-plane-idle-footprint-2026-10-19)). The 58 to 96 MB figures in [Performance](/performance) come from an Apple M4 Max dev build and are not comparable. The 100 and 500 app numbers are from that dev build only. Real public ACME issuance has one recorded live run ([the verification runbook](/acme-verification-runbook), 2026-10-05); renewal and DNS-01 wildcards are still unproven.

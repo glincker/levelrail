@@ -72,7 +72,7 @@ If SSO, audit logging or fine-grained roles matter to you, check each project's 
 ## What Levelrail does not do yet
 
 - LDAP: OAuth and OIDC sign-in are supported, and SAML single sign-on and SCIM provisioning are beta (off by default, not yet verified against a live identity provider); LDAP directory sync is not supported.
-- The largest template catalog: Levelrail ships 300+ one-click templates, each a Compose file the platform deploys and manages. Coolify's catalog is in the same range and other projects may list more, and the end-to-end suite live-deploys a sample of Levelrail's templates, not all of them. See [Templates and registry](/templates-and-registry).
+- The largest template catalog: Levelrail ships about 360 one-click templates, each a Compose file the platform deploys and manages. Coolify's catalog is in the same range and other projects may list more, and the end-to-end suite live-deploys a sample of Levelrail's templates, not all of them. See [Templates and registry](/templates-and-registry).
 - Track record: fewer real-world deployments and less community knowledge than projects that have existed for years.
 - Public ACME has had one live run: TLS defaults to an internal issuer. The public ACME issuer was verified once against Let's Encrypt on a public VPS. Renewal and DNS-01 wildcards are not yet exercised live. See the [roadmap](/roadmap).
 - No Windows or non-Linux nodes, and no Kubernetes compatibility layer: these are deliberate non-goals.
