@@ -132,6 +132,9 @@ func (c *Client) ImportSAMLMetadata(ctx context.Context, id string, req SAMLMeta
 	return out, err
 }
 
+// URL returns an absolute URL on the API target, for pages the operator opens in a browser.
+func (c *Client) URL(path string) string { return c.baseURL + path }
+
 // SAMLSPMetadata fetches the public SP metadata XML for a connection.
 func (c *Client) SAMLSPMetadata(ctx context.Context, id string) ([]byte, error) {
 	return c.downloadRaw(ctx, "/api/v1/auth/saml/"+PathEscape(id)+"/metadata")

@@ -66,3 +66,6 @@ skills-lock.json
 
 __pycache__/
 *.pyc
+
+# SSO lab: generated self-signed IdP certificate
+test/sso-lab/certs/

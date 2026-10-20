@@ -113,8 +113,8 @@ func (c cliCtx) runSAML(args []string) int {
 				s, err := cl.GetSAMLConnection(ctx, id)
 				return s, c.printSAML(s), err
 			})
-	case "create":
-		return c.runAPI("sso saml create", "sso saml create <name> [connection flags] [flags]", rest, f.register,
+	case "create", "add":
+		return c.runAPI("sso saml add", "sso saml create <name> [connection flags] [flags]", rest, f.register,
 			func(ctx context.Context, cl *Client, fs *flag.FlagSet) (any, func(), error) {
 				name, err := oneArg(fs, "connection name")
 				if err != nil {
@@ -145,8 +145,8 @@ func (c cliCtx) runSAML(args []string) int {
 				s, err := cl.UpdateSAMLConnection(ctx, id, req)
 				return s, c.printSAML(s), err
 			})
-	case "delete":
-		return c.runAPI("sso saml delete", "sso saml delete <id> [flags]", rest, nil,
+	case "delete", "remove":
+		return c.runAPI("sso saml remove", "sso saml remove <id> [flags]", rest, nil,
 			func(ctx context.Context, cl *Client, fs *flag.FlagSet) (any, func(), error) {
 				id, err := oneArg(fs, "connection id")
 				if err != nil {
@@ -157,6 +157,22 @@ func (c cliCtx) runSAML(args []string) int {
 				}
 				_, _ = fmt.Fprintf(c.stdout, "saml connection %s deleted\n", id)
 				return nil, nil, nil
+			})
+	case "test":
+		return c.runAPI("sso saml test", "sso saml test <id> [flags]", rest, nil,
+			func(ctx context.Context, cl *Client, fs *flag.FlagSet) (any, func(), error) {
+				id, err := oneArg(fs, "connection id")
+				if err != nil {
+					return nil, nil, err
+				}
+				s, err := cl.GetSAMLConnection(ctx, id)
+				if err != nil {
+					return nil, nil, err
+				}
+				if !s.Configured || !s.Enabled {
+					return nil, nil, newValidationError("connection %s must be configured and enabled before it can be tested", id)
+				}
+				return printTestLogin(c, cl.URL("/api/v1/sso/saml/connections/"+apiclient.PathEscape(id)+"/test/start"))
 			})
 	case "import-metadata":
 		return c.runSAMLImport(rest)
@@ -205,4 +221,16 @@ func (c cliCtx) runSAMLImport(args []string) int {
 			s, err := cl.ImportSAMLMetadata(ctx, id, req)
 			return s, c.printSAML(s), err
 		})
+}
+
+// testLoginResult is what the test commands print: the sign-in runs in a
+// browser, because the identity provider's login page needs one.
+type testLoginResult struct {
+	URL string `json:"url"`
+}
+
+func printTestLogin(c cliCtx, u string) (any, func(), error) {
+	return testLoginResult{URL: u}, func() {
+		_, _ = fmt.Fprintf(c.stdout, "Open this address in a browser signed in as a root user:\n  %s\nThe dashboard then shows the claims received, the mapped role and a typed fix for any failure. Nothing is created.\n", u)
+	}, nil
 }

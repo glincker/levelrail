@@ -1753,6 +1753,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/alert-defaults | AbilityRead | handleListDefaultAlerts |
 | PUT | /api/v1/alert-defaults/{id} | AbilityWrite | handleSetDefaultAlertEnabled |
 | GET | /api/v1/go-live/status | AbilityRead | handleLiveBadges |
+| GET | /api/v1/sso/saml/connections/{id}/test/start | AbilityRoot | handleStartSAMLTest |
+| GET | /api/v1/sso/saml/connections/{id}/test/result | AbilityRoot | handleSAMLTestResult |
 
 ## See also
 

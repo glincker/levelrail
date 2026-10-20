@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1528 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1530 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1251,6 +1251,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/sso/saml/connections/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetSAMLConnection", Description: ""},
 	{Method: "PUT", Path: "/api/v1/sso/saml/connections/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateSAMLConnection", Description: ""},
 	{Method: "POST", Path: "/api/v1/sso/saml/connections/{id}/metadata", Ability: "AbilityRoot", Group: "Other", Handler: "handleImportSAMLMetadata", Description: ""},
+	{Method: "GET", Path: "/api/v1/sso/saml/connections/{id}/test/result", Ability: "AbilityRoot", Group: "Other", Handler: "handleSAMLTestResult", Description: ""},
+	{Method: "GET", Path: "/api/v1/sso/saml/connections/{id}/test/start", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartSAMLTest", Description: ""},
 	{Method: "GET", Path: "/api/v1/sso/scim/tokens", Ability: "AbilityRoot", Group: "Other", Handler: "handleListSCIMTokens", Description: ""},
 	{Method: "POST", Path: "/api/v1/sso/scim/tokens", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateSCIMToken", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/sso/scim/tokens/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleRevokeSCIMToken", Description: ""},
