@@ -8,7 +8,7 @@
 # Env: INTEGRATE_NO_PUSH=1 skips the push, INTEGRATE_NO_RESTART=1 skips the app restart.
 # A conflict outside the known generated files aborts that merge and moves on.
 # INTEGRATE_LOCAL=1 merges local branch refs (agent branches that are not pushed).
-# INTEGRATE_OLD_BASE (default origin/release/0.8) names a squash-merged line to strip.
+# INTEGRATE_OLD_BASE (default origin/release/v0.8) names a squash-merged line to strip.
 
 set -uo pipefail
 
@@ -56,7 +56,7 @@ worktree_for_branch() {
 		/^worktree /{p=$2} /^branch /{if ($2==b) print p}'
 }
 
-old_base="${INTEGRATE_OLD_BASE:-origin/release/0.8}"
+old_base="${INTEGRATE_OLD_BASE:-origin/release/v0.8}"
 merged=()
 failed=()
 for b in "$@"; do
