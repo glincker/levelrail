@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1498 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1502 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -770,6 +770,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/nodes/{id}/drain", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDrainNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/drains", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeDrains", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/events", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeEvents", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/failure", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeFailure", Description: ""},
+	{Method: "PUT", Path: "/api/v1/nodes/{id}/failure-policy", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeFailurePolicy", Description: ""},
+	{Method: "POST", Path: "/api/v1/nodes/{id}/failure/lost", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleMarkNodeLost", Description: ""},
+	{Method: "POST", Path: "/api/v1/nodes/{id}/failure/resolve", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleResolveNodeFailure", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/health", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeHealth", Description: "Health, cordon, drain, same AbilityRoot boundary as every other node route above."},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/labels", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeLabels", Description: ""},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/labels", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeLabels", Description: ""},

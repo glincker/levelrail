@@ -1,3 +1,4 @@
+import type { NodeFailureSummary } from './nodeFailure'
 import type { NodeAgentResource, NodeCertResource } from './nodeCert'
 
 // Wire type for a node, GET /api/v1/nodes and GET /api/v1/nodes/{id}
@@ -66,6 +67,8 @@ export interface NodeResource {
   // Absent from control planes that predate ADR 021.
   cert?: NodeCertResource
   agent?: NodeAgentResource
+  // Present while the node has a live failure state.
+  failure?: NodeFailureSummary
 }
 
 // GPU summary on a node (internal/api/gpu_placement.go's nodeGPUResource).

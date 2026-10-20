@@ -79,6 +79,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/certflow"
 	"github.com/GLINCKER/levelrail/internal/compliance"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
+	"github.com/GLINCKER/levelrail/internal/nodefailure"
 	"github.com/GLINCKER/levelrail/internal/repolist"
 	"github.com/GLINCKER/levelrail/internal/search"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -745,6 +746,8 @@ type Router struct {
 	meshPaths meshpath.Resolver
 	// multiNode holds node moves, drains, labels and selectors; nil means 501.
 	multiNode *multiNodeState
+	// nodeFailure is nil unless WithNodeFailure was applied.
+	nodeFailure *nodefailure.Controller
 	// joinTokenTTL overrides nodeJoinTokenTTL, see WithNodeJoinTokenTTL.
 	joinTokenTTL time.Duration
 	// meshRotator is the same node's *network.Coordinator, narrowed to

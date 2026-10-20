@@ -2965,6 +2965,8 @@ type NodeResource struct {
 	// agent's self-reported build (node_cert.go in this package).
 	Cert  *NodeCertResource  `json:"cert,omitempty"`
 	Agent *NodeAgentResource `json:"agent,omitempty"`
+	// Failure is set while the node has a live failure state.
+	Failure *NodeFailureSummary `json:"failure,omitempty"`
 }
 
 // NodeAlertStatusResource mirrors internal/api's nodeAlertStatusResource

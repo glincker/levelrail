@@ -47,6 +47,7 @@ var kindInfos = map[string]kindInfo{
 	"cert_renewal":              {"Certificate renewal for %s looks stalled", "Open Domains and read the CA error", linkDomains, false},
 	"doctor":                    {"Check failed: %s", "Open Status and read the check", linkStatus, false},
 	"update":                    {"A new version is available", "Review the release and update", linkUpdates, false},
+	KindNodeFailure:             {"Node %s has failed", "Open the node and decide what happens to its apps", linkNodes, false},
 	KindNodeReenroll:            {"Node %s needs to be re-enrolled", "Open the node and use Re-enroll", linkNodes, false},
 	KindDeviceLogin:             {"CLI login from %s is waiting", "Compare the code and approve or deny it", linkCLI, false},
 	KindDeviceLoginResolved:     {"CLI login from %s", "Run the CLI login again if you still need it", linkCLI, false},
