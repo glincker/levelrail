@@ -439,7 +439,7 @@ func TestGitPollerSkipsReleaseModeAndHonorsBackoffAndRateLimit(t *testing.T) {
 	if err := db.SaveGitHubAppConnection(context.Background(), store.GitHubAppConnection{AppID: 1, ClientID: "c", InstanceURL: "https://github.com", CreatedAt: "2026-10-20T00:00:00Z"}); err != nil {
 		t.Fatal(err)
 	}
-	rt.recordGitConn(context.Background(), &gitConnError{Provider: gitProviderGitHub, Status: store.GitConnRateLimited, NextCheck: time.Now().Add(time.Hour), Err: context.Canceled})
+	rt.recordGitConn(context.Background(), &gitConnError{Provider: gitProviderGitHub, Key: gitProviderGitHub, Status: store.GitConnRateLimited, NextCheck: time.Now().Add(time.Hour), Err: context.Canceled})
 	if err := db.SaveGitSource(context.Background(), store.GitSource{ServiceName: "web", RepoURL: "https://github.com/org/web.git", Branch: "main", BuildType: "dockerfile"}); err != nil {
 		t.Fatal(err)
 	}

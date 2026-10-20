@@ -19,9 +19,9 @@ export const GIT_REPO_PAGE_SIZE = 100
 
 export const gitRepoKeys = {
   all: ['git-repos'] as const,
-  provider: (provider: GitRepoProvider) =>
-    [...gitRepoKeys.all, provider] as const,
-  list: (provider: GitRepoProvider, params: GitRepoListParams) =>
+  provider: (provider: GitRepoProvider | '') =>
+    [...gitRepoKeys.all, provider || 'all'] as const,
+  list: (provider: GitRepoProvider | '', params: GitRepoListParams) =>
     [...gitRepoKeys.provider(provider), params] as const,
 }
 
@@ -38,10 +38,12 @@ export class GitRepoRateLimitError extends ApiError {
 }
 
 export function gitRepoListUrl(
-  provider: GitRepoProvider,
+  provider: GitRepoProvider | '',
   params: GitRepoListParams,
 ): string {
-  const q = new URLSearchParams({ provider })
+  const q = new URLSearchParams()
+  if (provider) q.set('provider', provider)
+  if (params.connection) q.set('connection', params.connection)
   q.set('limit', String(params.limit ?? GIT_REPO_PAGE_SIZE))
   if (params.search) q.set('search', params.search)
   if (params.owner) q.set('owner', params.owner)
@@ -55,7 +57,7 @@ export function gitRepoListUrl(
 }
 
 export async function fetchGitRepoList(
-  provider: GitRepoProvider,
+  provider: GitRepoProvider | '',
   params: GitRepoListParams,
 ): Promise<GitRepoListResponse> {
   const res = await fetch(gitRepoListUrl(provider, params))
@@ -65,7 +67,7 @@ export async function fetchGitRepoList(
       next_check_at?: string
     } | null
     throw new GitRepoRateLimitError(
-      body?.error ?? `${provider} is rate limiting`,
+      body?.error ?? `${provider || 'the git provider'} is rate limiting`,
       body?.next_check_at ?? '',
     )
   }
@@ -74,7 +76,7 @@ export async function fetchGitRepoList(
       res.status,
       await readErrorMessage(
         res,
-        `fetch ${provider} repositories failed: ${res.status}`,
+        `fetch ${provider || 'git'} repositories failed: ${res.status}`,
       ),
     )
   }
@@ -82,7 +84,7 @@ export async function fetchGitRepoList(
 }
 
 export function useGitRepoList(
-  provider: GitRepoProvider,
+  provider: GitRepoProvider | '',
   params: GitRepoListParams,
   enabled: boolean,
 ) {
@@ -99,7 +101,7 @@ export function useGitRepoList(
 
 // Re-lists the provider now instead of serving the cache, then reloads every
 // open list for that provider.
-export function useRefreshGitRepos(provider: GitRepoProvider) {
+export function useRefreshGitRepos(provider: GitRepoProvider | '') {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => fetchGitRepoList(provider, { refresh: true }),

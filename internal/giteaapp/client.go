@@ -17,6 +17,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -332,4 +333,22 @@ func (c *Client) CreateCommitStatus(ctx context.Context, instanceURL, accessToke
 	}
 	u := fmt.Sprintf("%s/repos/%s/statuses/%s", apiBaseURL(instanceURL), fullName, url.PathEscape(sha))
 	return c.do(ctx, http.MethodPost, u, "Bearer "+accessToken, bytes.NewReader(payload), nil)
+}
+
+// Account is the authenticated user behind an access token.
+type Account struct {
+	ID    string
+	Login string
+}
+
+// CurrentUser returns the user an access token belongs to.
+func (c *Client) CurrentUser(ctx context.Context, instanceURL, accessToken string) (Account, error) {
+	var resp struct {
+		ID    int64  `json:"id"`
+		Login string `json:"login"`
+	}
+	if err := c.do(ctx, http.MethodGet, apiBaseURL(instanceURL)+"/user", "Bearer "+accessToken, nil, &resp); err != nil {
+		return Account{}, err
+	}
+	return Account{ID: strconv.FormatInt(resp.ID, 10), Login: resp.Login}, nil
 }

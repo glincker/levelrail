@@ -18,6 +18,19 @@ function when(iso?: string): string {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleString()
 }
 
+type ConnectableProvider = 'gitlab' | 'bitbucket' | 'gitea'
+
+// The provider pages that can reconnect a source whose account is gone.
+// Without a known provider the repository host is the only hint.
+function reconnectProviders(source: GitSourceResource): ConnectableProvider[] {
+  if (source.connection?.provider) return [source.connection.provider]
+  const host = new URL(source.repo_url, 'https://x.invalid').hostname
+  if (host === 'bitbucket.org') return ['bitbucket']
+  if (host.includes('gitlab')) return ['gitlab']
+  if (/gitea|forgejo|codeberg/.test(host)) return ['gitea']
+  return ['gitlab', 'gitea']
+}
+
 // What a missed webhook looks like from the source's side: an unreachable
 // webhook address with a Fix, a registration that failed with Register again,
 // and when the poller and webhooks were last heard from.
@@ -34,6 +47,36 @@ export function GitSourceReliability({
 
   return (
     <div className="space-y-2" data-testid="git-source-reliability">
+      {source.connection &&
+      !['ok', 'rate_limited'].includes(source.connection.state) ? (
+        <Alert variant="destructive">
+          <WarningIcon className="size-4" aria-hidden="true" />
+          <AlertDescription className="space-y-2">
+            <p>
+              {t(`reliability.connection.${source.connection.state}`, {
+                label: source.connection.label ?? '',
+                defaultValue: t('reliability.connection.needs_reauthorize', {
+                  label: source.connection.label ?? '',
+                }),
+              })}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {reconnectProviders(source).map((provider) => (
+                <Button
+                  key={provider}
+                  size="sm"
+                  render={<a href={`/settings/${provider}-app`} />}
+                  nativeButton={false}
+                >
+                  {t('reliability.connection.reconnect', {
+                    provider: t(`connection.providers.${provider}`),
+                  })}
+                </Button>
+              ))}
+            </div>
+          </AlertDescription>
+        </Alert>
+      ) : null}
       {source.webhook_url_warning ? (
         <Alert variant="destructive">
           <WarningIcon className="size-4" aria-hidden="true" />

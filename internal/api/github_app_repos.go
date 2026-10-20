@@ -63,7 +63,7 @@ func (rt *Router) mintGitHubAppInstallationToken(ctx context.Context) (instanceU
 
 	tok, err := rt.githubAppClient.MintInstallationToken(ctx, instanceURL, appJWT, *conn.InstallationID)
 	if err != nil {
-		return "", "", rt.gitConnRecordFailure(ctx, gitProviderGitHub, fmt.Errorf("mint github app installation token: %w", err), true)
+		return "", "", rt.gitConnRecordFailure(ctx, gitProviderGitHub, gitProviderGitHub, fmt.Errorf("mint github app installation token: %w", err), true)
 	}
 	secretmask.Add(tok.Token)
 	return instanceURL, tok.Token, nil
@@ -111,7 +111,7 @@ func (rt *Router) mintGitHubAppInstallationTokenForOwner(ctx context.Context, ow
 	}
 	tok, err := rt.githubAppClient.MintInstallationToken(ctx, instanceURL, appJWT, matched.InstallationID)
 	if err != nil {
-		return "", "", rt.gitConnRecordFailure(ctx, gitProviderGitHub, fmt.Errorf("mint github app installation token: %w", err), true)
+		return "", "", rt.gitConnRecordFailure(ctx, gitProviderGitHub, gitProviderGitHub, fmt.Errorf("mint github app installation token: %w", err), true)
 	}
 	secretmask.Add(tok.Token)
 	return instanceURL, tok.Token, nil
@@ -164,8 +164,11 @@ type gitHubAppRepoListResource struct {
 }
 
 type gitHubAppRepoListErrResource struct {
-	AccountLogin string `json:"account_login"`
-	Error        string `json:"error"`
+	AccountLogin    string `json:"account_login"`
+	Provider        string `json:"provider,omitempty"`
+	ConnectionID    string `json:"connection_id,omitempty"`
+	ConnectionLabel string `json:"connection_label,omitempty"`
+	Error           string `json:"error"`
 }
 
 // handleListGitHubAppRepos handles GET /api/v1/github-app/repos: every

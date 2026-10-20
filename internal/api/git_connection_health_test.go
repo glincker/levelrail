@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -39,21 +40,22 @@ func (r *rotatingGitLab) RefreshToken(_ context.Context, _, _, _, refresh string
 	return gitlabapp.Tokens{AccessToken: "at-" + r.valid, RefreshToken: r.valid, ExpiresAt: time.Now().Add(time.Hour)}, nil
 }
 
-func expiredGitLabSecrets(t *testing.T, refresh string) *fakeGitLabAppSecrets {
+// expiredGitConn seeds a connection whose access token is already past expiry.
+func expiredGitConn(t *testing.T, db *store.DB, secrets GitConnSecrets, host, account, refresh string) store.GitConnection {
 	t.Helper()
-	s := newFakeGitLabAppSecrets()
-	key := store.GitLabAppSecretsKey()
-	mustSetGitLabSecret(t, s, key, gitLabAppClientSecretKey, "csecret")
-	mustSetGitLabSecret(t, s, key, gitLabAppAccessTokenKey, "at-old")
-	mustSetGitLabSecret(t, s, key, gitLabAppRefreshTokenKey, refresh)
-	mustSetGitLabSecret(t, s, key, gitLabAppTokenExpiresKey, strconv.FormatInt(time.Now().Add(-time.Hour).Unix(), 10))
-	return s
+	c := seedGitConn(t, db, secrets, gitProviderGitLab, host, account, true)
+	mustSetGitConnSecret(t, secrets, c.SecretsKey, gitConnAccessTokenKey, "at-old")
+	mustSetGitConnSecret(t, secrets, c.SecretsKey, gitConnRefreshTokenKey, refresh)
+	mustSetGitConnSecret(t, secrets, c.SecretsKey, gitConnTokenExpiresKey, strconv.FormatInt(time.Now().Add(-time.Hour).Unix(), 10))
+	return c
 }
 
-func TestGitLabAccessToken_ConcurrentCallersRefreshOnce(t *testing.T) {
+func TestGitConnToken_ConcurrentCallersRefreshOnce(t *testing.T) {
 	rot := &rotatingGitLab{fakeGitLabAppClient: &fakeGitLabAppClient{}, valid: "rt-0"}
-	rt, db := newTestRouterWithGitLabApp(t, expiredGitLabSecrets(t, "rt-0"), rot)
-	seedGitLabAppConnection(t, db)
+	secrets := newFakeGitConnSecrets()
+	rt, db := newGitConnTestRouter(t, secrets)
+	rt.gitlabAppClient = rot
+	conn := expiredGitConn(t, db, secrets, "gitlab.example.com", "ann", "rt-0")
 
 	const callers = 16
 	tokens := make([]string, callers)
@@ -63,7 +65,7 @@ func TestGitLabAccessToken_ConcurrentCallersRefreshOnce(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, tokens[i], errs[i] = rt.gitlabAccessToken(t.Context())
+			_, tokens[i], errs[i] = rt.gitConnToken(t.Context(), conn.ID)
 		}()
 	}
 	wg.Wait()
@@ -76,8 +78,46 @@ func TestGitLabAccessToken_ConcurrentCallersRefreshOnce(t *testing.T) {
 	if rot.calls.Load() != 1 {
 		t.Fatalf("refresh token spent %d times, want exactly once", rot.calls.Load())
 	}
-	if got := rt.gitConnHealth(t.Context(), gitProviderGitLab); got.Status != store.GitConnOK {
+	if got := rt.gitConnHealth(t.Context(), conn.ID); got.Status != store.GitConnOK {
 		t.Fatalf("health after a good refresh = %+v", got)
+	}
+}
+
+// Two accounts on the same provider refresh independently: one refresh per
+// connection, and a refresh stuck on one never blocks the other.
+func TestGitConnToken_RefreshIsSerializedPerConnectionNotPerProvider(t *testing.T) {
+	gate := make(chan struct{})
+	fake := &fakeGitLabAppClient{
+		refreshTokens: gitlabapp.Tokens{AccessToken: "at-new", RefreshToken: "rt-new", ExpiresAt: time.Now().Add(time.Hour)},
+		refreshGate:   gate,
+	}
+	secrets := newFakeGitConnSecrets()
+	rt, db := newGitConnTestRouter(t, secrets)
+	rt.gitlabAppClient = fake
+	a := expiredGitConn(t, db, secrets, "gitlab.com", "ann", "rt-a")
+	b := expiredGitConn(t, db, secrets, "git.corp.example", "bob", "rt-b")
+
+	var wg sync.WaitGroup
+	for _, c := range []store.GitConnection{a, a, b, b} {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if _, _, err := rt.gitConnToken(t.Context(), c.ID); err != nil {
+				t.Errorf("token for %s: %v", c.ID, err)
+			}
+		}()
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for fake.refreshCount.Load() < 2 && time.Now().Before(deadline) {
+		time.Sleep(5 * time.Millisecond)
+	}
+	if got := fake.refreshCount.Load(); got != 2 {
+		t.Fatalf("while both refreshes are in flight, refresh calls = %d, want 2 (one per connection, in parallel)", got)
+	}
+	close(gate)
+	wg.Wait()
+	if got := fake.refreshCount.Load(); got != 2 {
+		t.Fatalf("total refresh calls = %d, want 2: duplicate callers must reuse the refreshed token", got)
 	}
 }
 
@@ -87,7 +127,7 @@ func TestRefreshGitOAuth_DiscardsResultWhenRefreshTokenChangedUnderneath(t *test
 	state := gitOAuthState{Access: "old", Refresh: "rt-1", ExpiresUnix: time.Now().Add(-time.Hour).Unix()}
 	saved := false
 	spec := gitOAuthSpec{
-		provider: gitProviderGitLab,
+		provider: gitProviderGitLab, key: "gc_test",
 		read: func(context.Context) (gitOAuthState, error) {
 			mu.Lock()
 			defer mu.Unlock()
@@ -108,22 +148,47 @@ func TestRefreshGitOAuth_DiscardsResultWhenRefreshTokenChangedUnderneath(t *test
 	}
 }
 
-func TestGitLabRevokedGrantIsTypedNotA500(t *testing.T) {
+func TestGitLabRevokedGrantIsTypedNotA500AndScopedToItsConnection(t *testing.T) {
 	rot := &rotatingGitLab{fakeGitLabAppClient: &fakeGitLabAppClient{}, valid: "someone-else"}
-	rt, db := newTestRouterWithGitLabApp(t, expiredGitLabSecrets(t, "rt-0"), rot)
+	secrets := newFakeGitConnSecrets()
+	rt, db := newGitConnTestRouter(t, secrets)
+	rt.gitlabAppClient = rot
 	cookie := loginTestSession(t, rt, db)
-	seedGitLabAppConnection(t, db)
+	broken := expiredGitConn(t, db, secrets, "gitlab.com", "ann", "rt-0")
+	healthy := seedGitConn(t, db, secrets, gitProviderGitLab, "git.corp.example", "bob", true)
 
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/gitlab-app/projects", ""))
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/git/repos?provider=gitlab&connection="+broken.ID, ""))
 	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), `"code":"needs_reauthorize"`) {
 		t.Fatalf("status = %d body = %s, want 409 needs_reauthorize", rec.Code, rec.Body.String())
+	}
+	if got := rt.gitConnHealth(t.Context(), broken.ID); got.Status != store.GitConnNeedsReauthorize {
+		t.Fatalf("broken connection health = %+v", got)
+	}
+	if got := rt.gitConnHealth(t.Context(), healthy.ID); got.Status != store.GitConnOK {
+		t.Fatalf("the other account's health = %+v, want ok", got)
+	}
+
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/git-connections?provider=gitlab", ""))
+	var conns []gitConnectionResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &conns); err != nil || len(conns) != 2 {
+		t.Fatalf("connections = %s, err %v", rec.Body.String(), err)
+	}
+	for _, c := range conns {
+		want := store.GitConnOK
+		if c.ID == broken.ID {
+			want = store.GitConnNeedsReauthorize
+		}
+		if c.Connection.Status != want {
+			t.Errorf("connection %s status = %q, want %q", c.ID, c.Connection.Status, want)
+		}
 	}
 
 	rec = httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/git-providers", ""))
 	if !strings.Contains(rec.Body.String(), `"provider":"gitlab","connected":true`) || !strings.Contains(rec.Body.String(), `"status":"needs_reauthorize"`) {
-		t.Fatalf("git-providers = %s, want gitlab needs_reauthorize", rec.Body.String())
+		t.Fatalf("git-providers = %s, want gitlab flagged needs_reauthorize", rec.Body.String())
 	}
 }
 
@@ -172,56 +237,68 @@ func TestGitHubUnauthorizedListIsNeedsReauthorizeAndRecovers(t *testing.T) {
 	}
 }
 
-func TestGitLabDisconnectRevokesTokenAtProvider(t *testing.T) {
+func TestGitConnectionDisconnectRevokesOnlyItsOwnTokenAtProvider(t *testing.T) {
 	fake := &fakeGitLabAppClient{}
-	secrets := authorizedGitLabSecrets(t)
-	mustSetGitLabSecret(t, secrets, store.GitLabAppSecretsKey(), gitLabAppRefreshTokenKey, "rt-live")
-	rt, db := newTestRouterWithGitLabApp(t, secrets, fake)
+	secrets := newFakeGitConnSecrets()
+	rt, db := newGitConnTestRouter(t, secrets)
+	rt.gitlabAppClient = fake
 	cookie := loginTestSession(t, rt, db)
-	seedGitLabAppConnection(t, db)
+	gone := seedGitConn(t, db, secrets, gitProviderGitLab, "gitlab.com", "ann", true)
+	kept := seedGitConn(t, db, secrets, gitProviderGitLab, "git.corp.example", "bob", true)
+	mustSetGitConnSecret(t, secrets, gone.SecretsKey, gitConnRefreshTokenKey, "rt-live")
 
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/gitlab-app", ""))
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/git-connections/"+gone.ID, ""))
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"token_revoked":true`) {
 		t.Fatalf("status = %d body = %s, want a revoked token", rec.Code, rec.Body.String())
 	}
-	if fake.revokedToken != "rt-live" {
-		t.Fatalf("revoked %q, want the refresh token", fake.revokedToken)
+	if len(fake.revokedTokens) != 1 || fake.revokedTokens[0] != "rt-live" {
+		t.Fatalf("revoked %v, want only the disconnected connection's refresh token", fake.revokedTokens)
+	}
+	if ok, _ := secrets.Exists(t.Context(), kept.SecretsKey, gitConnAccessTokenKey); !ok {
+		t.Error("the other connection's token was deleted")
+	}
+	if ok, _ := secrets.Exists(t.Context(), gone.SecretsKey, gitConnAccessTokenKey); ok {
+		t.Error("the disconnected connection's token is still stored")
 	}
 }
 
-func TestGitLabDisconnectStillSucceedsWhenRevocationFails(t *testing.T) {
+func TestGitConnectionDisconnectStillSucceedsWhenRevocationFails(t *testing.T) {
 	fake := &fakeGitLabAppClient{revokeErr: errors.New("gitlab down")}
-	rt, db := newTestRouterWithGitLabApp(t, authorizedGitLabSecrets(t), fake)
+	secrets := newFakeGitConnSecrets()
+	rt, db := newGitConnTestRouter(t, secrets)
+	rt.gitlabAppClient = fake
 	cookie := loginTestSession(t, rt, db)
-	seedGitLabAppConnection(t, db)
+	c := seedGitConn(t, db, secrets, gitProviderGitLab, "gitlab.com", "ann", true)
 
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/gitlab-app", ""))
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/git-connections/"+c.ID, ""))
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"token_revoked":false`) || !strings.Contains(rec.Body.String(), "Revoke it yourself") {
 		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
 	}
 }
 
 func TestBitbucketDisconnectSaysItCannotRevoke(t *testing.T) {
-	rt, db := newTestRouterWithBitbucketApp(t, newFakeBitbucketAppSecrets(), &fakeBitbucketAppClient{})
+	secrets := newFakeGitConnSecrets()
+	rt, db := newGitConnTestRouter(t, secrets)
 	cookie := loginTestSession(t, rt, db)
-	seedBitbucketAppConnection(t, db)
+	c := seedGitConn(t, db, secrets, gitProviderBitbucket, "bitbucket.org", "wsuser", true)
 
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/bitbucket-app", ""))
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/git-connections/"+c.ID, ""))
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"token_revoked":false`) || !strings.Contains(rec.Body.String(), "no API to revoke") {
 		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
 	}
 }
 
 func TestDoctorGitConnectionsWarnsWhenAProviderNeedsReconnect(t *testing.T) {
-	rt, db := newTestRouterWithGitLabApp(t, authorizedGitLabSecrets(t), &fakeGitLabAppClient{})
-	seedGitLabAppConnection(t, db)
+	secrets := newFakeGitConnSecrets()
+	rt, db := newGitConnTestRouter(t, secrets)
+	c := seedGitConn(t, db, secrets, gitProviderGitLab, "gitlab.com", "ann", true)
 	if got := rt.doctorCheckGitConnections(t.Context()); got.Status != doctorStatusOK {
 		t.Fatalf("healthy = %+v", got)
 	}
-	rt.recordGitConn(t.Context(), &gitConnError{Provider: gitProviderGitLab, Status: store.GitConnNeedsReauthorize, Err: errors.New("x")})
+	rt.recordGitConn(t.Context(), &gitConnError{Provider: gitProviderGitLab, Key: c.ID, Status: store.GitConnNeedsReauthorize, Err: errors.New("x")})
 	got := rt.doctorCheckGitConnections(t.Context())
 	if got.Status != doctorStatusWarn || !strings.Contains(got.Message, "gitlab (needs_reauthorize)") {
 		t.Fatalf("check = %+v, want a warning naming gitlab", got)

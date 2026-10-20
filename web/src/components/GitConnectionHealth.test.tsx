@@ -87,7 +87,7 @@ describe('GitConnectionBanner', () => {
       screen.getByText('GitLab needs to be reconnected'),
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Reconnect GitLab' }))
-    expect(assign).toHaveBeenCalledWith('/api/v1/gitlab-app/connect')
+    expect(assign).toHaveBeenCalledWith('/settings/gitlab-app')
   })
 
   it('sends a removed GitHub installation to the App settings page', () => {

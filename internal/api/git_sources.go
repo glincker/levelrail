@@ -146,6 +146,10 @@ type gitSourceResource struct {
 	WebhookRegistration *gitWebhookRegistrationResource `json:"webhook_registration,omitempty"`
 	// Poll is the missed-webhook poller's view of this source.
 	Poll *gitPollStatusResource `json:"poll,omitempty"`
+	// ConnectionID is the provider connection the repository was picked from; empty for a pasted URL.
+	ConnectionID string `json:"connection_id,omitempty"`
+	// Connection is that connection's state, including needs_reconnect once it was removed.
+	Connection *gitSourceConnectionResource `json:"connection,omitempty"`
 }
 
 // gitSourceWebhookPath is the relative API path GitHub's own webhook
@@ -188,6 +192,7 @@ func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gi
 		DeployPaths:        nonNilPaths(g.DeployPaths),
 		DeployPathsIgnore:  nonNilPaths(g.DeployPathsIgnore),
 		ReportStatus:       g.ReportStatus,
+		ConnectionID:       g.ConnectionID,
 		CreatedAt:          g.CreatedAt,
 		UpdatedAt:          g.UpdatedAt,
 	}
@@ -380,7 +385,9 @@ func effectiveGitSourceTriggerMode(triggerMode string) string {
 // (owner/repo, project id, workspace/repoSlug) identify which repo,
 // never this body, so the body shape has never actually differed.
 type useRepoAsSourceRequest struct {
-	AppName   string `json:"app_name"`
+	AppName string `json:"app_name"`
+	// Repo names the repository on a git provider connection: a project id for GitLab, owner/name otherwise.
+	Repo      string `json:"repo,omitempty"`
 	Branch    string `json:"branch,omitempty"`
 	BuildType string `json:"build_type,omitempty"`
 	BuildPath string `json:"build_path,omitempty"`

@@ -169,4 +169,44 @@ describe('GitSourceReliability', () => {
       screen.getByText(/The last check failed: host unreachable/),
     ).toBeInTheDocument()
   })
+
+  it('says needs reconnect with a Reconnect action when the source account was disconnected', () => {
+    renderPanel(
+      source({
+        repo_url: 'https://git.corp.example/g/web.git',
+        connection_id: 'gc_gone',
+        connection: { id: 'gc_gone', state: 'needs_reconnect' },
+      }),
+      () => json({}),
+    )
+    expect(
+      screen.getByText(
+        /The account this repository was picked from was disconnected/,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Reconnect GitLab').closest('a')).toHaveAttribute(
+      'href',
+      '/settings/gitlab-app',
+    )
+    expect(screen.getByText('Reconnect Gitea')).toBeInTheDocument()
+  })
+
+  it('names the account whose authorization was revoked', () => {
+    renderPanel(
+      source({
+        connection_id: 'gc_1',
+        connection: {
+          id: 'gc_1',
+          provider: 'gitlab',
+          label: 'Work',
+          state: 'revoked',
+        },
+      }),
+      () => json({}),
+    )
+    expect(
+      screen.getByText(/The account Work was removed on the provider/),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Reconnect Gitea')).not.toBeInTheDocument()
+  })
 })

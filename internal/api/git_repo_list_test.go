@@ -93,7 +93,7 @@ func TestGitRepoList_ManualRefreshAndInvalidationOnDisconnect(t *testing.T) {
 	rt, db := newTestRouterWithGitLabApp(t, authorizedGitLabSecrets(t), fake)
 	rt.repoCache = newRepoCacheForTest(0)
 	cookie := loginTestSession(t, rt, db)
-	seedGitLabAppConnection(t, db)
+	conn := seedGitLabAppConnection(t, db)
 
 	getRepoList(t, rt, cookie, "provider=gitlab")
 	getRepoList(t, rt, cookie, "provider=gitlab")
@@ -106,7 +106,7 @@ func TestGitRepoList_ManualRefreshAndInvalidationOnDisconnect(t *testing.T) {
 	}
 
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/gitlab-app", ""))
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/git-connections/"+conn.ID, ""))
 	if rec.Code >= 300 {
 		t.Fatalf("disconnect status = %d: %s", rec.Code, rec.Body.String())
 	}

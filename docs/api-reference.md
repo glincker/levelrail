@@ -1060,22 +1060,6 @@ Endpoints for:
 | GET | /api/v1/github-app/repos | AbilityReadSensitive | handleListGitHubAppRepos |
 | GET | /api/v1/github-app/repos/{owner}/{repo}/branches | AbilityReadSensitive | handleListGitHubAppBranches |
 | POST | /api/v1/github-app/repos/{owner}/{repo}/use-as-source | AbilityWriteSensitive | handleUseGitHubRepoAsSource |
-| GET | /api/v1/gitlab-app | AbilityRoot | handleGetGitLabAppStatus |
-| PUT | /api/v1/gitlab-app | AbilityRoot | handleConnectGitLabApp |
-| DELETE | /api/v1/gitlab-app | AbilityRoot | handleDisconnectGitLabApp |
-| GET | /api/v1/gitlab-app/connect | AbilityRoot | handleStartGitLabAppConnect |
-| GET | /api/v1/gitlab-app/callback | AbilityRoot | handleGitLabAppCallback |
-| GET | /api/v1/gitlab-app/projects | AbilityReadSensitive | handleListGitLabAppProjects |
-| GET | /api/v1/gitlab-app/projects/{id}/branches | AbilityReadSensitive | handleListGitLabAppBranches |
-| POST | /api/v1/gitlab-app/projects/{id}/use-as-source | AbilityWriteSensitive | handleUseGitLabProjectAsSource |
-| GET | /api/v1/bitbucket-app | AbilityRoot | handleGetBitbucketAppStatus |
-| PUT | /api/v1/bitbucket-app | AbilityRoot | handleConnectBitbucketApp |
-| DELETE | /api/v1/bitbucket-app | AbilityRoot | handleDisconnectBitbucketApp |
-| GET | /api/v1/bitbucket-app/connect | AbilityRoot | handleStartBitbucketAppConnect |
-| GET | /api/v1/bitbucket-app/callback | AbilityRoot | handleBitbucketAppCallback |
-| GET | /api/v1/bitbucket-app/repos | AbilityReadSensitive | handleListBitbucketAppRepos |
-| GET | /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/branches | AbilityReadSensitive | handleListBitbucketAppBranches |
-| POST | /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source | AbilityWriteSensitive | handleUseBitbucketRepoAsSource |
 | GET | /api/v1/github-app/installations | AbilityRoot | handleListGitHubAppInstallations |
 | DELETE | /api/v1/github-app/installations/{id} | AbilityRoot | handleDeleteGitHubAppInstallation |
 | POST | /api/v1/git-providers/{provider}/validate | AbilityRoot | handleValidateGitProvider |
@@ -1228,14 +1212,6 @@ Routes that do not fit an existing group.
 | POST | /api/v1/deploy-approvals/{id}/approve | AbilityDeploy | handleApproveDeployApproval |
 | POST | /api/v1/deploy-approvals/{id}/reject | AbilityDeploy | handleRejectDeployApproval |
 | GET | /api/v1/mesh | AbilityRoot | handleGetMeshStatus |
-| GET | /api/v1/gitea-app | AbilityRoot | handleGetGiteaAppStatus |
-| PUT | /api/v1/gitea-app | AbilityRoot | handleConnectGiteaApp |
-| DELETE | /api/v1/gitea-app | AbilityRoot | handleDisconnectGiteaApp |
-| GET | /api/v1/gitea-app/connect | AbilityRoot | handleStartGiteaAppConnect |
-| GET | /api/v1/gitea-app/callback | AbilityRoot | handleGiteaAppCallback |
-| GET | /api/v1/gitea-app/repos | AbilityReadSensitive | handleListGiteaAppRepos |
-| GET | /api/v1/gitea-app/repos/{owner}/{repo}/branches | AbilityReadSensitive | handleListGiteaAppBranches |
-| POST | /api/v1/gitea-app/repos/{owner}/{repo}/use-as-source | AbilityWriteSensitive | handleUseGiteaRepoAsSource |
 | POST | /api/v1/ai/sessions | AbilityRoot | handleCreateAIChatSession |
 | GET | /api/v1/ai/sessions | AbilityRoot | handleListAIChatSessions |
 | GET | /api/v1/ai/sessions/{id} | AbilityRoot | handleGetAIChatSession |
@@ -1731,6 +1707,20 @@ Routes that do not fit an existing group.
 | GET | /api/v1/sso/oidc/{provider}/test/result | AbilityRoot | handleOAuthSSOTestResult |
 | GET | /api/v1/local-mode | AbilityRead | handleGetLocalMode |
 | POST | /api/v1/local-mode/reset | AbilityRoot | handleLocalModeReset |
+| GET | /api/v1/git-connections | AbilityReadSensitive | handleListGitConnections |
+| POST | /api/v1/git-connections | AbilityRoot | handleCreateGitConnection |
+| GET | /api/v1/git-connections/{id} | AbilityReadSensitive | handleGetGitConnection |
+| PATCH | /api/v1/git-connections/{id} | AbilityRoot | handleRenameGitConnection |
+| DELETE | /api/v1/git-connections/{id} | AbilityRoot | handleDisconnectGitConnection |
+| POST | /api/v1/git-connections/{id}/default | AbilityRoot | handleSetDefaultGitConnection |
+| GET | /api/v1/git-connections/{id}/branches | AbilityReadSensitive | handleListGitConnectionBranches |
+| POST | /api/v1/git-connections/{id}/use-as-source | AbilityWriteSensitive | handleUseGitConnectionRepoAsSource |
+| GET | /api/v1/gitlab-app/connect | AbilityRoot | handleStartGitConnect |
+| GET | /api/v1/gitlab-app/callback | AbilityRoot | handleGitConnectCallback |
+| GET | /api/v1/bitbucket-app/connect | AbilityRoot | handleStartGitConnect |
+| GET | /api/v1/bitbucket-app/callback | AbilityRoot | handleGitConnectCallback |
+| GET | /api/v1/gitea-app/connect | AbilityRoot | handleStartGitConnect |
+| GET | /api/v1/gitea-app/callback | AbilityRoot | handleGitConnectCallback |
 
 ## See also
 
