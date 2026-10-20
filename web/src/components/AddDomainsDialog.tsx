@@ -38,6 +38,7 @@ import {
   domainCheckKeys,
   domainCheckQueryOptions,
 } from '../queries/domainCheck'
+import { GetCertificateButton } from './GetCertificateButton'
 import type { EditDomainsResult } from '../queries/appEnvironmentDomains'
 import { DomainCheckPanel } from './DomainDnsCheck'
 import { DomainDnsStatusBadge } from './DomainDnsStatusBadge'
@@ -121,6 +122,7 @@ function ResultRow({
         >
           {t('page.row.diagnose')}
         </Button>
+        <GetCertificateButton domain={outcome.domain} variant="ghost" />
       </div>
       <div className="mt-2 pl-6">
         <GoLivePanel

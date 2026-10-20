@@ -167,6 +167,11 @@ The edge hardening limits are in [Domains and ingress](/domains-and-ingress#edge
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_CERT_EXPIRY_WARNING_WINDOW` | `336h` (14 days) | How close to expiry a certificate must be before it counts as expiring, for both the certificate expiry alert rules and the API. Control plane. |
+| `APP_CERT_FAIL_DAYS` | `14` | Days left below which an auto-renewed certificate makes the doctor's certificate check fail (and raises an attention item). Control plane. |
+| `APP_CERT_WATCHDOG_INTERVAL` | `10m` | How often the renewal watchdog looks for stuck or failing renewals. Control plane. |
+| `APP_CERT_WATCHDOG_BACKOFF` | `30m` | First retry delay of the renewal watchdog; it doubles per attempt up to 12 hours. Control plane. |
+| `APP_ACME_FAILED_PER_HOUR` | `5` | Failed validations per hostname per hour the certificate preflight treats as the Let's Encrypt limit. Control plane. |
+| `APP_ACME_DUPLICATE_PER_WEEK` | `5` | Certificates per exact name per week the preflight treats as the Let's Encrypt duplicate limit. Control plane. |
 | `APP_SLOW_REQUEST_THRESHOLD` | `500ms` | API requests slower than this are logged at Warn level, with a `breakdown` field naming the slowest phases (for example `telemetry_latest=1.2s`). Control plane. |
 | `APP_CRITICAL_REQUEST_THRESHOLD` | `2s` | API requests slower than this are logged at Error level. Control plane. |
 | `APP_DASHBOARD_CACHE_TTL` | `5s` | How long the dashboard's aggregate reads (app and node resource usage, apps metrics, system status, doctor) are reused between requests. `0` disables the cache. Control plane. |

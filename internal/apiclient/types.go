@@ -3837,6 +3837,12 @@ type CertificateResource struct {
 	// ExpiryClass is "incident" when this certificate's expiry needs an
 	// operator, empty otherwise.
 	ExpiryClass string `json:"expiry_class,omitempty"`
+	// Kind is who signed it: internal, staging, letsencrypt, custom, proxy or other.
+	Kind     string `json:"kind,omitempty"`
+	DaysLeft int    `json:"days_left"`
+	// LastRenewal is the last issue or renewal attempt.
+	LastRenewal *CertRenewal `json:"last_renewal,omitempty"`
+	NextRetryAt *time.Time   `json:"next_retry_at,omitempty"`
 }
 
 // RenewCertificateResource mirrors internal/api's

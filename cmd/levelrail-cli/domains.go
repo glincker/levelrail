@@ -46,6 +46,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsActivity(prog, args[1:], stdout, stderr, lookupEnv)
 	case "connectivity":
 		return runDomainsConnectivity(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cert":
+		return runDomainsCert(prog, args[1:], stdout, stderr, lookupEnv)
 	case "certificates":
 		return runDomainsCertificates(prog, args[1:], stdout, stderr, lookupEnv)
 	case "waf":
@@ -100,6 +102,7 @@ func domainsUsage(prog string) string {
   %[1]s domains summary [flags]                count domains by status and certificates needing attention
   %[1]s domains activity <domain> [flags]       list a domain's recent changes and certificate events
   %[1]s domains connectivity [flags]            check whether ports 80/443 reach this node and whether HTTP-01 can work
+  %[1]s domains cert <domain> [--staging] [--wait]  get a real Let's Encrypt certificate for a domain, with a preflight
   %[1]s domains certificates [flags]            list every certificate in certmagic storage, healthy or not
   %[1]s domains waf <verb> [flags]              configure a domain's opt-in WAF and rate limiting
   %[1]s domains error-pages <verb> [flags]      configure a domain's custom error pages (404, 500, 502, 503)

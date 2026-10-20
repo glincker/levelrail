@@ -128,6 +128,13 @@ func (rt *Router) doctorFacts(ctx context.Context, svc *store.DesiredService, do
 // every check, calling emit (when set) as each finishes. A non-zero status
 // is the HTTP error the caller should send with msg.
 func (rt *Router) runDomainDoctor(ctx context.Context, name, domain string, emit func(domaindoctor.Check)) (rep domaindoctor.Report, status int, msg string) {
+	return rt.runDomainDoctorWith(ctx, name, domain, emit, nil)
+}
+
+// runDomainDoctorWith is runDomainDoctor with a hook to adjust the facts, so
+// the certificate preflight can run the CAA and port checks as if public
+// certificates were already on.
+func (rt *Router) runDomainDoctorWith(ctx context.Context, name, domain string, emit func(domaindoctor.Check), adjust func(*domaindoctor.Facts)) (rep domaindoctor.Report, status int, msg string) {
 	svc, target, err := rt.doctorSubject(ctx, name, domain)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		return rep, http.StatusNotFound, "app not found"
@@ -142,6 +149,9 @@ func (rt *Router) runDomainDoctor(ctx context.Context, name, domain string, emit
 	}
 	facts := rt.doctorFacts(ctx, svc, domain, held)
 	facts.Target = target
+	if adjust != nil {
+		adjust(&facts)
+	}
 	probes := domaindoctor.DefaultProbes()
 	if rt.traffic != nil && rt.traffic.doctorProbes != nil {
 		probes = *rt.traffic.doctorProbes

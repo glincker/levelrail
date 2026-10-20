@@ -267,6 +267,9 @@ func Build(in Input) []Item {
 		case "expiring_soon":
 			items = append(items, newItem(Warning, "certificate", c.Domain, "expires "+c.NotAfter.Format("2006-01-02")+acmeReason(c)))
 		}
+		if c.Status == "healthy" && c.ACMEFailure != nil {
+			items = append(items, newItem(Warning, "cert_renewal", c.Domain, "last renewal failed, certificate expires "+c.NotAfter.Format("2006-01-02")+"; retrying with backoff"+acmeReason(c)))
+		}
 		if c.Renewal == "stalled" && c.Status != "expired" {
 			items = append(items, newItem(Warning, "cert_renewal", c.Domain, "renewal looks stalled, certificate expires "+c.NotAfter.Format("2006-01-02")+acmeReason(c)))
 		}

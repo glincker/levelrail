@@ -1013,6 +1013,9 @@ Endpoints for:
 | DELETE | /api/v1/static-sites/{name} | AbilityWriteSensitive | handleDeleteStaticSite |
 | POST | /api/v1/domains/{domain}/diagnose | AbilityRead | handleDomainDiagnose |
 | GET | /api/v1/domains/{domain}/diagnose/stream | AbilityRead | handleDomainDiagnoseStream |
+| GET | /api/v1/domains/{domain}/cert/preflight | AbilityRead | handleCertPreflight |
+| GET | /api/v1/domains/{domain}/cert/status | AbilityRead | handleCertStatus |
+| POST | /api/v1/domains/{domain}/cert | AbilityRoot | handleGetCert |
 
 ## Built-in Container Registry
 

@@ -7,6 +7,10 @@ description: "Verify real ACME certificate issuance against a live public domain
 ACME issuer configuration, settings toggles, and form validation are covered by automated tests: config-shape unit tests in `internal/ingress/acme_test.go` and end-to-end tests against a local CA in `internal/ingress/acme_live_test.go`. Those tests cannot prove issuance against a real public CA with real DNS and real reachability on ports 80 and 443. This runbook is that verification.
 
 A first run is recorded [at the bottom of this page](#recorded-run-2026-10-05), so you do not need to repeat it before trusting the feature. Repeating it on your own host is the fastest way to confirm your firewall is right. For a version that needs no DNS, use the **Enable HTTPS** card described in [Domains and ingress](/domains-and-ingress#zero-dns-setup-sslipio-hostnames-and-one-click-https).
+## The guided path
+
+Most operators do not need the manual steps below. **Get a real certificate** (domain row, the domain's Overview, or the result step after adding a domain) and `levelrail-cli domains cert <domain> [--staging] [--wait]` run a preflight first (DNS, port 80, CAA, contact email, Let's Encrypt limits with a next safe time), optionally rehearse against staging, turn public ACME on and show the progress until the certificate is issued or fails with a plain-language reason. See [Get a real certificate in one step](/domains-and-ingress#get-a-real-certificate-in-one-step). The manual steps and the failure list below remain the reference for what each check means.
+
 ## Prerequisites
 
 - A domain you control, with access to create an `A` or `AAAA` record.
@@ -41,7 +45,7 @@ Switch on **Issue real ACME certificates** and fill in:
 - **Contact email**: required. The CA uses it to reach you about problems such as forced revocation. Use a monitored address.
 - **Directory URL (optional)**: leave blank for Let's Encrypt production.
 
-For a first run, set the directory URL to Let's Encrypt staging, `https://acme-staging-v02.api.letsencrypt.org/directory`. Staging certificates trigger browser warnings but exercise the same mechanism without touching production rate limits. When staging succeeds, clear the field and save again for a trusted certificate. Saving drops the previous issuer's stored certificates so the new CA re-issues them.
+For a first run, set the directory URL to Let's Encrypt staging, `https://acme-staging-v02.api.letsencrypt.org/directory`. Staging certificates trigger browser warnings but exercise the same mechanism without touching production rate limits. Use staging only while no domain has a working real certificate: the guided request and the one-click HTTPS flow refuse it otherwise, because switching the CA drops every stored ACME certificate. When staging succeeds, clear the field and save again for a trusted certificate. Saving drops the previous issuer's stored certificates so the new CA re-issues them.
 
 From the CLI:
 
@@ -144,6 +148,16 @@ What the run found and fixed:
 5. A failed issuance was invisible: only a log line. The CA's error is now captured from Caddy's certificate events and returned with a hint code.
 
 Not covered by this run: the live capture of a CA error (item 5 is covered by unit tests only), renewal (certificates are 90 days old at best, so the renewal path ran only in tests and the `got renewal info` log lines), wildcard certificates through DNS-01, and a deliberately failing issuance against the production CA.
+
+## What is and is not verified
+
+Verified by a real run: one issuance on 2026-10-05, described above (staging, then production, HTTP-01, on a public VPS with `<dashed-ip>.sslip.io` hostnames). That is the only recorded real-world run.
+
+Verified by automated tests with fakes, never against a real CA: the guided request's preflight outcomes (DNS elsewhere, port 80 closed, CAA blocking, bad email, unissuable name, upstream proxy), the staging flag and its refusal over a working certificate (every current-certificate by requested-mode cell), the rate-limit next safe time, the progress states (off, pending, issued, failed with a plain-language reason), the certificate badge fields, the doctor's expiry and failed-renewal check with its Renew now fix, and the watchdog's backoff, recovery and rate-limit pause. No test in the repository talks to a public CA, and these tests do not use Pebble.
+
+Not verified anywhere: a real renewal (certificates from the recorded run were too young), the watchdog against a real CA failure, wildcard issuance through DNS-01, and the preflight's port 80 check from outside the server. That check runs from the control plane and cannot prove the internet can reach the port; it is a hint, and a failure can be acknowledged.
+
+Where to see certificate status afterwards: the badge on the Domains page and a domain's Overview, `levelrail-cli domains certificates`, the doctor's "Certificate expiry" check and the attention center.
 
 ## See also
 
