@@ -109059,7 +109059,7 @@
     },
     "/api/v1/system/doctor/checks": {
       "get": {
-        "description": "Same checks as the report: list them, stream results as each finishes, re-run one. Fixes apply through POST /api/v1/fixes/{id}/apply (root, audit-logged).\n\nRequires the `read` ability.",
+        "description": "Requires the `read` ability.",
         "operationId": "handleListDoctorChecks",
         "responses": {
           "200": {
@@ -109118,7 +109118,7 @@
             ]
           }
         ],
-        "summary": "Same checks as the report: list them, stream results as each finishes, re-run one.",
+        "summary": "List Doctor Checks",
         "tags": [
           "System"
         ],
@@ -110993,6 +110993,232 @@
           "System"
         ],
         "x-required-ability": "read"
+      }
+    },
+    "/api/v1/system/resilience": {
+      "get": {
+        "description": "Same checks as the report: list them, stream results as each finishes, re-run one. Fixes apply through POST /api/v1/fixes/{id}/apply (root, audit-logged).\n\nRequires the `read` ability.",
+        "operationId": "handleGetResilience",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "summary": "Same checks as the report: list them, stream results as each finishes, re-run one.",
+        "tags": [
+          "System"
+        ],
+        "x-required-ability": "read"
+      }
+    },
+    "/api/v1/system/resilience/simulate": {
+      "post": {
+        "description": "Requires the `read` ability.",
+        "operationId": "handleSimulateResilience",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "summary": "Simulate Resilience",
+        "tags": [
+          "System"
+        ],
+        "x-required-ability": "read"
+      }
+    },
+    "/api/v1/system/resilience/snapshot": {
+      "post": {
+        "description": "Requires the `root` ability.",
+        "operationId": "handleResilienceFix",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Resilience Fix",
+        "tags": [
+          "System"
+        ],
+        "x-required-ability": "root"
       }
     },
     "/api/v1/system/restart": {

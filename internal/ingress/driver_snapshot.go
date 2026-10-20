@@ -110,3 +110,46 @@ func (d *Driver) saveSnapshot(payload []byte) {
 		d.logger.Warn("ingress route snapshot not saved, a restart will wait for the first reconcile", "error", err)
 	}
 }
+
+// SnapshotCheck is the result of a dry-run snapshot verification.
+type SnapshotCheck struct {
+	SavedAt     time.Time
+	ConfigBytes int
+}
+
+// ErrNoAppliedConfig means nothing has been applied yet, so there is nothing to snapshot.
+var ErrNoAppliedConfig = errors.New("ingress: no applied config to snapshot")
+
+// VerifySnapshot opens the snapshot the way a restart would, without loading it into Caddy.
+func (d *Driver) VerifySnapshot() (SnapshotCheck, error) {
+	d.mu.Lock()
+	store, fp := d.snapshot, d.snapshotFingerprint
+	d.mu.Unlock()
+	if store == nil {
+		return SnapshotCheck{}, ErrNoSnapshot
+	}
+	data, err := store.Load(fp)
+	if err != nil {
+		return SnapshotCheck{}, err
+	}
+	return SnapshotCheck{SavedAt: data.SavedAt, ConfigBytes: len(data.Config)}, nil
+}
+
+// SaveSnapshotNow writes the currently applied config to the snapshot file.
+func (d *Driver) SaveSnapshotNow() error {
+	d.mu.Lock()
+	payload := append([]byte(nil), d.lastApplied...)
+	store := d.snapshot
+	d.mu.Unlock()
+	if store == nil {
+		return ErrNoSnapshot
+	}
+	if len(payload) == 0 {
+		return ErrNoAppliedConfig
+	}
+	d.saveSnapshot(payload)
+	if msg := d.SnapshotStatus().SaveError; msg != "" {
+		return errors.New(msg)
+	}
+	return nil
+}

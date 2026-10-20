@@ -294,6 +294,15 @@ func (s *bootState) startMesh() error {
 	edgeInfo := edge.doctorInfo()
 	edgeInfo.Snapshot = setupIngressSnapshot(ctx, logger, ingressDriver, db, secretsManager, edge)
 	apiRouter.SetDoctorIngressEdge(edgeInfo)
+	apiRouter.SetIngressResilience(api.IngressResilience{
+		Status:  ingressDriver.SnapshotStatus,
+		Verify:  ingressDriver.VerifySnapshot,
+		SaveNow: ingressDriver.SaveSnapshotNow,
+		CertKeys: func(ctx context.Context) (int, error) {
+			keys, err := db.ListCertStorageKeys(ctx, "certificates", true)
+			return len(keys), err
+		},
+	})
 	proxySyncer := newProxySyncer(b, db, logger, proxyContainerExec{rt: client})
 	apiRouter.SetProxyIntegration(proxySyncer, db, proxyVerifyTimeout(logger))
 	routeCheck := newRouteCheck(logger)

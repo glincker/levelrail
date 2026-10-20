@@ -26,6 +26,9 @@ func (rt *Router) registerPublicRoutes(mux *http.ServeMux) {
 	// AbilityRead like system/status above.
 	mux.HandleFunc("GET /api/v1/system/doctor", rt.requireAbility(AbilityRead, rt.handleSystemDoctor))
 	// Same checks as the report: list them, stream results as each finishes, re-run one. Fixes apply through POST /api/v1/fixes/{id}/apply (root, audit-logged).
+	mux.HandleFunc("GET /api/v1/system/resilience", rt.requireAbility(AbilityRead, rt.handleGetResilience))
+	mux.HandleFunc("POST /api/v1/system/resilience/simulate", rt.requireAbility(AbilityRead, rt.handleSimulateResilience))
+	mux.HandleFunc("POST /api/v1/system/resilience/snapshot", rt.requireAbility(AbilityRoot, rt.handleResilienceFix))
 	mux.HandleFunc("GET /api/v1/system/doctor/checks", rt.requireAbility(AbilityRead, rt.handleListDoctorChecks))
 	mux.HandleFunc("GET /api/v1/system/doctor/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(doctorStreamResource, rt.handleStreamDoctor)))
 	mux.HandleFunc("POST /api/v1/system/doctor/checks/{id}/run", rt.requireAbility(AbilityRead, rt.handleRunDoctorCheck))

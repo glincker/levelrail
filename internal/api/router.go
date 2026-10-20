@@ -133,6 +133,8 @@ import (
 // Router wires every internal/api handler onto one http.Handler.
 type Router struct {
 	doctorEdge *DoctorIngressEdge // set via SetDoctorIngressEdge
+	// nil is valid: the resilience check reports the route snapshot as off.
+	ingressResilience *IngressResilience
 
 	dash        *dashboardCache // never nil after NewRouter; WithDashboardCache sets the ttl
 	dashPrewarm bool

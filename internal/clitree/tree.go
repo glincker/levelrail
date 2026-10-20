@@ -297,6 +297,7 @@ var Tree = map[string]*Node{
 	"costs":                    {Subs: map[string]*Node{"explore": nil, "budgets": {Subs: map[string]*Node{"list": nil, "create": nil, "set": nil, "delete": nil}}}},
 	"usage":                    {Subs: map[string]*Node{"report": nil, "settings": {Subs: map[string]*Node{"set": nil}}, "budgets": {Subs: map[string]*Node{"set": nil, "delete": nil}}}},
 	"doctor":                   nil,
+	"resilience":               {Subs: map[string]*Node{"check": nil}},
 	"fixes":                    {Subs: map[string]*Node{"list": nil, "preview": nil, "apply": nil}},
 	"setup":                    {Subs: map[string]*Node{"status": nil, "next": nil, "skip": nil, "undo": nil, "reset": nil}},
 	"proxy":                    {Subs: map[string]*Node{"setup": nil, "status": nil, "apply": nil, "verify": nil, "disable": nil}},

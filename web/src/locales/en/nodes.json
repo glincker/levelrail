@@ -641,5 +641,26 @@
     "graceHint": "0 uses the default. Otherwise at least 30.",
     "save": "Save",
     "saved": "Failure policy saved"
+  },
+  "resilience": {
+    "title": "Resilience check",
+    "description": "Will your apps keep serving if the control plane goes down? This checks the saved state a restart would rely on.",
+    "recheck": "Re-check",
+    "simulate": "Simulate control plane outage",
+    "simulatedNote": "Dry run: nothing was stopped. The saved state was opened the way a restart would open it.",
+    "fix": "Fix",
+    "status": {
+      "pass": "Pass",
+      "fail": "Fail",
+      "warn": "Warning",
+      "unknown": "Unknown"
+    },
+    "checks": {
+      "route_snapshot": "Route snapshot",
+      "cert_cache": "Certificate cache",
+      "agent_link": "Agent link",
+      "container_restart": "Containers after host reboot",
+      "telemetry_buffer": "Metrics and logs while disconnected"
+    }
   }
 }

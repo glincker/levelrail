@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1507 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1510 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1460,7 +1460,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/system/docker-guard", Ability: "AbilityRead", Group: "System", Handler: "handleGetDockerGuard", Description: "Docker API guard status (Security settings page): AbilityRead like system/doctor."},
 	{Method: "PUT", Path: "/api/v1/system/docker-guard", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateDockerGuard", Description: "Switching modes changes the host-protection boundary, so AbilityRoot."},
 	{Method: "GET", Path: "/api/v1/system/doctor", Ability: "AbilityRead", Group: "System", Handler: "handleSystemDoctor", Description: "Doctor (levelrail-cli doctor): a superset preflight bundle of the same individual checks above, plus a few doctor-only ones (data dir writability, ingress port availability, SQLite reachability), AbilityRead like system/status above."},
-	{Method: "GET", Path: "/api/v1/system/doctor/checks", Ability: "AbilityRead", Group: "System", Handler: "handleListDoctorChecks", Description: "Same checks as the report: list them, stream results as each finishes, re-run one. Fixes apply through POST /api/v1/fixes/{id}/apply (root, audit-logged)."},
+	{Method: "GET", Path: "/api/v1/system/doctor/checks", Ability: "AbilityRead", Group: "System", Handler: "handleListDoctorChecks", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/doctor/checks/{id}/run", Ability: "AbilityRead", Group: "System", Handler: "handleRunDoctorCheck", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/doctor/stream", Ability: "AbilityRead", Group: "System", Handler: "handleStreamDoctor", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/encryption-keys", Ability: "AbilityRead", Group: "System", Handler: "handleGetEncryptionKeys", Description: ""},
@@ -1486,6 +1486,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/system/proxy-integration/verify", Ability: "AbilityRoot", Group: "System", Handler: "handleVerifyProxyIntegration", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/prune", Ability: "AbilityRoot", Group: "System", Handler: "handleSystemPrune", Description: "POST /system/prune deletes real Docker resources (stopped containers, dangling images, anonymous volumes, unused build cache) fleet-wide, not scoped to one app: AbilityRoot, the same gate handleDrainNode uses for its own fleet-wide, no-undo action, not AbilityWrite (which a narrower, single-app token could hold)."},
 	{Method: "GET", Path: "/api/v1/system/readiness", Ability: "AbilityRead", Group: "System", Handler: "handleServerReadiness", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/resilience", Ability: "AbilityRead", Group: "System", Handler: "handleGetResilience", Description: "Same checks as the report: list them, stream results as each finishes, re-run one. Fixes apply through POST /api/v1/fixes/{id}/apply (root, audit-logged)."},
+	{Method: "POST", Path: "/api/v1/system/resilience/simulate", Ability: "AbilityRead", Group: "System", Handler: "handleSimulateResilience", Description: ""},
+	{Method: "POST", Path: "/api/v1/system/resilience/snapshot", Ability: "AbilityRoot", Group: "System", Handler: "handleResilienceFix", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/restart", Ability: "AbilityRead", Group: "System", Handler: "handleGetSystemRestart", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/restart", Ability: "AbilityRoot", Group: "System", Handler: "handleSystemRestart", Description: "Exiting the process drops every in-flight request and node session, so AbilityRoot."},
 	{Method: "GET", Path: "/api/v1/system/reverse-proxy", Ability: "AbilityRead", Group: "System", Handler: "handleReverseProxyGuide", Description: ""},

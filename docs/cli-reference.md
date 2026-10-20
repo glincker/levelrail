@@ -1511,6 +1511,14 @@ levelrail-cli doctor [flags]
 
 Runs a local preflight health check: Docker daemon reachability, disk space and write latency, write access on the data directory, port 80 and 443 availability for the embedded ingress, control plane database reachability, RAM and CPU against the recommended minimums, firewall status, outbound network reachability (public IP, external port reachability, ACME, clock skew, the agent advertise host, image registries), and GPU attach checks. Exit code is 0 if every check is ok or warn, 1 if any check fails.
 
+## Resilience
+
+```
+levelrail-cli resilience check [--simulate] [--fix] [flags]
+```
+
+Shows whether apps keep serving if the control plane is down: route snapshot, certificate cache, and per node agent link, each pass, warn, fail or unknown. `--simulate` is a dry run that verifies the saved snapshot would let ingress restart without the control plane and stops nothing. `--fix` rewrites the route snapshot from the applied config. Supports `--json` and `--output json`.
+
 ## Setup
 
 ```
