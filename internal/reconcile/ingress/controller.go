@@ -784,7 +784,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
 	canaries := c.activeCanaries(ctx, services)
 	envDomainSets := c.environmentDomainSets(ctx)
-	maintenanceSettings, err = c.applySpendCaps(ctx, services, envDomainSets, settings.FallbackDomainsDisabled, now, maintenanceByDomain, maintenanceSettings, wafByDomain)
+	fallbackResolver := ingress.LoadFallbackResolver(ctx, c.store, c.publicHost)
+	maintenanceSettings, err = c.applySpendCaps(ctx, services, envDomainSets, settings.FallbackDomainsDisabled, fallbackResolver, now, maintenanceByDomain, maintenanceSettings, wafByDomain)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: apply spend caps: %w", err)
 	}
@@ -807,7 +808,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			if settings.FallbackDomainsDisabled {
 				continue
 			}
-			fallback, ok := ingress.FallbackDomain(c.publicHost, svc.Name)
+			fallback, ok := fallbackResolver.Domain(svc.Name)
 			if !ok {
 				continue
 			}

@@ -298,6 +298,8 @@ It is routed by the same ingress and gets the same TLS treatment as any other do
 
 The automatic hostname is a beta test address, and the dashboard labels it that way. It works only while your resolver answers for sslip.io: some routers and DNS filters block it or drop private-looking answers (DNS rebind protection), so check with `dig <name>` before assuming the app is down. sslip.io maps a name to an IP and never to a port, so when ingress cannot own 80 and 443 and listens on fallback ports such as 8081 and 8443, the URL must carry the port (`https://<name>:8443`). The dashboard, CLI and API print it that way. Use your own domain for production.
 
+Choose the wildcard-DNS provider under Settings, Domains (default for every app) or on an app's Domains tab (override): sslip.io, nip.io, traefik.me (IPv4 only), or **Custom base domain**, your own wildcard such as `apps.example.com` pointing at this server, which names apps `<app>.apps.example.com`. Changing it re-derives the hostname and updates the route with no downtime, and the old hostname stops working. **Test resolution** resolves a sample hostname and reports ok, wrong IP or not resolving, with a one-click switch to another provider or your own domain. From the CLI: `levelrail-cli domains provider get|set|test [--app <app>]`. Free providers get the internal issuer or plain HTTP only, never a shared private key.
+
 A request that matches no app, or an app with no healthy replica, gets a small "No app is serving this address" page (plain text for non-browser clients) with the original 404 or 503 status.
 
 ### HTTP redirects to HTTPS

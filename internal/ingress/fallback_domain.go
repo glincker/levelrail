@@ -41,25 +41,7 @@ const LocalHost = "localhost"
 //     DNS label (lowercased, non-alphanumeric runs collapsed to a
 //     single hyphen, leading/trailing hyphens trimmed)
 func FallbackDomain(publicHost, serviceName string) (domain string, ok bool) {
-	if strings.EqualFold(strings.TrimSpace(publicHost), LocalHost) {
-		label := sanitizeDNSLabel(serviceName)
-		if label == "" {
-			return "", false
-		}
-		return label + "." + LocalHost, true
-	}
-	ip := net.ParseIP(strings.TrimSpace(publicHost))
-	if ip == nil {
-		return "", false
-	}
-	if !isPubliclyRoutable(ip) {
-		return "", false
-	}
-	label := sanitizeDNSLabel(serviceName)
-	if label == "" {
-		return "", false
-	}
-	return label + "." + dashEncodeIP(ip) + "." + fallbackDomainSuffix, true
+	return FallbackDomainFor(publicHost, serviceName, ProviderChoice{})
 }
 
 // SanitizeDNSLabel is sanitizeDNSLabel for callers outside this package.

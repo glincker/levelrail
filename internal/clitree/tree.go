@@ -185,6 +185,7 @@ var Tree = map[string]*Node{
 		"redirects":            {Subs: map[string]*Node{"show": nil, "force-https": nil, "canonical": nil, "alias": nil, "slash": nil, "lowercase": nil, "clear": nil}},
 		"ports":                {Subs: map[string]*Node{"show": nil, "restrict": nil, "unrestrict": nil}},
 		"standalone":           {Subs: map[string]*Node{"list": nil, "add": nil, "update": nil, "remove": nil}},
+		"provider":             {Subs: map[string]*Node{"get": nil, "set": nil, "test": nil}},
 	}},
 	"backups": {Subs: map[string]*Node{
 		"list": nil, "list-all": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "clone-restores": nil, "verify": nil, "verifications": nil,

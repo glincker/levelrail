@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1522 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1528 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -189,6 +189,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/deploys/{deployId}/rollback", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRollbackToDeploy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/{deployId}/steps", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeployStepStream", Description: "Deploy-attempt step stream (deploy_steps.go): SSE, named pipeline-phase transitions (detecting/building/pushing/deploying) rather than raw log lines, for a checklist-style progress view. Same AbilityRead boundary as the log stream above."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/diagnose", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDiagnoseApp", Description: "Read-only failure diagnosis (diagnose.go): synthesizes the app's newest (or ?deploy_id=-pinned) deploy attempt, current reconcile conditions, and crashloop state into a deterministic explanation. AbilityRead, same sensitivity as the routes above; never writes anything."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/dns-provider", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppDNSProvider", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/dns-provider", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppDNSProvider", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/dns-provider/test", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTestAppDNSProvider", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppEgressPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppEgressPolicy", Description: "Outbound allowlist per app: AbilityWriteSensitive, it changes the exfiltration surface. GET has its own route since an unset policy is the common case."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppEgressPolicy", Description: ""},
@@ -515,8 +518,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/settings/database-upgrades", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutPlatformUpgradePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetGlobalDeployFreeze", Description: "OAuth settings: GET is AbilityRead, PUT is AbilityRoot, matching /api/v1/settings/ingress's own tiers. Global deploy freeze windows apply to every app, so writing them is root-only."},
 	{Method: "PUT", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutGlobalDeployFreeze", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/dns-provider", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetDNSProvider", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/dns-provider", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetDNSProvider", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/dns-provider-plugin", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetDNSProviderPlugin", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/dns-provider-plugin", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetDNSProviderPlugin", Description: ""},
+	{Method: "POST", Path: "/api/v1/settings/dns-provider/test", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleTestDNSProvider", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/domain-automation", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetDomainAutomation", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/domain-automation", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateDomainAutomation", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/oauth", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListOAuthSettings", Description: ""},

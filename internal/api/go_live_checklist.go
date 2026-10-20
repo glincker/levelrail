@@ -20,7 +20,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/golive"
 	"github.com/GLINCKER/levelrail/internal/hostfw"
 	"github.com/GLINCKER/levelrail/internal/hostprovider"
-	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -117,7 +116,7 @@ func (rt *Router) goLivePort(ctx context.Context, svc *store.DesiredService, run
 	}
 	if p.ZeroConfigURL == "" {
 		if ing, err := rt.ingressSettings.GetIngressSettings(ctx); err == nil && !ing.FallbackDomainsDisabled {
-			if fb, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
+			if fb, ok := rt.autoHost(ctx, svc.Name); ok {
 				p.ZeroConfigURL = rt.ingressHTTPSURL(ing, fb)
 			}
 		}

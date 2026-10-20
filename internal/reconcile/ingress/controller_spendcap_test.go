@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"testing"
 	"time"
 
@@ -56,7 +57,7 @@ func TestApplySpendCaps(t *testing.T) {
 			if waf == nil {
 				waf = map[string]store.DomainWAF{}
 			}
-			settings, err := c.applySpendCaps(context.Background(), services, nil, true, now, maint, nil, waf)
+			settings, err := c.applySpendCaps(context.Background(), services, nil, true, ingress.FallbackResolver{}, now, maint, nil, waf)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -83,7 +84,7 @@ func TestApplySpendCaps(t *testing.T) {
 func TestApplySpendCapsKeepsOperatorMaintenancePage(t *testing.T) {
 	c := &Controller{store: &spendCapStore{rows: []spendcap.Enforcement{{App: "web", Action: spendcap.ActionPause}}}}
 	own := store.DomainMaintenance{Domain: "web.example.com", Title: "Back soon", RetryAfterSeconds: 60}
-	settings, err := c.applySpendCaps(context.Background(), []store.DesiredService{{Name: "web", Domains: []string{"web.example.com"}}}, nil, true,
+	settings, err := c.applySpendCaps(context.Background(), []store.DesiredService{{Name: "web", Domains: []string{"web.example.com"}}}, nil, true, ingress.FallbackResolver{},
 		time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC), map[string]bool{}, map[string]store.DomainMaintenance{"web.example.com": own}, map[string]store.DomainWAF{})
 	if err != nil || settings["web.example.com"].Title != "Back soon" {
 		t.Errorf("operator page replaced: %+v %v", settings, err)
@@ -94,15 +95,15 @@ func TestApplySpendCapsPeriodAndErrors(t *testing.T) {
 	s := &spendCapStore{}
 	c := &Controller{store: s}
 	now := time.Date(2026, 11, 1, 0, 0, 1, 0, time.UTC)
-	if _, err := c.applySpendCaps(context.Background(), nil, nil, true, now, map[string]bool{}, nil, map[string]store.DomainWAF{}); err != nil || s.period != "2026-11" {
+	if _, err := c.applySpendCaps(context.Background(), nil, nil, true, ingress.FallbackResolver{}, now, map[string]bool{}, nil, map[string]store.DomainWAF{}); err != nil || s.period != "2026-11" {
 		t.Errorf("period = %q err=%v", s.period, err)
 	}
 	s.err = errors.New("db down")
-	if _, err := c.applySpendCaps(context.Background(), nil, nil, true, now, map[string]bool{}, nil, map[string]store.DomainWAF{}); err == nil {
+	if _, err := c.applySpendCaps(context.Background(), nil, nil, true, ingress.FallbackResolver{}, now, map[string]bool{}, nil, map[string]store.DomainWAF{}); err == nil {
 		t.Error("store error swallowed: a limit must not silently lift")
 	}
 	bare := &Controller{store: struct{ ServiceStore }{}}
-	if _, err := bare.applySpendCaps(context.Background(), nil, nil, true, now, nil, nil, nil); err != nil {
+	if _, err := bare.applySpendCaps(context.Background(), nil, nil, true, ingress.FallbackResolver{}, now, nil, nil, nil); err != nil {
 		t.Errorf("store without caps: %v", err)
 	}
 }

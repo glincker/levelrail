@@ -277,6 +277,9 @@ Endpoints for:
 | PUT | /api/v1/settings/server-profile | AbilityRoot | handleSetServerProfile |
 | POST | /api/v1/auth/cli-pairing | Session | handleCreateCLIPairing |
 | POST | /api/v1/auth/cli-pairing/redeem | Public | handleRedeemCLIPairing |
+| GET | /api/v1/settings/dns-provider | AbilityRead | handleGetDNSProvider |
+| PUT | /api/v1/settings/dns-provider | AbilityRoot | handleSetDNSProvider |
+| POST | /api/v1/settings/dns-provider/test | AbilityRoot | handleTestDNSProvider |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -581,6 +584,9 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/build-limits | AbilityRoot | handleResetAppBuildLimits |
 | GET | /api/v1/apps/{name}/go-live/checklist | AbilityRead | handleGoLiveChecklist |
 | GET | /api/v1/apps/{name}/go-live/stream | AbilityRead | handleGoLiveChecklistStream |
+| GET | /api/v1/apps/{name}/dns-provider | AbilityRead | handleGetAppDNSProvider |
+| PUT | /api/v1/apps/{name}/dns-provider | AbilityWriteSensitive | handleSetAppDNSProvider |
+| POST | /api/v1/apps/{name}/dns-provider/test | AbilityWriteSensitive | handleTestAppDNSProvider |
 
 </Accordion>
 

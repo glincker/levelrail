@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -46,8 +45,9 @@ func (rt *Router) domainOwners(ctx context.Context) (map[string][]string, error)
 	if err != nil {
 		return nil, fmt.Errorf("list services: %w", err)
 	}
+	res := rt.fallbackResolver(ctx)
 	for _, svc := range services {
-		if d, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
+		if d, ok := res.Domain(svc.Name); ok {
 			owners[key(d)] = append(owners[key(d)], svc.Name)
 		}
 	}

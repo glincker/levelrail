@@ -78,6 +78,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsStandalone(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ports":
 		return runDomainsPorts(prog, args[1:], stdout, stderr, lookupEnv)
+	case "provider":
+		return runDomainsProvider(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown domains subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, domainsUsage(prog))
@@ -112,6 +114,7 @@ func domainsUsage(prog string) string {
   %[1]s domains go-live runs|undo [flags]       automation history and one-step undo
   %[1]s domains backfill-base-domain [flags]    give existing apps without a domain <app>.<base domain>
   %[1]s domains standalone <verb> [flags]       proxy a domain to a port, address or URL without an app
+  %[1]s domains provider <verb> [flags]       choose the free wildcard-DNS provider for automatic hostnames
 %[2]s
 Run "%[1]s domains <subcommand> -h" for a subcommand's own flags.
 `, prog, domainsPoliciesUsageLines(prog))

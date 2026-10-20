@@ -3,6 +3,8 @@ import { ArrowSquareOutIcon, GlobeIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { useAppNetwork } from '../queries/appNetwork'
 import { BetaBadge } from './BetaBadge'
+import { DnsProviderPicker } from './DnsProviderPicker'
+import { FREE_PROVIDER_HOST } from '../lib/freeDnsHost'
 import { FallbackBetaNote } from './FallbackBetaNote'
 
 /** AutomaticDomainRow shows the zero-config hostname Levelrail assigned, so the Domains page agrees with the Overview. */
@@ -22,7 +24,7 @@ export function AutomaticDomainRow({ appName }: { appName: string }) {
         />
         <span className="font-mono text-foreground">{host}</span>
         <Badge variant="muted">{t('automaticDomain.badge')}</Badge>
-        {/\.sslip\.io(:\d+)?$/i.test(host) ? (
+        {FREE_PROVIDER_HOST.test(host) ? (
           <BetaBadge hint={t('automaticDomain.betaHint')} />
         ) : null}
         <a
@@ -39,6 +41,7 @@ export function AutomaticDomainRow({ appName }: { appName: string }) {
         {t('automaticDomain.hint')}
       </p>
       <FallbackBetaNote url={url} />
+      <DnsProviderPicker app={appName} />
     </div>
   )
 }

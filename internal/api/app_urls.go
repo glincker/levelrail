@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
-	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/network"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -185,7 +184,7 @@ func (rt *Router) handleGetAppURLs(w http.ResponseWriter, r *http.Request) {
 		res.Addresses = append(res.Addresses, appAccessAddress{Kind: accessKindDomain, Host: d, URL: u, ReachableHint: hintUnknown})
 	}
 	if len(svc.Domains) == 0 && !ing.FallbackDomainsDisabled {
-		if fb, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
+		if fb, ok := rt.autoHost(ctx, svc.Name); ok {
 			u := rt.ingressHTTPSURL(ing, fb)
 			res.Addresses = append(res.Addresses, appAccessAddress{Kind: accessKindDomain, Host: hostOfURL(u, fb), URL: u, ReachableHint: hintUnknown})
 		}
