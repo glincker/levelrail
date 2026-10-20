@@ -267,6 +267,7 @@ func (s *bootState) startMesh() error {
 	apiRouter.SetMeshPaths(newMeshPathResolver(meshCfg, db))
 	apiRouter.SetMeshPeerStatus(agent.NewGRPCSink(agentRegistry))
 	go apiRouter.RunNodeMoves(ctx)
+	go apiRouter.RunNodeFailure(ctx)
 	// Resolved once: the bridge gateway IP does not change while the process runs.
 	meshDNSAddr := containerDNSAddr(ctx, client, meshCfg, logger)
 	if meshDNSAddr != "" && meshCfg != nil && meshCfg.resolver != nil {

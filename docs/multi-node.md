@@ -436,6 +436,23 @@ levelrail-cli nodes failure --zone a
 
 This answers the scheduling question from reported capacity. It does not measure how long requests fail while a zone is lost; that run is not yet measured (see [benchmarks](/benchmarks)). Nodes that report no capacity are ranked last and flagged as unverified.
 
+### When a node stays unreachable (beta)
+
+An opt-in, deterministic policy decides what happens once a node has sent no heartbeat for longer than its grace period. The default is `off`; `notify` only reports it and `auto` also moves what is safe to move.
+
+- Stateless apps (no volumes) are placed on a healthy node by the normal scheduler.
+- Apps with node-local volumes and all databases are never moved automatically, because that would lose or split their data. They show as **needs your decision** with three choices: **Wait**, **Restore on another node** (places it on a healthy node, then restore its data from a backup there) or **Mark node lost**, which also moves the stateless apps now.
+- A node that drops again while recovering does not cause new moves. When it returns, stale copies of anything moved are stopped first, and the node is made schedulable again after a hold period.
+- Every automatic action is written to the audit log.
+
+```bash
+levelrail-cli nodes failure-policy set <id> --mode auto --grace 300
+levelrail-cli nodes lost <id> --dry-run
+levelrail-cli nodes failure-resolve <id> app <name> --wait
+```
+
+Defaults come from `APP_NODE_FAILURE_MODE`, `APP_NODE_FAILURE_GRACE` (5m), `APP_NODE_FAILURE_RECOVERY_HOLD` (2m) and `APP_NODE_FAILURE_INTERVAL` (15s). The node page has a **Failure handling** card with the same settings, and unresolved nodes appear on the attention list. Each app lives on one node today, so there is no "other replicas keep serving" case yet. This has been tested with fakes, not on real hosts.
+
 ### The spread scheduler
 
 When a move or a drain has no explicit target, the scheduler picks the eligible node with the most headroom, breaking ties by load and then node id. A node is not eligible when it is cordoned, offline, missing a label the selector requires, or short of the CPU or memory the resource requests. See [Resource-aware placement](/resource-aware-placement).

@@ -509,5 +509,62 @@
     "revokeAll": "Revoke all",
     "revoked_one": "Revoked {{count}} join token",
     "revoked_other": "Revoked {{count}} join tokens"
+  },
+  "failure": {
+    "title": "Failure handling",
+    "description": "What happens when this node stays unreachable. Stateless apps can move to healthy nodes. Apps and databases with node-local data never move on their own.",
+    "loadFailed": "Could not load failure state.",
+    "retry": "Retry",
+    "healthy": "This node is reachable. Nothing to do.",
+    "phase": {
+      "healthy": "Healthy",
+      "grace": "Silent, in grace period",
+      "unreachable": "Unreachable",
+      "recovering": "Recovering",
+      "lost": "Marked lost"
+    },
+    "graceTimer": "Silent for {{silent}}s, {{left}}s of grace left",
+    "kind": {
+      "app": "app",
+      "database": "database"
+    },
+    "class": {
+      "reschedule": "Stateless: can start on a healthy node",
+      "needs_decision": "Has node-local data: needs your decision"
+    },
+    "status": {
+      "pending": "Pending",
+      "moving": "Moving",
+      "moved": "Moved",
+      "fenced": "Moved, old copy stopped",
+      "waiting": "Waiting",
+      "failed": "Could not move"
+    },
+    "target": "on {{node}}",
+    "wait": "Wait",
+    "restore": "Restore on another node",
+    "restoreHint": "The resource is placed on a healthy node. Restore its data from a backup there.",
+    "resolved": {
+      "wait": "Waiting for the node to return",
+      "restore": "Placed on another node. Restore its data from a backup there."
+    },
+    "markLost": "Mark node lost",
+    "lostTitle": "Mark this node lost?",
+    "lostDescription": "Stateless apps move to healthy nodes now. Anything with node-local data stays put until you decide. If the node returns, stale copies are stopped.",
+    "planMove": "{{name}} moves to {{node}}",
+    "planDecide": "{{name}} waits for your decision",
+    "lostDone": "Node marked lost",
+    "saving": "Saving",
+    "mode": "When the node is unreachable",
+    "modeDefault": "Control plane default ({{mode}})",
+    "modes": {
+      "off": "Do nothing",
+      "notify": "Only tell me",
+      "auto": "Move stateless apps automatically"
+    },
+    "grace": "Grace period (seconds)",
+    "graceHint": "0 uses the default. Otherwise at least 30.",
+    "save": "Save",
+    "saved": "Failure policy saved"
   }
 }

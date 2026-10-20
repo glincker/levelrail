@@ -855,6 +855,10 @@ Endpoints for:
 | GET | /api/v1/nodes/placement-simulation | AbilityRoot | handlePlacementSimulation |
 | GET | /api/v1/nodes/failure-simulation | AbilityRoot | handleFailureSimulation |
 | POST | /api/v1/nodes/{id}/cert/drill | AbilityRoot | handleNodeCertDrill |
+| GET | /api/v1/nodes/{id}/failure | AbilityRoot | handleGetNodeFailure |
+| PUT | /api/v1/nodes/{id}/failure-policy | AbilityRoot | handleSetNodeFailurePolicy |
+| POST | /api/v1/nodes/{id}/failure/lost | AbilityRoot | handleMarkNodeLost |
+| POST | /api/v1/nodes/{id}/failure/resolve | AbilityRoot | handleResolveNodeFailure |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 

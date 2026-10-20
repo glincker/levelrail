@@ -23,6 +23,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/nodefailure"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -136,6 +137,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
 		api.WithArchives(archive.New(db.DB, dataDir), db),
 		multiNodeOption(db),
+		api.WithNodeFailure(db, nodefailure.ConfigFromEnv(os.LookupEnv)),
 		api.WithNodeJoinTokenTTL(nodeJoinTokenTTL(logger)),
 		api.WithControlPlaneBackupScheduleDisabled(controlPlaneBackupInterval(logger) == 0),
 		api.WithDockerPinger(client),
