@@ -367,8 +367,8 @@ type (
 )
 
 // NewClient identifies requests as this CLI so the audit log can tell CLI actions apart.
-func NewClient(baseURL, token string) *Client {
-	return apiclient.NewClient(baseURL, token, apiclient.WithUserAgent("levelrail-cli/"+version.Version))
+func NewClient(baseURL, token string, extra ...apiclient.Option) *Client {
+	return apiclient.NewClient(baseURL, token, append([]apiclient.Option{apiclient.WithUserAgent("levelrail-cli/" + version.Version)}, extra...)...)
 }
 
 // Aliases apiclient's helpers; this and CoolifyClient share one URL and error-body helper.

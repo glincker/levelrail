@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { useIsRoot } from '../../hooks/useIsRoot'
+import { httpsStatusQueryOptions } from '../../queries/httpsStatus'
 import { updatesQueryOptions } from '../../queries/updates'
 import { CleanUpDockerDialog } from '../CleanUpDockerDialog'
 import { snoozeNow, useSnoozed } from '../shell/snoozeStore'
@@ -33,12 +34,33 @@ export function DashboardBanners() {
     staleTime: 60 * 60_000,
     enabled: isRoot,
   })
+  const https = useQuery({
+    ...httpsStatusQueryOptions(),
+    retry: false,
+    enabled: isRoot && window.location.protocol === 'http:',
+  })
   const disk = pickDiskIssue(issues, isSnoozed)
   const update = updates.data?.update_available ? updates.data : undefined
-  if (!disk && !update) return null
+  const plainHttp =
+    https.data?.state === 'off' && Boolean(https.data.suggested_domain)
+  if (!disk && !update && !plainHttp) return null
 
   return (
     <>
+      {plainHttp ? (
+        <Banner
+          variant="warning"
+          title={t('banners.httpsTitle')}
+          dismissId="dashboard-enable-https"
+          action={
+            <Button size="sm" variant="outline" render={<Link to="/domains" />}>
+              {t('banners.httpsAction')}
+            </Button>
+          }
+        >
+          {t('banners.httpsDetail')}
+        </Banner>
+      ) : null}
       {disk ? (
         <Banner
           variant="critical"

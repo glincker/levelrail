@@ -40,7 +40,7 @@ type LoginTab = 'sign-in' | 'register'
 
 // The login screen for returning operators and first run alike. The setup
 // tab is picked automatically while the instance has no admin, or when the
-// installer's ?setup=<token> link was opened. sessionLink, when present
+// installer's #setup=<token> link was opened. sessionLink, when present
 // (a ?session_link=<token> link from "levelrail-cli auth session-link"
 // or POST /api/v1/auth/session-links), is consumed automatically on
 // mount instead of showing the normal sign-in form at all.

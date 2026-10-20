@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import type { CategoryVerdict } from '../../lib/setupReadiness'
+type CategoryVerdict = 'ready' | 'attention' | 'blocked'
 
 const RADIUS = 45
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS

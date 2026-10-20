@@ -1,18 +1,11 @@
-import { Suspense, lazy, useEffect, useState } from 'react'
-import { CaretDownIcon, RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
+import { Suspense, lazy, useState } from 'react'
+import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
 import { useTranslation } from 'react-i18next'
-import { EmptyState } from '@/components/ui/empty-state'
-import { Button } from '@/components/ui/button'
 import { useQuery } from '@tanstack/react-query'
 import type { AppListEntry } from '../../types/appDetail'
 import type { AppsSummary } from '../../queries/appPages'
 import { appListQueryOptions } from '../../queries/apps'
-import { useCompleteOnboarding } from '../../queries/onboarding'
-import type { OnboardingState } from '../../queries/onboarding'
 import { useIsRoot } from '../../hooks/useIsRoot'
-import { useBrand } from '../../hooks/useBrand'
-import { SetupWizard } from '../setup/SetupWizard'
-import { CreateResourceWizard } from '../CreateResourceWizard'
 import { FleetUtilizationSummary } from '../FleetUtilizationSummary'
 import { TopResourceConsumers } from '../TopResourceConsumers'
 import { DashboardHero } from './DashboardHero'
@@ -28,6 +21,12 @@ import { ResourceAdvisorTile } from '../resourceAdvisor/ResourceAdvisorTile'
 import { StorageUsageCard } from './StorageUsageCard'
 import { SleepFleetCard } from './SleepFleetCard'
 import { PlatformCapabilities } from './PlatformCapabilities'
+
+const FirstDeploy = lazy(() =>
+  import('../getStarted/FirstDeploy').then((m) => ({
+    default: m.FirstDeploy,
+  })),
+)
 
 const FleetResourceChart = lazy(() =>
   import('../FleetResourceChart').then((m) => ({
@@ -86,46 +85,35 @@ function UsageDetails() {
 export function DashboardHome({
   summary,
   sample,
-  onboarding,
 }: {
   summary: AppsSummary
   sample: AppListEntry[]
-  onboarding: OnboardingState
 }) {
-  const brand = useBrand()
-  const { t } = useTranslation('dashboard')
   const isRoot = useIsRoot()
-  const completeOnboarding = useCompleteOnboarding()
+  const [deployStarted, setDeployStarted] = useState(false)
+  const [firstRunDone, setFirstRunDone] = useState(false)
   const hasApps = summary.total > 0
-  const wizardStarted = onboarding.current_step !== ''
-  const { mutate: markOnboardingComplete } = completeOnboarding
-  useEffect(() => {
-    if (hasApps && !onboarding.completed && !wizardStarted) {
-      markOnboardingComplete()
-    }
-  }, [hasApps, onboarding.completed, wizardStarted, markOnboardingComplete])
 
-  if (isRoot && !onboarding.completed && (!hasApps || wizardStarted)) {
-    return <SetupWizard />
-  }
-
-  if (!hasApps) {
+  if (!hasApps || (deployStarted && !firstRunDone)) {
     return (
       <div className="space-y-8">
-        <EmptyState
-          illustration="rocket"
-          icon={<RocketLaunchIcon className="size-6" />}
-          title={t('welcome.title', { brand: brand.Name })}
-          description={t('welcome.description')}
-          action={
-            <CreateResourceWizard
-              trigger={<Button size="lg">{t('welcome.cta')}</Button>}
-            />
-          }
-        />
-        <RecommendationsLine showSetup={isRoot} />
-        <QuickStart />
-        <PlatformCapabilities />
+        <Suspense fallback={null}>
+          <FirstDeploy
+            onStarted={() => {
+              setDeployStarted(true)
+            }}
+            onDone={() => {
+              setFirstRunDone(true)
+            }}
+          />
+        </Suspense>
+        {hasApps ? null : (
+          <>
+            <RecommendationsLine showSetup={isRoot} />
+            <QuickStart />
+            <PlatformCapabilities />
+          </>
+        )}
       </div>
     )
   }

@@ -112,7 +112,7 @@
   wait: 3000
 
 - output: docs/assets/screenshots/setup-wizard.png
-  url: __BASE_URL__/settings/setup-wizard
+  url: __BASE_URL__/get-started
   width: 1280
   height: 800
   wait: 2000
