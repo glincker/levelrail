@@ -296,6 +296,10 @@ It is routed by the same ingress and gets the same TLS treatment as any other do
 - Toggle it per server (not per app) with the **Automatic app hostnames** setting on the Domains page, or `levelrail-cli settings ingress set --fallback-domains=false`.
 - It needs a public IPv4 address (detected or `APP_PUBLIC_HOST`). With a private address, a hostname, or detection turned off there is nothing to build, and the Network tab says so.
 
+The automatic hostname is a beta test address, and the dashboard labels it that way. It works only while your resolver answers for sslip.io: some routers and DNS filters block it or drop private-looking answers (DNS rebind protection), so check with `dig <name>` before assuming the app is down. sslip.io maps a name to an IP and never to a port, so when ingress cannot own 80 and 443 and listens on fallback ports such as 8081 and 8443, the URL must carry the port (`https://<name>:8443`). The dashboard, CLI and API print it that way. Use your own domain for production.
+
+A request that matches no app, or an app with no healthy replica, gets a small "No app is serving this address" page (plain text for non-browser clients) with the original 404 or 503 status.
+
 ### HTTP redirects to HTTPS
 
 When the control plane can bind the HTTP ingress port (port 80 as root, the installer's default), every routed host answers plain HTTP with a `308` redirect to the same URL over HTTPS, and Let's Encrypt's HTTP-01 challenge is served on the same listener. A non-root development run that cannot bind port 80 skips the redirect and logs why. `APP_INGRESS_HTTP_REDIRECT=true|false` forces the choice instead of auto detecting.

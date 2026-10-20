@@ -50,6 +50,10 @@ type Hardening struct {
 	// GracePeriod lets in-flight requests finish when the config is replaced or
 	// the process stops. Zero closes them at once.
 	GracePeriod time.Duration
+	// BrandName and DocsURL label the diagnostic page for unmatched hosts and
+	// backendless apps; both come from the brand layer.
+	BrandName string
+	DocsURL   string
 }
 
 // DefaultHardening returns defaults that are safe for general web apps: no
@@ -324,8 +328,9 @@ func (h Hardening) unavailableRoutes() []Route {
 	gateway := page
 	gateway.StatusCode = 504
 	return []Route{
+		diagnostic503Route(h),
 		{
-			Match:  []Matcher{{Expression: &ExpressionMatcher{Expr: "{http.error.status_code} in [502, 503]"}}},
+			Match:  []Matcher{{Expression: &ExpressionMatcher{Expr: "{http.error.status_code} == 502"}}},
 			Handle: []any{page},
 		},
 		{

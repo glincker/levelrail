@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next'
 import { ArrowSquareOutIcon, GlobeIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { useAppNetwork } from '../queries/appNetwork'
+import { BetaBadge } from './BetaBadge'
+import { FallbackBetaNote } from './FallbackBetaNote'
 
 /** AutomaticDomainRow shows the zero-config hostname Levelrail assigned, so the Domains page agrees with the Overview. */
 export function AutomaticDomainRow({ appName }: { appName: string }) {
@@ -20,6 +22,9 @@ export function AutomaticDomainRow({ appName }: { appName: string }) {
         />
         <span className="font-mono text-foreground">{host}</span>
         <Badge variant="muted">{t('automaticDomain.badge')}</Badge>
+        {/\.sslip\.io(:\d+)?$/i.test(host) ? (
+          <BetaBadge hint={t('automaticDomain.betaHint')} />
+        ) : null}
         <a
           href={url}
           target="_blank"
@@ -33,6 +38,7 @@ export function AutomaticDomainRow({ appName }: { appName: string }) {
       <p className="text-xs text-muted-foreground">
         {t('automaticDomain.hint')}
       </p>
+      <FallbackBetaNote url={url} />
     </div>
   )
 }

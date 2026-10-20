@@ -288,7 +288,7 @@ func (s *bootState) startMesh() error {
 	apiRouter.SetOrphanReaper(orphanReaper)
 	janitorEngine := apiRouter.NewJanitor(db, client)
 
-	edge, err := loadIngressEdge(logger)
+	edge, err := loadIngressEdge(logger, b)
 	if err != nil {
 		return fmt.Errorf("ingress edge settings: %w", err)
 	}

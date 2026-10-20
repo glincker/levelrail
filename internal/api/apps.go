@@ -830,7 +830,7 @@ func (rt *Router) publicHTTPSURL(ctx context.Context, host string) string {
 	if err != nil {
 		return httpsURL(host, 0)
 	}
-	return httpsURL(host, s.PublicLinkPort())
+	return rt.ingressHTTPSURL(s, host)
 }
 
 // previewURLFor is publicHTTPSURL for a possibly empty preview domain.

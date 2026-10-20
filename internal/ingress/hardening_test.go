@@ -89,7 +89,7 @@ func TestHardeningApplyServer(t *testing.T) {
 	if s.TrustedProxies == nil || s.TrustedProxiesStrict != 1 {
 		t.Errorf("trusted proxies wrong: %+v", s)
 	}
-	if s.Errors == nil || len(s.Errors.Routes) != 2 {
+	if s.Errors == nil || len(s.Errors.Routes) != 3 {
 		t.Error("friendly error routes missing")
 	}
 }

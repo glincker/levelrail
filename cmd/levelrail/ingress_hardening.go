@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/GLINCKER/levelrail/internal/brand"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -35,7 +36,7 @@ type ingressEdge struct {
 
 // loadIngressEdge reads the APP_INGRESS_* tuning variables. Hardening is on by
 // default; APP_INGRESS_HARDENING=false restores the bare Caddy config.
-func loadIngressEdge(logger *slog.Logger) (ingressEdge, error) {
+func loadIngressEdge(logger *slog.Logger, b *brand.Brand) (ingressEdge, error) {
 	window := defaultIngressHold
 	if raw := strings.TrimSpace(os.Getenv(envIngressHoldWindow)); raw != "" {
 		d, err := time.ParseDuration(raw)
@@ -73,6 +74,7 @@ func loadIngressEdge(logger *slog.Logger) (ingressEdge, error) {
 	if inherited.Active() && strings.TrimSpace(os.Getenv(ingressdriver.EnvGracePeriod)) == "" {
 		h.GracePeriod = 3 * time.Second
 	}
+	h.BrandName, h.DocsURL = b.Name, strings.TrimRight(b.DocsURL, "/")+"/domains-and-ingress"
 	edge.hardening = &h
 	return edge, nil
 }

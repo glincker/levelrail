@@ -11,6 +11,7 @@ import { HeroActions } from './HeroActions'
 import { ReleaseLine } from './ReleaseLine'
 import { TagChips } from './TagChips'
 import { AutoUrlTlsNote } from './AutoUrlTlsNote'
+import { AutoUrlBetaNote } from './AutoUrlBetaNote'
 import { UrlLine } from './UrlLine'
 import { AppLiveBadge } from '../golive/GoLiveBadge'
 import { AppHeaderBadges } from '../apps/AppHeaderBadges'
@@ -80,6 +81,7 @@ export function OverviewHero({
         </div>
         <UrlLine appName={app.name} url={url} />
         <AppLiveBadge app={app.name} />
+        <AutoUrlBetaNote appName={app.name} />
         <AutoUrlTlsNote appName={app.name} />
         <ReleaseLine app={app} latest={released ?? latestAttempt} />
         <TagChips appName={app.name} tags={app.tags} />

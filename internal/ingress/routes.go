@@ -693,6 +693,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 	if opts.Firewall {
 		routes = append([]Route{{Handle: []any{NewFirewallHandler()}}}, routes...)
 	}
+	if opts.Hardening != nil {
+		routes = append(routes, diagnosticCatchAll(opts.Hardening))
+	}
 	server := &Server{
 		Listen: []string{opts.ListenAddr},
 		Routes: routes,
