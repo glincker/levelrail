@@ -142,7 +142,7 @@ A static site you deploy with `--ref` is one deploy of one ref. To get a stable 
 ## Limitations
 
 - **Build toolchain**: the build container is Node based. For other generators (Hugo, Jekyll), set `APP_STATIC_BUILD_IMAGE` to an image that has the tool and a shell, or build in CI and serve the committed output with `build.path`.
-- **Redirects and rewrites**: The embedded Caddy serves files as-is. URL rewrites and sophisticated routing are not configured. If you need them, run a small container service for the site instead.
+- **Routing**: redirects, rewrites, headers, single page app fallback, a custom 404 page and clean URLs come from `_redirects`, `_headers` and `app.yaml` and are published with each deploy. See [Static site routing rules](/static-routing). Proxying a path to another origin and edge conditions (country, language) are not supported; use a path forwarder on the domain for proxying.
 - **Large file limits**: There are no hard limits, but very large directories (> 1GB) may see slower deploy and rollback times. Monitor the data directory disk usage with `df -h /var/lib/levelrail-data`.
 
 ## For contributors
@@ -151,6 +151,7 @@ A static site you deploy with `--ref` is one deploy of one ref. To get a stable 
 - Deploy logic: `internal/deploy/static.go`
 - Storage: `internal/store/static_site.go`, migrations `0015_static_sites.sql`
 - Ingress routing: `internal/reconcile/ingress/controller_static_test.go` (controller tests; no separate impl file)
-- API: `internal/api/static_sites.go`
+- Routing rules: `internal/staticroutes` (parsers and resolver), `internal/deploy/static_routes.go` (compile at deploy time), `internal/ingress/static_site.go` (serving)
+- API: `internal/api/static_sites.go`, `internal/api/static_routes.go`
 - CLI: `cmd/levelrail-cli/static_sites.go`
 </Accordion>

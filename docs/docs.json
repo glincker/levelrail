@@ -166,6 +166,7 @@
               "new-app-wizard",
               "importing-apps",
               "pages",
+              "static-routing",
               "deploy-safety",
               "deploy-failures",
               "git-host-outages",

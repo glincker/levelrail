@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1584 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1587 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -361,6 +361,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/sleep/wake", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleWakeApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/slo-preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSLOPreview", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/start", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStartApp", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/static-routes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetStaticRoutes", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/static-routes/lint", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleLintStaticRoutes", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/static-routes/test", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTestStaticRoutes", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/stop", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStopApp", Description: "Stop/start (handleStopApp/handleStartApp's own doc comments): same AbilityDeploy tier as restart above, the same class of lifecycle action."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/streams", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppStreams", Description: "Streams (app_streams.go): raw TCP port forwards, host port to one container port, proxied by Caddy's layer4 app (internal/reconcile/ingress). AbilityWriteSensitive for create/ delete, the same tier as a firewall rule: a stream opens a new host port to raw TCP traffic. List is ordinary AbilityRead."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/streams", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateAppStream", Description: ""},

@@ -80,6 +80,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -979,7 +980,12 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		for _, host := range site.Domains {
 			claimedHosts[host] = site.Name
 		}
-		staticRoutes = append(staticRoutes, ingress.StaticRoute{Hosts: site.Domains, RootDir: site.RootDir})
+		rules, rulesErr := staticroutes.LoadSidecar(site.RootDir)
+		if rulesErr != nil {
+			c.logger.WarnContext(ctx, "ingress: static site routing rules unreadable, serving files without them",
+				slog.String("static_site", site.Name), slog.String("error", rulesErr.Error()))
+		}
+		staticRoutes = append(staticRoutes, ingress.StaticRoute{Hosts: site.Domains, RootDir: site.RootDir, Rules: rules})
 	}
 
 	// Platform primary domain (store.IngressSettings.PrimaryDomain): one

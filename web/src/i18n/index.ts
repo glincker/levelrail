@@ -97,6 +97,7 @@ export const NAMESPACES = [
   'trialApp',
   'deployPolicies',
   'deployDetail',
+  'staticRoutes',
   'pipelines',
   'budget',
   'inbox',

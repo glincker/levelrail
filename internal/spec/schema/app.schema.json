@@ -47,6 +47,15 @@
           "propertyNames": { "pattern": "^(deploy-preview|branch-deploy|branch:.+)$" },
           "additionalProperties": { "$ref": "#/$defs/contextConfig" }
         },
+        "routes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/route" }
+        },
+        "headers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/headerRule" }
+        },
+        "static": { "$ref": "#/$defs/staticOptions" },
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
@@ -96,6 +105,44 @@
             }
           }
         }
+      }
+    },
+    "route": {
+      "type": "object",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "from": { "type": "string", "pattern": "^/" },
+        "to": { "type": "string", "minLength": 1 },
+        "status": { "enum": [200, 301, 302, 303, 307, 308, 404, 410, 451] },
+        "force": { "type": "boolean" },
+        "query": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "headerRule": {
+      "type": "object",
+      "required": ["path"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "pattern": "^/" },
+        "values": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "remove": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "staticOptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "spa": { "type": "boolean" },
+        "cleanUrls": { "type": "boolean" },
+        "trailingSlash": { "enum": ["off", "add", "remove"] },
+        "notFound": { "type": "string", "minLength": 1 }
       }
     },
     "canary": {

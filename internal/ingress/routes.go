@@ -14,6 +14,8 @@ import (
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/staticroutes"
 )
 
 // FileServerHandler is Caddy's "file_server" handler
@@ -256,6 +258,9 @@ type StaticRoute struct {
 	Hosts []string
 	// RootDir is the local filesystem directory to serve.
 	RootDir string
+	// Rules, when set, serves the tree through the routing rules compiled
+	// at deploy time instead of the plain file server.
+	Rules *staticroutes.Ruleset
 }
 
 // MaintenanceRoute is one domain currently in maintenance mode: every
@@ -637,6 +642,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			return nil, fmt.Errorf("ingress: build routes config: static route %d has no root directory", i)
 		}
 		staticHandle := []any{NewFileServerHandler(r.RootDir)}
+		if r.Rules != nil {
+			staticHandle = []any{NewStaticSiteHandler(r.RootDir, r.Rules)}
+		}
 		if opts.RequestStats {
 			staticHandle = append([]any{NewRequestStatsHandler(r.Hosts[0])}, staticHandle...)
 		}

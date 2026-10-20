@@ -611,6 +611,9 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/contexts | AbilityWriteSensitive | handleSetAppContext |
 | DELETE | /api/v1/apps/{name}/contexts | AbilityWrite | handleDeleteAppContext |
 | GET | /api/v1/apps/{name}/effective-config | AbilityRead | handleGetEffectiveConfig |
+| GET | /api/v1/apps/{name}/static-routes | AbilityRead | handleGetStaticRoutes |
+| POST | /api/v1/apps/{name}/static-routes/test | AbilityRead | handleTestStaticRoutes |
+| POST | /api/v1/apps/{name}/static-routes/lint | AbilityRead | handleLintStaticRoutes |
 
 </Accordion>
 

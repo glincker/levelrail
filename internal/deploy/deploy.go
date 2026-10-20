@@ -18,6 +18,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/extdb"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -187,9 +188,11 @@ type Pipeline struct {
 	// both nil/empty is valid, the same "fail loudly without config"
 	// shape secrets above already establishes for a different optional
 	// feature.
-	staticSites    StaticSiteStore
-	staticRootDir  string
-	staticRecorder StaticPublishRecorder
+	staticSites   StaticSiteStore
+	staticRootDir string
+	// staticRouteLimits caps _redirects, _headers and spec routing rules.
+	staticRouteLimits staticroutes.Limits
+	staticRecorder    StaticPublishRecorder
 
 	staticExtractor  StaticExtractor // nil is valid: build.command then fails its deploy loudly
 	staticBuildImage string

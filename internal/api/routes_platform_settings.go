@@ -84,6 +84,9 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	// own git-push-triggered write.
 	mux.HandleFunc("GET /api/v1/static-sites", rt.requireAbility(AbilityRead, rt.handleListStaticSites))
 	mux.HandleFunc("DELETE /api/v1/static-sites/{name}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteStaticSite))
+	mux.HandleFunc("GET /api/v1/apps/{name}/static-routes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticRoutes))
+	mux.HandleFunc("POST /api/v1/apps/{name}/static-routes/test", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleTestStaticRoutes))
+	mux.HandleFunc("POST /api/v1/apps/{name}/static-routes/lint", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleLintStaticRoutes))
 
 	// Backup targets (connected S3-compatible buckets a database backup
 	// can be uploaded to). Create and delete need AbilityWriteSensitive:

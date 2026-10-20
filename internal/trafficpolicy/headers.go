@@ -259,3 +259,6 @@ func ValidOrigin(o string) bool {
 	return (u.Path == "" || u.Path == "/") && u.RawQuery == "" && u.Fragment == "" && u.User == nil &&
 		!strings.ContainsAny(o, "'\"\\ {}")
 }
+
+// ResponseHeaderNameProblem returns why name cannot be set on a response, or "".
+func ResponseHeaderNameProblem(name string) string { return headerNameProblem(SideResponse, name) }

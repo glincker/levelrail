@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
   SidebarGroup,
@@ -27,6 +28,7 @@ import {
 } from './navModel'
 import { useExperimentalFeatures } from '@/hooks/useExperimental'
 import { usePersistedToggles } from './usePersistedToggles'
+import { staticSitesQueryOptions } from '../../queries/staticSites'
 
 const APP_NAV_STORAGE_KEY = 'shell.nav.app.open'
 
@@ -119,6 +121,9 @@ export function AppNav({ name }: { name: string }) {
   const [stored, setOpen] = usePersistedToggles(APP_NAV_STORAGE_KEY)
   const active = activeAppSection(pathname)
   const experimental = useExperimentalFeatures()
+  const { data: staticSites } = useQuery(staticSitesQueryOptions())
+  const isStatic = staticSites?.some((s) => s.name === name) ?? false
+  const sections = visibleAppSections(isStatic)
 
   return (
     <>
@@ -126,7 +131,7 @@ export function AppNav({ name }: { name: string }) {
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
-            {visibleAppSections().map((section) => {
+            {sections.map((section) => {
               const only = section.items[0]
               if (only && isSingleSection(section) && !rail) {
                 return (

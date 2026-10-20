@@ -132,6 +132,12 @@ type Service struct {
 	// through the dashboard or CLI alone; an explicit empty list removes
 	// every spec-declared job.
 	Jobs []Job `yaml:"jobs,omitempty"`
+
+	// Routes, Headers and Static shape a build.type: static site: redirects
+	// and rewrites, response headers, and the SPA, clean URL and 404 options.
+	Routes  []Route        `yaml:"routes,omitempty"`
+	Headers []HeaderRule   `yaml:"headers,omitempty"`
+	Static  *StaticOptions `yaml:"static,omitempty"`
 }
 
 // Job is one entry under a service's jobs:. Durations use Go syntax

@@ -28,6 +28,7 @@ import (
 	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -204,6 +205,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithLogger(logger),
 		deploy.WithStaticSiteStore(db),
 		deploy.WithStaticRootDir(staticSitesDir),
+		deploy.WithStaticRouteLimits(staticroutes.LimitsFromEnv(os.LookupEnv)),
 		deploy.WithStaticExtractor(build.NewImageExtractor(rawDockerCli, build.StaticMaxBytesFromEnv(os.LookupEnv))),
 		deploy.WithStaticBuildImage(os.Getenv(deploy.EnvStaticBuildImage)),
 		deploy.WithStaticPublishRecorder(db),

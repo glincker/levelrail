@@ -395,7 +395,7 @@ var Tree = map[string]*Node{
 	}}}},
 	"templates":        {Subs: map[string]*Node{"list": nil, "get": nil, "show": nil, "deploy": nil, "install": nil, "delete": nil}},
 	"compose":          {Subs: map[string]*Node{"deploy": nil, "preview": nil, "status": nil, "revisions": nil, "logs": nil, "redeploy": nil, "rollback": nil, "down": nil}},
-	"static-sites":     {Subs: map[string]*Node{"list": nil, "delete": nil}},
+	"static-sites":     {Subs: map[string]*Node{"list": nil, "delete": nil, "routes": {Subs: map[string]*Node{"show": nil, "test": nil, "lint": nil}}}},
 	"deploy-approvals": {Subs: map[string]*Node{"list": nil, "get": nil, "approve": nil, "reject": nil}},
 	"build":            {Subs: map[string]*Node{"detect": nil, "branches": nil, "frameworks": nil}},
 	"email": {Subs: map[string]*Node{

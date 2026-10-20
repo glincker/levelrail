@@ -22,6 +22,7 @@ import {
   GlobeIcon,
   GlobeHemisphereWestIcon,
   LightningIcon,
+  SignpostIcon,
   ListBulletsIcon,
   HardDrivesIcon,
   HeartbeatIcon,
@@ -418,8 +419,12 @@ export function visibleGlobalFooter(): GlobalNavItem[] {
   return GLOBAL_NAV_FOOTER
 }
 
-export function visibleAppSections(): AppNavSection[] {
-  return APP_NAV_SECTIONS
+export function visibleAppSections(isStatic = false): AppNavSection[] {
+  if (isStatic) return APP_NAV_SECTIONS
+  return APP_NAV_SECTIONS.map((s) => ({
+    ...s,
+    items: s.items.filter((i) => !i.staticOnly),
+  }))
 }
 
 export function allGlobalItems(): GlobalNavItem[] {
@@ -459,6 +464,7 @@ export type AppTo =
   | '/apps/$name/network'
   | '/apps/$name/cache'
   | '/apps/$name/forms'
+  | '/apps/$name/static-routes'
   | '/apps/$name/environment'
   | '/apps/$name/services'
   | '/apps/$name/resources'
@@ -484,6 +490,8 @@ export interface AppNavItem {
   to: AppTo
   icon: React.ReactNode
   feature?: ExperimentalFeature
+  /** Shown only for build.type: static apps. */
+  staticOnly?: boolean
 }
 
 export interface AppNavSection {
@@ -560,6 +568,15 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
       item('network', 'Network', '/apps/$name/network', <ShareNetworkIcon />),
       item('cache', 'Cache', '/apps/$name/cache', <LightningIcon />),
       item('forms', 'Forms', '/apps/$name/forms', <ClipboardTextIcon />),
+      {
+        ...item(
+          'static-routes',
+          'Routing rules',
+          '/apps/$name/static-routes',
+          <SignpostIcon />,
+        ),
+        staticOnly: true,
+      },
     ],
   },
   {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   APP_NAV_SECTIONS,
+  visibleAppSections,
   visibleGlobalGroups,
   GLOBAL_NAV_GROUPS,
   activeAppSection,
@@ -66,6 +67,7 @@ const EXPECTED_APP = [
   'streams',
   'network',
   'cache',
+  'static-routes',
   'environment',
   'services',
   'resources',
@@ -178,5 +180,15 @@ describe('collapsed state persistence', () => {
     expect(readJson('k', {}, isBoolRecord)).toEqual({})
     window.localStorage.setItem('k', 'not json')
     expect(readJson('k', { z: true }, isBoolRecord)).toEqual({ z: true })
+  })
+})
+
+describe('static routing rules nav item', () => {
+  const slugs = (isStatic: boolean) =>
+    visibleAppSections(isStatic).flatMap((s) => s.items.map((i) => i.slug))
+
+  it('appears only for static sites', () => {
+    expect(slugs(true)).toContain('static-routes')
+    expect(slugs(false)).not.toContain('static-routes')
   })
 })

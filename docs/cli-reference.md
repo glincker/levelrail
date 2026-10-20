@@ -1849,8 +1849,11 @@ See [Compose apps](/compose-apps).
 
 ```
 levelrail-cli static-sites list [flags]
+levelrail-cli static-sites routes show <app> [flags]
+levelrail-cli static-sites routes test <app> <path> [--method M] [--request-query Q] [flags]
+levelrail-cli static-sites routes lint <app> [--redirects FILE] [--headers FILE] [flags]
 ```
-Lists every `build.type: static` app served directly through the embedded Caddy ingress, with no container involved.
+`list` shows every `build.type: static` app served directly through the embedded Caddy ingress, with no container involved. The `routes` commands show a site's redirect, rewrite and header rules, run one request through them, and check `_redirects` and `_headers` files without deploying. See [Static site routing rules](/static-routing).
 
 ## Response cache
 

@@ -111,6 +111,9 @@ func (p *Pipeline) deployStaticBuilt(ctx context.Context, req Request, progress 
 		_ = os.RemoveAll(staging)
 		return fail("publish build output: %w", err)
 	}
+	if err := p.prepareStaticRouting(req, destDir, progress); err != nil {
+		return fail("%w", err)
+	}
 	duration := time.Since(start)
 	stats, err := HashStaticTree(destDir)
 	if err != nil {

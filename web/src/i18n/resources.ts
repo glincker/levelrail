@@ -88,6 +88,7 @@ import type usage from '../locales/en/usage.json'
 import type costs from '../locales/en/costs.json'
 import type resources from '../locales/en/resources.json'
 import type deployDetail from '../locales/en/deployDetail.json'
+import type staticRoutes from '../locales/en/staticRoutes.json'
 import type deployTimeline from '../locales/en/deployTimeline.json'
 import type images from '../locales/en/images.json'
 import type buildCenter from '../locales/en/buildCenter.json'
@@ -203,6 +204,7 @@ declare module 'i18next' {
       trialApp: typeof trialApp
       deployPolicies: typeof deployPolicies
       deployDetail: typeof deployDetail
+      staticRoutes: typeof staticRoutes
       firewall: typeof firewall
       rules: typeof rules
       storageBuckets: typeof storageBuckets
