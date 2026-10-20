@@ -340,7 +340,7 @@ func TestRepoParts(t *testing.T) {
 	}
 }
 
-// TestRepoParts_SelfHostedNoOwner covers F-023 (FRICTION.md): a plain git
+// TestRepoParts_SelfHostedNoOwner covers F-023: a plain git
 // HTTP(S) URL with no owner segment, the shape a self-hosted git server
 // (no forge owner namespace) actually serves, must be accepted, while a
 // known forge host (github.com, gitlab.com, bitbucket.org, codeberg.org)

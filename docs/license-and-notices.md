@@ -24,7 +24,7 @@ The license includes a patent grant from contributors. It does not grant rights 
 
 ## Contributions
 
-Contributions are accepted under the same license. See the [contributing guide](https://github.com/glincker/levelrail/blob/main/CONTRIBUTING.md).
+Contributions are accepted under the same license. See the [contributing guide](https://github.com/glincker/levelrail/blob/main/.github/CONTRIBUTING.md).
 
 ## Third-party software
 
@@ -32,7 +32,7 @@ Levelrail builds on open source libraries, each under its own license. The depen
 
 ## Security
 
-Report vulnerabilities through the [security policy](https://github.com/glincker/levelrail/blob/main/SECURITY.md).
+Report vulnerabilities through the [security policy](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md).
 
 ## Contact
 

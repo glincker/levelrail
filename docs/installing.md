@@ -371,7 +371,7 @@ docker buildx imagetools inspect ghcr.io/glincker/levelrail:beta --format '{{ js
 
 ## Option 3: build from source
 
-The path for contributors, anyone running an unreleased commit, or trying Levelrail on a laptop without a server. See `CONTRIBUTING.md` in the repository for branch and commit conventions and how to run the tests.
+The path for contributors, anyone running an unreleased commit, or trying Levelrail on a laptop without a server. See `.github/CONTRIBUTING.md` in the repository for branch and commit conventions and how to run the tests.
 
 **Requirements:** Go 1.26 or newer, a running Docker daemon, and Node.js with npm only if you build the frontend yourself.
 
@@ -390,7 +390,7 @@ npm run dev       # Vite dev server
 npm run build     # type-check and production build
 ```
 
-The control plane listens on `:8080` by default. For a throwaway local instance, start it with `APP_DEV_MODE=1`: it creates a fixed `dev`/`dev` admin and fixed API tokens from `dev-fixtures.yml` so you can skip sign-up.
+The control plane listens on `:8080` by default. For a throwaway local instance, start it with `APP_DEV_MODE=1`: it creates a fixed `dev`/`dev` admin and fixed API tokens from `test/fixtures/dev-fixtures.yml` so you can skip sign-up.
 
 <Warning>
 Dev mode is for local use only. A release build (`-tags embedweb`) ignores `APP_DEV_MODE`, so it can never run this way in production.

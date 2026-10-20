@@ -29,7 +29,7 @@ Levelrail is pre-release software. The roadmap and feature status pages say what
 - [Feature status](/feature-status)
 - [Pricing](/pricing)
 - [Contact](/contact)
-- [Contributing](https://github.com/glincker/levelrail/blob/main/CONTRIBUTING.md)
+- [Contributing](https://github.com/glincker/levelrail/blob/main/.github/CONTRIBUTING.md)
 
 ## Help shape it
 

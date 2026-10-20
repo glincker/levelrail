@@ -17,7 +17,7 @@ One Go binary &middot; Docker runtime &middot; agents instead of SSH &middot; ob
   <a href="docs/mcp.md"><img src="https://img.shields.io/badge/MCP-server-8A2BE2?style=flat" alt="MCP server"></a>
   <a href="https://docs.levelrail.com"><img src="https://img.shields.io/badge/docs-docs.levelrail.com-blue?style=flat" alt="Documentation"></a>
   <a href="https://github.com/glincker/levelrail/commits/main"><img src="https://img.shields.io/github/last-commit/glincker/levelrail?style=flat" alt="Last commit"></a>
-  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome"></a>
+  <a href=".github/CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome"></a>
 </p>
 <p>
   <a href="https://levelrail.com">Website</a> &middot;
@@ -85,7 +85,7 @@ Single-server deployments are production ready today. Multi-node and a handful o
 | Safe upgrades and rollback | Tested upgrade matrix, downgrade refusal, one-click [rollback](docs/rollback.md) and clean shutdown |
 | Measured, not promised | [Benchmarks](docs/benchmarks.md): idle footprint, ingress throughput, limits, with the method next to every number |
 | Verified backups | Every backup is re-downloaded and checksummed, with scheduled restore drills |
-| Tamper-evident security | Verifiable audit chain, [security policy](SECURITY.md), signed releases and SBOM scanning |
+| Tamper-evident security | Verifiable audit chain, [security policy](.github/SECURITY.md), signed releases and SBOM scanning |
 
 ## Levelrail vs Coolify, Dokploy, CapRover and Dokku
 
@@ -255,7 +255,7 @@ Step by step walkthroughs, each tested against a real install:
 
 ## For AI agents and crawlers
 
-- **Agent skill:** [`skills/levelrail/SKILL.md`](skills/levelrail/SKILL.md) teaches a coding agent to deploy, wait, diagnose and roll back safely.
+- **Agent skill:** [`integrations/skills/levelrail/SKILL.md`](integrations/skills/levelrail/SKILL.md) teaches a coding agent to deploy, wait, diagnose and roll back safely.
 - **MCP server:** `levelrail-mcp` exposes the same API and permission model. Start in `read-only` mode. See [MCP](docs/mcp.md) and [AI control](docs/ai-control.md).
 - **Repo guide:** [`AGENTS.md`](AGENTS.md) for working in this codebase, and [`llms.txt`](llms.txt) as the index. Docs for LLMs: [llms.txt](https://docs.levelrail.com/llms.txt) and [llms-full.txt](https://docs.levelrail.com/llms-full.txt).
 
@@ -263,8 +263,8 @@ Step by step walkthroughs, each tested against a real install:
 
 - [GitHub Discussions](https://github.com/glincker/levelrail/discussions) for questions, ideas and show and tell, and [Issues](https://github.com/glincker/levelrail/issues) for bugs.
 - [GLINR Discord](https://discord.gg/Ar5pcaZB99): live chat with the maintainers, in the `#levelrail` forum channel.
-- [support@levelrail.com](mailto:support@levelrail.com) for direct help, and the [Security policy](SECURITY.md) to report a vulnerability privately.
-- [Contributing](CONTRIBUTING.md): dev loop, tests and commit conventions. Build from source needs Go 1.26 or newer and Docker: see [Installing](docs/installing.md#option-3-build-from-source).
+- [support@levelrail.com](mailto:support@levelrail.com) for direct help, and the [Security policy](.github/SECURITY.md) to report a vulnerability privately.
+- [Contributing](.github/CONTRIBUTING.md): dev loop, tests and commit conventions. Build from source needs Go 1.26 or newer and Docker: see [Installing](docs/installing.md#option-3-build-from-source).
 
 ## Star the repo
 

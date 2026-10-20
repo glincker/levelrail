@@ -56,8 +56,13 @@ case_ "docs json embedded or read by Go runs Go" "go=true" -- docs/public/openap
 case_ "embedded data file runs Go" "go=true web=none" -- internal/dbupgrade/catalog.json
 case_ "web embed.go runs Go, web source does not" "go=true web=none" -- web/embed.go
 case_ "kit module change runs the kit job" "go=true kit=true" -- kit/upgrade/preflight.go
-case_ "terraform provider change runs its own job only" "tfprovider=true go=false web=none" -- terraform-provider/main.go
+case_ "terraform provider change runs its own job only" "tfprovider=true go=false web=none" -- integrations/terraform-provider/main.go
 case_ "installer change runs the installer job" "installer=true" -- install.sh
+case_ "packaging change runs the installer job" "installer=true" -- deploy/packaging/nfpm/agent.yaml
+case_ "dockerfile move target runs nothing, as the root did" "$none" -- deploy/docker/Dockerfile.levelrail
+case_ "release-please config runs nothing, as the root did" "$none" -- .github/release-please/release-please-config.json .github/release-please/.release-please-manifest.json
+case_ "contributing and security files run nothing" "$none" -- .github/CONTRIBUTING.md .github/SECURITY.md
+case_ "dev fixtures file runs Go (read by api tests)" "go=true" -- test/fixtures/dev-fixtures.yml
 
 # Shard partition: every name lands in exactly one shard, deterministically.
 printf '%s\n' TestA TestB TestC TestD TestE TestF TestG >"$tmp/names"

@@ -78,7 +78,7 @@ These variables turn on the control plane's own `POST /webhook` receiver for a s
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_GITHUB_APP_MANIFEST_FILE` | `./github-app-manifest.yaml` | YAML file with `default_permissions` (a map) and `default_events` (a list) that a newly registered GitHub App requests. A missing file means the built-in set: `contents:read`, `metadata:read`, `repository_hooks:write`, `statuses:write`, `deployments:write`, and no events. A file that exists but cannot be parsed stops the load with an error. The relative default resolves against the process working directory, which is the data directory under the installer's unit. Control plane. |
+| `APP_GITHUB_APP_MANIFEST_FILE` | `./deploy/github-app-manifest.yaml` | YAML file with `default_permissions` (a map) and `default_events` (a list) that a newly registered GitHub App requests. A missing file means the built-in set: `contents:read`, `metadata:read`, `repository_hooks:write`, `statuses:write`, `deployments:write`, and no events. A file that exists but cannot be parsed stops the load with an error. The relative default resolves against the process working directory, which is the data directory under the installer's unit. Control plane. |
 
 ## Pipelines and OIDC
 

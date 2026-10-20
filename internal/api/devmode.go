@@ -57,7 +57,7 @@ type devModeResponse struct {
 // MaybeBootstrapDevAdmin already seeds) instead of the operator typing
 // them by hand, without the frontend needing to guess whether dev mode
 // is active. Reveals only a boolean, never the credentials themselves,
-// those are already public knowledge documented in dev-fixtures.yml and
+// those are already public knowledge documented in test/fixtures/dev-fixtures.yml and
 // this package's own devModeUsername/devModePassword constants, not a
 // secret this endpoint could leak.
 func (rt *Router) handleDevMode(w http.ResponseWriter, _ *http.Request) {

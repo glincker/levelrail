@@ -6,7 +6,7 @@ description: Every security issue Levelrail has found and fixed, with a stable I
 
 This page lists security issues found in Levelrail and fixed, one row each, with a stable ID you can cite. We publish an entry when the fix has shipped, not before. Entries are never removed or renumbered.
 
-For how to report something, see [SECURITY.md](https://github.com/glincker/levelrail/blob/main/SECURITY.md). For what the platform defends and where it does not yet, see the [threat model](/threat-model).
+For how to report something, see [SECURITY.md](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md). For what the platform defends and where it does not yet, see the [threat model](/threat-model).
 
 ## How to read an entry
 

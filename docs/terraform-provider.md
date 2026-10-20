@@ -4,7 +4,7 @@ description: "Manage projects, environments, apps, domains, databases and shared
 "og:url": "https://docs.levelrail.com/terraform-provider"
 ---
 
-The provider drives the same REST API as the dashboard and CLI, with your own token, so every policy and approval rule still applies. It lives in its own Go module, `terraform-provider/`, and never ships inside the control plane binary.
+The provider drives the same REST API as the dashboard and CLI, with your own token, so every policy and approval rule still applies. It lives in its own Go module, `integrations/terraform-provider/`, and never ships inside the control plane binary.
 
 <Warning>
 **Not published yet.** The provider is built from source for now. Publishing to the Terraform and OpenTofu registries is a later step, so there is no `terraform init` download yet.
@@ -12,7 +12,7 @@ The provider drives the same REST API as the dashboard and CLI, with your own to
 
 ## Where the name lives
 
-Everything that carries the product name is in one file, `terraform-provider/internal/provider/brand.go`: the resource prefix, the registry address, and the environment variable names. A rename is that one edit plus the module path in `terraform-provider/go.mod`. Resource type names are built from the prefix at runtime, so no other Go file repeats it.
+Everything that carries the product name is in one file, `integrations/terraform-provider/internal/provider/brand.go`: the resource prefix, the registry address, and the environment variable names. A rename is that one edit plus the module path in `integrations/terraform-provider/go.mod`. Resource type names are built from the prefix at runtime, so no other Go file repeats it.
 
 ## Configure
 
@@ -122,7 +122,7 @@ They need a `terraform` or `tofu` binary and a live control plane, and are off u
 
 ```bash
 SMOKE_KEEP=1 scripts/smoke.sh -- nodes list
-cd terraform-provider
+cd integrations/terraform-provider
 TF_ACC=1 APP_API_URL=http://127.0.0.1:<port> APP_API_TOKEN=dev-root-token \
   go test ./internal/provider -count=1
 ```

@@ -14,7 +14,7 @@ This directory is the source of truth for Levelrail's user-facing and contributo
 | [Deploy a first app](/getting-started) | From the dashboard or the CLI |
 | [Compare with Coolify and Dokploy](/comparison) | Sourced, honest, includes where Levelrail trails |
 | [Feature status](/feature-status) and [roadmap](/roadmap) | What is stable, beta, or planned |
-| [Security policy](https://github.com/glincker/levelrail/blob/main/SECURITY.md) | Report a vulnerability privately |
+| [Security policy](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md) | Report a vulnerability privately |
 
 **New here?** Read [Getting started](/getting-started), then [Installing](/installing) if you want the details behind the one-line install.
 
@@ -185,8 +185,8 @@ noted per-document since these move between draft, proposed, accepted
 - **Bug or question?** Open an issue on [GitHub](https://github.com/glincker/levelrail/issues).
 - **Quick question?** Ask in the `#levelrail` forum on the [GLINR Discord](https://discord.gg/Ar5pcaZB99).
 - **Everything else?** Email [support@levelrail.com](mailto:support@levelrail.com).
-- **Security vulnerability?** Don't open a public issue; see [Security overview](/security#reporting-a-vulnerability) or the repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/SECURITY.md).
-- **Want to contribute code?** See the repository's [CONTRIBUTING.md](/CONTRIBUTING) for branch naming, commit conventions, and how to run tests and the linter before opening a PR.
+- **Security vulnerability?** Don't open a public issue; see [Security overview](/security#reporting-a-vulnerability) or the repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md).
+- **Want to contribute code?** See the repository's [CONTRIBUTING.md](https://github.com/glincker/levelrail/blob/main/.github/CONTRIBUTING.md) for branch naming, commit conventions, and how to run tests and the linter before opening a PR.
 
 ## Adding a new doc
 

@@ -125,7 +125,7 @@ log "building control plane and CLI binaries"
 #
 # -tags embedweb (needed for the real frontend) compiles out the
 # APP_DEV_MODE bypass entirely (internal/api/devmode_release.go), so
-# dev-fixtures.yml's fixed tokens are not available here. APP_ADMIN_USERNAME/
+# test/fixtures/dev-fixtures.yml's fixed tokens are not available here. APP_ADMIN_USERNAME/
 # PASSWORD bootstrap a real dev/dev admin account instead, unconditionally
 # available regardless of build tags.
 #
@@ -208,7 +208,7 @@ SESSION_COOKIE="$(cat "$SESSION_COOKIE_FILE")"
 # --- mint a CLI API token via the device-login flow ------------------------
 #
 # The same embedweb-disables-dev-mode constraint above means the CLI has
-# no dev-fixtures.yml token to use either. "auth login" (username/
+# no test/fixtures/dev-fixtures.yml token to use either. "auth login" (username/
 # password) needs https for its session-cookie round trip; --device is
 # the one auth path documented to work over plain http, and approving it
 # with the session cookie above is a real approval through the real API,

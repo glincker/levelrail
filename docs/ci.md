@@ -66,7 +66,7 @@ Go toolchain) sorts changed files into areas:
 | `docs/*.md` (except `docs/changelog/`, which the in-app help does not bundle) | Web bundle build and the help page tests |
 | `scripts/test-ci-*.sh`, `scripts/ci-test-weights.txt`, `scripts/refresh-test-weights.sh` | The planner table tests (`Build, vet`), no Go test lane |
 | `.github/actions/setup-go-cached/` | Every Go lane (live suites in smoke mode) |
-| `install.sh`, `scripts/test-install-sh.sh`, `packaging/` | install.sh end to end on Ubuntu and Debian |
+| `install.sh`, `scripts/test-install-sh.sh`, `deploy/packaging/` | install.sh end to end on Ubuntu and Debian |
 | Other `.github/workflows/*` | actionlint on the changed files |
 | `.github/flaky-tests.txt` | The packages named in the changed lines, plus the quarantine lane |
 | Anything else (`adr/`, `LICENSE`, other `.github/` files) | Nothing beyond the always-on checks |
@@ -328,7 +328,7 @@ gh secret set HOMEBREW_TAP_DEPLOY_KEY --repo glincker/levelrail < ./tapkey
 rm ./tapkey ./tapkey.pub
 ```
 
-The formula template is `packaging/homebrew/levelrail-cli.rb.tmpl`, and `scripts/test-packaging.sh` checks the rendered result. The binary is a raw download without the execute bit, so the template sets it with `chmod`; without that, `brew install` fails with `EACCES`.
+The formula template is `deploy/packaging/homebrew/levelrail-cli.rb.tmpl`, and `scripts/test-packaging.sh` checks the rendered result. The binary is a raw download without the execute bit, so the template sets it with `chmod`; without that, `brew install` fails with `EACCES`.
 
 ### npm
 

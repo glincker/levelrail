@@ -160,7 +160,7 @@ Stated plainly. Status says whether a gap is open, accepted, or by design.
 
 ## Reporting a vulnerability
 
-Do not open a public issue. Use GitHub private vulnerability reporting: [open a security advisory](https://github.com/glincker/levelrail/security/advisories/new). Include the affected component, reproduction steps and the impact you expect. There is no dedicated security team and no formal response time; reports are handled best effort and you can follow up on the same advisory. The repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/SECURITY.md) has the full policy.
+Do not open a public issue. Use GitHub private vulnerability reporting: [open a security advisory](https://github.com/glincker/levelrail/security/advisories/new). Include the affected component, reproduction steps and the impact you expect. There is no dedicated security team and no formal response time; reports are handled best effort and you can follow up on the same advisory. The repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md) has the full policy.
 
 ## See also
 

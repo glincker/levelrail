@@ -12,7 +12,7 @@ Please do not open a public GitHub issue for a suspected security
 vulnerability.
 
 Instead, use GitHub's private vulnerability reporting: open a [Security
-Advisory](../../security/advisories/new) on this repository. That gives
+Advisory](../../../security/advisories/new) on this repository. That gives
 maintainers a private channel to discuss and fix the issue with you
 before any public disclosure.
 
@@ -24,7 +24,7 @@ Include as much detail as you reasonably can:
 - The impact you believe the issue has.
 
 Fixed issues are listed with stable IDs on the
-[security advisories page](docs/security-advisories.md).
+[security advisories page](../docs/security-advisories.md).
 
 ## What to expect
 

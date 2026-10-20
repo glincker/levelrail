@@ -230,7 +230,7 @@ jobs:
           cp "agent-bin/levelrail-agent-linux-${ARCH}" pkg/levelrail-agent
           export VERSION="${RELEASE_TAG#v}"
           for fmt in deb rpm; do
-            "$(go env GOPATH)/bin/nfpm" package --config packaging/nfpm/agent.yaml --packager "$fmt" --target "out/levelrail-agent-linux-${ARCH}.${fmt}"
+            "$(go env GOPATH)/bin/nfpm" package --config deploy/packaging/nfpm/agent.yaml --packager "$fmt" --target "out/levelrail-agent-linux-${ARCH}.${fmt}"
           done
 
       - name: Upload packages
@@ -492,7 +492,7 @@ jobs:
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
-          file: Dockerfile.levelrail
+          file: deploy/docker/Dockerfile.levelrail
           platforms: ${{ matrix.platform }}
           outputs: type=image,name=ghcr.io/glincker/levelrail,push-by-digest=true,name-canonical=true,push=true
           build-args: VERSION=${{ env.IMAGE_VERSION }}
@@ -607,7 +607,7 @@ jobs:
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
-          file: Dockerfile.levelrail-agent
+          file: deploy/docker/Dockerfile.levelrail-agent
           platforms: ${{ matrix.platform }}
           outputs: type=image,name=ghcr.io/glincker/levelrail-agent,push-by-digest=true,name-canonical=true,push=true
           build-args: VERSION=${{ env.IMAGE_VERSION }}

@@ -87,7 +87,7 @@ func TestBreakGlass_Live_AgentSurvivesControlPlaneDeath(t *testing.T) {
 	cpEnv := envWithOverrides(hermeticEnv(
 		"APP_DEV_MODE=1",
 		"APP_BRAND_FILE="+filepath.Join(repoRoot, "brand.yaml"),
-		"APP_DEV_FIXTURES_FILE="+filepath.Join(repoRoot, "dev-fixtures.yml"),
+		"APP_DEV_FIXTURES_FILE="+filepath.Join(repoRoot, "test", "fixtures", "dev-fixtures.yml"),
 		"APP_DATA_DIR="+dataDir,
 		"APP_HTTP_ADDR="+httpAddr,
 		"APP_AGENT_ADDR="+agentAddr,

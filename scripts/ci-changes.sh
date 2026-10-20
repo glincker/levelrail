@@ -15,7 +15,7 @@
 #   lint_dirs   package dirs for lint=changed
 #   tools       the separate tools/ module changed
 #   kit         the separate kit/ module changed (its own vet, lint, test lane)
-#   tfprovider  the separate terraform-provider/ module changed (its own vet, test lane)
+#   tfprovider  the separate integrations/terraform-provider/ module changed (its own vet, test lane)
 #   web         none | docs (docs/ feeds the web build's help manifest) | full
 #   vitest      none | changed | full
 #   installer   install.sh end-to-end job
@@ -82,8 +82,8 @@ for f in "${files[@]}"; do
 		go=true go_full=true kit=true dep_full=true
 		reasons+=("import graph can't scope: $f")
 		;;
-	terraform-provider/*.md) ;;
-	terraform-provider/*)
+	integrations/terraform-provider/*.md) ;;
+	integrations/terraform-provider/*)
 		tfprovider=true
 		;;
 	kit/*.md) ;;
@@ -102,7 +102,7 @@ for f in "${files[@]}"; do
 	tools/*)
 		go=true tools=true
 		;;
-	install.sh | install-cli.sh | scripts/test-install-sh.sh | scripts/test-install-cli.sh | packaging/*)
+	install.sh | install-cli.sh | scripts/test-install-sh.sh | scripts/test-install-cli.sh | deploy/packaging/*)
 		installer=true
 		;;
 	web/*.go) ;;
@@ -121,7 +121,7 @@ for f in "${files[@]}"; do
 	esac
 	case "$f" in
 	*.go)
-		case "$f" in tools/* | kit/* | terraform-provider/*) continue ;; esac
+		case "$f" in tools/* | kit/* | integrations/terraform-provider/*) continue ;; esac
 		dir="$(dirname "$f")"
 		[ -d "$dir" ] && lint_dirs["./$dir/"]=1
 		;;

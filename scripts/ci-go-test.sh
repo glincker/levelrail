@@ -187,7 +187,7 @@ done
 	echo "### Go tests: $lane"
 	if [ -s "$out/flaky.txt" ]; then
 		echo
-		echo "Passed only on retry (flaky, see CONTRIBUTING.md#flaky-tests):"
+		echo "Passed only on retry (flaky, see .github/CONTRIBUTING.md#flaky-tests):"
 		echo
 		echo "| Package | Test | Failed / total attempts |"
 		echo "| --- | --- | --- |"

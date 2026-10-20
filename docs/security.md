@@ -248,7 +248,7 @@ Data and install directories must be absolute, free of shell and unit metacharac
 
 ## Reporting a vulnerability
 
-Levelrail does not yet have a dedicated security disclosure address. Until one exists, open a private security advisory on the [GitHub repository](https://github.com/glincker/levelrail/security/advisories/new) rather than a public issue. The repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/SECURITY.md) has the full policy, including what to expect after reporting.
+Levelrail does not yet have a dedicated security disclosure address. Until one exists, open a private security advisory on the [GitHub repository](https://github.com/glincker/levelrail/security/advisories/new) rather than a public issue. The repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md) has the full policy, including what to expect after reporting.
 
 ## What this does not cover yet
 

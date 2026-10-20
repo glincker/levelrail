@@ -1,7 +1,7 @@
 # Optional, dev-mode-only API token fixtures. Only ever read when
 # APP_DEV_MODE=1 (see internal/api/devmode_debug.go / devmode_release.go),
 # never in a real -tags embedweb release build. Path override:
-# APP_DEV_FIXTURES_FILE (default ./dev-fixtures.yml, this file).
+# APP_DEV_FIXTURES_FILE (default ./test/fixtures/dev-fixtures.yml, this file).
 #
 # These fixed plaintexts are deliberately not secret: the same "the
 # build-tag gate is what makes this safe, not credential secrecy"

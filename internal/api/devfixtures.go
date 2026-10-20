@@ -13,7 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// DevFixtureToken is one entry in a dev-fixtures.yml file: a fixed
+// DevFixtureToken is one entry in a test/fixtures/dev-fixtures.yml file: a fixed
 // plaintext API token, minted with a known ability set, so local
 // testing of the auth flow (does a read-only token get 403'd on a
 // write route, does a write:sensitive token reach the secrets handler,
@@ -26,14 +26,14 @@ type DevFixtureToken struct {
 	Abilities []string `yaml:"abilities"`
 }
 
-// DevFixtures is the top-level shape of dev-fixtures.yml.
+// DevFixtures is the top-level shape of test/fixtures/dev-fixtures.yml.
 type DevFixtures struct {
 	Tokens []DevFixtureToken `yaml:"tokens"`
 }
 
 // ParseDevFixtures validates as much as validateAbilities already
 // validates a real token mint request: an empty or unrecognized
-// ability list is rejected here too, so a typo in dev-fixtures.yml
+// ability list is rejected here too, so a typo in test/fixtures/dev-fixtures.yml
 // fails loudly at startup instead of silently minting a token nobody
 // can use as intended.
 func ParseDevFixtures(data []byte) (*DevFixtures, error) {
@@ -107,7 +107,7 @@ func seedDevFixtures(ctx context.Context, s TokenStore, logger *slog.Logger, fix
 // called unconditionally on every startup the same way
 // MaybeBootstrapDevAdmin already is. A missing fixtures file is not an
 // error: dev mode works without one (only the fixed dev/dev admin
-// account), a dev-fixtures.yml is an opt-in convenience layered on top.
+// account), a test/fixtures/dev-fixtures.yml is an opt-in convenience layered on top.
 func MaybeSeedDevFixturesFromFile(ctx context.Context, s TokenStore, logger *slog.Logger, path string) error {
 	if !devModeEnabled() {
 		return nil

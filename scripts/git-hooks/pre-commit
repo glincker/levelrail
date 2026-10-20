@@ -46,7 +46,7 @@ fi
 # Go checks run only for staged Go files, on their packages only. The full
 # build (every dependent) runs once per push in pre-push, and CI lints the
 # whole tree, so a commit pays for what it touched, not for the repo.
-go_pkg_dirs=$(git diff --cached --name-only --diff-filter=ACMR -- '*.go' ':!tools/*' ':!kit/*' ':!terraform-provider/*' ':!docs-local/*' | xargs -n1 dirname 2>/dev/null | sort -u | while read -r d; do [ -d "$d" ] && echo "./$d"; done)
+go_pkg_dirs=$(git diff --cached --name-only --diff-filter=ACMR -- '*.go' ':!tools/*' ':!kit/*' ':!integrations/terraform-provider/*' ':!docs-local/*' | xargs -n1 dirname 2>/dev/null | sort -u | while read -r d; do [ -d "$d" ] && echo "./$d"; done)
 go_mod_staged=$(git diff --cached --name-only -- go.mod go.sum)
 
 echo "pre-commit: go vet (changed packages)"
@@ -95,12 +95,12 @@ if [ -n "$staged_kit_files" ]; then
 fi
 
 echo "pre-commit: terraform-provider (vet, build, brand strings)"
-staged_tf_files=$(git diff --cached --name-only --diff-filter=ACM -- 'terraform-provider/')
+staged_tf_files=$(git diff --cached --name-only --diff-filter=ACM -- 'integrations/terraform-provider/')
 if [ -n "$staged_tf_files" ]; then
-	if ! go -C terraform-provider vet ./... 2>&1; then
+	if ! go -C integrations/terraform-provider vet ./... 2>&1; then
 		fail=1
 	fi
-	if ! go -C terraform-provider build ./... 2>&1; then
+	if ! go -C integrations/terraform-provider build ./... 2>&1; then
 		fail=1
 	fi
 	if ! scripts/check-brand-strings.sh; then

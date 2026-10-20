@@ -18,7 +18,7 @@
 
 ## For agents
 
-- [Agent skill](skills/levelrail/SKILL.md): deploy, wait, diagnose and roll back with the CLI or MCP
+- [Agent skill](integrations/skills/levelrail/SKILL.md): deploy, wait, diagnose and roll back with the CLI or MCP
 - [MCP server](https://docs.levelrail.com/mcp): tools, modes and token budget
 - [CLI reference](https://docs.levelrail.com/cli-reference)
 - [App spec reference](https://docs.levelrail.com/app-spec-reference)

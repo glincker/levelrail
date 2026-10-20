@@ -2,7 +2,7 @@
 #
 # dev-auth-check.sh: local sanity check for the API ability boundaries
 # (internal/api/router.go's requireAbility calls), using the fixed
-# plaintext tokens in dev-fixtures.yml instead of registering an admin,
+# plaintext tokens in test/fixtures/dev-fixtures.yml instead of registering an admin,
 # logging in, and minting a token by hand every time.
 #
 # Assumptions:
@@ -11,7 +11,7 @@
 #     internal/api/devmode_debug.go / devmode_release.go and
 #     adr/013-backend-dev-mode-build-tag-gate.md). This script does not
 #     start or stop the server, that is out of scope.
-#   - dev-fixtures.yml exists at the repo root (or wherever
+#   - test/fixtures/dev-fixtures.yml exists at test/fixtures (or wherever
 #     APP_DEV_FIXTURES_FILE pointed the running server at, see below)
 #     and has not been edited to remove the six stock fixture tokens
 #     (dev-read, dev-read-sensitive, dev-write, dev-write-sensitive,
@@ -33,7 +33,7 @@
 #
 # Env vars:
 #   LEVELRAIL_URL       base URL of the running server (default http://localhost:8080)
-#   DEV_FIXTURES_FILE   path to dev-fixtures.yml (default <repo root>/dev-fixtures.yml,
+#   DEV_FIXTURES_FILE   path to test/fixtures/dev-fixtures.yml (default <repo root>/dev-fixtures.yml,
 #                       resolved relative to this script's location, not the caller's cwd)
 #
 # Exit code: 0 if every check passed, nonzero otherwise.
@@ -44,21 +44,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 LEVELRAIL_URL="${LEVELRAIL_URL:-http://localhost:8080}"
-FIXTURES_FILE="${DEV_FIXTURES_FILE:-$REPO_ROOT/dev-fixtures.yml}"
+FIXTURES_FILE="${DEV_FIXTURES_FILE:-$REPO_ROOT/test/fixtures/dev-fixtures.yml}"
 
 APP_NAME="devauthcheck-web"
 APP_IMAGE="nginx:alpine"
 APP_PORT=80
 
 if [ ! -f "$FIXTURES_FILE" ]; then
-  echo "[ERROR] dev-fixtures.yml not found at $FIXTURES_FILE" >&2
+  echo "[ERROR] test/fixtures/dev-fixtures.yml not found at $FIXTURES_FILE" >&2
   echo "[ERROR] this script only works against a dev server seeded from that file; see the header comment for what it assumes" >&2
   exit 1
 fi
 
 # --- fixture token parsing -------------------------------------------
 #
-# dev-fixtures.yml is a small, deliberately simple YAML file (see its
+# test/fixtures/dev-fixtures.yml is a small, deliberately simple YAML file (see its
 # own header comment): a top-level "tokens:" list, each entry a
 # "- name: ...", "plaintext: ...", "abilities: [...]" block in that
 # fixed order. We use yq if it's on PATH (the correct way to parse
@@ -67,7 +67,7 @@ fi
 # machine and this script should not introduce a new dependency for it.
 # The fallback is intentionally not a general YAML parser: it only
 # understands "find the block whose 'name:' value matches, then read
-# that block's 'plaintext:' value," which is all dev-fixtures.yml's
+# that block's 'plaintext:' value," which is all test/fixtures/dev-fixtures.yml's
 # fixed structure requires.
 get_plaintext() {
   local fixture_name="$1"
@@ -101,7 +101,7 @@ for pair in "dev-read:$READ_TOKEN" "dev-write:$WRITE_TOKEN" "dev-write-sensitive
   plaintext="${pair#*:}"
   if [ -z "$plaintext" ]; then
     echo "[ERROR] could not read plaintext for fixture token \"$fixture_name\" from $FIXTURES_FILE" >&2
-    echo "[ERROR] has dev-fixtures.yml been edited to remove or rename it?" >&2
+    echo "[ERROR] has test/fixtures/dev-fixtures.yml been edited to remove or rename it?" >&2
     exit 1
   fi
 done

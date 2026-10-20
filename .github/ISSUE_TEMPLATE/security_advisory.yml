@@ -12,7 +12,7 @@ body:
 
         ## How to report a vulnerability
 
-        Use [GitHub's private vulnerability reporting](https://github.com/glincker/levelrail/security/advisories/new). This keeps the report confidential until a fix is published. See [SECURITY.md](https://github.com/glincker/levelrail/blob/main/SECURITY.md) for what to include and what to expect.
+        Use [GitHub's private vulnerability reporting](https://github.com/glincker/levelrail/security/advisories/new). This keeps the report confidential until a fix is published. See [SECURITY.md](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md) for what to include and what to expect.
 
         Given the platform's scope, particularly relevant areas: secret handling (`internal/secrets`), agent enrollment and certificate validation, container escape surface in the Docker integration, and the install path.
 

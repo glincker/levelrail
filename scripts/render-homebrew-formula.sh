@@ -26,4 +26,4 @@ sed \
 	-e "s|@SHA_DARWIN_AMD64@|${darwin_amd64}|" \
 	-e "s|@SHA_LINUX_ARM64@|${linux_arm64}|" \
 	-e "s|@SHA_LINUX_AMD64@|${linux_amd64}|" \
-	"$root/packaging/homebrew/levelrail-cli.rb.tmpl"
+	"$root/deploy/packaging/homebrew/levelrail-cli.rb.tmpl"

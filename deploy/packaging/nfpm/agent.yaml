@@ -12,12 +12,12 @@ contents:
     dst: /usr/bin/levelrail-agent
     file_info:
       mode: 0755
-  - src: packaging/systemd/levelrail-agent.service
+  - src: deploy/packaging/systemd/levelrail-agent.service
     dst: /lib/systemd/system/levelrail-agent.service
-  - src: packaging/nfpm/agent.env
+  - src: deploy/packaging/nfpm/agent.env
     dst: /etc/levelrail-agent/agent.env
     type: config|noreplace
     file_info:
       mode: 0600
 scripts:
-  postinstall: packaging/nfpm/postinstall.sh
+  postinstall: deploy/packaging/nfpm/postinstall.sh

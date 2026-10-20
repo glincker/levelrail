@@ -26,7 +26,7 @@ cat "$@" 2>/dev/null | sort -u | while read -r pkg test attempts; do
 	else
 		gh issue create --title "$title" --label "$label" --label "type/test" --body "$body
 
-Quarantine only with an issue link in \`.github/flaky-tests.txt\`; fix or delete within 14 days. See CONTRIBUTING.md#flaky-tests."
+Quarantine only with an issue link in \`.github/flaky-tests.txt\`; fix or delete within 14 days. See .github/CONTRIBUTING.md#flaky-tests."
 		echo "opened: $title"
 	fi
 done

@@ -1,4 +1,4 @@
-# actions/labeler config: type/* from the branch name (CONTRIBUTING.md's
+# actions/labeler config: type/* from the branch name (.github/CONTRIBUTING.md's
 # own type/short-description convention), area/* from which part of the
 # tree changed.
 

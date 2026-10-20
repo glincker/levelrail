@@ -37,7 +37,7 @@ echo "bench: building"
 go build -o "$work/levelrail" ./cmd/levelrail || exit 1
 
 APP_API_RATE_LIMIT_READ_RPM=10000000 APP_API_RATE_LIMIT_WRITE_RPM=10000000 \
-	APP_DEV_MODE=1 APP_DEV_FIXTURES_FILE="$repo_root/dev-fixtures.yml" \
+	APP_DEV_MODE=1 APP_DEV_FIXTURES_FILE="$repo_root/test/fixtures/dev-fixtures.yml" \
 	APP_DATA_DIR="$work/data" APP_HTTP_ADDR="127.0.0.1:$port" APP_AGENT_ADDR="127.0.0.1:0" \
 	APP_INGRESS_HTTP_ADDR="127.0.0.1:0" APP_INGRESS_HTTPS_ADDR="127.0.0.1:0" \
 	"$work/levelrail" >"$work/server.log" 2>&1 &

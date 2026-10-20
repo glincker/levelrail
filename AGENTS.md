@@ -1,6 +1,6 @@
 # Levelrail: agent guide
 
-Levelrail is a self-hosted deployment platform: one Go control plane, one Go node agent, Docker's Engine API, embedded Caddy and BuildKit, SQLite state, and a React dashboard embedded in the control plane binary. This file tells a coding agent how to work in this repository. Human contributors should read [CONTRIBUTING.md](CONTRIBUTING.md); the two agree.
+Levelrail is a self-hosted deployment platform: one Go control plane, one Go node agent, Docker's Engine API, embedded Caddy and BuildKit, SQLite state, and a React dashboard embedded in the control plane binary. This file tells a coding agent how to work in this repository. Human contributors should read [CONTRIBUTING.md](.github/CONTRIBUTING.md); the two agree.
 
 ## Layout
 
@@ -57,7 +57,7 @@ Use `npx tsc -b`, not `--noEmit`: the root web tsconfig lists no files, so `--no
 This section is for an agent that deploys or operates an app on a Levelrail instance, not for one changing this repository.
 
 - Run `levelrail-cli init` in a project to write `app.yaml`, an `AGENTS.md` with deploy instructions, and an `.mcp.json` for `levelrail-mcp`.
-- The skill in [skills/levelrail](skills/levelrail/SKILL.md) covers the deploy, wait, diagnose and roll back loop. Install it with `npx skills add glincker/levelrail`.
+- The skill in [integrations/skills/levelrail](integrations/skills/levelrail/SKILL.md) covers the deploy, wait, diagnose and roll back loop. Install it with `npx skills add glincker/levelrail`.
 - `levelrail-mcp` exposes tools by mode (`agent-core`, `read-only`, `standard`, `full`). Start with the smallest mode that does the job. See [docs/agents.md](docs/agents.md) and [docs/mcp-tool-surface.md](docs/mcp-tool-surface.md).
 - Documentation for models: `https://docs.levelrail.com/llms.txt` (index) and `https://docs.levelrail.com/llms-full.txt` (full text).
 - Never write an API token into a file, a commit, or a chat message. Tokens come from `APP_API_TOKEN`, and the instance URL from `APP_API_URL`.

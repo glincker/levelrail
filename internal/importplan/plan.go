@@ -326,7 +326,7 @@ func repoParts(raw string) (normalized, repo string, err error) {
 		// real owner/repo path; a bare "github.com/onlyowner" can't be a
 		// real repo there. A self-hosted git server has no such
 		// convention to check, so it falls through to the single-segment
-		// case below instead: see F-023 (FRICTION.md), a plain git HTTP
+		// case below instead: see F-023, a plain git HTTP
 		// URL like "https://git.example.com/myrepo.git" with no owner
 		// segment at all.
 		return "", "", fmt.Errorf("importplan: repo URL needs an owner and a repository on %s: %q", host, raw)

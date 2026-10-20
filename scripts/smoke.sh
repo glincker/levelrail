@@ -8,7 +8,7 @@
 #   scripts/smoke.sh -- attention --json -- apps list
 #
 # Each "--" starts one CLI invocation. The CLI runs with the fixed dev-root-token
-# token from dev-fixtures.yml. Exits non-zero if the server fails to come
+# token from test/fixtures/dev-fixtures.yml. Exits non-zero if the server fails to come
 # up or any command exits non-zero. Set SMOKE_KEEP=1 to leave the server
 # running (prints its URL) for manual poking, or SMOKE_PORT to pick a port.
 #
@@ -40,7 +40,7 @@ go build -o "$work/levelrail" ./cmd/levelrail || exit 1
 go build -o "$work/levelrail-cli" ./cmd/levelrail-cli || exit 1
 
 echo "smoke: starting control plane on $url"
-APP_DEV_MODE=1 APP_DEV_FIXTURES_FILE="$repo_root/dev-fixtures.yml" \
+APP_DEV_MODE=1 APP_DEV_FIXTURES_FILE="$repo_root/test/fixtures/dev-fixtures.yml" \
 	APP_DATA_DIR="$work/data" APP_HTTP_ADDR="127.0.0.1:$port" APP_AGENT_ADDR="127.0.0.1:0" \
 	APP_INGRESS_HTTP_ADDR="127.0.0.1:0" APP_INGRESS_HTTPS_ADDR="127.0.0.1:0" \
 	"$work/levelrail" >"$work/server.log" 2>&1 &

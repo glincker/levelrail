@@ -86,7 +86,7 @@ secrets. The pre-commit hook scans only your staged changes (well under a
 second) and is skipped with a hint if gitleaks is not installed
 (`brew install gitleaks`). CI runs the same scan on every PR and push to
 `main` (`.github/workflows/secret-scan.yml`). The dev-mode fixture tokens
-in `dev-fixtures.yml` and test fixtures are intentionally public and
+in `test/fixtures/dev-fixtures.yml` and test fixtures are intentionally public and
 allowlisted in `.gitleaks.toml`; extend that file for a genuine false
 positive rather than editing real code. Never commit a real credential:
 if one leaks, rotate it, since removing it from history does not

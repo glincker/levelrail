@@ -620,7 +620,7 @@ jobs:
         if: env.BASE != '' && env.BASE != '0000000000000000000000000000000000000000'
         run: scripts/check-changed-file-coverage.sh kit-coverage.out "$BASE" kit/ 50
 
-  # terraform-provider/ is its own module: vet and unit tests only. The
+  # integrations/terraform-provider/ is its own module: vet and unit tests only. The
   # acceptance tests need a live control plane and run by hand (its README).
   tfprovider:
     name: Terraform provider (vet, test)
@@ -653,10 +653,10 @@ jobs:
         run: scripts/check-brand-strings.sh
 
       - name: go vet
-        run: go -C terraform-provider vet ./...
+        run: go -C integrations/terraform-provider vet ./...
 
       - name: go test
-        run: go -C terraform-provider test -short -timeout=5m ./...
+        run: go -C integrations/terraform-provider test -short -timeout=5m ./...
 
   web-check:
     name: Web (tsc, eslint)
