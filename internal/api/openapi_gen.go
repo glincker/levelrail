@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1478 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1482 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1052,6 +1052,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/stage", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleStageAppImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleVerifyAppImport", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/volumes", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportVolumes", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/volumes/copy", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportVolumeCopyStatus", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/volumes/copy", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleAppImportVolumeCopy", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/ssh/host-keys", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleSSHHostKeys", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/ssh/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleSSHTest", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/checklists", Ability: "AbilityRead", Group: "Other", Handler: "handleListMigrationChecklists", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/checklists/{app}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMigrationChecklist", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/checklists/{app}/steps/{step}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMigrationChecklistStep", Description: ""},

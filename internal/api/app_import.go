@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/appimport"
+	"github.com/GLINCKER/levelrail/internal/dockerssh"
 	"github.com/GLINCKER/levelrail/internal/imagemove"
 	"github.com/GLINCKER/levelrail/internal/platformimport"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
@@ -65,6 +66,11 @@ type appImportState struct {
 	moves    map[string]*imageMoveRun
 	hostKeys *imagemove.HostKeys
 	newSaver saverFactory
+	// newTunnelSaver replaces the docker-ssh image source in tests.
+	newTunnelSaver tunnelSaverFactory
+	// newInspectReader replaces the docker-ssh container reader in tests.
+	newInspectReader func(cfg dockerssh.Config) platformimport.InspectReader
+	volCopies        map[string]*volumeCopyRun
 }
 
 func newAppImportState() *appImportState {
@@ -74,6 +80,9 @@ func newAppImportState() *appImportState {
 func (s *appImportState) set(id string, req platformImportRequest, disc *platformimport.Discovery) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if old, ok := s.live[id]; ok && old.req.SSH != req.SSH {
+		old.req.wipeSecrets()
+	}
 	s.live[id] = &appImportLive{req: req, disc: disc, expires: time.Now().Add(envDuration(envHubPasswordTTL, 2*time.Hour))}
 }
 
@@ -82,6 +91,9 @@ func (s *appImportState) get(id string) *appImportLive {
 	defer s.mu.Unlock()
 	l, ok := s.live[id]
 	if !ok || time.Now().After(l.expires) {
+		if ok {
+			l.req.wipeSecrets()
+		}
 		delete(s.live, id)
 		return nil
 	}
@@ -91,6 +103,9 @@ func (s *appImportState) get(id string) *appImportLive {
 func (s *appImportState) forget(id string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if l, ok := s.live[id]; ok {
+		l.req.wipeSecrets()
+	}
 	delete(s.live, id)
 }
 

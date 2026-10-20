@@ -36,6 +36,8 @@ type platformImportRequest struct {
 	AllowLoopback bool     `json:"allow_loopback,omitempty"`
 	Only          []string `json:"only,omitempty"`
 	Collision     string   `json:"collision,omitempty"`
+	// SSH is the login of a docker-ssh source: read-only access to its Docker socket.
+	SSH *sshConnection `json:"ssh,omitempty"`
 }
 
 func envTrue(name string) bool {
@@ -59,6 +61,11 @@ func (rt *Router) decodePlatformImport(w http.ResponseWriter, r *http.Request) (
 	var req platformImportRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxPlatformImportBody)).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
+		return req, nil, false
+	}
+	if err := req.normalizeSSH(); err != nil {
+		req.wipeSecrets()
+		writeError(w, http.StatusBadRequest, err.Error())
 		return req, nil, false
 	}
 	src, ok := rt.openImportSource(w, req)
@@ -97,6 +104,9 @@ func (rt *Router) openImportSource(w http.ResponseWriter, req platformImportRequ
 	if req.Collision != "" && req.Collision != platformimport.CollisionSuffix && req.Collision != platformimport.CollisionSkip {
 		writeError(w, http.StatusBadRequest, "collision must be suffix or skip")
 		return nil, false
+	}
+	if platform == platformimport.DockerSSH {
+		return rt.openDockerSSHSource(w, req)
 	}
 	if platform == platformimport.Docker || platform == platformimport.Compose || platform == platformimport.Dokku {
 		return openFileImportSource(w, platform, req)
@@ -174,6 +184,7 @@ func (rt *Router) handleDiscoverPlatformImport(w http.ResponseWriter, r *http.Re
 	if !ok {
 		return
 	}
+	defer req.wipeSecrets()
 	plan, err := rt.buildImportPlan(r.Context(), req, src)
 	if err != nil {
 		rt.writeImportError(w, err, req.Token)
@@ -189,6 +200,7 @@ func (rt *Router) handleApplyPlatformImport(w http.ResponseWriter, r *http.Reque
 	if !ok {
 		return
 	}
+	defer req.wipeSecrets()
 	plan, err := rt.buildImportPlan(r.Context(), req, src)
 	if err != nil {
 		rt.writeImportError(w, err, req.Token)

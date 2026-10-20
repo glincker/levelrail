@@ -3,6 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { AppImportSSHLogin } from './appImportSSH'
 
 export type AppImportVerdict =
   'ready' | 'ready-with-notes' | 'needs-attention' | 'unsupported'
@@ -166,6 +167,8 @@ export interface AppImportSource {
   allow_private?: boolean
   insecure_tls?: boolean
   collision?: 'suffix' | 'skip'
+  // docker-ssh: the SSH login used as a read-only transport to the Docker socket.
+  ssh?: AppImportSSHLogin
 }
 
 export interface AppImportVolumeGuide {

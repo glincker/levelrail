@@ -335,6 +335,7 @@
               "migration-reference",
               "migrating-from-coolify-dokploy-and-caprover",
               "migrate-same-server",
+              "migrate-over-ssh",
               "migrating-from-vercel",
               "migrating-from-cloud-run"
             ],

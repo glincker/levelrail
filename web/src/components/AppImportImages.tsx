@@ -103,7 +103,8 @@ export function AppImportImages({
   const pending = images.filter(
     (i) => i.state !== 'verified' && i.state !== 'loaded',
   ).length
-  const canReuse = data?.credentials_held ?? false
+  const viaTunnel = session.platform === 'docker-ssh'
+  const canReuse = viaTunnel || (data?.credentials_held ?? false)
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -156,70 +157,78 @@ export function AppImportImages({
       {images.length > 0 ? (
         <>
           <form onSubmit={onSubmit} className="space-y-3">
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="appimport-img-ssh">
-                  {t('appImport.images.ssh')}
-                </Label>
-                <Input
-                  id="appimport-img-ssh"
-                  required={!canReuse}
-                  autoComplete="off"
-                  spellCheck={false}
-                  placeholder={
-                    data?.source ?? t('appImport.images.sshPlaceholder')
-                  }
-                  value={ssh}
-                  onChange={(e) => setSsh(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {t('appImport.images.sshHelp')}
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="appimport-img-pass">
-                  {t('appImport.images.passphrase')}
-                </Label>
-                <Input
-                  id="appimport-img-pass"
-                  type="password"
-                  autoComplete="off"
-                  value={passphrase}
-                  disabled={agent}
-                  onChange={(e) => setPassphrase(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="appimport-img-key">
-                {t('appImport.images.key')}
-              </Label>
-              <Textarea
-                id="appimport-img-key"
-                className="font-mono text-xs"
-                rows={4}
-                autoComplete="off"
-                spellCheck={false}
-                disabled={agent}
-                placeholder={
-                  canReuse
-                    ? t('appImport.images.keyHeld')
-                    : t('appImport.images.keyPlaceholder')
-                }
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                {t('appImport.images.keyHelp')}
+            {viaTunnel ? (
+              <p className="text-sm text-muted-foreground">
+                {t('appImport.images.viaTunnel')}
               </p>
-            </div>
-            <Label className="flex items-center gap-2 text-sm font-normal">
-              <Checkbox
-                checked={agent}
-                onCheckedChange={(c) => setAgent(c === true)}
-              />
-              {t('appImport.images.agent')}
-            </Label>
+            ) : (
+              <>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="appimport-img-ssh">
+                      {t('appImport.images.ssh')}
+                    </Label>
+                    <Input
+                      id="appimport-img-ssh"
+                      required={!canReuse}
+                      autoComplete="off"
+                      spellCheck={false}
+                      placeholder={
+                        data?.source ?? t('appImport.images.sshPlaceholder')
+                      }
+                      value={ssh}
+                      onChange={(e) => setSsh(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {t('appImport.images.sshHelp')}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="appimport-img-pass">
+                      {t('appImport.images.passphrase')}
+                    </Label>
+                    <Input
+                      id="appimport-img-pass"
+                      type="password"
+                      autoComplete="off"
+                      value={passphrase}
+                      disabled={agent}
+                      onChange={(e) => setPassphrase(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="appimport-img-key">
+                    {t('appImport.images.key')}
+                  </Label>
+                  <Textarea
+                    id="appimport-img-key"
+                    className="font-mono text-xs"
+                    rows={4}
+                    autoComplete="off"
+                    spellCheck={false}
+                    disabled={agent}
+                    placeholder={
+                      canReuse
+                        ? t('appImport.images.keyHeld')
+                        : t('appImport.images.keyPlaceholder')
+                    }
+                    value={key}
+                    onChange={(e) => setKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('appImport.images.keyHelp')}
+                  </p>
+                </div>
+                <Label className="flex items-center gap-2 text-sm font-normal">
+                  <Checkbox
+                    checked={agent}
+                    onCheckedChange={(c) => setAgent(c === true)}
+                  />
+                  {t('appImport.images.agent')}
+                </Label>
+              </>
+            )}
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="submit"

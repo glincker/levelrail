@@ -17,6 +17,8 @@ const (
 	Dokku    Platform = "dokku"
 	// Docker is a docker inspect snapshot of one host, no platform API.
 	Docker Platform = "docker"
+	// DockerSSH reads one host's Docker socket through an SSH login, no platform API.
+	DockerSSH Platform = "docker-ssh"
 )
 
 // Source discovers the neutral model from one source platform.
@@ -83,6 +85,8 @@ type App struct {
 	Image       string
 	// ImageID is the source host's local image ID, set by snapshot sources.
 	ImageID string
+	// SourceContainer is the running container's ID on the source host, set by live Docker sources.
+	SourceContainer string
 	// HostBuilt marks an image built on the source host and absent from any registry.
 	HostBuilt   bool
 	GitURL      string

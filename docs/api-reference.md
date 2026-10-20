@@ -1703,6 +1703,10 @@ Routes that do not fit an existing group.
 | POST | /api/v1/migration/takeover/runs | AbilityRoot | handleStartTakeover |
 | GET | /api/v1/migration/takeover/runs/{run} | AbilityRoot | handleGetTakeoverRun |
 | POST | /api/v1/migration/takeover/runs/{run}/rollback | AbilityRoot | handleRollbackTakeover |
+| POST | /api/v1/migration/apps/ssh/host-keys | AbilityWriteSensitive | handleSSHHostKeys |
+| POST | /api/v1/migration/apps/ssh/test | AbilityWriteSensitive | handleSSHTest |
+| GET | /api/v1/migration/apps/sessions/{id}/volumes/copy | AbilityRead | handleAppImportVolumeCopyStatus |
+| POST | /api/v1/migration/apps/sessions/{id}/volumes/copy | AbilityWriteSensitive | handleAppImportVolumeCopy |
 
 ## See also
 

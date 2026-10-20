@@ -71,7 +71,7 @@ const dockerSocketPath = "/var/run/docker.sock"
 func dockerInfraContainer(c dockerContainer, name string) bool {
 	img := strings.ToLower(c.Config.Image)
 	switch {
-	case strings.HasPrefix(name, "coolify"), strings.HasPrefix(name, "levelrail"):
+	case strings.HasPrefix(name, "coolify"), strings.HasPrefix(name, "levelrail"), strings.HasPrefix(name, "captain-"), strings.HasPrefix(name, "dokploy"):
 		return true
 	case strings.Contains(img, "coollabsio/coolify"), strings.Contains(img, "levelrail"):
 		return true
@@ -218,6 +218,9 @@ func dockerApp(id, name, project string, c dockerContainer, domains []string, po
 	app := App{SourceID: id, Name: name, Project: project, Environment: c.Config.Labels["coolify.environmentName"],
 		Kind: SourceImage, Image: c.Config.Image, Domains: domains, Port: port, Replicas: running,
 		MemoryBytes: c.HostConfig.Memory, NanoCPUs: c.HostConfig.NanoCPUs, ImageID: c.ImageID}
+	if c.State.Running {
+		app.SourceContainer = c.ID
+	}
 	if app.Replicas == 0 {
 		app.Replicas = 1
 		app.Notes = append(app.Notes, Note{Reason: "no container of this app was running in the snapshot", Manual: "confirm it is meant to run before cutover"})

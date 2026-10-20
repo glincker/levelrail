@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { AppImportSSHVolumes } from './AppImportSSHVolumes'
 import {
   useAppImportVolumes,
   useSetAppImportVolume,
@@ -47,6 +48,9 @@ export function AppImportVolumes({
           {t('appImport.volumes.description')}
         </p>
       </div>
+      {withVolumes.length > 0 && session.platform === 'docker-ssh' ? (
+        <AppImportSSHVolumes session={session} />
+      ) : null}
       {withVolumes.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           {t('appImport.volumes.none')}

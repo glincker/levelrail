@@ -249,7 +249,8 @@
         "api": "Coolify API",
         "docker": "Docker snapshot",
         "compose": "Compose file",
-        "dokku": "Dokku env dump"
+        "dokku": "Dokku env dump",
+        "ssh": "Connect over SSH"
       },
       "fileDescription": {
         "docker": "No API token needed. Paste the output of the command below, run on the old server. It reads container settings and environment variables, and changes nothing there.",
@@ -483,6 +484,107 @@
         "loaded": "Loaded, unverified",
         "failed": "Failed",
         "cancelled": "Cancelled"
+      },
+      "viaTunnel": "Images are streamed through the same SSH connection, read only. Nothing is run on the old server, and no extra login is needed."
+    },
+    "ssh": {
+      "description": "Import from an old Coolify, Dokploy, CapRover or Dokku server with only an SSH login. No platform token and no agent. SSH is used only to reach the Docker socket, and only read requests are sent: nothing is ever run on the old server.",
+      "host": "Server address",
+      "port": "SSH port",
+      "user": "SSH user",
+      "passphrase": "Key passphrase",
+      "key": "Private key",
+      "keyPlaceholder": "-----BEGIN OPENSSH PRIVATE KEY-----",
+      "keyFile": "Or load the private key from a file",
+      "keyHelp": "Held in memory for this session only, sent in the request body, never stored or logged. Whoever holds this key can act as that user on the old server, so use a key you can remove afterwards.",
+      "advanced": "Password, Docker socket path and network options",
+      "password": "Password (instead of a key)",
+      "socket": "Docker socket path on the old server",
+      "test": "Test connection",
+      "testing": "Testing",
+      "recheck": "Re-check",
+      "readOnlyNote": "Read only: lists containers, volumes and images.",
+      "storedConfig": "Environment variables and settings come from the running containers. The old platform's own stored config (Coolify's database, CapRover's data folder, Dokku's app folder) is not read.",
+      "hostKey": {
+        "title": "Confirm the server identity",
+        "read": "Read host key",
+        "reading": "Reading",
+        "help": "Read the fingerprint the server presents, then confirm it is the same one the old server reports. A wrong or changed fingerprint stops the connection.",
+        "list": "Host keys the server presents",
+        "fingerprint": "Host key fingerprint",
+        "confirm": "This fingerprint matches my old server",
+        "compare": "Compare with the fingerprint on the old server",
+        "compareCommand": "ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub",
+        "insecure": "Skip host key verification (unsafe)",
+        "insecureTitle": "Host key verification is off",
+        "insecureBody": "Anyone between this server and the old one could read what is sent, including the key. Confirm the fingerprint instead. This session is marked as unverified everywhere.",
+        "placeholder": "SHA256:..."
+      },
+      "ok": {
+        "title": "Connected",
+        "reads": "Read only: lists containers, volumes and images.",
+        "counts": "Docker {{version}}: {{containers}} containers ({{running}} running), {{volumes}} volumes, {{images}} images."
+      },
+      "fix": {
+        "viaCli": "Fix via CLI",
+        "auth_failed": {
+          "title": "The login was refused",
+          "body": "Check the private key, its passphrase and the user name, then re-check."
+        },
+        "host_key_mismatch": {
+          "title": "The host key does not match",
+          "body": "The server presented a different host key than the one you confirmed. If you expected the change, trust the new fingerprint and confirm it again.",
+          "trust": "Trust {{fingerprint}}"
+        },
+        "host_key_required": {
+          "title": "Confirm the host key first",
+          "body": "Read the server fingerprint and confirm it before connecting."
+        },
+        "socket_permission": {
+          "title": "The user cannot use the Docker socket",
+          "body": "Add the SSH user to the docker group on the old server, log in again, then re-check.",
+          "command": "sudo usermod -aG docker USER"
+        },
+        "socket_path": {
+          "title": "No Docker socket at that path",
+          "body": "Pick the right socket path, or enter it under the advanced options.",
+          "try": "Try {{path}}"
+        },
+        "socket_forbidden": {
+          "title": "The server blocks socket forwarding",
+          "body": "The old server's sshd refuses forwarding to a Unix socket for this login. Allow stream local forwarding for this user, then re-check."
+        },
+        "unreachable": {
+          "title": "The server could not be reached",
+          "body": "Check the address and port, and that this server can reach it, then re-check."
+        },
+        "blocked_address": {
+          "title": "That address is not allowed",
+          "body": "Private network addresses are blocked unless the control plane operator allows them. Cloud metadata addresses are never allowed.",
+          "allow": "Allow private addresses"
+        },
+        "other": {
+          "title": "The connection failed",
+          "body": "See the message below, then re-check."
+        }
+      },
+      "volumes": {
+        "title": "Copy over SSH",
+        "description": "Volumes of running containers are streamed through the SSH connection, read only on the old server, up to {{size}} each. Stopped containers and bind mounts need the commands below.",
+        "reconnect": "The SSH login is held in memory only. Reconnect the source to copy volumes.",
+        "copy": "Copy volumes over SSH",
+        "again": "Copy again",
+        "running": "Copying",
+        "done": "{{files}} files, {{size}}",
+        "leftOut": "Left out: {{entry}}",
+        "fallback": "Run the copy again right before the DNS switch to catch the last changes.",
+        "state": {
+          "pending": "Waiting",
+          "running": "Copying",
+          "copied": "Copied",
+          "failed": "Failed",
+          "skipped": "Use the command"
+        }
       }
     }
   },

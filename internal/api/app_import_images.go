@@ -11,7 +11,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/dockerssh"
 	"github.com/GLINCKER/levelrail/internal/imagemove"
+	"github.com/GLINCKER/levelrail/internal/platformimport"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -166,6 +168,33 @@ func (rt *Router) resolveImageMoveCreds(sessID string, req appImportImagesTransf
 	return t, c, nil
 }
 
+// imageMoveSource picks where images come from: the session's held docker-ssh
+// tunnel, or the classic SSH login in the request.
+func (rt *Router) imageMoveSource(sess store.AppImportSession, req appImportImagesTransferRequest) (imagemove.Target, imagemove.Credentials, *dockerssh.Config, error) {
+	if sess.Platform != string(platformimport.DockerSSH) {
+		t, c, err := rt.resolveImageMoveCreds(sess.ID, req)
+		return t, c, nil, err
+	}
+	cfg, err := rt.sessionSSHConfig(sess.ID)
+	if err != nil {
+		return imagemove.Target{}, imagemove.Credentials{}, nil, err
+	}
+	return imagemove.Target{User: cfg.User, Host: cfg.Host, Port: cfg.Port}, imagemove.Credentials{}, &cfg, nil
+}
+
+// sessionSSHConfig rebuilds the docker-ssh login held in memory for a session.
+func (rt *Router) sessionSSHConfig(id string) (dockerssh.Config, error) {
+	live := rt.appImportLive.get(id)
+	if live == nil || live.req.SSH == nil {
+		return dockerssh.Config{}, errors.New("the ssh login is held in memory only and is not connected: reconnect the source first")
+	}
+	policy, err := platformImportPolicy(live.req)
+	if err != nil {
+		return dockerssh.Config{}, err
+	}
+	return live.req.SSH.config(policy)
+}
+
 // handleTransferAppImportImages streams host-built images to the target node; it returns at once, so poll images/status.
 func (rt *Router) handleTransferAppImportImages(w http.ResponseWriter, r *http.Request) {
 	sess, items, ok := rt.loadAppImport(w, r)
@@ -181,7 +210,7 @@ func (rt *Router) handleTransferAppImportImages(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	target, creds, err := rt.resolveImageMoveCreds(sess.ID, req)
+	target, creds, tunnel, err := rt.imageMoveSource(sess, req)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -206,14 +235,19 @@ func (rt *Router) handleTransferAppImportImages(w http.ResponseWriter, r *http.R
 	}
 	rt.setAppImportStep(r.Context(), sess, appImportStepImages)
 	rt.logger.Info("api: app import: image move started", slog.String("session_id", sess.ID), slog.String("source", target.String()), slog.Int("images", len(queued)))
-	go rt.runImageMove(ctx, cancel, sess.ID, target, creds, queued)
+	go rt.runImageMove(ctx, cancel, sess.ID, target, creds, tunnel, queued)
 	writeJSON(w, http.StatusAccepted, rt.imagesView(r.Context(), sess.ID, items, false))
 }
 
-func (rt *Router) runImageMove(ctx context.Context, cancel context.CancelFunc, sessID string, target imagemove.Target, creds imagemove.Credentials, queued []appImportImage) {
+func (rt *Router) runImageMove(ctx context.Context, cancel context.CancelFunc, sessID string, target imagemove.Target, creds imagemove.Credentials, tunnel *dockerssh.Config, queued []appImportImage) {
 	defer cancel()
 	defer rt.appImportLive.finishMove(sessID)
-	saver := rt.appImportLive.saverFor(target, creds, rt.appImportLive.hostKeyStore(rt.dataDir))
+	var saver imagemove.Saver
+	if tunnel != nil {
+		saver = rt.appImportLive.tunnelSaverFor(*tunnel)
+	} else {
+		saver = rt.appImportLive.saverFor(target, creds, rt.appImportLive.hostKeyStore(rt.dataDir))
+	}
 	maxBytes := imageMoveMaxBytes()
 	timeout := envDuration(envImageMoveTimeout, defaultImageMoveTimeout)
 	for _, img := range queued {

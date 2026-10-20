@@ -22,6 +22,7 @@ type AppImportRequest struct {
 	URL           string             `json:"url"`
 	Token         string             `json:"token"`
 	Snapshot      string             `json:"snapshot,omitempty"`
+	SSH           *AppImportSSH      `json:"ssh,omitempty"`
 	AppName       string             `json:"dokku_app_name,omitempty"`
 	InsecureTLS   bool               `json:"insecure_tls,omitempty"`
 	AllowPrivate  bool               `json:"allow_private,omitempty"`
