@@ -6,6 +6,7 @@ import {
   CopyIcon,
   DotsThreeIcon,
   ListMagnifyingGlassIcon,
+  StethoscopeIcon,
   PencilSimpleIcon,
   TrashIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -90,10 +91,12 @@ export function StandaloneRowActions({
   domain,
   onShowRecord,
   onRecheck,
+  onDiagnose,
 }: {
   domain: Domain
   onShowRecord: () => void
   onRecheck: () => void
+  onDiagnose: () => void
 }) {
   const { t } = useTranslation('domains')
   const { copied, copy } = useCopyToClipboard()
@@ -128,6 +131,10 @@ export function StandaloneRowActions({
           <DropdownMenuItem onClick={onShowRecord}>
             <ListMagnifyingGlassIcon />
             {t('page.row.dnsRecord')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onDiagnose}>
+            <StethoscopeIcon />
+            {t('page.row.diagnose')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onRecheck}>
             <ArrowsClockwiseIcon />

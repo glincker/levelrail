@@ -66,8 +66,11 @@ func (rn *run) checkResolves(ctx context.Context) Check {
 	case answered == 0:
 		c.State = StateFail
 		c.Title = rn.facts.Domain + " does not resolve"
-		c.Fix = &Fix{Summary: fmt.Sprintf("Add an A record for %s pointing at %s at your DNS provider.", rn.facts.Domain, firstOr(rn.facts.ServerIPs, "this server's public address")),
-			Action: &Action{Kind: ActionCopy, Label: "Copy record", Value: fmt.Sprintf("%s A %s", rn.facts.Domain, firstOr(rn.facts.ServerIPs, ""))}}
+		if recs := PlanRecords(rn.facts.Domain, rn.facts.ServerIPs, rn.facts.ServerHost); len(recs) > 0 {
+			c.Fix = rn.recordFix(fmt.Sprintf("Add a %s record for %s pointing at %s.", recs[0].Type, rn.facts.Domain, recs[0].Value), recs[0])
+		} else {
+			c.Fix = &Fix{Summary: fmt.Sprintf("Add an A record for %s pointing at this server's public address; set APP_PUBLIC_HOST so the exact value can be shown.", rn.facts.Domain)}
+		}
 	case answered < len(rn.answers) || (matching > 0 && matching < answered):
 		c.State = StateWarn
 		c.Title = "DNS is propagating"
@@ -87,6 +90,8 @@ func (rn *run) checkPointsHere(context.Context) Check {
 		c.State, c.Detail = StateUnavailable, "this server's public address is unknown; set APP_PUBLIC_HOST"
 	case overlaps(rn.resolved, rn.facts.ServerIPs):
 		c.State, c.Detail = StatePass, "resolves to "+strings.Join(intersect(rn.resolved, rn.facts.ServerIPs), ", ")
+	case allCloudflare(rn.resolved):
+		c.State, c.Detail = StateSkipped, "resolves to Cloudflare's proxy, see "+IDDNSProxied
 	case rn.facts.TLSTerminatedUpstream:
 		c.State = StateWarn
 		c.Detail = fmt.Sprintf("resolves to %s, not this server (%s). Expected when your own proxy or CDN fronts this server.", strings.Join(rn.resolved, ", "), strings.Join(rn.facts.ServerIPs, ", "))

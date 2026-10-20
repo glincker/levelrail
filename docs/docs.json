@@ -199,6 +199,7 @@
               "domains-and-ingress",
               "standalone-domains",
               "dns",
+              "domain-diagnosis",
               "domain-traffic-controls",
               "cdn-and-caching",
               "firewall",

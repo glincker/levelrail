@@ -36,6 +36,10 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsCheck(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDomainsDoctor(prog, args[1:], stdout, stderr, lookupEnv)
+	case "diagnose":
+		return runDomainsDiagnose(prog, args[1:], stdout, stderr, lookupEnv)
+	case "add":
+		return runDomainsAdd(prog, args[1:], stdout, stderr, lookupEnv)
 	case "summary":
 		return runDomainsSummary(prog, args[1:], stdout, stderr, lookupEnv)
 	case "activity":
@@ -91,7 +95,9 @@ func domainsUsage(prog string) string {
   %[1]s domains tls-cert <verb> [flags]         upload or clear a domain's own (BYO) TLS certificate
   %[1]s domains check <app> <domain> [flags]    run a real DNS lookup and report whether the domain reaches this control plane
   %[1]s domains doctor <app> <domain> [flags]   run every domain check and print a prioritised fix list
-  %[1]s domains summary [flags]                 count domains by status and certificates needing attention
+  %[1]s domains diagnose <domain> [flags]       why isn't my domain working: every check with the exact fix, optionally applied with --fix
+  %[1]s domains add <app> <domain>... [flags]   add domains and print the exact DNS records to create
+  %[1]s domains summary [flags]                count domains by status and certificates needing attention
   %[1]s domains activity <domain> [flags]       list a domain's recent changes and certificate events
   %[1]s domains connectivity [flags]            check whether ports 80/443 reach this node and whether HTTP-01 can work
   %[1]s domains certificates [flags]            list every certificate in certmagic storage, healthy or not

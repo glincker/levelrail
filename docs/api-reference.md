@@ -1009,6 +1009,8 @@ Endpoints for:
 | GET | /api/v1/registry-credentials/{id}/usage | AbilityRead | handleRegistryCredentialUsage |
 | POST | /api/v1/registry-credentials/test | AbilityWriteSensitive | handleProbeRegistryCredential |
 | DELETE | /api/v1/static-sites/{name} | AbilityWriteSensitive | handleDeleteStaticSite |
+| POST | /api/v1/domains/{domain}/diagnose | AbilityRead | handleDomainDiagnose |
+| GET | /api/v1/domains/{domain}/diagnose/stream | AbilityRead | handleDomainDiagnoseStream |
 
 ## Built-in Container Registry
 

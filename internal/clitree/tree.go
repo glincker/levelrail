@@ -162,6 +162,8 @@ var Tree = map[string]*Node{
 		"tls-cert":             {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "renew": nil}},
 		"check":                nil,
 		"doctor":               nil,
+		"diagnose":             nil,
+		"add":                  nil,
 		"summary":              nil,
 		"activity":             nil,
 		"certificates":         nil,

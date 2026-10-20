@@ -78,7 +78,11 @@ func (rt *Router) domainBelongsTo(ctx context.Context, svc *store.DesiredService
 
 // doctorFacts gathers stored state; it performs no probe of the domain.
 func (rt *Router) doctorFacts(ctx context.Context, svc *store.DesiredService, domain string, held map[string]bool) domaindoctor.Facts {
-	f := domaindoctor.Facts{Domain: domain, App: svc.Name, HeldBack: held[domain], ServerIPs: rt.serverPublicIPs(ctx)}
+	f := domaindoctor.Facts{Domain: domain, App: svc.Name, HeldBack: held[domain], ServerIPs: rt.serverPublicIPs(ctx),
+		ServerHost: rt.publicHost, CLIName: rt.cliName()}
+	if mgr, provider, zone, err := rt.dnsRecordManager(ctx, domain); err == nil && mgr != nil {
+		f.DNSProvider, f.DNSZone = provider, zone
+	}
 	if s, err := rt.ingressSettings.GetIngressSettings(ctx); err == nil {
 		f.TLSTerminatedUpstream = s.TLSTerminatedUpstream
 		f.ACMEEnabled = s.EffectiveACMEEnabled()
@@ -120,34 +124,43 @@ func (rt *Router) doctorFacts(ctx context.Context, svc *store.DesiredService, do
 	return f
 }
 
-// handleDomainDoctor handles POST /api/v1/apps/{name}/domains/{domain}/doctor.
-func (rt *Router) handleDomainDoctor(w http.ResponseWriter, r *http.Request) {
-	name := r.PathValue("name")
-	domain := strings.ToLower(strings.TrimSuffix(strings.TrimSpace(r.PathValue("domain")), "."))
-	svc, target, err := rt.doctorSubject(r.Context(), name, domain)
+// runDomainDoctor loads the stored facts for domain on app name and runs
+// every check, calling emit (when set) as each finishes. A non-zero status
+// is the HTTP error the caller should send with msg.
+func (rt *Router) runDomainDoctor(ctx context.Context, name, domain string, emit func(domaindoctor.Check)) (rep domaindoctor.Report, status int, msg string) {
+	svc, target, err := rt.doctorSubject(ctx, name, domain)
 	if errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
-		return
+		return rep, http.StatusNotFound, "app not found"
 	}
 	if err != nil {
-		rt.internalError(w, "api: domain doctor: load app", err)
-		return
+		rt.logger.Error("api: domain doctor: load app", "error", err.Error(), "app", name, "domain", domain)
+		return rep, http.StatusInternalServerError, "internal error"
 	}
-	held := rt.heldBackDomains(r.Context())
-	if domain == "" || (target == nil && !rt.domainBelongsTo(r.Context(), svc, domain, held)) {
-		writeError(w, http.StatusNotFound, "domain not found on this app")
-		return
+	held := rt.heldBackDomains(ctx)
+	if domain == "" || (target == nil && !rt.domainBelongsTo(ctx, svc, domain, held)) {
+		return rep, http.StatusNotFound, "domain not found on this app"
 	}
-	facts := rt.doctorFacts(r.Context(), svc, domain, held)
+	facts := rt.doctorFacts(ctx, svc, domain, held)
 	facts.Target = target
 	probes := domaindoctor.DefaultProbes()
 	if rt.traffic != nil && rt.traffic.doctorProbes != nil {
 		probes = *rt.traffic.doctorProbes
 	}
-	rep := domaindoctor.Run(r.Context(), facts, probes, domaindoctor.Options{
+	rep = domaindoctor.RunStream(ctx, facts, probes, domaindoctor.Options{
 		Timeout:        envDuration(envDomainDoctorTimeout, defaultDomainDoctorTimeout),
 		ProbeTimeout:   envDuration(envDomainDoctorProbeTimeout, defaultDomainDoctorProbe),
 		ExpiryWarnDays: envInt(envTrafficCertExpiryDays, defaultTrafficCertDays),
-	})
+	}, emit)
+	return rep, 0, ""
+}
+
+// handleDomainDoctor handles POST /api/v1/apps/{name}/domains/{domain}/doctor.
+func (rt *Router) handleDomainDoctor(w http.ResponseWriter, r *http.Request) {
+	domain := strings.ToLower(strings.TrimSuffix(strings.TrimSpace(r.PathValue("domain")), "."))
+	rep, status, msg := rt.runDomainDoctor(r.Context(), r.PathValue("name"), domain, nil)
+	if status != 0 {
+		writeError(w, status, msg)
+		return
+	}
 	writeJSON(w, http.StatusOK, rep)
 }
