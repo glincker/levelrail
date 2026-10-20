@@ -11,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // TestMain enables every experimental feature so the rest of the package
@@ -22,6 +23,7 @@ import (
 // calls do; doing one single-threaded open here first avoids it.
 func TestMain(m *testing.M) {
 	experimental.Set(experimental.All()...)
+	passwordHashCost = bcrypt.MinCost
 	// No test may probe the real network for this machine's public address.
 	_ = os.Setenv("APP_PUBLIC_IP_DETECT", "off")
 	_ = os.Setenv("APP_DNS_PUBLIC_RESOLVERS", "off")

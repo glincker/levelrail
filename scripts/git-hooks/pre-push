@@ -131,7 +131,7 @@ elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 	fi
 	if [ "$fail" -eq 0 ] && [ -n "$api_tests" ]; then
 		echo "pre-push: go test -short ./internal/api, only tests from changed test files"
-		if ! go test ./internal/api -short -timeout "$go_test_timeout" -run "^($api_tests)\$" 2>&1; then
+		if ! TEST_FAST_TIMEOUT="$go_test_timeout" scripts/test-fast.sh -r "^($api_tests)\$" 2>&1; then
 			fail=1
 		fi
 	fi
