@@ -224,6 +224,15 @@ func (s *bootState) startSchedulers() {
 	}
 
 	// Always runs: scheduledTaskRunner needs no master key, so this loop is never gated.
+	localNodeID := ""
+	if meshCfg != nil {
+		localNodeID = meshCfg.localNodeID
+	}
+	scheduledTaskRunner.HTTPConfigs = db
+	scheduledTaskRunner.Target = jobHTTPTarget{
+		db: db, nudger: engine, local: client,
+		nodes: lbNodeUpstreams{db: db, local: client, registry: agentRegistry, localNodeID: localNodeID},
+	}
 	scheduledTaskScheduler := scheduledtask.NewScheduler(db, scheduledTaskRunner, logger)
 	scheduledTaskScheduler.Lookback = scheduledTaskRunner.Limits.CatchUpLookback
 	go func() {

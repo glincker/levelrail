@@ -173,6 +173,7 @@
               "build-center",
               "scheduled-deploys",
               "scheduled-jobs",
+              "scheduled-functions",
               "image-auto-update",
               "build-hooks",
               "sleep-when-idle",

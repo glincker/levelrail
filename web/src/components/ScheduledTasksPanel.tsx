@@ -21,8 +21,15 @@ import {
 } from '../queries/scheduledTasks'
 import type { ScheduledTask } from '../types/scheduledTasks'
 
+function jobTarget(task: ScheduledTask): string {
+  if (task.mode === 'http' && task.http) {
+    return `${task.http.method ?? 'POST'} ${task.http.path}${task.http.background ? ' (background)' : ''}`
+  }
+  return task.command.join(' ')
+}
+
 function jobLabel(task: ScheduledTask): string {
-  return task.name || task.command.join(' ')
+  return task.name || jobTarget(task)
 }
 
 function LastRunCell({ task }: { task: ScheduledTask }) {
@@ -114,7 +121,7 @@ export function ScheduledTasksPanel({ appName }: { appName: string }) {
               ) : null}
             </span>
             <span className="truncate font-mono text-xs text-muted-foreground">
-              {task.command.join(' ')}
+              {jobTarget(task)}
             </span>
           </div>
         ),

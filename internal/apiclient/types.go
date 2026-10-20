@@ -2092,6 +2092,8 @@ type ScheduledTaskResource struct {
 	NextRunAt              *time.Time `json:"next_run_at,omitempty"`
 	// RunID is set on the response to a run-now call.
 	RunID string `json:"run_id,omitempty"`
+	// HTTP is the request an http-mode job sends instead of a command.
+	HTTP *JobHTTP `json:"http,omitempty"`
 
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
@@ -2126,8 +2128,8 @@ type ScheduledTaskRequest struct {
 	Command  []string `json:"command"`
 	Schedule string   `json:"schedule"`
 	Enabled  bool     `json:"enabled"`
-	// ConcurrencyPolicy is one of "allow", "forbid", "replace", or empty
-	// (server-side default "allow").
+	// ConcurrencyPolicy is one of "allow", "forbid", "replace", "queue",
+	// or empty (server-side default "allow").
 	ConcurrencyPolicy string `json:"concurrency_policy,omitempty"`
 
 	// Scheduled job fields; zero values are omitted so an update leaves
@@ -2143,6 +2145,17 @@ type ScheduledTaskRequest struct {
 	CPULimitMillis         int    `json:"cpu_limit_millis,omitempty"`
 	MemoryLimitMB          int    `json:"memory_limit_mb,omitempty"`
 	WarnAfterSeconds       int    `json:"warn_after_seconds,omitempty"`
+	// HTTP makes the job call a path on the app (Mode "http").
+	HTTP *JobHTTP `json:"http,omitempty"`
+}
+
+// JobHTTP mirrors internal/api's jobHTTPResource. Background jobs are
+// awaited by the control plane under APP_JOBS_BACKGROUND_TIMEOUT.
+type JobHTTP struct {
+	Method     string `json:"method,omitempty"`
+	Path       string `json:"path"`
+	Body       string `json:"body,omitempty"`
+	Background bool   `json:"background,omitempty"`
 }
 
 // FeatureFlagResource mirrors internal/api's featureFlagResource

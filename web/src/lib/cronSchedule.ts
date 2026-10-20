@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { CRON_MACROS } from './cronNext'
 
 // Shared cron-schedule form logic between BackupScheduleForm (a
 // database's backup schedule) and VolumeBackupScheduleForm (an app
@@ -35,7 +36,11 @@ export function refineCronFields(
   ctx: z.RefinementCtx,
 ): void {
   if (data.frequency === 'custom') {
-    if (data.customCron.split(/\s+/).filter(Boolean).length !== 5) {
+    const fields = data.customCron.split(/\s+/).filter(Boolean)
+    const isMacro =
+      fields.length === 1 &&
+      CRON_MACROS.includes((fields[0] ?? '').toLowerCase())
+    if (!isMacro && fields.length !== 5) {
       ctx.addIssue({
         code: 'custom',
         message:
