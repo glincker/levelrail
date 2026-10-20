@@ -6,7 +6,7 @@ description: "Levelrail is an open source Dokku alternative that adds a dashboar
 
 **When one server and a command line stops being enough**
 
-Dokku is a classic for a single host. Levelrail does not give you a `git push` remote on your server. It deploys from a connected git provider (GitHub, GitLab, Bitbucket or Gitea webhooks), from a public repository URL, or from a container image, or in one command with `levelrail-cli up` from your project directory, and adds a dashboard, deploy history with one-click rollback, built-in observability and a way to add more servers.
+Dokku is a classic for a single host. Levelrail can give you a `git push` remote on your own server (beta, off by default, see [Git push deploys](/git-push-deploy)). It deploys from a connected git provider (GitHub, GitLab, Bitbucket or Gitea webhooks), from a public repository URL, or from a container image, or in one command with `levelrail-cli up` from your project directory, and adds a dashboard, deploy history with one-click rollback, built-in observability and a way to add more servers.
 
 [Get started](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 
