@@ -6,6 +6,8 @@ import {
   RocketLaunchIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { useGitSource } from '../../queries/gitSources'
+import { useIsStaticSite } from '../../queries/staticSites'
+import { DropDeployCard } from '../dropdeploy/DropDeployCard'
 import { registerPageActions } from '../../lib/pageActions'
 import type { AppDetail } from '../../types/appDetail'
 import type { ReconcileCondition } from '../../types/deploy'
@@ -53,6 +55,7 @@ export function OverviewPage({
   const latest = attempts[0]
   const reading = useResourceReading(app)
   const git = useGitSource(app.name)
+  const isStatic = useIsStaticSite(app.name)
   const uploadAttempt = git.data ? undefined : latestUpload(attempts)
   const suggestions = useOverviewSuggestions(app, reading, latest, conditions)
   const setup = useSetupDismissed(app.name)
@@ -145,8 +148,13 @@ export function OverviewPage({
     health: <AppHealthScorePanel appName={app.name} />,
     activity: (
       <div className="space-y-6">
+        {isStatic ? <DropDeployCard appName={app.name} /> : null}
         {uploadAttempt ? (
-          <UploadSourceCard appName={app.name} attempt={uploadAttempt} />
+          <UploadSourceCard
+            appName={app.name}
+            attempt={uploadAttempt}
+            isStatic={isStatic}
+          />
         ) : null}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <ActivityTimeline

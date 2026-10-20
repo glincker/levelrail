@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -39,6 +40,9 @@ type sourceUploadResource struct {
 	CreatedAt      string `json:"created_at"`
 	Deduped        bool   `json:"deduped,omitempty"`
 	ExpiresAt      string `json:"expires_at,omitempty"`
+	// HasIndex and SiteRoot are set only for zip uploads: whether index.html is at the site root, and the wrapper folder removed.
+	HasIndex *bool  `json:"has_index,omitempty"`
+	SiteRoot string `json:"site_root,omitempty"`
 }
 
 type sourceUploadListResponse struct {
@@ -51,11 +55,15 @@ func (rt *Router) uploadStore() *sourceupload.Store {
 	if rt.dataDir == "" {
 		return nil
 	}
-	return sourceupload.NewStore(filepath.Join(rt.dataDir, "uploads"), sourceupload.Limits{
+	return sourceupload.NewStore(filepath.Join(rt.dataDir, "uploads"), uploadLimits())
+}
+
+func uploadLimits() sourceupload.Limits {
+	return sourceupload.Limits{
 		MaxFiles:     int(envInt64Positive(envUploadMaxFiles, defaultUploadMaxFiles)),
 		MaxBytes:     envInt64Positive(envUploadMaxExtracted, defaultUploadMaxExtracted),
 		MaxFileBytes: envInt64Positive(envUploadMaxExtracted, defaultUploadMaxExtracted),
-	})
+	}
 }
 
 func uploadRetention() time.Duration { return envDuration(envUploadRetention, defaultUploadRetention) }
@@ -119,7 +127,17 @@ func (rt *Router) handleUploadSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rt.CleanupUploads(r.Context())
-	meta, deduped, err := st.Put(name, r.Body, limit)
+	var body io.Reader = r.Body
+	var zipRes *sourceupload.ZipResult
+	if isZipUpload(r) {
+		zb, zr, cleanup, ok := rt.convertZipBody(w, r, limit)
+		if !ok {
+			return
+		}
+		defer cleanup()
+		body, zipRes = zb, &zr
+	}
+	meta, deduped, err := st.Put(name, body, limit)
 	switch {
 	case errors.Is(err, sourceupload.ErrTooLarge):
 		writeError(w, http.StatusRequestEntityTooLarge, "upload is too large: "+err.Error())
@@ -141,7 +159,11 @@ func (rt *Router) handleUploadSource(w http.ResponseWriter, r *http.Request) {
 	if deduped {
 		status = http.StatusOK
 	}
-	writeJSON(w, status, uploadResource(meta, deduped))
+	res := uploadResource(meta, deduped)
+	if zipRes != nil {
+		res.HasIndex, res.SiteRoot = &zipRes.HasIndex, zipRes.StrippedDir
+	}
+	writeJSON(w, status, res)
 }
 
 // handleListUploads lists an app's retained uploads and the total archive disk use.
@@ -167,8 +189,8 @@ func (rt *Router) handleListUploads(w http.ResponseWriter, r *http.Request) {
 // prepareUploadBuild turns req.UploadHash into the internal source reference.
 // It returns an HTTP status and message when the request cannot proceed.
 func (rt *Router) prepareUploadBuild(name string, req *triggerBuildRequest, buildType string) (sourceupload.Meta, int, string) {
-	if buildType != spec.BuildDockerfile && buildType != spec.BuildRailpack {
-		return sourceupload.Meta{}, http.StatusBadRequest, fmt.Sprintf("upload_hash needs build.type %q or %q, not %q", spec.BuildDockerfile, spec.BuildRailpack, buildType)
+	if buildType != spec.BuildDockerfile && buildType != spec.BuildRailpack && buildType != spec.BuildStatic {
+		return sourceupload.Meta{}, http.StatusBadRequest, fmt.Sprintf("upload_hash needs build.type %q, %q or %q, not %q", spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic, buildType)
 	}
 	if req.RepoURL != "" || req.FromCache {
 		return sourceupload.Meta{}, http.StatusBadRequest, "upload_hash cannot be combined with repo_url or from_cache"

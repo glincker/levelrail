@@ -11,9 +11,11 @@ import { uploadFileCount } from './uploadSource'
 export function UploadSourceCard({
   appName,
   attempt,
+  isStatic = false,
 }: {
   appName: string
   attempt: DeployAttempt
+  isStatic?: boolean
 }) {
   const { t } = useTranslation('newApp')
   const brand = useBrand()
@@ -21,7 +23,7 @@ export function UploadSourceCard({
   const hash = attempt.commit_sha?.slice(0, 12) ?? ''
   const command = cliCommand(
     brand.BinaryName,
-    `deploy --app ${appName} --api-url ${window.location.origin}`,
+    `deploy --app ${appName}${isStatic ? ' --static' : ''} --api-url ${window.location.origin}`,
   )
 
   return (

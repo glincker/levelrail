@@ -7,6 +7,7 @@ import { sourceFromRepo } from '../../lib/newApp'
 import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
 import { ImportPlanPreview } from '../ImportPlanPreview'
 import type { ImportPlan, ImportPlanRequest } from '../../queries/imports'
+import { NewStaticSiteDrop } from '../dropdeploy/NewStaticSiteDrop'
 import { DeployFromComputer } from './DeployFromComputer'
 import { FeaturedTemplates } from './FeaturedTemplates'
 import { GitProviderCards } from './GitProviderCards'
@@ -122,6 +123,7 @@ export function SourceStep({
 
       <FeaturedTemplates />
       <OtherWays onPlan={onPlan} />
+      <NewStaticSiteDrop />
       <DeployFromComputer />
     </div>
   )

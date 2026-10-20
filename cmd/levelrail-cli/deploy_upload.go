@@ -76,7 +76,7 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "deploy", "print the result as JSON to stdout and nothing else", stderr)
 	var appName, name, fromHash, timeoutStr string
 	var port int
-	var dryRun, yes bool
+	var dryRun, yes, static bool
 	env, buildEnv := stringMapFlag{}, stringMapFlag{}
 	var include []string
 	fs.StringVar(&appName, "app", "", "app to deploy to (default: the directory name, created on the first deploy)")
@@ -90,6 +90,7 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 	})
 	fs.StringVar(&fromHash, "upload-hash", "", "rebuild an earlier upload that is still stored, without sending the directory again")
 	fs.StringVar(&timeoutStr, "timeout", defaultDeployUploadWait, "stop following the deploy after this long (the deploy itself keeps running)")
+	fs.BoolVar(&static, "static", false, "publish a folder or .zip as a static site: no build, no source control (implied by a .zip argument)")
 	fs.BoolVar(&dryRun, "dry-run", false, "list the files that would be uploaded and change nothing")
 	fs.BoolVar(&yes, "yes", false, "do not ask for confirmation on a terminal")
 	fs.BoolVar(&yes, "y", false, "shorthand for --yes")
@@ -109,7 +110,8 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 		fs.Usage()
 		return exitUsage
 	}
-	if st, err := os.Stat(dir); err != nil || !st.IsDir() {
+	staticDrop := static || isZipPath(dir)
+	if st, err := os.Stat(dir); !staticDrop && (err != nil || !st.IsDir()) {
 		return reportError(stdout, stderr, jsonOut, newValidationError("%q is not a directory; to deploy an image use \"%s deploy APP --image IMAGE\"", dir, prog))
 	}
 	if appName == "" {
@@ -124,6 +126,13 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
+	if staticDrop {
+		opts := staticOpts{appName: appName, fromHash: fromHash, include: include, timeout: timeout, maxBytes: maxBytes, dryRun: dryRun, yes: yes}
+		newClient := func() *Client { return apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv) }
+		return runDeployStatic(prog, dir, opts, newClient, stdout, stderr, of, jsonOut, func() bool {
+			return !isTerminal(stdin) || confirmUp(stdin, stderr)
+		})
+	}
 	if appName == "" {
 		appName = dirAppName(dir)
 	}
@@ -396,6 +405,10 @@ later deploys update it. Files matching .gitignore, plus node_modules, .git,
 build caches and .env or key files, are never uploaded unless --include names
 them. The file count and the largest files are shown before anything is sent.
 
+Static sites need no build: "%[1]s deploy ./site --static" or "%[1]s deploy site.zip"
+publishes the folder or zip as is (_redirects, _headers and a 404.html are honored).
+A folder or zip wrapped in one top-level directory is unwrapped for you.
+
 To deploy a git repository by URL, use "%[1]s deploy <git-url>".
 To deploy an image or a git commit instead, use "%[1]s deploy APP --image IMAGE"
 or "--latest".
@@ -409,6 +422,7 @@ Flags:
   --include PATH        upload a normally ignored path, repeatable
   --upload-hash HASH    rebuild an earlier upload that is still stored (default retention 7 days)
   --timeout duration    stop following the deploy after this long (default %[2]s)
+  --static              publish as a static site, no build (implied for a .zip)
   --dry-run             list the files that would be uploaded, send nothing
   --yes, -y             do not ask for confirmation on a terminal
   --token, --api-url, --profile, --json, --output, --query as for every command

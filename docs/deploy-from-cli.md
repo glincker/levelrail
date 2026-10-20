@@ -9,7 +9,7 @@ description: Deploy the current directory with one command, no git remote and no
 
 `levelrail-cli deploy` packs a directory on your machine, uploads it to the control plane, builds it there and follows the deploy until the app is healthy. You need no git remote, no registry and no SSH access. It is the quickest way to try an app that is not in a repository yet.
 
-The directory needs a `Dockerfile` or a stack Levelrail detects (Node, Go, Python, Java and others, built with Railpack). Static sites and Docker Compose projects are not supported by this command yet.
+The directory needs a `Dockerfile` or a stack Levelrail detects (Node, Go, Python, Java and others, built with Railpack). Docker Compose projects are not supported by this command yet. For a static site, see [Drop deploy](/drop-deploy): `levelrail-cli deploy ./site --static` or a `.zip`.
 
 ## Deploy a directory
 
@@ -84,7 +84,7 @@ levelrail-cli deploy --env LOG_LEVEL=info --build-env NODE_ENV=production
 
 When the directory is over the cap the CLI stops before uploading and says which variable to raise. Excluding build output in `.gitignore` is usually the better fix.
 
-The control plane keeps each uploaded archive under its data directory for the retention period, then deletes it. Uploading identical content again reuses the stored archive. Deploy history shows each upload as "Uploaded from CLI" with the archive hash and file count, and no git commit.
+The control plane keeps each uploaded archive under its data directory for the retention period, then deletes it. Uploading identical content again reuses the stored archive. Deploy history shows each upload as "Uploaded" with the archive hash and file count, and no git commit.
 
 ## Roll back or redeploy an earlier upload
 

@@ -16,6 +16,9 @@ type SourceUpload struct {
 	CreatedAt      string `json:"created_at"`
 	ExpiresAt      string `json:"expires_at,omitempty"`
 	Deduped        bool   `json:"deduped,omitempty"`
+	// HasIndex and SiteRoot are set for zip uploads only.
+	HasIndex *bool  `json:"has_index,omitempty"`
+	SiteRoot string `json:"site_root,omitempty"`
 }
 
 // SourceUploadList is GET /api/v1/apps/{name}/uploads.
@@ -42,6 +45,15 @@ func (p *progressReader) Read(b []byte) (int, error) {
 // UploadSource streams a gzip tar of size bytes to POST /api/v1/apps/{name}/uploads.
 // It uses no overall timeout: a large archive on a slow link is bounded by ctx.
 func (c *Client) UploadSource(ctx context.Context, name string, archive io.Reader, size int64, progress func(sent int64)) (SourceUpload, error) {
+	return c.uploadArchive(ctx, name, archive, size, "application/gzip", progress)
+}
+
+// UploadSiteZip streams a zip of a static site to POST /api/v1/apps/{name}/uploads.
+func (c *Client) UploadSiteZip(ctx context.Context, name string, archive io.Reader, size int64, progress func(sent int64)) (SourceUpload, error) {
+	return c.uploadArchive(ctx, name, archive, size, "application/zip", progress)
+}
+
+func (c *Client) uploadArchive(ctx context.Context, name string, archive io.Reader, size int64, contentType string, progress func(sent int64)) (SourceUpload, error) {
 	path := "/api/v1/apps/" + PathEscape(name) + "/uploads"
 	body := &progressReader{r: archive, fn: progress}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, body) //nolint:gosec // c.baseURL is the operator-supplied API target
@@ -49,7 +61,7 @@ func (c *Client) UploadSource(ctx context.Context, name string, archive io.Reade
 		return SourceUpload{}, fmt.Errorf("build request: %w", err)
 	}
 	req.ContentLength = size
-	req.Header.Set(headerContentType, "application/gzip")
+	req.Header.Set(headerContentType, contentType)
 	if c.token != "" {
 		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
 	}
