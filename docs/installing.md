@@ -619,7 +619,7 @@ docker volume rm levelrail-data
 </Tab>
 </Tabs>
 
-Uninstalling does not touch Docker itself or any containers, images, or volumes Levelrail created for your deployed apps, and `install.sh uninstall` leaves `levelrail-cli` in place. Remove those separately if needed.
+Uninstalling does not touch Docker itself or any containers, images, or volumes Levelrail created for your deployed apps, and `install.sh uninstall` also removes `levelrail-cli` from `/usr/local/bin`. Remove the apps' containers separately if needed.
 
 ## Troubleshooting
 
