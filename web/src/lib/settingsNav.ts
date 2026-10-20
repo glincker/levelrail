@@ -285,6 +285,21 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: EnvelopeIcon,
       },
       {
+        id: 'email-templates',
+        to: '/settings/email-templates',
+        icon: EnvelopeIcon,
+      },
+      {
+        id: 'email-audiences',
+        to: '/settings/email-audiences',
+        icon: UsersThreeIcon,
+      },
+      {
+        id: 'email-messages',
+        to: '/settings/email-messages',
+        icon: EnvelopeIcon,
+      },
+      {
         id: 'status-page',
         to: '/settings/status-page',
         icon: HeartbeatIcon,

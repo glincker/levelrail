@@ -417,6 +417,7 @@ func composeMux(apiHandler http.Handler, webhookHandler http.Handler, webHandler
 	mux.Handle("/api/", apiHandler)
 	mux.Handle("/public/", apiHandler)
 	mux.Handle("/gate/", apiHandler)
+	mux.Handle("/mail/unsubscribe", apiHandler)
 	if webhookHandler != nil {
 		mux.Handle("POST /webhook", webhookHandler)
 	}

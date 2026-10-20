@@ -397,6 +397,12 @@ var Tree = map[string]*Node{
 	"static-sites":     {Subs: map[string]*Node{"list": nil, "delete": nil}},
 	"deploy-approvals": {Subs: map[string]*Node{"list": nil, "get": nil, "approve": nil, "reject": nil}},
 	"build":            {Subs: map[string]*Node{"detect": nil, "branches": nil, "frameworks": nil}},
+	"email": {Subs: map[string]*Node{
+		"tokens":    {Subs: map[string]*Node{"list": nil}},
+		"templates": {Subs: map[string]*Node{"list": nil, "get": nil, "set": nil, "preview": nil, "reset": nil}},
+		"groups":    {Subs: map[string]*Node{"list": nil, "create": nil, "show": nil, "delete": nil}},
+		"send":      nil,
+	}},
 }
 
 // Tier says whether a top-level verb shows in the short help or only in the advanced list.

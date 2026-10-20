@@ -281,6 +281,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runUsers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "invites":
 		return runInvites(prog, args[1:], stdout, stderr, lookupEnv)
+	case "email":
+		return runEmail(prog, args[1:], stdout, stderr, lookupEnv)
 	case "iam":
 		return runIAM(prog, args[1:], stdout, stderr, lookupEnv)
 	case "secrets":

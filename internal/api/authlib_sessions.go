@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
+	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -274,8 +275,9 @@ func (rt *Router) sendLibMail(ctx context.Context, to, _, body string) error {
 	if !ok || rt.emailSender == nil {
 		return nil
 	}
-	subject, text := rt.passwordResetMessage(ctx, token)
-	return rt.emailSender.Send(ctx, to, subject, text)
+	return rt.sendMailEvent(ctx, mailtemplates.EventPasswordReset, to, map[string]string{
+		"reset_link": rt.passwordResetURL(ctx, token), "expires_in": fmt.Sprintf("%d minutes", int(passwordResetTokenTTL.Minutes())),
+	})
 }
 
 // resetLibPassword is handleResetPassword's library-backed body.

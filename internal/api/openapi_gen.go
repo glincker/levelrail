@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1555 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1580 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1069,6 +1069,31 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteSavedLogQuery", Description: ""},
 	{Method: "PUT", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleUpdateSavedLogQuery", Description: ""},
 	{Method: "GET", Path: "/api/v1/logs/usage", Ability: "AbilityRead", Group: "Other", Handler: "handleLogUsage", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/audience-options", Ability: "AbilityRoot", Group: "Other", Handler: "handleMailAudienceOptions", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/audience/preview", Ability: "AbilityRoot", Group: "Other", Handler: "handlePreviewMailAudience", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/broadcasts", Ability: "AbilityRoot", Group: "Other", Handler: "handleListMailBroadcasts", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/broadcasts", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateMailBroadcast", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/broadcasts/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestMailBroadcast", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/broadcasts/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMailBroadcast", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/broadcasts/{id}/cancel", Ability: "AbilityRoot", Group: "Other", Handler: "handleCancelMailBroadcast", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/groups", Ability: "AbilityRoot", Group: "Other", Handler: "handleListMailGroups", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/groups", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateMailGroup", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/mail/groups/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteMailGroup", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/groups/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMailGroup", Description: ""},
+	{Method: "PUT", Path: "/api/v1/mail/groups/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateMailGroup", Description: ""},
+	{Method: "PUT", Path: "/api/v1/mail/layout", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetMailLayout", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/suppressions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListMailSuppressions", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/suppressions", Ability: "AbilityRoot", Group: "Other", Handler: "handleAddMailSuppression", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/mail/suppressions/{email}", Ability: "AbilityRoot", Group: "Other", Handler: "handleRemoveMailSuppression", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/templates", Ability: "AbilityRead", Group: "Other", Handler: "handleListMailTemplates", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/mail/templates/{key}", Ability: "AbilityRoot", Group: "Other", Handler: "handleResetMailTemplate", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/templates/{key}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMailTemplate", Description: ""},
+	{Method: "PUT", Path: "/api/v1/mail/templates/{key}", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetMailTemplate", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/templates/{key}/preview", Ability: "AbilityRoot", Group: "Other", Handler: "handlePreviewMailTemplate", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/templates/{key}/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestMailTemplate", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/templates/{key}/versions", Ability: "AbilityRead", Group: "Other", Handler: "handleListMailTemplateVersions", Description: ""},
+	{Method: "POST", Path: "/api/v1/mail/templates/{key}/versions/{version}/restore", Ability: "AbilityRoot", Group: "Other", Handler: "handleRestoreMailTemplateVersion", Description: ""},
+	{Method: "GET", Path: "/api/v1/mail/tokens", Ability: "AbilityRead", Group: "Other", Handler: "handleListMailTokens", Description: ""},
 	{Method: "GET", Path: "/api/v1/maintenance/domains", Ability: "AbilityRead", Group: "Other", Handler: "handleListFleetMaintenance", Description: ""},
 	{Method: "POST", Path: "/api/v1/maintenance/preview", Ability: "AbilityRead", Group: "Other", Handler: "handlePreviewMaintenance", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},

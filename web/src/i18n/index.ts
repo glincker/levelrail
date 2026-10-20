@@ -65,6 +65,7 @@ export const NAMESPACES = [
   'envEditor',
   'resourceAdvisor',
   'plugins',
+  'mail',
   'help',
   'traces',
   'errors',

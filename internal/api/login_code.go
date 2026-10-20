@@ -13,6 +13,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -221,8 +222,7 @@ func (rt *Router) emailLoginCode(parent context.Context, user store.User, c stor
 	channel := "dashboard"
 	if rt.emailSender != nil {
 		if _, perr := mail.ParseAddress(user.Email); perr == nil {
-			subject, body := rt.loginCodeMessage(c, code)
-			switch err := rt.emailSender.Send(ctx, user.Email, subject, body); {
+			switch err := rt.sendMailEvent(ctx, mailtemplates.EventLoginCode, user.Email, rt.loginCodeValues(user, c, code)); {
 			case err == nil:
 				channel = "dashboard,email"
 			case errors.Is(err, email.ErrNotConfigured):
@@ -234,13 +234,12 @@ func (rt *Router) emailLoginCode(parent context.Context, user store.User, c stor
 	rt.auditSignIn(ctx, nil, anonymousSignIn(user.ID), store.AuditActionLoginCodeDeliver, loginCodeAuditPrefix+c.ID+"#"+channel, http.StatusOK)
 }
 
-func (rt *Router) loginCodeMessage(c store.LoginCodeChallenge, code string) (subject, body string) {
-	subject = fmt.Sprintf("[%s] Your sign-in code", rt.brand.Name)
-	body = fmt.Sprintf(
-		"Someone asked to sign in to your %s account.\n\nCode: %s\n\nRequested from %s (%s) at %s. The code expires in %d minutes and only works in the browser that asked for it.\n\nIf this was not you, ignore this email and consider changing your password.",
-		rt.brand.Name, formatLoginCode(code), safeSignInIP(c.RequesterIP), safeSignInText(c.UserAgent), c.CreatedAt.UTC().Format(time.RFC1123),
-		int(c.ExpiresAt.Sub(c.CreatedAt).Minutes()))
-	return subject, body
+func (rt *Router) loginCodeValues(user store.User, c store.LoginCodeChallenge, code string) map[string]string {
+	return map[string]string{
+		"display_name": user.DisplayName, "first_name": firstWord(user.DisplayName),
+		"sign_in_code": formatLoginCode(code), "ip_address": safeSignInIP(c.RequesterIP), "browser": safeSignInText(c.UserAgent),
+		"occurred_at": c.CreatedAt.UTC().Format(time.RFC1123), "expires_in": fmt.Sprintf("%d minutes", int(c.ExpiresAt.Sub(c.CreatedAt).Minutes())),
+	}
 }
 
 // handleRedeemLoginCode handles POST /api/v1/auth/login-code/redeem: only

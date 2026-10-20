@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -186,12 +187,8 @@ func (rt *Router) sendInviteEmail(ctx context.Context, email, link string) {
 		rt.logger.Warn("api: create invite: no email capability configured on this control plane")
 		return
 	}
-	subject := fmt.Sprintf("[%s] You're invited", rt.brand.Name)
-	body := fmt.Sprintf(
-		"You've been invited to join %s.\n\nAccept the invite and set a password: %s\n\nThis link expires in %d days.",
-		rt.brand.Name, link, int(rt.effectiveInviteTTL().Hours()/24),
-	)
-	if err := rt.emailSender.Send(ctx, email, subject, body); err != nil {
+	vals := map[string]string{"invite_link": link, "expires_in": fmt.Sprintf("%d days", int(rt.effectiveInviteTTL().Hours()/24))}
+	if err := rt.sendMailEvent(ctx, mailtemplates.EventUserInvite, email, vals); err != nil {
 		rt.logger.Error("api: create invite: send email failed", slog.String("error", err.Error()))
 	}
 }

@@ -1780,6 +1780,31 @@ Routes that do not fit an existing group.
 | POST | /api/v1/hooks/deploy/{id}/{token} | Public | handleBuildHookTrigger |
 | POST | /api/v1/forms/{app}/{name} | Public | handleFormSubmit |
 | OPTIONS | /api/v1/forms/{app}/{name} | Public | handleFormPreflight |
+| GET | /api/v1/mail/tokens | AbilityRead | handleListMailTokens |
+| GET | /api/v1/mail/templates | AbilityRead | handleListMailTemplates |
+| GET | /api/v1/mail/templates/{key} | AbilityRead | handleGetMailTemplate |
+| PUT | /api/v1/mail/templates/{key} | AbilityRoot | handleSetMailTemplate |
+| DELETE | /api/v1/mail/templates/{key} | AbilityRoot | handleResetMailTemplate |
+| GET | /api/v1/mail/templates/{key}/versions | AbilityRead | handleListMailTemplateVersions |
+| POST | /api/v1/mail/templates/{key}/versions/{version}/restore | AbilityRoot | handleRestoreMailTemplateVersion |
+| POST | /api/v1/mail/templates/{key}/preview | AbilityRoot | handlePreviewMailTemplate |
+| POST | /api/v1/mail/templates/{key}/test | AbilityRoot | handleTestMailTemplate |
+| PUT | /api/v1/mail/layout | AbilityRoot | handleSetMailLayout |
+| GET | /api/v1/mail/audience-options | AbilityRoot | handleMailAudienceOptions |
+| POST | /api/v1/mail/audience/preview | AbilityRoot | handlePreviewMailAudience |
+| GET | /api/v1/mail/groups | AbilityRoot | handleListMailGroups |
+| POST | /api/v1/mail/groups | AbilityRoot | handleCreateMailGroup |
+| GET | /api/v1/mail/groups/{id} | AbilityRoot | handleGetMailGroup |
+| PUT | /api/v1/mail/groups/{id} | AbilityRoot | handleUpdateMailGroup |
+| DELETE | /api/v1/mail/groups/{id} | AbilityRoot | handleDeleteMailGroup |
+| GET | /api/v1/mail/suppressions | AbilityRoot | handleListMailSuppressions |
+| POST | /api/v1/mail/suppressions | AbilityRoot | handleAddMailSuppression |
+| DELETE | /api/v1/mail/suppressions/{email} | AbilityRoot | handleRemoveMailSuppression |
+| GET | /api/v1/mail/broadcasts | AbilityRoot | handleListMailBroadcasts |
+| POST | /api/v1/mail/broadcasts | AbilityRoot | handleCreateMailBroadcast |
+| POST | /api/v1/mail/broadcasts/test | AbilityRoot | handleTestMailBroadcast |
+| GET | /api/v1/mail/broadcasts/{id} | AbilityRoot | handleGetMailBroadcast |
+| POST | /api/v1/mail/broadcasts/{id}/cancel | AbilityRoot | handleCancelMailBroadcast |
 
 ## See also
 

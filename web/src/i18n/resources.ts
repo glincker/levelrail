@@ -74,6 +74,7 @@ import type autoscale from '../locales/en/autoscale.json'
 import type envEditor from '../locales/en/envEditor.json'
 import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
 import type plugins from '../locales/en/plugins.json'
+import type mail from '../locales/en/mail.json'
 import type help from '../locales/en/help.json'
 import type traces from '../locales/en/traces.json'
 import type errors from '../locales/en/errors.json'
@@ -169,6 +170,7 @@ declare module 'i18next' {
       envEditor: typeof envEditor
       resourceAdvisor: typeof resourceAdvisor
       plugins: typeof plugins
+      mail: typeof mail
       help: typeof help
       traces: typeof traces
       errors: typeof errors

@@ -558,6 +558,18 @@
         "title": "Email",
         "description": "Outbound SMTP for alerts and password resets."
       },
+      "email-templates": {
+        "title": "Email templates",
+        "description": "Edit every email the platform sends, with live preview."
+      },
+      "email-audiences": {
+        "title": "Email audiences",
+        "description": "Saved groups of people to write to, with opt-outs."
+      },
+      "email-messages": {
+        "title": "Email messages",
+        "description": "Write to an audience and see delivery history."
+      },
       "cloudflare-tunnel": {
         "title": "Cloudflare Tunnel",
         "description": "Expose this control plane without opening an inbound port."
