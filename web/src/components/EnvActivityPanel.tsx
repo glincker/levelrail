@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString()
@@ -49,7 +50,7 @@ export function EnvActivityPanel({ appName }: { appName: string }) {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <ListSkeleton rows={3} />
         ) : data && data.length > 0 ? (
           <ul className="space-y-2">
             {data.map((entry) => (

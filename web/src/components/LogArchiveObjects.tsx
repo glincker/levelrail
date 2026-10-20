@@ -1,4 +1,5 @@
 import { DownloadSimpleIcon, FilesIcon } from '@phosphor-icons/react/dist/ssr'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { logArchiveDownloadUrl, useLogArchiveObjects } from '../queries/storage'
 
 function formatBytes(n: number): string {
@@ -31,7 +32,7 @@ export function LogArchiveObjects({
         Archived objects
       </h2>
       {objects.isPending ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <ListSkeleton rows={3} />
       ) : objects.isError ? (
         <p role="alert" className="text-sm text-destructive">
           {objects.error.message}
