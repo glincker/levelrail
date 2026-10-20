@@ -38,7 +38,7 @@ func TestDeployCompose_TemplateDefaults_StrategyMemoryAndNoLowering(t *testing.T
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
-	const want = int64(2147483648)
+	const want = int64(2147483648) * templateMemoryHeadroom
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/oc/compose?template=openclaw", singleWriterComposeYAML))

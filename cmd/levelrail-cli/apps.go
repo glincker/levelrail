@@ -75,6 +75,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsAutoRollbackSLOBurn(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "cancel-superseded":
 		return runAppsCancelSuperseded(prog, args[1:], stdout, stderr, lookupEnv)
+	case "watch":
+		return runAppsWatch(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-safety":
 		return runAppsDeploySafety(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploys":
@@ -257,6 +259,7 @@ func appsUsage(prog string) string {
   %[1]s apps cancel-superseded enable|disable|status <name> [flags]   let a newer queued deploy replace older queued ones of the same branch
   %[1]s apps autoscale show|set|clear|history <name> [flags]   scale replicas on CPU, memory or request load within a minimum and maximum
   %[1]s apps auto-rollback enable|disable|status <name> [flags]   opt an app into (or out of) automatic rollback when a crashloop alert fires
+  %[1]s apps watch get|set|stop <name> [flags]   post-deploy watch: mode (off, notify, auto), window, thresholds, current state
   %[1]s apps deploy-safety show|set|targets <name> [flags]   readiness gate, drain and post-deploy watch thresholds, and pinned rollback targets
   %[1]s apps sleep enable|disable|status|wake|now|history <name> [flags]   stop an idle app and wake it on the next request
   %[1]s apps sleep list [flags]       apps with sleep on, which are asleep, and the memory freed

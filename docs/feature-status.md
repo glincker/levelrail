@@ -35,6 +35,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Notification channels (18) | beta | All 18 kinds have unit tests against `httptest`, none against a real vendor. |
 | Pipelines | stable | Live Docker test (`internal/pipeline/live_test.go`) and a live e2e run (`test/e2e/pipeline_run_test.go`). |
 | Deploy freeze | stable | Live e2e proves a freeze blocks then allows a real deploy (`test/e2e/deploy_freeze_test.go`), documented in `docs/deploy-safety.md`. |
+| Post-deploy watch and auto rollback | beta | Hard signals (crashloop, OOM, 5xx) and the soft p95 latency signal are unit tested against a fake store and metrics (`internal/deploywatch`); not yet proven under real traffic. |
 | Feature flags | beta | Unit, API, CLI, MCP tests and a doc page, no e2e. |
 | Templates | beta | About 360 catalog entries (generated count in the [catalog](/template-catalog)). Unit tests check shape and a floor of 180, and live e2e tests deploy samples (a 16-template fleet plus batch boot tests), not the whole catalog. |
 | Log archive | beta | Unit and e2e tests (`test/e2e/log_archive_test.go`), dedicated doc page (`docs/log-archive.md`). |
@@ -165,6 +166,14 @@ Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic,
 - Docs: `docs/deploy-safety.md`.
 - Real infra: none found.
 - Label: stable.
+
+### Post-deploy watch and auto rollback
+
+- Unit: `internal/deploywatch/watcher_test.go`, `watcher_soft_test.go`, `internal/deploysafety/rules_test.go`; CLI `apps_deploys_gate_test.go`.
+- E2E: `test/e2e/reconcile/deploy_safety_live_test.go` covers the hard signals.
+- Docs: `docs/deploy-safety.md`.
+- Real infra: none found for the latency signal.
+- Label: beta.
 
 ### Deploy freeze
 

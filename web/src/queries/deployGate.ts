@@ -114,3 +114,23 @@ export function rollbackTargetsQueryOptions(appName: string) {
 export function useRollbackTargets(appName: string) {
   return useQuery(rollbackTargetsQueryOptions(appName))
 }
+
+export function useStopWatch(appName: string) {
+  const queryClient = useQueryClient()
+  return useMutation<unknown, ApiError, void>({
+    mutationFn: async () => {
+      const res = await fetch(`${appPath(appName)}/watch/stop`, {
+        method: 'POST',
+      })
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `stop watch failed: ${res.status}`),
+        )
+      }
+      return (await res.json()) as unknown
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: appKeys.detail(appName) }),
+  })
+}

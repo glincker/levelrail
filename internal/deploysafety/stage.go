@@ -4,13 +4,14 @@ import "github.com/GLINCKER/levelrail/internal/store"
 
 // Stages a release moves through, derived from its gate timeline.
 const (
-	StagePending     = "pending"
-	StageGating      = "gating"
-	StageGateFailed  = "gate_failed"
-	StageWatching    = "watching"
-	StageCleared     = "cleared"
-	StageWatchFailed = "watch_failed"
-	StageRolledBack  = "rolled_back"
+	StagePending      = "pending"
+	StageGating       = "gating"
+	StageGateFailed   = "gate_failed"
+	StageWatching     = "watching"
+	StageCleared      = "cleared"
+	StageWatchFailed  = "watch_failed"
+	StageRolledBack   = "rolled_back"
+	StageWatchStopped = "watch_stopped"
 )
 
 // Stage folds a timeline (oldest first) into the stage the release is in
@@ -37,6 +38,8 @@ func Stage(events []store.DeployGateEvent) string {
 				stage = StageCleared
 			case StatusFailed:
 				stage = StageWatchFailed
+			case StatusStopped:
+				stage = StageWatchStopped
 			}
 		case PhaseRollback:
 			if e.Status == StatusPassed {
@@ -60,7 +63,7 @@ func StageFailed(stage string) bool {
 // stage without an operator acting.
 func StageTerminal(stage string) bool {
 	switch stage {
-	case StageCleared, StageGateFailed, StageWatchFailed, StageRolledBack:
+	case StageCleared, StageGateFailed, StageWatchFailed, StageRolledBack, StageWatchStopped:
 		return true
 	}
 	return false
