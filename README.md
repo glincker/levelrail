@@ -255,7 +255,7 @@ Step by step walkthroughs, each tested against a real install:
 
 ## For AI agents and crawlers
 
-- **Agent skill:** [`integrations/skills/levelrail/SKILL.md`](integrations/skills/levelrail/SKILL.md) teaches a coding agent to deploy, wait, diagnose and roll back safely.
+- **Agent skill:** [`skills/levelrail/SKILL.md`](skills/levelrail/SKILL.md) teaches a coding agent to deploy, wait, diagnose and roll back safely.
 - **MCP server:** `levelrail-mcp` exposes the same API and permission model. Start in `read-only` mode. See [MCP](docs/mcp.md) and [AI control](docs/ai-control.md).
 - **Repo guide:** [`AGENTS.md`](AGENTS.md) for working in this codebase, and [`llms.txt`](llms.txt) as the index. Docs for LLMs: [llms.txt](https://docs.levelrail.com/llms.txt) and [llms-full.txt](https://docs.levelrail.com/llms-full.txt).
 

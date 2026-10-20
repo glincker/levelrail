@@ -2,7 +2,7 @@
   "$schema": "https://context7.com/schema/context7.json",
   "projectTitle": "Levelrail",
   "description": "Self-hosted deployment platform: push to git, get a running app with TLS, logs, metrics, and rollback on your own Linux servers. CLI, MCP server, app.yaml spec, and HTTP API.",
-  "folders": ["docs", "integrations/skills"],
+  "folders": ["docs", "skills"],
   "excludeFolders": [
     "docs/node_modules",
     "docs/public",
