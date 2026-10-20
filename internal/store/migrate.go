@@ -5,9 +5,11 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 //go:embed migrations/*.sql
@@ -133,10 +135,14 @@ func (db *DB) migrate(ctx context.Context, cfg openConfig) error {
 		}
 	}
 
+	started := time.Now()
 	for _, m := range pending {
 		if err := db.applyMigration(ctx, m); err != nil {
 			return fmt.Errorf("apply migration %04d_%s: %w", m.version, m.name, err)
 		}
+	}
+	if current > 0 && len(pending) > 0 {
+		slog.Info("schema migrations applied", "count", len(pending), "from", current, "duration", time.Since(started).Round(time.Millisecond))
 	}
 
 	return nil

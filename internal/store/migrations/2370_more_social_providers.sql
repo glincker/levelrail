@@ -1,6 +1,7 @@
--- Widens the provider CHECK constraints (0700) to admit dropbox, kakao and patreon.
+-- Drops the provider CHECK lists (0700) for good so a new provider is a code-only change.
+-- Validation lives in store.IsOAuthProvider. Keeps every column added by 2360.
 CREATE TABLE oauth_provider_settings_new (
-    provider             TEXT PRIMARY KEY CHECK (provider IN ('google', 'github', 'oidc', 'microsoft', 'gitlab', 'bitbucket', 'discord', 'slack', 'linkedin', 'twitch', 'facebook', 'linear', 'vercel', 'huggingface', 'figma', 'salesforce', 'codeberg', 'cognito', 'dropbox', 'kakao', 'patreon')),
+    provider             TEXT PRIMARY KEY,
     enabled              INTEGER NOT NULL DEFAULT 0,
     client_id            TEXT,
     allowed_email_domain TEXT,
@@ -26,7 +27,7 @@ INSERT INTO oauth_provider_settings (provider, enabled) VALUES
 CREATE TABLE user_oauth_identities_new (
     id               TEXT PRIMARY KEY,
     user_id          TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    provider         TEXT NOT NULL CHECK (provider IN ('google', 'github', 'oidc', 'microsoft', 'gitlab', 'bitbucket', 'discord', 'slack', 'linkedin', 'twitch', 'facebook', 'linear', 'vercel', 'huggingface', 'figma', 'salesforce', 'codeberg', 'cognito', 'dropbox', 'kakao', 'patreon')),
+    provider         TEXT NOT NULL,
     provider_user_id TEXT NOT NULL,
     created_at       TEXT NOT NULL
 );

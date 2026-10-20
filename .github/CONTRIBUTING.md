@@ -258,6 +258,18 @@ See "Branches and commits" and "Code style" above for comment and commit
 conventions; they apply the same way inside a `contrib/*.yaml` file's
 `compose` body as anywhere else.
 
+## Writing migrations
+
+Migrations are forward-only SQL files in `internal/store/migrations/`, named `NNNN_description.sql`. Three checks in `internal/store` (`migrations_lint_test.go`, `migrations_drift_test.go`) run in `-short` and fail the build on the mistakes below.
+
+- **Version numbers.** Numbers are spaced in steps of 10 and parallel authors reserve a block of ten per branch (for example 2380 to 2389) in the dispatch or PR description before writing. Re-check the newest number on the integration branch right before pushing. Versions must be unique and strictly increasing in filename order, padded to four digits.
+- **Never edit a shipped migration.** Fix a bad one with a new migration. Editing is only fine for a file that has not left your branch.
+- **Header comment.** Every new file starts with one comment line saying why it exists.
+- **Rebuilding a table** (`CREATE TABLE x_new`, copy, `DROP TABLE x`, `RENAME`) copies every row under a write lock. Prefer `ALTER TABLE ... ADD COLUMN`. When a rebuild is unavoidable, copy the column list from the current schema (`PRAGMA table_info`), not from an older migration, because the drift test fails when a column disappears. Rebuilding a table listed in `unboundedTables` (audit log, deploy history, usage, events and similar) needs the line `-- migrate: large-table-rebuild-reviewed: <why this is safe>` in the file.
+- **Intentional drops.** Dropping a column or table needs `-- migrate: drops <table>.<column>` (or `<table>.*`) in the file, otherwise the drift test reports a silent loss.
+- **No CHECK lists for extensible enums.** Provider names, engine names and similar lists that grow live in a Go allowlist (see `store.IsOAuthProvider`), validated by the store and the API. A CHECK list forces a table rebuild for every new value.
+- **Testing an upgrade.** `cmd/levelrail/upgrade_matrix_test.go` seeds a database at an older schema with `WithMigrationCeiling`, upgrades it to head and asserts no rows are lost. Add a seed there when your migration transforms existing data. Run the full drift sweep once with `go test ./internal/store -run MigrationDrift` (without `-short`).
+
 ## Architecture decision records
 
 Significant architectural choices are recorded as ADRs under `/adr`, one

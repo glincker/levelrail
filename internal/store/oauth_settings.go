@@ -102,6 +102,9 @@ func (db *DB) ListOAuthProviderSettings(ctx context.Context) ([]OAuthProviderSet
 // UpdateOAuthProviderSettings replaces one provider's client settings. It
 // never touches a credential or the SSO policy (see SetOAuthSSOPolicy).
 func (db *DB) UpdateOAuthProviderSettings(ctx context.Context, s OAuthProviderSettings) error {
+	if !IsOAuthProvider(s.Provider) {
+		return fmt.Errorf("%w: %q", ErrUnknownOAuthProvider, s.Provider)
+	}
 	enabled := 0
 	if s.Enabled {
 		enabled = 1
