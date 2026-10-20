@@ -222,10 +222,32 @@ To go back to the previous successful deploy in one step, run `levelrail-cli rol
 ```bash
 curl -fsSL https://levelrail.com/install-cli.sh | sh
 export APP_API_URL=https://console.example.com
-levelrail-cli login --device
+levelrail-cli login --api-url https://console.example.com --code ABCD-EF23
 ```
 
-`login --device` prints a code and asks you to approve it in the dashboard. It works like `gh auth login`, so your two-factor setup applies. For CI, create an API token under **Settings, API tokens** and set it as `APP_API_TOKEN`.
+Right after setup, the dashboard home shows a **Connect your CLI** card. Press **Show my command** and paste the one line it prints into your terminal. The code is single use, expires in minutes and is only ever shown to a signed-in dashboard session, so it signs the CLI in with no password and no approval step:
+
+```text
+$ levelrail-cli login --api-url https://console.example.com --code ABCD-EF23
+logged in as "you@example.com"
+token tk_9fQ2x saved to ~/.config/levelrail-cli/credentials under profile "default", expires 2027-01-18
+```
+
+If you sign in with your password instead (`levelrail-cli login --api-url https://console.example.com`), a new device needs approval from a browser where you are signed in. The CLI tells you exactly where:
+
+```text
+This sign-in comes from a new device, so it needs your approval.
+
+  1. Open https://console.example.com/approve-sign-in?request=la_Kx3pQ
+     in the browser where you are signed in to the dashboard.
+  2. Type this number when asked: 42
+
+Or run "levelrail-cli auth approve la_Kx3pQ --match 42" with a token that holds signin:approve.
+Faster: open the dashboard, copy the command from the "Connect your CLI" card and run it (levelrail-cli login --api-url <url> --code XXXX-XXXX).
+Waiting up to 3m0s. Press Ctrl+C to cancel.
+```
+
+On a desktop terminal the CLI opens that page for you (`--open`, or `--open=false` to turn it off); over SSH and in scripts it does not. In a script it stops at once with the same instructions on one line, unless you pass `--wait`. Change the wait with `--approval-timeout` or `APP_LOGIN_APPROVAL_TIMEOUT`. `login --device` still works when you prefer to start from the CLI and approve in the dashboard. For CI, create an API token under **Settings, API tokens** and set it as `APP_API_TOKEN`.
 
 ## Finish setting up
 

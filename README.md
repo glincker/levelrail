@@ -64,21 +64,20 @@ Open the setup link and choose a password. The first sign-in opens one screen th
 On the server, the installer already put `levelrail-cli` in `/usr/local/bin`. Sign in once, then import a repository (`levelrail-cli apps create --interactive` asks for everything step by step):
 
 ```bash
-levelrail-cli login --device
+levelrail-cli login --api-url http://<server-ip>:8080 --code ABCD-EF23
 levelrail-cli import https://github.com/your-org/your-app --deploy
 ```
 
 Prefer containers, a pinned version or a source build? See [Installing](docs/installing.md). Want it as light as Dokku, or everything on? `install.sh --profile minimal|standard|suite`, see [Server profiles](docs/profiles.md). Coming from another platform? See [Migrate to Levelrail](docs/migrate-to-levelrail.md): Coolify, Dokploy, CapRover, Dokku and compose files each get a dry run first, and the old server keeps serving.
 
-`login --device` prints an approval link and a short code. Open the link in your browser, check that the code matches, and approve. The CLI then saves a token:
+After setup, the dashboard home shows a **Connect your CLI** card. Press **Show my command**, paste the line into your terminal, and the CLI signs in with a single-use code that expires in minutes (no password, no approval step):
 
 ```text
-To finish logging in, open:
-  <approval link>
-and confirm this code matches: ABCD-EFGH
-...
-device login approved
+logged in as "you@example.com"
+token tk_9fQ2x saved to ~/.config/levelrail-cli/credentials under profile "default", expires 2027-01-18
 ```
+
+Signing in with your password from a new device needs approval: the CLI prints the dashboard page to approve it on and the number to type. `login --device` also still works.
 
 Without `--deploy`, `import` only prints the deployment plan. To see the app's address, run `levelrail-cli open your-app`. It prints the custom domain first, then the automatic URL.
 

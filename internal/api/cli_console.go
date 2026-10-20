@@ -199,6 +199,11 @@ type cliConsoleTokenIDs struct{ legacyID, engineID string }
 // mintCLIConsoleToken issues the per-session token, mirroring the library
 // mint path so the token is listed, expiring and revocable like any other.
 func (rt *Router) mintCLIConsoleToken(ctx context.Context, userID string, abilities []string, expires time.Time) (string, cliConsoleTokenIDs, error) {
+	return rt.mintOwnedToken(ctx, userID, "cli-console", abilities, expires)
+}
+
+// mintOwnedToken mints a user-owned token named "<label> <short id>".
+func (rt *Router) mintOwnedToken(ctx context.Context, userID, label string, abilities []string, expires time.Time) (string, cliConsoleTokenIDs, error) {
 	if err := validateTokenAbilities(abilities); err != nil {
 		return "", cliConsoleTokenIDs{}, err
 	}
@@ -206,7 +211,7 @@ func (rt *Router) mintCLIConsoleToken(ctx context.Context, userID string, abilit
 	if err != nil {
 		return "", cliConsoleTokenIDs{}, err
 	}
-	name := "cli-console " + legacyID[:min(8, len(legacyID))]
+	name := label + " " + legacyID[:min(8, len(legacyID))]
 	raw, rec, err := rt.authLib.tokens.MintToken(ctx, authengine.MintInput{OwnerLegacyID: userID, Name: name, Abilities: abilities, ExpiresAt: &expires})
 	if err != nil {
 		return "", cliConsoleTokenIDs{}, err

@@ -426,6 +426,13 @@ export APP_API_URL=https://your-dashboard-domain
 </Step>
 <Step title="Log in">
 <Tabs>
+<Tab title="Pairing code (a person, fastest)">
+```bash
+levelrail-cli login --api-url https://your-dashboard-domain --code ABCD-EF23
+```
+
+Open the dashboard home, press **Show my command** on the **Connect your CLI** card and paste the line it prints. The code is single use, expires in minutes, and is issued only to a signed-in dashboard session, so it needs no password and no new-device approval. It works over plain HTTP. A password sign-in from a new device (`levelrail-cli login --api-url ...`) prints the dashboard page to approve it on and a two digit number to type there, and opens the page when a desktop browser is available.
+</Tab>
 <Tab title="Device login (a person)">
 ```bash
 levelrail-cli auth login --device

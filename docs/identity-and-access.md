@@ -515,6 +515,13 @@ A token owned by the user that holds `signin:approve` can decide too: `levelrail
 
 **Trusted browsers.** An approved browser, or one that signed in with a code, gets a trusted-device cookie: a random token stored only as a hash. Signing in again from that browser extends the same entry instead of adding one, and its next password sign-in goes straight through. Revoke one under **Settings > Security > Trusted browsers** or with `levelrail-cli auth devices revoke <id>`.
 
+**Sign in the CLI from the dashboard.** The first thing a new user does is sign the CLI in, so there are two guided paths, both safe against a stolen password:
+
+- *Pairing code.* The dashboard home shows a **Connect your CLI** card (`POST /api/v1/auth/cli-pairing`). It prints `levelrail-cli login --api-url <url> --code XXXX-XXXX`. The code has 40 bits of entropy, lives `APP_CLI_PAIRING_TTL` (default 5 minutes, 15 maximum), works once, and only a signed-in browser session can ask for it: a bearer token, a session link or an anonymous caller cannot. Only its SHA-256 is stored. Asking for a new code, changing or resetting the password, or signing out other sessions revokes the older ones. Redeeming it (`POST /api/v1/auth/cli-pairing/redeem`) is rate limited per IP (`APP_CLI_PAIR_PER_MINUTE`, default 10) and per code (5 wrong guesses burn it), and every refusal looks the same. The token it mints carries the account's abilities except `root`, like a device login, never `signin:approve`, and expires like a device token.
+- *Approval.* A password sign-in from a new device prints the page to approve it on (`/approve-sign-in`, which also appears as a card on the dashboard home within seconds), the number to type, a countdown and how to cancel. The CLI waits `--approval-timeout` (default 3 minutes, `APP_LOGIN_APPROVAL_TIMEOUT`), backing off between polls, and opens the page with `--open` at a desktop terminal. Without a terminal it fails at once with the fix unless `--wait` is set.
+
+A password alone never signs in a new device while another session of the account is live, and a pairing code is useless without a signed-in session that issued it. Audit actions: `cli_pairing.created`, `cli_pairing.paired`, `cli_pairing.failed` (never the code itself), `cli_pairing.revoked`, plus the existing `new_device.*` entries for approvals.
+
 Every trusted browser of an account is revoked when its password is changed or reset, when it signs out its other sessions, when `recover-admin` resets it, and when the user is deleted. The same events, plus turning two-factor authentication off or removing a passkey, also cancel the account's waiting approvals (approved ones not yet collected included) and lock its live sign-in codes. Expired entries are removed by the periodic sweep.
 
 <Warning>
@@ -749,7 +756,7 @@ levelrail-cli tokens list
 levelrail-cli tokens revoke <id>
 
 # Auth: login, identity check, two-factor
-levelrail-cli auth login [--device] [--token-name NAME] [--abilities LIST] [--expires-in-days N]
+levelrail-cli auth login [--code XXXX-XXXX | --device] [--open] [--wait] [--approval-timeout DUR] [--token-name NAME] [--abilities LIST] [--expires-in-days N]
 levelrail-cli auth whoami
 levelrail-cli auth session-link
 levelrail-cli auth code                       # waiting sign-in codes and new-browser sign-ins

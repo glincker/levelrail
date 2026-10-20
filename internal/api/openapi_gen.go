@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1500 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1502 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -372,6 +372,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/auth/2fa/setup", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/2fa/verify", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/auth/account", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteAccount", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/cli-pairing", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateCLIPairing", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/cli-pairing/redeem", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRedeemCLIPairing", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/delete-account/check", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteAccountCheck", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/device/activity", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeviceActivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/device/pending-summary", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDevicePendingSummary", Description: ""},
