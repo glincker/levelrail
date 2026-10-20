@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FolderOpenIcon, TagIcon } from '@phosphor-icons/react/dist/ssr'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 import {
   Dialog,
   DialogContent,
@@ -58,7 +59,7 @@ export function BrowseRegistryCredentialDialog({
               Repositories
             </p>
             {repos.isLoading ? (
-              <p className="text-sm text-muted-foreground">Loading...</p>
+              <ListSkeleton rows={3} />
             ) : repos.isError ? (
               <p className="text-sm text-destructive">{repos.error.message}</p>
             ) : (repos.data ?? []).length === 0 ? (
@@ -93,7 +94,7 @@ export function BrowseRegistryCredentialDialog({
                 Select a repository.
               </p>
             ) : tags.isLoading ? (
-              <p className="text-sm text-muted-foreground">Loading...</p>
+              <ListSkeleton rows={3} />
             ) : tags.isError ? (
               <p className="text-sm text-destructive">{tags.error.message}</p>
             ) : (tags.data ?? []).length === 0 ? (
