@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -109,6 +110,13 @@ func (rt *Router) handleSCIM(w http.ResponseWriter, r *http.Request) {
 	resource, id := parseSCIMPath(strings.TrimPrefix(r.URL.Path, scimBasePath))
 	if resource == scimUsers && r.Method == http.MethodPatch {
 		body = normalizeSCIMActive(body)
+		var dropped []string
+		if body, dropped = dropUnsupportedSCIMUserPatch(body); len(dropped) > 0 {
+			rt.logger.Debug("api: scim: ignored unsupported patch attributes", slog.String("token_id", tokenID), slog.Any("attributes", dropped))
+		}
+	}
+	if resource == scimGroups && r.Method == http.MethodPatch {
+		body = rewriteSCIMMemberFilterRemoval(body)
 	}
 	call := scimCall{method: r.Method, resource: resource, id: id, tokenID: tokenID, body: body}
 	pre, status, detail := rt.scimBefore(r, call)
@@ -124,19 +132,44 @@ func (rt *Router) handleSCIM(w http.ResponseWriter, r *http.Request) {
 	if rec.status == 0 {
 		rec.status = http.StatusOK
 	}
+	if pre.reactivating && rec.status >= 300 {
+		rt.scimUndoReactivation(r, id)
+	}
+	if id != "" && scimInvalidIDAnswer(rec.status, rec.body.Bytes()) {
+		writeSCIMError(w, http.StatusNotFound, "", "resource not found")
+		return
+	}
 	if rec.status >= 200 && rec.status < 300 {
 		if status, detail := rt.scimAfter(r, call, pre, rec); status != 0 {
+			if pre.reactivating {
+				rt.scimUndoReactivation(r, id)
+			}
 			writeSCIMError(w, status, "", detail)
 			return
 		}
 	}
-	out := bytes.ReplaceAll(rec.body.Bytes(), []byte(rt.authEngine.SCIMLocationBase()), []byte(rt.scimBase(r.Context())))
+	out := rec.body.Bytes()
+	if resource == scimUsers && r.Method == http.MethodPatch && rec.status == http.StatusOK && scimPatchDeactivates(body) {
+		out = scimMarkInactive(out)
+	}
+	out = bytes.ReplaceAll(out, []byte(rt.authEngine.SCIMLocationBase()), []byte(rt.scimBase(r.Context())))
 	for k, v := range rec.header {
 		w.Header()[k] = v
+	}
+	if rec.status == http.StatusCreated && w.Header().Get("Location") == "" {
+		if loc := scimLocation(out); loc != "" {
+			w.Header().Set("Location", loc)
+		}
 	}
 	w.Header().Del("Content-Length")
 	w.WriteHeader(rec.status)
 	_, _ = w.Write(out)
+}
+
+func (rt *Router) scimUndoReactivation(r *http.Request, engineID string) {
+	if err := rt.authEngine.SetDirectoryMember(context.WithoutCancel(r.Context()), engineID, false); err != nil {
+		rt.logger.Error("api: scim: undo reactivation failed", slog.String("engine_user_id", engineID), slog.String("error", err.Error()))
+	}
 }
 
 // normalizeSCIMActive turns Entra ID's string "True"/"False" for active into

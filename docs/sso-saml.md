@@ -66,7 +66,7 @@ The library's check, which then links the identity and issues the session:
 
 In-flight sign-ins are held in memory, so a control plane restart in the middle of one means starting again from the button.
 
-Encrypted assertions should work (the IdP can encrypt to the service provider certificate shown at the bottom of the settings page), but are not covered by a test yet.
+Encrypted assertions are not supported. The sign-in library looks for the assertion signature in the raw response, which an encrypted assertion hides, so the response is refused with `saml assertion not signed` and no account or session is left behind. Turn assertion encryption off at the IdP.
 
 ## Accounts and roles
 
@@ -113,7 +113,7 @@ See [Emergency access](emergency-access.md) for the host-side recovery routes.
 
 ## IdP setup guides
 
-These follow each IdP's documented SAML setup. They have not been run end to end against these IdPs yet.
+The Okta and Entra ID steps follow each IdP's documented SAML setup and have not been run against a live tenant. The Keycloak steps were run end to end (see [Tested against](#tested-against)).
 
 ### Okta
 
@@ -142,10 +142,30 @@ These follow each IdP's documented SAML setup. They have not been run end to end
 5. **Client scopes, dedicated scope, Add mapper:** a **User Property** mapper for `email` (SAML attribute name `email`) and a **Group list** mapper with attribute name `groups` and **Full group path** off. Set the connection's attribute names to match.
 6. Import `https://<keycloak>/realms/<realm>/protocol/saml/descriptor`.
 
+## Tested against
+
+Run against real identity providers in local Docker containers, driven by a scripted HTTP client with a cookie jar (no browser): SP-initiated login, the IdP's own login form, and the signed response posted back to the ACS of an in-process control plane. The test is `internal/api/sso_saml_live_test.go`, skipped under `-short` and run only with `LEVELRAIL_LIVE_IDP=1`.
+
+| IdP | Version | Verified |
+| --- | --- | --- |
+| Keycloak | 26.0.8, `start-dev`, https | Everything in the list below, plus Keycloak importing Levelrail's SP metadata as a client |
+| SimpleSAMLphp | 1.15.2 (`kristophjunge/test-saml-idp`), https | Everything in the list below |
+
+Verified against both:
+
+- Metadata: the IdP descriptor parses into entity ID, sign-in URL and signing certificate.
+- Sign-in with a signed assertion creates the account with the right email, picks up the group attribute and applies the mapped role (with role sync on). A second sign-in links the same account.
+- Account creation off refuses an unknown person, and signs in an invited one.
+- A tampered response, a replayed response (same flow and a fresh flow), a response with no flow cookie and a response issued for another connection are all refused, each for its own reason.
+- An assertion that is not signed is refused when only the outer response is signed (the library gate) and when nothing is signed, and no account is left behind.
+- Keycloak only: an IdP-initiated response is refused, with and without a flow cookie. Encrypted assertions are refused cleanly (see above).
+
+Not verified live, covered only by the canned-response unit tests: a wrong audience, expired or not-yet-valid assertions (the three minute skew cannot be waited out), an IdP certificate rotation, and metadata import from an https URL (the IdPs ran with self-signed certificates and the fetch refuses private addresses).
+
 ## What has not been verified
 
-- Sign-in against a live Okta, Entra ID or Keycloak tenant. The tests sign responses with a local test IdP built on the same SAML library.
-- Encrypted assertions.
+- Sign-in against a live Okta or Entra ID tenant. Their attribute names, NameID formats and group claims are covered by the attribute settings above, not by a run.
+- Encrypted assertions are refused, see above.
 - An IdP certificate rotation: a connection holds one signing certificate, so the new certificate has to be imported at the moment the IdP switches.
 
 ## Troubleshooting
