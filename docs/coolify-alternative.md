@@ -35,16 +35,18 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh
 
 ## Bring your apps with you
 
-The importer reads your existing instance through its own HTTP API and never changes anything there. Run it with --dry-run first to see exactly what would be created.
+The importer reads your Coolify instance through its API and changes nothing there. It creates the apps and databases on your Levelrail server. Databases and volumes are created empty, so copy their data separately (see the migration guide). Run a dry run first.
 
-```bash title="install, import, verify"
+```bash title="install, import, dry run"
 curl -fsSL https://levelrail.com/install.sh | sudo sh
-# control plane running as a systemd service
+# on the server: sign in, then pass the Coolify API token from the environment
+levelrail-cli login --device
+export APP_IMPORT_SOURCE_TOKEN=...   # or pipe it in with --token-stdin
 levelrail-cli import platform coolify --url https://coolify.example.com --dry-run
-# dry run: report only, nothing is written here or changed there
 levelrail-cli import platform coolify --url https://coolify.example.com --only web,api
-# apps and databases created, ready to deploy
 ```
+
+Re-running the import skips what it already created. For the full steps, including database copy and DNS cutover, see [Migrating from Coolify, Dokploy and CapRover](/migrating-from-coolify-dokploy-and-caprover).
 
 ## Coolify and Levelrail, side by side
 
