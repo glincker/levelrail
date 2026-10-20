@@ -31,3 +31,27 @@ func TestCompare(t *testing.T) {
 		})
 	}
 }
+
+func TestCompare_GitDescribeBuildsAreAfterTheirTag(t *testing.T) {
+	tests := []struct {
+		a, b string
+		want int
+	}{
+		{"v0.6.0-138-gabbfcdba5", "v0.6.0", 1},
+		{"v0.6.0", "v0.6.0-138-gabbfcdba5", -1},
+		{"v0.6.0-138-gabbfcdba5", "v0.6.1", -1},
+		{"v0.6.0-138-gabbfcdba5", "v0.5.9", 1},
+		{"v0.6.0-3-gabc1234", "v0.6.0-138-gabbfcdba5", -1},
+		{"v0.6.0-3-gabc1234-dirty", "v0.6.0-3-gabc1234", 0},
+		{"v1.0.0-rc.1-3-gabc1234", "v1.0.0-rc.1", 1},
+		{"v1.0.0-rc.1-3-gabc1234", "v1.0.0", -1},
+		{"0.4.0-beta.2", "0.4.0", -1},
+		{"0.4.0-beta.2", "0.4.0-beta.10", -1},
+	}
+	for _, tt := range tests {
+		got, ok := Compare(tt.a, tt.b)
+		if !ok || got != tt.want {
+			t.Errorf("Compare(%q, %q) = %d, %v, want %d", tt.a, tt.b, got, ok, tt.want)
+		}
+	}
+}

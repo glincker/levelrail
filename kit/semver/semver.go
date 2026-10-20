@@ -3,9 +3,14 @@
 package semver
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 )
+
+// describeSuffix matches the tail `git describe` appends to a build made N
+// commits after a tag, for example v0.6.0-138-gabbfcdba5 or v0.6.0-3-gabc1234-dirty.
+var describeSuffix = regexp.MustCompile(`^(.*?)-?(\d+)-g[0-9a-f]{7,40}(?:-dirty)?$`)
 
 // Compare orders two release versions such as "v1.2.3" or "0.4.0-beta.2"
 // by semver precedence: -1 if a < b, 0 if equal, 1 if a > b. ok is false
@@ -21,12 +26,16 @@ func Compare(a, b string) (cmp int, ok bool) {
 			return c, true
 		}
 	}
-	return comparePre(pa.pre, pb.pre), true
+	if c := comparePre(pa.pre, pb.pre); c != 0 {
+		return c, true
+	}
+	return compareInt(pa.post, pb.post), true
 }
 
 type parsed struct {
 	core [3]int
 	pre  []string
+	post int
 }
 
 func parse(v string) (parsed, bool) {
@@ -38,7 +47,14 @@ func parse(v string) (parsed, bool) {
 	core := v
 	if i := strings.IndexByte(v, '-'); i >= 0 {
 		core = v[:i]
-		p.pre = strings.Split(v[i+1:], ".")
+		tail := v[i+1:]
+		if m := describeSuffix.FindStringSubmatch(tail); m != nil {
+			p.post, _ = strconv.Atoi(m[2])
+			tail = m[1]
+		}
+		if tail != "" {
+			p.pre = strings.Split(tail, ".")
+		}
 	}
 	parts := strings.Split(core, ".")
 	if len(parts) < 2 || len(parts) > 3 {
