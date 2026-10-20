@@ -82280,6 +82280,84 @@
         "x-required-ability": "root"
       }
     },
+    "/api/v1/nodes/{id}/capacity": {
+      "get": {
+        "description": "Requires the `root` ability.",
+        "operationId": "handleGetNodeCapacity",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Get Node Capacity",
+        "tags": [
+          "Nodes"
+        ],
+        "x-required-ability": "root"
+      }
+    },
     "/api/v1/nodes/{id}/capacity-forecast": {
       "get": {
         "description": "Rough disk/memory exhaustion projection (node_capacity_forecast.go), a read-and-suggest layer over the same host samples patch-status/metrics above read, same AbilityRoot boundary and nil-telemetry 501 shape as every other node route.\n\nRequires the `root` ability.",
@@ -82530,6 +82608,173 @@
           }
         ],
         "summary": "Renew Node Cert",
+        "tags": [
+          "Nodes"
+        ],
+        "x-required-ability": "root"
+      }
+    },
+    "/api/v1/nodes/{id}/cleanup": {
+      "post": {
+        "description": "Requires the `root` ability.",
+        "operationId": "handleNodeCleanup",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Node Cleanup",
+        "tags": [
+          "Nodes"
+        ],
+        "x-required-ability": "root"
+      }
+    },
+    "/api/v1/nodes/{id}/cleanup-runs": {
+      "get": {
+        "description": "Requires the `root` ability.",
+        "operationId": "handleListNodeCleanupRuns",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "List Node Cleanup Runs",
         "tags": [
           "Nodes"
         ],
@@ -82864,6 +83109,95 @@
           }
         ],
         "summary": "List Node Events",
+        "tags": [
+          "Nodes"
+        ],
+        "x-required-ability": "root"
+      }
+    },
+    "/api/v1/nodes/{id}/guardrails": {
+      "put": {
+        "description": "Requires the `root` ability.",
+        "operationId": "handlePutNodeGuardrails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Put Node Guardrails",
         "tags": [
           "Nodes"
         ],

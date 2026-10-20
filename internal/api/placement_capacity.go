@@ -115,7 +115,7 @@ func (rt *Router) candidatesFrom(ctx context.Context, inv placementInventory) ([
 			nodeLabels = merged
 		}
 		out = append(out, placement.Candidate{
-			ID: n.ID, Name: n.Name, Labels: nodeLabels, Schedulable: n.Schedulable,
+			ID: n.ID, Name: n.Name, Labels: nodeLabels, Schedulable: n.Schedulable && rt.nodeBlockReason(ctx, n.ID) == "",
 			Online: n.Status == store.NodeStatusOnline, Load: load,
 			Capacity: rt.nodeCapacity(n.ID), Requested: requested,
 		})

@@ -457,6 +457,8 @@ func (e *Engine) Tick(ctx context.Context) error {
 			} else {
 				certNotices = notices
 			}
+		case KindNodeHostGuardrail:
+			continue
 		default:
 			e.logger.Warn("alerting: rule has unknown kind, skipping", slog.String("rule_id", r.ID), slog.String("kind", string(r.Kind)))
 			continue

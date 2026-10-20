@@ -861,6 +861,10 @@ Endpoints for:
 | GET | /api/v1/nodes/placement-simulation | AbilityRoot | handlePlacementSimulation |
 | GET | /api/v1/nodes/failure-simulation | AbilityRoot | handleFailureSimulation |
 | POST | /api/v1/nodes/{id}/cert/drill | AbilityRoot | handleNodeCertDrill |
+| GET | /api/v1/nodes/{id}/capacity | AbilityRoot | handleGetNodeCapacity |
+| PUT | /api/v1/nodes/{id}/guardrails | AbilityRoot | handlePutNodeGuardrails |
+| POST | /api/v1/nodes/{id}/cleanup | AbilityRoot | handleNodeCleanup |
+| GET | /api/v1/nodes/{id}/cleanup-runs | AbilityRoot | handleListNodeCleanupRuns |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 

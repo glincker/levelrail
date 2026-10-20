@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1502 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1510 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -777,13 +777,17 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/nodes/zones", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListZones", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDeleteNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNode", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/capacity", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeCapacity", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/capacity-forecast", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCapacityForecast", Description: "Rough disk/memory exhaustion projection (node_capacity_forecast.go), a read-and-suggest layer over the same host samples patch-status/metrics above read, same AbilityRoot boundary and nil-telemetry 501 shape as every other node route."},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/cert/drill", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCertDrill", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/cert/renew", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRenewNodeCert", Description: ""},
+	{Method: "POST", Path: "/api/v1/nodes/{id}/cleanup", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCleanup", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/cleanup-runs", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeCleanupRuns", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/cordon", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCordonNode", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/drain", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDrainNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/drains", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeDrains", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/events", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeEvents", Description: ""},
+	{Method: "PUT", Path: "/api/v1/nodes/{id}/guardrails", Ability: "AbilityRoot", Group: "Nodes", Handler: "handlePutNodeGuardrails", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/health", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeHealth", Description: "Health, cordon, drain, same AbilityRoot boundary as every other node route above."},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/labels", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeLabels", Description: ""},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/labels", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeLabels", Description: ""},
