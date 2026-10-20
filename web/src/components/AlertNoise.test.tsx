@@ -6,6 +6,7 @@ import { AlertHistoryTable } from './AlertHistoryTable'
 import { AlertSilencesPanel } from './AlertSilencesPanel'
 import { SilenceRuleMenu } from './SilenceRuleMenu'
 import { StatusComponentsPanel } from './StatusComponentsPanel'
+import { AllI18n } from '../test/allI18n'
 
 function urlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -25,7 +26,11 @@ function renderWithClient(node: React.ReactNode) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
-  render(<QueryClientProvider client={queryClient}>{node}</QueryClientProvider>)
+  render(
+    <AllI18n>
+      <QueryClientProvider client={queryClient}>{node}</QueryClientProvider>
+    </AllI18n>,
+  )
 }
 
 describe('alert noise UI', () => {

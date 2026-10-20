@@ -202,7 +202,7 @@ function DnsWriter({ current }: Readonly<{ current: string }>) {
   const { t } = useTranslation('domains')
   const plugins = usePlugins()
   const choose = useSetDnsProviderPlugin()
-  const options = (plugins.data ?? []).filter(
+  const options = (Array.isArray(plugins.data) ? plugins.data : []).filter(
     (p) => p.kind === 'dns_provider' && p.state === 'enabled',
   )
   if (current === '' && options.length === 0) return null
