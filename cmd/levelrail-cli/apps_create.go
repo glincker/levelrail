@@ -658,10 +658,20 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		detected = detectLocalGit()
 	}
 
+	profile := resolveProfile(profileFlag, lookupEnv)
+	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
+	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
+	client := NewClient(apiURL, token)
+	ctx := context.Background()
+
 	preset, err := applyFrameworkPreset(&f)
 	if err != nil {
 		return reportError(stdout, stderr, f.jsonOut, err)
 	}
+	applyGitBuildDefaults(&f, detected, ".", func(repo, ref string) (int, bool) {
+		det, derr := client.DetectFramework(ctx, repo, ref)
+		return det.Port, derr == nil && det.Detected && det.Port > 0
+	})
 
 	plan, err := planFromFlags(f, fileSpec, detected)
 	if err != nil {
@@ -689,12 +699,6 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	if len(f.vaultSecrets) > 0 {
 		plan.CreateBody.VaultEnv = f.vaultSecrets
 	}
-
-	profile := resolveProfile(profileFlag, lookupEnv)
-	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
-	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
-	client := NewClient(apiURL, token)
-	ctx := context.Background()
 
 	if plan.DeploySpec != nil {
 		return runAppsCreateStatic(ctx, client, plan.DeploySpec, of, stdout, stderr, f.jsonOut)
@@ -828,20 +832,20 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.Usage = func() { _, _ = fmt.Fprint(errOut, appsCreateUsage(prog)) }
 
 	var f createFlags
-	fs.StringVar(&f.name, "name", "", "app name (required unless --file is given and app.yaml has exactly one service)")
+	fs.StringVar(&f.name, "name", "", "app name (default: the repo name on the git-build path, or the single service key with --file)")
 	fs.StringVar(&f.image, "image", "", "existing image to deploy, e.g. registry.example.com/org/app:tag (existing-image path)")
-	fs.IntVar(&f.port, "port", 0, "container port the app listens on")
+	fs.IntVar(&f.port, "port", 0, "container port the app listens on (git-build default: detected from the checkout, the Dockerfile or the server's scan)")
 	fs.IntVar(&f.hostPort, "host-port", 0, "host port to pin the container port to (default: auto-assigned by Docker)")
 	fs.StringVar(&f.bindAddress, "bind-address", "", "network interface the port binds to: \"private\" (loopback only, the default), \"public\" (every interface), or a literal IP")
 	fs.StringVar(&f.repo, "repo", "", "git repository URL to build from (git-build path); auto-detected from the current directory's git remote \"origin\" when omitted")
 	fs.StringVar(&f.ref, "ref", "", "git ref (branch) to build from (git-build path); defaults to the current directory's branch, then \"main\"")
 	fs.StringVar(&f.dockerfile, "dockerfile", "", "Dockerfile path relative to the repo root (git-build path, --build-type dockerfile only); defaults to \"Dockerfile\" at the repo root")
-	fs.StringVar(&f.buildType, "build-type", "", "build type for the git-build path: \"dockerfile\" (default) or \"railpack\" (auto-detected build, no Dockerfile needed)")
+	fs.StringVar(&f.buildType, "build-type", "", "build type for the git-build path: \"dockerfile\" or \"railpack\" (auto-detected build, no Dockerfile needed); default: railpack when the local checkout has no Dockerfile, else dockerfile")
 	fs.StringVar(&f.framework, "framework", "", "framework preset that fills the port, build type and volumes (git-build path); list them with \"build frameworks\"")
 	fs.StringVar(&f.baseDirectory, "base-directory", "", "subdirectory of the repo to build from, for a monorepo (git-build path); defaults to the repo root")
 	f.buildArgs = make(map[string]string)
 	fs.Var(stringMapFlag(f.buildArgs), "build-arg", "Dockerfile build arg as KEY=VALUE, repeatable (git-build path, --build-type dockerfile only)")
-	fs.StringVar(&f.imageRepo, "image-repo", "", "image name without a tag, e.g. registry.example.com/org/app (git-build path)")
+	fs.StringVar(&f.imageRepo, "image-repo", "", "image name without a tag, e.g. registry.example.com/org/app (git-build path; default: the app name)")
 	fs.StringVar(&f.file, "file", "", "path to an app.yaml (or equivalent) spec file; an alternative to the flag-only paths above")
 	fs.StringVar(&f.service, "service", "", "which service in --file's services: map to create, required when it declares more than one")
 	fs.IntVar(&f.replicas, "replicas", 0, "number of container replicas (default 1, or the spec's replicas with --file)")
@@ -890,7 +894,7 @@ func reportError(stdout, stderr io.Writer, jsonOut bool, err error) int {
 func appsCreateUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps create --name NAME --image IMAGE --port PORT [flags]
-  %[1]s apps create --name NAME --port PORT --repo URL --image-repo REPO [flags]
+  %[1]s apps create --repo URL [--name NAME] [--port PORT] [--image-repo REPO] [flags]
   %[1]s apps create --file app.yaml [flags]
   %[1]s apps create --interactive
 
@@ -918,14 +922,14 @@ Existing-image path:
   --bind-address string  network interface the port binds to: "private" (default), "public", or a literal IP
 
 Git-build path (flags):
-  --name string          app name (required)
-  --port int              container port (required)
+  --name string          app name (default: the repo's name)
+  --port int              container port (default: detected from the checkout, the Dockerfile or the server's scan)
   --host-port int      host port to pin the container port to (default: auto-assigned by Docker)
   --bind-address string  network interface the port binds to: "private" (default), "public", or a literal IP
   --repo string           git repository URL (required unless auto-detected from ./.git's "origin" remote)
   --ref string            git ref/branch (default: current branch, then "main")
-  --image-repo string     image name without a tag (required)
-  --build-type string  "dockerfile" (default) or "railpack" (auto-detected build, no Dockerfile needed)
+  --image-repo string     image name without a tag (default: the app name)
+  --build-type string  "dockerfile" or "railpack" (auto-detected build, no Dockerfile needed); default: railpack when the local checkout has no Dockerfile, else dockerfile
   --framework string      framework preset that fills the port, build type and volumes; list them with "build frameworks"
   --dockerfile string   Dockerfile path relative to the repo root, --build-type dockerfile only (default: "Dockerfile")
   --base-directory string  subdirectory of the repo to build from, for a monorepo (default: repo root)

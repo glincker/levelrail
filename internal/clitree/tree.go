@@ -10,6 +10,11 @@ type Node struct {
 // Tree mirrors every CLI dispatch switch; the CLI's drift test keeps them in sync.
 var Tree = map[string]*Node{
 	"deploy":   nil,
+	"up":       nil,
+	"open":     nil,
+	"login":    nil,
+	"backup":   nil,
+	"restore":  nil,
 	"bench":    {Subs: map[string]*Node{"run": nil, "soak": nil, "chaos": {Subs: map[string]*Node{"list": nil, "run": nil, "report": nil, "disk": nil, "free-space": nil}}}},
 	"rollback": nil,
 	"previews": {Subs: map[string]*Node{
@@ -213,6 +218,7 @@ var Tree = map[string]*Node{
 	}},
 	"channels":           {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil, "quiet-hours": nil}},
 	"push-subscriptions": {Subs: map[string]*Node{"list": nil, "revoke": nil}},
+	"env":                {Subs: map[string]*Node{"set": nil, "pull": nil, "push": nil}},
 	"shared-env":         {Subs: map[string]*Node{"list": nil, "set": nil, "delete": nil}},
 	"backup-targets":     {Subs: map[string]*Node{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
 	"firewall": {Subs: map[string]*Node{"list": nil, "allow": nil, "deny": nil, "delete": nil, "exposure": nil, "restrict": nil, "unrestrict": nil,
@@ -374,6 +380,31 @@ var Tree = map[string]*Node{
 	"static-sites":     {Subs: map[string]*Node{"list": nil, "delete": nil}},
 	"deploy-approvals": {Subs: map[string]*Node{"list": nil, "get": nil, "approve": nil, "reject": nil}},
 	"build":            {Subs: map[string]*Node{"detect": nil, "branches": nil, "frameworks": nil}},
+}
+
+// Tier says whether a top-level verb shows in the short help or only in the advanced list.
+type Tier string
+
+// Help tiers: simple verbs cover a single-server user's day, advanced is everything else.
+const (
+	TierSimple   Tier = "simple"
+	TierAdvanced Tier = "advanced"
+)
+
+// simpleVerbs sits beside Tree, not on Node, because most leaves are nil nodes.
+var simpleVerbs = []string{"up", "deploy", "rollback", "logs", "env", "domains", "db", "backup", "restore", "apps", "status", "open", "login"}
+
+// SimpleVerbs returns the short-help verbs in display order.
+func SimpleVerbs() []string { return append([]string(nil), simpleVerbs...) }
+
+// TierOf reports the help tier of a top-level verb.
+func TierOf(verb string) Tier {
+	for _, v := range simpleVerbs {
+		if v == verb {
+			return TierSimple
+		}
+	}
+	return TierAdvanced
 }
 
 // db is the short alias for databases and shares its subtree.

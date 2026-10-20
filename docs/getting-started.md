@@ -188,6 +188,11 @@ Do the backup steps before anything else. Your control plane database and `maste
 ## Where to go next
 
 <CardGroup cols={2}>
+<Card title="One command quickstart" href="/quickstart-one-command">
+
+Deploy a project from your laptop with `levelrail-cli up`.
+
+</Card>
 <Card title="Managing databases" href="/managing-databases">
 
 Run Postgres, Redis, or another database next to your app.

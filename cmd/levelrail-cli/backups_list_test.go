@@ -95,13 +95,10 @@ func TestRun_BackupsTrigger(t *testing.T) {
 }
 
 func TestRun_BackupsTrigger_MissingTarget(t *testing.T) {
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"backups", "trigger", "main"}, &stdout, &stderr, envMap())
-	if got != exitValidation {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitValidation, stdout.String(), stderr.String())
-	}
-	if !strings.Contains(stderr.String(), "--target is required") {
-		t.Errorf("stderr = %q, want a missing --target error", stderr.String())
+	srv := routeServer(t, map[string]any{"GET /api/v1/backup-targets": []map[string]string{}}, nil)
+	stderr := runCLIExpectValidationError(t, cliArgs(srv, "backups", "trigger", "main"))
+	if !strings.Contains(stderr, "no backup target is configured") {
+		t.Errorf("stderr = %q, want a missing target error", stderr)
 	}
 }
 

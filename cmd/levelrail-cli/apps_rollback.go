@@ -12,13 +12,40 @@ import (
 func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	return runAppsDeployOrRollback(prog, args, stdout, stderr, lookupEnv, stdin, deployOrRollbackConfig{
 		cmdLabel:        "apps rollback",
-		imageHelp:       "older, already-built image reference to roll back to, e.g. registry.example.com/org/app:tag (required)",
+		imageHelp:       "older, already-built image reference to roll back to, e.g. registry.example.com/org/app:tag (default: the previous successful deploy)",
 		confirmHelp:     "confirm rolling back into a protected environment; omit to be prompted interactively if needed",
 		usage:           appsRollbackUsage,
 		errContext:      "roll back",
 		successFormat:   "app %q rolling back to image %q; reconcile is asynchronous, check \"%s apps status %s\"\n",
 		knownImagesOnly: true,
 	})
+}
+
+// previousDeployImage is the newest succeeded deploy whose image differs from the one the app runs now.
+func previousDeployImage(ctx context.Context, client *Client, name string) (string, error) {
+	app, err := client.GetApp(ctx, name)
+	if err != nil {
+		return "", fmt.Errorf("get app %q: %w", name, err)
+	}
+	attempts, err := client.ListDeployAttempts(ctx, name)
+	if err != nil {
+		return "", fmt.Errorf("list deploys for app %q: %w", name, err)
+	}
+	current := unpinnedImage(app.Image)
+	var newest *deployAttemptResource
+	for i := range attempts {
+		a := &attempts[i]
+		if a.Status != "succeeded" || a.Image == "" || unpinnedImage(a.Image) == current {
+			continue
+		}
+		if newest == nil || a.StartedAt.After(newest.StartedAt) {
+			newest = a
+		}
+	}
+	if newest == nil {
+		return "", newValidationError("app %q has no earlier successful deploy to go back to; pass --image, see \"apps images %s\"", name, name)
+	}
+	return newest.Image, nil
 }
 
 // A history tag resolves to its recorded digest so the request names the exact image.
@@ -75,8 +102,9 @@ func imageRepoOf(ref string) string {
 
 func appsRollbackUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s apps rollback <name> --image IMAGE [flags]
+  %[1]s apps rollback <name> [--image IMAGE] [flags]
 
+Without --image, rolls back to the app's previous successful deploy.
 Points an existing app's desired image back at an older, already-built
 IMAGE and returns immediately; the next reconcile converges the running
 container to it. This sends the same request "%[1]s apps deploy <name>
@@ -93,7 +121,7 @@ If the app is tagged with a protected environment, this fails unless
 --confirm is set or you type "yes" at the interactive prompt.
 
 Flags:
-  --image string          older, already-built image reference to roll back to (required)
+  --image string          older, already-built image reference to roll back to (default: the previous successful deploy)
   --confirm                  confirm rolling back into a protected environment, skipping the interactive prompt
   --diff                     show what this rollback would change against the last successful deploy, then exit without rolling back
   --token string          API token (default: %[2]s env var, then the credentials file)

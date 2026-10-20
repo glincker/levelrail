@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 
 func logsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
+  %[1]s logs <app> [flags]                     an app's recent logs, the same as "apps logs <app>"
   %[1]s logs usage                             stored log volume per app, noisiest first, with budget and forecast
   %[1]s logs archive set --target ID [--app NAME] [--interval 1h] [--retention-days N] [--disable]
   %[1]s logs archive status                    show every archive policy and its last run
@@ -63,6 +65,9 @@ func runLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "signatures", "saved", "alert-from":
 		return runLogsExplorer(prog, args[0], rest, stdout, stderr, lookupEnv)
 	default:
+		if !strings.HasPrefix(args[0], "-") {
+			return runAppsLogs(prog, args, stdout, stderr, lookupEnv)
+		}
 		_, _ = fmt.Fprintf(stderr, "%s: unknown logs subcommand %q\n\n%s", prog, args[0], logsUsage(prog))
 		return exitUsage
 	}

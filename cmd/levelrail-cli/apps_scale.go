@@ -12,9 +12,12 @@ import (
 func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps scale", "print the app as JSON to stdout and nothing else", stderr)
 	var replicas int
-	var strategy string
+	var strategy, memory string
+	var cpu float64
 	fs.IntVar(&replicas, "replicas", 0, "number of container replicas (at least 1; use \"apps stop\" to run none)")
 	fs.StringVar(&strategy, "strategy", "", "deploy strategy: rolling, recreate, or blue-green (default: unchanged)")
+	fs.StringVar(&memory, "memory", "", "memory limit, e.g. 512Mi or 2Gi (default: unchanged)")
+	fs.Float64Var(&cpu, "cpu", 0, "CPU limit in cores, e.g. 0.5 (default: unchanged)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScaleUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -25,8 +28,12 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	if !ok {
 		return exitUsage
 	}
-	if replicas < 0 || (replicas == 0 && strategy == "") {
-		return reportError(stdout, stderr, jsonOut, newValidationError("apps scale requires --replicas N (N >= 1) and/or --strategy"))
+	if replicas < 0 || cpu < 0 || (replicas == 0 && strategy == "" && memory == "" && cpu == 0) {
+		return reportError(stdout, stderr, jsonOut, newValidationError("apps scale requires --replicas N (N >= 1), --strategy, --memory and/or --cpu"))
+	}
+	memoryBytes, err := parseOptionalMemory(memory)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--memory: %v", err))
 	}
 	if strategy != "" && strategy != "rolling" && strategy != "recreate" && strategy != "blue-green" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--strategy must be rolling, recreate, or blue-green, got %q", strategy))
@@ -44,6 +51,19 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	if strategy != "" {
 		app.Strategy = strategy
 	}
+	if memoryBytes > 0 || cpu > 0 {
+		res := serviceResources{}
+		if app.Resources != nil {
+			res = *app.Resources
+		}
+		if memoryBytes > 0 {
+			res.MemoryBytes = memoryBytes
+		}
+		if cpu > 0 {
+			res.NanoCPUs = int64(cpu * 1e9)
+		}
+		app.Resources = &res
+	}
 	updated, err := client.UpdateApp(ctx, name, app)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("scale app %q: %w", name, err))
@@ -59,16 +79,26 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	return exitOK
 }
 
+func parseOptionalMemory(s string) (int64, error) {
+	if s == "" {
+		return 0, nil
+	}
+	return parseMemoryBytes(s)
+}
+
 func appsScaleUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s apps scale <name> --replicas N [--strategy rolling|recreate|blue-green] [flags]
+  %[1]s apps scale <name> [--replicas N] [--strategy rolling|recreate|blue-green] [--memory 512Mi] [--cpu 0.5] [flags]
 
-Sets an app's replica count and/or deploy strategy. Works for any app,
-including one running a prebuilt image.
+Sets an app's replica count, deploy strategy and/or resource limits. Works
+for any app, including one running a prebuilt image. Limits apply to a
+running container live when Docker allows it, otherwise at the next restart.
 
 Flags:
   --replicas int          number of container replicas (at least 1)
   --strategy string       deploy strategy: rolling, recreate, or blue-green
+  --memory string         memory limit, e.g. 512Mi or 2Gi
+  --cpu float             CPU limit in cores, e.g. 0.5
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

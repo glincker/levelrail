@@ -20,6 +20,8 @@ func runEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, envUsage(prog))
 		return exitOK
+	case "set":
+		return runEnvSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "pull":
 		return runEnvPull(prog, args[1:], stdout, stderr, lookupEnv)
 	case "push":
@@ -33,6 +35,7 @@ func runEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 
 func envUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
+  %[1]s env set <app> KEY=VALUE... [--apply] [flags]                    set plain env vars on an app
   %[1]s env pull <app> [--file .env] [--masked] [flags]                 write an app's env vars to a local .env file
   %[1]s env push <app> [--file .env] [--dry-run] [--keep-existing] [flags]   merge a local .env file into an app's env vars
 

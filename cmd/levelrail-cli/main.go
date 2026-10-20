@@ -33,7 +33,7 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 	}
 
 	if len(args) == 0 {
-		_, _ = fmt.Fprint(stderr, rootUsage(prog))
+		_, _ = fmt.Fprint(stderr, simpleUsage(prog))
 		return exitUsage
 	}
 
@@ -43,9 +43,26 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 	}
 
 	switch args[0] {
-	case "-h", "--help", "help":
-		_, _ = fmt.Fprint(stdout, rootUsage(prog))
+	case "-h", "--help":
+		_, _ = fmt.Fprint(stdout, simpleUsage(prog))
 		return exitOK
+	case "help":
+		if len(args) > 1 && (args[1] == "advanced" || args[1] == "all") {
+			_, _ = fmt.Fprint(stdout, rootUsage(prog))
+		} else {
+			_, _ = fmt.Fprint(stdout, simpleUsage(prog))
+		}
+		return exitOK
+	case "up":
+		return runUp(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
+	case "open":
+		return runOpen(prog, args[1:], stdout, stderr, lookupEnv)
+	case "login":
+		return runLogin(prog, args[1:], stdout, stderr, lookupEnv)
+	case "backup":
+		return runBackupAlias(prog, args[1:], stdout, stderr, lookupEnv)
+	case "restore":
+		return runRestoreAlias(prog, args[1:], stdout, stderr, lookupEnv)
 	case "apps":
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
 	case "previews":
@@ -297,6 +314,11 @@ func rootUsage(prog string) string {
 	return filterExperimentalUsage(fmt.Sprintf(`%[1]s: a scriptable client for the control plane API.
 
 Usage:
+  %[1]s up [dir] [--with postgres,redis] [--domain D] [flags]   deploy a directory with one command: infer, create or update, databases, build, domain
+  %[1]s login [--device] [flags]     sign in and save a token, same as auth login
+  %[1]s open <app> [flags]           print an app's public URLs
+  %[1]s backup <database> [--target ID] [flags]   back a database up now, same as backups trigger
+  %[1]s restore <database> --latest --confirm NAME [flags]   restore a database, same as backups restore
   %[1]s apps create [flags]         create an app
   %[1]s apps list [flags]             list apps
   %[1]s apps get <name> [flags]       show one app

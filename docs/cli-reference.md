@@ -96,7 +96,14 @@ None of them take arguments: paths, process names, container names and flags are
 
 A command's own subject is a positional argument or `--name`. `--app` is a scope flag: it narrows a list or ties a new object to an app (`alerts history --app web`, `proxy --app web`), and is never the name of the thing being created. Every list command prints a bare JSON array under `--json`; paging info (`apps list --max-items`) goes to stderr, so the stdout shape never changes with a flag.
 
-## Top-level convenience aliases
+## Simple verbs
+
+`levelrail-cli help` lists the 13 everyday verbs (`up`, `deploy`, `rollback`, `logs`, `env`, `domains`, `db`, `backup`, `restore`, `apps`, `status`, `open`, `login`). `levelrail-cli help advanced` lists everything else. There is one CLI: the simple verbs are shortcuts over the same commands, and every flag of the longer forms still works.
+
+```
+levelrail-cli up [dir] [--name N] [--port P] [--domain D] [--with postgres,redis] [--replicas N] [--strategy S] [--memory 512Mi] [--cpu 0.5] [--repo URL] [--ref BRANCH] [--secret KEY=VALUE] [--dry-run] [--yes] [flags]
+```
+Deploy a directory with one command. See the [one command quickstart](/quickstart-one-command).
 
 ```
 levelrail-cli deploy <name> --image IMAGE [flags]
@@ -104,9 +111,27 @@ levelrail-cli deploy <name> --image IMAGE [flags]
 Alias for `apps deploy`; deploy an image to an existing app.
 
 ```
-levelrail-cli rollback <name> --image IMAGE [flags]
+levelrail-cli rollback <name> [--image IMAGE] [flags]
 ```
-Alias for `apps rollback`; redeploy an older image.
+Alias for `apps rollback`; without `--image` it goes back to the previous successful deploy.
+
+```
+levelrail-cli logs <app> [flags]
+```
+Same as `apps logs <app>`. The log archive and search commands keep their names (`logs archive`, `logs search`, `logs dump`).
+
+```
+levelrail-cli env set <app> KEY=VALUE... [--apply] [flags]
+```
+Set plain environment variables. Keys stored as secrets are refused; use `apps secrets set` for those.
+
+```
+levelrail-cli open <app> [flags]
+levelrail-cli login [--device] [flags]
+levelrail-cli backup <database> [--target ID] [flags]
+levelrail-cli restore <database> (--backup ID | --latest) --confirm NAME [flags]
+```
+`open` prints the app's public URLs. `login` is `auth login`. `backup` is `backups trigger` and uses the only configured backup target when there is exactly one. `restore` is `backups restore` and `--latest` picks the newest succeeded backup.
 
 ## Apps
 
@@ -148,7 +173,7 @@ levelrail-cli apps deploy <name> --image IMAGE [flags]
 levelrail-cli apps deploy-compose <name> --file compose.yaml [flags]
 levelrail-cli apps deploy-spec <name> --file app.yaml --repo-url <url> --ref <ref> [flags]
 levelrail-cli apps builds trigger <name> --repo URL --ref REF [flags]
-levelrail-cli apps rollback <name> --image IMAGE [flags]
+levelrail-cli apps rollback <name> [--image IMAGE] [flags]
 levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--preview] [flags]
 levelrail-cli apps wait <name> [--attempt-id ID] [--timeout 5m] [--poll-interval 3s] [flags]
 levelrail-cli apps restart <name> [flags]
@@ -156,7 +181,7 @@ levelrail-cli apps apply <name> [flags]
 levelrail-cli apps stop <name> [flags]
 levelrail-cli apps keep <name> [flags]
 levelrail-cli apps start <name> [flags]
-levelrail-cli apps scale <name> --replicas N [--strategy rolling|recreate|blue-green] [flags]
+levelrail-cli apps scale <name> [--replicas N] [--strategy rolling|recreate|blue-green] [--memory 512Mi] [--cpu 0.5] [flags]
 levelrail-cli apps group <name> [flags]
 levelrail-cli apps hook-runs <name> [flags]
 levelrail-cli apps images <name> [flags]
@@ -431,7 +456,7 @@ levelrail-cli apps tag <name> <tag> [flags]
 levelrail-cli apps untag <name> <tag> [flags]
 ```
 
-- `apps connect` connects an app to a managed database and injects its resolved connection value as an env var; unlike `apps database`, an app can have any number of these. `connections list` shows each connection, including whether it resolves to a mesh DNS name (cross node capable) or a container name; `connections suggest` lists databases the app could connect to. `apps disconnect` removes one connection by its env var name.
+- `apps connect` is the canonical way to attach a database; `apps database set` keeps working for the single-database form. `apps connect` connects an app to a managed database and injects its resolved connection value as an env var; unlike `apps database`, an app can have any number of these. `connections list` shows each connection, including whether it resolves to a mesh DNS name (cross node capable) or a container name; `connections suggest` lists databases the app could connect to. `apps disconnect` removes one connection by its env var name.
 - `apps database set` attaches one already created managed database as the app's connection env var source (default `DATABASE_URL`, field `url`); `clear` detaches it.
 - `apps save-as-template` derives a compose.yaml from the app's current desired state and saves it as a reusable template. No secret, database or vault backed env value is captured, only the key name.
 - `apps tag` attaches a tag by name, creating it if new; `apps untag` detaches it. See [Tags](#tags).
@@ -775,10 +800,10 @@ See [Backups and storage](/backups-and-storage).
 ```
 levelrail-cli backups list <database> [flags]
 levelrail-cli backups list-all [flags]
-levelrail-cli backups trigger <database> --target ID [flags]
+levelrail-cli backups trigger <database> [--target ID] [flags]
 levelrail-cli backups delete <database> <backup-id> [flags]
 levelrail-cli backups download <database> <backup-id> [flags]
-levelrail-cli backups restore <database> --backup ID --confirm NAME [flags]
+levelrail-cli backups restore <database> (--backup ID | --latest) --confirm NAME [flags]
 levelrail-cli backups restore-as-new <database> --backup ID --new-name NAME [flags]
 levelrail-cli backups restores <database> [flags]
 levelrail-cli backups clone-restores <database> [flags]

@@ -79,7 +79,8 @@
               "index",
               "what-you-need",
               "installing",
-              "getting-started"
+              "getting-started",
+              "quickstart-one-command"
             ],
             "icon": "/assets/icons/download-simple.svg"
           },
