@@ -55,7 +55,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_domain_error_pages",
-		Description: "Get every custom error page currently configured for one of an app's domains: the status codes (404, 500, 502, 503) that have a custom HTML body, and that body's content. Served by the embedded Caddy ingress instead of Caddy's bare default error text or whatever the backend itself returned.",
+		Description: "Custom error pages of one app domain: status codes with a custom HTML body, and that body.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainErrorPagesResource, error) {
 		pages, err := client.GetDomainErrorPages(ctx, in.Name, in.Domain)
 		if err != nil {

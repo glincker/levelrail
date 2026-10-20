@@ -202,7 +202,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "preflight_model",
-		Description: "Check a HuggingFace repository before deploying a model: existence, gated access, license, size, GGUF quantizations with fit verdicts against free VRAM, recommended quantization, node disk and engine. Fit numbers are estimates. Persists nothing.",
+		Description: "Check a HuggingFace repo before deploying: existence, gating, license, size, GGUF quantizations with fit verdicts. Estimates only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in preflightModelInput) (*mcp.CallToolResult, apiclient.ModelPreflightResult, error) {
 		out, err := client.PreflightModel(ctx, apiclient.ModelPreflightRequest{
 			Repo: in.Repo, Engine: in.Engine, Quant: in.Quant, File: in.File, NodeID: in.NodeID, HFToken: in.HFToken,

@@ -62,6 +62,21 @@ var tasks = []task{
 		{"enable_toolset", map[string]any{"toolsets": []string{"metrics"}}, "metrics"},
 		{"get_cdn_overview", map[string]any{"window": "1h"}, `"window"`},
 	}},
+	{"read a template's security requirements", []call{
+		{"enable_toolset", map[string]any{"toolsets": []string{"security"}}, "security"},
+		{"get_template_requirements", map[string]any{"id": "ghost"}, `"level"`},
+		{"get_security_reachability", nil, `"counts"`},
+	}},
+	{"read migration status", []call{
+		{"enable_toolset", map[string]any{"toolsets": []string{"migrate"}}, "migrate"},
+		{"list_app_import_sessions", nil, `"sessions"`},
+		{"list_database_data_copies", nil, `"copies"`},
+	}},
+	{"read SSO and SCIM state", []call{
+		{"enable_toolset", map[string]any{"toolsets": []string{"identity"}}, "identity"},
+		{"list_sso_connections", nil, `"connections"`},
+		{"get_scim_status", nil, `"tokens"`},
+	}},
 	{"openclaw: list apps", []call{{"list_apps", nil, `"web"`}}},
 	{"openclaw: read logs", []call{
 		{"enable_toolset", map[string]any{"toolsets": []string{"logs"}}, "logs"},
@@ -85,6 +100,14 @@ var demoRoutes = map[string]string{
 	"/api/v1/audit-log/verify":           `{"ok":true,"checked":120,"problems":[]}`,
 	"/api/v1/cdn/overview":               `{"window":"1h","has_traffic":true,"requests":1200,"nodes":[]}`,
 	"/api/v1/apps/web/logs":              `{"entries":[{"timestamp":"2026-01-01T00:00:00Z","stream":"stdout","message":"gateway listening on :18789"}],"total":1}`,
+	"/api/v1/service-templates/ghost":    `{"id":"ghost","name":"Ghost","requirements":{"level":"standard","findings":[],"protections":[]}}`,
+	"/api/v1/security/reachability":      `{"counts":{"high":0,"medium":1,"low":0,"info":0},"subjects":[],"findings":[],"rules_readable":true,"restricted_ports":0}`,
+	"/api/v1/migration/apps/sessions":    `{"sessions":[{"id":"s1","platform":"coolify","source_url":"https://old.example.com","step":"plan","states":{"planned":2}}]}`,
+	"/api/v1/imports/platform/databases": `[{"database":"main","engine":"postgres","status":"verified","checked":12,"mismatched":0}]`,
+	"/api/v1/sso/saml/connections":       `[{"id":"c1","name":"Okta","enabled":true,"configured":true,"allowed_domains":[],"certificates":[]}]`,
+	"/api/v1/sso/settings":               `{"enforce_sso":false,"scim_base_url":"https://lr.example.com/api/v1/scim/v2","scim_default_role_id":""}`,
+	"/api/v1/sso/scim/tokens":            `[{"id":"t1","name":"okta","prefix":"scim_ab","last_used_at":null,"revoked_at":null}]`,
+	"/api/v1/settings/beta-features":     `[{"id":"saml-scim","enabled":true,"maturity":"beta"}]`,
 	"POST /api/v1/apps/web/deploys":      `{"name":"web","image":"nginx:2","port":80,"replicas":1,"strategy":"rolling"}`,
 }
 
@@ -276,7 +299,7 @@ func runReadOnlyToken(ctx context.Context) result {
 		return res
 	}
 	defer func() { _ = session.Close() }()
-	for _, group := range []string{"apps", "deploys", "domains"} {
+	for _, group := range []string{"apps", "deploys", "domains", "security", "migrate", "identity"} {
 		if _, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "enable_toolset", Arguments: map[string]any{"toolsets": []string{group}}}); err != nil {
 			res.Detail = "enable_toolset: " + err.Error()
 			return res
@@ -289,9 +312,22 @@ func runReadOnlyToken(ctx context.Context) result {
 	}
 	b, _ := json.Marshal(tools.Tools)
 	res.Tokens = len(b) / charsPerToken
+	rootOnly := map[string]bool{"get_security_reachability": true, "list_export_destinations": true, "list_sso_connections": true, "get_scim_status": true, "list_sso_group_mappings": true}
+	offered := map[string]bool{}
 	for _, t := range tools.Tools {
+		offered[t.Name] = true
 		if m, ok := mcptools.Lookup(t.Name); ok && m.Class != mcptools.ClassRead {
 			res.Detail = t.Name + " is offered to a read-only token"
+			return res
+		}
+		if rootOnly[t.Name] {
+			res.Detail = t.Name + " needs root but is offered to a read-only token"
+			return res
+		}
+	}
+	for _, want := range []string{"get_template_requirements", "list_app_import_sessions", "get_app_import_cutover_plan"} {
+		if !offered[want] {
+			res.Detail = want + " is missing for a read-only token"
 			return res
 		}
 	}

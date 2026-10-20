@@ -14,7 +14,7 @@ import (
 func registerDeployFreezeTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_deploy_freeze",
-		Description: "Show an app's deploy freeze windows (its own and inherited global ones) and whether a freeze is active right now. While frozen, webhook and pipeline deploys are held and released when the window ends; manual deploys need an explicit override.",
+		Description: "An app's deploy freeze windows (own and global) and whether one is active. Frozen: webhook and pipeline deploys are held; manual ones need an override.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.DeployFreezeResource, error) {
 		res, err := client.GetDeployFreeze(ctx, in.Name)
 		if err != nil {

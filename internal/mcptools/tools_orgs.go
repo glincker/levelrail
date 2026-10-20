@@ -11,7 +11,7 @@ import (
 func registerOrganizationTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_organizations",
-		Description: "List every organization on the control plane: a lightweight, non-auth label that groups projects. There is no owner, member list, or per-organization ability; every operator already sees every organization's projects and apps regardless of grouping.",
+		Description: "Organizations, a plain label grouping projects. No owners or members; every operator sees all.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.OrganizationResource, error) {
 		orgs, err := client.ListOrganizations(ctx)
 		if err != nil {

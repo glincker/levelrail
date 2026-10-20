@@ -104,7 +104,7 @@ func registerAlertNoiseTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_alert_history",
-		Description: "List alert firings and resolutions, newest first, with what happened to each notification (sent, silenced, grouped, inhibited, failed, ratelimited, flapping, skipped). Set include_changes to see what changed on the app before each firing.",
+		Description: "Alert firings and resolutions, newest first, with each notification outcome. include_changes adds app changes before each firing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in alertHistoryInput) (*mcp.CallToolResult, []apiclient.AlertHistoryEntry, error) {
 		q := apiclient.AlertHistoryQuery{App: in.App, RuleID: in.RuleID, Outcome: in.Outcome, Event: in.Event, Since: in.Since, Limit: in.Limit, IncludeChanges: in.IncludeChanges}
 		out, err := client.ListAlertHistory(ctx, q)

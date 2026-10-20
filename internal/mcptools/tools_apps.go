@@ -196,7 +196,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_deploy",
-		Description: "Get one deploy attempt (deploy_id, or \"latest\"): status, image, commit and, on failure, the structured failure (code, cause, failing_step, redacted log_excerpt, suggested_fix, docs_url, retryable). Use it to explain a failed deploy.",
+		Description: "One deploy attempt (deploy_id or \"latest\"): status, image, commit and, on failure, the structured failure with cause, step, log excerpt and suggested fix.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in getDeployInput) (*mcp.CallToolResult, apiclient.DeployAttemptResource, error) {
 		id := in.DeployID
 		if id == "" {
@@ -211,7 +211,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_deploy_attempts",
-		Description: "List an app's deploy-attempt history, newest first: one row per trigger (manual, build, webhook) with status, image, commit SHA and timestamps. Filters apply server side. Unlike get_app_status, this is a log of what was tried.",
+		Description: "An app's deploy attempts, newest first: trigger, status, image, commit, times. A log of what was tried, unlike get_app_status.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listDeployAttemptsInput) (*mcp.CallToolResult, []apiclient.DeployAttemptResource, error) {
 		attempts, err := client.ListDeployAttemptsFiltered(ctx, in.Name, apiclient.DeployAttemptFilter{Branch: in.Branch, Author: in.Author, Commit: in.Commit, Status: in.Status, Query: in.Query, Limit: in.Limit})
 		if err != nil {

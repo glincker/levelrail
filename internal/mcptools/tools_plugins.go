@@ -17,7 +17,7 @@ type pluginNameInput struct {
 func registerPluginTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_plugins",
-		Description: "List installed plugins with publisher, version, requested and approved abilities, lifecycle state, health, signature verification status and the fix the dashboard would offer. Needs a root token and the plugins experimental feature. Read only: install, approve, upgrade and removal stay in the dashboard and CLI.",
+		Description: "Installed plugins: publisher, version, abilities, state, health, signature status, suggested fix. Root token and plugins feature needed. Read only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.Plugin, error) {
 		plugins, err := client.ListPlugins(ctx)
 		if err != nil {
@@ -28,7 +28,7 @@ func registerPluginTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_marketplace_plugins",
-		Description: "List plugins from the signed marketplace indexes: publisher, version, requested abilities, digest, key trust, installed or update state. Needs a root token and the plugins feature. Read only; installing needs a human in the dashboard or CLI.",
+		Description: "Plugins in the signed marketplace indexes: publisher, version, abilities, digest, key trust, state. Root token and plugins feature needed. Read only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.MarketplaceEntry, error) {
 		cat, err := client.MarketplaceCatalog(ctx)
 		if err != nil {

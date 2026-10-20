@@ -36,7 +36,7 @@ func (in planApplyInput) request() apiclient.IaCRequest {
 func registerIaCTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "plan_apply",
-		Description: "Dry run of declarative resource files: validates them and returns the plan (create, update with a field diff, delete, no change) against live state. Env values are hidden. Line numbered validation errors come back as an error. Changes nothing; run it before apply_resources.",
+		Description: "Dry run of resource files: validation and a plan (create, update diff, delete) against live state. Env values hidden. Changes nothing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in planApplyInput) (*mcp.CallToolResult, iac.Plan, error) {
 		plan, err := client.PlanIaC(ctx, in.request())
 		if err != nil {

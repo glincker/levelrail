@@ -45,7 +45,7 @@ func registerModelServingTools(server *mcp.Server, client *apiclient.Client) {
 	})
 	addTool(server, &mcp.Tool{
 		Name:        "get_model_engine_metrics",
-		Description: "Inference engine metrics for a model: KV cache, queue, prefix cache hits, tokens per second, time to first token (vLLM, llama.cpp) or VRAM residency and CPU offload (Ollama), with a health summary. Unavailable metrics are flagged supported=false.",
+		Description: "Inference engine metrics for a model (KV cache, queue, tokens per second, TTFT, or Ollama VRAM) with a health summary. Unavailable ones flagged.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelEngineMetricsInput) (*mcp.CallToolResult, apiclient.EngineMetricsReport, error) {
 		var since time.Duration
 		if in.Since != "" {

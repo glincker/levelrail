@@ -11,7 +11,7 @@ import (
 func registerAppConfigTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_git_source",
-		Description: "Get an app's connected git source, if any: repo URL, branch, build type/path, the webhook URL to configure at the provider, and whether a deploy token is stored (never the token or webhook secret itself). Explains why a push isn't triggering a deploy.",
+		Description: "An app's git source: repo, branch, build type, webhook URL, whether a deploy token is stored (never the token). Explains missing push deploys.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.GitSourceResource, error) {
 		source, err := client.GetGitSource(ctx, in.Name)
 		if err != nil {
@@ -33,7 +33,7 @@ func registerAppConfigTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_domain_tls_cert_status",
-		Description: "Get whether one of an app's domains has an operator-supplied (BYO) TLS certificate uploaded in place of Caddy's automatic ACME issuance, and when it was uploaded/expires. Neither the certificate nor the private key is ever returned.",
+		Description: "Whether a domain uses an uploaded (BYO) TLS certificate instead of ACME, with upload and expiry. Never the certificate or key.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainTLSCertResource, error) {
 		status, err := client.GetDomainTLSCert(ctx, in.Name, in.Domain)
 		if err != nil {

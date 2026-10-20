@@ -449,6 +449,12 @@
   "post_deploy",
   "pre_deploy"
  ],
+ "get_app_import_cutover_plan": [
+  "app",
+  "checks",
+  "domains",
+  "verdict"
+ ],
  "get_app_import_plan": [
   "blocking",
   "id",
@@ -1102,6 +1108,18 @@
   "updated_at",
   "warn_after_seconds"
  ],
+ "get_scim_status": [
+  "base_url",
+  "default_role_id",
+  "tokens"
+ ],
+ "get_security_reachability": [
+  "counts",
+  "findings",
+  "restricted_ports",
+  "rules_readable",
+  "truncated"
+ ],
  "get_service_template": [
   "category",
   "compose",
@@ -1140,6 +1158,12 @@
   "docker_error",
   "secrets_configured",
   "telemetry_configured"
+ ],
+ "get_template_requirements": [
+  "findings",
+  "id",
+  "level",
+  "protections"
  ],
  "get_upgrade_readiness": [
   "breaking",
@@ -1245,6 +1269,12 @@
   "created_at",
   "tag"
  ],
+ "list_app_import_cutover_runs": [
+  "runs"
+ ],
+ "list_app_import_sessions": [
+  "sessions"
+ ],
  "list_app_volume_backups": [
   "checksum_sha256",
   "database_name",
@@ -1349,6 +1379,9 @@
  ],
  "list_dashboards": [
   "dashboards"
+ ],
+ "list_database_data_copies": [
+  "copies"
  ],
  "list_database_engines": [
   "default_version",
@@ -1474,6 +1507,9 @@
   "protected",
   "scope",
   "sort_order"
+ ],
+ "list_export_destinations": [
+  "destinations"
  ],
  "list_external_databases": [
   "database",
@@ -1865,6 +1901,15 @@
   "recommended_memory_bytes",
   "requires_gpu",
   "slogan"
+ ],
+ "list_sso_connections": [
+  "connections",
+  "enforce_sso",
+  "feature_enabled",
+  "maturity"
+ ],
+ "list_sso_group_mappings": [
+  "mappings"
  ],
  "list_status_incidents": [
   "body",

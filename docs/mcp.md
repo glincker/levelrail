@@ -77,9 +77,31 @@ These four are on demand: none is in the default session, enable the toolset fir
 | `get_cdn_overview` | `metrics` | Fleet edge view over `window` (`5m`, `1h`, `24h`): request rate, 5xx rate, cache hit ratio, traffic per node. |
 | `verify_audit_log` | `audit` | Walks the audit hash chain and reports edited, removed or truncated rows. Root token. |
 
+### Security, migration and identity toolsets
+
+Three more on-demand toolsets, all read only. None is in the default session, and `tools/list` hides the root ones from tokens without the `root` ability.
+
+| Toolset | Tool | Ability | Answers |
+| --- | --- | --- | --- |
+| `security` | `get_security_reachability` | root | What is reachable from outside: severity counts and up to 50 findings. |
+| `security` | `list_export_destinations` | root | Data export destinations with delivery health and whether each is behind. No endpoint or secrets. |
+| `security` | `get_template_requirements` | read | A service template's security level, findings and protections. |
+| `migrate` | `list_app_import_sessions` | read | App import sessions with step and per-state counts. |
+| `migrate` | `get_app_import_plan` | read | One session's per-app verdict, state, reasons and manual leftovers. |
+| `migrate` | `get_app_import_cutover_plan` | read | Cutover readiness of one staged app: verdict, checks, DNS method per domain. |
+| `migrate` | `list_app_import_cutover_runs` | read | Cutover dry runs and switches of one app with their state. |
+| `migrate` | `list_database_data_copies` | read | Status of each database data copy, with mismatches. |
+| `identity` | `list_sso_connections` | root | SAML connections with feature maturity, status and certificate expiry. No secrets. |
+| `identity` | `get_scim_status` | root | SCIM base URL, default role and token metadata. Never a token value. |
+| `identity` | `list_sso_group_mappings` | root | Which directory group maps to which role, by priority. |
+
+SBOM and vulnerability summaries of a deploy are `get_deploy_sbom` and `get_deploy_vulnerabilities` in the `deploys` toolset. `get_model_endpoint_health` stays in `models`.
+
+No MCP tool starts a takeover, starts, switches or rolls back a cutover, or opens a connection to a source server (SSH or API). Those are human-only operations in the dashboard and CLI, and the migrate toolset can only read their state.
+
 ## Scripted agent eval
 
-`go run ./scripts/mcp-eval` runs thirteen fixed agent tasks (the last three are OpenClaw-style: list apps, read logs, deploy then roll back; `-app`, `-image` and `-prev-image` point them at a live app) through the real MCP server (progressive session, so each task enables the toolset it needs) and prints pass or fail with the estimated tokens each one costs. It makes no model call and needs no network: by default it answers from an in-process demo API. Pass `-api URL -token TOKEN` to drive a real control plane instead (then it only checks that every call succeeds), and `-json` for machine output. It exits 1 when a task fails, so it can gate a change to the tool surface.
+`go run ./scripts/mcp-eval` runs sixteen fixed agent tasks (the last three are OpenClaw-style: list apps, read logs, deploy then roll back; `-app`, `-image` and `-prev-image` point them at a live app) through the real MCP server (progressive session, so each task enables the toolset it needs) and prints pass or fail with the estimated tokens each one costs. It makes no model call and needs no network: by default it answers from an in-process demo API. Pass `-api URL -token TOKEN` to drive a real control plane instead (then it only checks that every call succeeds), and `-json` for machine output. It exits 1 when a task fails, so it can gate a change to the tool surface.
 
 An agent that drives these tools from OpenClaw is walked through in [Control Levelrail from OpenClaw](/guides/control-levelrail-from-openclaw).
 

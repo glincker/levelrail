@@ -23,7 +23,7 @@ type controlPlaneDrillOutput struct {
 func registerControlPlaneDRTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_control_plane_dr_status",
-		Description: "Get disaster recovery status for the control plane's own database: off-box destination, schedule, retention, public age recipients, last backup, last restore drill, escrow state, setup checklist and warnings. Read-only. Never returns key material.",
+		Description: "Control plane DR status: destination, schedule, retention, last backup and drill, escrow, checklist, warnings. Never key material.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.ControlPlaneDR, error) {
 		st, err := client.GetControlPlaneDR(ctx)
 		if err != nil {

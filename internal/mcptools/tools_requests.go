@@ -12,7 +12,7 @@ import (
 func registerAppRequestsTool(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_requests",
-		Description: "Get an app's HTTP request health measured at the ingress with no app changes: request rate, 4xx and 5xx error rates, latency p50/p95/p99, plus a summary for the window. Use it to tell whether users are affected and whether a deploy changed latency or errors.",
+		Description: "App HTTP health at the ingress: request rate, 4xx and 5xx rates, p50/p95/p99. Tells whether users are affected or a deploy changed latency.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appRequestsInput) (*mcp.CallToolResult, apiclient.AppRequestsResource, error) {
 		window := defaultMetricsWindow
 		if in.Since != "" {
@@ -42,7 +42,7 @@ func registerAppRequestsTool(server *mcp.Server, client *apiclient.Client) {
 func registerAppTrafficTool(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_traffic",
-		Description: "Get an app's ingress traffic breakdown for a window: request rate, error rates, latency p50/p95/p99, per replica latency, slowest routes, top referrer hosts, top countries (when a geo source is set), sampled slow or failed requests and SLO burn. Use it to find which replica or route made the app slow.",
+		Description: "App ingress traffic for a window: rates, p50/p95/p99, per replica latency, slow routes, referrers, countries, slow samples, SLO burn.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appTrafficInput) (*mcp.CallToolResult, apiclient.AppTrafficResource, error) {
 		window := in.Window
 		if window == "" {

@@ -33,6 +33,12 @@ var deployTierTools = map[string]struct{}{
 	"restart_app": {}, "promote_app": {}, "approve_deploy_approval": {}, "reject_deploy_approval": {},
 }
 
+// rootTierTools are read tools whose API route needs the root ability, so a read token cannot call them.
+var rootTierTools = map[string]struct{}{
+	"get_security_reachability": {}, "list_export_destinations": {},
+	"list_sso_connections": {}, "get_scim_status": {}, "list_sso_group_mappings": {},
+}
+
 // anyAuthTools answer for any authenticated token, whatever its abilities.
 var anyAuthTools = map[string]struct{}{"whoami": {}, aiControlStatusTool: {}}
 
@@ -40,6 +46,9 @@ var anyAuthTools = map[string]struct{}{"whoami": {}, aiControlStatusTool: {}}
 func requiredAbilities(name string, m Meta) []string {
 	if _, ok := anyAuthTools[name]; ok || isToolsetMetaTool(name) {
 		return nil
+	}
+	if _, ok := rootTierTools[name]; ok {
+		return []string{abilityRoot}
 	}
 	if m.Class == ClassRead {
 		return []string{abilityRead, abilityReadSensitive}

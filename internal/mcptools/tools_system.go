@@ -11,7 +11,7 @@ import (
 func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_system_doctor",
-		Description: "Run the control plane's local preflight health check: Docker daemon reachability, disk space and write access, ingress port availability, database reachability. Read-only, changes nothing; the same report 'levelrail-cli doctor' prints.",
+		Description: "Local preflight: Docker, disk, ingress ports, database. Read only; same report as 'levelrail-cli doctor'.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.SystemDoctorResource, error) {
 		report, err := client.GetSystemDoctor(ctx)
 		if err != nil {
@@ -22,7 +22,7 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_system_status",
-		Description: "Get the control plane's own configured/not-configured signals: whether secrets, telemetry, and alerts are set up, local Docker daemon reachability, and data directory disk usage. A smaller, faster read than get_system_doctor's full preflight bundle.",
+		Description: "Control plane configured signals: secrets, telemetry, alerts, Docker reachability, data disk usage. Lighter than get_system_doctor.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.SystemStatusResource, error) {
 		status, err := client.GetSystemStatus(ctx)
 		if err != nil {

@@ -111,6 +111,9 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerExpansionReadTools(server, client)
 	registerExpansionWriteTools(server, client)
 	registerInterfaceExtraTools(server, client)
+	registerSecurityTools(server, client)
+	registerMigrateTools(server, client)
+	registerIdentityTools(server, client)
 
 	registerPrompts(server, opts)
 	registerResources(server, client)
