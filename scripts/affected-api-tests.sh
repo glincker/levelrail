@@ -4,7 +4,7 @@
 # point of affected files via cross-file identifier grep, exempting
 # routes.go wiring and a struct field nothing else reads (otherwise
 # those two near-universal patterns swallow almost every change).
-# Rationale/examples: docs-local/api-test-narrowing-findings-2026-10-04.md
+# Rationale/examples: the API test narrowing notes
 
 # Usage: scripts/affected-api-tests.sh <changed-package-import-path>...
 # Output: ALL, or a "|"-joined -run regex of Test/Example/Fuzz names.

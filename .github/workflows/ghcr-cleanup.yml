@@ -5,7 +5,7 @@ name: GHCR image cleanup
 # tag once the manifest list is assembled. Tagged versions (every real
 # :vX.Y.Z, plus whatever :edge/:beta currently point at) are never
 # touched: rollback pinning depends on every stable release staying
-# available forever. docs-local/research/self-update-and-image-channels.md
+# available forever. the self-update and image channels research notes
 # has the full design.
 on:
   schedule:

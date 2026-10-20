@@ -138,7 +138,6 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Threat model](https://docs.levelrail.com/threat-model): trust boundaries, assets, attackers, and today's mitigations and known gaps.
 - [Security advisories](https://docs.levelrail.com/security-advisories): every fixed security issue with a stable ID, severity, affected versions and the fix.
 - [Docker access and the API guard](https://docs.levelrail.com/docker-access): every Docker Engine API call Levelrail makes, and the guard that refuses privileged containers and host mounts.
-- [Security alert verdicts](https://docs.levelrail.com/security-alert-verdicts): verdict, evidence, and dismissal command for each open code scanning alert.
 - [White-labeling](https://docs.levelrail.com/white-labeling): how the brand layer names the dashboard, agent, prefixes and update repository, and what a fork must change.
 - [Comparison](https://docs.levelrail.com/comparison): how Levelrail differs from Coolify, Dokploy, CapRover, Dokku, and Kamal.
 - [Coolify alternative](https://levelrail.com/coolify-alternative): why and how to move from Coolify, with a read-only importer.
@@ -175,7 +174,6 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [CI](https://docs.levelrail.com/ci): how pull request checks are chosen and which ones branch protection relies on.
 - [Changelog](https://docs.levelrail.com/changelog/): every Levelrail release with highlights, fixes, and upgrade notes.
 - [VPS smoke test](https://docs.levelrail.com/vps-smoke): checks a real install end to end on a VPS you already have.
-- [Git provider integrations design proposal](https://docs.levelrail.com/design/git-provider-integrations): a design document, not yet shipped behavior.
 
 The full text of every page above (except Changelog, which changes too
 often to be worth inlining) is concatenated at

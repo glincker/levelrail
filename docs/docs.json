@@ -398,7 +398,6 @@
               "security",
               "threat-model",
               "docker-access",
-              "security-alert-verdicts",
               "comparison",
               "use-cases",
               "white-labeling",
@@ -428,7 +427,6 @@
           {
             "group": "Design proposals",
             "pages": [
-              "design/git-provider-integrations",
               "iam-design"
             ]
           }

@@ -14,7 +14,7 @@ const authorizeURLBase = "https://bitbucket.org/site/oauth2/authorize"
 // GitLab's own AuthorizeURL, Bitbucket OAuth consumers have their
 // permissions configured once on the consumer itself
 // (Repositories: Read, Webhooks: Read and Write), not requested per
-// authorization (docs/design/git-provider-integrations.md section 3).
+// authorization (the Bitbucket provider design).
 func AuthorizeURL(clientID, redirectURI, state string) string {
 	q := url.Values{
 		"client_id":     {clientID},

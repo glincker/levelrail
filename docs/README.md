@@ -157,7 +157,6 @@ Four main types, plus two Levelrail-specific categories:
 | [architecture.md](/architecture) | How Levelrail is actually built today: reconciler, ingress, builds, storage |
 | [resilience.md](/resilience) | What survives a control plane process crash and what does not, measured live: running containers, node agents, and the embedded ingress outage window |
 | [threat-model.md](/threat-model) | Trust boundaries, assets, attackers, mitigations with file references, known gaps, and how to report a vulnerability |
-| [security-alert-verdicts.md](/security-alert-verdicts) | Verdict and evidence for each code scanning alert: fixed, false positive, or accepted risk |
 | [comparison.md](/comparison) | How Levelrail differs from Coolify, Dokploy, CapRover, Dokku, Kamal |
 
 ### Design proposals
@@ -169,7 +168,6 @@ noted per-document since these move between draft, proposed, accepted
 
 | Doc | Status | Covers |
 | --- | --- | --- |
-| [design/git-provider-integrations.md](/design/git-provider-integrations) | Proposed | Shared abstraction across GitHub Enterprise Server, Bitbucket, and the connect-flow UX |
 
 ### Status
 
