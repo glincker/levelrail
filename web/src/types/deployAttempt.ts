@@ -40,6 +40,7 @@ export type DeployAttemptSource =
   | 'auto_rollback'
   | 'git_push'
   | 'poll'
+  | 'upload'
 
 export interface DeployAttempt {
   id: string

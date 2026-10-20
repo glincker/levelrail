@@ -159,6 +159,7 @@
             "group": "Deploying",
             "pages": [
               "deploying-apps",
+              "deploy-from-cli",
               "compose-apps",
               "new-app-wizard",
               "importing-apps",

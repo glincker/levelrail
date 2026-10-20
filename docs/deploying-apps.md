@@ -165,6 +165,8 @@ Every field of the spec is in the [app.yaml reference](/app-spec-reference).
 
 ## Deploy and watch a rollout
 
+To deploy a local directory with no git remote, see [Deploy from your computer](/deploy-from-cli).
+
 <Tabs>
 <Tab title="CLI">
 

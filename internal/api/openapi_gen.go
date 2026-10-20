@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1492 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1498 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -347,6 +347,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/tracing", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetTracing", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/tracing", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleEnableTracing", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/traffic", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppTraffic", Description: "Traffic: RED totals, per-replica latency, slowest route templates, slow or failed request samples and SLO burn over window=5m, 1h, 24h or 7d, plus top referrers and countries."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/uploads", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListUploads", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/uploads", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUploadSource", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/urls", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppURLs", Description: "Exposure: port, direct host port and its tagged firewall rule. The write opens a host port, so it is AbilityWriteSensitive like firewall rules."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/validate-spec", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleValidateSpec", Description: "Live app.yaml validation (apps_validate_spec.go): read-only, same AbilityRead/POST shape as preflight above. Never saves or deploys anything, only runs the submitted body through internal/spec's own Parse-time checks for an editor's earlier, friendlier feedback."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/watch", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppWatch", Description: ""},

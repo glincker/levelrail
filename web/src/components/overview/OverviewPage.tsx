@@ -14,6 +14,8 @@ import { AppHealthScorePanel } from '../AppHealthScorePanel'
 import { ActivityTimeline } from './ActivityTimeline'
 import { DeploySheet, type DeployTab } from './DeploySheet'
 import { DetailsSection } from './DetailsSection'
+import { UploadSourceCard } from './UploadSourceCard'
+import { latestUpload } from './uploadSource'
 import { LogsTail } from './LogsTail'
 import { OverviewHero } from './OverviewHero'
 import { OverviewSuggestions } from './OverviewSuggestions'
@@ -51,6 +53,7 @@ export function OverviewPage({
   const latest = attempts[0]
   const reading = useResourceReading(app)
   const git = useGitSource(app.name)
+  const uploadAttempt = git.data ? undefined : latestUpload(attempts)
   const suggestions = useOverviewSuggestions(app, reading, latest, conditions)
   const setup = useSetupDismissed(app.name)
   const { data: traffic } = useAppTraffic(app.name)
@@ -141,13 +144,18 @@ export function OverviewPage({
     ),
     health: <AppHealthScorePanel appName={app.name} />,
     activity: (
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <ActivityTimeline
-          app={app}
-          attempts={attempts}
-          conditions={conditions}
-        />
-        <LogsTail appName={app.name} />
+      <div className="space-y-6">
+        {uploadAttempt ? (
+          <UploadSourceCard appName={app.name} attempt={uploadAttempt} />
+        ) : null}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <ActivityTimeline
+            app={app}
+            attempts={attempts}
+            conditions={conditions}
+          />
+          <LogsTail appName={app.name} />
+        </div>
       </div>
     ),
     setup: (
