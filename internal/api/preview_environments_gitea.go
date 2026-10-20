@@ -16,10 +16,10 @@ import (
 // or gs.RepoURL isn't hosted on the connected instance (mirrors
 // previewGitHubTarget).
 func (rt *Router) previewGiteaTarget(ctx context.Context, appName string, gs store.GitSource) (instanceURL, accessToken, fullName string, ok bool) {
-	if !gs.PostPRComments || rt.giteaAppSecrets == nil {
+	if !gs.PostPRComments || rt.gitConnSecrets == nil {
 		return "", "", "", false
 	}
-	conn, accessToken, err := rt.giteaAccessToken(ctx)
+	conn, accessToken, err := rt.gitTokenForRepo(ctx, gitProviderGitea, gs.RepoURL, gs.ConnectionID)
 	if err != nil {
 		rt.logger.Info("api: preview gitea notification skipped: no usable gitea connection",
 			slog.String("app_name", appName), slog.String("error", err.Error()))

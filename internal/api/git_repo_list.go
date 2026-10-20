@@ -17,8 +17,9 @@ type gitRepoRateLimitResource struct {
 	RetryAfterSeconds int       `json:"retry_after_seconds"`
 }
 
-// gitRepoListResource is GET /api/v1/git/repos: one filtered page of a
-// provider's repositories plus how complete and fresh the underlying list is.
+// gitRepoListResource is GET /api/v1/git/repos: one filtered page of the
+// repositories of one provider or of every connected account, plus how
+// complete and fresh the underlying lists are.
 type gitRepoListResource struct {
 	Provider string          `json:"provider"`
 	Items    []repolist.Repo `json:"items"`
@@ -39,7 +40,9 @@ type gitRepoListResource struct {
 	Refreshing bool                           `json:"refreshing"`
 	Owners     []repolist.OwnerCount          `json:"owners"`
 	Errors     []gitHubAppRepoListErrResource `json:"errors,omitempty"`
-	RateLimit  *gitRepoRateLimitResource      `json:"rate_limit,omitempty"`
+	// Connections lists every account the merged list was built from.
+	Connections []gitRepoConnectionFacet  `json:"connections"`
+	RateLimit   *gitRepoRateLimitResource `json:"rate_limit,omitempty"`
 }
 
 // gitRepoRateLimitedError is the 429 body: the provider's rate limit with a
@@ -65,17 +68,10 @@ func writeGitRateLimited(w http.ResponseWriter, provider string, rl *gitprovider
 }
 
 func (rt *Router) gitProviderSecretsMissing(provider string) (string, bool) {
-	switch provider {
-	case gitProviderGitHub:
+	if provider == gitProviderGitHub {
 		return "the github app connection requires a master key to be configured on this control plane", rt.githubAppSecrets == nil
-	case gitProviderGitLab:
-		return "the gitlab app connection requires a master key to be configured on this control plane", rt.gitlabAppSecrets == nil
-	case gitProviderBitbucket:
-		return errBitbucketMasterKeyRequired, rt.bitbucketAppSecrets == nil
-	case gitProviderGitea:
-		return errGiteaMasterKeyRequired, rt.giteaAppSecrets == nil
 	}
-	return "", false
+	return errGitMasterKeyRequired, rt.gitConnSecrets == nil
 }
 
 // writeGitRepoListError maps a failed listing to a response: connection
@@ -85,15 +81,10 @@ func (rt *Router) writeGitRepoListError(w http.ResponseWriter, provider string, 
 	var conn *repoListConnError
 	if errors.As(err, &conn) {
 		logMsg := "api: git repo list connection check failed for " + provider
-		switch provider {
-		case gitProviderGitHub:
+		if provider == gitProviderGitHub {
 			rt.writeGitHubAppTokenError(w, logMsg, conn.err)
-		case gitProviderGitLab:
-			rt.writeGitLabAppTokenError(w, logMsg, conn.err)
-		case gitProviderBitbucket:
-			rt.writeBitbucketAppTokenError(w, logMsg, conn.err)
-		default:
-			rt.writeGiteaAppTokenError(w, logMsg, conn.err)
+		} else {
+			rt.writeGitConnTokenError(w, logMsg, conn.err)
 		}
 		return
 	}
@@ -125,14 +116,17 @@ func flattenRepoAccounts(accts []repoListAccount) flatRepoList {
 	var f flatRepoList
 	for _, a := range accts {
 		if a.Err != nil {
-			f.Errors = append(f.Errors, gitHubAppRepoListErrResource{AccountLogin: a.Account, Error: a.Err.Error()})
+			f.Errors = append(f.Errors, gitHubAppRepoListErrResource{AccountLogin: a.Account, Provider: a.Provider, ConnectionID: a.ConnectionID, ConnectionLabel: a.ConnectionLabel, Error: a.Err.Error()})
 			if f.FirstErr == nil {
 				f.FirstErr = a.Err
 			}
 			continue
 		}
 		f.Succeeded++
-		f.Repos = append(f.Repos, a.Result.Repos...)
+		for _, r := range a.Result.Repos {
+			r.Provider, r.ConnectionID, r.ConnectionLabel, r.Account = a.Provider, a.ConnectionID, a.ConnectionLabel, a.Account
+			f.Repos = append(f.Repos, r)
+		}
 		f.Truncated = f.Truncated || a.Result.Truncated
 		f.Stale = f.Stale || a.Result.Stale
 		f.Refreshing = f.Refreshing || a.Result.Refreshing
@@ -159,29 +153,54 @@ func parseRepoQuery(r *http.Request) repolist.Query {
 
 func isTruthy(v string) bool { return v == "1" || v == "true" }
 
-// handleListGitRepos handles GET /api/v1/git/repos: one provider's
-// repositories, searched, filtered and paged on the server from a
-// per-connection cache. AbilityReadSensitive, like the per-provider listings.
+// handleListGitRepos handles GET /api/v1/git/repos: repositories searched,
+// filtered and paged on the server from the per-connection caches. Without
+// provider it merges every connected account of every provider; connection
+// narrows it to one. AbilityReadSensitive.
 func (rt *Router) handleListGitRepos(w http.ResponseWriter, r *http.Request) {
 	provider := r.URL.Query().Get("provider")
+	providers := []string{gitProviderGitHub, gitProviderGitLab, gitProviderBitbucket, gitProviderGitea}
 	switch provider {
+	case "":
 	case gitProviderGitHub, gitProviderGitLab, gitProviderBitbucket, gitProviderGitea:
+		providers = []string{provider}
 	default:
 		writeError(w, http.StatusBadRequest, "provider must be one of github, gitlab, bitbucket, gitea")
 		return
 	}
-	if msg, missing := rt.gitProviderSecretsMissing(provider); missing {
-		writeError(w, http.StatusNotImplemented, msg)
-		return
-	}
+	refresh := isTruthy(r.URL.Query().Get("refresh"))
 
-	accts, err := rt.loadGitRepos(r.Context(), provider, isTruthy(r.URL.Query().Get("refresh")))
-	if err != nil {
-		rt.writeGitRepoListError(w, provider, err)
-		return
+	var accts []repoListAccount
+	for _, p := range providers {
+		if msg, missing := rt.gitProviderSecretsMissing(p); missing {
+			if provider != "" {
+				writeError(w, http.StatusNotImplemented, msg)
+				return
+			}
+			continue
+		}
+		got, err := rt.loadGitRepos(r.Context(), p, refresh)
+		if err != nil {
+			var connErr *repoListConnError
+			if provider == "" && errors.As(err, &connErr) {
+				continue
+			}
+			rt.writeGitRepoListError(w, p, err)
+			return
+		}
+		accts = append(accts, got...)
+	}
+	if conn := r.URL.Query().Get("connection"); conn != "" {
+		kept := accts[:0]
+		for _, a := range accts {
+			if a.ConnectionID == conn {
+				kept = append(kept, a)
+			}
+		}
+		accts = kept
 	}
 	flat := flattenRepoAccounts(accts)
-	if flat.Succeeded == 0 && flat.FirstErr != nil {
+	if provider != "" && flat.Succeeded == 0 && flat.FirstErr != nil {
 		rt.writeGitRepoListError(w, provider, flat.FirstErr)
 		return
 	}
@@ -192,7 +211,7 @@ func (rt *Router) handleListGitRepos(w http.ResponseWriter, r *http.Request) {
 		Limit: page.Limit, Offset: page.Offset, HasMore: page.NextOffset >= 0,
 		Truncated: flat.Truncated, Cap: rt.repoCache.Config().MaxItems,
 		CachedAt: flat.CachedAt.UTC(), Stale: flat.Stale, Refreshing: flat.Refreshing,
-		Owners: page.Owners, Errors: flat.Errors,
+		Owners: page.Owners, Errors: flat.Errors, Connections: connectionFacets(accts),
 	}
 	if page.NextOffset >= 0 {
 		next := page.NextOffset
@@ -202,4 +221,25 @@ func (rt *Router) handleListGitRepos(w http.ResponseWriter, r *http.Request) {
 		res.RateLimit = &gitRepoRateLimitResource{NextCheckAt: rl.NextCheck.UTC(), RetryAfterSeconds: max(int(time.Until(rl.NextCheck).Seconds())+1, 1)}
 	}
 	writeJSON(w, http.StatusOK, res)
+}
+
+// gitRepoConnectionFacet is one account the list was built from, for the picker's account filter.
+type gitRepoConnectionFacet struct {
+	ConnectionID string `json:"connection_id"`
+	Provider     string `json:"provider"`
+	Label        string `json:"label"`
+	Account      string `json:"account,omitempty"`
+	Loaded       int    `json:"loaded"`
+	Failed       bool   `json:"failed"`
+}
+
+func connectionFacets(accts []repoListAccount) []gitRepoConnectionFacet {
+	out := make([]gitRepoConnectionFacet, 0, len(accts))
+	for _, a := range accts {
+		out = append(out, gitRepoConnectionFacet{
+			ConnectionID: a.ConnectionID, Provider: a.Provider, Label: a.ConnectionLabel, Account: a.Account,
+			Loaded: len(a.Result.Repos), Failed: a.Err != nil,
+		})
+	}
+	return out
 }

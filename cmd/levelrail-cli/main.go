@@ -189,6 +189,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "upgrade":
 		return runUpgrade(prog, args[1:], stdout, stderr, lookupEnv)
+	case "updates":
+		return runUpdates(prog, args[1:], stdout, stderr, lookupEnv)
 	case "readiness":
 		return runReadiness(prog, args[1:], stdout, stderr, lookupEnv)
 	case "version":
@@ -287,12 +289,6 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runGitProviders(prog, args[1:], stdout, stderr, lookupEnv)
 	case "github-app":
 		return runGitHubApp(prog, args[1:], stdout, stderr, lookupEnv)
-	case "gitlab-app":
-		return runGitLabApp(prog, args[1:], stdout, stderr, lookupEnv)
-	case "bitbucket-app":
-		return runBitbucketApp(prog, args[1:], stdout, stderr, lookupEnv)
-	case "gitea-app":
-		return runGiteaApp(prog, args[1:], stdout, stderr, lookupEnv)
 	case "compose":
 		return runCompose(prog, args[1:], stdout, stderr, lookupEnv)
 	case "templates":
@@ -403,6 +399,7 @@ Usage:
   %[1]s upgrade --list [--channel stable|beta|all]             last 5 releases with a database schema compatibility verdict
   %[1]s upgrade --rollback-plan <version>                      read-only rollback preview, applied on the host
   %[1]s upgrade --history [--json] | --ack <id>                recorded upgrades, rollbacks and installs, and acknowledging one
+  %[1]s updates restore-points list|restore <id> [--yes]       pre-upgrade restore points and putting one back
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
   %[1]s changelog [--limit N] [flags]                         recent release notes from the control plane's own CHANGELOG.md
   %[1]s ai-control status|set|revoke-agents [flags]           what agents and AI may do: off, observe, operate, admin
@@ -467,9 +464,6 @@ Usage:
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant
   %[1]s git-providers [flags]                             connection status and capabilities for every git provider in one call
   %[1]s github-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a GitHub App connection, browse and use its repos
-  %[1]s gitlab-app status|disconnect|projects|branches|use-as-source [flags]   check/forget a GitLab App connection, browse and use its projects
-  %[1]s bitbucket-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a Bitbucket App connection, browse and use its repos
-  %[1]s gitea-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a Gitea App connection, browse and use its repos
   %[1]s templates list|get|deploy|install [flags]         browse, deploy and install from the curated service catalog
   %[1]s compose deploy|status|logs|redeploy|rollback|down  run a Docker Compose file as one stack
   %[1]s static-sites list|delete [flags]                   list build.type: static apps, remove an orphaned site

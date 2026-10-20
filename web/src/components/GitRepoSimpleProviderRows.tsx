@@ -5,8 +5,7 @@ import { GitConnectionBanner } from './GitConnectionHealth'
 import { GitRepoListPicker } from './GitRepoListPicker'
 import type { NormalizedRepoOption } from '../lib/gitRepoOptions'
 import { useGitHubAppBranches } from '../queries/githubApp'
-import { useBitbucketAppBranches } from '../queries/bitbucketApp'
-import { useGiteaAppBranches } from '../queries/giteaApp'
+import { useGitConnectionBranches } from '../queries/gitConnections'
 import type { GitRepoProvider } from '../types/gitRepos'
 import { NotConnectedPrompt, type ProviderRowProps } from './GitRepoSourceRows'
 import type {
@@ -140,9 +139,9 @@ export function BitbucketProviderRow(props: ProviderRowProps) {
       providerKey="bitbucket"
       displayName="Bitbucket"
       settingsPath="/settings/bitbucket-app"
-      useBranches={useBitbucketAppBranches}
+      useBranches={useGitConnectionBranches}
       branchArgsFrom={(ref) =>
-        ref.kind === 'bitbucket' ? [ref.workspace, ref.repoSlug] : ['', '']
+        ref.kind === 'bitbucket' ? [ref.connectionId, ref.repo] : ['', '']
       }
     />
   )
@@ -155,9 +154,9 @@ export function GiteaProviderRow(props: ProviderRowProps) {
       providerKey="gitea"
       displayName="Gitea"
       settingsPath="/settings/gitea-app"
-      useBranches={useGiteaAppBranches}
+      useBranches={useGitConnectionBranches}
       branchArgsFrom={(ref) =>
-        ref.kind === 'gitea' ? [ref.owner, ref.repo] : ['', '']
+        ref.kind === 'gitea' ? [ref.connectionId, ref.repo] : ['', '']
       }
     />
   )

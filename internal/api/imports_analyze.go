@@ -120,18 +120,8 @@ func (rt *Router) analysisToken(ctx context.Context, repoURL string) string {
 	if t := rt.tokenForRepo(ctx, "", repoURL, true); t != "" {
 		return t
 	}
-	u, err := url.Parse(repoURL)
-	if err != nil {
-		return ""
-	}
-	host := strings.ToLower(u.Host)
-	if rt.gitlabApp != nil && rt.gitlabAppSecrets != nil {
-		if conn, tok, err := rt.gitlabAccessToken(ctx); err == nil && hostOf(conn.InstanceURL) == host {
-			return tok
-		}
-	}
-	if rt.giteaApp != nil && rt.giteaAppSecrets != nil {
-		if conn, tok, err := rt.giteaAccessToken(ctx); err == nil && hostOf(conn.InstanceURL) == host {
+	for _, p := range []string{gitProviderGitLab, gitProviderGitea} {
+		if _, tok, err := rt.gitTokenForRepo(ctx, p, repoURL, ""); err == nil {
 			return tok
 		}
 	}

@@ -382,6 +382,8 @@ func runReleaseCommand(name string, args []string) bool {
 		err = runRollback(context.Background(), args, dataDirFromEnv(), os.Stdin, os.Stdout)
 	case "self-upgrade":
 		err = runSelfUpgrade(context.Background(), args, dataDirFromEnv(), os.Stdin, os.Stdout)
+	case "restore-point":
+		err = runRestorePoint(context.Background(), args, dataDirFromEnv(), os.Stdout)
 	case "migrate-check":
 		err = runMigrateCheck(context.Background(), args, os.Stdout)
 	default:

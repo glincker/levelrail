@@ -17,6 +17,12 @@ func runGitProviders(prog string, args []string, stdout, stderr io.Writer, looku
 	if len(args) > 0 && args[0] == "repos" {
 		return runGitProvidersRepos(prog, args[1:], stdout, stderr, lookupEnv)
 	}
+	if len(args) > 0 {
+		switch args[0] {
+		case "connections", "add", "rename", "default", "disconnect", "branches", "use-as-source":
+			return runGitConnectionsCmd(prog, args[0], args[1:], stdout, stderr, lookupEnv)
+		}
+	}
 	if len(args) > 0 && args[0] == "list" {
 		args = args[1:]
 	}
@@ -35,20 +41,29 @@ func runGitProviders(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list git providers: %w", err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, of, providers, func() { printGitProvidersHuman(stdout, providers) })
+	return writeScheduledTaskResult(stdout, stderr, of, providers, func() {
+		printGitProvidersHuman(stdout, providers)
+		conns, err := client.ListGitConnections(context.Background(), "")
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "warning: could not list connections: %v\n", err)
+			return
+		}
+		_, _ = fmt.Fprintln(stdout)
+		printGitConnectionsHuman(stdout, conns)
+	})
 }
 
 func gitProvidersUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s git-providers [list] [flags]
   %[1]s git-providers validate <github|gitlab|gitea|bitbucket> [flags]
-  %[1]s git-providers repos <github|gitlab|gitea|bitbucket> [--search Q] [--refresh] [flags]
+  %[1]s git-providers repos <github|gitlab|gitea|bitbucket> [--connection ID] [--search Q] [--refresh] [flags]
+  %[1]s git-providers connections|add|rename|default|disconnect|branches|use-as-source ...
 
 Shows connection status and capabilities (list branches, register a
-webhook, authenticated clone) for github, gitlab, bitbucket, and gitea
-in one call. See "%[1]s github-app status", "%[1]s gitlab-app status",
-"%[1]s bitbucket-app status", or "%[1]s gitea-app status" for one
-provider's own fuller detail.
+webhook, authenticated clone) for github, gitlab, bitbucket, and gitea,
+then every connected account. Run "%[1]s git-providers connections -h"
+for managing several accounts per provider.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

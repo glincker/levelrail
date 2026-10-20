@@ -20,6 +20,7 @@ and paged on the control plane from a cached list.
 
 Flags:
   --search string         only repositories whose name contains every word
+  --connection string     only repositories of one connection id (see "git-providers connections")
   --owner string          only repositories under one owner or organization
   --archived string       include (default), exclude or only archived repositories
   --forks string          include (default), exclude or only forks
@@ -41,6 +42,7 @@ func runGitProvidersRepos(prog string, args []string, stdout, stderr io.Writer, 
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "git-providers repos", "print the page as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, gitReposUsage(prog)) }
 	search := fs.String("search", "", "")
+	connection := fs.String("connection", "", "")
 	owner := fs.String("owner", "", "")
 	archived := fs.String("archived", "", "")
 	forks := fs.String("forks", "", "")
@@ -55,7 +57,7 @@ func runGitProvidersRepos(prog string, args []string, stdout, stderr io.Writer, 
 	}
 
 	params := apiclient.GitRepoListParams{
-		Provider: provider, Search: *search, Owner: *owner, Archived: *archived, Forks: *forks,
+		Provider: provider, Connection: *connection, Search: *search, Owner: *owner, Archived: *archived, Forks: *forks,
 		Limit: *limit, Offset: *offset, Refresh: *refresh,
 	}
 	if *all {
@@ -83,9 +85,9 @@ func printGitReposHuman(out io.Writer, res apiclient.GitRepoListResource) {
 		_, _ = fmt.Fprintln(out, "no repositories")
 	} else {
 		tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-		_, _ = fmt.Fprintln(tw, "REPOSITORY\tOWNER\tPRIVATE\tARCHIVED\tFORK\tDEFAULT_BRANCH")
+		_, _ = fmt.Fprintln(tw, "REPOSITORY\tOWNER\tACCOUNT\tPRIVATE\tARCHIVED\tFORK\tDEFAULT_BRANCH")
 		for _, r := range res.Items {
-			_, _ = fmt.Fprintf(tw, "%s\t%s\t%v\t%v\t%v\t%s\n", r.FullName, r.Owner, r.Private, r.Archived, r.Fork, r.DefaultBranch)
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%v\t%v\t%v\t%s\n", r.FullName, r.Owner, accountLabel(r), r.Private, r.Archived, r.Fork, r.DefaultBranch)
 		}
 		_ = tw.Flush()
 	}
@@ -106,4 +108,11 @@ func printGitReposHuman(out io.Writer, res apiclient.GitRepoListResource) {
 	for _, e := range res.Errors {
 		_, _ = fmt.Fprintf(out, "warning: could not list repos for %s: %s\n", e.AccountLogin, e.Error)
 	}
+}
+
+func accountLabel(r apiclient.GitRepoResource) string {
+	if r.Account != "" {
+		return r.Account
+	}
+	return r.ConnectionLabel
 }

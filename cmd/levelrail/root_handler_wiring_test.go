@@ -50,8 +50,7 @@ func TestRootHandler_GitProviderAppSecretsWired(t *testing.T) {
 		path   string
 	}{
 		{"github app manual connect", http.MethodPut, "/api/v1/github-app/manual"},
-		{"gitlab app connect", http.MethodPut, "/api/v1/gitlab-app"},
-		{"bitbucket app connect", http.MethodPut, "/api/v1/bitbucket-app"},
+		{"git provider connection create", http.MethodPost, "/api/v1/git-connections"},
 	}
 
 	for _, tc := range cases {

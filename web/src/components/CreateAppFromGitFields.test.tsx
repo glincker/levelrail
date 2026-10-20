@@ -91,7 +91,7 @@ vi.mock('./GitRepoSourcePicker', () => ({
             provider: 'gitlab',
             repoUrl: 'https://gitlab.example.com/acme/app.git',
             branch: 'main',
-            providerRef: { kind: 'gitlab', projectId: 42 },
+            providerRef: { kind: 'gitlab', connectionId: 'gc_gl', repo: '42' },
           })
         }}
       >
@@ -106,8 +106,8 @@ vi.mock('./GitRepoSourcePicker', () => ({
             branch: 'main',
             providerRef: {
               kind: 'bitbucket',
-              workspace: 'acme',
-              repoSlug: 'app',
+              connectionId: 'gc_bb',
+              repo: 'acme/app',
             },
           })
         }}
@@ -121,7 +121,11 @@ vi.mock('./GitRepoSourcePicker', () => ({
             provider: 'gitea',
             repoUrl: 'https://git.example.com/acme/app.git',
             branch: 'main',
-            providerRef: { kind: 'gitea', owner: 'acme', repo: 'app' },
+            providerRef: {
+              kind: 'gitea',
+              connectionId: 'gc_gi',
+              repo: 'acme/app',
+            },
           })
         }}
       >
@@ -269,7 +273,7 @@ describe('CreateAppFromGitFields', () => {
         )
       }
       if (
-        url === '/api/v1/gitlab-app/projects/42/use-as-source' &&
+        url === '/api/v1/git-connections/gc_gl/use-as-source' &&
         method === 'POST'
       ) {
         return Promise.resolve(
@@ -282,7 +286,7 @@ describe('CreateAppFromGitFields', () => {
         )
       }
       if (
-        url === '/api/v1/bitbucket-app/repos/acme/app/use-as-source' &&
+        url === '/api/v1/git-connections/gc_bb/use-as-source' &&
         method === 'POST'
       ) {
         return Promise.resolve(
@@ -295,7 +299,7 @@ describe('CreateAppFromGitFields', () => {
         )
       }
       if (
-        url === '/api/v1/gitea-app/repos/acme/app/use-as-source' &&
+        url === '/api/v1/git-connections/gc_gi/use-as-source' &&
         method === 'POST'
       ) {
         return Promise.resolve(
@@ -410,17 +414,17 @@ describe('CreateAppFromGitFields', () => {
     {
       name: 'GitLab',
       pickButton: 'Pick GitLab project (test)',
-      connectURL: '/api/v1/gitlab-app/projects/42/use-as-source',
+      connectURL: '/api/v1/git-connections/gc_gl/use-as-source',
     },
     {
       name: 'Bitbucket',
       pickButton: 'Pick Bitbucket repo (test)',
-      connectURL: '/api/v1/bitbucket-app/repos/acme/app/use-as-source',
+      connectURL: '/api/v1/git-connections/gc_bb/use-as-source',
     },
     {
       name: 'Gitea',
       pickButton: 'Pick Gitea repo (test)',
-      connectURL: '/api/v1/gitea-app/repos/acme/app/use-as-source',
+      connectURL: '/api/v1/git-connections/gc_gi/use-as-source',
     },
   ])(
     'connects the git source via use-as-source for a $name pick, then triggers the build',

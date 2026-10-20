@@ -1318,6 +1318,8 @@ levelrail-cli upgrade --plan [--version TAG]
 levelrail-cli upgrade --apply [--version TAG] [--ack-breaking ID,...] [--no-wait]
 levelrail-cli upgrade --attempts
 levelrail-cli upgrade backup-now
+levelrail-cli updates restore-points list
+levelrail-cli updates restore-points restore <id> --yes
 levelrail-cli upgrade schedule (--at TIME | --window) [--version TAG] [--timezone TZ] [--ack-breaking ID,...] [--ack-major] [--replace]
 levelrail-cli upgrade schedule show
 levelrail-cli upgrade schedule cancel
@@ -1758,22 +1760,20 @@ levelrail-cli settings ai-assistant get|set|clear [flags]
 ```
 levelrail-cli git-providers [list] [flags]
 levelrail-cli git-providers validate <github|gitlab|gitea|bitbucket> [flags]
-levelrail-cli git-providers repos <github|gitlab|gitea|bitbucket> [--search Q] [--owner O] [--archived MODE] [--forks MODE] [--limit N] [--offset N] [--all] [--refresh] [flags]
+levelrail-cli git-providers repos <github|gitlab|gitea|bitbucket> [--connection ID] [--search Q] [--owner O] [--archived MODE] [--forks MODE] [--limit N] [--offset N] [--all] [--refresh] [flags]
 levelrail-cli github-app status|disconnect|repos [flags]
 levelrail-cli github-app branches <owner> <repo> [flags]
 levelrail-cli github-app use-as-source <owner> <repo> --app-name NAME [flags]
 levelrail-cli github-app register-url [--owner ORG] [--public] [--instance-url URL] [--name NAME] [flags]
 levelrail-cli github-app installations list|add [flags]
 levelrail-cli github-app installations remove <id> [flags]
-levelrail-cli gitlab-app status|disconnect|projects [flags]
-levelrail-cli gitlab-app branches <project-id> [flags]
-levelrail-cli gitlab-app use-as-source <project-id> --app-name NAME [flags]
-levelrail-cli bitbucket-app status|disconnect|repos [flags]
-levelrail-cli bitbucket-app branches <workspace> <repo-slug> [flags]
-levelrail-cli bitbucket-app use-as-source <workspace> <repo-slug> --app-name NAME [flags]
-levelrail-cli gitea-app status|disconnect|repos [flags]
-levelrail-cli gitea-app branches <owner> <repo> [flags]
-levelrail-cli gitea-app use-as-source <owner> <repo> --app-name NAME [flags]
+levelrail-cli git-providers connections [--provider P] [flags]
+levelrail-cli git-providers add <gitlab|bitbucket|gitea> [--instance-url URL] [--client-id ID] [--client-secret S] [--label L] [--reuse ID] [flags]
+levelrail-cli git-providers rename <id> <label> [flags]
+levelrail-cli git-providers default <id> [flags]
+levelrail-cli git-providers disconnect --id ID [flags]
+levelrail-cli git-providers branches --id ID --repo REPO [flags]
+levelrail-cli git-providers use-as-source --id ID --repo REPO --app-name NAME [flags]
 ```
 
 - `git-providers` shows connection status and capabilities (list branches, register a webhook, authenticated clone) for GitHub, GitLab, Bitbucket and Gitea in one call.

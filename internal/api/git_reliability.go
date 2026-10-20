@@ -10,6 +10,7 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -145,6 +146,7 @@ func (rt *Router) gitSourceResourceFor(ctx context.Context, g store.GitSource, h
 	st := rt.gitSourceWebhookStatus(ctx, name)
 	res := toGitSourceResource(g, hasToken, st.URL)
 	res.WebhookURLWarning, res.WebhookURLSource = st.Warning, st.Source
+	res.Connection = rt.gitSourceConnectionState(ctx, g.ConnectionID)
 	if rt.gitRel == nil {
 		return res
 	}
@@ -209,16 +211,20 @@ func (rt *Router) registerGitSourceWebhook(ctx context.Context, name string, gs 
 	if host == "" || path == "" {
 		return fmt.Errorf("cannot read host and path from %q", gs.RepoURL)
 	}
-	for _, try := range []func(context.Context, string, string, string, string) (bool, error){
-		rt.registerHookGitHub, rt.registerHookGitLab, rt.registerHookBitbucket, rt.registerHookGitea,
-	} {
-		matched, err := try(ctx, host, path, st.URL, secret)
-		if matched {
-			if err != nil {
-				return fmt.Errorf("register webhook: %w", err)
-			}
-			return nil
+	if gs.ConnectionID != "" {
+		return rt.registerHookOnConnection(ctx, gs, path, st.URL, secret)
+	}
+	if matched, err := rt.registerHookGitHub(ctx, host, path, st.URL, secret); matched {
+		if err != nil {
+			return fmt.Errorf("register webhook: %w", err)
 		}
+		return nil
+	}
+	for _, provider := range []string{gitProviderGitLab, gitProviderBitbucket, gitProviderGitea} {
+		if _, err := rt.gitConnForRepo(ctx, provider, gs.RepoURL, ""); err != nil {
+			continue
+		}
+		return rt.registerHookOnProvider(ctx, provider, gs, path, st.URL, secret)
 	}
 	return errWebhookNoProvider
 }
@@ -271,62 +277,52 @@ func (rt *Router) registerHookGitHub(ctx context.Context, host, path, hookURL, s
 	return true, nil
 }
 
-func (rt *Router) registerHookGitLab(ctx context.Context, host, path, hookURL, secret string) (bool, error) {
-	if rt.gitlabAppSecrets == nil {
-		return false, nil
-	}
-	conn, err := rt.gitlabApp.GetGitLabAppConnection(ctx)
-	if err != nil || repoURLHost(conn.InstanceURL) != host {
-		return false, nil
-	}
-	accts, err := rt.loadGitRepos(ctx, gitProviderGitLab, false)
+// registerHookOnConnection registers the webhook through the connection the
+// source recorded, so a repository picked from one account is never hooked
+// with another account's token.
+func (rt *Router) registerHookOnConnection(ctx context.Context, gs store.GitSource, path, hookURL, secret string) error {
+	conn, err := rt.gitConns.GetGitConnection(ctx, gs.ConnectionID)
 	if err != nil {
-		return true, err
+		return fmt.Errorf("the connection this source was picked from is gone; connect the account again: %w", err)
 	}
-	var projectID int64
-	for _, a := range flattenRepoAccounts(accts).Repos {
-		if strings.EqualFold(a.FullName, path) {
-			projectID = a.ProjectID
-			break
+	return rt.registerHookOnProvider(ctx, conn.Provider, gs, path, hookURL, secret)
+}
+
+func (rt *Router) registerHookOnProvider(ctx context.Context, provider string, gs store.GitSource, path, hookURL, secret string) error {
+	adapter, ok := rt.gitAdapter(provider)
+	if !ok {
+		return errWebhookNoProvider
+	}
+	conn, token, err := rt.gitTokenForRepo(ctx, provider, gs.RepoURL, gs.ConnectionID)
+	if err != nil {
+		return fmt.Errorf("register webhook: %w", err)
+	}
+	repo := path
+	if provider == gitProviderGitLab {
+		repo, err = rt.gitlabProjectIDFor(ctx, conn, path)
+		if err != nil {
+			return fmt.Errorf("register webhook: %w", err)
 		}
 	}
-	if projectID == 0 {
-		return true, fmt.Errorf("project %q is not visible to the connected gitlab account", path)
+	if err := adapter.webhook(ctx, conn, token, repo, hookURL, secret); err != nil {
+		return fmt.Errorf("register webhook: %w", err)
 	}
-	_, token, err := rt.gitlabAccessToken(ctx)
-	if err != nil {
-		return true, err
-	}
-	return true, rt.gitlabAppClient.CreateProjectWebhook(ctx, conn.InstanceURL, token, projectID, hookURL, secret)
+	return nil
 }
 
-func (rt *Router) registerHookBitbucket(ctx context.Context, host, path, hookURL, secret string) (bool, error) {
-	if rt.bitbucketAppSecrets == nil || host != "bitbucket.org" {
-		return false, nil
+// gitlabProjectIDFor finds the numeric project id behind a namespaced path
+// among the projects the connection can see.
+func (rt *Router) gitlabProjectIDFor(ctx context.Context, conn store.GitConnection, path string) (string, error) {
+	acct := rt.loadConnectionRepos(ctx, conn, false)
+	if acct.Err != nil {
+		return "", acct.Err
 	}
-	if _, err := rt.bitbucketApp.GetBitbucketAppConnection(ctx); err != nil {
-		return false, nil
+	for _, r := range acct.Result.Repos {
+		if strings.EqualFold(r.FullName, path) {
+			return strconv.FormatInt(r.ProjectID, 10), nil
+		}
 	}
-	token, err := rt.bitbucketAccessToken(ctx)
-	if err != nil {
-		return true, err
-	}
-	return true, rt.bitbucketAppClient.CreateRepoWebhook(ctx, token, path, hookURL, secret)
-}
-
-func (rt *Router) registerHookGitea(ctx context.Context, host, path, hookURL, secret string) (bool, error) {
-	if rt.giteaAppSecrets == nil {
-		return false, nil
-	}
-	conn, err := rt.giteaApp.GetGiteaAppConnection(ctx)
-	if err != nil || repoURLHost(conn.InstanceURL) != host {
-		return false, nil
-	}
-	_, token, err := rt.giteaAccessToken(ctx)
-	if err != nil {
-		return true, err
-	}
-	return true, rt.giteaAppClient.CreateRepoWebhook(ctx, conn.InstanceURL, token, path, hookURL, secret)
+	return "", fmt.Errorf("project %q is not visible to the connected gitlab account", path)
 }
 
 // handleRegisterGitSourceWebhook handles POST /api/v1/apps/{name}/git-source/webhook/register:

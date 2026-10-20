@@ -116,6 +116,9 @@ const fakeGiteaRepo = {
   name: 'app',
   owner: 'acme',
   clone_url: 'https://git.example.com/acme/app.git',
+  connection_id: 'gc_1',
+  connection_label: 'Work',
+  account: 'ann',
 }
 
 const fakeGitLabProject = {
@@ -127,6 +130,9 @@ const fakeGitLabProject = {
   private: true,
   project_id: 7,
   clone_url: 'https://gitlab.example.com/acme/web.git',
+  connection_id: 'gc_1',
+  connection_label: 'Work',
+  account: 'ann',
 }
 
 // The envelope GET /api/v1/git/repos returns around one page of items.
@@ -541,7 +547,7 @@ describe('GitRepoSourcePicker', () => {
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
       [reposUrl('gitlab')]: jsonRoute(listBody('gitlab', [fakeGitLabProject])),
-      'GET /api/v1/gitlab-app/projects/7/branches': jsonRoute([
+      'GET /api/v1/git-connections/gc_1/branches?repo=7': jsonRoute([
         { name: 'main', commit_sha: 'abc' },
         { name: 'dev', commit_sha: 'def' },
       ]),
@@ -560,7 +566,7 @@ describe('GitRepoSourcePicker', () => {
       provider: 'gitlab',
       repoUrl: 'https://gitlab.example.com/acme/web.git',
       branch: 'main',
-      providerRef: { kind: 'gitlab', projectId: 7 },
+      providerRef: { kind: 'gitlab', connectionId: 'gc_1', repo: '7' },
     })
 
     // The branch control is now a combobox (Select) fed by real branch
@@ -675,7 +681,7 @@ describe('GitRepoSourcePicker', () => {
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
       [reposUrl('gitea')]: jsonRoute(listBody('gitea', [fakeGiteaRepo])),
-      'GET /api/v1/gitea-app/repos/acme/app/branches': jsonRoute([
+      'GET /api/v1/git-connections/gc_1/branches?repo=acme%2Fapp': jsonRoute([
         { name: 'main', commit_sha: 'abc123' },
       ]),
     })
@@ -699,7 +705,7 @@ describe('GitRepoSourcePicker', () => {
       provider: 'gitea',
       repoUrl: 'https://git.example.com/acme/app.git',
       branch: 'main',
-      providerRef: { kind: 'gitea', owner: 'acme', repo: 'app' },
+      providerRef: { kind: 'gitea', connectionId: 'gc_1', repo: 'acme/app' },
     })
   })
 })

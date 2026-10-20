@@ -19,6 +19,20 @@ export interface GitRepoItem {
   pushed_at?: string
   project_id?: number
   account_type?: 'user' | 'organization'
+  /** Which connected account the row came from, so same-name repos stay apart. */
+  provider?: GitRepoProvider
+  connection_id?: string
+  connection_label?: string
+  account?: string
+}
+
+export interface GitRepoConnectionFacet {
+  connection_id: string
+  provider: GitRepoProvider
+  label: string
+  account?: string
+  loaded: number
+  failed: boolean
 }
 
 export interface GitRepoOwnerCount {
@@ -32,7 +46,8 @@ export interface GitRepoRateLimit {
 }
 
 export interface GitRepoListResponse {
-  provider: GitRepoProvider
+  /** Empty when the list merges every provider. */
+  provider: GitRepoProvider | ''
   items: GitRepoItem[]
   total: number
   loaded: number
@@ -46,11 +61,21 @@ export interface GitRepoListResponse {
   stale: boolean
   refreshing: boolean
   owners: GitRepoOwnerCount[]
-  errors?: { account_login: string; error: string }[]
+  errors?: {
+    account_login: string
+    provider?: GitRepoProvider
+    connection_id?: string
+    connection_label?: string
+    error: string
+  }[]
+  /** Every account the merged list was built from. */
+  connections: GitRepoConnectionFacet[]
   rate_limit?: GitRepoRateLimit
 }
 
 export interface GitRepoListParams {
+  /** Narrow to one connected account (a connection id). */
+  connection?: string
   search?: string
   owner?: string
   archived?: GitRepoMode

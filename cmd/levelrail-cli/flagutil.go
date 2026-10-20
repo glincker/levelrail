@@ -191,7 +191,7 @@ func loggedInSessionClient(ctx context.Context, sf sessionFlags, prog string, lo
 
 	loginResp, err := sessionClient.Login(ctx, resolvedUsername, resolvedPassword)
 	if err == nil && loginResp.ApprovalRequired {
-		loginResp, err = sessionClient.awaitApproval(ctx, prog, loginResp.ApprovalID, loginResp.ApprovalMatch, stderr)
+		loginResp, err = sessionClient.awaitApproval(ctx, prog, loginResp, lookupEnv, stderr)
 	}
 	if err != nil {
 		return nil, loginResponse{}, fmt.Errorf("log in as %q: %w", resolvedUsername, err)

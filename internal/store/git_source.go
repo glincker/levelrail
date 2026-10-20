@@ -98,8 +98,12 @@ type GitSource struct {
 	DeployPaths       []string
 	DeployPathsIgnore []string
 	ReportStatus      bool
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
+	// ConnectionID is the git_provider_connections row the repository was
+	// picked from; empty for a pasted URL or a GitHub source. Set only via
+	// SetGitSourceConnection.
+	ConnectionID string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // GitSourceBuild is one additional service's own build config within
@@ -176,7 +180,7 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 // ErrGitSourceNotFound if none is.
 func (db *DB) GetGitSource(ctx context.Context, serviceName string) (*GitSource, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at
+		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at, connection_id
 		FROM service_git_sources WHERE service_name = ?
 	`, serviceName)
 	g, err := scanGitSource(row.Scan)
@@ -362,6 +366,72 @@ func (db *DB) SetGitSourceDeploySettings(ctx context.Context, serviceName string
 	return nil
 }
 
+// SetGitSourceConnection records which provider connection a source's
+// repository was picked from.
+func (db *DB) SetGitSourceConnection(ctx context.Context, serviceName, connectionID string) error {
+	res, err := db.ExecContext(ctx, `UPDATE service_git_sources SET connection_id = ? WHERE service_name = ?`, connectionID, serviceName)
+	if err != nil {
+		return fmt.Errorf("store: set git source %q connection: %w", serviceName, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrGitSourceNotFound
+	}
+	return nil
+}
+
+// ListGitSourcesByConnection returns the service names of every source
+// recorded against connectionID.
+func (db *DB) ListGitSourcesByConnection(ctx context.Context, connectionID string) ([]string, error) {
+	rows, err := db.QueryContext(ctx, `SELECT service_name FROM service_git_sources WHERE connection_id = ? ORDER BY service_name`, connectionID)
+	if err != nil {
+		return nil, fmt.Errorf("store: list git sources for connection %q: %w", connectionID, err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []string
+	for rows.Next() {
+		var n string
+		if err := rows.Scan(&n); err != nil {
+			return nil, fmt.Errorf("store: list git sources for connection %q: scan: %w", connectionID, err)
+		}
+		out = append(out, n)
+	}
+	return out, rows.Err()
+}
+
+// RelinkOrphanedGitSources points sources whose recorded connection no
+// longer exists, and whose repository is on host, at connectionID. It
+// returns how many sources it moved.
+func (db *DB) RelinkOrphanedGitSources(ctx context.Context, host, connectionID string) (int, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT s.service_name, s.repo_url FROM service_git_sources s
+		WHERE s.connection_id != '' AND NOT EXISTS (SELECT 1 FROM git_provider_connections c WHERE c.id = s.connection_id)`)
+	if err != nil {
+		return 0, fmt.Errorf("store: find orphaned git sources: %w", err)
+	}
+	var names []string
+	for rows.Next() {
+		var name, repoURL string
+		if err := rows.Scan(&name, &repoURL); err != nil {
+			_ = rows.Close()
+			return 0, fmt.Errorf("store: find orphaned git sources: scan: %w", err)
+		}
+		if RepoHost(repoURL) == host {
+			names = append(names, name)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return 0, fmt.Errorf("store: find orphaned git sources: %w", err)
+	}
+	_ = rows.Close()
+	for _, n := range names {
+		if err := db.SetGitSourceConnection(ctx, n, connectionID); err != nil {
+			return 0, fmt.Errorf("store: relink git source %q: %w", n, err)
+		}
+	}
+	return len(names), nil
+}
+
 // setGitSourceBoolColumn is SetGitSourcePreviewEnabled/
 // SetGitSourcePostPRComments's shared implementation: column is always
 // one of this file's own literal column names, never caller/request
@@ -398,7 +468,7 @@ func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 		pathsJSON, pathsIgnoreJSON    string
 		createdAt, updatedAt          string
 	)
-	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt); err != nil {
+	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt, &g.ConnectionID); err != nil {
 		return nil, err
 	}
 	g.PreviewEnabled = previewEnabled != 0

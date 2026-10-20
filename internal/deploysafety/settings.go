@@ -19,6 +19,11 @@ const (
 	EnvWatchErrorRate   = "APP_DEPLOY_WATCH_ERROR_RATE"
 	EnvWatchMinRequests = "APP_DEPLOY_WATCH_MIN_REQUESTS"
 	EnvAutoRollback     = "APP_DEPLOY_AUTO_ROLLBACK"
+	EnvWatchMode        = "APP_DEPLOY_WATCH_MODE"
+	EnvWatchLatency     = "APP_DEPLOY_WATCH_LATENCY_RATIO"
+	EnvWatchLatencyMin  = "APP_DEPLOY_WATCH_LATENCY_MIN_DELTA"
+	EnvWatchSoftTicks   = "APP_DEPLOY_WATCH_SOFT_TICKS"
+	EnvWatchSoftRoll    = "APP_DEPLOY_WATCH_SOFT_ROLLBACK"
 	EnvRollbackPins     = "APP_DEPLOY_ROLLBACK_PINS"
 	EnvWatchInterval    = "APP_DEPLOY_WATCH_INTERVAL"
 )
@@ -38,7 +43,23 @@ type Effective struct {
 	WatchMaxRestarts int           `json:"watch_max_restarts"`
 	WatchErrorRate   float64       `json:"watch_error_rate"`
 	WatchMinRequests int           `json:"watch_min_requests"`
-	AutoRollback     bool          `json:"auto_rollback"`
+	// AutoRollback is derived from WatchMode (auto).
+	AutoRollback bool `json:"auto_rollback"`
+	// WatchMode is off, notify or auto.
+	WatchMode string `json:"watch_mode"`
+	// WatchLatencyRatio trips the soft latency signal when the new
+	// release's p95 reaches this multiple of the previous release's; 0
+	// turns the signal off.
+	WatchLatencyRatio float64 `json:"watch_latency_ratio"`
+	// WatchLatencyMinDelta is the absolute p95 increase also required, so
+	// a 4ms to 9ms move is never a regression.
+	WatchLatencyMinDelta time.Duration `json:"watch_latency_min_delta"`
+	// WatchSoftTicks is how many consecutive evaluations a soft signal must
+	// hold before it counts.
+	WatchSoftTicks int `json:"watch_soft_ticks"`
+	// WatchSoftRollback lets a soft signal roll back (mode auto only);
+	// otherwise it only notifies.
+	WatchSoftRollback bool `json:"watch_soft_rollback"`
 	// RollbackPins is how many past releases per app stay pinned.
 	RollbackPins  int           `json:"rollback_pins"`
 	WatchInterval time.Duration `json:"watch_interval"`
@@ -47,16 +68,20 @@ type Effective struct {
 // BuiltinDefaults are the defaults with no environment set.
 func BuiltinDefaults() Effective {
 	return Effective{
-		SuccessThreshold: 2,
-		StableWindow:     10 * time.Second,
-		DrainTimeout:     15 * time.Second,
-		WatchWindow:      5 * time.Minute,
-		WatchMaxRestarts: 2,
-		WatchErrorRate:   0.2,
-		WatchMinRequests: 20,
-		AutoRollback:     true,
-		RollbackPins:     3,
-		WatchInterval:    10 * time.Second,
+		SuccessThreshold:     2,
+		StableWindow:         10 * time.Second,
+		DrainTimeout:         15 * time.Second,
+		WatchWindow:          5 * time.Minute,
+		WatchMaxRestarts:     2,
+		WatchErrorRate:       0.2,
+		WatchMinRequests:     20,
+		AutoRollback:         true,
+		WatchMode:            WatchModeAuto,
+		WatchLatencyRatio:    2,
+		WatchLatencyMinDelta: 100 * time.Millisecond,
+		WatchSoftTicks:       3,
+		RollbackPins:         3,
+		WatchInterval:        10 * time.Second,
 	}
 }
 
@@ -105,14 +130,43 @@ func DefaultsFromEnv(lookup func(string) (string, bool)) (Effective, []error) {
 			d.WatchErrorRate = v
 		}
 	}
-	if raw, ok := lookup(EnvAutoRollback); ok && raw != "" {
-		v, err := strconv.ParseBool(raw)
-		if err != nil {
-			warnings = append(warnings, fmt.Errorf("%s=%q: want a boolean", EnvAutoRollback, raw))
+	envDur(EnvWatchLatencyMin, &d.WatchLatencyMinDelta)
+	envInt(EnvWatchSoftTicks, &d.WatchSoftTicks, 1)
+	if raw, ok := lookup(EnvWatchLatency); ok && raw != "" {
+		v, err := strconv.ParseFloat(raw, 64)
+		if err != nil || (v != 0 && v < 1) {
+			warnings = append(warnings, fmt.Errorf("%s=%q: want 0 (off) or a ratio >= 1", EnvWatchLatency, raw))
 		} else {
-			d.AutoRollback = v
+			d.WatchLatencyRatio = v
 		}
 	}
+	if raw, ok := lookup(EnvWatchSoftRoll); ok && raw != "" {
+		v, err := strconv.ParseBool(raw)
+		if err != nil {
+			warnings = append(warnings, fmt.Errorf("%s=%q: want a boolean", EnvWatchSoftRoll, raw))
+		} else {
+			d.WatchSoftRollback = v
+		}
+	}
+	if raw, ok := lookup(EnvAutoRollback); ok && raw != "" {
+		v, err := strconv.ParseBool(raw)
+		switch {
+		case err != nil:
+			warnings = append(warnings, fmt.Errorf("%s=%q: want a boolean", EnvAutoRollback, raw))
+		case v:
+			d.WatchMode = WatchModeAuto
+		default:
+			d.WatchMode = WatchModeNotify
+		}
+	}
+	if raw, ok := lookup(EnvWatchMode); ok && raw != "" {
+		if ValidWatchMode(raw) {
+			d.WatchMode = raw
+		} else {
+			warnings = append(warnings, fmt.Errorf("%s=%q: want off, notify or auto", EnvWatchMode, raw))
+		}
+	}
+	d.AutoRollback = d.WatchMode == WatchModeAuto
 	if d.WatchInterval <= 0 {
 		d.WatchInterval = BuiltinDefaults().WatchInterval
 	}
@@ -143,8 +197,20 @@ func Resolve(defaults Effective, s store.DeploySafetySettings) Effective {
 	if s.WatchMinRequests != nil {
 		e.WatchMinRequests = *s.WatchMinRequests
 	}
-	if s.AutoRollback != nil {
-		e.AutoRollback = *s.AutoRollback
+	switch {
+	case s.WatchMode != nil:
+		e.WatchMode = *s.WatchMode
+	case s.AutoRollback != nil && *s.AutoRollback:
+		e.WatchMode = WatchModeAuto
+	case s.AutoRollback != nil && e.WatchMode == WatchModeAuto:
+		e.WatchMode = WatchModeNotify
+	}
+	e.AutoRollback = e.WatchMode == WatchModeAuto
+	if s.WatchLatencyRatio != nil {
+		e.WatchLatencyRatio = *s.WatchLatencyRatio
+	}
+	if s.WatchSoftRollback != nil {
+		e.WatchSoftRollback = *s.WatchSoftRollback
 	}
 	if e.SuccessThreshold < 1 {
 		e.SuccessThreshold = 1
@@ -180,5 +246,16 @@ func Validate(s store.DeploySafetySettings) error {
 	if s.WatchMinRequests != nil && *s.WatchMinRequests < 1 {
 		errs = append(errs, errors.New("watch_min_requests must be at least 1"))
 	}
+	if s.WatchMode != nil && !ValidWatchMode(*s.WatchMode) {
+		errs = append(errs, errors.New("watch_mode must be off, notify or auto"))
+	}
+	if s.WatchLatencyRatio != nil && *s.WatchLatencyRatio != 0 && *s.WatchLatencyRatio < 1 {
+		errs = append(errs, errors.New("watch_latency_ratio must be 0 (off) or at least 1"))
+	}
 	return errors.Join(errs...)
+}
+
+// ValidWatchMode reports whether m is off, notify or auto.
+func ValidWatchMode(m string) bool {
+	return m == WatchModeOff || m == WatchModeNotify || m == WatchModeAuto
 }

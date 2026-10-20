@@ -15,6 +15,7 @@ import { Timeline, type TimelineItem } from '@/components/kit'
 import type { Tone } from '@/components/kit/tone'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { useDeployGate } from '../queries/deployGate'
+import { WatchActions, WatchSummary } from './WatchControls'
 import type {
   DeployGate,
   GateEvent,
@@ -43,6 +44,7 @@ const STAGE_TONE: Record<GateStage, Tone> = {
   cleared: 'success',
   watch_failed: 'danger',
   rolled_back: 'warning',
+  watch_stopped: 'neutral',
 }
 
 function eventTone(e: GateEvent): Tone {
@@ -70,7 +72,14 @@ export function DeployGatePanel({
   if (isPending) {
     return <Timeline items={[]} loading />
   }
-  return <GateView gate={gate} />
+  return (
+    <div className="space-y-3">
+      <GateView gate={gate} />
+      {gate.watch.state === 'watching' ? (
+        <WatchActions appName={appName} />
+      ) : null}
+    </div>
+  )
 }
 
 export function GateView({ gate }: { gate: DeployGate }) {
@@ -107,6 +116,7 @@ export function GateView({ gate }: { gate: DeployGate }) {
           watch: s.watch_window,
         })}
       </p>
+      <WatchSummary watch={gate.watch} />
       {gate.rollback_pin ? (
         <p className="text-sm text-muted-foreground">
           {t('gate.pinned', { ref: gate.rollback_pin.pin_ref })}

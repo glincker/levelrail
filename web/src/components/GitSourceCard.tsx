@@ -37,9 +37,7 @@ import {
 import { useSpecValidation } from '../queries/specValidation'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { connectGitHubRepoAsSource } from '../queries/githubApp'
-import { connectGitLabProjectAsSource } from '../queries/gitlabApp'
-import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
-import { connectGiteaRepoAsSource } from '../queries/giteaApp'
+import { connectRepoAsSource } from '../queries/gitConnections'
 import {
   GitRepoSourcePicker,
   type GitRepoSourceValue,
@@ -368,44 +366,14 @@ async function connectGitSource(
       )
       return { resource, autoRegistered, webhookError }
     }
-    if (form.providerRef.kind === 'gitlab') {
-      const resource = await connectGitLabProjectAsSource(
-        form.providerRef.projectId,
-        {
-          app_name: appName,
-          branch,
-          build_type: form.buildType,
-          build_path: buildPath,
-          trigger_mode: form.triggerMode,
-        },
-      )
-      return { resource, autoRegistered: true }
-    }
-    if (form.providerRef.kind === 'bitbucket') {
-      const resource = await connectBitbucketRepoAsSource(
-        form.providerRef.workspace,
-        form.providerRef.repoSlug,
-        {
-          app_name: appName,
-          branch,
-          build_type: form.buildType,
-          build_path: buildPath,
-          trigger_mode: form.triggerMode,
-        },
-      )
-      return { resource, autoRegistered: true }
-    }
-    const resource = await connectGiteaRepoAsSource(
-      form.providerRef.owner,
-      form.providerRef.repo,
-      {
-        app_name: appName,
-        branch,
-        build_type: form.buildType,
-        build_path: buildPath,
-        trigger_mode: form.triggerMode,
-      },
-    )
+    const resource = await connectRepoAsSource(form.providerRef.connectionId, {
+      app_name: appName,
+      repo: form.providerRef.repo,
+      branch,
+      build_type: form.buildType,
+      build_path: buildPath,
+      trigger_mode: form.triggerMode,
+    })
     return { resource, autoRegistered: true }
   }
 

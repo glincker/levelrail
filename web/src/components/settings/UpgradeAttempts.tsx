@@ -57,7 +57,12 @@ export function AttemptRow({ attempt }: { attempt: SelfUpgradeAttempt }) {
       ) : null}
       {attempt.outcome === 'rolled_back' ? (
         <p className="text-xs text-muted-foreground">
-          {t('selfUpgrade.rolledBackNote', { version: attempt.from_version })}
+          {t('selfUpgrade.rolledBackNote', { version: attempt.from_version })}{' '}
+          {attempt.database_restored
+            ? t('selfUpgrade.dbRestored', {
+                minutes: attempt.rolled_back_minutes ?? 0,
+              })
+            : t('selfUpgrade.dbKept')}
         </p>
       ) : null}
     </li>

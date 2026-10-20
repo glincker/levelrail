@@ -228,21 +228,26 @@ step_setup_link() {
 	case "$status" in *'"needs_setup":false'*) ;; *) fail "setup-status after register: $status" || return 1 ;; esac
 }
 
-# A password sign-in from a new device waits for approval from a signed-in dashboard, so the
-# admin session saved by the setup step plays the part of the open browser tab.
+# The dashboard's "Connect your CLI" card issues a pairing code to the signed-in session (the admin
+# cookie saved at setup plays that session); the CLI signs in with it. A password-only sign-in from
+# a new device must still be blocked while that session is live.
 step_cli_login() {
-	local out id match
-	in_ct 'rm -f /root/fh/login.out'
-	docker exec -e HOME=/root -d "$name" sh -c "levelrail-cli auth login --api-url http://127.0.0.1:8080 --username '$admin_user' --password '$admin_pass' >/root/fh/login.out 2>&1" || return 1
-	poll "the new-device approval request" 30 in_ct 'grep -q "Approve request" /root/fh/login.out' ||
-		fail "no approval request printed: $(in_ct 'cat /root/fh/login.out' 2>&1)" || return 1
-	id="$(in_ct 'cat /root/fh/login.out' | sed -n 's/.*Approve request \(la_[^ ]*\) .*/\1/p' | head -1)"
-	match="$(in_ct 'cat /root/fh/login.out' | sed -n 's/.*pick the number \([0-9]*\).*/\1/p' | head -1)"
-	out="$(in_ct "curl -sS --max-time 10 -b /root/fh/jar -w '\n%{http_code}' -H 'Content-Type: application/json' -d '{\"match\":$match}' http://127.0.0.1:8080/api/v1/auth/login-approvals/$id/approve" 2>&1)"
-	case "$out" in *$'\n'2??) ;; *) fail "approving $id from the admin session failed: $out" || return 1 ;; esac
-	poll "levelrail-cli to report the sign-in" 60 in_ct 'grep -q "logged in as" /root/fh/login.out' ||
-		fail "sign-in did not complete after approval: $(in_ct 'cat /root/fh/login.out' 2>&1)" || return 1
-	out="$(lr apps list --api-url http://127.0.0.1:8080 2>&1)" || fail "apps list with the saved token failed: $out" || return 1
+	local out code
+	out="$(in_ct "curl -sS --max-time 10 -b /root/fh/jar -w '\n%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' http://127.0.0.1:8080/api/v1/auth/cli-pairing" 2>&1)"
+	case "$out" in *$'\n'201) ;; *) fail "issuing a CLI pairing code from the admin session failed: $out" || return 1 ;; esac
+	code="$(printf '%s' "$out" | sed -n 's/.*"code":"\([A-Z2-7]\{4\}-[A-Z2-7]\{4\}\)".*/\1/p' | head -1)"
+	[ -n "$code" ] || fail "no pairing code in the response" || return 1
+	out="$(docker exec -e HOME=/root "$name" levelrail-cli login --api-url http://127.0.0.1:8080 --code "$code" 2>&1)" ||
+		fail "signing in with the pairing code failed: $out" || return 1
+	case "$out" in *"logged in as"*) ;; *) fail "pairing sign-in did not report success: $out" || return 1 ;; esac
+	out="$(lr apps list --api-url http://127.0.0.1:8080 2>&1)" || fail "apps list with the paired token failed: $out" || return 1
+	if docker exec -e HOME=/root "$name" levelrail-cli login --api-url http://127.0.0.1:8080 --code "$code" >/root/fh/reuse.out 2>&1; then
+		fail "a pairing code worked twice" || return 1
+	fi
+	if out="$(docker exec -e HOME=/tmp/fh-blocked "$name" levelrail-cli auth login --api-url http://127.0.0.1:8080 --username "$admin_user" --password "$admin_pass" 2>&1)"; then
+		fail "a password-only sign-in from a new device was not blocked: $out" || return 1
+	fi
+	case "$out" in *"approval required"*) ;; *) fail "password sign-in failed for the wrong reason, expected the new-device approval error: $out" || return 1 ;; esac
 }
 
 step_deploy() {

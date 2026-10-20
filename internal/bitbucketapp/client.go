@@ -395,3 +395,32 @@ func (c *Client) CreateCommitBuildStatus(ctx context.Context, accessToken, fullN
 	u := c.apiBaseURL() + repositoriesAPI + fullName + "/commit/" + url.PathEscape(commit) + "/statuses/build"
 	return c.do(ctx, http.MethodPost, u, bearerPrefix+accessToken, bytes.NewReader(payload), nil)
 }
+
+// Account is the authenticated user behind an access token.
+type Account struct {
+	ID    string
+	Login string
+}
+
+// CurrentUser returns the user an access token belongs to. It needs the
+// account scope on the OAuth consumer.
+func (c *Client) CurrentUser(ctx context.Context, accessToken string) (Account, error) {
+	var resp struct {
+		AccountID   string `json:"account_id"`
+		UUID        string `json:"uuid"`
+		Nickname    string `json:"nickname"`
+		DisplayName string `json:"display_name"`
+	}
+	if err := c.do(ctx, http.MethodGet, c.apiBaseURL()+"/user", bearerPrefix+accessToken, nil, &resp); err != nil {
+		return Account{}, err
+	}
+	id := resp.AccountID
+	if id == "" {
+		id = resp.UUID
+	}
+	login := resp.Nickname
+	if login == "" {
+		login = resp.DisplayName
+	}
+	return Account{ID: id, Login: login}, nil
+}

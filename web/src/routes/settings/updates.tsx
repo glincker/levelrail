@@ -20,6 +20,7 @@ import {
 } from '../../queries/updates'
 import { UpgradePreflight } from '../../components/settings/UpgradePreflight'
 import { UpgradeAttempts } from '../../components/settings/UpgradeAttempts'
+import { RestorePoints } from '../../components/settings/RestorePoints'
 import { AutomaticUpgrades } from '../../components/settings/AutomaticUpgrades'
 import { ServerReadiness } from '../../components/settings/ServerReadiness'
 import { ReleaseHistory } from '../../components/settings/ReleaseHistory'
@@ -155,6 +156,7 @@ function UpdatesSettingsPage() {
         description={t('history.description')}
       >
         <ReleaseHistory />
+        <RestorePoints />
       </SectionCard>
       <SectionCard
         title={t('upgradeHistory.title')}

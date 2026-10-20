@@ -10,6 +10,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// templateMemoryHeadroom: a recommendation is a working-set estimate, so the cap leaves room for peaks (a Node app aborted at exactly the recommended size).
+const templateMemoryHeadroom = 2
+
 type templateDefaultsStore interface {
 	SaveServiceTemplateDefaults(ctx context.Context, d store.ServiceTemplateDefaults) error
 	GetServiceTemplateDefaults(ctx context.Context, serviceName string) (*store.ServiceTemplateDefaults, error)
@@ -55,8 +58,8 @@ func (rt *Router) planTemplateDefaults(ctx context.Context, appName, templateID 
 					}
 				}
 			case !existed:
-				limit = recommended
-				d.MemoryBytes = recommended
+				limit = recommended * templateMemoryHeadroom
+				d.MemoryBytes = limit
 			}
 			if limit > 0 {
 				if svc.Resources == nil {

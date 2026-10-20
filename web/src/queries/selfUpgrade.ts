@@ -64,6 +64,8 @@ export interface SelfUpgradeAttempt {
   log: SelfUpgradeLogLine[]
   started_at: string
   finished_at: string
+  database_restored?: boolean
+  rolled_back_minutes?: number
 }
 
 export interface ReadinessCheck {

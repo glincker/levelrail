@@ -2,6 +2,7 @@ import {
   CheckCircleIcon,
   GitBranchIcon,
   LockSimpleIcon,
+  UserCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
@@ -54,6 +55,16 @@ export function GitRepoCard({
           />
         ) : null}
       </span>
+      {option.account || option.connectionLabel ? (
+        <span className="flex w-full items-center gap-1 text-xs text-muted-foreground">
+          <UserCircleIcon className="size-3 shrink-0" aria-hidden="true" />
+          <span className="truncate">
+            {t('picker.account', {
+              name: option.account || option.connectionLabel,
+            })}
+          </span>
+        </span>
+      ) : null}
       <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
         <GitBranchIcon className="size-3 shrink-0" aria-hidden="true" />
         <span className="truncate font-mono">{option.defaultBranch}</span>

@@ -83,7 +83,7 @@ type deployWatchDeps struct {
 func startDeployWatch(ctx context.Context, g deployGate, d deployWatchDeps) {
 	resolver, _ := d.local.(docker.ImageResolver)
 	w := &deploywatch.Watcher{
-		Store: d.db, Defaults: g.defaults, Restarts: d.restarts, Metrics: d.metrics,
+		Store: d.db, Audit: d.db, Defaults: g.defaults, Restarts: d.restarts, Metrics: d.metrics,
 		Resolver: resolver, Nudger: d.nudger, Logger: d.logger, SampleInterval: d.sampleEvery,
 		Inspectors: func(nodeID string) (docker.ExitStateInspector, error) {
 			if nodeID == d.localNodeID {

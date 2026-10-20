@@ -6,9 +6,7 @@ import { triggerBuild } from '../queries/builds'
 import { setGitSource } from '../queries/gitSources'
 import { setGitBuild } from '../queries/gitBuildSettings'
 import { connectGitHubRepoAsSource } from '../queries/githubApp'
-import { connectGitLabProjectAsSource } from '../queries/gitlabApp'
-import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
-import { connectGiteaRepoAsSource } from '../queries/giteaApp'
+import { connectRepoAsSource } from '../queries/gitConnections'
 import type { ImportAnalysis } from '../queries/importAnalyze'
 import type { NormalizedRepoOption } from './gitRepoOptions'
 import type { GitSourceBuildType } from '../types/gitSource'
@@ -203,13 +201,9 @@ async function connectSource(
       await connectGitHubRepoAsSource(ref.owner, ref.repo, base)
       break
     case 'gitlab':
-      await connectGitLabProjectAsSource(ref.projectId, base)
-      break
     case 'bitbucket':
-      await connectBitbucketRepoAsSource(ref.workspace, ref.repoSlug, base)
-      break
     case 'gitea':
-      await connectGiteaRepoAsSource(ref.owner, ref.repo, base)
+      await connectRepoAsSource(ref.connectionId, { ...base, repo: ref.repo })
       break
     default:
       await setGitSource(appName, {

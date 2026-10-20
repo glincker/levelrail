@@ -209,7 +209,23 @@
       "first": "first report"
     }
   },
+  "restorePoints": {
+    "title": "Restore points",
+    "description": "A restore point (database copy, program and service file) is taken automatically before every upgrade. Restoring puts back the program, and the database only if the running one was already changed by a newer release.",
+    "empty": "No restore points yet. One is taken automatically before the next upgrade.",
+    "size": "{{mb}} MB",
+    "withData": "Also restores the database",
+    "binaryOnly": "Program only",
+    "restore": "Restore",
+    "pending": "Restoring...",
+    "confirmTitle": "Restore {{version}}?",
+    "confirmWithData": "The program and the database go back to how they were at {{time}}. Everything saved since then is discarded. The replaced database is kept on the host.",
+    "confirmBinaryOnly": "The program goes back to the earlier release. The database is already compatible, so no saved changes are lost.",
+    "started": "Restoring {{version}} on the host. The result appears in the upgrade attempts above."
+  },
   "selfUpgrade": {
+    "dbRestored": "The database was restored from the snapshot. {{minutes}} minutes of changes made since the snapshot were rolled back.",
+    "dbKept": "The database was already compatible with the previous release, so no changes were lost.",
     "title": "Upgrade this server",
     "description": "Downloads the release, checks its checksum and signature, backs up the database, tries the migrations on a copy, swaps the program and restarts. If the new release does not become healthy in time, the previous program and data come back automatically.",
     "loading": "Preparing the upgrade plan...",
