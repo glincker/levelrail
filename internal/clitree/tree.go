@@ -54,6 +54,7 @@ var Tree = map[string]*Node{
 		"errors":                  {Subs: map[string]*Node{"list": nil, "get": nil, "resolve": nil, "ignore": nil, "reopen": nil}},
 		"error-tracking":          {Subs: map[string]*Node{"enable": nil, "status": nil, "disable": nil}},
 		"canary":                  {Subs: map[string]*Node{"start": nil, "status": nil, "weight": nil, "promote": nil, "abort": nil}},
+		"split":                   {Subs: map[string]*Node{"start": nil, "status": nil, "weights": nil, "promote": nil, "stop": nil}},
 		"autoscale":               {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil, "history": nil}},
 		"build-hooks":             {Subs: map[string]*Node{"list": nil, "create": nil, "rotate": nil, "revoke": nil}},
 		"auto-update":             {Subs: map[string]*Node{"enable": nil, "disable": nil, "status": nil, "check": nil, "webhook": nil}},

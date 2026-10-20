@@ -12,6 +12,7 @@ import {
   CpuIcon,
   DatabaseIcon,
   FlagIcon,
+  FlaskIcon,
   FolderIcon,
   FolderOpenIcon,
   GaugeIcon,
@@ -472,6 +473,7 @@ export type AppTo =
   | '/apps/$name/health'
   | '/apps/$name/scheduled-tasks'
   | '/apps/$name/feature-flags'
+  | '/apps/$name/split-testing'
   | '/apps/$name/integrations'
   | '/apps/$name/metrics'
   | '/apps/$name/logs'
@@ -605,6 +607,12 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
         'Feature flags',
         '/apps/$name/feature-flags',
         <FlagIcon />,
+      ),
+      item(
+        'split-testing',
+        'Split testing',
+        '/apps/$name/split-testing',
+        <FlaskIcon />,
       ),
       item(
         'integrations',

@@ -622,6 +622,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		}
 		// Traffic controls, front side: redirects, geo and headers run first.
 		handle = r.Policy.wrapFront(r.Hosts[0], handle)
+		if DefaultSplits().Active(r.Hosts) {
+			handle = append([]any{NewSplitTestingHandler()}, handle...)
+		}
 		if r.Maintenance != nil {
 			handle = r.Maintenance.wrap(handle)
 		}
@@ -644,6 +647,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		staticHandle := []any{NewFileServerHandler(r.RootDir)}
 		if r.Rules != nil {
 			staticHandle = []any{NewStaticSiteHandler(r.RootDir, r.Rules)}
+		}
+		if DefaultSplits().Active(r.Hosts) {
+			staticHandle = append([]any{NewSplitTestingHandler()}, staticHandle...)
 		}
 		if opts.RequestStats {
 			staticHandle = append([]any{NewRequestStatsHandler(r.Hosts[0])}, staticHandle...)

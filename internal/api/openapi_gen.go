@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1591 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1596 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -360,6 +360,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/sleep/now", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSleepAppNow", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/sleep/wake", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleWakeApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/slo-preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSLOPreview", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/split", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStopSplit", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/split", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetSplit", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/split", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStartSplit", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/split", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetSplitWeights", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/split/promote", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePromoteSplit", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/start", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStartApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/static-routes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetStaticRoutes", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/static-routes/lint", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleLintStaticRoutes", Description: ""},

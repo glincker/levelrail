@@ -614,6 +614,11 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/static-routes | AbilityRead | handleGetStaticRoutes |
 | POST | /api/v1/apps/{name}/static-routes/test | AbilityRead | handleTestStaticRoutes |
 | POST | /api/v1/apps/{name}/static-routes/lint | AbilityRead | handleLintStaticRoutes |
+| GET | /api/v1/apps/{name}/split | AbilityRead | handleGetSplit |
+| POST | /api/v1/apps/{name}/split | AbilityDeploy | handleStartSplit |
+| PUT | /api/v1/apps/{name}/split | AbilityDeploy | handleSetSplitWeights |
+| DELETE | /api/v1/apps/{name}/split | AbilityDeploy | handleStopSplit |
+| POST | /api/v1/apps/{name}/split/promote | AbilityDeploy | handlePromoteSplit |
 
 </Accordion>
 

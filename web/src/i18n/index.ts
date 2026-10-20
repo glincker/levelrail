@@ -110,6 +110,7 @@ export const NAMESPACES = [
   'passkeys',
   'account',
   'palette',
+  'splitTesting',
 ] as const
 
 // New language: add its code here and a locales/<code>/ folder; untranslated namespaces and keys fall back to en.

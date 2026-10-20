@@ -75,6 +75,7 @@ const EXPECTED_APP = [
   'health',
   'scheduled-tasks',
   'feature-flags',
+  'split-testing',
   'integrations',
   'metrics',
   'logs',

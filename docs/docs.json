@@ -181,6 +181,7 @@
               "sleep-when-idle",
               "functions",
               "canary-deploys",
+              "split-testing",
               "deployments-page",
               "images",
               "deploy-previews",

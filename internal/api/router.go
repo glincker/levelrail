@@ -594,6 +594,7 @@ type Router struct {
 	sleepActivity                SleepActivity                                         // nil falls back to the stored idle baseline
 	wakeToken                    string                                                // empty disables the wake hook
 	canaries                     CanaryStore                                           // always set, in-flight canary releases
+	splitStore                   SplitTestStore                                        // nil disables split testing routes
 	canaryProgress               CanaryProgress                                        // nil is valid: GET canary then omits the live stage comparison
 	dbQueries                    DatabaseQueryStore                                    // always set, console history and saved queries
 	githubActions                AppGitHubActionsStore                                 // always set, per-app GitHub Actions report settings
@@ -1020,6 +1021,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.dashboards, _ = s.(DashboardStore)
 	rt.chaosResults, _ = s.(ChaosStore)
 	rt.emailDeliveries, _ = s.(EmailDeliveryStore)
+	rt.splitStore, _ = s.(SplitTestStore)
 	for _, opt := range opts {
 		opt(rt)
 	}

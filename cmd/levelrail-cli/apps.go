@@ -75,6 +75,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsErrorTracking(prog, args[1:], stdout, stderr, lookupEnv)
 	case "canary":
 		return runAppsCanary(prog, args[1:], stdout, stderr, lookupEnv)
+	case "split":
+		return runAppsSplit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-rollback-slo-burn":
 		return runAppsAutoRollbackSLOBurn(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "cancel-superseded":
@@ -282,6 +284,7 @@ func appsUsage(prog string) string {
   %[1]s apps errors list|get|resolve|ignore|reopen <name> [fingerprint] [flags]   Sentry-compatible error issues grouped per app
   %[1]s apps error-tracking enable|status|disable <name> [flags]   the app's Sentry DSN to set as SENTRY_DSN
   %[1]s apps canary start|status|weight|promote|abort <name> [flags]   send a share of traffic to a new image before promoting it
+  %[1]s apps split start|status|weights|promote|stop <name> [flags]   split testing: send a share of visitors to a branch deploy or release, sticky per visitor
   %[1]s apps build-hooks list|create|rotate|revoke <name> [flags]   secret URLs that build and deploy the app when POSTed to
   %[1]s apps auto-update enable|disable|status|check <name> [flags]   redeploy automatically when the image tag moves to a new digest
   %[1]s apps auto-rollback-slo-burn set|status <name> [mode] [flags]   how an app reacts when an SLO burn-rate alert fires: off, auto, dry_run, pause_for_human

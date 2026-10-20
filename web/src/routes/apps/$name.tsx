@@ -59,6 +59,7 @@ const APP_SECTION_LABELS: Record<string, string> = {
   integrations: 'Integrations',
   'scheduled-tasks': 'Jobs',
   'feature-flags': 'Feature flags',
+  'split-testing': 'Split testing',
   metrics: 'Metrics',
   logs: 'Logs',
   alerts: 'Alerts',
