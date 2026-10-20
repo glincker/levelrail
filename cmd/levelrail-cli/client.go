@@ -323,6 +323,7 @@ type (
 	ingressSettingsResource            = apiclient.IngressSettingsResource
 	httpsStatusResource                = apiclient.HTTPSStatusResource
 	imageAutoUpdateResource            = apiclient.ImageAutoUpdateResource
+	buildHookResource                  = apiclient.BuildHookResource
 	appSleepResource                   = apiclient.AppSleepResource
 	canaryResource                     = apiclient.CanaryResource
 	enableHTTPSRequest                 = apiclient.EnableHTTPSRequest

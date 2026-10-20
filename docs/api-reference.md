@@ -587,6 +587,10 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/dns-provider | AbilityRead | handleGetAppDNSProvider |
 | PUT | /api/v1/apps/{name}/dns-provider | AbilityWriteSensitive | handleSetAppDNSProvider |
 | POST | /api/v1/apps/{name}/dns-provider/test | AbilityWriteSensitive | handleTestAppDNSProvider |
+| GET | /api/v1/apps/{name}/build-hooks | AbilityRead | handleListBuildHooks |
+| POST | /api/v1/apps/{name}/build-hooks | AbilityWriteSensitive | handleCreateBuildHook |
+| POST | /api/v1/apps/{name}/build-hooks/{id}/rotate | AbilityWriteSensitive | handleRotateBuildHook |
+| DELETE | /api/v1/apps/{name}/build-hooks/{id} | AbilityWriteSensitive | handleRevokeBuildHook |
 
 </Accordion>
 
@@ -1757,6 +1761,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/sso/saml/connections/{id}/test/result | AbilityRoot | handleSAMLTestResult |
 | GET | /api/v1/forgejo-app/connect | AbilityRoot | handleStartGitConnect |
 | GET | /api/v1/forgejo-app/callback | AbilityRoot | handleGitConnectCallback |
+| POST | /api/v1/hooks/deploy/{id}/{token} | Public | handleBuildHookTrigger |
 
 ## See also
 

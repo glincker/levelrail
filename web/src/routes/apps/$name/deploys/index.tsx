@@ -13,6 +13,7 @@ import { DeployAttemptsList } from '../../../../components/DeployAttemptsList'
 import { AutoRollbackCard } from '../../../../components/AutoRollbackCard'
 import { AutoRollbackSLOBurnCard } from '../../../../components/AutoRollbackSLOBurnCard'
 import { ImageAutoUpdateCard } from '../../../../components/ImageAutoUpdateCard'
+import { BuildHooksCard } from '../../../../components/BuildHooksCard'
 import { AppSleepCard } from '../../../../components/AppSleepCard'
 import { AppAutoscaleCard } from '../../../../components/AppAutoscaleCard'
 import { AppBudgetCard } from '../../../../components/AppBudgetCard'
@@ -101,6 +102,7 @@ function DeploysSection() {
             <AutoRollbackSLOBurnCard appName={name} />
             <CanaryCard appName={name} />
             <ImageAutoUpdateCard appName={name} />
+            <BuildHooksCard appName={name} />
             <BadgeSettingsCard appName={name} />
             <GitHubActionsCard appName={name} />
             <CIDeployCard appName={name} />

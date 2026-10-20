@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1532 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1537 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -126,6 +126,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/budget", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetSpendCap", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/budget", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutSpendCap", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/budget/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendCapHistory", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/build-hooks", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListBuildHooks", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/build-hooks", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateBuildHook", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-hooks/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRevokeBuildHook", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/build-hooks/{id}/rotate", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRotateBuildHook", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleResetAppBuildLimits", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppBuildLimits", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppBuildLimits", Description: "An app's CPU and memory cap decides how much of the host its builds can take, so root only."},
@@ -1006,6 +1010,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/gitea-app/callback", Ability: "AbilityRoot", Group: "Other", Handler: "handleGitConnectCallback", Description: ""},
 	{Method: "GET", Path: "/api/v1/gitea-app/connect", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartGitConnect", Description: ""},
 	{Method: "GET", Path: "/api/v1/go-live/status", Ability: "AbilityRead", Group: "Other", Handler: "handleLiveBadges", Description: ""},
+	{Method: "POST", Path: "/api/v1/hooks/deploy/{id}/{token}", Ability: "Public", Group: "Other", Handler: "handleBuildHookTrigger", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/image-update/{name}/{token}", Ability: "Public", Group: "Other", Handler: "handleImageUpdateWebhook", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/pipeline/{id}/{token}", Ability: "Public", Group: "Other", Handler: "handlePipelineWebhook", Description: ""},
 	{Method: "GET", Path: "/api/v1/hooks/wake", Ability: "Public", Group: "Other", Handler: "handleWakeHook", Description: ""},

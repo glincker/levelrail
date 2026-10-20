@@ -14,6 +14,11 @@ import (
 // TriggerScheduledDeploy deploys serviceName's git source at the latest commit on branch, which may differ from gs.Branch.
 // Called only by the scheduler, so it returns a plain error.
 func (rt *Router) TriggerScheduledDeploy(ctx context.Context, serviceName, branch string) (string, error) {
+	return rt.triggerGitDeploy(ctx, serviceName, branch, store.DeployAttemptSourceSchedule)
+}
+
+// triggerGitDeploy deploys the latest commit on branch, recording the attempt under source.
+func (rt *Router) triggerGitDeploy(ctx context.Context, serviceName, branch, source string) (string, error) {
 	gs, err := rt.gitSources.GetGitSource(ctx, serviceName)
 	if err != nil {
 		if errors.Is(err, store.ErrGitSourceNotFound) {
@@ -34,7 +39,7 @@ func (rt *Router) TriggerScheduledDeploy(ctx context.Context, serviceName, branc
 
 	targeted := *gs
 	targeted.Branch = branch
-	status, message := rt.deployFromGitSourceAs(ctx, serviceName, targeted, sha, sha, rt.nextOrder(ctx, serviceName, sha, "", time.Time{}), store.DeployAttemptSourceSchedule)
+	status, message := rt.deployFromGitSourceAs(ctx, serviceName, targeted, sha, sha, rt.nextOrder(ctx, serviceName, sha, "", time.Time{}), source)
 	message = strings.TrimSpace(message)
 	if status >= http.StatusBadRequest {
 		if message == "" {

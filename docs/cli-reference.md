@@ -242,6 +242,7 @@ levelrail-cli jobs list|get|create|update|run|history|logs|enable|disable|delete
 levelrail-cli apps sleep enable|disable|status|wake|now|history <app-name> [flags]
 levelrail-cli apps sleep list [flags]
 levelrail-cli apps canary start|status|weight|promote|abort <app-name> [flags]   (start takes --stages, --interval, --max-error-rate, --max-p95-ratio for a staged canary)
+levelrail-cli apps build-hooks list|create|rotate|revoke <app-name> [flags]
 levelrail-cli apps auto-update enable|disable|status|check <app-name> [flags]
 levelrail-cli apps auto-rollback-slo-burn set <app-name> off|auto|dry_run|pause_for_human [flags]
 levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]

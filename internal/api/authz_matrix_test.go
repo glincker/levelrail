@@ -80,6 +80,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/webhooks/github/{name}":            "authenticated by the HMAC signature of the app's webhook secret",
 	"POST /api/v1/hooks/pipeline/{id}/{token}":       "authenticated by the per-pipeline secret URL token (sha256 compared in constant time, uniform 404 on any mismatch), optionally plus a body HMAC, rate limited",
 	"POST /api/v1/ci/oidc-exchange":                  "authenticated by a CI provider OIDC identity token (signature, issuer, audience and expiry verified) that must match a per-app trust, rate limited",
+	"POST /api/v1/hooks/deploy/{id}/{token}":         "authenticated by the per-hook secret token in the path (hash compared in constant time); any mismatch answers a uniform 404",
 	"POST /api/v1/hooks/image-update/{name}/{token}": "authenticated by the per-app secret token in the path (hash compared in constant time); any mismatch answers a uniform 404",
 	"POST /api/v1/otlp/v1/traces":                    "OTLP exporters send a per-app ingest key as a bearer token; a missing or wrong key answers 401",
 	"POST /api/v1/sentry/api/{project}/envelope/":    "Sentry SDKs send the app's DSN public key in X-Sentry-Auth; a missing or wrong key answers 401, rate limited per app",

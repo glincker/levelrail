@@ -232,6 +232,7 @@ type Store interface {
 	AppGitHubActionsStore
 	CIOIDCTrustStore
 	ImageAutoUpdateStore
+	BuildHookStore
 	AppSleepStore
 	DataImportStore
 	MigrationHubStore
