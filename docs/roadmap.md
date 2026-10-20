@@ -37,7 +37,7 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 - Embedded Caddy ingress: automatic TLS (internal issuer by default, public ACME toggleable), zero-config `sslip.io` hostnames, per-domain bring-your-own certificates. See [domains and ingress](/domains-and-ingress).
 - Envelope-encrypted secrets with master-key rotation. See [security](/security).
 - Container exec and an interactive terminal (dashboard or `apps exec --interactive`), gated to root-level tokens.
-- [Service template](/templates-and-registry) catalog: 300+ entries (see [template catalog](/template-catalog)), reversing the original non-goal in [ADR 015](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md).
+- [Service template](/templates-and-registry) catalog: about 360 entries (see [template catalog](/template-catalog)), reversing the original non-goal in [ADR 015](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md).
 
 ### Data
 
@@ -88,7 +88,7 @@ These exist and are tested, but are gated or carry a beta label. See [feature st
 - Multi-node on real hosts: the WireGuard mesh and cross-host remote transport are unverified outside fakes and local Docker daemons.
 - Idle footprint on Linux: measured only on an Apple M4 Max dev build so far. See [performance](/performance).
 - Load and failover numbers: the harness exists (`levelrail-cli bench run`), no published results yet. See [benchmarks](/benchmarks).
-- Template coverage: a sample of the 300+ templates is deployed by e2e tests, not the whole catalog.
+- Template coverage: a sample of the roughly 360 templates is deployed by e2e tests, not the whole catalog.
 - Other database engines: PITR is Postgres only, and TLS by default is Postgres and Redis only.
 - Stable release: none yet. Upgrade and downgrade testing across versions with real data is part of Phase 5.
 
