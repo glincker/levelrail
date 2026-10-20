@@ -221,6 +221,13 @@ func (rt *Router) handleResolveNodeFailure(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "kind, name and action (wait or restore) are required")
 		return
 	}
+	ref := appRef(body.Name)
+	if body.Kind == store.NodeMoveKindDatabase {
+		ref = databaseRef(body.Name)
+	}
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusNotFound, "resource not found"), ref, nodeRef(r.PathValue("id"))) {
+		return
+	}
 	if body.TargetNodeID != "" {
 		if err := rt.checkPlacement(r.Context(), body.Kind, body.Name, body.TargetNodeID); err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
