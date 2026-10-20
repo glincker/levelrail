@@ -59,3 +59,22 @@ func TestRun_GitProvidersRepos_SurfacesTruncationAndMoreHint(t *testing.T) {
 		t.Errorf("stdout = %q, want the more-results hint and the truncation warning", stdout)
 	}
 }
+
+func TestRun_GitProviders_ShowsHealthAndReconnectHint(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, []gitProviderResource{
+		{Provider: "github", Connected: true, Connection: apiclient.GitConnectionResource{Status: "ok"}},
+		{Provider: "gitlab", Connected: true, Connection: apiclient.GitConnectionResource{Status: "needs_reauthorize", Detail: "the authorization was revoked or has expired"}},
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"git-providers", "--api-url", srv.URL})
+	for _, want := range []string{"HEALTH", "needs_reauthorize", "Press Reconnect", "/api/v1/gitlab-app/connect"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("stdout missing %q:\n%s", want, stdout)
+		}
+	}
+	if strings.Contains(stdout, "github: ") {
+		t.Errorf("a healthy provider must not print a reconnect hint:\n%s", stdout)
+	}
+}

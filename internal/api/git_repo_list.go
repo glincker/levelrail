@@ -101,6 +101,9 @@ func (rt *Router) writeGitRepoListError(w http.ResponseWriter, provider string, 
 		writeGitRateLimited(w, provider, rl)
 		return
 	}
+	if rt.writeGitConnError(w, err) {
+		return
+	}
 	rt.logger.Error("api: list git repos failed", slog.String("provider", provider), slog.String("error", err.Error()))
 	writeError(w, http.StatusBadGateway, "failed to list repositories from "+provider)
 }

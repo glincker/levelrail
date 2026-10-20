@@ -313,8 +313,8 @@ func TestHandleDisconnectGiteaApp_ClearsSecrets(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/gitea-app", ""))
-	if rec.Code != http.StatusNoContent {
-		t.Fatalf("status = %d, want 204, body = %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
 	}
 	if _, err := secrets.Resolve(ctx, store.GiteaAppSecretsKey(), giteaAppAccessTokenKey); err == nil {
 		t.Error("access_token still resolvable after disconnect, want it deleted")

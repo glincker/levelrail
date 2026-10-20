@@ -16,6 +16,8 @@ type gitProviderResource struct {
 	CanListBranches    bool   `json:"can_list_branches"`
 	CanRegisterWebhook bool   `json:"can_register_webhook"`
 	CanAuthClone       bool   `json:"can_auth_clone"`
+	// Connection is the last known health of the connection: ok, needs_reauthorize, revoked or rate_limited.
+	Connection gitConnResource `json:"connection"`
 }
 
 // Replaces three separate provider status calls. AbilityReadSensitive, since it discloses only connection state and capabilities.
@@ -26,6 +28,9 @@ func (rt *Router) handleListGitProviders(w http.ResponseWriter, r *http.Request)
 		rt.gitlabProviderStatus(ctx),
 		rt.bitbucketProviderStatus(ctx),
 		rt.giteaProviderStatus(ctx),
+	}
+	for i := range out {
+		out[i].Connection = rt.gitConnHealth(ctx, out[i].Provider)
 	}
 	writeJSON(w, http.StatusOK, out)
 }

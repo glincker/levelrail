@@ -125,16 +125,16 @@ func TestHandleListGitProviders_AllConnected(t *testing.T) {
 		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
 	}
 	body := rec.Body.String()
-	if !strings.Contains(body, `{"provider":"github","connected":true,"can_list_branches":true,"can_register_webhook":true,"can_auth_clone":true}`) {
+	if !strings.Contains(body, `{"provider":"github","connected":true,"can_list_branches":true,"can_register_webhook":true,"can_auth_clone":true,"connection":{"status":"ok"}}`) {
 		t.Errorf("body = %s, want github fully capable", body)
 	}
-	if !strings.Contains(body, `{"provider":"gitlab","connected":true,"can_list_branches":true,"can_register_webhook":true,"can_auth_clone":false}`) {
+	if !strings.Contains(body, `{"provider":"gitlab","connected":true,"can_list_branches":true,"can_register_webhook":true,"can_auth_clone":false,"connection":{"status":"ok"}}`) {
 		t.Errorf("body = %s, want gitlab connected with branch listing and webhook registration, no auth clone", body)
 	}
-	if !strings.Contains(body, `{"provider":"bitbucket","connected":true,"can_list_branches":true,"can_register_webhook":true,"can_auth_clone":false}`) {
+	if !strings.Contains(body, `{"provider":"bitbucket","connected":true,"can_list_branches":true,"can_register_webhook":true,"can_auth_clone":false,"connection":{"status":"ok"}}`) {
 		t.Errorf("body = %s, want bitbucket connected with branch listing and webhook registration, no auth clone", body)
 	}
-	if !strings.Contains(body, `{"provider":"gitea","connected":true,"can_list_branches":true,"can_register_webhook":true,"can_auth_clone":false}`) {
+	if !strings.Contains(body, `{"provider":"gitea","connected":true,"can_list_branches":true,"can_register_webhook":true,"can_auth_clone":false,"connection":{"status":"ok"}}`) {
 		t.Errorf("body = %s, want gitea connected with branch listing and webhook registration, no auth clone", body)
 	}
 }

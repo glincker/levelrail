@@ -31,6 +31,7 @@ var sensitiveFieldAllowlist = map[string]string{ //nolint:gosec // field names a
 	"sharedEnvVarResource.Secret":                       "bool flag",
 	"prPreviewEnvResource.Secret":                       "bool flag",
 	"environmentCloneResultResource.CopiedSecretValues": "bool flag",
+	"gitDisconnectResource.TokenRevoked":                "bool flag, true only when the provider revocation call succeeded",
 	"securitySessionsResponse.Tokens":                   "token metadata list (tokenResource carries no secret)",
 	"myCredentialsResponse.Tokens":                      "token metadata list (tokenResource carries no secret)",
 	"suggestionsResponse.Tokens":                        "token ids, names and ability lists only, no token value or hash",

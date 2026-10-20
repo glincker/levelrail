@@ -138,6 +138,19 @@ func (c *Client) token(ctx context.Context, instanceURL string, form url.Values)
 	return toTokens(out), nil
 }
 
+// RevokeToken revokes an access or refresh token at the instance, ending the
+// grant. GitLab answers 200 even for an already revoked token.
+func (c *Client) RevokeToken(ctx context.Context, instanceURL, clientID, clientSecret, token string) error {
+	form := url.Values{"client_id": {clientID}, "client_secret": {clientSecret}, "token": {token}}
+	revokeURL := strings.TrimRight(instanceURL, "/") + "/oauth/revoke"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, revokeURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return fmt.Errorf("%s: build revoke request: %w", errPrefix, err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	return gitprovider.Execute(c.HTTP, req, errPrefix, apiName, http.MethodPost+" "+revokeURL, nil)
+}
+
 // Project is one GitLab project accessible to the connected account, the
 // subset of GitLab's Project object this control plane's project picker
 // and "use as source" action need.

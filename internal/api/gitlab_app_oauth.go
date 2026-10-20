@@ -211,27 +211,35 @@ func (rt *Router) gitlabAccessToken(ctx context.Context) (store.GitLabAppConnect
 		return conn, accessToken, nil
 	}
 
-	refreshToken, err := rt.gitlabAppSecrets.Resolve(ctx, key, gitLabAppRefreshTokenKey)
+	accessToken, err := rt.refreshGitOAuth(ctx, gitOAuthSpec{
+		provider: gitProviderGitLab,
+		read: func(ctx context.Context) (gitOAuthState, error) {
+			return rt.readGitOAuthState(ctx, rt.gitlabAppSecrets, key, gitLabAppAccessTokenKey, gitLabAppRefreshTokenKey, gitLabAppTokenExpiresKey)
+		},
+		exchange: func(ctx context.Context, refresh string) (gitOAuthTokens, error) {
+			clientSecret, err := rt.gitlabAppSecrets.Resolve(ctx, key, gitLabAppClientSecretKey)
+			if err != nil {
+				return gitOAuthTokens{}, fmt.Errorf("resolve gitlab client secret: %w", err)
+			}
+			t, err := rt.gitlabAppClient.RefreshToken(ctx, conn.InstanceURL, conn.ClientID, clientSecret, refresh)
+			return gitOAuthTokens{Access: t.AccessToken, Refresh: t.RefreshToken, Expires: t.ExpiresAt}, err
+		},
+		save: func(ctx context.Context, t gitOAuthTokens) error {
+			return rt.saveGitLabTokens(ctx, gitlabapp.Tokens{AccessToken: t.Access, RefreshToken: t.Refresh, ExpiresAt: t.Expires})
+		},
+	})
 	if err != nil {
-		return store.GitLabAppConnection{}, "", fmt.Errorf("resolve gitlab refresh token: %w", err)
+		return store.GitLabAppConnection{}, "", err
 	}
-	clientSecret, err := rt.gitlabAppSecrets.Resolve(ctx, key, gitLabAppClientSecretKey)
-	if err != nil {
-		return store.GitLabAppConnection{}, "", fmt.Errorf("resolve gitlab client secret: %w", err)
-	}
-	tokens, err := rt.gitlabAppClient.RefreshToken(ctx, conn.InstanceURL, conn.ClientID, clientSecret, refreshToken)
-	if err != nil {
-		return store.GitLabAppConnection{}, "", fmt.Errorf("refresh gitlab access token: %w", err)
-	}
-	if err := rt.saveGitLabTokens(ctx, tokens); err != nil {
-		return store.GitLabAppConnection{}, "", fmt.Errorf("save refreshed gitlab tokens: %w", err)
-	}
-	return conn, tokens.AccessToken, nil
+	return conn, accessToken, nil
 }
 
 // writeGitLabAppTokenError maps gitlabAccessToken's sentinels to 409,
 // everything else to a logged 500, mirroring writeGitHubAppTokenError.
 func (rt *Router) writeGitLabAppTokenError(w http.ResponseWriter, logMsg string, err error) {
+	if rt.writeGitConnError(w, err) {
+		return
+	}
 	if errors.Is(err, errGitLabAppNotConnected) {
 		writeError(w, http.StatusConflict, "no gitlab app is connected")
 		return

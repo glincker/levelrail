@@ -205,27 +205,35 @@ func (rt *Router) giteaAccessToken(ctx context.Context) (store.GiteaAppConnectio
 		return conn, accessToken, nil
 	}
 
-	refreshToken, err := rt.giteaAppSecrets.Resolve(ctx, key, giteaAppRefreshTokenKey)
+	accessToken, err := rt.refreshGitOAuth(ctx, gitOAuthSpec{
+		provider: gitProviderGitea,
+		read: func(ctx context.Context) (gitOAuthState, error) {
+			return rt.readGitOAuthState(ctx, rt.giteaAppSecrets, key, giteaAppAccessTokenKey, giteaAppRefreshTokenKey, giteaAppTokenExpiresKey)
+		},
+		exchange: func(ctx context.Context, refresh string) (gitOAuthTokens, error) {
+			clientSecret, err := rt.giteaAppSecrets.Resolve(ctx, key, giteaAppClientSecretKey)
+			if err != nil {
+				return gitOAuthTokens{}, fmt.Errorf("resolve gitea client secret: %w", err)
+			}
+			t, err := rt.giteaAppClient.RefreshToken(ctx, conn.InstanceURL, conn.ClientID, clientSecret, refresh)
+			return gitOAuthTokens{Access: t.AccessToken, Refresh: t.RefreshToken, Expires: t.ExpiresAt}, err
+		},
+		save: func(ctx context.Context, t gitOAuthTokens) error {
+			return rt.saveGiteaTokens(ctx, giteaapp.Tokens{AccessToken: t.Access, RefreshToken: t.Refresh, ExpiresAt: t.Expires})
+		},
+	})
 	if err != nil {
-		return store.GiteaAppConnection{}, "", fmt.Errorf("resolve gitea refresh token: %w", err)
+		return store.GiteaAppConnection{}, "", err
 	}
-	clientSecret, err := rt.giteaAppSecrets.Resolve(ctx, key, giteaAppClientSecretKey)
-	if err != nil {
-		return store.GiteaAppConnection{}, "", fmt.Errorf("resolve gitea client secret: %w", err)
-	}
-	tokens, err := rt.giteaAppClient.RefreshToken(ctx, conn.InstanceURL, conn.ClientID, clientSecret, refreshToken)
-	if err != nil {
-		return store.GiteaAppConnection{}, "", fmt.Errorf("refresh gitea access token: %w", err)
-	}
-	if err := rt.saveGiteaTokens(ctx, tokens); err != nil {
-		return store.GiteaAppConnection{}, "", fmt.Errorf("save refreshed gitea tokens: %w", err)
-	}
-	return conn, tokens.AccessToken, nil
+	return conn, accessToken, nil
 }
 
 // writeGiteaAppTokenError maps giteaAccessToken's sentinels to 409,
 // everything else to a logged 500, mirroring writeGitLabAppTokenError.
 func (rt *Router) writeGiteaAppTokenError(w http.ResponseWriter, logMsg string, err error) {
+	if rt.writeGitConnError(w, err) {
+		return
+	}
 	if errors.Is(err, errGiteaAppNotConnected) {
 		writeError(w, http.StatusConflict, "no gitea app is connected")
 		return

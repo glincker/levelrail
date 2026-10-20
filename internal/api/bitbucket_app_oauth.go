@@ -187,28 +187,32 @@ func (rt *Router) bitbucketAccessToken(ctx context.Context) (string, error) {
 		return accessToken, nil
 	}
 
-	refreshToken, err := rt.bitbucketAppSecrets.Resolve(ctx, key, bitbucketAppRefreshTokenKey)
-	if err != nil {
-		return "", fmt.Errorf("resolve bitbucket refresh token: %w", err)
-	}
-	consumerSecret, err := rt.bitbucketAppSecrets.Resolve(ctx, key, bitbucketAppSecretKey)
-	if err != nil {
-		return "", fmt.Errorf("resolve bitbucket consumer secret: %w", err)
-	}
-	tokens, err := rt.bitbucketAppClient.RefreshToken(ctx, conn.Key, consumerSecret, refreshToken)
-	if err != nil {
-		return "", fmt.Errorf("refresh bitbucket access token: %w", err)
-	}
-	if err := rt.saveBitbucketTokens(ctx, tokens); err != nil {
-		return "", fmt.Errorf("save refreshed bitbucket tokens: %w", err)
-	}
-	return tokens.AccessToken, nil
+	return rt.refreshGitOAuth(ctx, gitOAuthSpec{
+		provider: gitProviderBitbucket,
+		read: func(ctx context.Context) (gitOAuthState, error) {
+			return rt.readGitOAuthState(ctx, rt.bitbucketAppSecrets, key, bitbucketAppAccessTokenKey, bitbucketAppRefreshTokenKey, bitbucketAppTokenExpiresKey)
+		},
+		exchange: func(ctx context.Context, refresh string) (gitOAuthTokens, error) {
+			consumerSecret, err := rt.bitbucketAppSecrets.Resolve(ctx, key, bitbucketAppSecretKey)
+			if err != nil {
+				return gitOAuthTokens{}, fmt.Errorf("resolve bitbucket consumer secret: %w", err)
+			}
+			t, err := rt.bitbucketAppClient.RefreshToken(ctx, conn.Key, consumerSecret, refresh)
+			return gitOAuthTokens{Access: t.AccessToken, Refresh: t.RefreshToken, Expires: t.ExpiresAt}, err
+		},
+		save: func(ctx context.Context, t gitOAuthTokens) error {
+			return rt.saveBitbucketTokens(ctx, bitbucketapp.Tokens{AccessToken: t.Access, RefreshToken: t.Refresh, ExpiresAt: t.Expires})
+		},
+	})
 }
 
 // writeBitbucketAppTokenError maps bitbucketAccessToken's sentinels to
 // 409, everything else to a logged 500, mirroring
 // writeGitLabAppTokenError.
 func (rt *Router) writeBitbucketAppTokenError(w http.ResponseWriter, logMsg string, err error) {
+	if rt.writeGitConnError(w, err) {
+		return
+	}
 	if errors.Is(err, errBitbucketAppNotConnected) {
 		writeError(w, http.StatusConflict, "no bitbucket app is connected")
 		return

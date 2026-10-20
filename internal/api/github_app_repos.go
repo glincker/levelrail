@@ -63,7 +63,7 @@ func (rt *Router) mintGitHubAppInstallationToken(ctx context.Context) (instanceU
 
 	tok, err := rt.githubAppClient.MintInstallationToken(ctx, instanceURL, appJWT, *conn.InstallationID)
 	if err != nil {
-		return "", "", fmt.Errorf("mint github app installation token: %w", err)
+		return "", "", rt.gitConnRecordFailure(ctx, gitProviderGitHub, fmt.Errorf("mint github app installation token: %w", err), true)
 	}
 	secretmask.Add(tok.Token)
 	return instanceURL, tok.Token, nil
@@ -111,7 +111,7 @@ func (rt *Router) mintGitHubAppInstallationTokenForOwner(ctx context.Context, ow
 	}
 	tok, err := rt.githubAppClient.MintInstallationToken(ctx, instanceURL, appJWT, matched.InstallationID)
 	if err != nil {
-		return "", "", fmt.Errorf("mint github app installation token: %w", err)
+		return "", "", rt.gitConnRecordFailure(ctx, gitProviderGitHub, fmt.Errorf("mint github app installation token: %w", err), true)
 	}
 	secretmask.Add(tok.Token)
 	return instanceURL, tok.Token, nil
@@ -120,6 +120,9 @@ func (rt *Router) mintGitHubAppInstallationTokenForOwner(ctx context.Context, ow
 // writeGitHubAppTokenError maps mintGitHubAppInstallationToken's
 // sentinels to 409, everything else to a logged 500.
 func (rt *Router) writeGitHubAppTokenError(w http.ResponseWriter, logMsg string, err error) {
+	if rt.writeGitConnError(w, err) {
+		return
+	}
 	if errors.Is(err, errGitHubAppNotConnected) {
 		writeError(w, http.StatusConflict, "no github app is connected")
 		return

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   ArrowsClockwiseIcon,
   MagnifyingGlassIcon,
@@ -22,6 +23,7 @@ import type { GitRepoListParams, GitRepoProvider } from '../types/gitRepos'
 import { GitRepoCard } from './GitRepoCard'
 import { GitRepoListStatus } from './GitRepoListStatus'
 import { clock } from '../lib/clockTime'
+import { gitProviderKeys } from '../queries/gitProviders'
 
 const SEARCH_DEBOUNCE_MS = 250
 const MAX_OWNER_CHIPS = 8
@@ -92,6 +94,13 @@ export function GitRepoListPicker({
   )
   const list = useGitRepoList(provider, params, enabled)
   const refresh = useRefreshGitRepos(provider)
+  const queryClient = useQueryClient()
+  const failed = list.isError
+  useEffect(() => {
+    if (failed) {
+      void queryClient.invalidateQueries({ queryKey: gitProviderKeys.all })
+    }
+  }, [failed, queryClient])
 
   const pages = useMemo(() => list.data?.pages ?? [], [list.data])
   const first = pages[0]

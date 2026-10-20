@@ -102,7 +102,7 @@ Register an OAuth2 application in Gitea, then paste its `instance_url`, `client_
 </Tab>
 </Tabs>
 
-To disconnect, call `DELETE /api/v1/github-app` (or `/gitlab-app`, `/bitbucket-app`, `/gitea-app`) removes the connection and its secrets from the control plane only. It does not revoke the token or delete the App on the provider's side. Remove it there yourself, for example from `github.com/settings/apps`.
+To disconnect, call `DELETE /api/v1/github-app` (or `/gitlab-app`, `/bitbucket-app`, `/gitea-app`). It removes the connection and its secrets from the control plane, revokes the OAuth token at GitLab, and answers `{disconnected, token_revoked, note}`. It does not uninstall the GitHub App or delete the application on the provider's side; the note says where to do that.
 
 ## Listing repositories
 
@@ -128,6 +128,25 @@ levelrail-cli git-providers repos github --search api --archived exclude
 levelrail-cli git-providers repos gitlab --owner platform --all
 levelrail-cli git-providers repos gitea --refresh
 ```
+
+## Reconnecting a provider
+
+Each connection has a health state, shown on its settings page, in `GET /api/v1/git-providers` (`connection.status`), in `levelrail-cli git-providers` and in the System Doctor check `git_connections`.
+
+| Status | Meaning | What to do |
+| --- | --- | --- |
+| `ok` | The provider accepted the last call. | Nothing. |
+| `needs_reauthorize` | The grant was revoked or expired, or the provider answered 401 or 403 to the stored credential. | Press Reconnect on the provider's settings page. |
+| `revoked` | The GitHub App installation (or the authorization) no longer exists on the provider. | Press Reconnect, which opens the App page to install it again. |
+| `rate_limited` | The provider is rate limiting this control plane. | Nothing: saved lists are used and the provider is asked again after `next_check_at`. |
+
+API calls that hit a `needs_reauthorize` or `revoked` connection answer `409` with `{"code": "needs_reauthorize"}` (or `revoked`) instead of an internal error. A rate limit answers `429` with `Retry-After`. The status clears itself on the next call the provider accepts.
+
+GitLab, Bitbucket and Gitea refresh their OAuth tokens one caller at a time per connection. A caller that waited reuses the token another caller just refreshed, and a refresh token is never spent twice, so concurrent requests cannot break a provider that rotates refresh tokens.
+
+Disconnecting a provider reports what happened on the provider's side: GitLab's token is revoked at GitLab; GitHub (installation tokens are minted per call and never stored), Bitbucket and Gitea have nothing the control plane can revoke, and the response says where to remove the grant by hand.
+
+GitLab asks for the broad `api` OAuth scope, because it is the one scope that covers listing projects and registering webhooks. It grants read and write on everything the connecting account can see. Connect with a dedicated, least-privileged GitLab account or a bot user if that is too wide.
 
 ## Use a repository as an app's source
 
@@ -633,9 +652,9 @@ Both have their own release webhook events that Levelrail does not subscribe to.
 A GitHub Enterprise Server connection works for the App itself, but the authenticated-clone path only recognizes `github.com` URLs.
 
 </Accordion>
-<Accordion title="Disconnecting does not revoke anything on the provider">
+<Accordion title="Disconnecting only revokes the token on GitLab">
 
-Disconnecting deletes the local connection and its secrets. It never revokes the token, uninstalls the App, or deletes the OAuth application on the provider's side.
+Disconnecting deletes the local connection and its secrets and, for GitLab, revokes the OAuth token. It never uninstalls the GitHub App or deletes the OAuth application on any provider, and Bitbucket and Gitea offer no API to revoke a token. The disconnect response and the toast say which of these applied.
 
 </Accordion>
 </AccordionGroup>

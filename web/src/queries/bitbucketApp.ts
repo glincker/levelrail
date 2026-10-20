@@ -25,6 +25,7 @@ import type {
 } from '../types/bitbucketApp'
 import type { GitSourceResource } from '../types/gitSource'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { GitDisconnectResult } from '../types/gitProviders'
 import { gitSourceKeys } from './gitSources'
 
 export const bitbucketAppKeys = {
@@ -94,12 +95,12 @@ export function useConnectBitbucketApp() {
   })
 }
 
-// DELETE /api/v1/bitbucket-app (handleDisconnectBitbucketApp). 204 on
-// success.
-export async function disconnectBitbucketApp(): Promise<void> {
+// DELETE /api/v1/bitbucket-app (handleDisconnectBitbucketApp). Says whether the
+// token was revoked at the provider.
+export async function disconnectBitbucketApp(): Promise<GitDisconnectResult> {
   const res = await fetch('/api/v1/bitbucket-app', { method: 'DELETE' })
-  if (res.status === 204) {
-    return
+  if (res.ok) {
+    return (await res.json()) as GitDisconnectResult
   }
   throw new ApiError(
     res.status,
@@ -112,7 +113,7 @@ export async function disconnectBitbucketApp(): Promise<void> {
 
 export function useDisconnectBitbucketApp() {
   const queryClient = useQueryClient()
-  return useMutation<void, ApiError, void>({
+  return useMutation<GitDisconnectResult, ApiError, void>({
     mutationFn: disconnectBitbucketApp,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: bitbucketAppKeys.all })

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { GitSelectedRepoBar } from './GitSelectedRepoBar'
+import { GitConnectionBanner } from './GitConnectionHealth'
 import { GitRepoListPicker } from './GitRepoListPicker'
 import type { NormalizedRepoOption } from '../lib/gitRepoOptions'
 import { useGitHubAppBranches } from '../queries/githubApp'
@@ -66,6 +67,7 @@ function ConnectedProviderRow({
 
   return (
     <div className="space-y-2">
+      <GitConnectionBanner provider={provider} />
       {selected && !changing ? (
         <GitSelectedRepoBar
           option={selected}
