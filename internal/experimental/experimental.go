@@ -39,6 +39,8 @@ const (
 	SAMLSCIM Feature = "saml-scim"
 	// Plugins is the out-of-process plugin runtime: signed packages, operator-approved abilities (ADR 034).
 	Plugins Feature = "plugins"
+	// GitPush is the built-in remote that deploys an app from a push.
+	GitPush Feature = "git-push"
 )
 
 // EnvVar names the env var holding the comma separated enabled features.
@@ -46,7 +48,7 @@ const EnvVar = "APP_EXPERIMENTAL"
 
 // All returns every gated feature, sorted.
 func All() []Feature {
-	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl, ResourceAdvisor, CLIConsole, MobileAPI, SAMLSCIM, Plugins}
+	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl, ResourceAdvisor, CLIConsole, MobileAPI, SAMLSCIM, Plugins, GitPush}
 	sort.Slice(fs, func(i, j int) bool { return fs[i] < fs[j] })
 	return fs
 }

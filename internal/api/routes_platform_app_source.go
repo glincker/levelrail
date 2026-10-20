@@ -47,6 +47,18 @@ func (rt *Router) registerAppSourceRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/validate", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleValidateGitSourceAccess))
 	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/rotate-webhook-secret", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotateGitSourceWebhookSecret))
 
+	// Git push deploy remote (git_push_remote.go): token management for the
+	// beta push remote, GET=Read, everything else WriteSensitive like git-source.
+	mux.HandleFunc("GET /api/v1/apps/{name}/git-remote", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetGitRemote))
+	mux.HandleFunc("POST /api/v1/apps/{name}/git-remote", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleIssueGitRemote))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/git-remote", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitRemoteBranch))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/git-remote", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteGitRemote))
+	// The push endpoints (git_push_http.go) take HTTP basic auth with the per-app
+	// push token (hash compared in constant time, uniform 401, rate limited), not
+	// a session. An anonymous request gets the 401 challenge git clients expect.
+	mux.HandleFunc("GET /api/v1/git/{repo}/info/refs", rt.handleGitInfoRefs)
+	mux.HandleFunc("POST /api/v1/git/{repo}/git-receive-pack", rt.handleGitReceivePack)
+
 	// Scheduled deploys (app_schedule.go): a per-app cron schedule that
 	// redeploys the latest commit on a branch, checked by
 	// internal/scheduledeploy.Scheduler. Same GET=Read/PUT=WriteSensitive

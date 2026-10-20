@@ -265,6 +265,8 @@ Endpoints for:
 | GET | /api/v1/security/reachability | AbilityRoot | handleSecurityReachability |
 | GET | /api/v1/settings/dns-provider-plugin | AbilityRead | handleGetDNSProviderPlugin |
 | PUT | /api/v1/settings/dns-provider-plugin | AbilityRoot | handleSetDNSProviderPlugin |
+| GET | /api/v1/settings/server-profile | AbilityRead | handleGetServerProfile |
+| PUT | /api/v1/settings/server-profile | AbilityRoot | handleSetServerProfile |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -278,8 +280,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/settings/server-profile | AbilityRead | handleGetServerProfile |
-| PUT | /api/v1/settings/server-profile | AbilityRoot | handleSetServerProfile |
 
 </Accordion>
 
@@ -555,6 +555,12 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/shield/recommended | AbilityDeploy | handleApplyRecommendedShield |
 | GET | /api/v1/apps/{name}/ingress-limits | AbilityRead | handleGetAppIngressLimits |
 | PUT | /api/v1/apps/{name}/ingress-limits | AbilityDeploy | handlePutAppIngressLimits |
+| GET | /api/v1/apps/{name}/git-remote | AbilityRead | handleGetGitRemote |
+| POST | /api/v1/apps/{name}/git-remote | AbilityWriteSensitive | handleIssueGitRemote |
+| PUT | /api/v1/apps/{name}/git-remote | AbilityWriteSensitive | handleSetGitRemoteBranch |
+| DELETE | /api/v1/apps/{name}/git-remote | AbilityWriteSensitive | handleDeleteGitRemote |
+| GET | /api/v1/git/{repo}/info/refs | Public | handleGitInfoRefs |
+| POST | /api/v1/git/{repo}/git-receive-pack | Public | handleGitReceivePack |
 
 </Accordion>
 

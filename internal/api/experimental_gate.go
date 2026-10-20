@@ -19,11 +19,15 @@ type experimentalError struct {
 
 var databaseEnvironmentPath = regexp.MustCompile(`^/api/v1/databases/[^/]+/environment$`)
 
+var gitRemoteAppPath = regexp.MustCompile(`^/api/v1/apps/[^/]+/git-remote$`)
+
 var lbAppPath = regexp.MustCompile(`^/api/v1/apps/[^/]+/loadbalancer(/|$)`)
 
 // featureForPath maps a request path to the experimental feature guarding it.
 func featureForPath(p string) (experimental.Feature, bool) {
 	switch {
+	case gitRemoteAppPath.MatchString(p):
+		return experimental.GitPush, true
 	case p == "/api/v1/ai/sessions" || strings.HasPrefix(p, "/api/v1/ai/sessions/"),
 		p == "/api/v1/settings/ai-assistant", strings.HasPrefix(p, "/api/v1/settings/ai-assistant/"),
 		p == "/api/v1/ai/usage":

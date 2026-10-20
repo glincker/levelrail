@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { GitSourceCard } from '../../../components/GitSourceCard'
+import { GitPushRemoteCard } from '../../../components/GitPushRemoteCard'
 import { GitDeploySettingsCard } from '../../../components/GitDeploySettingsCard'
 import { WebhookDeliveriesPanel } from '../../../components/WebhookDeliveriesPanel'
 
@@ -19,6 +20,7 @@ function SourceSection() {
   return (
     <div className="space-y-6">
       <GitSourceCard app={app} />
+      <GitPushRemoteCard appName={name} />
       <GitDeploySettingsCard appName={name} />
       <WebhookDeliveriesPanel app={app} />
     </div>

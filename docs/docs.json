@@ -247,6 +247,7 @@
               "pipelines",
               "pipelines-oidc",
               "git-integrations",
+              "git-push-deploy",
               "import-a-repo",
               "monorepos"
             ],

@@ -476,7 +476,9 @@ type Router struct {
 	// WithCapacityForecastLookback.
 	capacityForecastLookback     time.Duration
 	builder                      Builder                      // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
-	sourceCache                  *sourcecache.Cache           // git mirror and git host health; never nil after NewRouter
+	gitPushStore                 GitPushStore                 // nil is valid: the push remote routes answer 501
+	gitPush                      gitPushRuntime               // zero value is ready: limiters and per-app push locks
+	sourceCache                  *sourcecache.Cache           //git mirror and git host health; never nil after NewRouter
 	fetch                        fetchFunc                    // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
 	listBranches                 listBranchesFunc             // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
 	importFiles                  func() importplan.FileSource // per-request repo file reader for handleImportPlan; defaulted in NewRouter, overridable in tests
@@ -961,6 +963,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.dnsRecordManager = rt.resolveDNSRecordManager
 	rt.fetch = rt.gitCheckout
 	rt.gitSourceFetch = rt.gitCheckoutWithToken
+	if g, ok := any(s).(GitPushStore); ok {
+		rt.gitPushStore = g
+	}
 	if g, ok := any(s).(SetupGuideStore); ok {
 		rt.setupGuide = g
 	}

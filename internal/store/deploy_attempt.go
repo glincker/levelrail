@@ -260,6 +260,7 @@ const (
 // own manual rollback already goes through.
 const (
 	DeployAttemptSourceWebhook      = "webhook"
+	DeployAttemptSourceGitPush      = "git_push"
 	DeployAttemptSourceManual       = "manual"
 	DeployAttemptSourceImage        = "image"
 	DeployAttemptSourceCompose      = "compose"

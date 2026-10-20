@@ -65,6 +65,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runRestoreAlias(prog, args[1:], stdout, stderr, lookupEnv)
 	case "apps":
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
+	case "git":
+		return runGit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "previews":
 		return runAppsPreviews(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy":
@@ -325,6 +327,7 @@ Usage:
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
   %[1]s apps deploy-compose <name> --file compose.yaml [flags]   deploy a Docker Compose file as an app
   %[1]s import <repo-url|image|-f file|--docker-run "..."> [--deploy] [flags]   preview or deploy anything: repo, image, docker run, compose, Dockerfile
+  %[1]s git remote add|show|rotate|branch|revoke <app> [flags]   deploy with git push to your own server (beta)
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
