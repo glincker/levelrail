@@ -22,6 +22,7 @@ const dashboardURLProbeTimeout = 6 * time.Second
 func (rt *Router) settingsFixes() []fixit.Fix {
 	return []fixit.Fix{
 		rt.dashboardHTTPSFix(),
+		rt.webhookPublicURLFix(),
 		rt.passkeyRPFix(),
 		rt.trustedProxiesFix(),
 		rt.guidedSettingsFix("settings.email.sender", "email_sender", "Set up an email sender",

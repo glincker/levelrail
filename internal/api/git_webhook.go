@@ -174,22 +174,9 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return http.StatusOK, msg
 	}
 
-	if !isWebhookReplay(ctx) {
-		switch rt.commitDeployState(ctx, name, ev.After) {
-		case "deployed":
-			return http.StatusOK, fmt.Sprintf("ignored: commit %s is already deployed\n", webhookShortSHA(ev.After))
-		case "in flight":
-			return http.StatusOK, fmt.Sprintf("ignored: commit %s is already in flight\n", webhookShortSHA(ev.After))
-		}
-	}
-	if held, msg := rt.holdIfFrozen(ctx, name, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt}, name+":"+ev.After); held {
-		return http.StatusAccepted, msg
-	}
-	if rt.builder != nil && rt.deploySafety != nil && len(gs.Services) == 0 {
-		hr := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt, Branch: strings.TrimPrefix(ev.Ref, "refs/heads/")}
-		if status, msg, ok := rt.enqueueGitPushDeploy(ctx, name, hr); ok {
-			return status, msg
-		}
+	rt.noteGitHead(ctx, name, ev.After)
+	if status, msg, handled := rt.admitGitPush(ctx, name, ev); handled {
+		return status, msg
 	}
 	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt, Branch: strings.TrimPrefix(ev.Ref, "refs/heads/")}, name+":"+ev.After)
 	defer release()

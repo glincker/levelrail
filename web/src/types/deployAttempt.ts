@@ -39,6 +39,7 @@ export type DeployAttemptSource =
   | 'schedule'
   | 'auto_rollback'
   | 'git_push'
+  | 'poll'
 
 export interface DeployAttempt {
   id: string

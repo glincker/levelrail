@@ -36,6 +36,8 @@ func runAppsGitSource(prog string, args []string, stdout, stderr io.Writer, look
 		return runAppsGitSourceWebhook(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rotate-secret":
 		return runAppsGitSourceRotateSecret(prog, args[1:], stdout, stderr, lookupEnv)
+	case "register-webhook":
+		return runAppsGitSourceRegisterWebhook(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runAppsGitSourceDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -58,6 +60,7 @@ func appsGitSourceUsage(prog string) string {
   %[1]s apps git-source settings <name> [flags]                         set push path filters and forge status reporting
   %[1]s apps git-source webhook <name> [--rotate] [flags]               print the URL, content type and events for the provider
   %[1]s apps git-source rotate-secret <name> [flags]                    mint a fresh webhook secret, shown once
+  %[1]s apps git-source register-webhook <name> [flags]                 register the push webhook on the provider again
   %[1]s apps git-source delete <name> [flags]                           disconnect an app's repo
 
 Run "%[1]s apps git-source <subcommand> -h" for a subcommand's own flags.
@@ -210,6 +213,7 @@ func printGitSourceHuman(out io.Writer, gs gitSourceResource) {
 	_, _ = fmt.Fprintf(out, "trigger_mode:   %s\n", gs.TriggerMode)
 	_, _ = fmt.Fprintf(out, "has_token:      %t\n", gs.HasToken)
 	_, _ = fmt.Fprintf(out, "webhook_url:    %s\n", gs.WebhookURL)
+	printGitSourceReliability(out, gs)
 	_, _ = fmt.Fprintf(out, "preview_enabled: %t\n", gs.PreviewEnabled)
 	_, _ = fmt.Fprintf(out, "post_pr_comments: %t\n", gs.PostPRComments)
 	_, _ = fmt.Fprintf(out, "report_status:  %t\n", gs.ReportStatus)
@@ -218,5 +222,60 @@ func printGitSourceHuman(out io.Writer, gs gitSourceResource) {
 	}
 	if len(gs.DeployPathsIgnore) > 0 {
 		_, _ = fmt.Fprintf(out, "deploy_paths_ignore: %s\n", strings.Join(gs.DeployPathsIgnore, ", "))
+	}
+}
+
+func runAppsGitSourceRegisterWebhook(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps git-source register-webhook", "print the git source as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source register-webhook <name> [flags]\n\nRegisters the push webhook on the provider that hosts the repository, using\nthe connected provider app. Use it after a failed registration or after\nsetting the public URL. Exits non-zero when it still fails.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps git-source register-webhook", "app name"}, lookupEnv)
+	if !ok {
+		return exitCode
+	}
+	gs, err := client.RegisterGitSourceWebhook(context.Background(), name)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("register git source webhook for app %q: %w", name, err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, gs, func() { printGitSourceHuman(stdout, gs) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	if gs.WebhookRegistration == nil || gs.WebhookRegistration.State != "registered" {
+		return exitCheckFailed
+	}
+	return exitOK
+}
+
+// printGitSourceReliability prints what a missed webhook would hinge on: an
+// unreachable webhook address, a failed registration, and the poller's state.
+func printGitSourceReliability(out io.Writer, gs gitSourceResource) {
+	switch gs.WebhookURLWarning {
+	case "private_address":
+		_, _ = fmt.Fprintln(out, "warning:        the webhook address is private or local, git hosts cannot reach it; set a public URL (dashboard: Fix) and register the webhook again")
+	case "no_public_url":
+		_, _ = fmt.Fprintln(out, "warning:        no public address is configured, git hosts have no webhook address to call")
+	}
+	if r := gs.WebhookRegistration; r != nil {
+		line := "webhook:        " + r.State
+		if r.Error != "" {
+			line += " (" + r.Error + ")"
+		}
+		_, _ = fmt.Fprintln(out, line)
+	}
+	if p := gs.Poll; p != nil {
+		switch {
+		case !p.Enabled:
+			_, _ = fmt.Fprintln(out, "poll:           off")
+		case p.LastPolledAt != nil:
+			_, _ = fmt.Fprintf(out, "poll:           last checked %s\n", p.LastPolledAt.Format("2006-01-02 15:04:05Z07:00"))
+		default:
+			_, _ = fmt.Fprintln(out, "poll:           not checked yet")
+		}
+		if p.Error != "" {
+			_, _ = fmt.Fprintf(out, "poll_error:     %s\n", p.Error)
+		}
 	}
 }

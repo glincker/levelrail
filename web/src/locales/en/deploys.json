@@ -78,7 +78,8 @@
       "clone": "a clone",
       "schedule": "a schedule",
       "auto_rollback": "an automatic rollback",
-      "git_push": "a git push to the server"
+      "git_push": "a git push to the server",
+      "poll": "a poll, because a webhook was missed"
     }
   },
   "imageAutoUpdate": {

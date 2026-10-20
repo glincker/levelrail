@@ -66,5 +66,28 @@
     },
     "reconnect": "Reconnect {{provider}}",
     "detail": "{{detail}}"
+  },
+  "reliability": {
+    "urlWarning": {
+      "private_address": "This control plane's webhook address is private or local, so GitHub, GitLab and other git hosts cannot call it. Pushes will not arrive.",
+      "no_public_url": "This control plane has no public address yet, so git hosts have no webhook address to call. Pushes will not arrive."
+    },
+    "urlFixHint": "Set a public URL for webhooks below, then register the webhook again.",
+    "registration": {
+      "registered": "Webhook registered on the provider.",
+      "failed": "The webhook was not registered on the provider: {{error}}",
+      "registerAgain": "Register again",
+      "registering": "Registering",
+      "done": "Webhook registered.",
+      "failedToast": "Could not register the webhook."
+    },
+    "poll": {
+      "last": "Last checked {{time}}.",
+      "never": "Not checked yet.",
+      "lastWebhook": "Last webhook {{time}}.",
+      "noWebhook": "No webhook has arrived yet.",
+      "error": "The last check failed: {{error}}",
+      "disabled": "Polling for missed pushes is off."
+    }
   }
 }

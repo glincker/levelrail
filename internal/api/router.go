@@ -595,6 +595,8 @@ type Router struct {
 	repoLayoutSource             repoLayoutSourceFunc         // nil uses defaultRepoLayoutSource; tests serve a fake tree
 	gitCommits                   *gitCommitsCache             // brief provider-side cache for the deploy sheet's commits list
 	gitConn                      gitConnectionStore           // nil is valid: provider connection health is then not recorded
+	gitRel                       gitReliabilityStore          // nil is valid: webhook registration and poll bookkeeping are then not recorded
+	gitEnqueueMu                 sync.Mutex                   // serializes the dedupe check and enqueue of a git head, so a webhook and the poller never both queue one commit
 	gitOAuthLocks                gitOAuthLocks                // per-provider mutexes serializing OAuth token refresh
 	repoCache                    *repolist.Cache              // always set: per-connection repository list cache behind every git repo picker
 	backupProtection             BackupProtection             // nil is valid: backup health, drill, policy and restore-to routes return 501
@@ -1002,6 +1004,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	}
 	rt.attachRepoCache(s)
 	rt.attachGitConnStore(s)
+	rt.attachGitReliability(s)
 	rt.warmDashboardCaches()
 	// sessions is built after options are applied, not in the struct
 	// literal above, specifically so WithSessionTTL can influence it:

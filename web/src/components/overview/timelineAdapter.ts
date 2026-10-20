@@ -28,6 +28,7 @@ const SOURCE_ACTOR: Record<DeployAttemptSource, string> = {
   schedule: 'schedule',
   auto_rollback: 'auto rollback',
   git_push: 'git push',
+  poll: 'poll',
 }
 
 function attemptTitle(a: DeployAttempt): string {

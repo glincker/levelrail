@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Suspense, lazy, useMemo, useState } from 'react'
 import {
   CheckIcon,
   CopyIcon,
@@ -56,6 +56,13 @@ import type {
   GitSourceService,
   GitSourceTriggerMode,
 } from '../types/gitSource'
+
+// Lazy: the reliability panel only shows for connected sources, so keep it out of the source route chunk.
+const GitSourceReliability = lazy(() =>
+  import('./GitSourceReliability').then((m) => ({
+    default: m.GitSourceReliability,
+  })),
+)
 
 // Git source connect/manage card, PUT/GET/DELETE
 // /api/v1/apps/{name}/git-source (internal/api/git_sources.go): the
@@ -1295,6 +1302,10 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
             </dl>
 
             <GitBuildSettings appName={app.name} source={query.data} />
+
+            <Suspense fallback={null}>
+              <GitSourceReliability appName={app.name} source={query.data} />
+            </Suspense>
 
             <Field>
               <FieldLabel htmlFor="git-source-webhook-url-connected">

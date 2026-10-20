@@ -120,6 +120,24 @@ export interface GitSourceResource {
   trigger_mode: GitSourceTriggerMode
   has_token: boolean
   webhook_url: string
+  // webhook_url_warning is set when webhook_url cannot be reached by a git
+  // host: a localhost or private address, or no public address at all.
+  webhook_url_warning?: 'private_address' | 'no_public_url'
+  webhook_url_source?: string
+  // webhook_registration is the outcome of registering the webhook on the provider.
+  webhook_registration?: {
+    state: 'registered' | 'failed'
+    error?: string
+    changed_at?: string
+  }
+  // poll is the missed-webhook poller's view of this source.
+  poll?: {
+    enabled: boolean
+    last_polled_at?: string
+    last_webhook_at?: string
+    last_seen_head?: string
+    error?: string
+  }
   webhook_secret?: string
   // preview_enabled mirrors store.GitSource.PreviewEnabled: read-only
   // here, set via PUT /api/v1/apps/{name}/preview-settings

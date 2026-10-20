@@ -278,6 +278,8 @@ const (
 	// its configured branch, deployed through the same
 	// internal/api.deployFromGitSourceAs path a webhook push uses.
 	DeployAttemptSourceSchedule = "schedule"
+	// DeployAttemptSourcePoll marks a deploy the git source poller started because a webhook never arrived.
+	DeployAttemptSourcePoll = "poll"
 )
 
 // deployAttemptIDPrefix mirrors internal/api/tokens.go's "tok_" prefix

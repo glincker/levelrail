@@ -111,7 +111,7 @@ var Tree = map[string]*Node{
 		"env": {Subs: map[string]*Node{"import": nil, "export": nil, "get": nil, "diff": nil, "pull": nil, "push": nil, "check": nil, "history": nil}},
 		"secrets": {Subs: map[string]*Node{"list": nil, "set": nil, "delete": nil, "lock": nil,
 			"rotation": {Subs: map[string]*Node{"list": nil, "due": nil, "set": nil, "remove": nil, "rotate": nil}}}},
-		"git-source":         {Subs: map[string]*Node{"validate": nil, "commits": nil, "get": nil, "show": nil, "detect": nil, "affected": nil, "set": nil, "settings": nil, "rotate-secret": nil, "delete": nil}},
+		"git-source":         {Subs: map[string]*Node{"validate": nil, "commits": nil, "get": nil, "show": nil, "detect": nil, "affected": nil, "set": nil, "settings": nil, "rotate-secret": nil, "register-webhook": nil, "delete": nil}},
 		"webhook-deliveries": {Subs: map[string]*Node{"list": nil, "replay": nil}},
 		"bulk":               nil,
 		"clone":              nil,

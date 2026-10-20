@@ -138,6 +138,14 @@ type gitSourceResource struct {
 	ReportStatus      bool      `json:"report_status"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
+	// WebhookURLWarning is private_address or no_public_url when WebhookURL
+	// cannot be reached by a git host; WebhookURLSource says where it came from.
+	WebhookURLWarning string `json:"webhook_url_warning,omitempty"`
+	WebhookURLSource  string `json:"webhook_url_source,omitempty"`
+	// WebhookRegistration is the outcome of registering the webhook on the provider.
+	WebhookRegistration *gitWebhookRegistrationResource `json:"webhook_registration,omitempty"`
+	// Poll is the missed-webhook poller's view of this source.
+	Poll *gitPollStatusResource `json:"poll,omitempty"`
 }
 
 // gitSourceWebhookPath is the relative API path GitHub's own webhook
@@ -157,15 +165,7 @@ func gitSourceWebhookPath(name string) string {
 // this is the best answer available without an operator-configured
 // origin.
 func (rt *Router) gitSourceWebhookURL(ctx context.Context, name string) string {
-	path := gitSourceWebhookPath(name)
-	base, err := rt.controlPlaneBaseURL(ctx)
-	if err != nil {
-		if origin := requestOriginFrom(ctx); origin != "" {
-			return origin + path
-		}
-		return path
-	}
-	return base + path
+	return rt.gitSourceWebhookStatus(ctx, name).URL
 }
 
 func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gitSourceResource {
@@ -518,7 +518,7 @@ func (rt *Router) handleGetGitSource(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJSON(w, http.StatusOK, toGitSourceResource(*gs, hasToken, rt.gitSourceWebhookURL(withRequestOrigin(r.Context(), r), name)))
+	writeJSON(w, http.StatusOK, rt.gitSourceResourceFor(withRequestOrigin(r.Context(), r), *gs, hasToken, name))
 }
 
 // handleSetGitSource handles PUT /api/v1/apps/{name}/git-source: connect
@@ -717,7 +717,7 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 		return connectGitSourceResult{}, fmt.Errorf("check deploy token: %w", err)
 	}
 
-	resource := toGitSourceResource(*saved, hasToken, rt.gitSourceWebhookURL(ctx, name))
+	resource := rt.gitSourceResourceFor(ctx, *saved, hasToken, name)
 	if creating {
 		resource.WebhookSecret = webhookSecretPlain
 	}
@@ -770,7 +770,7 @@ func (rt *Router) handleRotateGitSourceWebhookSecret(w http.ResponseWriter, r *h
 		return
 	}
 
-	resource := toGitSourceResource(*gs, hasToken, rt.gitSourceWebhookURL(withRequestOrigin(r.Context(), r), name))
+	resource := rt.gitSourceResourceFor(withRequestOrigin(r.Context(), r), *gs, hasToken, name)
 	resource.WebhookSecret = newSecret
 
 	rt.logger.Info("api: git source webhook secret rotated", slog.String("name", name))

@@ -613,6 +613,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/previews/{number}/env | AbilityWriteSensitive | handleSetPRPreviewEnv |
 | DELETE | /api/v1/apps/{name}/previews/{number}/env/{id} | AbilityWrite | handleDeletePRPreviewEnv |
 | POST | /api/v1/apps/{name}/git-source/validate | AbilityDeploy | handleValidateGitSourceAccess |
+| POST | /api/v1/apps/{name}/git-source/webhook/register | AbilityWriteSensitive | handleRegisterGitSourceWebhook |
 
 ## Telemetry
 

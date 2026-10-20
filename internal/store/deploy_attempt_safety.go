@@ -40,6 +40,8 @@ const (
 	DeployReasonFrozen     = "Frozen"
 	DeployReasonSuperseded = "Superseded"
 	DeployReasonStale      = "StaleCommit"
+	// DeployReasonPolled marks a deploy the poller started for a missed webhook.
+	DeployReasonPolled = "DetectedByPoll"
 )
 
 // SetDeployAttemptDigest records the content identity an attempt resolved to.

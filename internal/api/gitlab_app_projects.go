@@ -160,6 +160,7 @@ func (rt *Router) handleUseGitLabProjectAsSource(w http.ResponseWriter, r *http.
 	_, err = rt.controlPlaneBaseURL(ctx)
 	if err != nil {
 		if errors.Is(err, errNoPrimaryDomain) {
+			rt.recordWebhookRegistration(ctx, req.AppName, errWebhookNoPublicURL)
 			writeError(w, http.StatusConflict, "git source connected, but set a primary domain in ingress settings before gitlab can reach a webhook here")
 			return
 		}
@@ -176,11 +177,13 @@ func (rt *Router) handleUseGitLabProjectAsSource(w http.ResponseWriter, r *http.
 	}
 
 	if err := rt.gitlabAppClient.CreateProjectWebhook(ctx, conn.InstanceURL, accessToken, projectID, result.Resource.WebhookURL, webhookSecret); err != nil {
+		rt.recordWebhookRegistration(ctx, req.AppName, err)
 		rt.logger.Error("api: register gitlab project webhook failed", slog.String("error", err.Error()), slog.Int64("project_id", projectID), slog.String("app_name", req.AppName))
 		writeError(w, http.StatusBadGateway, "git source connected, but registering the webhook on gitlab failed; add it manually")
 		return
 	}
 
+	rt.recordWebhookRegistration(ctx, req.AppName, nil)
 	status := http.StatusOK
 	if result.Creating {
 		status = http.StatusCreated

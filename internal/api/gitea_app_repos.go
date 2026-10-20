@@ -157,6 +157,7 @@ func (rt *Router) handleUseGiteaRepoAsSource(w http.ResponseWriter, r *http.Requ
 	_, err = rt.controlPlaneBaseURL(ctx)
 	if err != nil {
 		if errors.Is(err, errNoPrimaryDomain) {
+			rt.recordWebhookRegistration(ctx, req.AppName, errWebhookNoPublicURL)
 			writeError(w, http.StatusConflict, "git source connected, but set a primary domain in ingress settings before gitea can reach a webhook here")
 			return
 		}
@@ -173,11 +174,13 @@ func (rt *Router) handleUseGiteaRepoAsSource(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := rt.giteaAppClient.CreateRepoWebhook(ctx, conn.InstanceURL, accessToken, fullName, result.Resource.WebhookURL, webhookSecret); err != nil {
+		rt.recordWebhookRegistration(ctx, req.AppName, err)
 		rt.logger.Error("api: register gitea repo webhook failed", slog.String("error", err.Error()), slog.String("full_name", fullName), slog.String("app_name", req.AppName))
 		writeError(w, http.StatusBadGateway, "git source connected, but registering the webhook on gitea failed; add it manually")
 		return
 	}
 
+	rt.recordWebhookRegistration(ctx, req.AppName, nil)
 	status := http.StatusOK
 	if result.Creating {
 		status = http.StatusCreated

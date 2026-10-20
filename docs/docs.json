@@ -256,6 +256,7 @@
               "pipelines",
               "pipelines-oidc",
               "git-integrations",
+              "git-reliability",
               "git-push-deploy",
               "import-a-repo",
               "monorepos"

@@ -134,7 +134,7 @@ func (rt *Router) handleSetGitSourceBuild(w http.ResponseWriter, r *http.Request
 		}
 	}
 	rt.logger.Info("api: git source build settings updated", slog.String("name", name), slog.String("build_type", buildType), slog.String("base_directory", base), slog.String("build_path", p))
-	writeJSON(w, http.StatusOK, toGitSourceResource(*gs, hasToken, rt.gitSourceWebhookURL(ctx, name)))
+	writeJSON(w, http.StatusOK, rt.gitSourceResourceFor(ctx, *gs, hasToken, name))
 }
 
 type detectGitSourceRequest struct {
