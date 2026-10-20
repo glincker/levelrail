@@ -332,7 +332,8 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 		res := toDeployAttemptResource(a)
 		res.DeployURL = deployURLs[a.ID]
 		res.Live = a.Status == store.DeployAttemptStatusSucceeded && a.Image == svc.Image
-		if held[a.ID] && !res.Live {
+		if held[a.ID] && (!res.Live || isStaticAttempt(a)) {
+			res.Live = false
 			res.PublishState = publishStateHeld
 		}
 		res.CacheWarning = warnings[a.ID]

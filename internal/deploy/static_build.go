@@ -122,11 +122,11 @@ func (p *Pipeline) deployStaticBuilt(ctx context.Context, req Request, progress 
 	if err := commitPoint(req); err != nil {
 		return fail("%w", err)
 	}
-	if err := p.staticSites.SaveStaticSite(ctx, store.StaticSite{Name: req.ServiceName, Domains: req.Service.Domains, RootDir: destDir}); err != nil {
+	held, err := p.saveStaticSite(ctx, req, store.StaticSite{Name: req.ServiceName, Domains: req.Service.Domains, RootDir: destDir})
+	if err != nil {
 		return fail("save static site: %w", err)
 	}
-	emitStatic(progress, stepStaticPublish, fmt.Sprintf("%d files, %d bytes, digest %s", stats.Files, stats.Bytes, stats.Digest), true)
-	p.recordStaticPublished(ctx, req, stats, duration)
+	p.finishStaticPublish(ctx, req, progress, stats, duration, held)
 	if p.metrics != nil {
 		if err := p.metrics.RecordBuildDuration(ctx, req.ServiceName, duration, time.Now()); err != nil {
 			p.logger.Warn("deploy: record build duration metric failed",

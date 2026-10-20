@@ -111,6 +111,9 @@ func (db *DB) GetHeldBuild(ctx context.Context, deployID string) (*DesiredServic
 	if err != nil {
 		return nil, fmt.Errorf("store: get held build %q: %w", deployID, err)
 	}
+	if heldStaticSite(raw) != nil {
+		return nil, ErrHeldBuildNotFound
+	}
 	var svc DesiredService
 	if err := json.Unmarshal([]byte(raw), &svc); err != nil {
 		return nil, fmt.Errorf("store: decode held build %q: %w", deployID, err)

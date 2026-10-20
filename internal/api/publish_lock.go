@@ -165,6 +165,9 @@ func (rt *Router) handlePublishHeldBuild(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	deployID := r.PathValue("deployId")
+	if rt.publishHeldStatic(w, r, *svc, deployID) {
+		return
+	}
 	held, err := rt.publishLocks.GetHeldBuild(r.Context(), deployID)
 	if errors.Is(err, store.ErrHeldBuildNotFound) || (err == nil && held.Name != svc.Name) {
 		writeError(w, http.StatusNotFound, "no held build with that id")

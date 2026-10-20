@@ -145,16 +145,16 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request, progress func(
 	if err := commitPoint(req); err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
-	if err := p.staticSites.SaveStaticSite(ctx, store.StaticSite{
+	held, err := p.saveStaticSite(ctx, req, store.StaticSite{
 		Name:    req.ServiceName,
 		Domains: req.Service.Domains,
 		RootDir: destDir,
-	}); err != nil {
+	})
+	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: save static site: %w", req.ServiceName, err)
 	}
 
-	emitStatic(progress, stepStaticPublish, fmt.Sprintf("%d files, %d bytes, digest %s", stats.Files, stats.Bytes, stats.Digest), true)
-	p.recordStaticPublished(ctx, req, stats, duration)
+	p.finishStaticPublish(ctx, req, progress, stats, duration, held)
 
 	// Best-effort, secondary to the deploy itself, the identical
 	// "must never block the real operation" choice deployDockerfile
