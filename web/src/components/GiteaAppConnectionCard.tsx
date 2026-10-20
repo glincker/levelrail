@@ -15,6 +15,7 @@ import {
   useDisconnectGiteaApp,
   useGiteaAppStatus,
 } from '../queries/giteaApp'
+import { GitConnectionHealth } from './GitConnectionHealth'
 import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
 import {
   ConfiguredStatusHeading,
@@ -64,6 +65,7 @@ export function GiteaAppConnectionCard() {
         {status.connected && !status.authorized && !status.base_url ? (
           <SetPrimaryDomainPrompt />
         ) : null}
+        {status.connected ? <GitConnectionHealth provider="gitea" /> : null}
         <ConnectionActions>
           {status.connected ? (
             <>

@@ -15,6 +15,7 @@ import {
   useDisconnectBitbucketApp,
   useBitbucketAppStatus,
 } from '../queries/bitbucketApp'
+import { GitConnectionHealth } from './GitConnectionHealth'
 import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
 import {
   ConfiguredStatusHeading,
@@ -60,6 +61,7 @@ export function BitbucketAppConnectionCard() {
         {status.connected && !status.authorized && !status.base_url ? (
           <SetPrimaryDomainPrompt />
         ) : null}
+        {status.connected ? <GitConnectionHealth provider="bitbucket" /> : null}
         <ConnectionActions>
           {status.connected ? (
             <>

@@ -209,5 +209,5 @@ func (rt *Router) handleDisconnectGiteaApp(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	rt.finishGitDisconnect(ctx, w, gitProviderGitea, false, "Gitea has no API to revoke an OAuth2 application's tokens. Remove the application under Settings, Applications on your Gitea instance.")
 }

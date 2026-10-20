@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"text/tabwriter"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // Read-only flat GET: one call replaces the four per-provider status commands.
@@ -65,9 +67,39 @@ func printGitProvidersHuman(out io.Writer, providers []gitProviderResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "PROVIDER\tCONNECTED\tCAN_LIST_BRANCHES\tCAN_REGISTER_WEBHOOK\tCAN_AUTH_CLONE")
+	_, _ = fmt.Fprintln(tw, "PROVIDER\tCONNECTED\tHEALTH\tCAN_LIST_BRANCHES\tCAN_REGISTER_WEBHOOK\tCAN_AUTH_CLONE")
 	for _, p := range providers {
-		_, _ = fmt.Fprintf(tw, "%s\t%v\t%v\t%v\t%v\n", p.Provider, p.Connected, p.CanListBranches, p.CanRegisterWebhook, p.CanAuthClone)
+		health := p.Connection.Status
+		if health == "" {
+			health = "ok"
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%v\t%s\t%v\t%v\t%v\n", p.Provider, p.Connected, health, p.CanListBranches, p.CanRegisterWebhook, p.CanAuthClone)
 	}
 	_ = tw.Flush()
+	for _, p := range providers {
+		printGitReconnectHint(out, p)
+	}
+}
+
+// printGitReconnectHint says how to recover a connection that needs the
+// operator. Connecting is a browser redirect, so the dashboard button is the
+// way; the CLI line only names the page to open.
+func printGitReconnectHint(out io.Writer, p gitProviderResource) {
+	switch p.Connection.Status {
+	case "needs_reauthorize", "revoked":
+		_, _ = fmt.Fprintf(out, "%s: %s. Press Reconnect on its settings page in the dashboard, or open /api/v1/%s-app/connect on your control plane in a browser.\n", p.Provider, gitConnectionSummary(p.Connection), p.Provider)
+	case "rate_limited":
+		next := ""
+		if p.Connection.NextCheckAt != nil {
+			next = " until " + p.Connection.NextCheckAt.Format("15:04:05")
+		}
+		_, _ = fmt.Fprintf(out, "%s: the provider is rate limiting; saved lists are used%s.\n", p.Provider, next)
+	}
+}
+
+func gitConnectionSummary(c apiclient.GitConnectionResource) string {
+	if c.Detail != "" {
+		return c.Status + " (" + c.Detail + ")"
+	}
+	return c.Status
 }

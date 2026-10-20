@@ -260,8 +260,8 @@ func TestHandleDisconnectGitHubApp(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/github-app", ""))
-	if rec.Code != http.StatusNoContent {
-		t.Fatalf("status = %d, want 204, body = %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
 	}
 
 	statusRec := httptest.NewRecorder()
@@ -297,8 +297,8 @@ func TestHandleDisconnectGitHubApp_ClearsSecrets(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/github-app", ""))
-	if rec.Code != http.StatusNoContent {
-		t.Fatalf("status = %d, want 204, body = %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
 	}
 
 	if _, err := secrets.Resolve(ctx, secretsKey, "private_key"); err == nil {

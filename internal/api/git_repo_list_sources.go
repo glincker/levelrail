@@ -140,8 +140,9 @@ func (rt *Router) githubListSnapshot(ctx context.Context, instanceURL, token, ac
 	}
 	repos, res, err := rt.githubAppClient.ListInstallationRepos(ctx, instanceURL, token, opts)
 	if err != nil {
-		return repolist.Snapshot{}, fmt.Errorf("list github installation repos: %w", err)
+		return repolist.Snapshot{}, rt.gitConnRecordFailure(ctx, gitProviderGitHub, fmt.Errorf("list github installation repos: %w", err), false)
 	}
+	rt.markGitConnOK(ctx, gitProviderGitHub)
 	meta, err := json.Marshal(res.ETags)
 	if err != nil {
 		return repolist.Snapshot{}, fmt.Errorf("encode github page etags: %w", err)
@@ -177,8 +178,9 @@ func (rt *Router) gitlabRepoFetch(ctx context.Context, _ *repolist.Snapshot) (re
 	}
 	projects, res, err := rt.gitlabAppClient.ListProjects(ctx, conn.InstanceURL, accessToken, rt.repoListOptions())
 	if err != nil {
-		return repolist.Snapshot{}, fmt.Errorf("list gitlab projects: %w", err)
+		return repolist.Snapshot{}, rt.gitConnRecordFailure(ctx, gitProviderGitLab, fmt.Errorf("list gitlab projects: %w", err), false)
 	}
+	rt.markGitConnOK(ctx, gitProviderGitLab)
 	out := make([]repolist.Repo, 0, len(projects))
 	for _, p := range projects {
 		out = append(out, gitlabProjectToRepo(p))
@@ -201,8 +203,9 @@ func (rt *Router) bitbucketRepoFetch(ctx context.Context, _ *repolist.Snapshot) 
 	}
 	repos, res, err := rt.bitbucketAppClient.ListRepos(ctx, accessToken, rt.repoListOptions())
 	if err != nil {
-		return repolist.Snapshot{}, fmt.Errorf("list bitbucket repos: %w", err)
+		return repolist.Snapshot{}, rt.gitConnRecordFailure(ctx, gitProviderBitbucket, fmt.Errorf("list bitbucket repos: %w", err), false)
 	}
+	rt.markGitConnOK(ctx, gitProviderBitbucket)
 	out := make([]repolist.Repo, 0, len(repos))
 	for _, r := range repos {
 		out = append(out, bitbucketRepoToRepo(r))
@@ -224,8 +227,9 @@ func (rt *Router) giteaRepoFetch(ctx context.Context, _ *repolist.Snapshot) (rep
 	}
 	repos, res, err := rt.giteaAppClient.ListRepos(ctx, conn.InstanceURL, accessToken, rt.repoListOptions())
 	if err != nil {
-		return repolist.Snapshot{}, fmt.Errorf("list gitea repos: %w", err)
+		return repolist.Snapshot{}, rt.gitConnRecordFailure(ctx, gitProviderGitea, fmt.Errorf("list gitea repos: %w", err), false)
 	}
+	rt.markGitConnOK(ctx, gitProviderGitea)
 	out := make([]repolist.Repo, 0, len(repos))
 	for _, r := range repos {
 		out = append(out, giteaRepoToRepo(r))

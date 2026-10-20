@@ -90,6 +90,8 @@ func (f *fakeGitLabAppSecrets) DeleteAll(_ context.Context, serviceName string) 
 // method's return value set directly on the struct before use, the same
 // convention fakeGitHubAppClient already establishes.
 type fakeGitLabAppClient struct {
+	revokedToken   string
+	revokeErr      error
 	listCalls      atomic.Int32
 	listResult     gitprovider.ListResult
 	exchangeTokens gitlabapp.Tokens
@@ -144,6 +146,11 @@ type fakeGitLabCommitStatus struct {
 func (f *fakeGitLabAppClient) ExchangeCode(_ context.Context, _, _, _, _, code string) (gitlabapp.Tokens, error) {
 	f.gotCode = code
 	return f.exchangeTokens, f.exchangeErr
+}
+
+func (f *fakeGitLabAppClient) RevokeToken(_ context.Context, _, _, _, token string) error {
+	f.revokedToken = token
+	return f.revokeErr
 }
 
 func (f *fakeGitLabAppClient) RefreshToken(_ context.Context, _, _, _, _ string) (gitlabapp.Tokens, error) {
@@ -313,8 +320,8 @@ func TestHandleDisconnectGitLabApp_ClearsSecrets(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/gitlab-app", ""))
-	if rec.Code != http.StatusNoContent {
-		t.Fatalf("status = %d, want 204, body = %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
 	}
 	if _, err := secrets.Resolve(ctx, store.GitLabAppSecretsKey(), gitLabAppAccessTokenKey); err == nil {
 		t.Error("access_token still resolvable after disconnect, want it deleted")

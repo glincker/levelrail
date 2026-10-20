@@ -44,6 +44,7 @@ type GitLabAppSecrets interface {
 type GitLabAppClient interface {
 	ExchangeCode(ctx context.Context, instanceURL, clientID, clientSecret, redirectURI, code string) (gitlabapp.Tokens, error)
 	RefreshToken(ctx context.Context, instanceURL, clientID, clientSecret, refreshToken string) (gitlabapp.Tokens, error)
+	RevokeToken(ctx context.Context, instanceURL, clientID, clientSecret, token string) error
 	ListProjects(ctx context.Context, instanceURL, accessToken string, opts gitprovider.ListOptions) ([]gitlabapp.Project, gitprovider.ListResult, error)
 	GetProject(ctx context.Context, instanceURL, accessToken string, projectID int64) (gitlabapp.Project, error)
 	ListBranches(ctx context.Context, instanceURL, accessToken string, projectID int64) ([]gitlabapp.Branch, error)
@@ -190,6 +191,7 @@ func (rt *Router) handleConnectGitLabApp(w http.ResponseWriter, r *http.Request)
 func (rt *Router) handleDisconnectGitLabApp(w http.ResponseWriter, r *http.Request) {
 	rt.invalidateGitRepoCache(r.Context(), gitProviderGitLab)
 	ctx := r.Context()
+	revoked, revokeNote := rt.revokeGitLabGrant(ctx)
 	err := rt.gitlabApp.DeleteGitLabAppConnection(ctx)
 	if errors.Is(err, store.ErrGitLabAppConnectionNotFound) {
 		writeError(w, http.StatusNotFound, "no gitlab app is connected")
@@ -209,5 +211,34 @@ func (rt *Router) handleDisconnectGitLabApp(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	rt.finishGitDisconnect(ctx, w, gitProviderGitLab, revoked, revokeNote)
+}
+
+// revokeGitLabGrant ends the OAuth grant at GitLab before the local secrets
+// are deleted. A failure never blocks the disconnect; the note says what to do.
+func (rt *Router) revokeGitLabGrant(ctx context.Context) (bool, string) {
+	const manual = "Revoke it yourself under User Settings, Applications on your GitLab instance."
+	if rt.gitlabAppSecrets == nil {
+		return false, manual
+	}
+	conn, err := rt.gitlabApp.GetGitLabAppConnection(ctx)
+	if err != nil {
+		return false, manual
+	}
+	key := store.GitLabAppSecretsKey()
+	token, err := rt.gitlabAppSecrets.Resolve(ctx, key, gitLabAppRefreshTokenKey)
+	if err != nil || token == "" {
+		token, err = rt.gitlabAppSecrets.Resolve(ctx, key, gitLabAppAccessTokenKey)
+	}
+	secret, secretErr := rt.gitlabAppSecrets.Resolve(ctx, key, gitLabAppClientSecretKey)
+	if err != nil || secretErr != nil {
+		return false, "There was no stored token to revoke. " + manual
+	}
+	rctx, cancel := context.WithTimeout(ctx, gitRevokeTimeout)
+	defer cancel()
+	if err := rt.gitlabAppClient.RevokeToken(rctx, conn.InstanceURL, conn.ClientID, secret, token); err != nil {
+		rt.logger.Warn("api: revoke gitlab token on disconnect failed", slog.String("error", err.Error()))
+		return false, "GitLab did not accept the revocation. " + manual
+	}
+	return true, "The token was revoked at GitLab."
 }

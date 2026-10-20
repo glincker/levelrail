@@ -25,6 +25,7 @@ import type {
 } from '../types/gitlabApp'
 import type { GitSourceResource } from '../types/gitSource'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { GitDisconnectResult } from '../types/gitProviders'
 import { gitSourceKeys } from './gitSources'
 
 export const gitlabAppKeys = {
@@ -91,11 +92,12 @@ export function useConnectGitLabApp() {
   })
 }
 
-// DELETE /api/v1/gitlab-app (handleDisconnectGitLabApp). 204 on success.
-export async function disconnectGitLabApp(): Promise<void> {
+// DELETE /api/v1/gitlab-app (handleDisconnectGitLabApp). Says whether the
+// token was revoked at the provider.
+export async function disconnectGitLabApp(): Promise<GitDisconnectResult> {
   const res = await fetch('/api/v1/gitlab-app', { method: 'DELETE' })
-  if (res.status === 204) {
-    return
+  if (res.ok) {
+    return (await res.json()) as GitDisconnectResult
   }
   throw new ApiError(
     res.status,
@@ -105,7 +107,7 @@ export async function disconnectGitLabApp(): Promise<void> {
 
 export function useDisconnectGitLabApp() {
   const queryClient = useQueryClient()
-  return useMutation<void, ApiError, void>({
+  return useMutation<GitDisconnectResult, ApiError, void>({
     mutationFn: disconnectGitLabApp,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: gitlabAppKeys.all })

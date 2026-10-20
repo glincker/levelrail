@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { Combobox } from '@/components/ui/combobox'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { GitConnectionBanner } from './GitConnectionHealth'
 import { GitRepoListPicker } from './GitRepoListPicker'
 import type { NormalizedRepoOption } from '../lib/gitRepoOptions'
 import { useGitLabAppBranches } from '../queries/gitlabApp'
@@ -86,6 +87,7 @@ export function GitLabProviderRow({
 
   return (
     <div className="space-y-2">
+      <GitConnectionBanner provider={provider} />
       <Field>
         <FieldLabel htmlFor="git-picker-gitlab-project">Project</FieldLabel>
         <GitRepoListPicker

@@ -245,5 +245,5 @@ func (rt *Router) handleDisconnectGitHubApp(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	rt.finishGitDisconnect(ctx, w, gitProviderGitHub, false, "Installation tokens are short lived and never stored, so there is nothing to revoke. The App stays installed on GitHub: uninstall it under Settings, Applications, Installed GitHub Apps.")
 }

@@ -15,6 +15,7 @@ import {
   useDisconnectGitLabApp,
   useGitLabAppStatus,
 } from '../queries/gitlabApp'
+import { GitConnectionHealth } from './GitConnectionHealth'
 import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
 import {
   ConfiguredStatusHeading,
@@ -65,6 +66,7 @@ export function GitLabAppConnectionCard() {
         {status.connected && !status.authorized && !status.base_url ? (
           <SetPrimaryDomainPrompt />
         ) : null}
+        {status.connected ? <GitConnectionHealth provider="gitlab" /> : null}
         <ConnectionActions>
           {status.connected ? (
             <>
@@ -75,8 +77,9 @@ export function GitLabAppConnectionCard() {
                 description={
                   <>
                     This stops this control plane from using the connection to
-                    list projects or register webhooks. It does not revoke the
-                    authorization or delete the Application on GitLab itself.
+                    list projects or register webhooks. It also revokes the
+                    authorization at GitLab. The Application itself stays on
+                    GitLab.
                   </>
                 }
                 pending={disconnect.isPending}

@@ -80,7 +80,7 @@ One or more checks failed. See above.
 | | `certificates` | Expired or stalled certificates that need an operator |
 | | `dashboard_url_https` | Dashboard URL still on plain http with certificates available, with an auto fix |
 | | `registry_reachability_*`, `cross_node_ingress`, `ingress_edge`, `ingress_survives`, `exposure` | Registries, cross-node routing, edge policy, data plane resilience, exposed services |
-| Security | `master_key_rotation`, `stale_secrets`, `notification_channel_secrets`, `secret_reveal_policy`, `legacy_tokens`, `signature_pin` | Key and secret age, channel secrets, tokens, release signatures |
+| Security | `master_key_rotation`, `stale_secrets`, `notification_channel_secrets`, `secret_reveal_policy`, `legacy_tokens`, `git_connections`, `signature_pin` | Key and secret age, channel secrets, tokens, git provider connections, release signatures |
 | Backups | `control_plane_backup`, `control_plane_dr` | Newest control plane snapshot and recovery readiness, with an auto snapshot fix |
 | | `backup_freshness` | Scheduled database backups that are overdue |
 | | `backup_drill` | The latest restore drill of every database and volume |

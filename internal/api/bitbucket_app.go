@@ -198,5 +198,5 @@ func (rt *Router) handleDisconnectBitbucketApp(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	rt.finishGitDisconnect(ctx, w, gitProviderBitbucket, false, "Bitbucket has no API to revoke an OAuth consumer's tokens. Revoke access under Personal settings, App authorizations on bitbucket.org.")
 }

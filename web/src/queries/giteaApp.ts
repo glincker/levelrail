@@ -26,6 +26,7 @@ import type {
 } from '../types/giteaApp'
 import type { GitSourceResource } from '../types/gitSource'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { GitDisconnectResult } from '../types/gitProviders'
 import { gitSourceKeys } from './gitSources'
 
 export const giteaAppKeys = {
@@ -92,11 +93,12 @@ export function useConnectGiteaApp() {
   })
 }
 
-// DELETE /api/v1/gitea-app (handleDisconnectGiteaApp). 204 on success.
-export async function disconnectGiteaApp(): Promise<void> {
+// DELETE /api/v1/gitea-app (handleDisconnectGiteaApp). Says whether the
+// token was revoked at the provider.
+export async function disconnectGiteaApp(): Promise<GitDisconnectResult> {
   const res = await fetch('/api/v1/gitea-app', { method: 'DELETE' })
-  if (res.status === 204) {
-    return
+  if (res.ok) {
+    return (await res.json()) as GitDisconnectResult
   }
   throw new ApiError(
     res.status,
@@ -106,7 +108,7 @@ export async function disconnectGiteaApp(): Promise<void> {
 
 export function useDisconnectGiteaApp() {
   const queryClient = useQueryClient()
-  return useMutation<void, ApiError, void>({
+  return useMutation<GitDisconnectResult, ApiError, void>({
     mutationFn: disconnectGiteaApp,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: giteaAppKeys.all })

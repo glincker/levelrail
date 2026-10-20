@@ -4277,6 +4277,15 @@ type GitProviderResource struct {
 	CanListBranches    bool   `json:"can_list_branches"`
 	CanRegisterWebhook bool   `json:"can_register_webhook"`
 	CanAuthClone       bool   `json:"can_auth_clone"`
+	// Connection is the last known health: ok, needs_reauthorize, revoked or rate_limited.
+	Connection GitConnectionResource `json:"connection"`
+}
+
+// GitConnectionResource mirrors internal/api's gitConnResource.
+type GitConnectionResource struct {
+	Status      string     `json:"status"`
+	Detail      string     `json:"detail,omitempty"`
+	NextCheckAt *time.Time `json:"next_check_at,omitempty"`
 }
 
 // GitHubAppStatusResource mirrors internal/api's gitHubAppStatusResource:

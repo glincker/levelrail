@@ -42,5 +42,29 @@
       "running": "Running as {{name}}"
     },
     "retry": "Try again"
+  },
+  "connection": {
+    "label": "Connection health",
+    "healthy": "Healthy",
+    "providers": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "gitea": "Gitea"
+    },
+    "needs_reauthorize": {
+      "title": "{{provider}} needs to be reconnected",
+      "body": "The authorization was revoked, expired or is no longer accepted, so repositories cannot be listed or cloned until you reconnect."
+    },
+    "revoked": {
+      "title": "The {{provider}} connection was removed",
+      "body": "The installation or authorization no longer exists on the provider. Reconnect to use it again."
+    },
+    "rate_limited": {
+      "title": "{{provider}} is rate limiting this control plane",
+      "body": "Saved lists are still shown. It will be checked again after {{time}}."
+    },
+    "reconnect": "Reconnect {{provider}}",
+    "detail": "{{detail}}"
   }
 }
