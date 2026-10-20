@@ -98,5 +98,8 @@
     "poweredBy": "Powered by {{name}}",
     "theAuthLabel": "TheAuth, open-source auth (opens in a new tab)",
     "studioLabel": "GLINR Studios (opens in a new tab)"
+  },
+  "passkey": {
+    "discoverable": "Sign in with a passkey"
   }
 }

@@ -262,16 +262,50 @@ export async function beginPasskeyLogin(
   return { sessionId: body.session_id, options: body.options.publicKey }
 }
 
+export interface PasskeyPromptOptions {
+  // Conditional UI: the browser lists saved passkeys in the username field's autofill.
+  conditional?: boolean
+  signal?: AbortSignal
+}
+
+// Usernameless sign-in: the challenge names no account, the authenticator picks the credential.
+export async function beginDiscoverablePasskeyLogin(): Promise<PasskeyLoginChallenge> {
+  const res = await fetch('/api/v1/auth/passkey-login/begin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ discoverable: true }),
+  })
+  if (!res.ok) {
+    await throwPasskeyError(res, `begin passkey login failed: ${res.status}`)
+  }
+  const body = (await res.json()) as PasskeyLoginBeginResponse
+  return { sessionId: body.session_id, options: body.options.publicKey }
+}
+
+export async function isConditionalPasskeyAvailable(): Promise<boolean> {
+  if (!isPasskeySupported()) {
+    return false
+  }
+  return 'isConditionalMediationAvailable' in PublicKeyCredential
+    ? await PublicKeyCredential.isConditionalMediationAvailable()
+    : false
+}
+
 // finishPasskeyLogin prompts the platform authenticator for an
 // already-fetched challenge and completes the sign-in.
 export async function finishPasskeyLogin(
   challenge: PasskeyLoginChallenge,
+  prompt: PasskeyPromptOptions = {},
 ): Promise<AuthUser | ApprovalRequiredResponse> {
   assertPasskeySupport()
   const options = PublicKeyCredential.parseRequestOptionsFromJSON(
     challenge.options,
   )
-  const credential = await navigator.credentials.get({ publicKey: options })
+  const credential = await navigator.credentials.get({
+    publicKey: options,
+    mediation: prompt.conditional ? 'conditional' : undefined,
+    signal: prompt.signal,
+  })
   if (!(credential instanceof PublicKeyCredential)) {
     throw new PasskeyUnsupportedError('The browser did not return a passkey.')
   }
@@ -307,8 +341,28 @@ export function useFinishPasskeyLogin() {
     Error,
     PasskeyLoginChallenge
   >({
-    mutationFn: finishPasskeyLogin,
+    mutationFn: (challenge) => finishPasskeyLogin(challenge),
     // A new browser held for approval stays on the sign-in screen to wait.
+    onSuccess: (user) => {
+      if (isApprovalRequired(user)) {
+        return
+      }
+      setStoredUsername(user.username)
+      goAfterLogin(navigate, router)
+    },
+  })
+}
+
+export function useDiscoverablePasskeyLogin() {
+  const navigate = useNavigate()
+  const router = useRouter()
+  return useMutation<
+    AuthUser | ApprovalRequiredResponse,
+    Error,
+    PasskeyPromptOptions
+  >({
+    mutationFn: async (prompt) =>
+      finishPasskeyLogin(await beginDiscoverablePasskeyLogin(), prompt),
     onSuccess: (user) => {
       if (isApprovalRequired(user)) {
         return

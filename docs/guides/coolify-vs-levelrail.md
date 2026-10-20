@@ -30,7 +30,7 @@ Levelrail has no stable release yet and is the younger project. This guide compa
 - You do not want inbound SSH from a control plane to every server. Levelrail agents dial out, so a managed node opens no inbound ports and works behind NAT.
 - You want a deploy to count as healthy only after the new container passes its readiness probe, with the old release still serving until then. See [zero-downtime deploys](/guides/zero-downtime-deploys-without-kubernetes).
 - You want metrics, log search, and alerts without installing a separate stack. See [observability](/observability).
-- You want OAuth sign-in with 17 providers plus generic OpenID Connect, passkeys and 2FA, IAM policies, and an audit log in the same free edition. See [identity and access](/identity-and-access).
+- You want OAuth sign-in with 20 providers plus generic OpenID Connect, passkeys and 2FA, IAM policies, and an audit log in the same free edition. See [identity and access](/identity-and-access).
 
 ## What Levelrail does not do yet
 

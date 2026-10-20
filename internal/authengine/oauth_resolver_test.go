@@ -19,6 +19,7 @@ func TestValidOAuthProvider(t *testing.T) {
 		{"linkedin", true}, {"twitch", true}, {"facebook", true},
 		{"linear", true}, {"vercel", true}, {"huggingface", true}, {"figma", true},
 		{"salesforce", true}, {"codeberg", true}, {"cognito", true},
+		{"dropbox", true}, {"kakao", true}, {"patreon", true},
 		{"x", false}, {"apple", false}, {"", false}, {"GitHub", false}, {"../etc", false},
 	}
 	for _, tc := range tests {
@@ -52,6 +53,9 @@ func TestProviderResolverBuild(t *testing.T) {
 		{store.OAuthProviderFigma, "figma.com", "current_user"},
 		{store.OAuthProviderSalesforce, "salesforce.com", "openid"},
 		{store.OAuthProviderCodeberg, "codeberg.org", ""},
+		{store.OAuthProviderDropbox, "dropbox.com", "account_info.read"},
+		{store.OAuthProviderKakao, "kauth.kakao.com", "account_email"},
+		{store.OAuthProviderPatreon, "patreon.com", "identity"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.provider, func(t *testing.T) {
@@ -141,6 +145,7 @@ func TestEmailVerifiedByProvider(t *testing.T) {
 		store.OAuthProviderMicrosoft: true, store.OAuthProviderFacebook: true,
 		store.OAuthProviderLinear: true, store.OAuthProviderFigma: true, store.OAuthProviderCodeberg: true,
 		store.OAuthProviderGoogle: false, store.OAuthProviderVercel: false, store.OAuthProviderCognito: false,
+		store.OAuthProviderDropbox: false, store.OAuthProviderKakao: false, store.OAuthProviderPatreon: false,
 	} {
 		if got := emailVerifiedByProvider(name); got != want {
 			t.Errorf("emailVerifiedByProvider(%q) = %v, want %v", name, got, want)

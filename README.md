@@ -98,7 +98,7 @@ Most self-hosted platforms in this category manage servers by SSHing in and shel
 | Built-in metrics and logs | Yes | Opt-in add-on | Separate binary | No | No |
 | Rollback | Pinned images, readiness-gated | Health check off by default | Swarm rollback | Manual | Default scheduler: none |
 | Backup verification | Automatic, all 8 engines | Non-empty check | None | None | No backups |
-| SSO and provisioning | OAuth (17 providers) and generic OIDC; SAML and SCIM (beta, off by default) | See their docs | See their docs | See their docs | See their docs |
+| SSO and provisioning | OAuth (20 providers) and generic OIDC; SAML and SCIM (beta, off by default) | See their docs | See their docs | See their docs | See their docs |
 | Audit log | Hash-chained, verifiable, CSV export, forwarding to syslog, webhook or bucket | See their docs | See their docs | See their docs | See their docs |
 | IAM | Allow and Deny policies per app or database, scoped tokens | See their docs | See their docs | See their docs | See their docs |
 
@@ -112,7 +112,7 @@ This is positioning, not a ranking, and every project here is worth using. Where
 - **One search for everything:** Cmd+K across apps, databases, nodes, templates and actions, filtered by what you may do. [Search](docs/search.md)
 - **Servers:** Add nodes with a one-time token, WireGuard mesh, zones and failure-domain spreading, placement what-if. [Multi-node](docs/multi-node.md)
 - **Templates:** 300+ one-click services, with a smoke test that brings up the top 50 (48 pass today, [status](docs/templates-status.md)). [Catalog](docs/template-catalog.md)
-- **Identity and access:** Password, passkeys, TOTP, OAuth with 17 providers plus generic OIDC, IAM policies, teams, a hash-chained audit log with CSV export. SAML single sign-on and SCIM provisioning are beta and off by default. [Identity and access](docs/identity-and-access.md), [SAML and SCIM](docs/sso-saml.md)
+- **Identity and access:** Password, passkeys, TOTP, OAuth with 20 providers plus generic OIDC, IAM policies, teams, a hash-chained audit log with CSV export. SAML single sign-on and SCIM provisioning are beta and off by default. [Identity and access](docs/identity-and-access.md), [SAML and SCIM](docs/sso-saml.md)
 - **Plugins:** A signed plugin marketplace with one-click install, dashboard panels and first-party alert channels. [Plugins](docs/plugins.md)
 - **Automation:** One HTTP API behind the dashboard, a CLI and an MCP server. AI never sits in the reconciliation path. [CLI](docs/cli-reference.md), [AI control](docs/ai-control.md)
 - **Pipelines, previews, cost budgets, sleep when idle, status pages** and more. See [Product tour](https://docs.levelrail.com/product-tour).

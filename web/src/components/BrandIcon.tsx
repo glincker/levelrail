@@ -68,6 +68,9 @@ export type BrandIconName =
   | 'salesforce'
   | 'codeberg'
   | 'cognito'
+  | 'dropbox'
+  | 'kakao'
+  | 'patreon'
   | 'okta'
   | 'keycloak'
   | 'auth0'
@@ -202,6 +205,9 @@ const LOADERS: Record<
   salesforce: () => import('@thesvg/react/salesforce'),
   codeberg: () => import('@thesvg/react/codeberg'),
   cognito: () => import('@thesvg/react/aws-amazon-cognito'),
+  dropbox: () => import('@thesvg/react/dropbox'),
+  kakao: () => import('@thesvg/react/kakao'),
+  patreon: () => import('@thesvg/react/patreon'),
   okta: () => import('@thesvg/react/okta'),
   keycloak: () => import('@thesvg/react/keycloak'),
   auth0: () => import('@thesvg/react/auth0'),

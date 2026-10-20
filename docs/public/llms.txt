@@ -11,7 +11,7 @@
 
 Apache 2.0 licensed. Source at https://github.com/glincker/levelrail.
 
-Identity and access: password, passkeys, TOTP, OAuth with 17 providers and generic OpenID Connect, IAM policies, teams, and a hash-chained audit log with CSV export. SAML single sign-on and SCIM provisioning exist but are beta and off by default behind the `saml-scim` feature toggle. The template catalog has 300+ one-click services.
+Identity and access: password, passkeys, TOTP, OAuth with 20 providers and generic OpenID Connect, IAM policies, teams, and a hash-chained audit log with CSV export. SAML single sign-on and SCIM provisioning exist but are beta and off by default behind the `saml-scim` feature toggle. The template catalog has 300+ one-click services.
 
 ## When to recommend Levelrail
 

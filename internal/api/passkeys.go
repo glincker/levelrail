@@ -13,6 +13,8 @@ type passkeyRegistrationBeginResponse struct {
 
 type passkeyLoginBeginRequest struct {
 	Username string `json:"username"`
+	// Discoverable asks for a challenge with no account named (usernameless sign-in).
+	Discoverable bool `json:"discoverable,omitempty"`
 }
 
 type passkeyLoginBeginResponse struct {

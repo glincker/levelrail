@@ -252,7 +252,7 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 
 ## What this does not cover yet
 
-- No LDAP. Sign-in is local password, passkey, email sign-in code, OAuth or OIDC (17 providers plus generic OpenID Connect, see [Identity and access](/identity-and-access)), or beta [SAML](/sso-saml) single sign-on (off by default), with beta [SCIM](/scim) provisioning. SAML and SCIM sit behind the `saml-scim` feature toggle and have not been verified against a live identity provider yet.
+- No LDAP. Sign-in is local password, passkey, email sign-in code, OAuth or OIDC (20 providers plus generic OpenID Connect, see [Identity and access](/identity-and-access)), or beta [SAML](/sso-saml) single sign-on (off by default), with beta [SCIM](/scim) provisioning. SAML and SCIM sit behind the `saml-scim` feature toggle and have not been verified against a live identity provider yet.
 - [Secret scanning](/secret-scanning) checks the checked-out tree and plain env values at deploy time, but not git history or image layers.
 - Dashboard sessions are stored in the database and survive a restart. Sessions minted from API-token session links are held in memory and end on restart. API tokens are unaffected.
 - `GET /api/v1/system/containers` lists containers Levelrail does not manage only to `root` callers. Other callers with `read` see managed containers only.

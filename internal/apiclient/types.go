@@ -684,6 +684,9 @@ const (
 	OAuthProviderSalesforce  = "salesforce"
 	OAuthProviderCodeberg    = "codeberg"
 	OAuthProviderCognito     = "cognito"
+	OAuthProviderDropbox     = "dropbox"
+	OAuthProviderKakao       = "kakao"
+	OAuthProviderPatreon     = "patreon"
 )
 
 // Email backends accepted by EmailSettingsResource.Backend.

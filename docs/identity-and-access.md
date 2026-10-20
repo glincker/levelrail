@@ -294,7 +294,7 @@ Sign in with Touch ID, Windows Hello, or a security key instead of a password. N
 | Revoke | `DELETE /api/v1/auth/passkeys/{id}` |
 | Sign in | `POST /api/v1/auth/passkey-login/begin`, then `.../finish` |
 
-Passkey sign-in is username-first, not usernameless: the operator types their username, the server looks up that account's credentials, and the browser's passkey prompt proves possession. A successful passkey sign-in completes the session the same way a password does, without an additional TOTP prompt even if the account has 2FA enabled (the same shape OAuth sign-in has).
+Passkey sign-in works two ways. Username-first: the operator types a username and the browser's passkey prompt proves possession. Usernameless: the sign-in page offers **Sign in with a passkey** (and, where the browser supports conditional UI, lists saved passkeys in the username field's autofill), so no username is typed. The usernameless call is `POST /api/v1/auth/passkey-login/begin` with `{"discoverable": true}`; the finish call is the same. It uses the same single-use challenges, rate limits and approval policy as username-first sign-in, and every failure at the finish step returns the same `401` whatever the reason (bad signature, unknown credential, disabled account), so it cannot be used to find out which accounts exist. New passkeys are registered with `residentKey: preferred`, so authenticators that can store a discoverable credential do; a key that cannot (some older security keys) still works username-first. The passkey list shows whether each credential is synced or bound to one device, but not whether it is discoverable, because the sign-in library does not report that. There is no CLI verb for usernameless sign-in: it needs a browser's WebAuthn prompt. A successful passkey sign-in completes the session the same way a password does, without an additional TOTP prompt even if the account has 2FA enabled (the same shape OAuth sign-in has).
 
 Every registration and login challenge is single-use and expires in 5 minutes. The relying party ID and origin are derived from the request's own `Host` header, since there is no single fixed domain to configure on a self-hosted platform.
 
@@ -320,6 +320,9 @@ Eighteen providers are supported. Every one uses the same callback URL shape, `h
 | `figma` | Figma, Developers, My apps. | `current_user:read` |
 | `salesforce` | Salesforce Setup, App Manager, New Connected App (enable OAuth, add the `openid`, `email`, `profile` scopes). | `openid email profile` |
 | `codeberg` | Codeberg, Settings, Applications, Manage OAuth2 applications (confidential client). | provider default |
+| `dropbox` | Dropbox App Console, Create app (scoped access, add the `account_info.read` permission). | `account_info.read` |
+| `kakao` | Kakao Developers, your app, Kakao Login (enable the email consent item). | `account_email profile_nickname profile_image` |
+| `patreon` | Patreon Developers, Clients and API Keys, Create Client. | `identity identity[email]` |
 | `cognito` | AWS Cognito, your user pool, App integrations, app client (confidential, with a secret); needs the user pool ID. | `openid profile email` |
 | `oidc` | Your identity provider's admin console; needs an issuer URL. | `openid email profile` |
 
@@ -775,7 +778,7 @@ levelrail-cli audit-purge
   IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. There is no organization- or project-level grouping in the permission model. The Organizations settings page groups projects for display and navigation only; it is unrelated to access control.
 
 - **Directory sync covers SCIM 2.0 only**
-  Sign-in covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook, Linear, Vercel, Hugging Face, Figma, Salesforce, Codeberg, Amazon Cognito, generic OIDC and [SAML 2.0](/sso-saml) (beta); accounts and groups sync through [SCIM](/scim). There is no LDAP sync.
+  Sign-in covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook, Linear, Vercel, Hugging Face, Figma, Salesforce, Codeberg, Amazon Cognito, Dropbox, Kakao, Patreon, generic OIDC and [SAML 2.0](/sso-saml) (beta); accounts and groups sync through [SCIM](/scim). There is no LDAP sync.
 
 - There is no per-team or per-project access boundary. IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. The Organizations settings page groups projects for display and navigation only.
 - SAML sign-in and SCIM provisioning are beta (the `saml-scim` feature, off by default). They are built on the sign-in library, with Levelrail's own checks in front, and are tested against a local test identity provider, not yet against a live Okta, Entra ID or Keycloak tenant. See [SAML](/sso-saml) and [SCIM](/scim).

@@ -54,7 +54,7 @@ Kamal is deliberately minimal: no control plane, no database, no agent. It runs 
 
 Levelrail has one edition. It is Apache 2.0 licensed, there is no license key, no enterprise tier and no feature gated behind a plan. Everything below ships in the same binary for everyone:
 
-- Sign-in: email and password, TOTP two-factor authentication, passkeys, and OAuth sign-in with 17 providers (Google, GitHub, Microsoft, GitLab and more) or any generic OpenID Connect provider. See [Identity and access](/identity-and-access).
+- Sign-in: email and password, TOTP two-factor authentication, passkeys, and OAuth sign-in with 20 providers (Google, GitHub, Microsoft, GitLab and more) or any generic OpenID Connect provider. See [Identity and access](/identity-and-access).
 - SAML single sign-on and SCIM provisioning: beta, and off by default behind the `saml-scim` feature toggle. See [SAML and SCIM](/sso-saml).
 - IAM: AWS-style Allow and Deny policies scoped to `app:name`, `database:name` or `*`, attachable to users and API tokens, on top of three role presets (admin, operator, viewer). API tokens carry fine-grained abilities.
 - Audit log: every mutating and sensitive request is recorded with actor, ability, method, path, status, remote address and caller surface (CLI, dashboard, MCP or API). It is queryable and exportable as CSV with configurable retention.
@@ -63,7 +63,7 @@ Levelrail has one edition. It is Apache 2.0 licensed, there is no license key, n
 
 | | Levelrail | Coolify | Dokploy | CapRover | Dokku | Kamal |
 | --- | --- | --- | --- | --- | --- | --- |
-| SSO (SAML, OIDC) | OIDC and 17 OAuth providers; SAML beta | Not documented here, see their docs | SSO provider configuration and enforcement exist in the codebase, see their docs for protocols | Not documented here, see their docs | Not documented here, see their docs | None: a command line tool with no web login |
+| SSO (SAML, OIDC) | OIDC and 20 OAuth providers; SAML beta | Not documented here, see their docs | SSO provider configuration and enforcement exist in the codebase, see their docs for protocols | Not documented here, see their docs | Not documented here, see their docs | None: a command line tool with no web login |
 | SCIM provisioning | Beta, off by default | Not documented here, see their docs | Not documented here, see their docs | Not documented here, see their docs | Not documented here, see their docs | None: no server component |
 | Audit log and streaming | Hash-chained, CSV export, forwarding to syslog, a webhook or a bucket | Not documented here, see their docs | Not documented here, see their docs | Not documented here, see their docs | Not documented here, see their docs | None: no server component |
 

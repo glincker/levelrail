@@ -29,6 +29,9 @@ const (
 	OAuthProviderSalesforce  = "salesforce"
 	OAuthProviderCodeberg    = "codeberg"
 	OAuthProviderCognito     = "cognito"
+	OAuthProviderDropbox     = "dropbox"
+	OAuthProviderKakao       = "kakao"
+	OAuthProviderPatreon     = "patreon"
 )
 
 // IsOAuthProvider reports whether name is a sign-in provider the settings
@@ -39,7 +42,8 @@ func IsOAuthProvider(name string) bool {
 		OAuthProviderGitLab, OAuthProviderBitbucket, OAuthProviderDiscord, OAuthProviderSlack,
 		OAuthProviderLinkedIn, OAuthProviderTwitch, OAuthProviderFacebook,
 		OAuthProviderLinear, OAuthProviderVercel, OAuthProviderHuggingFace, OAuthProviderFigma,
-		OAuthProviderSalesforce, OAuthProviderCodeberg, OAuthProviderCognito:
+		OAuthProviderSalesforce, OAuthProviderCodeberg, OAuthProviderCognito,
+		OAuthProviderDropbox, OAuthProviderKakao, OAuthProviderPatreon:
 		return true
 	}
 	return false

@@ -71,7 +71,7 @@ Heroku is a managed platform. Levelrail is the same workflow on infrastructure y
     Yes, Apache 2.0, one edition.
   </Accordion>
   <Accordion title="Does Levelrail support SSO, SAML and SCIM?">
-    Levelrail has password, passkey and TOTP sign-in, OAuth sign-in with 17 providers and generic OpenID Connect, IAM policies, teams and a hash-chained audit log, all in the one free edition. SAML single sign-on and SCIM provisioning exist but are beta: they sit behind the `saml-scim` feature toggle, are off by default, and are tested against a test identity provider rather than a live Okta or Entra ID tenant. See [SAML and SCIM](/sso-saml).
+    Levelrail has password, passkey and TOTP sign-in, OAuth sign-in with 20 providers and generic OpenID Connect, IAM policies, teams and a hash-chained audit log, all in the one free edition. SAML single sign-on and SCIM provisioning exist but are beta: they sit behind the `saml-scim` feature toggle, are off by default, and are tested against a test identity provider rather than a live Okta or Entra ID tenant. See [SAML and SCIM](/sso-saml).
   </Accordion>
 </AccordionGroup>
 

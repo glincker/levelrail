@@ -63,9 +63,9 @@ func TestListOAuthProviderSettings_AllProvidersSeeded(t *testing.T) {
 	}
 	want := []string{
 		OAuthProviderBitbucket, OAuthProviderCodeberg, OAuthProviderCognito, OAuthProviderDiscord,
-		OAuthProviderFacebook, OAuthProviderFigma, OAuthProviderGitHub, OAuthProviderGitLab,
-		OAuthProviderGoogle, OAuthProviderHuggingFace, OAuthProviderLinear, OAuthProviderLinkedIn,
-		OAuthProviderMicrosoft, OAuthProviderOIDC, OAuthProviderSalesforce, OAuthProviderSlack,
+		OAuthProviderDropbox, OAuthProviderFacebook, OAuthProviderFigma, OAuthProviderGitHub, OAuthProviderGitLab,
+		OAuthProviderGoogle, OAuthProviderHuggingFace, OAuthProviderKakao, OAuthProviderLinear, OAuthProviderLinkedIn,
+		OAuthProviderMicrosoft, OAuthProviderOIDC, OAuthProviderPatreon, OAuthProviderSalesforce, OAuthProviderSlack,
 		OAuthProviderTwitch, OAuthProviderVercel,
 	}
 	if len(got) != len(want) {

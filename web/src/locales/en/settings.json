@@ -712,7 +712,10 @@
       "figma": "Figma",
       "salesforce": "Salesforce",
       "codeberg": "Codeberg",
-      "cognito": "Amazon Cognito"
+      "cognito": "Amazon Cognito",
+      "dropbox": "Dropbox",
+      "kakao": "Kakao",
+      "patreon": "Patreon"
     },
     "state": {
       "connected": "Connected",

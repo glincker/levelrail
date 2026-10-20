@@ -56,6 +56,9 @@ describe('brandKeyFor', () => {
     ['salesforce', 'salesforce'],
     ['codeberg', 'codeberg'],
     ['cognito', 'cognito'],
+    ['dropbox', 'dropbox'],
+    ['kakao', 'kakao'],
+    ['patreon', 'patreon'],
     ['custom', 'custom'],
   ] as const)('%s', (p, want) => {
     expect(brandKeyFor(p)).toBe(want)

@@ -28,6 +28,9 @@ const PROVIDER_NAMES: Record<string, string> = {
   salesforce: 'Salesforce',
   codeberg: 'Codeberg',
   cognito: 'Amazon Cognito',
+  dropbox: 'Dropbox',
+  kakao: 'Kakao',
+  patreon: 'Patreon',
 }
 
 // Real top-level navigation (<a href>, not a fetch): the browser must

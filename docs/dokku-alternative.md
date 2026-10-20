@@ -72,7 +72,7 @@ Dokku has almost no idle footprint and is hard to beat for simplicity on one ser
     Yes. Apache 2.0, one edition.
   </Accordion>
   <Accordion title="Does Levelrail support SSO, SAML and SCIM?">
-    Levelrail has password, passkey and TOTP sign-in, OAuth sign-in with 17 providers and generic OpenID Connect, IAM policies, teams and a hash-chained audit log, all in the one free edition. SAML single sign-on and SCIM provisioning exist but are beta: they sit behind the `saml-scim` feature toggle, are off by default, and are tested against a test identity provider rather than a live Okta or Entra ID tenant. See [SAML and SCIM](/sso-saml). Dokku has no web login of its own: access is by SSH keys, so SSO is a different question there. See its documentation for plugins.
+    Levelrail has password, passkey and TOTP sign-in, OAuth sign-in with 20 providers and generic OpenID Connect, IAM policies, teams and a hash-chained audit log, all in the one free edition. SAML single sign-on and SCIM provisioning exist but are beta: they sit behind the `saml-scim` feature toggle, are off by default, and are tested against a test identity provider rather than a live Okta or Entra ID tenant. See [SAML and SCIM](/sso-saml). Dokku has no web login of its own: access is by SSH keys, so SSO is a different question there. See its documentation for plugins.
   </Accordion>
 </AccordionGroup>
 
