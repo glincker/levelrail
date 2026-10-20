@@ -303,6 +303,8 @@ type BuildTriggerRequest struct {
 	// human-readable framework name a prior DetectFramework call reported
 	// for this exact repo/ref, stored on the resulting deploy_attempts row.
 	DetectedFramework string `json:"detected_framework,omitempty"`
+	// UploadHash builds a directory sent with UploadSource instead of a git checkout; RepoURL and Ref stay empty.
+	UploadHash string `json:"upload_hash,omitempty"`
 }
 
 // BuildTriggerRequestBuild is BuildTriggerRequest's nested build.* input

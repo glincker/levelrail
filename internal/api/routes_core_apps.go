@@ -283,6 +283,8 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// configured. AbilityDeploy, the same boundary as the image-tag
 	// trigger above: this also ultimately writes desired state.
 	mux.HandleFunc("POST /api/v1/apps/{name}/builds", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleTriggerBuild))
+	mux.HandleFunc("POST /api/v1/apps/{name}/uploads", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleUploadSource))
+	mux.HandleFunc("GET /api/v1/apps/{name}/uploads", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListUploads))
 
 	// Multi-service fan-out (handleDeploySpec's own doc comment,
 	// apps_multi.go): one app.yaml's services: map, built and deployed as

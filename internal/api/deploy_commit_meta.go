@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/sourceupload"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
 
@@ -32,4 +33,8 @@ func withPushCommitMeta(ctx context.Context, ev webhook.PushEvent) context.Conte
 func commitMetaFrom(ctx context.Context) commitMeta {
 	m, _ := ctx.Value(commitMetaKey{}).(commitMeta)
 	return m
+}
+
+func withUploadCommitMeta(ctx context.Context, m sourceupload.Meta) context.Context {
+	return context.WithValue(ctx, commitMetaKey{}, commitMeta{Message: uploadMessage(m)})
 }

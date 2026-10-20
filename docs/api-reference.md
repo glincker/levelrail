@@ -571,6 +571,8 @@ Endpoints for:
 | GET | /api/v1/git/repos | AbilityReadSensitive | handleListGitRepos |
 | GET | /api/v1/apps/{name}/watch | AbilityRead | handleGetAppWatch |
 | POST | /api/v1/apps/{name}/watch/stop | AbilityDeploy | handleStopAppWatch |
+| POST | /api/v1/apps/{name}/uploads | AbilityDeploy | handleUploadSource |
+| GET | /api/v1/apps/{name}/uploads | AbilityRead | handleListUploads |
 
 </Accordion>
 
