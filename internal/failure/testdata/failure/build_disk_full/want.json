@@ -1,5 +1,0 @@
-{
-  "code": "disk_full",
-  "retryable": false,
-  "excerpt_contains": ["no space left on device"]
-}

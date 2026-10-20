@@ -1,4 +1,0 @@
-{
-  "Status": "failed",
-  "Error": "deploy: env DATABASE_URL is required but no secret value is set"
-}

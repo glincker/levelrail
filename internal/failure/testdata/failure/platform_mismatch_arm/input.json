@@ -1,8 +1,0 @@
-{
-  "Status": "failed",
-  "Error": "container exited during readiness",
-  "LogLines": [
-    "docker: Error response from daemon: image with reference acme/api:1.4 was found but its platform (linux/arm64) does not match the specified platform (linux/amd64)",
-    "standard_init_linux.go:228: exec user process caused: exec format error"
-  ]
-}

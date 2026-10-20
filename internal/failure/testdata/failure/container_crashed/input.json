@@ -1,6 +1,0 @@
-{
-  "Condition": {
-    "Reason": "ExitedDuringReadiness",
-    "Message": "container exited with code 2 during readiness"
-  }
-}

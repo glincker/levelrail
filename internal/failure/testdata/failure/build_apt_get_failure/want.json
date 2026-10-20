@@ -1,7 +1,0 @@
-{
-  "code": "dependency_install_failed",
-  "retryable": false,
-  "excerpt_contains": [
-    "E: Unable to locate package libpq-devx"
-  ]
-}

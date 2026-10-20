@@ -1,7 +1,0 @@
-{
-  "code": "build_config_error",
-  "retryable": false,
-  "excerpt_contains": [
-    "Missing script: \"build\""
-  ]
-}

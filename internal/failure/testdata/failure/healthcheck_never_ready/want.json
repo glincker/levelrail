@@ -1,5 +1,0 @@
-{
-  "code": "health_check_failed",
-  "retryable": false,
-  "excerpt_contains": ["ReadinessFailed"]
-}

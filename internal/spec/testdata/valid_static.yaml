@@ -1,8 +1,0 @@
-version: 1
-services:
-  docs:
-    build:
-      type: static
-      path: ./dist
-    domains:
-      - docs.example.com

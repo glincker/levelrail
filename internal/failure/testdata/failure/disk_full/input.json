@@ -1,4 +1,0 @@
-{
-  "Status": "failed",
-  "Error": "write /var/lib/docker/tmp: no space left on device"
-}

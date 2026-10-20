@@ -1,4 +1,0 @@
-{
-  "Status": "failed",
-  "Error": "image web:1 was garbage collected and can no longer be rolled back to"
-}

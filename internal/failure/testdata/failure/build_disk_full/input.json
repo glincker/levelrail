@@ -1,6 +1,0 @@
-{
-  "Status": "failed",
-  "FailingStep": "building",
-  "Error": "deploy: service \"web\": build: write /var/lib/docker/tmp/x: no space left on device",
-  "LogLines": ["#9 extracting sha256:ab12 0.4s", "#9 ERROR: failed to copy: write /var/lib/docker/tmp/x: no space left on device"]
-}

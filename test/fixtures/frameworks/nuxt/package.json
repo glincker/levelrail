@@ -1,1 +1,0 @@
-{"name":"fixture-nuxt","private":true,"scripts":{"build":"nuxt build"},"dependencies":{"nuxt":"3.14.0","vue":"3.5.0"}}
