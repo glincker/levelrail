@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/glincker/levelrail/compare/kit/v0.3.0...kit/v0.4.0) (2026-10-20)
+
+
+### Features
+
+* release 0.13 with safer defaults, a plugin marketplace and one search across everything ([#1291](https://github.com/glincker/levelrail/issues/1291)) ([8bfd8c7](https://github.com/glincker/levelrail/commit/8bfd8c7b22747a8a0fc007194c9b1ce9aa4f558f))
+* release 0.14 with easier migration, one-command deploys, git push deploys and stronger SSO ([#1294](https://github.com/glincker/levelrail/issues/1294)) ([6a2bafe](https://github.com/glincker/levelrail/commit/6a2bafe173ca88222c11d2b943f4b18a55d268aa))
+
 ## [0.3.0](https://github.com/glincker/levelrail/compare/kit/v0.2.1...kit/v0.3.0) (2026-10-17)
 
 
