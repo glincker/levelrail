@@ -204,6 +204,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
 		api.WithDeploySafety(db, client),
+		api.WithPublishLocks(db),
 		api.WithDeployMaxConcurrent(deployMaxConcurrent(logger)),
 		api.WithWakeToken(appWakeToken()),
 		api.WithLogBroadcaster(logBroadcaster),

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1550 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1555 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -193,7 +193,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/{deployId}/logs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeployLogStream", Description: "Deploy-attempt build/log stream (deploy_attempts.go): SSE, serving either a live tail (attempt still running) or a full persisted replay (attempt already finished), the exact contract web/src/hooks/useDeployLogStream.ts was built against. AbilityRead: this is a read of one attempt's own output, the same sensitivity as the deploy-attempts list above."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/{deployId}/logs/download", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDownloadDeployLog", Description: "Deploy-attempt log download (deploy_log_download.go): the same attempt's full log as a plain-text attachment instead of an SSE stream, mirroring /apps/{name}/logs/download for runtime logs."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/{deployId}/probes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListProbeAttempts", Description: "Deploy-attempt readiness-probe attempts (deploy_probes.go): plain polling JSON, not SSE, the individual probe attempts (internal/probe.WithOnAttempt) one deploy's cutover made. Same AbilityRead boundary as the step/log streams above."},
+	{Method: "POST", Path: "/api/v1/apps/{name}/deploys/{deployId}/publish", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePublishHeldBuild", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/deploys/{deployId}/rollback", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRollbackToDeploy", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/deploys/{deployId}/rollback-lock", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRollbackAndLock", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/{deployId}/steps", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeployStepStream", Description: "Deploy-attempt step stream (deploy_steps.go): SSE, named pipeline-phase transitions (detecting/building/pushing/deploying) rather than raw log lines, for a checklist-style progress view. Same AbilityRead boundary as the log stream above."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/diagnose", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDiagnoseApp", Description: "Read-only failure diagnosis (diagnose.go): synthesizes the app's newest (or ?deploy_id=-pinned) deploy attempt, current reconcile conditions, and crashloop state into a deterministic explanation. AbilityRead, same sensitivity as the routes above; never writes anything."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/dns-provider", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppDNSProvider", Description: ""},
@@ -330,6 +332,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/preview/prune", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePrunePreview", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/promote", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePromoteApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/promote/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePromotePreview", Description: "Promotion (promote.go): move a known-good image from this app to a sibling app tagged with another environment in the same project, through the exact same deploy path a plain trigger uses. Preview is AbilityRead like the comparison view above; the trigger itself is AbilityDeploy, matching POST .../deploys."},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/publish-lock", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeletePublishLock", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/publish-lock", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPublishLock", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/publish-lock", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutPublishLock", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/requests", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleQueryRequests", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/resource-recommendation", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppResourceRecommendation", Description: "Read-only resource right-sizing suggestion (resource_recommendation.go): synthesizes the app's historical CPU/memory usage and current limits into a deterministic raise/lower/keep suggestion per dimension. AbilityRead, same sensitivity as diagnose above; never writes anything, never applied automatically."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/restart", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRestartApp", Description: ""},

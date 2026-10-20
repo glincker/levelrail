@@ -208,6 +208,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithStaticBuildImage(os.Getenv(deploy.EnvStaticBuildImage)),
 		deploy.WithStaticPublishRecorder(db),
 		deploy.WithAppStore(db),
+		deploy.WithPublishLocks(db),
 		deploy.WithVaultConfigChecker(db),
 		deploy.WithLoadBalancerStore(db),
 		deploy.WithSpendCapStore(db),

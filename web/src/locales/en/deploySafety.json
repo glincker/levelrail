@@ -132,5 +132,19 @@
     "title": "Pinned rollback targets",
     "empty": "No pinned releases yet. A release is pinned when it takes traffic.",
     "live": "Live"
+  },
+  "publishLock": {
+    "lock": "Lock publishing",
+    "unlock": "Unlock publishing",
+    "bannerTitle": "Publishing is locked",
+    "bannerBody_one": "{{by}} locked it. The live release stays pinned and {{count}} build is held.",
+    "bannerBody_other": "{{by}} locked it. The live release stays pinned and {{count}} builds are held.",
+    "reason": "Reason: {{reason}}",
+    "publish": "Publish",
+    "publishedToast": "Published. The held build is going live.",
+    "rollbackLock": "Roll back and lock",
+    "rollbackLockHint": "Redeploy this release and hold every later build",
+    "held": "Held, not live",
+    "error": "Could not change the publish lock."
   }
 }

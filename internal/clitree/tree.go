@@ -25,6 +25,9 @@ var Tree = map[string]*Node{
 	}},
 	"apps": {Subs: map[string]*Node{
 		"freeze":                  {Subs: map[string]*Node{"set": nil, "show": nil, "clear": nil}},
+		"lock":                    nil,
+		"unlock":                  nil,
+		"publish":                 nil,
 		"sbom":                    nil,
 		"scan":                    {Subs: map[string]*Node{"enable": nil, "disable": nil, "status": nil, "run": nil, "gate": nil, "override": nil}},
 		"create":                  nil,

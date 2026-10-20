@@ -10,6 +10,7 @@ import {
   GitCommitIcon,
   GitDiffIcon,
   ArrowSquareOutIcon,
+  LockSimpleIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { DeployAttempt } from '../types/deployAttempt'
@@ -17,6 +18,7 @@ import type { ReconcileCondition } from '../types/deploy'
 import type { EnvironmentResource } from '../types/environment'
 import { isPendingApproval, useTriggerDeploy } from '../queries/deploys'
 import { useRollbackToDeploy } from '../queries/deployControl'
+import { usePublishLockActions } from '../queries/publishLock'
 import { formatDeployDuration } from '../lib/deployDuration'
 import { computeDeployStages } from '../lib/deployStages'
 import {
@@ -89,6 +91,7 @@ export function DeployAttemptRow({
   const navigate = useNavigate()
   const triggerDeploy = useTriggerDeploy(appName)
   const rollbackTo = useRollbackToDeploy(appName)
+  const { publish, rollbackAndLock } = usePublishLockActions(appName)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const isCancelable =
     attempt.status === 'queued' ||
@@ -154,6 +157,22 @@ export function DeployAttemptRow({
   }
 
   const live = attempt.rollout_state === 'serving'
+  const held = attempt.publish_state === 'held'
+  const lockToastError = (error: Error) =>
+    toast.add({
+      title: t('publishLock.error', { ns: 'deploySafety' }),
+      description: error.message,
+      type: 'error',
+    })
+  const handlePublish = () =>
+    publish.mutate(attempt.id, {
+      onSuccess: () =>
+        toast.add({
+          title: t('publishLock.publishedToast', { ns: 'deploySafety' }),
+          type: 'success',
+        }),
+      onError: lockToastError,
+    })
   const menuItems = [
     {
       id: 'compare',
@@ -168,7 +187,7 @@ export function DeployAttemptRow({
         })
       },
     },
-    ...(attempt.status === 'succeeded' && !live
+    ...(attempt.status === 'succeeded' && !live && !held
       ? [
           {
             id: 'rollback',
@@ -179,6 +198,21 @@ export function DeployAttemptRow({
             icon: <ArrowCounterClockwiseIcon className="size-4" />,
             disabled: rollbackBlocked,
             onSelect: handleRollback,
+          },
+        ]
+      : []),
+    ...(attempt.status === 'succeeded' && !live && !held
+      ? [
+          {
+            id: 'rollback-lock',
+            label: t('publishLock.rollbackLock', { ns: 'deploySafety' }),
+            description: t('publishLock.rollbackLockHint', {
+              ns: 'deploySafety',
+            }),
+            icon: <LockSimpleIcon className="size-4" />,
+            disabled: rollbackBlocked || rollbackAndLock.isPending,
+            onSelect: () =>
+              rollbackAndLock.mutate(attempt.id, { onError: lockToastError }),
           },
         ]
       : []),
@@ -388,7 +422,16 @@ export function DeployAttemptRow({
             {t('deployHistory.visit')}
           </Button>
         ) : null}
-        {attempt.status === 'succeeded' && !live ? (
+        {held ? (
+          <Button
+            size="sm"
+            disabled={publish.isPending}
+            onClick={handlePublish}
+          >
+            {t('publishLock.publish', { ns: 'deploySafety' })}
+          </Button>
+        ) : null}
+        {attempt.status === 'succeeded' && !live && !held ? (
           <Button
             variant="outline"
             size="sm"

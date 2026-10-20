@@ -84,17 +84,20 @@ func WithAttemptRecorder(r AttemptRecorder) Option {
 
 // saveDesired writes desired through the ordering guard when the request
 // carries an Order and the pipeline has an ordered store.
-func (p *Pipeline) saveDesired(ctx context.Context, req Request, desired store.DesiredService) error {
+func (p *Pipeline) saveDesired(ctx context.Context, req Request, desired store.DesiredService) (held bool, err error) {
 	if err := p.applyAutoscaleReplicas(ctx, req, &desired); err != nil {
-		return err
+		return false, err
 	}
 	if err := commitPoint(req); err != nil {
-		return err
+		return false, err
+	}
+	if held, err := p.holdForLock(ctx, req, desired); held || err != nil {
+		return held, err
 	}
 	if req.Order != nil && p.ordered != nil {
-		return p.ordered.SaveDesiredServiceOrdered(ctx, desired, *req.Order, CheckOrder)
+		return false, p.ordered.SaveDesiredServiceOrdered(ctx, desired, *req.Order, CheckOrder)
 	}
-	return p.store.SaveDesiredService(ctx, desired)
+	return false, p.store.SaveDesiredService(ctx, desired)
 }
 
 func (p *Pipeline) recordDigest(ctx context.Context, req Request, res ImageResolution) {

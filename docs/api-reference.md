@@ -602,6 +602,11 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/branch-deploys | AbilityRead | handleListBranchDeploys |
 | PUT | /api/v1/apps/{name}/branch-deploys | AbilityWriteSensitive | handleSetBranchDeploySettings |
 | DELETE | /api/v1/apps/{name}/branch-deploys/{slug} | AbilityDeploy | handleDeleteBranchDeploy |
+| POST | /api/v1/apps/{name}/deploys/{deployId}/rollback-lock | AbilityDeploy | handleRollbackAndLock |
+| POST | /api/v1/apps/{name}/deploys/{deployId}/publish | AbilityDeploy | handlePublishHeldBuild |
+| GET | /api/v1/apps/{name}/publish-lock | AbilityRead | handleGetPublishLock |
+| PUT | /api/v1/apps/{name}/publish-lock | AbilityDeploy | handlePutPublishLock |
+| DELETE | /api/v1/apps/{name}/publish-lock | AbilityDeploy | handleDeletePublishLock |
 
 </Accordion>
 

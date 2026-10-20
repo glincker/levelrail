@@ -43,6 +43,8 @@ export type DeployAttemptSource =
   | 'upload'
 
 export interface DeployAttempt {
+  /** 'held' is a finished build the app's publish lock kept off the live site. */
+  publish_state?: 'held'
   id: string
   service_name: string
   image: string
