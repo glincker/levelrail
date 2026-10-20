@@ -81,6 +81,7 @@
               "installing",
               "getting-started",
               "quickstart-one-command",
+              "tutorials/deploy-a-docker-app",
               "profiles",
               "getting-started"
             ],
@@ -91,6 +92,7 @@
             "pages": [
               "domains-and-ingress",
               "app-exposure",
+              "tutorials/index",
               "tutorials/connect-an-app-to-postgres",
               "tutorials/deploy-from-github-actions",
               "environment-and-secrets",
@@ -163,6 +165,7 @@
               "git-host-outages",
               "deploy-trace",
               "build-performance",
+              "build-center",
               "scheduled-deploys",
               "scheduled-jobs",
               "image-auto-update",
@@ -215,6 +218,7 @@
             "pages": [
               "managing-databases",
               "database-upgrades",
+              "database-version-catalog",
               "external-databases",
               "connecting-apps-to-databases",
               "backups-and-storage",
@@ -379,6 +383,7 @@
               "mobile-api",
               "plugins",
               "plugin-publishing",
+              "plugins-first-party",
               "mcp-tool-surface",
               "agent-tooling-audit",
               "kit",
