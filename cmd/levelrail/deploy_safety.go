@@ -107,6 +107,7 @@ func startHeldDeployReleaser(ctx context.Context, logger *slog.Logger, db *store
 	go r.Run(ctx, interval)
 	go runDeployQueueDrain(ctx, rt, interval)
 	go rt.RunGitHostWatch(ctx)
+	go rt.RunGitPoller(ctx)
 }
 
 // runDeployQueueDrain restarts queued deploys a restart or a missed finish

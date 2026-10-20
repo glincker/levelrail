@@ -78,3 +78,36 @@ func TestRun_GitProviders_ShowsHealthAndReconnectHint(t *testing.T) {
 		t.Errorf("a healthy provider must not print a reconnect hint:\n%s", stdout)
 	}
 }
+
+func TestRun_AppsGitSourceRegisterWebhook(t *testing.T) {
+	respond := func(state, msg string) *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost || r.URL.Path != "/api/v1/apps/web/git-source/webhook/register" {
+				t.Errorf("%s %s", r.Method, r.URL.Path)
+			}
+			_ = json.NewEncoder(w).Encode(apiclient.GitSourceResource{
+				ServiceName: "web", RepoURL: "https://github.com/org/web.git", Branch: "main", TriggerMode: "push",
+				WebhookURLWarning:   "private_address",
+				WebhookRegistration: &apiclient.GitWebhookRegistrationResource{State: state, Error: msg},
+				Poll:                &apiclient.GitPollStatusResource{Enabled: true},
+			})
+		}))
+	}
+
+	ok := respond("registered", "")
+	defer ok.Close()
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "git-source", "register-webhook", "web", "--api-url", ok.URL})
+	for _, want := range []string{"webhook:        registered", "webhook address is private or local", "poll:           not checked yet"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("stdout missing %q:\n%s", want, stdout)
+		}
+	}
+
+	failed := respond("failed", "permission denied")
+	defer failed.Close()
+	var outBuf, errBuf strings.Builder
+	got := run("levelrail-cli-test", []string{"apps", "git-source", "register-webhook", "web", "--api-url", failed.URL}, &outBuf, &errBuf, envMap())
+	if got != exitCheckFailed || !strings.Contains(outBuf.String(), "failed (permission denied)") {
+		t.Errorf("exit = %d, stdout = %q; want a non-zero exit with the error shown", got, outBuf.String())
+	}
+}

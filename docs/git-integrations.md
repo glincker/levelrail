@@ -613,6 +613,7 @@ The TTL sweep covers a pull-request-closed delivery that never arrived. A backgr
 | `PUT` | `/api/v1/apps/{name}/git-source/build` | `write:sensitive` |
 | `POST` | `/api/v1/apps/{name}/git-source/detect` | `deploy` |
 | `POST` | `/api/v1/webhooks/github/{name}` | none (signature verified) |
+| `POST` | `/api/v1/apps/{name}/git-source/webhook/register` | `write:sensitive` |
 | `GET` | `/api/v1/apps/{name}/webhook-deliveries` | `read` |
 | `POST` | `/api/v1/apps/{name}/webhook-deliveries/{id}/replay` | `deploy` |
 | `PUT` | `/api/v1/apps/{name}/preview-settings` | `write:sensitive` |
@@ -647,9 +648,9 @@ Both have their own release webhook events that Levelrail does not subscribe to.
 `use-as-source` connects the repository and registers the webhook, but does not carry the OAuth token forward as the git source's deploy token. A private repository only builds once you paste a personal access token into the app's git source card. GitHub does not have this gap, because its installation token is minted fresh on every call. Likewise `can_auth_clone` in `GET /api/v1/git-providers` is true only for GitHub.
 
 </Accordion>
-<Accordion title="GitHub Enterprise Server clone authentication">
+<Accordion title="GitHub Enterprise Server is not tested against a live instance">
 
-A GitHub Enterprise Server connection works for the App itself, but the authenticated-clone path only recognizes `github.com` URLs.
+A GitHub Enterprise Server connection uses the instance's own host for the App, for listing and for authenticated clones: a repository URL on the connected instance's host gets the installation token, exactly like `github.com`. This is covered by unit tests only; it has not been run against a live Enterprise Server.
 
 </Accordion>
 <Accordion title="Disconnecting only revokes the token on GitLab">
@@ -658,6 +659,10 @@ Disconnecting deletes the local connection and its secrets and, for GitLab, revo
 
 </Accordion>
 </AccordionGroup>
+
+## When webhooks do not arrive
+
+A push can reach a git source without a webhook ever being called: the webhook address was `localhost`, registration failed, or the git host was down. [Git reliability](/git-reliability) describes what the control plane does about it: it flags an unreachable webhook address, shows registration failures with a Register again button, polls the branch head for missed pushes and ignores a late delivery for a commit older than the one already deployed.
 
 ## Troubleshooting
 

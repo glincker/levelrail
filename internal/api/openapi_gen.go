@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1496 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1497 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1367,6 +1367,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/detect", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleDetectGitSourceBuild", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/rotate-webhook-secret", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleRotateGitSourceWebhookSecret", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/validate", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleValidateGitSourceAccess", Description: "Rotate webhook secret (git_sources.go): mints a fresh secret without touching repo_url/branch/build config, the narrow alternative to a full DELETE-then-PUT reconnect. Same AbilityWriteSensitive tier as PUT .../git-source, since it's the identical class of credential write."},
+	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/webhook/register", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleRegisterGitSourceWebhook", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/preview-settings", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetPreviewEnabled", Description: "Preview environments per pull request (preview_environments.go/ preview_environments_handlers.go): opt-in per app, off by default. AbilityWriteSensitive for the toggle, matching PUT .../git-source's own tier since it's the same connect-time-adjacent configuration surface; AbilityRead for the list, matching GET .../git-source; AbilityDeploy for the manual teardown, the same lifecycle-action tier POST .../restart and POST .../stop already use."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/previews", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListPreviewEnvironments", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/previews/{number}/approve", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleApprovePreviewEnvironment", Description: ""},

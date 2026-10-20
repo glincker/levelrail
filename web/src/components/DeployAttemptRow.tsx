@@ -38,6 +38,9 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast, toastAction } from '@/components/ui/toast'
 
+// The reason code a poll-started deploy carries; its label already says why.
+const POLLED_REASON = 'DetectedByPoll'
+
 const TONE_TEXT: Record<string, string> = {
   success: 'text-tone-success',
   danger: 'text-tone-danger',
@@ -216,7 +219,9 @@ export function DeployAttemptRow({
           ? `Superseded by ${attempt.superseded_by}`
           : attempt.status === 'canceled'
             ? `Canceled${attempt.canceled_by ? ` by ${attempt.canceled_by}` : ''}`
-            : attempt.reason
+            : attempt.reason === POLLED_REASON
+              ? undefined
+              : attempt.reason
 
   return (
     <li

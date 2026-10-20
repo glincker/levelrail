@@ -94,3 +94,27 @@ func (c *Client) ListGitRepos(ctx context.Context, p GitRepoListParams) (GitRepo
 	err := c.do(ctx, http.MethodGet, "/api/v1/git/repos?"+q.Encode(), nil, &out)
 	return out, err
 }
+
+// GitWebhookRegistrationResource mirrors internal/api's gitWebhookRegistrationResource.
+type GitWebhookRegistrationResource struct {
+	State     string     `json:"state"`
+	Error     string     `json:"error,omitempty"`
+	ChangedAt *time.Time `json:"changed_at,omitempty"`
+}
+
+// GitPollStatusResource mirrors internal/api's gitPollStatusResource.
+type GitPollStatusResource struct {
+	Enabled       bool       `json:"enabled"`
+	LastPolledAt  *time.Time `json:"last_polled_at,omitempty"`
+	LastWebhookAt *time.Time `json:"last_webhook_at,omitempty"`
+	LastSeenHead  string     `json:"last_seen_head,omitempty"`
+	Error         string     `json:"error,omitempty"`
+}
+
+// RegisterGitSourceWebhook calls POST /api/v1/apps/{name}/git-source/webhook/register:
+// registers the push webhook on the provider again and returns the source with the new outcome.
+func (c *Client) RegisterGitSourceWebhook(ctx context.Context, name string) (GitSourceResource, error) {
+	var out GitSourceResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/git-source/webhook/register", nil, &out)
+	return out, err
+}

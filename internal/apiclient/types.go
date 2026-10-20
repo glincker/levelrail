@@ -1819,11 +1819,17 @@ type GitSourceResource struct {
 	ResolvedBuild GitSourceResolvedBuild `json:"resolved_build"`
 	// TriggerMode mirrors store.GitSource.TriggerMode: "push" (default)
 	// or "release", see internal/api's normalizeGitSourceTriggerMode.
-	TriggerMode    string `json:"trigger_mode,omitempty"`
-	HasToken       bool   `json:"has_token"`
-	WebhookURL     string `json:"webhook_url"`
-	WebhookSecret  string `json:"webhook_secret,omitempty"`
-	PreviewEnabled bool   `json:"preview_enabled"`
+	TriggerMode string `json:"trigger_mode,omitempty"`
+	HasToken    bool   `json:"has_token"`
+	WebhookURL  string `json:"webhook_url"`
+	// WebhookURLWarning is private_address or no_public_url when WebhookURL cannot be reached by a git host.
+	WebhookURLWarning string `json:"webhook_url_warning,omitempty"`
+	// WebhookRegistration is the outcome of registering the webhook on the provider.
+	WebhookRegistration *GitWebhookRegistrationResource `json:"webhook_registration,omitempty"`
+	// Poll is the missed-webhook poller's view of the source.
+	Poll           *GitPollStatusResource `json:"poll,omitempty"`
+	WebhookSecret  string                 `json:"webhook_secret,omitempty"`
+	PreviewEnabled bool                   `json:"preview_enabled"`
 	// PostPRComments mirrors store.GitSource.PostPRComments: the opt-in
 	// toggle for a preview deploy's GitHub PR comment/commit status, set
 	// via SetPreviewPostPRComments (preview-settings, same route as
