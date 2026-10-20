@@ -1508,7 +1508,7 @@ The dashboard's Get started checklist from a terminal. `status` prints every ste
 
 ```
 levelrail-cli proxy [--domain D | --app NAME] [--proxy traefik|nginx|caddy] [--verify] [flags]
-levelrail-cli proxy setup [--confirm] [--dynamic-dir DIR] [flags]
+levelrail-cli proxy setup [--confirm] [--provider traefik|nginx|caddy|haproxy|auto] [--dynamic-dir DIR] [--cert-dir DIR] [flags]
 levelrail-cli proxy status [flags]
 levelrail-cli proxy apply [flags]
 levelrail-cli proxy verify [--domain D] [flags]
@@ -1516,6 +1516,8 @@ levelrail-cli proxy disable [flags]
 ```
 
 Without a subcommand: shows which container publishes ports 80 and 443 and the configuration to paste into that proxy, for the dashboard (`--domain`) or an app's domain (`--app`, upstream is the ingress HTTP port). `setup` detects a Traefik (Coolify's included) and, with `--confirm`, turns on `tls_terminated_upstream`, saves the detected entrypoints, certificate resolver, directory and upstream host, writes one route file per domain and verifies each over HTTPS; without `--confirm` it is a dry run. It exits with an API error and the precise gap (`detection_incomplete`, `upstream_unreachable` with the drop-in fix, `not_writable`) when it cannot proceed. `status` prints detection, per-domain state (`missing`, `written`, `stale`, `error`), certificate issuer and expiry, and the checklist. `apply` rewrites the files now, `verify` probes again, `disable` removes the files it wrote. Writes need a root scoped token. Details: [Run behind an existing proxy](/behind-an-existing-proxy#one-step-setup-traefik-including-coolify).
+
+`--provider` picks the proxy (`auto`, the default, uses the one detected). nginx is managed: `setup --confirm` writes one `.conf` per domain, validates it with `nginx -t` and rolls back on failure. Caddy and HAProxy only render a snippet to apply by hand.
 
 ## Containers
 

@@ -136,6 +136,9 @@ export type BrandIconName =
   | 'deepseek'
   | 'xai'
   | 'fireworks'
+  | 'nginx'
+  | 'traefik'
+  | 'caddy'
   | 'ollama'
   | 'perplexity'
   | 'vllm'
@@ -275,6 +278,9 @@ const LOADERS: Record<
   deepseek: () => import('@thesvg/react/deepseek'),
   xai: () => import('@thesvg/react/xai'),
   fireworks: () => import('@thesvg/react/fireworks'),
+  nginx: () => import('@thesvg/react/nginx'),
+  traefik: () => import('@thesvg/react/traefik'),
+  caddy: () => import('@thesvg/react/caddy'),
   ollama: () => import('@thesvg/react/ollama'),
   perplexity: () => import('@thesvg/react/perplexity'),
   vllm: () => import('@thesvg/react/vllm'),

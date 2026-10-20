@@ -117,7 +117,7 @@ func TestDetect(t *testing.T) {
 			missingHint: []string{"several certificate resolvers (a, letsencrypt)"},
 		},
 		{name: "watch disabled", mutate: func(c *Container) { c.Args = append(c.Args, "--providers.file.watch=false") }, missingHint: []string{"watch=false"}},
-		{name: "nginx", mutate: func(c *Container) { c.Kind = KindNginx }, missingHint: []string{"nginx is supported through the copy and paste guide only"}},
+		{name: "caddy is manual", mutate: func(c *Container) { c.Kind = KindCaddy }, missingHint: []string{"apply the generated snippet by hand"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
