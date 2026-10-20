@@ -27,6 +27,7 @@ const SOURCE_ACTOR: Record<DeployAttemptSource, string> = {
   clone: 'clone',
   schedule: 'schedule',
   auto_rollback: 'auto rollback',
+  git_push: 'git push',
 }
 
 function attemptTitle(a: DeployAttempt): string {
