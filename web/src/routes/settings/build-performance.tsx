@@ -38,6 +38,8 @@ function LimitsForm({ limits }: { limits: BuildLimits }) {
   const [concurrent, setConcurrent] = useState(
     String(limits.effective.max_concurrent),
   )
+  const [memory, setMemory] = useState(String(limits.effective.memory_mb))
+  const [cores, setCores] = useState(String(limits.effective.cpu_millis / 1000))
 
   const minutesNum = Number(minutes)
   const concurrentNum = Number(concurrent)
@@ -48,7 +50,12 @@ function LimitsForm({ limits }: { limits: BuildLimits }) {
     minutesNum >= 0 &&
     Number.isInteger(concurrentNum) &&
     concurrentNum >= 0 &&
-    concurrentNum <= 64
+    concurrentNum <= 64 &&
+    memory.trim() !== '' &&
+    Number.isInteger(Number(memory)) &&
+    Number(memory) >= 0 &&
+    cores.trim() !== '' &&
+    Number(cores) >= 0
 
   return (
     <Card>
@@ -62,6 +69,8 @@ function LimitsForm({ limits }: { limits: BuildLimits }) {
               {
                 timeout_seconds: Math.round(minutesNum * 60),
                 max_concurrent: concurrentNum,
+                memory_mb: Number(memory),
+                cpu_millis: Math.round(Number(cores) * 1000),
               },
               {
                 onSuccess: () => {
@@ -121,11 +130,59 @@ function LimitsForm({ limits }: { limits: BuildLimits }) {
                 {t('settings.concurrentHelp')}
               </FieldDescription>
             </Field>
+            <Field>
+              <FieldLabel htmlFor="build-memory">
+                {t('settings.memoryLabel')}
+                {limits.overrides.memory_mb !== undefined ? (
+                  <Badge variant="outline" className="ml-2">
+                    {t('settings.overridden')}
+                  </Badge>
+                ) : null}
+              </FieldLabel>
+              <Input
+                id="build-memory"
+                type="number"
+                min={0}
+                step={1}
+                inputMode="numeric"
+                value={memory}
+                disabled={!isRoot}
+                onChange={(e) => {
+                  setMemory(e.target.value)
+                }}
+              />
+              <FieldDescription>{t('settings.memoryHelp')}</FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="build-cpu">
+                {t('settings.cpuLabel')}
+                {limits.overrides.cpu_millis !== undefined ? (
+                  <Badge variant="outline" className="ml-2">
+                    {t('settings.overridden')}
+                  </Badge>
+                ) : null}
+              </FieldLabel>
+              <Input
+                id="build-cpu"
+                type="number"
+                min={0}
+                step="any"
+                inputMode="decimal"
+                value={cores}
+                disabled={!isRoot}
+                onChange={(e) => {
+                  setCores(e.target.value)
+                }}
+              />
+              <FieldDescription>{t('settings.cpuHelp')}</FieldDescription>
+            </Field>
           </div>
           <p className="text-sm text-muted-foreground">
             {t('settings.defaultsNote', {
               timeout: toMinutes(limits.default.timeout_seconds),
               concurrent: limits.default.max_concurrent,
+              memory: limits.default.memory_mb,
+              cpu: limits.default.cpu_millis / 1000,
             })}
           </p>
           {!isRoot ? (
@@ -156,14 +213,15 @@ function LimitsForm({ limits }: { limits: BuildLimits }) {
               disabled={
                 !isRoot ||
                 reset.isPending ||
-                (limits.overrides.timeout_seconds === undefined &&
-                  limits.overrides.max_concurrent === undefined)
+                Object.keys(limits.overrides).length === 0
               }
               onClick={() => {
                 reset.mutate(undefined, {
                   onSuccess: (next) => {
                     setMinutes(toMinutes(next.effective.timeout_seconds))
                     setConcurrent(String(next.effective.max_concurrent))
+                    setMemory(String(next.effective.memory_mb))
+                    setCores(String(next.effective.cpu_millis / 1000))
                     toast.add({
                       title: t('settings.resetDone'),
                       type: 'success',

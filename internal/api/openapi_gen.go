@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1514 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1517 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -126,6 +126,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/budget", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetSpendCap", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/budget", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutSpendCap", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/budget/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendCapHistory", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleResetAppBuildLimits", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppBuildLimits", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppBuildLimits", Description: "An app's CPU and memory cap decides how much of the host its builds can take, so root only."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-speed", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBuildSpeed", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-stats", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBuildStats", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/builds", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTriggerBuild", Description: "Manual build trigger (see Builder/WithBuilder above and handleTriggerBuild's own doc comment): builds an image from a git source through the same internal/deploy.Pipeline the webhook receiver uses, for an operator with no working git webhook configured. AbilityDeploy, the same boundary as the image-tag trigger above: this also ultimately writes desired state."},

@@ -48,18 +48,45 @@
   },
   "settings": {
     "title": "Build performance",
-    "description": "Cap how long a build may run and how many builds run at once. Extra builds wait in a queue.",
+    "description": "Cap how long a build may run, how much CPU and memory it may take, and how many builds run at once. Extra builds wait in a queue.",
     "loadError": "Could not load build limits.",
     "timeoutLabel": "Build timeout (minutes)",
     "timeoutHelp": "A build running longer than this is stopped and marked as timed out. 0 means no limit.",
     "concurrentLabel": "Concurrent builds",
     "concurrentHelp": "Builds past this number wait for a free slot. 0 means no limit.",
-    "defaultsNote": "Defaults come from APP_BUILD_TIMEOUT and APP_BUILD_MAX_CONCURRENT: {{timeout}} minutes and {{concurrent}} builds.",
+    "defaultsNote": "Defaults come from APP_BUILD_TIMEOUT, APP_BUILD_MAX_CONCURRENT, APP_BUILD_MEMORY_MB and APP_BUILD_CPU_MILLIS: {{timeout}} minutes, {{concurrent}} builds, {{memory}} MB, {{cpu}} cores.",
     "overridden": "Overridden",
     "save": "Save limits",
     "reset": "Use defaults",
     "saved": "Build limits saved.",
     "resetDone": "Build limits reset to the defaults.",
-    "rootOnly": "Only a root account can change build limits."
+    "rootOnly": "Only a root account can change build limits.",
+    "memoryLabel": "Build memory (MB)",
+    "memoryHelp": "A build using more than this is killed and marked as over its memory limit. 0 means no limit.",
+    "cpuLabel": "Build CPU (cores)",
+    "cpuHelp": "Caps the CPU one build can use, for example 1.5. 0 means no limit."
+  },
+  "limits": {
+    "title": "Build limits",
+    "description": "Caps for this app only. Unset values follow the control plane defaults.",
+    "loadError": "Could not load build limits.",
+    "timeoutLabel": "Timeout (minutes)",
+    "memoryLabel": "Memory (MB)",
+    "cpuLabel": "CPU (cores)",
+    "unlimited": "No limit",
+    "globalNote": "Control plane defaults: {{timeout}} minutes, {{memory}} MB, {{cpu}} cores. 0 means no limit.",
+    "overridden": "Overridden",
+    "save": "Save limits",
+    "saved": "Build limits saved.",
+    "reset": "Use defaults",
+    "resetDone": "Build limits reset to the defaults.",
+    "rootOnly": "Only a root account can change build limits.",
+    "hit": {
+      "memory_limit": "The last build was killed for using more than {{value}} MB.",
+      "timeout": "The last build was stopped after {{value}} minutes."
+    },
+    "raiseMemory": "Raise memory to {{value}} MB",
+    "raiseTimeout": "Raise timeout to {{value}} minutes",
+    "raised": "Limit raised. Retry the deploy."
   }
 }

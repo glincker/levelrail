@@ -79,6 +79,7 @@
     "registry": "Check registry credentials",
     "nodes": "Check node resources",
     "buildPerformance": "Adjust build resources",
+    "raiseBuildLimit": "Raise the build limit",
     "health": "Check health settings",
     "appLogs": "View app logs",
     "resources": "Adjust resource limits",

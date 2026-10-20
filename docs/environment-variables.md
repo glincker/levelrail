@@ -46,6 +46,9 @@ The control plane builds images with BuildKit. By default each build starts from
 | `APP_BUILD_CACHE_REGISTRY_INSECURE` | unset (off) | Set to exactly `true` to allow a plain-HTTP or self-signed cache registry. Only applies when `APP_BUILD_CACHE_REGISTRY` is set. Control plane. |
 | `APP_BUILD_TIMEOUT` | `30m` | How long one build may run before it is stopped and marked timed out. A Go duration such as `45m`; `0` means no limit. A value saved in the dashboard or with `apps build-limits set` wins. Control plane. |
 | `APP_BUILD_MAX_CONCURRENT` | `2` | Builds allowed to run at once; the rest wait in a queue. `0` means no limit. A saved override wins. Control plane. |
+| `APP_BUILD_MEMORY_MB` | `0` | Memory one build may use, in MB. `0` means no limit. A saved global or per-app override wins. Control plane, Linux cgroup v2. |
+| `APP_BUILD_CPU_MILLIS` | `0` | CPU one build may use, in thousandths of a core (`1500` is 1.5 cores). `0` means no limit. A saved override wins. Control plane, Linux cgroup v2. |
+| `APP_BUILD_CGROUP_ROOT` | `/sys/fs/cgroup` | Where the control plane creates the per-build cgroups that enforce the memory and CPU limits. |
 
 ## Source cache and git fetches
 

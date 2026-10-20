@@ -91,6 +91,14 @@ var presets = []Preset{
 		},
 	},
 	{
+		ID: "remix", Name: "Remix", Runtime: "node", Icon: "remix", BuildType: BuildRailpack, OutputMode: OutputServer,
+		Port: 3000, HealthPath: "/", BuildCommand: "remix vite:build", StartCommand: "remix-serve ./build/server/index.js", DocsAnchor: "remix",
+		EnvHints: []EnvHint{
+			{Key: "PORT", Description: "remix-serve listens on this port; keep it equal to the app port.", Default: "3000"},
+			{Key: "SESSION_SECRET", Description: "Signs session cookies; generate a long random value.", Required: true},
+		},
+	},
+	{
 		ID: "sveltekit", Name: "SvelteKit", Runtime: "node", Icon: "svelte", BuildType: BuildRailpack, OutputMode: OutputServer,
 		Port: 3000, HealthPath: "/", BuildCommand: "vite build", StartCommand: "node build", DocsAnchor: "sveltekit",
 		EnvHints: []EnvHint{

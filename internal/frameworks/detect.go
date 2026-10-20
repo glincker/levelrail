@@ -76,6 +76,8 @@ func detectNode(text string, read Reader) (Match, bool) {
 			return match("nextjs-static", "next.config sets output: export"), true
 		}
 		return match("nextjs", "package.json lists next"), true
+	case has("@remix-run/node") || has("@remix-run/react") || has("@remix-run/dev") || has("@remix-run/serve"):
+		return match("remix", "package.json lists @remix-run packages"), true
 	case has("nuxt"):
 		return match("nuxt", "package.json lists nuxt"), true
 	case has("@sveltejs/kit"):

@@ -42,6 +42,10 @@ type Request struct {
 	// or the build cache key. Local builds only: a remote build node does
 	// not receive them.
 	Secrets map[string][]byte
+
+	// CgroupParent places the build's processes in a pre-sized cgroup so
+	// CPU and memory limits hold. Set by the Limiter; local builds only.
+	CgroupParent string
 }
 
 // ErrContextDirRequired and ErrTagRequired are returned by Validate for

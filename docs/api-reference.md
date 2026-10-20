@@ -576,6 +576,9 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/watch/stop | AbilityDeploy | handleStopAppWatch |
 | POST | /api/v1/apps/{name}/uploads | AbilityDeploy | handleUploadSource |
 | GET | /api/v1/apps/{name}/uploads | AbilityRead | handleListUploads |
+| GET | /api/v1/apps/{name}/build-limits | AbilityRead | handleGetAppBuildLimits |
+| PUT | /api/v1/apps/{name}/build-limits | AbilityRoot | handleSetAppBuildLimits |
+| DELETE | /api/v1/apps/{name}/build-limits | AbilityRoot | handleResetAppBuildLimits |
 
 </Accordion>
 

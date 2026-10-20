@@ -12,6 +12,8 @@ import (
 const (
 	BuildLimitMaxConcurrent  = "max_concurrent"
 	BuildLimitTimeoutSeconds = "timeout_seconds"
+	BuildLimitMemoryMB       = "memory_mb"
+	BuildLimitCPUMillis      = "cpu_millis"
 	buildRunsKeepPerApp      = 200
 	buildRunsListMaxRows     = 500
 )
@@ -95,6 +97,9 @@ func (db *DB) queryBuildRuns(ctx context.Context, clause string, args ...any) ([
 	}
 	return out, rows.Err()
 }
+
+// BuildLimitAppKey is the build_limit_settings key of one app's override of key.
+func BuildLimitAppKey(app, key string) string { return "app/" + app + "/" + key }
 
 // GetBuildLimitSetting returns a stored override.
 func (db *DB) GetBuildLimitSetting(ctx context.Context, key string) (int64, bool, error) {
