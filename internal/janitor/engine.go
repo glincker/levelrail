@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sync"
 	"time"
 
@@ -27,6 +28,7 @@ const (
 	TriggerScheduled        = "scheduled"
 	TriggerManual           = "manual"
 	TriggerDiskFix          = "disk_fix"
+	TriggerNodeGuardrail    = "node_guardrail"
 	historyKeep             = 200
 	maxAttemptsPerPass      = 500
 	maxVolumeRemovalsPerRun = 5
@@ -129,6 +131,8 @@ type Options struct {
 	DryRun  bool
 	// Force runs the size-driven stages even when free space is above budget.
 	Force bool
+	// Stages limits the pass to these stages; empty runs every stage the policy enables.
+	Stages []Stage
 }
 
 func newID() string {
@@ -165,7 +169,10 @@ func (e *Engine) Run(ctx context.Context, opts Options) (Report, error) {
 		{StageAttempts, func() StageResult { return e.attempts(ctx, policy, opts.DryRun, now) }},
 	}
 	for _, s := range steps {
-		if !policy.stageOn(s.stage) {
+		if len(opts.Stages) > 0 && !slices.Contains(opts.Stages, s.stage) {
+			continue
+		}
+		if len(opts.Stages) == 0 && !policy.stageOn(s.stage) {
 			rep.Stages = append(rep.Stages, StageResult{Stage: s.stage, Status: StatusSkipped, Reason: "disabled in policy", Items: []Item{}})
 			continue
 		}

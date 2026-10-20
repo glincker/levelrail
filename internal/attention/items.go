@@ -73,6 +73,7 @@ var kindInfos = map[string]kindInfo{
 	KindQuotaNearLimit:          {"A resource quota is nearly used up", "Raise the limit or free up resources", linkTeams, false},
 	KindMaintenanceLong:         {"%s has been in maintenance for a long time", "End maintenance if the work is done, or let it switch off on its own", linkDomains, false},
 	KindGitHostUnreachable:      {"Git host %s is unreachable", "Redeploy a known commit from cache, or wait: queued pushes retry when the host answers", linkApps, false},
+	KindNodeCapacity:            {"Node %s is running out of room", "Open the node, review the Capacity card and free space", linkNodes, false},
 	KindFirewallAttackSuggested: {"Blocked traffic is spiking", "Open the firewall and turn on attack mode if this is an attack", linkFirewall, false},
 	KindAccessReviewOverdue:     {"Access review %s is overdue", "Open the compliance tab and finish the review", linkCenter + "?tab=compliance", false},
 }

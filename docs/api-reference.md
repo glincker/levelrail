@@ -863,6 +863,10 @@ Endpoints for:
 | GET | /api/v1/nodes/placement-simulation | AbilityRoot | handlePlacementSimulation |
 | GET | /api/v1/nodes/failure-simulation | AbilityRoot | handleFailureSimulation |
 | POST | /api/v1/nodes/{id}/cert/drill | AbilityRoot | handleNodeCertDrill |
+| GET | /api/v1/nodes/{id}/capacity | AbilityRoot | handleGetNodeCapacity |
+| PUT | /api/v1/nodes/{id}/guardrails | AbilityRoot | handlePutNodeGuardrails |
+| POST | /api/v1/nodes/{id}/cleanup | AbilityRoot | handleNodeCleanup |
+| GET | /api/v1/nodes/{id}/cleanup-runs | AbilityRoot | handleListNodeCleanupRuns |
 | GET | /api/v1/nodes/{id}/failure | AbilityRoot | handleGetNodeFailure |
 | PUT | /api/v1/nodes/{id}/failure-policy | AbilityRoot | handleSetNodeFailurePolicy |
 | POST | /api/v1/nodes/{id}/failure/lost | AbilityRoot | handleMarkNodeLost |
@@ -1066,6 +1070,10 @@ Endpoints for:
 | GET | /api/v1/github-app/repos | AbilityReadSensitive | handleListGitHubAppRepos |
 | GET | /api/v1/github-app/repos/{owner}/{repo}/branches | AbilityReadSensitive | handleListGitHubAppBranches |
 | POST | /api/v1/github-app/repos/{owner}/{repo}/use-as-source | AbilityWriteSensitive | handleUseGitHubRepoAsSource |
+| GET | /api/v1/gitlab-app/connect | AbilityRoot | handleStartGitConnect |
+| GET | /api/v1/gitlab-app/callback | AbilityRoot | handleGitConnectCallback |
+| GET | /api/v1/bitbucket-app/connect | AbilityRoot | handleStartGitConnect |
+| GET | /api/v1/bitbucket-app/callback | AbilityRoot | handleGitConnectCallback |
 | GET | /api/v1/github-app/installations | AbilityRoot | handleListGitHubAppInstallations |
 | DELETE | /api/v1/github-app/installations/{id} | AbilityRoot | handleDeleteGitHubAppInstallation |
 | POST | /api/v1/git-providers/{provider}/validate | AbilityRoot | handleValidateGitProvider |
@@ -1218,6 +1226,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/deploy-approvals/{id}/approve | AbilityDeploy | handleApproveDeployApproval |
 | POST | /api/v1/deploy-approvals/{id}/reject | AbilityDeploy | handleRejectDeployApproval |
 | GET | /api/v1/mesh | AbilityRoot | handleGetMeshStatus |
+| GET | /api/v1/gitea-app/connect | AbilityRoot | handleStartGitConnect |
+| GET | /api/v1/gitea-app/callback | AbilityRoot | handleGitConnectCallback |
 | POST | /api/v1/ai/sessions | AbilityRoot | handleCreateAIChatSession |
 | GET | /api/v1/ai/sessions | AbilityRoot | handleListAIChatSessions |
 | GET | /api/v1/ai/sessions/{id} | AbilityRoot | handleGetAIChatSession |
@@ -1721,12 +1731,6 @@ Routes that do not fit an existing group.
 | POST | /api/v1/git-connections/{id}/default | AbilityRoot | handleSetDefaultGitConnection |
 | GET | /api/v1/git-connections/{id}/branches | AbilityReadSensitive | handleListGitConnectionBranches |
 | POST | /api/v1/git-connections/{id}/use-as-source | AbilityWriteSensitive | handleUseGitConnectionRepoAsSource |
-| GET | /api/v1/gitlab-app/connect | AbilityRoot | handleStartGitConnect |
-| GET | /api/v1/gitlab-app/callback | AbilityRoot | handleGitConnectCallback |
-| GET | /api/v1/bitbucket-app/connect | AbilityRoot | handleStartGitConnect |
-| GET | /api/v1/bitbucket-app/callback | AbilityRoot | handleGitConnectCallback |
-| GET | /api/v1/gitea-app/connect | AbilityRoot | handleStartGitConnect |
-| GET | /api/v1/gitea-app/callback | AbilityRoot | handleGitConnectCallback |
 
 ## See also
 

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1502 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1506 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -635,6 +635,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/databases/{name}/users/{role}/enable", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleEnableDatabaseUser", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/users/{role}/rotate", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleRotateDatabaseUser", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/version", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseVersion", Description: "Minor and patch image change for a database, same data volume. AbilityWriteSensitive: it restarts the database container."},
+	{Method: "GET", Path: "/api/v1/bitbucket-app/callback", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleGitConnectCallback", Description: ""},
+	{Method: "GET", Path: "/api/v1/bitbucket-app/connect", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleStartGitConnect", Description: ""},
 	{Method: "GET", Path: "/api/v1/git-providers", Ability: "AbilityReadSensitive", Group: "Git Provider Apps", Handler: "handleListGitProviders", Description: "Aggregated git provider capability summary (git_providers.go): one AbilityReadSensitive call the git-source picker uses instead of the three AbilityRoot status endpoints below, so a non-root deploy-scoped user can open the app creation wizard without hitting a 403. See handleListGitProviders's own doc comment."},
 	{Method: "POST", Path: "/api/v1/git-providers/{provider}/validate", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleValidateGitProvider", Description: "Public Docker Hub search (dockerhub_search.go): the same picker's third source, for a well-known public image that isn't in the built-in registry or a connected credential. AbilityRead, same tier as the built-in catalog just above: a read of a public, unauthenticated upstream, proxied server-side only to avoid a browser-to-hub.docker.com CORS call."},
 	{Method: "DELETE", Path: "/api/v1/github-app", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleDisconnectGitHubApp", Description: ""},
@@ -649,6 +651,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/github-app/repos", Ability: "AbilityReadSensitive", Group: "Git Provider Apps", Handler: "handleListGitHubAppRepos", Description: ""},
 	{Method: "GET", Path: "/api/v1/github-app/repos/{owner}/{repo}/branches", Ability: "AbilityReadSensitive", Group: "Git Provider Apps", Handler: "handleListGitHubAppBranches", Description: ""},
 	{Method: "POST", Path: "/api/v1/github-app/repos/{owner}/{repo}/use-as-source", Ability: "AbilityWriteSensitive", Group: "Git Provider Apps", Handler: "handleUseGitHubRepoAsSource", Description: ""},
+	{Method: "GET", Path: "/api/v1/gitlab-app/callback", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleGitConnectCallback", Description: ""},
+	{Method: "GET", Path: "/api/v1/gitlab-app/connect", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleStartGitConnect", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/branch-env", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleListAppBranchEnv", Description: "Branch-scoped env var overrides (apps_branch_env.go): a narrower, pattern-matched sibling of PUT/DELETE .../preview-env just above, only applied when a preview's own branch matches. POST can carry a secret-marked value, so it's gated at AbilityWriteSensitive, the same tier PUT .../secrets/{key} uses; GET and DELETE never expose or require a value, so they stay at AbilityRead/AbilityWrite."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/branch-env", Ability: "AbilityWriteSensitive", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetAppBranchEnv", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/branch-env/{id}", Ability: "AbilityWrite", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleDeleteAppBranchEnv", Description: ""},
@@ -763,9 +767,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/nodes/zones", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListZones", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDeleteNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNode", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/capacity", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeCapacity", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/capacity-forecast", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCapacityForecast", Description: "Rough disk/memory exhaustion projection (node_capacity_forecast.go), a read-and-suggest layer over the same host samples patch-status/metrics above read, same AbilityRoot boundary and nil-telemetry 501 shape as every other node route."},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/cert/drill", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCertDrill", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/cert/renew", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRenewNodeCert", Description: ""},
+	{Method: "POST", Path: "/api/v1/nodes/{id}/cleanup", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCleanup", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/cleanup-runs", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeCleanupRuns", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/cordon", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCordonNode", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/drain", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDrainNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/drains", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeDrains", Description: ""},
@@ -774,6 +781,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/failure-policy", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeFailurePolicy", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/failure/lost", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleMarkNodeLost", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/failure/resolve", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleResolveNodeFailure", Description: ""},
+	{Method: "PUT", Path: "/api/v1/nodes/{id}/guardrails", Ability: "AbilityRoot", Group: "Nodes", Handler: "handlePutNodeGuardrails", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/health", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeHealth", Description: "Health, cordon, drain, same AbilityRoot boundary as every other node route above."},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/labels", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeLabels", Description: ""},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/labels", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeLabels", Description: ""},
@@ -822,8 +830,6 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/archives/{id}/verify", Ability: "AbilityRoot", Group: "Other", Handler: "handleVerifyArchive", Description: ""},
 	{Method: "POST", Path: "/api/v1/attention/dismiss", Ability: "Session", Group: "Other", Handler: "handleAttentionDismiss", Description: ""},
 	{Method: "GET", Path: "/api/v1/attention/feed", Ability: "AbilityRead", Group: "Other", Handler: "handleAttentionFeed", Description: ""},
-	{Method: "GET", Path: "/api/v1/bitbucket-app/callback", Ability: "AbilityRoot", Group: "Other", Handler: "handleGitConnectCallback", Description: ""},
-	{Method: "GET", Path: "/api/v1/bitbucket-app/connect", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartGitConnect", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/build-cache", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteBuildCache", Description: ""},
 	{Method: "GET", Path: "/api/v1/build-cache", Ability: "AbilityRead", Group: "Other", Handler: "handleListBuildCache", Description: ""},
 	{Method: "PUT", Path: "/api/v1/build-cache", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetBuildCache", Description: ""},
@@ -981,8 +987,6 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/git-sources/analyze", Ability: "AbilityWrite", Group: "Other", Handler: "handleAnalyzeImport", Description: ""},
 	{Method: "GET", Path: "/api/v1/gitea-app/callback", Ability: "AbilityRoot", Group: "Other", Handler: "handleGitConnectCallback", Description: ""},
 	{Method: "GET", Path: "/api/v1/gitea-app/connect", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartGitConnect", Description: ""},
-	{Method: "GET", Path: "/api/v1/gitlab-app/callback", Ability: "AbilityRoot", Group: "Other", Handler: "handleGitConnectCallback", Description: ""},
-	{Method: "GET", Path: "/api/v1/gitlab-app/connect", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartGitConnect", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/image-update/{name}/{token}", Ability: "Public", Group: "Other", Handler: "handleImageUpdateWebhook", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/pipeline/{id}/{token}", Ability: "Public", Group: "Other", Handler: "handlePipelineWebhook", Description: ""},
 	{Method: "GET", Path: "/api/v1/hooks/wake", Ability: "Public", Group: "Other", Handler: "handleWakeHook", Description: ""},

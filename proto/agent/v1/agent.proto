@@ -417,6 +417,11 @@ message HostReport {
   uint32 cpu_cores = 6;
   uint64 disk_total_bytes = 7;
   uint64 disk_free_bytes = 8;
+  // Inode and swap counts are zero when unreadable; no swap reads as total 0.
+  uint64 disk_inodes_total = 9;
+  uint64 disk_inodes_free = 10;
+  uint64 swap_total_bytes = 11;
+  uint64 swap_free_bytes = 12;
 }
 
 message ContainerState {

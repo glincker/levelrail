@@ -281,6 +281,10 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if rt.refuseNodeCritical(r.Context(), w, existing.NodeID) {
+		return
+	}
+
 	buildType := req.Build.Type
 	if buildType == "" {
 		buildType = spec.BuildDockerfile

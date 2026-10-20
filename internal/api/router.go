@@ -242,6 +242,7 @@ type Router struct {
 	orphanedVolumes        OrphanedVolumeManager    // nil is valid: GET/POST /system/volumes/orphaned* return 501, same shape as dockerPruner above
 	janitor                *janitor.Engine          // nil is valid: /system/janitor* return 501, and the disk fix falls back to a plain prune
 	janitorStore           janitor.Store            // set with janitor
+	nodeGuard              *nodeGuardState          // nil is valid: node capacity routes return 501 and nothing is blocked
 	orphanReaper           *orphans.Reaper          // nil is valid: GET /system/orphans and POST /system/orphans/reap return 501
 	orphanedContainers     OrphanedContainerManager // nil is valid: POST /system/containers/{name}/stop and .../remove return 501, same shape as orphanedVolumes above
 	registryAuthTester     RegistryAuthTester       // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
