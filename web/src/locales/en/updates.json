@@ -244,7 +244,7 @@
     "hostOnly": "This host cannot run the upgrade from the dashboard: {{reason}}.",
     "hostCommand": "Run on the server as root",
     "attemptsTitle": "Upgrade attempts",
-    "noAttempts": "No self-upgrade has run on this server yet.",
+    "noAttempts": "No upgrades have run on this server yet.",
     "by": "by {{who}}",
     "rolledBackNote": "The previous release {{version}} is running again and its data was restored.",
     "outcome": {
@@ -269,7 +269,23 @@
       "rollback": "Roll back"
     },
     "notPinned": "Release signatures are verified by this server. The next upgrade checks the signature, then this install only accepts signed releases.",
-    "pinned": "Signed releases only, pinned since {{version}}. An unsigned release is refused."
+    "pinned": "Signed releases only, pinned since {{version}}. An unsigned release is refused.",
+    "noAttemptsHint": "When you upgrade from this page or on a schedule, each attempt shows up here with every step it took.",
+    "to": "to",
+    "unknownActor": "unknown",
+    "showOlder_one": "Show {{count}} older attempt",
+    "showOlder_other": "Show {{count}} older attempts",
+    "version": {
+      "dev_one": "dev build, {{commits}} commit after {{base}} ({{sha}})",
+      "dev_other": "dev build, {{commits}} commits after {{base}} ({{sha}})",
+      "unknown": "unknown"
+    },
+    "summary": {
+      "current": "Current version",
+      "lastOk": "Last successful upgrade",
+      "never": "Never",
+      "failed": "Failed in the last 30 days"
+    }
   },
   "readiness": {
     "title": "Server readiness",

@@ -148,7 +148,7 @@ function UpdatesSettingsPage() {
         title={t('selfUpgrade.attemptsTitle')}
         description={t('selfUpgrade.description')}
       >
-        <UpgradeAttempts />
+        <UpgradeAttempts currentVersion={status.current_version} />
       </SectionCard>
       <SectionCard
         id={ROLLBACK_SECTION_ID}
