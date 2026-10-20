@@ -59,7 +59,7 @@ func registerLoadBalancerTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_load_balancer_status",
-		Description: "Get the live upstream table for an app's load balancer: each replica's state (healthy, unhealthy, draining), weight, active requests, failures and last health check, plus the reconciler's reason string. Use it to see why traffic is not reaching a replica.",
+		Description: "Live upstream table of an app's load balancer: replica state, weight, active requests, failures, last check, reason.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.LoadBalancerStatus, error) {
 		st, err := client.GetLoadBalancerStatus(ctx, in.Name)
 		if err != nil {
@@ -124,7 +124,7 @@ func registerLoadBalancerTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "export_app_load_balancer",
-		Description: "Generate an infrastructure-as-code definition of an app's load balancer: terraform (AWS ALB HCL), cdk (AWS CDK TypeScript), cloudformation (YAML), caddy (Caddyfile) or caddy-json. Pure text generation, calls no cloud API. Warnings list settings with no equivalent in the target.",
+		Description: "App load balancer as terraform, cdk, cloudformation, caddy or caddy-json text. Calls no cloud API; warnings list unmapped settings.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in exportLoadBalancerInput) (*mcp.CallToolResult, apiclient.LoadBalancerArtifact, error) {
 		art, err := client.ExportLoadBalancer(ctx, in.Name, in.Format)
 		if err != nil {

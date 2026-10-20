@@ -18,7 +18,7 @@ The module requires Go 1.24 or newer.
 
 - The module is **v0.x**. The API may change between minor versions and there is no compatibility promise yet, so pin an exact version if you depend on it.
 - The module lives in this repository as a nested module with its own `go.mod`, so it is versioned separately from the platform. Releases are tagged `kit/vX.Y.Z`, which is the tag form Go uses for a module in a subdirectory.
-- Changes to `kit/` go through the same pull request flow as the rest of the repository (see `CONTRIBUTING.md`). The module is Apache-2.0 licensed.
+- Changes to `kit/` go through the same pull request flow as the rest of the repository (see `.github/CONTRIBUTING.md`). The module is Apache-2.0 licensed.
 - The kit's source never names the product. A repository check (`scripts/check-brand-strings.sh`) scans `kit/**/*.go` for brand strings, in line with the platform's [rebrandability rule](/white-labeling).
 
 ## Packages

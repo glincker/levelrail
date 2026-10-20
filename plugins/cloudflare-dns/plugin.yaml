@@ -1,0 +1,18 @@
+api_version: 1
+name: cloudflare-dns
+version: 0.1.0
+kind: dns_provider
+publisher: GLINCKER
+description: Lists zones and manages DNS records in Cloudflare with the credential the control plane hands over per call.
+image: ghcr.io/glincker/levelrail-plugin-cloudflare-dns@sha256:0000000000000000000000000000000000000000000000000000000000000000
+abilities: [read]
+outbound_hosts:
+  - api.cloudflare.com
+contributes:
+  panels:
+    - id: provider
+      title: DNS provider
+      description: What this plugin does and what it needs.
+      rows:
+        - { label: Manages, value: DNS records in your Cloudflare zones }
+        - { label: Credential, value: "Cloudflare API token with Zone:DNS:Edit, sent per call" }

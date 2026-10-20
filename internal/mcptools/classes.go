@@ -262,7 +262,17 @@ var toolTable = map[string]Meta{
 	"check_domain_dns":                      {clsR, "domains", outb},
 	"plan_import":                           {clsR, "imports", outb | unt},
 	"get_migration_plan":                    {clsR, "databases", 0},
-	"get_app_import_plan":                   {clsR, "imports", unt},
+	"get_app_import_plan":                   {clsR, "migrate", unt},
+	"list_app_import_sessions":              {clsR, "migrate", 0},
+	"get_app_import_cutover_plan":           {clsR, "migrate", unt},
+	"list_app_import_cutover_runs":          {clsR, "migrate", unt},
+	"list_database_data_copies":             {clsR, "migrate", unt},
+	"get_security_reachability":             {clsR, "security", 0},
+	"list_export_destinations":              {clsR, "security", unt},
+	"get_template_requirements":             {clsR, "security", 0},
+	"list_sso_connections":                  {clsR, "identity", 0},
+	"get_scim_status":                       {clsR, "identity", 0},
+	"list_sso_group_mappings":               {clsR, "identity", 0},
 	"list_certificates":                     {clsR, "domains", 0},
 	"get_cloudflare_tunnel_status":          {clsR, "domains", outb},
 	"get_app_log_drain":                     {clsR, "logs", sens},
@@ -307,6 +317,7 @@ var toolTable = map[string]Meta{
 	"revoke_model_key":                      {clsD, "models", 0},
 	"get_model_usage":                       {clsR, "models", 0},
 	"get_model_engine_metrics":              {clsR, "models", 0},
+	"get_model_endpoint_health":             {clsR, "models", 0},
 	"check_model_fit":                       {clsR, "models", 0},
 	"get_model_logs":                        {clsR, "models", unt},
 	"deploy_model":                          {clsM, "models", outb},
@@ -390,7 +401,7 @@ func addTool[In, Out any](s *mcp.Server, t *mcp.Tool, h mcp.ToolHandlerFor[In, O
 			t.OutputSchema = slim
 		}
 	}
-	mcp.AddTool(s, t, withAgentClient(h))
+	mcp.AddTool(s, t, withAgentClient(withForbiddenHint(t.Name, h)))
 }
 
 // withAgentClient reports the calling MCP client's name and version on every

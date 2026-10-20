@@ -8,7 +8,7 @@
     "api_version": { "const": 1 },
     "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,39}$" },
     "version": { "type": "string", "pattern": "^[0-9A-Za-z][0-9A-Za-z._+-]{0,39}$" },
-    "kind": { "enum": ["notification_channel", "panel_provider"] },
+    "kind": { "enum": ["notification_channel", "panel_provider", "dns_provider"] },
     "publisher": { "type": "string", "minLength": 1, "maxLength": 80 },
     "description": { "type": "string", "maxLength": 400 },
     "image": { "type": "string", "pattern": "@sha256:[0-9a-f]{64}$" },

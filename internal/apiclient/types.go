@@ -124,6 +124,9 @@ type AppResource struct {
 	PreviousReleaseHeldUntil string `json:"previous_release_held_until,omitempty"`
 	// FallbackURL is the automatic sslip.io URL of an app with no domain (GET only).
 	FallbackURL string `json:"fallback_url,omitempty"`
+	// StrategyReason and MemoryFromTemplate mirror the GET app payload: why a template pinned the strategy, and whether the memory limit is the template's recommendation.
+	StrategyReason     string `json:"strategy_reason,omitempty"`
+	MemoryFromTemplate bool   `json:"memory_from_template,omitempty"`
 	// Volumes mirrors internal/api's appResource.Volumes: this app's
 	// declared named Docker volumes, response-only (declared through
 	// app.yaml, not settable here).
@@ -341,6 +344,7 @@ type DeployTriggerRequest struct {
 	Confirm bool   `json:"confirm,omitempty"`
 	// Pull re-resolves the tag and fails if the registry is unreachable.
 	Pull           bool   `json:"pull,omitempty"`
+	Rollback       bool   `json:"rollback,omitempty"`
 	OverrideFreeze bool   `json:"override_freeze,omitempty"`
 	OverrideReason string `json:"override_reason,omitempty"`
 }
@@ -680,6 +684,9 @@ const (
 	OAuthProviderSalesforce  = "salesforce"
 	OAuthProviderCodeberg    = "codeberg"
 	OAuthProviderCognito     = "cognito"
+	OAuthProviderDropbox     = "dropbox"
+	OAuthProviderKakao       = "kakao"
+	OAuthProviderPatreon     = "patreon"
 )
 
 // Email backends accepted by EmailSettingsResource.Backend.
@@ -1640,15 +1647,38 @@ type ServiceTemplateListItem struct {
 // those, see resolveTemplate's own doc comment
 // (internal/api/service_templates.go).
 type ServiceTemplateDetail struct {
-	ID                     string `json:"id"`
-	Name                   string `json:"name"`
-	Slogan                 string `json:"slogan"`
-	Category               string `json:"category"`
-	DocumentationURL       string `json:"documentation_url"`
-	Compose                string `json:"compose"`
-	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
-	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
-	RequiresConfiguration  bool   `json:"requires_configuration,omitempty"`
+	ID                     string               `json:"id"`
+	Name                   string               `json:"name"`
+	Slogan                 string               `json:"slogan"`
+	Category               string               `json:"category"`
+	DocumentationURL       string               `json:"documentation_url"`
+	Compose                string               `json:"compose"`
+	RecommendedMemoryBytes int64                `json:"recommended_memory_bytes,omitempty"`
+	RequiresGPU            bool                 `json:"requires_gpu,omitempty"`
+	RequiresConfiguration  bool                 `json:"requires_configuration,omitempty"`
+	Requirements           TemplateRequirements `json:"requirements"`
+}
+
+// TemplateRequirements mirrors internal/catalog's Requirements.
+type TemplateRequirements struct {
+	Level       string               `json:"level"`
+	Findings    []TemplateFinding    `json:"findings"`
+	Protections []TemplateProtection `json:"protections"`
+}
+
+// TemplateFinding mirrors internal/catalog's Finding.
+type TemplateFinding struct {
+	Code     string   `json:"code"`
+	Severity string   `json:"severity"`
+	Services []string `json:"services,omitempty"`
+	Detail   string   `json:"detail,omitempty"`
+	Message  string   `json:"message"`
+}
+
+// TemplateProtection mirrors internal/catalog's Protection.
+type TemplateProtection struct {
+	Code  string `json:"code"`
+	Label string `json:"label"`
 }
 
 // SaveAppAsTemplateRequest mirrors internal/api's
@@ -3895,6 +3925,7 @@ type HTTPSStatusResource struct {
 	Error            string     `json:"error,omitempty"`
 	Hint             string     `json:"hint,omitempty"`
 	DashboardURL     string     `json:"dashboard_url,omitempty"`
+	DefaultEmail     string     `json:"default_email,omitempty"`
 	// Preflight is set on the enable response only.
 	Preflight []HTTPSPreflightPort `json:"preflight,omitempty"`
 }
@@ -3907,7 +3938,7 @@ type HTTPSPreflightPort struct {
 
 // EnableHTTPSRequest is POST /api/v1/settings/ingress/https's body.
 type EnableHTTPSRequest struct {
-	Email   string `json:"email"`
+	Email   string `json:"email,omitempty"`
 	Staging bool   `json:"staging"`
 }
 

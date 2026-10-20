@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 const (
@@ -154,6 +155,15 @@ func (rt *Router) applySAMLRequest(ctx context.Context, c *store.SSOConnection, 
 	if req.DefaultRoleID != "" {
 		if _, err := rt.roles.GetRole(ctx, req.DefaultRoleID); err != nil {
 			return store.SSODraft{}, http.StatusBadRequest, errors.New("default_role_id does not name a stored role")
+		}
+	}
+	for _, d := range domains {
+		owner, err := rt.ssoDomainOwner(ctx, d, ssoKindSAML, c.ID)
+		if err != nil {
+			return store.SSODraft{}, http.StatusInternalServerError, errors.New("internal error")
+		}
+		if owner != "" {
+			return store.SSODraft{}, http.StatusConflict, errors.New("allowed_domains: " + d + " is already claimed by " + owner)
 		}
 	}
 	c.Name, c.Enabled, c.IDPMetadataURL = name, req.Enabled, strings.TrimSpace(req.IDPMetadataURL)
@@ -385,7 +395,7 @@ func (rt *Router) handleImportSAMLMetadata(w http.ResponseWriter, r *http.Reques
 	}
 	raw := []byte(req.XML)
 	if req.URL != "" {
-		body, err := authengine.FetchSAMLIdPMetadata(r.Context(), nil, req.URL)
+		body, err := authengine.FetchSAMLIdPMetadata(r.Context(), netguard.NewClient(), req.URL)
 		if err != nil {
 			writeError(w, http.StatusBadGateway, err.Error())
 			return

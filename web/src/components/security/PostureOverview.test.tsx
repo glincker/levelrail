@@ -117,6 +117,21 @@ describe('PostureChecklist', () => {
     expect(screen.getByText('No API token holds root')).toBeInTheDocument()
   })
 
+  it('labels a no-penalty item as recommended', () => {
+    mockFetch()
+    renderList([
+      {
+        id: 'offbox_backup_off',
+        severity: 'high',
+        status: 'fail',
+        count: 0,
+        recommended: true,
+        fix: { kind: 'link', link: '/settings/control-plane-backup' },
+      },
+    ])
+    expect(screen.getByText('Recommended')).toBeInTheDocument()
+  })
+
   it('applies a one click policy fix', async () => {
     mockFetch()
     const user = userEvent.setup()

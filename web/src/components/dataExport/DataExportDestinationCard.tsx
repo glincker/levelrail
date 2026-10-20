@@ -27,7 +27,10 @@ import {
 import type {
   DataExportDestination,
   DataExportKind,
+  DataExportTestResult,
+  UpdateDataExportDestinationRequest,
 } from '../../types/dataExport'
+import { TestFixPanel } from './TestFixPanel'
 
 const KIND_KEYS = {
   logs_http: 'kinds.logs_http',
@@ -40,6 +43,9 @@ const KIND_KEYS = {
   logs_betterstack: 'kinds.logs_betterstack',
   audit_webhook: 'kinds.audit_webhook',
   audit_s3: 'kinds.audit_s3',
+  audit_splunk: 'kinds.audit_splunk',
+  audit_syslog: 'kinds.audit_syslog',
+  audit_otlp: 'kinds.audit_otlp',
   metrics_otlp: 'kinds.metrics_otlp',
   metrics_remote_write: 'kinds.metrics_remote_write',
 } as const satisfies Record<DataExportKind, string>
@@ -63,6 +69,7 @@ export function DataExportDestinationCard({
   const test = useTestDataExportDestination()
   const remove = useDeleteDataExportDestination()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [failure, setFailure] = useState<DataExportTestResult | null>(null)
   const s = destination.status
 
   const endpoint =
@@ -70,9 +77,21 @@ export function DataExportDestinationCard({
       ? (destination.options.storage_target_id ?? '')
       : destination.endpoint
 
+  function applyFix(body: UpdateDataExportDestinationRequest) {
+    update.mutate(
+      { id: destination.id, body },
+      {
+        onSuccess: () => {
+          runTest()
+        },
+      },
+    )
+  }
+
   function runTest() {
     test.mutate(destination.id, {
       onSuccess: (res) => {
+        setFailure(res.ok ? null : res)
         if (res.ok) {
           toast.add({
             title: t('card.testOk', { name: destination.name }),
@@ -148,6 +167,16 @@ export function DataExportDestinationCard({
           <p className="break-words text-sm text-tone-danger">
             {t('card.lastError')}: {s.last_error}
           </p>
+        ) : null}
+        {failure?.fix ? (
+          <TestFixPanel
+            destination={destination}
+            fix={failure.fix}
+            message={failure.error ?? ''}
+            saving={update.isPending || test.isPending}
+            onApply={applyFix}
+            onRetest={runTest}
+          />
         ) : null}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-2 text-sm text-foreground">

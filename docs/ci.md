@@ -66,7 +66,7 @@ Go toolchain) sorts changed files into areas:
 | `docs/*.md` (except `docs/changelog/`, which the in-app help does not bundle) | Web bundle build and the help page tests |
 | `scripts/test-ci-*.sh`, `scripts/ci-test-weights.txt`, `scripts/refresh-test-weights.sh` | The planner table tests (`Build, vet`), no Go test lane |
 | `.github/actions/setup-go-cached/` | Every Go lane (live suites in smoke mode) |
-| `install.sh`, `scripts/test-install-sh.sh`, `packaging/` | install.sh end to end on Ubuntu and Debian |
+| `install.sh`, `scripts/test-install-sh.sh`, `deploy/packaging/` | install.sh end to end on Ubuntu and Debian |
 | Other `.github/workflows/*` | actionlint on the changed files |
 | `.github/flaky-tests.txt` | The packages named in the changed lines, plus the quarantine lane |
 | Anything else (`adr/`, `LICENSE`, other `.github/` files) | Nothing beyond the always-on checks |
@@ -194,6 +194,56 @@ for `internal/`, a scoped run checks the changed-line gate only, at a
 lower 50% bar (a partial profile makes the aggregate meaningless, same as the
 pre-push hook).
 
+## What runs where
+
+PRs carry a thin live smoke. The full live sweep belongs to nightly and to
+the release gate. Three mechanisms decide it, all already in the pipeline:
+
+- `go test -short` (every PR lane): a live Docker, DB or network test calls
+  `dockertest.SkipIfShort(t)` (or goes through a helper that does, such as
+  `liveClient` and `liveRuntime`) and is skipped. `nightly.yml` runs without
+  `-short`, so it runs there, shuffled, with its images pre-pulled.
+- `testenv.RequireFullLive(t)` (e2e lanes): the test skips in smoke mode, which
+  is every PR whose diff does not touch the area (see `live=full` above).
+  A diff that touches `internal/{docker,agent,ingress,reconcile,...}` or
+  `test/e2e` still runs it, so a change to the code a heavy test covers is
+  checked by that test before merge.
+- The `ci:live` label forces `live=full` on any PR.
+
+| Tier | What | Where |
+| --- | --- | --- |
+| PR, always | Unit tests, fake-runtime and httptest tests (authz, secret-leak, supply chain, migration state machine, envelope-secret env, compose healthcheck gate, scheduled task concurrency, loopback ingress, local-repo git clone and branch listing), the e2e smoke subset | `ci.yml` |
+| PR, when the diff touches the area | Heavy e2e live tests (`RequireFullLive`): load balancer real traffic and drain, point-in-time restore over HTTP, compose healthcheck gate, catalog batches, break-glass, template fleet | `ci.yml` with `live=full` |
+| Nightly and release gate only | Everything skipped by `-short`: DB restore, clone, PITR and volume live tests, docker exec TTY, agent remote build and exec TTY, scheduled task and pipeline live, ACME, the migration runner live test, secret-env live test | `nightly.yml`, and the full run when a release branch merges to `main` |
+| Weekly | Template smoke across the catalog | `template-smoke.yml` |
+
+CI time budget: a PR that touches no live-suite path should finish its Go
+lanes in under 8 minutes of wall time, and the live-heavy lanes (`docker`,
+`e2e*`) should stay under 25 lane-minutes combined in smoke mode. Anything
+that pushes past that moves to nightly.
+
+### Adding a live test
+
+The default is nightly. A new test that needs Docker, a database, the network
+or a real registry starts with `dockertest.SkipIfShort(t)` (unit and package
+tests) or `testenv.RequireFullLive(t)` (`test/e2e`). Promote it to run on every
+PR only when it guards a property that no fake can (and say which one in the
+PR). Write the fake-backed twin first: a logic assertion belongs in an
+httptest or fake-runtime test, and the live test then proves only what the
+fake cannot, the real daemon or real wire behavior.
+
+### Retries
+
+Retry infrastructure errors, never assertion failures. Registry pulls retry
+with backoff in two places: `scripts/prepull-test-images.sh` runs before the
+`docker` and `e2e*` lanes (and nightly) so a 429 from a public registry costs a
+backoff, not a re-run of the job, and `test/e2e/testenv/pull_retry.go` retries
+`Create` on 429, 5xx and timeout errors inside the test. `scripts/ci-go-test.sh`
+reruns a failed test twice on the `docker` and `e2e*` lanes only, where the
+failure can be infrastructure; every other lane (`api-*`, `rest`) has zero
+reruns, so a real failure is red the first time and a test that passes only on
+retry cannot hide there.
+
 ## The kit module
 
 `kit/` is a nested Go module (`github.com/GLINCKER/levelrail/kit`), so
@@ -261,6 +311,10 @@ gh variable set AUTO_RELEASE --body true --repo glincker/levelrail
 
 With the secret, the release PR runs CI like any other PR, and the tag push starts `release.yml` by itself. With the variable as well, release-please also arms auto-merge on the PR, so a change on `main` ships as a new beta once CI passes. Every merge to `main` updates the same PR, so this releases on every merge. Leave `AUTO_RELEASE` unset to keep merging release PRs by hand, with the token still doing its job of running CI on them.
 
+## Release gate
+
+`release.yml` has a `release-gate` job between the binary build and everything that publishes (the release assets and both container images wait on it). It runs `scripts/release-gate.sh` with the candidate `levelrail-linux-amd64`, the previous published release's binary (checksum verified against its `checksums.txt`) and the seeded databases from `scripts/upgrade-fixtures/generate.sh`. It fails the release if the schema version goes backwards, if the previous release cannot be replaced by the candidate on the same data (checked through the control plane's own `/readyz`, no Docker), or if the candidate does not refuse a newer database with exit 78. A release with no earlier release to compare against only warns. The `release` job also refuses to publish when `release-manifest.json`, the file the Updates page reads the schema from, is missing from the signed `checksums.txt`. `scripts/test-release-gate.sh` builds two binaries and checks the gate passes the good path and refuses the bad ones; it is not part of PR CI.
+
 ## Publishing the CLI to Homebrew and npm
 
 The release workflow builds every binary, attaches them to the GitHub Release, and then runs two independent jobs. A failure in one never blocks the other or the release itself.
@@ -278,7 +332,7 @@ gh secret set HOMEBREW_TAP_DEPLOY_KEY --repo glincker/levelrail < ./tapkey
 rm ./tapkey ./tapkey.pub
 ```
 
-The formula template is `packaging/homebrew/levelrail-cli.rb.tmpl`, and `scripts/test-packaging.sh` checks the rendered result. The binary is a raw download without the execute bit, so the template sets it with `chmod`; without that, `brew install` fails with `EACCES`.
+The formula template is `deploy/packaging/homebrew/levelrail-cli.rb.tmpl`, and `scripts/test-packaging.sh` checks the rendered result. The binary is a raw download without the execute bit, so the template sets it with `chmod`; without that, `brew install` fails with `EACCES`.
 
 ### npm
 

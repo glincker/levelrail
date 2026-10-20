@@ -22,6 +22,8 @@ func runSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runSettingsEmail(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ingress":
 		return runSettingsIngress(prog, args[1:], stdout, stderr, lookupEnv)
+	case "edge":
+		return runSettingsEdge(prog, args[1:], stdout, stderr, lookupEnv)
 	case "dashboard-url":
 		return runSettingsDashboardURL(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ai-assistant":
@@ -34,6 +36,8 @@ func runSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runSettingsDomainAutomation(prog, args[1:], stdout, stderr, lookupEnv)
 	case "beta-features":
 		return runSettingsBetaFeatures(prog, args[1:], stdout, stderr, lookupEnv)
+	case "profile":
+		return runSettingsProfile(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown settings subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, settingsUsage(prog))
@@ -49,6 +53,7 @@ func settingsUsage(prog string) string {
   %[1]s settings email set [flags]                        configure outbound email
   %[1]s settings ingress get [flags]                      show the current ingress/ACME settings
   %[1]s settings ingress set [flags]                      configure the primary domain and ACME (Let's Encrypt) settings
+  %[1]s settings edge get|set|fix [flags]                 request limits and trusted proxies (fix detects the proxy in front)
   %[1]s settings dashboard-url get [flags]                show the public URL operators use to reach the dashboard
   %[1]s settings dashboard-url set --url URL [flags]      set it (https refuses plain-HTTP sign-in afterwards)
   %[1]s settings ai-assistant get [flags]                 show the current BYOK AI assistant settings
@@ -58,6 +63,7 @@ func settingsUsage(prog string) string {
   %[1]s settings updates set --channel CHANNEL [--auto-update] [flags]   configure the release channel and auto-update checking
   %[1]s settings domain-automation get|set [flags]        the add-a-domain-and-go-live policy
   %[1]s settings beta-features list|set <feature> on|off   gated features, switch one (saved at once)
+  %[1]s settings profile get|set minimal|standard|suite   the server profile: which optional subsystems start
   %[1]s settings deploy-freeze show [flags]             show the fleet-wide deploy freeze windows
   %[1]s settings deploy-freeze set --cron EXPR --duration D [flags]   replace them with one window
   %[1]s settings deploy-freeze clear [flags]              clear the fleet-wide freeze windows

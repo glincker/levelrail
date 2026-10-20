@@ -11,16 +11,16 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// This file is a regression test that dev-fixtures.yml's documented
+// This file is a regression test that test/fixtures/dev-fixtures.yml's documented
 // ability matrix still matches what internal/api/router.go actually
 // enforces. It is deliberately not a general-purpose ability test:
 // internal/api/tokens_test.go and internal/api/abilities_test.go already
 // cover requireAbility and hasAbility in the general case with synthetic
-// tokens. This file instead reads the real dev-fixtures.yml at the repo
+// tokens. This file instead reads the real test/fixtures/dev-fixtures.yml at the repo
 // root, seeds it into a fresh router through the same seedDevFixtures
 // core MaybeSeedDevFixturesFromFile calls in production, and fires real
 // HTTP requests at real routes. If a future change to router.go's
-// requireAbility wiring silently breaks a promise dev-fixtures.yml's own
+// requireAbility wiring silently breaks a promise test/fixtures/dev-fixtures.yml's own
 // header comment makes (e.g. "a read token gets 200 on GET /apps"),
 // this test fails in CI instead of a developer discovering it by hand
 // with curl.
@@ -28,9 +28,9 @@ import (
 // realDevFixturesPath is relative to this package's directory
 // (internal/api), which is where `go test` sets its working directory
 // regardless of the directory the test command itself was invoked from.
-const realDevFixturesPath = "../../dev-fixtures.yml"
+const realDevFixturesPath = "../../test/fixtures/dev-fixtures.yml"
 
-// loadRealDevFixtures reads and parses the actual dev-fixtures.yml
+// loadRealDevFixtures reads and parses the actual test/fixtures/dev-fixtures.yml
 // shipped at the repo root, via the same os.ReadFile + ParseDevFixtures
 // pair MaybeSeedDevFixturesFromFile uses internally. If that file goes
 // missing or becomes malformed, this fails loudly here rather than only
@@ -39,11 +39,11 @@ func loadRealDevFixtures(t *testing.T) *DevFixtures {
 	t.Helper()
 	data, err := os.ReadFile(realDevFixturesPath)
 	if err != nil {
-		t.Fatalf("os.ReadFile(%q) error = %v (dev-fixtures.yml must exist at the repo root)", realDevFixturesPath, err)
+		t.Fatalf("os.ReadFile(%q) error = %v (test/fixtures/dev-fixtures.yml must exist at test/fixtures)", realDevFixturesPath, err)
 	}
 	fixtures, err := ParseDevFixtures(data)
 	if err != nil {
-		t.Fatalf("ParseDevFixtures(dev-fixtures.yml) error = %v", err)
+		t.Fatalf("ParseDevFixtures(test/fixtures/dev-fixtures.yml) error = %v", err)
 	}
 	return fixtures
 }
@@ -64,7 +64,7 @@ func fixturePlaintext(t *testing.T, fixtures *DevFixtures, name string) string {
 }
 
 // newDevFixturesTestRouter builds a fresh router and store, then seeds
-// it with the real dev-fixtures.yml tokens via seedDevFixtures, the same
+// it with the real test/fixtures/dev-fixtures.yml tokens via seedDevFixtures, the same
 // unexported core MaybeSeedDevFixturesFromFile calls after reading and
 // parsing the file. enabled is passed as true directly, mirroring how
 // MaybeSeedDevFixturesFromFile only ever calls it that way once

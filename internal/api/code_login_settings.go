@@ -27,6 +27,9 @@ type loginOptionsResponse struct {
 	// EmailConfigured is whether this server can send email at all, so the
 	// sign-in page can say so instead of promising a code that cannot arrive.
 	EmailConfigured bool `json:"email_configured"`
+	// SSORoute is where "Continue with SSO" sends the typed email's domain, or
+	// null: the same answer for an unknown domain, a malformed one and none.
+	SSORoute *ssoRoute `json:"sso_route"`
 }
 
 // handleGetCodeLoginSettings handles GET /api/v1/settings/auth/code-login,
@@ -94,6 +97,7 @@ func (rt *Router) handleLoginOptions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	out := loginOptionsResponse{CodeLogin: s.Admins || s.Others, EmailConfigured: rt.emailReady(r.Context())}
+	out.SSORoute = rt.routeSSODomain(r)
 	if rt.newDeviceApproval {
 		out.TrustedDeviceDays = max(1, int(rt.codeLogin.trustTTL.Hours()/24))
 	}

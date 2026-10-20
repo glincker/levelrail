@@ -25,7 +25,8 @@
     "backToApps": "Back to apps",
     "viewOverview": "View overview",
     "viewApp": "View app",
-    "viewDatabase": "View database"
+    "viewDatabase": "View database",
+    "closeToast": "Close notification"
   },
   "tableLabels": {
     "appServices": "App services",
@@ -65,6 +66,10 @@
   },
   "sessionEnded": {
     "notice": "You were signed out because your session ended, for example after an upgrade or restart. Sign in again to continue. API tokens are not affected."
+  },
+  "loadMore": {
+    "showing": "Showing {{loaded}} of {{total}}",
+    "button": "Load more"
   },
   "appsList": {
     "title": "Apps",
@@ -447,7 +452,11 @@
         "sso_no_role": "Your identity provider groups do not grant access here. Ask an administrator to map one of your groups to a role.",
         "sso_no_email": "Your identity provider did not send an email address, so no account could be matched.",
         "account_disabled": "This account is disabled. Ask an administrator to restore access."
-      }
+      },
+      "ssoEmail": "Work email",
+      "ssoContinue": "Continue with SSO",
+      "ssoRouted": "Your organization signs in through {{provider}}.",
+      "ssoNoRoute": "No single sign-on is set up for that email. Sign in with your password or another option."
     },
     "banner": {
       "dismiss": "Dismiss"
@@ -577,5 +586,10 @@
       "installation": "Installation",
       "credentials": "App credentials"
     }
+  },
+  "templateDefaults": {
+    "strategyReason": "Set by the template: {{reason}}",
+    "recreateDowntime": "Recreate stops the old container before the new one starts, so each deploy has a brief downtime. A deploy that fails its readiness check rolls back to the previous image.",
+    "memoryNote": "This limit came from the template's recommendation. Edit it here to change it."
   }
 }

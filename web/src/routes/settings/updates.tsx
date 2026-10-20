@@ -27,6 +27,7 @@ import { UpgradeHistory } from '../../components/settings/UpgradeHistory'
 import { PostUpgradeVerify } from '../../components/settings/PostUpgradeVerify'
 import { UpdateStatusHeader } from '../../components/settings/updates/UpdateStatusHeader'
 import { UpdateSettingsForm } from '../../components/settings/updates/UpdateSettingsForm'
+import { ROLLBACK_SECTION_ID } from '../../lib/updatesAnchors'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import {
   SettingsCardSkeleton,
@@ -92,15 +93,17 @@ function SectionCard({
   title,
   description,
   className,
+  id,
   children,
 }: {
   title: string
   description: string
   className?: string
+  id?: string
   children: React.ReactNode
 }) {
   return (
-    <Card className={className}>
+    <Card id={id} className={className}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription className="max-w-prose">{description}</CardDescription>
@@ -147,6 +150,7 @@ function UpdatesSettingsPage() {
         <UpgradeAttempts />
       </SectionCard>
       <SectionCard
+        id={ROLLBACK_SECTION_ID}
         title={t('history.title')}
         description={t('history.description')}
       >

@@ -39,7 +39,7 @@ Every package uses the Go standard library only. The module has no third-party r
 
 ## Contributing
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) in the repository root. Changes to `kit/` go through the same pull request flow as the rest of the repository.
+See [CONTRIBUTING.md](../.github/CONTRIBUTING.md) in the repository root. Changes to `kit/` go through the same pull request flow as the rest of the repository.
 
 ## License
 

@@ -29,6 +29,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerLoadBalancerRoutes(mux)
 	rt.registerPlatformImportRoutes(mux)
 	rt.registerAppImportRoutes(mux)
+	rt.registerTakeoverRoutes(mux)
 	rt.registerDeployGateRoutes(mux)
 	rt.registerImageRoutes(mux)
 	rt.registerIaCRoutes(mux)
@@ -47,6 +48,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerChaosRoutes(mux)
 	rt.registerArchiveRoutes(mux)
 	rt.registerSpendCapRoutes(mux)
+	rt.registerIngressEdgeRoutes(mux)
 	rt.registerCostExplorerRoutes(mux)
 	rt.registerAutoscaleRoutes(mux)
 	rt.registerPreviewRoutes(mux)
@@ -77,6 +79,7 @@ func (rt *Router) Handler() http.Handler {
 	h = rt.accountEventMiddleware(h)
 	h = experimentalGateMiddleware(h)
 	h = rt.accessPolicyMiddleware(h)
+	h = compressMiddleware(h)
 	h = csrfOriginMiddleware(h)
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
 	if !rt.hstsEnabled {

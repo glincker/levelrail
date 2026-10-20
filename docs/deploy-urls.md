@@ -40,3 +40,5 @@ changed by this feature.
 
 A retained copy runs the old code with the app's env, so jobs and webhooks of an
 old deploy can fire while it is awake. It does not get the app's volumes.
+
+Retained copies are internal: they are left out of the app list, search and the dashboard, and the delete API refuses them with a 409. They are removed automatically when their deploy ages out.

@@ -30,11 +30,11 @@ Levelrail has no stable release yet and is the younger project. This guide compa
 - You do not want inbound SSH from a control plane to every server. Levelrail agents dial out, so a managed node opens no inbound ports and works behind NAT.
 - You want a deploy to count as healthy only after the new container passes its readiness probe, with the old release still serving until then. See [zero-downtime deploys](/guides/zero-downtime-deploys-without-kubernetes).
 - You want metrics, log search, and alerts without installing a separate stack. See [observability](/observability).
-- You want SSO (Google, GitHub, Microsoft, or generic OIDC), IAM policies, and an audit log in the same free edition. See [identity and access](/identity-and-access).
+- You want OAuth sign-in with 20 providers plus generic OpenID Connect, passkeys and 2FA, IAM policies, and an audit log in the same free edition. See [identity and access](/identity-and-access).
 
 ## What Levelrail does not do yet
 
-- No SAML or SCIM. OAuth and OIDC sign-in work.
+- SAML SSO and SCIM provisioning are in beta behind the `saml-scim` feature flag, off by default and not yet tested against a live identity provider. OAuth and OIDC sign-in work.
 - A smaller [template catalog](/templates-and-registry) than Coolify.
 - Public ACME certificate issuance has had less field testing than the rest of the ingress.
 - No Windows or non-Linux nodes, and no Kubernetes compatibility layer. Those are deliberate non-goals.
@@ -47,7 +47,7 @@ The control plane measured about 68 MB resident at zero apps, about 83 MB at 100
 
 ## Moving over from Coolify
 
-The platform importer reads a live Coolify instance, shows a dry run, and creates apps only after you confirm. It does not move database contents, volume contents, certificates, or history. Read [migrating from Coolify, Dokploy and CapRover](/migrating-from-coolify-dokploy-and-caprover) before planning a cutover.
+The platform importer reads a live Coolify instance, shows a dry run, and creates apps only after you confirm. Database contents are copied by a separate verified step and volume contents by `rsync` commands it prints. Certificates and history do not move. Read [Migrate from Coolify](/migrate-from-coolify) and the [downtime table](/migrate-to-levelrail#what-stays-online-during-the-move) before planning a cutover.
 
 ## Next steps
 

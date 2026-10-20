@@ -1,6 +1,6 @@
 # Levelrail: agent guide
 
-Levelrail is a self-hosted deployment platform: one Go control plane, one Go node agent, Docker's Engine API, embedded Caddy and BuildKit, SQLite state, and a React dashboard embedded in the control plane binary. This file tells a coding agent how to work in this repository. Human contributors should read [CONTRIBUTING.md](CONTRIBUTING.md); the two agree.
+Levelrail is a self-hosted deployment platform: one Go control plane, one Go node agent, Docker's Engine API, embedded Caddy and BuildKit, SQLite state, and a React dashboard embedded in the control plane binary. This file tells a coding agent how to work in this repository. Human contributors should read [CONTRIBUTING.md](.github/CONTRIBUTING.md); the two agree.
 
 ## Layout
 

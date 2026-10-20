@@ -75,7 +75,7 @@ func TestPipelineRun_Live(t *testing.T) {
 		stopEngine()
 		engine.Close()
 	})
-	go func() { _ = engine.Run(engineCtx, e2ePipelineTickRate) }()
+	go func() { _ = engine.Run(engineCtx, e2ePipelineTickRate, e2ePipelineTickRate) }()
 
 	logger := discardTestLogger()
 	b := &brand.Brand{Name: "E2E Test Platform", BinaryName: "e2e-test-platform"}

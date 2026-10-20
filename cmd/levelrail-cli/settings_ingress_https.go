@@ -21,12 +21,12 @@ func runSettingsIngressHTTPS(prog string, args []string, stdout, stderr io.Write
 	var staging bool
 	var wait time.Duration
 	if verb == "enable" {
-		fs.StringVar(&email, "email", "", "ACME account contact address (required)")
+		fs.StringVar(&email, "email", "", "ACME account contact address (default: your admin account email)")
 		fs.BoolVar(&staging, "staging", false, "use Let's Encrypt staging: untrusted certificate, but no real rate limits")
 		fs.DurationVar(&wait, "wait", 0, "wait up to this long for the certificate (for example 2m)")
 	}
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings ingress https status [flags]\n  %s settings ingress https enable --email EMAIL [--staging] [--wait 2m] [flags]\n\nEnable points the dashboard at <dashed-ip>.sslip.io and issues a real\nLet's Encrypt certificate for it, with no DNS setup.\n\nFlags:\n", prog, prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings ingress https status [flags]\n  %s settings ingress https enable [--email EMAIL] [--staging] [--wait 2m] [flags]\n\nEnable points the dashboard at <dashed-ip>.sslip.io and issues a real\nLet's Encrypt certificate for it, with no DNS setup. The contact email\ndefaults to your admin account email. Once the https address is saved as the\ndashboard URL, plain HTTP sign-in stops working.\n\nFlags:\n", prog, prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -39,10 +39,6 @@ func runSettingsIngressHTTPS(prog string, args []string, stdout, stderr io.Write
 	var status httpsStatusResource
 	var err error
 	if verb == "enable" {
-		if email == "" {
-			_, _ = fmt.Fprintf(stderr, "%s: --email is required\n", prog)
-			return exitUsage
-		}
 		status, err = client.EnableHTTPS(ctx, enableHTTPSRequest{Email: email, Staging: staging})
 		if err == nil && wait > 0 {
 			status, err = waitForHTTPS(ctx, client, status, wait)
@@ -75,7 +71,7 @@ func printHTTPSStatusHuman(out io.Writer, s httpsStatusResource) {
 		_, _ = fmt.Fprintf(out, "domain:     %s\n", s.Domain)
 	}
 	if s.State == "off" && s.SuggestedDomain != "" {
-		_, _ = fmt.Fprintf(out, "suggested:  %s (run: settings ingress https enable --email you@yourdomain.com)\n", s.SuggestedDomain)
+		_, _ = fmt.Fprintf(out, "suggested:  %s (run: settings ingress https enable%s)\n", s.SuggestedDomain, enableEmailHint(s.DefaultEmail))
 	}
 	if s.State == "issued" {
 		_, _ = fmt.Fprintf(out, "issuer:     %s\n", s.Issuer)
@@ -86,6 +82,7 @@ func printHTTPSStatusHuman(out io.Writer, s httpsStatusResource) {
 			_, _ = fmt.Fprintln(out, "note:       staging certificate, browsers will not trust it")
 		} else {
 			_, _ = fmt.Fprintf(out, "dashboard:  https://%s\n", s.Domain)
+			_, _ = fmt.Fprintln(out, "note:       plain HTTP sign-in stops once the https dashboard URL is saved")
 		}
 	}
 	for _, p := range s.Preflight {
@@ -96,7 +93,15 @@ func printHTTPSStatusHuman(out io.Writer, s httpsStatusResource) {
 	if s.Error != "" {
 		_, _ = fmt.Fprintf(out, "error:      %s\n", s.Error)
 		_, _ = fmt.Fprintf(out, "hint:       %s\n", httpsHintText(s.Hint))
+		_, _ = fmt.Fprintln(out, "re-check:   settings ingress https status (or run enable again once fixed)")
 	}
+}
+
+func enableEmailHint(def string) string {
+	if def == "" {
+		return " --email you@yourdomain.com"
+	}
+	return fmt.Sprintf(", contact defaults to %s", def)
 }
 
 func httpsHintText(hint string) string {

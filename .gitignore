@@ -14,6 +14,8 @@ vendor/
 /levelrail-agent
 /levelrail-mcp
 /levelrail-cli
+/catalog-smoke
+/twilio-sms
 *.log
 
 # Node (web frontend, once scaffolded). Anchored to /web/build/ so this

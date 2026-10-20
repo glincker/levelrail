@@ -47,14 +47,22 @@ case_ "the Go planner reruns every Go lane, not web" "go=true go_full=true web=n
 case_ "the shard splitter reruns every Go lane" "go=true go_full=true web=none" -- scripts/ci-shard-names.sh
 case_ "planner tests alone run the planner tests, no Go lane" "go=true go_full=false planner=true web=none" -- scripts/test-ci-go-plan.sh
 case_ "shard weights alone run the planner tests" "go=true go_full=false planner=true" -- scripts/ci-test-weights.txt
+case_ "the lane runner (rerun policy) reruns every Go lane" "go=true go_full=true web=none full=false" -- scripts/ci-go-test.sh
+case_ "nightly workflow edits run actionlint only, no Go lane" "workflows=true go=false go_full=false full=false" -- .github/workflows/nightly.yml
+case_ "a moved live test still runs Go for its package" "go=true go_full=false full=false" -- test/e2e/loadbalancer_test.go
 case_ "Go setup action reruns every Go lane" "go=true go_full=true" -- .github/actions/setup-go-cached/action.yml
 case_ "docs read by a Go test still run Go" "go=true web=docs" -- docs/api-reference.md
 case_ "docs json embedded or read by Go runs Go" "go=true" -- docs/public/openapi.json
 case_ "embedded data file runs Go" "go=true web=none" -- internal/dbupgrade/catalog.json
 case_ "web embed.go runs Go, web source does not" "go=true web=none" -- web/embed.go
 case_ "kit module change runs the kit job" "go=true kit=true" -- kit/upgrade/preflight.go
-case_ "terraform provider change runs its own job only" "tfprovider=true go=false web=none" -- terraform-provider/main.go
+case_ "terraform provider change runs its own job only" "tfprovider=true go=false web=none" -- integrations/terraform-provider/main.go
 case_ "installer change runs the installer job" "installer=true" -- install.sh
+case_ "packaging change runs the installer job" "installer=true" -- deploy/packaging/nfpm/agent.yaml
+case_ "dockerfile move target runs nothing, as the root did" "$none" -- deploy/docker/Dockerfile.levelrail
+case_ "release-please config runs nothing, as the root did" "$none" -- .github/release-please/release-please-config.json .github/release-please/.release-please-manifest.json
+case_ "contributing and security files run nothing" "$none" -- .github/CONTRIBUTING.md .github/SECURITY.md
+case_ "dev fixtures file runs Go (read by api tests)" "go=true" -- test/fixtures/dev-fixtures.yml
 
 # Shard partition: every name lands in exactly one shard, deterministically.
 printf '%s\n' TestA TestB TestC TestD TestE TestF TestG >"$tmp/names"

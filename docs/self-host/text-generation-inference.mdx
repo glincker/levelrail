@@ -25,6 +25,25 @@ This template sets no environment variables.
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`tgi`): 8080:80.
+- Stores data in named volumes (`tgi`): tgi_data.
+- Reserves an NVIDIA GPU (`tgi`).
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
 ## Deploy Text Generation Inference with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Text Generation Inference. Review the Compose body and deploy.

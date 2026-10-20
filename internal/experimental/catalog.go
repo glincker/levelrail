@@ -36,7 +36,8 @@ var catalog = map[Feature]Info{
 	CLIConsole:         {Name: "CLI console", Summary: "A web console for the platform CLI in the dashboard (never a host shell).", DocsPath: docsPath, Maturity: MaturityBeta},
 	MobileAPI:          {Name: "Mobile API", Summary: "Phone pairing, device tokens and the mobile overview endpoint.", DocsPath: docsPath, Maturity: MaturityBeta},
 	Plugins:            {Name: "Plugins", Summary: "Run signed, operator-approved plugins in locked-down containers. Starts with notification channels.", DocsPath: "/plugins", Maturity: MaturityExperimental},
-	SAMLSCIM:           {Name: "SAML and SCIM", Summary: "Interim SAML single sign-on and SCIM provisioning.", DocsPath: "/sso-saml", Maturity: MaturityBeta},
+	GitPush:            {Name: "Git push deploy", Summary: "Deploy an app with git push to a remote on your own server, using a per-app token.", DocsPath: "/git-push-deploy", Maturity: MaturityBeta},
+	SAMLSCIM:           {Name: "SAML and SCIM", Summary: "SAML 2.0 single sign-on and SCIM 2.0 provisioning, built on the sign-in library. Beta: not yet verified against every identity provider.", DocsPath: "/sso-saml", Maturity: MaturityBeta},
 }
 
 // Describe returns the operator-facing description of f. Only the Settings

@@ -7,7 +7,10 @@ import (
 	"time"
 )
 
-const defaultFailedDeploysWindow = 24 * time.Hour
+const (
+	defaultFailedDeploysWindow = 24 * time.Hour
+	defaultFailedDeploysPage   = 100
+)
 
 type failedDeployResource struct {
 	deployAttemptResource
@@ -16,6 +19,7 @@ type failedDeployResource struct {
 
 // handleListFailedDeploys handles GET /api/v1/deploys/failed?since=24h:
 // apps whose latest deploy attempt failed inside the window, one per app.
+// Paged by limit/offset (default 100), X-Total-Count carries the full count.
 func (rt *Router) handleListFailedDeploys(w http.ResponseWriter, r *http.Request) {
 	window := defaultFailedDeploysWindow
 	if raw := r.URL.Query().Get("since"); raw != "" {
@@ -47,7 +51,7 @@ func (rt *Router) handleListFailedDeploys(w http.ResponseWriter, r *http.Request
 		rt.attachFailure(&res, f.Attempt)
 		out = append(out, failedDeployResource{res, f.LastGoodImage})
 	}
-	writeJSON(w, http.StatusOK, out)
+	writeJSON(w, http.StatusOK, pageQueryDefault(w, r, out, defaultFailedDeploysPage))
 }
 
 // appVisibilityFilter returns a predicate reporting whether the caller can

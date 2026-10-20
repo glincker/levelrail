@@ -37,6 +37,27 @@ Recommended memory: about 1536 MiB.
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`chatwoot`): 3000:3000.
+- Passwords and keys are generated at deploy time (`chatwoot`, `db`): POSTGRES_PASSWORD, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_USERNAME, SECRET_KEY_BASE.
+- No health check, so a deploy is judged by the process starting (`db`, `redis`).
+- Stores data in named volumes (`chatwoot`, `db`, `redis`): chatwoot_data, chatwoot_db_data, chatwoot_redis_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
 ## Deploy Chatwoot with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Chatwoot. Review the Compose body and deploy.

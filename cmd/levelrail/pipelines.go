@@ -101,7 +101,7 @@ func startPipelines(ctx context.Context, logger *slog.Logger, b *brand.Brand, db
 	}
 
 	go func() {
-		if err := engine.Run(ctx, envDuration("APP_PIPELINE_TICK_INTERVAL", 2*time.Second)); err != nil && !errors.Is(err, context.Canceled) {
+		if err := engine.Run(ctx, envDuration("APP_PIPELINE_TICK_INTERVAL", 2*time.Second), envDuration("APP_PIPELINE_IDLE_INTERVAL", time.Minute)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("pipeline engine stopped", slog.String("error", err.Error()))
 		}
 	}()

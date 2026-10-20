@@ -262,6 +262,11 @@ Endpoints for:
 | GET | /api/v1/iam/suggestions | AbilityRead | handleIAMSuggestions |
 | GET | /api/v1/security/hsts | AbilityRoot | handleGetHSTS |
 | PUT | /api/v1/security/hsts | AbilityRoot | handlePutHSTS |
+| GET | /api/v1/security/reachability | AbilityRoot | handleSecurityReachability |
+| GET | /api/v1/settings/dns-provider-plugin | AbilityRead | handleGetDNSProviderPlugin |
+| PUT | /api/v1/settings/dns-provider-plugin | AbilityRoot | handleSetDNSProviderPlugin |
+| GET | /api/v1/settings/server-profile | AbilityRead | handleGetServerProfile |
+| PUT | /api/v1/settings/server-profile | AbilityRoot | handleSetServerProfile |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -548,6 +553,14 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/env/history | AbilityRead | handleListEnvHistory |
 | POST | /api/v1/apps/{name}/log-budget/trim | AbilityWriteSensitive | handleTrimLogBudget |
 | POST | /api/v1/apps/{name}/shield/recommended | AbilityDeploy | handleApplyRecommendedShield |
+| GET | /api/v1/apps/{name}/ingress-limits | AbilityRead | handleGetAppIngressLimits |
+| PUT | /api/v1/apps/{name}/ingress-limits | AbilityDeploy | handlePutAppIngressLimits |
+| GET | /api/v1/apps/{name}/git-remote | AbilityRead | handleGetGitRemote |
+| POST | /api/v1/apps/{name}/git-remote | AbilityWriteSensitive | handleIssueGitRemote |
+| PUT | /api/v1/apps/{name}/git-remote | AbilityWriteSensitive | handleSetGitRemoteBranch |
+| DELETE | /api/v1/apps/{name}/git-remote | AbilityWriteSensitive | handleDeleteGitRemote |
+| GET | /api/v1/git/{repo}/info/refs | Public | handleGitInfoRefs |
+| POST | /api/v1/git/{repo}/git-receive-pack | Public | handleGitReceivePack |
 
 </Accordion>
 
@@ -949,6 +962,9 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/domains/{domain}/shield | AbilityDeploy | handleDeleteDomainPolicy |
 | POST | /api/v1/apps/{name}/domains/{domain}/shield/under-attack | AbilityDeploy | handleStartUnderAttack |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/shield/under-attack | AbilityDeploy | handleStopUnderAttack |
+| GET | /api/v1/settings/ingress/edge | AbilityRead | handleGetIngressEdge |
+| PUT | /api/v1/settings/ingress/edge | AbilityRoot | handlePutIngressEdge |
+| POST | /api/v1/settings/ingress/edge/trusted-proxies/apply-detected | AbilityRoot | handleApplyDetectedProxy |
 
 </Accordion>
 
@@ -1173,6 +1189,9 @@ AI model resources on GPU nodes and the GPU node snapshots they schedule against
 | POST | /api/v1/models/{name}/sleep | AbilityWrite | handleSleepModel |
 | PUT | /api/v1/models/{name}/swap-group | AbilityWrite | handleSetModelSwapGroup |
 | POST | /api/v1/models/{name}/benchmark | AbilityWrite | handleModelBenchmark |
+| POST | /api/v1/models/{name}/endpoint/test | AbilityWrite | handleTestEndpoint |
+| PUT | /api/v1/models/{name}/endpoint/routing | AbilityWrite | handleSetEndpointRouting |
+| PUT | /api/v1/models/{name}/endpoint/credential | AbilityWriteSensitive | handleSetEndpointCredential |
 
 ## Other
 
@@ -1677,6 +1696,23 @@ Routes that do not fit an existing group.
 | GET | /api/v1/inbox/preferences | AbilityRead | handleGetInboxPrefs |
 | PUT | /api/v1/inbox/preferences | AbilityWrite | handlePutInboxPrefs |
 | POST | /api/v1/images/signature-policy/validate | AbilityWrite | handleValidateImageSignaturePolicy |
+| POST | /api/v1/plugins/{name}/test | AbilityRoot | handleTestPlugin |
+| POST | /api/v1/model-endpoints/test | AbilityWrite | handleTestEndpointInput |
+| GET | /api/v1/migration/takeover/plan | AbilityRoot | handleTakeoverPlan |
+| GET | /api/v1/migration/takeover/runs | AbilityRoot | handleListTakeoverRuns |
+| POST | /api/v1/migration/takeover/runs | AbilityRoot | handleStartTakeover |
+| GET | /api/v1/migration/takeover/runs/{run} | AbilityRoot | handleGetTakeoverRun |
+| POST | /api/v1/migration/takeover/runs/{run}/rollback | AbilityRoot | handleRollbackTakeover |
+| POST | /api/v1/migration/apps/ssh/host-keys | AbilityWriteSensitive | handleSSHHostKeys |
+| POST | /api/v1/migration/apps/ssh/test | AbilityWriteSensitive | handleSSHTest |
+| GET | /api/v1/migration/apps/sessions/{id}/volumes/copy | AbilityRead | handleAppImportVolumeCopyStatus |
+| POST | /api/v1/migration/apps/sessions/{id}/volumes/copy | AbilityWriteSensitive | handleAppImportVolumeCopy |
+| GET | /api/v1/sso/oidc | AbilityRoot | handleListOAuthSSOPolicies |
+| GET | /api/v1/sso/oidc/{provider} | AbilityRoot | handleGetOAuthSSOPolicy |
+| PUT | /api/v1/sso/oidc/{provider} | AbilityRoot | handlePutOAuthSSOPolicy |
+| POST | /api/v1/sso/oidc/{provider}/evaluate | AbilityRoot | handleEvaluateOAuthSSO |
+| GET | /api/v1/sso/oidc/{provider}/test/start | AbilityRoot | handleStartOAuthSSOTest |
+| GET | /api/v1/sso/oidc/{provider}/test/result | AbilityRoot | handleOAuthSSOTestResult |
 
 ## See also
 

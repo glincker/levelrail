@@ -19,6 +19,7 @@ const (
 	refKindEnvironment refKind = "environment"
 	refKindNode        refKind = "node"
 	refKindProject     refKind = "project"
+	refKindModel       refKind = "model"
 )
 
 // resourceRef is a resource a request names in its body or query rather
@@ -32,6 +33,7 @@ func appRef(name string) resourceRef            { return resourceRef{refKindApp,
 func databaseRef(name string) resourceRef       { return resourceRef{refKindDatabase, name} }
 func environmentRef(id string) resourceRef      { return resourceRef{refKindEnvironment, id} }
 func nodeRef(id string) resourceRef             { return resourceRef{refKindNode, id} }
+func modelRef(name string) resourceRef          { return resourceRef{refKindModel, name} }
 func projectRef(id string) resourceRef          { return resourceRef{refKindProject, id} }
 func appRefs(names []string) []resourceRef      { return mapRefs(names, appRef) }
 func databaseRefs(names []string) []resourceRef { return mapRefs(names, databaseRef) }
@@ -149,6 +151,8 @@ func (rt *Router) refAllowed(ctx context.Context, c *refCaller, ability string, 
 		return allowed && !hidden, err
 	case refKindNode:
 		return authorizeResource(c.abilities, c.policies, ability, resourcePrefixNode+ref.id), nil
+	case refKindModel:
+		return authorizeResource(c.abilities, c.policies, ability, "model:"+ref.id), nil
 	case refKindEnvironment:
 		return rt.environmentRefAllowed(ctx, c, ability, ref.id)
 	case refKindProject:

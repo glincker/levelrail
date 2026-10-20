@@ -11,11 +11,13 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // Real join token, mTLS session, and BuildKit solve; the only fake is that both nodes are this machine.
 func TestLive_RemoteBuildDispatch(t *testing.T) {
+	dockertest.SkipIfShort(t)
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)
@@ -138,6 +140,7 @@ func TestLive_RemoteBuildDispatch(t *testing.T) {
 
 // The build must fail with the session error, not hang until the caller's timeout.
 func TestLive_RemoteBuildDispatch_NodeOfflineMidBuild(t *testing.T) {
+	dockertest.SkipIfShort(t)
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

@@ -212,6 +212,7 @@ type Router struct {
 	meshZone               string // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness              ReadinessProbes
 	meshSettings           meshSettingsState                                             // see mesh_settings.go
+	serverProfile          serverProfileState                                            // see server_profile.go
 	fixit                  fixitState                                                    // see fixit.go
 	buildPerf              BuildPerformanceStore                                         // see build_performance.go
 	buildLoad              BuildLoadSource                                               // nil: the build center shows no live slot usage
@@ -397,6 +398,8 @@ type Router struct {
 	releaseHist *releaseHistorySource
 	// upgradeHistory is nil unless WithUpgradeHistory was applied.
 	upgradeHistory UpgradeHistoryStore
+	// schemaSource is nil unless WithReleaseSchemaSource was applied.
+	schemaSource *releaseSchemaSource
 	// selfUpgrade is nil unless WithSelfUpgrade was applied.
 	selfUpgrade *selfUpgradeConfig
 	// upgradeSchedule is nil unless WithUpgradeScheduling was applied;
@@ -475,7 +478,9 @@ type Router struct {
 	// WithCapacityForecastLookback.
 	capacityForecastLookback     time.Duration
 	builder                      Builder                      // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
-	sourceCache                  *sourcecache.Cache           // git mirror and git host health; never nil after NewRouter
+	gitPushStore                 GitPushStore                 // nil is valid: the push remote routes answer 501
+	gitPush                      gitPushRuntime               // zero value is ready: limiters and per-app push locks
+	sourceCache                  *sourcecache.Cache           //git mirror and git host health; never nil after NewRouter
 	fetch                        fetchFunc                    // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
 	listBranches                 listBranchesFunc             // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
 	importFiles                  func() importplan.FileSource // per-request repo file reader for handleImportPlan; defaulted in NewRouter, overridable in tests
@@ -590,6 +595,7 @@ type Router struct {
 	backupProtection             BackupProtection             // nil is valid: backup health, drill, policy and restore-to routes return 501
 	backupProtectionStore        BackupProtectionStore        // nil is valid, same as backupProtection above
 	cutover                      cutoverService               // in-memory cutover workers, zero value is ready
+	takeover                     takeoverService              // port takeover test seams, zero value is ready
 	githubAppSecrets             GitHubAppSecrets             // nil is valid: every github-app route that needs it (register/start, callback, installed, repos, branches) returns 501, same shape as backupSecrets above
 	githubAppClient              GitHubAppClient              // always set (NewRouter defaults it to a real *githubapp.Client, which needs no configuration to construct), overridable in this package's own tests the same way fetch is
 	githubAppState               *pendingState                // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see pendingState's own doc comment
@@ -706,6 +712,9 @@ type Router struct {
 	samlFlows   *samlFlowStore
 	scimLib     http.Handler
 	samlLimiter *apiRateLimiter
+	// ssoTests holds test logins of OAuth providers; ssoRouteLimiter limits domain routing.
+	ssoTests        *ssoTestStore
+	ssoRouteLimiter *apiRateLimiter
 
 	publicBucketLimiter     *apiRateLimiter
 	publicBucketLimiterOnce sync.Once
@@ -960,6 +969,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.dnsRecordManager = rt.resolveDNSRecordManager
 	rt.fetch = rt.gitCheckout
 	rt.gitSourceFetch = rt.gitCheckoutWithToken
+	if g, ok := any(s).(GitPushStore); ok {
+		rt.gitPushStore = g
+	}
 	if g, ok := any(s).(SetupGuideStore); ok {
 		rt.setupGuide = g
 	}

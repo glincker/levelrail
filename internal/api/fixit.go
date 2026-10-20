@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/netip"
@@ -14,6 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/fixit"
 	"github.com/GLINCKER/levelrail/internal/network"
@@ -38,6 +40,7 @@ type fixitState struct {
 	once     sync.Once
 	engine   *fixit.Engine
 	override atomic.Pointer[string]
+	observed atomic.Pointer[edgeDetection]
 	// env is injectable for tests; nil reads the real host.
 	host func() fixit.HostEnv
 }
@@ -179,6 +182,13 @@ func (rt *Router) fixitFixes() []fixit.Fix {
 			Create: rt.fixitCreateBackup,
 		}),
 		fixit.GuidedCheckFix(fixit.GuidedDeps{
+			ID: "backup.drill.failing", CheckID: "backup_drill", Subject: "backup",
+			Title: "Fix the failing restore drill",
+			Why:   "A backup that cannot be restored is not a backup. The latest drill of at least one database or volume failed.",
+			Risk:  fixit.RiskSafe,
+			Check: rt.backupDrillFinding,
+		}),
+		fixit.GuidedCheckFix(fixit.GuidedDeps{
 			ID: "host.firewall.open_web_ports", CheckID: "firewall", Subject: "host",
 			Title: "Open ports 80 and 443 in the host firewall",
 			Why:   "Certificates and visitors reach this server on ports 80 and 443. The host firewall is blocking them.",
@@ -189,6 +199,40 @@ func (rt *Router) fixitFixes() []fixit.Fix {
 			},
 		}),
 	}...)
+}
+
+func (rt *Router) backupDrillFinding(ctx context.Context) (fixit.Finding, error) {
+	if rt.backupProtectionStore == nil {
+		return fixit.Finding{}, nil
+	}
+	drills, err := rt.backupProtectionStore.ListBackupDrills(ctx, "", "", "", 1000)
+	if err != nil {
+		return fixit.Finding{}, err
+	}
+	seen := map[string]bool{}
+	var failed []store.BackupDrill
+	for _, d := range drills {
+		if d.Status == store.DrillStatusRunning {
+			continue
+		}
+		key := d.ResourceKind + "/" + d.DatabaseName + "/" + d.ServiceName + "/" + d.VolumeName
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		if d.Status == store.DrillStatusFailed {
+			failed = append(failed, d)
+		}
+	}
+	if len(failed) == 0 {
+		return fixit.Finding{Detail: "the latest restore drill of every resource passed"}, nil
+	}
+	cls := backup.ClassifyDrillFailure(failed[0].Error)
+	return fixit.Finding{
+		Failing: true,
+		Detail:  fmt.Sprintf("%d resource(s) failed their latest drill; first error at %s: %s", len(failed), failed[0].Stage, failed[0].Error),
+		Reason:  cls.Guidance,
+	}, nil
 }
 
 func (rt *Router) fixitCreateBackup(ctx context.Context) (string, error) {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"sync"
 	"time"
 
@@ -147,6 +148,33 @@ func (s *Service) build(ctx context.Context, d store.ExportDestination) (sender,
 			prefix = "audit-log"
 		}
 		return sender{audit: &s3AuditSender{put: s.d.Objects, targetID: d.Options.StorageTargetID, prefix: prefix}}, nil
+	case store.ExportKindAuditSplunk:
+		host, _ := os.Hostname()
+		client := s.client
+		if d.Options.InsecureSkipVerify {
+			client = insecureClient(client)
+		}
+		src, st := d.Options.Source, d.Options.SourceType
+		if src == "" {
+			src = s.prefix[:len(s.prefix)-1]
+		}
+		if st == "" {
+			st = s.prefix[:len(s.prefix)-1] + ":audit"
+		}
+		return sender{audit: &splunkAuditSender{url: SplunkHECURL(d.Endpoint), client: client, headers: blob.Headers, index: d.Options.Index, source: src, sourceType: st, host: host, gzip: d.Options.Gzip}}, nil
+	case store.ExportKindAuditOTLP:
+		client := s.client
+		if d.Options.InsecureSkipVerify {
+			client = insecureClient(client)
+		}
+		name := s.prefix[:len(s.prefix)-1]
+		return sender{audit: &otlpAuditSender{url: OTLPLogsURL(d.Endpoint), client: client, headers: blob.Headers, resource: d.Options.Labels, service: name, scope: name, gzip: d.Options.Gzip}}, nil
+	case store.ExportKindAuditSyslog:
+		sl, err := newSyslogAuditSender(d.Endpoint, d.Options.Facility, d.Options.AppName, s.prefix[:len(s.prefix)-1], d.Options.InsecureSkipVerify)
+		if err != nil {
+			return sender{}, err
+		}
+		return sender{audit: sl, close: sl.close}, nil
 	case store.ExportKindMetricsOTLP:
 		url := OTLPURL(d.Endpoint)
 		return sender{metrics: func(ctx context.Context, body []byte) error {

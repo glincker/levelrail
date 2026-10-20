@@ -37,6 +37,25 @@ for (const t of templates) {
         .map((e) => `| \`${e.service}\` | \`${e.key}\` | ${kindLabel[e.kind] ?? e.kind} |`)
         .join('\n')}`
     : 'This template sets no environment variables.'
+  const req = t.requirements
+  const reqLevel = { standard: 'Standard', review: 'Review before deploying', elevated: 'Elevated access' }[req.level] ?? req.level
+  const reqFindings = req.findings.length
+    ? req.findings
+        .map((f) => `- ${esc(f.message)}${f.services?.length ? ` (${f.services.map((n) => `\`${n}\``).join(', ')})` : ''}${f.detail ? `: ${esc(f.detail)}` : ''}.`)
+        .join('\n')
+    : '- Nothing beyond a standard container: no extra privileges, host mounts or published ports.'
+  const reqSection = `## Security and requirements
+
+Level: **${reqLevel}**.
+
+What this template needs:
+
+${reqFindings}
+
+What Levelrail adds around it:
+
+${req.protections.map((p) => `- ${esc(p.label)}.`).join('\n')}
+`
   const cmd = t.needsConfig
     ? `levelrail-cli templates get ${t.id} --output json | jq -r .compose > ${t.id}.compose.yaml\n# edit ${t.id}.compose.yaml to set the variables you must provide\nlevelrail-cli apps deploy-compose my-${t.id} --file ${t.id}.compose.yaml`
     : `levelrail-cli templates deploy ${t.id} --name my-${t.id}`
@@ -62,7 +81,8 @@ ${svc}
 ${env}
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
-${t.needsConfig ? '\n<Warning>This template needs configuration before it can deploy. Open it in the dashboard, set each variable marked "You must provide" in the Compose body, then deploy.</Warning>\n' : ''}
+
+${reqSection}${t.needsConfig ? '\n<Warning>This template needs configuration before it can deploy. Open it in the dashboard, set each variable marked "You must provide" in the Compose body, then deploy.</Warning>\n' : ''}
 ## Deploy ${esc(t.name)} with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select ${esc(t.name)}. Review the Compose body and deploy.

@@ -83,6 +83,8 @@ type Engine struct {
 
 	logArchive LogArchiveSource
 
+	exportHealth ExportHealthSource
+
 	restoreDrills RestoreDrillSource
 
 	nodeCertWarning, nodeCertCritical time.Duration
@@ -183,6 +185,9 @@ func (e *Engine) SetControlPlaneBackups(src ControlPlaneBackupSource, maxAge tim
 
 // SetLogArchive enables kind=log_archive_stale rules.
 func (e *Engine) SetLogArchive(src LogArchiveSource) { e.logArchive = src }
+
+// SetExportHealth enables kind=export_behind rules.
+func (e *Engine) SetExportHealth(src ExportHealthSource) { e.exportHealth = src }
 
 // SetRestoreDrills enables kind=restore_drill_failed rules.
 func (e *Engine) SetRestoreDrills(src RestoreDrillSource) { e.restoreDrills = src }
@@ -400,6 +405,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindExportBehind:
+			if e.exportHealth == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateExportBehind(ctx, e.exportHealth, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindRestoreDrillFailed:
 			if e.restoreDrills == nil {
 				continue
@@ -565,7 +579,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindRestoreDrillFailed) && !resolved {
+	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindRestoreDrillFailed) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {

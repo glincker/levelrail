@@ -52,7 +52,8 @@ Every rule id appears in the `403` body, the log line and the audit row (`abilit
 | `path_noncanonical` | Paths with `..` or `.` segments, encoded `/` or `\` (`%2F`, `%5C`), or NUL. Repeated slashes are collapsed and the version prefix (`/v1.47/`) is kept, so the daemon receives exactly the path that was matched. |
 | `body_too_large`, `body_invalid` | A body over the limit, or one that does not decode as the endpoint's JSON type. |
 | `privileged` | `HostConfig.Privileged`. |
-| `host_pid`, `host_ipc`, `host_uts`, `host_userns`, `host_cgroupns` | `PidMode`, `IpcMode`, `UTSMode`, `UsernsMode`, `CgroupnsMode` set to `host`. `container:<id>` sharing stays allowed. |
+| `host_pid`, `host_ipc`, `host_uts`, `host_userns`, `host_cgroupns` | `PidMode`, `IpcMode`, `UTSMode`, `UsernsMode`, `CgroupnsMode` set to `host`. |
+| `container_namespace_share` | `PidMode` or `IpcMode` of `container:<id>`, which would let an app read a platform container's processes. Only `NetworkMode: container:<id>` stays allowed, for the egress sidecar. |
 | `network_host` | `NetworkMode: host`, unless the create was declared with host networking and `APP_DOCKER_GUARD_ALLOW_HOST_NETWORK=true`. `app.yaml` has no host networking field today, so in practice this is always denied. |
 | `cap_add_disallowed` | A `CapAdd` entry outside the hardening profile: the minimal set from [Container hardening](/security#container-hardening) plus `APP_CONTAINER_HARDENING_CAP_ADD`. `NET_ADMIN` and `NET_RAW` pass only for a create that declared them (the egress sidecar). |
 | `devices_not_granted` | `DeviceRequests`, or `Devices` other than `/dev/nvidia*` and `/dev/dri/*`, on a container whose app did not request a GPU. Also device changes through container update. |

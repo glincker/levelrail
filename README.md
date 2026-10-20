@@ -17,7 +17,7 @@ One Go binary &middot; Docker runtime &middot; agents instead of SSH &middot; ob
   <a href="docs/mcp.md"><img src="https://img.shields.io/badge/MCP-server-8A2BE2?style=flat" alt="MCP server"></a>
   <a href="https://docs.levelrail.com"><img src="https://img.shields.io/badge/docs-docs.levelrail.com-blue?style=flat" alt="Documentation"></a>
   <a href="https://github.com/glincker/levelrail/commits/main"><img src="https://img.shields.io/github/last-commit/glincker/levelrail?style=flat" alt="Last commit"></a>
-  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome"></a>
+  <a href=".github/CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome"></a>
 </p>
 <p>
   <a href="https://levelrail.com">Website</a> &middot;
@@ -50,7 +50,7 @@ Open the URL it prints, pick a password, and deploy your first app from the setu
 levelrail-cli import https://github.com/your-org/your-app --deploy
 ```
 
-Prefer containers, a pinned version or a source build? See [Installing](docs/installing.md). Coming from another platform? `levelrail-cli migrate coolify|dokploy|caprover` plans the move and shows a dry-run diff first.
+Prefer containers, a pinned version or a source build? See [Installing](docs/installing.md). Want it as light as Dokku, or everything on? `install.sh --profile minimal|standard|suite`, see [Server profiles](docs/profiles.md). Coming from another platform? See [Migrate to Levelrail](docs/migrate-to-levelrail.md): Coolify, Dokploy, CapRover, Dokku and compose files each get a dry run first, and the old server keeps serving.
 
 <table>
   <tr>
@@ -71,7 +71,7 @@ Prefer containers, a pinned version or a source build? See [Installing](docs/ins
 - **Agents, not SSH.** Each node runs a small agent that dials out over mTLS and talks to Docker's Engine API directly. No inbound ports, no shelling out to the `docker` CLI, no polling loops.
 - **Observability included.** Per-node metrics at 15 second resolution, searchable logs, deploy markers, traces, SLO burn, alert inbox and an idle-footprint health page. No Grafana stack to install.
 - **Deploys that protect you.** Readiness-gated rollouts, pinned images so rollback always works, canary releases that roll back on errors, deploy diffs, approvals and freezes.
-- **Secure by default.** Hash-chained audit log you can verify, SSRF-guarded outbound calls, envelope-encrypted secrets with key rotation, scoped tokens, passkeys and 2FA, signed releases.
+- **Secure by default.** Hash-chained audit log you can verify, SSRF-guarded outbound calls, envelope-encrypted secrets with key rotation, scoped tokens, passkeys and TOTP 2FA, OAuth and OIDC sign-in, IAM policies, signed releases. SAML single sign-on and SCIM provisioning are available as a [beta feature](docs/sso-saml.md), off by default.
 - **Built for AI agents.** An MCP server with a small default tool list (about 2.4k tokens, more load on demand), a scoped-token permission model and an agent skill.
 
 ## Production ready, with receipts
@@ -85,7 +85,7 @@ Single-server deployments are production ready today. Multi-node and a handful o
 | Safe upgrades and rollback | Tested upgrade matrix, downgrade refusal, one-click [rollback](docs/rollback.md) and clean shutdown |
 | Measured, not promised | [Benchmarks](docs/benchmarks.md): idle footprint, ingress throughput, limits, with the method next to every number |
 | Verified backups | Every backup is re-downloaded and checksummed, with scheduled restore drills |
-| Tamper-evident security | Verifiable audit chain, [security policy](SECURITY.md), signed releases and SBOM scanning |
+| Tamper-evident security | Verifiable audit chain, [security policy](.github/SECURITY.md), signed releases and SBOM scanning |
 
 ## Levelrail vs Coolify, Dokploy, CapRover and Dokku
 
@@ -98,17 +98,21 @@ Most self-hosted platforms in this category manage servers by SSHing in and shel
 | Built-in metrics and logs | Yes | Opt-in add-on | Separate binary | No | No |
 | Rollback | Pinned images, readiness-gated | Health check off by default | Swarm rollback | Manual | Default scheduler: none |
 | Backup verification | Automatic, all 8 engines | Non-empty check | None | None | No backups |
+| SSO and provisioning | OAuth (20 providers) and generic OIDC; SAML and SCIM (beta, off by default) | See their docs | See their docs | See their docs | See their docs |
+| Audit log | Hash-chained, verifiable, CSV export, forwarding to syslog, webhook or bucket | See their docs | See their docs | See their docs | See their docs |
+| IAM | Allow and Deny policies per app or database, scoped tokens | See their docs | See their docs | See their docs | See their docs |
 
-This is positioning, not a ranking, and every project here is worth using. Where Levelrail trails: Coolify's template catalog is larger, and Levelrail bets on a smaller curated one ([ADR 015](adr/015-service-template-catalog-reversal.md)). The full, sourced comparison is in [Comparison](docs/comparison.md).
+This is positioning, not a ranking, and every project here is worth using. Where Levelrail trails: it is the youngest project here, with fewer users and less production mileage, and its SAML single sign-on and SCIM provisioning are beta ([details](docs/sso-saml.md)). Its template catalog (300+ entries) is in the same range as Coolify's, but only a sample is deployed end to end ([ADR 015](adr/015-service-template-catalog-reversal.md)). The full, sourced comparison is in [Comparison](docs/comparison.md).
 
 ## What you get
 
-- **Deploys:** Git push (GitHub, GitLab, Bitbucket, Gitea), preview environments per pull request, framework presets (Next.js, Go, React, Spring Boot and more), Dockerfile, Compose or image deploys, canary and blue-green rollouts. [Deploying apps](docs/deploying-apps.md)
+- **Deploys:** Push to your git host (GitHub, GitLab, Bitbucket, Gitea webhooks), preview environments per pull request, framework presets (Next.js, Go, React, Spring Boot and more), Dockerfile, Compose or image deploys, canary and blue-green rollouts. [Deploying apps](docs/deploying-apps.md)
 - **Domains and TLS:** Embedded Caddy ingress, automatic certificates, wildcard and custom certificates, per-app abuse protection. [Domains](docs/domains-and-ingress.md)
 - **Databases:** Postgres, MySQL, MariaDB, MongoDB, Redis, KeyDB, Dragonfly and ClickHouse with scheduled backups, Postgres point-in-time recovery, restore, and password rotation. [Databases](docs/managing-databases.md)
 - **One search for everything:** Cmd+K across apps, databases, nodes, templates and actions, filtered by what you may do. [Search](docs/search.md)
 - **Servers:** Add nodes with a one-time token, WireGuard mesh, zones and failure-domain spreading, placement what-if. [Multi-node](docs/multi-node.md)
 - **Templates:** 300+ one-click services, with a smoke test that brings up the top 50 (48 pass today, [status](docs/templates-status.md)). [Catalog](docs/template-catalog.md)
+- **Identity and access:** Password, passkeys, TOTP, OAuth with 20 providers plus generic OIDC, IAM policies, teams, a hash-chained audit log with CSV export. SAML single sign-on and SCIM provisioning are beta and off by default. [Identity and access](docs/identity-and-access.md), [SAML and SCIM](docs/sso-saml.md)
 - **Plugins:** A signed plugin marketplace with one-click install, dashboard panels and first-party alert channels. [Plugins](docs/plugins.md)
 - **Automation:** One HTTP API behind the dashboard, a CLI and an MCP server. AI never sits in the reconciliation path. [CLI](docs/cli-reference.md), [AI control](docs/ai-control.md)
 - **Pipelines, previews, cost budgets, sleep when idle, status pages** and more. See [Product tour](https://docs.levelrail.com/product-tour).
@@ -259,8 +263,8 @@ Step by step walkthroughs, each tested against a real install:
 
 - [GitHub Discussions](https://github.com/glincker/levelrail/discussions) for questions, ideas and show and tell, and [Issues](https://github.com/glincker/levelrail/issues) for bugs.
 - [GLINR Discord](https://discord.gg/Ar5pcaZB99): live chat with the maintainers, in the `#levelrail` forum channel.
-- [support@levelrail.com](mailto:support@levelrail.com) for direct help, and the [Security policy](SECURITY.md) to report a vulnerability privately.
-- [Contributing](CONTRIBUTING.md): dev loop, tests and commit conventions. Build from source needs Go 1.26 or newer and Docker: see [Installing](docs/installing.md#option-3-build-from-source).
+- [support@levelrail.com](mailto:support@levelrail.com) for direct help, and the [Security policy](.github/SECURITY.md) to report a vulnerability privately.
+- [Contributing](.github/CONTRIBUTING.md): dev loop, tests and commit conventions. Build from source needs Go 1.26 or newer and Docker: see [Installing](docs/installing.md#option-3-build-from-source).
 
 ## Star the repo
 

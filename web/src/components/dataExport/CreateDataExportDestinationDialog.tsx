@@ -23,205 +23,72 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { toast } from '@/components/ui/toast'
 import { BrandIcon } from '../BrandIcon'
 import { VendorFields } from './VendorFields'
+import { AuditSinkFields } from './AuditSinkFields'
+import { useDataExportDestinationForm } from './useDataExportDestinationForm'
+import { isAuditStreamKind } from '../../lib/auditSink'
 import { KIND_MARKS } from '../../lib/dataExportKinds'
-import { useCreateDataExportDestination } from '../../queries/dataExport'
+import {
+  hasAppFilter,
+  isLogKind,
+  isMetricsKind,
+  isVendorKind,
+  KIND_KEYS,
+  KINDS,
+  LEVEL_KEYS,
+  LEVELS,
+} from '../../lib/dataExportForm'
 import { useStorageDestinationsOptional } from '../../queries/storage'
-import type {
-  CreateDataExportDestinationRequest,
-  DataExportKind,
-} from '../../types/dataExport'
-
-const KINDS: DataExportKind[] = [
-  'logs_newrelic',
-  'logs_datadog',
-  'logs_axiom',
-  'logs_betterstack',
-  'logs_loki',
-  'logs_otlp',
-  'logs_http',
-  'logs_syslog',
-  'audit_webhook',
-  'audit_s3',
-  'metrics_otlp',
-  'metrics_remote_write',
-]
-
-const KIND_KEYS = {
-  logs_http: 'kinds.logs_http',
-  logs_loki: 'kinds.logs_loki',
-  logs_otlp: 'kinds.logs_otlp',
-  logs_syslog: 'kinds.logs_syslog',
-  logs_newrelic: 'kinds.logs_newrelic',
-  logs_datadog: 'kinds.logs_datadog',
-  logs_axiom: 'kinds.logs_axiom',
-  logs_betterstack: 'kinds.logs_betterstack',
-  audit_webhook: 'kinds.audit_webhook',
-  audit_s3: 'kinds.audit_s3',
-  metrics_otlp: 'kinds.metrics_otlp',
-  metrics_remote_write: 'kinds.metrics_remote_write',
-} as const satisfies Record<DataExportKind, string>
-
-const LEVELS = ['any', 'debug', 'info', 'warn', 'error'] as const
-
-const LEVEL_KEYS = {
-  any: 'levels.any',
-  debug: 'levels.debug',
-  info: 'levels.info',
-  warn: 'levels.warn',
-  error: 'levels.error',
-} as const
-
-const isLogKind = (k: DataExportKind) => k.startsWith('logs_')
-const isVendorKind = (k: DataExportKind) =>
-  k === 'logs_newrelic' ||
-  k === 'logs_datadog' ||
-  k === 'logs_axiom' ||
-  k === 'logs_betterstack'
-const isMetricsKind = (k: DataExportKind) => k.startsWith('metrics_')
-const hasAppFilter = (k: DataExportKind) => isLogKind(k) || isMetricsKind(k)
-
-function parseHeaders(raw: string): Record<string, string> {
-  const out: Record<string, string> = {}
-  for (const line of raw.split('\n')) {
-    const idx = line.indexOf(':')
-    if (idx <= 0) continue
-    const name = line.slice(0, idx).trim()
-    const value = line.slice(idx + 1).trim()
-    if (name && value) out[name] = value
-  }
-  return out
-}
 
 export function CreateDataExportDestinationDialog() {
   const { t } = useTranslation('dataExport')
-  const create = useCreateDataExportDestination()
   const storage = useStorageDestinationsOptional()
   const [open, setOpen] = useState(false)
-  const [name, setName] = useState('')
-  const [kind, setKind] = useState<DataExportKind>('logs_loki')
-  const [endpoint, setEndpoint] = useState('')
-  const [apps, setApps] = useState('')
-  const [level, setLevel] = useState<(typeof LEVELS)[number]>('any')
-  const [headers, setHeaders] = useState('')
-  const [hmacKey, setHmacKey] = useState('')
-  const [target, setTarget] = useState('')
-  const [prefix, setPrefix] = useState('')
-  const [interval, setInterval] = useState('')
-  const [backfill, setBackfill] = useState(false)
-  const [apiKey, setApiKey] = useState('')
-  const [region, setRegion] = useState('us')
-  const [site, setSite] = useState('')
-  const [dataset, setDataset] = useState('')
-  const [username, setUsername] = useState('')
-
-  function reset() {
-    setName('')
-    setEndpoint('')
-    setApps('')
-    setLevel('any')
-    setHeaders('')
-    setHmacKey('')
-    setTarget('')
-    setPrefix('')
-    setInterval('')
-    setBackfill(false)
-    setApiKey('')
-    setUsername('')
-    setRegion('us')
-    setSite('')
-    setDataset('')
-    create.reset()
-  }
-
-  function submit(e: React.FormEvent) {
-    e.preventDefault()
-    const req: CreateDataExportDestinationRequest = {
-      name: name.trim(),
-      kind,
-      enabled: true,
-    }
-    if (kind !== 'audit_s3' && endpoint.trim() !== '') {
-      req.endpoint = endpoint.trim()
-    }
-    if (
-      isVendorKind(kind) ||
-      (kind === 'metrics_remote_write' && apiKey.trim())
-    )
-      req.api_key = apiKey.trim()
-    if (hasAppFilter(kind)) {
-      const list = apps
-        .split(',')
-        .map((a) => a.trim())
-        .filter(Boolean)
-      if (list.length > 0) req.apps = list
-    }
-    if (isLogKind(kind) && level !== 'any') req.min_level = level
-    const parsed = parseHeaders(headers)
-    if (Object.keys(parsed).length > 0 && kind !== 'logs_syslog') {
-      req.headers = parsed
-    }
-    if (kind === 'audit_webhook' && hmacKey) req.hmac_key = hmacKey
-    const options: NonNullable<CreateDataExportDestinationRequest['options']> =
-      {}
-    if (kind === 'audit_s3') {
-      options.storage_target_id = target
-      if (prefix.trim()) options.prefix = prefix.trim()
-    }
-    if (kind === 'metrics_remote_write' && username.trim()) {
-      options.username = username.trim()
-    }
-    if (isMetricsKind(kind) && interval) {
-      options.interval_seconds = Number(interval)
-    }
-    if ((kind === 'audit_s3' || kind === 'audit_webhook') && backfill) {
-      options.backfill = true
-    }
-    if (kind === 'logs_newrelic' || kind === 'logs_axiom') {
-      options.region = region
-    }
-    if (kind === 'logs_datadog' && site.trim()) options.site = site.trim()
-    if (kind === 'logs_axiom') options.dataset = dataset.trim()
-    if (Object.keys(options).length > 0) req.options = options
-
-    create.mutate(req, {
-      onSuccess: (created) => {
-        setOpen(false)
-        reset()
-        toast.add({
-          title: t('form.created', { name: created.name }),
-          type: 'success',
-        })
-      },
-    })
-  }
-
-  const endpointPlaceholder = {
-    logs_http: t('form.endpointHttp'),
-    logs_loki: t('form.endpointLoki'),
-    logs_otlp: t('form.endpointOtlp'),
-    logs_syslog: t('form.endpointSyslog'),
-    logs_newrelic: t('form.endpointOverride'),
-    logs_datadog: t('form.endpointOverride'),
-    logs_axiom: t('form.endpointOverride'),
-    logs_betterstack: t('form.endpointOverride'),
-    audit_webhook: t('form.endpointHttp'),
-    audit_s3: '',
-    metrics_otlp: t('form.endpointOtlp'),
-    metrics_remote_write: t('form.endpointRemoteWrite'),
-  }[kind]
-
+  const {
+    name,
+    setName,
+    kind,
+    setKind,
+    endpoint,
+    setEndpoint,
+    apps,
+    setApps,
+    level,
+    setLevel,
+    headers,
+    setHeaders,
+    hmacKey,
+    setHmacKey,
+    target,
+    setTarget,
+    prefix,
+    setPrefix,
+    interval,
+    setInterval,
+    backfill,
+    setBackfill,
+    apiKey,
+    setApiKey,
+    region,
+    setRegion,
+    site,
+    setSite,
+    dataset,
+    setDataset,
+    username,
+    setUsername,
+    sink,
+    setSink,
+    reset,
+    submit,
+    endpointPlaceholder,
+    canSubmit,
+    create,
+  } = useDataExportDestinationForm(() => {
+    setOpen(false)
+  })
   const targets = storage.data ?? []
-  const canSubmit =
-    name.trim() !== '' &&
-    (kind === 'audit_s3'
-      ? target !== ''
-      : isVendorKind(kind)
-        ? apiKey.trim() !== '' &&
-          (kind !== 'logs_axiom' || dataset.trim() !== '')
-        : endpoint !== '')
 
   return (
     <Dialog
@@ -354,6 +221,16 @@ export function CreateDataExportDestinationDialog() {
             />
           ) : null}
 
+          {isAuditStreamKind(kind) ? (
+            <AuditSinkFields
+              kind={kind}
+              values={sink}
+              onChange={(next) => {
+                setSink((cur) => ({ ...cur, ...next }))
+              }}
+            />
+          ) : null}
+
           {hasAppFilter(kind) ? (
             <Field>
               <FieldLabel htmlFor="export-apps">{t('form.apps')}</FieldLabel>
@@ -397,7 +274,10 @@ export function CreateDataExportDestinationDialog() {
             </>
           ) : null}
 
-          {kind !== 'logs_syslog' && kind !== 'audit_s3' ? (
+          {kind !== 'logs_syslog' &&
+          kind !== 'audit_syslog' &&
+          kind !== 'audit_s3' &&
+          kind !== 'audit_splunk' ? (
             <Field>
               <FieldLabel htmlFor="export-headers">
                 {t('form.headers')}
@@ -485,7 +365,9 @@ export function CreateDataExportDestinationDialog() {
             </Field>
           ) : null}
 
-          {kind === 'audit_s3' || kind === 'audit_webhook' ? (
+          {kind === 'audit_s3' ||
+          kind === 'audit_webhook' ||
+          isAuditStreamKind(kind) ? (
             <label className="flex items-center gap-2 text-sm text-foreground">
               <Switch checked={backfill} onCheckedChange={setBackfill} />
               {t('form.backfill')}

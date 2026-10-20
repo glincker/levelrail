@@ -77,7 +77,8 @@
       "promote": "a promotion",
       "clone": "a clone",
       "schedule": "a schedule",
-      "auto_rollback": "an automatic rollback"
+      "auto_rollback": "an automatic rollback",
+      "git_push": "a git push to the server"
     }
   },
   "imageAutoUpdate": {

@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/dockerssh"
 	"github.com/GLINCKER/levelrail/internal/imagemove"
 )
 
@@ -104,6 +105,16 @@ func (s *appImportState) saverFor(t imagemove.Target, c imagemove.Credentials, k
 		f = defaultSaverFactory
 	}
 	return f(t, c, keys)
+}
+
+func (s *appImportState) tunnelSaverFor(cfg dockerssh.Config) imagemove.Saver {
+	s.mu.Lock()
+	f := s.newTunnelSaver
+	s.mu.Unlock()
+	if f == nil {
+		f = defaultTunnelSaver
+	}
+	return f(cfg)
 }
 
 // startMove claims the session's move, returning false when one runs.

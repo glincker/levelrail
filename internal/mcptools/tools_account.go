@@ -57,7 +57,7 @@ func registerAccountTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_my_activity",
-		Description: "List what this account's own sessions and tokens did, newest first: sign-ins, token use, session changes and passkey or two-factor changes. Security events only unless all is true. Only this account's rows. Filter with kind (sign_in, security, sessions, tokens, token_use, account, failed) and page with cursor.",
+		Description: "This account's own sign-ins, token use and security changes, newest first. Filter with kind, page with cursor; all includes non-security rows.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in myActivityInput) (*mcp.CallToolResult, apiclient.MyActivity, error) {
 		kind := in.Kind
 		if in.All && kind == "" {

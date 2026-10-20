@@ -253,6 +253,39 @@ func Run(ctx context.Context, d Doer, cfg Config, ev *Event) (Result, error) {
 	return res, ctx.Err()
 }
 
+// RunClosed drives url with a fixed number of workers, each sending its next
+// request when the previous one returns. It measures capacity at a given
+// concurrency, not latency under a fixed arrival rate (use Run for that).
+func RunClosed(ctx context.Context, d Doer, url string, workers int, duration, timeout time.Duration) (Stats, error) {
+	if url == "" {
+		return Stats{}, errors.New("bench: empty URL")
+	}
+	if workers <= 0 || duration <= 0 {
+		return Stats{}, errors.New("bench: workers and duration must be positive")
+	}
+	start := time.Now()
+	deadline := start.Add(duration)
+	per := make([][]Sample, workers)
+	var wg sync.WaitGroup
+	for w := 0; w < workers; w++ {
+		wg.Add(1)
+		go func(w int) {
+			defer wg.Done()
+			for ctx.Err() == nil && time.Now().Before(deadline) {
+				t0 := time.Now()
+				failed := doOne(ctx, d, url, timeout)
+				per[w] = append(per[w], Sample{Offset: t0.Sub(start), Latency: time.Since(t0), Failed: failed})
+			}
+		}(w)
+	}
+	wg.Wait()
+	var all []Sample
+	for _, p := range per {
+		all = append(all, p...)
+	}
+	return Summarize(all, time.Since(start)), ctx.Err()
+}
+
 func doOne(ctx context.Context, d Doer, url string, timeout time.Duration) bool {
 	if timeout > 0 {
 		var cancel context.CancelFunc

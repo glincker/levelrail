@@ -48,9 +48,9 @@ done
 
 main="$out/levelrail-cli"
 mkdir -p "$main/bin"
-cp "$root/packaging/npm/levelrail-cli.js" "$main/bin/levelrail-cli.js"
+cp "$root/deploy/packaging/npm/levelrail-cli.js" "$main/bin/levelrail-cli.js"
 chmod 755 "$main/bin/levelrail-cli.js"
-cp "$root/packaging/npm/README.md" "$main/README.md"
+cp "$root/deploy/packaging/npm/README.md" "$main/README.md"
 cp "$root/LICENSE" "$main/LICENSE"
 deps="${deps%,
 }"

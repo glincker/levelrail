@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	agentLoopToken    = "dev-root-token" //nolint:gosec // dev-mode fixture token from dev-fixtures.yml
+	agentLoopToken    = "dev-root-token" //nolint:gosec // dev-mode fixture token from test/fixtures/dev-fixtures.yml
 	agentLoopImageNS  = "levelrail-e2e-agent-loop"
 	agentLoopPollTick = 250 * time.Millisecond
 )
@@ -111,7 +111,7 @@ func startControlPlane(t *testing.T, repoRoot, bin string) string {
 	cmd.Env = hermeticEnv(
 		"APP_DEV_MODE=1",
 		"APP_BRAND_FILE="+filepath.Join(repoRoot, "brand.yaml"),
-		"APP_DEV_FIXTURES_FILE="+filepath.Join(repoRoot, "dev-fixtures.yml"),
+		"APP_DEV_FIXTURES_FILE="+filepath.Join(repoRoot, "test", "fixtures", "dev-fixtures.yml"),
 		"APP_DATA_DIR="+filepath.Join(dir, "data"),
 		"APP_HTTP_ADDR="+addr,
 		"APP_AGENT_ADDR=127.0.0.1:0",

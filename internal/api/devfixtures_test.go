@@ -213,7 +213,7 @@ func TestMaybeSeedDevFixturesFromFile_MissingFileIsNotAnError(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.New(slog.NewTextHandler(bytes.NewBuffer(nil), nil))
 
-	// Fixtures are optional: a fresh checkout without a dev-fixtures.yml
+	// Fixtures are optional: a fresh checkout without a test/fixtures/dev-fixtures.yml
 	// must not fail startup, dev mode's admin bootstrap already works
 	// without one.
 	err := MaybeSeedDevFixturesFromFile(ctx, db, logger, "/nonexistent/dev-fixtures.yml")

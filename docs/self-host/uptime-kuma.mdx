@@ -23,6 +23,23 @@ This template sets no environment variables.
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`kuma`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
 ## Deploy Uptime Kuma with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Uptime Kuma. Review the Compose body and deploy.

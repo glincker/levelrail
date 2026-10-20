@@ -68,6 +68,27 @@ Recommended memory: about 4096 MiB.
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`langfuse-web`): 3000:3000.
+- Passwords and keys are generated at deploy time (`clickhouse`, `db`, `langfuse-web`, `langfuse-worker`, `minio`): CLICKHOUSE_PASSWORD, CLICKHOUSE_PASSWORD, DATABASE_URL, ENCRYPTION_KEY, LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY, NEXTAUTH_SECRET, SALT, CLICKHOUSE_PASSWORD, DATABASE_URL, ENCRYPTION_KEY, LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY, SALT, MINIO_ROOT_PASSWORD, POSTGRES_PASSWORD.
+- No health check, so a deploy is judged by the process starting (`clickhouse`, `langfuse-worker`, `minio`, `redis`).
+- Stores data in named volumes (`clickhouse`, `db`, `minio`, `redis`): langfuse_clickhouse_data, langfuse_db_data, langfuse_minio_data, langfuse_redis_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
 ## Deploy Langfuse with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Langfuse. Review the Compose body and deploy.

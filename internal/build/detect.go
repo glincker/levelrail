@@ -19,6 +19,7 @@ import (
 	"github.com/railwayapp/railpack/core"
 	rpapp "github.com/railwayapp/railpack/core/app"
 
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/frameworks"
 )
 
@@ -150,13 +151,13 @@ func frameworkPort(framework string) int {
 func ValidatePublicRepoURL(repoURL string) error {
 	u, err := url.Parse(repoURL)
 	if err != nil {
-		return fmt.Errorf("build: detect: %q: %w", repoURL, err)
+		return fmt.Errorf("build: detect: invalid repository url: %w", errors.Unwrap(err))
 	}
 	switch u.Scheme {
 	case "http", "https":
 		return nil
 	default:
-		return fmt.Errorf("build: detect: %q: %w", repoURL, ErrRepoURLSchemeNotAllowed)
+		return fmt.Errorf("build: detect: %q: %w", envredact.URLForLog(repoURL), ErrRepoURLSchemeNotAllowed)
 	}
 }
 
@@ -242,9 +243,9 @@ func detectUnchecked(ctx context.Context, req DetectRequest) (*DetectResult, err
 	}
 	if _, err := git.PlainCloneContext(ctx, dir, false, cloneOpts); err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return nil, fmt.Errorf("build: detect: clone %q: %w", req.RepoURL, ctx.Err())
+			return nil, fmt.Errorf("build: detect: clone %q: %w", envredact.URLForLog(req.RepoURL), ctx.Err())
 		}
-		return nil, fmt.Errorf("build: detect: clone %q: %w", req.RepoURL, err)
+		return nil, fmt.Errorf("build: detect: clone %q: %w", envredact.URLForLog(req.RepoURL), err)
 	}
 
 	size, err := dirSize(dir, detectMaxRepoBytes)

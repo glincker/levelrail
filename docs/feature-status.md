@@ -31,11 +31,12 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | PITR and database backups | stable | Live e2e restores before a marker row through the real API with MinIO (`test/e2e/pitr_test.go`), plus live Docker dump and restore tests. |
 | Previews | stable (GitHub), beta (GitLab, Bitbucket) | Lifecycle e2e exists for all three (`test/e2e/preview_environments_*_test.go`), but they replay synthetic webhooks, not a real forge. Kept beta for the two forges with less usage. |
 | IAM | stable | Broadest unit coverage in the repo, plus live e2e where a deny policy blocks a real action and a token allow policy scopes one (`test/e2e/iam_policy_enforcement_test.go`). |
+| SAML single sign-on and SCIM provisioning | beta | Built on the sign-in library, behind the `saml-scim` feature toggle, off by default. Tested against a signing test identity provider, not a live Okta, Entra ID or Keycloak tenant. See [Identity and access](#identity-and-access). |
 | Notification channels (18) | beta | All 18 kinds have unit tests against `httptest`, none against a real vendor. |
 | Pipelines | stable | Live Docker test (`internal/pipeline/live_test.go`) and a live e2e run (`test/e2e/pipeline_run_test.go`). |
 | Deploy freeze | stable | Live e2e proves a freeze blocks then allows a real deploy (`test/e2e/deploy_freeze_test.go`), documented in `docs/deploy-safety.md`. |
 | Feature flags | beta | Unit, API, CLI, MCP tests and a doc page, no e2e. |
-| Templates | beta | 311 catalog entries. Unit tests check shape and a floor of 180, and live e2e tests deploy samples (a 16-template fleet plus batch boot tests), not the whole catalog. |
+| Templates | beta | 300+ catalog entries. Unit tests check shape and a floor of 180, and live e2e tests deploy samples (a 16-template fleet plus batch boot tests), not the whole catalog. |
 | Log archive | beta | Unit and e2e tests (`test/e2e/log_archive_test.go`), dedicated doc page (`docs/log-archive.md`). |
 | Automatic cleanup (janitor) | beta | Unit tests for every stage and safety rule, API test, CLI, MCP read tool, doc page (`docs/janitor.md`). No live disk-fill run yet; other nodes are not covered. |
 | Supply chain | stable | Live e2e proves the gate blocks and an override works through the real API (`test/e2e/supply_chain_test.go`). SBOM and scan stay off by default (`docs/supply-chain.md`). |
@@ -48,6 +49,24 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Load balancer | hide-behind-flag | Live e2e with real traffic and drain (`test/e2e/loadbalancer_test.go`), but gated behind `load-balancer` and not exercised across real hosts. |
 | Platform as code (iac) | hide-behind-flag | Live e2e covers export, plan and apply (`test/e2e/iac_apply_test.go`), but the apply path changes many resources in one run and stays gated behind `iac`. |
 | Cloudflare tunnel | hide-behind-flag | Reconciler unit tests only, needs a real Cloudflare account, no dedicated doc page. |
+
+## Identity and access
+
+What exists for sign-in, authorization and audit, with the label each one carries. Only IAM and the SAML and SCIM toggle have their own label in this page; the rest is core sign-in that ships on by default and has unit tests, with `test/e2e/auth_lifecycle_test.go` covering sessions.
+
+| Capability | Maturity | Notes |
+| --- | --- | --- |
+| Password sign-in | core, on by default | Local accounts with sessions. |
+| Passkeys (WebAuthn) | core, on by default | Register and sign in, with a guard for passkey-only rules (`internal/api/passkey_guard_test.go`). |
+| TOTP two-factor | core, on by default | Recovery codes included (`internal/authengine/mfa_test.go`). |
+| OAuth and OIDC sign-in | core, on by default once a provider is configured | 17 named providers plus generic OpenID Connect, 18 settings rows in all (`internal/store/oauth_identity.go`). Unit tests use a fake identity provider. |
+| SAML single sign-on | beta | Built on the sign-in library, behind the `saml-scim` feature toggle (Settings, Beta features), off by default. Not yet verified against a live identity provider. [SAML](/sso-saml) |
+| SCIM provisioning | beta | Same toggle and same caveats. Users and groups under `/api/v1/scim/v2`. [SCIM](/scim) |
+| IAM policies | stable | See the IAM label above. |
+| Teams and roles | on by default | Owner, admin, developer and viewer roles per team. [Teams and roles](/teams-and-roles). Custom roles and per-environment grants are experimental (`access-roles`). |
+| Audit log | on by default | Every mutating request recorded, hash chain you can verify (`GET /api/v1/audit-log/verify`), CSV export, retention, and forwarding through [Data export](/data-export). |
+
+LDAP directory sync is not supported.
 
 ## Evidence per area
 
@@ -177,7 +196,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: `test/e2e/template_fleet_test.go` (`TestTemplateFleet_Live_DeploysAndTearsDownCleanly`) deploys a diverse sample of 16 templates through the real one-click route and a real application controller, then tears them down and checks nothing leaks. Batch boot tests (`catalog_batch*_live_test.go`, `catalog_devtools_batch_live_test.go`) cover more, but not the whole catalog. `test/e2e/compose_healthcheck_test.go` covers Compose readiness generally.
 - Docs: `docs/templates-and-registry.md` (209 lines).
 - Real infra: none found. Only the 16 sampled templates have deploy evidence, so "works" is unverified for the rest. `docs/templates-and-registry.md` also notes GPU passthrough is not translated for GPU templates.
-- Count: 311 entries in `internal/catalog.Templates`. ADR 015 cites a 339-template goal, which is not yet the shipped catalog.
+- Count: 300+ entries in `internal/catalog.Templates` (359 in this build, see [Template catalog](/template-catalog)). ADR 015 cites a 339-template goal, which is not yet the shipped catalog.
 - Label: beta.
 
 ### IAM
@@ -223,7 +242,7 @@ These counts appear in the README, the landing page, and several guides. Re-chec
 | Notification channel kinds | 18 | `NotifyKind` constants in `internal/alerting/rules.go` |
 | Alert rule kinds | 14 | `Kind` constants in `internal/alerting/rules.go` |
 | Managed database engines | 8 | `internal/store/database.go` |
-| Service templates | 311 | `len(catalog.Templates)`, listed in [Template catalog](/template-catalog) |
-| Latest release | See the [releases page](https://github.com/glincker/levelrail/releases) | `.release-please-manifest.json` |
+| Service templates | 300+ | `len(catalog.Templates)`, listed in [Template catalog](/template-catalog) |
+| Latest release | See the [releases page](https://github.com/glincker/levelrail/releases) | `.github/release-please/.release-please-manifest.json` |
 
 Two caveats still hold. Idle footprint is measured only on an Apple M4 Max dev build (58 to 96 MB RSS from 0 to 500 apps, see [Performance](/performance)), with no Linux release-build number yet. Real public ACME issuance has one recorded live run ([the verification runbook](/acme-verification-runbook), 2026-10-05); renewal and DNS-01 wildcards are still unproven.

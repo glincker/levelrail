@@ -83,3 +83,24 @@ export function stepGroups(guide: SetupGuide): {
   const settled = guide.steps.filter((s) => !isOpen(s))
   return { next, todo, settled }
 }
+
+/** ESSENTIAL_STEPS are the four steps that matter before a first deploy, in the order to do them. */
+export const ESSENTIAL_STEPS: readonly SetupGuideStepId[] = [
+  'public_address',
+  'secure_admin',
+  'git_provider',
+  'first_app',
+]
+
+/** essentialSplit separates the essential steps from the rest; every step lands in exactly one list. */
+export function essentialSplit(guide: SetupGuide): {
+  essential: SetupGuideStep[]
+  more: SetupGuideStep[]
+} {
+  const essential = ESSENTIAL_STEPS.flatMap((id) => {
+    const step = guideStep(guide, id)
+    return step ? [step] : []
+  })
+  const more = guide.steps.filter((s) => !ESSENTIAL_STEPS.includes(s.id))
+  return { essential, more }
+}

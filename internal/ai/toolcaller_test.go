@@ -17,6 +17,10 @@ func TestToolCaller_InProcess(t *testing.T) {
 			_, _ = w.Write([]byte(`{"mode":"operate"}`))
 			return
 		}
+		if r.URL.Path == "/api/v1/auth/my-access" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/apps" {
 			t.Errorf("request = %s %s, want GET /api/v1/apps", r.Method, r.URL.Path)
 		}

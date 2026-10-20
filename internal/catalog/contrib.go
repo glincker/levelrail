@@ -10,7 +10,7 @@ import (
 )
 
 // contribFS embeds every contributor-submitted template file. See
-// CONTRIBUTING.md for the format: one YAML file per template, no Go
+// .github/CONTRIBUTING.md for the format: one YAML file per template, no Go
 // source or build step required to add one.
 //
 //go:embed contrib/*.yaml

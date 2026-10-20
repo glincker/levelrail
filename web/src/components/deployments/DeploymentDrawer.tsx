@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { GitBranchIcon, GitCommitIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Sheet,
@@ -58,22 +59,23 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 }
 
 function FailureCard({ d }: { d: Deployment }) {
+  const { t } = useTranslation('deployDetail')
   const tail = useQuery(deploymentLogTailOptions(d.app, d.id))
   const step = d.steps?.failing_step
   return (
-    <Section title="What went wrong">
+    <Section title={t('drawer.whatWentWrong')}>
       <div className="flex flex-col gap-2 rounded-lg border border-tone-danger-border bg-tone-danger-soft p-3">
         {step && (
           <p className="text-sm font-medium text-tone-danger">
-            Failed at step: {step}
+            {t('drawer.failedAtStep', { step })}
           </p>
         )}
         <p className="text-sm break-words">
-          {d.error_summary ?? 'The deploy failed. No error was recorded.'}
+          {d.error_summary ?? t('drawer.noErrorRecorded')}
         </p>
         {tail.data && tail.data.length > 0 && (
           <pre
-            aria-label="Last log lines"
+            aria-label={t('drawer.lastLogLines')}
             className="max-h-48 overflow-auto rounded-md bg-background p-2 font-mono text-xs leading-relaxed"
           >
             {tail.data.join('\n')}
@@ -81,7 +83,7 @@ function FailureCard({ d }: { d: Deployment }) {
         )}
         {tail.isError && (
           <p className="text-xs text-muted-foreground">
-            The log tail could not be loaded.
+            {t('drawer.tailFailed')}
           </p>
         )}
         <div>
@@ -91,7 +93,7 @@ function FailureCard({ d }: { d: Deployment }) {
             nativeButton={false}
             render={<Link {...deployLogsPath(d)} />}
           >
-            View full logs
+            {t('drawer.viewFullLogs')}
           </Button>
         </div>
       </div>
@@ -110,6 +112,7 @@ function DrawerBody({
   onAction: (kind: DeploymentActionKind, d: Deployment) => void
   onOpenDeployment: (id: string) => void
 }) {
+  const { t } = useTranslation('deployDetail')
   const app = useQuery(appDetailQueryOptions(d.app))
   const [promoteOpen, setPromoteOpen] = useState(false)
   const projectId = app.data?.project_id
@@ -122,7 +125,9 @@ function DrawerBody({
         <StatusCell d={d} now={now} />
         <EnvPill d={d} />
         {d.is_live && (
-          <span className="text-xs font-medium text-tone-success">Live</span>
+          <span className="text-xs font-medium text-tone-success">
+            {t('drawer.live')}
+          </span>
         )}
       </div>
       {hasNote(d) ? (
@@ -144,29 +149,31 @@ function DrawerBody({
         }}
       />
       {d.status === 'failed' && <FailureCard d={d} />}
-      <Section title="Timing">
+      <Section title={t('drawer.timing')}>
         <dl className="flex flex-col gap-1">
-          <Row label="Started">
+          <Row label={t('drawer.started')}>
             <RelativeTime at={d.started_at} live />
           </Row>
           {d.finished_at && (
-            <Row label="Finished">
+            <Row label={t('drawer.finished')}>
               <RelativeTime at={d.finished_at} />
             </Row>
           )}
-          <Row label="Duration">{durationLabel(d, now) || 'Not finished'}</Row>
+          <Row label={t('drawer.duration')}>
+            {durationLabel(d, now) || t('drawer.notFinished')}
+          </Row>
         </dl>
       </Section>
-      <Section title="Source">
+      <Section title={t('drawer.source')}>
         <dl className="flex flex-col gap-1">
-          <Row label="Trigger">{triggerLabel(d.trigger)}</Row>
+          <Row label={t('drawer.trigger')}>{triggerLabel(d.trigger)}</Row>
           {rollback && d.rollback_of && (
-            <Row label="Rollback to">
+            <Row label={t('drawer.rollbackTo')}>
               <span className="font-mono">{shortId(d.rollback_of)}</span>
             </Row>
           )}
           {d.branch && (
-            <Row label="Branch">
+            <Row label={t('drawer.branch')}>
               <span className="inline-flex items-center gap-1 font-mono">
                 <GitBranchIcon className="size-3.5" aria-hidden="true" />
                 {d.branch}
@@ -174,7 +181,7 @@ function DrawerBody({
             </Row>
           )}
           {d.commit_sha && (
-            <Row label="Commit">
+            <Row label={t('drawer.commit')}>
               <span className="inline-flex items-center gap-1 font-mono">
                 <GitCommitIcon className="size-3.5" aria-hidden="true" />
                 {shortSha(d.commit_sha)}
@@ -182,17 +189,17 @@ function DrawerBody({
             </Row>
           )}
           {d.commit_message && (
-            <Row label="Message">
+            <Row label={t('drawer.message')}>
               <span className="block max-h-40 overflow-y-auto text-left whitespace-pre-wrap">
                 {d.commit_message}
               </span>
             </Row>
           )}
-          {d.author && <Row label="Author">{d.author}</Row>}
+          {d.author && <Row label={t('drawer.author')}>{d.author}</Row>}
           {d.pr_number !== null && (
-            <Row label="Pull request">#{d.pr_number}</Row>
+            <Row label={t('drawer.pullRequest')}>#{d.pr_number}</Row>
           )}
-          <Row label="App">
+          <Row label={t('drawer.app')}>
             <Link
               to="/apps/$name/overview"
               params={{ name: d.app }}
@@ -203,10 +210,10 @@ function DrawerBody({
           </Row>
         </dl>
       </Section>
-      <Section title="Image">
+      <Section title={t('drawer.image')}>
         <ImageRefChip d={d} />
       </Section>
-      <Section title="Domains">
+      <Section title={t('drawer.domains')}>
         {domains.length > 0 ? (
           <ul className="flex flex-col gap-0.5 font-mono text-sm">
             {domains.map((dom) => (
@@ -215,11 +222,11 @@ function DrawerBody({
           </ul>
         ) : (
           <p className="text-sm text-muted-foreground">
-            {app.isPending ? 'Loading domains' : 'No domains configured.'}
+            {app.isPending ? t('drawer.loadingDomains') : t('drawer.noDomains')}
           </p>
         )}
       </Section>
-      <Section title="Preview">
+      <Section title={t('drawer.preview')}>
         <DeployPreviewThumb
           appName={d.app}
           deploymentId={d.id}
@@ -229,7 +236,7 @@ function DrawerBody({
           className="w-full"
         />
       </Section>
-      <Section title="Supply chain">
+      <Section title={t('drawer.supplyChain')}>
         <SupplyChainSection
           appName={d.app}
           deploymentId={d.id}
@@ -245,7 +252,7 @@ function DrawerBody({
           nativeButton={false}
           render={<Link {...deployLogsPath(d)} />}
         >
-          View full logs
+          {t('drawer.viewFullLogs')}
         </Button>
       )}
       {projectId && (

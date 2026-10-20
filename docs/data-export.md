@@ -20,6 +20,9 @@ Metrics, logs and the audit log stay on the control plane and its nodes by defau
 | Logs | `logs_newrelic`, `logs_datadog`, `logs_axiom`, `logs_betterstack` | The vendor's own ingest API, you supply only a key |
 | Audit log | `audit_webhook` | NDJSON batches over HTTP POST, optional HMAC signature |
 | Audit log | `audit_s3` | NDJSON objects in a connected storage destination |
+| Audit log | `audit_splunk` | Splunk HTTP Event Collector (HEC) events |
+| Audit log | `audit_syslog` | RFC 5424 over TCP, TLS or UDP with structured data |
+| Audit log | `audit_otlp` | OTLP/HTTP JSON log records |
 | Audit log | download | `GET /api/v1/audit-log/export`, NDJSON or CSV |
 
 Manage destinations from **Settings, Data export** in the dashboard or with `levelrail-cli export destinations`.
@@ -134,6 +137,33 @@ def verify(key: bytes, header: str, body: bytes, tolerance=300) -> bool:
 
 Tokens, bearer values, URL credentials and token-shaped strings are masked in every exported field. By default streaming starts at the moment the destination is created. `--backfill` starts at the oldest audit row instead.
 
+### Splunk, syslog and OpenTelemetry sinks
+
+Three streaming sinks feed a SIEM directly. All three use the same cursor, retry and breaker as the webhook, and all three send the same fields, listed in [Audit event schema](/audit-event-schema).
+
+| Kind | Endpoint | Options |
+| --- | --- | --- |
+| `audit_splunk` | `https://splunk.example.com:8088` (the `/services/collector/event` path is added when missing) | HEC token (`--api-key-env`, stored encrypted), `--index`, `--source`, `--source-type`, `--gzip` |
+| `audit_syslog` | `udp://`, `tcp://` or `tls://` host and port | `--facility` (default `authpriv`), `--app-name` |
+| `audit_otlp` | `https://otel.example.com:4318` (`/v1/logs` is added when missing) | `--header` for credentials (stored encrypted), `--label` for extra resource attributes, `--gzip` |
+
+- **Splunk.** Each row is one HEC event with `time`, `host`, `source`, `sourcetype`, `index` and the record as `event`. The token is sent as `Authorization: Splunk <token>` and is never returned by the API or written to an event.
+- **Syslog.** Messages are RFC 5424. TCP and TLS use octet counting. Actor, ability, method, path, status, remote address and surface are in the `audit@32473` structured data element. UDP carries one message per datagram and is cut at 1400 bytes, so prefer TCP or TLS for a log that must be complete. A TCP write that succeeds only means the kernel took it, so a collector that drops data after accepting it can still lose rows. Splunk and OTLP confirm each batch with an HTTP response.
+- **OpenTelemetry.** JSON encoded `ExportLogsServiceRequest`. `service.name` is the product short name, so it follows the brand. Severity is `ERROR` for 5xx, `WARN` for 4xx and `INFO` otherwise.
+- **TLS.** Certificates are verified. `--insecure-skip-verify` (or the switch in the dashboard, which warns) turns verification off for one destination, for a collector you control with a self-signed certificate.
+- **Private collectors.** An internal Splunk or syslog host is refused unless `APP_EXPORT_ALLOW_PRIVATE_NETWORKS=true`. Cloud metadata and link-local addresses (169.254.0.0/16, `fe80::/10`, and similar) are refused even then, at save time and at every connection.
+- **Test.** **Send test** (or `levelrail-cli export destinations test <id>`) delivers one synthetic event. A failure comes back with a typed fix: replace the token, accept a certificate, check reachability, check the index or path, or allow private networks. In the dashboard the fix is a button that applies the change and tests again.
+- **Falling behind.** There is no in-memory queue for audit sinks: the audit log is the buffer, so a failing sink never drops a row, and its cursor stays on the last accepted batch. Create an alert rule of kind `export_behind` to be told when a destination keeps failing (default 15 minutes, set with `--for-duration`).
+
+```bash
+export HEC_TOKEN=...
+levelrail-cli export destinations create --name splunk --kind audit_splunk \
+  --endpoint https://splunk.example.com:8088 --api-key-env HEC_TOKEN --index audit --gzip
+levelrail-cli export destinations create --name siem --kind audit_syslog --endpoint tls://siem.example.com:6514
+levelrail-cli export destinations create --name otel --kind audit_otlp --endpoint https://otel.example.com:4318 --header "x-api-key=..."
+levelrail-cli apps alerts create <app> --kind export_behind --name "audit sink behind"
+```
+
 ### Delivery semantics
 
 - A cursor (timestamp and row id) is saved after every successful batch, so a restart resumes where it stopped.
@@ -203,7 +233,7 @@ levelrail-cli otel destinations list
 - Container log lines are handed to exporters through a non-blocking subscription. A slow destination cannot slow a container, the log store, a deploy or the API.
 - A batch is retried with exponential backoff and jitter up to `APP_EXPORT_MAX_ATTEMPTS` times. Responses in the 4xx range other than 408 and 429 are not retried, because retrying cannot fix them.
 - After `APP_EXPORT_BREAKER_FAILURES` consecutive failed batches a destination backs off for `APP_EXPORT_BREAKER_COOLDOWN`, then tries one batch.
-- Endpoints are validated when saved and again at every connection, including redirects: private, loopback and link-local addresses are refused unless `APP_EXPORT_ALLOW_PRIVATE_NETWORKS=true`. Endpoints cannot embed credentials.
+- Endpoints are validated when saved and again at every connection, including redirects: private and loopback addresses are refused unless `APP_EXPORT_ALLOW_PRIVATE_NETWORKS=true`. Cloud metadata and link-local addresses are always refused. Endpoints cannot embed credentials.
 - Headers and signing keys are stored with envelope encryption and are never returned. The API shows header names and whether a key is set.
 - Each destination shows its last success, last error, queue depth, dropped and failed counts, and breaker state, in the dashboard, with `levelrail-cli export destinations status <id>`, and as `export_*` metrics.
 
@@ -212,6 +242,7 @@ levelrail-cli otel destinations list
 ```
 levelrail-cli export destinations list
 levelrail-cli export destinations create --name N --kind K [--endpoint URL] [--api-key-env VAR] [--region us|eu] [--site HOST] [--dataset NAME] [--app A] [--min-level L] [--header K=V] [--hmac-key KEY] [--storage-target ID] [--label K=V] [--interval S] [--backfill] [--disabled]
+                                     [--index I] [--source S] [--source-type T] [--facility F] [--app-name N] [--gzip] [--insecure-skip-verify]
 levelrail-cli export destinations test <id>
 levelrail-cli export destinations status <id>
 levelrail-cli export destinations enable|disable <id>

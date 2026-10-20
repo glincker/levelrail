@@ -23,10 +23,23 @@ type appFilterStore interface {
 func parseAppListFilter(r *http.Request) store.AppListFilter {
 	q := r.URL.Query()
 	f := store.AppListFilter{
-		Query:       q.Get("q"),
-		ProjectID:   q.Get("project"),
-		Environment: q.Get("environment"),
+		Query:     q.Get("q"),
+		ProjectID: q.Get("project"),
 	}
+	var envs []string
+	for _, raw := range q["environment"] {
+		for _, e := range strings.Split(raw, ",") {
+			if e = strings.TrimSpace(e); e != "" {
+				envs = append(envs, e)
+			}
+		}
+	}
+	if len(envs) == 1 {
+		f.Environment = envs[0]
+	} else {
+		f.Environments = envs
+	}
+	f.AnyTag = q.Get("tag_match") == "any"
 	seen := map[string]bool{}
 	for _, raw := range q["tag"] {
 		for _, t := range strings.Split(raw, ",") {
@@ -72,6 +85,13 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	f := parseAppListFilter(r)
+	if bucket := r.URL.Query().Get("status"); bucket != "" {
+		canRead, filtered, err = rt.restrictToStatus(r.Context(), fs, f, bucket, canRead)
+		if err != nil {
+			rt.internalError(w, "api: list apps: status filter failed", err)
+			return
+		}
+	}
 	rank := rt.rankedAppOrder(r, fs, f)
 	var (
 		svcs  []store.DesiredService
@@ -186,17 +206,18 @@ func (rt *Router) environmentNames(ctx context.Context, svcs []store.DesiredServ
 }
 
 type appsSummaryResource struct {
-	Total     int `json:"total"`
-	Running   int `json:"running"`
-	Failing   int `json:"failing"`
-	Deploying int `json:"deploying"`
-	Stopped   int `json:"stopped"`
-	Unknown   int `json:"unknown"`
+	Total         int            `json:"total"`
+	Running       int            `json:"running"`
+	Failing       int            `json:"failing"`
+	Deploying     int            `json:"deploying"`
+	Stopped       int            `json:"stopped"`
+	Attention     int            `json:"attention"`
+	ByEnvironment map[string]int `json:"by_environment"`
 }
 
-// handleAppsSummary handles GET /api/v1/apps-summary: status counts over
-// the same filters as the list, needing NodeID/Domains per app (to detect
-// crossNodeIngressAppCondition) plus one batched conditions query.
+// handleAppsSummary handles GET /api/v1/apps-summary: status and environment
+// counts over the same filters and visibility as the list, so a dashboard
+// can show tiles without downloading every app.
 func (rt *Router) handleAppsSummary(w http.ResponseWriter, r *http.Request) {
 	fs, ok := rt.apps.(appFilterStore)
 	if !ok {
@@ -215,37 +236,34 @@ func (rt *Router) handleAppsSummary(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: apps summary failed", err)
 		return
 	}
-	controllers := make([]string, 0, len(svcs))
 	visible := svcs[:0:0]
 	for _, s := range svcs {
 		if canRead(s.Name) {
 			visible = append(visible, s)
-			controllers = append(controllers, applicationControllerName(s.Name))
 		}
 	}
-	conds, err := rt.deploys.GetConditionsForControllers(r.Context(), controllers)
+	buckets, err := rt.appStatusBuckets(r.Context(), visible)
 	if err != nil {
 		rt.internalError(w, "api: apps summary: batch load conditions failed", err)
 		return
 	}
-	sum := appsSummaryResource{Total: len(visible)}
+	envNames := rt.environmentNames(r.Context(), visible)
+	sum := appsSummaryResource{Total: len(visible), ByEnvironment: map[string]int{}}
 	for _, s := range visible {
-		conditions := conds[applicationControllerName(s.Name)]
-		if cond := rt.crossNodeIngressAppCondition(r.Context(), s); cond != nil {
-			conditions = append(conditions, *cond)
-		}
-		switch summarizeAppConditions(conditions).Label {
-		case "Healthy":
+		switch buckets[s.Name] {
+		case appBucketRunning:
 			sum.Running++
-		case "Attention needed":
+		case appBucketFailing:
 			sum.Failing++
-		case "Reconciling":
-			sum.Deploying++
-		case "Stopped":
+		case appBucketStopped:
 			sum.Stopped++
 		default:
-			sum.Unknown++
+			sum.Deploying++
+		}
+		if name := envNames[s.EnvironmentID]; name != "" {
+			sum.ByEnvironment[name]++
 		}
 	}
+	sum.Attention = sum.Failing
 	writeJSON(w, http.StatusOK, sum)
 }

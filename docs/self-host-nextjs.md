@@ -1,12 +1,12 @@
 ---
-title: "Self-host Next.js on your own server with git push, TLS and rollback"
+title: "Self-host Next.js on your own server with TLS and rollback"
 description: "How to self-host a Next.js app with Levelrail: Dockerfile build, automatic HTTPS, preview environments per pull request and env vars."
 "og:url": "https://docs.levelrail.com/self-host-nextjs"
 ---
 
 **Run Next.js on a server you own, without the glue scripts**
 
-Build from your Dockerfile, get HTTPS, preview environments per pull request, a managed database and one-click rollback, all from a git push.
+Build from your Dockerfile, get HTTPS, preview environments per pull request, a managed database and one-click rollback, deployed on every push to your git host.
 
 [Get started](/getting-started) | [Vercel migration runbook](/migrating-from-vercel)
 

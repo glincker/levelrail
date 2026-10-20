@@ -119,6 +119,7 @@ run "data-rewriting migration is a full run" - "scope=all" has:api-1 -- internal
 run "pipeline-only full run keeps live suites in smoke mode" CI_LIVE_SMOKE=true "scope=all" "live=smoke" lacks:e2e-fleet -- go.mod
 run "pipeline-only full run with ci:live label is full" "CI_LIVE_SMOKE=true CI_LIVE_LABEL=true" "scope=all" "live=full" has:e2e-fleet -- go.mod
 run "web only has no go lanes" - "scope=none" "has_tests=false" -- web/src/App.tsx
+run "moved docker and release-please files plan no go lanes" - "scope=none" "has_tests=false" -- deploy/docker/Dockerfile.levelrail .github/release-please/release-please-config.json deploy/packaging/nfpm/agent.yaml
 
 collect
 

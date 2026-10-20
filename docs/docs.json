@@ -79,6 +79,10 @@
               "index",
               "what-you-need",
               "installing",
+              "getting-started",
+              "quickstart-one-command",
+              "tutorials/deploy-a-docker-app",
+              "profiles",
               "getting-started"
             ],
             "icon": "/assets/icons/download-simple.svg"
@@ -88,6 +92,7 @@
             "pages": [
               "domains-and-ingress",
               "app-exposure",
+              "tutorials/index",
               "tutorials/connect-an-app-to-postgres",
               "tutorials/deploy-from-github-actions",
               "environment-and-secrets",
@@ -107,7 +112,19 @@
               "guides/index",
               "guides/coolify-vs-levelrail",
               "guides/self-host-postgres-with-backups",
-              "guides/zero-downtime-deploys-without-kubernetes"
+              "guides/zero-downtime-deploys-without-kubernetes",
+              "guides/control-levelrail-from-openclaw",
+              "guides/use-a-mac-as-a-private-llm-server",
+              "guides/self-host-ollama-open-webui",
+              "guides/self-host-n8n",
+              "guides/self-host-langflow",
+              "guides/self-host-flowise",
+              "guides/self-host-openclaw",
+              "guides/self-host-qdrant",
+              "guides/self-host-litellm",
+              "guides/run-ai-agents-safely",
+              "guides/openclaw-on-docker-compose-vs-levelrail",
+              "guides/use-ollama-open-webui-with-a-mac-and-levelrail"
             ],
             "icon": "/assets/icons/compass.svg"
           },
@@ -148,6 +165,7 @@
               "git-host-outages",
               "deploy-trace",
               "build-performance",
+              "build-center",
               "scheduled-deploys",
               "scheduled-jobs",
               "image-auto-update",
@@ -200,6 +218,7 @@
             "pages": [
               "managing-databases",
               "database-upgrades",
+              "database-version-catalog",
               "external-databases",
               "connecting-apps-to-databases",
               "backups-and-storage",
@@ -214,6 +233,7 @@
               "log-pipelines",
               "log-budgets",
               "data-export",
+              "audit-event-schema",
               "control-plane-backup",
               "archives",
               "disaster-recovery",
@@ -232,6 +252,7 @@
               "pipelines",
               "pipelines-oidc",
               "git-integrations",
+              "git-push-deploy",
               "import-a-repo",
               "monorepos"
             ],
@@ -256,6 +277,7 @@
               "promotions-and-releases",
               "identity-and-access",
               "sso-saml",
+              "sso-oidc",
               "scim",
               "session-policy",
               "projects-and-organizations"
@@ -307,9 +329,18 @@
             "icon": "/assets/icons/squares-four.svg"
           },
           {
-            "group": "Migrating from other platforms",
+            "group": "Migrate",
             "pages": [
+              "migrate-to-levelrail",
+              "migrate-from-coolify",
+              "migrate-from-dokploy",
+              "migrate-from-caprover",
+              "migrate-from-dokku",
+              "migrate-from-docker-compose",
+              "migration-reference",
               "migrating-from-coolify-dokploy-and-caprover",
+              "migrate-same-server",
+              "migrate-over-ssh",
               "migrating-from-vercel",
               "migrating-from-cloud-run"
             ],
@@ -353,6 +384,7 @@
               "mobile-api",
               "plugins",
               "plugin-publishing",
+              "plugins-first-party",
               "mcp-tool-surface",
               "agent-tooling-audit",
               "kit",
@@ -374,7 +406,6 @@
               "security",
               "threat-model",
               "docker-access",
-              "security-alert-verdicts",
               "comparison",
               "use-cases",
               "white-labeling",
@@ -404,7 +435,6 @@
           {
             "group": "Design proposals",
             "pages": [
-              "design/git-provider-integrations",
               "iam-design"
             ]
           }
@@ -449,6 +479,7 @@
               "self-host/ollama-phi",
               "self-host/ollama-qwen",
               "self-host/open-webui",
+              "self-host/openclaw",
               "self-host/speaches",
               "self-host/stable-diffusion-webui",
               "self-host/text-embeddings-inference",

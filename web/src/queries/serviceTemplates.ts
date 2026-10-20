@@ -50,6 +50,29 @@ export interface ServiceTemplateListItem {
 export interface ServiceTemplateDetail extends ServiceTemplateListItem {
   compose: string
   manifest?: TemplateManifest
+  requirements: TemplateRequirements
+}
+
+export type RequirementsLevel = 'standard' | 'review' | 'elevated'
+
+export interface TemplateFinding {
+  code: string
+  severity: 'info' | 'review' | 'elevated'
+  services?: string[]
+  detail?: string
+  message: string
+}
+
+export interface TemplateProtection {
+  code: string
+  label: string
+}
+
+// Mirrors internal/catalog's Requirements.
+export interface TemplateRequirements {
+  level: RequirementsLevel
+  findings: TemplateFinding[]
+  protections: TemplateProtection[]
 }
 
 export async function fetchServiceTemplates(): Promise<

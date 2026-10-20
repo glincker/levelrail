@@ -94,6 +94,14 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 		}
 		image = unpinnedImage(current.Image)
 	}
+	if image == "" && cfg.knownImagesOnly {
+		previous, err := previousDeployImage(ctx, client, name)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+		_, _ = fmt.Fprintf(stderr, "rolling back to the previous successful deploy, image %s\n", previous)
+		image = previous
+	}
 	if image == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--image is required (or --pull to re-resolve the current tag)"))
 	}

@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { useTranslation } from 'react-i18next'
 import { CpuIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail, ServiceResources } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
@@ -178,6 +179,7 @@ function toResources(values: ResourcesFormValues): ServiceResources {
 // editor sits on the same AppDetail prop as the others and must not let a
 // background refetch stomp unsaved edits in a sibling editor.
 export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
+  const { t } = useTranslation('common')
   const updateApp = useUpdateApp(app.name)
   const notifyRestartRequired = useRestartRequiredToast()
   const { control, register, handleSubmit, formState } =
@@ -216,6 +218,9 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
         <CardDescription>
           Memory, CPU, swap, and CPU pinning limits applied to the container at
           create time. Leave a limit off to run unbounded.
+          {app.memory_from_template
+            ? ` ${t('templateDefaults.memoryNote')}`
+            : null}
         </CardDescription>
       </CardHeader>
       <CardContent>

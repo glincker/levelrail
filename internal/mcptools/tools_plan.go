@@ -77,7 +77,7 @@ func PlannableTools() []string {
 func registerPlanTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "plan_change",
-		Description: "Dry run of a mutating tool call: pass tool and the arguments you would use, get what would change (before and after), whether a freeze window or approval would block it, and the resulting image. Reads only, never executes. Tools that cannot be planned say so and are not run.",
+		Description: "Dry run of a mutating tool call: before and after, freeze or approval blocks, resulting image. Never executes.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in planChangeInput) (*mcp.CallToolResult, PlanResult, error) {
 		res, err := planCall(ctx, client, in.Tool, in.Arguments)
 		if err != nil {

@@ -1,0 +1,292 @@
+# Contributing to Levelrail
+
+Thanks for taking a look at this project. It's early and moving fast,
+so a few conventions keep changes easy to review.
+
+## Before you start
+
+For anything beyond a small fix, open an issue first to talk through the
+approach. This avoids spending time on a PR that doesn't fit the current
+architecture, especially around the reconciler, the agent transport, or
+the database schema, all of which have deliberate design constraints
+that aren't always obvious from the code alone.
+
+For quick questions before opening an issue, ask in the `#levelrail`
+forum on the [GLINR Discord](https://discord.gg/Ar5pcaZB99).
+
+## Branches and commits
+
+- Branch names: `type/short-description`, e.g. `fix/rollback-image-gc`
+  or `feat/agent-reconnect-backoff`.
+- Commit messages follow conventional commits: `type: description`, for
+  example `fix: prevent image gc from pruning rollback targets`. The
+  commit-msg hook enforces the allowed types: `feat`, `fix`, `perf`,
+  `refactor`, `docs`, `test`, `chore`, `ci`, `security`. Use `security`
+  for a fix whose primary purpose is closing a vulnerability, so it gets
+  its own changelog section instead of blending into Bug Fixes.
+- No em dashes or en dashes in commit messages or code comments. Use
+  commas, periods, or parentheses instead.
+- Keep each PR to one logical change. Do not mix a refactor with a
+  feature, or bundle unrelated fixes into the same PR. Smaller PRs get
+  reviewed faster and are easier to revert if something's wrong.
+- State what the PR does not do. If it's a partial implementation
+  (e.g. it lays the groundwork but doesn't wire up the UI yet), say so
+  explicitly in the description.
+- Opening a PR shows the default template. For a type-specific one
+  (feature, fix, refactor, docs), append `?template=feature.md` (or
+  `fix.md`, `refactor.md`, `docs.md`) to the compare/PR URL.
+
+## Fast dev loop
+
+Iterate on the smallest thing that proves the change, and let CI be the
+backstop instead of running it all by hand.
+
+1. **While coding**: test only what you touched, not the whole tree.
+   `scripts/affected-tests.sh` runs the changed packages plus their
+   dependents; for a single package use `go test -short ./internal/foo`.
+   Web: `cd web && npx tsc -b && npx vitest run --changed`.
+2. **Prove it works for real**: unit tests can pass on a feature that does
+   not work. Boot the actual control plane from your tree and drive it with
+   the CLI:
+
+   ```
+   scripts/smoke.sh -- nodes list -- attention
+   ```
+
+   It builds the binaries, starts a dev-mode server in a throwaway data
+   dir (no Docker required), runs each `--` separated CLI command, and
+   fails if any exits non-zero. `SMOKE_KEEP=1` leaves the server running
+   for manual poking.
+3. **Push**: the pre-push hook is a fast lane by default (compile
+   everything, then test only the packages you edited; `internal/api` runs
+   just the tests from test files you changed; no dependents, no
+   `test/e2e`, no coverage gate). It takes seconds. Set
+   `LEVELRAIL_PUSH_SCOPE=affected` for the slower run that includes
+   dependents and the changed-line coverage gate.
+4. **Do not wait on CI**: open the PR, then run
+   `gh pr merge --auto --squash`. GitHub merges it when the required
+   checks pass. If a check fails, fix it on the same branch; that is the
+   only reason to look at CI again.
+
+Dependents, `test/e2e`, and the coverage gate run in CI, and the full
+`-race` sweep runs nightly.
+
+## Branch cleanup
+
+`.github/workflows/branch-cleanup.yml` deletes a pull request's branch
+when the PR merges, and a weekly sweep removes branches whose PR merged
+or was closed unmerged more than 30 days ago. Branches with an open PR
+are never touched, and branches with no PR are only listed in the job
+summary.
+
+## Secret scanning
+
+[gitleaks](https://github.com/gitleaks/gitleaks) scans for committed
+secrets. The pre-commit hook scans only your staged changes (well under a
+second) and is skipped with a hint if gitleaks is not installed
+(`brew install gitleaks`). CI runs the same scan on every PR and push to
+`main` (`.github/workflows/secret-scan.yml`). The dev-mode fixture tokens
+in `test/fixtures/dev-fixtures.yml` and test fixtures are intentionally public and
+allowlisted in `.gitleaks.toml`; extend that file for a genuine false
+positive rather than editing real code. Never commit a real credential:
+if one leaks, rotate it, since removing it from history does not
+un-expose it.
+
+## CI at a glance
+
+A PR shows one gate that matters: **CI required**. It always runs and
+passes only if every job that applies to your change passed, so docs-only
+PRs are not blocked by skipped backend jobs. Under it, jobs run in parallel
+and only for the areas you touched (backend, web, installer). Also on every
+PR: **PR hygiene** (labels, size, description and commit rules, one job) and
+the third-party review bots, which are not required. Flaky-test issues are
+filed by a separate workflow after CI finishes on `main`, not on PRs.
+
+## Running tests
+
+```
+go test ./...
+```
+
+Table-driven tests are expected for pure logic. Reconcilers need a test
+against a fake Docker client covering at least one failure case, since a
+reconciler that only handles the happy path isn't done. `/internal` is
+held to a 70% coverage floor in CI; new code shouldn't lower it even if
+the overall number still passes.
+
+Frontend tests live alongside components in `web/`; see `web/README.md`
+for how to run them.
+
+To find which tests in a package are actually slow, run
+`scripts/go-test-slowest.sh <package>...` (`-t <threshold>` to change the
+cutoff, default `500ms`). It wraps gotestsum's `--jsonfile` plus
+`tool slowest` so that two-step doesn't need hand-assembling every time.
+
+## Flaky tests
+
+CI reruns a failed Go test at most twice (`scripts/ci-go-test.sh`, via
+gotestsum) and a failed vitest test at most twice (CI only). A retry is
+not a pass: every test that needed one is listed under "Passed only on
+retry" or "Flaky Tests" in the job summary, gets a warning annotation,
+and on `main` and in the nightly run opens or updates a GitHub issue
+labeled `flaky-test`. A test that fails every attempt still fails the
+build. Reruns stop entirely when more than 5 tests fail, since that is a
+real breakage, and never happen after a data race.
+
+When a test flakes:
+
+1. Fix it if you can. Most flakes are timing: wait on a condition
+   (`findBy*`, `waitFor`, a readiness probe, a polled status with a
+   deadline) instead of sleeping, and use fake timers instead of real
+   ones.
+2. If it blocks unrelated work and can't be fixed quickly, quarantine
+   it: add a line to `.github/flaky-tests.txt` with its package, test
+   name, an open issue URL, and today's date. Quarantined tests are
+   skipped in the required lanes and run in a non-blocking lane instead.
+3. A quarantined test must be fixed or deleted within 14 days. Overdue
+   entries warn on every PR and fail the nightly quarantine job.
+
+The nightly run (`nightly.yml`) also runs everything with `-race` and
+`-shuffle=on` to expose order dependence, and repeats the packages with
+a flake history (`FLAKE_SWEEP_PACKAGES`) with `-count=3` and no reruns.
+To reproduce a shuffled failure, take the `-test.shuffle <seed>` line
+from the lane's `events.json` (in its `test-results-*` artifact) and run
+`go test -shuffle=<seed> ./internal/pkg/`.
+
+Docker-backed packages (any `*_live_test.go`, `test/e2e`) run in their
+own CI job with `-p 2`, so live containers don't compete for the
+runner's memory with each other and with the rest of the suite.
+
+## Running the linter
+
+```
+golangci-lint run
+```
+
+To scope it to one package while iterating:
+
+```
+golangci-lint run ./internal/store/...
+```
+
+The linter set is deliberately small and fixed (errcheck, govet,
+staticcheck, gosec, revive, ineffassign, unparam), configured in
+`.golangci.yml`. Don't add linters to that config in a feature PR; raise
+it separately if you think the set should change.
+
+## Code style
+
+- Max 500 lines per file (Go) or per component (frontend). Split into
+  smaller units rather than growing a file past that.
+- No `interface{}` or `any` in exported Go signatures without a comment
+  explaining why. Same spirit on the frontend: TypeScript strict mode,
+  no `any`.
+- Wrap errors with context at every package boundary. Don't return a
+  bare `err` across a boundary the caller can't diagnose from.
+- Every blocking call takes a `context.Context` and respects
+  cancellation.
+- Structured logging via `log/slog`. Any log line describing a resource
+  includes its ID.
+- No `Thread.sleep()`-equivalent busy-waiting in production code paths;
+  use proper scheduling or event-driven signaling instead.
+- On the frontend: no data fetching inside component bodies, route
+  loaders prime the query cache and components read from it. Any list
+  that can exceed 50 items is virtualized.
+
+## Adding a service template
+
+The service catalog (`internal/catalog`, served by
+`GET /api/v1/service-templates`) has two sources, merged into one list
+everywhere it's used:
+
+- `internal/catalog/templates_*.go`: the existing, hand-written Go
+  entries. Don't touch these to add a new template.
+- `internal/catalog/contrib/*.yaml`: one YAML file per template. This is
+  the path for contributing a new template without touching Go source or
+  running the Go toolchain.
+
+To add one, create `internal/catalog/contrib/<your-id>.yaml`:
+
+```yaml
+id: your-app
+name: Your App
+slogan: One sentence describing what it does and why it's worth running.
+category: Developer Tools
+documentation_url: https://example.com/docs
+recommended_memory_bytes: 268435456
+compose: |
+  services:
+    your-app:
+      image: ghcr.io/you/your-app:1.2.3
+      ports: ["8080:8080"]
+      volumes:
+        - your_app_data:/data
+      healthcheck:
+        test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
+        interval: 30s
+        timeout: 5s
+        retries: 3
+```
+
+Notes on the fields:
+
+- `id` must be unique across the whole catalog (Go entries included).
+  `go test ./internal/catalog/...` fails the build on a duplicate.
+- `compose` is a real `compose.yaml` body, pasted in as a YAML block
+  scalar (the `|` above), not escaped or quoted. It must parse against
+  this platform's supported Compose subset (`internal/compose`): one
+  container per service, no bind-mount file injection, no
+  `depends_on: service_healthy` ordering. Use an image tag, not `latest`.
+  At least one service needs a `healthcheck:` block.
+- `recommended_memory_bytes` is shown in the UI and applied as the new
+  app's container memory limit (editable under Resources, never lowered on
+  a redeploy). It is not checked against any node's real memory.
+- A single-writer app that locks its state volume sets
+  `x-levelrail-strategy: recreate` and an `x-levelrail-strategy-reason` on
+  its service in the compose body.
+- Pin a real, specific image tag you've verified exists.
+
+Review model: a human reviews every template PR the same way as any
+other PR. There is no automated pipeline that pulls or boots the image,
+and there will not be: an orchestrator platform isn't the place to
+bulk-verify every vendor's image. Please say in your PR description that
+you pulled the image and ran it locally with the volumes mounted (not
+just `docker build`), since that's the one thing a review can't see for
+itself, but this isn't mechanically checked.
+
+See "Branches and commits" and "Code style" above for comment and commit
+conventions; they apply the same way inside a `contrib/*.yaml` file's
+`compose` body as anywhere else.
+
+## Writing migrations
+
+Migrations are forward-only SQL files in `internal/store/migrations/`, named `NNNN_description.sql`. Three checks in `internal/store` (`migrations_lint_test.go`, `migrations_drift_test.go`) run in `-short` and fail the build on the mistakes below.
+
+- **Version numbers.** Numbers are spaced in steps of 10 and parallel authors reserve a block of ten per branch (for example 2380 to 2389) in the dispatch or PR description before writing. Re-check the newest number on the integration branch right before pushing. Versions must be unique and strictly increasing in filename order, padded to four digits.
+- **Never edit a shipped migration.** Fix a bad one with a new migration. Editing is only fine for a file that has not left your branch.
+- **Header comment.** Every new file starts with one comment line saying why it exists.
+- **Rebuilding a table** (`CREATE TABLE x_new`, copy, `DROP TABLE x`, `RENAME`) copies every row under a write lock. Prefer `ALTER TABLE ... ADD COLUMN`. When a rebuild is unavoidable, copy the column list from the current schema (`PRAGMA table_info`), not from an older migration, because the drift test fails when a column disappears. Rebuilding a table listed in `unboundedTables` (audit log, deploy history, usage, events and similar) needs the line `-- migrate: large-table-rebuild-reviewed: <why this is safe>` in the file.
+- **Intentional drops.** Dropping a column or table needs `-- migrate: drops <table>.<column>` (or `<table>.*`) in the file, otherwise the drift test reports a silent loss.
+- **No CHECK lists for extensible enums.** Provider names, engine names and similar lists that grow live in a Go allowlist (see `store.IsOAuthProvider`), validated by the store and the API. A CHECK list forces a table rebuild for every new value.
+- **Testing an upgrade.** `cmd/levelrail/upgrade_matrix_test.go` seeds a database at an older schema with `WithMigrationCeiling`, upgrades it to head and asserts no rows are lost. Add a seed there when your migration transforms existing data. Run the full drift sweep once with `go test ./internal/store -run MigrationDrift` (without `-short`).
+
+## Architecture decision records
+
+Significant architectural choices are recorded as ADRs under `/adr`, one
+per decision, numbered sequentially, including the alternatives that
+were considered and why they were rejected. If your change reverses or
+meaningfully extends a prior architectural decision, add a new ADR
+rather than editing history in place, and reference the one it
+supersedes.
+
+## Reporting bugs and requesting features
+
+Use the issue templates. For security issues, see
+[SECURITY.md](SECURITY.md) instead of opening a public issue.
+
+## Labels
+
+`type/*` and `size/*` are applied automatically (from the branch name,
+changed files, and diff size, see `.github/labeler.yml`). `area/*` is
+also automatic, matching whichever part of `/internal`, `/cmd`, or
+`/web` a PR touches. The full taxonomy lives in `.github/labels.yml`.

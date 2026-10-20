@@ -34,7 +34,7 @@ The site links to services we do not control, such as GitHub and Discord. Their 
 
 ## Security
 
-If you find a vulnerability, report it through the [security policy](https://github.com/glincker/levelrail/blob/main/SECURITY.md) instead of a public issue.
+If you find a vulnerability, report it through the [security policy](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md) instead of a public issue.
 
 ## Changes
 

@@ -1,4 +1,4 @@
-// Command mcp-eval runs ten scripted agent tasks through the real MCP server
+// Command mcp-eval runs scripted agent tasks through the real MCP server
 // and reports pass or fail and the estimated tokens each one costs.
 //
 // By default it serves canned responses from an in-process demo API, so it
@@ -62,9 +62,34 @@ var tasks = []task{
 		{"enable_toolset", map[string]any{"toolsets": []string{"metrics"}}, "metrics"},
 		{"get_cdn_overview", map[string]any{"window": "1h"}, `"window"`},
 	}},
+	{"read a template's security requirements", []call{
+		{"enable_toolset", map[string]any{"toolsets": []string{"security"}}, "security"},
+		{"get_template_requirements", map[string]any{"id": "ghost"}, `"level"`},
+		{"get_security_reachability", nil, `"counts"`},
+	}},
+	{"read migration status", []call{
+		{"enable_toolset", map[string]any{"toolsets": []string{"migrate"}}, "migrate"},
+		{"list_app_import_sessions", nil, `"sessions"`},
+		{"list_database_data_copies", nil, `"copies"`},
+	}},
+	{"read SSO and SCIM state", []call{
+		{"enable_toolset", map[string]any{"toolsets": []string{"identity"}}, "identity"},
+		{"list_sso_connections", nil, `"connections"`},
+		{"get_scim_status", nil, `"tokens"`},
+	}},
+	{"openclaw: list apps", []call{{"list_apps", nil, `"web"`}}},
+	{"openclaw: read logs", []call{
+		{"enable_toolset", map[string]any{"toolsets": []string{"logs"}}, "logs"},
+		{"get_app_logs", map[string]any{"name": "$APP", "since": "1h", "tail": 20}, "listening"},
+	}},
+	{"openclaw: deploy then roll back", []call{
+		{"deploy_app", map[string]any{"name": "$APP", "image": "$IMAGE"}, `"name"`},
+		{"rollback_app", map[string]any{"name": "$APP", "image": "$PREV_IMAGE"}, `"name"`},
+	}},
 }
 
 var demoRoutes = map[string]string{
+	"/api/v1/auth/my-access":             `{"kind":"token","abilities":["root"],"policies":[]}`,
 	"/api/v1/auth/whoami":                `{"kind":"token","name":"demo","abilities":["read","root"]}`,
 	"/api/v1/apps":                       `[{"name":"web","image":"nginx:1","port":80,"replicas":1,"strategy":"rolling"}]`,
 	"/api/v1/apps/web/deploys":           `[{"type":"Ready","status":"True","reason":"Converged","message":"1/1 replicas ready"}]`,
@@ -74,6 +99,29 @@ var demoRoutes = map[string]string{
 	"/api/v1/nodes/failure-simulation":   `{"zone":"eu-1","lost_node_ids":["n1"],"displaced":2,"placed":[],"unplaced":0,"zones":[]}`,
 	"/api/v1/audit-log/verify":           `{"ok":true,"checked":120,"problems":[]}`,
 	"/api/v1/cdn/overview":               `{"window":"1h","has_traffic":true,"requests":1200,"nodes":[]}`,
+	"/api/v1/apps/web/logs":              `{"entries":[{"timestamp":"2026-01-01T00:00:00Z","stream":"stdout","message":"gateway listening on :18789"}],"total":1}`,
+	"/api/v1/service-templates/ghost":    `{"id":"ghost","name":"Ghost","requirements":{"level":"standard","findings":[],"protections":[]}}`,
+	"/api/v1/security/reachability":      `{"counts":{"high":0,"medium":1,"low":0,"info":0},"subjects":[],"findings":[],"rules_readable":true,"restricted_ports":0}`,
+	"/api/v1/migration/apps/sessions":    `{"sessions":[{"id":"s1","platform":"coolify","source_url":"https://old.example.com","step":"plan","states":{"planned":2}}]}`,
+	"/api/v1/imports/platform/databases": `[{"database":"main","engine":"postgres","status":"verified","checked":12,"mismatched":0}]`,
+	"/api/v1/sso/saml/connections":       `[{"id":"c1","name":"Okta","enabled":true,"configured":true,"allowed_domains":[],"certificates":[]}]`,
+	"/api/v1/sso/settings":               `{"enforce_sso":false,"scim_base_url":"https://lr.example.com/api/v1/scim/v2","scim_default_role_id":""}`,
+	"/api/v1/sso/scim/tokens":            `[{"id":"t1","name":"okta","prefix":"scim_ab","last_used_at":null,"revoked_at":null}]`,
+	"/api/v1/settings/beta-features":     `[{"id":"saml-scim","enabled":true,"maturity":"beta"}]`,
+	"POST /api/v1/apps/web/deploys":      `{"name":"web","image":"nginx:2","port":80,"replicas":1,"strategy":"rolling"}`,
+}
+
+var subst *strings.Replacer
+
+func expand(in map[string]any) map[string]any {
+	out := make(map[string]any, len(in))
+	for k, v := range in {
+		if str, ok := v.(string); ok {
+			v = subst.Replace(str)
+		}
+		out[k] = v
+	}
+	return out
 }
 
 type result struct {
@@ -87,12 +135,19 @@ func main() {
 	api := flag.String("api", "", "base URL of a real control plane; default is the in-process demo API")
 	token := flag.String("token", "", "API token for -api")
 	asJSON := flag.Bool("json", false, "print results as JSON")
+	app := flag.String("app", "web", "app the openclaw tasks read, deploy and roll back (live mode)")
+	image := flag.String("image", "nginx:2", "image the openclaw deploy task points the app at (live mode)")
+	prev := flag.String("prev-image", "nginx:1", "image the openclaw rollback task restores (live mode)")
 	flag.Parse()
+	subst = strings.NewReplacer("$APP", *app, "$IMAGE", *image, "$PREV_IMAGE", *prev)
 
 	base, tok, live := *api, *token, *api != ""
 	if !live {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			body, ok := demoRoutes[r.URL.Path]
+			body, ok := demoRoutes[r.Method+" "+r.URL.Path]
+			if !ok {
+				body, ok = demoRoutes[r.URL.Path]
+			}
 			if !ok {
 				http.NotFound(w, r)
 				return
@@ -108,6 +163,13 @@ func main() {
 	failed := 0
 	for _, t := range tasks {
 		r := run(context.Background(), base, tok, live, t)
+		if !r.Pass {
+			failed++
+		}
+		results = append(results, r)
+	}
+	if !live {
+		r := runReadOnlyToken(context.Background())
 		if !r.Pass {
 			failed++
 		}
@@ -146,8 +208,9 @@ func run(ctx context.Context, base, tok string, live bool, t task) result {
 		return res
 	}
 	for _, c := range t.calls {
-		args, _ := json.Marshal(c.args)
-		out, err := session.CallTool(ctx, &mcp.CallToolParams{Name: c.tool, Arguments: c.args})
+		cargs := expand(c.args)
+		args, _ := json.Marshal(cargs)
+		out, err := session.CallTool(ctx, &mcp.CallToolParams{Name: c.tool, Arguments: cargs})
 		if err != nil {
 			res.Detail = fmt.Sprintf("%s: %v", c.tool, err)
 			res.Tokens = tokens
@@ -214,4 +277,60 @@ func report(results []result, asJSON bool) {
 	}
 	_ = w.Flush()
 	fmt.Printf("\n%d/%d passed, ~%d tokens in total\n", passed, len(results), total)
+}
+
+// runReadOnlyToken asserts that a read-only token is never offered a write tool, before or after enabling a toolset.
+func runReadOnlyToken(ctx context.Context) result {
+	res := result{Task: "read-only token never sees write tools"}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/auth/my-access" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write([]byte(`{"kind":"token","abilities":["read"],"policies":[]}`))
+	}))
+	defer srv.Close()
+	server, _ := mcptools.NewServerWithOptions(apiclient.NewClient(srv.URL, "ro"), mcptools.Options{Mode: mcptools.ModeFull, Dynamic: true})
+	st, ct := mcp.NewInMemoryTransports()
+	go func() { _ = server.Run(ctx, st) }()
+	session, err := mcp.NewClient(&mcp.Implementation{Name: "mcp-eval", Version: "0"}, nil).Connect(ctx, ct, nil)
+	if err != nil {
+		res.Detail = "connect: " + err.Error()
+		return res
+	}
+	defer func() { _ = session.Close() }()
+	for _, group := range []string{"apps", "deploys", "domains", "security", "migrate", "identity"} {
+		if _, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "enable_toolset", Arguments: map[string]any{"toolsets": []string{group}}}); err != nil {
+			res.Detail = "enable_toolset: " + err.Error()
+			return res
+		}
+	}
+	tools, err := session.ListTools(ctx, nil)
+	if err != nil {
+		res.Detail = "list tools: " + err.Error()
+		return res
+	}
+	b, _ := json.Marshal(tools.Tools)
+	res.Tokens = len(b) / charsPerToken
+	rootOnly := map[string]bool{"get_security_reachability": true, "list_export_destinations": true, "list_sso_connections": true, "get_scim_status": true, "list_sso_group_mappings": true}
+	offered := map[string]bool{}
+	for _, t := range tools.Tools {
+		offered[t.Name] = true
+		if m, ok := mcptools.Lookup(t.Name); ok && m.Class != mcptools.ClassRead {
+			res.Detail = t.Name + " is offered to a read-only token"
+			return res
+		}
+		if rootOnly[t.Name] {
+			res.Detail = t.Name + " needs root but is offered to a read-only token"
+			return res
+		}
+	}
+	for _, want := range []string{"get_template_requirements", "list_app_import_sessions", "get_app_import_cutover_plan"} {
+		if !offered[want] {
+			res.Detail = want + " is missing for a read-only token"
+			return res
+		}
+	}
+	res.Pass = true
+	return res
 }

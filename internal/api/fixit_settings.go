@@ -23,6 +23,7 @@ func (rt *Router) settingsFixes() []fixit.Fix {
 	return []fixit.Fix{
 		rt.dashboardHTTPSFix(),
 		rt.passkeyRPFix(),
+		rt.trustedProxiesFix(),
 		rt.guidedSettingsFix("settings.email.sender", "email_sender", "Set up an email sender",
 			"Invites, password resets and alerts cannot be delivered until a sender is configured.",
 			"Open Settings, Email, choose a backend and send a test message, then re-check.", rt.checkEmailSender),

@@ -45,7 +45,7 @@ There is no hosted plan today. Levelrail is self-hosted software only, so there 
 
 ## Why it stays this way
 
-Levelrail has one edition by design. Features such as SSO, audit logging and fine-grained roles ship in the same free binary. The comparison page covers how Levelrail differs from other projects and notes that their plans change over time.
+Levelrail has one edition by design. Features such as OAuth and OIDC sign-in, SAML SSO (beta, off by default), audit logging and fine-grained roles ship in the same free binary. The comparison page covers how Levelrail differs from other projects and notes that their plans change over time.
 
 ## At a glance
 

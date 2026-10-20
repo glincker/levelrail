@@ -24,6 +24,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/compose"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/test/e2e/testenv"
 )
 
 // TestComposeHealthcheck_Live_GatesDeploySuccess builds
@@ -35,6 +36,7 @@ import (
 // return a non-nil error and a False/ReadinessFailed condition, proving
 // the probe compose.ToDesiredServices produces is not a decoration.
 func TestComposeHealthcheck_Live_GatesDeploySuccess(t *testing.T) {
+	testenv.RequireFullLive(t)
 	env := newLiveBuildEnv(t)
 	dockerCli, buildClient, runtime := env.DockerCli, env.BuildClient, env.Runtime
 

@@ -3,6 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { AppImportSSHLogin } from './appImportSSH'
 
 export type AppImportVerdict =
   'ready' | 'ready-with-notes' | 'needs-attention' | 'unsupported'
@@ -25,6 +26,7 @@ export type AppImportStep =
   | 'verify'
   | 'volumes'
   | 'cutover'
+  | 'takeover'
 
 export interface AppImportFinding {
   reason: string
@@ -157,12 +159,16 @@ export interface AppImportSource {
   platform: string
   url: string
   token: string
-  // docker platform: the docker inspect JSON, used instead of url and token.
+  // docker, compose and dokku: the pasted file content, used instead of url and token.
   snapshot?: string
+  // dokku: the app the env dump belongs to.
+  dokku_app_name?: string
   allow_loopback?: boolean
   allow_private?: boolean
   insecure_tls?: boolean
   collision?: 'suffix' | 'skip'
+  // docker-ssh: the SSH login used as a read-only transport to the Docker socket.
+  ssh?: AppImportSSHLogin
 }
 
 export interface AppImportVolumeGuide {

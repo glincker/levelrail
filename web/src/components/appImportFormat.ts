@@ -14,6 +14,7 @@ export const APP_IMPORT_STEPS = [
   'verify',
   'volumes',
   'cutover',
+  'takeover',
 ] as const
 
 export type AppImportViewStep = (typeof APP_IMPORT_STEPS)[number]

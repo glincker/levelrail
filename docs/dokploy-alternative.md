@@ -79,13 +79,16 @@ Dokploy is a polished project built on a mature mechanism. These are the design 
     No. It runs plain Docker containers on each node, driven through the Docker Engine API by a reconciler. Placement across nodes is explicit, and cordon and drain are supported.
   </Accordion>
   <Accordion title="How do I migrate from Dokploy?">
-    Use the platform importer, levelrail-cli import platform dokploy with your Dokploy URL. It is read-only against the source and supports --dry-run and --only.
+    Use the platform importer, levelrail-cli import platform dokploy with your Dokploy URL. It is read-only against the source and supports --dry-run and --only. Read [Migrate from Dokploy](/migrate-from-dokploy) for what maps and the downtime window.
   </Accordion>
   <Accordion title="Is Levelrail free?">
     Yes, Apache 2.0 with a single edition and no feature gated behind a plan.
   </Accordion>
   <Accordion title="How mature is it?">
     It is pre-release and moving fast. Single node is the most tested path, and multi-node enrollment, cordon and drain have been verified against real Docker daemons.
+  </Accordion>
+  <Accordion title="Does Levelrail support SSO, SAML and SCIM?">
+    Levelrail has password, passkey and TOTP sign-in, OAuth sign-in with 20 providers and generic OpenID Connect, IAM policies, teams and a hash-chained audit log, all in the one free edition. SAML single sign-on and SCIM provisioning exist but are beta: they sit behind the `saml-scim` feature toggle, are off by default, and are tested against a test identity provider rather than a live Okta or Entra ID tenant. See [SAML and SCIM](/sso-saml). Dokploy also has SSO support; see its own documentation for which protocols and plans.
   </Accordion>
 </AccordionGroup>
 

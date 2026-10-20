@@ -298,7 +298,7 @@ func DeploymentTrigger(source string, hasRollbackTarget bool, prNumber int) stri
 		return DeploymentTriggerPreview
 	}
 	switch source {
-	case DeployAttemptSourceWebhook:
+	case DeployAttemptSourceWebhook, DeployAttemptSourceGitPush:
 		return DeploymentTriggerGitPush
 	case DeployAttemptSourceAutoRollback:
 		return DeploymentTriggerRollback

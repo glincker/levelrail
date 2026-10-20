@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
@@ -34,17 +35,23 @@ type AuditRecord struct {
 	AgentName   string `json:"agent_name,omitempty"`
 	AgentClient string `json:"agent_client,omitempty"`
 	Action      string `json:"action,omitempty"`
+	OnBehalfOf  string `json:"on_behalf_of,omitempty"`
+	ChainSeq    int64  `json:"chain_seq,omitempty"`
+	ChainPrev   string `json:"chain_prev,omitempty"`
+	ChainHash   string `json:"chain_hash,omitempty"`
+	ChainAlg    string `json:"chain_alg,omitempty"`
 }
 
 // NewAuditRecord converts a stored row, masking token-shaped strings, URL
 // credentials and bearer values in every free-text field.
 func NewAuditRecord(e store.AuditEntry) AuditRecord {
-	red := untrusted.RedactTokens
+	red := func(v string) string { return secretmask.Mask(untrusted.RedactTokens(v)) }
 	return AuditRecord{
 		ID: e.ID, Time: e.CreatedAt, ActorType: e.ActorType, ActorID: e.ActorID,
 		ActorName: red(e.ActorName), Ability: e.Ability, Method: e.Method, Path: red(e.Path),
 		Status: e.StatusCode, RemoteAddr: e.RemoteAddr, ClientKind: e.ClientKind,
 		AgentName: red(e.AgentName), AgentClient: red(e.AgentClient), Action: e.Action,
+		OnBehalfOf: red(e.OnBehalfOf), ChainSeq: e.ChainSeq, ChainPrev: e.ChainPrev, ChainHash: e.ChainHash, ChainAlg: e.ChainAlg,
 	}
 }
 

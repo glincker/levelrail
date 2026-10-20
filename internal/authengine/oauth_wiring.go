@@ -28,7 +28,7 @@ type OAuthSettingsSource interface {
 
 // LegacyUserWriter creates and reads platform users and their linked identities (*store.DB).
 type LegacyUserWriter interface {
-	CreateUser(ctx context.Context, u store.User) error
+	CreateProvisionedUser(ctx context.Context, u store.User, roleID string) error
 	SaveOAuthIdentity(ctx context.Context, i store.OAuthIdentity) error
 }
 

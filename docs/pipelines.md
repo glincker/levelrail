@@ -548,7 +548,7 @@ levelrail-cli pipelines insights web ci
 
 The engine stores every run, job, and step in the database with a status and a reason, and re-derives what to do from that state on each pass. If the control plane restarts, jobs recorded as running are picked up again: leftover containers are removed, finished steps are skipped, and the interrupted step runs again. Write steps so that running them twice is safe.
 
-Environment variables tune the engine: `APP_PIPELINE_MAX_PARALLEL_JOBS` (default 4), `APP_PIPELINE_MAX_LOG_LINES` (50000 per job), `APP_PIPELINE_STEP_TIMEOUT` (30m), `APP_PIPELINE_JOB_TIMEOUT` (1h), `APP_PIPELINE_APPROVAL_TIMEOUT` (72h), `APP_PIPELINE_KEEP_RUNS` (100), `APP_PIPELINE_GIT_IMAGE` (the image used for checkout, default `alpine/git`), and `APP_PIPELINE_TICK_INTERVAL`. Artifact, parameter, and webhook limits are listed in their own sections above.
+Environment variables tune the engine: `APP_PIPELINE_MAX_PARALLEL_JOBS` (default 4), `APP_PIPELINE_MAX_LOG_LINES` (50000 per job), `APP_PIPELINE_STEP_TIMEOUT` (30m), `APP_PIPELINE_JOB_TIMEOUT` (1h), `APP_PIPELINE_APPROVAL_TIMEOUT` (72h), `APP_PIPELINE_KEEP_RUNS` (100), `APP_PIPELINE_GIT_IMAGE` (the image used for checkout, default `alpine/git`), `APP_PIPELINE_TICK_INTERVAL` (default 2s, only while a run is active) and `APP_PIPELINE_IDLE_INTERVAL` (default 1m, the safety net poll when no run is active; starting a run wakes the engine at once). Artifact, parameter, and webhook limits are listed in their own sections above.
 
 ## Current limits
 

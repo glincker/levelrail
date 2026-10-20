@@ -6,12 +6,25 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
+
+func TestValidatePublicRepoURLErrorsNeverEchoCredentials(t *testing.T) {
+	for _, raw := range []string{"ssh://bob:s3cret@git.example.com/a/b", "https://bob:s3cret@host:badport/a/b"} {
+		err := ValidatePublicRepoURL(raw)
+		if err == nil {
+			t.Fatalf("%q should be rejected", raw)
+		}
+		if strings.Contains(err.Error(), "s3cret") {
+			t.Fatalf("error leaks the password: %v", err)
+		}
+	}
+}
 
 func TestValidatePublicRepoURL(t *testing.T) {
 	tests := []struct {

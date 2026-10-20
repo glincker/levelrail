@@ -26,14 +26,18 @@ type platformImportRequest struct {
 	Platform string `json:"platform"`
 	URL      string `json:"url"`
 	Token    string `json:"token"`
-	// Snapshot is a docker inspect JSON array, used by the docker platform
-	// in place of a URL and token. It holds container env, so treat it like Token.
-	Snapshot      string   `json:"snapshot,omitempty"`
+	// Snapshot is pasted source content (docker inspect JSON, a compose file or a
+	// dokku env dump) used in place of a URL and token. It holds env, so treat it like Token.
+	Snapshot string `json:"snapshot,omitempty"`
+	// AppName names the one app a dokku env dump describes.
+	AppName       string   `json:"dokku_app_name,omitempty"`
 	InsecureTLS   bool     `json:"insecure_tls,omitempty"`
 	AllowPrivate  bool     `json:"allow_private,omitempty"`
 	AllowLoopback bool     `json:"allow_loopback,omitempty"`
 	Only          []string `json:"only,omitempty"`
 	Collision     string   `json:"collision,omitempty"`
+	// SSH is the login of a docker-ssh source: read-only access to its Docker socket.
+	SSH *sshConnection `json:"ssh,omitempty"`
 }
 
 func envTrue(name string) bool {
@@ -59,8 +63,34 @@ func (rt *Router) decodePlatformImport(w http.ResponseWriter, r *http.Request) (
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return req, nil, false
 	}
+	if err := req.normalizeSSH(); err != nil {
+		req.wipeSecrets()
+		writeError(w, http.StatusBadRequest, err.Error())
+		return req, nil, false
+	}
 	src, ok := rt.openImportSource(w, req)
 	return req, src, ok
+}
+
+// openFileImportSource builds a source from pasted content (docker inspect
+// output, a compose file or a dokku env dump), which never touches the network.
+func openFileImportSource(w http.ResponseWriter, platform platformimport.Platform, req platformImportRequest) (platformimport.Source, bool) {
+	if strings.TrimSpace(req.Snapshot) == "" {
+		writeError(w, http.StatusBadRequest, "snapshot is required for the "+string(platform)+" platform")
+		return nil, false
+	}
+	switch platform {
+	case platformimport.Compose:
+		return platformimport.ComposeSource{Data: []byte(req.Snapshot)}, true
+	case platformimport.Dokku:
+		if strings.TrimSpace(req.AppName) == "" {
+			writeError(w, http.StatusBadRequest, "dokku_app_name is required for the dokku platform")
+			return nil, false
+		}
+		return platformimport.DokkuEnvSource{AppName: strings.TrimSpace(req.AppName), Data: req.Snapshot}, true
+	default:
+		return platformimport.DockerSource{Data: []byte(req.Snapshot)}, true
+	}
 }
 
 // openImportSource validates a decoded request and builds the read-only
@@ -75,12 +105,11 @@ func (rt *Router) openImportSource(w http.ResponseWriter, req platformImportRequ
 		writeError(w, http.StatusBadRequest, "collision must be suffix or skip")
 		return nil, false
 	}
-	if platform == platformimport.Docker {
-		if strings.TrimSpace(req.Snapshot) == "" {
-			writeError(w, http.StatusBadRequest, "snapshot is required for the docker platform (docker inspect output)")
-			return nil, false
-		}
-		return platformimport.DockerSource{Data: []byte(req.Snapshot)}, true
+	if platform == platformimport.DockerSSH {
+		return rt.openDockerSSHSource(w, req)
+	}
+	if platform == platformimport.Docker || platform == platformimport.Compose || platform == platformimport.Dokku {
+		return openFileImportSource(w, platform, req)
 	}
 	policy, err := platformImportPolicy(req)
 	if err != nil {
@@ -155,6 +184,7 @@ func (rt *Router) handleDiscoverPlatformImport(w http.ResponseWriter, r *http.Re
 	if !ok {
 		return
 	}
+	defer req.wipeSecrets()
 	plan, err := rt.buildImportPlan(r.Context(), req, src)
 	if err != nil {
 		rt.writeImportError(w, err, req.Token)
@@ -170,6 +200,7 @@ func (rt *Router) handleApplyPlatformImport(w http.ResponseWriter, r *http.Reque
 	if !ok {
 		return
 	}
+	defer req.wipeSecrets()
 	plan, err := rt.buildImportPlan(r.Context(), req, src)
 	if err != nil {
 		rt.writeImportError(w, err, req.Token)

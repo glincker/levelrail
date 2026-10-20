@@ -48,12 +48,6 @@ export default defineConfig({
               priority: 30,
             },
             {
-              name: 'brand-logos',
-              test: /node_modules[\\/]@thesvg[\\/]/,
-              maxSize: 300_000,
-              priority: 25,
-            },
-            {
               name: 'vendor',
               test: /node_modules[\\/]/,
               tags: ['$initial'],

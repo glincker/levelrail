@@ -114,6 +114,23 @@ export function UpgradeNow() {
   const pre = preflight.data
   const hostBinaryEdge = pre?.edge?.installable === false
   if (!pre || (!pre.update_available && !hostBinaryEdge)) {
+    const schemaBlock = pre?.checks.find(
+      (c) => c.code === 'schema_compat' && c.status === 'fail',
+    )
+    if (!recent && schemaBlock) {
+      return (
+        <div className="space-y-2">
+          <p className="text-sm font-medium">
+            {t('upgradeNow.schemaBlockedTitle', {
+              version: pre?.latest_version ?? '',
+            })}
+          </p>
+          <ul className="space-y-3" aria-label={t('preflight.checksLabel')}>
+            <UpgradeCheckRow check={schemaBlock} />
+          </ul>
+        </div>
+      )
+    }
     if (!recent) return null
     return (
       <UpgradeProgress

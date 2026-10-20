@@ -14,6 +14,7 @@ import {
 import { SAMLConnectionList } from '@/components/settings/sso/SAMLConnectionList'
 import { SSOEnforcementCard } from '@/components/settings/sso/SSOEnforcementCard'
 import { SSOGroupMappingsCard } from '@/components/settings/sso/SSOGroupMappingsCard'
+import { OIDCPolicyList } from '@/components/settings/sso/OIDCPolicyList'
 import { SCIMCard } from '@/components/settings/sso/SCIMCard'
 import {
   samlConnectionsQueryOptions,
@@ -21,6 +22,7 @@ import {
   ssoMappingsQueryOptions,
   ssoSettingsQueryOptions,
 } from '../../queries/sso'
+import { oauthSSOPoliciesQueryOptions } from '../../queries/ssoOidc'
 import { roleListQueryOptions } from '../../queries/roles'
 import { requireExperimental } from '../../lib/experimental'
 
@@ -31,6 +33,7 @@ export const Route = createFileRoute('/settings/sso')({
   loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.ensureQueryData(samlConnectionsQueryOptions()),
+      queryClient.ensureQueryData(oauthSSOPoliciesQueryOptions()),
       queryClient.ensureQueryData(ssoMappingsQueryOptions()),
       queryClient.ensureQueryData(ssoSettingsQueryOptions()),
       queryClient.ensureQueryData(roleListQueryOptions()),
@@ -53,6 +56,9 @@ function SSOSettingsSkeleton() {
 function SSOSettingsPage() {
   const { t } = useTranslation('sso')
   const { data: connections } = useSuspenseQuery(samlConnectionsQueryOptions())
+  const { data: oidcPolicies } = useSuspenseQuery(
+    oauthSSOPoliciesQueryOptions(),
+  )
   const { data: mappings } = useSuspenseQuery(ssoMappingsQueryOptions())
   const { data: settings } = useSuspenseQuery(ssoSettingsQueryOptions())
   const { data: roles } = useSuspenseQuery(roleListQueryOptions())
@@ -67,7 +73,7 @@ function SSOSettingsPage() {
       eyebrow={t('page.eyebrow')}
       title={t('page.title')}
       description={t('page.description')}
-      helpPath="/sso-saml"
+      helpPath="/sso-oidc"
       status={
         <Badge variant={on > 0 ? 'success' : 'muted'}>
           {t('page.connectedCount', { count: on })}
@@ -84,6 +90,7 @@ function SSOSettingsPage() {
       }
     >
       <SAMLConnectionList connections={connections} roles={roles} />
+      <OIDCPolicyList policies={oidcPolicies} roles={roles} />
       <SSOGroupMappingsCard
         key={mappings.mappings.map((m) => m.group).join('|')}
         mappings={mappings.mappings}

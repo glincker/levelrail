@@ -68,7 +68,10 @@ var toolsetDescriptions = map[string]string{
 	"functions":           "Functions.",
 	"global-environments": "Shared env sets across apps.",
 	"iac":                 "Plan and apply declarative resource files.",
+	"identity":            "SSO connections, SCIM status and group mappings (root).",
 	"imports":             "Import plans for apps moving in from other platforms.",
+	"migrate":             "Read-only migration status: import sessions, cutover plans and runs, data copies.",
+	"security":            "Exposure report, export destination health, template requirements.",
 	"inbox":               "Your notification inbox: list and unread count.",
 	"iam":                 "Tokens, policies and access templates.",
 	"images":              "Registry images and credentials.",
@@ -212,20 +215,22 @@ func (c *toolsetController) cost() map[string]toolsetCost {
 }
 
 // exposed reports the toolsets that have at least one tool this mode lists.
-func (c *toolsetController) exposed() map[string]bool {
+func (c *toolsetController) exposed(ctx context.Context) map[string]bool {
 	out := map[string]bool{}
+	abilities := c.opts.probe.get(ctx)
 	for name, m := range toolTable {
-		if c.opts.allows(name, m) {
+		if c.opts.allows(name, m) && abilityAllows(abilities, name, m) {
 			out[m.Group] = true
 		}
 	}
 	return out
 }
 
-func (c *toolsetController) listed(enabled map[string]bool) int {
+func (c *toolsetController) listed(ctx context.Context, enabled map[string]bool) int {
 	n := len(isToolsetMetaToolNames())
+	abilities := c.opts.probe.get(ctx)
 	for name, m := range toolTable {
-		if !c.opts.allows(name, m) {
+		if !c.opts.allows(name, m) || !abilityAllows(abilities, name, m) {
 			continue
 		}
 		if _, core := dynamicCoreTools[name]; core || enabled[m.Group] {
@@ -254,11 +259,11 @@ func (c *toolsetController) register() {
 		Name:        toolListToolsets,
 		Description: "List toolsets with tool count and token cost. Enable one with enable_toolset.",
 		Annotations: ro,
-	}, func(_ context.Context, req *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, listToolsetsOutput, error) {
+	}, func(ctx context.Context, req *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, listToolsetsOutput, error) {
 		enabled := c.state.groups(sessionOf(req))
 		costs := c.cost()
 		var out listToolsetsOutput
-		exposed := c.exposed()
+		exposed := c.exposed(ctx)
 		for _, g := range Groups() {
 			if !exposed[g] {
 				continue
@@ -274,24 +279,24 @@ func (c *toolsetController) register() {
 		Name:        toolEnableToolset,
 		Description: "Add toolsets' tools to this session's tool list.",
 		Annotations: mut,
-	}, func(_ context.Context, req *mcp.CallToolRequest, in toolsetNamesInput) (*mcp.CallToolResult, toolsetChangeOutput, error) {
-		return c.change(req, in, true)
+	}, func(ctx context.Context, req *mcp.CallToolRequest, in toolsetNamesInput) (*mcp.CallToolResult, toolsetChangeOutput, error) {
+		return c.change(ctx, req, in, true)
 	})
 	mcp.AddTool(c.server, &mcp.Tool{
 		Name:        toolDisableToolset,
 		Description: "Remove toolsets' tools from this session's tool list.",
 		Annotations: mut,
-	}, func(_ context.Context, req *mcp.CallToolRequest, in toolsetNamesInput) (*mcp.CallToolResult, toolsetChangeOutput, error) {
-		return c.change(req, in, false)
+	}, func(ctx context.Context, req *mcp.CallToolRequest, in toolsetNamesInput) (*mcp.CallToolResult, toolsetChangeOutput, error) {
+		return c.change(ctx, req, in, false)
 	})
 }
 
-func (c *toolsetController) change(req *mcp.CallToolRequest, in toolsetNamesInput, on bool) (*mcp.CallToolResult, toolsetChangeOutput, error) {
+func (c *toolsetController) change(ctx context.Context, req *mcp.CallToolRequest, in toolsetNamesInput, on bool) (*mcp.CallToolResult, toolsetChangeOutput, error) {
 	sess := sessionOf(req)
 	if sess == nil || len(in.Toolsets) == 0 {
 		return nil, toolsetChangeOutput{}, fmt.Errorf("toolsets is required, see list_toolsets")
 	}
-	exposed := c.exposed()
+	exposed := c.exposed(ctx)
 	names := make([]string, 0, len(in.Toolsets))
 	for _, raw := range in.Toolsets {
 		g := strings.ToLower(strings.TrimSpace(raw))
@@ -317,7 +322,7 @@ func (c *toolsetController) change(req *mcp.CallToolRequest, in toolsetNamesInpu
 		enabled = append(enabled, g)
 	}
 	sort.Strings(enabled)
-	return nil, toolsetChangeOutput{Changed: changed, Enabled: enabled, ToolsListed: c.listed(after)}, nil
+	return nil, toolsetChangeOutput{Changed: changed, Enabled: enabled, ToolsListed: c.listed(ctx, after)}, nil
 }
 
 // middleware filters tools/list to the core plus the session's enabled

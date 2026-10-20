@@ -3,10 +3,13 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/dataexport"
@@ -70,4 +73,26 @@ func exportSpoolDir(lookup func(string) (string, bool)) string {
 		dir = defaultDataDir
 	}
 	return filepath.Join(dir, "export-spool")
+}
+
+// exportHealthSource feeds kind=export_behind alert rules from the stored destinations and their delivery status.
+type exportHealthSource struct{ db *store.DB }
+
+func (s exportHealthSource) ExportHealth(ctx context.Context) ([]alerting.ExportHealth, error) {
+	dests, err := s.db.ListExportDestinations(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list export destinations: %w", err)
+	}
+	out := make([]alerting.ExportHealth, 0, len(dests))
+	for _, d := range dests {
+		st, err := s.db.GetExportStatus(ctx, d.ID)
+		if err != nil {
+			continue
+		}
+		h := alerting.ExportHealth{Name: d.Name, Enabled: d.Enabled, LastError: st.LastError, CircuitOpen: st.CircuitOpen}
+		h.CreatedAt, _ = time.Parse(time.RFC3339Nano, d.CreatedAt)
+		h.LastSuccessAt, _ = time.Parse(time.RFC3339Nano, st.LastSuccessAt)
+		out = append(out, h)
+	}
+	return out, nil
 }

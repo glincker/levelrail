@@ -33,5 +33,9 @@ func (rt *Router) registerModelRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/models/{name}/benchmark", rt.requireAbilityForResource(AbilityWrite, modelResourceFromPath, rt.handleModelBenchmark))
 	mux.HandleFunc("GET /api/v1/model-cache", rt.requireAbility(AbilityRead, rt.handleListModelCache))
 	mux.HandleFunc("POST /api/v1/model-cache/prune", rt.requireAbility(AbilityRoot, rt.handlePruneModelCache))
+	mux.HandleFunc("POST /api/v1/model-endpoints/test", rt.requireAbility(AbilityWrite, rt.handleTestEndpointInput))
+	mux.HandleFunc("POST /api/v1/models/{name}/endpoint/test", rt.requireAbilityForResource(AbilityWrite, modelResourceFromPath, rt.handleTestEndpoint))
+	mux.HandleFunc("PUT /api/v1/models/{name}/endpoint/routing", rt.requireAbilityForResource(AbilityWrite, modelResourceFromPath, rt.handleSetEndpointRouting))
+	mux.HandleFunc("PUT /api/v1/models/{name}/endpoint/credential", rt.requireAbilityForResource(AbilityWriteSensitive, modelResourceFromPath, rt.handleSetEndpointCredential))
 	mux.HandleFunc("GET /api/v1/gpus", rt.requireAbility(AbilityRead, rt.handleListGPUNodes))
 }

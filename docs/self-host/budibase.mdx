@@ -68,6 +68,27 @@ Recommended memory: about 2048 MiB.
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
+## Security and requirements
+
+Level: **Review before deploying**.
+
+What this template needs:
+
+- Image is not pinned to a version tag, so a redeploy can pull different code (`app-service`, `couchdb-service`, `proxy-service`, `worker-service`): budibase.docker.scarf.sh/budibase/apps:latest, budibase.docker.scarf.sh/budibase/worker:latest, budibase/couchdb:latest, budibase/proxy:latest.
+- Publishes ports directly on the host (`proxy-service`): 10000:10000.
+- Passwords and keys are generated at deploy time (`app-service`, `couchdb-service`, `minio-service`, `worker-service`): API_ENCRYPTION_KEY, COUCH_DB_PASSWORD, COUCH_DB_URL, COUCH_DB_USERNAME, INTERNAL_API_KEY, JWT_SECRET, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, API_ENCRYPTION_KEY, COUCH_DB_URL, ENCRYPTION_KEY, INTERNAL_API_KEY, JWT_SECRET, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, COUCHDB_PASSWORD, COUCHDB_USER, MINIO_ROOT_PASSWORD, MINIO_ROOT_USER.
+- Stores data in named volumes (`couchdb-service`, `minio-service`, `redis-service`): budibase_couchdb_data, budibase_minio_data, budibase_redis_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
 ## Deploy Budibase with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Budibase. Review the Compose body and deploy.

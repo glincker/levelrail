@@ -6,7 +6,7 @@ description: "Levelrail is an open source CapRover alternative: plain Docker ins
 
 **Keep the simple CapRover workflow, drop the Swarm dependency**
 
-Levelrail runs apps on plain Docker containers with its own reconciler and a small agent per extra server. Git push to deploy, automatic HTTPS, rollback and an importer for your CapRover apps.
+Levelrail runs apps on plain Docker containers with its own reconciler and a small agent per extra server. Push-to-deploy from your git host, automatic HTTPS, rollback and an importer for your CapRover apps.
 
 [Get started](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 
@@ -76,13 +76,16 @@ CapRover is a long-standing project with a large install base and a one-click ap
     No. It runs plain Docker containers on each node. Placement across servers is explicit, and cordon and drain are supported.
   </Accordion>
   <Accordion title="How do I migrate from CapRover?">
-    Use levelrail-cli import platform caprover with your CapRover URL. It is read-only against the source and supports --dry-run and --only.
+    Use levelrail-cli import platform caprover with your CapRover URL. It is read-only against the source and supports --dry-run and --only. Read [Migrate from CapRover](/migrate-from-caprover) for what maps and the downtime window.
   </Accordion>
   <Accordion title="Does it have a one-click app store?">
-    Levelrail ships a curated template catalog and is expanding it, but CapRover's app store is larger today. Check that the services you need are covered.
+    Levelrail ships a catalog of 300+ one-click templates, each a Compose file the platform deploys. CapRover has its own one-click app store with a different set of apps. Check that the services you need are covered in either catalog.
   </Accordion>
   <Accordion title="Is it free?">
     Yes. Apache 2.0, one edition, nothing behind a paywall.
+  </Accordion>
+  <Accordion title="Does Levelrail support SSO, SAML and SCIM?">
+    Levelrail has password, passkey and TOTP sign-in, OAuth sign-in with 20 providers and generic OpenID Connect, IAM policies, teams and a hash-chained audit log, all in the one free edition. SAML single sign-on and SCIM provisioning exist but are beta: they sit behind the `saml-scim` feature toggle, are off by default, and are tested against a test identity provider rather than a live Okta or Entra ID tenant. See [SAML and SCIM](/sso-saml). For what CapRover supports, see its own documentation.
   </Accordion>
 </AccordionGroup>
 

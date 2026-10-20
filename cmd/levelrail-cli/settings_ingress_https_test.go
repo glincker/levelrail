@@ -38,6 +38,27 @@ func TestRun_SettingsIngressHTTPS(t *testing.T) {
 	}
 }
 
+func TestRun_SettingsIngressHTTPS_EmailOptional(t *testing.T) {
+	var gotReq enableHTTPSRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			_ = json.NewDecoder(r.Body).Decode(&gotReq)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(httpsStatusResource{State: "off", SuggestedDomain: "1-2-3-4.sslip.io", DefaultEmail: "me@glincker.com"})
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{"settings", "ingress", "https", "enable", "--api-url", srv.URL})
+	if gotReq.Email != "" {
+		t.Fatalf("email should be left for the server to default, got %q", gotReq.Email)
+	}
+	stdout, _ := runCLIExpectOK(t, []string{"settings", "ingress", "https", "status", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "me@glincker.com") {
+		t.Errorf("stdout = %q, want the default contact shown", stdout)
+	}
+}
+
 func TestRun_SettingsIngressSet_FallbackDomains(t *testing.T) {
 	var gotBody ingressSettingsResource
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

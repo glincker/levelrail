@@ -44,6 +44,9 @@ type rawService struct {
 	Configs     []any             `yaml:"configs"`
 	Profiles    []string          `yaml:"profiles"`
 	HostAccess  HostAccess        `yaml:",inline"`
+	Strategy    string            `yaml:"x-levelrail-strategy"`
+	// StrategyReason is shown next to the strategy so an operator knows why a template pinned it.
+	StrategyReason string `yaml:"x-levelrail-strategy-reason"`
 	// DependsOnHealthy is filled by Parse from depends_on's long form.
 	DependsOnHealthy []string `yaml:"-"`
 }

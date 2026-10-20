@@ -3,7 +3,7 @@
 // GET .../deployments/{id}/sbom, GET .../deployments/{id}/vulnerabilities and
 // POST .../deployments/{id}/scan.
 
-export type ScanGate = 'off' | 'warn' | 'block_on_critical'
+export type ScanGate = 'off' | 'warn' | 'block_on_critical' | 'block_on_high'
 
 export type VulnSeverity = 'critical' | 'high' | 'medium' | 'low' | 'unknown'
 

@@ -36,6 +36,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/test/e2e/testenv"
 )
 
 const (
@@ -44,6 +45,7 @@ const (
 )
 
 func TestPITR_Live_HTTPRoundTrip_RestoresBeforeMarkerNotAfterMarker(t *testing.T) {
+	testenv.RequireFullLive(t)
 	env := newLiveBuildEnv(t)
 	runtime := env.Runtime
 

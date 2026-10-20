@@ -8,8 +8,7 @@ import (
 	"time"
 )
 
-// OAuth provider names the migrations/0035_users.sql and 0052's CHECK
-// constraints accept.
+// OAuth provider names accepted by IsOAuthProvider.
 const (
 	OAuthProviderGoogle      = "google"
 	OAuthProviderGitHub      = "github"
@@ -29,21 +28,40 @@ const (
 	OAuthProviderSalesforce  = "salesforce"
 	OAuthProviderCodeberg    = "codeberg"
 	OAuthProviderCognito     = "cognito"
+	OAuthProviderDropbox     = "dropbox"
+	OAuthProviderKakao       = "kakao"
+	OAuthProviderPatreon     = "patreon"
 )
 
-// IsOAuthProvider reports whether name is a sign-in provider the settings
-// table and identity table (migrations 0690, 0700) accept.
+// oauthProviders is the single allowlist of sign-in providers. Adding one is
+// a code-only change: the tables carry no provider CHECK list.
+var oauthProviders = []string{
+	OAuthProviderGoogle, OAuthProviderGitHub, OAuthProviderOIDC, OAuthProviderMicrosoft,
+	OAuthProviderGitLab, OAuthProviderBitbucket, OAuthProviderDiscord, OAuthProviderSlack,
+	OAuthProviderLinkedIn, OAuthProviderTwitch, OAuthProviderFacebook,
+	OAuthProviderLinear, OAuthProviderVercel, OAuthProviderHuggingFace, OAuthProviderFigma,
+	OAuthProviderSalesforce, OAuthProviderCodeberg, OAuthProviderCognito,
+	OAuthProviderDropbox, OAuthProviderKakao, OAuthProviderPatreon,
+}
+
+// OAuthProviders returns a copy of the provider allowlist.
+func OAuthProviders() []string {
+	return append([]string(nil), oauthProviders...)
+}
+
+// IsOAuthProvider reports whether name is an allowed sign-in provider. The
+// store write paths and the API both validate through it.
 func IsOAuthProvider(name string) bool {
-	switch name {
-	case OAuthProviderGoogle, OAuthProviderGitHub, OAuthProviderOIDC, OAuthProviderMicrosoft,
-		OAuthProviderGitLab, OAuthProviderBitbucket, OAuthProviderDiscord, OAuthProviderSlack,
-		OAuthProviderLinkedIn, OAuthProviderTwitch, OAuthProviderFacebook,
-		OAuthProviderLinear, OAuthProviderVercel, OAuthProviderHuggingFace, OAuthProviderFigma,
-		OAuthProviderSalesforce, OAuthProviderCodeberg, OAuthProviderCognito:
-		return true
+	for _, p := range oauthProviders {
+		if p == name {
+			return true
+		}
 	}
 	return false
 }
+
+// ErrUnknownOAuthProvider is returned when a write names a provider outside the allowlist.
+var ErrUnknownOAuthProvider = errors.New("store: unknown oauth provider")
 
 // OAuthIdentity is one linked external account. Uniqueness (at most one
 // per provider per user, never linked to two users) is enforced by
@@ -67,6 +85,9 @@ var ErrOAuthIdentityAlreadyLinked = errors.New("store: oauth identity already li
 // SaveOAuthIdentity inserts a new linked identity, insert-only, never an
 // upsert.
 func (db *DB) SaveOAuthIdentity(ctx context.Context, i OAuthIdentity) error {
+	if !IsOAuthProvider(i.Provider) {
+		return fmt.Errorf("%w: %q", ErrUnknownOAuthProvider, i.Provider)
+	}
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO user_oauth_identities (id, user_id, provider, provider_user_id, created_at)
 		VALUES (?, ?, ?, ?, ?)

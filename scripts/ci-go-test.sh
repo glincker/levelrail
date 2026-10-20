@@ -8,7 +8,7 @@
 # Environment:
 #   GO_TEST_FLAGS       extra go test flags (e.g. "-short -timeout=13m")
 #   COVERPROFILE        write a merged coverage profile here (optional)
-#   RERUNS              reruns per failed test (default 2, 0 disables)
+#   RERUNS              reruns per failed test (default 2 on docker and e2e lanes, 0 elsewhere)
 #   RERUN_MAX_FAILURES  skip reruns entirely above this many failures (default 5)
 #   SHARD               "i/n": run shard i of n, packed by scripts/ci-test-weights.txt (single package only)
 #   TEST_NAME_FILTER    "|"-joined regex: shard only tests matching this,
@@ -31,7 +31,11 @@ packages=("$@")
 root="$(git rev-parse --show-toplevel)"
 cd "$root" || exit 2
 
-reruns="${RERUNS:-2}"
+case "$lane" in
+docker | e2e*) default_reruns=2 ;;
+*) default_reruns=0 ;;
+esac
+reruns="${RERUNS:-$default_reruns}"
 max_failures="${RERUN_MAX_FAILURES:-5}"
 quarantine_mode="${QUARANTINE:-skip}"
 out="${RESULTS_DIR:-test-results}/$lane"
@@ -183,7 +187,7 @@ done
 	echo "### Go tests: $lane"
 	if [ -s "$out/flaky.txt" ]; then
 		echo
-		echo "Passed only on retry (flaky, see CONTRIBUTING.md#flaky-tests):"
+		echo "Passed only on retry (flaky, see .github/CONTRIBUTING.md#flaky-tests):"
 		echo
 		echo "| Package | Test | Failed / total attempts |"
 		echo "| --- | --- | --- |"

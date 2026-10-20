@@ -153,7 +153,7 @@ A short list for the server itself, independent of anything Levelrail configures
 
 ## Audit log
 
-Every mutating API call from an authenticated principal is recorded: who, what, when, and the outcome. The log is queryable and exportable as CSV. See [Identity and access](/identity-and-access#audit-log).
+Every mutating API call from an authenticated principal is recorded: who, what, when, and the outcome. The log is queryable, exportable as NDJSON or CSV, verifiable as a hash chain, and streamable to a webhook or an S3 bucket. See [Identity and access](/identity-and-access#audit-log).
 
 ## Container hardening
 
@@ -248,13 +248,13 @@ Data and install directories must be absolute, free of shell and unit metacharac
 
 ## Reporting a vulnerability
 
-Levelrail does not yet have a dedicated security disclosure address. Until one exists, open a private security advisory on the [GitHub repository](https://github.com/glincker/levelrail/security/advisories/new) rather than a public issue. The repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/SECURITY.md) has the full policy, including what to expect after reporting.
+Levelrail does not yet have a dedicated security disclosure address. Until one exists, open a private security advisory on the [GitHub repository](https://github.com/glincker/levelrail/security/advisories/new) rather than a public issue. The repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md) has the full policy, including what to expect after reporting.
 
 ## What this does not cover yet
 
-- No LDAP. Sign-in is local password, passkey, OAuth (Google, GitHub, Microsoft, generic OIDC) or experimental [SAML](/sso-saml), with experimental [SCIM](/scim) provisioning. SAML and SCIM run on the sign-in library behind Levelrail's own response and token checks and have not been verified against a live identity provider yet.
+- No LDAP. Sign-in is local password, passkey, email sign-in code, OAuth or OIDC (20 providers plus generic OpenID Connect, see [Identity and access](/identity-and-access)), or beta [SAML](/sso-saml) single sign-on (off by default), with beta [SCIM](/scim) provisioning. SAML and SCIM sit behind the `saml-scim` feature toggle and have not been verified against a live identity provider yet.
 - [Secret scanning](/secret-scanning) checks the checked-out tree and plain env values at deploy time, but not git history or image layers.
-- Sessions live in memory, so every control plane restart (including an upgrade) signs everyone out. API tokens are unaffected.
+- Dashboard sessions are stored in the database and survive a restart. Sessions minted from API-token session links are held in memory and end on restart. API tokens are unaffected.
 - `GET /api/v1/system/containers` lists containers Levelrail does not manage only to `root` callers. Other callers with `read` see managed containers only.
 - Container hardening is on by default but has no per-app override yet, and read-only root filesystems stay opt-in.
 - Rootless Docker and Podman detection and hardening adjustment ([above](#rootless-and-podman)) exist but are not verified against a real installation; bind-mount ownership and cgroup resource limits beyond `PidsLimit` are known gaps.

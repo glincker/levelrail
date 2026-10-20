@@ -38,7 +38,7 @@ func registerSearchTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "search_actions",
-		Description: "Find actions (deploy, restart, logs, rollback, backup now, add domain) the token may run on a named app or database. Lists only, runs nothing. Each hit's action gives the exact mcp_tool to call, mcp_args already filled in and mcp_needs for what you must still supply; an empty mcp_tool means no tool exists, use the href.",
+		Description: "Find actions the token may run on an app or database. Each hit names the mcp_tool and mcp_args to call; empty mcp_tool means use the href. Runs nothing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in searchActionsInput) (*mcp.CallToolResult, searchOutput, error) {
 		resp, err := client.Search(ctx, in.Query, "action", in.Limit, "")
 		if err != nil {

@@ -56,6 +56,8 @@ export interface NodeResource {
   // itself, the only node with real disk_used_bytes/disk_total_bytes/
   // memory_total_bytes/memory_available_bytes host metrics.
   is_local: boolean
+  // Apps plus databases placed here; the list endpoint only.
+  resource_count?: number
   // Machine-readable reason a status needs action, e.g. a pending node
   // whose agent never connected after its join token was spent.
   status_reason?: 'enrolled_never_connected'

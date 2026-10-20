@@ -270,12 +270,17 @@ func (h Hardening) applyProxy(rp *ReverseProxyHandler) {
 	}
 }
 
-// bodyLimit returns the request_body handler to prepend, or nil when unlimited.
-func (h Hardening) bodyLimit() any {
-	if h.MaxBodyBytes <= 0 {
+// bodyLimitFor returns the request_body handler to prepend, or nil when
+// unlimited. A positive override beats the instance cap; h may be nil.
+func (h *Hardening) bodyLimitFor(override int64) any {
+	limit := override
+	if limit <= 0 && h != nil {
+		limit = h.MaxBodyBytes
+	}
+	if limit <= 0 {
 		return nil
 	}
-	return RequestBodyHandler{Handler: "request_body", MaxSize: h.MaxBodyBytes}
+	return RequestBodyHandler{Handler: "request_body", MaxSize: limit}
 }
 
 const unavailablePageTemplate = `<!DOCTYPE html>

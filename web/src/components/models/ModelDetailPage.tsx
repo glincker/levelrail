@@ -15,6 +15,7 @@ import { DeleteModelDialog } from '../DeleteModelDialog'
 import { LiveModelLogViewer } from '../LiveModelLogViewer'
 import { ModelKeysPanel } from '../ModelKeysPanel'
 import { ModelUsageCard } from '../ModelUsageCard'
+import { EndpointHealthBadge } from './EndpointHealthBadge'
 import { ModelOverviewTab } from './ModelOverviewTab'
 
 const TAB_LABEL: Record<ModelTab, string> = {
@@ -53,11 +54,18 @@ export function ModelDetailPage({
           <Badge variant="outline" className="font-mono text-[11px]">
             {model.engine}
           </Badge>
-          <StatusPill
-            tone={modelTone(model)}
-            label={modelStatusLabel(model)}
-            live={!model.status.ready && !deleting}
-          />
+          {model.external ? (
+            <EndpointHealthBadge
+              state={model.external.health.state}
+              latencyMs={model.external.health.latency_ms}
+            />
+          ) : (
+            <StatusPill
+              tone={modelTone(model)}
+              label={modelStatusLabel(model)}
+              live={!model.status.ready && !deleting}
+            />
+          )}
         </div>
         <DeleteModelDialog name={model.name} disabled={deleting} />
       </div>

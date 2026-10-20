@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 import type { AppListEntry } from '../../types/appDetail'
-import { countBuckets } from '../../lib/appsListView'
+import type { AppsSummary } from '../../queries/appPages'
 import { buildNextSteps, type NextStep } from '../../lib/dashboardHome'
 import { attentionToSuggestions } from '../../lib/fleetSuggestions'
 import {
@@ -152,13 +152,19 @@ export function NextStepsView({
   )
 }
 
-export function NextSteps({ apps }: { apps: AppListEntry[] }) {
+export function NextSteps({
+  summary,
+  sample,
+}: {
+  summary: AppsSummary
+  sample: AppListEntry[]
+}) {
   const { t } = useTranslation('dashboard')
   const { visible, isLoading } = useAttentionSummary()
   const { data: guide } = useSetupGuide()
   const run = useSuggestionRunner()
   const now = useMinuteNow()
-  const names = useMemo(() => pickSampleApps(apps, SAMPLE_APP_CAP), [apps])
+  const names = useMemo(() => pickSampleApps(sample, SAMPLE_APP_CAP), [sample])
   const deploys = useFleetDeploys(names)
   const steps = buildNextSteps({
     specs: attentionToSuggestions(visible, t),
@@ -166,8 +172,8 @@ export function NextSteps({ apps }: { apps: AppListEntry[] }) {
     limit: MAX_SHOWN,
   })
   const quiet = {
-    running: countBuckets(apps).running,
-    total: apps.length,
+    running: summary.running,
+    total: summary.total,
     deploys: deploysPerHour(flattenAttempts(deploys.byApp), now).total,
   }
   return (

@@ -55,6 +55,9 @@ type ModelResource struct {
 	// currently in that same group on the same node.
 	SwapGroup     string   `json:"swap_group,omitempty"`
 	SharesGPUWith []string `json:"shares_gpu_with,omitempty"`
+
+	// External is set for models served by an endpoint Levelrail does not run.
+	External *ExternalEndpoint `json:"external,omitempty"`
 }
 
 // CreateModelRequest mirrors internal/api's createModelRequest.
@@ -79,6 +82,8 @@ type CreateModelRequest struct {
 	MemoryMiB     int     `json:"memory_mib,omitempty"`
 	WeightsFile   string  `json:"weights_file,omitempty"`
 	AcceptLicense bool    `json:"accept_license,omitempty"`
+
+	External *ExternalEndpointRequest `json:"external,omitempty"`
 }
 
 // CreateModelResponse is a ModelResource plus the one-time API key.

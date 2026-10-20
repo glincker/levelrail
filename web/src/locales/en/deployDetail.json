@@ -8,7 +8,16 @@
   "state": {
     "title": "Deploy status",
     "now": "Right now",
-    "next": "What happens next",
+    "next": {
+      "queued": "It starts automatically when the deploy ahead of it finishes.",
+      "held": "Release it from the deploy history, or wait for the freeze window to end.",
+      "building": "When the build succeeds, the new container starts and must pass its health check before it receives traffic.",
+      "buildingStatic": "When the build succeeds, the output is published directly. No container is started.",
+      "failed": "Open the Build tab to read the failing step, fix it, then deploy again.",
+      "rolloutFailed": "The previous version keeps serving. Check the container logs and the health path, then redeploy or roll back.",
+      "rollingOut": "Once the health check passes, traffic cuts over and the old container is removed.",
+      "staticPublished": "Nothing else to wait for. Visit the site to confirm the new files are served."
+    },
     "label": {
       "queued": "Queued",
       "held": "Held",
@@ -39,16 +48,6 @@
       "rollingOutNoImage": "Build finished. The roll out is waiting because no container image exists for this app yet, {{elapsed}} so far.",
       "untracked": "The build finished. Roll out results are only tracked for the latest deploy.",
       "untrackedImage": "A pre-built image was deployed. Roll out results are only tracked for the latest deploy."
-    },
-    "next": {
-      "queued": "It starts automatically when the deploy ahead of it finishes.",
-      "held": "Release it from the deploy history, or wait for the freeze window to end.",
-      "building": "When the build succeeds, the new container starts and must pass its health check before it receives traffic.",
-      "buildingStatic": "When the build succeeds, the output is published directly. No container is started.",
-      "failed": "Open the Build tab to read the failing step, fix it, then deploy again.",
-      "rolloutFailed": "The previous version keeps serving. Check the container logs and the health path, then redeploy or roll back.",
-      "rollingOut": "Once the health check passes, traffic cuts over and the old container is removed.",
-      "staticPublished": "Nothing else to wait for. Visit the site to confirm the new files are served."
     },
     "mismatch": {
       "buildOkRolloutPending": "The build finished, but the roll out has not completed. The build status and the roll out status are tracked separately, so both are true at once.",
@@ -194,5 +193,34 @@
   "page": {
     "notInHistory": "This deploy attempt is not in this app's current history.",
     "currentChip": "Current"
+  },
+  "drawer": {
+    "whatWentWrong": "What went wrong",
+    "failedAtStep": "Failed at step: {{step}}",
+    "noErrorRecorded": "The deploy failed. No error was recorded.",
+    "lastLogLines": "Last log lines",
+    "tailFailed": "The log tail could not be loaded.",
+    "viewFullLogs": "View full logs",
+    "live": "Live",
+    "timing": "Timing",
+    "started": "Started",
+    "finished": "Finished",
+    "duration": "Duration",
+    "notFinished": "Not finished",
+    "source": "Source",
+    "trigger": "Trigger",
+    "rollbackTo": "Rollback to",
+    "branch": "Branch",
+    "commit": "Commit",
+    "message": "Message",
+    "author": "Author",
+    "pullRequest": "Pull request",
+    "app": "App",
+    "image": "Image",
+    "domains": "Domains",
+    "loadingDomains": "Loading domains",
+    "noDomains": "No domains configured.",
+    "preview": "Preview",
+    "supplyChain": "Supply chain"
   }
 }

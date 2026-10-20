@@ -9,6 +9,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/profile"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 )
@@ -35,7 +36,7 @@ func (r supplyChainResolver) AttemptExists(ctx context.Context, attemptID string
 
 // newSupplyChainService builds the SBOM and scan service and starts its sweep.
 func newSupplyChainService(ctx context.Context, logger *slog.Logger, db *store.DB, client *docker.Client, dataDir, namespace string) *supplychain.Service {
-	cfg := supplychain.ConfigFromEnv(os.LookupEnv, logger)
+	cfg := supplychain.ConfigFromEnv(profile.Lookup(os.LookupEnv, profile.Active()), logger)
 	sqlStore := supplychain.NewSQLStore(db)
 	svc := supplychain.New(cfg, supplychain.Deps{
 		Store:     sqlStore,

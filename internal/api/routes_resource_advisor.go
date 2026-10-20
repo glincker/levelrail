@@ -33,4 +33,6 @@ func (rt *Router) registerResourceAdvisorRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/resource-advisor/findings/{id}/restore", rt.requireAbility(AbilityWrite, rt.handleResourceAdvisorState("")))
 	mux.HandleFunc("GET /api/v1/settings/beta-features", rt.requireAbility(AbilityRead, rt.handleListBetaFeatures))
 	mux.HandleFunc("PUT /api/v1/settings/beta-features/{feature}", rt.requireAbility(AbilityRoot, rt.handleSetBetaFeature))
+	mux.HandleFunc("GET /api/v1/settings/server-profile", rt.requireAbility(AbilityRead, rt.handleGetServerProfile))
+	mux.HandleFunc("PUT /api/v1/settings/server-profile", rt.requireAbility(AbilityRoot, rt.handleSetServerProfile))
 }

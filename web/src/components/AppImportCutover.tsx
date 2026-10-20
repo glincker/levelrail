@@ -169,9 +169,11 @@ function ItemCard({
 export function AppImportCutover({
   session,
   onBack,
+  onNext,
 }: {
   session: AppImportSession
   onBack: () => void
+  onNext?: () => void
 }) {
   const { t } = useTranslation('migration')
   const [targetIp, setTargetIp] = useState('')
@@ -282,6 +284,11 @@ export function AppImportCutover({
         <span className="text-xs text-muted-foreground">
           {t('appImport.cutover.receiptNote')}
         </span>
+        {onNext ? (
+          <Button className="ml-auto" onClick={onNext}>
+            {t('appImport.cutover.next')}
+          </Button>
+        ) : null}
       </div>
     </div>
   )

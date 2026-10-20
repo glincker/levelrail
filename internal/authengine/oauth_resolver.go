@@ -154,7 +154,8 @@ func (r *providerResolver) build(ctx context.Context, s store.OAuthProviderSetti
 			ClientID: s.ClientID, ClientSecret: secret, Scopes: facebookScopes, HTTPClient: hc,
 		}), nil
 	case store.OAuthProviderLinear, store.OAuthProviderVercel, store.OAuthProviderHuggingFace,
-		store.OAuthProviderFigma, store.OAuthProviderSalesforce, store.OAuthProviderCodeberg:
+		store.OAuthProviderFigma, store.OAuthProviderSalesforce, store.OAuthProviderCodeberg,
+		store.OAuthProviderDropbox, store.OAuthProviderKakao, store.OAuthProviderPatreon:
 		return genericprov.NewByName(s.Provider, genericprov.Config{
 			ClientID: s.ClientID, ClientSecret: secret, HTTPClient: hc,
 		})

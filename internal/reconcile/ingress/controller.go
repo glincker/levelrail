@@ -754,6 +754,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	for _, d := range hiddenList {
 		hiddenByDomain[d] = true
 	}
+	bodyLimits, err := c.appBodyLimits(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list app body limits: %w", err)
+	}
 	lbConfigs, err := c.loadBalancerConfigs(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancers: %w", err)
@@ -926,6 +930,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		svcRoutes = append(svcRoutes, gatedRoutes...)
 		for i := range svcRoutes {
 			svcRoutes[i].LB = lb
+			svcRoutes[i].MaxBodyBytes = bodyLimits[svc.Name]
 		}
 		routes = append(routes, svcRoutes...)
 	}

@@ -15,6 +15,7 @@ export type ExperimentalFeature =
   | 'mobile-api'
   | 'saml-scim'
   | 'plugins'
+  | 'git-push'
 
 export const BETA_FEATURES_PATH = '/settings/beta-features'
 

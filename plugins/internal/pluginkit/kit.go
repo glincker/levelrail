@@ -44,11 +44,14 @@ type Plugin struct {
 	Version      string
 	ConfigSchema string
 	Send         func(ctx context.Context, c Call) Result
+	// DNS makes this a dns_provider plugin. Send is then unused.
+	DNS *DNSProvider
 }
 
 type server struct {
 	pluginpb.UnimplementedPluginServiceServer
 	pluginpb.UnimplementedNotificationChannelServiceServer
+	pluginpb.UnimplementedDnsProviderServiceServer
 	p Plugin
 }
 
@@ -59,8 +62,12 @@ func (s server) Describe(_ context.Context, req *pluginpb.DescribeRequest) (*plu
 			if schema == "" {
 				schema = `{"type":"object","additionalProperties":false}`
 			}
+			kind := "notification_channel"
+			if s.p.DNS != nil {
+				kind = "dns_provider"
+			}
 			return &pluginpb.DescribeResponse{
-				ContractVersion: contractVersion, Name: s.p.Name, Version: s.p.Version, Kind: "notification_channel",
+				ContractVersion: contractVersion, Name: s.p.Name, Version: s.p.Version, Kind: kind,
 				RequestedAbilities: []string{"read"}, ConfigSchema: schema,
 			}, nil
 		}
@@ -86,7 +93,11 @@ func NewServer(p Plugin) *grpc.Server {
 	s := grpc.NewServer()
 	srv := server{p: p}
 	pluginpb.RegisterPluginServiceServer(s, srv)
-	pluginpb.RegisterNotificationChannelServiceServer(s, srv)
+	if p.DNS != nil {
+		pluginpb.RegisterDnsProviderServiceServer(s, srv)
+	} else {
+		pluginpb.RegisterNotificationChannelServiceServer(s, srv)
+	}
 	return s
 }
 

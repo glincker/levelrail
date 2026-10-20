@@ -41,7 +41,7 @@ func (p funcProvider) Kind() search.Kind                              { return p
 func (p funcProvider) Docs(ctx context.Context) ([]search.Doc, error) { return p.fn(ctx) }
 
 func (rt *Router) searchAppNames(ctx context.Context) ([]string, error) {
-	svcs, err := rt.apps.ListDesiredServices(ctx)
+	svcs, err := rt.listPublicApps(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list apps: %w", err)
 	}
@@ -71,7 +71,7 @@ func (rt *Router) appSearchProvider() search.Provider { return appDocsProvider{r
 func (appDocsProvider) Kind() search.Kind { return search.KindApp }
 
 func (p appDocsProvider) Docs(ctx context.Context) ([]search.Doc, error) {
-	svcs, err := p.rt.apps.ListDesiredServices(ctx)
+	svcs, err := p.rt.listPublicApps(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list apps: %w", err)
 	}
@@ -138,7 +138,7 @@ func (rt *Router) domainSearchProvider() search.Provider { return domainDocsProv
 func (domainDocsProvider) Kind() search.Kind { return search.KindDomain }
 
 func (p domainDocsProvider) Docs(ctx context.Context) ([]search.Doc, error) {
-	svcs, err := p.rt.apps.ListDesiredServices(ctx)
+	svcs, err := p.rt.listPublicApps(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list apps: %w", err)
 	}

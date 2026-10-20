@@ -14,7 +14,7 @@ import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import type { BetaFeature } from '../../types/resourceAdvisor'
 
-function RestartNeeded() {
+export function RestartNeeded() {
   const { t } = useTranslation('betaFeatures')
   const isRoot = useIsRoot()
   const { data: info, refetch, isFetching } = useSystemRestartInfo()

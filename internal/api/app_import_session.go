@@ -197,7 +197,11 @@ func (rt *Router) currentView(ctx context.Context, sess store.AppImportSession, 
 	if err != nil {
 		return appImportSessionResource{}, err
 	}
-	return rt.appImportView(ctx, sess, items, calc), nil
+	view := rt.appImportView(ctx, sess, items, calc)
+	if live.req.SSH != nil && live.req.SSH.InsecureHostKey {
+		view.Notes = append(view.Notes, sshInsecureWarning)
+	}
+	return view, nil
 }
 
 func (rt *Router) writeAppImportView(w http.ResponseWriter, r *http.Request, status int, sess store.AppImportSession, items []store.AppImportItem) {
@@ -222,9 +226,15 @@ func (rt *Router) decodeAppImportCreate(w http.ResponseWriter, r *http.Request) 
 	}
 	for _, m := range req.Mappings {
 		if err := appimport.ValidateMapping(m); err != nil {
+			req.wipeSecrets()
 			writeError(w, http.StatusBadRequest, err.Error())
 			return req, nil, false
 		}
+	}
+	if err := req.normalizeSSH(); err != nil {
+		req.wipeSecrets()
+		writeError(w, http.StatusBadRequest, err.Error())
+		return req, nil, false
 	}
 	src, ok := rt.openImportSource(w, req.platformImportRequest)
 	return req, src, ok
@@ -250,6 +260,7 @@ func (rt *Router) handleAppImportPlan(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	defer req.wipeSecrets()
 	disc, err := rt.discoverForImport(r.Context(), src, req.Token)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err.Error())
@@ -301,6 +312,12 @@ func (rt *Router) handleCreateAppImportSession(w http.ResponseWriter, r *http.Re
 	if !ok {
 		return
 	}
+	kept := false
+	defer func() {
+		if !kept {
+			req.wipeSecrets()
+		}
+	}()
 	disc, err := rt.discoverForImport(r.Context(), src, req.Token)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err.Error())
@@ -328,6 +345,7 @@ func (rt *Router) handleCreateAppImportSession(w http.ResponseWriter, r *http.Re
 		return
 	}
 	rt.appImportLive.set(id, req.platformImportRequest, disc)
+	kept = true
 	rt.logger.Info("api: app import session created", slog.String("session_id", id), slog.String("platform", req.Platform), slog.Int("items", len(items)))
 	stored, err := rt.appImports.ListAppImportItems(r.Context(), id)
 	if err != nil {
@@ -377,6 +395,7 @@ func (rt *Router) handleDeleteAppImportSession(w http.ResponseWriter, r *http.Re
 	}
 	rt.appImportLive.forget(id)
 	rt.appImportLive.forgetMove(id)
+	rt.appImportLive.forgetVolumeCopy(id)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -391,6 +410,12 @@ func (rt *Router) handleConnectAppImportSession(w http.ResponseWriter, r *http.R
 	if !ok {
 		return
 	}
+	kept := false
+	defer func() {
+		if !kept {
+			req.wipeSecrets()
+		}
+	}()
 	if sourceBase(req.URL) != sess.SourceURL || req.Platform != sess.Platform {
 		writeError(w, http.StatusBadRequest, "the session was created for "+sess.SourceURL+", connect to the same source")
 		return
@@ -401,6 +426,7 @@ func (rt *Router) handleConnectAppImportSession(w http.ResponseWriter, r *http.R
 		return
 	}
 	rt.appImportLive.set(sess.ID, req.platformImportRequest, disc)
+	kept = true
 	ictx, _, err := rt.appImportContext(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: app import: read targets failed", err)

@@ -33,6 +33,16 @@ func URLUserinfo(raw, username string) (string, error) {
 	return u.String(), nil
 }
 
+// URLForLog is URLUserinfo for log lines and error text: it never fails, and
+// an unparseable URL is replaced whole because its parse error would echo it.
+func URLForLog(raw string) string {
+	out, err := URLUserinfo(raw, "redacted")
+	if err != nil {
+		return "<unparseable url>"
+	}
+	return out
+}
+
 // URLQuery replaces the value of every query key in keys (matched
 // case-insensitively, keys lowercase) with mask. A malformed URL is
 // returned as is.

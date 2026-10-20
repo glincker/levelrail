@@ -83,6 +83,8 @@ type Model struct {
 const (
 	ComputeGPU = "gpu"
 	ComputeCPU = "cpu"
+	// ComputeExternal marks a model served by a server Levelrail does not run.
+	ComputeExternal = "external"
 )
 
 // Model residency modes and reconciler-observed states.
@@ -300,7 +302,7 @@ func (db *DB) DeleteModel(ctx context.Context, name string) error {
 		return fmt.Errorf("store: begin delete model %q: %w", name, err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	for _, q := range []string{`DELETE FROM model_keys WHERE model_name = ?`, `DELETE FROM model_usage_hourly WHERE model_name = ?`, `DELETE FROM models WHERE name = ?`} {
+	for _, q := range []string{`DELETE FROM model_keys WHERE model_name = ?`, `DELETE FROM model_usage_hourly WHERE model_name = ?`, `DELETE FROM inference_endpoints WHERE name = ?`, `DELETE FROM models WHERE name = ?`} {
 		if _, err := tx.ExecContext(ctx, q, name); err != nil {
 			return fmt.Errorf("store: delete model %q: %w", name, err)
 		}
@@ -402,7 +404,7 @@ func (db *DB) ListModelsInSwapGroup(ctx context.Context, group string) ([]Model,
 }
 
 func computeOrDefault(c string) string {
-	if c == ComputeCPU {
+	if c == ComputeCPU || c == ComputeExternal {
 		return c
 	}
 	return ComputeGPU

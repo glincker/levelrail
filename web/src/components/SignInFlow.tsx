@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FingerprintIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
+  isConditionalPasskeyAvailable,
   isPasskeySupported,
   useBeginPasskeyLogin,
+  useDiscoverablePasskeyLogin,
   useFinishPasskeyLogin,
   type PasskeyLoginChallenge,
 } from '../queries/passkeys'
@@ -15,7 +17,11 @@ import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Field, FieldLabel } from './ui/field'
 import { Alert, AlertDescription } from './ui/alert'
-import { isApprovalRequired } from '../queries/auth'
+import {
+  isApprovalRequired,
+  type ApprovalRequiredResponse,
+  type AuthUser,
+} from '../queries/auth'
 import { classifyPasskeyError } from '../lib/passkeyErrors'
 import { NewDeviceApprovalWait } from './NewDeviceApprovalWait'
 import { ResumedApprovalWait } from './ResumedApprovalWait'
@@ -53,6 +59,8 @@ export function SignInFlow({
       : { kind: 'username' },
   )
   const begin = useBeginPasskeyLogin()
+  const discoverable = useDiscoverablePasskeyLogin()
+  const conditionalAbort = useRef<AbortController | null>(null)
   const finish = useFinishPasskeyLogin()
   const { t } = useTranslation('signIn')
   const { t: tp } = useTranslation('passkeys')
@@ -69,6 +77,45 @@ export function SignInFlow({
       {t('code.useCode')}
     </Button>
   ) : null
+
+  function handleDiscoverableResult(
+    result: AuthUser | ApprovalRequiredResponse,
+  ) {
+    if (isApprovalRequired(result)) {
+      setStep({
+        kind: 'approval',
+        id: result.approval_id,
+        expiresAt: result.approval_expires_at,
+        match: result.approval_match,
+      })
+    }
+  }
+
+  const onUsernameStep = step.kind === 'username'
+  const { mutate: runDiscoverable } = discoverable
+  useEffect(() => {
+    if (!onUsernameStep) {
+      return
+    }
+    const controller = new AbortController()
+    conditionalAbort.current = controller
+    void isConditionalPasskeyAvailable().then((ok) => {
+      if (ok && !controller.signal.aborted) {
+        runDiscoverable(
+          { conditional: true, signal: controller.signal },
+          { onSuccess: handleDiscoverableResult },
+        )
+      }
+    })
+    return () => {
+      controller.abort()
+    }
+  }, [onUsernameStep, runDiscoverable])
+
+  function handlePasskeyButton() {
+    conditionalAbort.current?.abort()
+    runDiscoverable({}, { onSuccess: handleDiscoverableResult })
+  }
 
   if (step.kind === 'approval' || step.kind === 'resume') {
     const back = () => {
@@ -160,6 +207,28 @@ export function SignInFlow({
         >
           {begin.isPending ? 'Checking...' : 'Continue'}
         </Button>
+        {isPasskeySupported() ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={
+              discoverable.isPending && !discoverable.variables?.conditional
+            }
+            onClick={handlePasskeyButton}
+          >
+            <FingerprintIcon />
+            {t('passkey.discoverable')}
+          </Button>
+        ) : null}
+        {discoverable.isError && !discoverable.variables?.conditional ? (
+          <Alert variant="destructive">
+            <WarningIcon />
+            <AlertDescription>
+              {tp(`errors.${classifyPasskeyError(discoverable.error)}`)}
+            </AlertDescription>
+          </Alert>
+        ) : null}
         {codeLink}
       </div>
     )

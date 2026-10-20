@@ -66,13 +66,13 @@ func TestRun_AppsRollback_Human(t *testing.T) {
 }
 
 func TestRun_AppsRollback_MissingImage(t *testing.T) {
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "rollback", "web"}, &stdout, &stderr, envMap())
-	if got != exitValidation {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitValidation, stdout.String(), stderr.String())
-	}
-	if !strings.Contains(stderr.String(), "--image is required") {
-		t.Errorf("stderr = %q, want a missing --image validation error", stderr.String())
+	srv := routeServer(t, map[string]any{
+		"GET /api/v1/apps/web":                 appResource{Name: "web", Image: "x:1"},
+		"GET /api/v1/apps/web/deploy-attempts": []deployAttemptResource{},
+	}, nil)
+	stderr := runCLIExpectValidationError(t, cliArgs(srv, "apps", "rollback", "web"))
+	if !strings.Contains(stderr, "no earlier successful deploy") {
+		t.Errorf("stderr = %q, want a no previous deploy error", stderr)
 	}
 }
 

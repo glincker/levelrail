@@ -3,7 +3,8 @@
   "description": "Review everything on your old platform before anything is created, import only what you pick, then walk each app through cutover.",
   "tabs": {
     "plan": "Plan",
-    "cutover": "Cutover"
+    "cutover": "Cutover",
+    "takeover": "Take over ports"
   },
   "connect": {
     "title": "Read the source",

@@ -27,6 +27,25 @@ Recommended memory: about 1024 MiB.
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
+## Security and requirements
+
+Level: **Review before deploying**.
+
+What this template needs:
+
+- Image is not pinned to a version tag, so a redeploy can pull different code (`emby`): lscr.io/linuxserver/emby:latest.
+- Publishes ports directly on the host (`emby`): 8096:8096.
+- Stores data in named volumes (`emby`): emby_config, emby_movies, emby_tvshows.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
 ## Deploy Emby with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Emby. Review the Compose body and deploy.

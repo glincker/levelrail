@@ -13,7 +13,7 @@ import (
 
 // dynamicListingBudget is the ratchet on the default progressive session's whole
 // tools/list in estimated tokens (output schemas omitted). Lower it, never raise it.
-const dynamicListingBudget = 3400
+const dynamicListingBudget = 3150
 
 func dynamicSession(t *testing.T, opts Options) (*mcp.ClientSession, chan struct{}) {
 	t.Helper()

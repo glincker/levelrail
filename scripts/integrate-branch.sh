@@ -36,7 +36,7 @@ resolve_conflicts() {
 			git checkout --ours -- "$f" 2>/dev/null
 			regen_api && git add "$f" || unresolved="$unresolved $f"
 			;;
-		docs/template-catalog.md | docs/.vitepress/data/templates.json)
+		docs/template-catalog.md)
 			git checkout --ours -- "$f" 2>/dev/null
 			regen_catalog && git add "$f" || unresolved="$unresolved $f"
 			;;

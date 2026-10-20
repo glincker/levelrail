@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
@@ -49,6 +50,7 @@ const GATES: GateOption[] = [
     detail:
       'A release with a critical vulnerability does not go live. The previous release keeps serving and the deploy records why. If the scanner itself fails, the release is allowed.',
   },
+  { gate: 'block_on_high', label: '', summary: '', detail: '' },
 ]
 
 function GateSelector({
@@ -60,9 +62,20 @@ function GateSelector({
   disabled: boolean
   onChange: (gate: ScanGate) => void
 }) {
+  const { t } = useTranslation('security')
+  const options = GATES.map((g) =>
+    g.gate === 'block_on_high'
+      ? {
+          ...g,
+          label: t('supplyGate.blockOnHigh.label'),
+          summary: t('supplyGate.blockOnHigh.summary'),
+          detail: t('supplyGate.blockOnHigh.detail'),
+        }
+      : g,
+  )
   return (
     <div role="radiogroup" aria-label="Scan gate" className="grid gap-2">
-      {GATES.map((g) => {
+      {options.map((g) => {
         const id = `scan-gate-${g.gate}`
         const selected = value === g.gate
         return (
@@ -152,7 +165,9 @@ function SupplyChainForm({
   const save = useSetSupplyChain(appName)
   const override = useOverrideScanGate(appName)
   const [reason, setReason] = useState('')
-  const blocked = settings.scan_gate === 'block_on_critical'
+  const blocked =
+    settings.scan_gate === 'block_on_critical' ||
+    settings.scan_gate === 'block_on_high'
 
   function onError(title: string) {
     return (error: Error) =>

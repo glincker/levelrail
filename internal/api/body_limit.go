@@ -28,6 +28,10 @@ func (rt *Router) bodyLimitMiddleware(next http.Handler) http.Handler {
 		enginePrefix = rt.authEngine.Prefix()
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if isGitPushUpload(r.URL.Path) {
+			next.ServeHTTP(w, r)
+			return
+		}
 		if r.Body != nil && r.Body != http.NoBody {
 			limit := backstop
 			if isPreAuthPath(r.URL.Path, enginePrefix) && preAuthMaxBodyBytes < limit {
@@ -37,6 +41,16 @@ func (rt *Router) bodyLimitMiddleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// isGitPushUpload is the one route whose body (a pack) the handler bounds itself, after auth.
+func isGitPushUpload(path string) bool {
+	rest, ok := strings.CutPrefix(path, gitPushRoutePrefix)
+	if !ok {
+		return false
+	}
+	repo, tail, ok := strings.Cut(rest, "/")
+	return ok && repo != "" && tail == gitReceivePackService
 }
 
 func isPreAuthPath(path, enginePrefix string) bool {

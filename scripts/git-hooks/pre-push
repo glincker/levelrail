@@ -96,7 +96,7 @@ elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 	changed_files="$(git diff --name-only $base_ref...HEAD -- '*.go' 2>/dev/null)"
 	fast_pkgs=""
 	for d in $(printf '%s\n' "$changed_files" | xargs -n1 dirname 2>/dev/null | sort -u); do
-		case "$d" in test/e2e* | internal/api | kit | kit/* | terraform-provider | terraform-provider/* | tools | tools/*) continue ;; esac
+		case "$d" in test/e2e* | internal/api | kit | kit/* | integrations/terraform-provider | integrations/terraform-provider/* | tools | tools/*) continue ;; esac
 		if ls "$d"/*_test.go >/dev/null 2>&1; then
 			fast_pkgs="$fast_pkgs ./$d"
 		fi

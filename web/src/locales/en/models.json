@@ -217,5 +217,139 @@
     "sharesGpu": "Shares a GPU with:",
     "lastUsedPrefix": "Last used",
     "stopsAfter": "Stops after {{minutes}} idle minutes."
+  },
+  "endpoint": {
+    "state": {
+      "unknown": "Not checked",
+      "online": "Online",
+      "slow": "Slow",
+      "unreachable": "Asleep or unreachable",
+      "auth_failed": "Credential rejected",
+      "error": "Error"
+    },
+    "stateWithLatency": "{{state}}, {{ms}} ms",
+    "recheck": "Re-check",
+    "testing": "Checking",
+    "recheckFailed": "Could not re-check the endpoint.",
+    "testResult": "Connection test result",
+    "modelsFound_one": "{{count}} model found",
+    "modelsFound_other": "{{count}} models found",
+    "toast": {
+      "added": "Endpoint {{name}} registered."
+    },
+    "add": {
+      "trigger": "Add endpoint",
+      "title": "Add an inference endpoint",
+      "description": "Use a model server you run yourself, such as Ollama, LM Studio or an MLX server on a Mac. Requests go through the gateway with scoped keys, limits and usage tracking.",
+      "testConnection": "Test connection",
+      "submit": "Register endpoint",
+      "adding": "Registering",
+      "registerAnyway": "You can still register it now. Levelrail keeps checking and shows when it comes online."
+    },
+    "fields": {
+      "url": "Server address",
+      "urlHint": "Reachable from the control plane, for example a WireGuard mesh address.",
+      "urlPlaceholder": "http://100.64.0.7:11434",
+      "apiType": "API type",
+      "name": "Name",
+      "nameHint": "Optional. Taken from the address when empty.",
+      "namePlaceholder": "mac-mini",
+      "credential": "API key",
+      "credentialHint": "Optional. Stored encrypted.",
+      "credentialPlaceholder": "Leave empty if the server has none"
+    },
+    "apiType": {
+      "ollama": {
+        "label": "Ollama",
+        "hint": "Models are listed from /api/tags."
+      },
+      "openai": {
+        "label": "OpenAI-compatible",
+        "hint": "LM Studio, MLX, vLLM, llama.cpp or a cloud API. Models are listed from /v1/models."
+      }
+    },
+    "errors": {
+      "url": "Enter an http or https address without a username or password.",
+      "name": "Use lowercase letters, digits or hyphens."
+    },
+    "health": {
+      "title": "Health",
+      "upstream": "Server address",
+      "apiType": "API type",
+      "lastChecked": "Last checked",
+      "privateOff": "Internal destinations are off on this control plane, so only public https servers can be reached."
+    },
+    "models": {
+      "title": "Models on the server",
+      "none": "No models listed yet."
+    },
+    "credential": {
+      "title": "API key",
+      "set": "A key is stored and sent with every request to this endpoint.",
+      "notSet": "No key is stored. Requests are sent without credentials.",
+      "remove": "Remove key",
+      "removed": "Key removed.",
+      "saveFailed": "Could not update the key."
+    },
+    "routing": {
+      "title": "Fallback",
+      "description": "Off by default. When on, requests go to another model while this endpoint is down or slower than the budget.",
+      "fallback": "Fall back to",
+      "off": "Off",
+      "modelId": "Model id on the fallback",
+      "modelIdPlaceholder": "Same as the fallback model",
+      "budget": "Latency budget (s)",
+      "budgetPlaceholder": "No budget",
+      "save": "Save",
+      "saved": "Fallback saved.",
+      "saveFailed": "Could not save the fallback.",
+      "hint": "The budget is the time to the first response bytes. Without a budget, only errors and an unreachable endpoint trigger the fallback.",
+      "used_one": "Used once so far.",
+      "used_other": "Used {{count}} times so far."
+    },
+    "fix": {
+      "saveAndCheck": "Save and check",
+      "ollamaBind": "Ollama only listens on localhost by default. On the server, bind it to the network address:",
+      "check_port": {
+        "title": "Nothing answered on that port",
+        "body": "Check the port and that the server is running. Ollama uses 11434, LM Studio 1234. Choose the matching API type and test again."
+      },
+      "check_network": {
+        "title": "The server did not answer in time",
+        "body": "The machine may be asleep, off the network, or a firewall may block this port. Wake it, check the mesh or LAN connection and the firewall, then re-check."
+      },
+      "check_host": {
+        "title": "The host name does not resolve",
+        "body": "Check the spelling, or use the IP address on your WireGuard mesh or LAN, then test again."
+      },
+      "use_other_address": {
+        "title": "That address is never allowed",
+        "body": "Link-local and cloud metadata addresses cannot be used as an inference endpoint. Use the machine's mesh or LAN address instead."
+      },
+      "enable_internal": {
+        "title": "Internal destinations are off",
+        "body": "This address is private. An operator must allow internal destinations on the control plane with {{env}}, restart it, then re-check."
+      },
+      "set_credential": {
+        "title": "The server rejected the credential",
+        "body": "Enter the server's API key. It is stored encrypted and sent only to this endpoint."
+      },
+      "check_api_type": {
+        "title": "The server does not answer like this API type",
+        "body": "Pick the other API type (Ollama or OpenAI-compatible) and test again."
+      },
+      "use_http_or_trust": {
+        "title": "The TLS certificate is not trusted",
+        "body": "Use a certificate from a trusted authority, or a private http address on your mesh, then re-check."
+      },
+      "pull_model": {
+        "title": "The server has no models yet",
+        "body": "Pull or load a model on the server, then re-check to list it."
+      },
+      "check_server": {
+        "title": "The server reported an error",
+        "body": "Look at the server's own log, then re-check once it is healthy."
+      }
+    }
   }
 }

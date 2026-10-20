@@ -298,6 +298,7 @@ func (s *bootState) startMesh() error {
 	routeCheck := newRouteCheck(logger)
 	apiRouter.SetProxyRouteCheck(routeCheck)
 	apiRouter.ResumeCutoverRuns(ctx)
+	go apiRouter.ResumeTakeover(ctx)
 	s.lbRegistry = lbRegistry
 	s.meshCfg = meshCfg
 	s.meshDNSAddr = meshDNSAddr

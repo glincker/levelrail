@@ -24,7 +24,7 @@ func runShieldRecommend(prog string, args []string, stdout, stderr io.Writer, lo
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, res, func() {
 		if res.Blocked != "" {
-			_, _ = fmt.Fprintln(stdout, "refused: a proxy in front hides client addresses, so a per-client limit would hit everyone. Set APP_INGRESS_TRUSTED_PROXIES first.")
+			_, _ = fmt.Fprintln(stdout, "refused: a proxy in front hides client addresses, so a per-client limit would hit everyone. Run \"settings edge fix\" first.")
 			return
 		}
 		verb := "applied to"

@@ -88,6 +88,8 @@ type modelResource struct {
 	// on the same node.
 	SwapGroup     string   `json:"swap_group,omitempty"`
 	SharesGPUWith []string `json:"shares_gpu_with,omitempty"`
+	// External is set for models served by an endpoint Levelrail does not run.
+	External *endpointResource `json:"external,omitempty"`
 	modelCPUResource
 }
 
@@ -104,6 +106,7 @@ func toModelResource(v models.View) modelResource {
 		EffectiveIdleTTLSeconds: int(models.IdleTTL(m) / time.Second),
 		LastActiveAt:            optTime(m.LastActiveAt),
 		SwapGroup:               m.SwapGroup, SharesGPUWith: v.SharesGPUWith,
+		External:         toEndpointResource(v.Endpoint),
 		modelCPUResource: toModelCPUResource(v),
 	}
 }
@@ -137,6 +140,8 @@ type createModelRequest struct {
 	MemoryMiB     int     `json:"memory_mib"`
 	WeightsFile   string  `json:"weights_file"`
 	AcceptLicense bool    `json:"accept_license"`
+	// External registers a model server Levelrail does not run.
+	External *externalRequest `json:"external"`
 }
 
 type createModelResponse struct {
@@ -207,6 +212,8 @@ func (rt *Router) writeModelError(w http.ResponseWriter, op string, err error) {
 	case errors.Is(err, models.ErrLicenseAck):
 		msg := strings.TrimPrefix(err.Error(), models.ErrLicenseAck.Error()+": ")
 		writeError(w, http.StatusBadRequest, "license_ack_required: "+msg)
+	case errors.Is(err, models.ErrEndpointBlocked), errors.Is(err, models.ErrEndpointPrivate):
+		writeError(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, models.ErrNodeNotFound):
 		writeError(w, http.StatusBadRequest, "unknown node_id")
 	case errors.Is(err, models.ErrSecretsUnavailable):
@@ -261,7 +268,19 @@ func (rt *Router) handleCreateModel(w http.ResponseWriter, r *http.Request) {
 	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, "unknown node_id"), nodeRef(req.NodeID)) {
 		return
 	}
+	var ext *models.ExternalInput
+	if req.External != nil {
+		if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, "unknown fallback_model"), modelRef(req.External.FallbackModel)) {
+			return
+		}
+		ext = &models.ExternalInput{
+			BaseURL: req.External.BaseURL, APIType: req.External.APIType, Credential: req.External.Credential,
+			FallbackModel: req.External.FallbackModel, FallbackRef: req.External.FallbackModelRef,
+			LatencyBudget: time.Duration(req.External.LatencyBudgetMS) * time.Millisecond,
+		}
+	}
 	created, err := rt.models.Create(r.Context(), models.CreateInput{
+		External: ext,
 		Spec: models.Spec{
 			Name: req.Name, Engine: req.Engine, ModelRef: req.Model, GPUCount: req.GPUCount,
 			GPUDeviceIDs: req.GPUDeviceIDs, ContextLength: req.ContextLength, Quantization: req.Quantization,

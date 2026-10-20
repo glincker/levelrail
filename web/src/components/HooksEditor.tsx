@@ -45,7 +45,7 @@ export function HooksEditor({ app }: { app: AppDetail }) {
   const hasHooks = !!(app.hooks?.pre_deploy || app.hooks?.post_deploy)
   const { data: hookRuns } = useAppHookRuns(app.name, hasHooks)
 
-  const { register, handleSubmit } = useForm<HooksFormValues>({
+  const { register, handleSubmit, formState } = useForm<HooksFormValues>({
     resolver: zodResolver(hooksSchema),
     values: toFieldValues(app),
     resetOptions: { keepDirtyValues: true },
@@ -93,7 +93,7 @@ export function HooksEditor({ app }: { app: AppDetail }) {
           }}
           className="space-y-4"
         >
-          <Field>
+          <Field data-invalid={formState.errors.preDeploy ? true : undefined}>
             <FieldLabel htmlFor="hooks-pre-deploy">
               Pre-deploy command
             </FieldLabel>
@@ -102,6 +102,7 @@ export function HooksEditor({ app }: { app: AppDetail }) {
               {...register('preDeploy')}
               className="font-mono"
               placeholder="rails db:migrate"
+              aria-invalid={!!formState.errors.preDeploy}
             />
             <FieldDescription>
               Runs before the new container receives traffic. A nonzero exit
@@ -115,7 +116,7 @@ export function HooksEditor({ app }: { app: AppDetail }) {
             ) : null}
           </Field>
 
-          <Field>
+          <Field data-invalid={formState.errors.postDeploy ? true : undefined}>
             <FieldLabel htmlFor="hooks-post-deploy">
               Post-deploy command
             </FieldLabel>
@@ -124,6 +125,7 @@ export function HooksEditor({ app }: { app: AppDetail }) {
               {...register('postDeploy')}
               className="font-mono"
               placeholder="curl -f https://hooks.example.com/deployed"
+              aria-invalid={!!formState.errors.postDeploy}
             />
             <FieldDescription>
               Runs once the new container is fully live. A nonzero exit code is

@@ -25,6 +25,8 @@ func runSecurity(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return exitOK
 	case "posture":
 		return runSecurityPosture(prog, args[1:], stdout, stderr, lookupEnv)
+	case "reachability":
+		return runSecurityReachability(prog, args[1:], stdout, stderr, lookupEnv)
 	case "sessions":
 		return runSecuritySessions(prog, args[1:], stdout, stderr, lookupEnv)
 	case "policy":
@@ -40,6 +42,7 @@ func runSecurity(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 func securityUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s security posture [flags]                         score and prioritised checklist (the item list needs root)
+  %[1]s security reachability [--recheck] [--fix ID]     what the internet can reach per app and database, with a typed fix per finding (root)
   %[1]s security sessions list [--user ID] [flags]       live sessions, trusted browsers and API tokens
   %[1]s security sessions revoke <id> [--user ID]        end one session
   %[1]s security sessions revoke-others [--user ID]      end every session but this one

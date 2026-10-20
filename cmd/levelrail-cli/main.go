@@ -33,7 +33,7 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 	}
 
 	if len(args) == 0 {
-		_, _ = fmt.Fprint(stderr, rootUsage(prog))
+		_, _ = fmt.Fprint(stderr, simpleUsage(prog))
 		return exitUsage
 	}
 
@@ -43,11 +43,30 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 	}
 
 	switch args[0] {
-	case "-h", "--help", "help":
-		_, _ = fmt.Fprint(stdout, rootUsage(prog))
+	case "-h", "--help":
+		_, _ = fmt.Fprint(stdout, simpleUsage(prog))
 		return exitOK
+	case "help":
+		if len(args) > 1 && (args[1] == "advanced" || args[1] == "all") {
+			_, _ = fmt.Fprint(stdout, rootUsage(prog))
+		} else {
+			_, _ = fmt.Fprint(stdout, simpleUsage(prog))
+		}
+		return exitOK
+	case "up":
+		return runUp(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
+	case "open":
+		return runOpen(prog, args[1:], stdout, stderr, lookupEnv)
+	case "login":
+		return runLogin(prog, args[1:], stdout, stderr, lookupEnv)
+	case "backup":
+		return runBackupAlias(prog, args[1:], stdout, stderr, lookupEnv)
+	case "restore":
+		return runRestoreAlias(prog, args[1:], stdout, stderr, lookupEnv)
 	case "apps":
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
+	case "git":
+		return runGit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "previews":
 		return runAppsPreviews(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy":
@@ -226,6 +245,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runCosts(prog, args[1:], stdout, stderr, lookupEnv)
 	case "usage":
 		return runUsage(prog, args[1:], stdout, stderr, lookupEnv)
+	case "ingress-limits":
+		return runIngressLimits(prog, args[1:], stdout, stderr, lookupEnv)
 	case "budget":
 		return runBudget(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned":
@@ -295,12 +316,18 @@ func rootUsage(prog string) string {
 	return filterExperimentalUsage(fmt.Sprintf(`%[1]s: a scriptable client for the control plane API.
 
 Usage:
+  %[1]s up [dir] [--with postgres,redis] [--domain D] [flags]   deploy a directory with one command: infer, create or update, databases, build, domain
+  %[1]s login [--device] [flags]     sign in and save a token, same as auth login
+  %[1]s open <app> [flags]           print an app's public URLs
+  %[1]s backup <database> [--target ID] [flags]   back a database up now, same as backups trigger
+  %[1]s restore <database> --latest --confirm NAME [flags]   restore a database, same as backups restore
   %[1]s apps create [flags]         create an app
   %[1]s apps list [flags]             list apps
   %[1]s apps get <name> [flags]       show one app
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
   %[1]s apps deploy-compose <name> --file compose.yaml [flags]   deploy a Docker Compose file as an app
   %[1]s import <repo-url|image|-f file|--docker-run "..."> [--deploy] [flags]   preview or deploy anything: repo, image, docker run, compose, Dockerfile
+  %[1]s git remote add|show|rotate|branch|revoke <app> [flags]   deploy with git push to your own server (beta)
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
@@ -387,6 +414,7 @@ Usage:
   %[1]s resources list|tag|untag|views [flags]                 every app, database, node, domain, bucket and network in one list, tags, bulk tag with --dry-run, saved views
   %[1]s usage report|settings|budgets [flags]                  cost showback per app, project and team
   %[1]s costs explore|budgets [flags]                         cost explorer with forecast and movers, named budgets with alerts and a 100%% action
+  %[1]s ingress-limits show|set|clear APP [flags]             per-app request body cap
   %[1]s budget show|set|clear APP [flags]                      per-app monthly egress and cost cap with throttle or pause
   %[1]s budget [set|delete] project|team ID [flags]            alias for usage budgets
   %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
@@ -431,6 +459,7 @@ Usage:
   %[1]s plugins list|show|inspect|install|upgrade|approve|enable|disable|restart|uninstall|run|trust [flags]   signed plugins (needs the plugins experimental feature)
   %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
   %[1]s import platform coolify|dokploy|caprover --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
+  %[1]s import takeover plan|run|status|rollback [flags]   move this server's ports 80 and 443 from the old proxy to the built-in ingress, see "%[1]s import takeover -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant
   %[1]s git-providers [flags]                             connection status and capabilities for every git provider in one call

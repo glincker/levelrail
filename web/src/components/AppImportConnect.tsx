@@ -6,11 +6,21 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { AppImportSSHConnect } from './AppImportSSHConnect'
 import {
   useConnectAppImportSession,
   useCreateAppImportSession,
   type AppImportSource,
 } from '../queries/appImport'
+
+type Mode = 'api' | 'docker' | 'compose' | 'dokku' | 'ssh'
+type FileMode = Exclude<Mode, 'api' | 'ssh'>
+
+const FILE_MODES: readonly string[] = ['docker', 'compose', 'dokku']
+
+function isFileMode(m: string | undefined): m is FileMode {
+  return m !== undefined && FILE_MODES.includes(m)
+}
 
 interface Props {
   // Set when re-attaching the token to an existing session.
@@ -24,7 +34,14 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
   const connect = useConnectAppImportSession()
   const [url, setUrl] = useState(reconnect?.url ?? '')
   const [token, setToken] = useState('')
-  const [docker, setDocker] = useState(reconnect?.platform === 'docker')
+  const [mode, setMode] = useState<Mode>(
+    reconnect?.platform === 'docker-ssh'
+      ? 'ssh'
+      : isFileMode(reconnect?.platform)
+        ? reconnect.platform
+        : 'api',
+  )
+  const [appName, setAppName] = useState('')
   const [snapshot, setSnapshot] = useState('')
   const [loopback, setLoopback] = useState(false)
   const [priv, setPriv] = useState(false)
@@ -34,11 +51,14 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    if (mode === 'ssh') return
+    const fileMode = isFileMode(mode) ? mode : null
     const source: AppImportSource = {
-      platform: docker ? 'docker' : (reconnect?.platform ?? 'coolify'),
-      url: docker ? 'docker://snapshot' : url.trim(),
-      token: docker ? '' : token,
-      snapshot: docker ? snapshot : undefined,
+      platform: fileMode ?? reconnect?.platform ?? 'coolify',
+      url: fileMode ? `file://${fileMode}` : url.trim(),
+      token: fileMode ? '' : token,
+      snapshot: fileMode ? snapshot : undefined,
+      dokku_app_name: mode === 'dokku' ? appName.trim() : undefined,
       allow_loopback: loopback || undefined,
       allow_private: priv || undefined,
       insecure_tls: insecure || undefined,
@@ -71,37 +91,47 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
         </p>
       </div>
       {reconnect ? null : (
-        <div className="flex gap-2" role="group">
-          <Button
-            type="button"
-            size="sm"
-            variant={docker ? 'outline' : 'default'}
-            aria-pressed={!docker}
-            onClick={() => setDocker(false)}
-          >
-            {t('appImport.connect.modeApi')}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={docker ? 'default' : 'outline'}
-            aria-pressed={docker}
-            onClick={() => setDocker(true)}
-          >
-            {t('appImport.connect.modeDocker')}
-          </Button>
+        <div className="flex flex-wrap gap-2" role="group">
+          {(['api', 'docker', 'compose', 'dokku', 'ssh'] as const).map((m) => (
+            <Button
+              key={m}
+              type="button"
+              size="sm"
+              variant={mode === m ? 'default' : 'outline'}
+              aria-pressed={mode === m}
+              onClick={() => setMode(m)}
+            >
+              {t(`appImport.connect.mode.${m}`)}
+            </Button>
+          ))}
         </div>
       )}
-      {docker ? (
+      {mode === 'ssh' ? (
+        <AppImportSSHConnect reconnect={reconnect} onCreated={onCreated} />
+      ) : isFileMode(mode) ? (
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            {t('appImport.connect.dockerDescription')}
+            {t(`appImport.connect.fileDescription.${mode}`)}
           </p>
           <code className="block rounded-md bg-muted px-3 py-2 text-sm">
-            {t('appImport.connect.dockerCommand')}
+            {t(`appImport.connect.fileCommand.${mode}`)}
           </code>
+          {mode === 'dokku' ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="appimport-appname">
+                {t('appImport.connect.appName')}
+              </Label>
+              <Input
+                id="appimport-appname"
+                required
+                autoComplete="off"
+                value={appName}
+                onChange={(e) => setAppName(e.target.value)}
+              />
+            </div>
+          ) : null}
           <Label htmlFor="appimport-snapshot">
-            {t('appImport.connect.snapshot')}
+            {t(`appImport.connect.fileLabel.${mode}`)}
           </Label>
           <Textarea
             id="appimport-snapshot"
@@ -115,7 +145,6 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
           />
           <Input
             type="file"
-            accept="application/json,.json"
             aria-label={t('appImport.connect.snapshotFile')}
             onChange={(e) => {
               void e.target.files?.[0]?.text().then(setSnapshot)
@@ -157,44 +186,48 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
           </div>
         </div>
       )}
-      <details>
-        <summary className="cursor-pointer text-sm text-muted-foreground">
-          {t('appImport.connect.network')}
-        </summary>
-        <div className="mt-2 space-y-2">
-          <Label className="flex items-center gap-2 font-normal">
-            <Checkbox
-              aria-label={t('appImport.connect.loopback')}
-              checked={loopback}
-              onCheckedChange={(v) => setLoopback(v === true)}
-            />
-            {t('appImport.connect.loopback')}
-          </Label>
-          <Label className="flex items-center gap-2 font-normal">
-            <Checkbox
-              aria-label={t('appImport.connect.private')}
-              checked={priv}
-              onCheckedChange={(v) => setPriv(v === true)}
-            />
-            {t('appImport.connect.private')}
-          </Label>
-          <Label className="flex items-center gap-2 font-normal">
-            <Checkbox
-              aria-label={t('appImport.connect.insecure')}
-              checked={insecure}
-              onCheckedChange={(v) => setInsecure(v === true)}
-            />
-            {t('appImport.connect.insecure')}
-          </Label>
-          <p className="text-xs text-muted-foreground">
-            {t('appImport.connect.networkHelp')}
-          </p>
-        </div>
-      </details>
-      <p className="text-xs text-muted-foreground">
-        {t('appImport.connect.readOnly')}
-      </p>
-      {error ? (
+      {mode === 'ssh' ? null : (
+        <details>
+          <summary className="cursor-pointer text-sm text-muted-foreground">
+            {t('appImport.connect.network')}
+          </summary>
+          <div className="mt-2 space-y-2">
+            <Label className="flex items-center gap-2 font-normal">
+              <Checkbox
+                aria-label={t('appImport.connect.loopback')}
+                checked={loopback}
+                onCheckedChange={(v) => setLoopback(v === true)}
+              />
+              {t('appImport.connect.loopback')}
+            </Label>
+            <Label className="flex items-center gap-2 font-normal">
+              <Checkbox
+                aria-label={t('appImport.connect.private')}
+                checked={priv}
+                onCheckedChange={(v) => setPriv(v === true)}
+              />
+              {t('appImport.connect.private')}
+            </Label>
+            <Label className="flex items-center gap-2 font-normal">
+              <Checkbox
+                aria-label={t('appImport.connect.insecure')}
+                checked={insecure}
+                onCheckedChange={(v) => setInsecure(v === true)}
+              />
+              {t('appImport.connect.insecure')}
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {t('appImport.connect.networkHelp')}
+            </p>
+          </div>
+        </details>
+      )}
+      {mode === 'ssh' ? null : (
+        <p className="text-xs text-muted-foreground">
+          {t('appImport.connect.readOnly')}
+        </p>
+      )}
+      {error && mode !== 'ssh' ? (
         <Alert variant="destructive">
           <AlertTitle>{t('appImport.connect.error')}</AlertTitle>
           <AlertDescription className="break-words whitespace-pre-wrap">
@@ -202,11 +235,13 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
           </AlertDescription>
         </Alert>
       ) : null}
-      <Button type="submit" disabled={pending}>
-        {pending
-          ? t('appImport.connect.submitting')
-          : t('appImport.connect.submit')}
-      </Button>
+      {mode === 'ssh' ? null : (
+        <Button type="submit" disabled={pending}>
+          {pending
+            ? t('appImport.connect.submitting')
+            : t('appImport.connect.submit')}
+        </Button>
+      )}
     </form>
   )
 }

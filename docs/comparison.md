@@ -37,7 +37,7 @@ Dokploy builds on Docker Swarm, so [multi-node](/multi-node) scheduling and roll
 
 CapRover is a long-running, simple, Swarm-based platform with a one-click app store and a CLI. It has a large install base and is easy to pick up.
 
-Dokku is the classic "Heroku on your own box": `git push` to deploy, buildpacks, a rich plugin ecosystem, and almost no idle footprint because there is no long-running control service. For a single server it is hard to beat on simplicity.
+Dokku is the classic "Heroku on your own box": `git push` to deploy, buildpacks, a rich plugin ecosystem, and almost no idle footprint because there is no long-running control service. For a single server it is hard to beat on simplicity. Levelrail's zero-DNS HTTPS is the closest counter.
 
 Kamal is deliberately minimal: no control plane, no database, no agent. It runs over SSH from your CI and pairs with `kamal-proxy` for zero-downtime cutover. If you want as few moving parts as possible and don't need a dashboard, it is excellent.
 
@@ -54,18 +54,25 @@ Kamal is deliberately minimal: no control plane, no database, no agent. It runs 
 
 Levelrail has one edition. It is Apache 2.0 licensed, there is no license key, no enterprise tier and no feature gated behind a plan. Everything below ships in the same binary for everyone:
 
-- Sign-in: email and password, TOTP two-factor authentication, passkeys, and OAuth sign-in with Google, GitHub, Microsoft or any generic OpenID Connect provider. See [Identity and access](/identity-and-access).
+- Sign-in: email and password, TOTP two-factor authentication, passkeys, and OAuth sign-in with 20 providers (Google, GitHub, Microsoft, GitLab and more) or any generic OpenID Connect provider. See [Identity and access](/identity-and-access).
+- SAML single sign-on and SCIM provisioning: beta, and off by default behind the `saml-scim` feature toggle. See [SAML and SCIM](/sso-saml).
 - IAM: AWS-style Allow and Deny policies scoped to `app:name`, `database:name` or `*`, attachable to users and API tokens, on top of three role presets (admin, operator, viewer). API tokens carry fine-grained abilities.
 - Audit log: every mutating and sensitive request is recorded with actor, ability, method, path, status, remote address and caller surface (CLI, dashboard, MCP or API). It is queryable and exportable as CSV with configurable retention.
 - Backups: scheduled database and volume backups with retention, automatic verification after each run, restore, and restore into a new resource. The control plane database gets automatic snapshots, a pre-migration snapshot, encrypted off-box backups and restore drills. See [Backups and storage](/backups-and-storage) and [Control plane backup](/control-plane-backup).
 - Approvals and freezes: protected environments, deploy approvals and deploy freeze windows. See [Deploy safety](/deploy-safety).
 
+| | Levelrail | Coolify | Dokploy | CapRover | Dokku | Kamal |
+| --- | --- | --- | --- | --- | --- | --- |
+| SSO (SAML, OIDC) | OIDC and 20 OAuth providers; SAML beta | Not documented here, see their docs | SSO provider configuration and enforcement exist in the codebase, see their docs for protocols | Not documented here, see their docs | Not documented here, see their docs | None: a command line tool with no web login |
+| SCIM provisioning | Beta, off by default | Not documented here, see their docs | Not documented here, see their docs | Not documented here, see their docs | Not documented here, see their docs | None: no server component |
+| Audit log and streaming | Hash-chained, CSV export, forwarding to syslog, a webhook or a bucket | Not documented here, see their docs | Not documented here, see their docs | Not documented here, see their docs | Not documented here, see their docs | None: no server component |
+
 If SSO, audit logging or fine-grained roles matter to you, check each project's own pricing and licensing pages. We have not verified every project's current split, and it changes over time.
 
 ## What Levelrail does not do yet
 
-- LDAP: OAuth, OIDC, SAML single sign-on and SCIM provisioning are supported; LDAP directory sync is not.
-- The largest template catalog: Levelrail ships 311 one-click templates, each a Compose file the platform deploys and manages. Other projects may list more, and the end-to-end suite live-deploys a sample of Levelrail's templates, not all of them. See [Templates and registry](/templates-and-registry).
+- LDAP: OAuth and OIDC sign-in are supported, and SAML single sign-on and SCIM provisioning are beta (off by default, not yet verified against a live identity provider); LDAP directory sync is not supported.
+- The largest template catalog: Levelrail ships 300+ one-click templates, each a Compose file the platform deploys and manages. Coolify's catalog is in the same range and other projects may list more, and the end-to-end suite live-deploys a sample of Levelrail's templates, not all of them. See [Templates and registry](/templates-and-registry).
 - Track record: fewer real-world deployments and less community knowledge than projects that have existed for years.
 - Public ACME has had one live run: TLS defaults to an internal issuer. The public ACME issuer was verified once against Let's Encrypt on a public VPS. Renewal and DNS-01 wildcards are not yet exercised live. See the [roadmap](/roadmap).
 - No Windows or non-Linux nodes, and no Kubernetes compatibility layer: these are deliberate non-goals.
@@ -77,7 +84,7 @@ If SSO, audit logging or fine-grained roles matter to you, check each project's 
 - Docker Swarm is already your model: Dokploy or CapRover.
 - Want an agent-based control plane with built-in observability, IAM and audit on one binary: Levelrail.
 
-To move an existing setup, see [Migrating from Coolify, Dokploy and CapRover](/migrating-from-coolify-dokploy-and-caprover).
+To move an existing setup, see [Migrate to Levelrail](/migrate-to-levelrail).
 
 ## See also
 

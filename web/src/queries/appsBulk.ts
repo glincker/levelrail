@@ -1,8 +1,4 @@
-import {
-  queryOptions,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { appKeys } from './apps'
 
@@ -37,36 +33,6 @@ export interface BulkResponse {
   dry_run: boolean
   results: BulkAppResult[]
   counts: Record<string, number>
-}
-
-export interface AppsSummary {
-  total: number
-  running: number
-  failing: number
-  deploying: number
-  stopped: number
-  unknown: number
-}
-
-export function appsSummaryQueryOptions() {
-  return queryOptions({
-    queryKey: [...appKeys.all, 'summary'] as const,
-    queryFn: async (): Promise<AppsSummary> => {
-      const res = await fetch('/api/v1/apps-summary')
-      if (!res.ok) {
-        throw new ApiError(
-          res.status,
-          await readErrorMessage(
-            res,
-            `fetch apps summary failed: ${res.status}`,
-          ),
-        )
-      }
-      return (await res.json()) as AppsSummary
-    },
-    staleTime: 10_000,
-    refetchInterval: 15_000,
-  })
 }
 
 export async function postBulk(req: BulkRequest): Promise<BulkResponse> {

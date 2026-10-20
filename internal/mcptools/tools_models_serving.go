@@ -15,11 +15,37 @@ type modelEngineMetricsInput struct {
 	Since string `json:"since,omitempty" jsonschema:"how far back to read as a Go duration, e.g. 1h or 24h; defaults to 1h"`
 }
 
+type modelEndpointHealthOutput struct {
+	State     string `json:"state"`
+	LatencyMS int64  `json:"latency_ms"`
+	Failures  int    `json:"failures"`
+	Problem   string `json:"problem,omitempty"`
+	Fix       string `json:"fix,omitempty"`
+}
+
 func registerModelServingTools(server *mcp.Server, client *apiclient.Client) {
 	registerModelFitTool(server, client)
 	addTool(server, &mcp.Tool{
+		Name:        "get_model_endpoint_health",
+		Description: "Last health probe of an external inference endpoint: state, latency, failures, fix.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelNameInput) (*mcp.CallToolResult, modelEndpointHealthOutput, error) {
+		m, err := client.GetModel(ctx, in.Name)
+		if err != nil {
+			return nil, modelEndpointHealthOutput{}, fmt.Errorf("get endpoint health of model %q: %w", in.Name, err)
+		}
+		if m.External == nil {
+			return nil, modelEndpointHealthOutput{}, fmt.Errorf("model %q is not an external endpoint, use get_model_engine_metrics", in.Name)
+		}
+		h := m.External.Health
+		out := modelEndpointHealthOutput{State: h.State, LatencyMS: h.LatencyMS, Failures: h.Failures}
+		if h.Diagnosis != nil {
+			out.Problem, out.Fix = h.Diagnosis.Message, h.Diagnosis.Fix
+		}
+		return nil, out, nil
+	})
+	addTool(server, &mcp.Tool{
 		Name:        "get_model_engine_metrics",
-		Description: "The inference engine's own metrics for a model: KV cache usage, queued and running requests, prefix cache hit rate, tokens per second and time to first token (vLLM and llama.cpp), or VRAM residency and CPU offload (Ollama), with a health summary. Metrics an engine cannot expose are flagged supported=false.",
+		Description: "Inference engine metrics for a model (KV cache, queue, tokens per second, TTFT, or Ollama VRAM) with a health summary. Unavailable ones flagged.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelEngineMetricsInput) (*mcp.CallToolResult, apiclient.EngineMetricsReport, error) {
 		var since time.Duration
 		if in.Since != "" {

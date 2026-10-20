@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { toast } from '@/components/ui/toast'
 import { BetaFeatureCard } from '@/components/settings/BetaFeatureCard'
+import { ServerProfileCard } from '@/components/settings/ServerProfileCard'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
@@ -128,6 +129,7 @@ function BetaFeaturesPage() {
         </>
       }
     >
+      <ServerProfileCard />
       {groupByMaturity(features).map((group) => (
         <section
           key={group.maturity}

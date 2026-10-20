@@ -10,6 +10,12 @@ type Node struct {
 // Tree mirrors every CLI dispatch switch; the CLI's drift test keeps them in sync.
 var Tree = map[string]*Node{
 	"deploy":   nil,
+	"up":       nil,
+	"open":     nil,
+	"login":    nil,
+	"backup":   nil,
+	"restore":  nil,
+	"git":      {Subs: map[string]*Node{"remote": {Subs: map[string]*Node{"add": nil, "show": nil, "rotate": nil, "branch": nil, "revoke": nil}}}},
 	"bench":    {Subs: map[string]*Node{"run": nil, "soak": nil, "chaos": {Subs: map[string]*Node{"list": nil, "run": nil, "report": nil, "disk": nil, "free-space": nil}}}},
 	"rollback": nil,
 	"previews": {Subs: map[string]*Node{
@@ -132,7 +138,7 @@ var Tree = map[string]*Node{
 	}},
 	"jobs":       {Subs: map[string]*Node{"list": nil, "get": nil, "create": nil, "update": nil, "run": nil, "history": nil, "logs": nil, "enable": nil, "disable": nil, "delete": nil}},
 	"functions":  {Subs: map[string]*Node{"deploy": nil, "list": nil, "invoke": nil, "runtimes": nil, "init": nil, "delete": nil}},
-	"models":     {Subs: map[string]*Node{"list": nil, "get": nil, "deploy": nil, "logs": nil, "delete": nil, "restart": nil, "rotate-key": nil, "metrics": nil, "fit": nil, "residency": nil, "swap-group": nil, "wake": nil, "sleep": nil, "gpus": nil, "preflight": nil, "catalog": nil, "benchmark": nil, "cache": {Subs: map[string]*Node{"list": nil, "prune": nil}}, "keys": {Subs: map[string]*Node{"list": nil, "create": nil, "revoke": nil, "rotate": nil}}, "usage": nil}},
+	"models":     {Subs: map[string]*Node{"list": nil, "get": nil, "deploy": nil, "logs": nil, "delete": nil, "restart": nil, "rotate-key": nil, "metrics": nil, "fit": nil, "residency": nil, "swap-group": nil, "wake": nil, "sleep": nil, "gpus": nil, "preflight": nil, "catalog": nil, "benchmark": nil, "cache": {Subs: map[string]*Node{"list": nil, "prune": nil}}, "keys": {Subs: map[string]*Node{"list": nil, "create": nil, "revoke": nil, "rotate": nil}}, "endpoint": {Subs: map[string]*Node{"add": nil, "test": nil, "routing": nil, "credential": nil}}, "usage": nil}},
 	"databases":  {Subs: map[string]*Node{"rotate-password": nil, "move-env": nil, "connect": nil, "link": nil, "links": nil, "adopt": nil, "probe": nil, "create": nil, "list": nil, "get": nil, "status": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "logs": nil, "slow-queries": nil, "query": nil, "schema": nil, "set-project": nil, "clear-project": nil, "set-node": nil, "clear-node": nil, "set-resources": nil, "set-version": nil, "major-upgrade": nil, "major-upgrades": nil, "major-upgrade-rollback": nil, "major-upgrade-discard": nil, "upgrades": nil, "upgrade-policy": nil, "upgrade-now": nil, "versions": nil, "catalog": {Subs: map[string]*Node{"status": nil, "refresh": nil, "set": nil}}, "public-access": {Subs: map[string]*Node{"set": nil, "clear": nil}}, "users": {Subs: map[string]*Node{"list": nil, "create": nil, "rotate": nil, "disable": nil, "enable": nil, "delete": nil}}, "access": {Subs: map[string]*Node{"temp": nil, "list": nil, "revoke": nil, "who": nil, "grant": nil}}, "network": {Subs: map[string]*Node{"show": nil, "allow": nil, "deny": nil, "make-private": nil, "scope": nil, "tls": nil}}}},
 	"images":     {Subs: map[string]*Node{"list": nil, "layers": nil, "gc": nil, "verify": nil, "policy": nil, "lint": nil, "health": nil, "status": nil}},
 	"builds":     {Subs: map[string]*Node{"list": nil, "show": nil, "cancel": nil, "retry": nil, "cache": nil, "prune": nil}},
@@ -143,7 +149,7 @@ var Tree = map[string]*Node{
 	}}}},
 	"profile": {Subs: map[string]*Node{"list": nil}},
 	"tokens":  {Subs: map[string]*Node{"create": nil, "list": nil, "revoke": nil}},
-	"plugins": {Subs: map[string]*Node{"list": nil, "show": nil, "inspect": nil, "install": nil, "upgrade": nil, "restart": nil, "uninstall": nil, "approve": nil, "enable": nil, "disable": nil, "remove": nil, "run": nil, "trust": {Subs: map[string]*Node{"add": nil, "list": nil, "remove": nil}}, "marketplace": {Subs: map[string]*Node{"search": nil, "info": nil, "install": nil, "update": nil, "refresh": nil, "sources": {Subs: map[string]*Node{"list": nil, "add": nil, "remove": nil}}}}}},
+	"plugins": {Subs: map[string]*Node{"list": nil, "show": nil, "inspect": nil, "install": nil, "upgrade": nil, "restart": nil, "uninstall": nil, "approve": nil, "enable": nil, "disable": nil, "remove": nil, "test": nil, "dns-provider": nil, "run": nil, "trust": {Subs: map[string]*Node{"add": nil, "list": nil, "remove": nil}}, "marketplace": {Subs: map[string]*Node{"search": nil, "info": nil, "install": nil, "update": nil, "refresh": nil, "sources": {Subs: map[string]*Node{"list": nil, "add": nil, "remove": nil}}}}}},
 	"mobile":  {Subs: map[string]*Node{"pair": nil, "devices": {Subs: map[string]*Node{"list": nil, "revoke": nil}}}},
 	"domains": {Subs: map[string]*Node{
 		"list":                 nil,
@@ -213,6 +219,7 @@ var Tree = map[string]*Node{
 	}},
 	"channels":           {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil, "quiet-hours": nil}},
 	"push-subscriptions": {Subs: map[string]*Node{"list": nil, "revoke": nil}},
+	"env":                {Subs: map[string]*Node{"set": nil, "pull": nil, "push": nil}},
 	"shared-env":         {Subs: map[string]*Node{"list": nil, "set": nil, "delete": nil}},
 	"backup-targets":     {Subs: map[string]*Node{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
 	"firewall": {Subs: map[string]*Node{"list": nil, "allow": nil, "deny": nil, "delete": nil, "exposure": nil, "restrict": nil, "unrestrict": nil,
@@ -224,7 +231,7 @@ var Tree = map[string]*Node{
 			"attack-mode": {Subs: map[string]*Node{"on": nil, "off": nil}},
 		}},
 	}},
-	"security": {Subs: map[string]*Node{"posture": nil, "sessions": {Subs: map[string]*Node{"list": nil, "revoke": nil, "revoke-others": nil}},
+	"security": {Subs: map[string]*Node{"posture": nil, "reachability": nil, "sessions": {Subs: map[string]*Node{"list": nil, "revoke": nil, "revoke-others": nil}},
 		"policy": {Subs: map[string]*Node{"get": nil, "set": nil}},
 		"hsts":   {Subs: map[string]*Node{"status": nil, "enable": nil, "disable": nil}}}},
 	"storage": {Subs: map[string]*Node{"providers": nil, "list": nil, "add": nil, "test": nil, "delete": nil,
@@ -279,6 +286,7 @@ var Tree = map[string]*Node{
 	"attention":                nil,
 	"tui":                      nil,
 	"advisor":                  {Subs: map[string]*Node{"findings": nil, "summary": nil, "apply": nil, "dismiss": nil, "snooze": nil, "restore": nil, "enable": nil, "disable": nil}},
+	"ingress-limits":           {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},
 	"budget":                   {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil, "delete": nil}},
 	"costs":                    {Subs: map[string]*Node{"explore": nil, "budgets": {Subs: map[string]*Node{"list": nil, "create": nil, "set": nil, "delete": nil}}}},
 	"usage":                    {Subs: map[string]*Node{"report": nil, "settings": {Subs: map[string]*Node{"set": nil}}, "budgets": {Subs: map[string]*Node{"set": nil, "delete": nil}}}},
@@ -302,6 +310,7 @@ var Tree = map[string]*Node{
 	"session-policy":           {Subs: map[string]*Node{"list": nil, "set": nil, "clear": nil, "effective": nil}},
 	"sso": {Subs: map[string]*Node{
 		"saml":     {Subs: map[string]*Node{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "import-metadata": nil, "metadata": nil}},
+		"oidc":     {Subs: map[string]*Node{"list": nil, "get": nil, "set": nil, "evaluate": nil}},
 		"mappings": {Subs: map[string]*Node{"list": nil, "set": nil}},
 		"settings": {Subs: map[string]*Node{"get": nil, "set": nil}},
 		"scim":     {Subs: map[string]*Node{"tokens": {Subs: map[string]*Node{"list": nil, "create": nil, "rotate": nil, "revoke": nil}}}},
@@ -345,11 +354,12 @@ var Tree = map[string]*Node{
 	"cdn":            {Subs: map[string]*Node{"overview": nil}},
 	"event-webhooks": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "deliveries": nil, "replay": nil, "enable": nil, "disable": nil, "rotate-secret": nil, "delete": nil}},
 	"export":         {Subs: map[string]*Node{"destinations": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "status": nil, "enable": nil, "disable": nil, "delete": nil}}, "audit": nil}},
-	"import":         {Subs: map[string]*Node{"platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}}},
+	"import":         {Subs: map[string]*Node{"platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
 	"completion":     {Subs: map[string]*Node{"bash": nil, "zsh": nil, "fish": nil}},
 	"settings": {Subs: map[string]*Node{
 		"oauth":         {Subs: map[string]*Node{"list": nil, "set": nil}},
 		"email":         {Subs: map[string]*Node{"get": nil, "set": nil}},
+		"edge":          {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},
 		"ingress":       {Subs: map[string]*Node{"get": nil, "set": nil, "https": {Subs: map[string]*Node{"status": nil, "enable": nil}}}},
 		"dashboard-url": {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},
 		"ai-assistant": {Subs: map[string]*Node{"get": nil, "use": nil, "usage": nil,
@@ -359,6 +369,7 @@ var Tree = map[string]*Node{
 		"deploy-freeze":     {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},
 		"domain-automation": {Subs: map[string]*Node{"get": nil, "set": nil}},
 		"beta-features":     {Subs: map[string]*Node{"list": nil, "set": nil}},
+		"profile":           {Subs: map[string]*Node{"get": nil, "set": nil}},
 	}},
 	"git-providers": {Subs: map[string]*Node{"list": nil, "validate": nil}},
 	"github-app": {Subs: map[string]*Node{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil, "register-url": nil, "installations": {Subs: map[string]*Node{
@@ -367,11 +378,36 @@ var Tree = map[string]*Node{
 	"gitlab-app":       {Subs: map[string]*Node{"status": nil, "disconnect": nil, "projects": nil, "branches": nil, "use-as-source": nil}},
 	"bitbucket-app":    {Subs: map[string]*Node{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil}},
 	"gitea-app":        {Subs: map[string]*Node{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil}},
-	"templates":        {Subs: map[string]*Node{"list": nil, "get": nil, "deploy": nil, "install": nil, "delete": nil}},
+	"templates":        {Subs: map[string]*Node{"list": nil, "get": nil, "show": nil, "deploy": nil, "install": nil, "delete": nil}},
 	"compose":          {Subs: map[string]*Node{"deploy": nil, "preview": nil, "status": nil, "revisions": nil, "logs": nil, "redeploy": nil, "rollback": nil, "down": nil}},
 	"static-sites":     {Subs: map[string]*Node{"list": nil, "delete": nil}},
 	"deploy-approvals": {Subs: map[string]*Node{"list": nil, "get": nil, "approve": nil, "reject": nil}},
 	"build":            {Subs: map[string]*Node{"detect": nil, "branches": nil, "frameworks": nil}},
+}
+
+// Tier says whether a top-level verb shows in the short help or only in the advanced list.
+type Tier string
+
+// Help tiers: simple verbs cover a single-server user's day, advanced is everything else.
+const (
+	TierSimple   Tier = "simple"
+	TierAdvanced Tier = "advanced"
+)
+
+// simpleVerbs sits beside Tree, not on Node, because most leaves are nil nodes.
+var simpleVerbs = []string{"up", "deploy", "rollback", "logs", "env", "domains", "db", "backup", "restore", "apps", "status", "open", "login"}
+
+// SimpleVerbs returns the short-help verbs in display order.
+func SimpleVerbs() []string { return append([]string(nil), simpleVerbs...) }
+
+// TierOf reports the help tier of a top-level verb.
+func TierOf(verb string) Tier {
+	for _, v := range simpleVerbs {
+		if v == verb {
+			return TierSimple
+		}
+	}
+	return TierAdvanced
 }
 
 // db is the short alias for databases and shares its subtree.

@@ -1,6 +1,11 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEnvironmentScope } from '../../lib/environmentScope'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQuery,
+  useSuspenseQuery,
+} from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -13,7 +18,12 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageTemplate } from '@/components/shell/PageTemplate'
-import { appListQueryOptions } from '../../queries/apps'
+import {
+  appPagesQueryOptions,
+  appsSummaryQueryOptions,
+} from '../../queries/appPages'
+import { LoadMore } from '@/components/ui/load-more'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { staticSitesQueryOptions } from '../../queries/staticSites'
 import { RowSkeleton } from '../../components/AppRow'
 import { StaticSitesCard } from '../../components/StaticSitesCard'
@@ -30,8 +40,6 @@ import {
   type AppListFilters,
 } from '../../lib/appViews'
 import {
-  countBuckets,
-  filterApps,
   loadViewMode,
   parseStatusSearch,
   storeViewMode,
@@ -53,9 +61,13 @@ export const Route = createFileRoute('/apps/')({
     const status = parseStatusSearch(search.status)
     return status ? { status } : {}
   },
-  loader: ({ context: { queryClient } }) =>
+  loaderDeps: ({ search }) => ({ status: search.status ?? null }),
+  loader: ({ context: { queryClient }, deps }) =>
     Promise.all([
-      queryClient.ensureQueryData(appListQueryOptions()),
+      queryClient.ensureInfiniteQueryData(
+        appPagesQueryOptions({ status: deps.status }),
+      ),
+      queryClient.ensureQueryData(appsSummaryQueryOptions()),
       queryClient.ensureQueryData(staticSitesQueryOptions()),
     ]),
   component: AppListPage,
@@ -66,33 +78,52 @@ export const Route = createFileRoute('/apps/')({
 function AppListPage() {
   useEnvironmentScope()
   const { t } = useTranslation('common')
-  const { data: apps } = useSuspenseQuery({
-    ...appListQueryOptions(),
-    refetchInterval: 15_000,
-  })
   const { data: staticSites } = useSuspenseQuery(staticSitesQueryOptions())
   const status = Route.useSearch().status ?? null
   const navigate = useNavigate({ from: Route.fullPath })
   const [filters, setFilters] = useState<AppListFilters>(EMPTY_FILTERS)
+  const debouncedQuery = useDebouncedValue(filters.query, 250)
+  const pageParams = useMemo(
+    () => ({
+      status,
+      q: debouncedQuery,
+      environments: filters.environments,
+      tags: filters.tags,
+    }),
+    [status, debouncedQuery, filters.environments, filters.tags],
+  )
+  const pages = useInfiniteQuery({
+    ...appPagesQueryOptions(pageParams),
+    refetchInterval: 15_000,
+    placeholderData: keepPreviousData,
+  })
+  const { data: summary } = useQuery({
+    ...appsSummaryQueryOptions(),
+    refetchInterval: 15_000,
+  })
+  const apps = useMemo(
+    () => pages.data?.pages.flatMap((p) => p.items) ?? [],
+    [pages.data],
+  )
+  const filteredTotal = pages.data?.pages.at(-1)?.total ?? 0
+  const totalApps = summary?.total ?? filteredTotal
   const [selected, setSelected] = useState<string[]>([])
   const [mode, setMode] = useState<ViewMode>(loadViewMode)
 
   const environments = useMemo(
-    () =>
-      [
-        ...new Set(
-          apps.flatMap((app) =>
-            app.environment_name ? [app.environment_name] : [],
-          ),
-        ),
-      ].sort(),
-    [apps],
+    () => Object.keys(summary?.by_environment ?? {}).sort(),
+    [summary],
   )
-  const counts = useMemo(() => countBuckets(apps), [apps])
-  const filteredApps = useMemo(
-    () => filterApps(apps, filters, status),
-    [apps, filters, status],
+  const counts = useMemo(
+    () => ({
+      running: summary?.running ?? 0,
+      deploying: summary?.deploying ?? 0,
+      failing: summary?.failing ?? 0,
+      stopped: summary?.stopped ?? 0,
+    }),
+    [summary],
   )
+  const filteredApps = apps
 
   const setStatus = (next: StatusFilter) => {
     void navigate({ search: next ? { status: next } : {}, replace: true })
@@ -112,12 +143,12 @@ function AppListPage() {
   const narrowed = filtersActive(filters) || status !== null
 
   const countLabel =
-    apps.length === 0
+    totalApps === 0
       ? undefined
       : t('appsList.count', {
           defaultValue: '{{count}} apps',
-          count: filteredApps.length,
-          total: apps.length,
+          count: filteredTotal,
+          total: totalApps,
           context: narrowed ? 'filtered' : undefined,
         })
 
@@ -144,7 +175,7 @@ function AppListPage() {
                 : t('appsList.selectAll', { defaultValue: 'Select all' })}
             </Button>
           ) : null}
-          {apps.length > 0 ? (
+          {totalApps > 0 ? (
             <span className="hidden sm:block">
               <ViewToggle mode={mode} onChange={changeMode} />
             </span>
@@ -170,7 +201,7 @@ function AppListPage() {
         </>
       }
     >
-      {apps.length > 0 ? (
+      {totalApps > 0 ? (
         <div className="space-y-3">
           <AppsStatusChips
             counts={counts}
@@ -184,7 +215,7 @@ function AppListPage() {
           />
         </div>
       ) : null}
-      {apps.length === 0 && staticSites.length === 0 ? (
+      {totalApps === 0 && staticSites.length === 0 ? (
         <EmptyState
           illustration="rocket"
           icon={<PackageIcon className="size-6" />}
@@ -218,6 +249,8 @@ function AppListPage() {
             </div>
           }
         />
+      ) : pages.isPending ? (
+        <AppListRowsPending />
       ) : filteredApps.length === 0 ? (
         <EmptyState
           illustration="chart"
@@ -226,7 +259,7 @@ function AppListPage() {
           description={t('appsList.noMatchBody', {
             defaultValue:
               'No app fits the current status and search. Clear the filters to see all {{total}}.',
-            total: apps.length,
+            total: totalApps,
           })}
           action={
             <Button
@@ -242,12 +275,22 @@ function AppListPage() {
           }
         />
       ) : (
-        <AppsListBody
-          apps={filteredApps}
-          mode={mode}
-          selected={selected}
-          onSelect={toggleSelected}
-        />
+        <>
+          <AppsListBody
+            apps={filteredApps}
+            mode={mode}
+            selected={selected}
+            onSelect={toggleSelected}
+          />
+          <LoadMore
+            loaded={filteredApps.length}
+            total={filteredTotal}
+            loading={pages.isFetchingNextPage}
+            onLoadMore={() => {
+              void pages.fetchNextPage()
+            }}
+          />
+        </>
       )}
       <StaticSitesCard />
       <AppsBulkBar
@@ -260,15 +303,21 @@ function AppListPage() {
   )
 }
 
+function AppListRowsPending() {
+  return (
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <ListHeader />
+      {Array.from({ length: 6 }, (_, i) => (
+        <RowSkeleton key={i} />
+      ))}
+    </div>
+  )
+}
+
 function AppListPending() {
   return (
     <PageTemplate title="Apps">
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
-        <ListHeader />
-        {Array.from({ length: 6 }, (_, i) => (
-          <RowSkeleton key={i} />
-        ))}
-      </div>
+      <AppListRowsPending />
     </PageTemplate>
   )
 }

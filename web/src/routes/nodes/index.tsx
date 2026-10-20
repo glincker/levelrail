@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PendingJoinTokensCard } from '../../components/nodes/PendingJoinTokensCard'
 import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
-import { nodeListQueryOptions, useNodes } from '../../queries/nodes'
+import { nodePagesQueryOptions } from '../../queries/nodes'
 import { useFleetResourceUsage } from '../../queries/fleetResourceUsage'
-import { useAppListOptional } from '../../queries/apps'
-import { useDatabases } from '../../queries/databases'
 import { NODE_LIST_GRID, RowSkeleton } from '../../components/NodeRow'
 import { NodesTable } from '../../components/NodesTable'
 import { AddNodeWizard } from '../../components/AddNodeWizard'
@@ -13,12 +13,12 @@ import { BuildStrainSuggestion } from '../../components/BuildStrainSuggestion'
 import { EmptyState } from '../../components/ui/empty-state'
 import { ZoneSpreadCard } from '../../components/nodes/ZoneSpreadCard'
 import { PageTemplate } from '../../components/shell/PageTemplate'
-import { countResourcesByNode } from '../../lib/nodeResourceCounts'
+import { LoadMore } from '../../components/ui/load-more'
 
 // The loader primes the cache; the table virtualizes itself past 50 rows.
 export const Route = createFileRoute('/nodes/')({
   loader: ({ context: { queryClient } }) =>
-    queryClient.ensureQueryData(nodeListQueryOptions()),
+    queryClient.ensureInfiniteQueryData(nodePagesQueryOptions()),
   component: NodeListPage,
   pendingComponent: NodeListPending,
 })
@@ -44,17 +44,17 @@ function ListHeader() {
 
 function NodeListPage() {
   const { t } = useTranslation('nodes')
-  const { data: nodes } = useNodes()
+  const pages = useSuspenseInfiniteQuery(nodePagesQueryOptions())
+  const nodes = useMemo(
+    () => pages.data.pages.flatMap((p) => p.items),
+    [pages.data],
+  )
+  const total = pages.data.pages.at(-1)?.total ?? nodes.length
   // Plain query: a 501 (telemetry not configured) is a real state, and the
   // list must render either way with the usage cells falling back to "-".
   const { data: usage } = useFleetResourceUsage()
-  const { data: apps } = useAppListOptional()
-  const { data: databases } = useDatabases()
   const usageByNodeId = new Map((usage?.nodes ?? []).map((n) => [n.node_id, n]))
-  const counts =
-    apps && databases
-      ? countResourcesByNode(nodes, apps, databases)
-      : new Map<string, number>()
+  const counts = new Map(nodes.map((n) => [n.id, n.resource_count ?? 0]))
   return (
     <PageTemplate
       title={t('list.title')}
@@ -65,7 +65,7 @@ function NodeListPage() {
         <>
           {nodes.length > 0 ? (
             <span className="text-sm text-muted-foreground">
-              {t('list.count', { count: nodes.length })}
+              {t('list.count', { count: total })}
             </span>
           ) : null}
           <AddNodeWizard />
@@ -89,6 +89,14 @@ function NodeListPage() {
           counts={counts}
         />
       )}
+      <LoadMore
+        loaded={nodes.length}
+        total={total}
+        loading={pages.isFetchingNextPage}
+        onLoadMore={() => {
+          void pages.fetchNextPage()
+        }}
+      />
     </PageTemplate>
   )
 }

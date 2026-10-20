@@ -85,7 +85,7 @@ func (rt *Router) toIngressSettingsResource(s store.IngressSettings) ingressSett
 	res.PublicHost = rt.publicHost
 	res.PublicHostSource = rt.publicHostSource
 	res.ACMESkippedUpstream = s.TLSTerminatedUpstream && s.ACMEEnabled
-	res.TrustedProxiesMissing = s.TLSTerminatedUpstream && rt.doctorEdge != nil && rt.doctorEdge.TrustedProxies == 0
+	res.TrustedProxiesMissing = s.TLSTerminatedUpstream && rt.doctorEdge != nil && rt.doctorEdge.TrustedProxies == 0 && !rt.edgeTrustedProxiesSet(context.Background())
 	httpPort, httpsPort := rt.doctorHTTPPort, rt.doctorHTTPSPort
 	if httpPort == 0 {
 		httpPort = defaultDoctorHTTPPort
@@ -527,6 +527,7 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 	out = append(out, rt.standaloneDomainRows(r, func(d string) domainResource {
 		return domainResource{WAFEnabled: wafEnabled[d], HasRedirect: hasRedirect[d], MaintenanceEnabled: inMaintenance[d], HasBasicAuth: hasBasicAuth[d], ACMEFailure: acmeFailureFor(d)}
 	})...)
+	out = pageQueryDefault(w, r, out, appListMaxLimit)
 	rt.annotateDomainTLS(r.Context(), out)
 	rt.annotateDomainReachability(r.Context(), out)
 	rt.annotateDomainEnforcement(r.Context(), out)

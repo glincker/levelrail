@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // Returns one generic JSON body for every path, so both template calls decode without per-path routing.
@@ -105,6 +107,28 @@ func TestRun_Templates_Get(t *testing.T) {
 	}
 	if !strings.Contains(stdout, "image: postgres") {
 		t.Errorf("stdout = %q, want the compose body included", stdout)
+	}
+}
+
+func TestRun_Templates_Show(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, serviceTemplateDetail{ID: "agent", Name: "Agent", Requirements: apiclient.TemplateRequirements{
+		Level:       "elevated",
+		Findings:    []apiclient.TemplateFinding{{Code: "docker_socket", Severity: "elevated", Message: "Mounts the Docker socket", Services: []string{"agent"}}},
+		Protections: []apiclient.TemplateProtection{{Code: "rollback", Label: "One-step rollback"}},
+	}})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"templates", "show", "agent", "--api-url", srv.URL})
+	for _, want := range []string{"level: elevated", "[elevated] Mounts the Docker socket (agent)", "One-step rollback"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("stdout = %q, want %q", stdout, want)
+		}
+	}
+
+	jsonOut, _ := runCLIExpectOK(t, []string{"templates", "show", "agent", "--json", "--api-url", srv.URL})
+	if !strings.Contains(jsonOut, `"level": "elevated"`) && !strings.Contains(jsonOut, `"level":"elevated"`) {
+		t.Errorf("json stdout = %q", jsonOut)
 	}
 }
 

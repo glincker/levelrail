@@ -18,6 +18,10 @@ const (
 	DiskPressure       = "disk-pressure"
 	OOMDuringReadiness = "oom-during-readiness"
 	IngressSteady      = "ingress-steady"
+	DeployLatency      = "deploy-latency"
+	RolloutUnderLoad   = "rollout-under-traffic"
+	IngressConcurrency = "ingress-concurrency"
+	ReplicaFailover    = "replica-failover"
 )
 
 // Result statuses.
@@ -43,6 +47,10 @@ func Catalog() []Info {
 		{DiskPressure, "Scratch volume filled", "the node disk space rule fires on the measured usage"},
 		{OOMDuringReadiness, "OOM kill during the readiness wait", "the deploy fails as OOMKilledDuringReadiness and the old version keeps serving"},
 		{IngressSteady, "Rising steady load through the ingress", "the lowest step runs clean; the highest clean step is recorded as this machine's ceiling"},
+		{DeployLatency, "Deploy latency from image to serving", "each redeploy becomes healthy and routed; p50 and p95 over the runs are recorded"},
+		{RolloutUnderLoad, "Rolling deploy of two replicas under traffic", "no request fails while the new version replaces the old one"},
+		{IngressConcurrency, "Ingress throughput at fixed concurrency", "requests per second and p50, p95, p99 are recorded at each concurrency with no errors"},
+		{ReplicaFailover, "Kill one of two replicas under traffic", "the surviving replica keeps answering and the second replica is replaced"},
 	}
 }
 

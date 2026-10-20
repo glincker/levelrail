@@ -4,11 +4,19 @@ description: "Sign in through Okta, Microsoft Entra ID, Keycloak or any SAML 2.0
 "og:url": "https://docs.levelrail.com/sso-saml"
 ---
 
-> **Experimental, off by default.** SAML sign-in and [SCIM provisioning](scim.md) sit behind the `saml-scim` beta feature: turn it on under **Settings, Beta features** or with `APP_EXPERIMENTAL=saml-scim`. While off, the routes answer `404`, the settings page and the sign-in button are hidden, and a "require single sign-on" setting is not applied. The service provider is the sign-in library's native SAML implementation; Levelrail adds a stricter response check, account policy and role mapping around it. It is tested against a signing test identity provider, not yet against a live Okta, Entra ID or Keycloak tenant (see [What has not been verified](#what-has-not-been-verified)).
+> **Beta, off by default.** SAML sign-in and [SCIM provisioning](scim.md) sit behind the `saml-scim` beta feature: turn it on under **Settings, Beta features** or with `APP_EXPERIMENTAL=saml-scim`. While off, the routes answer `404`, the settings page and the sign-in button are hidden, and a "require single sign-on" setting is not applied. The service provider is built on the sign-in library; Levelrail adds a stricter response check, account policy and role mapping around it. It is tested against a signing test identity provider, not yet against a live Okta, Entra ID or Keycloak tenant (see [What has not been verified](#what-has-not-been-verified)).
 
-Connect one or more SAML 2.0 identity providers (IdPs). Each enabled connection adds a button to the sign-in page. Directory groups can decide each person's role, and you can require single sign-on for everyone except root users.
+Connect one or more SAML 2.0 identity providers (IdPs). For OpenID Connect and OAuth providers see [OAuth and OIDC single sign-on](sso-oidc.md), which has the same group, role and account controls. Each enabled connection adds a button to the sign-in page. Directory groups can decide each person's role, and you can require single sign-on for everyone except root users.
 
 <InlineToc default-open />
+
+## SCIM provisioning at a glance
+
+SCIM 2.0 provisioning shares the `saml-scim` toggle and the group to role mappings below. Open **Settings, Single sign-on, Directory sync (SCIM)**, copy the base URL `https://<dashboard>/api/v1/scim/v2`, create a token (shown once) and paste both into your IdP. It supports `/Users` and `/Groups` (list, get, create, `PATCH`, delete), deactivation that revokes sessions at once, and the discovery endpoints. Bulk, sorting, ETags and `PUT` are not supported. Full steps, IdP guides and limits: [SCIM provisioning](scim.md).
+
+```bash
+levelrail-cli sso scim tokens create okta-provisioning
+```
 
 ## Before you start
 
@@ -48,7 +56,7 @@ Sign-in is SP-initiated only: it always starts from the button on the sign-in pa
 
 Levelrail's check, before the library sees the response:
 
-- `InResponseTo` names the AuthnRequest this browser started, and the assertion carries a bearer confirmation for that same request. Each request ID is single use, expires after ten minutes, and is bound to the browser by a secure cookie. This is what refuses IdP-initiated, forwarded and replayed responses: the library on its own accepts IdP-initiated responses and does not check `InResponseTo`.
+- `InResponseTo` names the AuthnRequest this browser started, and the assertion carries a bearer confirmation for that same request. Each request ID is single use, expires after ten minutes, and is bound to the browser by a secure cookie. This is what refuses IdP-initiated, forwarded and replayed responses. The library on its own accepts IdP-initiated responses (no `InResponseTo`) and checks `InResponseTo` only when one is present.
 - The assertion names this connection's entity ID as its audience. An assertion without an audience restriction is refused.
 - The response carries a valid XML signature from the stored IdP certificate, the issuer is the configured IdP entity ID, `Destination` and the bearer `Recipient` are this connection's ACS URL, `NotBefore` and `NotOnOrAfter` hold (three minutes of clock skew), and the response and assertion are no older than 90 seconds.
 
@@ -58,7 +66,7 @@ The library's check, which then links the identity and issues the session:
 
 In-flight sign-ins are held in memory, so a control plane restart in the middle of one means starting again from the button.
 
-Encrypted assertions should work (the IdP can encrypt to the service provider certificate shown at the bottom of the settings page), but are not covered by a test yet.
+Encrypted assertions are not supported. The sign-in library looks for the assertion signature in the raw response, which an encrypted assertion hides, so the response is refused with `saml assertion not signed` and no account or session is left behind. Turn assertion encryption off at the IdP.
 
 ## Accounts and roles
 
@@ -81,11 +89,11 @@ The sign-in library groups SAML connections, SCIM tokens and directory users und
 Map IdP groups to stored roles under **Group to role mappings**, or:
 
 ```bash
-levelrail-cli sso mappings set --map Admins=role_admin:100 --map Engineering=role_operator:10 --map everyone=role_viewer
+levelrail-cli sso mappings set --map Engineering=role_operator:10 --map everyone=role_viewer
 levelrail-cli sso mappings list
 ```
 
-The highest priority group the person belongs to decides the role. Group names match case-insensitively. A person in no mapped group gets the connection's default role. With **Apply the mapped role on every sign-in** (`--sync-roles`), the role is re-applied at each sign-in, so a group change at the IdP takes effect at the next one. With sync on and no default role, a person in no mapped group is refused. The last root user is never demoted by a mapping, so directory drift cannot lock the instance out. The same mappings drive [SCIM provisioning](scim.md) groups.
+The highest priority group the person belongs to decides the role. Group names match case-insensitively. A person in no mapped group gets the connection's default role. With **Apply the mapped role on every sign-in** (`--sync-roles`), the role is re-applied at each sign-in, so a group change at the IdP takes effect at the next one. With sync on and no default role, a person in no mapped group is refused. A mapping cannot name a role that holds root: only a person with root can grant it, so an assertion never can. A user who already holds root is never changed by role sync, so directory drift cannot lock the instance out. The same mappings drive [SCIM provisioning](scim.md) groups and [OAuth and OIDC sign-in](sso-oidc.md).
 
 The groups attribute defaults to `http://schemas.xmlsoap.org/claims/Group`, the email attribute to `http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress` and the name attribute to `http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name`. Set the attribute names on the connection when your IdP sends something else (for example `email` and `groups`).
 
@@ -105,7 +113,7 @@ See [Emergency access](emergency-access.md) for the host-side recovery routes.
 
 ## IdP setup guides
 
-These follow each IdP's documented SAML setup. They have not been run end to end against these IdPs yet.
+The Okta and Entra ID steps follow each IdP's documented SAML setup and have not been run against a live tenant. The Keycloak steps were run end to end (see [Tested against](#tested-against)).
 
 ### Okta
 
@@ -134,10 +142,30 @@ These follow each IdP's documented SAML setup. They have not been run end to end
 5. **Client scopes, dedicated scope, Add mapper:** a **User Property** mapper for `email` (SAML attribute name `email`) and a **Group list** mapper with attribute name `groups` and **Full group path** off. Set the connection's attribute names to match.
 6. Import `https://<keycloak>/realms/<realm>/protocol/saml/descriptor`.
 
+## Tested against
+
+Run against real identity providers in local Docker containers, driven by a scripted HTTP client with a cookie jar (no browser): SP-initiated login, the IdP's own login form, and the signed response posted back to the ACS of an in-process control plane. The test is `internal/api/sso_saml_live_test.go`, skipped under `-short` and run only with `LEVELRAIL_LIVE_IDP=1`.
+
+| IdP | Version | Verified |
+| --- | --- | --- |
+| Keycloak | 26.0.8, `start-dev`, https | Everything in the list below, plus Keycloak importing Levelrail's SP metadata as a client |
+| SimpleSAMLphp | 1.15.2 (`kristophjunge/test-saml-idp`), https | Everything in the list below |
+
+Verified against both:
+
+- Metadata: the IdP descriptor parses into entity ID, sign-in URL and signing certificate.
+- Sign-in with a signed assertion creates the account with the right email, picks up the group attribute and applies the mapped role (with role sync on). A second sign-in links the same account.
+- Account creation off refuses an unknown person, and signs in an invited one.
+- A tampered response, a replayed response (same flow and a fresh flow), a response with no flow cookie and a response issued for another connection are all refused, each for its own reason.
+- An assertion that is not signed is refused when only the outer response is signed (the library gate) and when nothing is signed, and no account is left behind.
+- Keycloak only: an IdP-initiated response is refused, with and without a flow cookie. Encrypted assertions are refused cleanly (see above).
+
+Not verified live, covered only by the canned-response unit tests: a wrong audience, expired or not-yet-valid assertions (the three minute skew cannot be waited out), an IdP certificate rotation, and metadata import from an https URL (the IdPs ran with self-signed certificates and the fetch refuses private addresses).
+
 ## What has not been verified
 
-- Sign-in against a live Okta, Entra ID or Keycloak tenant. The tests sign responses with a local test IdP built on the same SAML library.
-- Encrypted assertions.
+- Sign-in against a live Okta or Entra ID tenant. Their attribute names, NameID formats and group claims are covered by the attribute settings above, not by a run.
+- Encrypted assertions are refused, see above.
 - An IdP certificate rotation: a connection holds one signing certificate, so the new certificate has to be imported at the moment the IdP switches.
 
 ## Troubleshooting

@@ -44,7 +44,7 @@ func registerIAMTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "simulate_iam_access",
-		Description: "Ask whether a user or token can do an ability on a resource (for example write on app:web). Returns allow or deny, the statement that decided it, and every statement that matched, using the real evaluator. Read-only; changes nothing.",
+		Description: "Can a user or token do an ability on a resource (write on app:web)? Allow or deny with the deciding and matching statements. Read only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in simulateIAMInput) (*mcp.CallToolResult, apiclient.IAMSimulation, error) {
 		sim, err := client.SimulateIAM(ctx, in.PrincipalType, in.PrincipalID, in.Action, in.Resource)
 		if err != nil {

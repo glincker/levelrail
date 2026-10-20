@@ -12,7 +12,7 @@ This is a runbook for moving one Vercel-hosted Next.js app onto a Levelrail inst
 Some areas are still beta (see [feature status](/feature-status)), and real public ACME has one recorded live run but no renewal or wildcard verification yet (see the [ACME verification runbook](/acme-verification-runbook)). Run the new deployment in parallel with Vercel, and keep Vercel as the rollback path until the shadow run in section 6 is clean.
 </Warning>
 
-Unlike the platform importer in [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover), there is no importer for Vercel. Everything below is manual. Record every issue you hit in `FRICTION.md` at the repo root.
+Unlike the platform importer in [Migrate to Levelrail](/migrate-to-levelrail), there is no importer for Vercel. Everything below is manual.
 
 ## 1. Inventory what Vercel holds
 
@@ -147,7 +147,6 @@ Run both platforms side by side long enough for boring problems to appear. Sugge
 - [ ] Response time and error rate compare acceptably against Vercel, using the app's request metrics.
 - [ ] [Preview environments](/previews) open, update, and tear down on a test pull request.
 - [ ] A control plane backup exists (see [Control plane backup](/control-plane-backup)).
-- [ ] Every issue found is logged in `FRICTION.md` with a severity.
 
 Decommission Vercel only after this passes and you have decided what to do about each gap in section 4.
 

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/network"
+	"github.com/GLINCKER/levelrail/internal/profile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -87,7 +88,7 @@ func (rt *Router) buildMeshSettings(ctx context.Context) (meshSettingsResource, 
 		}
 		saved = s
 	}
-	configured, source := network.ResolveEnabled(rt.meshSettingsLookup(), saved.Enabled, saved.Set)
+	configured, source := network.ResolveEnabledWithProfile(rt.meshSettingsLookup(), saved.Enabled, saved.Set, profile.For(profile.Active()).Mesh)
 	running := rt.mesh != nil
 
 	nodes, err := rt.nodes.ListNodes(ctx)

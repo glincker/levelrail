@@ -11,11 +11,12 @@ import (
 // deniedCommands are command paths that only make sense on an operator's own
 // machine: they read or write local files, local config, or need a TTY.
 var deniedCommands = []string{
-	"auth", "profile", "completion", "init", "tui", "proxy", "migrate",
+	"auth", "login", "up", "profile", "completion", "init", "tui", "proxy", "migrate",
 	"import", "apply", "diff", "export",
 	"tokens create",
 	"pipelines validate", "pipelines save",
 	"apps exec",
+	"env pull", "env push",
 	"logs fetch",
 	"backups download", "app-volume-backups download",
 	"control-plane-backups download", "control-plane-backups keys", "control-plane-backups escrow",

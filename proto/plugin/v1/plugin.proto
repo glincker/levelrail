@@ -30,6 +30,88 @@ service PanelService {
   rpc PanelAction(PanelActionRequest) returns (PanelActionResponse);
 }
 
+// DnsProviderService is served by plugins whose kind is dns_provider. Every
+// request carries the credential for that one call in secret, which the
+// plugin must not persist or log.
+service DnsProviderService {
+  rpc ListZones(ListZonesRequest) returns (ListZonesResponse);
+  rpc ListRecords(ListRecordsRequest) returns (ListRecordsResponse);
+  rpc UpsertRecord(UpsertRecordRequest) returns (UpsertRecordResponse);
+  rpc DeleteRecord(DeleteRecordRequest) returns (DeleteRecordResponse);
+  rpc VerifyRecord(VerifyRecordRequest) returns (VerifyRecordResponse);
+}
+
+message DnsRecord {
+  // Name relative to the zone, "@" for the apex.
+  string name = 1;
+  string type = 2;
+  string value = 3;
+  uint32 ttl_seconds = 4;
+  bool proxied = 5;
+}
+
+message DnsOutcome {
+  bool ok = 1;
+  string detail = 2;
+  bool retryable = 3;
+}
+
+message ListZonesRequest {
+  string config_json = 1;
+  string secret = 2;
+}
+
+message ListZonesResponse {
+  DnsOutcome outcome = 1;
+  repeated string zones = 2;
+}
+
+message ListRecordsRequest {
+  string zone = 1;
+  string config_json = 2;
+  string secret = 3;
+}
+
+message ListRecordsResponse {
+  DnsOutcome outcome = 1;
+  repeated DnsRecord records = 2;
+}
+
+message UpsertRecordRequest {
+  string zone = 1;
+  DnsRecord record = 2;
+  string config_json = 3;
+  string secret = 4;
+}
+
+message UpsertRecordResponse {
+  DnsOutcome outcome = 1;
+}
+
+message DeleteRecordRequest {
+  string zone = 1;
+  DnsRecord record = 2;
+  string config_json = 3;
+  string secret = 4;
+}
+
+message DeleteRecordResponse {
+  DnsOutcome outcome = 1;
+}
+
+message VerifyRecordRequest {
+  string zone = 1;
+  DnsRecord record = 2;
+  string config_json = 3;
+  string secret = 4;
+}
+
+message VerifyRecordResponse {
+  DnsOutcome outcome = 1;
+  // True when the provider now serves exactly the requested record.
+  bool present = 2;
+}
+
 message DescribeRequest {
   repeated uint32 host_contract_versions = 1;
 }

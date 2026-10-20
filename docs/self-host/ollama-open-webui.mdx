@@ -26,6 +26,25 @@ Recommended memory: about 2048 MiB.
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
+## Security and requirements
+
+Level: **Review before deploying**.
+
+What this template needs:
+
+- Image is not pinned to a version tag, so a redeploy can pull different code (`ollama-api`): ollama/ollama:latest.
+- Publishes ports directly on the host (`open-webui`): 8080:8080.
+- Stores data in named volumes (`ollama-api`, `open-webui`): ollama_data, open_webui_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
 ## Deploy Ollama + Open WebUI with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Ollama + Open WebUI. Review the Compose body and deploy.

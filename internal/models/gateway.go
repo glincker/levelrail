@@ -51,10 +51,14 @@ type Gateway struct {
 	touchMu   sync.Mutex
 	lastTouch map[string]time.Time
 
+	external externalDeps
+
 	mu       sync.Mutex
 	loadedAt time.Time
 	byHost   map[string]store.Model
+	byName   map[string]store.Model
 	keys     map[string][]store.ModelKey
+	ext      map[string]externalTarget
 }
 
 // NewGateway builds a Gateway. hosts maps a model to the hostnames it is
@@ -75,6 +79,7 @@ func NewGateway(st GatewayStore, hosts *HostResolver, logger *slog.Logger) *Gate
 func (g *Gateway) SetLimits(l GatewayLimits) {
 	g.limits = l
 	g.transport = newGatewayTransport(l)
+	g.external.setTransport(newEndpointTransport(l.DialTimeout, l.HeaderTimeout))
 }
 
 // StartMetering flushes usage to st every flush interval until ctx ends.
@@ -115,10 +120,13 @@ func (g *Gateway) lookup(ctx context.Context, host string) (store.Model, []store
 		}
 		g.keyLimits.retain(live)
 		g.byHost = map[string]store.Model{}
+		g.byName = map[string]store.Model{}
+		g.ext = g.loadExternal(ctx)
 		for _, m := range list {
 			if m.Deleting {
 				continue
 			}
+			g.byName[m.Name] = m
 			for _, h := range g.hosts.Hosts(m) {
 				g.byHost[h] = m
 			}
@@ -197,7 +205,8 @@ func (g *Gateway) serve(w *statusWriter, r *http.Request, m store.Model, keys []
 		return
 	}
 	onDemand := m.Residency == store.ResidencyOnDemand
-	if m.EndpointDial == "" && !onDemand {
+	external := m.Compute == store.ComputeExternal
+	if m.EndpointDial == "" && !onDemand && !external {
 		writeOpenAIError(w, http.StatusServiceUnavailable, "model_not_ready", "model is not running yet")
 		return
 	}
@@ -240,6 +249,10 @@ func (g *Gateway) serve(w *statusWriter, r *http.Request, m store.Model, keys []
 }
 
 func (g *Gateway) forward(w http.ResponseWriter, r *http.Request, m store.Model) {
+	if m.Compute == store.ComputeExternal {
+		g.forwardExternal(w, r, m)
+		return
+	}
 	clientCtx := r.Context()
 	ctx, cancel := context.WithCancel(clientCtx)
 	defer cancel()

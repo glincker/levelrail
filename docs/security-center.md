@@ -29,12 +29,17 @@ Anyone with `read` gets the score and counts, plus a short checklist for their o
 | Admins can sign in with a code | medium | `auth.code_login` | one click: turn it off |
 | HSTS is off while real certificates are in place | medium | HSTS setting and certificates | one click: probe, then turn it on |
 | Node agents older than the minimum version | medium | each node's reported agent version | Nodes |
+| Routed domains without an enabled shield | low | per-domain shield policies, skipped while a proxy hides client IPs | Domains, Shield |
 | No admin has a passkey | low | registered passkeys | Settings > Security |
 | API tokens unused for a long time | low | last use, `warn_unused_days` | Settings > API tokens |
 | Old sessions still signed in | low | sessions older than `APP_SECURITY_SESSION_MAX_AGE_DAYS` (default 7) | Sessions tab |
 | Only password sign-ins need new browser approval | low | `auth.approval_scope` | one click: every method |
-| The master key is missing or overdue for rotation | low | rotation history, `APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS` | `secrets rotate-master-key` |
+| The master key is missing, or was rotated longer ago than the warn window | low | rotation history, `APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS` | `secrets rotate-master-key` |
 | Secrets older than 90 days | low | secret update times | rotate the secret |
+
+### Recommendations on a fresh server
+
+A brand new single server cannot do everything on day one, so two failing checks are shown as **Recommended** and cost no score until they matter: off-box control plane backups, and a master key that has never been rotated (the doctor already treats that as informational, so the two views agree). Both stay visible with their fix. They start costing points when at least one app is deployed, or at once if you set `APP_SECURITY_POSTURE_STRICT=true`. A master key that was rotated and is now older than the warn window is a real failing check, and a missing master key always is. Recommended items are counted separately in `counts.recommended` and carry `"recommended": true`. No check was removed or weakened: only whether it lowers the score changed.
 
 HSTS is never on by default. The **Enable HSTS** button first probes every public domain over HTTPS and only turns it on when each serves a publicly trusted certificate; a self-signed or internal certificate blocks it, because browsers give no way past an HSTS error. It covers subdomains and browsers remember it for 180 days. `levelrail-cli security hsts status|enable|disable` does the same, and `PUT /api/v1/security/hsts` refuses with 409 until the probe passes.
 
@@ -46,6 +51,21 @@ From the CLI:
 levelrail-cli security posture
 levelrail-cli security posture --json
 ```
+
+## Exposure report
+
+The **Exposure** tab (admins) answers "what can the internet reach" for every app and database: its domains, its published host ports and whether a firewall rule narrows each one. `GET /api/v1/security/reachability` returns the same report (root).
+
+Each finding has a typed fix and a **Re-check** button re-measures it, including the score above:
+
+| Finding | Fix |
+| --- | --- |
+| An app is published on a direct host port | Automatic: **Serve through the proxy** recreates the container and closes the port (apps on the control plane's own node). Guided for apps on other nodes. |
+| A domain has no shield | Automatic: **Apply recommended shield** applies the recommended rate limits. |
+| A database or other container port is open to everyone | Guided: opens the database access page or the firewall controls where you pick the allowed addresses. |
+| The Docker API is reachable | Guided: opens the firewall controls. |
+
+From the CLI: `levelrail-cli security reachability`, `--recheck` and `--fix ID` (see the [CLI reference](/cli-reference)). The port findings are the same ones the [exposure audit](/exposure-audit) reports, so fixing them raises the score. A node whose firewall rules cannot be read is flagged, because its restricted ports may show as open.
 
 ## Sessions and devices
 

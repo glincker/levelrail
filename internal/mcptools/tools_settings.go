@@ -26,7 +26,7 @@ func registerSettingsTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_email_settings",
-		Description: "Get the control plane's outbound email settings: backend (smtp/ses/disabled) and its non-secret fields (host, port, username, from address). SMTP password and SES secret access key are never returned, only smtp_password_set/ses_secret_access_key_set booleans reporting whether one is stored.",
+		Description: "Outbound email settings: backend and non-secret fields. Secrets return only as *_set booleans.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.EmailSettingsResource, error) {
 		settings, err := client.GetEmailSettings(ctx)
 		if err != nil {

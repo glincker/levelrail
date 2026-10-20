@@ -21,13 +21,14 @@ const (
 )
 
 type importAppsFlags struct {
-	from, url, token, only, collision, apiURL, profile, session, snapshot string
-	tokenStdin, plan, apply, verify, receipt, rollback                    bool
-	acceptSuggested, insecure, allowPrivate, allowLoopback                bool
-	jsonOut                                                               bool
-	images                                                                imageMoveFlags
-	maps                                                                  mapPairs
-	wait                                                                  time.Duration
+	from, url, token, only, collision, apiURL, profile, session, snapshot, appName string
+	tokenStdin, plan, apply, verify, receipt, rollback                             bool
+	acceptSuggested, insecure, allowPrivate, allowLoopback                         bool
+	jsonOut                                                                        bool
+	images                                                                         imageMoveFlags
+	ssh                                                                            importSSHFlags
+	maps                                                                           mapPairs
+	wait                                                                           time.Duration
 }
 
 type mapPairs []apiclient.AppImportMapping
@@ -60,9 +61,10 @@ func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr i
 	fs := flag.NewFlagSet(prog+" import apps", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, importAppsUsage(prog)) }
-	fs.StringVar(&f.from, "from", "coolify", "source platform: coolify, dokploy, caprover or docker")
+	fs.StringVar(&f.from, "from", "coolify", "source platform: coolify, dokploy, caprover, docker, docker-ssh, compose or dokku")
 	fs.StringVar(&f.url, "url", "", "source platform base URL")
-	fs.StringVar(&f.snapshot, "snapshot", "", "docker inspect JSON file (use with --from docker, or - for stdin)")
+	fs.StringVar(&f.snapshot, "snapshot", "", "source file: docker inspect JSON, a compose file or a dokku env dump (- for stdin)")
+	fs.StringVar(&f.appName, "app-name", "", "the app a dokku env dump belongs to (--from dokku)")
 	fs.StringVar(&f.token, "token", "", "source token (prefer "+envImportSourceToken+" or --token-stdin)")
 	fs.BoolVar(&f.tokenStdin, "token-stdin", false, "read the source token from the first line of stdin")
 	fs.BoolVar(&f.plan, "plan", false, "print the inventory, verdicts and preflight, create nothing")
@@ -80,6 +82,11 @@ func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr i
 	fs.BoolVar(&f.allowLoopback, "allow-loopback", false, "allow a loopback source (control plane also needs "+"APP_IMPORT_ALLOW_LOOPBACK=true)")
 	fs.DurationVar(&f.wait, "wait", 15*time.Minute, "how long --verify and --transfer-images wait")
 	f.images.register(fs)
+	fs.StringVar(&f.ssh.fingerprint, "fingerprint", "", "host key fingerprint to pin for --from docker-ssh, SHA256:... (omit it to list the server's keys)")
+	fs.BoolVar(&f.ssh.insecureHostKey, "insecure-host-key", false, "skip host key verification for --from docker-ssh (unsafe, warned on every surface)")
+	fs.StringVar(&f.ssh.socket, "ssh-socket", "", "Docker socket path on the old host for --from docker-ssh (default /var/run/docker.sock)")
+	fs.BoolVar(&f.ssh.testOnly, "test-connection", false, "with --from docker-ssh: log in and count containers, volumes and images, change nothing")
+	fs.BoolVar(&f.ssh.copyVolumes, "copy-volumes", false, "copy a docker-ssh session's volumes through the ssh tunnel, read only on the old host (needs --session)")
 	fs.StringVar(&f.apiURL, "api-url", "", "control plane API base URL")
 	fs.StringVar(&f.profile, "profile", "", "named credentials profile for the control plane")
 	fs.BoolVar(&f.jsonOut, "json", false, "print JSON")
@@ -96,30 +103,48 @@ func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr i
 	case f.images.any() && f.session == "":
 		_, _ = fmt.Fprintf(stderr, "%s: --transfer-images, --images and --cancel-images need --session\n", prog)
 		return exitUsage
+	case f.ssh.copyVolumes && f.session == "":
+		_, _ = fmt.Fprintf(stderr, "%s: --copy-volumes needs --session\n", prog)
+		return exitUsage
+	case f.ssh.copyVolumes:
+		return runImportAppsCopyVolumes(ctx, prog, client, f, stdout, stderr)
 	case f.images.any():
 		return runImportAppsImages(ctx, prog, client, f, stdin, stdout, stderr, lookupEnv)
 	case f.session != "" && (f.verify || f.rollback || f.receipt):
 		return runImportAppsSession(ctx, client, f, stdout, stderr)
+	case f.from == platformDockerSSH && f.ssh.testOnly:
+		return runImportAppsSSH(ctx, prog, client, f, stdin, stdout, stderr, lookupEnv)
 	case f.plan == f.apply:
 		_, _ = fmt.Fprintf(stderr, "%s: choose exactly one of --plan or --apply (or --session with --verify, --rollback or --receipt)\n", prog)
 		return exitUsage
-	case f.from == "docker" && f.snapshot == "":
-		_, _ = fmt.Fprintf(stderr, "%s: --snapshot FILE is required with --from docker\n", prog)
+	case isFileImportSource(f.from) && f.snapshot == "":
+		_, _ = fmt.Fprintf(stderr, "%s: --snapshot FILE is required with --from %s\n", prog, f.from)
 		return exitUsage
-	case f.from != "docker" && f.url == "":
+	case f.from == "dokku" && strings.TrimSpace(f.appName) == "":
+		_, _ = fmt.Fprintf(stderr, "%s: --app-name is required with --from dokku\n", prog)
+		return exitUsage
+	case f.from != platformDockerSSH && !isFileImportSource(f.from) && f.url == "":
 		_, _ = fmt.Fprintf(stderr, "%s: --url is required\n", prog)
 		return exitUsage
 	}
 	var token, snapshot string
+	var conn *apiclient.AppImportSSH
 	srcURL := f.url
-	if f.from == "docker" {
+	switch {
+	case f.from == platformDockerSSH:
+		c, code, ok := prepareImportSSH(ctx, prog, client, f, stdin, stdout, stderr, lookupEnv)
+		if !ok {
+			return code
+		}
+		conn, srcURL = &c, ""
+	case isFileImportSource(f.from):
 		var err error
 		if snapshot, err = readSnapshot(f.snapshot, stdin); err != nil {
 			_, _ = fmt.Fprintf(stderr, "%s: %v\n", prog, err)
 			return exitUsage
 		}
-		srcURL = "docker://snapshot"
-	} else {
+		srcURL = "file://" + f.from
+	default:
 		var code int
 		var ok bool
 		pf := importPlatformFlags{token: f.token, tokenStdin: f.tokenStdin}
@@ -127,7 +152,7 @@ func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr i
 			return code
 		}
 	}
-	req := apiclient.AppImportRequest{Platform: f.from, URL: srcURL, Token: token, Snapshot: snapshot, InsecureTLS: f.insecure, AllowPrivate: f.allowPrivate,
+	req := apiclient.AppImportRequest{Platform: f.from, URL: srcURL, Token: token, Snapshot: snapshot, SSH: conn, AppName: f.appName, InsecureTLS: f.insecure, AllowPrivate: f.allowPrivate,
 		AllowLoopback: f.allowLoopback, Collision: f.collision, Mappings: f.maps, Only: f.onlyList()}
 	if f.plan {
 		view, err := client.PlanAppImport(ctx, req)
@@ -299,6 +324,10 @@ func importAppsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s import apps --from coolify --url URL --token-stdin --plan [--only NAME] [--map OLD=NEW] [--json]
   %[1]s import apps --from docker --snapshot inspect.json --plan
+  %[1]s import apps --from compose --snapshot docker-compose.yml --plan
+  %[1]s import apps --from docker-ssh --ssh user@host[:port] --ssh-key FILE|- [--fingerprint SHA256:... | --insecure-host-key] [--ssh-socket PATH] [--allow-private] --test-connection|--plan|--apply
+  %[1]s import apps --session ID --copy-volumes [--only NAME]
+  %[1]s import apps --from dokku --app-name web --snapshot dokku-env.txt --plan
   %[1]s import apps --from coolify --url URL --token-stdin --apply [--only NAME] [--map OLD=NEW] [--accept-suggested-maps]
   %[1]s import apps --session ID --transfer-images --ssh user@host[:port] --ssh-key FILE|--ssh-agent [--only NAME]
   %[1]s import apps --session ID --images|--cancel-images
@@ -316,9 +345,24 @@ image ID against the snapshot. The key is read from --ssh-key (a file, or -
 for stdin) and its passphrase from %[3]s; neither is stored. Run it after
 --apply and before --verify. A re-run skips images already verified.
 
+--from docker-ssh needs only an SSH login on the old host: no platform token, no
+agent. SSH is used as a transport to the Docker socket and nothing is ever run
+there: only read-only Engine API GETs are sent (containers, volumes, images, a
+mounted directory's archive, an image save stream). The host key must be pinned
+with --fingerprint (omit it to list what the server presents; --insecure-host-key
+skips the check and is warned about). The key comes from --ssh-key (a file, or
+- for stdin) with its passphrase in %[3]s, or a password in %[4]s; they are held
+in memory for the session and never stored. env comes from the running
+containers: the old platform's own stored config is not read. After --apply,
+--transfer-images and --copy-volumes need no further SSH flags.
+
 The source token is read from %[2]s, or --token-stdin, or --token (warns).
 It is sent to this control plane in the request body only and never stored.
-`, prog, envImportSourceToken, envImportSSHPassphrase)
+`, prog, envImportSourceToken, envImportSSHPassphrase, envImportSSHPassword)
+}
+
+func isFileImportSource(from string) bool {
+	return from == "docker" || from == "compose" || from == "dokku"
 }
 
 // readSnapshot reads a docker inspect JSON file, or stdin when path is "-".
@@ -334,4 +378,23 @@ func readSnapshot(path string, stdin io.Reader) (string, error) {
 		return "", fmt.Errorf("read snapshot: %w", err)
 	}
 	return string(b), nil
+}
+
+func prepareImportSSH(ctx context.Context, prog string, client *Client, f importAppsFlags, stdin io.Reader, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) (apiclient.AppImportSSH, int, bool) {
+	conn, ok := buildImportSSH(prog, f, stdin, stderr, lookupEnv)
+	if !ok {
+		return conn, exitUsage, false
+	}
+	if code, ok := confirmHostKey(ctx, prog, client, f, conn, stdout, stderr); !ok {
+		return conn, code, false
+	}
+	return conn, exitOK, true
+}
+
+func runImportAppsSSH(ctx context.Context, prog string, client *Client, f importAppsFlags, stdin io.Reader, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	conn, code, ok := prepareImportSSH(ctx, prog, client, f, stdin, stdout, stderr, lookupEnv)
+	if !ok {
+		return code
+	}
+	return runImportAppsSSHTest(ctx, prog, client, f, conn, stdout, stderr)
 }

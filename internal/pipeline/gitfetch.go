@@ -15,6 +15,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
+
+	"github.com/GLINCKER/levelrail/internal/envredact"
 )
 
 // GitFetcher reads pipeline files with a shallow, in-memory clone, so
@@ -65,7 +67,7 @@ func cloneTip(ctx context.Context, url, branch string, auth transport.AuthMethod
 	}
 	repo, err := git.CloneContext(ctx, memory.NewStorage(), nil, opts)
 	if err != nil {
-		return nil, plumbing.ZeroHash, fmt.Errorf("clone %q: %w", url, err)
+		return nil, plumbing.ZeroHash, fmt.Errorf("clone %q: %w", envredact.URLForLog(url), err)
 	}
 	head, err := repo.Head()
 	if err != nil {

@@ -107,6 +107,19 @@ func TestModelTools_RequestsAndResults(t *testing.T) {
 			},
 		},
 		{
+			tool: "get_model_endpoint_health", args: map[string]any{"name": "mac"}, wantMethod: http.MethodGet, wantPath: "/api/v1/models/mac",
+			respond: func(w http.ResponseWriter) {
+				_ = json.NewEncoder(w).Encode(apiclient.ModelResource{Name: "mac", External: &apiclient.ExternalEndpoint{Health: apiclient.EndpointHealth{State: "down", Failures: 3, Diagnosis: &apiclient.EndpointDiagnosis{Message: "refused", Fix: "start the server"}}}})
+			},
+			check: func(t *testing.T, r *mcp.CallToolResult) {
+				var out modelEndpointHealthOutput
+				decodeStructured(t, r, &out)
+				if out.State != "down" || out.Failures != 3 || out.Fix != "start the server" {
+					t.Errorf("out = %+v", out)
+				}
+			},
+		},
+		{
 			tool: "get_model_engine_metrics", args: map[string]any{"name": "chat", "since": "2h"}, wantMethod: http.MethodGet, wantPath: "/api/v1/models/chat/engine-metrics",
 			respond: func(w http.ResponseWriter) {
 				_ = json.NewEncoder(w).Encode(apiclient.EngineMetricsReport{Model: "chat", Engine: "vllm", Collecting: true, Health: apiclient.EngineHealth{State: "ok"}})

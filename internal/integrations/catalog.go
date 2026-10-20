@@ -2,7 +2,7 @@
 // an app can attach (internal/catalog's deployable-template catalog is
 // unrelated: this is per-app add-ons, not services to deploy). v1 scope
 // is env-var injection only, no webhook or API wiring, per the approved
-// design in docs-local/specs/2026-09-23-framework-native-deploys-design.md
+// design in the framework-native deploys design
 // item 6.
 package integrations
 
@@ -42,7 +42,7 @@ type Integration struct {
 	EnvVars     []EnvVar
 	// Frameworks names the frameworks this integration is most relevant
 	// for, matching internal/build's detected framework identifiers once
-	// that detection work lands (docs-local spec item 2). Empty means
+	// that detection work lands (framework-native deploys design, item 2). Empty means
 	// relevant regardless of framework: this catalog must degrade
 	// gracefully with no framework detected at all, not depend on it.
 	Frameworks []string

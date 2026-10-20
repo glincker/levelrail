@@ -18,6 +18,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/GLINCKER/levelrail/internal/profile"
 )
 
 const (
@@ -96,7 +97,7 @@ func TestFootprintPhase(t *testing.T) {
 	}
 }
 
-// TestFootprint measures idle RSS, goroutines, threads and CPU with every experimental feature off and on, and fails on a regression against testdata/footprint_baseline.json. Set FOOTPRINT_RECORD=1 to rewrite the baseline.
+// TestFootprint measures idle RSS, goroutines, threads and CPU with every experimental feature off and on and under each server profile, and fails on a regression against testdata/footprint_baseline.json. Set FOOTPRINT_RECORD=1 to rewrite the baseline.
 func TestFootprint(t *testing.T) {
 	if testing.Short() || os.Getenv(envFootprintPhase) != "" {
 		t.Skip("footprint harness runs in the nightly lane, not under -short")
@@ -106,9 +107,20 @@ func TestFootprint(t *testing.T) {
 		all = append(all, string(f))
 	}
 	got := footprintBaselineFile{}
-	for mode, features := range map[string]string{"off": "", "on": strings.Join(all, ",")} {
-		got[mode] = runFootprintPhase(t, mode, features)
-		t.Logf("%s: %+v", mode, got[mode])
+	phases := []footprintPhase{
+		{mode: "off"},
+		{mode: "on", features: strings.Join(all, ",")},
+		{mode: "profile-minimal", profile: profile.Minimal},
+		{mode: "profile-standard", profile: profile.Standard},
+		{mode: "profile-suite", profile: profile.Suite},
+	}
+	for _, ph := range phases {
+		got[ph.mode] = runFootprintPhase(t, ph)
+		t.Logf("%s: %+v", ph.mode, got[ph.mode])
+	}
+	lo, std := got["profile-minimal"], got["profile-standard"]
+	if lo.Goroutines >= std.Goroutines || lo.Loops >= std.Loops {
+		t.Errorf("minimal must start less than standard: goroutines %d vs %d, loops %d vs %d", lo.Goroutines, std.Goroutines, lo.Loops, std.Loops)
 	}
 
 	key := func(mode string) string { return runtime.GOOS + "/" + mode }
@@ -149,10 +161,17 @@ func TestFootprint(t *testing.T) {
 	}
 }
 
-func runFootprintPhase(t *testing.T, mode, features string) footprintResult {
+type footprintPhase struct {
+	mode     string
+	features string
+	profile  profile.Profile
+}
+
+func runFootprintPhase(t *testing.T, ph footprintPhase) footprintResult {
 	t.Helper()
+	mode, features := ph.mode, ph.features
 	cmd := exec.Command(os.Args[0], "-test.run", "^TestFootprintPhase$", "-test.v", "-test.timeout", "10m") //nolint:gosec // re-runs this test binary
-	cmd.Env = append(os.Environ(), envFootprintPhase+"="+mode, experimental.EnvVar+"="+features)
+	cmd.Env = append(os.Environ(), envFootprintPhase+"="+mode, experimental.EnvVar+"="+features, profile.EnvVar+"="+string(ph.profile))
 	var out bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &out
 	if err := cmd.Run(); err != nil {

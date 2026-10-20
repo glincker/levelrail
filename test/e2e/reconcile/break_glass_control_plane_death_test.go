@@ -34,7 +34,7 @@ import (
 	"github.com/GLINCKER/levelrail/test/e2e/testenv"
 )
 
-const breakGlassToken = "dev-root-token" //nolint:gosec // dev-mode fixture token from dev-fixtures.yml
+const breakGlassToken = "dev-root-token" //nolint:gosec // dev-mode fixture token from test/fixtures/dev-fixtures.yml
 
 // breakGlassProcess is one real OS process running a binary this package
 // built, with its exit tracked so a test can SIGKILL it and know exactly
@@ -286,7 +286,7 @@ func TestBreakGlass_Live_ControlPlaneDeath_WorkloadAndIngress(t *testing.T) {
 	cpEnv := envWithOverrides(hermeticEnv(
 		"APP_DEV_MODE=1",
 		"APP_BRAND_FILE="+filepath.Join(repoRoot, "brand.yaml"),
-		"APP_DEV_FIXTURES_FILE="+filepath.Join(repoRoot, "dev-fixtures.yml"),
+		"APP_DEV_FIXTURES_FILE="+filepath.Join(repoRoot, "test", "fixtures", "dev-fixtures.yml"),
 		"APP_DATA_DIR="+dataDir,
 		"APP_HTTP_ADDR="+httpAddr,
 		"APP_AGENT_ADDR=127.0.0.1:0",

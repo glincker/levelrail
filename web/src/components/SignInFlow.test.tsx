@@ -74,6 +74,31 @@ describe('SignInFlow', () => {
     ).toBeInTheDocument()
   })
 
+  it('starts usernameless sign-in without a username', async () => {
+    // @ts-expect-error minimal stub, only presence is checked
+    window.PublicKeyCredential = class {}
+    const bodies: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+        const url = input instanceof Request ? input.url : String(input)
+        if (url.includes('/passkey-login/begin')) {
+          bodies.push(typeof init?.body === 'string' ? init.body : '')
+          return Promise.resolve(json({ error: 'refused' }, 401))
+        }
+        return Promise.resolve(json({}, 404))
+      }),
+    )
+    const user = userEvent.setup()
+    renderFlow('')
+    await user.click(
+      screen.getByRole('button', { name: 'passkey.discoverable' }),
+    )
+    await waitFor(() => {
+      expect(bodies).toEqual(['{"discoverable":true}'])
+    })
+  })
+
   it('falls back to a password field when the account has no passkey', async () => {
     // @ts-expect-error minimal stub, only presence is checked
     window.PublicKeyCredential = class {}

@@ -8,6 +8,8 @@ On a server that already runs Coolify, Dokploy or your own nginx, something else
 owns ports 80 and 443. Levelrail doesn't fight it. It detects what holds the ports
 and generates the configuration to put the dashboard behind it.
 
+When the apps are staged and verified, [take over this server's ports](/migrate-same-server#4-take-over-this-servers-ports) in one guided, reversible step.
+
 ## One step setup (Traefik, including Coolify)
 
 When the proxy is Traefik with a file provider directory, Levelrail can manage
@@ -296,7 +298,7 @@ Likely cause: APP_INGRESS_TRUSTED_PROXIES is not set, so Levelrail does not trus
 
 How to confirm: open the browser's developer console (F12) and check the Network tab for mixed content warnings.
 
-Fix: on the control plane, set `APP_INGRESS_TRUSTED_PROXIES` to the IP range or address of your proxy. For example, `APP_INGRESS_TRUSTED_PROXIES=10.0.0.0/8` for a private network, or the proxy's specific IP if it is static. After setting it, restart Levelrail: `sudo systemctl restart levelrail`. Once Levelrail trusts the proxy's `X-Forwarded-Proto` header, it will serve links over HTTPS.
+Fix: open Domains, then Platform settings, then "Request limits and trusted proxies", and press the Fix button. Levelrail reads the forwarding headers of your own request to name the proxy (Cloudflare, Traefik, Coolify or another) and saves its address as the trusted proxy list; "Re-check" confirms it. The CLI equivalent is `levelrail-cli settings edge fix`. A proxy on a private or loopback address is trusted as `private_ranges`; a public address is trusted as that one address, and Cloudflare's public edge is never guessed, so enter its published ranges by hand. To do it by hand instead, set `APP_INGRESS_TRUSTED_PROXIES` to the IP range or address of your proxy; the environment variable always wins over the saved value. For example, `APP_INGRESS_TRUSTED_PROXIES=10.0.0.0/8` for a private network, or the proxy's specific IP if it is static. After setting it, restart Levelrail: `sudo systemctl restart levelrail`. Once Levelrail trusts the proxy's `X-Forwarded-Proto` header, it will serve links over HTTPS.
 
 ### The dashboard is unreachable from outside but works on the server
 

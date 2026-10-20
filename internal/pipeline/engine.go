@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -29,6 +30,7 @@ type Engine struct {
 	mu     sync.Mutex
 	active map[string]context.CancelCauseFunc
 	ticks  int
+	idle   atomic.Bool
 
 	// oidcRequests backs the runtime OIDC token request endpoint (see
 	// oidc_request.go): one entry per running job that opted into oidc,
@@ -55,11 +57,14 @@ func (e *Engine) Nudge() {
 	}
 }
 
-// Run ticks every interval (or sooner after a Nudge) until ctx is done, then
-// interrupts running jobs. Interrupted jobs stay recorded as running and are
-// resumed by the next process.
-func (e *Engine) Run(ctx context.Context, interval time.Duration) error {
-	t := time.NewTicker(interval)
+// Run ticks every interval while runs are active, and backs off to idleInterval
+// when there are none. A Nudge always ticks at once. Interrupted jobs stay
+// recorded as running and are resumed by the next process.
+func (e *Engine) Run(ctx context.Context, interval, idleInterval time.Duration) error {
+	if idleInterval < interval {
+		idleInterval = interval
+	}
+	t := time.NewTimer(interval)
 	defer t.Stop()
 	for {
 		select {
@@ -68,9 +73,20 @@ func (e *Engine) Run(ctx context.Context, interval time.Duration) error {
 			return ctx.Err()
 		case <-t.C:
 		case <-e.nudge:
+			if !t.Stop() {
+				select {
+				case <-t.C:
+				default:
+				}
+			}
 		}
 		if err := e.Tick(ctx); err != nil {
 			e.cfg.Logger.Warn("pipeline: tick had errors", slog.String("error", err.Error()))
+		}
+		if e.idle.Load() {
+			t.Reset(idleInterval)
+		} else {
+			t.Reset(interval)
 		}
 	}
 }
@@ -90,6 +106,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("pipeline: list active runs: %w", err)
 	}
+	e.idle.Store(len(runs) == 0)
 	var errs []error
 	for _, r := range runs {
 		if err := e.advance(ctx, r); err != nil {

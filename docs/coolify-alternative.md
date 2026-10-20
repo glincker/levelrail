@@ -81,19 +81,22 @@ Architecture and design choices, not a ranking. Coolify is a mature project with
 
 <AccordionGroup>
   <Accordion title="Is Levelrail a drop-in replacement for Coolify?">
-    It covers the same job, deploying apps and databases to your own servers from a git push, but it is a different design, not a fork. A read-only importer brings apps and databases across, and the migration guide lists what maps and what does not.
+    It covers the same job, deploying apps and databases to your own servers from a connected git provider, but it is a different design, not a fork. A read-only importer brings apps and databases across, and the [migration guide](/migrate-from-coolify) lists what maps and what does not.
   </Accordion>
   <Accordion title="Does Levelrail have Coolify's one-click service catalog?">
-    Levelrail ships a catalog of 311 one-click templates, a sample of which is deployed by its end-to-end tests. Check that the services you need are covered, in either catalog, before moving.
+    Levelrail ships a catalog of 300+ one-click templates, a sample of which is deployed by its end-to-end tests. Coolify's catalog is in the same range. Check that the services you need are covered, in either catalog, before moving.
   </Accordion>
   <Accordion title="Can I run Levelrail on more than one server?">
     Yes. Extra servers join with a one-time token and run a small agent that dials out to the control plane, so managed servers never open an inbound port. Enrollment, cordon and drain are verified against real Docker daemons.
   </Accordion>
   <Accordion title="What does it cost?">
-    Nothing. Levelrail is Apache 2.0 with one edition: SSO, audit logging, IAM and scheduled backups all ship in the same free binary.
+    Nothing. Levelrail is Apache 2.0 with one edition: OAuth and OIDC sign-in, audit logging, IAM and scheduled backups all ship in the same free binary. SAML SSO and SCIM provisioning are beta and off until you turn them on.
   </Accordion>
   <Accordion title="Is it production ready?">
     Levelrail is in active pre-release development, and single node is the best tested path. Run it next to your current setup first, which the importer's read-only design makes safe.
+  </Accordion>
+  <Accordion title="Does Levelrail support SSO, SAML and SCIM?">
+    Levelrail has password, passkey and TOTP sign-in, OAuth sign-in with 20 providers and generic OpenID Connect, IAM policies, teams and a hash-chained audit log, all in the one free edition. SAML single sign-on and SCIM provisioning exist but are beta: they sit behind the `saml-scim` feature toggle, are off by default, and are tested against a test identity provider rather than a live Okta or Entra ID tenant. See [SAML and SCIM](/sso-saml). For what Coolify supports, see its own documentation.
   </Accordion>
 </AccordionGroup>
 

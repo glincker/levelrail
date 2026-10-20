@@ -36,6 +36,7 @@
     "compose": "Compose",
     "promote": "Promoted",
     "auto_rollback": "Auto rollback",
+    "git_push": "Git push remote",
     "clone": "Clone",
     "schedule": "Scheduled",
     "other": "Deploy"

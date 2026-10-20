@@ -75,6 +75,43 @@ describe('EnableHttpsCard', () => {
     })
   })
 
+  it('prefills the contact email from the admin account and enables in one click', async () => {
+    const user = userEvent.setup()
+    const fetchMock = stubStatus({
+      state: 'off',
+      suggested_domain: '203-0-113-5.sslip.io',
+      staging: false,
+      default_email: 'admin@glincker.com',
+    })
+    renderCard()
+    expect(await screen.findByLabelText(/email for certificate/i)).toHaveValue(
+      'admin@glincker.com',
+    )
+    expect(screen.getByText(/plain HTTP stops working/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Enable HTTPS' }))
+    await waitFor(() => {
+      const post = fetchMock.mock.calls.find(
+        ([, init]) => init?.method === 'POST',
+      )
+      expect(post?.[1]?.body).toBe(
+        JSON.stringify({ email: 'admin@glincker.com', staging: false }),
+      )
+    })
+  })
+
+  it('offers a re-check when issuance failed', async () => {
+    stubStatus({
+      state: 'failed',
+      domain: '203-0-113-5.sslip.io',
+      staging: false,
+      hint: 'dns',
+    })
+    renderCard()
+    expect(
+      await screen.findByRole('button', { name: 'Re-check' }),
+    ).toBeInTheDocument()
+  })
+
   it('explains a missing public IP instead of showing a form', async () => {
     stubStatus({ state: 'off', staging: false })
     renderCard()

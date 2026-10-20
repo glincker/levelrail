@@ -61,6 +61,43 @@ services:
 	}
 }
 
+func TestToDesiredServices_StrategyPropagatesAndValidates(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  gw:
+    image: gw:1
+    x-levelrail-strategy: recreate
+    x-levelrail-strategy-reason: locks its volume
+  db:
+    image: db:1
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	got, _, err := ToDesiredServices("app", f)
+	if err != nil {
+		t.Fatalf("ToDesiredServices() error = %v", err)
+	}
+	byName := map[string]string{}
+	for _, s := range got {
+		byName[s.Name] = s.Strategy
+	}
+	if byName["app-gw"] != "recreate" || byName["app-db"] != "" {
+		t.Errorf("strategies = %v, want recreate on gw only", byName)
+	}
+	if f.Services["gw"].StrategyReason != "locks its volume" {
+		t.Errorf("reason = %q", f.Services["gw"].StrategyReason)
+	}
+
+	bad, err := Parse([]byte("services:\n  gw:\n    image: gw:1\n    x-levelrail-strategy: yolo\n"))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if _, _, err := ToDesiredServices("app", bad); err == nil {
+		t.Error("an unknown strategy was accepted")
+	}
+}
+
 func TestToDesiredServices_CommandPropagates(t *testing.T) {
 	f, err := Parse([]byte(`
 services:

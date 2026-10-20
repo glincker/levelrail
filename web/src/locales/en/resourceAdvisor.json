@@ -186,7 +186,7 @@
     "mobileApiTurnedOn": "Mobile app access turned on",
     "mobileApiTurnedOff": "Mobile app access turned off",
     "samlScimTitle": "SAML sign-in and SCIM",
-    "samlScimDescription": "An interim, hand-built implementation of SAML 2.0 single sign-on and SCIM user provisioning, with Settings, Single sign-on. It will move onto the sign-in library's own SAML and SCIM once its storage supports them. While off, its routes answer 404, the sign-in button is hidden, and an earlier SSO enforcement setting is not applied.",
+    "samlScimDescription": "SAML 2.0 single sign-on and SCIM 2.0 user provisioning, built on the sign-in library, with Settings, Single sign-on. Beta, not yet tested against a live identity provider. While off, its routes answer 404, the sign-in button is hidden, and an earlier SSO enforcement setting is not applied.",
     "samlScimToggleLabel": "Turn on SAML sign-in and SCIM",
     "samlScimTurnedOn": "SAML sign-in and SCIM turned on",
     "samlScimTurnedOff": "SAML sign-in and SCIM turned off"

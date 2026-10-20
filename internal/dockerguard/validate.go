@@ -48,6 +48,11 @@ func (p Policy) validateCreate(req container.CreateRequest, grant docker.CreateD
 			out = append(out, violation(ns.rule, "HostConfig.%s=host shares a host namespace", ns.field))
 		}
 	}
+	for _, ns := range []struct{ field, value string }{{"PidMode", string(hc.PidMode)}, {"IpcMode", string(hc.IpcMode)}} {
+		if strings.HasPrefix(strings.ToLower(strings.TrimSpace(ns.value)), "container:") {
+			out = append(out, violation(RuleContainerNS, "HostConfig.%s joins another container's namespace, which can expose a platform container", ns.field))
+		}
+	}
 	if strings.EqualFold(strings.TrimSpace(string(hc.NetworkMode)), "host") && (!grant.HostNetwork || !p.AllowHostNetwork) {
 		out = append(out, violation(RuleNetworkHost, "HostConfig.NetworkMode=host needs a declared host network and %s=true", EnvAllowHostNetwork))
 	}

@@ -48,6 +48,7 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			PullPolicy:       pullPolicy,
 			DependsOn:        []string(svc.DependsOn),
 			DependsOnHealthy: svc.DependsOnHealthy,
+			Strategy:         svc.Strategy,
 		}
 		gpu, err := gpuFromDeploy(svc.Deploy)
 		if err != nil {

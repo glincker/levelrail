@@ -73,6 +73,8 @@ type nodeResource struct {
 	// node_metrics.go), stamped by the caller since toNodeResource is a
 	// plain store.Node -> wire mapper with no Router access.
 	IsLocal bool `json:"is_local"`
+	// ResourceCount is apps plus databases placed on this node, list only.
+	ResourceCount int `json:"resource_count,omitempty"`
 	// StatusReason is a machine-readable code explaining a status that
 	// needs operator action (nodeReason*), empty when nothing is wrong.
 	StatusReason string `json:"status_reason,omitempty"`
@@ -223,10 +225,18 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 	gpus := rt.nodeGPUResources(r.Context())
 	renewal := rt.renewalStates(r.Context())
 	now := time.Now()
+	var counts map[string]int
+	if cs, ok := rt.nodes.(nodeResourceCountStore); ok {
+		counts, _ = cs.NodeResourceCounts(r.Context())
+	}
 	out := make([]nodeResource, 0, len(nodes))
 	for _, n := range nodes {
 		res := toNodeResource(n)
 		res.IsLocal = n.ID == rt.localNodeID
+		res.ResourceCount = counts[n.ID]
+		if res.IsLocal {
+			res.ResourceCount += counts[""]
+		}
 		res.StatusReason = nodeStatusReason(n, now, nodePendingStaleAfter())
 		res.GPU = gpus[n.ID]
 		res.Cert, res.Agent = rt.nodeCertAndAgent(n, now, renewal)

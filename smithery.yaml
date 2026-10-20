@@ -1,6 +1,6 @@
 runtime: container
 build:
-  dockerfile: Dockerfile.levelrail-mcp
+  dockerfile: deploy/docker/Dockerfile.levelrail-mcp
   dockerBuildPath: .
 startCommand:
   type: stdio

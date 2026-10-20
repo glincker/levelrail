@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/GLINCKER/levelrail/internal/profile"
 )
 
 // Where a feature's on state comes from.
@@ -45,14 +46,20 @@ type BetaFeatureStore interface {
 	ListBetaFeatures(ctx context.Context) (map[string]bool, error)
 }
 
-// LoadBetaFeatures applies stored Settings switches at startup.
+// LoadBetaFeatures applies stored Settings switches at startup; a feature never
+// switched in Settings follows the active server profile.
 func LoadBetaFeatures(ctx context.Context, s BetaFeatureStore) error {
 	stored, err := s.ListBetaFeatures(ctx)
 	if err != nil {
 		return fmt.Errorf("load beta features: %w", err)
 	}
+	byProfile := profile.For(profile.Active()).Features
 	for _, f := range experimental.All() {
-		experimental.ApplyAtBoot(f, stored[string(f)])
+		on, chosen := stored[string(f)]
+		if !chosen {
+			on = slices.Contains(byProfile, f)
+		}
+		experimental.ApplyAtBoot(f, on)
 	}
 	return nil
 }

@@ -14,7 +14,7 @@ This directory is the source of truth for Levelrail's user-facing and contributo
 | [Deploy a first app](/getting-started) | From the dashboard or the CLI |
 | [Compare with Coolify and Dokploy](/comparison) | Sourced, honest, includes where Levelrail trails |
 | [Feature status](/feature-status) and [roadmap](/roadmap) | What is stable, beta, or planned |
-| [Security policy](https://github.com/glincker/levelrail/blob/main/SECURITY.md) | Report a vulnerability privately |
+| [Security policy](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md) | Report a vulnerability privately |
 
 **New here?** Read [Getting started](/getting-started), then [Installing](/installing) if you want the details behind the one-line install.
 
@@ -118,7 +118,14 @@ Four main types, plus two Levelrail-specific categories:
 | Doc | Covers |
 | --- | --- |
 | [master-key-rotation.md](/master-key-rotation) | Rotate the envelope-encryption master key without losing access to stored secrets |
-| [migrating-from-coolify-dokploy-and-caprover.md](/migrating-from-coolify-dokploy-and-caprover) | Move apps off a live Coolify, Dokploy, or CapRover instance with `levelrail-cli migrate` |
+| [migrate-to-levelrail.md](/migrate-to-levelrail) | Migration hub: pick your source, the six step flow, the downtime table, checklists and rollback |
+| [migrate-from-coolify.md](/migrate-from-coolify) | Move apps, databases and domains off Coolify with a staged, reversible cutover |
+| [migrate-from-dokploy.md](/migrate-from-dokploy) | Import Dokploy apps and databases, then copy data and switch DNS |
+| [migrate-from-caprover.md](/migrate-from-caprover) | Import CapRover apps. Images need a repo or registry |
+| [migrate-from-dokku.md](/migrate-from-dokku) | Import a Dokku env dump or container snapshot. No live Dokku import |
+| [migrate-from-docker-compose.md](/migrate-from-docker-compose) | Turn a compose file into apps and managed databases |
+| [migration-reference.md](/migration-reference) | Importer flags, mapping tables, database copy, hub and cutover details |
+| [migrating-from-coolify-dokploy-and-caprover.md](/migrating-from-coolify-dokploy-and-caprover) | Moved: points at the migration hub |
 | [feature-flags.md](/feature-flags) | Toggle app behavior at runtime without a redeploy |
 | [platform-as-code.md](/platform-as-code) | Describe projects, environments, apps, domains and databases as YAML, then export, diff, plan and apply them from the CLI, the dashboard, MCP or CI |
 | [terraform-provider.md](/terraform-provider) | Manage projects, environments, apps, domains, databases and shared variables from Terraform or OpenTofu |
@@ -150,7 +157,6 @@ Four main types, plus two Levelrail-specific categories:
 | [architecture.md](/architecture) | How Levelrail is actually built today: reconciler, ingress, builds, storage |
 | [resilience.md](/resilience) | What survives a control plane process crash and what does not, measured live: running containers, node agents, and the embedded ingress outage window |
 | [threat-model.md](/threat-model) | Trust boundaries, assets, attackers, mitigations with file references, known gaps, and how to report a vulnerability |
-| [security-alert-verdicts.md](/security-alert-verdicts) | Verdict and evidence for each code scanning alert: fixed, false positive, or accepted risk |
 | [comparison.md](/comparison) | How Levelrail differs from Coolify, Dokploy, CapRover, Dokku, Kamal |
 
 ### Design proposals
@@ -162,7 +168,6 @@ noted per-document since these move between draft, proposed, accepted
 
 | Doc | Status | Covers |
 | --- | --- | --- |
-| [design/git-provider-integrations.md](/design/git-provider-integrations) | Proposed | Shared abstraction across GitHub Enterprise Server, Bitbucket, and the connect-flow UX |
 
 ### Status
 
@@ -172,6 +177,7 @@ noted per-document since these move between draft, proposed, accepted
 | [feature-status.md](/feature-status) | Maturity label and test evidence per feature, and README claims checked against the code |
 | [experimental-features.md](/experimental-features) | The `APP_EXPERIMENTAL` switch, what each gated feature does while off, and how the CLI, MCP, and web read it |
 | [ci.md](/ci) | How the CI lanes, required checks and local hooks fit together |
+| [profiles.md](/profiles) | The minimal, standard and suite server profiles, what each starts, and how to switch without losing data |
 | [performance.md](/performance) | Measured idle CPU, memory, and API latency at 0, 100, and 500 apps, and how to reproduce it |
 
 ## Support and contributing
@@ -179,8 +185,8 @@ noted per-document since these move between draft, proposed, accepted
 - **Bug or question?** Open an issue on [GitHub](https://github.com/glincker/levelrail/issues).
 - **Quick question?** Ask in the `#levelrail` forum on the [GLINR Discord](https://discord.gg/Ar5pcaZB99).
 - **Everything else?** Email [support@levelrail.com](mailto:support@levelrail.com).
-- **Security vulnerability?** Don't open a public issue; see [Security overview](/security#reporting-a-vulnerability) or the repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/SECURITY.md).
-- **Want to contribute code?** See the repository's [CONTRIBUTING.md](/CONTRIBUTING) for branch naming, commit conventions, and how to run tests and the linter before opening a PR.
+- **Security vulnerability?** Don't open a public issue; see [Security overview](/security#reporting-a-vulnerability) or the repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md).
+- **Want to contribute code?** See the repository's [CONTRIBUTING.md](https://github.com/glincker/levelrail/blob/main/.github/CONTRIBUTING.md) for branch naming, commit conventions, and how to run tests and the linter before opening a PR.
 
 ## Adding a new doc
 

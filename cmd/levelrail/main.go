@@ -24,9 +24,9 @@ const (
 	// Absence is not an error: the What's new panel just shows no entries.
 	defaultChangelogFile = "./CHANGELOG.md"
 	// Absence is not an error: the built-in manifest config is used instead.
-	defaultGitHubAppManifestFile = "./github-app-manifest.yaml"
+	defaultGitHubAppManifestFile = "./deploy/github-app-manifest.yaml"
 	// Only read when APP_DEV_MODE=1.
-	defaultDevFixturesFile = "./dev-fixtures.yml"
+	defaultDevFixturesFile = "./test/fixtures/dev-fixtures.yml"
 	// defaultHTTPAddr is where the HTTP API listens.
 	defaultHTTPAddr = ":8080"
 

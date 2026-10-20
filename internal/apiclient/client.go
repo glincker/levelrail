@@ -649,9 +649,18 @@ func prPreviewEnvPath(name string, pr int) string {
 // The handler reads the body verbatim, so it must not be JSON-marshaled the way do() does.
 // Content-Type: text/yaml instead of do()'s hardcoded application/json.
 func (c *Client) DeployCompose(ctx context.Context, name string, composeYAML []byte) (ComposeDeployResult, error) {
-	var out ComposeDeployResult
+	return c.DeployComposeFromTemplate(ctx, name, composeYAML, "")
+}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/v1/apps/"+PathEscape(name)+"/compose", bytes.NewReader(composeYAML)) //nolint:gosec // c.baseURL is the operator-supplied API target, same as do()
+// DeployComposeFromTemplate is DeployCompose for a catalog template's compose file; templateID lets the server apply the template's recommended memory limit.
+func (c *Client) DeployComposeFromTemplate(ctx context.Context, name string, composeYAML []byte, templateID string) (ComposeDeployResult, error) {
+	var out ComposeDeployResult
+	query := ""
+	if templateID != "" {
+		query = "?template=" + url.QueryEscape(templateID)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/v1/apps/"+PathEscape(name)+"/compose"+query, bytes.NewReader(composeYAML)) //nolint:gosec // c.baseURL is the operator-supplied API target, same as do()
 	if err != nil {
 		return out, fmt.Errorf("build request: %w", err)
 	}

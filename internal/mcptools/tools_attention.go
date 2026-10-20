@@ -17,7 +17,7 @@ type attentionOutput struct {
 func registerAttentionTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_attention",
-		Description: "Everything needing attention now, critical first: failing apps, offline nodes, certificates, doctor warnings, expiring tokens, failed data copies, overdue backups, invitations, and items waiting on a person. Only items the token may read. Decisions stay in the dashboard.",
+		Description: "Everything needing attention, critical first: failing apps, offline nodes, certificates, warnings, backups, pending items. Only what the token may read.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, attentionOutput, error) {
 		items, err := attention.Collect(ctx, client)
 		if err != nil {

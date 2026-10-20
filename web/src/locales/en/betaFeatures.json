@@ -56,5 +56,42 @@
     "restartUnit": "Restart the unit",
     "recreate": "Recreate the container",
     "restartNote": "This feature is wired when the server starts, so a restart applies it."
+  },
+  "profile": {
+    "title": "Server profile",
+    "description": "Decides which optional parts of the server start. Moving between profiles never deletes data. Most of it is wired at startup, so a restart applies a change.",
+    "names": {
+      "minimal": "Minimal",
+      "standard": "Standard",
+      "suite": "Suite"
+    },
+    "summary": {
+      "minimal": "One server as light as it gets. Nothing runs that you did not ask for.",
+      "standard": "The default install. Everything a small team needs.",
+      "suite": "Standard plus the mesh, plugins and every experimental feature."
+    },
+    "facts": {
+      "meshOn": "Mesh on",
+      "meshOff": "Mesh off",
+      "pluginsOn": "Plugins on",
+      "pluginsOff": "Plugins off",
+      "experimentalOn": "All experimental features on",
+      "experimentalOff": "Experimental features off",
+      "retention": "Metrics and logs kept for {{days}} days",
+      "loopbackAgent": "Agent listener on loopback until a node enrolls",
+      "lazyLoops": "Backup loops start when a backup is scheduled",
+      "recommendations": "Backup and key rotation shown as recommendations, not score items",
+      "sbom": "Build SBOMs on"
+    },
+    "current": "Current",
+    "use": "Use this profile",
+    "confirm": "Confirm and apply",
+    "saved": "{{name}} profile saved",
+    "error": "Could not change the profile: {{message}}",
+    "recommended": "This machine has little memory. The {{name}} profile is the lightest fit.",
+    "pinned": "Set by the server",
+    "pinnedHelp": "{{env}} is set on the server, so it decides the profile. Remove it there to choose from this page.",
+    "neverDeletes": "Moving down stops loops and hides routes but never deletes rows. Moves that would orphan enrolled nodes or enabled plugins are refused.",
+    "readOnly": "Only an administrator can change the server profile."
   }
 }

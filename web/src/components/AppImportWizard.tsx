@@ -19,6 +19,7 @@ import { AppImportInventory } from './AppImportInventory'
 import { AppImportPreflight } from './AppImportPreflight'
 import { AppImportRun } from './AppImportRun'
 import { AppImportVolumes } from './AppImportVolumes'
+import { PortTakeoverPanel } from './PortTakeoverPanel'
 import {
   APP_IMPORT_STEPS,
   stepReached,
@@ -159,7 +160,14 @@ function Session({
         />
       ) : null}
       {current === 'cutover' ? (
-        <AppImportCutover session={session} onBack={() => go('volumes')} />
+        <AppImportCutover
+          session={session}
+          onBack={() => go('volumes')}
+          onNext={() => go('takeover')}
+        />
+      ) : null}
+      {current === 'takeover' ? (
+        <PortTakeoverPanel onBack={() => go('cutover')} />
       ) : null}
     </div>
   )

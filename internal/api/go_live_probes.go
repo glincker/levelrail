@@ -35,6 +35,7 @@ type domainAutoSeams struct {
 	tlsProbe      func(ctx context.Context, dialAddr, sni string) (tlsProbeResult, error)
 	httpProbe     func(ctx context.Context, rawURL, dialAddr string) (int, error)
 	proxy         func(ctx context.Context, r *http.Request) *proxyIntegrationView
+	pluginDNS     dnsPluginCaller
 
 	handlerMu sync.Mutex
 	handler   http.Handler

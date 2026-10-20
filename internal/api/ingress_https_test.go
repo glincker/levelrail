@@ -156,6 +156,44 @@ func TestHandleEnableHTTPS(t *testing.T) {
 	})
 }
 
+func TestEnableHTTPSDefaultsEmailToAdmin(t *testing.T) {
+	db := openTestDB(t)
+	const adminEmail = "owner@glincker.com"
+	if err := BootstrapAdmin(t.Context(), db, adminEmail, testAdminPassword); err != nil {
+		t.Fatal(err)
+	}
+	rt := NewRouter(discardLogger(), testBrand(), db, WithPublicHost("203.0.113.5"))
+	rt.doctorDialContext = fakeDoctorOfflineDialContext
+	login := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(`{"username":"`+adminEmail+`","password":"`+testAdminPassword+`"}`))
+	lrec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(lrec, login)
+	var cookie *http.Cookie
+	for _, c := range lrec.Result().Cookies() {
+		if c.Name == sessionCookieName {
+			cookie = c
+		}
+	}
+	if cookie == nil {
+		t.Fatalf("login failed: %d %s", lrec.Code, lrec.Body.String())
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress/https", ""))
+	var st httpsStatusResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &st); err != nil || st.DefaultEmail != adminEmail {
+		t.Fatalf("default_email = %q (%v), want %q", st.DefaultEmail, err, adminEmail)
+	}
+
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/settings/ingress/https", `{"staging":true}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("enable without email: %d %s", rec.Code, rec.Body.String())
+	}
+	if s, err := db.GetIngressSettings(t.Context()); err != nil || s.ACMEEmail != adminEmail {
+		t.Fatalf("acme email = %q, %v", s.ACMEEmail, err)
+	}
+}
+
 func TestIngressSettingsFallbackToggle(t *testing.T) {
 	db := openTestDB(t)
 	rt := NewRouter(discardLogger(), testBrand(), db, WithPublicHost("203.0.113.5"), WithPublicHostSource("detected"))

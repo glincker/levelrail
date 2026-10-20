@@ -9,6 +9,7 @@ export const KIND_MARKS: Partial<Record<DataExportKind, BrandIconName>> = {
   logs_betterstack: 'betterstack',
   logs_loki: 'grafana',
   logs_otlp: 'opentelemetry',
+  audit_otlp: 'opentelemetry',
   metrics_otlp: 'opentelemetry',
   metrics_remote_write: 'grafana',
 }

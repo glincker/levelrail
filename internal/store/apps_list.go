@@ -13,6 +13,8 @@ type AppListFilter struct {
 	Query         string
 	ProjectID     string
 	Environment   string
+	Environments  []string
+	AnyTag        bool
 	Tags          []string
 	Names         []string
 	Limit, Offset int
@@ -21,7 +23,7 @@ type AppListFilter struct {
 var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 
 func (f AppListFilter) where() (string, []any, error) {
-	clauses := []string{`name NOT LIKE ? ESCAPE '\'`}
+	clauses := []string{`name NOT LIKE ? ESCAPE '\'`, `name NOT IN (SELECT service_name FROM deploy_urls)`}
 	args := []any{"%" + likeEscaper.Replace(CanaryServiceSuffix)}
 	if q := strings.ToLower(strings.TrimSpace(f.Query)); q != "" {
 		clauses = append(clauses, `(lower(name) LIKE ? ESCAPE '\' OR lower(image) LIKE ? ESCAPE '\')`)
@@ -44,7 +46,19 @@ func (f AppListFilter) where() (string, []any, error) {
 		clauses = append(clauses, `environment_id IN (SELECT id FROM environments WHERE id = ? OR name = ?)`)
 		args = append(args, f.Environment, f.Environment)
 	}
+	if len(f.Environments) > 0 {
+		bEnvs, err := json.Marshal(f.Environments)
+		if err != nil {
+			return "", nil, fmt.Errorf("marshal environments: %w", err)
+		}
+		clauses = append(clauses, `environment_id IN (SELECT id FROM environments WHERE id IN (SELECT value FROM json_each(?)) OR name IN (SELECT value FROM json_each(?)))`)
+		args = append(args, string(bEnvs), string(bEnvs))
+	}
 	if n := len(f.Tags); n > 0 {
+		need := n
+		if f.AnyTag {
+			need = 1
+		}
 		bTags, err := json.Marshal(f.Tags)
 		if err != nil {
 			return "", nil, fmt.Errorf("marshal tags: %w", err)
@@ -52,8 +66,8 @@ func (f AppListFilter) where() (string, []any, error) {
 		clauses = append(clauses, `name IN (
 			SELECT at.app_name FROM app_tags at JOIN tags t ON t.id = at.tag_id
 			WHERE t.name IN (SELECT value FROM json_each(?))
-			GROUP BY at.app_name HAVING COUNT(DISTINCT t.name) = ?)`)
-		args = append(args, string(bTags), n)
+			GROUP BY at.app_name HAVING COUNT(DISTINCT t.name) >= ?)`)
+		args = append(args, string(bTags), need)
 	}
 	if len(clauses) == 0 {
 		return "", nil, nil

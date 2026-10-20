@@ -6,7 +6,7 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        v7.35.1
-// source: plugin/v1/plugin.proto
+// source: proto/plugin/v1/plugin.proto
 
 package pluginpb
 
@@ -26,6 +26,704 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type DnsRecord struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Name relative to the zone, "@" for the apex.
+	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Type          string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	Value         string `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
+	TtlSeconds    uint32 `protobuf:"varint,4,opt,name=ttl_seconds,json=ttlSeconds,proto3" json:"ttl_seconds,omitempty"`
+	Proxied       bool   `protobuf:"varint,5,opt,name=proxied,proto3" json:"proxied,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DnsRecord) Reset() {
+	*x = DnsRecord{}
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DnsRecord) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DnsRecord) ProtoMessage() {}
+
+func (x *DnsRecord) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DnsRecord.ProtoReflect.Descriptor instead.
+func (*DnsRecord) Descriptor() ([]byte, []int) {
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *DnsRecord) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *DnsRecord) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *DnsRecord) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
+func (x *DnsRecord) GetTtlSeconds() uint32 {
+	if x != nil {
+		return x.TtlSeconds
+	}
+	return 0
+}
+
+func (x *DnsRecord) GetProxied() bool {
+	if x != nil {
+		return x.Proxied
+	}
+	return false
+}
+
+type DnsOutcome struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	Detail        string                 `protobuf:"bytes,2,opt,name=detail,proto3" json:"detail,omitempty"`
+	Retryable     bool                   `protobuf:"varint,3,opt,name=retryable,proto3" json:"retryable,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DnsOutcome) Reset() {
+	*x = DnsOutcome{}
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DnsOutcome) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DnsOutcome) ProtoMessage() {}
+
+func (x *DnsOutcome) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DnsOutcome.ProtoReflect.Descriptor instead.
+func (*DnsOutcome) Descriptor() ([]byte, []int) {
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *DnsOutcome) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *DnsOutcome) GetDetail() string {
+	if x != nil {
+		return x.Detail
+	}
+	return ""
+}
+
+func (x *DnsOutcome) GetRetryable() bool {
+	if x != nil {
+		return x.Retryable
+	}
+	return false
+}
+
+type ListZonesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ConfigJson    string                 `protobuf:"bytes,1,opt,name=config_json,json=configJson,proto3" json:"config_json,omitempty"`
+	Secret        string                 `protobuf:"bytes,2,opt,name=secret,proto3" json:"secret,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListZonesRequest) Reset() {
+	*x = ListZonesRequest{}
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListZonesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListZonesRequest) ProtoMessage() {}
+
+func (x *ListZonesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListZonesRequest.ProtoReflect.Descriptor instead.
+func (*ListZonesRequest) Descriptor() ([]byte, []int) {
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ListZonesRequest) GetConfigJson() string {
+	if x != nil {
+		return x.ConfigJson
+	}
+	return ""
+}
+
+func (x *ListZonesRequest) GetSecret() string {
+	if x != nil {
+		return x.Secret
+	}
+	return ""
+}
+
+type ListZonesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *DnsOutcome            `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	Zones         []string               `protobuf:"bytes,2,rep,name=zones,proto3" json:"zones,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListZonesResponse) Reset() {
+	*x = ListZonesResponse{}
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListZonesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListZonesResponse) ProtoMessage() {}
+
+func (x *ListZonesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListZonesResponse.ProtoReflect.Descriptor instead.
+func (*ListZonesResponse) Descriptor() ([]byte, []int) {
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ListZonesResponse) GetOutcome() *DnsOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+func (x *ListZonesResponse) GetZones() []string {
+	if x != nil {
+		return x.Zones
+	}
+	return nil
+}
+
+type ListRecordsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Zone          string                 `protobuf:"bytes,1,opt,name=zone,proto3" json:"zone,omitempty"`
+	ConfigJson    string                 `protobuf:"bytes,2,opt,name=config_json,json=configJson,proto3" json:"config_json,omitempty"`
+	Secret        string                 `protobuf:"bytes,3,opt,name=secret,proto3" json:"secret,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRecordsRequest) Reset() {
+	*x = ListRecordsRequest{}
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRecordsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRecordsRequest) ProtoMessage() {}
+
+func (x *ListRecordsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRecordsRequest.ProtoReflect.Descriptor instead.
+func (*ListRecordsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ListRecordsRequest) GetZone() string {
+	if x != nil {
+		return x.Zone
+	}
+	return ""
+}
+
+func (x *ListRecordsRequest) GetConfigJson() string {
+	if x != nil {
+		return x.ConfigJson
+	}
+	return ""
+}
+
+func (x *ListRecordsRequest) GetSecret() string {
+	if x != nil {
+		return x.Secret
+	}
+	return ""
+}
+
+type ListRecordsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *DnsOutcome            `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	Records       []*DnsRecord           `protobuf:"bytes,2,rep,name=records,proto3" json:"records,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRecordsResponse) Reset() {
+	*x = ListRecordsResponse{}
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRecordsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRecordsResponse) ProtoMessage() {}
+
+func (x *ListRecordsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRecordsResponse.ProtoReflect.Descriptor instead.
+func (*ListRecordsResponse) Descriptor() ([]byte, []int) {
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ListRecordsResponse) GetOutcome() *DnsOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+func (x *ListRecordsResponse) GetRecords() []*DnsRecord {
+	if x != nil {
+		return x.Records
+	}
+	return nil
+}
+
+type UpsertRecordRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Zone          string                 `protobuf:"bytes,1,opt,name=zone,proto3" json:"zone,omitempty"`
+	Record        *DnsRecord             `protobuf:"bytes,2,opt,name=record,proto3" json:"record,omitempty"`
+	ConfigJson    string                 `protobuf:"bytes,3,opt,name=config_json,json=configJson,proto3" json:"config_json,omitempty"`
+	Secret        string                 `protobuf:"bytes,4,opt,name=secret,proto3" json:"secret,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpsertRecordRequest) Reset() {
+	*x = UpsertRecordRequest{}
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpsertRecordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpsertRecordRequest) ProtoMessage() {}
+
+func (x *UpsertRecordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpsertRecordRequest.ProtoReflect.Descriptor instead.
+func (*UpsertRecordRequest) Descriptor() ([]byte, []int) {
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *UpsertRecordRequest) GetZone() string {
+	if x != nil {
+		return x.Zone
+	}
+	return ""
+}
+
+func (x *UpsertRecordRequest) GetRecord() *DnsRecord {
+	if x != nil {
+		return x.Record
+	}
+	return nil
+}
+
+func (x *UpsertRecordRequest) GetConfigJson() string {
+	if x != nil {
+		return x.ConfigJson
+	}
+	return ""
+}
+
+func (x *UpsertRecordRequest) GetSecret() string {
+	if x != nil {
+		return x.Secret
+	}
+	return ""
+}
+
+type UpsertRecordResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *DnsOutcome            `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpsertRecordResponse) Reset() {
+	*x = UpsertRecordResponse{}
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpsertRecordResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpsertRecordResponse) ProtoMessage() {}
+
+func (x *UpsertRecordResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpsertRecordResponse.ProtoReflect.Descriptor instead.
+func (*UpsertRecordResponse) Descriptor() ([]byte, []int) {
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *UpsertRecordResponse) GetOutcome() *DnsOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type DeleteRecordRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Zone          string                 `protobuf:"bytes,1,opt,name=zone,proto3" json:"zone,omitempty"`
+	Record        *DnsRecord             `protobuf:"bytes,2,opt,name=record,proto3" json:"record,omitempty"`
+	ConfigJson    string                 `protobuf:"bytes,3,opt,name=config_json,json=configJson,proto3" json:"config_json,omitempty"`
+	Secret        string                 `protobuf:"bytes,4,opt,name=secret,proto3" json:"secret,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteRecordRequest) Reset() {
+	*x = DeleteRecordRequest{}
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteRecordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteRecordRequest) ProtoMessage() {}
+
+func (x *DeleteRecordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteRecordRequest.ProtoReflect.Descriptor instead.
+func (*DeleteRecordRequest) Descriptor() ([]byte, []int) {
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *DeleteRecordRequest) GetZone() string {
+	if x != nil {
+		return x.Zone
+	}
+	return ""
+}
+
+func (x *DeleteRecordRequest) GetRecord() *DnsRecord {
+	if x != nil {
+		return x.Record
+	}
+	return nil
+}
+
+func (x *DeleteRecordRequest) GetConfigJson() string {
+	if x != nil {
+		return x.ConfigJson
+	}
+	return ""
+}
+
+func (x *DeleteRecordRequest) GetSecret() string {
+	if x != nil {
+		return x.Secret
+	}
+	return ""
+}
+
+type DeleteRecordResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outcome       *DnsOutcome            `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteRecordResponse) Reset() {
+	*x = DeleteRecordResponse{}
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteRecordResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteRecordResponse) ProtoMessage() {}
+
+func (x *DeleteRecordResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteRecordResponse.ProtoReflect.Descriptor instead.
+func (*DeleteRecordResponse) Descriptor() ([]byte, []int) {
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *DeleteRecordResponse) GetOutcome() *DnsOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+type VerifyRecordRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Zone          string                 `protobuf:"bytes,1,opt,name=zone,proto3" json:"zone,omitempty"`
+	Record        *DnsRecord             `protobuf:"bytes,2,opt,name=record,proto3" json:"record,omitempty"`
+	ConfigJson    string                 `protobuf:"bytes,3,opt,name=config_json,json=configJson,proto3" json:"config_json,omitempty"`
+	Secret        string                 `protobuf:"bytes,4,opt,name=secret,proto3" json:"secret,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VerifyRecordRequest) Reset() {
+	*x = VerifyRecordRequest{}
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifyRecordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifyRecordRequest) ProtoMessage() {}
+
+func (x *VerifyRecordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifyRecordRequest.ProtoReflect.Descriptor instead.
+func (*VerifyRecordRequest) Descriptor() ([]byte, []int) {
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *VerifyRecordRequest) GetZone() string {
+	if x != nil {
+		return x.Zone
+	}
+	return ""
+}
+
+func (x *VerifyRecordRequest) GetRecord() *DnsRecord {
+	if x != nil {
+		return x.Record
+	}
+	return nil
+}
+
+func (x *VerifyRecordRequest) GetConfigJson() string {
+	if x != nil {
+		return x.ConfigJson
+	}
+	return ""
+}
+
+func (x *VerifyRecordRequest) GetSecret() string {
+	if x != nil {
+		return x.Secret
+	}
+	return ""
+}
+
+type VerifyRecordResponse struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Outcome *DnsOutcome            `protobuf:"bytes,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	// True when the provider now serves exactly the requested record.
+	Present       bool `protobuf:"varint,2,opt,name=present,proto3" json:"present,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VerifyRecordResponse) Reset() {
+	*x = VerifyRecordResponse{}
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifyRecordResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifyRecordResponse) ProtoMessage() {}
+
+func (x *VerifyRecordResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifyRecordResponse.ProtoReflect.Descriptor instead.
+func (*VerifyRecordResponse) Descriptor() ([]byte, []int) {
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *VerifyRecordResponse) GetOutcome() *DnsOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+func (x *VerifyRecordResponse) GetPresent() bool {
+	if x != nil {
+		return x.Present
+	}
+	return false
+}
+
 type DescribeRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	HostContractVersions []uint32               `protobuf:"varint,1,rep,packed,name=host_contract_versions,json=hostContractVersions,proto3" json:"host_contract_versions,omitempty"`
@@ -35,7 +733,7 @@ type DescribeRequest struct {
 
 func (x *DescribeRequest) Reset() {
 	*x = DescribeRequest{}
-	mi := &file_plugin_v1_plugin_proto_msgTypes[0]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -47,7 +745,7 @@ func (x *DescribeRequest) String() string {
 func (*DescribeRequest) ProtoMessage() {}
 
 func (x *DescribeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_v1_plugin_proto_msgTypes[0]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -60,7 +758,7 @@ func (x *DescribeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DescribeRequest.ProtoReflect.Descriptor instead.
 func (*DescribeRequest) Descriptor() ([]byte, []int) {
-	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{0}
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *DescribeRequest) GetHostContractVersions() []uint32 {
@@ -87,7 +785,7 @@ type DescribeResponse struct {
 
 func (x *DescribeResponse) Reset() {
 	*x = DescribeResponse{}
-	mi := &file_plugin_v1_plugin_proto_msgTypes[1]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -99,7 +797,7 @@ func (x *DescribeResponse) String() string {
 func (*DescribeResponse) ProtoMessage() {}
 
 func (x *DescribeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_v1_plugin_proto_msgTypes[1]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -112,7 +810,7 @@ func (x *DescribeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DescribeResponse.ProtoReflect.Descriptor instead.
 func (*DescribeResponse) Descriptor() ([]byte, []int) {
-	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{1}
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *DescribeResponse) GetContractVersion() uint32 {
@@ -165,7 +863,7 @@ type HealthRequest struct {
 
 func (x *HealthRequest) Reset() {
 	*x = HealthRequest{}
-	mi := &file_plugin_v1_plugin_proto_msgTypes[2]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -177,7 +875,7 @@ func (x *HealthRequest) String() string {
 func (*HealthRequest) ProtoMessage() {}
 
 func (x *HealthRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_v1_plugin_proto_msgTypes[2]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -190,7 +888,7 @@ func (x *HealthRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthRequest.ProtoReflect.Descriptor instead.
 func (*HealthRequest) Descriptor() ([]byte, []int) {
-	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{2}
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{14}
 }
 
 type HealthResponse struct {
@@ -203,7 +901,7 @@ type HealthResponse struct {
 
 func (x *HealthResponse) Reset() {
 	*x = HealthResponse{}
-	mi := &file_plugin_v1_plugin_proto_msgTypes[3]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -215,7 +913,7 @@ func (x *HealthResponse) String() string {
 func (*HealthResponse) ProtoMessage() {}
 
 func (x *HealthResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_v1_plugin_proto_msgTypes[3]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -228,7 +926,7 @@ func (x *HealthResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthResponse.ProtoReflect.Descriptor instead.
 func (*HealthResponse) Descriptor() ([]byte, []int) {
-	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{3}
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *HealthResponse) GetOk() bool {
@@ -262,7 +960,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_plugin_v1_plugin_proto_msgTypes[4]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -274,7 +972,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_v1_plugin_proto_msgTypes[4]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -287,7 +985,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{4}
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *Event) GetId() string {
@@ -360,7 +1058,7 @@ type SendRequest struct {
 
 func (x *SendRequest) Reset() {
 	*x = SendRequest{}
-	mi := &file_plugin_v1_plugin_proto_msgTypes[5]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -372,7 +1070,7 @@ func (x *SendRequest) String() string {
 func (*SendRequest) ProtoMessage() {}
 
 func (x *SendRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_v1_plugin_proto_msgTypes[5]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -385,7 +1083,7 @@ func (x *SendRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendRequest.ProtoReflect.Descriptor instead.
 func (*SendRequest) Descriptor() ([]byte, []int) {
-	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{5}
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *SendRequest) GetEvent() *Event {
@@ -420,7 +1118,7 @@ type SendResponse struct {
 
 func (x *SendResponse) Reset() {
 	*x = SendResponse{}
-	mi := &file_plugin_v1_plugin_proto_msgTypes[6]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -432,7 +1130,7 @@ func (x *SendResponse) String() string {
 func (*SendResponse) ProtoMessage() {}
 
 func (x *SendResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_v1_plugin_proto_msgTypes[6]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -445,7 +1143,7 @@ func (x *SendResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendResponse.ProtoReflect.Descriptor instead.
 func (*SendResponse) Descriptor() ([]byte, []int) {
-	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{6}
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *SendResponse) GetDelivered() bool {
@@ -482,7 +1180,7 @@ type PanelDataRequest struct {
 
 func (x *PanelDataRequest) Reset() {
 	*x = PanelDataRequest{}
-	mi := &file_plugin_v1_plugin_proto_msgTypes[7]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -494,7 +1192,7 @@ func (x *PanelDataRequest) String() string {
 func (*PanelDataRequest) ProtoMessage() {}
 
 func (x *PanelDataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_v1_plugin_proto_msgTypes[7]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -507,7 +1205,7 @@ func (x *PanelDataRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PanelDataRequest.ProtoReflect.Descriptor instead.
 func (*PanelDataRequest) Descriptor() ([]byte, []int) {
-	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{7}
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *PanelDataRequest) GetPanelId() string {
@@ -548,7 +1246,7 @@ type PanelDataResponse struct {
 
 func (x *PanelDataResponse) Reset() {
 	*x = PanelDataResponse{}
-	mi := &file_plugin_v1_plugin_proto_msgTypes[8]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -560,7 +1258,7 @@ func (x *PanelDataResponse) String() string {
 func (*PanelDataResponse) ProtoMessage() {}
 
 func (x *PanelDataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_v1_plugin_proto_msgTypes[8]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -573,7 +1271,7 @@ func (x *PanelDataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PanelDataResponse.ProtoReflect.Descriptor instead.
 func (*PanelDataResponse) Descriptor() ([]byte, []int) {
-	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{8}
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *PanelDataResponse) GetJson() string {
@@ -595,7 +1293,7 @@ type PanelActionRequest struct {
 
 func (x *PanelActionRequest) Reset() {
 	*x = PanelActionRequest{}
-	mi := &file_plugin_v1_plugin_proto_msgTypes[9]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -607,7 +1305,7 @@ func (x *PanelActionRequest) String() string {
 func (*PanelActionRequest) ProtoMessage() {}
 
 func (x *PanelActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_v1_plugin_proto_msgTypes[9]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -620,7 +1318,7 @@ func (x *PanelActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PanelActionRequest.ProtoReflect.Descriptor instead.
 func (*PanelActionRequest) Descriptor() ([]byte, []int) {
-	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{9}
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *PanelActionRequest) GetPanelId() string {
@@ -661,7 +1359,7 @@ type PanelActionResponse struct {
 
 func (x *PanelActionResponse) Reset() {
 	*x = PanelActionResponse{}
-	mi := &file_plugin_v1_plugin_proto_msgTypes[10]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -673,7 +1371,7 @@ func (x *PanelActionResponse) String() string {
 func (*PanelActionResponse) ProtoMessage() {}
 
 func (x *PanelActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_v1_plugin_proto_msgTypes[10]
+	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -686,7 +1384,7 @@ func (x *PanelActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PanelActionResponse.ProtoReflect.Descriptor instead.
 func (*PanelActionResponse) Descriptor() ([]byte, []int) {
-	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{10}
+	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *PanelActionResponse) GetOk() bool {
@@ -703,11 +1401,63 @@ func (x *PanelActionResponse) GetMessage() string {
 	return ""
 }
 
-var File_plugin_v1_plugin_proto protoreflect.FileDescriptor
+var File_proto_plugin_v1_plugin_proto protoreflect.FileDescriptor
 
-const file_plugin_v1_plugin_proto_rawDesc = "" +
+const file_proto_plugin_v1_plugin_proto_rawDesc = "" +
 	"\n" +
-	"\x16plugin/v1/plugin.proto\x12\x13levelrail.plugin.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"G\n" +
+	"\x1cproto/plugin/v1/plugin.proto\x12\x13levelrail.plugin.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x84\x01\n" +
+	"\tDnsRecord\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12\x14\n" +
+	"\x05value\x18\x03 \x01(\tR\x05value\x12\x1f\n" +
+	"\vttl_seconds\x18\x04 \x01(\rR\n" +
+	"ttlSeconds\x12\x18\n" +
+	"\aproxied\x18\x05 \x01(\bR\aproxied\"R\n" +
+	"\n" +
+	"DnsOutcome\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x16\n" +
+	"\x06detail\x18\x02 \x01(\tR\x06detail\x12\x1c\n" +
+	"\tretryable\x18\x03 \x01(\bR\tretryable\"K\n" +
+	"\x10ListZonesRequest\x12\x1f\n" +
+	"\vconfig_json\x18\x01 \x01(\tR\n" +
+	"configJson\x12\x16\n" +
+	"\x06secret\x18\x02 \x01(\tR\x06secret\"d\n" +
+	"\x11ListZonesResponse\x129\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x1f.levelrail.plugin.v1.DnsOutcomeR\aoutcome\x12\x14\n" +
+	"\x05zones\x18\x02 \x03(\tR\x05zones\"a\n" +
+	"\x12ListRecordsRequest\x12\x12\n" +
+	"\x04zone\x18\x01 \x01(\tR\x04zone\x12\x1f\n" +
+	"\vconfig_json\x18\x02 \x01(\tR\n" +
+	"configJson\x12\x16\n" +
+	"\x06secret\x18\x03 \x01(\tR\x06secret\"\x8a\x01\n" +
+	"\x13ListRecordsResponse\x129\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x1f.levelrail.plugin.v1.DnsOutcomeR\aoutcome\x128\n" +
+	"\arecords\x18\x02 \x03(\v2\x1e.levelrail.plugin.v1.DnsRecordR\arecords\"\x9a\x01\n" +
+	"\x13UpsertRecordRequest\x12\x12\n" +
+	"\x04zone\x18\x01 \x01(\tR\x04zone\x126\n" +
+	"\x06record\x18\x02 \x01(\v2\x1e.levelrail.plugin.v1.DnsRecordR\x06record\x12\x1f\n" +
+	"\vconfig_json\x18\x03 \x01(\tR\n" +
+	"configJson\x12\x16\n" +
+	"\x06secret\x18\x04 \x01(\tR\x06secret\"Q\n" +
+	"\x14UpsertRecordResponse\x129\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x1f.levelrail.plugin.v1.DnsOutcomeR\aoutcome\"\x9a\x01\n" +
+	"\x13DeleteRecordRequest\x12\x12\n" +
+	"\x04zone\x18\x01 \x01(\tR\x04zone\x126\n" +
+	"\x06record\x18\x02 \x01(\v2\x1e.levelrail.plugin.v1.DnsRecordR\x06record\x12\x1f\n" +
+	"\vconfig_json\x18\x03 \x01(\tR\n" +
+	"configJson\x12\x16\n" +
+	"\x06secret\x18\x04 \x01(\tR\x06secret\"Q\n" +
+	"\x14DeleteRecordResponse\x129\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x1f.levelrail.plugin.v1.DnsOutcomeR\aoutcome\"\x9a\x01\n" +
+	"\x13VerifyRecordRequest\x12\x12\n" +
+	"\x04zone\x18\x01 \x01(\tR\x04zone\x126\n" +
+	"\x06record\x18\x02 \x01(\v2\x1e.levelrail.plugin.v1.DnsRecordR\x06record\x12\x1f\n" +
+	"\vconfig_json\x18\x03 \x01(\tR\n" +
+	"configJson\x12\x16\n" +
+	"\x06secret\x18\x04 \x01(\tR\x06secret\"k\n" +
+	"\x14VerifyRecordResponse\x129\n" +
+	"\aoutcome\x18\x01 \x01(\v2\x1f.levelrail.plugin.v1.DnsOutcomeR\aoutcome\x12\x18\n" +
+	"\apresent\x18\x02 \x01(\bR\apresent\"G\n" +
 	"\x0fDescribeRequest\x124\n" +
 	"\x16host_contract_versions\x18\x01 \x03(\rR\x14hostContractVersions\"\xd5\x01\n" +
 	"\x10DescribeResponse\x12)\n" +
@@ -771,79 +1521,116 @@ const file_plugin_v1_plugin_proto_rawDesc = "" +
 	"\x04Send\x12 .levelrail.plugin.v1.SendRequest\x1a!.levelrail.plugin.v1.SendResponse2\xcc\x01\n" +
 	"\fPanelService\x12Z\n" +
 	"\tPanelData\x12%.levelrail.plugin.v1.PanelDataRequest\x1a&.levelrail.plugin.v1.PanelDataResponse\x12`\n" +
-	"\vPanelAction\x12'.levelrail.plugin.v1.PanelActionRequest\x1a(.levelrail.plugin.v1.PanelActionResponseBAZ?github.com/GLINCKER/levelrail/internal/plugin/pluginpb;pluginpbb\x06proto3"
+	"\vPanelAction\x12'.levelrail.plugin.v1.PanelActionRequest\x1a(.levelrail.plugin.v1.PanelActionResponse2\x81\x04\n" +
+	"\x12DnsProviderService\x12Z\n" +
+	"\tListZones\x12%.levelrail.plugin.v1.ListZonesRequest\x1a&.levelrail.plugin.v1.ListZonesResponse\x12`\n" +
+	"\vListRecords\x12'.levelrail.plugin.v1.ListRecordsRequest\x1a(.levelrail.plugin.v1.ListRecordsResponse\x12c\n" +
+	"\fUpsertRecord\x12(.levelrail.plugin.v1.UpsertRecordRequest\x1a).levelrail.plugin.v1.UpsertRecordResponse\x12c\n" +
+	"\fDeleteRecord\x12(.levelrail.plugin.v1.DeleteRecordRequest\x1a).levelrail.plugin.v1.DeleteRecordResponse\x12c\n" +
+	"\fVerifyRecord\x12(.levelrail.plugin.v1.VerifyRecordRequest\x1a).levelrail.plugin.v1.VerifyRecordResponseBAZ?github.com/GLINCKER/levelrail/internal/plugin/pluginpb;pluginpbb\x06proto3"
 
 var (
-	file_plugin_v1_plugin_proto_rawDescOnce sync.Once
-	file_plugin_v1_plugin_proto_rawDescData []byte
+	file_proto_plugin_v1_plugin_proto_rawDescOnce sync.Once
+	file_proto_plugin_v1_plugin_proto_rawDescData []byte
 )
 
-func file_plugin_v1_plugin_proto_rawDescGZIP() []byte {
-	file_plugin_v1_plugin_proto_rawDescOnce.Do(func() {
-		file_plugin_v1_plugin_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_plugin_v1_plugin_proto_rawDesc), len(file_plugin_v1_plugin_proto_rawDesc)))
+func file_proto_plugin_v1_plugin_proto_rawDescGZIP() []byte {
+	file_proto_plugin_v1_plugin_proto_rawDescOnce.Do(func() {
+		file_proto_plugin_v1_plugin_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_plugin_v1_plugin_proto_rawDesc), len(file_proto_plugin_v1_plugin_proto_rawDesc)))
 	})
-	return file_plugin_v1_plugin_proto_rawDescData
+	return file_proto_plugin_v1_plugin_proto_rawDescData
 }
 
-var file_plugin_v1_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
-var file_plugin_v1_plugin_proto_goTypes = []any{
-	(*DescribeRequest)(nil),       // 0: levelrail.plugin.v1.DescribeRequest
-	(*DescribeResponse)(nil),      // 1: levelrail.plugin.v1.DescribeResponse
-	(*HealthRequest)(nil),         // 2: levelrail.plugin.v1.HealthRequest
-	(*HealthResponse)(nil),        // 3: levelrail.plugin.v1.HealthResponse
-	(*Event)(nil),                 // 4: levelrail.plugin.v1.Event
-	(*SendRequest)(nil),           // 5: levelrail.plugin.v1.SendRequest
-	(*SendResponse)(nil),          // 6: levelrail.plugin.v1.SendResponse
-	(*PanelDataRequest)(nil),      // 7: levelrail.plugin.v1.PanelDataRequest
-	(*PanelDataResponse)(nil),     // 8: levelrail.plugin.v1.PanelDataResponse
-	(*PanelActionRequest)(nil),    // 9: levelrail.plugin.v1.PanelActionRequest
-	(*PanelActionResponse)(nil),   // 10: levelrail.plugin.v1.PanelActionResponse
-	nil,                           // 11: levelrail.plugin.v1.PanelDataRequest.ContextEntry
-	nil,                           // 12: levelrail.plugin.v1.PanelActionRequest.ContextEntry
-	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
+var file_proto_plugin_v1_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_proto_plugin_v1_plugin_proto_goTypes = []any{
+	(*DnsRecord)(nil),             // 0: levelrail.plugin.v1.DnsRecord
+	(*DnsOutcome)(nil),            // 1: levelrail.plugin.v1.DnsOutcome
+	(*ListZonesRequest)(nil),      // 2: levelrail.plugin.v1.ListZonesRequest
+	(*ListZonesResponse)(nil),     // 3: levelrail.plugin.v1.ListZonesResponse
+	(*ListRecordsRequest)(nil),    // 4: levelrail.plugin.v1.ListRecordsRequest
+	(*ListRecordsResponse)(nil),   // 5: levelrail.plugin.v1.ListRecordsResponse
+	(*UpsertRecordRequest)(nil),   // 6: levelrail.plugin.v1.UpsertRecordRequest
+	(*UpsertRecordResponse)(nil),  // 7: levelrail.plugin.v1.UpsertRecordResponse
+	(*DeleteRecordRequest)(nil),   // 8: levelrail.plugin.v1.DeleteRecordRequest
+	(*DeleteRecordResponse)(nil),  // 9: levelrail.plugin.v1.DeleteRecordResponse
+	(*VerifyRecordRequest)(nil),   // 10: levelrail.plugin.v1.VerifyRecordRequest
+	(*VerifyRecordResponse)(nil),  // 11: levelrail.plugin.v1.VerifyRecordResponse
+	(*DescribeRequest)(nil),       // 12: levelrail.plugin.v1.DescribeRequest
+	(*DescribeResponse)(nil),      // 13: levelrail.plugin.v1.DescribeResponse
+	(*HealthRequest)(nil),         // 14: levelrail.plugin.v1.HealthRequest
+	(*HealthResponse)(nil),        // 15: levelrail.plugin.v1.HealthResponse
+	(*Event)(nil),                 // 16: levelrail.plugin.v1.Event
+	(*SendRequest)(nil),           // 17: levelrail.plugin.v1.SendRequest
+	(*SendResponse)(nil),          // 18: levelrail.plugin.v1.SendResponse
+	(*PanelDataRequest)(nil),      // 19: levelrail.plugin.v1.PanelDataRequest
+	(*PanelDataResponse)(nil),     // 20: levelrail.plugin.v1.PanelDataResponse
+	(*PanelActionRequest)(nil),    // 21: levelrail.plugin.v1.PanelActionRequest
+	(*PanelActionResponse)(nil),   // 22: levelrail.plugin.v1.PanelActionResponse
+	nil,                           // 23: levelrail.plugin.v1.PanelDataRequest.ContextEntry
+	nil,                           // 24: levelrail.plugin.v1.PanelActionRequest.ContextEntry
+	(*timestamppb.Timestamp)(nil), // 25: google.protobuf.Timestamp
 }
-var file_plugin_v1_plugin_proto_depIdxs = []int32{
-	13, // 0: levelrail.plugin.v1.Event.occurred_at:type_name -> google.protobuf.Timestamp
-	4,  // 1: levelrail.plugin.v1.SendRequest.event:type_name -> levelrail.plugin.v1.Event
-	11, // 2: levelrail.plugin.v1.PanelDataRequest.context:type_name -> levelrail.plugin.v1.PanelDataRequest.ContextEntry
-	12, // 3: levelrail.plugin.v1.PanelActionRequest.context:type_name -> levelrail.plugin.v1.PanelActionRequest.ContextEntry
-	0,  // 4: levelrail.plugin.v1.PluginService.Describe:input_type -> levelrail.plugin.v1.DescribeRequest
-	2,  // 5: levelrail.plugin.v1.PluginService.Health:input_type -> levelrail.plugin.v1.HealthRequest
-	5,  // 6: levelrail.plugin.v1.NotificationChannelService.Send:input_type -> levelrail.plugin.v1.SendRequest
-	7,  // 7: levelrail.plugin.v1.PanelService.PanelData:input_type -> levelrail.plugin.v1.PanelDataRequest
-	9,  // 8: levelrail.plugin.v1.PanelService.PanelAction:input_type -> levelrail.plugin.v1.PanelActionRequest
-	1,  // 9: levelrail.plugin.v1.PluginService.Describe:output_type -> levelrail.plugin.v1.DescribeResponse
-	3,  // 10: levelrail.plugin.v1.PluginService.Health:output_type -> levelrail.plugin.v1.HealthResponse
-	6,  // 11: levelrail.plugin.v1.NotificationChannelService.Send:output_type -> levelrail.plugin.v1.SendResponse
-	8,  // 12: levelrail.plugin.v1.PanelService.PanelData:output_type -> levelrail.plugin.v1.PanelDataResponse
-	10, // 13: levelrail.plugin.v1.PanelService.PanelAction:output_type -> levelrail.plugin.v1.PanelActionResponse
-	9,  // [9:14] is the sub-list for method output_type
-	4,  // [4:9] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+var file_proto_plugin_v1_plugin_proto_depIdxs = []int32{
+	1,  // 0: levelrail.plugin.v1.ListZonesResponse.outcome:type_name -> levelrail.plugin.v1.DnsOutcome
+	1,  // 1: levelrail.plugin.v1.ListRecordsResponse.outcome:type_name -> levelrail.plugin.v1.DnsOutcome
+	0,  // 2: levelrail.plugin.v1.ListRecordsResponse.records:type_name -> levelrail.plugin.v1.DnsRecord
+	0,  // 3: levelrail.plugin.v1.UpsertRecordRequest.record:type_name -> levelrail.plugin.v1.DnsRecord
+	1,  // 4: levelrail.plugin.v1.UpsertRecordResponse.outcome:type_name -> levelrail.plugin.v1.DnsOutcome
+	0,  // 5: levelrail.plugin.v1.DeleteRecordRequest.record:type_name -> levelrail.plugin.v1.DnsRecord
+	1,  // 6: levelrail.plugin.v1.DeleteRecordResponse.outcome:type_name -> levelrail.plugin.v1.DnsOutcome
+	0,  // 7: levelrail.plugin.v1.VerifyRecordRequest.record:type_name -> levelrail.plugin.v1.DnsRecord
+	1,  // 8: levelrail.plugin.v1.VerifyRecordResponse.outcome:type_name -> levelrail.plugin.v1.DnsOutcome
+	25, // 9: levelrail.plugin.v1.Event.occurred_at:type_name -> google.protobuf.Timestamp
+	16, // 10: levelrail.plugin.v1.SendRequest.event:type_name -> levelrail.plugin.v1.Event
+	23, // 11: levelrail.plugin.v1.PanelDataRequest.context:type_name -> levelrail.plugin.v1.PanelDataRequest.ContextEntry
+	24, // 12: levelrail.plugin.v1.PanelActionRequest.context:type_name -> levelrail.plugin.v1.PanelActionRequest.ContextEntry
+	12, // 13: levelrail.plugin.v1.PluginService.Describe:input_type -> levelrail.plugin.v1.DescribeRequest
+	14, // 14: levelrail.plugin.v1.PluginService.Health:input_type -> levelrail.plugin.v1.HealthRequest
+	17, // 15: levelrail.plugin.v1.NotificationChannelService.Send:input_type -> levelrail.plugin.v1.SendRequest
+	19, // 16: levelrail.plugin.v1.PanelService.PanelData:input_type -> levelrail.plugin.v1.PanelDataRequest
+	21, // 17: levelrail.plugin.v1.PanelService.PanelAction:input_type -> levelrail.plugin.v1.PanelActionRequest
+	2,  // 18: levelrail.plugin.v1.DnsProviderService.ListZones:input_type -> levelrail.plugin.v1.ListZonesRequest
+	4,  // 19: levelrail.plugin.v1.DnsProviderService.ListRecords:input_type -> levelrail.plugin.v1.ListRecordsRequest
+	6,  // 20: levelrail.plugin.v1.DnsProviderService.UpsertRecord:input_type -> levelrail.plugin.v1.UpsertRecordRequest
+	8,  // 21: levelrail.plugin.v1.DnsProviderService.DeleteRecord:input_type -> levelrail.plugin.v1.DeleteRecordRequest
+	10, // 22: levelrail.plugin.v1.DnsProviderService.VerifyRecord:input_type -> levelrail.plugin.v1.VerifyRecordRequest
+	13, // 23: levelrail.plugin.v1.PluginService.Describe:output_type -> levelrail.plugin.v1.DescribeResponse
+	15, // 24: levelrail.plugin.v1.PluginService.Health:output_type -> levelrail.plugin.v1.HealthResponse
+	18, // 25: levelrail.plugin.v1.NotificationChannelService.Send:output_type -> levelrail.plugin.v1.SendResponse
+	20, // 26: levelrail.plugin.v1.PanelService.PanelData:output_type -> levelrail.plugin.v1.PanelDataResponse
+	22, // 27: levelrail.plugin.v1.PanelService.PanelAction:output_type -> levelrail.plugin.v1.PanelActionResponse
+	3,  // 28: levelrail.plugin.v1.DnsProviderService.ListZones:output_type -> levelrail.plugin.v1.ListZonesResponse
+	5,  // 29: levelrail.plugin.v1.DnsProviderService.ListRecords:output_type -> levelrail.plugin.v1.ListRecordsResponse
+	7,  // 30: levelrail.plugin.v1.DnsProviderService.UpsertRecord:output_type -> levelrail.plugin.v1.UpsertRecordResponse
+	9,  // 31: levelrail.plugin.v1.DnsProviderService.DeleteRecord:output_type -> levelrail.plugin.v1.DeleteRecordResponse
+	11, // 32: levelrail.plugin.v1.DnsProviderService.VerifyRecord:output_type -> levelrail.plugin.v1.VerifyRecordResponse
+	23, // [23:33] is the sub-list for method output_type
+	13, // [13:23] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
-func init() { file_plugin_v1_plugin_proto_init() }
-func file_plugin_v1_plugin_proto_init() {
-	if File_plugin_v1_plugin_proto != nil {
+func init() { file_proto_plugin_v1_plugin_proto_init() }
+func file_proto_plugin_v1_plugin_proto_init() {
+	if File_proto_plugin_v1_plugin_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_plugin_v1_plugin_proto_rawDesc), len(file_plugin_v1_plugin_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_plugin_v1_plugin_proto_rawDesc), len(file_proto_plugin_v1_plugin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   25,
 			NumExtensions: 0,
-			NumServices:   3,
+			NumServices:   4,
 		},
-		GoTypes:           file_plugin_v1_plugin_proto_goTypes,
-		DependencyIndexes: file_plugin_v1_plugin_proto_depIdxs,
-		MessageInfos:      file_plugin_v1_plugin_proto_msgTypes,
+		GoTypes:           file_proto_plugin_v1_plugin_proto_goTypes,
+		DependencyIndexes: file_proto_plugin_v1_plugin_proto_depIdxs,
+		MessageInfos:      file_proto_plugin_v1_plugin_proto_msgTypes,
 	}.Build()
-	File_plugin_v1_plugin_proto = out.File
-	file_plugin_v1_plugin_proto_goTypes = nil
-	file_plugin_v1_plugin_proto_depIdxs = nil
+	File_proto_plugin_v1_plugin_proto = out.File
+	file_proto_plugin_v1_plugin_proto_goTypes = nil
+	file_proto_plugin_v1_plugin_proto_depIdxs = nil
 }

@@ -12,6 +12,9 @@ export type DataExportKind =
   | 'logs_betterstack'
   | 'audit_webhook'
   | 'audit_s3'
+  | 'audit_splunk'
+  | 'audit_syslog'
+  | 'audit_otlp'
   | 'metrics_otlp'
   | 'metrics_remote_write'
 
@@ -25,6 +28,13 @@ export interface DataExportOptions {
   site?: string
   dataset?: string
   username?: string
+  index?: string
+  source?: string
+  source_type?: string
+  gzip?: boolean
+  insecure_skip_verify?: boolean
+  facility?: string
+  app_name?: string
 }
 
 export interface DataExportStatus {
@@ -71,12 +81,17 @@ export interface CreateDataExportDestinationRequest {
 
 export interface UpdateDataExportDestinationRequest {
   enabled?: boolean
+  options?: DataExportOptions
   headers?: Record<string, string>
   hmac_key?: string
   api_key?: string
 }
 
+export type DataExportFix =
+  'bad_token' | 'tls_error' | 'unreachable' | 'rejected' | 'private_blocked'
+
 export interface DataExportTestResult {
   ok: boolean
   error?: string
+  fix?: DataExportFix
 }

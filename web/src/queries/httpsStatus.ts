@@ -24,12 +24,13 @@ export interface HttpsStatus {
   error?: string
   hint?: HttpsHint
   dashboard_url?: string
+  default_email?: string
   // Enable response only: self-dial of ports 80 and 443 (a hint, not proof).
   preflight?: { port: number; reachable: boolean }[]
 }
 
 export interface EnableHttpsRequest {
-  email: string
+  email?: string
   staging: boolean
 }
 

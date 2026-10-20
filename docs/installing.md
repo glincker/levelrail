@@ -71,6 +71,8 @@ The script:
 - Checks that ports 80 and 443 answer on the server's public IP, and prints the `ufw`/`firewalld` commands to open them if not.
 - Prints the dashboard URL, the one-time **setup token** for the first admin, and a reminder to back up `<data dir>/master.key`.
 
+Pass `--profile minimal|standard|suite` to choose how much starts (default `standard`); see [Server profiles](/profiles).
+
 <Note>
 A missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECKSUM=1`. The installer picks the newest stable release; choose explicitly with `LEVELRAIL_CHANNEL=stable|beta`. A release with no binary for your architecture is skipped with a warning. Some providers never route a server's own public IP back to itself, so treat a failed reachability test as a hint, not proof.
 </Note>
@@ -90,16 +92,18 @@ Open one of the `http://<ip>:8080/login?setup=<token>` links from the install su
 After you create the admin account, the setup wizard opens and runs the server checks shown above.
 </Step>
 <Step title="Enable HTTPS">
-The dashboard shows a "connection is not encrypted" banner until you enable HTTPS. Once you have an `https://` **dashboard URL**, sign-in over plain HTTP is refused.
+The dashboard shows a "connection is not encrypted" banner until you enable HTTPS. Once you have an `https://` **dashboard URL**, sign-in over plain HTTP is refused, so switch to the https address right after. The certificate contact email defaults to your admin account email; change it if you want notices elsewhere.
 
 <Tabs>
 <Tab title="Dashboard">
-Open the Domains page and click **Enable HTTPS**. It issues a real Let's Encrypt certificate for `<dashed-ip>.sslip.io`, no DNS needed. See [Domains and ingress](/domains-and-ingress#zero-dns-setup-sslipio-hostnames-and-one-click-https).
+Open the Domains page and click **Enable HTTPS** (the email field is prefilled from your admin account). It issues a real Let's Encrypt certificate for `<dashed-ip>.sslip.io`, no DNS needed. See [Domains and ingress](/domains-and-ingress#zero-dns-setup-sslipio-hostnames-and-one-click-https).
 </Tab>
 <Tab title="CLI">
 ```bash
-levelrail-cli settings ingress https enable --email you@yourdomain.com
+levelrail-cli settings ingress https enable
 ```
+
+Add `--email you@yourdomain.com` to use a different contact. If the certificate does not issue because the address does not reach this server yet, fix that and run `levelrail-cli settings ingress https status` to re-check.
 </Tab>
 <Tab title="Own domain">
 Set a primary domain plus ACME on the Domains page.
@@ -218,6 +222,8 @@ levelrail-cli readiness [--domain D]
 It reports who holds ports 80 and 443 (Traefik, nginx, Caddy, Apache, HAProxy, a container or a host process), the Docker version and whether the daemon is rootless, whether the Docker API is exposed on the network, free disk, memory, the [host firewall](/host-firewall), and whether the domain you give resolves to this server. It ends with the recommended mode, own ports or behind your existing proxy, and the exact command to run next. It exits non-zero when a check fails.
 
 ### Server already runs a proxy
+
+After coexist mode, [Migrate on the same server](/migrate-same-server) covers staging your apps and moving ports 80 and 443 to Levelrail with a rollback.
 
 Coolify, Traefik, nginx or Caddy on the same box already hold ports 80 and 443, so a default install would start but never serve or issue certificates. The installer checks this before it changes anything (`ss`, and `docker ps --filter publish=<port>` to name a container and image):
 
@@ -367,7 +373,7 @@ docker buildx imagetools inspect ghcr.io/glincker/levelrail:beta --format '{{ js
 
 ## Option 3: build from source
 
-The path for contributors, anyone running an unreleased commit, or trying Levelrail on a laptop without a server. See `CONTRIBUTING.md` in the repository for branch and commit conventions and how to run the tests.
+The path for contributors, anyone running an unreleased commit, or trying Levelrail on a laptop without a server. See `.github/CONTRIBUTING.md` in the repository for branch and commit conventions and how to run the tests.
 
 **Requirements:** Go 1.26 or newer, a running Docker daemon, and Node.js with npm only if you build the frontend yourself.
 
@@ -386,7 +392,7 @@ npm run dev       # Vite dev server
 npm run build     # type-check and production build
 ```
 
-The control plane listens on `:8080` by default. For a throwaway local instance, start it with `APP_DEV_MODE=1`: it creates a fixed `dev`/`dev` admin and fixed API tokens from `dev-fixtures.yml` so you can skip sign-up.
+The control plane listens on `:8080` by default. For a throwaway local instance, start it with `APP_DEV_MODE=1`: it creates a fixed `dev`/`dev` admin and fixed API tokens from `test/fixtures/dev-fixtures.yml` so you can skip sign-up.
 
 <Warning>
 Dev mode is for local use only. A release build (`-tags embedweb`) ignores `APP_DEV_MODE`, so it can never run this way in production.

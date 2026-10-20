@@ -2984,6 +2984,31 @@ func TestController_Reconcile_Recreate_CreateFailsAfterCleanup_HalfSucceeded(t *
 	}
 }
 
+func TestController_Reconcile_Recreate_FailedNewImage_RollbackConverges(t *testing.T) {
+	rt := newFakeRuntime(0)
+	rt.seed(ContainerName("web", "img:v1", ""), true)
+	desired := &store.DesiredService{Name: "web", Image: "img:v2", Port: 80, Strategy: "recreate", Replicas: store.DefaultReplicas}
+	rt.createErr = errors.New("boom")
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	if _, err := c.Reconcile(context.Background()); err == nil {
+		t.Fatal("Reconcile() error = nil, want the new image to fail")
+	}
+
+	rt.createErr = nil
+	desired.Image = "img:v1"
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("rollback Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue {
+		t.Fatalf("condition = %+v, want Ready after rolling back", cond)
+	}
+	if _, ok := rt.containers[ContainerName("web", "img:v1", "")]; !ok || rt.count() != 1 {
+		t.Errorf("containers = %v, want only the rolled back v1", rt.names())
+	}
+}
+
 func TestController_Reconcile_Recreate_SameNonce_AlreadyConverged(t *testing.T) {
 	// The idempotency counterpart to the "different nonce forces
 	// recreate" tests below: two reconcile passes with the SAME

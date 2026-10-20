@@ -161,19 +161,31 @@ export function PortEditor({ app }: { app: AppDetail }) {
           className="space-y-4"
         >
           <div className="flex flex-wrap gap-4">
-            <Field className="max-w-40">
+            <Field
+              className="max-w-40"
+              data-invalid={formState.errors.port ? true : undefined}
+            >
               <FieldLabel htmlFor="app-port">Port</FieldLabel>
-              <Input id="app-port" inputMode="numeric" {...register('port')} />
+              <Input
+                id="app-port"
+                inputMode="numeric"
+                {...register('port')}
+                aria-invalid={!!formState.errors.port}
+              />
               <FieldError errors={[formState.errors.port]} />
             </Field>
 
-            <Field className="max-w-40">
+            <Field
+              className="max-w-40"
+              data-invalid={formState.errors.hostPort ? true : undefined}
+            >
               <FieldLabel htmlFor="app-host-port">Host port</FieldLabel>
               <Input
                 id="app-host-port"
                 inputMode="numeric"
                 placeholder="Automatic"
                 {...register('hostPort')}
+                aria-invalid={!!formState.errors.hostPort}
               />
               <FieldError errors={[formState.errors.hostPort]} />
             </Field>
@@ -207,7 +219,12 @@ export function PortEditor({ app }: { app: AppDetail }) {
             </Field>
 
             {bindAddressMode === 'custom' ? (
-              <Field className="max-w-48">
+              <Field
+                className="max-w-48"
+                data-invalid={
+                  formState.errors.customBindAddress ? true : undefined
+                }
+              >
                 <FieldLabel htmlFor="app-custom-bind-address">
                   IP address
                 </FieldLabel>
@@ -215,6 +232,7 @@ export function PortEditor({ app }: { app: AppDetail }) {
                   id="app-custom-bind-address"
                   placeholder="10.0.0.5"
                   {...register('customBindAddress')}
+                  aria-invalid={!!formState.errors.customBindAddress}
                 />
                 <FieldError errors={[formState.errors.customBindAddress]} />
               </Field>

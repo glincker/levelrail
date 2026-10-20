@@ -17,6 +17,14 @@ type ExportOptions struct {
 	Site            string            `json:"site,omitempty"`
 	Dataset         string            `json:"dataset,omitempty"`
 	Username        string            `json:"username,omitempty"`
+
+	Index              string `json:"index,omitempty"`
+	Source             string `json:"source,omitempty"`
+	SourceType         string `json:"source_type,omitempty"`
+	Gzip               bool   `json:"gzip,omitempty"`
+	InsecureSkipVerify bool   `json:"insecure_skip_verify,omitempty"`
+	Facility           string `json:"facility,omitempty"`
+	AppName            string `json:"app_name,omitempty"`
 }
 
 // ExportStatus is a destination's delivery state.
@@ -81,6 +89,7 @@ type UpdateExportDestinationRequest struct {
 type ExportTestResult struct {
 	OK    bool   `json:"ok"`
 	Error string `json:"error,omitempty"`
+	Fix   string `json:"fix,omitempty"`
 }
 
 func exportDestinationPath(id string) string {

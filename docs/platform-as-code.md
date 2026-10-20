@@ -450,7 +450,7 @@ The pipeline definition format.
 Tokens and per resource policies.
 
 </Card>
-<Card title="Migrating from other platforms" href="/migrating-from-coolify-dokploy-and-caprover">
+<Card title="Migrating from other platforms" href="/migrate-to-levelrail">
 
 Import from Coolify, Dokploy or CapRover.
 

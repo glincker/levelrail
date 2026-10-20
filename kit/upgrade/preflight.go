@@ -124,17 +124,23 @@ type Inputs struct {
 	ReleaseKind string
 	// TrustRoot reports the Sigstore trust root state without blocking; nil reports unknown.
 	TrustRoot func() string
+	// Schema is the target's schema compatibility; nil leaves the check out.
+	Schema *SchemaInput
 }
 
 // Run evaluates every preflight check. It never changes anything.
 func Run(ctx context.Context, in Inputs) []Check {
-	return []Check{
+	checks := []Check{
 		releaseAssetsCheck(in),
 		verifierCheck(in),
 		dockerCheck(ctx, in),
 		diskCheck(in),
 		backupCheck(in),
 	}
+	if in.Schema != nil && in.ReleaseKind != KindEdgeImage {
+		checks = append(checks, schemaCheck(*in.Schema))
+	}
+	return checks
 }
 
 // Blocked reports whether any check stops an upgrade: a failure, or a

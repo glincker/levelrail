@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { useTranslation } from 'react-i18next'
 import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
@@ -60,6 +61,7 @@ const STRATEGY_LABELS: Record<string, string> = {
 // prop as the others and must not let a background refetch stomp
 // unsaved edits in a sibling editor.
 export function DeployStrategyEditor({ app }: { app: AppDetail }) {
+  const { t } = useTranslation('common')
   const updateApp = useUpdateApp(app.name)
   const { control, register, handleSubmit, formState } = useForm<
     DeployStrategyFormInput,
@@ -100,13 +102,17 @@ export function DeployStrategyEditor({ app }: { app: AppDetail }) {
           className="space-y-4"
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field>
+            <Field data-invalid={formState.errors.strategy ? true : undefined}>
               <FieldLabel htmlFor="deploy-strategy">Strategy</FieldLabel>
               <Controller
                 control={control}
                 name="strategy"
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    aria-invalid={!!formState.errors.strategy}
+                  >
                     <SelectTrigger id="deploy-strategy" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
@@ -123,7 +129,7 @@ export function DeployStrategyEditor({ app }: { app: AppDetail }) {
               <FieldError errors={[formState.errors.strategy]} />
             </Field>
 
-            <Field>
+            <Field data-invalid={formState.errors.replicas ? true : undefined}>
               <FieldLabel htmlFor="deploy-replicas">Replicas</FieldLabel>
               <Input
                 id="deploy-replicas"
@@ -131,10 +137,24 @@ export function DeployStrategyEditor({ app }: { app: AppDetail }) {
                 step="1"
                 min="1"
                 {...register('replicas')}
+                aria-invalid={!!formState.errors.replicas}
               />
               <FieldError errors={[formState.errors.replicas]} />
             </Field>
           </div>
+
+          {app.strategy_reason ? (
+            <p className="text-sm text-muted-foreground">
+              {t('templateDefaults.strategyReason', {
+                reason: app.strategy_reason,
+              })}
+            </p>
+          ) : null}
+          {app.strategy === 'recreate' ? (
+            <p className="text-sm text-muted-foreground">
+              {t('templateDefaults.recreateDowntime')}
+            </p>
+          ) : null}
 
           <div className="flex items-center gap-2">
             <Button type="submit" size="sm" disabled={updateApp.isPending}>

@@ -33,7 +33,7 @@ func registerDatabaseTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_database_engines",
-		Description: "List every database engine this control plane can create right now: id, display label, and default version. Backed by the embedded database engine registry, not a hardcoded list, so this reflects exactly what the creation wizard's engine picker offers.",
+		Description: "Database engines this control plane can create: id, label, default version.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.DatabaseEngineResource, error) {
 		engines, err := client.ListDatabaseEngines(ctx)
 		if err != nil {
@@ -44,7 +44,7 @@ func registerDatabaseTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_external_databases",
-		Description: "List databases this control plane connects to but does not run (connected in place or adopted from an existing container): name, engine, host, port, and the last health probe (reachable, slow, auth_failed, tls_error, unreachable). Never returns a password. Read-only: this server cannot create or change one.",
+		Description: "Databases connected in place or adopted, not run here: name, engine, host, port, last health probe. Never a password. Read only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.ExternalDatabase, error) {
 		databases, err := client.ListExternalDatabases(ctx)
 		if err != nil {

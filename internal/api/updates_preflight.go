@@ -81,6 +81,10 @@ func (rt *Router) evaluatePreflight(ctx context.Context, release *upgrade.Releas
 		out.ReleaseKind = kind
 		out.Edge = buildEdgeGuidance(release)
 	}
+	var schema *upgrade.SchemaInput
+	if out.UpdateAvailable && kind != upgrade.KindEdgeImage {
+		schema = rt.schemaInputFor(ctx, upgradeTag, assets)
+	}
 	out.Checks = upgrade.Run(ctx, upgrade.Inputs{
 		Lookup:             os.LookupEnv,
 		DockerVersion:      rt.dockerEngineVersion(),
@@ -92,7 +96,11 @@ func (rt *Router) evaluatePreflight(ctx context.Context, release *upgrade.Releas
 		ReleasePublishedAt: published,
 		ReleaseKind:        kind,
 		TrustRoot:          rt.trustRootState(),
+		Schema:             schema,
 	})
+	if upgrade.SchemaBlocked(out.Checks) {
+		out.UpdateAvailable = false
+	}
 	if rt.dataDir != "" {
 		_, pinned, _ := selfupgrade.ReadPin(rt.dataDir)
 		out.Checks = append(out.Checks, signaturePinCheck(signaturePinInputs{
@@ -134,6 +142,9 @@ func onlyRetryableBlockers(checks []upgrade.Check) bool {
 func (rt *Router) expireReleaseCaches() {
 	rt.updatesCache.expire()
 	rt.channelUpdatesCache.Expire()
+	if rt.schemaSource != nil {
+		rt.schemaSource.forget()
+	}
 	if rt.selfUpgrade != nil {
 		rt.selfUpgrade.expire()
 	}

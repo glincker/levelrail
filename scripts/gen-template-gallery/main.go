@@ -36,16 +36,17 @@ type EnvVar struct {
 
 // Entry is one template in the exported gallery data.
 type Entry struct {
-	ID               string    `json:"id"`
-	Name             string    `json:"name"`
-	Slogan           string    `json:"slogan"`
-	Category         string    `json:"category"`
-	DocumentationURL string    `json:"docUrl,omitempty"`
-	MemoryMiB        int64     `json:"memoryMiB,omitempty"`
-	RequiresGPU      bool      `json:"gpu,omitempty"`
-	NeedsConfig      bool      `json:"needsConfig"`
-	Services         []Service `json:"services"`
-	Env              []EnvVar  `json:"env"`
+	ID               string               `json:"id"`
+	Name             string               `json:"name"`
+	Slogan           string               `json:"slogan"`
+	Category         string               `json:"category"`
+	DocumentationURL string               `json:"docUrl,omitempty"`
+	MemoryMiB        int64                `json:"memoryMiB,omitempty"`
+	RequiresGPU      bool                 `json:"gpu,omitempty"`
+	NeedsConfig      bool                 `json:"needsConfig"`
+	Services         []Service            `json:"services"`
+	Env              []EnvVar             `json:"env"`
+	Requirements     catalog.Requirements `json:"requirements"`
 }
 
 const (
@@ -76,6 +77,7 @@ func buildEntry(t catalog.Template) (Entry, error) {
 		RequiresGPU:      t.RequiresGPU,
 		Services:         []Service{},
 		Env:              []EnvVar{},
+		Requirements:     catalog.ComputeRequirements(t.Compose),
 	}
 	f, err := compose.Parse([]byte(t.Compose))
 	if err != nil {

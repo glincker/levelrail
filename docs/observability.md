@@ -828,10 +828,10 @@ Raw 15 second samples are rolled up into 1 minute and 1 hour buckets by a backgr
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_METRICS_RETENTION` | 360h (15 days) | Raw sample retention (Go duration string) |
+| `APP_METRICS_RETENTION` | 360h (15 days), 7 days on a data disk under 20 GiB, 3 days on the minimal [profile](/profiles) | Raw sample retention (Go duration string) |
 | `APP_METRICS_RETENTION_1M` | 720h (30 days) | 1 minute rollup retention |
 | `APP_METRICS_RETENTION_1H` | 8760h (365 days) | 1 hour rollup retention |
-| `APP_LOGS_RETENTION` | 360h (15 days) | Log retention (same format) |
+| `APP_LOGS_RETENTION` | 360h (15 days), shortened the same way | Log retention (same format) |
 | `APP_METRICS_MAX_DB_BYTES` | 1073741824 | Live size cap for `telemetry.db`, 0 disables |
 | `APP_METRICS_RAW_QUERY_MAX_RANGE` | 6h | Widest range served from raw samples |
 | `APP_METRICS_MINUTE_QUERY_MAX_RANGE` | 168h | Widest range served from 1 minute rollups |

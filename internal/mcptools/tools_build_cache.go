@@ -28,7 +28,7 @@ type setBuildCacheInput struct {
 func registerBuildCacheTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_build_cache",
-		Description: "Show BuildKit remote build cache settings: which storage destination an app (or every app by default) caches layers in, the export mode, the last build outcome and any warning from a build that fell back to no cache. With stats, also object count, size and last export time from the bucket. No credentials, ever.",
+		Description: "BuildKit remote build cache settings per app or default: destination, export mode, last outcome, fallback warning. With stats, bucket size. No credentials.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in getBuildCacheInput) (*mcp.CallToolResult, getBuildCacheOutput, error) {
 		settings, err := client.ListBuildCache(ctx)
 		if err != nil {

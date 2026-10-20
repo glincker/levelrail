@@ -163,7 +163,50 @@ func isMetricsKind(k store.ExportKind) bool {
 }
 
 func isAuditKind(k store.ExportKind) bool {
-	return k == store.ExportKindAuditWebhook || k == store.ExportKindAuditS3
+	return k == store.ExportKindAuditWebhook || k == store.ExportKindAuditS3 || isAuditStreamKind(k)
+}
+
+func isAuditStreamKind(k store.ExportKind) bool {
+	return k == store.ExportKindAuditSplunk || k == store.ExportKindAuditSyslog || k == store.ExportKindAuditOTLP
+}
+
+var hecText = regexp.MustCompile(`^[A-Za-z0-9_.:/-]{1,64}$`)
+
+func (s *Service) validateAuditStream(in Input) error {
+	o := in.Options
+	if !isAuditStreamKind(in.Kind) {
+		if o.Index != "" || o.Source != "" || o.SourceType != "" || o.Gzip || o.InsecureSkipVerify || o.Facility != "" || o.AppName != "" {
+			return invalid("index, source, source_type, gzip, insecure_skip_verify, facility and app_name apply to audit_splunk, audit_syslog and audit_otlp only")
+		}
+		return nil
+	}
+	for name, v := range map[string]string{"index": o.Index, "source": o.Source, "source_type": o.SourceType} {
+		if v != "" && (in.Kind != store.ExportKindAuditSplunk || !hecText.MatchString(v)) {
+			return invalid("%s applies to audit_splunk and may contain letters, digits and _.:/- only", name)
+		}
+	}
+	if in.Kind != store.ExportKindAuditSyslog && (o.Facility != "" || o.AppName != "") {
+		return invalid("facility and app_name apply to audit_syslog only")
+	}
+	if in.Kind == store.ExportKindAuditSyslog && !ValidAuditFacility(o.Facility) {
+		return invalid("facility must be a syslog facility name such as authpriv or local0")
+	}
+	if len(o.AppName) > 48 {
+		return invalid("app_name is at most 48 characters")
+	}
+	if o.Gzip && in.Kind == store.ExportKindAuditSyslog {
+		return invalid("gzip does not apply to syslog")
+	}
+	if in.Kind == store.ExportKindAuditSyslog {
+		if len(in.Headers) > 0 {
+			return invalid("headers do not apply to audit_syslog")
+		}
+		return nil
+	}
+	if in.Kind == store.ExportKindAuditSplunk && len(in.Headers) == 0 {
+		return invalid("audit_splunk needs an HEC token (api_key)")
+	}
+	return nil
 }
 
 func (s *Service) validate(ctx context.Context, in Input) error {
@@ -177,6 +220,14 @@ func (s *Service) validate(ctx context.Context, in Input) error {
 		}
 	case store.ExportKindLogsSyslog:
 		if err := ValidateSyslogEndpoint(ctx, in.Endpoint); err != nil {
+			return invalid("%v", err)
+		}
+	case store.ExportKindAuditSplunk, store.ExportKindAuditOTLP:
+		if err := ValidateHTTPEndpoint(ctx, in.Endpoint); err != nil {
+			return invalid("%v", err)
+		}
+	case store.ExportKindAuditSyslog:
+		if err := ValidateAuditSyslogEndpoint(ctx, in.Endpoint); err != nil {
 			return invalid("%v", err)
 		}
 	case store.ExportKindLogsNewRelic, store.ExportKindLogsDatadog, store.ExportKindLogsAxiom, store.ExportKindLogsBetterStack:
@@ -199,6 +250,9 @@ func (s *Service) validate(ctx context.Context, in Input) error {
 		}
 	default:
 		return invalid("unknown kind %q", in.Kind)
+	}
+	if err := s.validateAuditStream(in); err != nil {
+		return err
 	}
 	if !isLogKind(in.Kind) && in.MinLevel != "" {
 		return invalid("min_level applies to log destinations only")
@@ -314,6 +368,9 @@ func (s *Service) Create(ctx context.Context, in Input) (store.ExportDestination
 	if in.Kind == store.ExportKindMetricsRemoteWrite && in.APIKey != "" {
 		in.Headers = mergeHeaders(in.Headers, remoteWriteAuthHeaders(in.Options.Username, in.APIKey))
 	}
+	if in.Kind == store.ExportKindAuditSplunk && in.APIKey != "" {
+		in.Headers = mergeHeaders(in.Headers, splunkAuthHeaders(in.APIKey))
+	}
 	if err := s.validate(ctx, in); err != nil {
 		return store.ExportDestination{}, err
 	}
@@ -392,6 +449,10 @@ func (s *Service) Update(ctx context.Context, id string, p Patch) (store.ExportD
 	}
 	if d.Kind == store.ExportKindMetricsRemoteWrite && p.APIKey != nil && *p.APIKey != "" {
 		blob.Headers = mergeHeaders(blob.Headers, remoteWriteAuthHeaders(d.Options.Username, *p.APIKey))
+		p.Headers = &blob.Headers
+	}
+	if d.Kind == store.ExportKindAuditSplunk && p.APIKey != nil && *p.APIKey != "" {
+		blob.Headers = mergeHeaders(blob.Headers, splunkAuthHeaders(*p.APIKey))
 		p.Headers = &blob.Headers
 	}
 	if p.HMACKey != nil {

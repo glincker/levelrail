@@ -22,7 +22,7 @@ func registerEnvironmentTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "preview_clone_environment",
-		Description: "Show what clone_environment would create: one entry per app tagged with the source environment (its suggested new name, current image, domains that will NOT be copied, declared secret env var names, scheduled task count), plus the environment's own shared env var keys. Read-only; creates nothing.",
+		Description: "What clone_environment would create: per app new name, image, uncopied domains, secret env names, task count, plus shared env keys. Creates nothing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneEnvironmentPreviewInput) (*mcp.CallToolResult, apiclient.EnvironmentClonePreviewResource, error) {
 		preview, err := client.PreviewEnvironmentClone(ctx, in.EnvironmentID, in.NewEnvironmentName)
 		if err != nil {

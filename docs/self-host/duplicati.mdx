@@ -29,6 +29,26 @@ Recommended memory: about 512 MiB.
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`duplicati`): 8200:8200.
+- Passwords and keys are generated at deploy time (`duplicati`): DUPLICATI__WEBSERVICE_PASSWORD, SETTINGS_ENCRYPTION_KEY.
+- Stores data in named volumes (`duplicati`): duplicati_backups, duplicati_config.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
 ## Deploy Duplicati with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Duplicati. Review the Compose body and deploy.

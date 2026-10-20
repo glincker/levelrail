@@ -7,7 +7,8 @@
       "sessions": "Sessions and devices",
       "policy": "Policy",
       "rotations": "Secret rotations",
-      "compliance": "Compliance"
+      "compliance": "Compliance",
+      "exposure": "Exposure"
     },
     "loadError": "Could not load the security center.",
     "retry": "Try again"
@@ -19,6 +20,7 @@
     "failing": "{{critical}} critical, {{high}} high, {{medium}} medium, {{low}} low",
     "passing": "{{count}} checks pass",
     "unknown": "{{count}} could not be checked",
+    "recommended": "{{count}} recommended steps do not affect the score until you deploy an app",
     "summaryOnly": "Only admins see the full checklist. Ask an admin to review the items behind this score."
   },
   "severity": {
@@ -30,7 +32,73 @@
   "status": {
     "pass": "Pass",
     "fail": "Needs action",
+    "recommended": "Recommended",
     "unknown": "Unknown"
+  },
+  "supplyGate": {
+    "blockOnHigh": {
+      "label": "Block on high or critical",
+      "summary": "Hold releases with serious findings.",
+      "detail": "A release with a high or critical vulnerability does not go live. The previous release keeps serving and the deploy records why. If the scanner itself fails, the release is allowed."
+    }
+  },
+  "reach": {
+    "title": "What the internet can reach",
+    "description": "Every domain and published port per app and database, with a fix for what should not be open. Fixes use the same controls as the app, firewall and database pages.",
+    "recheck": "Re-check",
+    "rechecking": "Checking",
+    "recheckError": "Could not re-check.",
+    "loadError": "Could not load the exposure report.",
+    "rulesUnreadable": "A node's firewall rules could not be read, so a restricted port may show as open.",
+    "clean": "Nothing risky is reachable. {{count}} published ports are narrowed by firewall rules.",
+    "subjects": "Apps and databases",
+    "private": "Not reachable from outside",
+    "fixed": "Fixed. The report was re-checked.",
+    "stillFailing": "The change was applied but the finding is still there.",
+    "applyError": "Could not apply the fix.",
+    "severity": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "info": "Info"
+    },
+    "type": {
+      "app": "App",
+      "database": "Database"
+    },
+    "kinds": {
+      "app_direct_port": {
+        "title": "{{name}} is open on {{port}}",
+        "why": "A direct port skips TLS, sign-in gates and the shield. Serving it through the proxy closes the port.",
+        "fix": "Serve through the proxy"
+      },
+      "app_no_shield": {
+        "title": "{{name}} has no shield on {{domain}}",
+        "why": "Without rate limits one client can use all of the app's capacity.",
+        "fix": "Apply recommended shield"
+      },
+      "database_public": {
+        "title": "Database {{name}} is open to the internet on {{port}}",
+        "why": "Anyone who finds the port can try to sign in. Restrict it to known addresses or make it private.",
+        "fix": "Review access"
+      },
+      "port_exposed": {
+        "title": "{{container}} is open on {{port}}",
+        "why": "Docker publishes ports past the host firewall, so anyone can reach this one.",
+        "fix": "Restrict in firewall"
+      },
+      "docker_api": {
+        "title": "The Docker API is open on {{port}}",
+        "why": "Anyone who reaches it controls every container on the server.",
+        "fix": "Restrict in firewall"
+      }
+    },
+    "confirm": {
+      "title": "Close the direct port?",
+      "description": "The app is recreated with the same image and is then reachable only through the proxy. Anything using the direct address stops working.",
+      "confirm": "Close the port",
+      "pending": "Applying"
+    }
   },
   "checklist": {
     "platform": "Platform",
@@ -145,6 +213,11 @@
       "title": "HSTS is off while real certificates are in place",
       "pass": "HSTS is on or not needed yet",
       "why": "Without HSTS, a first visit over plain HTTP can be intercepted and downgraded."
+    },
+    "domains_unshielded": {
+      "title": "Domains without a shield",
+      "pass": "Every routed domain has a shield",
+      "why": "A shield caps requests per visitor and turns away abusive bots, so one noisy client cannot starve the rest."
     },
     "agents_outdated": {
       "title": "Node agents older than the minimum version",

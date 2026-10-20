@@ -74,4 +74,5 @@ export const DEPLOY_ATTEMPT_SOURCE_LABEL: Record<DeployAttemptSource, string> =
     clone: 'Clone',
     schedule: 'Schedule',
     auto_rollback: 'Auto-rollback',
+    git_push: 'Git push remote',
   }

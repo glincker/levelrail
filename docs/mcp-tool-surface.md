@@ -13,52 +13,56 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 
 | Toolset | Tools | Est. tokens |
 | --- | ---: | ---: |
-| account | 5 | 393 |
-| alerts | 10 | 1259 |
-| apps | 16 | 2106 |
-| audit | 1 | 326 |
-| backups | 13 | 1134 |
+| account | 5 | 351 |
+| alerts | 10 | 1130 |
+| apps | 16 | 1979 |
+| audit | 2 | 320 |
+| backups | 13 | 1062 |
 | builds | 5 | 477 |
-| canary | 4 | 565 |
+| canary | 4 | 504 |
 | dashboards | 2 | 133 |
-| databases | 11 | 886 |
-| deploys | 22 | 3040 |
-| diagnostics | 5 | 595 |
-| domains | 12 | 1150 |
-| environments | 3 | 454 |
+| databases | 11 | 797 |
+| deploys | 22 | 2961 |
+| diagnostics | 5 | 496 |
+| domains | 12 | 987 |
+| environments | 3 | 417 |
 | flags | 2 | 139 |
 | functions | 1 | 99 |
 | global-environments | 2 | 203 |
-| iac | 2 | 800 |
-| iam | 8 | 589 |
+| iac | 2 | 739 |
+| iam | 8 | 564 |
+| identity | 3 | 104 |
 | images | 3 | 368 |
-| imports | 2 | 325 |
-| loadbalancer | 9 | 1336 |
-| logs | 13 | 1786 |
-| metrics | 9 | 1042 |
-| models | 15 | 2222 |
-| nodes | 6 | 464 |
-| notifications | 3 | 287 |
-| orgs | 2 | 145 |
-| pipelines | 3 | 432 |
-| plugins | 3 | 279 |
-| previews | 2 | 202 |
-| registry | 3 | 309 |
+| imports | 1 | 186 |
+| inbox | 1 | 50 |
+| loadbalancer | 9 | 1234 |
+| logs | 13 | 1671 |
+| metrics | 10 | 912 |
+| migrate | 5 | 322 |
+| models | 16 | 2013 |
+| nodes | 7 | 566 |
+| notifications | 3 | 225 |
+| orgs | 2 | 106 |
+| pipelines | 3 | 410 |
+| plugins | 3 | 185 |
+| previews | 2 | 163 |
+| registry | 3 | 272 |
 | scheduled | 4 | 331 |
-| search | 2 | 279 |
-| settings | 3 | 208 |
+| search | 2 | 237 |
+| security | 3 | 142 |
+| settings | 3 | 159 |
 | storage | 5 | 558 |
-| system | 13 | 776 |
+| system | 13 | 714 |
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 145 |
-| **total** | **229** | **26056** |
+| **total** | **244** | **24645** |
 
 ## Default session (progressive disclosure)
 
 `levelrail-mcp` lists only a small core plus `list_toolsets`, `enable_toolset` and `disable_toolset`. Enabling a toolset adds its tools for the rest of the session and sends `tools/list_changed`; the table above is what each toolset costs. `--all` (or `APP_MCP_ALL=1`), `--toolsets` and `--tool-profile` keep the static listing for clients without `list_changed` support. The mode and the token's abilities bound every call either way.
 
-21 tools, 2347 estimated tokens (ratchet 3400, ceiling per toolset 4000).
+21 tools, 2268 estimated tokens (ratchet 3150, ceiling per toolset 4000).
 
 - `cancel_deploy`
 - `deploy_app`
@@ -86,7 +90,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 
 Select with `--tool-profile agent-core` or `APP_MCP_TOOL_PROFILE=agent-core`. It is an allowlist independent of the read-only, standard and full modes; the API token's abilities still apply.
 
-15 tools, 1947 estimated tokens (cap 4000).
+15 tools, 1868 estimated tokens (cap 4000).
 
 - `cancel_deploy`
 - `deploy_app`

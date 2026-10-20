@@ -363,7 +363,7 @@ func (m *MFA) PasskeyBeginLogin(ctx context.Context) (*protocol.CredentialAssert
 func (m *MFA) PasskeyFinishLogin(ctx context.Context, challenge string, body io.Reader, userAgent, ip string) (string, error) {
 	_, sess, err := m.auth.FinishPasskeyLogin(ctx, challenge, body, userAgent, ip)
 	if err != nil {
-		if isCode(err, theauth.CodeWebAuthn) || errors.Is(err, theauth.ErrReplayDetected) {
+		if isCode(err, theauth.CodeWebAuthn) || isCode(err, theauth.CodeAccountDisabled) || errors.Is(err, theauth.ErrReplayDetected) {
 			return "", fmt.Errorf("%w: %s", ErrPasskeyRejected, errorChain(err))
 		}
 		return "", fmt.Errorf("authengine: finish passkey login: %w", err)

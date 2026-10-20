@@ -294,13 +294,13 @@ Sign in with Touch ID, Windows Hello, or a security key instead of a password. N
 | Revoke | `DELETE /api/v1/auth/passkeys/{id}` |
 | Sign in | `POST /api/v1/auth/passkey-login/begin`, then `.../finish` |
 
-Passkey sign-in is username-first, not usernameless: the operator types their username, the server looks up that account's credentials, and the browser's passkey prompt proves possession. A successful passkey sign-in completes the session the same way a password does, without an additional TOTP prompt even if the account has 2FA enabled (the same shape OAuth sign-in has).
+Passkey sign-in works two ways. Username-first: the operator types a username and the browser's passkey prompt proves possession. Usernameless: the sign-in page offers **Sign in with a passkey** (and, where the browser supports conditional UI, lists saved passkeys in the username field's autofill), so no username is typed. The usernameless call is `POST /api/v1/auth/passkey-login/begin` with `{"discoverable": true}`; the finish call is the same. It uses the same single-use challenges, rate limits and approval policy as username-first sign-in, and every failure at the finish step returns the same `401` whatever the reason (bad signature, unknown credential, disabled account), so it cannot be used to find out which accounts exist. New passkeys are registered with `residentKey: preferred`, so authenticators that can store a discoverable credential do; a key that cannot (some older security keys) still works username-first. The passkey list shows whether each credential is synced or bound to one device, but not whether it is discoverable, because the sign-in library does not report that. There is no CLI verb for usernameless sign-in: it needs a browser's WebAuthn prompt. A successful passkey sign-in completes the session the same way a password does, without an additional TOTP prompt even if the account has 2FA enabled (the same shape OAuth sign-in has).
 
 Every registration and login challenge is single-use and expires in 5 minutes. The relying party ID and origin are derived from the request's own `Host` header, since there is no single fixed domain to configure on a self-hosted platform.
 
 ### OAuth sign-in
 
-Eighteen providers are supported. Every one uses the same callback URL shape, `https://<your-dashboard-host>/api/v1/auth/oauth/<provider>/callback`, and the same flow: PKCE, single-use state, an envelope-encrypted client secret, and the link-account flow below.
+Eighteen providers are supported. Group to role mapping, account creation policy, allowed domains and sign-in by email domain are covered in [OAuth and OIDC single sign-on](/sso-oidc) (beta). Every one uses the same callback URL shape, `https://<your-dashboard-host>/api/v1/auth/oauth/<provider>/callback`, and the same flow: PKCE, single-use state, an envelope-encrypted client secret, and the link-account flow below.
 
 | Provider | Where to create the OAuth app | Scopes requested |
 | --- | --- | --- |
@@ -320,6 +320,9 @@ Eighteen providers are supported. Every one uses the same callback URL shape, `h
 | `figma` | Figma, Developers, My apps. | `current_user:read` |
 | `salesforce` | Salesforce Setup, App Manager, New Connected App (enable OAuth, add the `openid`, `email`, `profile` scopes). | `openid email profile` |
 | `codeberg` | Codeberg, Settings, Applications, Manage OAuth2 applications (confidential client). | provider default |
+| `dropbox` | Dropbox App Console, Create app (scoped access, add the `account_info.read` permission). | `account_info.read` |
+| `kakao` | Kakao Developers, your app, Kakao Login (enable the email consent item). | `account_email profile_nickname profile_image` |
+| `patreon` | Patreon Developers, Clients and API Keys, Create Client. | `identity identity[email]` |
 | `cognito` | AWS Cognito, your user pool, App integrations, app client (confidential, with a secret); needs the user pool ID. | `openid profile email` |
 | `oidc` | Your identity provider's admin console; needs an issuer URL. | `openid email profile` |
 
@@ -351,7 +354,7 @@ flowchart TD
 | Case | Result |
 | --- | --- |
 | Already-linked identity | Signs in as its existing owner. |
-| Brand-new email | Auto-provisions a user with `AbilityRead` only (never `root`, since a fresh OAuth signup is never the first user). A root user can grant more later via `PUT /api/v1/users/{id}/abilities`. |
+| Brand-new email | Refused with `sso_not_provisioned` unless the provider's **Create an account on first sign-in** is on (default off). When on, it creates a user with the mapped role or the default role (`viewer`), never a role that holds `root`. A root user can grant more later via `PUT /api/v1/users/{id}/abilities`. Providers that were enabled before this setting existed keep creating accounts. See [OAuth and OIDC single sign-on](/sso-oidc). |
 | Email already belongs to another account | Refused outright. Auto-linking would let an anonymous sign-in take over an unrelated account. |
 | Linking a provider to an existing account | Needs a live session: `GET /api/v1/auth/oauth/{provider}/link/start`. |
 | `AllowedEmailDomain` set on the provider | A new signup outside that domain is refused. |
@@ -554,6 +557,8 @@ Recording is best-effort and runs after the real request completes. A failed aud
 **Retention.** Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). Sign-in, step-up, token and policy events, secret reveals and exports, and reads of env or secret routes (action `sensitive_read`) are kept longer: 365 days by default (`APP_AUDIT_LOG_SECURITY_RETENTION_DAYS`, never shorter than the general window). The system sweeps automatically on an interval (`APP_AUDIT_LOG_SWEEP_INTERVAL`) and is purgeable on demand via `POST /api/v1/audit-log/purge`.
 
 **Tamper evidence.** Every row is chained to the one before it with an HMAC under a random key that is wrapped by the master key, and a signed checkpoint is written every 64 rows. `levelrail-cli audit-verify` (or the badge on the audit log page, or `GET /api/v1/audit-log/verify`) reports rows that were edited, removed or cut off the end, and exits 1 on a failure. Purging keeps a compact link for each removed run, so retention does not break the chain. Rows written before the upgrade are not chained.
+
+**Streaming to a SIEM.** Stream the log to Splunk, syslog or an OpenTelemetry collector with [data export](/data-export#splunk-syslog-and-opentelemetry-sinks). Every event carries `chain_seq`, `chain_prev`, `chain_hash` and `chain_alg`, so a receiver can check that sequence numbers are contiguous and that each `chain_prev` equals the previous row's `chain_hash`. Recomputing a hash needs the wrapped chain key and the full row, so run `levelrail-cli audit-verify` on the control plane for a complete check. Fields are listed in [Audit event schema](/audit-event-schema).
 
 **Secret values.** Values the secrets manager has stored or handed out are masked in audit rows, deploy and build logs, container log storage and the control plane's own log. A value shorter than 8 characters is not masked.
 
@@ -773,11 +778,11 @@ levelrail-cli audit-purge
   IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. There is no organization- or project-level grouping in the permission model. The Organizations settings page groups projects for display and navigation only; it is unrelated to access control.
 
 - **Directory sync covers SCIM 2.0 only**
-  Sign-in covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook, Linear, Vercel, Hugging Face, Figma, Salesforce, Codeberg, Amazon Cognito, generic OIDC and [SAML 2.0](/sso-saml); accounts and groups sync through [SCIM](/scim). There is no LDAP sync.
+  Sign-in covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook, Linear, Vercel, Hugging Face, Figma, Salesforce, Codeberg, Amazon Cognito, Dropbox, Kakao, Patreon, generic OIDC and [SAML 2.0](/sso-saml) (beta); accounts and groups sync through [SCIM](/scim). There is no LDAP sync.
 
 - There is no per-team or per-project access boundary. IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. The Organizations settings page groups projects for display and navigation only.
-- SAML sign-in and SCIM provisioning are experimental (the `saml-scim` beta feature) and run on the sign-in library's native implementation behind Levelrail's own checks. They are tested against a local test identity provider, not yet against a live Okta, Entra ID or Keycloak tenant. See [SAML](/sso-saml) and [SCIM](/scim).
-- Sessions are in memory. A control plane restart signs everyone out, and waiting sign-in codes can no longer be shown.
+- SAML sign-in and SCIM provisioning are beta (the `saml-scim` feature, off by default). They are built on the sign-in library, with Levelrail's own checks in front, and are tested against a local test identity provider, not yet against a live Okta, Entra ID or Keycloak tenant. See [SAML](/sso-saml) and [SCIM](/scim).
+- Dashboard sessions are stored in the database and survive a restart. Sessions minted from API-token session links are held in memory and end on restart.
 
 </Accordion>
 

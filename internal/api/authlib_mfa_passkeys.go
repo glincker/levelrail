@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/go-webauthn/webauthn/protocol"
+
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -65,7 +67,19 @@ func (l *authLibMFA) beginRegistration(w http.ResponseWriter, r *http.Request) {
 		l.fail(w, "api: passkey register begin: library begin failed", user.ID, err)
 		return
 	}
+	preferResidentKey(options)
 	writeJSON(w, http.StatusOK, passkeyRegistrationBeginResponse{SessionID: challenge, Options: options})
+}
+
+// preferResidentKey asks the authenticator for a discoverable credential when it can make one,
+// without refusing devices that cannot (the library leaves the choice unset).
+func preferResidentKey(c *protocol.CredentialCreation) {
+	if c == nil {
+		return
+	}
+	notRequired := false
+	c.Response.AuthenticatorSelection.ResidentKey = protocol.ResidentKeyRequirementPreferred
+	c.Response.AuthenticatorSelection.RequireResidentKey = &notRequired
 }
 
 func (l *authLibMFA) finishRegistration(w http.ResponseWriter, r *http.Request) {
@@ -199,6 +213,10 @@ func (l *authLibMFA) beginLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.Username = strings.TrimSpace(req.Username)
+	if req.Discoverable && req.Username == "" {
+		l.beginDiscoverableLogin(w, r)
+		return
+	}
 	if req.Username == "" {
 		writeError(w, http.StatusBadRequest, "username is required")
 		return
@@ -237,6 +255,33 @@ func (l *authLibMFA) beginLogin(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, passkeyLoginBeginResponse{SessionID: challenge, Options: options})
 }
 
+// beginDiscoverableLogin issues a challenge without naming an account; the authenticator
+// picks the credential, so nothing here depends on which users exist.
+func (l *authLibMFA) beginDiscoverableLogin(w http.ResponseWriter, r *http.Request) {
+	rt := l.rt
+	key := clientIP(r) + "|passkey-discover"
+	if allowed, retryAfter := rt.passkeyLogin.allow(key); !allowed {
+		w.Header().Set("Retry-After", fmt.Sprintf("%.0f", retryAfter.Seconds()))
+		writeError(w, http.StatusTooManyRequests, "too many attempts, try again later")
+		return
+	}
+	options, challenge, err := l.mfa.PasskeyBeginLogin(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: passkey discoverable login begin: library begin failed", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, passkeyLoginBeginResponse{SessionID: challenge, Options: options})
+}
+
+const msgPasskeyUnverified = "could not verify passkey"
+
+// denyPasskeyLogin is the single failure answer of the finish step, so a rejected assertion,
+// an unknown credential owner and a disabled account are indistinguishable to the caller.
+func (l *authLibMFA) denyPasskeyLogin(w http.ResponseWriter, key string) {
+	l.rt.passkeyLogin.recordFailure(key)
+	writeError(w, http.StatusUnauthorized, msgPasskeyUnverified)
+}
+
 func (l *authLibMFA) finishLogin(w http.ResponseWriter, r *http.Request) {
 	rt := l.rt
 	if rt.refuseInsecureLogin(w, r) {
@@ -259,24 +304,27 @@ func (l *authLibMFA) finishLogin(w http.ResponseWriter, r *http.Request) {
 	userID, err := l.mfa.PasskeyFinishLogin(r.Context(), sessionID, http.MaxBytesReader(w, r.Body, passkeyBodyLimit), r.UserAgent(), clientIP(r))
 	if errors.Is(err, authengine.ErrPasskeyRejected) || errors.Is(err, authengine.ErrNotMapped) {
 		rt.logger.Warn("api: passkey login finish failed", slog.String("remote", clientIP(r)))
-		rt.passkeyLogin.recordFailure(key)
-		writeError(w, http.StatusUnauthorized, "could not verify passkey")
+		l.denyPasskeyLogin(w, key)
 		return
 	}
 	if err != nil {
 		rt.internalError(w, "api: passkey login finish: library finish failed", err)
 		return
 	}
-	rt.passkeyLogin.recordSuccess(key)
 	user, err := rt.auth.GetUserByID(r.Context(), userID)
 	if err != nil {
 		if errors.Is(err, store.ErrUserNotFound) {
-			writeError(w, http.StatusUnauthorized, "invalid passkey login session")
+			l.denyPasskeyLogin(w, key)
 			return
 		}
 		rt.internalError(w, "api: passkey login finish: load user failed", err)
 		return
 	}
+	if rt.accountDisabled(r.Context(), user.ID) {
+		l.denyPasskeyLogin(w, key)
+		return
+	}
+	rt.passkeyLogin.recordSuccess(key)
 	if rt.ssoBlocksLocalSignIn(r.Context(), user.ID) {
 		writeError(w, http.StatusForbidden, ssoRequiredMessage)
 		return

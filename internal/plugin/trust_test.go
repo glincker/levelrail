@@ -83,7 +83,7 @@ func TestParseManifestRefusals(t *testing.T) {
 		{"write ability", strings.Replace(base, "[read]", "[read, write]", 1)},
 		{"no read", strings.Replace(base, "[read]", "[read:sensitive]", 1)},
 		{"unknown field", base + "privileged: true\n"},
-		{"bad kind", strings.Replace(base, "notification_channel", "dns_provider", 1)},
+		{"bad kind", strings.Replace(base, "notification_channel", "webhook_sender", 1)},
 		{"bad name", strings.Replace(base, "name: example", "name: Bad_Name", 1)},
 		{"url as outbound host", strings.Replace(base, "outbound_hosts: []", "outbound_hosts: [\"https://evil.example\"]", 1)},
 		{"missing publisher", strings.Replace(base, "publisher: Example Org\n", "", 1)},

@@ -8,6 +8,8 @@ description: Connect GitHub, GitLab, Bitbucket or Gitea for automatic git-trigge
 
 Connect a git provider once for the whole control plane, then point any number of apps at repositories it can see. A push, a tag, or a pull request on the repository then deploys the app, builds a preview, or both.
 
+No provider at all? A [git push remote on your own server](/git-push-deploy) (beta) deploys a pushed branch with no webhook.
+
 This page covers connecting a provider, using a repository as an app's source, deploy triggers and path filters, deploying a commit by hand, monorepo build settings, webhook handling and replay, and per-pull-request previews.
 
 <Tip>

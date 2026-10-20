@@ -20,6 +20,7 @@ Every check that blocks an upgrade says what it protects and carries its own fix
 | --- | --- | --- |
 | Recent control plane backup | A restore point for a failed migration. Blocks when the newest backup is older than `APP_UPGRADE_MAX_BACKUP_AGE` (26h default, shown in the message) or none exists. | **Back up now** takes a control plane backup, waits, and re-evaluates the check. CLI: `levelrail-cli upgrade backup-now`. |
 | Release checksums and signature | That the binary is the one the project published. | A release younger than `APP_UPGRADE_RELEASE_SETTLE` (1h default) that is missing `checksums.txt` or its signature is still being published: it shows as Waiting, not as a failure, and **Re-check** clears it once the assets land. An older release missing them is a hard block until a fixed release ships. |
+| Compatible with your database | That you are never offered a release older than your database, which would refuse to start. The release publishes its schema version in `release-manifest.json`, covered by the signed `checksums.txt`; the server fetches that small file (64 KiB cap, GitHub only), verifies it, and compares it with your database. | An older release is blocked, is not offered as an upgrade, and says: `target release is older than the database schema: database is at schema N, vX supports M`. Stay on your current version, or use **Roll back** (it scrolls to Release history) to go to an older release on purpose. A release that publishes no manifest shows as unknown and is checked after download instead. CLI: `levelrail-cli upgrade` prints the same check. |
 | Docker Engine version | Not restarting your apps on an engine release with a known bug. | Update Docker on the host, then **Re-check**. |
 | Free disk space | Room for the new binary and a snapshot. | Free space, then **Re-check**. |
 | Release signature verification | The server can check the release signature itself. It needs one download of Sigstore trust data, which starts automatically and is then saved for offline use. | Nothing to install. While it downloads you see a retry note; use **Re-check** if you are waiting. |
@@ -181,7 +182,34 @@ Migrations only go forward. A binary whose newest migration is older than the da
 - the exact command to install that release or newer;
 - how to list restore points if you really must run the older binary.
 
+The Updates page and `levelrail-cli upgrade` catch this before you click: see the Compatible with your database check above.
+
 Nothing is modified. The installer's unit sets `RestartPreventExitStatus=78` so systemd does not restart-loop it.
+
+## What is tested on every release
+
+An automated matrix builds a control plane database at several older schema versions, fills it with apps, environment values, secrets, domains, deploys, users, API tokens, backup targets, audit rows, plugins and model endpoints, then upgrades it to the current schema through the same start-up path a real upgrade uses. For each starting version it checks that:
+
+- the upgrade finishes and no table loses rows;
+- secrets still decrypt with the same master key, the audit hash chain still verifies and API tokens still authenticate;
+- the control plane answers `/healthz` and `/readyz` on the migrated database;
+- a second start does nothing, and takes no new snapshot;
+- the snapshot taken before the migration holds the old schema, and restoring it brings back the old data, which then upgrades again cleanly.
+
+Two failure cases are covered as well. A binary older than the database refuses to start, exits with status 78 and leaves the database file byte for byte unchanged. A migration that fails partway keeps the steps already committed, leaves the snapshot intact, and sends the control plane into safe mode with a migration failure reason, where the snapshot can be restored.
+
+The two most recent starting versions run on every pull request. The full set runs in the nightly suite. Run `scripts/upgrade-fixtures/generate.sh` to write the seeded pre-upgrade databases to a folder for inspection.
+
+## What is checked before a release is published
+
+`release.yml` runs a release gate before any binary, package or image is published. It fails the release when:
+
+- the release manifest does not name the tag and the schema version the candidate binary reports;
+- the candidate's schema is lower than the previous published release's, because installs of that release could never upgrade to it;
+- the previous release's binary, started on seeded data, cannot be stopped and replaced by the candidate on the same data directory, healthy on `/readyz` and at the candidate's schema version;
+- the candidate starts on a database newer than itself instead of exiting with status 78.
+
+The first release after this gate existed has no earlier schema manifest to compare, so a missing previous release is a warning, and a previous release without a manifest is compared through its own `version --json`. Run `scripts/release-gate.sh --help` to rehearse it locally against two binaries, and `scripts/test-release-gate.sh` to test the gate itself.
 
 ## Release notes metadata
 

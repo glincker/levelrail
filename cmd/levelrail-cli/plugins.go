@@ -25,6 +25,8 @@ func pluginsUsage(prog string) string {
                                                           grant the listed abilities, never implied by install
   %[1]s plugins enable|disable|restart <name> [flags]     start, stop or restart a plugin (restart clears failure backoff)
   %[1]s plugins uninstall|remove <name> [flags]           stop and delete a plugin
+  %[1]s plugins test <name> [flags]                       check a dns_provider plugin can reach its provider with the stored credential
+  %[1]s plugins dns-provider [<name> | --off] [flags]     show or choose the dns_provider plugin that writes DNS records (default: built-in client)
   %[1]s plugins run <plugin> <command> [--app NAME] [flags]
                                                           run a command the plugin declares in its manifest (shows data or presses a button)
   %[1]s plugins trust add --name NAME --public-key B64 [flags]   trust a publisher's ed25519 public key
@@ -77,6 +79,10 @@ func runPlugins(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runPluginsUpgrade(prog, rest, stdout, stderr, lookupEnv)
 	case "approve":
 		return runPluginsApprove(prog, rest, stdout, stderr, lookupEnv)
+	case "test":
+		return runPluginsTest(prog, rest, stdout, stderr, lookupEnv)
+	case "dns-provider":
+		return runPluginsDNSProvider(prog, rest, stdout, stderr, lookupEnv)
 	case "run":
 		return runPluginsRun(prog, rest, stdout, stderr, lookupEnv)
 	case "trust":

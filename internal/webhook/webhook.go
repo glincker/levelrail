@@ -47,6 +47,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -731,11 +732,11 @@ func (h *Handler) cloneAndCheckout(ctx context.Context, repoURL, sha string, pro
 	if progress == nil {
 		progress = func(build.ProgressEvent) {}
 	}
-	progress(build.ProgressEvent{Log: fmt.Sprintf("Fetching %s...", repoURL), Stream: "stdout"})
+	progress(build.ProgressEvent{Log: fmt.Sprintf("Fetching %s...", envredact.URLForLog(repoURL)), Stream: "stdout"})
 	co, err := h.cache.Checkout(ctx, repoURL, sha, "")
 	if err != nil {
 		progress(build.ProgressEvent{Log: fmt.Sprintf("Fetch failed: %s", err), Stream: "stderr"})
-		return "", nil, fmt.Errorf("webhook: fetch %q at %q: %w", repoURL, sha, err)
+		return "", nil, fmt.Errorf("webhook: fetch %q at %q: %w", envredact.URLForLog(repoURL), sha, err)
 	}
 	progress(build.ProgressEvent{Log: fmt.Sprintf("Checked out %s", sha), Stream: "stdout"})
 	return co.Dir, co.Cleanup, nil

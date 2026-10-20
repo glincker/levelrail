@@ -5,6 +5,7 @@ import { RelativeTime } from '@/components/kit'
 import { gpuSummary, nodeLabel } from '../../lib/models'
 import { chatCurlExample } from '../../lib/modelPresentation'
 import type { ModelResource } from '../../types/models'
+import { ModelEndpointPanel } from './ModelEndpointPanel'
 import { ModelEnginePanel } from './ModelEnginePanel'
 import { ModelCpuPanel } from './ModelCpuPanel'
 import { ModelFitCard } from './ModelFitCard'
@@ -46,40 +47,51 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 
 export function ModelOverviewTab({ model }: { model: ModelResource }) {
   const url = model.endpoint_url
-  const curl = url ? chatCurlExample(url, model.model) : ''
+  const curl = url
+    ? chatCurlExample(url, model.external?.models[0] ?? model.model)
+    : ''
   return (
     <div className="space-y-6">
       {model.status.message ? (
         <p className="text-sm text-muted-foreground">{model.status.message}</p>
       ) : null}
-      <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Fact label="Engine" value={model.engine} />
-        <Fact label="Model" value={model.model} />
-        <Fact label="Node" value={nodeLabel(model.node_id)} />
-        <Fact
-          label={model.compute === 'cpu' ? 'Compute' : 'GPU'}
-          value={gpuSummary(model)}
-        />
-        <Fact
-          label="Context length"
-          value={
-            model.context_length
-              ? String(model.context_length)
-              : 'engine default'
-          }
-        />
-        <Fact label="Quantization" value={model.quantization || 'from model'} />
-      </dl>
-      <ModelResidencyCard
-        key={`${model.residency}-${String(model.idle_ttl_seconds)}`}
-        model={model}
-      />
-      {model.compute === 'cpu' ? (
-        <ModelCpuPanel model={model} />
+      {model.engine === 'external' ? (
+        <ModelEndpointPanel model={model} />
       ) : (
-        <ModelFitCard modelName={model.name} />
+        <>
+          <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Fact label="Engine" value={model.engine} />
+            <Fact label="Model" value={model.model} />
+            <Fact label="Node" value={nodeLabel(model.node_id)} />
+            <Fact
+              label={model.compute === 'cpu' ? 'Compute' : 'GPU'}
+              value={gpuSummary(model)}
+            />
+            <Fact
+              label="Context length"
+              value={
+                model.context_length
+                  ? String(model.context_length)
+                  : 'engine default'
+              }
+            />
+            <Fact
+              label="Quantization"
+              value={model.quantization || 'from model'}
+            />
+          </dl>
+          <ModelResidencyCard
+            key={`${model.residency}-${String(model.idle_ttl_seconds)}`}
+            model={model}
+          />
+          {model.compute === 'cpu' ? (
+            <ModelCpuPanel model={model} />
+          ) : (
+            <ModelFitCard modelName={model.name} />
+          )}
+          <ModelEnginePanel modelName={model.name} engine={model.engine} />
+        </>
       )}
-      <ModelEnginePanel modelName={model.name} engine={model.engine} />
       <section aria-label="Endpoint" className="space-y-2">
         <h3 className="text-sm font-semibold">Endpoint</h3>
         {url ? (

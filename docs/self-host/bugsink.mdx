@@ -34,6 +34,27 @@ Recommended memory: about 512 MiB.
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
+## Security and requirements
+
+Level: **Review before deploying**.
+
+What this template needs:
+
+- Image is not pinned to a version tag, so a redeploy can pull different code (`web`): bugsink/bugsink:latest.
+- Publishes ports directly on the host (`web`): 8000:8000.
+- Passwords and keys are generated at deploy time (`mysql`, `web`): CREATE_SUPERUSER, DATABASE_URL, SECRET_KEY, MYSQL_PASSWORD, MYSQL_ROOT_PASSWORD.
+- Stores data in named volumes (`mysql`): bugsink_mysql_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
 ## Deploy Bugsink with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Bugsink. Review the Compose body and deploy.

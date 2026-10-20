@@ -20,6 +20,8 @@ import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import { formatBytes } from '../lib/format'
 import { RamFitBadge } from './RamFitBadge'
 import { ServiceTemplateGrid } from './ServiceTemplateGrid'
+import { TemplateRequirementsCard } from './templates/TemplateRequirementsCard'
+import { needsAcknowledgement } from '../lib/templateRequirements'
 import { useDeployTemplateNow } from '../hooks/useDeployTemplateNow'
 import { useDeployCompose } from '../queries/compose'
 import {
@@ -96,6 +98,7 @@ export function BrowseTemplatesFields({
     initialTemplateId ?? null,
   )
   const templateDetail = useServiceTemplate(templateId ?? '')
+  const [acknowledged, setAcknowledged] = useState(false)
   const deployCompose = useDeployCompose()
   const deployTemplateNow = useDeployTemplateNow(onCreated)
 
@@ -145,6 +148,7 @@ export function BrowseTemplatesFields({
   })
 
   function backToGrid() {
+    setAcknowledged(false)
     setTemplateId(null)
     deployCompose.reset()
   }
@@ -280,6 +284,12 @@ export function BrowseTemplatesFields({
               ) : null}
             </div>
 
+            <TemplateRequirementsCard
+              requirements={templateDetail.data.requirements}
+              acknowledged={acknowledged}
+              onAcknowledgedChange={setAcknowledged}
+            />
+
             <Field>
               <FieldLabel htmlFor="template-app-name">Name</FieldLabel>
               <Input
@@ -318,7 +328,14 @@ export function BrowseTemplatesFields({
             ) : null}
 
             <DialogFooter>
-              <Button type="submit" disabled={deployCompose.isPending}>
+              <Button
+                type="submit"
+                disabled={
+                  deployCompose.isPending ||
+                  (needsAcknowledgement(templateDetail.data.requirements) &&
+                    !acknowledged)
+                }
+              >
                 {deployCompose.isPending ? 'Deploying...' : 'Deploy'}
               </Button>
             </DialogFooter>

@@ -203,7 +203,7 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	out = rt.appendExternalDatabases(r, canSee, out)
-	writeJSON(w, http.StatusOK, out)
+	writeJSON(w, http.StatusOK, pageQueryDefault(w, r, out, appListMaxLimit))
 }
 
 // createDesiredDatabase is shared with restore-as-new so both creates take the same conflict and store path.

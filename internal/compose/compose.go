@@ -34,6 +34,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/bindmount"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"gopkg.in/yaml.v3"
 )
 
@@ -108,6 +109,10 @@ type Service struct {
 	// Profiles gates the service behind compose profiles (ApplyProfiles).
 	Profiles   []string
 	HostAccess HostAccess
+	// Strategy is x-levelrail-strategy: a deploy strategy the template needs,
+	// such as recreate for an app that locks its state volume. Empty means default.
+	Strategy       string
+	StrategyReason string
 	// DependsOnHealthy lists the DependsOn entries declared with
 	// condition: service_healthy, which wait for readiness, not just start.
 	DependsOnHealthy []string
@@ -227,6 +232,7 @@ func (f *File) validate(allowBuild, allowBindMounts bool) error {
 	errs = append(errs, validateComposeDependsOn(f)...)
 	errs = append(errs, validateUnsupportedTopLevel(f)...)
 	errs = append(errs, validateHostAccess(f)...)
+	errs = append(errs, validateStrategies(f)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -405,4 +411,16 @@ func joinErrors(errs []error) error {
 		b.WriteString(err.Error())
 	}
 	return errors.New(b.String())
+}
+
+func validateStrategies(f *File) []error {
+	var errs []error
+	for _, name := range sortedServiceNames(f) {
+		switch f.Services[name].Strategy {
+		case "", spec.StrategyBlueGreen, spec.StrategyRecreate, spec.StrategyRolling:
+		default:
+			errs = append(errs, fmt.Errorf("service %q: x-levelrail-strategy must be %q, %q or %q", name, spec.StrategyBlueGreen, spec.StrategyRecreate, spec.StrategyRolling))
+		}
+	}
+	return errs
 }

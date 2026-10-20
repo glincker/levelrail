@@ -764,7 +764,7 @@ For a structured list of all failure codes, visit [Deploy failures](deploy-failu
   <Card title="Deploy safety" href="/deploy-safety">Freeze windows, stale deploys, and what protects a rollout.</Card>
   <Card title="Deploy failures" href="/deploy-failures">How failures are structured and explained.</Card>
   <Card title="app.yaml reference" href="/app-spec-reference">Every field of the deployment spec.</Card>
-  <Card title="Git integrations" href="/git-integrations">Trigger deploys from git push and pull requests.</Card>
+  <Card title="Git integrations" href="/git-integrations">Trigger deploys from pushes and pull requests on your git provider.</Card>
   <Card title="Domains and ingress" href="/domains-and-ingress">Custom domains and HTTPS certificates.</Card>
   <Card title="Managing databases" href="/managing-databases">Attach Postgres, MySQL, Redis, and others.</Card>
   <Card title="CLI reference" href="/cli-reference">Every command, flag, and exit code.</Card>

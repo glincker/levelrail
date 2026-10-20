@@ -30,6 +30,7 @@ type scimPre struct {
 	wasMember    bool
 	groupMembers []string
 	inactive     bool
+	reactivating bool
 }
 
 type scimUserBody struct {
@@ -111,6 +112,13 @@ func (rt *Router) scimBefore(r *http.Request, c scimCall) (scimPre, int, string)
 			return pre, http.StatusInternalServerError, "internal error"
 		}
 		pre.wasMember = found && du.Member
+		if c.method == http.MethodPatch && found && !du.Member && scimPatchActivates(c.body) {
+			if err := rt.authEngine.SetDirectoryMember(ctx, c.id, true); err != nil {
+				rt.logger.Error("api: scim: reactivate membership failed", slog.String("engine_user_id", c.id), slog.String("error", err.Error()))
+				return pre, http.StatusInternalServerError, "internal error"
+			}
+			pre.reactivating = true
+		}
 		if pre.wasMember && (c.method == http.MethodDelete || scimPatchDeactivates(c.body)) {
 			if status, detail := rt.scimLastRootGuard(ctx, c.id); status != 0 {
 				return pre, status, detail
@@ -192,7 +200,7 @@ func (rt *Router) scimAfter(r *http.Request, c scimCall, pre scimPre, rec *scimC
 				return status, detail
 			}
 		}
-		return rt.scimSettle(r, c, c.id, scimSettleOpts{})
+		return rt.scimSettle(r, c, c.id, scimSettleOpts{reactivate: pre.reactivating})
 	case c.resource == scimGroups && c.method != http.MethodGet:
 		ids := pre.groupMembers
 		gid := c.id

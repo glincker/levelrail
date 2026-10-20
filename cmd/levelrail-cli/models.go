@@ -54,6 +54,8 @@ func runModels(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runModelsCatalog(prog, rest, stdout, stderr, lookupEnv)
 	case "benchmark":
 		return runModelsBenchmark(prog, rest, stdout, stderr, lookupEnv)
+	case "endpoint":
+		return runModelsEndpoint(prog, rest, stdout, stderr, lookupEnv)
 	case "cache":
 		return runModelsCache(prog, rest, stdout, stderr, lookupEnv)
 	default:
@@ -76,6 +78,7 @@ func modelsUsage(prog string) string {
   %[1]s models usage <name> [flags]         gateway requests, tokens, errors and latency per key
   %[1]s models residency <name> --mode M    always resident, or on_demand (stop when idle, start on first request)
   %[1]s models swap-group <name> --group G  share a GPU with other models in group G (--clear to remove)
+  %[1]s models endpoint add|test|routing|credential   use a server you run yourself (Ollama on a Mac) as a model
   %[1]s models wake|sleep <name> [flags]    start or stop an on-demand model's engine now
   %[1]s models fit --engine E --model M     estimate VRAM fit (fits, tight, no) on each GPU node (--compute cpu for CPU mode)
   %[1]s models metrics <name> [flags]       engine metrics: KV cache, queue, prefix hits, tokens per second, first token

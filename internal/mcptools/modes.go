@@ -119,6 +119,8 @@ type Options struct {
 	// OmitOutputSchemas drops outputSchema from tools/list. Results still
 	// carry structured content; only the schema advertisement is left out.
 	OmitOutputSchemas bool
+
+	probe *abilityProbe
 }
 
 // Summary reports what a server exposes.

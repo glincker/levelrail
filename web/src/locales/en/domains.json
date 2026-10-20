@@ -598,6 +598,14 @@
       "redirect_to_apex": "Redirect www to the apex",
       "redirect_to_www": "Redirect the apex to www",
       "help": "Needs the partner host, which is added for you when a redirect is chosen."
+    },
+    "dnsWriter": {
+      "label": "DNS record writer",
+      "builtIn": "The built-in client",
+      "plugin": "The {{name}} plugin",
+      "help": "Choose which one adds the DNS record when you fix a domain. Test a plugin on the Plugins page first.",
+      "managePlugins": "Manage DNS plugins",
+      "saved": "DNS record writer saved"
     }
   },
   "standalone": {
@@ -774,5 +782,57 @@
     "skipped": "{{count}} domain(s) already have limits and stay as they are.",
     "applied": "Recommended limits turned on for {{count}} domain(s).",
     "blockedProxy": "A proxy sits in front of this server and hides visitor addresses, so a per-visitor limit would hit everyone. Set the trusted proxy list first."
+  },
+  "edge": {
+    "title": "Request limits and trusted proxies",
+    "description": "Caps on request size and slow clients, and which proxies in front of this server are trusted to report visitor addresses.",
+    "proxy": {
+      "none": "no proxy",
+      "cloudflare": "Cloudflare",
+      "coolify": "Coolify",
+      "traefik": "Traefik",
+      "proxy": "a reverse proxy"
+    },
+    "fix": {
+      "title": "{{proxy}} detected in front of this server",
+      "body": "Visitor addresses and forwarded headers are ignored until the proxy is trusted, so per-visitor limits would hit everyone.",
+      "rangesRotate": "This proxy uses public addresses that change over time. Trust its published ranges instead of one address.",
+      "manual": "No address is safe to trust automatically. Enter the proxy addresses below.",
+      "apply": "Trust {{value}}",
+      "recheck": "Re-check",
+      "done": "Trusted proxies saved. Limits now see real visitor addresses."
+    },
+    "trusted": {
+      "label": "Trusted proxies",
+      "help": "Comma separated addresses, CIDR ranges or private_ranges. Leave empty to trust none."
+    },
+    "limits": {
+      "body": "Request body cap",
+      "header": "Request header cap",
+      "readHeader": "Header read timeout",
+      "idle": "Idle connection timeout",
+      "help": "Leave blank for the default shown."
+    },
+    "unit": {
+      "mib": "MiB",
+      "kib": "KiB",
+      "seconds": "seconds"
+    },
+    "envLocked": "Set by an environment variable on the control plane, which takes priority.",
+    "badNumber": "Enter plain numbers, or leave a field blank for its default.",
+    "save": "Save limits",
+    "saving": "Saving...",
+    "saved": "Edge settings saved.",
+    "loadFailed": "Could not load the edge settings."
+  },
+  "appLimits": {
+    "title": "Request size cap",
+    "description": "Cap how large a request body this app accepts. Header size and timeouts apply to the whole server.",
+    "body": "Request body cap",
+    "help": "Blank uses the server value ({{instance}} MiB).",
+    "invalid": "Enter a size above zero, or leave it blank.",
+    "save": "Save cap",
+    "reset": "Use server value",
+    "saved": "Request size cap saved."
   }
 }

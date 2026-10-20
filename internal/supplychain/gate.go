@@ -30,12 +30,16 @@ func Decide(mode GateMode, scan *ScanSummary, overrideReason string) Decision {
 		return Decision{Action: ActionAllow, Reason: "scan did not complete, release allowed"}
 	}
 	crit := scan.Counts.Critical
-	if crit == 0 {
+	high := gateHighCount(mode, scan)
+	if crit+high == 0 {
 		return Decision{Action: ActionAllow}
 	}
 	reason := fmt.Sprintf("%d critical vulnerabilities (%d fixable of %d total)", crit, scan.Fixable, scan.Counts.Total())
+	if mode == GateBlockOnHigh {
+		reason = fmt.Sprintf("%d critical and %d high vulnerabilities (%d fixable of %d total)", crit, high, scan.Fixable, scan.Counts.Total())
+	}
 	switch mode {
-	case GateBlockOnCritical:
+	case GateBlockOnCritical, GateBlockOnHigh:
 		if overrideReason != "" {
 			return Decision{Action: ActionOverride, Reason: reason + "; overridden: " + overrideReason}
 		}
@@ -43,4 +47,14 @@ func Decide(mode GateMode, scan *ScanSummary, overrideReason string) Decision {
 	default:
 		return Decision{Action: ActionWarn, Reason: reason}
 	}
+}
+
+func (m GateMode) blocking() bool { return m == GateBlockOnCritical || m == GateBlockOnHigh }
+
+// gateHighCount is the high findings that count toward mode: only block_on_high looks below critical.
+func gateHighCount(mode GateMode, scan *ScanSummary) int {
+	if mode == GateBlockOnHigh {
+		return scan.Counts.High
+	}
+	return 0
 }

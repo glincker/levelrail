@@ -15,6 +15,7 @@ const (
 	RuleHostUTS             = "host_uts"
 	RuleHostUserns          = "host_userns"
 	RuleHostCgroupns        = "host_cgroupns"
+	RuleContainerNS         = "container_namespace_share"
 	RuleNetworkHost         = "network_host"
 	RuleCapAdd              = "cap_add_disallowed"
 	RuleDevices             = "devices_not_granted"
@@ -34,6 +35,7 @@ const (
 var AllRules = []string{
 	RuleEndpointNotAllowed, RulePathNoncanonical, RuleBodyTooLarge, RuleBodyInvalid,
 	RulePrivileged, RuleHostPID, RuleHostIPC, RuleHostUTS, RuleHostUserns, RuleHostCgroupns,
+	RuleContainerNS,
 	RuleNetworkHost, RuleCapAdd, RuleDevices, RuleDeviceCgroupRules, RuleSecurityOpt,
 	RuleMaskedPaths, RuleBindSensitive, RuleBindUndeclared, RuleMountType, RuleVolumesFrom,
 	RuleVolumeBindDriverOpt, RuleExecPrivileged, RuleImageImport,

@@ -1,5 +1,6 @@
 import { NewAppPreflight } from './PreflightPanel'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -185,6 +186,7 @@ export function CreateAppFields({
    *  state; this component has no "open" concept of its own. */
   onCreated: () => void
 }) {
+  const { t } = useTranslation('newApp')
   const navigate = useNavigate()
   const createApp = useCreateApp()
   // Optional convenience only, see useNodeListOptional's own doc
@@ -291,12 +293,12 @@ export function CreateAppFields({
       onDismissDraftNotice={dismissDraftNotice}
     >
       <div className="space-y-4">
-        <FieldSectionLabel>Basics</FieldSectionLabel>
+        <FieldSectionLabel>{t('fields.basics')}</FieldSectionLabel>
         <Field>
-          <FieldLabel htmlFor="app-name">Name</FieldLabel>
+          <FieldLabel htmlFor="app-name">{t('fields.name')}</FieldLabel>
           <Input
             id="app-name"
-            placeholder="e.g. marketing-site"
+            placeholder={t('fields.namePlaceholder')}
             {...register('name')}
           />
           <FieldError errors={[formState.errors.name]} />
@@ -321,43 +323,36 @@ export function CreateAppFields({
         />
 
         <Field>
-          <FieldLabel htmlFor="app-image">Image</FieldLabel>
+          <FieldLabel htmlFor="app-image">{t('fields.image')}</FieldLabel>
           <Input
             id="app-image"
-            placeholder="e.g. ghcr.io/you/app:latest"
+            placeholder={t('fields.imagePlaceholder')}
             {...register('image')}
           />
-          <FieldHint>
-            The image to run, including a tag. Don&rsquo;t have one built yet?
-            Pick the git option in step 1 instead and we&rsquo;ll build it for
-            you.
-          </FieldHint>
+          <FieldHint>{t('fields.imageHint')}</FieldHint>
           <FieldError errors={[formState.errors.image]} />
         </Field>
       </div>
 
       <div className="space-y-4">
-        <FieldSectionLabel>Networking</FieldSectionLabel>
+        <FieldSectionLabel>{t('fields.networking')}</FieldSectionLabel>
         <Field>
-          <FieldLabel htmlFor="app-port">Port</FieldLabel>
+          <FieldLabel htmlFor="app-port">{t('fields.port')}</FieldLabel>
           <Input
             id="app-port"
             type="number"
             step="1"
             min="1"
-            placeholder="e.g. 3000"
+            placeholder={t('fields.portPlaceholder')}
             {...register('port')}
           />
-          <FieldHint>
-            The port your app listens on inside its container, e.g. 3000 for a
-            typical Next.js app.
-          </FieldHint>
+          <FieldHint>{t('fields.portHint')}</FieldHint>
           <FieldError errors={[formState.errors.port]} />
         </Field>
       </div>
 
       <div className="space-y-4">
-        <FieldSectionLabel>Health check</FieldSectionLabel>
+        <FieldSectionLabel>{t('fields.healthCheck')}</FieldSectionLabel>
         <Field orientation="horizontal">
           <Controller
             control={control}
@@ -371,23 +366,21 @@ export function CreateAppFields({
             )}
           />
           <FieldLabel htmlFor="app-health-enabled">
-            Enable a health check
+            {t('fields.healthEnable')}
           </FieldLabel>
         </Field>
         {healthCheckEnabled ? (
           <Field>
-            <FieldLabel htmlFor="app-health-path">Path</FieldLabel>
+            <FieldLabel htmlFor="app-health-path">
+              {t('fields.healthPath')}
+            </FieldLabel>
             <Input
               id="app-health-path"
               className="font-mono"
               placeholder={HEALTH_CHECK_DEFAULT_PATH}
               {...register('healthCheckPath')}
             />
-            <FieldHint>
-              Checked before cutting traffic to a new container, and to detect a
-              crashed one afterward. Change or turn this off if your app
-              doesn&rsquo;t serve this path.
-            </FieldHint>
+            <FieldHint>{t('fields.healthHint')}</FieldHint>
             <FieldError errors={[formState.errors.healthCheckPath]} />
           </Field>
         ) : null}
@@ -402,7 +395,7 @@ export function CreateAppFields({
           aria-expanded={showAdvanced}
           className="w-fit text-xs font-medium text-muted-foreground hover:text-foreground"
         >
-          {showAdvanced ? 'Hide advanced options' : 'Show advanced options'}
+          {showAdvanced ? t('fields.hideAdvanced') : t('fields.showAdvanced')}
         </button>
       ) : null}
 
@@ -410,7 +403,9 @@ export function CreateAppFields({
         <div className="space-y-4 rounded-lg border border-dashed border-border p-3">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field>
-              <FieldLabel htmlFor="app-strategy">Deploy strategy</FieldLabel>
+              <FieldLabel htmlFor="app-strategy">
+                {t('fields.strategy')}
+              </FieldLabel>
               <Controller
                 control={control}
                 name="strategy"
@@ -421,25 +416,29 @@ export function CreateAppFields({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={STRATEGY_DEFAULT_VALUE}>
-                        Default (blue-green)
+                        {t('fields.strategyDefault')}
                       </SelectItem>
-                      <SelectItem value="recreate">Recreate</SelectItem>
-                      <SelectItem value="blue-green">Blue-green</SelectItem>
-                      <SelectItem value="rolling">Rolling</SelectItem>
+                      <SelectItem value="recreate">
+                        {t('fields.strategyRecreate')}
+                      </SelectItem>
+                      <SelectItem value="blue-green">
+                        {t('fields.strategyBlueGreen')}
+                      </SelectItem>
+                      <SelectItem value="rolling">
+                        {t('fields.strategyRolling')}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 )}
               />
-              <FieldHint>
-                How new versions roll out. Blue-green starts the new version
-                alongside the old one and switches traffic over once it&rsquo;s
-                healthy.
-              </FieldHint>
+              <FieldHint>{t('fields.strategyHint')}</FieldHint>
               <FieldError errors={[formState.errors.strategy]} />
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="app-replicas">Replicas</FieldLabel>
+              <FieldLabel htmlFor="app-replicas">
+                {t('fields.replicas')}
+              </FieldLabel>
               <Input
                 id="app-replicas"
                 type="number"
@@ -448,10 +447,7 @@ export function CreateAppFields({
                 placeholder="1"
                 {...register('replicas')}
               />
-              <FieldHint>
-                How many copies of your app run at once. Leave blank to run just
-                one.
-              </FieldHint>
+              <FieldHint>{t('fields.replicasHint')}</FieldHint>
               <FieldError errors={[formState.errors.replicas]} />
             </Field>
           </div>
@@ -503,7 +499,7 @@ export function CreateAppFields({
 
       <DialogFooter>
         <Button type="submit" disabled={createApp.isPending}>
-          {createApp.isPending ? 'Creating...' : 'Create app'}
+          {createApp.isPending ? t('fields.creating') : t('fields.create')}
         </Button>
       </DialogFooter>
     </CreateFormShell>

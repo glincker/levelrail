@@ -25,6 +25,11 @@ Levelrail turns one or more Linux servers into a private cloud. Push to a git re
   </Card>
 </CardGroup>
 
+## Identity and access
+
+- Password, passkeys, TOTP, OAuth with 20 providers plus generic OpenID Connect, IAM policies, teams and a hash-chained audit log. See [Identity and access](/identity-and-access).
+- SAML single sign-on and SCIM provisioning are beta and off by default. See [SAML and SCIM](/sso-saml).
+
 ## Works with
 
 Levelrail drives Docker directly and plugs into the tools you already use.

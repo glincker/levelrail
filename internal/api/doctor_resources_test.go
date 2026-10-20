@@ -19,6 +19,11 @@ func TestDoctorCheckRAM(t *testing.T) {
 			wantStatus: doctorStatusOK,
 		},
 		{
+			name:       "documented 1 GB VM passes with default floor",
+			read:       func() (int64, int64, error) { return 950 << 20, 500 << 20, nil },
+			wantStatus: doctorStatusOK,
+		},
+		{
 			name:       "below the configured minimum",
 			read:       func() (int64, int64, error) { return 512 << 20, 256 << 20, nil },
 			minBytes:   1 << 30,
@@ -62,6 +67,11 @@ func TestDoctorCheckCPU(t *testing.T) {
 		{
 			name:       "well above the minimum",
 			count:      func() int { return 8 },
+			wantStatus: doctorStatusOK,
+		},
+		{
+			name:       "documented single vCPU passes with default floor",
+			count:      func() int { return 1 },
 			wantStatus: doctorStatusOK,
 		},
 		{

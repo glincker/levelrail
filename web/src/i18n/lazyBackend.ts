@@ -14,6 +14,11 @@ export const lazyBackend: BackendModule = {
         callback(null, mod.default)
       })
       .catch((err: unknown) => {
+        // A locale may ship only some namespaces: missing keys fall back to English.
+        if (language !== 'en') {
+          callback(null, {})
+          return
+        }
         callback(err instanceof Error ? err : String(err), null)
       })
   },

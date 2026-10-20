@@ -38,6 +38,7 @@ export type DeployAttemptSource =
   | 'clone'
   | 'schedule'
   | 'auto_rollback'
+  | 'git_push'
 
 export interface DeployAttempt {
   id: string

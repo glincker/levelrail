@@ -23,6 +23,7 @@ const KNOWN = new Set<string>([
   'secrets_old',
   'tls_not_public',
   'hsts_off',
+  'domains_unshielded',
   'agents_outdated',
   'login_anomalies',
   'own_mfa',

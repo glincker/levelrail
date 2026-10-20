@@ -33,6 +33,9 @@ func appsDatabaseUsage(prog string) string {
   %[1]s apps database set <name> --database-name NAME [--env-var VAR] [--field FIELD]   attach a managed database
   %[1]s apps database clear <name> [flags]                                                detach an app's database
 
+"%[1]s apps connect <app> <database>" is the canonical way to attach a
+database and takes several; this single-database form keeps working.
+
 Attaching a database injects a connection env var (default DATABASE_URL,
 field "url") into the app's container at container-create time. See
 "%[1]s databases list" for existing databases.

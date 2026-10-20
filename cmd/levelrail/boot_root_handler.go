@@ -131,6 +131,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithTokenRedeemRateLimit(apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM", defaultTokenRedeemRateLimitRPM)),
 		api.WithDataDir(dataDir),
 		api.WithTrustRoot(trustRoot),
+		api.WithReleaseSchemaSource(api.NewReleaseSchemaFetcher(dataDir, trustRoot)),
 		api.WithSourceCache(sourcecache.New(sourcecache.ConfigFromEnv(filepath.Join(dataDir, "source-cache")), logger)),
 		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
 		api.WithArchives(archive.New(db.DB, dataDir), db),
@@ -400,7 +401,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		modelGateway.SetWakeHook(engine.Nudge)
 	}
 	opts = append(opts, api.WithModels(modelSvc))
-	opts = append(opts, api.WithMeshSettings(db), api.WithFixit(db), api.WithBuildPerformance(db))
+	opts = append(opts, api.WithMeshSettings(db), api.WithServerProfile(db), api.WithFixit(db), api.WithBuildPerformance(db))
 	if client != nil {
 		opts = append(opts, api.WithGPUHostDiagnoser(func(ctx context.Context) gpu.HostDiagnosis {
 			return gpu.DiagnoseHost(ctx, gpu.ExecRunner{}, client, nil)
