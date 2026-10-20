@@ -26,7 +26,8 @@ const TEST_PARAM = 'sso_test'
 function useReturnedTest(): { provider: string | null; clear: () => void } {
   const [provider, setProvider] = useState<string | null>(() => {
     try {
-      return new URLSearchParams(window.location.search).get(TEST_PARAM)
+      const v = new URLSearchParams(window.location.search).get(TEST_PARAM)
+      return v?.startsWith('saml:') ? null : v
     } catch {
       return null
     }

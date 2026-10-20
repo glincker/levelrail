@@ -788,7 +788,7 @@ levelrail-cli audit-purge
   Sign-in covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook, Linear, Vercel, Hugging Face, Figma, Salesforce, Codeberg, Amazon Cognito, Dropbox, Kakao, Patreon, generic OIDC and [SAML 2.0](/sso-saml) (beta); accounts and groups sync through [SCIM](/scim). There is no LDAP sync.
 
 - There is no per-team or per-project access boundary. IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. The Organizations settings page groups projects for display and navigation only.
-- SAML sign-in and SCIM provisioning are beta (the `saml-scim` feature, off by default). They are built on the sign-in library, with Levelrail's own checks in front, and are tested against a local test identity provider, not yet against a live Okta, Entra ID or Keycloak tenant. See [SAML](/sso-saml) and [SCIM](/scim).
+- SAML sign-in and SCIM provisioning are beta (the `saml-scim` feature, off by default). They are built on the sign-in library, with Levelrail's own checks in front, and were run against Keycloak 26.0.8 and SimpleSAMLphp 1.15 in a local lab, not against Okta or Entra ID. See [SAML](/sso-saml) and [SCIM](/scim).
 - Dashboard sessions are stored in the database and survive a restart. Sessions minted from API-token session links are held in memory and end on restart.
 
 </Accordion>

@@ -4,7 +4,7 @@ description: "Sign in through Okta, Microsoft Entra ID, Keycloak or any SAML 2.0
 "og:url": "https://docs.levelrail.com/sso-saml"
 ---
 
-> **Beta, off by default.** SAML sign-in and [SCIM provisioning](scim.md) sit behind the `saml-scim` beta feature: turn it on under **Settings, Beta features** or with `APP_EXPERIMENTAL=saml-scim`. While off, the routes answer `404`, the settings page and the sign-in button are hidden, and a "require single sign-on" setting is not applied. The service provider is built on the sign-in library; Levelrail adds a stricter response check, account policy and role mapping around it. It is tested against a signing test identity provider, not yet against a live Okta, Entra ID or Keycloak tenant (see [What has not been verified](#what-has-not-been-verified)).
+> **Beta, off by default.** SAML sign-in and [SCIM provisioning](scim.md) sit behind the `saml-scim` beta feature: turn it on under **Settings, Beta features** or with `APP_EXPERIMENTAL=saml-scim`. While off, the routes answer `404`, the settings page and the sign-in button are hidden, and a "require single sign-on" setting is not applied. The service provider is built on the sign-in library; Levelrail adds a stricter response check, account policy and role mapping around it. It has been run against Keycloak 26.0.8 and SimpleSAMLphp 1.15 in a local lab (see [Tested against](#tested-against)). Okta and Microsoft Entra ID have not been tested (see [What has not been verified](#what-has-not-been-verified)).
 
 Connect one or more SAML 2.0 identity providers (IdPs). For OpenID Connect and OAuth providers see [OAuth and OIDC single sign-on](sso-oidc.md), which has the same group, role and account controls. Each enabled connection adds a button to the sign-in page. Directory groups can decide each person's role, and you can require single sign-on for everyone except root users.
 
@@ -48,7 +48,28 @@ levelrail-cli sso saml import-metadata saml_abc --url https://example.okta.com/a
 levelrail-cli sso saml update saml_abc --enabled --sync-roles
 levelrail-cli sso saml metadata saml_abc > sp-metadata.xml
 levelrail-cli sso saml list
+levelrail-cli sso saml test saml_abc
+levelrail-cli sso saml remove saml_abc
 ```
+
+`add` and `remove` are the same commands as `create` and `delete`.
+
+## Test the connection
+
+Once a connection is complete and enabled, **Test sign-in** in its sheet (or `levelrail-cli sso saml test <id>`, which prints the address to open in a browser signed in as root) runs the real sign-in at your identity provider for you. It ends on the settings page with a result panel: the email, groups and attributes the assertion carried, the role they would earn, whether the account would be linked, created or refused, and a typed fix for each problem. A test sign-in creates no account, role or session, and its result is shown once, to the root user who started it.
+
+| Result | What it means | Fix |
+| --- | --- | --- |
+| `signature_invalid` | The assertion is not signed by the certificate on file, or only the outer response is signed | Import the IdP metadata again, and sign the assertion |
+| `audience_mismatch` | The IdP addressed another entity ID | Set the audience to the entity ID shown in the sheet |
+| `clock_skew` | The assertion is outside its validity window (three minutes of skew are allowed) | Fix time sync (NTP) on this server or at the IdP |
+| `request_mismatch` | The response answers another request or destination | Start the test again, and check the ACS URL at the IdP |
+| `response_invalid` | The response could not be read or verified for another reason | Check the IdP logs and import its metadata again |
+| no groups received | The groups attribute name does not match what the IdP sends | Set the attribute name, or add a group statement at the IdP |
+| domain not allowed | The email domain is not claimed by the connection | One click adds the domain |
+| not provisioned | No account exists and account creation is off | One click turns account creation on |
+
+The failure codes are classified from the verifier's reason, and only `signature_invalid` is exercised against a real IdP (a tampered response). The other typed failures are covered by the classifier's unit test, not by a live run.
 
 ## What is checked on every sign-in
 
@@ -144,12 +165,23 @@ The Okta and Entra ID steps follow each IdP's documented SAML setup and have not
 
 ## Tested against
 
-Run against real identity providers in local Docker containers, driven by a scripted HTTP client with a cookie jar (no browser): SP-initiated login, the IdP's own login form, and the signed response posted back to the ACS of an in-process control plane. The test is `internal/api/sso_saml_live_test.go`, skipped under `-short` and run only with `LEVELRAIL_LIVE_IDP=1`.
+Last run on 2026-10-20 against real identity providers in local Docker containers (the SSO lab, `test/sso-lab/`), driven by a scripted HTTP client with a cookie jar (no browser): SP-initiated login, the IdP's own login form, and the signed response posted back to the ACS of an in-process control plane. The tests are `internal/api/sso_saml_live_test.go` and `internal/api/sso_saml_test_flow_live_test.go`, skipped under `-short` and run only with `LEVELRAIL_LIVE_IDP=1`.
+
+To reproduce it on your machine (Docker required, lab credentials only):
+
+```bash
+scripts/sso-lab.sh up          # starts both IdPs, waits until healthy, prints metadata URLs and test users
+export LEVELRAIL_LIVE_IDP=1
+CGO_ENABLED=0 go test ./internal/api -run 'TestLive' -count=1 -v
+scripts/sso-lab.sh down
+```
+
+The same lab is a quick way to try the setup flow by hand: import `https://localhost:18443/realms/lab/protocol/saml/descriptor` into a connection (the lab certificate is self-signed, so paste the metadata XML instead of using the URL) and register the connection's service provider values at the lab Keycloak.
 
 | IdP | Version | Verified |
 | --- | --- | --- |
 | Keycloak | 26.0.8, `start-dev`, https | Everything in the list below, plus Keycloak importing Levelrail's SP metadata as a client |
-| SimpleSAMLphp | 1.15.2 (`kristophjunge/test-saml-idp`), https | Everything in the list below |
+| SimpleSAMLphp | 1.15 (image `kristophjunge/test-saml-idp:1.15`, amd64), https | Everything in the list below |
 
 Verified against both:
 
@@ -158,12 +190,14 @@ Verified against both:
 - Account creation off refuses an unknown person, and signs in an invited one.
 - A tampered response, a replayed response (same flow and a fresh flow), a response with no flow cookie and a response issued for another connection are all refused, each for its own reason.
 - An assertion that is not signed is refused when only the outer response is signed (the library gate) and when nothing is signed, and no account is left behind.
+- Keycloak only: **Test sign-in** returns the received email and groups, the mapped role and an `account would be created` verdict without creating anything; a domain the connection does not claim comes back refused with the add-domain fix; a tampered response comes back as `signature_invalid`; the sign-in page's domain lookup (`/api/v1/auth/login-options?sso_domain=`) returns the connection for a claimed domain and nothing for an unclaimed one.
 - Keycloak only: an IdP-initiated response is refused, with and without a flow cookie. Encrypted assertions are refused cleanly (see above).
 
 Not verified live, covered only by the canned-response unit tests: a wrong audience, expired or not-yet-valid assertions (the three minute skew cannot be waited out), an IdP certificate rotation, and metadata import from an https URL (the IdPs ran with self-signed certificates and the fetch refuses private addresses).
 
 ## What has not been verified
 
+- Sign-in against Okta or Microsoft Entra ID, which have not been tested at all: no tenant was available. The Okta and Entra ID guides above follow each vendor's documentation.
 - Sign-in against a live Okta or Entra ID tenant. Their attribute names, NameID formats and group claims are covered by the attribute settings above, not by a run.
 - Encrypted assertions are refused, see above.
 - An IdP certificate rotation: a connection holds one signing certificate, so the new certificate has to be imported at the moment the IdP switches.
@@ -192,6 +226,7 @@ The control plane log and the audit log (`sso.saml.rejected`) record the exact r
 | `GET`, `POST` | `/api/v1/sso/saml/connections` | `root` |
 | `GET`, `PUT`, `DELETE` | `/api/v1/sso/saml/connections/{id}` | `root` |
 | `POST` | `/api/v1/sso/saml/connections/{id}/metadata` | `root` |
+| `GET` | `/api/v1/sso/saml/connections/{id}/test/start`, `/test/result` | `root`, needs a dashboard session |
 | `GET`, `PUT` | `/api/v1/sso/group-mappings` | `root` |
 | `GET`, `PUT` | `/api/v1/sso/settings` | `root` |
 

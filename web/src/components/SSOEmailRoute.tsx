@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr'
+import type { SSORoute } from '../queries/ssoOidc'
 import { emailDomain, fetchSSORoute } from '../queries/ssoOidc'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -15,15 +16,17 @@ export function SSOEmailRoute() {
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [missed, setMissed] = useState(false)
+  const [route, setRoute] = useState<SSORoute | null>(null)
 
   const submit = async () => {
     setBusy(true)
     setMissed(false)
+    setRoute(null)
     try {
       const domain = emailDomain(email)
-      const route = domain ? await fetchSSORoute(domain) : null
-      if (route) {
-        window.location.assign(route.start_url)
+      const found = domain ? await fetchSSORoute(domain) : null
+      if (found) {
+        setRoute(found)
         return
       }
       setMissed(true)
@@ -68,12 +71,24 @@ export function SSOEmailRoute() {
           autoComplete="email"
           autoFocus
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            setRoute(null)
+          }}
         />
         <Button type="submit" disabled={busy || email.trim() === ''}>
-          {t('foundation.signIn.ssoContinue')}
+          {t('foundation.signIn.ssoCheck')}
         </Button>
       </div>
+      {route ? (
+        <Button
+          type="button"
+          size="lg"
+          onClick={() => window.location.assign(route.start_url)}
+        >
+          {t('foundation.signIn.ssoContinueWith', { name: route.name })}
+        </Button>
+      ) : null}
       {missed ? (
         <p role="status" className="text-xs text-muted-foreground">
           {t('foundation.signIn.ssoNoRoute')}

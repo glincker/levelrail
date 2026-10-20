@@ -479,6 +479,8 @@
       },
       "ssoEmail": "Work email",
       "ssoContinue": "Continue with SSO",
+      "ssoCheck": "Continue",
+      "ssoContinueWith": "Continue with SSO ({{name}})",
       "ssoRouted": "Your organization signs in through {{provider}}.",
       "ssoNoRoute": "No single sign-on is set up for that email. Sign in with your password or another option."
     },
