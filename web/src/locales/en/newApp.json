@@ -273,5 +273,18 @@
     "replicasHint": "How many copies of your app run at once. Leave blank to run just one.",
     "creating": "Creating...",
     "create": "Create app"
+  },
+  "upload": {
+    "title": "Deploy from your computer",
+    "description": "No git remote needed. Run this in your project folder and the directory is uploaded, built and deployed.",
+    "note": "Create an API token under Settings, then run the CLI login once. Files in .gitignore, node_modules and .env files are never uploaded.",
+    "copy": "Copy",
+    "copied": "Copied"
+  },
+  "uploadSource": {
+    "title": "Source: CLI upload",
+    "hash": "Archive hash",
+    "files": "Files",
+    "redeploy": "Deploy again from the project folder with:"
   }
 }
