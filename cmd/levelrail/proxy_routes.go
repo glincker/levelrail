@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"io"
 	"log/slog"
 	"os"
 	"strconv"
@@ -8,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/GLINCKER/levelrail/internal/docker"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/proxyroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -19,8 +23,9 @@ const (
 )
 
 // newProxySyncer builds the one syncer the reconciler and the API share.
-func newProxySyncer(b *brand.Brand, db *store.DB, logger *slog.Logger) *proxyroutes.Syncer {
+func newProxySyncer(b *brand.Brand, db *store.DB, logger *slog.Logger, ex proxyroutes.Exec) *proxyroutes.Syncer {
 	return &proxyroutes.Syncer{
+		Exec:           ex,
 		Store:          db,
 		NS:             proxyroutes.Namespace(strings.ToLower(b.BinaryName)),
 		Ingress:        proxyroutes.Listener{Label: "ingress", Addr: ingressHTTPAddr(), EnvVar: "APP_INGRESS_HTTP_ADDR"},
@@ -68,4 +73,26 @@ func proxyVerifyTimeout(logger *slog.Logger) time.Duration {
 		return 0
 	}
 	return d
+}
+
+// proxyContainerExec runs commands in the proxy container through the Docker
+// Engine API.
+type proxyContainerExec struct{ rt docker.Runtime }
+
+func (e proxyContainerExec) Exec(ctx context.Context, container string, cmd []string) (string, error) {
+	r, err := e.rt.Exec(ctx, container, cmd)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = r.Close() }()
+	out, err := io.ReadAll(r)
+	var exit *docker.ExecExitError
+	if errors.As(err, &exit) {
+		msg := exit.Stderr
+		if msg == "" {
+			msg = strings.TrimSpace(string(out))
+		}
+		return string(out), &proxyroutes.ExecError{Output: msg, Err: err}
+	}
+	return string(out), err
 }

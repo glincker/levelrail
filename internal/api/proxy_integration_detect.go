@@ -68,6 +68,11 @@ func (rt *Router) detectProxy(ctx context.Context) proxyroutes.Detection {
 	if kind == proxyroutes.KindTraefik {
 		c.StaticFile, c.StaticConfig = readStaticConfig(proxyroutes.StaticConfigCandidates(c))
 	}
+	if kind == proxyroutes.KindNginx {
+		if path, ok := proxyroutes.NginxConfPath(c); ok {
+			_, c.NginxConf = readStaticConfig([]string{path})
+		}
+	}
 	return proxyroutes.Detect(c)
 }
 
@@ -77,6 +82,10 @@ func pickProxyHolder(all []docker.LocalContainer) (string, string) {
 	var name, kind string
 	for _, c := range all {
 		if !c.Running || !publishesWebPort(c) {
+			continue
+		}
+		if kind == "" && strings.Contains(strings.ToLower(c.Image), "haproxy") {
+			name, kind = c.Name, proxyroutes.KindHAProxy
 			continue
 		}
 		k, ok := proxycoexist.KindFromImage(c.Image)

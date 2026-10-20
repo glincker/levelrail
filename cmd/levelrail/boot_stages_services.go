@@ -293,7 +293,7 @@ func (s *bootState) startMesh() error {
 	edgeInfo := edge.doctorInfo()
 	edgeInfo.Snapshot = setupIngressSnapshot(ctx, logger, ingressDriver, db, secretsManager, edge)
 	apiRouter.SetDoctorIngressEdge(edgeInfo)
-	proxySyncer := newProxySyncer(b, db, logger)
+	proxySyncer := newProxySyncer(b, db, logger, proxyContainerExec{rt: client})
 	apiRouter.SetProxyIntegration(proxySyncer, db, proxyVerifyTimeout(logger))
 	routeCheck := newRouteCheck(logger)
 	apiRouter.SetProxyRouteCheck(routeCheck)

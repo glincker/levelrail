@@ -36,7 +36,7 @@ func TestClient_ProxyIntegration(t *testing.T) {
 		{"disable", func() error {
 			_, err := c.UpdateProxyIntegrationSettings(ctx, ProxyIntegrationSettings{Integration: "off"})
 			return err
-		}, http.MethodPut, "/api/v1/settings/proxy-integration", `{"integration":"off","dynamic_dir":"","entrypoint_http":"","entrypoint_https":"","cert_resolver":"","upstream_host":""}`},
+		}, http.MethodPut, "/api/v1/settings/proxy-integration", `{"integration":"off","dynamic_dir":"","entrypoint_http":"","entrypoint_https":"","cert_resolver":"","upstream_host":"","container":"","cert_dir":"","webroot":""}`},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
