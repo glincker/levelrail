@@ -1315,6 +1315,8 @@ levelrail-cli upgrade --plan [--version TAG]
 levelrail-cli upgrade --apply [--version TAG] [--ack-breaking ID,...] [--no-wait]
 levelrail-cli upgrade --attempts
 levelrail-cli upgrade backup-now
+levelrail-cli updates restore-points list
+levelrail-cli updates restore-points restore <id> --yes
 levelrail-cli upgrade schedule (--at TIME | --window) [--version TAG] [--timezone TZ] [--ack-breaking ID,...] [--ack-major] [--replace]
 levelrail-cli upgrade schedule show
 levelrail-cli upgrade schedule cancel

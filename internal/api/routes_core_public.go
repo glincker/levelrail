@@ -105,6 +105,8 @@ func (rt *Router) registerPublicRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/updates/self-upgrade/plan", rt.requireAbility(AbilityRead, rt.handleSelfUpgradePlan))
 	mux.HandleFunc("GET /api/v1/updates/self-upgrade/attempts", rt.requireAbility(AbilityRead, rt.handleSelfUpgradeAttempts))
 	mux.HandleFunc("POST /api/v1/updates/self-upgrade", rt.requireAbility(AbilityRoot, rt.handleSelfUpgradeStart))
+	mux.HandleFunc("GET /api/v1/updates/restore-points", rt.requireAbility(AbilityRoot, rt.handleRestorePointList))
+	mux.HandleFunc("POST /api/v1/updates/restore-points/{id}/restore", rt.requireAbility(AbilityRoot, rt.handleRestorePointRestore))
 	mux.HandleFunc("POST /api/v1/updates/rollback", rt.requireAbility(AbilityRoot, rt.handleRollbackStart))
 	mux.HandleFunc("GET /api/v1/updates/schedule", rt.requireAbility(AbilityRead, rt.handleGetUpgradeSchedule))
 	mux.HandleFunc("POST /api/v1/updates/schedule", rt.requireAbility(AbilityRoot, rt.handleCreateUpgradeSchedule))

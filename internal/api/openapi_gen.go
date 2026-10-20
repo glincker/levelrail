@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1500 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1502 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1500,6 +1500,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/updates/history/{id}/ack", Ability: "AbilityWrite", Group: "System", Handler: "handleAckUpgrade", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/preflight", Ability: "AbilityRead", Group: "System", Handler: "handleUpdatePreflight", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/releases", Ability: "AbilityRead", Group: "System", Handler: "handleReleaseHistory", Description: ""},
+	{Method: "GET", Path: "/api/v1/updates/restore-points", Ability: "AbilityRoot", Group: "System", Handler: "handleRestorePointList", Description: ""},
+	{Method: "POST", Path: "/api/v1/updates/restore-points/{id}/restore", Ability: "AbilityRoot", Group: "System", Handler: "handleRestorePointRestore", Description: ""},
 	{Method: "POST", Path: "/api/v1/updates/rollback", Ability: "AbilityRoot", Group: "System", Handler: "handleRollbackStart", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/rollback-plan", Ability: "AbilityRoot", Group: "System", Handler: "handleRollbackPlan", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/updates/schedule", Ability: "AbilityRoot", Group: "System", Handler: "handleCancelUpgradeSchedule", Description: ""},

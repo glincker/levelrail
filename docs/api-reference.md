@@ -107,6 +107,8 @@ System endpoints for:
 | GET | /api/v1/system/doctor/checks | AbilityRead | handleListDoctorChecks |
 | GET | /api/v1/system/doctor/stream | AbilityRead | handleStreamDoctor |
 | POST | /api/v1/system/doctor/checks/{id}/run | AbilityRead | handleRunDoctorCheck |
+| GET | /api/v1/updates/restore-points | AbilityRoot | handleRestorePointList |
+| POST | /api/v1/updates/restore-points/{id}/restore | AbilityRoot | handleRestorePointRestore |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

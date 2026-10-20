@@ -189,6 +189,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "upgrade":
 		return runUpgrade(prog, args[1:], stdout, stderr, lookupEnv)
+	case "updates":
+		return runUpdates(prog, args[1:], stdout, stderr, lookupEnv)
 	case "readiness":
 		return runReadiness(prog, args[1:], stdout, stderr, lookupEnv)
 	case "version":
@@ -403,6 +405,7 @@ Usage:
   %[1]s upgrade --list [--channel stable|beta|all]             last 5 releases with a database schema compatibility verdict
   %[1]s upgrade --rollback-plan <version>                      read-only rollback preview, applied on the host
   %[1]s upgrade --history [--json] | --ack <id>                recorded upgrades, rollbacks and installs, and acknowledging one
+  %[1]s updates restore-points list|restore <id> [--yes]       pre-upgrade restore points and putting one back
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
   %[1]s changelog [--limit N] [flags]                         recent release notes from the control plane's own CHANGELOG.md
   %[1]s ai-control status|set|revoke-agents [flags]           what agents and AI may do: off, observe, operate, admin
