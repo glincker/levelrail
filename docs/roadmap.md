@@ -41,7 +41,7 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 
 ### Data
 
-- Eight managed database engines: Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly and ClickHouse, with scheduled backups, restore, verification, metrics and log search. See [managing databases](/managing-databases).
+- Nine managed database engines: Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Valkey, Dragonfly and ClickHouse, with scheduled backups, restore, verification, metrics and log search. Meilisearch, Qdrant, Typesense and Memcached are built but not yet verified on a live Docker daemon. See [managing databases](/managing-databases).
 - Point-in-time restore for Postgres (opt-in WAL archiving, restore to a timestamp inside the recoverable window), restore into a new resource, and app volume backups to S3-compatible targets. See [backups and storage](/backups-and-storage).
 - TLS on newly created Postgres and Redis databases. Databases created before this feature are not switched.
 - Control-plane backups. See [control-plane backup](/control-plane-backup).
@@ -50,7 +50,7 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 
 - Node-local metrics (15s resolution) and log store with full-text and JSON search, federated across nodes, and a Prometheus remote-read endpoint. Deploy markers appear on metric charts.
 - Crashloop detection with the last 200 log lines surfaced in the UI.
-- Alerting over 14 rule kinds and 18 notification channel kinds, with retries for transient failures and delivery history.
+- Alerting with 25 rule kinds and 18 notification channel kinds, with retries for transient failures and delivery history.
 - Attention list, [status page](/status-page), capacity forecast, right-sizing suggestions and certificate renewal visibility. See [observability](/observability).
 
 ### Multi-node
@@ -72,8 +72,8 @@ The join flow is verified across two real Docker daemons, but not across a real 
 ### Operator surfaces
 
 - Dashboard, `levelrail-cli` (profiles, `--output` and `--query`, shell completion, device login, `doctor`, `apps create --interactive`) and `install.sh`.
-- Migration CLI: `levelrail-cli migrate coolify`, `dokploy` and `caprover`. See [migrate to Levelrail](/migrate-to-levelrail).
-- MCP server (`cmd/levelrail-mcp`): 156 tools in full mode, 146 in the default standard mode, 118 in read-only mode. See [MCP tool surface](/mcp-tool-surface) and the [AI assistant](/ai-assistant) page. Tokens are checked against the same abilities as the REST API.
+- Migration CLI: `levelrail-cli migrate coolify`, `dokploy` and `caprover`. See [migrating from Coolify, Dokploy and CapRover](/migrating-from-coolify-dokploy-and-caprover).
+- MCP server (`cmd/levelrail-mcp`): over 240 tools, grouped into toolsets that an agent enables on demand. See [MCP tool surface](/mcp-tool-surface) for the exact, generated numbers, and the [AI assistant](/ai-assistant) page. Tokens are checked against the same abilities as the REST API.
 
 ### Shipped but off by default or beta
 

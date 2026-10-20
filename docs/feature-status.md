@@ -4,7 +4,7 @@ description: Per-feature maturity labels (stable, beta, hide-behind-flag) with t
 "og:url": "https://docs.levelrail.com/feature-status"
 ---
 
-This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. The e2e rows, counts, and template and MCP rows were re-checked against main on 2026-10-05. Every claim cites a path, and where evidence is missing the page says so.
+This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. E2E rows were re-checked against main on 2026-10-05. Counts come from the generated pages linked below. Every claim cites a path, and where evidence is missing the page says so.
 
 ## How to read the labels
 
@@ -43,7 +43,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Sleep when idle | stable | Unit tests across scheduler, API, CLI and web, and a documented live run against a real Docker daemon and the real ingress (`scripts/verify-sleep-live.sh`, 10 checks: idle stop, wake on request, hold mode, manual wake, fleet counts). Per app and off by default (`docs/sleep-when-idle.md`). |
 | Status page | stable | Live e2e enables, authors and serves it publicly (`test/e2e/status_page_test.go`). Off until enabled. |
 | Multi-node and WireGuard | beta | Join flow verified locally across two real Docker daemons (enrollment, cordon, drain with real container relocation); the WireGuard mesh itself and cross-host remote transport are still unverified. |
-| AI assistant (MCP server) | beta | 156 tools in full mode (146 in the default standard mode, 118 read-only), 31 test files in `internal/mcptools`, no e2e. |
+| AI assistant (MCP server) | beta | over 240 tools in toolsets an agent enables on demand (exact, generated numbers on the [MCP tool surface](/mcp-tool-surface) page), 31 test files in `internal/mcptools`, no e2e. |
 | AI assistant (in-app chat) | hide-behind-flag | Tested against fake Anthropic responses only (unit, plus a real-HTTP e2e session lifecycle test with a fake provider); `docs/ai-assistant-chat.md` now documents it. |
 | AI models (GPU) | hide-behind-flag | Needs NVIDIA hardware, every test uses fakes, docs state v1 scope is NVIDIA on Linux only. |
 | Load balancer | hide-behind-flag | Live e2e with real traffic and drain (`test/e2e/loadbalancer_test.go`), but gated behind `load-balancer` and not exercised across real hosts. |
@@ -84,7 +84,7 @@ Test counts are `*_test.go` files in the named directory. "CLI" and "web" list t
 
 - Unit: `internal/models/` (13 files, for example `gpunodes_test.go`, `engines_test.go`, `gateway_test.go`, `prober_test.go`); API `internal/api/models_test.go`, `models_hf_test.go`, `models_keys_test.go`; CLI `models_test.go`, `models_keys_test.go`, `models_preflight_test.go`; web `ModelRow.test.tsx`, `ModelCacheCard.test.tsx`, `ModelKeysPanel.test.tsx`, `ModelPreflightPanel.test.tsx`.
 - E2E: none. No live Docker test either.
-- Docs: `docs/ai-models.md` (264 lines). It states v1 supports NVIDIA GPUs on Linux only.
+- Docs: `docs/ai-models.md`. It states v1 supports NVIDIA GPUs on Linux only.
 - Real infra: none found. No test touches a real GPU.
 - Label: hide-behind-flag. Correctness depends on driver, container toolkit and VRAM behavior that no test in the repo observes.
 
@@ -92,7 +92,7 @@ Test counts are `*_test.go` files in the named directory. "CLI" and "web" list t
 
 - Unit: `internal/loadbalancer/` (4 files: `check_test.go`, `config_test.go`, `history_test.go`, `status_test.go`); API `loadbalancer_test.go`, `loadbalancer_history_test.go`, `loadbalancer_list_test.go`; CLI `lb_test.go`, `lb_history_test.go`, `lb_list_test.go`; web `LoadBalancerOverview.test.tsx`, `web/src/lib/loadBalancer.test.ts`; MCP `tools_loadbalancer_test.go` and two more.
 - E2E: `test/e2e/loadbalancer_test.go` (`TestLoadBalancer_Live_RealTrafficAndDrain`, plus a gate-off test that expects 404). Live Docker: none beyond that.
-- Docs: `docs/load-balancing.md` (162 lines).
+- Docs: `docs/load-balancing.md`.
 - Real infra: none found.
 - Label: hide-behind-flag. Multi-replica routing is built on embedded Caddy and verified on one machine only.
 
@@ -101,18 +101,18 @@ Test counts are `*_test.go` files in the named directory. "CLI" and "web" list t
 - Unit: `internal/pipeline/` (14 files, including `engine_test.go`, `definition_test.go`, `trigger_event_test.go`, `pathtrigger_test.go`, `sync_test.go`); API `pipelines_test.go`, `pipelines_events_ci_test.go`, `pipelines_iam_test.go`, `pipelines_sync_test.go`; CLI `pipelines_test.go`, `pipelines_all_test.go`, `pipelines_sync_test.go`; web has six `Pipeline*.test.tsx` files.
 - Live Docker: `internal/pipeline/live_test.go` runs a two-job pipeline with artifact handoff and a failing step, then checks nothing leaks.
 - E2E: `test/e2e/pipeline_run_test.go` (`TestPipelineRun_Live`).
-- Docs: `docs/pipelines.md` (369 lines).
+- Docs: `docs/pipelines.md`.
 - Real infra: none found.
 - Label: stable.
 
 ### Notification channels (all 18)
 
-Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat, webpush. That is 18, matching the README and comparison count. `webpush` (browser push, `internal/webpush/`) is the newest and the only kind whose destination isn't an operator-supplied URL: it fans out to every registered browser subscription instead.
+Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat, webpush. That is 18, matching the README and comparison count. `webpush` (browser push, `internal/webpush/`) is the newest and the only kind whose destination isn't an operator-supplied URL: it fans out to every registered browser subscription instead.
 
 - Unit: `internal/alerting/` (28 files). Payload tests live in `notify_test.go` (`TestNotifyTelegram_PostsChatIDAndText`, `TestNotifyResend_PostsAuthHeaderAndPayload`, `TestNotifyOpsgenie_PostsAuthHeaderAndPayload`) and `TestNewNotifier_AllValidKinds_Recognized` (`notify_test.go:1095`). That table test covers a subset of the kinds, so the rest rely on their own payload tests, and coverage is thinnest for pushover, pagerduty and teams.
 - API `notification_channels_test.go`; CLI: no dedicated channel test file found; email retry tests at `notify_test.go:569-629`.
 - E2E: none. Every test posts to an `httptest` server.
-- Docs: covered in `docs/integrations.md` and `docs/observability.md`. `docs/integrations.md` is 45 lines.
+- Docs: covered in `docs/integrations.md` and `docs/observability.md`.
 - Real infra: none found. No test sends to a real Slack, PagerDuty, SMTP or other vendor.
 - Label: beta. Run a manual send test per vendor before calling any of them stable.
 
@@ -121,7 +121,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - Unit: `internal/network/` (13 files), `internal/agent/` (about 20 files including `grpc_transport_test.go`, `pki_test.go`, `renew_test.go`, `mesh_dispatch_test.go`), `cmd/levelrail/mesh_test.go` (skips without Docker); CLI `nodes_*_test.go` (about 14 files); reconcile `internal/reconcile/mesh/controller_test.go`.
 - Live Docker: `internal/agent/live_test.go`, `internal/agent/build_live_test.go`, `internal/reconcile/application/placement_live_test.go`.
 - E2E: `test/e2e/node_placement_test.go`. Its own header says one Docker daemon cannot exercise the NodeID-to-remote-agent resolution and that it only proves each controller uses the runtime it was built with.
-- Docs: `docs/multi-node.md` (542 lines).
+- Docs: `docs/multi-node.md`.
 - Real infra: the join flow was verified against two real agent processes, each with its own real Docker daemon (separate `docker:27-dind` containers), running against a real control plane binary. Enrollment, cordon, drain with actual container relocation between the two daemons, and explicit node-id placement pinning all behaved as documented; this also surfaced a real gap, now noted in `docs/multi-node.md`, where a control plane started without `APP_AGENT_ADVERTISE_HOST` set lets enrollment succeed but leaves the node stuck at `pending` on a TLS hostname mismatch. This was not run across a real WAN or a second physical host, and the WireGuard mesh itself is unchanged: `internal/network/device_test.go:3-11` still runs against fakes because real encryption "needs two real hosts and root", and the mesh's remote arm (`internal/network.ConfigSink`) does not span nodes yet.
 - Label: beta. Single node is the stable promise. Multi-node enrollment now has a documented real verification behind it, but the mesh and cross-host remote transport are still unverified, so the area stays beta.
 
@@ -129,7 +129,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 
 - Unit: `internal/iac/` (4 files: `fake_test.go`, `filter_test.go`, `iac_test.go`, `schema_file_test.go`) against 17 source files; API `iac_test.go`, `platform_import_test.go`; CLI `apply_test.go`, `apply_vars_test.go`, `import_platform_test.go`; MCP `tools_iac_test.go`; web `IacPlanView.test.tsx`, `PlatformImportCard.test.tsx`.
 - E2E: `test/e2e/iac_apply_test.go` (`TestIaCApply_Live_ExportPlanApplyRoundTrip`, plus a gate-off test that expects 404). Live Docker: none beyond that.
-- Docs: `docs/platform-as-code.md` (419 lines), `docs/app-spec-reference.md`, `docs/schemas/`.
+- Docs: `docs/platform-as-code.md`, `docs/app-spec-reference.md`, `docs/schemas/`.
 - Real infra: none found.
 - Label: hide-behind-flag. The apply path can change many resources in one run, so it stays opt-in until it has more real-world runs.
 
@@ -148,7 +148,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: `test/e2e/pitr_test.go` (real API, real reconciler, MinIO bucket, marker-row restore), `test/e2e/reconcile/database_test.go` (Redis reconcile only, `TestDatabase_Live_RedisReconcile`).
 - Docs: `docs/backups-and-storage.md`, `docs/managing-databases.md`, `docs/control-plane-backup.md`, `docs/disaster-recovery.md`. `docs/roadmap.md` notes PITR is "Live-Docker-verified end to end".
 - Real infra: none found. The real S3 and R2 test is skipped in CI (see [log archive](/log-archive)).
-- Label: stable for PITR and dump/restore/verify on Postgres. Other engines (eight are defined in `internal/store/database.go:16-23`) only have the Redis e2e, so treat them as beta until each has a live restore run.
+- Label: stable for PITR and dump/restore/verify on Postgres. Other engines (13 are defined as constants in `internal/store/database.go`) only have the Redis e2e, so treat them as beta until each has a live restore run.
 
 ### Cloudflare tunnel
 
@@ -162,7 +162,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 
 - Unit: `internal/store/deploy_approval_test.go`, `internal/api/deploy_approvals_test.go`, `deploy_approval_safety_test.go`, `deploys_test.go`; CLI `apps_deploys_control_test.go`.
 - E2E: `test/e2e/protected_environment_test.go` (`TestProtectedEnvironment_Live_DeployBlockedThenAllowed`): two cookie sessions, same-actor approval rejected, container untouched until a different user approves.
-- Docs: `docs/deploy-safety.md` (188 lines).
+- Docs: `docs/deploy-safety.md`.
 - Real infra: none found.
 - Label: stable.
 
@@ -178,7 +178,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 
 - Unit: `internal/preview/` (13 files, for example `manager_test.go`, `retention_test.go`, `sqlstore_test.go`); `internal/webhook/pull_request_test.go`; API `preview_test.go`, `preview_comment_test.go`; CLI `apps_previews_test.go`, `apps_previews_policy_test.go`, `preview_mode_test.go`; web `PreviewPolicyCard.test.tsx`, `PreviewSettingsCard.test.tsx`, `PreviewEnvironmentsCard.test.tsx`.
 - E2E: `test/e2e/preview_environments_github_test.go` and `preview_environments_gitlab_bitbucket_test.go` (open, synchronize, close lifecycles through real webhook handlers).
-- Docs: `docs/deploy-previews.md` (169 lines).
+- Docs: `docs/deploy-previews.md`.
 - Real infra: none found. Payloads are synthetic. Recent hardening (`13a50c33`, caps, fork approval, single comment) landed after these tests were written.
 - Label: stable for GitHub, beta for GitLab and Bitbucket.
 
@@ -186,7 +186,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 
 - Unit: `internal/store/feature_flag_test.go`, `internal/api/feature_flags_test.go`, CLI `flags_test.go` and `flagutil_test.go`, MCP `tools_new_features_test.go`.
 - E2E: none. The `flag` hits in `test/e2e/metrics_test.go` and `live_api_helpers.go` are unrelated.
-- Docs: `docs/feature-flags.md` (109 lines). This is an app-level runtime flag system. It is not a platform-level switch for hiding unfinished features. A platform-level hide mechanism does not exist yet.
+- Docs: `docs/feature-flags.md`. This is an app-level runtime flag system. It is not a platform-level switch for hiding unfinished features. A platform-level hide mechanism does not exist yet.
 - Real infra: none found.
 - Label: beta.
 
@@ -194,7 +194,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 
 - Unit: `internal/catalog/catalog_test.go` (asserts at least 180 templates, unique IDs) and `catalog_extra_test.go`; API `service_templates_test.go`; CLI `templates_test.go`; web `BrowseTemplatesFields.test.tsx`; `internal/registrycatalog/client_test.go`.
 - E2E: `test/e2e/template_fleet_test.go` (`TestTemplateFleet_Live_DeploysAndTearsDownCleanly`) deploys a diverse sample of 16 templates through the real one-click route and a real application controller, then tears them down and checks nothing leaks. Batch boot tests (`catalog_batch*_live_test.go`, `catalog_devtools_batch_live_test.go`) cover more, but not the whole catalog. `test/e2e/compose_healthcheck_test.go` covers Compose readiness generally.
-- Docs: `docs/templates-and-registry.md` (209 lines).
+- Docs: `docs/templates-and-registry.md`.
 - Real infra: none found. Only the 16 sampled templates have deploy evidence, so "works" is unverified for the rest. `docs/templates-and-registry.md` also notes GPU passthrough is not translated for GPU templates.
 - Count: 300+ entries in `internal/catalog.Templates` (359 in this build, see [Template catalog](/template-catalog)). ADR 015 cites a 339-template goal, which is not yet the shipped catalog.
 - Label: beta.
@@ -203,7 +203,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 
 - Unit: `internal/store/iam_policy_test.go`, `internal/api/iam_handlers_test.go`, `iam_test.go`, `authz_matrix_test.go`, `require_ability_for_resource_test.go`, `app_routes_iam_test.go`, `pipelines_iam_test.go`; CLI `iam_policies_test.go`.
 - E2E: `test/e2e/auth_lifecycle_test.go` (`TestAuthLifecycle_Live`) covers sessions. `test/e2e/iam_policy_enforcement_test.go` covers a session deny policy blocking a real action and a token allow policy scoping one.
-- Docs: `docs/identity-and-access.md` (529 lines), `docs/security.md`, `docs/threat-model.md`.
+- Docs: `docs/identity-and-access.md`, `docs/security.md`, `docs/threat-model.md`.
 - Real infra: none found.
 - Label: stable.
 
@@ -211,7 +211,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 
 - Unit: `internal/supplychain/` (`gate_fix_test.go`, `parse_test.go`, `service_test.go`); API `supplychain_test.go`; CLI `apps_supply_chain_test.go`; web `SupplyChainSection.test.tsx`, `SupplyChainSettingsCard.test.tsx`.
 - E2E: `test/e2e/supply_chain_test.go` (`TestSupplyChain_Live_GateBlocksAndOverrideThroughRealAPI`). Live Docker: none beyond that.
-- Docs: `docs/supply-chain.md` (94 lines). SBOM and scan are off by default.
+- Docs: `docs/supply-chain.md`. SBOM and scan are off by default.
 - Real infra: none found.
 - Label: stable, and off by default.
 
@@ -228,7 +228,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 
 - Unit: `internal/statuspage/statuspage_test.go`; API `status_page_test.go`.
 - E2E: `test/e2e/status_page_test.go` (`TestStatusPage_Live_EnableAuthorAndServePublicly`).
-- Docs: `docs/status-page.md` (95 lines). Off until enabled.
+- Docs: `docs/status-page.md`. Off until enabled.
 - Real infra: none found.
 - Label: stable.
 
@@ -238,10 +238,10 @@ These counts appear in the README, the landing page, and several guides. Re-chec
 
 | Number | Value | Source |
 | --- | --- | --- |
-| MCP tools | 156 in full mode, 146 in the default standard mode, 118 in read-only mode | `go test ./internal/mcptools -run TestToolListTokenBudget -v`, and the generated [MCP tool surface](/mcp-tool-surface) |
+| MCP tools | over 240, grouped into on-demand toolsets | The generated [MCP tool surface](/mcp-tool-surface) |
 | Notification channel kinds | 18 | `NotifyKind` constants in `internal/alerting/rules.go` |
-| Alert rule kinds | 14 | `Kind` constants in `internal/alerting/rules.go` |
-| Managed database engines | 8 | `internal/store/database.go` |
+| Alert rule kinds | 25 | `Kind` constants in `internal/alerting` |
+| Managed database engines | 9 supported; 4 more built but not yet live-verified | `internal/store/database.go`, [Managing databases](/managing-databases) |
 | Service templates | 300+ | `len(catalog.Templates)`, listed in [Template catalog](/template-catalog) |
 | Latest release | See the [releases page](https://github.com/glincker/levelrail/releases) | `.github/release-please/.release-please-manifest.json` |
 
