@@ -78,11 +78,17 @@ func run() error {
 	for _, a := range cur.Assets {
 		rel.Assets = append(rel.Assets, a.Name)
 	}
-	if idx > 0 {
-		rel.PrevTag = releases[idx-1].TagName
+	for i := idx - 1; i >= 0; i-- {
+		if sameStream(tag, releases[i].TagName) {
+			rel.PrevTag = releases[i].TagName
+			break
+		}
 	}
-	if idx+1 < len(releases) {
-		rel.NextTag = releases[idx+1].TagName
+	for i := idx + 1; i < len(releases); i++ {
+		if sameStream(tag, releases[i].TagName) {
+			rel.NextTag = releases[i].TagName
+			break
+		}
 	}
 
 	if rel.PrevTag != "" {
@@ -114,4 +120,10 @@ func run() error {
 		return fmt.Errorf("write %s: %w", out, err)
 	}
 	return nil
+}
+
+// sameStream reports whether two tags belong to the same release stream:
+// module tags such as kit/v0.3.0 are never the neighbour of a platform tag.
+func sameStream(a, b string) bool {
+	return strings.Contains(a, "/") == strings.Contains(b, "/")
 }

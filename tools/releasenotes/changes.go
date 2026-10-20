@@ -21,6 +21,14 @@ type Change struct {
 	ReleaseNote string
 	// NoteNone marks a PR whose author wrote NONE as its release note.
 	NoteNone bool
+	// Areas are the rows of the PR body's "Area | What users get" table.
+	Areas []Area
+}
+
+// Area is one row of a release PR's summary table.
+type Area struct {
+	Name string
+	Text string
 }
 
 // Section is a group of changes rendered under one heading.
@@ -109,6 +117,7 @@ func (c *Change) ApplyPR(body, author string, labels []string) {
 		c.Author = author
 	}
 	c.ReleaseNote, c.NoteNone = ExtractReleaseNote(body)
+	c.Areas = ExtractAreas(body)
 	if note := BreakingNote(body); note != "" {
 		c.Breaking = true
 		if c.BreakingNote == "" {
@@ -217,4 +226,33 @@ func Breaking(changes []Change) []Change {
 		}
 	}
 	return out
+}
+
+// ExtractAreas reads the rows of a two column markdown table whose header is
+// "Area | ..." so a squashed release branch can list what it contains.
+func ExtractAreas(body string) []Area {
+	var areas []Area
+	in := false
+	for _, line := range strings.Split(strings.ReplaceAll(body, "\r\n", "\n"), "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "|") {
+			if in {
+				break
+			}
+			continue
+		}
+		cells := strings.Split(strings.Trim(line, "|"), "|")
+		if len(cells) < 2 {
+			continue
+		}
+		name, text := strings.TrimSpace(cells[0]), strings.TrimSpace(strings.Join(cells[1:], "|"))
+		switch {
+		case strings.EqualFold(name, "area"):
+			in = true
+		case !in, strings.Trim(name, "-: ") == "":
+		case name != "" && text != "":
+			areas = append(areas, Area{Name: name, Text: text})
+		}
+	}
+	return areas
 }
