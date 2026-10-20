@@ -22,11 +22,31 @@ const (
 	OAuthErrSigninFailed        = "signin_failed"
 	OAuthErrInternal            = "internal_error"
 	OAuthErrRedirectUnavailable = "redirect_unavailable"
+	OAuthErrNotProvisioned      = "sso_not_provisioned"
+	OAuthErrDryRunComplete      = "sso_test_complete"
 
 	sessionCookieName = cookieName
 )
 
 type flowKey struct{}
+
+type dryRunKey struct{}
+
+// WithDryRun marks a callback as a test login: the sign-in stops after the
+// identity provider answered, reports what it saw, and creates nothing.
+func WithDryRun(ctx context.Context) context.Context {
+	return context.WithValue(ctx, dryRunKey{}, true)
+}
+
+// OAuthIdentityFacts is what the identity provider asserted, as read from a
+// verified token or userinfo. It carries no token.
+type OAuthIdentityFacts struct {
+	Provider       string
+	ProviderUserID string
+	Email          string
+	EmailVerified  bool
+	Claims         IDTokenClaims
+}
 
 // oauthFlow records what the provider adapter saw during one library request,
 // because the library only answers a generic failure.
@@ -36,6 +56,42 @@ type oauthFlow struct {
 	exchangeCalled bool
 	provider       string
 	providerUserID string
+	dryRun         bool
+	idToken        string
+	facts          OAuthIdentityFacts
+}
+
+// setVerifiedIDToken keeps the ID token of a successful nonce exchange, the
+// only token whose claims a sign-in may read.
+func (f *oauthFlow) setVerifiedIDToken(t string) {
+	if f == nil {
+		return
+	}
+	f.mu.Lock()
+	f.idToken = t
+	f.mu.Unlock()
+}
+
+func (f *oauthFlow) verifiedIDToken() string {
+	if f == nil {
+		return ""
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.idToken
+}
+
+func (f *oauthFlow) isDryRun() bool {
+	return f != nil && f.dryRun
+}
+
+func (f *oauthFlow) record(facts OAuthIdentityFacts) {
+	if f == nil {
+		return
+	}
+	f.mu.Lock()
+	f.facts = facts
+	f.mu.Unlock()
 }
 
 func flowFrom(ctx context.Context) *oauthFlow {
@@ -85,6 +141,8 @@ type OAuthOutcome struct {
 	// Provider and ProviderUserID identify the external account on success.
 	Provider       string
 	ProviderUserID string
+	// Facts is what the provider asserted, set on a success and on a dry run.
+	Facts OAuthIdentityFacts
 }
 
 type captureWriter struct {
@@ -113,7 +171,7 @@ func (c *captureWriter) Write(b []byte) (int, error) {
 }
 
 func (e *Engine) drive(r *http.Request, route, provider string) (OAuthOutcome, *oauthFlow) {
-	flow := &oauthFlow{}
+	flow := &oauthFlow{dryRun: r.Context().Value(dryRunKey{}) == true}
 	r2 := r.Clone(context.WithValue(r.Context(), flowKey{}, flow))
 	r2.URL.Path = e.prefix + "/providers/" + provider + "/" + route
 	r2.URL.RawPath = ""
@@ -160,7 +218,7 @@ func (e *Engine) OAuthCallback(r *http.Request, provider string) OAuthOutcome {
 	out, flow := e.drive(r, "callback", provider)
 	flow.mu.Lock()
 	defer flow.mu.Unlock()
-	out.Provider, out.ProviderUserID = flow.provider, flow.providerUserID
+	out.Provider, out.ProviderUserID, out.Facts = flow.provider, flow.providerUserID, flow.facts
 	if out.Status == http.StatusFound && out.SessionCookie != nil {
 		if flow.provider == "" || flow.providerUserID == "" {
 			out.ErrorCode = OAuthErrInternal

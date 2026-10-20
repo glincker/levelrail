@@ -2,8 +2,15 @@ package store
 
 import (
 	"context"
+	"reflect"
 	"testing"
 )
+
+// withoutPolicy drops the SSO policy so client settings compare with ==.
+func withoutPolicy(s OAuthProviderSettings) OAuthProviderSettings {
+	s.SSOPolicy = OAuthSSOPolicy{}
+	return s
+}
 
 func TestGetOAuthProviderSettings_SeededDefault(t *testing.T) {
 	db := openTestDB(t)
@@ -15,7 +22,7 @@ func TestGetOAuthProviderSettings_SeededDefault(t *testing.T) {
 			t.Fatalf("GetOAuthProviderSettings(%q) error = %v", provider, err)
 		}
 		want := OAuthProviderSettings{Provider: provider}
-		if got != want {
+		if !reflect.DeepEqual(withoutPolicy(got), want) {
 			t.Errorf("GetOAuthProviderSettings(%q) = %+v, want %+v", provider, got, want)
 		}
 	}
@@ -39,7 +46,7 @@ func TestUpdateAndGetOAuthProviderSettings_RoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetOAuthProviderSettings() error = %v", err)
 	}
-	if got != want {
+	if !reflect.DeepEqual(withoutPolicy(got), want) {
 		t.Errorf("GetOAuthProviderSettings() = %+v, want %+v", got, want)
 	}
 
@@ -97,7 +104,7 @@ func TestUpdateAndGetOAuthProviderSettings_OIDCFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetOAuthProviderSettings() error = %v", err)
 	}
-	if got != want {
+	if !reflect.DeepEqual(withoutPolicy(got), want) {
 		t.Errorf("GetOAuthProviderSettings() = %+v, want %+v", got, want)
 	}
 }
@@ -105,5 +112,43 @@ func TestUpdateAndGetOAuthProviderSettings_OIDCFields(t *testing.T) {
 func TestOAuthProviderSecretsKey(t *testing.T) {
 	if got, want := OAuthProviderSecretsKey("google"), "oauth-provider/google"; got != want {
 		t.Errorf("OAuthProviderSecretsKey(google) = %q, want %q", got, want)
+	}
+}
+
+func TestOAuthSSOPolicy_DefaultsAreLeastPrivilege(t *testing.T) {
+	db := openTestDB(t)
+	got, err := db.GetOAuthProviderSettings(context.Background(), OAuthProviderOIDC)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := OAuthSSOPolicy{GroupsClaim: "groups", DefaultRoleID: "role_viewer", AllowedDomains: []string{}}
+	if !reflect.DeepEqual(got.SSOPolicy, want) {
+		t.Errorf("default policy = %+v, want %+v", got.SSOPolicy, want)
+	}
+}
+
+func TestOAuthSSOPolicy_RoundTripKeepsClientSettings(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	client := OAuthProviderSettings{Provider: OAuthProviderOIDC, Enabled: true, ClientID: "c", IssuerURL: "https://idp.test"}
+	if err := db.UpdateOAuthProviderSettings(ctx, client); err != nil {
+		t.Fatal(err)
+	}
+	want := OAuthSSOPolicy{GroupsClaim: "roles", SyncRoles: true, DefaultRoleID: "role_operator", JITProvisioning: true, AllowedDomains: []string{"corp.test"}}
+	if err := db.SetOAuthSSOPolicy(ctx, OAuthProviderOIDC, want); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpdateOAuthProviderSettings(ctx, client); err != nil {
+		t.Fatal(err)
+	}
+	got, err := db.GetOAuthProviderSettings(ctx, OAuthProviderOIDC)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got.SSOPolicy, want) {
+		t.Errorf("policy = %+v, want %+v (a client settings update must not reset it)", got.SSOPolicy, want)
+	}
+	if err := db.SetOAuthSSOPolicy(ctx, "nope", want); err == nil {
+		t.Error("SetOAuthSSOPolicy on a missing provider succeeded")
 	}
 }

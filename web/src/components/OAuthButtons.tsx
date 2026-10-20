@@ -9,6 +9,7 @@ import { isFeatureVisible } from '../lib/experimental'
 import { brandKeyFor } from '../lib/oauthProviders'
 import { BrandTile } from './BrandLogoBadge'
 import { Button } from './ui/button'
+import { SSOEmailRoute } from './SSOEmailRoute'
 
 const PROVIDER_NAMES: Record<string, string> = {
   google: 'Google',
@@ -69,6 +70,7 @@ export function OAuthButtons() {
         {t('foundation.signIn.or')}
         <span className="h-px flex-1 bg-border" />
       </div>
+      {samlOn ? <SSOEmailRoute /> : null}
       {samlProviders.map((p) => (
         <Button
           key={p.id}

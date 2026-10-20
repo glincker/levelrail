@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -64,6 +65,8 @@ func (rt *Router) attachSSO(s Store) {
 	rt.scimTokenLimiter = newWindowRateLimiter(envInt(envSCIMRequestsPerToken, defaultSCIMRequestsPerToken), time.Minute)
 	rt.samlLimiter = newWindowRateLimiter(envInt(envSAMLRatePerMinute, defaultSAMLRatePerMinute), time.Minute)
 	rt.samlFlows = newSAMLFlowStore()
+	rt.ssoTests = newSSOTestStore()
+	rt.ssoRouteLimiter = newSSORouteLimiter()
 	if rt.authEngine != nil {
 		rt.scimLib = rt.authEngine.SCIMHandler(scimBasePath)
 	}
@@ -162,25 +165,32 @@ func resolveSSORole(groups []string, mappings []store.SSOGroupMapping) (string, 
 
 // emailDomainAllowed reports whether email is in one of domains; an empty list allows all.
 func emailDomainAllowed(email string, domains []string) bool {
-	if len(domains) == 0 {
-		return true
-	}
-	at := strings.LastIndexByte(email, '@')
-	if at < 0 {
-		return false
-	}
-	host := strings.ToLower(email[at+1:])
-	for _, d := range domains {
-		if strings.EqualFold(strings.TrimPrefix(strings.TrimSpace(d), "@"), host) {
-			return true
-		}
-	}
-	return false
+	return authengine.EmailDomainAllowed(email, domains)
 }
 
-// applySSORole moves a user to roleID unless that would strip root from the
-// last root user, which is kept so directory drift can never lock out the instance.
+// errSSORoleGrantsRoot is returned when a claim or mapping would hand out root.
+var errSSORoleGrantsRoot = errors.New("a sign-in claim cannot grant a role that holds root")
+
+// ssoGrantableRole loads roleID and refuses one that holds root: only a
+// person with root can grant root, never an assertion or a claim.
+func (rt *Router) ssoGrantableRole(ctx context.Context, roleID string) error {
+	role, err := rt.roles.GetRole(ctx, roleID)
+	if err != nil {
+		return fmt.Errorf("sso role %q: %w", roleID, err)
+	}
+	if slices.Contains(role.Abilities, AbilityRoot) {
+		return errSSORoleGrantsRoot
+	}
+	return nil
+}
+
+// applySSORole moves a user to roleID. A user who holds root is never changed
+// by SSO, and a role that holds root is never granted.
 func (rt *Router) applySSORole(ctx context.Context, user store.User, roleID string) (store.User, error) {
+	if slices.Contains(user.Abilities, AbilityRoot) {
+		rt.logger.Warn("api: sso: left a root user's role alone", slog.String("user_id", user.ID))
+		return user, nil
+	}
 	current, err := rt.roles.UserRoleID(ctx, user.ID)
 	if err != nil {
 		return store.User{}, err
@@ -188,19 +198,8 @@ func (rt *Router) applySSORole(ctx context.Context, user store.User, roleID stri
 	if current == roleID {
 		return user, nil
 	}
-	role, err := rt.roles.GetRole(ctx, roleID)
-	if err != nil {
-		return store.User{}, fmt.Errorf("sso role %q: %w", roleID, err)
-	}
-	if slices.Contains(user.Abilities, AbilityRoot) && !slices.Contains(role.Abilities, AbilityRoot) {
-		others, err := rt.roles.CountRootUsersExcept(ctx, user.ID)
-		if err != nil {
-			return store.User{}, err
-		}
-		if others == 0 {
-			rt.logger.Warn("api: sso: kept root on the last root user", slog.String("user_id", user.ID), slog.String("role_id", roleID))
-			return user, nil
-		}
+	if err := rt.ssoGrantableRole(ctx, roleID); err != nil {
+		return store.User{}, err
 	}
 	if err := rt.roles.SetUserRole(ctx, user.ID, roleID); err != nil {
 		return store.User{}, err

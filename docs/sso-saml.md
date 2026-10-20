@@ -6,7 +6,7 @@ description: "Sign in through Okta, Microsoft Entra ID, Keycloak or any SAML 2.0
 
 > **Beta, off by default.** SAML sign-in and [SCIM provisioning](scim.md) sit behind the `saml-scim` beta feature: turn it on under **Settings, Beta features** or with `APP_EXPERIMENTAL=saml-scim`. While off, the routes answer `404`, the settings page and the sign-in button are hidden, and a "require single sign-on" setting is not applied. The service provider is built on the sign-in library; Levelrail adds a stricter response check, account policy and role mapping around it. It is tested against a signing test identity provider, not yet against a live Okta, Entra ID or Keycloak tenant (see [What has not been verified](#what-has-not-been-verified)).
 
-Connect one or more SAML 2.0 identity providers (IdPs). Each enabled connection adds a button to the sign-in page. Directory groups can decide each person's role, and you can require single sign-on for everyone except root users.
+Connect one or more SAML 2.0 identity providers (IdPs). For OpenID Connect and OAuth providers see [OAuth and OIDC single sign-on](sso-oidc.md), which has the same group, role and account controls. Each enabled connection adds a button to the sign-in page. Directory groups can decide each person's role, and you can require single sign-on for everyone except root users.
 
 <InlineToc default-open />
 
@@ -89,11 +89,11 @@ The sign-in library groups SAML connections, SCIM tokens and directory users und
 Map IdP groups to stored roles under **Group to role mappings**, or:
 
 ```bash
-levelrail-cli sso mappings set --map Admins=role_admin:100 --map Engineering=role_operator:10 --map everyone=role_viewer
+levelrail-cli sso mappings set --map Engineering=role_operator:10 --map everyone=role_viewer
 levelrail-cli sso mappings list
 ```
 
-The highest priority group the person belongs to decides the role. Group names match case-insensitively. A person in no mapped group gets the connection's default role. With **Apply the mapped role on every sign-in** (`--sync-roles`), the role is re-applied at each sign-in, so a group change at the IdP takes effect at the next one. With sync on and no default role, a person in no mapped group is refused. The last root user is never demoted by a mapping, so directory drift cannot lock the instance out. The same mappings drive [SCIM provisioning](scim.md) groups.
+The highest priority group the person belongs to decides the role. Group names match case-insensitively. A person in no mapped group gets the connection's default role. With **Apply the mapped role on every sign-in** (`--sync-roles`), the role is re-applied at each sign-in, so a group change at the IdP takes effect at the next one. With sync on and no default role, a person in no mapped group is refused. A mapping cannot name a role that holds root: only a person with root can grant it, so an assertion never can. A user who already holds root is never changed by role sync, so directory drift cannot lock the instance out. The same mappings drive [SCIM provisioning](scim.md) groups and [OAuth and OIDC sign-in](sso-oidc.md).
 
 The groups attribute defaults to `http://schemas.xmlsoap.org/claims/Group`, the email attribute to `http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress` and the name attribute to `http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name`. Set the attribute names on the connection when your IdP sends something else (for example `email` and `groups`).
 

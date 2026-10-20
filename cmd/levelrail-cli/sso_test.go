@@ -1,6 +1,12 @@
 package main
 
-import "testing"
+import (
+	"flag"
+	"reflect"
+	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
+)
 
 func TestParseSSOMapping(t *testing.T) {
 	for _, tc := range []struct {
@@ -25,5 +31,22 @@ func TestParseSSOMapping(t *testing.T) {
 		if !tc.wantErr && (m.Group != tc.group || m.RoleID != tc.role || m.Priority != tc.prio) {
 			t.Fatalf("%q: got %+v", tc.in, m)
 		}
+	}
+}
+
+func TestOIDCPolicyFlagsOverwriteOnlyGivenFlags(t *testing.T) {
+	var f oidcPolicyFlags
+	fs := flag.NewFlagSet("t", flag.ContinueOnError)
+	f.register(fs)
+	if err := fs.Parse([]string{"--jit=false", "--allowed-domains", "a.test, b.test"}); err != nil {
+		t.Fatal(err)
+	}
+	req := apiclient.OAuthSSOPolicyRequest{GroupsClaim: "roles", SyncRoles: true, DefaultRoleID: "role_operator", JITProvisioning: true}
+	f.apply(fs, &req)
+	if req.JITProvisioning || !req.SyncRoles || req.GroupsClaim != "roles" || req.DefaultRoleID != "role_operator" {
+		t.Errorf("only the given flags may change the policy: %+v", req)
+	}
+	if !reflect.DeepEqual(req.AllowedDomains, []string{"a.test", "b.test"}) {
+		t.Errorf("domains = %v", req.AllowedDomains)
 	}
 }

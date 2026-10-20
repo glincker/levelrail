@@ -24,6 +24,8 @@ var (
 	errUserInfoIncomplete = errors.New("authengine: provider returned no subject or email")
 	errEmailInUse         = errors.New("authengine: email belongs to an existing account")
 	errDomainNotAllowed   = errors.New("authengine: email domain not allowed")
+	errNotProvisioned     = errors.New("authengine: no account for this identity and provisioning is off")
+	errDryRun             = errors.New("authengine: test sign-in stopped before creating anything")
 )
 
 // gatedProvider wraps a library provider to keep the in-house sign-in rules:
@@ -75,6 +77,9 @@ func (g *gatedNonceProvider) ExchangeCodeWithNonce(ctx context.Context, code, ve
 		flowFrom(ctx).fail(OAuthErrExchangeFailed)
 		return nil, err
 	}
+	if tok != nil {
+		flowFrom(ctx).setVerifiedIDToken(tok.IDToken)
+	}
 	return tok, nil
 }
 
@@ -85,13 +90,27 @@ func (g *gatedProvider) UserInfo(ctx context.Context, tok *theauth.ProviderToken
 		flow.fail(OAuthErrUserInfoFailed)
 		return nil, err
 	}
+	facts := OAuthIdentityFacts{Provider: g.Name(), ProviderUserID: info.ID, Email: info.Email,
+		EmailVerified: info.EmailVerified || emailVerifiedByProvider(g.Name())}
+	if idToken := flow.verifiedIDToken(); idToken != "" {
+		facts.Claims = ReadIDTokenClaims(idToken, g.settings.SSOPolicy.GroupsClaim)
+	}
+	flow.record(facts)
+	if flow.isDryRun() {
+		flow.fail(OAuthErrDryRunComplete)
+		return nil, errDryRun
+	}
 	if info.ID == "" || info.Email == "" {
 		flow.fail(OAuthErrUserInfoFailed)
 		return nil, errUserInfoIncomplete
 	}
-	if !info.EmailVerified && !emailVerifiedByProvider(g.Name()) {
+	if !facts.EmailVerified {
 		flow.fail(OAuthErrUserInfoFailed)
 		return nil, fmt.Errorf("authengine: %s email is not verified", g.Name())
+	}
+	if !EmailDomainAllowed(info.Email, g.settings.SSOPolicy.AllowedDomains) {
+		flow.fail(OAuthErrDomainNotAllowed)
+		return nil, errDomainNotAllowed
 	}
 	if err := g.rt.checkSignup(ctx, g.Name(), g.settings, info); err != nil {
 		switch {
@@ -99,6 +118,8 @@ func (g *gatedProvider) UserInfo(ctx context.Context, tok *theauth.ProviderToken
 			flow.fail(OAuthErrEmailInUse)
 		case errors.Is(err, errDomainNotAllowed):
 			flow.fail(OAuthErrDomainNotAllowed)
+		case errors.Is(err, errNotProvisioned):
+			flow.fail(OAuthErrNotProvisioned)
 		}
 		return nil, err
 	}
@@ -203,6 +224,9 @@ func (rt *oauthRuntime) checkSignup(ctx context.Context, provider string, s stor
 		}
 		return nil
 	}
+	if !s.SSOPolicy.JITProvisioning {
+		return errNotProvisioned
+	}
 	if s.AllowedEmailDomain != "" && !emailInDomain(email, s.AllowedEmailDomain) {
 		return errDomainNotAllowed
 	}
@@ -219,6 +243,24 @@ func (rt *oauthRuntime) exists(ctx context.Context, query string, args ...any) (
 		return false, fmt.Errorf("authengine: oauth signup check: %w", err)
 	}
 	return true, nil
+}
+
+// EmailDomainAllowed reports whether email is in one of domains; an empty list allows all.
+func EmailDomainAllowed(email string, domains []string) bool {
+	if len(domains) == 0 {
+		return true
+	}
+	at := strings.LastIndexByte(email, '@')
+	if at < 0 {
+		return false
+	}
+	host := email[at+1:]
+	for _, d := range domains {
+		if strings.EqualFold(strings.TrimPrefix(strings.TrimSpace(d), "@"), host) {
+			return true
+		}
+	}
+	return false
 }
 
 func emailInDomain(email, domain string) bool {

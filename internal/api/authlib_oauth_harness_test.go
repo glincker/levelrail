@@ -30,6 +30,8 @@ type oauthHarness struct {
 	secrets *fakeOAuthSecrets
 	key     []byte
 	jar     map[string]*http.Cookie
+	// adminCookie is a root dashboard session, made on first use.
+	adminCookie *http.Cookie
 }
 
 func newOAuthHarness(t *testing.T, mode string) *oauthHarness {
@@ -72,6 +74,14 @@ func (h *oauthHarness) enable(provider, allowedDomain string) {
 		s.IssuerURL = h.idp.Issuer()
 	}
 	if err := h.db.UpdateOAuthProviderSettings(ctx, s); err != nil {
+		h.t.Fatal(err)
+	}
+	h.setPolicy(provider, store.OAuthSSOPolicy{GroupsClaim: "groups", DefaultRoleID: defaultOIDCRoleID, JITProvisioning: true})
+}
+
+func (h *oauthHarness) setPolicy(provider string, p store.OAuthSSOPolicy) {
+	h.t.Helper()
+	if err := h.db.SetOAuthSSOPolicy(context.Background(), provider, p); err != nil {
 		h.t.Fatal(err)
 	}
 }

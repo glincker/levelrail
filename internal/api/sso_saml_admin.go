@@ -157,6 +157,15 @@ func (rt *Router) applySAMLRequest(ctx context.Context, c *store.SSOConnection, 
 			return store.SSODraft{}, http.StatusBadRequest, errors.New("default_role_id does not name a stored role")
 		}
 	}
+	for _, d := range domains {
+		owner, err := rt.ssoDomainOwner(ctx, d, ssoKindSAML, c.ID)
+		if err != nil {
+			return store.SSODraft{}, http.StatusInternalServerError, errors.New("internal error")
+		}
+		if owner != "" {
+			return store.SSODraft{}, http.StatusConflict, errors.New("allowed_domains: " + d + " is already claimed by " + owner)
+		}
+	}
 	c.Name, c.Enabled, c.IDPMetadataURL = name, req.Enabled, strings.TrimSpace(req.IDPMetadataURL)
 	c.AllowedDomains, c.JITProvisioning, c.DefaultRoleID, c.SyncRoles = domains, req.JITProvisioning, req.DefaultRoleID, req.SyncRoles
 	return b, 0, nil

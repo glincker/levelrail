@@ -80,6 +80,9 @@ func (rt *Router) samlProvision(ctx context.Context, c store.SSOConnection, iden
 	if roleID == "" {
 		return samlPlan{}, samlErrNoRole, nil
 	}
+	if err := rt.ssoGrantableRole(ctx, roleID); errors.Is(err, errSSORoleGrantsRoot) {
+		return samlPlan{}, samlErrNoRole, err
+	}
 	id, err := randomOpaqueID("user_")
 	if err != nil {
 		return samlPlan{}, samlErrInternal, err
@@ -123,6 +126,9 @@ func (rt *Router) samlSettleUser(ctx context.Context, c store.SSOConnection, pla
 		return store.User{}, samlErrNoRole, nil
 	}
 	synced, err := rt.applySSORole(ctx, *user, plan.desiredRole)
+	if errors.Is(err, errSSORoleGrantsRoot) {
+		return store.User{}, samlErrNoRole, err
+	}
 	if err != nil {
 		return store.User{}, samlErrInternal, err
 	}

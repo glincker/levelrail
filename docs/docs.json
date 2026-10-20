@@ -277,6 +277,7 @@
               "promotions-and-releases",
               "identity-and-access",
               "sso-saml",
+              "sso-oidc",
               "scim",
               "session-policy",
               "projects-and-organizations"

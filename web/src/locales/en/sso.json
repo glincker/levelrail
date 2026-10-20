@@ -170,5 +170,80 @@
     "summarySessionsReject_other": "{{count}} sessions, then refuse",
     "summaryAllow_one": "{{count}} network",
     "summaryAllow_other": "{{count}} networks"
+  },
+  "oidc": {
+    "title": "OAuth and OIDC sign-in",
+    "description": "The same controls as SAML for the providers you enabled under Settings, OAuth sign-in: which groups earn which role, whether a first sign-in creates an account, and which email domains may sign in.",
+    "emptyTitle": "No OAuth or OIDC provider yet",
+    "emptyBody": "Enable a provider under Settings, OAuth sign-in. It shows up here with its sign-in policy.",
+    "syncBadge": "Syncs roles",
+    "state": {
+      "enabled": "Enabled",
+      "off": "Off"
+    },
+    "form": {
+      "title": "Sign-in policy for {{name}}",
+      "sheetDescription": "Group to role mappings are shared with SAML and directory sync: edit them in the mappings card on this page.",
+      "access": {
+        "title": "Access",
+        "description": "Least privilege by default: unknown people are refused, and nobody gets more than the role you pick here."
+      },
+      "jit": "Create an account on first sign-in",
+      "jitHelp": "Off: someone with no account here is refused unless you invited them first. On: the first sign-in creates an account with the mapped role, or the default role.",
+      "syncRoles": "Reapply the mapped role on every sign-in",
+      "syncRolesHelp": "Off: a role is only set when the account is created. On: it follows the groups at each sign-in, and downgrades are written to the audit log. Root users are never changed.",
+      "defaultRole": "Default role",
+      "defaultRoleHelp": "For people none of the mappings match. A role that holds root is never offered: a sign-in claim cannot grant it.",
+      "domains": "Allowed email domains",
+      "domainsHelp": "Comma separated, for example example.com. Only these domains can sign in, and the sign-in page sends them to this provider. Empty allows any domain and turns routing off.",
+      "groups": {
+        "title": "Groups",
+        "description": "Where this provider says which groups a person is in.",
+        "unsupported": "This provider sends no verified ID token to read groups from, so everyone gets the default role. Use the generic OpenID Connect provider with your identity provider to map groups."
+      },
+      "groupsClaim": "Groups claim",
+      "groupsClaimHelp": "The ID token claim that lists group names, for example groups, roles or realm_access.roles. Only the signed ID token is read.",
+      "save": "Save policy",
+      "saved": "Sign-in policy saved"
+    },
+    "test": {
+      "button": "Test login",
+      "hint": "A test login signs you in at the provider and shows what a sign-in would do. It creates no account, role or session. Save your changes first.",
+      "allowed": "This sign-in would be allowed",
+      "refused": "This sign-in would be refused",
+      "groups": "Groups",
+      "noGroups": "none",
+      "role": "Role",
+      "source": {
+        "mapping": "from a group mapping",
+        "default": "the default role"
+      },
+      "account": "Account",
+      "accountState": {
+        "linked": "already linked",
+        "existing_by_email": "existing account matched by email",
+        "new_account": "a new account would be created",
+        "not_provisioned": "none, and account creation is off"
+      },
+      "issue": {
+        "no_groups_claim": "The ID token has no \"{{claim}}\" claim, so everyone gets the default role. Add a groups claim to the ID token at your identity provider.",
+        "wrong_claim_name": "The ID token has no \"{{claim}}\" claim, but it carries a list called \"{{value}}\".",
+        "email_unverified": "The provider did not mark this email as verified, so sign-in is refused. Verify the address at the provider.",
+        "domain_not_allowed": "This email domain is not in the allowed list.",
+        "not_provisioned": "No account exists for this person and account creation is off.",
+        "role_grants_root": "The role this sign-in would get holds root, or no longer exists. A claim can never grant root.",
+        "no_email": "The provider sent no email address."
+      },
+      "fix": {
+        "set_groups_claim": "Use {{value}} as the groups claim",
+        "add_domain": "Allow {{value}}",
+        "enable_jit": "Turn on account creation"
+      },
+      "fixManual": "Fix at the identity provider",
+      "fixed": "Policy updated. Run the test again.",
+      "failedTitle": "The test login did not finish",
+      "failedBody": "The provider or the redirect failed (code {{code}}). Check the client ID, client secret and redirect URL, then try again.",
+      "nothingCreated": "Nothing was created: no account, role or session."
+    }
   }
 }

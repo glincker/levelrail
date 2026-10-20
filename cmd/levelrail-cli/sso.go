@@ -62,6 +62,8 @@ func runSSO(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 		return exitOK
 	case "saml":
 		return c.runSAML(args[1:])
+	case "oidc":
+		return c.runSSOOIDC(args[1:])
 	case "mappings":
 		return c.runSSOMappings(args[1:])
 	case "settings":
@@ -76,6 +78,9 @@ func runSSO(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 func ssoUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s sso saml list|get|create|update|delete|import-metadata|metadata   manage SAML identity providers
+  %[1]s sso oidc list|get <provider>                          show OAuth and OIDC sign-in policy
+  %[1]s sso oidc set <provider> [--jit=BOOL] [--sync-roles=BOOL] [--default-role ID] [--groups-claim NAME] [--allowed-domains a.com,b.com]
+  %[1]s sso oidc evaluate <provider> --email E [--email-verified] [--groups g1,g2]   what a sign-in would do, changes nothing
   %[1]s sso mappings list                                     show IDP group to role mappings
   %[1]s sso mappings set --map GROUP=ROLE[:PRIORITY] ...      replace every mapping
   %[1]s sso settings get                                      show SSO settings and the SP certificate

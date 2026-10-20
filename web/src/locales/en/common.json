@@ -452,7 +452,11 @@
         "sso_no_role": "Your identity provider groups do not grant access here. Ask an administrator to map one of your groups to a role.",
         "sso_no_email": "Your identity provider did not send an email address, so no account could be matched.",
         "account_disabled": "This account is disabled. Ask an administrator to restore access."
-      }
+      },
+      "ssoEmail": "Work email",
+      "ssoContinue": "Continue with SSO",
+      "ssoRouted": "Your organization signs in through {{provider}}.",
+      "ssoNoRoute": "No single sign-on is set up for that email. Sign in with your password or another option."
     },
     "banner": {
       "dismiss": "Dismiss"

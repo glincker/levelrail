@@ -1707,6 +1707,12 @@ Routes that do not fit an existing group.
 | POST | /api/v1/migration/apps/ssh/test | AbilityWriteSensitive | handleSSHTest |
 | GET | /api/v1/migration/apps/sessions/{id}/volumes/copy | AbilityRead | handleAppImportVolumeCopyStatus |
 | POST | /api/v1/migration/apps/sessions/{id}/volumes/copy | AbilityWriteSensitive | handleAppImportVolumeCopy |
+| GET | /api/v1/sso/oidc | AbilityRoot | handleListOAuthSSOPolicies |
+| GET | /api/v1/sso/oidc/{provider} | AbilityRoot | handleGetOAuthSSOPolicy |
+| PUT | /api/v1/sso/oidc/{provider} | AbilityRoot | handlePutOAuthSSOPolicy |
+| POST | /api/v1/sso/oidc/{provider}/evaluate | AbilityRoot | handleEvaluateOAuthSSO |
+| GET | /api/v1/sso/oidc/{provider}/test/start | AbilityRoot | handleStartOAuthSSOTest |
+| GET | /api/v1/sso/oidc/{provider}/test/result | AbilityRoot | handleOAuthSSOTestResult |
 
 ## See also
 

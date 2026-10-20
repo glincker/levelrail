@@ -300,7 +300,7 @@ Every registration and login challenge is single-use and expires in 5 minutes. T
 
 ### OAuth sign-in
 
-Eighteen providers are supported. Every one uses the same callback URL shape, `https://<your-dashboard-host>/api/v1/auth/oauth/<provider>/callback`, and the same flow: PKCE, single-use state, an envelope-encrypted client secret, and the link-account flow below.
+Eighteen providers are supported. Group to role mapping, account creation policy, allowed domains and sign-in by email domain are covered in [OAuth and OIDC single sign-on](/sso-oidc) (beta). Every one uses the same callback URL shape, `https://<your-dashboard-host>/api/v1/auth/oauth/<provider>/callback`, and the same flow: PKCE, single-use state, an envelope-encrypted client secret, and the link-account flow below.
 
 | Provider | Where to create the OAuth app | Scopes requested |
 | --- | --- | --- |
@@ -354,7 +354,7 @@ flowchart TD
 | Case | Result |
 | --- | --- |
 | Already-linked identity | Signs in as its existing owner. |
-| Brand-new email | Auto-provisions a user with `AbilityRead` only (never `root`, since a fresh OAuth signup is never the first user). A root user can grant more later via `PUT /api/v1/users/{id}/abilities`. |
+| Brand-new email | Refused with `sso_not_provisioned` unless the provider's **Create an account on first sign-in** is on (default off). When on, it creates a user with the mapped role or the default role (`viewer`), never a role that holds `root`. A root user can grant more later via `PUT /api/v1/users/{id}/abilities`. Providers that were enabled before this setting existed keep creating accounts. See [OAuth and OIDC single sign-on](/sso-oidc). |
 | Email already belongs to another account | Refused outright. Auto-linking would let an anonymous sign-in take over an unrelated account. |
 | Linking a provider to an existing account | Needs a live session: `GET /api/v1/auth/oauth/{provider}/link/start`. |
 | `AllowedEmailDomain` set on the provider | A new signup outside that domain is refused. |

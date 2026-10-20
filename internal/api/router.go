@@ -710,6 +710,9 @@ type Router struct {
 	samlFlows   *samlFlowStore
 	scimLib     http.Handler
 	samlLimiter *apiRateLimiter
+	// ssoTests holds test logins of OAuth providers; ssoRouteLimiter limits domain routing.
+	ssoTests        *ssoTestStore
+	ssoRouteLimiter *apiRateLimiter
 
 	publicBucketLimiter     *apiRateLimiter
 	publicBucketLimiterOnce sync.Once

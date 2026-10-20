@@ -16,55 +16,56 @@ import (
 	"github.com/GLINCKER/levelrail/kit/ids"
 )
 
-// ResolveOAuthUser returns the platform user id behind a library OAuth account.
-// A user the library created on first sign-in gets a platform user with the
-// default read ability, and the identity is mirrored so rolling back keeps it.
-func (e *Engine) ResolveOAuthUser(ctx context.Context, provider, providerUserID string) (string, error) {
+// ResolveOAuthUser returns the platform user id behind a library OAuth account
+// and whether this call created the platform user. A user the library created
+// on first sign-in gets a platform user holding newUserRoleID, and the identity
+// is mirrored so rolling back keeps it.
+func (e *Engine) ResolveOAuthUser(ctx context.Context, provider, providerUserID, newUserRoleID string) (string, bool, error) {
 	rt := e.oauth
 	if rt == nil {
-		return "", errors.New("authengine: oauth is not enabled")
+		return "", false, errors.New("authengine: oauth is not enabled")
 	}
 	var engineID string
 	err := rt.db.QueryRowContext(ctx, `
 		SELECT user_id FROM theauth_oauth_accounts WHERE provider = ? AND provider_user_id = ?`,
 		provider, providerUserID).Scan(&engineID)
 	if err != nil {
-		return "", fmt.Errorf("authengine: find oauth account: %w", err)
+		return "", false, fmt.Errorf("authengine: find oauth account: %w", err)
 	}
-	legacyID, err := rt.legacyUserFor(ctx, engineID)
+	legacyID, created, err := rt.legacyUserFor(ctx, engineID, newUserRoleID)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	identityID, err := randomID("oid_")
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	err = rt.wiring.Users.SaveOAuthIdentity(ctx, store.OAuthIdentity{
 		ID: identityID, UserID: legacyID, Provider: provider, ProviderUserID: providerUserID, CreatedAt: time.Now(),
 	})
 	if err != nil && !errors.Is(err, store.ErrOAuthIdentityAlreadyLinked) {
-		return "", fmt.Errorf("authengine: mirror oauth identity: %w", err)
+		return "", false, fmt.Errorf("authengine: mirror oauth identity: %w", err)
 	}
-	return legacyID, nil
+	return legacyID, created, nil
 }
 
-func (rt *oauthRuntime) legacyUserFor(ctx context.Context, engineID string) (string, error) {
+func (rt *oauthRuntime) legacyUserFor(ctx context.Context, engineID, roleID string) (string, bool, error) {
 	var legacyID string
 	err := rt.db.QueryRowContext(ctx, `SELECT legacy_id FROM authengine_user_map WHERE engine_id = ?`, engineID).Scan(&legacyID)
 	if err == nil {
-		return legacyID, nil
+		return legacyID, false, nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
-		return "", fmt.Errorf("authengine: look up user map: %w", err)
+		return "", false, fmt.Errorf("authengine: look up user map: %w", err)
 	}
 	var email, name, display sql.NullString
 	err = rt.db.QueryRowContext(ctx, `SELECT email, name, display_name FROM theauth_users WHERE id = ?`, engineID).Scan(&email, &name, &display)
 	if err != nil {
-		return "", fmt.Errorf("authengine: load library user %s: %w", engineID, err)
+		return "", false, fmt.Errorf("authengine: load library user %s: %w", engineID, err)
 	}
 	addr := strings.ToLower(strings.TrimSpace(email.String))
 	if addr == "" {
-		return "", fmt.Errorf("authengine: library user %s has no email", engineID)
+		return "", false, fmt.Errorf("authengine: library user %s has no email", engineID)
 	}
 	label := display.String
 	if label == "" {
@@ -75,17 +76,17 @@ func (rt *oauthRuntime) legacyUserFor(ctx context.Context, engineID string) (str
 	}
 	legacyID, err = randomID("user_")
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
-	if err := rt.wiring.Users.CreateUser(ctx, store.User{
-		ID: legacyID, Email: addr, DisplayName: label, Abilities: []string{AbilityRead}, CreatedAt: time.Now(),
-	}); err != nil {
-		return "", fmt.Errorf("authengine: create platform user for library user %s: %w", engineID, err)
+	if err := rt.wiring.Users.CreateProvisionedUser(ctx, store.User{
+		ID: legacyID, Email: addr, DisplayName: label, CreatedAt: time.Now(),
+	}, roleID); err != nil {
+		return "", false, fmt.Errorf("authengine: create platform user for library user %s: %w", engineID, err)
 	}
 	if _, err := rt.db.ExecContext(ctx, `INSERT INTO authengine_user_map (legacy_id, engine_id) VALUES (?, ?)`, legacyID, engineID); err != nil {
-		return "", fmt.Errorf("authengine: map user %s: %w", legacyID, err)
+		return "", false, fmt.Errorf("authengine: map user %s: %w", legacyID, err)
 	}
-	return legacyID, nil
+	return legacyID, true, nil
 }
 
 func randomID(prefix string) (string, error) {

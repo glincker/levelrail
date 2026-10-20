@@ -25,6 +25,9 @@ type fakeIdentity struct {
 	Email    string
 	Name     string
 	Verified bool
+	// Claims are extra ID token claims; UserinfoClaims are extra userinfo fields (never trusted).
+	Claims         map[string]any
+	UserinfoClaims map[string]any
 }
 
 type fakeGrant struct {
@@ -42,6 +45,8 @@ type fakeIDP struct {
 	mu     sync.Mutex
 	grants map[string]fakeGrant
 	seq    int
+	// tamper rewrites the signed ID token before it is served.
+	tamper func(raw string) string
 }
 
 func newFakeIDP(t *testing.T) *fakeIDP {
@@ -141,10 +146,16 @@ func (f *fakeIDP) token(w http.ResponseWriter, r *http.Request) {
 		"iss": f.srv.URL, "aud": g.clientID, "sub": g.id.Sub, "email": g.id.Email, "email_verified": g.id.Verified,
 		"name": g.id.Name, "nonce": g.nonce, "exp": time.Now().Add(time.Hour).Unix(), "iat": time.Now().Unix(),
 	}
+	for k, v := range g.id.Claims {
+		claims[k] = v
+	}
 	raw, err := jwt.Signed(signer).Claims(claims).Serialize()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	if f.tamper != nil {
+		raw = f.tamper(raw)
 	}
 	writeFakeJSON(w, map[string]any{
 		"access_token": "at-" + r.PostForm.Get("code"), "token_type": "Bearer", "expires_in": 3600, "id_token": raw,
@@ -157,7 +168,11 @@ func (f *fakeIDP) userinfo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-	writeFakeJSON(w, map[string]any{"sub": g.id.Sub, "email": g.id.Email, "email_verified": g.id.Verified, "name": g.id.Name})
+	body := map[string]any{"sub": g.id.Sub, "email": g.id.Email, "email_verified": g.id.Verified, "name": g.id.Name}
+	for k, v := range g.id.UserinfoClaims {
+		body[k] = v
+	}
+	writeFakeJSON(w, body)
 }
 
 func (f *fakeIDP) githubUser(w http.ResponseWriter, r *http.Request) {

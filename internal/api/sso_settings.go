@@ -84,6 +84,12 @@ func (rt *Router) handlePutSSOGroupMappings(w http.ResponseWriter, r *http.Reque
 		}
 		ms = append(ms, store.SSOGroupMapping{Group: g, RoleID: m.RoleID, Priority: m.Priority})
 	}
+	for _, m := range ms {
+		if err := rt.ssoGrantableRole(r.Context(), m.RoleID); errors.Is(err, errSSORoleGrantsRoot) {
+			writeError(w, http.StatusBadRequest, "a group mapping cannot grant a role that holds root: grant root to a person directly")
+			return
+		}
+	}
 	err := rt.sso.ReplaceSSOGroupMappings(r.Context(), ms, time.Now())
 	switch {
 	case errors.Is(err, store.ErrSSOGroupDuplicate):

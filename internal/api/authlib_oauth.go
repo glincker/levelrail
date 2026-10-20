@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"net/url"
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
 )
@@ -15,7 +14,7 @@ type AuthLibOAuth interface {
 	Prefix() string
 	OAuthStart(r *http.Request, provider string) authengine.OAuthOutcome
 	OAuthCallback(r *http.Request, provider string) authengine.OAuthOutcome
-	ResolveOAuthUser(ctx context.Context, provider, providerUserID string) (string, error)
+	ResolveOAuthUser(ctx context.Context, provider, providerUserID, newUserRoleID string) (userID string, created bool, err error)
 	LinkOAuthIdentity(ctx context.Context, legacyUserID, provider, providerUserID string) error
 	InvalidateProvider(name string)
 }
@@ -81,43 +80,25 @@ func (rt *Router) authLibOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		redirectOAuthError(w, r, "invalid_provider")
 		return
 	}
+	test, isTest := rt.ssoTests.consumeFlow(r, provider)
+	if isTest {
+		r = r.WithContext(authengine.WithDryRun(r.Context()))
+	}
 	out := rt.authLibOAuth.OAuthCallback(r, provider)
 	rt.forwardOAuthCookies(w, r, provider, out.Cookies)
+	if isTest {
+		rt.finishSSOTest(w, r, provider, test, out)
+		return
+	}
 	if out.ErrorCode != "" {
 		rt.logger.Warn("api: oauth callback failed", slog.String("provider", provider), slog.String("code", out.ErrorCode))
+		rt.auditOAuthReject(r, provider, out.ErrorCode)
 		redirectOAuthError(w, r, out.ErrorCode)
 		return
 	}
-	userID, err := rt.authLibOAuth.ResolveOAuthUser(r.Context(), out.Provider, out.ProviderUserID)
-	if err != nil {
-		rt.logger.Error("api: oauth callback: resolve user failed", slog.String("provider", provider), slog.String("error", err.Error()))
-		redirectOAuthError(w, r, "internal_error")
+	settled, ok := rt.settleOAuthUser(w, r, provider, out)
+	if !ok {
 		return
 	}
-	user, err := rt.auth.GetUserByID(r.Context(), userID)
-	if err != nil {
-		rt.logger.Error("api: oauth callback: load user failed", slog.String("user_id", userID), slog.String("error", err.Error()))
-		redirectOAuthError(w, r, "internal_error")
-		return
-	}
-	if rt.accountDisabled(r.Context(), user.ID) {
-		rt.libSessions.Revoke(r.Context(), out.SessionCookie.Value)
-		redirectOAuthError(w, r, samlErrDisabled)
-		return
-	}
-	hold, err := rt.holdForApproval(w, r, *user, out.SessionCookie.Value, signInMethodOAuth)
-	switch {
-	case err != nil:
-		rt.logger.Error("api: oauth callback: new browser approval failed", slog.String("user_id", userID), slog.String("error", err.Error()))
-		redirectOAuthError(w, r, "internal_error")
-		return
-	case hold != nil && hold.limited:
-		redirectOAuthError(w, r, "rate_limited")
-		return
-	case hold != nil:
-		http.Redirect(w, r, "/login?approval="+url.QueryEscape(hold.approval.ID), http.StatusFound)
-		return
-	}
-	rt.finishLibSession(w, r, *user, out.SessionCookie.Value)
-	http.Redirect(w, r, "/oauth/complete", http.StatusFound)
+	rt.finishOAuthSignIn(w, r, provider, settled)
 }

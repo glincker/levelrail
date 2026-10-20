@@ -20,6 +20,7 @@ type OAuthSettingsStore interface {
 	GetOAuthProviderSettings(ctx context.Context, provider string) (store.OAuthProviderSettings, error)
 	ListOAuthProviderSettings(ctx context.Context) ([]store.OAuthProviderSettings, error)
 	UpdateOAuthProviderSettings(ctx context.Context, s store.OAuthProviderSettings) error
+	SetOAuthSSOPolicy(ctx context.Context, provider string, p store.OAuthSSOPolicy) error
 }
 
 // OAuthIdentityStore is the store surface the sign-in and account-

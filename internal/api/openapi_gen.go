@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1482 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1488 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1215,6 +1215,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/ssh-node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetSSHNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/sso/group-mappings", Ability: "AbilityRoot", Group: "Other", Handler: "handleListSSOGroupMappings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/sso/group-mappings", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutSSOGroupMappings", Description: ""},
+	{Method: "GET", Path: "/api/v1/sso/oidc", Ability: "AbilityRoot", Group: "Other", Handler: "handleListOAuthSSOPolicies", Description: ""},
+	{Method: "GET", Path: "/api/v1/sso/oidc/{provider}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetOAuthSSOPolicy", Description: ""},
+	{Method: "PUT", Path: "/api/v1/sso/oidc/{provider}", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutOAuthSSOPolicy", Description: ""},
+	{Method: "POST", Path: "/api/v1/sso/oidc/{provider}/evaluate", Ability: "AbilityRoot", Group: "Other", Handler: "handleEvaluateOAuthSSO", Description: ""},
+	{Method: "GET", Path: "/api/v1/sso/oidc/{provider}/test/result", Ability: "AbilityRoot", Group: "Other", Handler: "handleOAuthSSOTestResult", Description: ""},
+	{Method: "GET", Path: "/api/v1/sso/oidc/{provider}/test/start", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartOAuthSSOTest", Description: ""},
 	{Method: "GET", Path: "/api/v1/sso/saml/connections", Ability: "AbilityRoot", Group: "Other", Handler: "handleListSAMLConnections", Description: ""},
 	{Method: "POST", Path: "/api/v1/sso/saml/connections", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateSAMLConnection", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/sso/saml/connections/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteSAMLConnection", Description: ""},

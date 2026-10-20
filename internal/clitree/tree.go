@@ -310,6 +310,7 @@ var Tree = map[string]*Node{
 	"session-policy":           {Subs: map[string]*Node{"list": nil, "set": nil, "clear": nil, "effective": nil}},
 	"sso": {Subs: map[string]*Node{
 		"saml":     {Subs: map[string]*Node{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "import-metadata": nil, "metadata": nil}},
+		"oidc":     {Subs: map[string]*Node{"list": nil, "get": nil, "set": nil, "evaluate": nil}},
 		"mappings": {Subs: map[string]*Node{"list": nil, "set": nil}},
 		"settings": {Subs: map[string]*Node{"get": nil, "set": nil}},
 		"scim":     {Subs: map[string]*Node{"tokens": {Subs: map[string]*Node{"list": nil, "create": nil, "rotate": nil, "revoke": nil}}}},
