@@ -221,6 +221,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsPreviewEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "branch-env":
 		return runAppsBranchEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "contexts":
+		return runAppsContexts(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "branch-deploys":
 		return runAppsBranchDeploys(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "pr-env":
@@ -354,6 +356,7 @@ func appsUsage(prog string) string {
   %[1]s apps vault-env <verb> [flags]   declare/remove an env var resolved live from an external Vault instance
   %[1]s apps preview-env <verb> [flags]   declare/remove a preview-specific env var override, applied only when a preview is created
   %[1]s apps branch-env <verb> [flags]    declare/remove a branch-scoped env var override, applied only when a preview's own branch matches
+  %[1]s apps contexts <verb> [flags]      set env and build overrides per deploy context, show the effective config
   %[1]s apps branch-deploys <verb> [flags]   choose which branches get a stable per-branch deploy, list and remove them
   %[1]s apps pr-env <verb> [flags]        declare/remove an env var override for one pull request's preview
   %[1]s apps tag <name> <tag> [flags]     attach a tag (by name) to an app, creating it first if new

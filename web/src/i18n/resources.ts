@@ -47,6 +47,7 @@ import type observability from '../locales/en/observability.json'
 import type trialApp from '../locales/en/trialApp.json'
 import type previews from '../locales/en/previews.json'
 import type branchDeploys from '../locales/en/branchDeploys.json'
+import type deployContexts from '../locales/en/deployContexts.json'
 import type backups from '../locales/en/backups.json'
 import type sleepHistory from '../locales/en/sleepHistory.json'
 import type forms from '../locales/en/forms.json'
@@ -147,6 +148,7 @@ declare module 'i18next' {
       observability: typeof observability
       previews: typeof previews
       branchDeploys: typeof branchDeploys
+      deployContexts: typeof deployContexts
       backups: typeof backups
       sleepHistory: typeof sleepHistory
       forms: typeof forms

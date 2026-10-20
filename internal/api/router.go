@@ -827,6 +827,7 @@ type Router struct {
 	shutdown shutdownState
 
 	branchDeploys  BranchDeployStore // always set
+	contextConfigs ContextConfigStore
 	branchDeployMu sync.Mutex
 }
 
@@ -1041,5 +1042,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		rt.idempotency = is
 	}
 	rt.attachMail(s)
+	if cs, ok := s.(ContextConfigStore); ok {
+		rt.contextConfigs = cs
+	}
 	return rt
 }

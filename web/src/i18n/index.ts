@@ -45,6 +45,7 @@ export const NAMESPACES = [
   'observability',
   'previews',
   'branchDeploys',
+  'deployContexts',
   'backups',
   'sleepHistory',
   'forms',

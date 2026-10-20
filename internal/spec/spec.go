@@ -109,6 +109,11 @@ type Service struct {
 	// APP_CANARY_* defaults.
 	Canary *Canary `yaml:"canary,omitempty"`
 
+	// Contexts overrides env and build settings for deploy-preview,
+	// branch-deploy or a "branch:<pattern>" context. Production is the
+	// service's own settings.
+	Contexts map[string]ContextConfig `yaml:"contexts,omitempty"`
+
 	// DependsOn names sibling services: keys (within this same Spec, or
 	// within the same compose file for a compose-expanded service, see
 	// internal/compose.ExpandBuildService) this service waits on before

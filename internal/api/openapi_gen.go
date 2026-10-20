@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1580 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1584 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -170,6 +170,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/connections", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppConnections", Description: "Multi-connection app-to-database (apps_connections.go): the DatabaseEnv-map-backed sibling of PUT/DELETE .../database just above, for an app that connects to more than one managed database. Same AbilityWrite tier and \"config write, not a deploy trigger\" reasoning; GET is AbilityRead like any other app-detail read."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/connections", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateAppConnection", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/connections/{env_var}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteAppConnection", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/contexts", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteAppContext", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/contexts", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppContexts", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/contexts", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppContext", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/cost-estimate", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppCostEstimate", Description: "Read-only \"what this would cost elsewhere\" estimate (cost_estimate.go): compares the app's declared or observed CPU/memory against illustrative reference pricing. AbilityRead, same sensitivity as resource-recommendation above; never writes anything."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploy-attempts", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListDeployAttempts", Description: "Real deploy-attempt history (deploy_attempts.go): a row per trigger call across all three real trigger paths, additional to (not a replacement for) the reconcile-conditions route above. See DeployAttemptStore's own doc comment for why this is a separate endpoint rather than a change to GET .../deploys's existing response shape. AbilityRead, matching every other passive view of an app's own state."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploy-freeze", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppDeployFreeze", Description: ""},
@@ -201,6 +204,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/dns-provider", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppDNSProvider", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/dns-provider", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppDNSProvider", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/dns-provider/test", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTestAppDNSProvider", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/effective-config", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetEffectiveConfig", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppEgressPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppEgressPolicy", Description: "Outbound allowlist per app: AbilityWriteSensitive, it changes the exfiltration surface. GET has its own route since an unset policy is the common case."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppEgressPolicy", Description: ""},

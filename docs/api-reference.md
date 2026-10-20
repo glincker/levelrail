@@ -607,6 +607,10 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/publish-lock | AbilityRead | handleGetPublishLock |
 | PUT | /api/v1/apps/{name}/publish-lock | AbilityDeploy | handlePutPublishLock |
 | DELETE | /api/v1/apps/{name}/publish-lock | AbilityDeploy | handleDeletePublishLock |
+| GET | /api/v1/apps/{name}/contexts | AbilityRead | handleListAppContexts |
+| PUT | /api/v1/apps/{name}/contexts | AbilityWriteSensitive | handleSetAppContext |
+| DELETE | /api/v1/apps/{name}/contexts | AbilityWrite | handleDeleteAppContext |
+| GET | /api/v1/apps/{name}/effective-config | AbilityRead | handleGetEffectiveConfig |
 
 </Accordion>
 

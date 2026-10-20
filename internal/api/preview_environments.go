@@ -13,6 +13,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/deploycontext"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/webhook"
@@ -330,6 +331,11 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 	applyPreviewPolicy(&svcSpec, vars, attachmentVar)
 	if previewInheritsEnv(vars.Fork, vars.Policy) {
 		applyPreviewEnvOverrides(&svcSpec, prod.PreviewEnvOverrides)
+		contexts, err := rt.loadContextConfigs(ctx, appName)
+		if err != nil {
+			return "", false, fmt.Errorf("load deploy contexts for %q: %w", appName, err)
+		}
+		applyContextConfig(&svcSpec, deploycontext.For(vars.PRNumber, vars.Branch, productionBranch(gs)), vars.Branch, contexts)
 		branchOverrides, err := rt.apps.ListServiceBranchEnvOverrides(ctx, appName)
 		if err != nil {
 			return "", false, fmt.Errorf("load branch env overrides for %q: %w", appName, err)
@@ -387,6 +393,7 @@ func (rt *Router) deployPreviewMulti(ctx context.Context, appName, previewName s
 		}
 		applyPreviewPolicy(&svc, vars, "")
 		if previewInheritsEnv(vars.Fork, vars.Policy) {
+			applyContextConfig(&svc, deploycontext.For(vars.PRNumber, vars.Branch, productionBranch(gs)), vars.Branch, specContexts(svc.Contexts))
 			if err := rt.applyPRPreviewEnv(ctx, &svc, appName, vars.PRNumber); err != nil {
 				return "", false, fmt.Errorf("apply pr env overrides for %q: %w", appName, err)
 			}

@@ -195,7 +195,8 @@
               "screenshots",
               "docker",
               "zero-downtime-deploys",
-              "preview-environments"
+              "preview-environments",
+              "deploy-contexts"
             ],
             "icon": "/assets/icons/cloud-arrow-up.svg"
           },

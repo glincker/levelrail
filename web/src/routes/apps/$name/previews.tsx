@@ -3,6 +3,7 @@ import { useApp } from '../../../queries/apps'
 import { PreviewEnvironmentsCard } from '../../../components/PreviewEnvironmentsCard'
 import { PreviewPolicyCard } from '../../../components/PreviewPolicyCard'
 import { BranchDeploysCard } from '../../../components/BranchDeploysCard'
+import { DeployContextsCard } from '../../../components/DeployContextsCard'
 import { PreviewLifecycleCard } from '../../../components/PreviewLifecycleCard'
 
 export const Route = createFileRoute('/apps/$name/previews')({
@@ -17,6 +18,7 @@ function PreviewsSection() {
     <div className="space-y-6">
       <PreviewEnvironmentsCard app={app} />
       <BranchDeploysCard appName={name} />
+      <DeployContextsCard appName={name} />
       <PreviewPolicyCard appName={name} />
       <PreviewLifecycleCard appName={name} />
     </div>

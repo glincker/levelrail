@@ -390,6 +390,8 @@ levelrail-cli apps branch-env clear <name> <id> [flags]
 levelrail-cli apps branch-deploys list <name> [flags]
 levelrail-cli apps branch-deploys set <name> --mode off|all|patterns [--branch PATTERN]... [flags]
 levelrail-cli apps branch-deploys delete <name> <slug> [flags]
+levelrail-cli apps contexts list|clear|show <name> [flags]
+levelrail-cli apps contexts set <name> --context CTX [--env K=V]... [--build-command CMD] [--publish DIR] [--build-arg K=V]... [flags]
 ```
 
 - `apps env import` merges a .env file into an app's plain env vars and prints which keys are new, changed or unchanged. Keys that are already secrets are skipped. It reports how many changes are pending, or restarts the app right away with `--apply`.
@@ -399,6 +401,7 @@ levelrail-cli apps branch-deploys delete <name> <slug> [flags]
 - `apps vault-env` declares an env var resolved live from the configured external Vault (see [Vault](#vault)); only the reference is stored.
 - `apps preview-env` and `apps branch-env` override an env var for previews only. A branch override applies when the preview's own branch matches PATTERN (an exact name or a glob such as `release/*`); `--secret` stores it envelope encrypted. Neither affects the app's own running deploy.
 - `apps branch-deploys` chooses which branches get a stable per-branch deploy (see [Preview environments](/preview-environments#branch-deploys)), lists the live ones and removes one now.
+- `apps contexts` sets env and build overrides per deploy context and shows the effective config (see [Deploy contexts](/deploy-contexts)).
 
 ### Source, previews and webhooks
 

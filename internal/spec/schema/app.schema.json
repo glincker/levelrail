@@ -42,6 +42,11 @@
         "replicas": { "type": "integer", "minimum": 1 },
         "strategy": { "enum": ["rolling", "recreate", "blue-green", "canary"] },
         "canary": { "$ref": "#/$defs/canary" },
+        "contexts": {
+          "type": "object",
+          "propertyNames": { "pattern": "^(deploy-preview|branch-deploy|branch:.+)$" },
+          "additionalProperties": { "$ref": "#/$defs/contextConfig" }
+        },
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
@@ -68,6 +73,28 @@
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
           "minItems": 1
+        }
+      }
+    },
+    "contextConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "build": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "command": { "type": "string" },
+            "publish": { "type": "string" },
+            "args": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          }
         }
       }
     },
