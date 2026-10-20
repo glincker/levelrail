@@ -88,7 +88,7 @@ To move an existing setup, see [Migrate to Levelrail](/migrate-to-levelrail).
 
 ## See also
 
-- [Coolify alternative](/coolify-alternative), [Dokploy alternative](/dokploy-alternative), [Vercel alternative](/vercel-alternative), [Cloud Run alternative](/cloud-run-alternative), [Heroku alternative](/heroku-alternative) and [Railway alternative](/railway-alternative): focused guides for each switch
+- [Coolify alternative](/coolify-alternative), [Dokploy alternative](/dokploy-alternative), [Vercel alternative](/vercel-alternative), [Netlify alternative](/netlify-alternative), [Cloud Run alternative](/cloud-run-alternative), [Heroku alternative](/heroku-alternative) and [Railway alternative](/railway-alternative): focused guides for each switch
 - [Architecture](/architecture): how Levelrail is built internally
 - [Feature catalog](/feature-catalog): the dashboard pages by area
 - [Cloud integrations](/cloud-integrations): what works today with AWS, Google Cloud, Cloudflare, DigitalOcean and Hetzner

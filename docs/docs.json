@@ -357,6 +357,7 @@
               "migrate-same-server",
               "migrate-over-ssh",
               "migrating-from-vercel",
+              "migrating-from-netlify",
               "migrating-from-cloud-run"
             ],
             "icon": "/assets/icons/arrows-left-right.svg"
@@ -443,6 +444,7 @@
               "heroku-alternative",
               "railway-alternative",
               "vercel-alternative",
+              "netlify-alternative",
               "cloud-run-alternative",
               "self-host-nextjs"
             ]

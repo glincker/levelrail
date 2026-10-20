@@ -1,7 +1,7 @@
 <div align="center">
 <img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="56" height="56">
 <h1>Levelrail</h1>
-<p><strong>The lightweight, self-hosted alternative to Vercel, Heroku, Railway, Coolify and Dokku.</strong><br>
+<p><strong>The lightweight, self-hosted alternative to Vercel, Netlify, Heroku, Railway, Coolify and Dokku.</strong><br>
 Deploy on git push, with logs, metrics, HTTPS and one-click rollback, on your own servers. HTTPS is self-signed until you enable Let's Encrypt.<br>
 One Go binary &middot; Docker runtime &middot; agents instead of SSH &middot; observability built in &middot; no Kubernetes</p>
 <p>

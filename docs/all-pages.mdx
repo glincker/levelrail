@@ -243,6 +243,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Migrate on the same server](/migrate-same-server): Move from Coolify, Dokploy or CapRover to Levelrail on the same machine: install in coexist mode, import, verify, take over ports 80 and 443 with a verified rollback, and what can go wrong.
 - [Migrate over SSH](/migrate-over-ssh): Import apps, env, images and volumes from an old Coolify, Dokploy, CapRover or Dokku host with only an SSH login, read only, with no agent and no command run on the old host
 - [Migrating a Next.js app from Vercel](/migrating-from-vercel): A runbook for moving a Vercel Next.js app to Levelrail: inventory, concept mapping, a DNS cutover and rollback plan, gaps with no equivalent and a shadow run.
+- [Migrating a static site from Netlify](/migrating-from-netlify): A runbook for moving a Netlify site to Levelrail: build settings, netlify.toml mapping, redirects and headers, deploy contexts, forms, build hooks, a DNS cutover and the features with no equivalent.
 - [Migrating a service from Cloud Run](/migrating-from-cloud-run): A runbook for moving a Google Cloud Run service to Levelrail: concept mapping, deploying the same image, secrets, Cloud SQL, domains, jobs and what you give up.
 
 ### Beta and experimental
@@ -308,6 +309,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Self-hosted Heroku alternative: push-to-deploy on your own servers](/heroku-alternative): Levelrail is an open source Heroku alternative for your own Linux servers: push-to-deploy from your git host, managed Postgres and Redis, TLS, logs and rollback.
 - [Self-hosted Railway alternative with built-in observability](/railway-alternative): Levelrail is an open source Railway alternative you run on your own servers: push-to-deploy from your git host, managed databases, domains with TLS.
 - [Self-hosted Vercel alternative for Next.js and Docker apps](/vercel-alternative): Levelrail is an open source, self-hosted alternative to Vercel's Git deploys: webhook push-to-deploy, TLS and preview environments per pull request.
+- [Self-hosted Netlify alternative for static sites and Docker apps](/netlify-alternative): Levelrail is an open source, self-hosted alternative to Netlify's Git deploys for static sites: build and publish from git, _redirects and _headers, branch deploys, forms and build hooks on your own server.
 - [Self-hosted alternative to Cloud Run for steady workloads](/cloud-run-alternative): When an always-on container is cheaper on your own server than on Cloud Run, when it is not, and how Levelrail fits for git or image deploys.
 - [Self-host Next.js on your own server with TLS and rollback](/self-host-nextjs): How to self-host a Next.js app with Levelrail: Dockerfile build, automatic HTTPS, preview environments per pull request and env vars.
 
