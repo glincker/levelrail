@@ -64,6 +64,10 @@ type DrillRunner struct {
 	DBInfo     DatabaseInfo
 	ImageFor   func(engine, version string) string
 
+	// ScratchMemoryBytes and ScratchNanoCPUs cap scratch containers; zero uses the defaults.
+	ScratchMemoryBytes int64
+	ScratchNanoCPUs    int64
+
 	// OnFailure is called once for every failed drill.
 	OnFailure func(ctx context.Context, d store.BackupDrill)
 	Logger    *slog.Logger
@@ -357,6 +361,7 @@ func (r *DrillRunner) drillDatabase(ctx context.Context, d *store.BackupDrill, d
 	if err := scratchSearchSpec(engine, &spec); err != nil {
 		return err
 	}
+	r.hardenScratch(&spec)
 	id, err := r.Runtime.Create(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("create scratch %s container: %w", engine, err)

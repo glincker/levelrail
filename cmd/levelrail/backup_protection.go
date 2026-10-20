@@ -99,6 +99,7 @@ func newBackupProtection(db *store.DB, secretsManager *secrets.Manager, client *
 		ImageFor: database.ImageRef,
 		Logger:   logger,
 	}
+	drills.ScratchMemoryBytes, drills.ScratchNanoCPUs = backup.DrillLimitsFromEnv(os.LookupEnv)
 	if sealer != nil {
 		drills.Identities = sealer.Identities
 	}
