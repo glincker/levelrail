@@ -12,7 +12,9 @@
     "nextUp": "Next up",
     "allDoneTitle": "Everything is set up",
     "allDoneBody": "Every step is done or skipped. Reset the guide any time to review your choices.",
-    "serverAddress": "This server's address: {{address}}"
+    "serverAddress": "This server's address: {{address}}",
+    "essentialTitle": "Start here",
+    "essentialHelp": "Four steps get you from a fresh install to an app running over HTTPS."
   },
   "actions": {
     "skip": "Skip",
@@ -52,62 +54,62 @@
   "steps": {
     "secure_admin": {
       "title": "Secure the admin account",
-      "what": "Add two-factor authentication or a passkey to the account that controls every deployment.",
+      "what": "Add a second sign-in check, either an authenticator app code (two-factor) or a passkey (sign in with your fingerprint, face or device PIN), to the account that controls every deployment.",
       "why": "A stolen password alone should never be enough to reach your servers.",
       "cta": "Open security"
     },
     "sign_in_recovery": {
       "title": "Set up a way back in",
-      "what": "Connect email or approve sign-ins from another trusted session so you can recover access.",
+      "what": "Connect email, or approve new sign-ins from a device you already trust, so you can get back in if you lose your password.",
       "why": "If you lose your password or passkey, this is how you get back to your servers.",
       "cta": "Open security"
     },
     "public_address": {
-      "title": "Set the public dashboard address",
-      "what": "Tell the platform the address people reach it on, ideally an https hostname pointing at this server.",
-      "why": "Links in emails and alerts, and secure sign-in, depend on a correct public address.",
-      "cta": "Set the address"
+      "title": "Set the dashboard address and turn on HTTPS",
+      "what": "Pick the web address you open this dashboard on. The free option is the https address built from this server's IP, with a real certificate and no DNS setup.",
+      "why": "Once HTTPS is on, signing in over plain HTTP stops working, so this is best done early.",
+      "cta": "Enable HTTPS"
     },
     "git_provider": {
-      "title": "Connect a Git provider",
-      "what": "Link GitHub, GitLab, Bitbucket or Gitea so a push deploys your app.",
-      "why": "Deploy history is linked to commits and you get automatic deploys. Skip it if you deploy images.",
-      "cta": "Connect Git"
+      "title": "Connect a git source or deploy an image",
+      "what": "Link GitHub, GitLab, Bitbucket or Gitea so a push deploys your app. If you deploy a ready-made container image instead, skip this.",
+      "why": "Linked repositories give you automatic deploys and a deploy history tied to commits.",
+      "cta": "Connect git"
     },
     "first_app": {
       "title": "Deploy your first app",
-      "what": "Create an app from a repository, an image or a template and let it build and start.",
+      "what": "Create an app from a repository, a container image or a template. The platform builds it, starts it and gives it an https address.",
       "why": "It proves the build, deploy and rollback loop works on this server.",
       "cta": "Create an app"
     },
     "app_domain": {
       "title": "Put the app on your domain",
-      "what": "Attach a hostname to the app and point its DNS record at this server.",
+      "what": "Attach your own hostname to the app and point its DNS record (the entry at your domain registrar) at this server.",
       "why": "Real users reach the app by name, not by an IP address and port.",
       "cta": "Add a domain"
     },
     "dns": {
       "title": "Connect a DNS provider or proxy",
-      "what": "Let the platform manage DNS records through Cloudflare or Route 53, or run it behind your own proxy.",
+      "what": "Let the platform edit DNS records for you through Cloudflare or Route 53, or run it behind a reverse proxy you already have.",
       "why": "Records and certificates stop being manual copy and paste.",
       "cta": "Connect DNS"
     },
     "tls": {
-      "title": "Get a valid TLS certificate",
-      "what": "Check that every domain serves a trusted certificate that renews itself.",
+      "title": "Check the app's HTTPS certificate",
+      "what": "Confirm every domain serves a certificate browsers trust and that it renews on its own (TLS is the encryption behind https).",
       "why": "Browsers warn on invalid certificates, and a silent renewal failure takes the app down.",
       "cta": "Review certificates"
     },
     "backup_target": {
       "title": "Add a backup target",
-      "what": "Point backups at S3 compatible storage that does not live on this server.",
+      "what": "Send backups to storage that is not on this server, any S3-compatible service such as AWS S3, Backblaze B2 or Cloudflare R2.",
       "why": "A backup on the same disk does not survive the disk.",
       "cta": "Add a target"
     },
     "first_backup": {
       "title": "Take the first backup",
-      "what": "Snapshot the control plane database so every app definition can be recovered.",
-      "why": "Losing the control plane database means losing every app definition.",
+      "what": "Save a copy of the platform's own database, which holds every app definition, so it can be recovered.",
+      "why": "Losing that database means losing every app definition.",
       "cta": "Create a backup"
     },
     "verified_restore": {
@@ -118,7 +120,7 @@
     },
     "notifications": {
       "title": "Add a notification channel and alert rule",
-      "what": "Send alerts to email, Slack, Discord, Telegram or a webhook, then create a rule that uses it.",
+      "what": "Send alerts to email, Slack, Discord, Telegram or a webhook, then create an alert rule that uses it.",
       "why": "You hear about a crashloop or an expiring certificate before your users do.",
       "cta": "Add a channel"
     },
@@ -157,5 +159,9 @@
     "exists": "A sample app already exists on this server.",
     "error": "Could not deploy the sample app: {{message}}",
     "open": "Open sample app"
+  },
+  "more": {
+    "title": "More recommended steps",
+    "help": "These make the server safer to run in production. None of them blocks your first deploy."
   }
 }

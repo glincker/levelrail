@@ -9,7 +9,7 @@ import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { Progress } from '@/components/ui/progress'
 import { toast } from '@/components/ui/toast'
 import { useIsRoot } from '../../hooks/useIsRoot'
-import { stepGroups } from '../../lib/setupGuide'
+import { essentialSplit, isOpen } from '../../lib/setupGuide'
 import type {
   SetupGuide,
   SetupGuideOverride,
@@ -66,7 +66,12 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
   const reset = useResetGuide()
   const [confirmReset, setConfirmReset] = useState(false)
   const busy = setStep.isPending || setHidden.isPending || reset.isPending
-  const { next, todo, settled } = stepGroups(guide)
+  const { essential, more } = essentialSplit(guide)
+  const essentialsOpen = essential.some(isOpen)
+  const moreOrdered = [
+    ...more.filter(isOpen),
+    ...more.filter((s) => !isOpen(s)),
+  ]
 
   const onError = (err: unknown) => {
     toast.add({
@@ -173,21 +178,28 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
         />
       ) : null}
 
-      {next ? (
-        <section className="space-y-2">
-          <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
-            {t('summary.nextUp')}
-          </h2>
-          <ul className="space-y-2">{card(next, true)}</ul>
-        </section>
-      ) : null}
+      <section className="space-y-2">
+        <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
+          {t('summary.essentialTitle')}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {t('summary.essentialHelp')}
+        </p>
+        <ul className="space-y-2">
+          {essential.map((s) => card(s, s.id === guide.next_step))}
+        </ul>
+      </section>
 
-      {todo.length > 0 ? (
-        <ul className="space-y-2">{todo.map((s) => card(s))}</ul>
-      ) : null}
-
-      {settled.length > 0 ? (
-        <ul className="space-y-2">{settled.map((s) => card(s))}</ul>
+      {moreOrdered.length > 0 ? (
+        <details open={!essentialsOpen} className="space-y-2">
+          <summary className="cursor-pointer text-sm font-medium text-foreground">
+            {t('more.title')}
+          </summary>
+          <p className="mt-2 text-sm text-muted-foreground">{t('more.help')}</p>
+          <ul className="mt-2 space-y-2">
+            {moreOrdered.map((s) => card(s, s.id === guide.next_step))}
+          </ul>
+        </details>
       ) : null}
 
       <ConfirmDialog

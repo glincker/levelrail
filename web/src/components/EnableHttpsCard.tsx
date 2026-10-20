@@ -82,6 +82,9 @@ function EnableForm({
       <p className="max-w-prose text-sm text-muted-foreground">
         {t('card.description', { domain: suggestedDomain })}
       </p>
+      <p className="max-w-prose text-sm text-muted-foreground">
+        {t('card.httpSignInNote')}
+      </p>
       <div className="max-w-sm space-y-1.5">
         <Label htmlFor="enable-https-email">{t('card.emailLabel')}</Label>
         <Input
@@ -120,10 +123,14 @@ function StatusBody({
   status,
   preflight,
   onRetry,
+  onRecheck,
+  rechecking,
 }: {
   status: HttpsStatus
   preflight?: HttpsStatus['preflight']
   onRetry: () => void
+  onRecheck: () => void
+  rechecking: boolean
 }) {
   const { t } = useTranslation('https')
   if (status.state === 'pending') {
@@ -190,9 +197,15 @@ function StatusBody({
           ) : null}
         </AlertDescription>
       </Alert>
-      <Button type="button" variant="outline" onClick={onRetry}>
-        {t('card.retry')}
-      </Button>
+      <p className="text-xs text-muted-foreground">{t('card.recheckHelp')}</p>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" onClick={onRecheck} disabled={rechecking}>
+          {rechecking ? t('card.rechecking') : t('card.recheck')}
+        </Button>
+        <Button type="button" variant="outline" onClick={onRetry}>
+          {t('card.retry')}
+        </Button>
+      </div>
     </div>
   )
 }
@@ -200,14 +213,19 @@ function StatusBody({
 /** EnableHttpsCard is the one-click zero-DNS HTTPS flow for the dashboard. */
 export function EnableHttpsCard() {
   const { t } = useTranslation('https')
-  const { data: status } = useQuery(httpsStatusQueryOptions())
+  const {
+    data: status,
+    refetch,
+    isFetching,
+  } = useQuery(httpsStatusQueryOptions())
   const enable = useEnableHttps()
   const username = useAuthUsername()
   const [retrying, setRetrying] = useState(false)
   useAutoSaveDashboardUrl(status)
 
   const showForm = status?.state === 'off' || retrying
-  const initialEmail = username?.includes('@') ? username : ''
+  const initialEmail =
+    status?.default_email ?? (username?.includes('@') ? username : '')
   return (
     <Card>
       <CardHeader>
@@ -239,6 +257,8 @@ export function EnableHttpsCard() {
             status={status}
             preflight={enable.data?.preflight}
             onRetry={() => setRetrying(true)}
+            onRecheck={() => void refetch()}
+            rechecking={isFetching}
           />
         ) : null}
       </CardContent>

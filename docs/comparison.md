@@ -37,7 +37,7 @@ Dokploy builds on Docker Swarm, so [multi-node](/multi-node) scheduling and roll
 
 CapRover is a long-running, simple, Swarm-based platform with a one-click app store and a CLI. It has a large install base and is easy to pick up.
 
-Dokku is the classic "Heroku on your own box": `git push` to deploy, buildpacks, a rich plugin ecosystem, and almost no idle footprint because there is no long-running control service. For a single server it is hard to beat on simplicity.
+Dokku is the classic "Heroku on your own box": `git push` to deploy, buildpacks, a rich plugin ecosystem, and almost no idle footprint because there is no long-running control service. For a single server it is hard to beat on simplicity. Levelrail's zero-DNS HTTPS is the closest counter.
 
 Kamal is deliberately minimal: no control plane, no database, no agent. It runs over SSH from your CI and pairs with `kamal-proxy` for zero-downtime cutover. If you want as few moving parts as possible and don't need a dashboard, it is excellent.
 

@@ -3922,6 +3922,7 @@ type HTTPSStatusResource struct {
 	Error            string     `json:"error,omitempty"`
 	Hint             string     `json:"hint,omitempty"`
 	DashboardURL     string     `json:"dashboard_url,omitempty"`
+	DefaultEmail     string     `json:"default_email,omitempty"`
 	// Preflight is set on the enable response only.
 	Preflight []HTTPSPreflightPort `json:"preflight,omitempty"`
 }
@@ -3934,7 +3935,7 @@ type HTTPSPreflightPort struct {
 
 // EnableHTTPSRequest is POST /api/v1/settings/ingress/https's body.
 type EnableHTTPSRequest struct {
-	Email   string `json:"email"`
+	Email   string `json:"email,omitempty"`
 	Staging bool   `json:"staging"`
 }
 

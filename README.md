@@ -103,7 +103,7 @@ This is positioning, not a ranking, and every project here is worth using. Where
 
 ## What you get
 
-- **Deploys:** Git push (GitHub, GitLab, Bitbucket, Gitea), preview environments per pull request, framework presets (Next.js, Go, React, Spring Boot and more), Dockerfile, Compose or image deploys, canary and blue-green rollouts. [Deploying apps](docs/deploying-apps.md)
+- **Deploys:** Push to your git host (GitHub, GitLab, Bitbucket, Gitea webhooks), preview environments per pull request, framework presets (Next.js, Go, React, Spring Boot and more), Dockerfile, Compose or image deploys, canary and blue-green rollouts. [Deploying apps](docs/deploying-apps.md)
 - **Domains and TLS:** Embedded Caddy ingress, automatic certificates, wildcard and custom certificates, per-app abuse protection. [Domains](docs/domains-and-ingress.md)
 - **Databases:** Postgres, MySQL, MariaDB, MongoDB, Redis, KeyDB, Dragonfly and ClickHouse with scheduled backups, Postgres point-in-time recovery, restore, and password rotation. [Databases](docs/managing-databases.md)
 - **One search for everything:** Cmd+K across apps, databases, nodes, templates and actions, filtered by what you may do. [Search](docs/search.md)

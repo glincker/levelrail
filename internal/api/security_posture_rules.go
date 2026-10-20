@@ -44,6 +44,8 @@ type postureItem struct {
 	Subjects []string    `json:"subjects,omitempty"`
 	Detail   string      `json:"detail,omitempty"`
 	Fix      *postureFix `json:"fix,omitempty"`
+	// Recommended marks a failing item that costs no score yet: a fresh server with no app deployed.
+	Recommended bool `json:"recommended,omitempty"`
 }
 
 type postureUser struct {
@@ -100,6 +102,8 @@ type postureInput struct {
 	AgentsKnown       bool
 	Anomalies         []loginAnomaly
 	SecretRevealAllow bool
+	AppsLive          bool
+	Strict            bool
 }
 
 func pass(id, sev string) postureItem {
@@ -205,7 +209,7 @@ func evaluatePosture(in postureInput) []postureItem {
 		boolRule("code_login_admins", postureMedium, in.CodeLoginAdmins, true, actionFix("disable_code_login_admins", nil, securityPage)),
 		exposureRule(in, false),
 		exposureRule(in, true),
-		boolRule("offbox_backup_off", postureHigh, in.OffBoxBackups, false, &postureFix{Kind: postureFixLink, Link: "/settings/control-plane-backup", CLI: "control-plane-backups schedule show"}),
+		recommendUntilLive(in, boolRule("offbox_backup_off", postureHigh, in.OffBoxBackups, false, &postureFix{Kind: postureFixLink, Link: "/settings/control-plane-backup", CLI: "control-plane-backups schedule show"})),
 		masterKeyRule(in),
 		staleSecretsRule(in),
 		tlsRule(in),
@@ -215,12 +219,25 @@ func evaluatePosture(in postureInput) []postureItem {
 		anomalyRule(in),
 	}
 	sort.SliceStable(items, func(i, j int) bool {
+		if scoring(items[i]) != scoring(items[j]) {
+			return scoring(items[i])
+		}
 		if (items[i].Status == postureStatusFail) != (items[j].Status == postureStatusFail) {
 			return items[i].Status == postureStatusFail
 		}
 		return postureRank[items[i].Severity] < postureRank[items[j].Severity]
 	})
 	return items
+}
+
+func scoring(it postureItem) bool { return it.Status == postureStatusFail && !it.Recommended }
+
+// recommendUntilLive keeps a failing item visible but off the score until an app is deployed or strict mode is on.
+func recommendUntilLive(in postureInput, it postureItem) postureItem {
+	if it.Status == postureStatusFail && !in.AppsLive && !in.Strict {
+		it.Recommended = true
+	}
+	return it
 }
 
 func passkeysRule(in postureInput) postureItem {
@@ -296,7 +313,11 @@ func masterKeyRule(in postureInput) postureItem {
 		return failing(id, postureLow, nil, linkFix("/settings/general"))
 	case !in.MasterKeyKnown:
 		return unknown(id, postureLow, "rotation history could not be read")
-	case in.MasterKeyRotated == nil || in.Now.Sub(*in.MasterKeyRotated) > in.MasterKeyMaxAge:
+	case in.MasterKeyRotated == nil:
+		it := failing(id, postureLow, nil, &postureFix{Kind: postureFixLink, Link: "/settings/general", CLI: "secrets rotate-master-key --new-key-file PATH"})
+		it.Recommended = true
+		return it
+	case in.Now.Sub(*in.MasterKeyRotated) > in.MasterKeyMaxAge:
 		return failing(id, postureLow, nil, &postureFix{Kind: postureFixLink, Link: "/settings/general", CLI: "secrets rotate-master-key --new-key-file PATH"})
 	}
 	return pass(id, postureLow)
@@ -371,11 +392,11 @@ func anomalyRule(in postureInput) postureItem {
 	return failing(id, postureHigh, subjects, linkFix("/settings/audit-log"))
 }
 
-// postureScore is 100 minus the weight of every failing item, floored at 0.
+// postureScore is 100 minus the weight of every failing item that is not only a recommendation, floored at 0.
 func postureScore(items []postureItem) int {
 	score := 100
 	for _, it := range items {
-		if it.Status == postureStatusFail {
+		if scoring(it) {
 			score -= postureWeights[it.Severity]
 		}
 	}

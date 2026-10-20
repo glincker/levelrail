@@ -94,6 +94,11 @@ export function PostureScoreCard({ posture }: { posture: SecurityPosture }) {
               ? `, ${t('score.unknown', { count: c.unknown })}`
               : ''}
           </p>
+          {c.recommended ? (
+            <p className="text-xs text-muted-foreground">
+              {t('score.recommended', { count: c.recommended })}
+            </p>
+          ) : null}
           <p className="text-xs text-muted-foreground">
             {t('score.generated', {
               time: new Date(posture.generated_at).toLocaleTimeString(),
@@ -243,6 +248,9 @@ function ChecklistRow({
             <Badge variant="outline">
               {t('checklist.count', { count: item.count })}
             </Badge>
+          ) : null}
+          {item.recommended ? (
+            <Badge variant="muted">{t('status.recommended')}</Badge>
           ) : null}
           {item.status === 'unknown' ? (
             <Badge variant="muted">{t('status.unknown')}</Badge>

@@ -20,6 +20,7 @@
     "failing": "{{critical}} critical, {{high}} high, {{medium}} medium, {{low}} low",
     "passing": "{{count}} checks pass",
     "unknown": "{{count}} could not be checked",
+    "recommended": "{{count}} recommended steps do not affect the score until you deploy an app",
     "summaryOnly": "Only admins see the full checklist. Ask an admin to review the items behind this score."
   },
   "severity": {
@@ -31,6 +32,7 @@
   "status": {
     "pass": "Pass",
     "fail": "Needs action",
+    "recommended": "Recommended",
     "unknown": "Unknown"
   },
   "supplyGate": {

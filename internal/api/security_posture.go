@@ -36,6 +36,8 @@ type postureCounts struct {
 	Low      int `json:"low"`
 	Unknown  int `json:"unknown"`
 	Passing  int `json:"passing"`
+	// Recommended counts failing items that do not lower the score yet.
+	Recommended int `json:"recommended"`
 }
 
 type postureResponse struct {
@@ -108,6 +110,8 @@ func (rt *Router) postureExposure(ctx context.Context) *postureExposure {
 	return out
 }
 
+const envPostureStrict = "APP_SECURITY_POSTURE_STRICT"
+
 func (rt *Router) collectPosture(ctx context.Context, now time.Time) postureInput {
 	in := postureInput{Now: now, NewDeviceApproval: rt.newDeviceApproval, Anomalies: rt.sec.failures.recent(now)}
 	if policy, valid := revealPolicy(); valid && policy == revealPolicyAllow {
@@ -135,6 +139,12 @@ func (rt *Router) collectPosture(ctx context.Context, now time.Time) postureInpu
 	} else {
 		off := false
 		in.OffBoxBackups = &off
+	}
+	in.Strict = envBoolDefault(envPostureStrict, false)
+	if rt.apps != nil {
+		if svcs, err := rt.apps.ListDesiredServices(ctx); err != nil || len(svcs) > 0 {
+			in.AppsLive = true
+		}
 	}
 	rt.collectPostureSecrets(ctx, &in, now)
 	rt.collectPostureTLS(ctx, &in, now)
@@ -324,6 +334,8 @@ func countPosture(items []postureItem) postureCounts {
 			c.Passing++
 		case it.Status == postureStatusUnknown:
 			c.Unknown++
+		case it.Recommended:
+			c.Recommended++
 		case it.Severity == postureCritical:
 			c.Critical++
 		case it.Severity == postureHigh:

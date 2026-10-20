@@ -1,12 +1,12 @@
 ---
-title: "Self-hosted Heroku alternative: git push to your own servers"
-description: "Levelrail is an open source Heroku alternative for your own Linux servers: git push deploys, managed Postgres and Redis, TLS, logs and rollback."
+title: "Self-hosted Heroku alternative: push-to-deploy on your own servers"
+description: "Levelrail is an open source Heroku alternative for your own Linux servers: push-to-deploy from your git host, managed Postgres and Redis, TLS, logs and rollback."
 "og:url": "https://docs.levelrail.com/heroku-alternative"
 ---
 
 **The Heroku workflow on a server you control**
 
-Git push to deploy, managed databases, automatic HTTPS, logs and rollback, running on Linux boxes you own instead of per-dyno billing.
+Push-to-deploy from your git host, managed databases, automatic HTTPS, logs and rollback, running on Linux boxes you own instead of per-dyno billing. There is no `git push heroku` style remote on the server: deploys come from a connected git provider, a repository URL or a container image.
 
 [Get started](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 
@@ -17,7 +17,7 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh
 ## What carries over from Heroku
 
 <CardGroup cols={3}>
-  <Card title="Git push to deploy">
+  <Card title="Push to deploy">
     Connect GitHub, GitLab or Bitbucket and every push to a branch builds and deploys with a readiness-gated cutover.
   </Card>
   <Card title="Managed databases">
@@ -35,7 +35,7 @@ Heroku is a managed platform. Levelrail is the same workflow on infrastructure y
 | | Heroku | Levelrail |
 | --- | --- | --- |
 | Billing | Per dyno and per add-on | Your own servers, no per-app fee |
-| Deploys | git push, buildpacks, release phase | git push, Dockerfile builds, readiness-gated cutover |
+| Deploys | git push to Heroku, buildpacks, release phase | Push to your git host (webhook), Dockerfile and Railpack builds, readiness-gated cutover |
 | Databases | Add-ons | Eight engines managed in the platform, scheduled and verified backups |
 | Operations | Handled by the vendor | You operate the servers, with alerts and a status page to help |
 

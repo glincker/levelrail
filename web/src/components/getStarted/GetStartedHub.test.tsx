@@ -91,11 +91,29 @@ describe('GetStartedHub', () => {
     expect(
       await screen.findByText('40% ready for production'),
     ).toBeInTheDocument()
-    expect(screen.getByText('Next up')).toBeInTheDocument()
+    expect(screen.getByText('Start here')).toBeInTheDocument()
     expect(screen.getByText(/203\.0\.113\.7/)).toBeInTheDocument()
     expect(
       screen.getByText(/Do "Deploy your first app" first/),
     ).toBeInTheDocument()
+  })
+
+  it('keeps the other steps collapsed while an essential step is open', async () => {
+    const g = guide(
+      [
+        step({ id: 'first_app' }),
+        step({ id: 'backup_target' }),
+        step({ id: 'secure_admin', state: 'done' }),
+      ],
+      'first_app',
+    )
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(g)))
+    const { container } = renderHub()
+    await screen.findByText('Start here')
+    const more = container.querySelector('details')
+    expect(more).not.toBeNull()
+    expect(more).not.toHaveAttribute('open')
+    expect(screen.getByText('More recommended steps')).toBeInTheDocument()
   })
 
   it('flips a step to skipped without a reload and offers undo', async () => {

@@ -38,6 +38,16 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Zero-downtime deploys without Kubernetes](/guides/zero-downtime-deploys-without-kubernetes): Ship containers to your own servers with no downtime and a fast rollback, using readiness probes, pinned images and freeze windows.
 - [Control Levelrail from OpenClaw](/guides/control-levelrail-from-openclaw): Give an OpenClaw agent a least-privilege Levelrail token and connect it over MCP or the CLI, so it can read logs, deploy and roll back without being able to change your guardrails.
 - [Use your Mac mini or MacBook as a private LLM server](/guides/use-a-mac-as-a-private-llm-server): Run Ollama, LM Studio or an MLX server natively on a Mac, register it as an inference endpoint, and serve it through Levelrail with scoped keys, usage tracking, limits and an optional cloud fallback.
+- [Self-host Ollama with Open WebUI](/guides/self-host-ollama-open-webui): Run Ollama and Open WebUI on your own server with Levelrail: HTTPS, generated settings, volume backups and rollback. Docker on a Mac cannot use the GPU.
+- [Self-host n8n with Levelrail](/guides/self-host-n8n): Self-host n8n workflow automation with Levelrail: one-command deploy, a generated encryption key, HTTPS, volume backups, health-gated deploys and rollback.
+- [Self-host Langflow with Levelrail](/guides/self-host-langflow): Self-host Langflow with Postgres on Levelrail: generated database and admin passwords, HTTPS, volume backups, health-gated deploys and rollback.
+- [Self-host Flowise with Levelrail](/guides/self-host-flowise): Self-host Flowise, the drag-and-drop LLM flow builder, on Levelrail: generated admin password, HTTPS, volume backups, health-gated deploys and rollback.
+- [Self-host OpenClaw with Levelrail](/guides/self-host-openclaw): Self-host the OpenClaw agent gateway on Levelrail with a generated gateway token, HTTPS, volume backups and rollback, and the settings to review first.
+- [Self-host Qdrant with Levelrail](/guides/self-host-qdrant): Self-host Qdrant vector search on Levelrail: a generated API key, HTTPS through the ingress, volume backups, health-gated deploys and rollback.
+- [Self-host LiteLLM Proxy with Levelrail](/guides/self-host-litellm): Self-host LiteLLM Proxy with Postgres on Levelrail: generated master key and database password, HTTPS, volume backups, health-gated deploys and rollback.
+- [Run AI agents safely on your own server](/guides/run-ai-agents-safely): What it takes to run AI agents on your own server: the risk, what Levelrail gives you today, the self-host AI guides, and what is not covered yet.
+- [OpenClaw on Docker Compose or on Levelrail](/guides/openclaw-on-docker-compose-vs-levelrail): A factual comparison of the OpenClaw template run with plain docker compose up on a VPS versus on Levelrail, with passed checks and known limits.
+- [Use Ollama and Open WebUI with a Mac and Levelrail](/guides/use-ollama-open-webui-with-a-mac-and-levelrail): Run Ollama natively on a Mac, register it as a Levelrail endpoint, and point Open WebUI at the gateway with a scoped key that has limits and expiry.
 
 ### Announcements
 
@@ -265,13 +275,13 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Coolify alternative: a self-hosted deploy platform that stays light](/coolify-alternative): Levelrail is an open source Coolify alternative: Docker Engine API instead of SSH, built-in metrics and logs, one-click rollback, read-only importer.
 - [Dokploy alternative: self-hosted deploys without Docker Swarm](/dokploy-alternative): Levelrail is an open source Dokploy alternative that skips Docker Swarm: an agent on each node and a reconciler over the Docker Engine API.
 - [CapRover alternative: self-hosted deploys without Docker Swarm](/caprover-alternative): Levelrail is an open source CapRover alternative: plain Docker instead of Swarm, an agent per node, built-in metrics and logs, one-click rollback.
-- [Dokku alternative: git push deploys with a dashboard and multi-server](/dokku-alternative): Levelrail is an open source Dokku alternative that adds a dashboard, deploy history with rollback, and built-in metrics and logs.
+- [Dokku alternative: a dashboard, deploy history and multi-server](/dokku-alternative): Levelrail is an open source Dokku alternative that adds a dashboard, deploy history with rollback, and built-in metrics and logs.
 - [Kamal alternative with a dashboard, history and built-in observability](/kamal-alternative): Levelrail is an open source Kamal alternative: the same zero-downtime idea plus a control plane, dashboard, deploy history and built-in metrics.
-- [Self-hosted Heroku alternative: git push to your own servers](/heroku-alternative): Levelrail is an open source Heroku alternative for your own Linux servers: git push deploys, managed Postgres and Redis, TLS, logs and rollback.
-- [Self-hosted Railway alternative with built-in observability](/railway-alternative): Levelrail is an open source Railway alternative you run on your own servers: git push deploys, managed databases, domains with TLS.
-- [Self-hosted Vercel alternative for Next.js and Docker apps](/vercel-alternative): Levelrail is an open source, self-hosted Vercel alternative: git push deploys, automatic TLS and preview environments per pull request.
+- [Self-hosted Heroku alternative: push-to-deploy on your own servers](/heroku-alternative): Levelrail is an open source Heroku alternative for your own Linux servers: push-to-deploy from your git host, managed Postgres and Redis, TLS, logs and rollback.
+- [Self-hosted Railway alternative with built-in observability](/railway-alternative): Levelrail is an open source Railway alternative you run on your own servers: push-to-deploy from your git host, managed databases, domains with TLS.
+- [Self-hosted Vercel alternative for Next.js and Docker apps](/vercel-alternative): Levelrail is an open source, self-hosted Vercel alternative: push-to-deploy from your git host, automatic TLS and preview environments per pull request.
 - [Self-hosted alternative to Cloud Run for steady workloads](/cloud-run-alternative): When an always-on container is cheaper on your own server than on Cloud Run, when it is not, and how Levelrail fits for git or image deploys.
-- [Self-host Next.js on your own server with git push, TLS and rollback](/self-host-nextjs): How to self-host a Next.js app with Levelrail: Dockerfile build, automatic HTTPS, preview environments per pull request and env vars.
+- [Self-host Next.js on your own server with TLS and rollback](/self-host-nextjs): How to self-host a Next.js app with Levelrail: Dockerfile build, automatic HTTPS, preview environments per pull request and env vars.
 
 ### Design proposals
 
@@ -304,7 +314,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 - [About Levelrail: open source, built by GLINCKER](/about): Levelrail is an Apache 2.0 licensed, self-hosted deployment platform built by GLINCKER. Read what it is, how it is licensed, and how pre-release it still is.
 - [Pricing: Levelrail is free and open source (Apache 2.0)](/pricing): Levelrail costs nothing: Apache 2.0, one edition, no license key and no feature gated behind a plan. You only pay for your servers.
-- [Levelrail demo: install, deploy and roll back in minutes](/demo): See Levelrail in action: install script, git push deploys, live logs, metrics with deploy markers, multi-node and one-click rollback.
+- [Levelrail demo: install, deploy and roll back in minutes](/demo): See Levelrail in action: install script, push-to-deploy from your git host, live logs, metrics with deploy markers, multi-node and one-click rollback.
 - [Run a read-only demo](/run-a-read-only-demo): Run a read-only demo instance of the dashboard with fictional data, no Docker and no way to change anything.
 - [Case studies: measured results, not testimonials](/case-studies): Real Levelrail measurements: a 500-app idle benchmark and multi-node verification against real Docker daemons, plus what is not proven yet.
 - [Contribute to Levelrail: open source deployment platform](/get-involved): Help build Levelrail: try it and report what breaks, pick a good first issue, improve docs, add templates or test multi-node. Apache 2.0, active development.

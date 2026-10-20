@@ -27,6 +27,7 @@ export interface PostureItem {
   subjects?: string[]
   detail?: string
   fix?: PostureFix
+  recommended?: boolean
 }
 
 export interface PostureCounts {
@@ -36,6 +37,7 @@ export interface PostureCounts {
   low: number
   unknown: number
   passing: number
+  recommended?: number
 }
 
 export interface SecurityPosture {

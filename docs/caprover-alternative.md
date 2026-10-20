@@ -6,7 +6,7 @@ description: "Levelrail is an open source CapRover alternative: plain Docker ins
 
 **Keep the simple CapRover workflow, drop the Swarm dependency**
 
-Levelrail runs apps on plain Docker containers with its own reconciler and a small agent per extra server. Git push to deploy, automatic HTTPS, rollback and an importer for your CapRover apps.
+Levelrail runs apps on plain Docker containers with its own reconciler and a small agent per extra server. Push-to-deploy from your git host, automatic HTTPS, rollback and an importer for your CapRover apps.
 
 [Get started](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 

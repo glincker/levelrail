@@ -1684,7 +1684,7 @@ levelrail-cli settings email set [flags]
 levelrail-cli settings ingress get [flags]
 levelrail-cli settings ingress set [--primary-domain D] [--acme-enabled] [--public-https-port N] [--tls-terminated-upstream] [--apps-base-domain HOST] [--dns-cname-target HOST] [--dns-ttl SECONDS] [--dns-proxied] [flags]
 levelrail-cli settings ingress https status [flags]
-levelrail-cli settings ingress https enable --email EMAIL [--staging] [--wait 2m] [flags]
+levelrail-cli settings ingress https enable [--email EMAIL] [--staging] [--wait 2m] [flags]
 levelrail-cli settings edge get [flags]
 levelrail-cli settings edge set [--trusted-proxies LIST] [--max-body SIZE] [--max-header SIZE] [--read-header-timeout DUR] [--idle-timeout DUR] [flags]
 levelrail-cli settings edge fix [flags]
@@ -1701,7 +1701,7 @@ levelrail-cli settings ai-assistant get|set|clear [flags]
 
 - `oauth set <provider>` enables, configures or disables one sign in provider; `<provider>` is `google`, `github` or `oidc`.
 - `ingress get` shows the primary domain, ACME settings, the automatic hostname toggle and the detected public address. `ingress set` changes them (`--primary-domain`, `--acme-enabled`, `--acme-email`, `--acme-directory-url`, `--fallback-domains=false`, `--hsts-enabled`, `--apps-base-domain`, `--dns-cname-target`, `--dns-ttl`, `--dns-proxied`); flags you leave out keep their current value.
-- `ingress https status` shows whether the dashboard's free sslip.io HTTPS is off, pending, issued or failed. `ingress https enable` points the dashboard at `<dashed-ip>.sslip.io` and issues a real Let's Encrypt certificate for it, with no DNS setup.
+- `ingress https status` shows whether the dashboard's free sslip.io HTTPS is off, pending, issued or failed. `ingress https enable` points the dashboard at `<dashed-ip>.sslip.io` and issues a real Let's Encrypt certificate for it, with no DNS setup. `--email` defaults to your admin account email. Plain HTTP sign-in stops once the https dashboard URL is saved.
 - `edge get|set|fix` shows and changes request limits and the trusted proxy list; `fix` detects the proxy in front of this server and trusts it. `levelrail-cli ingress-limits show|set|clear APP` is the per-app request body cap. See [Domains and ingress](/domains-and-ingress#edge-limits-client-ips-and-failover).
 - `dashboard-url set` sets the public dashboard URL; once it is `https://`, sign in over plain HTTP is refused (`--url ""` clears it).
 - `dashboard-url fix` switches the URL to `https://` on the primary domain once it answers over https with a valid certificate. The same Fix button sits in Settings, General (Settings health) and Security. CLI and MCP gating of beta features follows the Settings switches (`APP_EXPERIMENTAL` stays an override).

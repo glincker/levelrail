@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/mail"
 	"strconv"
 	"strings"
 	"sync"
@@ -56,6 +57,8 @@ type httpsStatusResource struct {
 	Error            string     `json:"error,omitempty"`
 	Hint             string     `json:"hint,omitempty"`
 	DashboardURL     string     `json:"dashboard_url,omitempty"`
+	// DefaultEmail is the signed-in admin's address, offered as the ACME contact when none is typed.
+	DefaultEmail string `json:"default_email,omitempty"`
 	// Preflight is set on the enable response only: a non-blocking dial of
 	// ports 80 and 443 on the public IP, so a closed firewall shows up now
 	// instead of as a failed issuance minutes later.
@@ -240,7 +243,23 @@ func (rt *Router) buildHTTPSStatus(r *http.Request) (httpsStatusResource, error)
 	if u, uerr := rt.ingressSettings.GetDashboardURL(ctx); uerr == nil {
 		out.DashboardURL = u
 	}
+	out.DefaultEmail = rt.defaultACMEEmail(r)
 	return out, nil
+}
+
+// defaultACMEEmail is the caller's own account email when it is a real address, else the first admin's.
+func (rt *Router) defaultACMEEmail(r *http.Request) string {
+	if rt.auth == nil {
+		return ""
+	}
+	if userID, ok := rt.currentSessionUserID(r); ok {
+		if u, err := rt.auth.GetUserByID(r.Context(), userID); err == nil {
+			if a, perr := mail.ParseAddress(u.Email); perr == nil && a.Address == u.Email {
+				return u.Email
+			}
+		}
+	}
+	return rt.firstAdminAddress(r.Context())
 }
 
 // handleGetHTTPSStatus handles GET /api/v1/settings/ingress/https.
@@ -268,6 +287,9 @@ func (rt *Router) handleEnableHTTPS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	email := strings.TrimSpace(req.Email)
+	if email == "" {
+		email = rt.defaultACMEEmail(r)
+	}
 	if err := validateIngressSettingsRequest(ingressSettingsResource{ACMEEnabled: true, ACMEEmail: email}); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return

@@ -90,16 +90,18 @@ Open one of the `http://<ip>:8080/login?setup=<token>` links from the install su
 After you create the admin account, the setup wizard opens and runs the server checks shown above.
 </Step>
 <Step title="Enable HTTPS">
-The dashboard shows a "connection is not encrypted" banner until you enable HTTPS. Once you have an `https://` **dashboard URL**, sign-in over plain HTTP is refused.
+The dashboard shows a "connection is not encrypted" banner until you enable HTTPS. Once you have an `https://` **dashboard URL**, sign-in over plain HTTP is refused, so switch to the https address right after. The certificate contact email defaults to your admin account email; change it if you want notices elsewhere.
 
 <Tabs>
 <Tab title="Dashboard">
-Open the Domains page and click **Enable HTTPS**. It issues a real Let's Encrypt certificate for `<dashed-ip>.sslip.io`, no DNS needed. See [Domains and ingress](/domains-and-ingress#zero-dns-setup-sslipio-hostnames-and-one-click-https).
+Open the Domains page and click **Enable HTTPS** (the email field is prefilled from your admin account). It issues a real Let's Encrypt certificate for `<dashed-ip>.sslip.io`, no DNS needed. See [Domains and ingress](/domains-and-ingress#zero-dns-setup-sslipio-hostnames-and-one-click-https).
 </Tab>
 <Tab title="CLI">
 ```bash
-levelrail-cli settings ingress https enable --email you@yourdomain.com
+levelrail-cli settings ingress https enable
 ```
+
+Add `--email you@yourdomain.com` to use a different contact. If the certificate does not issue because the address does not reach this server yet, fix that and run `levelrail-cli settings ingress https status` to re-check.
 </Tab>
 <Tab title="Own domain">
 Set a primary domain plus ACME on the Domains page.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  essentialSplit,
   guideStep,
   showGuideEntryPoints,
   stepGroups,
@@ -49,6 +50,29 @@ describe('stepGroups', () => {
 
   it('has no focus step when nothing is next', () => {
     expect(stepGroups({ ...base, next_step: undefined }).next).toBeUndefined()
+  })
+})
+
+describe('essentialSplit', () => {
+  it('puts the four essential steps first in order and the rest under more', () => {
+    const g = essentialSplit({
+      ...base,
+      steps: [
+        step('tls', 'todo'),
+        step('first_app', 'todo'),
+        step('secure_admin', 'done'),
+        step('public_address', 'todo'),
+        step('git_provider', 'todo'),
+        step('teammate', 'todo'),
+      ],
+    })
+    expect(g.essential.map((s) => s.id)).toEqual([
+      'public_address',
+      'secure_admin',
+      'git_provider',
+      'first_app',
+    ])
+    expect(g.more.map((s) => s.id)).toEqual(['tls', 'teammate'])
   })
 })
 

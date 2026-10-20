@@ -81,7 +81,7 @@ Architecture and design choices, not a ranking. Coolify is a mature project with
 
 <AccordionGroup>
   <Accordion title="Is Levelrail a drop-in replacement for Coolify?">
-    It covers the same job, deploying apps and databases to your own servers from a git push, but it is a different design, not a fork. A read-only importer brings apps and databases across, and the migration guide lists what maps and what does not.
+    It covers the same job, deploying apps and databases to your own servers from a connected git provider, but it is a different design, not a fork. A read-only importer brings apps and databases across, and the migration guide lists what maps and what does not.
   </Accordion>
   <Accordion title="Does Levelrail have Coolify's one-click service catalog?">
     Levelrail ships a catalog of 311 one-click templates, a sample of which is deployed by its end-to-end tests. Check that the services you need are covered, in either catalog, before moving.

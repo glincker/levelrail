@@ -10,10 +10,10 @@ import (
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
-// Below these the check only warns: a small single-app instance can run lighter.
+// Below these the check only warns. Set under the documented 1 GB, 1 vCPU start because a "1 GB" VM reports under 1 GiB.
 const (
-	defaultDoctorMinRAMBytes = 1 << 30 // 1GiB
-	defaultDoctorMinCPUCount = 2
+	defaultDoctorMinRAMBytes = 768 << 20 // 768MiB
+	defaultDoctorMinCPUCount = 1
 )
 
 // Big enough to get past write-cache noise, small enough that the check is not itself slow.

@@ -202,7 +202,7 @@ Setting the primary domain to a domain an app already owns is rejected with a `4
 
 ### One-click HTTPS for the dashboard
 
-The Domains page opens with an **Enable HTTPS** card (the setup wizard's domain step shows the same card first). Enter a contact email and click the button. The control plane:
+The Domains page opens with an **Enable HTTPS** card (the setup wizard's domain step shows the same card first). The contact email is prefilled from your admin account and can be edited, so one click is enough. The control plane:
 
 1. sets the dashboard's primary domain to `<dashed-ip>.sslip.io`,
 2. turns on real ACME issuance and asks Let's Encrypt for a certificate over the HTTP-01 challenge,
@@ -213,7 +213,7 @@ The Domains page opens with an **Enable HTTPS** card (the setup wizard's domain 
 <Tab title="CLI">
 
 ```bash
-levelrail-cli settings ingress https enable --email you@yourdomain.com --wait 2m
+levelrail-cli settings ingress https enable --wait 2m
 levelrail-cli settings ingress https status
 ```
 

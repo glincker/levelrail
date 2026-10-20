@@ -34,8 +34,12 @@ Anyone with `read` gets the score and counts, plus a short checklist for their o
 | API tokens unused for a long time | low | last use, `warn_unused_days` | Settings > API tokens |
 | Old sessions still signed in | low | sessions older than `APP_SECURITY_SESSION_MAX_AGE_DAYS` (default 7) | Sessions tab |
 | Only password sign-ins need new browser approval | low | `auth.approval_scope` | one click: every method |
-| The master key is missing or overdue for rotation | low | rotation history, `APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS` | `secrets rotate-master-key` |
+| The master key is missing, or was rotated longer ago than the warn window | low | rotation history, `APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS` | `secrets rotate-master-key` |
 | Secrets older than 90 days | low | secret update times | rotate the secret |
+
+### Recommendations on a fresh server
+
+A brand new single server cannot do everything on day one, so two failing checks are shown as **Recommended** and cost no score until they matter: off-box control plane backups, and a master key that has never been rotated (the doctor already treats that as informational, so the two views agree). Both stay visible with their fix. They start costing points when at least one app is deployed, or at once if you set `APP_SECURITY_POSTURE_STRICT=true`. A master key that was rotated and is now older than the warn window is a real failing check, and a missing master key always is. Recommended items are counted separately in `counts.recommended` and carry `"recommended": true`. No check was removed or weakened: only whether it lowers the score changed.
 
 HSTS is never on by default. The **Enable HSTS** button first probes every public domain over HTTPS and only turns it on when each serves a publicly trusted certificate; a self-signed or internal certificate blocks it, because browsers give no way past an HSTS error. It covers subdomains and browsers remember it for 180 days. `levelrail-cli security hsts status|enable|disable` does the same, and `PUT /api/v1/security/hsts` refuses with 409 until the probe passes.
 

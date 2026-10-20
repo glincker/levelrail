@@ -90,8 +90,8 @@ func TestEvaluatePosture_EachRuleFails(t *testing.T) {
 		{"code_login_admins", postureStatusFail, func(in *postureInput) { in.CodeLoginAdmins = &yes }},
 		{"public_exposure", postureStatusFail, func(in *postureInput) { in.Exposure.Attention = 2 }},
 		{"docker_api_exposed", postureStatusFail, func(in *postureInput) { in.Exposure.DockerAPI = 1 }},
-		{"offbox_backup_off", postureStatusFail, func(in *postureInput) { in.OffBoxBackups = &no }},
-		{"master_key_rotation", postureStatusFail, func(in *postureInput) { in.MasterKeyRotated = nil }},
+		{"offbox_backup_off", postureStatusFail, func(in *postureInput) { in.OffBoxBackups = &no; in.AppsLive = true }},
+		{"master_key_rotation", postureStatusFail, func(in *postureInput) { in.MasterKeyRotated = &old }},
 		{"master_key_rotation", postureStatusFail, func(in *postureInput) { in.MasterKey = false }},
 		{"secrets_old", postureStatusFail, func(in *postureInput) { in.StaleSecrets = &stale }},
 		{"tls_not_public", postureStatusFail, func(in *postureInput) { in.InsecureDomains = []string{"app.example.com"} }},
@@ -163,5 +163,51 @@ func TestPostureScoreAndGrade(t *testing.T) {
 				t.Fatalf("score %d grade %s, want %d %s", got, postureGrade(got), tt.score, tt.grade)
 			}
 		})
+	}
+}
+
+func TestEvaluatePosture_FreshServerRecommendationsCostNothing(t *testing.T) {
+	no := false
+	fresh := func() postureInput {
+		in := healthyPosture()
+		in.OffBoxBackups, in.MasterKeyRotated = &no, nil
+		return in
+	}
+	tests := []struct {
+		name      string
+		mutate    func(*postureInput)
+		wantScore int
+		wantRec   bool
+	}{
+		{"fresh server", func(*postureInput) {}, 100, true},
+		{"app deployed, backup penalised, key still free", func(in *postureInput) { in.AppsLive = true }, 85, false},
+		{"strict mode penalises backup", func(in *postureInput) { in.Strict = true }, 85, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			in := fresh()
+			tt.mutate(&in)
+			items := evaluatePosture(in)
+			by := postureByID(items)
+			if got := postureScore(items); got != tt.wantScore {
+				t.Fatalf("score = %d, want %d", got, tt.wantScore)
+			}
+			if got := by["offbox_backup_off"]; got.Status != postureStatusFail || got.Recommended != tt.wantRec {
+				t.Fatalf("offbox = %+v, want fail with recommended=%v", got, tt.wantRec)
+			}
+			if got := by["master_key_rotation"]; got.Status != postureStatusFail || !got.Recommended {
+				t.Fatalf("never-rotated master key must be a recommendation, got %+v", got)
+			}
+		})
+	}
+}
+
+func TestCountPosture_RecommendedSeparate(t *testing.T) {
+	c := countPosture([]postureItem{
+		{Severity: postureHigh, Status: postureStatusFail, Recommended: true},
+		{Severity: postureHigh, Status: postureStatusFail},
+	})
+	if c.Recommended != 1 || c.High != 1 {
+		t.Fatalf("counts = %+v", c)
 	}
 }

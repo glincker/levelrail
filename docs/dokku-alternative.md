@@ -1,12 +1,12 @@
 ---
-title: "Dokku alternative: git push deploys with a dashboard and multi-server"
+title: "Dokku alternative: a dashboard, deploy history and multi-server"
 description: "Levelrail is an open source Dokku alternative that adds a dashboard, deploy history with rollback, and built-in metrics and logs."
 "og:url": "https://docs.levelrail.com/dokku-alternative"
 ---
 
-**When one server and git push stops being enough**
+**When one server and a command line stops being enough**
 
-Dokku is a classic for a single host. Levelrail keeps the git push workflow and adds a dashboard, deploy history with one-click rollback, built-in observability and a way to add more servers.
+Dokku is a classic for a single host. Levelrail does not give you a `git push` remote on your server. It deploys from a connected git provider (GitHub, GitLab, Bitbucket or Gitea webhooks), from a public repository URL, or from a container image, and adds a dashboard, deploy history with one-click rollback, built-in observability and a way to add more servers.
 
 [Get started](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 
@@ -14,7 +14,7 @@ Dokku is a classic for a single host. Levelrail keeps the git push workflow and 
 curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
-## What you gain on top of git push
+## What you gain on top of a deploy command
 
 <CardGroup cols={3}>
   <Card title="A dashboard and history">
@@ -34,7 +34,7 @@ Dokku has almost no idle footprint and is hard to beat for simplicity on one ser
 
 | | Dokku | Levelrail |
 | --- | --- | --- |
-| How it manages servers | Commands run on the host itself, driven over SSH or git push | A control plane with an agent per node that dials out over mTLS |
+| How it manages servers | Commands run on the host itself, driven over SSH or `git push` to the server | A control plane with an agent per node that dials out over mTLS |
 | Orchestration | A plugin-based scheduler over Docker on one host | Level-triggered reconciler with recorded status conditions |
 | Ingress | nginx by default, other proxies via plugins | Caddy embedded in the control plane |
 | Runs as | A set of scripts on the host, no separate web service | One Go binary with an embedded dashboard |
@@ -48,8 +48,8 @@ Dokku has almost no idle footprint and is hard to beat for simplicity on one ser
   <Step title="Install on a Linux box">
     The install script handles Docker and the systemd service.
   </Step>
-  <Step title="Connect a git repo">
-    GitHub, GitLab, Bitbucket and Gitea webhooks trigger deploys.
+  <Step title="Connect a git repo or point at an image">
+    Connect GitHub, GitLab, Bitbucket or Gitea and pushes to your repository trigger deploys through webhooks. Without a provider, run `levelrail-cli import <repo-url> --deploy` for a public repository, or `levelrail-cli deploy <name> --image IMAGE` for a container image.
   </Step>
   <Step title="Deploy and roll back">
     Traffic cuts over only after the readiness probe passes, and previous images stay pinned.
@@ -63,7 +63,7 @@ Dokku has almost no idle footprint and is hard to beat for simplicity on one ser
     No. You deploy the same repositories and recreate environment variables and domains. The importer covers Coolify, Dokploy and CapRover.
   </Accordion>
   <Accordion title="Does Levelrail use buildpacks?">
-    Levelrail builds Dockerfiles with BuildKit. Check the docs for the current state of automatic build detection.
+    Not Heroku buildpacks. Levelrail builds a Dockerfile with BuildKit, and when there is none it detects the stack from files such as `package.json` or `go.mod` and builds it with Railpack. See [Importing apps](/importing-apps) for the detection order.
   </Accordion>
   <Accordion title="Do I need more than one server?">
     No. Single node is the best tested path, and multi-server is there when you need it.
@@ -72,6 +72,10 @@ Dokku has almost no idle footprint and is hard to beat for simplicity on one ser
     Yes. Apache 2.0, one edition.
   </Accordion>
 </AccordionGroup>
+
+## Choose Dokku if
+
+Choose Dokku if you want the smallest possible setup on one server: one `git push` to your own host deploys the app, there is no long-running control service, no dashboard to log in to, and no separate account on a git provider. Levelrail costs more to learn and to run (a resident service, a dashboard login, a git provider connection for push deploys) and earns that back once you want history, rollback, metrics, or a second server. Levelrail's zero-DNS HTTPS on a `sslip.io` hostname is the closest counter to Dokku's simplicity.
 
 ## Add a dashboard to your deploys
 

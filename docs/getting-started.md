@@ -48,7 +48,7 @@ Open the printed setup link, choose a password, and you are the admin. The first
 
 1. **Server check** runs the same checks as `levelrail-cli doctor`. Each failure shows a command to fix it and a docs link. Only Docker, the database, or the data directory failing blocks you.
 2. **Topology** (optional) explains single node versus [multi-node](/multi-node). Single node is the default and nothing needs deciding now.
-3. **Dashboard domain** (optional, recommended) shows the exact DNS record to create, then watches DNS and the HTTPS certificate until both are green. Use a dedicated name such as `console.example.com`, not a domain an app will serve.
+3. **Dashboard domain** (optional, recommended) offers one **Enable HTTPS** button that needs no DNS: your admin email is prefilled as the certificate contact (you can edit it), and the dashboard gets a free `<dashed-ip>.sslip.io` address with a real certificate. After HTTPS is on, signing in over plain HTTP stops working, so use the https address from then on. If the certificate fails (for example the address does not reach this server yet), use **Re-check** after fixing it. To use your own name instead, the step shows the exact DNS record to create, then watches DNS and the certificate until both are green. Use a dedicated name such as `console.example.com`, not a domain an app will serve.
 4. **Email** (optional) saves an SMTP server and sends a test message, so password resets and alert emails work. SES and Resend are set up under **Settings, Email**.
 5. **Git provider** (optional) connects GitHub, GitLab, Bitbucket, or Gitea.
 6. **First app** deploys a sample, a template, or your own repository, and waits until it is healthy. A failure shows the automatic diagnosis and a link to the logs.
@@ -76,7 +76,7 @@ From a terminal, the same flow is:
 levelrail-cli import https://github.com/your-org/your-app --deploy
 ```
 
-Without `--deploy` it prints the plan and stops. Every accepted input, including `docker run` commands, compose files, and Dockerfiles, is listed in [Importing apps](/importing-apps).
+Without `--deploy` it prints the plan and stops. This reads a public repository over HTTPS and needs no git provider account. To deploy automatically on every push (and to read private repositories), connect GitHub, GitLab, Bitbucket, or Gitea first: Levelrail has no `git push` remote of its own, so push deploys come from your provider's webhook. Every accepted input, including `docker run` commands, compose files, and Dockerfiles, is listed in [Importing apps](/importing-apps).
 
 </Tab>
 <Tab title="Built image">
@@ -152,6 +152,8 @@ Once you are signed in, the dashboard home shows live stats, recent activity, an
 <img src="/assets/screenshots/dashboard-home.png" alt="Levelrail dashboard home with app, request, and deploy stats and a Needs attention list" className="hidden dark:block" />
 
 The sidebar also has a **Get started** item, and the home page a "Setup N% ready" chip, until you hide the guide or every step is settled. It is a checklist driven by live state: each step flips to done on its own the moment the real thing exists, with no reload.
+
+The page opens with four steps under **Start here**: set the dashboard address and turn on HTTPS, secure the admin account, connect a git source (or skip it and deploy an image), and deploy your first app. The rest sit under **More recommended steps**, which stays collapsed until those four are settled. None of the extra steps blocks your first deploy. Terms used on the page: two-factor means a code from an authenticator app, a passkey is a sign-in with your device's fingerprint, face or PIN, DNS is the record that points a name at your server, and TLS is the encryption behind https.
 
 | Step | Done when | Optional |
 | --- | --- | --- |
