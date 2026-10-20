@@ -75,6 +75,7 @@ export function GitRepoListPicker({
   const [search, setSearch] = useState('')
   const [debounced, setDebounced] = useState('')
   const [owner, setOwner] = useState('')
+  const [connection, setConnection] = useState('')
   const [hideArchived, setHideArchived] = useState(false)
   const [hideForks, setHideForks] = useState(false)
 
@@ -87,10 +88,11 @@ export function GitRepoListPicker({
     () => ({
       search: debounced,
       owner,
+      connection,
       archived: hideArchived ? 'exclude' : 'include',
       forks: hideForks ? 'exclude' : 'include',
     }),
-    [debounced, owner, hideArchived, hideForks],
+    [debounced, owner, connection, hideArchived, hideForks],
   )
   const list = useGitRepoList(provider, params, enabled)
   const refresh = useRefreshGitRepos(provider)
@@ -172,6 +174,7 @@ export function GitRepoListPicker({
   }
 
   const owners = first?.owners ?? []
+  const accounts = first?.connections ?? []
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
@@ -210,6 +213,23 @@ export function GitRepoListPicker({
         role="group"
         aria-label={t('picker.filters.label')}
       >
+        {accounts.length > 1 ? (
+          <>
+            <FilterChip
+              label={t('picker.filters.allAccounts')}
+              active={connection === ''}
+              onClick={() => setConnection('')}
+            />
+            {accounts.map((a) => (
+              <FilterChip
+                key={a.connection_id}
+                label={`${a.account || a.label} (${a.loaded})`}
+                active={connection === a.connection_id}
+                onClick={() => setConnection(a.connection_id)}
+              />
+            ))}
+          </>
+        ) : null}
         {owners.length > 1 ? (
           <>
             <FilterChip

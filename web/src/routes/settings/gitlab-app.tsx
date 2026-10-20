@@ -1,48 +1,43 @@
 import { useEffect } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { toast } from '@/components/ui/toast'
 import { GitProviderPage } from '@/components/settings/GitProviderPage'
-import { GitLabAppConnectionCard } from '../../components/GitLabAppConnectionCard'
-import { GitLabAppProjectsCard } from '../../components/GitLabAppProjectsCard'
-import { gitlabAppStatusQueryOptions } from '../../queries/gitlabApp'
+import { GitConnectionsCard } from '@/components/settings/GitConnectionsCard'
+import { gitConnectionsQueryOptions } from '../../queries/gitConnections'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '@/components/settings/SettingsSkeletons'
 
-// Account-level, mirroring routes/settings/github-app.tsx's own
-// structure and placement.
+// Account-level: every GitLab account connected to this control plane.
 export const Route = createFileRoute('/settings/gitlab-app')({
   loader: ({ context: { queryClient } }) =>
-    queryClient.ensureQueryData(gitlabAppStatusQueryOptions()),
-  component: GitLabAppSettingsPage,
-  pendingComponent: GitLabAppSettingsSkeleton,
+    queryClient.ensureQueryData(gitConnectionsQueryOptions('gitlab')),
+  component: GitLabSettingsPage,
+  pendingComponent: GitLabSettingsSkeleton,
 })
 
-function GitLabAppSettingsSkeleton() {
+function GitLabSettingsSkeleton() {
   return (
     <div className="space-y-6" aria-hidden="true">
       <SettingsHeaderSkeleton icon />
-      <SettingsCardSkeleton rows={1} rowVariant="status" />
-      <SettingsCardSkeleton headerIcon rows={3} rowVariant="list" />
+      <SettingsCardSkeleton rows={3} rowVariant="list" />
     </div>
   )
 }
 
-function GitLabAppSettingsPage() {
-  useSuspenseQuery(gitlabAppStatusQueryOptions())
+function GitLabSettingsPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation('settings')
 
-  // GitLab's OAuth callback redirect lands back here with
-  // ?gitlab_app=connected on success, mirroring the github-app route's
-  // own one-time toast then query-param strip.
+  // The OAuth callback lands back here with ?git_connection=connected.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    if (params.get('gitlab_app') === 'connected') {
+    if (params.get('git_connection') === 'connected') {
       toast.add({
-        title: 'GitLab App authorized.',
-        description: 'Projects are now available to pick from.',
+        title: t('gitConnections.toast.authorized'),
+        description: t('gitConnections.toast.authorizedBody'),
         type: 'success',
       })
       void navigate({ to: '/settings/gitlab-app', replace: true })
@@ -52,8 +47,7 @@ function GitLabAppSettingsPage() {
 
   return (
     <GitProviderPage provider="gitlab">
-      <GitLabAppConnectionCard />
-      <GitLabAppProjectsCard />
+      <GitConnectionsCard provider="gitlab" />
     </GitProviderPage>
   )
 }

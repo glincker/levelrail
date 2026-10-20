@@ -334,8 +334,6 @@ type (
 	renewCertificateResource           = apiclient.RenewCertificateResource
 	gitProviderResource                = apiclient.GitProviderResource
 	gitHubAppStatusResource            = apiclient.GitHubAppStatusResource
-	gitLabAppStatusResource            = apiclient.GitLabAppStatusResource
-	bitbucketAppStatusResource         = apiclient.BitbucketAppStatusResource
 	gitHubAppRepoResource              = apiclient.GitHubAppRepoResource
 	gitHubAppRepoListResource          = apiclient.GitHubAppRepoListResource
 	gitHubAppRepoListErrResource       = apiclient.GitHubAppRepoListErrResource
@@ -344,10 +342,6 @@ type (
 	gitAppBranchResource               = apiclient.GitAppBranchResource
 	useRepoAsSourceRequest             = apiclient.UseRepoAsSourceRequest
 	useGitHubRepoAsSourceResponse      = apiclient.UseGitHubRepoAsSourceResponse
-	gitLabAppProjectResource           = apiclient.GitLabAppProjectResource
-	bitbucketAppRepoResource           = apiclient.BitbucketAppRepoResource
-	giteaAppStatusResource             = apiclient.GiteaAppStatusResource
-	giteaAppRepoResource               = apiclient.GiteaAppRepoResource
 	serviceTemplateListItem            = apiclient.ServiceTemplateListItem
 	serviceTemplateDetail              = apiclient.ServiceTemplateDetail
 	customTemplateListItem             = apiclient.CustomTemplateListItem

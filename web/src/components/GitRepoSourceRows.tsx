@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { GitConnectionBanner } from './GitConnectionHealth'
 import { GitRepoListPicker } from './GitRepoListPicker'
 import type { NormalizedRepoOption } from '../lib/gitRepoOptions'
-import { useGitLabAppBranches } from '../queries/gitlabApp'
+import { useGitConnectionBranches } from '../queries/gitConnections'
 import type { GitProviderStatus } from '../types/gitProviders'
 import type { GitRepoSourceValue } from './GitRepoSourcePicker'
 
@@ -59,8 +59,10 @@ export function GitLabProviderRow({
   const [selected, setSelected] = useState<NormalizedRepoOption | null>(null)
   const [branch, setBranch] = useState('')
 
-  const branches = useGitLabAppBranches(
-    selected ? Number(selected.key) : 0,
+  const ref = selected?.providerRef
+  const branches = useGitConnectionBranches(
+    ref && ref.kind !== 'github' ? ref.connectionId : '',
+    ref && ref.kind !== 'github' ? ref.repo : '',
     provider.can_list_branches && selected !== null,
   )
   const branchOptions = useMemo(

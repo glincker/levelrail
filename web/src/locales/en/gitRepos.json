@@ -19,7 +19,8 @@
       "label": "Filters",
       "allOwners": "All owners",
       "hideArchived": "Hide archived",
-      "hideForks": "Hide forks"
+      "hideForks": "Hide forks",
+      "allAccounts": "All accounts"
     },
     "status": {
       "showing": "Showing {{shown}} of {{total}}.",
@@ -41,7 +42,8 @@
       "private": "Private repository",
       "running": "Running as {{name}}"
     },
-    "retry": "Try again"
+    "retry": "Try again",
+    "account": "Account: {{name}}"
   },
   "connection": {
     "label": "Connection health",
@@ -88,6 +90,12 @@
       "noWebhook": "No webhook has arrived yet.",
       "error": "The last check failed: {{error}}",
       "disabled": "Polling for missed pushes is off."
+    },
+    "connection": {
+      "needs_reconnect": "The account this repository was picked from was disconnected. The source stays, but webhooks and previews cannot use it until you connect an account on the same host again.",
+      "needs_reauthorize": "The account {{label}} needs to be reconnected before this source's webhooks and previews work.",
+      "revoked": "The account {{label}} was removed on the provider. Reconnect it to use this source again.",
+      "reconnect": "Reconnect {{provider}}"
     }
   }
 }

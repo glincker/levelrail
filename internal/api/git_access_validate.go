@@ -214,13 +214,7 @@ func (rt *Router) handleValidateGitProvider(w http.ResponseWriter, r *http.Reque
 }
 
 func (rt *Router) gitProviderStatus(ctx context.Context, provider string) gitProviderResource {
-	switch provider {
-	case "gitlab":
-		return rt.gitlabProviderStatus(ctx)
-	case "gitea":
-		return rt.giteaProviderStatus(ctx)
-	}
-	return rt.bitbucketProviderStatus(ctx)
+	return rt.gitProviderStatusFor(ctx, provider)
 }
 
 func (rt *Router) validateGitHubProvider(ctx context.Context, res *gitAccessResult, page string) {

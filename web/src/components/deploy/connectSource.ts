@@ -1,8 +1,6 @@
-import { connectBitbucketRepoAsSource } from '../../queries/bitbucketApp'
-import { connectGiteaRepoAsSource } from '../../queries/giteaApp'
+import { connectRepoAsSource } from '../../queries/gitConnections'
 import { connectGitHubRepoAsSource } from '../../queries/githubApp'
 import { setGitSource } from '../../queries/gitSources'
-import { connectGitLabProjectAsSource } from '../../queries/gitlabApp'
 import type { GitSourceResource } from '../../types/gitSource'
 import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
 
@@ -29,14 +27,8 @@ export async function connectPickedRepo(
     void _e
     return resource
   }
-  if (ref?.kind === 'gitlab') {
-    return connectGitLabProjectAsSource(ref.projectId, req)
-  }
-  if (ref?.kind === 'bitbucket') {
-    return connectBitbucketRepoAsSource(ref.workspace, ref.repoSlug, req)
-  }
-  if (ref?.kind === 'gitea') {
-    return connectGiteaRepoAsSource(ref.owner, ref.repo, req)
+  if (ref) {
+    return connectRepoAsSource(ref.connectionId, { ...req, repo: ref.repo })
   }
   return setGitSource(appName, {
     repo_url: value.repoUrl.trim(),

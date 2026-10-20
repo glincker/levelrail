@@ -4230,7 +4230,9 @@ type GitAppBranchResource struct {
 // the request body every provider's own use-as-source route shares
 // (github-app, gitlab-app, bitbucket-app).
 type UseRepoAsSourceRequest struct {
-	AppName     string `json:"app_name"`
+	AppName string `json:"app_name"`
+	// Repo names the repository on a provider connection: a project id for GitLab, owner/name otherwise.
+	Repo        string `json:"repo,omitempty"`
 	Branch      string `json:"branch,omitempty"`
 	BuildType   string `json:"build_type,omitempty"`
 	BuildPath   string `json:"build_path,omitempty"`
@@ -4246,40 +4248,6 @@ type UseGitHubRepoAsSourceResponse struct {
 	WebhookError      string `json:"webhook_error,omitempty"`
 }
 
-// GitLabAppProjectResource mirrors internal/api's
-// gitLabAppProjectResource: one entry of GET /api/v1/gitlab-app/projects.
-type GitLabAppProjectResource struct {
-	ID                int64  `json:"id"`
-	Name              string `json:"name"`
-	PathWithNamespace string `json:"path_with_namespace"`
-	CloneURL          string `json:"clone_url"`
-	DefaultBranch     string `json:"default_branch"`
-	Visibility        string `json:"visibility"`
-	WebURL            string `json:"web_url"`
-}
-
-// BitbucketAppRepoResource mirrors internal/api's
-// bitbucketAppRepoResource: one entry of GET /api/v1/bitbucket-app/repos.
-type BitbucketAppRepoResource struct {
-	FullName      string `json:"full_name"`
-	Name          string `json:"name"`
-	Private       bool   `json:"private"`
-	DefaultBranch string `json:"default_branch"`
-	CloneURL      string `json:"clone_url"`
-	WebURL        string `json:"web_url"`
-}
-
-// GiteaAppRepoResource mirrors internal/api's giteaAppRepoResource: one
-// entry of GET /api/v1/gitea-app/repos.
-type GiteaAppRepoResource struct {
-	FullName      string `json:"full_name"`
-	Name          string `json:"name"`
-	Private       bool   `json:"private"`
-	DefaultBranch string `json:"default_branch"`
-	CloneURL      string `json:"clone_url"`
-	WebURL        string `json:"web_url"`
-}
-
 // GitProviderResource mirrors internal/api's gitProviderResource: one
 // entry of GET /api/v1/git-providers, a capability summary for one git
 // provider (github, gitlab, bitbucket, gitea).
@@ -4291,6 +4259,9 @@ type GitProviderResource struct {
 	CanAuthClone       bool   `json:"can_auth_clone"`
 	// Connection is the last known health: ok, needs_reauthorize, revoked or rate_limited.
 	Connection GitConnectionResource `json:"connection"`
+	// Connections counts configured connections; Authorized counts those holding a token.
+	Connections int `json:"connections"`
+	Authorized  int `json:"authorized"`
 }
 
 // GitConnectionResource mirrors internal/api's gitConnResource.
@@ -4312,38 +4283,6 @@ type GitHubAppStatusResource struct {
 	AccountLogin       string `json:"account_login,omitempty"`
 	CreatedAt          string `json:"created_at,omitempty"`
 	BaseURL            string `json:"base_url,omitempty"`
-}
-
-// GitLabAppStatusResource mirrors internal/api's gitLabAppStatusResource:
-// GET /api/v1/gitlab-app's response.
-type GitLabAppStatusResource struct {
-	Connected   bool   `json:"connected"`
-	InstanceURL string `json:"instance_url,omitempty"`
-	ClientID    string `json:"client_id,omitempty"`
-	CreatedAt   string `json:"created_at,omitempty"`
-	Authorized  bool   `json:"authorized"`
-	BaseURL     string `json:"base_url,omitempty"`
-}
-
-// BitbucketAppStatusResource mirrors internal/api's
-// bitbucketAppStatusResource: GET /api/v1/bitbucket-app's response.
-type BitbucketAppStatusResource struct {
-	Connected  bool   `json:"connected"`
-	Key        string `json:"key,omitempty"`
-	CreatedAt  string `json:"created_at,omitempty"`
-	Authorized bool   `json:"authorized"`
-	BaseURL    string `json:"base_url,omitempty"`
-}
-
-// GiteaAppStatusResource mirrors internal/api's giteaAppStatusResource:
-// GET /api/v1/gitea-app's response.
-type GiteaAppStatusResource struct {
-	Connected   bool   `json:"connected"`
-	InstanceURL string `json:"instance_url,omitempty"`
-	ClientID    string `json:"client_id,omitempty"`
-	CreatedAt   string `json:"created_at,omitempty"`
-	Authorized  bool   `json:"authorized"`
-	BaseURL     string `json:"base_url,omitempty"`
 }
 
 // StaticSiteResource mirrors internal/api's staticSiteResource

@@ -10,11 +10,11 @@ Git integrations fail quietly in a few well-known ways: a list that stops at an 
 
 | Data | Cached for | Refresh |
 | --- | --- | --- |
-| Repository list of each connection (one per GitHub installation) | `APP_GIT_REPO_CACHE_TTL`, then served stale for up to `APP_GIT_REPO_CACHE_STALE_MAX` while one background refresh runs | Refresh button in the picker, `levelrail-cli git-providers repos <provider> --refresh`, `?refresh=1` |
+| Repository list of each connection (one per GitHub installation, one per GitLab, Bitbucket or Gitea account) | `APP_GIT_REPO_CACHE_TTL`, then served stale for up to `APP_GIT_REPO_CACHE_STALE_MAX` while one background refresh runs | Refresh button in the picker, `levelrail-cli git-providers repos <provider> --refresh`, `?refresh=1` |
 | Newest commits of a branch (deploy sheet) | `APP_GIT_COMMITS_CACHE_TTL` | `?refresh=1` |
 | OAuth access tokens | Until a minute before they expire | Refreshed one caller at a time per connection |
 
-Concurrent requests for one connection share a single provider call. A cached list is dropped when the provider is disconnected, its connection is replaced or reauthorized, or a GitHub installation is removed. If the provider rate limits a refresh, the saved list is still served and says when it will be checked again.
+Concurrent requests for one connection share a single provider call. Everything is kept per connection: the list cache key, the recorded health, the OAuth refresh lock and the rate limit notice all belong to one account, so a revoked grant or a rate limit on one account never hides or slows another. A cached list is dropped when its own connection is disconnected or reauthorized, or a GitHub installation is removed. If the provider rate limits a refresh, the saved list is still served and says when it will be checked again.
 
 ## What polls
 
@@ -42,12 +42,12 @@ Webhook deliveries can arrive out of order. A push is ignored, with the reason i
 
 ## Statuses
 
-Connection health (`connection.status` in `GET /api/v1/git-providers`, the settings page, the System Doctor check `git_connections`):
+Connection health (`connection.status` of each account in `GET /api/v1/git-connections`, the worst of a provider's accounts in `GET /api/v1/git-providers`, the settings page, the System Doctor check `git_connections`). A git source whose account was disconnected shows `needs_reconnect`:
 
 | Status | Meaning | Recovery |
 | --- | --- | --- |
 | `ok` | The provider accepted the last call. | None. |
-| `needs_reauthorize` | The grant was revoked or expired, or the provider answered 401 or 403. | Reconnect on the provider's settings page. |
+| `needs_reauthorize` | The grant was revoked or expired, or the provider answered 401 or 403. | Reconnect on that account's row on the provider's settings page. |
 | `revoked` | The GitHub App installation or authorization no longer exists. | Reconnect, which opens the App page to install again. |
 | `rate_limited` | The provider is rate limiting. | Automatic; shows `next_check_at`. |
 

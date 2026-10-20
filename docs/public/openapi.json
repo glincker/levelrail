@@ -42719,221 +42719,10 @@
         "x-required-ability": "write:sensitive"
       }
     },
-    "/api/v1/bitbucket-app": {
-      "delete": {
-        "description": "Requires the `root` ability.",
-        "operationId": "handleDisconnectBitbucketApp",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "root"
-            ]
-          }
-        ],
-        "summary": "Disconnect Bitbucket App",
-        "tags": [
-          "Git Provider Apps"
-        ],
-        "x-required-ability": "root"
-      },
-      "get": {
-        "description": "Bitbucket App: the OAuth-consumer counterpart of the GitLab App routes above, same ability tiers for the same reasons, same two-step \"configure, then authorize\" shape. Cloud only, no instance_url (docs/design/git-provider-integrations.md section 3).\n\nRequires the `root` ability.",
-        "operationId": "handleGetBitbucketAppStatus",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "root"
-            ]
-          }
-        ],
-        "summary": "Bitbucket App: the OAuth-consumer counterpart of the GitLab App routes above, same ability tiers for the same reasons, same two-step \"configure, then authorize\" shape.",
-        "tags": [
-          "Git Provider Apps"
-        ],
-        "x-required-ability": "root"
-      },
-      "put": {
-        "description": "Requires the `root` ability.",
-        "operationId": "handleConnectBitbucketApp",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "additionalProperties": true,
-                "type": "object"
-              }
-            }
-          },
-          "required": false
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "root"
-            ]
-          }
-        ],
-        "summary": "Connect Bitbucket App",
-        "tags": [
-          "Git Provider Apps"
-        ],
-        "x-required-ability": "root"
-      }
-    },
     "/api/v1/bitbucket-app/callback": {
       "get": {
         "description": "Requires the `root` ability.",
-        "operationId": "handleBitbucketAppCallback",
+        "operationId": "handleGitConnectCallback",
         "responses": {
           "200": {
             "content": {
@@ -42991,9 +42780,9 @@
             ]
           }
         ],
-        "summary": "Bitbucket App Callback",
+        "summary": "Git Connect Callback",
         "tags": [
-          "Git Provider Apps"
+          "Other"
         ],
         "x-required-ability": "root"
       }
@@ -43001,7 +42790,7 @@
     "/api/v1/bitbucket-app/connect": {
       "get": {
         "description": "Requires the `root` ability.",
-        "operationId": "handleStartBitbucketAppConnect",
+        "operationId": "handleStartGitConnect",
         "responses": {
           "200": {
             "content": {
@@ -43059,262 +42848,11 @@
             ]
           }
         ],
-        "summary": "Start Bitbucket App Connect",
+        "summary": "Start Git Connect",
         "tags": [
-          "Git Provider Apps"
+          "Other"
         ],
         "x-required-ability": "root"
-      }
-    },
-    "/api/v1/bitbucket-app/repos": {
-      "get": {
-        "description": "Requires the `read:sensitive` ability.",
-        "operationId": "handleListBitbucketAppRepos",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "read:sensitive"
-            ]
-          }
-        ],
-        "summary": "List Bitbucket App Repos",
-        "tags": [
-          "Git Provider Apps"
-        ],
-        "x-required-ability": "read:sensitive"
-      }
-    },
-    "/api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/branches": {
-      "get": {
-        "description": "Requires the `read:sensitive` ability.",
-        "operationId": "handleListBitbucketAppBranches",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "workspace",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "repoSlug",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "read:sensitive"
-            ]
-          }
-        ],
-        "summary": "List Bitbucket App Branches",
-        "tags": [
-          "Git Provider Apps"
-        ],
-        "x-required-ability": "read:sensitive"
-      }
-    },
-    "/api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source": {
-      "post": {
-        "description": "Requires the `write:sensitive` ability.",
-        "operationId": "handleUseBitbucketRepoAsSource",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "workspace",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "repoSlug",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "additionalProperties": true,
-                "type": "object"
-              }
-            }
-          },
-          "required": false
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "write:sensitive"
-            ]
-          }
-        ],
-        "summary": "Use Bitbucket Repo As Source",
-        "tags": [
-          "Git Provider Apps"
-        ],
-        "x-required-ability": "write:sensitive"
       }
     },
     "/api/v1/brand": {
@@ -64411,6 +63949,648 @@
         ]
       }
     },
+    "/api/v1/git-connections": {
+      "get": {
+        "description": "GitLab, Bitbucket and Gitea connections: many per provider. Listing and reading are AbilityReadSensitive like the repository lists they feed; creating, renaming, defaulting and disconnecting are AbilityRoot because a connection grants read access to private repositories control-plane wide. connect and callback are full-page browser navigations, so the session cookie is implicitly root.\n\nRequires the `read:sensitive` ability.",
+        "operationId": "handleListGitConnections",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read:sensitive"
+            ]
+          }
+        ],
+        "summary": "GitLab, Bitbucket and Gitea connections: many per provider.",
+        "tags": [
+          "Other"
+        ],
+        "x-required-ability": "read:sensitive"
+      },
+      "post": {
+        "description": "Requires the `root` ability.",
+        "operationId": "handleCreateGitConnection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Create Git Connection",
+        "tags": [
+          "Other"
+        ],
+        "x-required-ability": "root"
+      }
+    },
+    "/api/v1/git-connections/{id}": {
+      "delete": {
+        "description": "Requires the `root` ability.",
+        "operationId": "handleDisconnectGitConnection",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Disconnect Git Connection",
+        "tags": [
+          "Other"
+        ],
+        "x-required-ability": "root"
+      },
+      "get": {
+        "description": "Requires the `read:sensitive` ability.",
+        "operationId": "handleGetGitConnection",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read:sensitive"
+            ]
+          }
+        ],
+        "summary": "Get Git Connection",
+        "tags": [
+          "Other"
+        ],
+        "x-required-ability": "read:sensitive"
+      },
+      "patch": {
+        "description": "Requires the `root` ability.",
+        "operationId": "handleRenameGitConnection",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Rename Git Connection",
+        "tags": [
+          "Other"
+        ],
+        "x-required-ability": "root"
+      }
+    },
+    "/api/v1/git-connections/{id}/branches": {
+      "get": {
+        "description": "Requires the `read:sensitive` ability.",
+        "operationId": "handleListGitConnectionBranches",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read:sensitive"
+            ]
+          }
+        ],
+        "summary": "List Git Connection Branches",
+        "tags": [
+          "Other"
+        ],
+        "x-required-ability": "read:sensitive"
+      }
+    },
+    "/api/v1/git-connections/{id}/default": {
+      "post": {
+        "description": "Requires the `root` ability.",
+        "operationId": "handleSetDefaultGitConnection",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Set Default Git Connection",
+        "tags": [
+          "Other"
+        ],
+        "x-required-ability": "root"
+      }
+    },
+    "/api/v1/git-connections/{id}/use-as-source": {
+      "post": {
+        "description": "Requires the `write:sensitive` ability.",
+        "operationId": "handleUseGitConnectionRepoAsSource",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "write:sensitive"
+            ]
+          }
+        ],
+        "summary": "Use Git Connection Repo As Source",
+        "tags": [
+          "Other"
+        ],
+        "x-required-ability": "write:sensitive"
+      }
+    },
     "/api/v1/git-providers": {
       "get": {
         "description": "Aggregated git provider capability summary (git_providers.go): one AbilityReadSensitive call the git-source picker uses instead of the three AbilityRoot status endpoints below, so a non-root deploy-scoped user can open the app creation wizard without hitting a 403. See handleListGitProviders's own doc comment.\n\nRequires the `read:sensitive` ability.",
@@ -64907,221 +65087,10 @@
         ]
       }
     },
-    "/api/v1/gitea-app": {
-      "delete": {
-        "description": "Requires the `root` ability.",
-        "operationId": "handleDisconnectGiteaApp",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "root"
-            ]
-          }
-        ],
-        "summary": "Disconnect Gitea App",
-        "tags": [
-          "Other"
-        ],
-        "x-required-ability": "root"
-      },
-      "get": {
-        "description": "Gitea App: the OAuth-Application counterpart of the GitLab App routes above, same ability tiers and self-hosted instance_url shape (Gitea is almost always self-hosted). Repos are addressed by an \"owner/repo\" path pair like Bitbucket's workspace/repoSlug, not a numeric id like GitLab's.\n\nRequires the `root` ability.",
-        "operationId": "handleGetGiteaAppStatus",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "root"
-            ]
-          }
-        ],
-        "summary": "Gitea App: the OAuth-Application counterpart of the GitLab App routes above, same ability tiers and self-hosted instance_url shape (Gitea is almost always self-hosted).",
-        "tags": [
-          "Other"
-        ],
-        "x-required-ability": "root"
-      },
-      "put": {
-        "description": "Requires the `root` ability.",
-        "operationId": "handleConnectGiteaApp",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "additionalProperties": true,
-                "type": "object"
-              }
-            }
-          },
-          "required": false
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "root"
-            ]
-          }
-        ],
-        "summary": "Connect Gitea App",
-        "tags": [
-          "Other"
-        ],
-        "x-required-ability": "root"
-      }
-    },
     "/api/v1/gitea-app/callback": {
       "get": {
         "description": "Requires the `root` ability.",
-        "operationId": "handleGiteaAppCallback",
+        "operationId": "GitConnectCallbackGetapiv1giteaappcallback",
         "responses": {
           "200": {
             "content": {
@@ -65179,7 +65148,7 @@
             ]
           }
         ],
-        "summary": "Gitea App Callback",
+        "summary": "Git Connect Callback",
         "tags": [
           "Other"
         ],
@@ -65189,7 +65158,7 @@
     "/api/v1/gitea-app/connect": {
       "get": {
         "description": "Requires the `root` ability.",
-        "operationId": "handleStartGiteaAppConnect",
+        "operationId": "StartGitConnectGetapiv1giteaappconnect",
         "responses": {
           "200": {
             "content": {
@@ -65247,262 +65216,11 @@
             ]
           }
         ],
-        "summary": "Start Gitea App Connect",
+        "summary": "Start Git Connect",
         "tags": [
           "Other"
         ],
         "x-required-ability": "root"
-      }
-    },
-    "/api/v1/gitea-app/repos": {
-      "get": {
-        "description": "Requires the `read:sensitive` ability.",
-        "operationId": "handleListGiteaAppRepos",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "read:sensitive"
-            ]
-          }
-        ],
-        "summary": "List Gitea App Repos",
-        "tags": [
-          "Other"
-        ],
-        "x-required-ability": "read:sensitive"
-      }
-    },
-    "/api/v1/gitea-app/repos/{owner}/{repo}/branches": {
-      "get": {
-        "description": "Requires the `read:sensitive` ability.",
-        "operationId": "handleListGiteaAppBranches",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "owner",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "repo",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "read:sensitive"
-            ]
-          }
-        ],
-        "summary": "List Gitea App Branches",
-        "tags": [
-          "Other"
-        ],
-        "x-required-ability": "read:sensitive"
-      }
-    },
-    "/api/v1/gitea-app/repos/{owner}/{repo}/use-as-source": {
-      "post": {
-        "description": "Requires the `write:sensitive` ability.",
-        "operationId": "handleUseGiteaRepoAsSource",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "owner",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "repo",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "additionalProperties": true,
-                "type": "object"
-              }
-            }
-          },
-          "required": false
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "write:sensitive"
-            ]
-          }
-        ],
-        "summary": "Use Gitea Repo As Source",
-        "tags": [
-          "Other"
-        ],
-        "x-required-ability": "write:sensitive"
       }
     },
     "/api/v1/github-app": {
@@ -66387,221 +66105,10 @@
         "x-required-ability": "write:sensitive"
       }
     },
-    "/api/v1/gitlab-app": {
-      "delete": {
-        "description": "Requires the `root` ability.",
-        "operationId": "handleDisconnectGitLabApp",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "root"
-            ]
-          }
-        ],
-        "summary": "Disconnect Git Lab App",
-        "tags": [
-          "Git Provider Apps"
-        ],
-        "x-required-ability": "root"
-      },
-      "get": {
-        "description": "GitLab App: the OAuth-Application counterpart of the GitHub App routes above, same ability tiers for the same reasons. connect and callback are real, full-page browser navigations (GitLab's OAuth2 authorization endpoint requires that), not fetch calls. use-as-source is AbilityWriteSensitive, matching PUT .../git-source's own tier: it performs that exact action.\n\nRequires the `root` ability.",
-        "operationId": "handleGetGitLabAppStatus",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "root"
-            ]
-          }
-        ],
-        "summary": "GitLab App: the OAuth-Application counterpart of the GitHub App routes above, same ability tiers for the same reasons.",
-        "tags": [
-          "Git Provider Apps"
-        ],
-        "x-required-ability": "root"
-      },
-      "put": {
-        "description": "Requires the `root` ability.",
-        "operationId": "handleConnectGitLabApp",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "additionalProperties": true,
-                "type": "object"
-              }
-            }
-          },
-          "required": false
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "root"
-            ]
-          }
-        ],
-        "summary": "Connect Git Lab App",
-        "tags": [
-          "Git Provider Apps"
-        ],
-        "x-required-ability": "root"
-      }
-    },
     "/api/v1/gitlab-app/callback": {
       "get": {
         "description": "Requires the `root` ability.",
-        "operationId": "handleGitLabAppCallback",
+        "operationId": "GitConnectCallbackGetapiv1gitlabappcallback",
         "responses": {
           "200": {
             "content": {
@@ -66659,9 +66166,9 @@
             ]
           }
         ],
-        "summary": "Git Lab App Callback",
+        "summary": "Git Connect Callback",
         "tags": [
-          "Git Provider Apps"
+          "Other"
         ],
         "x-required-ability": "root"
       }
@@ -66669,7 +66176,7 @@
     "/api/v1/gitlab-app/connect": {
       "get": {
         "description": "Requires the `root` ability.",
-        "operationId": "handleStartGitLabAppConnect",
+        "operationId": "StartGitConnectGetapiv1gitlabappconnect",
         "responses": {
           "200": {
             "content": {
@@ -66727,246 +66234,11 @@
             ]
           }
         ],
-        "summary": "Start Git Lab App Connect",
+        "summary": "Start Git Connect",
         "tags": [
-          "Git Provider Apps"
+          "Other"
         ],
         "x-required-ability": "root"
-      }
-    },
-    "/api/v1/gitlab-app/projects": {
-      "get": {
-        "description": "Requires the `read:sensitive` ability.",
-        "operationId": "handleListGitLabAppProjects",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "read:sensitive"
-            ]
-          }
-        ],
-        "summary": "List Git Lab App Projects",
-        "tags": [
-          "Git Provider Apps"
-        ],
-        "x-required-ability": "read:sensitive"
-      }
-    },
-    "/api/v1/gitlab-app/projects/{id}/branches": {
-      "get": {
-        "description": "Requires the `read:sensitive` ability.",
-        "operationId": "handleListGitLabAppBranches",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "read:sensitive"
-            ]
-          }
-        ],
-        "summary": "List Git Lab App Branches",
-        "tags": [
-          "Git Provider Apps"
-        ],
-        "x-required-ability": "read:sensitive"
-      }
-    },
-    "/api/v1/gitlab-app/projects/{id}/use-as-source": {
-      "post": {
-        "description": "Requires the `write:sensitive` ability.",
-        "operationId": "handleUseGitLabProjectAsSource",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "additionalProperties": true,
-                "type": "object"
-              }
-            }
-          },
-          "required": false
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "write:sensitive"
-            ]
-          }
-        ],
-        "summary": "Use Git Lab Project As Source",
-        "tags": [
-          "Git Provider Apps"
-        ],
-        "x-required-ability": "write:sensitive"
       }
     },
     "/api/v1/gpus": {

@@ -24,6 +24,13 @@ type Repo struct {
 	PushedAt      string `json:"pushed_at,omitempty"`
 	ProjectID     int64  `json:"project_id,omitempty"`
 	AccountType   string `json:"account_type,omitempty"`
+	// Provider, ConnectionID, ConnectionLabel and Account say which
+	// connection a row came from; they are stamped when lists merge and are
+	// never cached.
+	Provider        string `json:"provider,omitempty"`
+	ConnectionID    string `json:"connection_id,omitempty"`
+	ConnectionLabel string `json:"connection_label,omitempty"`
+	Account         string `json:"account,omitempty"`
 }
 
 // Mode selects how a boolean attribute filters the list.

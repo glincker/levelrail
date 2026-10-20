@@ -287,12 +287,6 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runGitProviders(prog, args[1:], stdout, stderr, lookupEnv)
 	case "github-app":
 		return runGitHubApp(prog, args[1:], stdout, stderr, lookupEnv)
-	case "gitlab-app":
-		return runGitLabApp(prog, args[1:], stdout, stderr, lookupEnv)
-	case "bitbucket-app":
-		return runBitbucketApp(prog, args[1:], stdout, stderr, lookupEnv)
-	case "gitea-app":
-		return runGiteaApp(prog, args[1:], stdout, stderr, lookupEnv)
 	case "compose":
 		return runCompose(prog, args[1:], stdout, stderr, lookupEnv)
 	case "templates":
@@ -467,9 +461,6 @@ Usage:
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant
   %[1]s git-providers [flags]                             connection status and capabilities for every git provider in one call
   %[1]s github-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a GitHub App connection, browse and use its repos
-  %[1]s gitlab-app status|disconnect|projects|branches|use-as-source [flags]   check/forget a GitLab App connection, browse and use its projects
-  %[1]s bitbucket-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a Bitbucket App connection, browse and use its repos
-  %[1]s gitea-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a Gitea App connection, browse and use its repos
   %[1]s templates list|get|deploy|install [flags]         browse, deploy and install from the curated service catalog
   %[1]s compose deploy|status|logs|redeploy|rollback|down  run a Docker Compose file as one stack
   %[1]s static-sites list|delete [flags]                   list build.type: static apps, remove an orphaned site

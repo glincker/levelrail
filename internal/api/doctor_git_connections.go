@@ -16,7 +16,7 @@ func (rt *Router) doctorCheckGitConnections(ctx context.Context) doctorCheckReso
 	const code, name = "git_connections", "Git provider connections"
 	res := doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, DocsPath: gitConnectionsDocsPath}
 	statuses := []gitProviderResource{
-		rt.githubProviderStatus(ctx), rt.gitlabProviderStatus(ctx), rt.bitbucketProviderStatus(ctx), rt.giteaProviderStatus(ctx),
+		rt.githubProviderStatus(ctx), rt.gitProviderStatusFor(ctx, gitProviderGitLab), rt.gitProviderStatusFor(ctx, gitProviderBitbucket), rt.gitProviderStatusFor(ctx, gitProviderGitea),
 	}
 	var connected, problems []string
 	for _, p := range statuses {
@@ -24,7 +24,7 @@ func (rt *Router) doctorCheckGitConnections(ctx context.Context) doctorCheckReso
 			continue
 		}
 		connected = append(connected, p.Provider)
-		h := rt.gitConnHealth(ctx, p.Provider)
+		h := rt.gitProviderHealth(ctx, p.Provider)
 		if h.Status == store.GitConnOK {
 			continue
 		}

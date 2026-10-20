@@ -281,4 +281,60 @@ describe('GitRepoListPicker', () => {
       }),
     )
   })
+
+  it('shows the account on every row and filters by account when several are connected', async () => {
+    const ann = {
+      connection_id: 'gc_a',
+      connection_label: 'ann @ gitlab.com',
+      account: 'ann',
+    }
+    const bob = {
+      connection_id: 'gc_b',
+      connection_label: 'Work',
+      account: 'bob',
+    }
+    const facets = [
+      {
+        connection_id: 'gc_a',
+        provider: 'gitlab',
+        label: 'ann @ gitlab.com',
+        account: 'ann',
+        loaded: 1,
+        failed: false,
+      },
+      {
+        connection_id: 'gc_b',
+        provider: 'gitlab',
+        label: 'Work',
+        account: 'bob',
+        loaded: 1,
+        failed: false,
+      },
+    ]
+    const fetchMock = mockFetch((url) => {
+      if (url.includes('connection=gc_b')) {
+        return json(page([item('corp', 'web', bob)], { connections: facets }))
+      }
+      return json(
+        page([item('ann', 'web', ann), item('corp', 'web', bob)], {
+          connections: facets,
+        }),
+      )
+    })
+    renderPicker()
+
+    await screen.findByText('Account: ann')
+    expect(screen.getByText('Account: bob')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /web/ })).toHaveLength(2)
+
+    fireEvent.click(screen.getByRole('button', { name: 'bob (1)' }))
+    await waitFor(() => {
+      expect(screen.queryByText('Account: ann')).not.toBeInTheDocument()
+    })
+    expect(
+      fetchMock.mock.calls.some(([input]) =>
+        urlOf(input).includes('connection=gc_b'),
+      ),
+    ).toBe(true)
+  })
 })

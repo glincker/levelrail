@@ -23,9 +23,7 @@ import { deployKeys } from '../queries/deploys'
 import { deployAttemptKeys } from '../queries/deployAttempts'
 import { gitSourceKeys, setGitSource } from '../queries/gitSources'
 import { connectGitHubRepoAsSource } from '../queries/githubApp'
-import { connectGitLabProjectAsSource } from '../queries/gitlabApp'
-import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
-import { connectGiteaRepoAsSource } from '../queries/giteaApp'
+import { connectRepoAsSource } from '../queries/gitConnections'
 import type { GitSourceBuildType, GitSourceResource } from '../types/gitSource'
 import { useFormDraft } from '../hooks/useFormDraft'
 import {
@@ -287,9 +285,8 @@ function gitSourceBuildFields(values: FormOutput): {
 // GitBuildSourceFields) falls back to the generic endpoint, exactly the
 // path GitSourceCard.tsx's own manual connect form already uses.
 //
-// All three providers now have a real "use as source" endpoint that
-// registers a push webhook (queries/githubApp.ts, queries/gitlabApp.ts,
-// queries/bitbucketApp.ts). GitHub's own version can still come back with
+// Every provider has a real "use as source" endpoint that registers a push
+// webhook (queries/githubApp.ts, queries/gitConnections.ts). GitHub's own version can still come back with
 // autoRegistered: false plus a webhookError: an installation that
 // predates the App requesting repository_hooks:write can't register a
 // webhook at all (see GitHubAppUseRepoAsSourceResponse's own doc
@@ -331,37 +328,12 @@ async function connectGitSourceFor(
     )
     return { resource, autoRegistered: webhookRegistered, webhookError }
   }
-  if (effective?.providerRef?.kind === 'gitlab') {
-    const resource = await connectGitLabProjectAsSource(
-      effective.providerRef.projectId,
+  if (effective?.providerRef) {
+    const resource = await connectRepoAsSource(
+      effective.providerRef.connectionId,
       {
         app_name: name,
-        branch,
-        build_type: buildType,
-        build_path: buildPath,
-      },
-    )
-    return { resource, autoRegistered: true }
-  }
-  if (effective?.providerRef?.kind === 'bitbucket') {
-    const resource = await connectBitbucketRepoAsSource(
-      effective.providerRef.workspace,
-      effective.providerRef.repoSlug,
-      {
-        app_name: name,
-        branch,
-        build_type: buildType,
-        build_path: buildPath,
-      },
-    )
-    return { resource, autoRegistered: true }
-  }
-  if (effective?.providerRef?.kind === 'gitea') {
-    const resource = await connectGiteaRepoAsSource(
-      effective.providerRef.owner,
-      effective.providerRef.repo,
-      {
-        app_name: name,
+        repo: effective.providerRef.repo,
         branch,
         build_type: buildType,
         build_path: buildPath,
