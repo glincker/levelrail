@@ -131,7 +131,6 @@ github_app_register.go runGitHubAppRegisterURL --public
 iam_policies.go runIAMPoliciesAttachOrDetach --principal-id
 iam_policies.go runIAMPoliciesAttachOrDetach --principal-type
 import_apps.go runImportApps --allow-loopback
-import_apps.go runImportApps --allow-private
 import_apps.go runImportApps --api-url
 import_apps.go runImportApps --collision
 import_apps.go runImportApps --insecure-tls
