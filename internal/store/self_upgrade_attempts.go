@@ -23,10 +23,13 @@ type SelfUpgradeAttempt struct {
 	StepsJSON   string
 	StartedAt   string
 	FinishedAt  string
+	// RolledBackMinutes is -1 unless a rollback restored the database.
+	RolledBackMinutes int
+	DatabaseRestored  bool
 }
 
 const selfUpgradeColumns = `id, from_version, to_version, from_schema, to_schema, initiator, outcome,
-	failed_step, error, backup_name, acked_json, steps_json, started_at, finished_at`
+	failed_step, error, backup_name, acked_json, steps_json, started_at, finished_at, rolled_back_minutes, database_restored`
 
 // UpsertSelfUpgradeAttempt stores a, replacing an earlier copy of the same id,
 // so importing a journal twice is harmless.
@@ -39,16 +42,17 @@ func (db *DB) UpsertSelfUpgradeAttempt(ctx context.Context, a SelfUpgradeAttempt
 	}
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO self_upgrade_attempts (`+selfUpgradeColumns+`)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET
 			from_version = excluded.from_version, to_version = excluded.to_version,
 			from_schema = excluded.from_schema, to_schema = excluded.to_schema,
 			initiator = excluded.initiator, outcome = excluded.outcome,
 			failed_step = excluded.failed_step, error = excluded.error,
 			backup_name = excluded.backup_name, acked_json = excluded.acked_json,
-			steps_json = excluded.steps_json, finished_at = excluded.finished_at`,
+			steps_json = excluded.steps_json, finished_at = excluded.finished_at,
+			rolled_back_minutes = excluded.rolled_back_minutes, database_restored = excluded.database_restored`,
 		a.ID, a.FromVersion, a.ToVersion, a.FromSchema, a.ToSchema, a.Initiator, a.Outcome,
-		a.FailedStep, a.Error, a.BackupName, a.AckedJSON, a.StepsJSON, a.StartedAt, a.FinishedAt)
+		a.FailedStep, a.Error, a.BackupName, a.AckedJSON, a.StepsJSON, a.StartedAt, a.FinishedAt, a.RolledBackMinutes, a.DatabaseRestored)
 	if err != nil {
 		return fmt.Errorf("store self upgrade attempt %s: %w", a.ID, err)
 	}
@@ -79,7 +83,7 @@ func (db *DB) ListSelfUpgradeAttempts(ctx context.Context, limit int) ([]SelfUpg
 func scanSelfUpgrade(rows *sql.Rows) (SelfUpgradeAttempt, error) {
 	var a SelfUpgradeAttempt
 	err := rows.Scan(&a.ID, &a.FromVersion, &a.ToVersion, &a.FromSchema, &a.ToSchema, &a.Initiator, &a.Outcome,
-		&a.FailedStep, &a.Error, &a.BackupName, &a.AckedJSON, &a.StepsJSON, &a.StartedAt, &a.FinishedAt)
+		&a.FailedStep, &a.Error, &a.BackupName, &a.AckedJSON, &a.StepsJSON, &a.StartedAt, &a.FinishedAt, &a.RolledBackMinutes, &a.DatabaseRestored)
 	if err != nil {
 		return SelfUpgradeAttempt{}, fmt.Errorf("scan self upgrade attempt: %w", err)
 	}

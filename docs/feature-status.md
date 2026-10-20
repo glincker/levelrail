@@ -28,6 +28,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Area | Label | One-line justification |
 | --- | --- | --- |
 | Deploy approvals | stable | Live e2e proves a second user's approval is the only thing that cuts over (`test/e2e/protected_environment_test.go`). |
+| Upgrade restore points and post-upgrade verification | beta | Unit tests only (`internal/selfupgrade/restorepoint_test.go`): automatic restore of binary and database on failed verification, retention, manual restore. No live run on a real host yet. See [Upgrade safely](/upgrade-safely). |
 | PITR and database backups | stable | Live e2e restores before a marker row through the real API with MinIO (`test/e2e/pitr_test.go`), plus live Docker dump and restore tests. |
 | Previews | stable (GitHub), beta (GitLab, Bitbucket) | Lifecycle e2e exists for all three (`test/e2e/preview_environments_*_test.go`), but they replay synthetic webhooks, not a real forge. Kept beta for the two forges with less usage. |
 | IAM | stable | Broadest unit coverage in the repo, plus live e2e where a deny policy blocks a real action and a token allow policy scopes one (`test/e2e/iam_policy_enforcement_test.go`). |

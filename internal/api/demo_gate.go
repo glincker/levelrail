@@ -108,6 +108,7 @@ var demoReadDenylist = []string{
 	"/api/v1/updates/settings",
 	"/api/v1/updates/auto",
 	"/api/v1/updates/rollback-plan",
+	"/api/v1/updates/restore-points",
 	"/api/v1/updates/self-upgrade/attempts",
 	"/api/v1/updates/self-upgrade/plan",
 	"/api/v1/settings/ingress/check",

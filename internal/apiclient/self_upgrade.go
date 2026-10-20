@@ -60,6 +60,50 @@ type SelfUpgradeAttempt struct {
 	Log         []SelfUpgradeLogLine `json:"log"`
 	StartedAt   string               `json:"started_at"`
 	FinishedAt  string               `json:"finished_at"`
+
+	DatabaseRestored  bool `json:"database_restored"`
+	RolledBackMinutes int  `json:"rolled_back_minutes"`
+}
+
+// RestorePoint is one kept pre-upgrade restore point.
+type RestorePoint struct {
+	ID                    string `json:"id"`
+	Version               string `json:"version"`
+	Schema                int    `json:"schema"`
+	CreatedAt             string `json:"created_at"`
+	SizeBytes             int64  `json:"size_bytes"`
+	HasBinary             bool   `json:"has_binary"`
+	HasUnit               bool   `json:"has_unit"`
+	DatabaseRestoreNeeded bool   `json:"database_restore_needed"`
+	CanRestore            bool   `json:"can_restore"`
+	CannotRestoreWhy      string `json:"cannot_restore_reason"`
+}
+
+// RestorePoints is GET /api/v1/updates/restore-points' response.
+type RestorePoints struct {
+	RestorePoints []RestorePoint `json:"restore_points"`
+}
+
+// RestoreStarted is POST /api/v1/updates/restore-points/{id}/restore's response.
+type RestoreStarted struct {
+	Status       string `json:"status"`
+	RestorePoint string `json:"restore_point"`
+	Version      string `json:"version"`
+}
+
+// ListRestorePoints calls GET /api/v1/updates/restore-points.
+func (c *Client) ListRestorePoints(ctx context.Context) (RestorePoints, error) {
+	var out RestorePoints
+	err := c.do(ctx, http.MethodGet, "/api/v1/updates/restore-points", nil, &out)
+	return out, err
+}
+
+// RestoreRestorePoint calls POST /api/v1/updates/restore-points/{id}/restore.
+func (c *Client) RestoreRestorePoint(ctx context.Context, id string) (RestoreStarted, error) {
+	var out RestoreStarted
+	body := map[string]any{"confirm": id}
+	err := c.do(ctx, http.MethodPost, "/api/v1/updates/restore-points/"+url.PathEscape(id)+"/restore", body, &out)
+	return out, err
 }
 
 // SelfUpgradeAttempts is GET /api/v1/updates/self-upgrade/attempts' response.
