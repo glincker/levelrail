@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"syscall"
 	"time"
 )
 
@@ -26,16 +25,6 @@ func diskSpaceFromStatfs(blocks, bavail uint64, bsize int64) (total, used int64)
 	total = int64(blocks) * bsize  //nolint:gosec // statfs fields are always non-negative in practice
 	avail := int64(bavail) * bsize //nolint:gosec // statfs fields are always non-negative in practice
 	return total, total - avail
-}
-
-// diskSpaceBytes reads path's filesystem capacity via statfs.
-func diskSpaceBytes(path string) (total, used int64, err error) {
-	var stat syscall.Statfs_t
-	if err := syscall.Statfs(path, &stat); err != nil {
-		return 0, 0, fmt.Errorf("telemetry: statfs %q: %w", path, err)
-	}
-	total, used = diskSpaceFromStatfs(uint64(stat.Blocks), uint64(stat.Bavail), int64(stat.Bsize)) //nolint:gosec // statfs fields are always non-negative in practice
-	return total, used, nil
 }
 
 // HostDiskBytes reads path's filesystem total and used bytes.

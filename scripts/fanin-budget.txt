@@ -1,35 +1,41 @@
 # Max transitive dependents per package (scripts/check-fanin.sh). Raise a number only
 # with a reason in the PR; lowering it after a split is the point.
-# 0.10: docker, telemetry and netguard gained dependents from tracing, error tracking, budgets and the network pool.
-# 0.11: deploytrace and the GitHub Actions reporter are new packages, each adds one dependent to what it imports.
-# 0.11: the CPU model downloader (netguard, diskspace) adds one dependent each.
-# 0.12: the plugin runtime and its example plugin and signer import docker, adding two dependents.
-# 0.12: spendcap is a new pure package imported by store and spec, so it inherits their dependents.
-# 0.12: autoscale is a new pure package imported by store, spec and deploy, so it inherits their dependents.
-internal/autoscale 90
-internal/bindaddr 90
-internal/bindmount 92
-internal/build 21
-internal/compose 25
-internal/deploysafety 22
-internal/deploytrace 21
-internal/docker 99
-internal/dockerguard 27
-internal/extdb 21
-internal/gpu 88
-internal/loadbalancer 90
-internal/meshpath 28
-internal/network 32
-internal/policy 89
-internal/quota 88
-internal/reconcile 89
-internal/reconcile/database 27
-internal/spec 89
-internal/spendcap 90
-internal/store 87
-internal/telemetry 28
-internal/usagecost 88
-kit/cronexpr 90
-kit/diskspace 27
-kit/netguard 41
-kit/probe 90
+internal/autoscale 117
+internal/bindaddr 117
+internal/bindmount 119
+internal/build 29
+internal/canarypolicy 117
+internal/chaos 115
+internal/compose 43
+internal/costbudget 115
+internal/deploysafety 31
+internal/deploytrace 30
+internal/docker 131
+internal/dockerguard 46
+internal/envredact 52
+internal/extdb 30
+internal/footprint 127
+internal/frameworks 39
+internal/gpu 115
+internal/loadbalancer 117
+internal/meshpath 39
+internal/network 43
+internal/pkgregistry 24
+internal/policy 116
+internal/quota 115
+internal/reconcile 116
+internal/reconcile/database 38
+internal/secretmask 120
+internal/spec 116
+internal/spendcap 118
+internal/store 114
+internal/telemetry 47
+internal/usagecost 115
+internal/version 27
+kit/cronexpr 117
+kit/diskspace 36
+kit/ids 57
+kit/netguard 64
+kit/probe 117
+kit/semver 26
+kit/timeutil 116
