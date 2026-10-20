@@ -53,4 +53,6 @@ func (rt *Router) registerGitProviderRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/bitbucket-app/callback", rt.requireAbility(AbilityRoot, rt.handleGitConnectCallback(gitProviderBitbucket)))
 	mux.HandleFunc("GET /api/v1/gitea-app/connect", rt.requireAbility(AbilityRoot, rt.handleStartGitConnect(gitProviderGitea)))
 	mux.HandleFunc("GET /api/v1/gitea-app/callback", rt.requireAbility(AbilityRoot, rt.handleGitConnectCallback(gitProviderGitea)))
+	mux.HandleFunc("GET /api/v1/forgejo-app/connect", rt.requireAbility(AbilityRoot, rt.handleStartGitConnect(gitProviderForgejo)))
+	mux.HandleFunc("GET /api/v1/forgejo-app/callback", rt.requireAbility(AbilityRoot, rt.handleGitConnectCallback(gitProviderForgejo)))
 }

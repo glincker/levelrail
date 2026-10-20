@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -53,6 +54,9 @@ func (rt *Router) gitConnectionResourceFor(ctx context.Context, c store.GitConne
 		CreatedBy: c.CreatedBy, CreatedAt: c.CreatedAt, Connection: rt.gitConnHealth(ctx, c.ID),
 		AuthorizePath: "/api/v1/" + c.Provider + "-app/connect?connection_id=" + url.QueryEscape(c.ID),
 	}
+	if c.Provider == gitProviderBitbucketServer {
+		res.AuthorizePath = ""
+	}
 	if rt.gitConnSecrets != nil {
 		ok, err := rt.gitConnSecrets.Exists(ctx, c.SecretsKey, gitConnAccessTokenKey)
 		if err != nil {
@@ -67,7 +71,7 @@ func (rt *Router) gitConnectionResourceFor(ctx context.Context, c store.GitConne
 }
 
 func validGitProvider(p string) bool {
-	return p == gitProviderGitLab || p == gitProviderBitbucket || p == gitProviderGitea
+	return slices.Contains(connectionGitProviders, p)
 }
 
 // handleListGitConnections handles GET /api/v1/git-connections?provider=:
@@ -76,7 +80,7 @@ func validGitProvider(p string) bool {
 func (rt *Router) handleListGitConnections(w http.ResponseWriter, r *http.Request) {
 	provider := r.URL.Query().Get("provider")
 	if provider != "" && !validGitProvider(provider) {
-		writeError(w, http.StatusBadRequest, "provider must be one of gitlab, bitbucket, gitea")
+		writeError(w, http.StatusBadRequest, errGitProviderOneOf)
 		return
 	}
 	conns, err := rt.gitConns.ListGitConnections(r.Context(), provider)
@@ -121,6 +125,8 @@ type createGitConnectionRequest struct {
 	ClientSecret      string `json:"client_secret"`
 	Label             string `json:"label"`
 	ReuseConnectionID string `json:"reuse_connection_id"`
+	// Token is the personal access token of a token-authenticated provider (Bitbucket Server); it replaces the OAuth client fields.
+	Token string `json:"token"`
 }
 
 // handleCreateGitConnection handles POST /api/v1/git-connections: saves a new
@@ -138,7 +144,11 @@ func (rt *Router) handleCreateGitConnection(w http.ResponseWriter, r *http.Reque
 	}
 	adapter, ok := rt.gitAdapter(strings.TrimSpace(req.Provider))
 	if !ok {
-		writeError(w, http.StatusBadRequest, "provider must be one of gitlab, bitbucket, gitea")
+		writeError(w, http.StatusBadRequest, errGitProviderOneOf)
+		return
+	}
+	if adapter.patAuth {
+		rt.createPATGitConnection(w, r, adapter, req)
 		return
 	}
 	ctx := r.Context()

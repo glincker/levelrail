@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { BrandTile } from '../BrandLogoBadge'
 import {
   Dialog,
   DialogContent,
@@ -31,11 +32,22 @@ const NEW_APP = 'new'
 const DEFAULT_INSTANCE: Record<GitConnectionProvider, string> = {
   gitlab: 'https://gitlab.com',
   gitea: '',
+  forgejo: '',
   bitbucket: '',
+  bitbucket_server: '',
 }
 
-// Registers an OAuth application as one more connection. It never replaces
-// an existing one; authorizing it is the next click on its row.
+// Bitbucket Server has no mark of its own in thesvg, so it shows Bitbucket's.
+const BRAND_MARK: Record<GitConnectionProvider, string> = {
+  gitlab: 'gitlab',
+  gitea: 'gitea',
+  forgejo: 'forgejo',
+  bitbucket: 'bitbucket',
+  bitbucket_server: 'bitbucket',
+}
+
+// Registers an OAuth application (or, for Bitbucket Server, a personal access
+// token) as one more connection. It never replaces an existing one.
 export function AddGitConnectionDialog({
   provider,
   existing,
@@ -53,21 +65,25 @@ export function AddGitConnectionDialog({
   const [instanceUrl, setInstanceUrl] = useState(DEFAULT_INSTANCE[provider])
   const [clientId, setClientId] = useState('')
   const [clientSecret, setClientSecret] = useState('')
+  const [token, setToken] = useState('')
   const [label, setLabel] = useState('')
 
-  const reusing = source !== NEW_APP
+  const tokenAuth = provider === 'bitbucket_server'
+  const reusing = !tokenAuth && source !== NEW_APP
   const needsInstance = provider !== 'bitbucket'
-  const canSubmit =
-    reusing ||
-    (clientId.trim() !== '' &&
-      clientSecret.trim() !== '' &&
-      (!needsInstance || instanceUrl.trim() !== ''))
+  const canSubmit = tokenAuth
+    ? token.trim() !== '' && instanceUrl.trim() !== ''
+    : reusing ||
+      (clientId.trim() !== '' &&
+        clientSecret.trim() !== '' &&
+        (!needsInstance || instanceUrl.trim() !== ''))
 
   function reset() {
     setSource(NEW_APP)
     setInstanceUrl(DEFAULT_INSTANCE[provider])
     setClientId('')
     setClientSecret('')
+    setToken('')
     setLabel('')
     create.reset()
   }
@@ -77,13 +93,15 @@ export function AddGitConnectionDialog({
       {
         provider,
         label: label.trim() || undefined,
-        ...(reusing
-          ? { reuse_connection_id: source }
-          : {
-              instance_url: needsInstance ? instanceUrl.trim() : undefined,
-              client_id: clientId.trim(),
-              client_secret: clientSecret,
-            }),
+        ...(tokenAuth
+          ? { instance_url: instanceUrl.trim(), token: token.trim() }
+          : reusing
+            ? { reuse_connection_id: source }
+            : {
+                instance_url: needsInstance ? instanceUrl.trim() : undefined,
+                client_id: clientId.trim(),
+                client_secret: clientSecret,
+              }),
       },
       {
         onSuccess: (created) => {
@@ -94,7 +112,9 @@ export function AddGitConnectionDialog({
           })
           reset()
           onOpenChange(false)
-          window.location.assign(created.authorize_path)
+          if (created.authorize_path) {
+            window.location.assign(created.authorize_path)
+          }
         },
       },
     )
@@ -112,13 +132,22 @@ export function AddGitConnectionDialog({
     >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t(`gitConnections.add.title.${provider}`)}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <BrandTile
+              name={BRAND_MARK[provider]}
+              label={t(`gitConnections.add.title.${provider}`)}
+              size="sm"
+            />
+            {t(`gitConnections.add.title.${provider}`)}
+          </DialogTitle>
           <DialogDescription>
-            {t('gitConnections.add.description', { callback })}
+            {tokenAuth
+              ? t('gitConnections.add.tokenDescription')
+              : t('gitConnections.add.description', { callback })}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          {existing.length > 0 ? (
+          {existing.length > 0 && !tokenAuth ? (
             <Field>
               <FieldLabel htmlFor="git-conn-source">
                 {t('gitConnections.add.application')}
@@ -146,6 +175,24 @@ export function AddGitConnectionDialog({
               </FieldDescription>
             </Field>
           ) : null}
+          {tokenAuth ? (
+            <Field>
+              <FieldLabel htmlFor="git-conn-token">
+                {t('gitConnections.add.token')}
+              </FieldLabel>
+              <Input
+                id="git-conn-token"
+                type="password"
+                autoComplete="off"
+                spellCheck={false}
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+              />
+              <FieldDescription>
+                {t('gitConnections.add.tokenHelp')}
+              </FieldDescription>
+            </Field>
+          ) : null}
           {reusing ? null : (
             <>
               {needsInstance ? (
@@ -162,35 +209,41 @@ export function AddGitConnectionDialog({
                     onChange={(e) => setInstanceUrl(e.target.value)}
                   />
                   <FieldDescription>
-                    {t('gitConnections.add.instanceHelp')}
+                    {tokenAuth
+                      ? t('gitConnections.add.instanceHelpServer')
+                      : t('gitConnections.add.instanceHelp')}
                   </FieldDescription>
                 </Field>
               ) : null}
-              <Field>
-                <FieldLabel htmlFor="git-conn-client-id">
-                  {t(`gitConnections.add.clientId.${provider}`)}
-                </FieldLabel>
-                <Input
-                  id="git-conn-client-id"
-                  autoComplete="off"
-                  spellCheck={false}
-                  value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="git-conn-client-secret">
-                  {t('gitConnections.add.clientSecret')}
-                </FieldLabel>
-                <Input
-                  id="git-conn-client-secret"
-                  type="password"
-                  autoComplete="off"
-                  spellCheck={false}
-                  value={clientSecret}
-                  onChange={(e) => setClientSecret(e.target.value)}
-                />
-              </Field>
+              {tokenAuth ? null : (
+                <>
+                  <Field>
+                    <FieldLabel htmlFor="git-conn-client-id">
+                      {t(`gitConnections.add.clientId.${provider}`)}
+                    </FieldLabel>
+                    <Input
+                      id="git-conn-client-id"
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={clientId}
+                      onChange={(e) => setClientId(e.target.value)}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="git-conn-client-secret">
+                      {t('gitConnections.add.clientSecret')}
+                    </FieldLabel>
+                    <Input
+                      id="git-conn-client-secret"
+                      type="password"
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={clientSecret}
+                      onChange={(e) => setClientSecret(e.target.value)}
+                    />
+                  </Field>
+                </>
+              )}
             </>
           )}
           <Field>
@@ -228,8 +281,16 @@ export function AddGitConnectionDialog({
           >
             <PlusIcon className="size-4" aria-hidden="true" />
             {create.isPending
-              ? t('gitConnections.add.saving')
-              : t('gitConnections.add.submit')}
+              ? t(
+                  tokenAuth
+                    ? 'gitConnections.add.verifying'
+                    : 'gitConnections.add.saving',
+                )
+              : t(
+                  tokenAuth
+                    ? 'gitConnections.add.connect'
+                    : 'gitConnections.add.submit',
+                )}
           </Button>
         </DialogFooter>
       </DialogContent>

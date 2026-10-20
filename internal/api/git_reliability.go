@@ -220,7 +220,7 @@ func (rt *Router) registerGitSourceWebhook(ctx context.Context, name string, gs 
 		}
 		return nil
 	}
-	for _, provider := range []string{gitProviderGitLab, gitProviderBitbucket, gitProviderGitea} {
+	for _, provider := range connectionGitProviders {
 		if _, err := rt.gitConnForRepo(ctx, provider, gs.RepoURL, ""); err != nil {
 			continue
 		}

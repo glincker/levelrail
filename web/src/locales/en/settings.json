@@ -506,6 +506,14 @@
         "title": "Gitea App",
         "description": "Self-hosted Gitea repository access for git-based deploys."
       },
+      "forgejo-app": {
+        "title": "Forgejo App",
+        "description": "Self-hosted Forgejo repository access for git-based deploys."
+      },
+      "bitbucket-server-app": {
+        "title": "Bitbucket Server",
+        "description": "Bitbucket Server and Data Center repository access with a personal access token."
+      },
       "notification-channels": {
         "title": "Notification channels",
         "description": "Slack, Discord, Telegram, webhook, and email alerts."
@@ -824,8 +832,28 @@
           "Repositories your authorized account can read",
           "Branches and commits for deploys",
           "Webhook delivery for push events"
+        ],
+        "forgejo": [
+          "Repositories your authorized account can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ],
+        "bitbucket_server": [
+          "Repositories the token owner can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
         ]
       }
+    },
+    "forgejo": {
+      "title": "Forgejo App",
+      "description": "Connect a Forgejo OAuth2 application, Codeberg or self-hosted, for repository browsing and webhook-driven deploys.",
+      "banner": "Once the application is authorized, its repositories are available to pick from when you create an app."
+    },
+    "bitbucket_server": {
+      "title": "Bitbucket Server",
+      "description": "Connect Bitbucket Server or Data Center with a personal access token for repository browsing and webhook-driven deploys.",
+      "banner": "Once the token is verified, its repositories are available to pick from when you create an app."
     }
   },
   "securityPage": {
@@ -2372,7 +2400,9 @@
       "description": {
         "gitlab": "Register a GitLab OAuth application, then authorize it. gitlab.com and self-managed instances can be connected side by side.",
         "bitbucket": "Register a Bitbucket OAuth consumer, then authorize it. Add a second consumer later for another workspace.",
-        "gitea": "Register a Gitea OAuth application, then authorize it. Each Gitea or Forgejo server is its own connection."
+        "gitea": "Register a Gitea OAuth application, then authorize it. Each Gitea or Forgejo server is its own connection.",
+        "forgejo": "Register a Forgejo OAuth application, then authorize it. Codeberg and self-hosted servers are each their own connection.",
+        "bitbucket_server": "Create a personal access token on your Bitbucket Server, then add it here. Each server or account is its own connection."
       }
     },
     "default": "Default",
@@ -2410,7 +2440,9 @@
       "title": {
         "gitlab": "Add a GitLab account",
         "bitbucket": "Add a Bitbucket account",
-        "gitea": "Add a Gitea account"
+        "gitea": "Add a Gitea account",
+        "forgejo": "Add a Forgejo account",
+        "bitbucket_server": "Add a Bitbucket Server account"
       },
       "description": "Create the OAuth application on the provider with redirect URI {{callback}}, then enter it here. You will be sent to the provider to authorize it.",
       "application": "OAuth application",
@@ -2422,14 +2454,22 @@
       "clientId": {
         "gitlab": "Application ID",
         "bitbucket": "Consumer key",
-        "gitea": "Client ID"
+        "gitea": "Client ID",
+        "forgejo": "Client ID",
+        "bitbucket_server": "Client ID"
       },
       "clientSecret": "Secret",
       "label": "Label (optional)",
       "labelHelp": "Defaults to the account name once you authorize. You can rename it later.",
       "cancel": "Cancel",
       "submit": "Save and authorize",
-      "saving": "Saving"
+      "saving": "Saving",
+      "tokenDescription": "Create a personal access token on the server with repository read and write permission, then paste it here. It is verified, then stored encrypted.",
+      "token": "Personal access token",
+      "tokenHelp": "Under Manage account, Personal access tokens. The token is never shown again.",
+      "instanceHelpServer": "The base address of your server, for example https://bitbucket.example.com.",
+      "connect": "Verify and connect",
+      "verifying": "Verifying"
     },
     "toast": {
       "added": "Account saved",

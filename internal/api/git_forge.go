@@ -114,7 +114,11 @@ func (rt *Router) resolveForge(ctx context.Context, repoURL, connectionID string
 		}
 	}
 	if c, ok := rt.giteaAppClient.(giteaForgeClient); ok {
-		if conn, token, err := rt.gitTokenForRepo(ctx, gitProviderGitea, repoURL, connectionID); err == nil {
+		for _, p := range []string{gitProviderGitea, gitProviderForgejo} {
+			conn, token, err := rt.gitTokenForRepo(ctx, p, repoURL, connectionID)
+			if err != nil {
+				continue
+			}
 			if full, ok := giteaFullNameFromURL(repoURL, conn.InstanceURL); ok {
 				return &forge{kind: forgeGitea, instanceURL: conn.InstanceURL, token: token, repo: full, gitea: c}, nil
 			}

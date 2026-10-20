@@ -1786,7 +1786,7 @@ levelrail-cli github-app register-url [--owner ORG] [--public] [--instance-url U
 levelrail-cli github-app installations list|add [flags]
 levelrail-cli github-app installations remove <id> [flags]
 levelrail-cli git-providers connections [--provider P] [flags]
-levelrail-cli git-providers add <gitlab|bitbucket|gitea> [--instance-url URL] [--client-id ID] [--client-secret S] [--label L] [--reuse ID] [flags]
+levelrail-cli git-providers add <gitlab|bitbucket|bitbucket_server|gitea|forgejo> [--instance-url URL] [--client-id ID] [--client-secret S] [--pat TOKEN] [--label L] [--reuse ID] [flags]
 levelrail-cli git-providers rename <id> <label> [flags]
 levelrail-cli git-providers default <id> [flags]
 levelrail-cli git-providers disconnect --id ID [flags]

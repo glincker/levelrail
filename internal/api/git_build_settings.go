@@ -225,15 +225,29 @@ func (rt *Router) writeDetectError(w http.ResponseWriter, name, repoURL string, 
 
 func (rt *Router) repoLayoutHosts(ctx context.Context) repolayout.Hosts {
 	var hosts repolayout.Hosts
-	if rt.githubApp == nil {
+	if rt.githubApp != nil {
+		if conn, err := rt.githubApp.GetGitHubAppConnection(ctx); err == nil {
+			if u, perr := url.Parse(conn.InstanceURL); perr == nil {
+				hosts.GitHub = u.Host
+			}
+		}
+	}
+	if rt.gitConns == nil {
 		return hosts
 	}
-	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
+	conns, err := rt.gitConns.ListGitConnections(ctx, "")
 	if err != nil {
 		return hosts
 	}
-	if u, perr := url.Parse(conn.InstanceURL); perr == nil {
-		hosts.GitHub = u.Host
+	for _, c := range conns {
+		switch c.Provider {
+		case gitProviderGitLab:
+			hosts.GitLab = c.Host
+		case gitProviderGitea, gitProviderForgejo:
+			hosts.Gitea = c.Host
+		case gitProviderBitbucketServer:
+			hosts.BitbucketServer = c.Host
+		}
 	}
 	return hosts
 }

@@ -3,7 +3,8 @@
 
 import type { GitConnectionStatus } from './gitProviders'
 
-export type GitConnectionProvider = 'gitlab' | 'bitbucket' | 'gitea'
+export type GitConnectionProvider =
+  'gitlab' | 'bitbucket' | 'bitbucket_server' | 'gitea' | 'forgejo'
 
 export interface GitProviderConnection {
   id: string
@@ -33,6 +34,8 @@ export interface CreateGitConnectionRequest {
   label?: string
   /** Copies the OAuth application of this connection, so another account needs no second app. */
   reuse_connection_id?: string
+  /** Personal access token, for token-authenticated providers (Bitbucket Server). */
+  token?: string
 }
 
 export interface GitConnectionBranch {

@@ -187,7 +187,7 @@ func (rt *Router) gitPollProviderRateLimited(ctx context.Context, gs store.GitSo
 	if rt.githubInstanceHost(ctx) == host {
 		keys = append(keys, gitProviderGitHub)
 	}
-	for _, p := range []string{gitProviderGitLab, gitProviderBitbucket, gitProviderGitea} {
+	for _, p := range connectionGitProviders {
 		if c, err := rt.gitConnForRepo(ctx, p, gs.RepoURL, gs.ConnectionID); err == nil {
 			keys = append(keys, c.ID)
 		}

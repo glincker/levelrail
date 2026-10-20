@@ -6,7 +6,18 @@ import { BrandTile } from '../BrandLogoBadge'
 import { GitAccessValidate } from '../GitAccessValidate'
 import { GitProviderRail } from './GitProviderRail'
 
-export type GitProvider = 'github' | 'gitlab' | 'gitea' | 'bitbucket'
+export type GitProvider =
+  'github' | 'gitlab' | 'gitea' | 'forgejo' | 'bitbucket' | 'bitbucket_server'
+
+// Bitbucket Server has no mark of its own in thesvg, so it shows Bitbucket's.
+const BRAND_MARK: Record<GitProvider, string> = {
+  github: 'github',
+  gitlab: 'gitlab',
+  gitea: 'gitea',
+  forgejo: 'forgejo',
+  bitbucket: 'bitbucket',
+  bitbucket_server: 'bitbucket',
+}
 
 interface Copy {
   title: string
@@ -23,37 +34,16 @@ export function GitProviderPage({
   children: ReactNode
 }) {
   const { t } = useTranslation('settings')
-  const copy = ((): Copy => {
-    switch (provider) {
-      case 'github':
-        return {
-          title: t('gitProviders.github.title'),
-          description: t('gitProviders.github.description'),
-          banner: t('gitProviders.github.banner'),
-        }
-      case 'gitlab':
-        return {
-          title: t('gitProviders.gitlab.title'),
-          description: t('gitProviders.gitlab.description'),
-          banner: t('gitProviders.gitlab.banner'),
-        }
-      case 'gitea':
-        return {
-          title: t('gitProviders.gitea.title'),
-          description: t('gitProviders.gitea.description'),
-          banner: t('gitProviders.gitea.banner'),
-        }
-      case 'bitbucket':
-        return {
-          title: t('gitProviders.bitbucket.title'),
-          description: t('gitProviders.bitbucket.description'),
-          banner: t('gitProviders.bitbucket.banner'),
-        }
-    }
-  })()
+  const copy: Copy = {
+    title: t(`gitProviders.${provider}.title`),
+    description: t(`gitProviders.${provider}.description`),
+    banner: t(`gitProviders.${provider}.banner`),
+  }
   return (
     <PageTemplate
-      logo={<BrandTile name={provider} label={copy.title} size="lg" />}
+      logo={
+        <BrandTile name={BRAND_MARK[provider]} label={copy.title} size="lg" />
+      }
       eyebrow={t('gitProviders.eyebrow')}
       title={copy.title}
       description={copy.description}

@@ -168,6 +168,8 @@ type CreateGitConnectionRequest struct {
 	ClientSecret      string `json:"client_secret,omitempty"`
 	Label             string `json:"label,omitempty"`
 	ReuseConnectionID string `json:"reuse_connection_id,omitempty"`
+	// Token is a personal access token, used instead of the OAuth fields by Bitbucket Server.
+	Token string `json:"token,omitempty"`
 }
 
 // GitDisconnectResource mirrors internal/api's gitDisconnectResource.

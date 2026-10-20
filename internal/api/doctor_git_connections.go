@@ -15,8 +15,9 @@ const gitConnectionsDocsPath = "/git-integrations#reconnecting-a-provider"
 func (rt *Router) doctorCheckGitConnections(ctx context.Context) doctorCheckResource {
 	const code, name = "git_connections", "Git provider connections"
 	res := doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, DocsPath: gitConnectionsDocsPath}
-	statuses := []gitProviderResource{
-		rt.githubProviderStatus(ctx), rt.gitProviderStatusFor(ctx, gitProviderGitLab), rt.gitProviderStatusFor(ctx, gitProviderBitbucket), rt.gitProviderStatusFor(ctx, gitProviderGitea),
+	statuses := []gitProviderResource{rt.githubProviderStatus(ctx)}
+	for _, p := range connectionGitProviders {
+		statuses = append(statuses, rt.gitProviderStatusFor(ctx, p))
 	}
 	var connected, problems []string
 	for _, p := range statuses {

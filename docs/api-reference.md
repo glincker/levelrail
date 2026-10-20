@@ -1755,6 +1755,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/go-live/status | AbilityRead | handleLiveBadges |
 | GET | /api/v1/sso/saml/connections/{id}/test/start | AbilityRoot | handleStartSAMLTest |
 | GET | /api/v1/sso/saml/connections/{id}/test/result | AbilityRoot | handleSAMLTestResult |
+| GET | /api/v1/forgejo-app/connect | AbilityRoot | handleStartGitConnect |
+| GET | /api/v1/forgejo-app/callback | AbilityRoot | handleGitConnectCallback |
 
 ## See also
 

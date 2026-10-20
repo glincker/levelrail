@@ -13,7 +13,10 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-const errInternal = "internal error"
+const (
+	errInternal         = "internal error"
+	errGitProviderOneOf = "provider must be one of gitlab, bitbucket, bitbucket_server, gitea, forgejo"
+)
 
 // GitConnSecrets is the internal/secrets.Manager surface the git provider
 // connection handlers need: the OAuth application's client secret and each
@@ -137,6 +140,9 @@ type gitProviderAdapter struct {
 	lookup       func(ctx context.Context, c store.GitConnection, token, repo string) (gitRepoInfo, error)
 	branches     func(ctx context.Context, c store.GitConnection, token, repo string) ([]gitBranchInfo, error)
 	webhook      func(ctx context.Context, c store.GitConnection, token, repo, hookURL, secret string) error
+	// Set only by token-authenticated providers, which have no OAuth flow, refresh or client application.
+	patAuth       bool
+	deleteWebhook func(ctx context.Context, c store.GitConnection, token, repo, hookURL string) error
 }
 
 func (rt *Router) gitAdapter(provider string) (gitProviderAdapter, bool) {
@@ -147,6 +153,10 @@ func (rt *Router) gitAdapter(provider string) (gitProviderAdapter, bool) {
 		return rt.bitbucketAdapter(), true
 	case gitProviderGitea:
 		return rt.giteaAdapter(), true
+	case gitProviderForgejo:
+		return rt.forgejoAdapter(), true
+	case gitProviderBitbucketServer:
+		return rt.bitbucketServerAdapter(), true
 	}
 	return gitProviderAdapter{}, false
 }

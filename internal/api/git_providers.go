@@ -26,11 +26,9 @@ type gitProviderResource struct {
 // Replaces three separate provider status calls. AbilityReadSensitive, since it discloses only connection state and capabilities.
 func (rt *Router) handleListGitProviders(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	out := []gitProviderResource{
-		rt.githubProviderStatus(ctx),
-		rt.gitProviderStatusFor(ctx, gitProviderGitLab),
-		rt.gitProviderStatusFor(ctx, gitProviderBitbucket),
-		rt.gitProviderStatusFor(ctx, gitProviderGitea),
+	out := []gitProviderResource{rt.githubProviderStatus(ctx)}
+	for _, p := range connectionGitProviders {
+		out = append(out, rt.gitProviderStatusFor(ctx, p))
 	}
 	for i := range out {
 		out[i].Connection = rt.gitProviderHealth(ctx, out[i].Provider)

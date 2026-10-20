@@ -53,9 +53,10 @@ func Detect(ctx context.Context, src Source) (Result, error) {
 // Hosts names self-hosted instances so their API base can be inferred from a
 // repository URL. The public hosts are always recognised.
 type Hosts struct {
-	GitHub string
-	GitLab string
-	Gitea  string
+	GitHub          string
+	GitLab          string
+	Gitea           string
+	BitbucketServer string
 }
 
 // ErrUnsupportedHost means no provider API matches the repository URL, and
@@ -82,7 +83,9 @@ func NewAPISource(client *http.Client, repoURL, branch, token string, hosts Host
 		return &githubSource{c: client, api: base + "/api/v3", repo: full, ref: branch, token: token}, nil
 	case host == "gitlab.com" || strings.HasPrefix(host, "gitlab.") || (hosts.GitLab != "" && host == strings.ToLower(hosts.GitLab)):
 		return &gitlabSource{c: client, api: base + "/api/v4", repo: full, ref: branch, token: token}, nil
-	case host == "codeberg.org" || strings.HasPrefix(host, "gitea.") || (hosts.Gitea != "" && host == strings.ToLower(hosts.Gitea)):
+	case isBitbucketServerHost(host, hosts):
+		return newBitbucketServerSource(client, u, branch, token)
+	case host == "codeberg.org" || strings.HasPrefix(host, "gitea.") || strings.HasPrefix(host, "forgejo.") || (hosts.Gitea != "" && host == strings.ToLower(hosts.Gitea)):
 		return &giteaSource{c: client, api: base + "/api/v1", repo: full, ref: branch, token: token}, nil
 	}
 	return nil, ErrUnsupportedHost

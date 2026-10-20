@@ -164,17 +164,19 @@ export function GitConnectionRow({
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant={needsAuthorization ? 'default' : 'outline'}
-            onClick={() => window.location.assign(connection.authorize_path)}
-          >
-            <PlugsConnectedIcon className="size-4" aria-hidden="true" />
-            {connection.authorized
-              ? t('gitConnections.reconnect')
-              : t('gitConnections.authorize')}
-          </Button>
+          {connection.authorize_path ? (
+            <Button
+              type="button"
+              size="sm"
+              variant={needsAuthorization ? 'default' : 'outline'}
+              onClick={() => window.location.assign(connection.authorize_path)}
+            >
+              <PlugsConnectedIcon className="size-4" aria-hidden="true" />
+              {connection.authorized
+                ? t('gitConnections.reconnect')
+                : t('gitConnections.authorize')}
+            </Button>
+          ) : null}
           <Button
             type="button"
             size="sm"

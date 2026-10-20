@@ -57,6 +57,7 @@ export type BrandIconName =
   | 'google'
   | 'microsoft'
   | 'gitea'
+  | 'forgejo'
   | 'openid'
   | 'facebook'
   | 'linkedin'
@@ -197,6 +198,7 @@ const LOADERS: Record<
   google: () => import('@thesvg/react/google'),
   microsoft: () => import('@thesvg/react/microsoft'),
   gitea: () => import('@thesvg/react/gitea'),
+  forgejo: () => import('@thesvg/react/forgejo'),
   openid: () => import('@thesvg/react/openid'),
   facebook: () => import('@thesvg/react/facebook'),
   linkedin: () => import('@thesvg/react/linkedin'),

@@ -13,7 +13,8 @@ import {
 } from '../../queries/githubApp'
 import { useGitConnections } from '../../queries/gitConnections'
 
-export type RailProvider = 'github' | 'gitlab' | 'gitea' | 'bitbucket'
+export type RailProvider =
+  'github' | 'gitlab' | 'gitea' | 'forgejo' | 'bitbucket' | 'bitbucket_server'
 
 interface RailBodyProps {
   provider: RailProvider
@@ -91,7 +92,7 @@ function GitHubRail() {
 
 function ConnectionsRail({
   provider,
-}: Readonly<{ provider: 'gitlab' | 'gitea' | 'bitbucket' }>) {
+}: Readonly<{ provider: Exclude<RailProvider, 'github'> }>) {
   const { data: connections } = useGitConnections(provider)
   const authorized = connections.filter((c) => c.authorized)
   const first = authorized.find((c) => c.is_default) ?? authorized[0]
@@ -108,14 +109,6 @@ function ConnectionsRail({
 
 /** GitProviderRail is the right rail of the four git provider pages, built from the status each page already loads. */
 export function GitProviderRail({ provider }: { provider: RailProvider }) {
-  switch (provider) {
-    case 'github':
-      return <GitHubRail />
-    case 'gitlab':
-      return <ConnectionsRail provider="gitlab" />
-    case 'gitea':
-      return <ConnectionsRail provider="gitea" />
-    case 'bitbucket':
-      return <ConnectionsRail provider="bitbucket" />
-  }
+  if (provider === 'github') return <GitHubRail />
+  return <ConnectionsRail provider={provider} />
 }

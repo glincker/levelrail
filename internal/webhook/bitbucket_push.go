@@ -101,8 +101,11 @@ func ParseBitbucketPushEvent(body []byte) (PushEvent, error) {
 // verified signature/payload logic" boundary handleGitPushWebhook's own
 // doc comment already establishes.
 func ParsePushEventForProvider(body []byte, eventKeyHeader string) (PushEvent, error) {
-	if eventKeyHeader == bitbucketEventKeyHeader {
+	switch eventKeyHeader {
+	case bitbucketEventKeyHeader:
 		return ParseBitbucketPushEvent(body)
+	case bitbucketServerRefsChanged:
+		return ParseBitbucketServerPushEvent(body)
 	}
 	return ParsePushEvent(body)
 }

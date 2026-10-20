@@ -197,7 +197,7 @@ func (rt *Router) handleValidateGitProvider(w http.ResponseWriter, r *http.Reque
 	switch provider {
 	case "github":
 		rt.validateGitHubProvider(r.Context(), &res, page)
-	case "gitlab", "gitea", "bitbucket":
+	case "gitlab", "gitea", "bitbucket", "forgejo", "bitbucket_server":
 		st := rt.gitProviderStatus(r.Context(), provider)
 		if !st.Connected {
 			res.fail("connection", "the provider is not connected or its authorization is missing", gitAccessFix{

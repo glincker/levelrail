@@ -69,7 +69,7 @@ func (rt *Router) handleAnalyzeImport(w http.ResponseWriter, r *http.Request) {
 
 	branches := []string{strings.TrimSpace(req.Ref)}
 	if branches[0] == "" {
-		branches = []string{"main", "master"}
+		branches = rt.analyzeBranchCandidates(ctx, open, req.RepoURL, token, hosts)
 	}
 	if req.BaseDirectory == "" {
 		req.BaseDirectory = strings.Trim(req.Directory, "/ ")
@@ -97,10 +97,29 @@ func (rt *Router) handleAnalyzeImport(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if errors.Is(lastErr, repolayout.ErrUnsupportedHost) {
-		writeError(w, http.StatusUnprocessableEntity, "this host has no supported file API; connect a GitHub, GitLab or Gitea provider, or import a compose file or image instead")
+		writeError(w, http.StatusUnprocessableEntity, "this host has no supported file API; connect a GitHub, GitLab, Gitea, Forgejo or Bitbucket Server provider, or import a compose file or image instead")
 		return
 	}
 	rt.writeDetectError(w, "", req.RepoURL, lastErr)
+}
+
+// analyzeBranchCandidates asks the provider for the default branch and keeps main then master
+// only as the fallback for hosts that cannot answer.
+func (rt *Router) analyzeBranchCandidates(ctx context.Context, open repoLayoutSourceFunc, repoURL, token string, hosts repolayout.Hosts) []string {
+	fallback := []string{"main", "master"}
+	probe, err := open(ctx, repoURL, "", token, hosts)
+	if err != nil {
+		return fallback
+	}
+	db, ok := probe.(repolayout.DefaultBrancher)
+	if !ok {
+		return fallback
+	}
+	branch, err := db.DefaultBranch(ctx)
+	if err != nil || strings.TrimSpace(branch) == "" {
+		return fallback
+	}
+	return []string{strings.TrimSpace(branch)}
 }
 
 // apiOnlyRepoLayoutSource never falls back to a clone: analysis reads only
@@ -128,7 +147,7 @@ func (rt *Router) analysisToken(ctx context.Context, repoURL string) string {
 	if t := rt.tokenForRepo(ctx, "", repoURL, true); t != "" {
 		return t
 	}
-	for _, p := range []string{gitProviderGitLab, gitProviderGitea} {
+	for _, p := range []string{gitProviderGitLab, gitProviderGitea, gitProviderForgejo, gitProviderBitbucketServer} {
 		if _, tok, err := rt.gitTokenForRepo(ctx, p, repoURL, ""); err == nil {
 			return tok
 		}

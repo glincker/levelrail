@@ -16,6 +16,11 @@ const (
 	GitProviderGitLab    = "gitlab"
 	GitProviderBitbucket = "bitbucket"
 	GitProviderGitea     = "gitea"
+
+	// GitProviderForgejo is a Forgejo instance, reached through the Gitea-compatible API.
+	GitProviderForgejo = "forgejo"
+	// GitProviderBitbucketServer is Bitbucket Server or Data Center, authenticated with a personal access token.
+	GitProviderBitbucketServer = "bitbucket_server"
 )
 
 // ErrGitConnectionNotFound is returned when a connection id matches no row.

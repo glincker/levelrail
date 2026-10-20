@@ -409,6 +409,9 @@ func detectWebhookProviderAndEvent(header http.Header) (provider, eventType stri
 		return "gitlab", headerFields[webhook.HeaderGitLabEvent], headerFields
 	case headerFields[webhook.HeaderGiteaEventType] != "":
 		// Checked before X-GitHub-Event: Gitea also sends X-Hub-Signature-256 but never X-GitHub-Event, so this cannot shadow a GitHub delivery.
+		if header.Get("X-Forgejo-Event") != "" {
+			return "forgejo", headerFields[webhook.HeaderGiteaEventType], headerFields
+		}
 		return "gitea", headerFields[webhook.HeaderGiteaEventType], headerFields
 	case headerFields[webhook.HeaderGitHubEvent] != "":
 		return "github", headerFields[webhook.HeaderGitHubEvent], headerFields

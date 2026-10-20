@@ -12,20 +12,22 @@ import (
 
 func gitConnectionsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s git-providers connections [--provider P] [flags]            list every GitLab, Bitbucket and Gitea account
-  %[1]s git-providers add <gitlab|bitbucket|gitea> [flags]           register another account's OAuth application
+  %[1]s git-providers connections [--provider P] [flags]            list every GitLab, Bitbucket, Bitbucket Server, Gitea and Forgejo account
+  %[1]s git-providers add <gitlab|bitbucket|bitbucket_server|gitea|forgejo> [flags]
+                                                                    register another account
   %[1]s git-providers rename <id> <label> [flags]                    rename a connection
   %[1]s git-providers default <id> [flags]                           make a connection its provider's default
   %[1]s git-providers disconnect --id ID [flags]                     disconnect one account, others stay
   %[1]s git-providers branches --id ID --repo REPO [flags]           list a repository's branches
   %[1]s git-providers use-as-source --id ID --repo REPO --app-name NAME [flags]
 
-Flags for add: --instance-url URL (GitLab, Gitea), --client-id ID, --client-secret SECRET,
+Flags for add: --instance-url URL (all but Bitbucket Cloud), --client-id ID, --client-secret SECRET,
 --label LABEL, --reuse ID (copy the OAuth application of another connection).
+Bitbucket Server uses a personal access token instead: --instance-url URL --pat TOKEN.
 
 Authorizing a registered account is a browser redirect: open the printed
 authorize path on your control plane, or press Authorize in the dashboard.
-REPO is a project id for GitLab and owner/name for Bitbucket and Gitea.
+REPO is a project id for GitLab, PROJECT/slug for Bitbucket Server, owner/name otherwise.
 `, prog)
 }
 
@@ -53,6 +55,7 @@ func runGitConnectionsCmd(prog, sub string, args []string, stdout, stderr io.Wri
 	clientID := fs.String("client-id", "", "OAuth application client id (Bitbucket: the consumer key)")
 	clientSecret := fs.String("client-secret", "", "OAuth application client secret")
 	name := fs.String("label", "", "display label")
+	pat := fs.String("pat", "", "personal access token (Bitbucket Server)")
 	reuse := fs.String("reuse", "", "reuse the OAuth application of this connection id")
 	req := bindUseAsSourceFlags(fs)
 
@@ -87,12 +90,16 @@ func runGitConnectionsCmd(prog, sub string, args []string, stdout, stderr io.Wri
 			return exitUsage
 		}
 		c, err := client.CreateGitConnection(ctx, apiclient.CreateGitConnectionRequest{
-			Provider: rest[0], InstanceURL: *instance, ClientID: *clientID, ClientSecret: *clientSecret, Label: *name, ReuseConnectionID: *reuse,
+			Provider: rest[0], InstanceURL: *instance, ClientID: *clientID, ClientSecret: *clientSecret, Label: *name, ReuseConnectionID: *reuse, Token: *pat,
 		})
 		if err != nil {
 			return fail("add git connection", err)
 		}
 		return writeScheduledTaskResult(stdout, stderr, of, c, func() {
+			if c.AuthorizePath == "" {
+				_, _ = fmt.Fprintf(stdout, "connected %s (%s)\n", c.Label, c.ID)
+				return
+			}
 			_, _ = fmt.Fprintf(stdout, "registered %s (%s). Authorize it in a browser: %s%s\n", c.Label, c.ID, apiURLFlag, c.AuthorizePath)
 		})
 	case "rename":

@@ -52,7 +52,9 @@
       "github": "GitHub",
       "gitlab": "GitLab",
       "bitbucket": "Bitbucket",
-      "gitea": "Gitea"
+      "gitea": "Gitea",
+      "forgejo": "Forgejo",
+      "bitbucket_server": "Bitbucket Server"
     },
     "needs_reauthorize": {
       "title": "{{provider}} needs to be reconnected",

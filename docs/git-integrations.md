@@ -116,6 +116,8 @@ To add another account:
 
 From the CLI, `levelrail-cli git-providers add gitlab --instance-url https://git.example.com --client-id ID --client-secret SECRET` registers the application and prints the authorize path to open in a browser. `--reuse <connection id>` copies another connection's application.
 
+Forgejo (including Codeberg) connects exactly like Gitea, under its own provider. Bitbucket Server and Data Center connect with a personal access token instead of an OAuth application: `levelrail-cli git-providers add bitbucket_server --instance-url https://bitbucket.example.com --pat TOKEN` verifies the token and connects at once. Repositories there are addressed as `PROJECT/slug`, and the webhook it registers delivers `repo:refs_changed` pushes (pull request previews are not supported on Bitbucket Server yet).
+
 How it behaves:
 
 - Connecting again with a **different** account adds a connection and never replaces another. Connecting again with the **same** account (same host, same remote account, same OAuth application) updates that connection's tokens instead of adding a duplicate. The same login through a different OAuth application is a separate connection, which is what a Bitbucket workspace consumer needs.

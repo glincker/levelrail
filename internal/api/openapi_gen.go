@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1530 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1532 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -983,6 +983,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/fixes", Ability: "AbilityRead", Group: "Other", Handler: "handleListFixes", Description: ""},
 	{Method: "POST", Path: "/api/v1/fixes/{id}/apply", Ability: "AbilityRoot", Group: "Other", Handler: "handleApplyFix", Description: "Fixes prune Docker data, write settings and re-verify host state, so AbilityRoot."},
 	{Method: "POST", Path: "/api/v1/fixes/{id}/preview", Ability: "AbilityRead", Group: "Other", Handler: "handlePreviewFix", Description: ""},
+	{Method: "GET", Path: "/api/v1/forgejo-app/callback", Ability: "AbilityRoot", Group: "Other", Handler: "handleGitConnectCallback", Description: ""},
+	{Method: "GET", Path: "/api/v1/forgejo-app/connect", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartGitConnect", Description: ""},
 	{Method: "GET", Path: "/api/v1/frameworks", Ability: "AbilityRead", Group: "Other", Handler: "handleListFrameworks", Description: ""},
 	{Method: "GET", Path: "/api/v1/frameworks/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFramework", Description: ""},
 	{Method: "GET", Path: "/api/v1/frameworks/{id}/dockerfile", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFrameworkDockerfile", Description: ""},

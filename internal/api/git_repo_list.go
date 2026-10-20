@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/gitprovider"
@@ -159,13 +160,13 @@ func isTruthy(v string) bool { return v == "1" || v == "true" }
 // narrows it to one. AbilityReadSensitive.
 func (rt *Router) handleListGitRepos(w http.ResponseWriter, r *http.Request) {
 	provider := r.URL.Query().Get("provider")
-	providers := []string{gitProviderGitHub, gitProviderGitLab, gitProviderBitbucket, gitProviderGitea}
-	switch provider {
-	case "":
-	case gitProviderGitHub, gitProviderGitLab, gitProviderBitbucket, gitProviderGitea:
+	providers := append([]string{gitProviderGitHub}, connectionGitProviders...)
+	switch {
+	case provider == "":
+	case provider == gitProviderGitHub || validGitProvider(provider):
 		providers = []string{provider}
 	default:
-		writeError(w, http.StatusBadRequest, "provider must be one of github, gitlab, bitbucket, gitea")
+		writeError(w, http.StatusBadRequest, "provider must be one of github, "+strings.Join(connectionGitProviders, ", "))
 		return
 	}
 	refresh := isTruthy(r.URL.Query().Get("refresh"))

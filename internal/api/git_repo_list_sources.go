@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
+	"github.com/GLINCKER/levelrail/internal/bitbucketserver"
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
@@ -24,7 +25,13 @@ const (
 	gitProviderGitLab    = store.GitProviderGitLab
 	gitProviderBitbucket = store.GitProviderBitbucket
 	gitProviderGitea     = store.GitProviderGitea
+
+	gitProviderForgejo         = store.GitProviderForgejo
+	gitProviderBitbucketServer = store.GitProviderBitbucketServer
 )
+
+// connectionGitProviders are the providers that hold operator-managed connections, in display order.
+var connectionGitProviders = []string{gitProviderGitLab, gitProviderBitbucket, gitProviderBitbucketServer, gitProviderGitea, gitProviderForgejo}
 
 // repoListConnError marks a failure to reach the connection itself (not
 // connected, not authorized, no key), as opposed to a provider listing failure.
@@ -147,6 +154,12 @@ func (rt *Router) connectionRepoFetch(c store.GitConnection) repolist.FetchFunc 
 			list, res, err = rt.bitbucketAppClient.ListRepos(ctx, token, rt.repoListOptions())
 			for _, r := range list {
 				repos = append(repos, bitbucketRepoToRepo(r))
+			}
+		case gitProviderBitbucketServer:
+			var list []bitbucketserver.Repo
+			list, res, err = rt.bitbucketServerClient.ListRepos(ctx, conn.InstanceURL, token, rt.repoListOptions())
+			for _, r := range list {
+				repos = append(repos, bitbucketServerRepoToRepo(r))
 			}
 		default:
 			var list []giteaapp.Repo
