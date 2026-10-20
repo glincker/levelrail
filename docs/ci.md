@@ -300,6 +300,8 @@ Seven jobs also never skip because of an upstream failure: `Plan Go work`, `Buil
 
 Versions are automatic. [release-please](https://github.com/googleapis/release-please) reads the conventional commit messages on `main`, picks the next version, updates `CHANGELOG.md`, and keeps one open pull request titled `chore(main): release <version>`. Merging that PR tags the release, creates the GitHub Release, and dispatches `release.yml`, which builds every binary and publishes to Homebrew and npm.
 
+Releases are paced. While the project is pre-1.0, a `feat` bumps the patch (0.8.1, 0.8.2), not the minor, so versions go deep instead of wide; a minor jump such as 0.8.0 needs the `allow-minor-release` label on the release PR. The `Release pacing` check also fails until `RELEASE_COOLDOWN_HOURS` (repository variable, default 6) have passed since the last release, so two releases cannot land in the same hour. An hourly workflow re-runs the failed check, so an armed auto-merge goes through on its own once the wait ends. The `skip-release-cooldown` label overrides the wait for an urgent fix. `scripts/test-release-pacing.sh` is the self test.
+
 The one manual step is merging that PR. By default release-please uses the built-in `GITHUB_TOKEN`, and GitHub does not run CI on pull requests opened that way, so the required `CI required` check never reports and the PR stays blocked until someone reopens it or merges around the gate.
 
 To make releases hands-off, give release-please a real token. A fine-grained personal access token limited to this repository, with Contents and Pull requests set to read and write, is enough:
