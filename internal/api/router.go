@@ -169,6 +169,7 @@ type Router struct {
 	marketplace            *plugin.Marketplace                 // signed plugin index and one-click install, see plugins_marketplace.go
 	cliConsole             *cliConsoleState                    // web CLI console limits and config, see cli_console.go
 	mobile                 *mobileState                        // phone pairing rate limits, see mobile.go
+	cliPair                *cliPairState                       // CLI pairing rate limits, see cli_pairing.go
 	secrets                SecretSetter                        // nil is valid: a control plane with no master key configured serves everything except secret-setting
 	compliance             *compliance.Service                 // nil until SetCompliance: compliance routes answer 501
 	rotation               atomic.Pointer[secretRotationState] // nil until SetSecretRotation: rotation policy endpoints answer 501
@@ -1020,6 +1021,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.attachEnvProtection(s)
 	rt.cliConsole = newCLIConsoleState()
 	rt.mobile = newMobileState()
+	rt.cliPair = newCLIPairState()
 	if is, ok := s.(IdempotencyStore); ok {
 		rt.idempotency = is
 	}

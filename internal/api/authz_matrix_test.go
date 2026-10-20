@@ -63,6 +63,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/auth/sign-in-alert/disown":         "authenticated by the signed single-use link from the owner's new-sign-in email, rate limited per IP",
 	"POST /api/v1/auth/device/start":                 "CLI device login start, rate limited",
 	"POST /api/v1/auth/device/token":                 "CLI device login poll, authenticated by the device code",
+	"POST /api/v1/auth/cli-pairing/redeem":           "CLI pairing, authenticated by the single-use code a signed-in browser issued, rate limited per IP and code",
 	"POST /api/v1/mobile/pair":                       "phone pairing, authenticated by the one-time pairing code, rate limited per IP and code",
 	"GET /api/v1/auth/oauth/providers":               "login screen lists enabled providers",
 	"GET /api/v1/auth/saml/providers":                "login screen lists enabled SAML connections, id and name only",

@@ -270,6 +270,8 @@ Endpoints for:
 | PUT | /api/v1/settings/dns-provider-plugin | AbilityRoot | handleSetDNSProviderPlugin |
 | GET | /api/v1/settings/server-profile | AbilityRead | handleGetServerProfile |
 | PUT | /api/v1/settings/server-profile | AbilityRoot | handleSetServerProfile |
+| POST | /api/v1/auth/cli-pairing | Session | handleCreateCLIPairing |
+| POST | /api/v1/auth/cli-pairing/redeem | Public | handleRedeemCLIPairing |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |

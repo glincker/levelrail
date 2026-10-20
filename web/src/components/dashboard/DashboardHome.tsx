@@ -1,4 +1,5 @@
 import { Suspense, lazy, useState } from 'react'
+import { SignInHomeCards } from '../signin/SignInHomeCards'
 import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
@@ -97,6 +98,7 @@ export function DashboardHome({
   if (!hasApps || (deployStarted && !firstRunDone)) {
     return (
       <div className="space-y-8">
+        <SignInHomeCards />
         <Suspense fallback={null}>
           <FirstDeploy
             onStarted={() => {
@@ -120,6 +122,7 @@ export function DashboardHome({
 
   return (
     <DashboardHero summary={summary} banners={<DashboardBanners />}>
+      <SignInHomeCards />
       <FleetTiles summary={summary} sample={sample} />
       <div className="@container">
         <div className="grid gap-4 @4xl:grid-cols-2">

@@ -30,6 +30,8 @@ func (rt *Router) registerAuthRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/auth/login-approvals/{id}/deny", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.writeBudget(rt.handleDenyLoginApproval)))
 	mux.HandleFunc("GET /api/v1/auth/trusted-devices", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleListTrustedDevices))
 	mux.HandleFunc("DELETE /api/v1/auth/trusted-devices/{id}", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.writeBudget(rt.handleRevokeTrustedDevice)))
+	mux.HandleFunc("POST /api/v1/auth/cli-pairing", rt.requireAuth(rt.writeBudget(rt.handleCreateCLIPairing)))
+	mux.HandleFunc("POST /api/v1/auth/cli-pairing/redeem", rt.handleRedeemCLIPairing)
 	mux.HandleFunc("GET /api/v1/settings/auth/code-login", rt.requireAbility(AbilityRead, rt.handleGetCodeLoginSettings))
 	mux.HandleFunc("PUT /api/v1/settings/auth/code-login", rt.requireAbility(AbilityRoot, rt.handlePutCodeLoginSettings))
 
