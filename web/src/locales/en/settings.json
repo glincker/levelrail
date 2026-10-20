@@ -1218,7 +1218,20 @@
       "test": "Test connection",
       "testing": "Testing...",
       "testOk": "\"{{name}}\" connected successfully.",
-      "testFailed": "\"{{name}}\" failed to connect."
+      "testFailed": "\"{{name}}\" failed to connect.",
+      "encryption": "Dump encryption"
+    },
+    "encryption": {
+      "on": "Encrypted",
+      "off": "Not encrypted",
+      "enable": "Enable encryption",
+      "title": "Encrypt database dumps sent to \"{{name}}\"?",
+      "consequenceNew": "New database dumps to this destination are encrypted with age before upload, so the bucket never sees plaintext.",
+      "consequenceOld": "Dumps already stored there stay exactly as they are (unencrypted ones still restore normally).",
+      "consequenceKey": "Key loss warning: if the backup encryption key (backup-encryption.key in the data directory) is lost, encrypted backups cannot be restored. Keep a copy off this server.",
+      "confirm": "Enable encryption",
+      "pending": "Enabling...",
+      "enabled": "Database dumps to \"{{name}}\" are now encrypted."
     }
   },
   "certificatesPage": {

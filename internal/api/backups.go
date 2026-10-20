@@ -201,6 +201,8 @@ type backupHistoryResource struct {
 	StartedAt      string `json:"started_at"`
 	FinishedAt     string `json:"finished_at,omitempty"`
 	ChecksumSHA256 string `json:"checksum_sha256,omitempty"`
+	// Codec is "zstd+age" for an encrypted object, empty for a raw one.
+	Codec string `json:"codec,omitempty"`
 }
 
 func toBackupHistoryResource(h store.BackupHistory) backupHistoryResource {
@@ -222,6 +224,7 @@ func toBackupHistoryResource(h store.BackupHistory) backupHistoryResource {
 		StartedAt:      h.StartedAt,
 		FinishedAt:     h.FinishedAt,
 		ChecksumSHA256: h.ChecksumSHA256,
+		Codec:          h.Codec,
 	}
 }
 

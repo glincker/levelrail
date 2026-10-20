@@ -2226,6 +2226,17 @@ type BackupTargetResource struct {
 	Region    string `json:"region,omitempty"`
 	Bucket    string `json:"bucket"`
 	CreatedAt string `json:"created_at"`
+	// EncryptDumps is true when new database dumps are age-sealed.
+	EncryptDumps bool `json:"encrypt_dumps"`
+}
+
+// BackupTargetEncryptionResource mirrors internal/api's backupTargetEncryptionResource.
+type BackupTargetEncryptionResource struct {
+	TargetID        string `json:"target_id"`
+	Enabled         bool   `json:"enabled"`
+	KeyAvailable    bool   `json:"key_available"`
+	Recipient       string `json:"recipient,omitempty"`
+	KeyStoredOffBox bool   `json:"key_stored_off_box"`
 }
 
 // CreateBackupTargetRequest mirrors internal/api's
@@ -2239,6 +2250,7 @@ type CreateBackupTargetRequest struct {
 	Bucket          string `json:"bucket"`
 	AccessKeyID     string `json:"access_key_id"`
 	SecretAccessKey string `json:"secret_access_key"`
+	EncryptDumps    *bool  `json:"encrypt_dumps,omitempty"`
 }
 
 // UpdateBackupTargetRequest mirrors internal/api's

@@ -48,6 +48,7 @@ func printBackupTargetHuman(out io.Writer, t backupTargetResource) {
 	}
 	_, _ = fmt.Fprintf(out, "bucket:    %s\n", t.Bucket)
 	_, _ = fmt.Fprintf(out, "created:   %s\n", t.CreatedAt)
+	_, _ = fmt.Fprintf(out, "encrypt dumps: %t\n", t.EncryptDumps)
 }
 
 func backupTargetsGetUsage(prog string) string {

@@ -58,6 +58,7 @@ func (s *bootState) buildRunners() error {
 			return err
 		}
 		backupRunner.Volume = volumeBackupOpts
+		backupVerifyRunner.Identities = backupIdentities(backupRunner)
 	}
 
 	// Shared by the manual trigger and the cron loop; needs no master key since exec'd commands carry no credential.

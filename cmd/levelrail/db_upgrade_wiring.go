@@ -37,6 +37,7 @@ func startDatabaseUpgrades(ctx context.Context, logger *slog.Logger, db *store.D
 	if secretsManager != nil {
 		rt.Restorer = &backup.RestoreRunner{
 			Store: db, Secrets: secretsManager, Downloader: backup.S3Downloader{}, Restorer: &backup.ContainerRestorer{Runtime: client},
+			Identities: backupIdentities(backupRunner),
 		}
 	}
 	advisor := dbupgrade.Advisor{Catalog: catalog, EOLWarn: dbupgrade.DurationFromEnv(dbupgrade.EnvEOLWarn, dbupgrade.DefaultEOLWarn, logger)}

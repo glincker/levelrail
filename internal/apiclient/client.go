@@ -2273,6 +2273,20 @@ func (c *Client) DeleteBackupTarget(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, backupTargetPath(id), nil, nil)
 }
 
+// GetBackupTargetEncryption calls GET /api/v1/backup-targets/{id}/encryption.
+func (c *Client) GetBackupTargetEncryption(ctx context.Context, id string) (BackupTargetEncryptionResource, error) {
+	var out BackupTargetEncryptionResource
+	err := c.do(ctx, http.MethodGet, backupTargetPath(id)+"/encryption", nil, &out)
+	return out, err
+}
+
+// SetBackupTargetEncryption calls PUT /api/v1/backup-targets/{id}/encryption (root only).
+func (c *Client) SetBackupTargetEncryption(ctx context.Context, id string, enabled bool) (BackupTargetEncryptionResource, error) {
+	var out BackupTargetEncryptionResource
+	err := c.do(ctx, http.MethodPut, backupTargetPath(id)+"/encryption", map[string]bool{"enabled": enabled}, &out)
+	return out, err
+}
+
 // TestBackupTarget calls POST /api/v1/backup-targets/{id}/test: probes
 // the target's stored credentials against its configured bucket, without
 // uploading or deleting anything.

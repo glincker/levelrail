@@ -94,6 +94,8 @@ New volume backups are compressed with zstd and encrypted with [age](https://age
 Copy that file somewhere that is not this server. Lose it and encrypted backups cannot be restored, including after a disaster that destroys the control plane.
 </Warning>
 
+Database dumps use the same key, switched on per backup target. New targets encrypt dumps by default. For an existing target, press **Enable encryption** on **Settings, Backup targets** (root only), or run `levelrail-cli backups encryption set <target-id> on`; `get` shows the current state. Only new dumps are encrypted: dumps already in the bucket stay as they are, and restores, drills and verification read both kinds. Encrypted rows show an **Encrypted** badge in the backup list. There is no key export action; the key is the `backup-encryption.key` file above.
+
 Set `APP_BACKUP_ENCRYPTION=off` to keep compression but skip encryption. Older backups taken before this feature stay readable; each backup records how it was encoded.
 
 ## Consistency hooks

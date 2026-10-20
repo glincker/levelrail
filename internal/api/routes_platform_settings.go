@@ -96,6 +96,8 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/backup-targets/{id}", rt.requireAbility(AbilityRead, rt.handleGetBackupTarget))
 	mux.HandleFunc("PUT /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateBackupTarget))
 	mux.HandleFunc("DELETE /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteBackupTarget))
+	mux.HandleFunc("GET /api/v1/backup-targets/{id}/encryption", rt.requireAbility(AbilityRead, rt.handleGetBackupTargetEncryption))
+	mux.HandleFunc("PUT /api/v1/backup-targets/{id}/encryption", rt.requireAbility(AbilityRoot, rt.handleSetBackupTargetEncryption))
 	mux.HandleFunc("POST /api/v1/backup-targets/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestBackupTarget))
 
 	// Registry credentials (registry_credentials.go): same ability tiers

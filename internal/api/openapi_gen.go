@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1512 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1514 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1403,6 +1403,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/backup-targets/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteBackupTarget", Description: ""},
 	{Method: "GET", Path: "/api/v1/backup-targets/{id}", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetBackupTarget", Description: ""},
 	{Method: "PUT", Path: "/api/v1/backup-targets/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleUpdateBackupTarget", Description: ""},
+	{Method: "GET", Path: "/api/v1/backup-targets/{id}/encryption", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetBackupTargetEncryption", Description: ""},
+	{Method: "PUT", Path: "/api/v1/backup-targets/{id}/encryption", Ability: "AbilityRoot", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleSetBackupTargetEncryption", Description: ""},
 	{Method: "POST", Path: "/api/v1/backup-targets/{id}/test", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleTestBackupTarget", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListDomains", Description: "Domains (centralized cross-app list, web/src/routes/domains): every service_domains row, AbilityRead like GET /api/v1/apps, no new ability tier: this is the same data DomainEditor already exposes per-app, aggregated across every app in one read-only call."},
 	{Method: "GET", Path: "/api/v1/domains/automation/runs", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListAutomationRuns", Description: ""},

@@ -69,17 +69,20 @@ type backupTargetResource struct {
 	Region    string `json:"region,omitempty"`
 	Bucket    string `json:"bucket"`
 	CreatedAt string `json:"created_at"`
+	// EncryptDumps is true when new database dumps to this target are age-sealed.
+	EncryptDumps bool `json:"encrypt_dumps"`
 }
 
 func toBackupTargetResource(t store.BackupTarget) backupTargetResource {
 	return backupTargetResource{
-		ID:        t.ID,
-		Name:      t.Name,
-		Provider:  t.Provider,
-		Endpoint:  t.Endpoint,
-		Region:    t.Region,
-		Bucket:    t.Bucket,
-		CreatedAt: t.CreatedAt,
+		ID:           t.ID,
+		Name:         t.Name,
+		Provider:     t.Provider,
+		Endpoint:     t.Endpoint,
+		Region:       t.Region,
+		Bucket:       t.Bucket,
+		CreatedAt:    t.CreatedAt,
+		EncryptDumps: t.EncryptDumps,
 	}
 }
 
@@ -94,6 +97,8 @@ type createBackupTargetRequest struct {
 	Bucket          string `json:"bucket"`
 	AccessKeyID     string `json:"access_key_id"`
 	SecretAccessKey string `json:"secret_access_key"`
+	// EncryptDumps defaults to on when this control plane has a backup key.
+	EncryptDumps *bool `json:"encrypt_dumps,omitempty"`
 }
 
 // validateCreateBackupTargetRequest checks everything except whether the
@@ -228,6 +233,11 @@ func (rt *Router) handleCreateBackupTarget(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	encryptDumps, ok := rt.resolveCreateEncryption(w, req.EncryptDumps)
+	if !ok {
+		return
+	}
+
 	id, err := randomBackupTargetID()
 	if err != nil {
 		rt.logger.Error("api: create backup target: generate id failed", slog.String("error", err.Error()))
@@ -248,13 +258,14 @@ func (rt *Router) handleCreateBackupTarget(w http.ResponseWriter, r *http.Reques
 	}
 
 	target := store.BackupTarget{
-		ID:        id,
-		Name:      req.Name,
-		Provider:  req.Provider,
-		Endpoint:  req.Endpoint,
-		Region:    req.Region,
-		Bucket:    req.Bucket,
-		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+		ID:           id,
+		Name:         req.Name,
+		Provider:     req.Provider,
+		Endpoint:     req.Endpoint,
+		Region:       req.Region,
+		Bucket:       req.Bucket,
+		CreatedAt:    time.Now().UTC().Format(time.RFC3339),
+		EncryptDumps: encryptDumps,
 	}
 	if err := rt.backupTargets.SaveBackupTarget(r.Context(), target); err != nil {
 		rt.logger.Error("api: create backup target: save failed", slog.String("error", err.Error()), slog.String("id", id))

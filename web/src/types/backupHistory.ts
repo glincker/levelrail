@@ -35,6 +35,8 @@ export interface BackupHistoryRecord {
   error?: string
   started_at: string
   finished_at?: string
+  // "zstd+age" for an encrypted object, absent for a raw legacy one.
+  codec?: string
 }
 
 export interface TriggerBackupRequest {

@@ -1035,6 +1035,8 @@ Endpoints for:
 | GET | /api/v1/domains/{domain}/cert/preflight | AbilityRead | handleCertPreflight |
 | GET | /api/v1/domains/{domain}/cert/status | AbilityRead | handleCertStatus |
 | POST | /api/v1/domains/{domain}/cert | AbilityRoot | handleGetCert |
+| GET | /api/v1/backup-targets/{id}/encryption | AbilityRead | handleGetBackupTargetEncryption |
+| PUT | /api/v1/backup-targets/{id}/encryption | AbilityRoot | handleSetBackupTargetEncryption |
 
 ## Built-in Container Registry
 
