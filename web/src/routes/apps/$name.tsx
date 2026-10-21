@@ -1,5 +1,6 @@
 import { StuckPanel } from '../../components/StuckPanel'
-import { useState } from 'react'
+import { DelayedFallback } from '../../components/ui/delayed-fallback'
+import { Suspense, useState } from 'react'
 import {
   createFileRoute,
   Link,
@@ -146,7 +147,9 @@ function AppDetailLayout() {
       />
       <AppPaletteActions app={app} action={action} onDeploy={setDeployTab} />
       <StuckPanel kind="app" name={app.name} />
-      <Outlet />
+      <Suspense fallback={<DelayedFallback />}>
+        <Outlet />
+      </Suspense>
     </>
   )
 
