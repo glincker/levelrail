@@ -250,6 +250,7 @@ export function LogTerminal({
                     )
                   }}
                   measure={virtualizer.measureElement}
+                  highlight={filter.text}
                 />
               )
             })}

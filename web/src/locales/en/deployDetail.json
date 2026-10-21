@@ -244,6 +244,14 @@
       "resources": "Adjust resources"
     }
   },
+  "fixReturn": {
+    "body": "You were fixing a failed deploy ({{target}}). Redeploy to apply your changes.",
+    "redeploy": "Redeploy now",
+    "back": "Back to failed deploy",
+    "dismiss": "Dismiss",
+    "region": "Redeploy with your changes",
+    "started": "Redeploying with your changes."
+  },
   "report": {
     "copy": "Copy as report",
     "copied": "Report copied",

@@ -29,6 +29,7 @@ import {
   PublishLockToggle,
 } from '../../components/PublishLockControls'
 import { AppMaintenanceBanner } from '../../components/maintenance/AppMaintenanceBanner'
+import { FixReturnBanner } from '../../components/deployDetail/FixReturnBanner'
 import { TrialAppBanner } from '../../components/TrialAppBanner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -133,6 +134,7 @@ function AppDetailLayout() {
       <PendingDeployApprovalBanner appName={app.name} />
       <PublishLockBanner appName={app.name} />
       <AppMaintenanceBanner appName={app.name} />
+      <FixReturnBanner appName={app.name} image={app.image} />
     </>
   )
   const content = (

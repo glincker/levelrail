@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
 import { stripAnsiCodes } from '../lib/ansi'
+import { splitByNeedle } from '../lib/logHighlight'
 import { detectLogLevel, prettyJsonLine, type LogLevel } from '../lib/logLevel'
 import type { LogLine } from '../hooks/useLogStream'
 
@@ -21,6 +22,7 @@ export function LogRow({
   expanded,
   onToggle,
   measure,
+  highlight = '',
 }: {
   logLine: LogLine
   index: number
@@ -28,6 +30,8 @@ export function LogRow({
   expanded: boolean
   onToggle: () => void
   measure: (el: HTMLDivElement | null) => void
+  /** Active filter text; matches inside the line are wrapped in <mark>. */
+  highlight?: string
 }) {
   const { t } = useTranslation('common')
   const [copied, setCopied] = useState(false)
@@ -82,6 +86,7 @@ export function LogRow({
     <div
       data-index={index}
       ref={measure}
+      className="group"
       style={{
         position: 'absolute',
         top: 0,
@@ -107,7 +112,29 @@ export function LogRow({
           <span aria-hidden="true">{tag?.label ?? ''}</span>
           {level ? <span className="sr-only">{level}</span> : null}
         </span>
-        <span className="truncate">{text}</span>
+        <span className="truncate">
+          {splitByNeedle(text, highlight).map((seg, i) =>
+            seg.match ? (
+              <mark key={i} className="rounded-sm bg-amber-400/30 text-inherit">
+                {seg.text}
+              </mark>
+            ) : (
+              seg.text
+            ),
+          )}
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={handleCopy}
+        aria-label={t('logs.copyLineAria')}
+        className="absolute top-0 right-2 flex h-5 items-center rounded bg-neutral-800 px-1.5 text-neutral-300 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none hover:text-neutral-100"
+      >
+        {copied ? (
+          <CheckIcon className="size-3" aria-hidden="true" />
+        ) : (
+          <CopyIcon className="size-3" aria-hidden="true" />
+        )}
       </button>
       {expanded ? (
         <div className="border-l-2 border-neutral-700 bg-neutral-900 px-3 py-2">
