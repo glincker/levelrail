@@ -3,88 +3,50 @@
 // routes and headers blocks, and the SPA, clean URL and 404 options.
 package staticroutes
 
-import "regexp"
+import "github.com/GLINCKER/levelrail/internal/spec"
 
 // Rule and header sources, shown next to each parsed rule.
 const (
-	SourceRedirects = "_redirects"
-	SourceHeaders   = "_headers"
-	SourceSpec      = "app.yaml"
+	SourceRedirects = spec.StaticSourceRedirects
+	SourceHeaders   = spec.StaticSourceHeaders
+	SourceSpec      = spec.StaticSourceSpec
 )
 
 // Problem severities.
 const (
-	SeverityError   = "error"
-	SeverityWarning = "warning"
+	SeverityError   = spec.StaticSeverityError
+	SeverityWarning = spec.StaticSeverityWarning
 )
 
 // Trailing slash modes for Options.TrailingSlash.
 const (
-	SlashOff    = "off"
-	SlashAdd    = "add"
-	SlashRemove = "remove"
+	SlashOff    = spec.StaticSlashOff
+	SlashAdd    = spec.StaticSlashAdd
+	SlashRemove = spec.StaticSlashRemove
 )
 
 // SidecarSuffix names the compiled rules file stored beside a published tree.
-const SidecarSuffix = ".routes.json"
+const SidecarSuffix = spec.StaticSidecarSuffix
 
-// QueryMatch requires a query parameter; Value is a literal or ":name".
-type QueryMatch struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-// Rule is one redirect, rewrite or status rule.
-type Rule struct {
-	Source string       `json:"source"`
-	From   string       `json:"from"`
-	To     string       `json:"to"`
-	Status int          `json:"status"`
-	Force  bool         `json:"force,omitempty"`
-	Query  []QueryMatch `json:"query,omitempty"`
-
-	pat *pattern
-}
-
-// HeaderKV is one response header.
-type HeaderKV struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-// HeaderBlock applies Set and Remove to responses whose path matches Path.
-type HeaderBlock struct {
-	Source string     `json:"source"`
-	Path   string     `json:"path"`
-	Set    []HeaderKV `json:"set,omitempty"`
-	Remove []string   `json:"remove,omitempty"`
-
-	pat *pattern
-}
-
-// Options are the static serving switches.
-type Options struct {
-	SPA           bool   `json:"spa,omitempty"`
-	CleanURLs     bool   `json:"clean_urls,omitempty"`
-	TrailingSlash string `json:"trailing_slash,omitempty"`
-	NotFound      string `json:"not_found,omitempty"`
-}
+type (
+	// QueryMatch requires a query parameter.
+	QueryMatch = spec.StaticQueryMatch
+	// Rule is one redirect, rewrite or status rule.
+	Rule = spec.StaticRule
+	// HeaderKV is one response header.
+	HeaderKV = spec.StaticHeaderKV
+	// HeaderBlock applies header changes to matching paths.
+	HeaderBlock = spec.StaticHeaderBlock
+	// Options are the static serving switches.
+	Options = spec.StaticServeOptions
+)
 
 // Problem is one validation finding. Line is 0 for spec rules.
-type Problem struct {
-	Source   string `json:"source"`
-	Line     int    `json:"line,omitempty"`
-	Severity string `json:"severity"`
-	Message  string `json:"message"`
-}
+type Problem = spec.StaticProblem
 
-// Ruleset is everything compiled for one deploy.
+// Ruleset is everything compiled for one deploy; Resolve evaluates it.
 type Ruleset struct {
-	Version  int           `json:"version"`
-	Rules    []Rule        `json:"rules"`
-	Headers  []HeaderBlock `json:"headers"`
-	Options  Options       `json:"options"`
-	Problems []Problem     `json:"problems"`
+	spec.StaticRuleset
 }
 
-var placeholderRe = regexp.MustCompile(`:([A-Za-z_][A-Za-z0-9_]*)`)
+var placeholderRe = spec.StaticPlaceholderRe

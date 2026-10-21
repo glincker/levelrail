@@ -9,9 +9,23 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
-	"github.com/GLINCKER/levelrail/internal/splittest"
 )
+
+// Split test statuses.
+const (
+	SplitStatusRunning = "running"
+	SplitStatusStopped = "stopped"
+)
+
+// SplitVariant is one arm of a split test. Ref is a branch name for a branch
+// variant and a deploy URL service name for a release variant.
+type SplitVariant struct {
+	ID     string `json:"id"`
+	Label  string `json:"label"`
+	Kind   string `json:"kind"`
+	Ref    string `json:"ref,omitempty"`
+	Weight int    `json:"weight"`
+}
 
 // ErrSplitTestRunning is returned when an app already has a running test.
 var ErrSplitTestRunning = errors.New("store: a split test is already running for this app")
@@ -21,7 +35,7 @@ type SplitTest struct {
 	ID            string
 	AppName       string
 	Status        string
-	Variants      []splittest.Variant
+	Variants      []SplitVariant
 	CookieName    string
 	CookieTTLSecs int
 	CreatedAt     time.Time
@@ -86,7 +100,7 @@ func (db *DB) CreateSplitTest(ctx context.Context, t SplitTest) error {
 
 // GetRunningSplitTest returns the app's running test.
 func (db *DB) GetRunningSplitTest(ctx context.Context, app string) (SplitTest, bool, error) {
-	t, err := scanSplitTest(db.QueryRowContext(ctx, `SELECT `+splitTestCols+` FROM split_tests WHERE app_name = ? AND status = ?`, app, splittest.StatusRunning).Scan)
+	t, err := scanSplitTest(db.QueryRowContext(ctx, `SELECT `+splitTestCols+` FROM split_tests WHERE app_name = ? AND status = ?`, app, SplitStatusRunning).Scan)
 	return splitTestResult(t, err)
 }
 
@@ -108,7 +122,7 @@ func splitTestResult(t SplitTest, err error) (SplitTest, bool, error) {
 
 // ListRunningSplitTests returns every running test, for rebuilding ingress at boot.
 func (db *DB) ListRunningSplitTests(ctx context.Context) ([]SplitTest, error) {
-	rows, err := db.QueryContext(ctx, `SELECT `+splitTestCols+` FROM split_tests WHERE status = ?`, splittest.StatusRunning)
+	rows, err := db.QueryContext(ctx, `SELECT `+splitTestCols+` FROM split_tests WHERE status = ?`, SplitStatusRunning)
 	if err != nil {
 		return nil, fmt.Errorf("store: list running split tests: %w", err)
 	}
@@ -125,13 +139,13 @@ func (db *DB) ListRunningSplitTests(ctx context.Context) ([]SplitTest, error) {
 }
 
 // UpdateSplitTestVariants replaces the variants (weights) of a running test.
-func (db *DB) UpdateSplitTestVariants(ctx context.Context, id string, vs []splittest.Variant) error {
+func (db *DB) UpdateSplitTestVariants(ctx context.Context, id string, vs []SplitVariant) error {
 	raw, err := json.Marshal(vs)
 	if err != nil {
 		return fmt.Errorf("store: marshal split variants: %w", err)
 	}
 	if _, err := db.ExecContext(ctx, `UPDATE split_tests SET variants = ?, updated_at = ? WHERE id = ? AND status = ?`,
-		string(raw), time.Now().UTC().Format(time.RFC3339Nano), id, splittest.StatusRunning); err != nil {
+		string(raw), time.Now().UTC().Format(time.RFC3339Nano), id, SplitStatusRunning); err != nil {
 		return fmt.Errorf("store: update split test %q: %w", id, err)
 	}
 	return nil
@@ -141,7 +155,7 @@ func (db *DB) UpdateSplitTestVariants(ctx context.Context, id string, vs []split
 func (db *DB) EndSplitTest(ctx context.Context, id, reason string) error {
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	if _, err := db.ExecContext(ctx, `UPDATE split_tests SET status = ?, ended_at = ?, updated_at = ?, end_reason = ? WHERE id = ?`,
-		splittest.StatusStopped, now, now, reason, id); err != nil {
+		SplitStatusStopped, now, now, reason, id); err != nil {
 		return fmt.Errorf("store: end split test %q: %w", id, err)
 	}
 	return nil
