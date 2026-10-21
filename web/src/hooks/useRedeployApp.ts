@@ -11,7 +11,7 @@ import { isPendingApproval, useTriggerDeploy } from '../queries/deploys'
 export function useRedeployApp(
   name: string,
   image: string,
-  options?: { onViewApp?: () => void },
+  options?: { onViewApp?: () => void; onSuccess?: () => void },
 ) {
   const { t } = useTranslation('common')
   const triggerDeploy = useTriggerDeploy(name)
@@ -22,6 +22,7 @@ export function useRedeployApp(
         { image },
         {
           onSuccess: (result) => {
+            options?.onSuccess?.()
             const awaitingApproval = isPendingApproval(result)
             toast.add({
               title: awaitingApproval

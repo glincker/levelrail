@@ -188,6 +188,7 @@ export function DeployFailureSummaryCard({
             appName={appName}
             stage={summary.stageKey}
             causeId={summary.cause?.id}
+            deployId={attempt.id}
           />
           <div className="flex flex-wrap items-center gap-2">
             <Button

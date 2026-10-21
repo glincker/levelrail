@@ -3,6 +3,7 @@ import { WrenchIcon } from '@phosphor-icons/react/dist/ssr'
 import { buttonVariants } from '@/components/ui/button'
 import { deployFixLinks } from '../../lib/deployFixLinks'
 import type { DeployStage } from '../../lib/deployStages'
+import { writeFixMarker } from '../../lib/fixReturnMarker'
 import { useDeployDetailT } from './useDeployDetailT'
 
 /** DeployFixRow links to the setting most likely behind the failure; redeploying stays with the actions beside it. */
@@ -10,10 +11,13 @@ export function DeployFixRow({
   appName,
   stage,
   causeId,
+  deployId,
 }: {
   appName: string
   stage: DeployStage['key']
   causeId?: string
+  /** Failed deploy id, recorded so the app pages can offer a one-click redeploy. */
+  deployId?: string
 }) {
   const { t } = useDeployDetailT()
   const links = deployFixLinks(stage, causeId)
@@ -30,6 +34,16 @@ export function DeployFixRow({
             key={link.to}
             to={link.to}
             params={{ name: appName }}
+            onClick={() => {
+              if (deployId) {
+                writeFixMarker({
+                  appName,
+                  deployId,
+                  labelKey: link.labelKey,
+                  at: Date.now(),
+                })
+              }
+            }}
             className={buttonVariants({ variant: 'outline', size: 'sm' })}
           >
             {t(`fix.link.${link.labelKey}`)}
