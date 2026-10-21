@@ -79,9 +79,18 @@
       "groupOwn": "Bring your own"
     },
     "presets": {
-      "go": { "title": "Go", "body": "A tiny HTTP handler in Go, fast to start." },
-      "node": { "title": "Node.js", "body": "A ten line handler in Node.js." },
-      "python": { "title": "Python", "body": "A small handler in Python." },
+      "go": {
+        "title": "Go",
+        "body": "A tiny HTTP handler in Go, fast to start."
+      },
+      "node": {
+        "title": "Node.js",
+        "body": "A ten line handler in Node.js."
+      },
+      "python": {
+        "title": "Python",
+        "body": "A small handler in Python."
+      },
       "webhook": {
         "title": "Webhook receiver",
         "body": "Accept events from other services and act on them."
@@ -90,12 +99,18 @@
         "title": "Scheduled job runner",
         "body": "Run a task whenever a schedule calls it."
       },
-      "form": { "title": "Form to email", "body": "Turn a form post into an email." },
+      "form": {
+        "title": "Form to email",
+        "body": "Turn a form post into an email."
+      },
       "shortener": {
         "title": "URL shortener",
         "body": "Map short paths to long links."
       },
-      "chatbot": { "title": "Chat bot", "body": "Answer chat platform messages." },
+      "chatbot": {
+        "title": "Chat bot",
+        "body": "Answer chat platform messages."
+      },
       "repo": {
         "title": "Use my own repository",
         "body": "Deploy a handler you already have in git."
@@ -192,7 +207,17 @@
       "idleInvalid": "Enter a whole number of minutes, at least the minimum allowed.",
       "domainRequired": "Choose a domain for the path.",
       "pathInvalid": "Use a path such as /hello with letters, numbers, dashes or dots."
-    }
+    },
+    "name": "Name",
+    "repo": "Repository URL",
+    "ref": "Branch, tag or commit",
+    "directory": "Handler directory (optional)",
+    "directoryHint": "Leave empty when the handler is at the repository root.",
+    "routeDomain": "Also serve on domain",
+    "routePath": "Path prefix",
+    "routeHint": "Optional. A domain already attached to an app, plus a path such as /hello, serves this function at domain/hello. The prefix is stripped before the request reaches the handler.",
+    "port": "Port",
+    "idle": "Sleep after idle minutes"
   },
   "templates": {
     "title": "Starter handlers",
@@ -280,5 +305,17 @@
     "warm": "Warm",
     "stored": "Input stored for replay",
     "truncated": "The body was cut at the size limit."
+  },
+  "banner": {
+    "title": "Functions",
+    "description": "Small handlers that cost nothing while idle. They sleep after a quiet period and wake on the next request.",
+    "diagram": {
+      "browser": "browser",
+      "request": "request",
+      "function": "function",
+      "response": "response",
+      "coldStart": "cold start about 1s",
+      "sleeps": "sleeps when idle"
+    }
   }
 }
