@@ -45,6 +45,8 @@ export interface TriggerBuildInput {
   detectedFramework?: string
   /** Builds a previously uploaded archive instead of a git checkout; repoUrl and ref stay empty. */
   uploadHash?: string
+  /** Skips the BuildKit layer cache; the backend accepts it for dockerfile builds only. */
+  noCache?: boolean
 }
 
 // TriggerBuildResult mirrors internal/api/builds.go's own
@@ -85,6 +87,7 @@ export async function triggerBuild(
         ...(input.repoUrl ? { repo_url: input.repoUrl } : {}),
         ...(input.ref ? { ref: input.ref } : {}),
         ...(input.uploadHash ? { upload_hash: input.uploadHash } : {}),
+        ...(input.noCache ? { no_cache: true } : {}),
         ...(input.imageRepo ? { image_repo: input.imageRepo } : {}),
         ...(Object.keys(build).length > 0 ? { build } : {}),
         ...(input.detectedFramework
