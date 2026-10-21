@@ -28,6 +28,7 @@ import {
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { FormSection } from '@/components/ui/form-section'
+import { CLI_INSTALL_COMMAND } from '../../lib/cliInstall'
 import { CliAccessRail } from '../../components/settings/CliAccessRail'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
@@ -153,7 +154,7 @@ function CliAccessPage() {
               title={t('cliAccessPage.steps.install.title')}
               description={t('cliAccessPage.steps.install.body')}
             >
-              <CopyCommand command="curl -fsSL https://levelrail.com/install-cli.sh | sh" />
+              <CopyCommand command={CLI_INSTALL_COMMAND} />
               <p className="text-xs text-muted-foreground">
                 {t('cliAccessPage.steps.install.note')}
               </p>

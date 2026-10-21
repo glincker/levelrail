@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useExperimentalFeatures } from './useExperimental'
+import { openCliModal } from '@/lib/cliModalStore'
 import { useRouteAvailable } from '@/lib/routeAvailability'
 import {
   INITIAL_CHORD,
@@ -72,6 +73,9 @@ export function useShortcuts({
               ? { to: action.to, search: action.search }
               : { to: action.to },
           )
+        } else if (action.type === 'open-cli') {
+          e.preventDefault()
+          openCliModal()
         } else {
           const field = findSearchField()
           if (field) {

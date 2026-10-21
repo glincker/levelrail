@@ -121,8 +121,44 @@
     "commandLabel": "Command to run in your terminal",
     "expiresIn": "Single use, expires in {{time}}.",
     "expired": "This command has expired. Get a new one.",
-    "dismiss": "Dismiss",
     "failed": "Could not create a pairing code",
     "rateLimited": "Too many tries, wait a moment and try again"
+  },
+  "cliModal": {
+    "badge": "Connect CLI",
+    "badgeLabel": "Connect the command line tool. No CLI is connected yet.",
+    "title": "Command line tool",
+    "description": "Install the CLI, connect it to this server, and manage the ones already connected.",
+    "openAction": "Open CLI setup",
+    "openKeywords": "cli terminal command line install connect pair token",
+    "install": {
+      "title": "1. Install",
+      "lead": "Run this once in your terminal to install the CLI.",
+      "label": "Install command"
+    },
+    "connect": {
+      "title": "2. Connect",
+      "lead": "Get a one-line command that signs your terminal in to this server. No password, no approval step."
+    },
+    "manage": {
+      "title": "Connected CLIs",
+      "empty": "No CLI is connected yet. Connect one above.",
+      "loading": "Loading connected CLIs...",
+      "lastUsed": "Last used {{when}}",
+      "neverUsed": "Never used",
+      "lastIp": "From {{ip}}",
+      "expires": "Expires {{when}}",
+      "noExpiry": "Does not expire",
+      "revoke": "Revoke",
+      "revokeLabel": "Revoke {{name}}",
+      "revokeTitle": "Revoke this CLI?",
+      "revokeBody": "{{name}} will stop working right away. You can connect it again at any time.",
+      "revokeConfirm": "Revoke",
+      "revoking": "Revoking...",
+      "revokeCancel": "Cancel",
+      "revokeFailed": "Could not revoke this CLI",
+      "revoked": "CLI revoked",
+      "fullPage": "Manage all CLI access"
+    }
   }
 }

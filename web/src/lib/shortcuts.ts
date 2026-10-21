@@ -39,6 +39,10 @@ export const GO_TARGETS: Record<
   t: { to: '/settings', label: 'Settings' },
 }
 
+// Second key of the g-then-c chord; kept out of GO_TARGETS since it opens a
+// modal rather than navigating.
+export const OPEN_CLI_KEY = 'c'
+
 export interface ShortcutDoc {
   keys: string[]
   description: string
@@ -49,6 +53,7 @@ export interface ShortcutDoc {
 export const BASE_DOCS: ShortcutDoc[] = [
   { keys: ['Ctrl/Cmd', 'K'], description: 'Open the command palette' },
   { keys: ['Hold', 'L'], description: 'Open quick navigation' },
+  { keys: ['g', 'c'], description: 'Open CLI setup' },
   { keys: ['/'], description: 'Focus the search field on this page' },
   { keys: ['Esc'], description: 'Close a dialog, or leave the search field' },
 ]
@@ -70,6 +75,7 @@ export interface KeyInput {
 export type ShortcutAction =
   | { type: 'go'; to: string; search?: BetaFeaturesSearch }
   | { type: 'focus-search' }
+  | { type: 'open-cli' }
   | null
 
 export const INITIAL_CHORD: ChordState = { pending: false, startedAt: 0 }
@@ -95,6 +101,9 @@ export function stepChord(
   }
   const live = state.pending && now - state.startedAt <= CHORD_TIMEOUT_MS
   if (live) {
+    if (input.key === OPEN_CLI_KEY) {
+      return { state: INITIAL_CHORD, action: { type: 'open-cli' } }
+    }
     const target = GO_TARGETS[input.key]
     if (target && (!target.requiresRoute || routeAvailable(target.to))) {
       // A switched-off feature leads to Beta features instead of a dead key.
