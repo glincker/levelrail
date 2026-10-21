@@ -79,6 +79,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/certflow"
 	"github.com/GLINCKER/levelrail/internal/compliance"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
+	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/nodefailure"
 	"github.com/GLINCKER/levelrail/internal/repolist"
 	"github.com/GLINCKER/levelrail/internal/search"
@@ -115,7 +116,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/edgefw"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/exposure"
-	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
@@ -583,6 +583,10 @@ type Router struct {
 	imageAutoUpdates             ImageAutoUpdateStore // always set, per-app registry auto-update opt-in
 	forms                        FormsStore           // nil is valid: form routes return 501
 	formsRT                      *formsRuntime
+	functionTriggers             FunctionTriggerStore
+	functionCfg                  functions.TriggerConfig
+	functionKick                 func()
+	functionWebhookLimit         *apiRateLimiter
 	appSleep                     AppSleepStore                                         // always set, sleep-when-idle settings
 	dataImports                  DataImportStore                                       // always set, live data copy status
 	migrationHub                 MigrationHubStore                                     // always set, server migration hub sessions

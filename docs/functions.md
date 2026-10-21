@@ -123,6 +123,68 @@ The API is `GET|PUT /api/v1/functions/{name}/settings`,
 `POST /api/v1/functions/{name}/rollback?to=<id>&pin=true`. Without `--to`,
 rollback goes to the newest earlier successful version.
 
+## Triggers
+
+A function wakes on a request. Three more things can call it for you, and all of
+them wake it first:
+
+| Trigger | How |
+| --- | --- |
+| Schedule | An http job on the function's app, see [scheduled functions](/scheduled-functions). It is listed under the function's triggers. |
+| Signed webhook | `POST /api/v1/webhooks/functions/<name>`, signed with a per-function secret. |
+| Async call | `POST /api/v1/functions/<name>/async` returns `202` at once; the call is delivered from a durable queue. |
+
+```
+levelrail-cli functions triggers list hello
+levelrail-cli functions triggers webhook hello --path /hooks/stripe
+levelrail-cli functions triggers enqueue hello --path /jobs/resize --data '{"id":7}'
+levelrail-cli functions triggers dead-letters
+levelrail-cli functions triggers retry inv_0123abcd
+```
+
+The Functions page shows the same under Triggers: enable, rotate or turn off the
+webhook, see schedules and queue depth, and retry or discard dead letters.
+
+### Signed webhook
+
+Enabling the webhook prints a secret once (rotate to get a new one). It needs the
+control plane master key. A caller sends the body with two headers:
+
+- `X-Signature-Timestamp`: unix seconds.
+- `X-Signature`: `sha256=` and the hex of `HMAC-SHA256(secret, timestamp + "." + body)`.
+
+A timestamp outside the replay window, a bad signature or a repeated signature is
+refused (`401`, or `200` with `duplicate: true` for a repeat). A good call is
+queued and forwarded as a `POST` to the path chosen at setup, with the original
+`Content-Type` and body. The request is answered with `202` before the function
+has run.
+
+### Queue, retries and dead letters
+
+Each queued call is delivered by a small worker pool that wakes the function,
+calls it and treats a `2xx` as done. Transport errors, `408`, `429` and `5xx`
+are retried with a doubling delay up to a cap; any other status goes straight to
+the dead letters, as does a call that used all its attempts. Delivery is
+at least once: the function gets `X-Function-Invocation` (stable id) and
+`X-Function-Attempt` headers so it can deduplicate. A full queue answers `429`.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_FUNCTION_WEBHOOK_REPLAY_WINDOW` | 5m | Allowed clock difference for a signed timestamp. |
+| `APP_FUNCTION_WEBHOOK_RATE_LIMIT_RPM` | 600 | Webhook calls per minute per client and function. |
+| `APP_FUNCTION_QUEUE_MAX_BODY_BYTES` | 1048576 | Largest queued body. |
+| `APP_FUNCTION_QUEUE_MAX_PER_FUNCTION` | 1000 | Waiting plus running calls per function. |
+| `APP_FUNCTION_QUEUE_MAX_ATTEMPTS` | 5 | Tries before a call is dead-lettered. |
+| `APP_FUNCTION_QUEUE_BACKOFF_BASE` | 5s | Delay after the first failure, doubled each try. |
+| `APP_FUNCTION_QUEUE_BACKOFF_MAX` | 15m | Cap of the retry delay. |
+| `APP_FUNCTION_QUEUE_ATTEMPT_TIMEOUT` | 2m | Wake plus call time of one try. |
+| `APP_FUNCTION_QUEUE_POLL_INTERVAL` | 2s | How often idle workers look for due calls. |
+| `APP_FUNCTION_QUEUE_WORKERS` | 2 | Calls delivered at the same time. |
+| `APP_FUNCTION_QUEUE_DONE_RETENTION` | 24h | How long finished calls are kept. |
+
+Not yet verified on a real host. Request bodies are stored in the control plane
+database until delivered, so do not queue secrets you would not keep there.
+
 ## What a caller sees
 
 When the function is asleep, the first request is held while the container

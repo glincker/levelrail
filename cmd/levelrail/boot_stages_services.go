@@ -14,6 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/GLINCKER/levelrail/internal/functions"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/models"
@@ -77,6 +78,7 @@ func (s *bootState) buildRunners() error {
 	s.backupRunner = backupRunner
 	s.backupVerifyRunner = backupVerifyRunner
 	s.scheduledTaskRunner = scheduledTaskRunner
+	s.functionQueue = &functions.Queue{Store: db, Apps: db, Config: functions.TriggerConfigFromEnv(os.LookupEnv), Logger: logger}
 	return nil
 }
 
@@ -174,7 +176,7 @@ func (s *bootState) wireRouter() {
 		client: client, builder: builder, deployRecorder: deployRecorder, logBroadcaster: logBroadcaster,
 		deployDispatcher: deployDispatcher, backupRunner: backupRunner, backupVerifyRunner: backupVerifyRunner,
 		agentRegistry: agentRegistry, agentCAFingerprint: agentCA.Fingerprint(), emailSender: emailSender,
-		scheduledTaskRunner: scheduledTaskRunner, engine: engine, ingressDriver: ingressDriver,
+		scheduledTaskRunner: scheduledTaskRunner, functionQueue: s.functionQueue, engine: engine, ingressDriver: ingressDriver,
 		pushVAPIDPublicKey: pushVAPIDPublicKey,
 	})
 	apiRouter.WarmTrustRoot()

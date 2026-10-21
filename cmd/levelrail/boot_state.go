@@ -18,6 +18,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/functions"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/integrity"
 	"github.com/GLINCKER/levelrail/internal/janitor"
@@ -70,6 +71,7 @@ type bootState struct {
 	backupRunner        *backup.Runner
 	backupVerifyRunner  *backup.VerifyRunner
 	scheduledTaskRunner *scheduledtask.Runner
+	functionQueue       *functions.Queue
 	supplyChainSvc      *supplychain.Service
 	builder             *deploy.Pipeline
 	buildLimiter        *build.Limiter

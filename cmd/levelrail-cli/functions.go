@@ -28,6 +28,11 @@ const functionsUsage = `Usage:
   %[1]s functions settings <name> [--timeout 45s] [--concurrency 20] [--idle 10m]   show or change runtime limits
   %[1]s functions versions <name>                 deploy history, newest first
   %[1]s functions rollback <name> [--to <deploy id>] [--pin]   return to a version, --pin also locks publishing
+  %[1]s functions triggers list <name>            webhook, schedules and queue depth of a function
+  %[1]s functions triggers webhook <name> [--path /] [--rotate] [--disable]   signed webhook trigger
+  %[1]s functions triggers enqueue <name> [--path /] [--method POST] [--data BODY]   async call with retries
+  %[1]s functions triggers dead-letters [--function <name>]   calls that ran out of retries
+  %[1]s functions triggers retry <id> | discard <id>
 
 A function is an app (a handler repo built with Railpack, or an image) that sleeps when idle and starts on the next
 request. A request that arrives while it is asleep waits for the cold start
@@ -53,6 +58,8 @@ func runFunctions(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runFunctionsControls(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	case "dev":
 		return runFunctionsDev(prog, args[1:], stdout, stderr)
+	case "triggers":
+		return runFunctionsTriggers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy", "list", "invoke", "delete", "invocations":
 		return runFunctionsVerb(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	default:

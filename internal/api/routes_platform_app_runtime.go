@@ -22,6 +22,15 @@ func (rt *Router) registerAppRuntimeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/functions/{name}/invocations/{id}/replay", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleReplayFunctionInvocation))
 	mux.HandleFunc("GET /api/v1/functions/{name}/capture", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetFunctionCapture))
 	mux.HandleFunc("PUT /api/v1/functions/{name}/capture", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetFunctionCapture))
+	// Function triggers: signed webhook per function, async invocation queue with retries, dead-letter list and retry.
+	mux.HandleFunc("GET /api/v1/functions/{name}/triggers", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetFunctionTriggers))
+	mux.HandleFunc("PUT /api/v1/functions/{name}/triggers/webhook", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutFunctionWebhook))
+	mux.HandleFunc("DELETE /api/v1/functions/{name}/triggers/webhook", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteFunctionWebhook))
+	mux.HandleFunc("POST /api/v1/functions/{name}/async", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleEnqueueFunctionInvocation))
+	mux.HandleFunc("GET /api/v1/function-invocations", rt.requireAbility(AbilityRead, rt.handleListQueuedFunctionCalls))
+	mux.HandleFunc("POST /api/v1/function-invocations/{id}/retry", rt.requireAbility(AbilityDeploy, rt.handleRetryFunctionInvocation))
+	mux.HandleFunc("DELETE /api/v1/function-invocations/{id}", rt.requireAbility(AbilityDeploy, rt.handleDeleteFunctionInvocation))
+	mux.HandleFunc("POST /api/v1/webhooks/functions/{name}", rt.handleFunctionWebhook)
 	mux.HandleFunc("GET /api/v1/apps/{name}/requests", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryRequests))
 	// Traffic: RED totals, per-replica latency, slowest route templates, slow or failed request samples and SLO burn over window=5m, 1h, 24h or 7d, plus top referrers and countries.
 	mux.HandleFunc("GET /api/v1/apps/{name}/traffic", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppTraffic))

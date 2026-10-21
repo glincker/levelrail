@@ -675,6 +675,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/git-source/validate | AbilityDeploy | handleValidateGitSourceAccess |
 | POST | /api/v1/apps/{name}/git-source/webhook/register | AbilityWriteSensitive | handleRegisterGitSourceWebhook |
 | POST | /api/v1/apps/{name}/secrets/{key}/rotate | AbilityWriteSensitive | handleRotateSecretValue |
+| POST | /api/v1/webhooks/functions/{name} | Public | handleFunctionWebhook |
 
 ## Telemetry
 
@@ -1845,6 +1846,13 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/functions/{name}/settings | AbilityDeploy | handlePutFunctionSettings |
 | GET | /api/v1/functions/{name}/versions | AbilityRead | handleListFunctionVersions |
 | POST | /api/v1/functions/{name}/rollback | AbilityDeploy | handleFunctionRollback |
+| GET | /api/v1/functions/{name}/triggers | AbilityRead | handleGetFunctionTriggers |
+| PUT | /api/v1/functions/{name}/triggers/webhook | AbilityDeploy | handlePutFunctionWebhook |
+| DELETE | /api/v1/functions/{name}/triggers/webhook | AbilityDeploy | handleDeleteFunctionWebhook |
+| POST | /api/v1/functions/{name}/async | AbilityDeploy | handleEnqueueFunctionInvocation |
+| GET | /api/v1/function-invocations | AbilityRead | handleListQueuedFunctionCalls |
+| POST | /api/v1/function-invocations/{id}/retry | AbilityDeploy | handleRetryFunctionInvocation |
+| DELETE | /api/v1/function-invocations/{id} | AbilityDeploy | handleDeleteFunctionInvocation |
 
 ## See also
 

@@ -1,6 +1,36 @@
 {
   "title": "Functions",
   "description": "Small handlers that cost nothing while idle. A function sleeps after a quiet period and the next request wakes it and waits for the answer.",
+  "triggers": {
+    "title": "Triggers",
+    "pick": "Function",
+    "error": "Triggers could not be loaded: {{message}}",
+    "queue": "Async queue: {{queued}} waiting, {{running}} running, {{dead}} dead-lettered.",
+    "webhook": {
+      "title": "Signed webhook",
+      "path": "Path the webhook forwards to",
+      "enable": "Enable webhook",
+      "disable": "Turn off",
+      "rotate": "Rotate secret",
+      "on": "Calls are queued and forwarded to {{path}}. Signatures older than {{seconds}} seconds are rejected.",
+      "secretOnce": "Signing secret. It is shown once, copy it now.",
+      "signing": "Send X-Signature-Timestamp (unix seconds) and X-Signature: sha256=HMAC-SHA256(secret, timestamp + dot + body)."
+    },
+    "schedules": {
+      "title": "Schedules",
+      "none": "No scheduled HTTP jobs call this function.",
+      "manage": "Manage schedules in the Jobs tab of the app"
+    },
+    "dead": {
+      "title": "Dead letters",
+      "description": "Async calls that ran out of retries. Retry puts one back in the queue.",
+      "empty": "No dead-lettered calls.",
+      "error": "Dead letters could not be loaded: {{message}}",
+      "detail": "{{attempts}} of {{max}} attempts, HTTP {{code}} {{error}}",
+      "retry": "Retry",
+      "discard": "Discard"
+    }
+  },
   "window": {
     "label": "Statistics window",
     "1h": "Last hour",

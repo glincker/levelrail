@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"time"
 
@@ -1084,6 +1085,15 @@ func WithLogBroadcaster(b *telemetry.LogBroadcaster) Option {
 // protected even when an operator never sets either env var.
 func WithAPIRateLimit(readPerMinute, writePerMinute int) Option {
 	return func(rt *Router) { rt.apiRateLimit = newAPIRateLimit(readPerMinute, writePerMinute) }
+}
+
+// WithFunctionTriggers enables the signed webhook trigger and the async invocation queue of functions;
+// kick wakes the queue worker when a call is enqueued. Without it the trigger routes return 501.
+func WithFunctionTriggers(s FunctionTriggerStore, cfg functions.TriggerConfig, kick func()) Option {
+	return func(rt *Router) {
+		rt.functionTriggers, rt.functionCfg, rt.functionKick = s, cfg, kick
+		rt.functionWebhookLimit = newAPIRateLimiter(cfg.WebhookPerMinute)
+	}
 }
 
 // WithWebhookRateLimit enables a per-(client IP, app name) budget on

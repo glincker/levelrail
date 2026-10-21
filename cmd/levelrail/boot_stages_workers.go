@@ -248,6 +248,12 @@ func (s *bootState) startSchedulers() {
 		db: db, nudger: engine, local: client,
 		nodes: lbNodeUpstreams{db: db, local: client, registry: agentRegistry, localNodeID: localNodeID},
 	}
+	s.functionQueue.Target = scheduledTaskRunner.Target
+	go func() {
+		if err := s.functionQueue.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("function queue stopped", slog.String("error", err.Error()))
+		}
+	}()
 	scheduledTaskScheduler := scheduledtask.NewScheduler(db, scheduledTaskRunner, logger)
 	scheduledTaskScheduler.Lookback = scheduledTaskRunner.Limits.CatchUpLookback
 	go func() {

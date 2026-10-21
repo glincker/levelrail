@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1620 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1628 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1031,8 +1031,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/frameworks", Ability: "AbilityRead", Group: "Other", Handler: "handleListFrameworks", Description: ""},
 	{Method: "GET", Path: "/api/v1/frameworks/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFramework", Description: ""},
 	{Method: "GET", Path: "/api/v1/frameworks/{id}/dockerfile", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFrameworkDockerfile", Description: ""},
+	{Method: "GET", Path: "/api/v1/function-invocations", Ability: "AbilityRead", Group: "Other", Handler: "handleListQueuedFunctionCalls", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/function-invocations/{id}", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDeleteFunctionInvocation", Description: ""},
+	{Method: "POST", Path: "/api/v1/function-invocations/{id}/retry", Ability: "AbilityDeploy", Group: "Other", Handler: "handleRetryFunctionInvocation", Description: ""},
 	{Method: "GET", Path: "/api/v1/functions", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctions", Description: "Functions: apps that sleep to zero and hold the waking request, with call count and p95 duration, plus starter handlers per runtime."},
 	{Method: "GET", Path: "/api/v1/functions/runtimes", Ability: "AbilityRead", Group: "Other", Handler: "handleFunctionRuntimes", Description: ""},
+	{Method: "POST", Path: "/api/v1/functions/{name}/async", Ability: "AbilityDeploy", Group: "Other", Handler: "handleEnqueueFunctionInvocation", Description: ""},
 	{Method: "GET", Path: "/api/v1/functions/{name}/capture", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFunctionCapture", Description: ""},
 	{Method: "PUT", Path: "/api/v1/functions/{name}/capture", Ability: "AbilityDeploy", Group: "Other", Handler: "handleSetFunctionCapture", Description: ""},
 	{Method: "GET", Path: "/api/v1/functions/{name}/invocations", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctionInvocations", Description: "Function observe and try: recent edge calls, a test call through the real route, replay of stored input, and the per-function capture opt-in."},
@@ -1044,6 +1048,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/functions/{name}/route", Ability: "AbilityDeploy", Group: "Other", Handler: "handleSetFunctionRoute", Description: ""},
 	{Method: "GET", Path: "/api/v1/functions/{name}/settings", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFunctionSettings", Description: "Function controls: request timeout and concurrency limit, deploy versions, and rollback or pin through the app rollback."},
 	{Method: "PUT", Path: "/api/v1/functions/{name}/settings", Ability: "AbilityDeploy", Group: "Other", Handler: "handlePutFunctionSettings", Description: ""},
+	{Method: "GET", Path: "/api/v1/functions/{name}/triggers", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFunctionTriggers", Description: "Function triggers: signed webhook per function, async invocation queue with retries, dead-letter list and retry."},
+	{Method: "DELETE", Path: "/api/v1/functions/{name}/triggers/webhook", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDeleteFunctionWebhook", Description: ""},
+	{Method: "PUT", Path: "/api/v1/functions/{name}/triggers/webhook", Ability: "AbilityDeploy", Group: "Other", Handler: "handlePutFunctionWebhook", Description: ""},
 	{Method: "GET", Path: "/api/v1/functions/{name}/versions", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctionVersions", Description: ""},
 	{Method: "GET", Path: "/api/v1/gate/check", Ability: "Public", Group: "Other", Handler: "handleGateCheck", Description: "Unauthenticated by design: the check proves itself with the ingress's gate secret, and login requires a dashboard session before minting."},
 	{Method: "GET", Path: "/api/v1/git-connections", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleListGitConnections", Description: ""},
@@ -1499,6 +1506,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/previews", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListAllPreviews", Description: ""},
 	{Method: "POST", Path: "/api/v1/previews/sweep", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSweepPreviewEnvironments", Description: "Preview environment TTL sweep (preview_environments_sweep.go): the fallback for a pull-request-closed webhook delivery that never arrived, cross-app since staleness is a control-plane-wide sweep, not a per-app one. Same manual-trigger-alongside-the-automatic-path shape as POST .../previews/{number}/teardown above, same AbilityDeploy tier."},
 	{Method: "POST", Path: "/api/v1/webhooks/discord/interactions", Ability: "Public", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleDiscordInteraction", Description: ""},
+	{Method: "POST", Path: "/api/v1/webhooks/functions/{name}", Ability: "Public", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleFunctionWebhook", Description: ""},
 	{Method: "POST", Path: "/api/v1/webhooks/github/{name}", Ability: "Public", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleGitPushWebhook", Description: "Git push webhook: deliberately unauthenticated because GitHub cannot present a session. The per-app HMAC signature check (secret set at git-source connect time) stands in for auth."},
 	{Method: "POST", Path: "/api/v1/webhooks/slack/interactions", Ability: "Public", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSlackInteraction", Description: "Chat-interactive deploy approval (chat_interactions.go): a Slack/Discord button click posts back here, unauthenticated like POST .../webhooks/github/{name} above; its own signature check (Slack HMAC, Discord Ed25519) stands in for auth, and the decision itself runs through the exact same functions the gated routes above call."},
 	{Method: "GET", Path: "/api/v1/backup-targets", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListBackupTargets", Description: "Backup targets (connected S3-compatible buckets a database backup can be uploaded to). Create and delete need AbilityWriteSensitive: create because its request body carries live bucket credentials, delete because it gates access to the same. List/get are ordinary AbilityRead, the same boundary handleListCertificates/ handleListStaticSites already draw between visibility and mutation."},
