@@ -1,17 +1,20 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { CommonI18n } from '../test/commonI18n'
 import { RetrySplitButton } from './RetrySplitButton'
 
 function setup(canRebuild: boolean) {
   const onRetry = vi.fn()
   render(
-    <RetrySplitButton
-      onRetry={onRetry}
-      onRebuild={vi.fn()}
-      onRebuildNoCache={vi.fn()}
-      canRebuild={canRebuild}
-    />,
+    <CommonI18n>
+      <RetrySplitButton
+        onRetry={onRetry}
+        onRebuild={vi.fn()}
+        onRebuildNoCache={vi.fn()}
+        canRebuild={canRebuild}
+      />
+    </CommonI18n>,
   )
   return { onRetry }
 }
