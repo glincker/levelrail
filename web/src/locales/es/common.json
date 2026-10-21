@@ -172,6 +172,19 @@
     "emergencyDocs": "Acceso de emergencia"
   },
   "shell": {
+    "sectionTabs": {
+      "deployments": {
+        "label": "Secciones de despliegues",
+        "deploys": "Despliegues",
+        "timeline": "Cronología",
+        "builds": "Compilaciones"
+      },
+      "cost": {
+        "label": "Secciones de uso y costes",
+        "usage": "Uso",
+        "costs": "Explorador de costes"
+      }
+    },
     "pins": {
       "group": "Fijados",
       "pin": "Fijar {{label}}",
