@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1634 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1635 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1603,6 +1603,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/system/orphans/reap", Ability: "AbilityRoot", Group: "System", Handler: "handleReapOrphans", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/proxy-integration", Ability: "AbilityRead", Group: "System", Handler: "handleGetProxyIntegration", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/proxy-integration/apply", Ability: "AbilityRoot", Group: "System", Handler: "handleApplyProxyIntegration", Description: ""},
+	{Method: "POST", Path: "/api/v1/system/proxy-integration/install", Ability: "AbilityRoot", Group: "System", Handler: "handleInstallProxy", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/proxy-integration/setup", Ability: "AbilityRoot", Group: "System", Handler: "handleSetupProxyIntegration", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/proxy-integration/verify", Ability: "AbilityRoot", Group: "System", Handler: "handleVerifyProxyIntegration", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/prune", Ability: "AbilityRoot", Group: "System", Handler: "handleSystemPrune", Description: "POST /system/prune deletes real Docker resources (stopped containers, dangling images, anonymous volumes, unused build cache) fleet-wide, not scoped to one app: AbilityRoot, the same gate handleDrainNode uses for its own fleet-wide, no-undo action, not AbilityWrite (which a narrower, single-app token could hold)."},

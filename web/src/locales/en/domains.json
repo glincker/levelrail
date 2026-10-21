@@ -413,7 +413,74 @@
       "body": "Nothing was kept: the files were rolled back and your proxy keeps serving what it had. Fix the problem below, then try again."
     },
     "rootOnly": "Changing the proxy needs a root account or token.",
+    "applyWaiting": "Apply and verify turns on as soon as {{proxy}} is found on this server. Install it above, or check again once it runs.",
     "fixViaCli": "Fix via CLI"
+  },
+  "proxyMissing": {
+    "title": "{{proxy}} is not running on this server yet",
+    "looked": "Levelrail looked for a running container that publishes port 80 or 443 and uses a {{proxy}} image. It found none.",
+    "foundOther": "Levelrail looked for a {{proxy}} container on ports 80 and 443 and found {{other}} instead.",
+    "refusedTitle": "Nothing was changed",
+    "installed": "Proxy started. Checking what it detected.",
+    "installFailed": "The proxy could not be started.",
+    "install": {
+      "title": "Install and start {{proxy}} for me",
+      "body": "Levelrail starts an official {{proxy}} container for you, with ports 80 and 443 published. You see the exact plan first.",
+      "unsupported": "Automatic install is available for Traefik only. {{proxy}} needs certificates you provide, so start it yourself or pick another choice.",
+      "action": "Install and start {{proxy}} for me"
+    },
+    "builtin": {
+      "title": "Go back to the built-in Caddy",
+      "body": "Switch back to the ingress that ships with this control plane. Your domains and settings are kept.",
+      "action": "Use the built-in Caddy"
+    },
+    "elsewhere": {
+      "title": "It runs somewhere else",
+      "body": "Your proxy runs on another host or under another name. Enter how to reach it, then check again.",
+      "action": "Enter it by hand",
+      "hide": "Hide the fields"
+    },
+    "plan": {
+      "title": "Exactly what will happen",
+      "image": "Image",
+      "container": "Container",
+      "ports": "Ports",
+      "restart": "Restart policy",
+      "mount": "Mount",
+      "file": "Written to {{path}}",
+      "safety": "Only this container is created. Containers you already run are never stopped or removed, and running this twice does not create a second one.",
+      "confirm": "Confirm and start",
+      "installing": "Starting...",
+      "cancel": "Cancel"
+    },
+    "manual": {
+      "body": "These defaults match a standard setup. Change what differs on your server.",
+      "save": "Save these values",
+      "saved": "Proxy values saved. Check again to look for it.",
+      "saveFailed": "Could not save the proxy values.",
+      "fields": {
+        "container": "Container name",
+        "dynamic_dir": "Route directory on this server",
+        "entrypoint_http": "HTTP entrypoint",
+        "entrypoint_https": "HTTPS entrypoint",
+        "cert_resolver": "Certificate resolver",
+        "upstream_host": "Upstream host"
+      },
+      "hints": {
+        "container": "The name of the proxy container.",
+        "dynamic_dir": "The folder your proxy reads route files from.",
+        "entrypoint_http": "The entrypoint that listens on port 80.",
+        "entrypoint_https": "The entrypoint that listens on port 443.",
+        "cert_resolver": "Leave empty if the proxy does not issue certificates.",
+        "upstream_host": "How the proxy reaches this server, for example host.docker.internal."
+      },
+      "errors": {
+        "name": "Use letters, numbers, dots, dashes or underscores.",
+        "absolute": "Enter an absolute path that starts with /.",
+        "path": "No spaces or .. in the path.",
+        "host": "Enter a host name or address without http://."
+      }
+    }
   },
   "proxySetup": {
     "title": "Make this domain live",
@@ -431,8 +498,10 @@
       "done": "Done",
       "todo": "To do",
       "blocked": "Blocked",
-      "error": "Error"
+      "error": "Error",
+      "waiting": "Waiting"
     },
+    "waitingDetail": "waiting until your proxy is found",
     "setup": "Set up routing",
     "settingUp": "Setting up...",
     "setupDone": "Routes written. Waiting for your proxy to pick them up.",
