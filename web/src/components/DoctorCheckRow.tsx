@@ -9,6 +9,8 @@ import type { VariantProps } from 'class-variance-authority'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import type { DoctorCheck, DoctorCheckStatus } from '../queries/systemDoctor'
 import { CheckDetail } from './CheckDetail'
+import { SilenceMenu } from './attention/SilenceMenu'
+import { useSnoozed } from './shell/snoozeStore'
 
 const STATUS_META: Record<
   DoctorCheckStatus,
@@ -33,6 +35,9 @@ export function DoctorCheckRow({
   onRecheck?: () => Promise<void> | void
 }) {
   const meta = STATUS_META[check.status]
+  const silenceKey = `doctor:${check.name}`
+  const { isSnoozed } = useSnoozed()
+  const silenced = isSnoozed(silenceKey)
   const StatusIcon = meta.icon
   return (
     <div className="py-2.5 text-sm">
@@ -48,10 +53,19 @@ export function DoctorCheckRow({
             </p>
           ) : null}
         </div>
-        <Badge variant={meta.variant} className="shrink-0">
-          <StatusIcon />
-          {meta.label}
-        </Badge>
+        <div className="flex shrink-0 items-center gap-1">
+          {check.status === 'warn' || check.status === 'fail' ? (
+            <SilenceMenu
+              issueKey={silenceKey}
+              severity={check.status === 'fail' ? 'critical' : 'warning'}
+              title={check.name}
+            />
+          ) : null}
+          <Badge variant={silenced ? 'muted' : meta.variant}>
+            <StatusIcon />
+            {meta.label}
+          </Badge>
+        </div>
       </div>
       <CheckDetail check={check} onRecheck={onRecheck} />
     </div>

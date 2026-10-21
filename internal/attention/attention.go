@@ -344,6 +344,7 @@ func Collect(ctx context.Context, client *apiclient.Client) ([]Item, error) {
 		in.Devices, _ = client.ListPendingDeviceLogins(ctx)
 	}
 	items := Build(in)
+	items = dropSilenced(ctx, client, items)
 	markFixable(ctx, client, items)
 	return items, nil
 }
@@ -393,4 +394,31 @@ func markFixable(ctx context.Context, client *apiclient.Client, items []Item) {
 		}
 		it.Fixable = fixable[it.Subject]
 	}
+}
+
+// dropSilenced removes items an operator muted. A failed lookup keeps every item.
+func dropSilenced(ctx context.Context, client *apiclient.Client, items []Item) []Item {
+	silences, err := client.ListIssueSilences(ctx)
+	if err != nil || len(silences) == 0 {
+		return items
+	}
+	return FilterSilenced(items, silences, time.Now())
+}
+
+// FilterSilenced drops items an active silence covers.
+func FilterSilenced(items []Item, silences []apiclient.IssueSilenceResource, now time.Time) []Item {
+	out := make([]Item, 0, len(items))
+	for _, it := range items {
+		muted := false
+		for _, s := range silences {
+			if s.IssueKey == it.ID && !s.Expired && (s.Until == nil || now.Before(*s.Until)) {
+				muted = true
+				break
+			}
+		}
+		if !muted {
+			out = append(out, it)
+		}
+	}
+	return out
 }

@@ -1831,6 +1831,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/inbox/state | AbilityRead | handleInboxState |
 | POST | /api/v1/inbox/archive | AbilityWrite | handleInboxArchive |
 | POST | /api/v1/git-connections/test | AbilityRoot | handleTestGitConnection |
+| GET | /api/v1/silences | AbilityRead | handleListSilences |
+| POST | /api/v1/silences | AbilityWrite | handleCreateSilence |
+| DELETE | /api/v1/silences/{id} | AbilityWrite | handleDeleteSilence |
 
 ## See also
 

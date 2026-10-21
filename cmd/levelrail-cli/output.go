@@ -712,6 +712,9 @@ func printSystemDoctorHuman(out io.Writer, d systemDoctorResource) {
 
 	printSystemDoctorFixes(out, d.Checks)
 
+	if d.Silenced > 0 {
+		_, _ = fmt.Fprintf(out, "\nSilenced: %d (see status silences)\n", d.Silenced)
+	}
 	if d.OK {
 		_, _ = fmt.Fprintln(out, "\nAll checks passed.")
 	} else {

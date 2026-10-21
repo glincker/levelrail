@@ -70,6 +70,8 @@ type doctorCheckResource struct {
 type systemDoctorResponse struct {
 	OK     bool                  `json:"ok"`
 	Checks []doctorCheckResource `json:"checks"`
+	// Silenced counts failing or warning checks an operator muted; they stay in Checks.
+	Silenced int `json:"silenced,omitempty"`
 }
 
 // Always 200: a failed check is reported in the body, not as a 5xx.
@@ -79,6 +81,8 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: system doctor", err)
 		return
 	}
+	now := time.Now()
+	resp.Silenced = silencedDoctorCount(resp.Checks, rt.activeSilences(r.Context(), now), now)
 	writeJSON(w, http.StatusOK, resp)
 }
 

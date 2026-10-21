@@ -3141,6 +3141,8 @@ type DoctorCheckResource struct {
 type SystemDoctorResource struct {
 	OK     bool                  `json:"ok"`
 	Checks []DoctorCheckResource `json:"checks"`
+	// Silenced counts muted failing or warning checks; they stay in Checks.
+	Silenced int `json:"silenced,omitempty"`
 }
 
 // OpenAPIRouteResource mirrors internal/api's openAPISpecRoute exactly:

@@ -1,18 +1,11 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  BellSlashIcon,
   CheckCircleIcon,
   WarningCircleIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import {
   Popover,
   PopoverContent,
@@ -24,8 +17,8 @@ import { StatusPill, type Tone } from '@/components/kit'
 import { CleanUpDockerDialog } from '../CleanUpDockerDialog'
 import type { AttentionItem } from '../../lib/attention'
 import { attentionHref, type AttentionLevel } from '../../lib/attentionSummary'
-import type { SnoozeDuration } from './snooze'
-import { snoozeNow, unsnoozeNow } from './snoozeStore'
+import { SilenceMenu } from '../attention/SilenceMenu'
+import { unsnoozeNow } from './snoozeStore'
 import { useAttentionSummary } from './useAttentionSummary'
 
 const LEVEL_TONE: Record<AttentionLevel, Tone> = {
@@ -33,8 +26,6 @@ const LEVEL_TONE: Record<AttentionLevel, Tone> = {
   warning: 'warning',
   critical: 'danger',
 }
-
-const DURATIONS: SnoozeDuration[] = ['1h', '1d', 'forever']
 
 function IssueRow({ issue }: { issue: AttentionItem }) {
   const navigate = useNavigate()
@@ -72,33 +63,11 @@ function IssueRow({ issue }: { issue: AttentionItem }) {
               {t('shell.status.view')}
             </Button>
           )}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  aria-label={t('shell.status.snoozeItem', {
-                    title: issue.title,
-                  })}
-                />
-              }
-            >
-              <BellSlashIcon />
-              {t('shell.status.snooze')}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              {DURATIONS.map((d) => (
-                <DropdownMenuItem
-                  key={d}
-                  onClick={() => snoozeNow(issue.id, d)}
-                >
-                  {t(`shell.snoozeFor.${d}`)}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <SilenceMenu
+            issueKey={issue.id}
+            severity={issue.severity}
+            title={issue.title}
+          />
         </div>
       </div>
     </li>
@@ -108,6 +77,7 @@ function IssueRow({ issue }: { issue: AttentionItem }) {
 export function StatusChip() {
   const { t } = useTranslation()
   const { level, count, visible, snoozed } = useAttentionSummary()
+  const navigate = useNavigate()
   const label =
     level === 'ok' ? t('shell.status.ok') : t('shell.status.issues', { count })
 
@@ -163,7 +133,12 @@ export function StatusChip() {
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => snoozed.forEach((i) => unsnoozeNow(i.id))}
+              onClick={() => {
+                snoozed.forEach((i) => {
+                  unsnoozeNow(i.id)
+                })
+                void navigate({ to: '/status' })
+              }}
             >
               {t('shell.status.showAgain')}
             </Button>
