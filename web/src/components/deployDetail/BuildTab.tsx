@@ -3,7 +3,7 @@ import {
   HourglassIcon,
   PackageIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { buttonVariants } from '@/components/ui/button'
 import { EffectiveConfigPanel } from '../EffectiveConfigPanel'
@@ -16,6 +16,9 @@ import type { DeployAttempt } from '../../types/deployAttempt'
 import type { GitSourceResource } from '../../types/gitSource'
 import { deployLogDownloadURL } from '../../queries/deployLogs'
 import { parseBuildCacheStats } from '../../lib/buildCacheStats'
+import { analyzeBuildLog, type BuildStep } from '../../lib/buildLogPhases'
+import { BuildPhaseChips, type PhaseFilter } from './BuildPhaseChips'
+import { BuildStepList } from './BuildStepList'
 import { useDeployDetailT } from './useDeployDetailT'
 
 function heightFor(count: number): string {
@@ -68,6 +71,27 @@ export function BuildTab({
     ? t(`build.builderValue.${gitSource.build_type}`)
     : undefined
   const cacheStats = useMemo(() => parseBuildCacheStats(lines), [lines])
+  const analysis = useMemo(() => analyzeBuildLog(lines), [lines])
+  const [phase, setPhase] = useState<PhaseFilter>('all')
+  const [scrollTarget, setScrollTarget] = useState<{ id: number } | null>(null)
+  const shownLines = useMemo(
+    () =>
+      phase === 'all'
+        ? lines
+        : lines.filter((_, i) => analysis.linePhases[i] === phase),
+    [lines, analysis, phase],
+  )
+  const jumpToStep = useCallback(
+    (step: BuildStep) => {
+      const target = lines[step.firstLine]
+      if (!target) return
+      if (phase !== 'all' && analysis.linePhases[step.firstLine] !== phase) {
+        setPhase('all')
+      }
+      setScrollTarget({ id: target.id })
+    },
+    [lines, analysis, phase],
+  )
   const detected = [attempt.detected_framework, builder]
     .filter(Boolean)
     .join(', ')
@@ -161,8 +185,15 @@ export function BuildTab({
             </a>
           </div>
           <BuildLogHints lines={lines} />
+          <BuildPhaseChips
+            analysis={analysis}
+            active={phase}
+            onSelect={setPhase}
+          />
+          <BuildStepList analysis={analysis} onJump={jumpToStep} />
           <LogTerminal
-            lines={lines}
+            lines={shownLines}
+            scrollTarget={scrollTarget}
             isPaused={isPaused}
             pause={pause}
             resume={resume}

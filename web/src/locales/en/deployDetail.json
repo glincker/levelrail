@@ -269,5 +269,22 @@
   },
   "rollback": {
     "note": "Restores image {{image}}. Env vars, volumes and migrations are not reverted."
+  },
+  "phases": {
+    "label": "Build phases",
+    "all": "All",
+    "install": "Install",
+    "build": "Build",
+    "push": "Push",
+    "other": "Other",
+    "chip": "{{phase}} ({{count}})",
+    "showSteps": "Show steps",
+    "hideSteps": "Hide steps",
+    "stepsLabel": "Build steps",
+    "cached": "Cached",
+    "jump": "Jump to the first line of {{label}}",
+    "total": "{{phase}}: {{time}}",
+    "noTiming": "no timing",
+    "truncated": "Phases were detected in the first {{count}} lines only."
   }
 }
