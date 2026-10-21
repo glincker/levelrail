@@ -115,6 +115,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/edgefw"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/exposure"
+	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
@@ -210,8 +211,9 @@ type Router struct {
 	sessions               *sessionStore
 	mfaPending             *mfaPendingStore // always set, same "always present, not an Option" shape sessions itself has
 	passkeyLogin           *loginLimiter
-	setupTokenGuess        *loginLimiter // failed setup-token guesses per client IP
-	wakeTokenGuess         *loginLimiter // failed wake-token guesses per client IP
+	setupTokenGuess        *loginLimiter     // failed setup-token guesses per client IP
+	wakeTokenGuess         *loginLimiter     // failed wake-token guesses per client IP
+	functionLimiter        functions.Limiter // requests held per function while it wakes
 	devicePollLimit        *apiRateLimiter
 	mfaVerify              *loginLimiter // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
 	sessionTTL             time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL

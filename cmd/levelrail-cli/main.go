@@ -350,7 +350,7 @@ Usage:
   %[1]s databases create [flags]     create a managed database
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
-  %[1]s functions deploy|list|invoke|delete [flags]   image apps that sleep when idle and wake on the first request
+  %[1]s functions deploy|list|invoke|delete|settings|versions|rollback [flags]   image apps that sleep when idle and wake on the first request
   %[1]s models list|get|deploy|logs|delete|restart|rotate-key|gpus [flags]   AI models on GPU nodes
   %[1]s domains list [flags]           list every app's domains in one call
   %[1]s dns zones|records|check|health-checks ...   DNS zones, records, delegation and propagation at Cloudflare or Route53

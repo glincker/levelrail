@@ -51,5 +51,43 @@
     "copied": "Copied",
     "cliLabel": "Or from the terminal",
     "error": "Starter handlers could not be loaded: {{message}}"
+  },
+  "detail": {
+    "back": "All functions",
+    "notFound": "This function was not found. It may have been deleted or stopped sleeping.",
+    "seconds": "{{count}} s",
+    "tabs": {
+      "overview": "Overview",
+      "settings": "Settings",
+      "environment": "Environment and secrets",
+      "versions": "Versions"
+    },
+    "overview": {
+      "title": "Status",
+      "image": "Image",
+      "openApp": "Open as app"
+    },
+    "settings": {
+      "port": "Port",
+      "timeout": "Request timeout (seconds)",
+      "concurrency": "Max concurrency",
+      "limitsTitle": "Request limits",
+      "limitsHelp": "Apply while a request waits for a sleeping function to start. 0 uses the server default. A request over the concurrency limit gets a 429 with Retry-After.",
+      "timeoutHelp": "Longest wait for a cold start, at most {{max}} s. Now {{effective}} s (0 means the adaptive default).",
+      "concurrencyHelp": "Requests held at once, at most {{max}}. Now {{effective}} (0 means no limit).",
+      "save": "Save limits",
+      "saved": "Limits saved",
+      "saveFailed": "Limits could not be saved"
+    },
+    "versions": {
+      "title": "Versions",
+      "help": "Roll back to an earlier deploy, or pin it: pinning rolls back and locks publishing so new builds stay held until you unlock.",
+      "empty": "No deploys yet.",
+      "live": "Live",
+      "rollback": "Roll back",
+      "pin": "Pin this version",
+      "done": "Version change started",
+      "failed": "Version change failed"
+    }
   }
 }

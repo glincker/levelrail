@@ -22,6 +22,9 @@ const functionsUsage = `Usage:
   %[1]s functions runtimes
   %[1]s functions invoke <name> [--path /] [--method GET] [--data BODY] [--insecure]
   %[1]s functions delete <name>
+  %[1]s functions settings <name> [--timeout 45s] [--concurrency 20] [--idle 10m]   show or change runtime limits
+  %[1]s functions versions <name>                 deploy history, newest first
+  %[1]s functions rollback <name> [--to <deploy id>] [--pin]   return to a version, --pin also locks publishing
 
 A function is an app (a handler repo built with Railpack, or an image) that sleeps when idle and starts on the next
 request. A request that arrives while it is asleep waits for the cold start
@@ -43,6 +46,8 @@ func runFunctions(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runFunctionsInit(prog, args[1:], stdout, stderr)
 	case "runtimes":
 		return runFunctionsRuntimes(stdout)
+	case "settings", "versions", "rollback":
+		return runFunctionsControls(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	case "deploy", "list", "invoke", "delete":
 		return runFunctionsVerb(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	default:

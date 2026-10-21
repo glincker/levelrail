@@ -25,7 +25,7 @@ export function FunctionsTable({ items }: Readonly<{ items: FunctionItem[] }>) {
         cell: (fn) => (
           <span className="font-medium">
             <Link
-              to="/apps/$name"
+              to="/functions/$name"
               params={{ name: fn.name }}
               className="hover:underline"
             >

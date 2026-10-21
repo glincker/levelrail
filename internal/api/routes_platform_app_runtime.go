@@ -7,6 +7,11 @@ func (rt *Router) registerAppRuntimeRoutes(mux *http.ServeMux) {
 	// Functions: apps that sleep to zero and hold the waking request, with call count and p95 duration, plus starter handlers per runtime.
 	mux.HandleFunc("GET /api/v1/functions", rt.requireAbility(AbilityRead, rt.handleListFunctions))
 	mux.HandleFunc("GET /api/v1/functions/runtimes", rt.requireAbility(AbilityRead, rt.handleFunctionRuntimes))
+	// Function controls: request timeout and concurrency limit, deploy versions, and rollback or pin through the app rollback.
+	mux.HandleFunc("GET /api/v1/functions/{name}/settings", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetFunctionSettings))
+	mux.HandleFunc("PUT /api/v1/functions/{name}/settings", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutFunctionSettings))
+	mux.HandleFunc("GET /api/v1/functions/{name}/versions", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListFunctionVersions))
+	mux.HandleFunc("POST /api/v1/functions/{name}/rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleFunctionRollback))
 	// Function paths: serve a function at <domain>/<path> through a forwarder rule on the domain.
 	mux.HandleFunc("GET /api/v1/functions/{name}/route", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListFunctionRoutes))
 	mux.HandleFunc("PUT /api/v1/functions/{name}/route", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetFunctionRoute))

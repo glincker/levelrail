@@ -71,6 +71,39 @@ the request, and every other path still goes to the domain's own app. A longer
 prefix wins over a shorter one. A sleeping function is woken by a request to
 its path. `functions delete` removes its routes.
 
+## Runtime controls and versions
+
+Open a function from the Functions page to get its own view with Overview,
+Settings, Environment and secrets, and Versions tabs. Settings reuses the app
+cards for the idle period, memory and CPU limits and the port, and adds two
+limits that apply while a request waits for a sleeping function:
+
+- Request timeout: the longest a request is held during a cold start. It
+  replaces the adaptive wait (the 30 second default in "What a caller sees").
+- Max concurrency: requests held at once. The next one gets `429` with
+  `Retry-After`.
+
+`0` means the server default. Defaults and ceilings come from
+`APP_FUNCTION_REQUEST_TIMEOUT`, `APP_FUNCTION_REQUEST_TIMEOUT_MAX`,
+`APP_FUNCTION_MAX_CONCURRENCY` and `APP_FUNCTION_MAX_CONCURRENCY_CEILING`.
+Both limits apply to requests held for a wake, not to traffic proxied to an
+awake function. Environment variables and secrets are the app's own editor.
+
+Versions lists the deploy history. Roll back uses the app rollback. Pin this
+version rolls back and locks publishing, so new builds stay held until you
+unlock them.
+
+```
+levelrail-cli functions settings hello --timeout 45s --concurrency 20 --idle 10m
+levelrail-cli functions versions hello
+levelrail-cli functions rollback hello --to <deploy id> --pin
+```
+
+The API is `GET|PUT /api/v1/functions/{name}/settings`,
+`GET /api/v1/functions/{name}/versions` and
+`POST /api/v1/functions/{name}/rollback?to=<id>&pin=true`. Without `--to`,
+rollback goes to the newest earlier successful version.
+
 ## What a caller sees
 
 When the function is asleep, the first request is held while the container
@@ -88,9 +121,9 @@ If the app does not become ready within 30 seconds, the caller gets the
 
 - Functions are routed by host, one URL per function. Path prefixes on a shared
   domain are not supported yet.
-- A function waits for one container start. There is no per-request concurrency
-  control, queueing across many replicas, or autoscaling: it is one container,
-  like any other app.
+- A function waits for one container start. Concurrency is limited only for
+  requests held during a wake. There is no queueing across many replicas or
+  autoscaling: it is one container, like any other app.
 - The cold start is a container start, not a millisecond isolate start. Keep
   images small and the process quick to listen.
 - Callers must follow redirects. Streaming request bodies larger than memory
