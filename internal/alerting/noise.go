@@ -207,6 +207,15 @@ func targetKey(r Rule) string {
 // Route decides what happens to one firing or resolved event.
 func (n *NoiseControl) Route(ctx context.Context, ev Event, now time.Time, send SendFunc) {
 	r := ev.Rule
+	if ev.Resolved && r.Kind == KindCertExpiry {
+		if g, ok := n.store.(interface {
+			ResolveAllowed(ctx context.Context, ruleID, resourceID string, kind Kind) (bool, error)
+		}); ok {
+			if allowed, err := g.ResolveAllowed(ctx, r.ID, r.ResourceID, r.Kind); err == nil && !allowed {
+				return
+			}
+		}
+	}
 	sc := n.describe(ctx, r)
 
 	n.mu.Lock()
