@@ -9,6 +9,7 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { CodeBlock } from '@/components/ui/code-block'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { previewMailTemplate, type MailPreviewDraft } from '../../queries/mail'
@@ -127,9 +128,7 @@ export function TemplatePreview({
             {t('templates.preview.plain')}
           </Button>
           {showPlain ? (
-            <pre className="max-h-64 overflow-auto rounded-lg border border-border bg-muted/40 p-3 text-xs whitespace-pre-wrap">
-              {preview.data.text}
-            </pre>
+            <CodeBlock code={preview.data.text} wrap maxHeight="sm" />
           ) : null}
         </div>
       ) : null}
