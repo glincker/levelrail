@@ -14,6 +14,8 @@ const (
 	defaultRerunChainMaxDepth = 50
 )
 
+const rerunOfInvalidMsg = "rerun_of: no such deploy attempt for this app"
+
 type rerunOfKey struct{}
 
 // withRerunOf carries a validated rerun source down to the attempt row
@@ -32,6 +34,8 @@ func rerunOfFrom(ctx context.Context) string {
 
 // validateRerunOf checks that a caller-supplied rerun_of names an attempt
 // of the same app. It returns an HTTP status and message when it does not.
+// Both failures share one message so a caller cannot probe whether an id
+// exists under another app.
 func (rt *Router) validateRerunOf(ctx context.Context, app, id string) (int, string) {
 	if id == "" {
 		return 0, ""
@@ -39,12 +43,12 @@ func (rt *Router) validateRerunOf(ctx context.Context, app, id string) (int, str
 	a, err := rt.deployAttempts.GetDeployAttempt(ctx, id)
 	switch {
 	case errors.Is(err, store.ErrDeployAttemptNotFound):
-		return http.StatusBadRequest, "rerun_of: deploy attempt not found"
+		return http.StatusBadRequest, rerunOfInvalidMsg
 	case err != nil:
 		rt.logger.Error("api: validate rerun_of failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 		return http.StatusInternalServerError, "internal error"
 	case a.ServiceName != app:
-		return http.StatusBadRequest, "rerun_of: deploy attempt belongs to a different app"
+		return http.StatusBadRequest, rerunOfInvalidMsg
 	}
 	return 0, ""
 }

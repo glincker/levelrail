@@ -20,8 +20,8 @@ func TestTriggerDeployRerunOfValidation(t *testing.T) {
 		wantStored string
 		wantMsg    string
 	}{
-		{name: "unknown id", rerunOf: "dep_missing", wantStatus: http.StatusBadRequest, wantMsg: "not found"},
-		{name: "other app", rerunOf: "dep_other", wantStatus: http.StatusBadRequest, wantMsg: "different app"},
+		{name: "unknown id", rerunOf: "dep_missing", wantStatus: http.StatusBadRequest, wantMsg: "no such deploy attempt"},
+		{name: "other app", rerunOf: "dep_other", wantStatus: http.StatusBadRequest, wantMsg: "no such deploy attempt"},
 		{name: "valid", rerunOf: "dep_src", wantStatus: http.StatusAccepted, wantStored: "dep_src"},
 		{name: "not a rerun", rerunOf: "", wantStatus: http.StatusAccepted},
 	}
