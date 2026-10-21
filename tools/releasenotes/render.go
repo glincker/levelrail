@@ -102,6 +102,10 @@ func Render(r Release) string {
 	w := func(format string, a ...any) { fmt.Fprintf(&b, format, a...) }
 	w("%s\n", startMarker)
 
+	if r.hasBinaries() && r.Product != "" {
+		w("%s %s is a self-hosted deployment platform: one control plane for Docker apps, databases, TLS, logs, metrics and rollback across your own servers. A lightweight alternative to Coolify, Dokploy and Kubernetes for small teams.\n\n", strings.ToUpper(r.Product[:1])+r.Product[1:], r.Tag)
+	}
+
 	if !r.hasBinaries() {
 		w("> [!CAUTION]\n> This release shipped no binaries or container images (its build did not publish).")
 		if r.NextTag != "" {
@@ -143,6 +147,9 @@ func Render(r Release) string {
 			w("### %s\n\n", s.Title)
 			for _, c := range s.Changes {
 				w("%s\n", r.line(c))
+				for _, a := range c.Areas {
+					w("  - **%s:** %s\n", a.Name, a.Text)
+				}
 			}
 			w("\n")
 		}
@@ -157,6 +164,7 @@ func Render(r Release) string {
 
 	if r.hasBinaries() {
 		r.renderInstall(&b)
+		r.renderDownloads(&b)
 	}
 	r.renderImages(&b)
 	if r.hasBinaries() || len(r.Images) > 0 {
@@ -242,8 +250,39 @@ func (r Release) renderContributors(b *strings.Builder) {
 		b.WriteString("\n")
 	}
 	if len(r.Contributors) > 0 {
-		fmt.Fprintf(b, "Thanks to @%s.\n\n", strings.Join(r.Contributors, ", @"))
+		for _, c := range r.Contributors {
+			fmt.Fprintf(b, "<a href=\"https://github.com/%s\"><img src=\"https://github.com/%s.png?size=64\" width=\"48\" height=\"48\" alt=\"@%s\" title=\"@%s\"></a> ", c, c, c, c)
+		}
+		fmt.Fprintf(b, "\n\nThanks to @%s.\n\n", strings.Join(r.Contributors, ", @"))
 	}
+}
+
+func (r Release) renderDownloads(b *strings.Builder) {
+	var rows []string
+	for _, a := range r.Assets {
+		if a == "checksums.txt" || strings.HasSuffix(a, ".sig") || strings.HasSuffix(a, ".pem") {
+			continue
+		}
+		rows = append(rows, fmt.Sprintf("| [%s](https://github.com/%s/releases/download/%s/%s) | %s |", a, r.Repo, r.Tag, a, assetKind(a)))
+	}
+	if len(rows) == 0 {
+		return
+	}
+	b.WriteString("## Downloads\n\n| File | What it is |\n| --- | --- |\n")
+	b.WriteString(strings.Join(rows, "\n"))
+	fmt.Fprintf(b, "\n| [checksums.txt](https://github.com/%s/releases/download/%s/checksums.txt) | SHA-256 of every file |\n\n", r.Repo, r.Tag)
+}
+
+func assetKind(name string) string {
+	switch {
+	case strings.Contains(name, "agent"):
+		return "Node agent"
+	case strings.Contains(name, "cli"):
+		return "Command line tool"
+	case strings.HasSuffix(name, ".deb"), strings.HasSuffix(name, ".rpm"), strings.HasSuffix(name, ".apk"):
+		return "Package"
+	}
+	return "Control plane"
 }
 
 func (r Release) renderFooter(b *strings.Builder) {

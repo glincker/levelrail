@@ -160,6 +160,10 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 	rt.firePipelinePushEvent(ctx, name, ev)
 	ctx = withPushCommitMeta(ctx, ev)
 
+	if status, msg, handled := rt.handleBranchDeployPush(ctx, name, gs, ev); handled {
+		return status, msg
+	}
+
 	triggered, ignoredMsg := gitSourceTriggerMatchesPush(gs, ev.Ref)
 	if !triggered {
 		rt.logger.Info("api: git push webhook: ignoring push", slog.String("name", name), slog.String("ref", ev.Ref), slog.String("trigger_mode", effectiveGitSourceTriggerMode(gs.TriggerMode)))
@@ -174,22 +178,9 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return http.StatusOK, msg
 	}
 
-	if !isWebhookReplay(ctx) {
-		switch rt.commitDeployState(ctx, name, ev.After) {
-		case "deployed":
-			return http.StatusOK, fmt.Sprintf("ignored: commit %s is already deployed\n", webhookShortSHA(ev.After))
-		case "in flight":
-			return http.StatusOK, fmt.Sprintf("ignored: commit %s is already in flight\n", webhookShortSHA(ev.After))
-		}
-	}
-	if held, msg := rt.holdIfFrozen(ctx, name, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt}, name+":"+ev.After); held {
-		return http.StatusAccepted, msg
-	}
-	if rt.builder != nil && rt.deploySafety != nil && len(gs.Services) == 0 {
-		hr := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt, Branch: strings.TrimPrefix(ev.Ref, "refs/heads/")}
-		if status, msg, ok := rt.enqueueGitPushDeploy(ctx, name, hr); ok {
-			return status, msg
-		}
+	rt.noteGitHead(ctx, name, ev.After)
+	if status, msg, handled := rt.admitGitPush(ctx, name, ev); handled {
+		return status, msg
 	}
 	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt, Branch: strings.TrimPrefix(ev.Ref, "refs/heads/")}, name+":"+ev.After)
 	defer release()
@@ -366,6 +357,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		return http.StatusUnprocessableEntity, "invalid build settings: " + err.Error()
 	}
 	svcSpec := specServiceFromDesired(*existing, gitBuild)
+	svcSpec.Build.Args = mergeBuildArgs(svcSpec.Build.Args, extraBuildArgsFrom(ctx))
 
 	buildReq := deploy.Request{
 		ServiceName: name,
@@ -422,6 +414,9 @@ func detectWebhookProviderAndEvent(header http.Header) (provider, eventType stri
 		return "gitlab", headerFields[webhook.HeaderGitLabEvent], headerFields
 	case headerFields[webhook.HeaderGiteaEventType] != "":
 		// Checked before X-GitHub-Event: Gitea also sends X-Hub-Signature-256 but never X-GitHub-Event, so this cannot shadow a GitHub delivery.
+		if header.Get("X-Forgejo-Event") != "" {
+			return "forgejo", headerFields[webhook.HeaderGiteaEventType], headerFields
+		}
 		return "gitea", headerFields[webhook.HeaderGiteaEventType], headerFields
 	case headerFields[webhook.HeaderGitHubEvent] != "":
 		return "github", headerFields[webhook.HeaderGitHubEvent], headerFields

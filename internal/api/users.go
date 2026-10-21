@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // userResource is the wire shape for a user in list/create responses:
@@ -208,7 +207,7 @@ func (rt *Router) createLocalUser(ctx context.Context, email, displayName, passw
 // createLocalUserInTeam is createLocalUser for a user joining teamID as role
 // instead of the default team.
 func (rt *Router) createLocalUserInTeam(ctx context.Context, email, displayName, password string, abilities []string, teamID, role string) (store.User, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hash, err := hashPassword(password)
 	if err != nil {
 		return store.User{}, fmt.Errorf("hash password: %w", err)
 	}

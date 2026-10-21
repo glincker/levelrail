@@ -7,53 +7,61 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import { Card } from '@/components/ui/card'
+import { GoLiveCta } from './golive/GoLiveCta'
 
 // Links into this app's own already-existing sections (same routes and
 // icons as AppScopedSidebar.tsx's Observe/Deploy groups), not a parallel
 // set of destinations invented for this page.
 export function DeployQuickLinks({ appName }: { appName: string }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <Link to="/apps/$name/logs" params={{ name: appName }} className="block">
-        <QuickLinkCard
-          icon={ScrollIcon}
-          label="Logs"
-          description="Live and historical container output"
-        />
-      </Link>
-      <Link
-        to="/apps/$name/metrics"
-        params={{ name: appName }}
-        className="block"
-      >
-        <QuickLinkCard
-          icon={PulseIcon}
-          label="Metrics"
-          description="CPU, memory, and network usage"
-        />
-      </Link>
-      <Link
-        to="/apps/$name/alerts"
-        params={{ name: appName }}
-        className="block"
-      >
-        <QuickLinkCard
-          icon={BellIcon}
-          label="Alerts"
-          description="Notification rules for this app"
-        />
-      </Link>
-      <Link
-        to="/apps/$name/deploys"
-        params={{ name: appName }}
-        className="block"
-      >
-        <QuickLinkCard
-          icon={ClockCounterClockwiseIcon}
-          label="Deploy history"
-          description="Every attempt for this app"
-        />
-      </Link>
+    <div className="space-y-3">
+      <GoLiveCta app={appName} />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Link
+          to="/apps/$name/logs"
+          params={{ name: appName }}
+          className="block"
+        >
+          <QuickLinkCard
+            icon={ScrollIcon}
+            label="Logs"
+            description="Live and historical container output"
+          />
+        </Link>
+        <Link
+          to="/apps/$name/metrics"
+          params={{ name: appName }}
+          className="block"
+        >
+          <QuickLinkCard
+            icon={PulseIcon}
+            label="Metrics"
+            description="CPU, memory, and network usage"
+          />
+        </Link>
+        <Link
+          to="/apps/$name/alerts"
+          params={{ name: appName }}
+          className="block"
+        >
+          <QuickLinkCard
+            icon={BellIcon}
+            label="Alerts"
+            description="Notification rules for this app"
+          />
+        </Link>
+        <Link
+          to="/apps/$name/deploys"
+          params={{ name: appName }}
+          className="block"
+        >
+          <QuickLinkCard
+            icon={ClockCounterClockwiseIcon}
+            label="Deploy history"
+            description="Every attempt for this app"
+          />
+        </Link>
+      </div>
     </div>
   )
 }

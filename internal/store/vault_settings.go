@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 // VaultAuthMethodToken and VaultAuthMethodAppRole are
@@ -40,24 +41,48 @@ type VaultSettings struct {
 	Namespace  string
 	RoleID     string
 	MountPath  string
+	// CredentialRotatedAt and PreviousExpiresAt are zero until the credential
+	// is first rotated and while no previous credential is kept.
+	CredentialRotatedAt time.Time
+	PreviousExpiresAt   time.Time
 }
 
 // GetVaultSettings returns the single vault_settings row. Always
 // succeeds: the migration itself inserts the row (id = 1).
 func (db *DB) GetVaultSettings(ctx context.Context) (VaultSettings, error) {
 	var (
-		enabled int
-		s       VaultSettings
+		enabled          int
+		rotated, expires string
+		s                VaultSettings
 	)
 	err := db.QueryRowContext(ctx, `
-		SELECT enabled, address, auth_method, namespace, role_id, mount_path
+		SELECT enabled, address, auth_method, namespace, role_id, mount_path,
+			credential_rotated_at, credential_previous_expires_at
 		FROM vault_settings WHERE id = 1
-	`).Scan(&enabled, &s.Address, &s.AuthMethod, &s.Namespace, &s.RoleID, &s.MountPath)
+	`).Scan(&enabled, &s.Address, &s.AuthMethod, &s.Namespace, &s.RoleID, &s.MountPath, &rotated, &expires)
 	if err != nil {
 		return VaultSettings{}, fmt.Errorf("store: get vault settings: %w", err)
 	}
 	s.Enabled = enabled != 0
+	if s.CredentialRotatedAt, err = parseRotationTime(rotated); err != nil {
+		return VaultSettings{}, fmt.Errorf("store: get vault settings: %w", err)
+	}
+	if s.PreviousExpiresAt, err = parseRotationTime(expires); err != nil {
+		return VaultSettings{}, fmt.Errorf("store: get vault settings: %w", err)
+	}
 	return s, nil
+}
+
+// SetVaultCredentialRotation records the last rotation time and the expiry of
+// the kept previous credential. Zero times clear the fields.
+func (db *DB) SetVaultCredentialRotation(ctx context.Context, rotatedAt, previousExpiresAt time.Time) error {
+	_, err := db.ExecContext(ctx, `
+		UPDATE vault_settings SET credential_rotated_at = ?, credential_previous_expires_at = ? WHERE id = 1
+	`, formatRotationTime(rotatedAt), formatRotationTime(previousExpiresAt))
+	if err != nil {
+		return fmt.Errorf("store: set vault credential rotation: %w", err)
+	}
+	return nil
 }
 
 // VaultConfigured reports whether an operator has enabled Vault

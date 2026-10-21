@@ -40,6 +40,7 @@ import { CloneRestoreDialog } from './CloneRestoreDialog'
 import { CloneRestoreHistoryTable } from './CloneRestoreHistoryTable'
 import { BackupScheduleForm } from './BackupScheduleForm'
 import { BackupScheduleSuggestion } from './backups/BackupScheduleSuggestion'
+import { EncryptedBackupBadge } from './EncryptedBackupBadge'
 import { BackupVerificationBadge } from './BackupVerificationBadge'
 import { RestoreStatusCell } from './RestoreStatusCell'
 import type { BackupHistoryRecord } from '../types/backupHistory'
@@ -328,6 +329,12 @@ export function BackupHistoryTableView({
       cell: (r) => <RestoreStatusCell status={r.status} error={r.error} />,
     },
     {
+      id: 'encryption',
+      header: t('encryption.column'),
+      priority: 3,
+      cell: (r) => <EncryptedBackupBadge codec={r.codec} />,
+    },
+    {
       id: 'target',
       header: 'Target',
       priority: 2,
@@ -376,7 +383,7 @@ export function BackupHistoryTableView({
   ]
 
   if (isLoading) {
-    return <TableSkeleton columnCount={7} rowCount={3} />
+    return <TableSkeleton columnCount={8} rowCount={3} />
   }
   if (error) {
     return <p className="text-sm text-destructive">{error.message}</p>

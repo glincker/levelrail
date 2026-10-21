@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"filippo.io/age"
+
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -53,6 +55,8 @@ type CloneRestoreRunner struct {
 	Secrets    SecretsResolver
 	Downloader Downloader
 	Restorer   Restorer
+	// Identities decrypt sealed database dumps; empty is valid for raw ones.
+	Identities []age.Identity
 	// Now returns the current time, the same "field, not time.Now called
 	// directly" reasoning RestoreRunner.Now's own doc comment gives.
 	Now func() time.Time
@@ -140,7 +144,7 @@ func (r *CloneRestoreRunner) waitAndRestore(ctx context.Context, controllerName,
 	// creating its database, so a failure in this window is retried.
 	deadline := time.Now().Add(r.settleTimeout())
 	for {
-		err := downloadAndRestore(ctx, r.Store, r.Secrets, r.Downloader, r.Restorer, newDatabaseName, backupHistoryID, engine, containerName)
+		err := downloadAndRestore(ctx, r.Store, r.Secrets, r.Downloader, r.Restorer, r.Identities, newDatabaseName, backupHistoryID, engine, containerName)
 		var restoreErr *restoreStepError
 		if err == nil || !errors.As(err, &restoreErr) || !time.Now().Before(deadline) {
 			return err

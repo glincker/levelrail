@@ -44,5 +44,26 @@
   "blockers_one": "{{count}} blocker, {{dependent}} depend on it",
   "blockers_other": "{{count}} blockers, {{dependent}} depend on them",
   "showDependent": "Show dependent checks",
-  "hideDependent": "Hide dependent checks"
+  "hideDependent": "Hide dependent checks",
+  "stuck": {
+    "title": "Why is this not running?",
+    "healthy": "Ready, nothing to explain.",
+    "notReadyFor": "Not ready for {{duration}}",
+    "notReadyYet": "Not ready",
+    "timeline": "Condition timeline",
+    "noCauses": "No known cause matches yet. Open the logs, then Re-check.",
+    "confidenceHigh": "Likely cause",
+    "confidenceMedium": "Possible cause",
+    "evidence": "Evidence",
+    "recheck": "Re-check",
+    "retryDeploy": "Retry deploy",
+    "retrying": "Retrying...",
+    "retryFailed": "Retry failed: {{message}}",
+    "retryStarted": "Deploy started.",
+    "fixApplied": "Fix applied.",
+    "fixFailed": "Fix failed: {{message}}",
+    "loadFailed": "Could not load the diagnosis.",
+    "show": "Show details",
+    "hide": "Hide details"
+  }
 }

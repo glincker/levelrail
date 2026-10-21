@@ -24,7 +24,10 @@ import { DomainRedirectControl } from './DomainRedirectControl'
 import { DomainSearchVisibilityControl } from './DomainSearchVisibilityControl'
 import { DomainTLSCertControl } from './DomainTLSCertControl'
 import { DomainWafControl } from './DomainWafControl'
-import { certRenewalBadge, certStatusMeta } from '../lib/certStatus'
+import { certRenewalBadge } from '../lib/certStatus'
+import { certTruth } from '../lib/certTruth'
+import { CertTruthBadge } from './CertTruthBadge'
+import { GetCertificateButton } from './GetCertificateButton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -200,13 +203,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                                 <span>TLS certificate:</span>
                                 {cert ? (
                                   <>
-                                    <Badge
-                                      variant={
-                                        certStatusMeta[cert.status].variant
-                                      }
-                                    >
-                                      {certStatusMeta[cert.status].label}
-                                    </Badge>
+                                    <CertTruthBadge cert={cert} />
                                     {certRenewalBadge(cert) ? (
                                       <Badge
                                         variant="destructive"
@@ -214,6 +211,9 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                                       >
                                         {certRenewalBadge(cert)?.label}
                                       </Badge>
+                                    ) : null}
+                                    {certTruth(cert).wantsRealCert ? (
+                                      <GetCertificateButton domain={domain} />
                                     ) : null}
                                   </>
                                 ) : (

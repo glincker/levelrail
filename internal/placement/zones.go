@@ -1,6 +1,28 @@
 package placement
 
-import "sort"
+import (
+	"os"
+	"sort"
+	"strconv"
+)
+
+// EnvRegionSpreadWeight names the env var weighting region spread in replica
+// scoring. 0 turns region preference off.
+const EnvRegionSpreadWeight = "APP_PLACEMENT_REGION_SPREAD_WEIGHT"
+
+const defaultRegionSpreadWeight = 1
+
+func regionSpreadWeight() int {
+	v, ok := os.LookupEnv(EnvRegionSpreadWeight)
+	if !ok {
+		return defaultRegionSpreadWeight
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 {
+		return defaultRegionSpreadWeight
+	}
+	return n
+}
 
 // Well-known node label keys that name a failure domain.
 const (
@@ -18,23 +40,28 @@ type zoneSpread struct {
 	active   bool
 	siblings map[string]int
 	load     map[string]int
+	regions  map[string]int
+	weight   int
 }
 
 func newZoneSpread(cands []Candidate, evals []Evaluation, peers []string) zoneSpread {
 	zones := make(map[string]string, len(cands))
-	z := zoneSpread{siblings: map[string]int{}, load: map[string]int{}}
+	regions := make(map[string]string, len(cands))
+	z := zoneSpread{siblings: map[string]int{}, load: map[string]int{}, regions: map[string]int{}, weight: regionSpreadWeight()}
 	for _, c := range cands {
 		zone := ZoneOf(c.Labels)
 		zones[c.ID] = zone
+		regions[c.ID] = c.Labels[LabelRegion]
 		z.load[zone] += c.Load
 	}
 	for _, e := range evals {
-		if e.Eligible && zones[e.NodeID] != "" {
+		if e.Eligible && (zones[e.NodeID] != "" || (z.weight > 0 && regions[e.NodeID] != "")) {
 			z.active = true
 		}
 	}
 	for _, id := range peers {
 		z.siblings[zones[id]]++
+		z.regions[regions[id]]++
 	}
 	return z
 }
@@ -51,8 +78,17 @@ func applyZones(cands []Candidate, evals []Evaluation) {
 	}
 }
 
+// regionScore is the weighted peer count of a region; unlabeled regions score
+// 0 so they never outrank a labeled one by accident.
+func (z zoneSpread) regionScore(region string) int {
+	if region == "" || z.weight == 0 {
+		return 0
+	}
+	return z.regions[region] * z.weight
+}
+
 // rankZones orders eligible evaluations: the zone holding the fewest peer
-// replicas first, then the least loaded zone, then the usual headroom order.
+// replicas first, then the region holding the fewest, then the least loaded zone, then the usual headroom order.
 func rankZones(evals []Evaluation, z zoneSpread) []Evaluation {
 	out := rank(evals)
 	if !z.active {
@@ -62,6 +98,9 @@ func rankZones(evals []Evaluation, z zoneSpread) []Evaluation {
 		a, b := out[i], out[j]
 		if z.siblings[a.Zone] != z.siblings[b.Zone] {
 			return z.siblings[a.Zone] < z.siblings[b.Zone]
+		}
+		if ra, rb := z.regionScore(a.Region), z.regionScore(b.Region); ra != rb {
+			return ra < rb
 		}
 		if z.load[a.Zone] != z.load[b.Zone] {
 			return z.load[a.Zone] < z.load[b.Zone]

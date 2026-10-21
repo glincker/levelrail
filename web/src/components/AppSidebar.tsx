@@ -20,6 +20,8 @@ import { appScopeName, databaseScopeName } from '../lib/sidebarScope'
 import { GlobalNav } from './shell/GlobalNav'
 import { GLOBAL_NAV_GROUPS, isGlobalItemActive } from './shell/navModel'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
+import { SidebarStatusBadge } from './shell/SidebarStatusBadge'
+import { scheduleScrollActiveNavItem } from './shell/scrollActiveNavItem'
 
 // Lazy: exactly one of these three renders at a time (mutually exclusive
 // by pathname below), so a session that never visits /databases or
@@ -79,14 +81,7 @@ export function AppSidebar() {
     SETTINGS_SCOPE_PATTERN.test(pathname) && !ownedByGlobalNav
 
   // Keep the current page's entry visible in a long sidebar.
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      document
-        .querySelector('[data-slot="sidebar-content"] [aria-current="page"]')
-        ?.scrollIntoView({ block: 'nearest' })
-    })
-    return () => cancelAnimationFrame(frame)
-  }, [pathname])
+  useEffect(() => scheduleScrollActiveNavItem(), [pathname])
 
   return (
     <Sidebar collapsible="icon" variant="floating">
@@ -98,8 +93,9 @@ export function AppSidebar() {
               render={<Link to="/" />}
               className="gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/40 data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-sidebar-accent"
             >
-              <span className="flex size-8 shrink-0 items-center justify-center text-sm font-bold text-foreground">
+              <span className="relative flex size-8 shrink-0 items-center justify-center text-sm font-bold text-foreground">
                 <BrandMarkGlyph svgWrapperClassName="flex size-7 items-center justify-center [&_svg]:size-full" />
+                <SidebarStatusBadge />
               </span>
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-sm font-semibold">

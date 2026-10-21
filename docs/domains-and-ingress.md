@@ -12,6 +12,8 @@ description: Automatic TLS, domain routing, WAF, rate limiting, and redirects, a
 
 Levelrail has nothing to install for ingress. The control plane embeds [Caddy](https://caddyserver.com/) as a Go library (`internal/ingress`) and drives it through its admin API, not a hand-written Caddyfile. Config comes from the app specs the reconciler already knows about, so there is no `caddy` binary, no separate proxy container, and no way for ingress config to drift from desired state. The reasoning is in [ADR 005](https://github.com/glincker/levelrail/blob/main/adr/005-caddy-embedded-ingress.md) and the [comparison](/comparison).
 
+New to this? The [Go live checklist](/go-live) walks one app and domain through firewall, DNS, certificate and a final HTTPS check with live status.
+
 ## What this covers
 
 | You want to | Go to |
@@ -202,7 +204,7 @@ Setting the primary domain to a domain an app already owns is rejected with a `4
 
 ### One-click HTTPS for the dashboard
 
-The Domains page opens with an **Enable HTTPS** card (the setup wizard's domain step shows the same card first). The contact email is prefilled from your admin account and can be edited, so one click is enough. The control plane:
+The Domains page opens with an **Enable HTTPS** card (the first-run screen shows the same card first). The contact email is prefilled from your admin account and can be edited, so one click is enough. The control plane:
 
 1. sets the dashboard's primary domain to `<dashed-ip>.sslip.io`,
 2. turns on real ACME issuance and asks Let's Encrypt for a certificate over the HTTP-01 challenge,
@@ -294,6 +296,12 @@ It is routed by the same ingress and gets the same TLS treatment as any other do
 - Toggle it per server (not per app) with the **Automatic app hostnames** setting on the Domains page, or `levelrail-cli settings ingress set --fallback-domains=false`.
 - It needs a public IPv4 address (detected or `APP_PUBLIC_HOST`). With a private address, a hostname, or detection turned off there is nothing to build, and the Network tab says so.
 
+The automatic hostname is a beta test address, and the dashboard labels it that way. It works only while your resolver answers for sslip.io: some routers and DNS filters block it or drop private-looking answers (DNS rebind protection), so check with `dig <name>` before assuming the app is down. sslip.io maps a name to an IP and never to a port, so when ingress cannot own 80 and 443 and listens on fallback ports such as 8081 and 8443, the URL must carry the port (`https://<name>:8443`). The dashboard, CLI and API print it that way. Use your own domain for production.
+
+Choose the wildcard-DNS provider under Settings, Domains (default for every app) or on an app's Domains tab (override): sslip.io, nip.io, traefik.me (IPv4 only), or **Custom base domain**, your own wildcard such as `apps.example.com` pointing at this server, which names apps `<app>.apps.example.com`. Changing it re-derives the hostname and updates the route with no downtime, and the old hostname stops working. **Test resolution** resolves a sample hostname and reports ok, wrong IP or not resolving, with a one-click switch to another provider or your own domain. From the CLI: `levelrail-cli domains provider get|set|test [--app <app>]`. Free providers get the internal issuer or plain HTTP only, never a shared private key.
+
+A request that matches no app, or an app with no healthy replica, gets a small "No app is serving this address" page (plain text for non-browser clients) with the original 404 or 503 status.
+
 ### HTTP redirects to HTTPS
 
 When the control plane can bind the HTTP ingress port (port 80 as root, the installer's default), every routed host answers plain HTTP with a `308` redirect to the same URL over HTTPS, and Let's Encrypt's HTTP-01 challenge is served on the same listener. A non-root development run that cannot bind port 80 skips the redirect and logs why. `APP_INGRESS_HTTP_REDIRECT=true|false` forces the choice instead of auto detecting.
@@ -335,9 +343,9 @@ levelrail-cli domains go-live my-app app.example.com --wait --timeout 5m
 | Provider | Needed |
 | --- | --- |
 | Cloudflare | An API token with `Zone:DNS:Edit` and `Zone:Zone:Read` on the zones you use. Read is how the zone for a domain is found. |
-| Route53 | `route53:ListHostedZonesByName`, `route53:ListResourceRecordSets` and `route53:ChangeResourceRecordSets`. |
+| Route53 | `route53:ListHostedZones`, `route53:GetHostedZone`, `route53:ListResourceRecordSets` and `route53:ChangeResourceRecordSets`. Add `route53:GetChange` to wait for a change to propagate. |
 
-Creating or changing a record needs the root ability. Every record write is recorded in the audit log as `dns_record.created`, `dns_record.updated` or `dns_record.deleted`.
+Creating or changing a record needs the root ability. Every record write is recorded in the audit log as `dns_record.create`, `dns_record.update` or `dns_record.delete`.
 
 ### Apps base domain
 
@@ -389,6 +397,39 @@ The API is `GET/PUT /api/v1/settings/ingress`. An account email is required, and
 Real Let's Encrypt issuance, HTTP to HTTPS redirect and trusted-chain handshakes were run on a public VPS (`<dashed-ip>.sslip.io`, ports 80 and 443 open). The recorded run, including what failed before it worked, is in the [ACME verification runbook](/acme-verification-runbook#recorded-run-2026-10-05).
 </Tip>
 
+### Get a real certificate in one step
+
+A domain that still serves the internal certificate shows a browser warning. **Get a real certificate** (on the domain row, the domain's Overview, and the result step after adding a domain) is the one guided action that ends it:
+
+1. **Preflight.** The control plane checks, without calling Let's Encrypt: the name is one a public CA signs, TLS is not terminated by a proxy in front, DNS points at this server, port 80 answers on this server's address, no CAA record blocks Let's Encrypt, a contact email is set, and no Let's Encrypt limit is close. The email defaults to the one already saved, else your admin account's; you can change it. Rate limits (failed validations per hour, duplicate certificates per week) come with a **next safe time**.
+2. **Staging first, optionally.** Tick the staging option to rehearse against Let's Encrypt's test CA, which has no meaningful limits. Its certificates are untrusted by browsers, and the badge says **Staging** so it is never mistaken for the real thing. Run the action again without staging for the trusted one.
+3. **Request and progress.** The action turns public certificates on, clears the domain's internal or wrong-CA certificate and waits with a visible state: challenge pending, issued, or failed with a plain-language reason and the CA's own message. A finished request shows the issuer, expiry, and the date renewal starts (a third of the lifetime before expiry).
+
+Staging is for rehearsal on a domain that has no real certificate yet (still on the internal certificate or on an earlier staging one). The preflight blocks it, and the server refuses it independently, when any working Let's Encrypt certificate exists on the server (switching the CA drops every stored ACME certificate) or the domain has a working uploaded or proxy certificate. An expired or stalled certificate may be replaced. Going from staging to production is always allowed.
+
+Public certificates are a server setting, so the action applies to every domain on this server, not only the one you clicked. A failed port 80 self-check can be acknowledged when you know the port is open (some routers cannot reach themselves); the other checks cannot.
+
+From a terminal:
+
+```bash
+levelrail-cli domains cert shop.example.com --staging --wait
+levelrail-cli domains cert shop.example.com --wait
+levelrail-cli domains cert shop.example.com --preflight
+```
+
+The API is `GET /api/v1/domains/{domain}/cert/preflight`, `POST /api/v1/domains/{domain}/cert` (root ability, audited) and `GET /api/v1/domains/{domain}/cert/status`.
+
+### Where to see certificate status
+
+| Where | What it shows |
+| --- | --- |
+| Domains page, a domain's Overview, the app's domain editor | A badge per domain: **Internal certificate**, **Staging**, **Let's Encrypt** (with days left), **Uploaded certificate**, **Proxy certificate** or **No certificate**, plus the last renewal attempt, its result and the next retry |
+| `levelrail-cli domains certificates` and `GET /api/v1/certificates` | The same facts per certificate: `kind`, `days_left`, `last_renewal`, `next_retry_at` |
+| Doctor, check "Certificate expiry" | Fails when an auto-renewed certificate expired, its renewal stalled or failed, or it has fewer than `APP_CERT_FAIL_DAYS` days left (default 14). The typed fix **Renew now** clears the stored certificate and asks for a new one |
+| Attention center | An item for a failing renewal or a certificate inside the failure window, with the CA's last error |
+
+A renewal watchdog retries stuck or failing renewals on its own with exponential backoff (first retry after `APP_CERT_WATCHDOG_BACKOFF`, default 30 minutes, doubling to at most 12 hours, checked every `APP_CERT_WATCHDOG_INTERVAL`, default 10 minutes). It reuses the normal renewal path (it never runs a second ACME client), leaves a still-valid certificate in place and only asks the ingress to try again, clears a certificate that has already expired, and pauses while a Let's Encrypt rate limit is in the way. The rate-limit ledger lives in memory, so a restart forgets it and the CA's own answer remains the final word. See [Environment variables](/environment-variables#certificates-and-request-thresholds) for the knobs.
+
 ### HSTS (HTTP Strict Transport Security)
 
 Turn on **Enable HSTS** on the Domains page (or `levelrail-cli settings ingress set --hsts-enabled`) to send `Strict-Transport-Security` on every https response, including the dashboard's HTML page, no restart required. It is never sent over plain HTTP. HSTS defaults to off on purpose.
@@ -396,7 +437,7 @@ Turn on **Enable HSTS** on the Domains page (or `levelrail-cli settings ingress 
 `APP_ENABLE_HSTS=true` still works. The two are additive: HSTS is sent if either the dashboard toggle or the environment variable is on, so upgrading never turns HSTS off for a deployment that already had it on.
 
 <Warning>
-HSTS tells browsers to refuse plain HTTP and refuse certificate warnings on this host for 180 days. Enabling it before ACME is working (while still on self-signed certificates) can lock you out of your own dashboard. Only enable it once real, browser-trusted certificates are issuing.
+HSTS tells browsers to refuse plain HTTP and refuse certificate warnings on this host for one year (`max-age=31536000`). Enabling it before ACME is working (while still on self-signed certificates) can lock you out of your own dashboard. Only enable it once real, browser-trusted certificates are issuing.
 </Warning>
 
 ### Bring your own certificate
@@ -490,7 +531,7 @@ APP_INGRESS_HTTP_ADDR=:8080 \
 ```
 
 - `APP_INGRESS_HTTPS_ADDR` (default `:443`): the embedded Caddy ingress's HTTPS listener.
-- `APP_INGRESS_HTTP_ADDR` (default `:80`): kept off port 80 only when real ACME (not the default self-signed issuer) is enabled for a non-wildcard domain, since that is the one path that can otherwise reach for a literal port 80 for its HTTP-01 challenge.
+- `APP_INGRESS_HTTP_ADDR` (default `:80`): the plain HTTP listener. It redirects to HTTPS (see [HTTP redirects to HTTPS](#http-redirects-to-https)) and serves the HTTP-01 challenge.
 
 `GET /api/v1/system/doctor`'s port checks follow whatever you set here, so a second instance on `:8443`/`:8080` reports those ports as owned and available, not `:443`/`:80`.
 
@@ -948,6 +989,8 @@ levelrail-cli domains doctor shop shop.example.com          # prioritised fix li
 levelrail-cli domains doctor shop shop.example.com --json
 ```
 
+Need the fix applied or the exact record? See [Diagnose a domain](/domain-diagnosis).
+
 Each check has a `state` (`pass`, `warn`, `fail`, `skipped`, `unavailable`), a `tier` (1 blocks traffic, 2 blocks the certificate, 3 breaks soon, 4 hygiene) and, when it is not passing, a `fix` with a summary and at most one action (`request` with the API call, `link`, or `copy` with the exact record).
 
 <Accordion title="Every check the doctor runs">
@@ -1037,6 +1080,20 @@ The dashboard builds its **Open site** button from this field only, so it never 
 
 ## Troubleshooting
 
+### If this fails
+
+| Error or symptom | Where you see it | Fix |
+| --- | --- | --- |
+| `store: domain "shop.example.com" is already in use by service "api"` (409) | `apps domains add`, the Domains tab | A hostname belongs to one app. Remove it from the other app first, or use another hostname. |
+| `this server's public address is unknown; set APP_PUBLIC_HOST` | Domain doctor, go-live | Set `APP_PUBLIC_HOST` to the address that reaches ports 80 and 443, then restart. |
+| `sign-in over plain HTTP is disabled on this instance; sign in at https://...` | Sign-in page | Open the `https://` dashboard URL in the message. |
+| Hint `unreachable` | Enable HTTPS card | Let's Encrypt could not reach port 80. Open ports 80 and 443 in the host firewall and the cloud security group. |
+| Hint `rate_limited` | Enable HTTPS card | Let's Encrypt is throttling the name. Wait, and test with staging. |
+| Hint `dns` | Enable HTTPS card | The name does not resolve to this server. Check the public address the card shows. |
+| Hint `caa` | Enable HTTPS card | A CAA record blocks Let's Encrypt for this name. Change the CAA record. |
+| `external_reachability_80` warning | `levelrail-cli doctor` | The check dials the server's own public address from the server. A router without hairpin support can fail it. Test from outside the network. |
+| `all predefined address pools have been fully subnetted` | Deploy fails | Docker is out of network subnets. See [App network pool](/troubleshooting#app-network-pool). |
+
 ### Browser shows a security warning about the certificate
 
 Browsers warn when the certificate is self-signed or expired, or when the domain name in the certificate does not match the one you visited.
@@ -1045,7 +1102,7 @@ Likely cause: ACME TLS is not enabled, or the certificate is still being issued 
 
 How to confirm: visit the domain in a browser and check the certificate details (usually by clicking the lock icon), or run `levelrail-cli domains doctor <app> <domain>` to see the certificate status.
 
-Fix: enable ACME on the Domains page (Settings > Domains > Enable HTTPS) and follow the [ACME verification runbook](/acme-verification-runbook) to issue a real Let's Encrypt certificate. Certificates take a few seconds to issue.
+Fix: open the **Enable HTTPS** card on the Domains page (or run `levelrail-cli settings ingress https enable --wait 2m`), then follow the [ACME verification runbook](/acme-verification-runbook) to issue a real Let's Encrypt certificate. Certificates take a few seconds to issue.
 
 ### The domain is added but requests get connection refused
 
@@ -1075,7 +1132,7 @@ Likely cause: the DNS A record has not been created or propagated, or it points 
 
 How to confirm: run `levelrail-cli domains check <app> <domain>` to see what the domain resolves to, or `dig <domain>` to inspect the DNS records directly.
 
-Fix: create or update the A record at your registrar or DNS provider to point at the control plane's public IP address (shown in Settings > General > Public IP, or run `levelrail-cli status --json | jq .public_host`). DNS changes can take up to a few hours to propagate globally. Once it resolves, the domain status changes automatically.
+Fix: create or update the A record at your registrar or DNS provider to point at the control plane's public IP address. The Domains page shows it, and `levelrail-cli settings ingress get --json | jq .public_host` prints it. DNS changes can take up to a few hours to propagate globally. Once it resolves, the domain status changes automatically.
 
 ### Wildcard domain rules do not work
 
@@ -1083,7 +1140,7 @@ A wildcard domain added to the app is not routing subdomains correctly.
 
 Likely cause: the wildcard domain needs DNS-01 ACME, which requires DNS provider credentials. The system cannot issue a wildcard cert with HTTP-01.
 
-How to confirm: go to Settings > Domains > DNS provider and check whether a provider is configured. Also see the domain's status on the Domains page to check if the certificate is issued.
+How to confirm: check the DNS provider section of the Domains page, or run `levelrail-cli domains cloudflare-dns get` or `levelrail-cli domains route53-dns get`. Also see the domain's status on the Domains page to check if the certificate is issued.
 
 Fix: connect a DNS provider (Cloudflare or Route53) on the Domains page and enable DNS-01 for wildcard domains. Then open the domain on the Domains page and check the certificate status.
 

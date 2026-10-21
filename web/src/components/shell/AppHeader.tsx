@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
@@ -10,9 +9,12 @@ import { EnvironmentSwitcher } from '../environments/EnvironmentSwitcher'
 import { DockToggle } from '../dock/DockToggle'
 import { HelpMenu } from '../HelpMenu'
 import { ThemeToggle } from '../ThemeToggle'
+import { InboxBadge } from './InboxBadge'
 import { NotificationCenter } from './NotificationCenter'
 import { StatusChip } from './StatusChip'
 import { WhatsNewPanel } from './WhatsNewPanel'
+import { usePageTitle } from './pageTitleStore'
+import { useMainScrolled } from './useMainScrolled'
 
 const isMac =
   typeof navigator !== 'undefined' && /mac/i.test(navigator.platform)
@@ -23,33 +25,25 @@ const isMac =
 // environment switcher sits on its own row until @4xl.
 export function AppHeader({ onSearch }: { onSearch: () => void }) {
   const { t } = useTranslation()
-  const sentinel = useRef<HTMLDivElement>(null)
-  const [scrolled, setScrolled] = useState(false)
-
-  // Zero-height sentinel at the top of the inset: leaves view once content scrolls under the header.
-  useEffect(() => {
-    const el = sentinel.current
-    if (!el || typeof IntersectionObserver === 'undefined') return
-    const io = new IntersectionObserver(([entry]) => {
-      if (entry) setScrolled(!entry.isIntersecting)
-    })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [])
+  const scrolled = useMainScrolled()
+  const pageTitle = usePageTitle()
 
   return (
     <>
-      <div
-        ref={sentinel}
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-px"
-      />
       <header
         aria-label={t('shell.topBar')}
         data-scrolled={scrolled}
-        className="@container sticky top-0 z-30 shrink-0 border-b border-border bg-background transition-shadow duration-150 data-[scrolled=true]:shadow-header motion-reduce:transition-none"
+        className="@container group/bar sticky top-0 z-30 shrink-0"
       >
-        <div className="flex min-h-14 flex-wrap items-center gap-x-1 gap-y-2 px-3 py-2 @xl:gap-x-2 @xl:px-4 @4xl:flex-nowrap @4xl:py-0">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 origin-top border-b border-border bg-background transition-transform duration-150 group-data-[scrolled=true]/bar:@4xl:scale-y-90 motion-reduce:transition-none"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 shadow-header transition-opacity duration-150 not-group-data-[scrolled=true]/bar:opacity-0 motion-reduce:transition-none"
+        />
+        <div className="relative flex min-h-14 flex-wrap items-center gap-x-1 gap-y-2 px-3 py-2 @xl:gap-x-2 @xl:px-4 @4xl:flex-nowrap @4xl:py-0 @4xl:transition-transform @4xl:duration-150 motion-reduce:transition-none group-data-[scrolled=true]/bar:@4xl:-translate-y-1">
           <SidebarTrigger
             className="-ml-1"
             aria-label={t('shell.toggleSidebar')}
@@ -78,9 +72,18 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
           <div className="order-last w-full empty:hidden @4xl:order-none @4xl:w-auto">
             <EnvironmentSwitcher />
           </div>
+          {pageTitle ? (
+            <span
+              aria-hidden="true"
+              className="hidden min-w-0 max-w-64 truncate text-sm font-medium text-foreground opacity-0 transition-opacity duration-150 group-data-[scrolled=true]/bar:opacity-100 motion-reduce:transition-none @4xl:block"
+            >
+              {pageTitle}
+            </span>
+          ) : null}
           <div className="ml-auto flex items-center gap-1 @xl:gap-2">
             <TeamSwitcher />
             <StatusChip />
+            <InboxBadge />
             <NotificationCenter />
             <div className="hidden @md:block">
               <WhatsNewPanel />

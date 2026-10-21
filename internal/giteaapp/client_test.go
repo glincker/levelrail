@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
@@ -100,7 +101,7 @@ func TestClient_ListRepos_FollowsPagePagination(t *testing.T) {
 	defer srv.Close()
 
 	c := &Client{HTTP: srv.Client()}
-	repos, err := c.ListRepos(context.Background(), srv.URL, "the-token")
+	repos, _, err := c.ListRepos(context.Background(), srv.URL, "the-token", gitprovider.ListOptions{})
 	if err != nil {
 		t.Fatalf("ListRepos() error = %v", err)
 	}

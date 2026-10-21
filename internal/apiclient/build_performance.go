@@ -48,23 +48,34 @@ type BuildStats struct {
 type BuildLimitValues struct {
 	MaxConcurrent  int `json:"max_concurrent"`
 	TimeoutSeconds int `json:"timeout_seconds"`
+	MemoryMB       int `json:"memory_mb"`
+	CPUMillis      int `json:"cpu_millis"`
+}
+
+// BuildLimitOverrides are the limits set explicitly; nil means the default applies.
+type BuildLimitOverrides struct {
+	MaxConcurrent  *int `json:"max_concurrent,omitempty"`
+	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
+	MemoryMB       *int `json:"memory_mb,omitempty"`
+	CPUMillis      *int `json:"cpu_millis,omitempty"`
 }
 
 // BuildLimits is the response of /api/v1/build-limits.
 type BuildLimits struct {
-	Effective BuildLimitValues `json:"effective"`
-	Default   BuildLimitValues `json:"default"`
-	Overrides struct {
-		MaxConcurrent  *int `json:"max_concurrent,omitempty"`
-		TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
-	} `json:"overrides"`
+	Effective BuildLimitValues    `json:"effective"`
+	Default   BuildLimitValues    `json:"default"`
+	Overrides BuildLimitOverrides `json:"overrides"`
+}
+
+// AppBuildLimits is the response of /api/v1/apps/{name}/build-limits.
+type AppBuildLimits struct {
+	Effective BuildLimitValues    `json:"effective"`
+	Global    BuildLimitValues    `json:"global"`
+	Overrides BuildLimitOverrides `json:"overrides"`
 }
 
 // BuildLimitsRequest sets build limit overrides; nil fields are left alone.
-type BuildLimitsRequest struct {
-	MaxConcurrent  *int `json:"max_concurrent,omitempty"`
-	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
-}
+type BuildLimitsRequest = BuildLimitOverrides
 
 // GetBuildStats calls GET /api/v1/apps/{name}/build-stats.
 func (c *Client) GetBuildStats(ctx context.Context, app string, limit int) (BuildStats, error) {
@@ -95,6 +106,27 @@ func (c *Client) SetBuildLimits(ctx context.Context, req BuildLimitsRequest) (Bu
 func (c *Client) ResetBuildLimits(ctx context.Context) (BuildLimits, error) {
 	var out BuildLimits
 	err := c.do(ctx, http.MethodDelete, "/api/v1/build-limits", nil, &out)
+	return out, err
+}
+
+// GetAppBuildLimits calls GET /api/v1/apps/{name}/build-limits.
+func (c *Client) GetAppBuildLimits(ctx context.Context, app string) (AppBuildLimits, error) {
+	var out AppBuildLimits
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+url.PathEscape(app)+"/build-limits", nil, &out)
+	return out, err
+}
+
+// SetAppBuildLimits calls PUT /api/v1/apps/{name}/build-limits.
+func (c *Client) SetAppBuildLimits(ctx context.Context, app string, req BuildLimitsRequest) (AppBuildLimits, error) {
+	var out AppBuildLimits
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+url.PathEscape(app)+"/build-limits", req, &out)
+	return out, err
+}
+
+// ResetAppBuildLimits calls DELETE /api/v1/apps/{name}/build-limits.
+func (c *Client) ResetAppBuildLimits(ctx context.Context, app string) (AppBuildLimits, error) {
+	var out AppBuildLimits
+	err := c.do(ctx, http.MethodDelete, "/api/v1/apps/"+url.PathEscape(app)+"/build-limits", nil, &out)
 	return out, err
 }
 

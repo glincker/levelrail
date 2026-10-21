@@ -123,6 +123,7 @@ type releaseHistoryItem struct {
 	SchemaVersion  *int                  `json:"schema_version"`
 	SchemaSource   string                `json:"schema_source"`
 	Verdict        upgrade.SchemaVerdict `json:"verdict"`
+	State          string                `json:"state"`
 	Notes          string                `json:"notes"`
 }
 
@@ -218,6 +219,7 @@ func (rt *Router) historyItem(ctx context.Context, r upgrade.HistoryRelease, dbS
 		AssetName: rt.assetName(), AssetAvailable: has || isRet, AssetSize: asset.Size, Signed: hasSig,
 		SchemaVersion: optInt(schema), SchemaSource: source,
 		Verdict: upgrade.VerdictFor(dbSchema, schema),
+		State:   releaseState(dbSchema, schema, r.Tag == version.Version),
 		Notes:   truncateRunes(cleanReleaseNotes(r.Body), releaseNotesHistoryMx),
 	}
 }
@@ -255,6 +257,7 @@ func (rt *Router) handleReleaseHistory(w http.ResponseWriter, r *http.Request) {
 			AssetName: rt.assetName(), AssetAvailable: true, AssetSize: ret.SizeBytes,
 			SchemaVersion: optInt(ret.SchemaVersion), SchemaSource: rollbackSource(ret.SchemaVersion),
 			Verdict: upgrade.VerdictFor(dbSchema, ret.SchemaVersion),
+			State:   releaseState(dbSchema, ret.SchemaVersion, tag == version.Version),
 		})
 	}
 	writeJSON(w, http.StatusOK, out)

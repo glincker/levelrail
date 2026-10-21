@@ -110,8 +110,9 @@ func printDeployGate(w io.Writer, g apiclient.DeployGateResource, from int) {
 			_, _ = fmt.Fprintf(w, "reason:   %s\n", g.Reason)
 		}
 		s := g.Settings
-		_, _ = fmt.Fprintf(w, "gate:     %d passes, %s stable, %s drain, watch %s (auto-rollback %t)\n",
-			s.SuccessThreshold, s.StableWindow, s.DrainTimeout, s.WatchWindow, s.AutoRollback)
+		_, _ = fmt.Fprintf(w, "gate:     %d passes, %s stable, %s drain, watch %s (mode %s)\n",
+			s.SuccessThreshold, s.StableWindow, s.DrainTimeout, s.WatchWindow, s.WatchMode)
+		_, _ = fmt.Fprintf(w, "watch:    %s\n", describeWatch(g.Watch))
 		if g.RollbackPin != nil {
 			_, _ = fmt.Fprintf(w, "pinned:   %s\n", g.RollbackPin.PinRef)
 		}

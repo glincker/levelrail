@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	cerrdefs "github.com/containerd/errdefs"
@@ -31,8 +32,9 @@ import (
 // API over the local socket. It never shells out to the `docker` CLI,
 // per the project's Docker Engine API only rule.
 type Client struct {
-	cli *dockerclient.Client
-	cdi cdiCache
+	cli   *dockerclient.Client
+	guard *guardTransport
+	cdi   cdiCache
 	// instanceLabelKey/instanceLabelValue, when both set (WithInstanceLabel),
 	// are stamped onto every container and network this Client creates
 	// (Create, EnsureNetwork) and used to scope every by-name lookup this
@@ -55,6 +57,8 @@ type Client struct {
 	// pool, when set, makes EnsureNetwork assign explicit subnets.
 	pool  *NetworkPool
 	alloc poolAllocator
+	stop  chan struct{}
+	close sync.Once
 }
 
 // ClientOption configures optional Client behavior at construction time.
@@ -92,19 +96,38 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	for _, opt := range opts {
 		opt(c)
 	}
-	dockerOpts := []dockerclient.Opt{dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation()}
+	dockerOpts := []dockerclient.Opt{dockerclient.FromEnv}
 	switch {
 	case c.host != "":
 		dockerOpts = append(dockerOpts, dockerclient.WithHost(c.host))
 	case runtime.Source == envRuntimeSocket:
 		dockerOpts = append(dockerOpts, dockerclient.WithHost(runtime.Host))
 	}
-	cli, err := dockerclient.NewClientWithOpts(dockerOpts...)
+	probe, err := dockerclient.NewClientWithOpts(dockerOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("docker: new client: %w", err)
 	}
+	hc := probe.HTTPClient()
+	guard := &guardTransport{base: hc.Transport, timeout: envDuration(envCallTimeout, defaultCallTimeout)}
+	hc.Transport = guard
+	cli, err := dockerclient.NewClientWithOpts(append(dockerOpts, dockerclient.WithHTTPClient(hc))...)
+	if err != nil {
+		return nil, fmt.Errorf("docker: new client: %w", err)
+	}
+	_ = probe.Close()
 	c.cli = cli
+	c.guard = guard
+	c.stop = make(chan struct{})
+	negotiateUpFront(cli, envDuration(envBootTimeout, defaultBootTimeout), c.stop)
 	return c, nil
+}
+
+// UnresponsiveSince reports when the daemon stopped answering, zero while it answers.
+func (c *Client) UnresponsiveSince() time.Time {
+	if c.guard == nil {
+		return time.Time{}
+	}
+	return c.guard.unresponsiveSince()
 }
 
 // Runtime reports which container engine and privilege mode this Client
@@ -151,6 +174,9 @@ func (c *Client) withInstanceLabel(labels map[string]string) map[string]string {
 
 // Close releases the underlying HTTP transport.
 func (c *Client) Close() error {
+	if c.stop != nil {
+		c.close.Do(func() { close(c.stop) })
+	}
 	return c.cli.Close()
 }
 

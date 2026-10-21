@@ -1,4 +1,17 @@
 {
+  "connectDrawer": {
+    "trigger": "Connect",
+    "title": "Connect to this database",
+    "description": "Connection strings for this engine. Copy one into your app or client.",
+    "passwordNote": "Passwords are never shown here. Replace <password> with a credential from the Access page.",
+    "internal": "From apps on this server",
+    "public": "From the internet",
+    "copyUri": "Copy connection string",
+    "copyCommand": "Copy command",
+    "tunnelTitle": "No public port? Use a tunnel",
+    "tunnelBody": "The CLI opens a local port that relays to this database through the control plane. Nothing is exposed to the internet.",
+    "tunnelAfter": "The command prints a connection string for the local port. Add --launch to start psql, mysql or redis-cli automatically (set LEVELRAIL_DB_PASSWORD first)."
+  },
   "upgrades": {
     "nav": "Upgrades"
   },

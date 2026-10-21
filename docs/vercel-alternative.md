@@ -1,12 +1,12 @@
 ---
 title: "Self-hosted Vercel alternative for Next.js and Docker apps"
-description: "Levelrail is an open source, self-hosted Vercel alternative: push-to-deploy from your git host, automatic TLS and preview environments per pull request."
+description: "Levelrail is an open source, self-hosted alternative to Vercel's Git deploys: webhook push-to-deploy, TLS and preview environments per pull request."
 "og:url": "https://docs.levelrail.com/vercel-alternative"
 ---
 
 **Vercel-style deploys on servers you own**
 
-Push to git and get a running app with HTTPS, preview environments per pull request, logs, metrics and one-click rollback, on your own Linux boxes.
+Push to your git host and get a running app, preview environments per pull request, logs, metrics and one-click rollback, on your own Linux boxes. Deploys start from a forge webhook by default; a native `git push` remote is beta and off by default. HTTPS uses a self-signed certificate until you enable Let's Encrypt (see [Domains and ingress](/domains-and-ingress#tls-whats-actually-shipped-today)). One live Let's Encrypt run is recorded; renewal and DNS-01 wildcards are unverified.
 
 [Get started](/getting-started) | [Migration guide](/migrating-from-vercel)
 
@@ -18,7 +18,7 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh
 
 <CardGroup cols={3}>
   <Card title="Preview environments per PR">
-    GitHub, GitLab and Bitbucket webhooks create a preview for each pull request and tear it down automatically when it closes.
+    GitHub, GitLab and Bitbucket webhooks create a preview for each pull request and tear it down when it closes. Stable on GitHub, beta on GitLab and Bitbucket.
   </Card>
   <Card title="One-click rollback">
     Prior images stay pinned, so going back means switching to an image that is still there, not rebuilding from an old commit.
@@ -38,7 +38,15 @@ Vercel is a managed cloud with a global edge network. Levelrail is the other mod
 | Deploys | Git integration, previews, instant rollback | Git integration, previews per PR, rollback with pinned images |
 | Observability | See Vercel's own documentation | Metrics and log search built in, node-local |
 | Data | Handled by the vendor | Secrets, metrics and logs stay on your nodes unless you configure an export or drain |
+| Zero-downtime deploys | Atomic deployments | Cutover only after the readiness probe passes. Live-tested with zero failed requests on a single node; multi-node is beta and not measured |
+| Env vars per environment | Production, Preview and Development | One env set per app, with preview and branch overrides. Instance-wide environments need the experimental `global-environments` flag |
+| Functions | Serverless and edge functions | [Functions](/functions): container apps that sleep when idle and wake on the first request. Cold start is a container start. Not an edge runtime |
 | Edge network | Global edge network | Not provided: bring your own CDN if you need one |
+| Edge runtime | Edge and middleware runtime | Not offered |
+| ISR revalidation | Incremental static regeneration | Not offered (the Next.js preset only keeps the app's own cache across redeploys) |
+| Image optimization | Built-in resizing | Not offered |
+| Visitor analytics | Web Analytics | Not offered. Request rate, errors and latency percentiles per app are built in |
+| Blob and KV storage | Blob, KV | Not offered. Managed Postgres and Redis, and S3-compatible storage for backups |
 
 [Read the Vercel migration runbook](/migrating-from-vercel)
 
@@ -63,7 +71,7 @@ Vercel is a managed cloud with a global edge network. Levelrail is the other mod
     Yes, as a container built from your Dockerfile. Build-time variables such as NEXT_PUBLIC_* are inlined at build, which the migration runbook covers.
   </Accordion>
   <Accordion title="Does it have serverless functions or an edge network?">
-    No. It runs long-lived containers on your servers. If you need a global edge network, put a CDN in front.
+    Functions, yes in a limited form: `levelrail-cli functions` deploys a handler as a container app that sleeps when idle and answers the first request after a cold start (one URL per function, no per-request concurrency control). See [Functions](/functions). There is no edge runtime and no edge network. If you need a global edge network, put a CDN in front.
   </Accordion>
   <Accordion title="Is there an importer for Vercel?">
     No, migration from Vercel is manual. The runbook maps each Vercel concept to its Levelrail equivalent and lists the gaps.

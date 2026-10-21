@@ -95,6 +95,18 @@ func TestCertExpiryClass(t *testing.T) {
 			Issuer: "R11", Source: "acme", TLSOwner: "acme", Status: "expired", Routed: true,
 			NotBefore: now.Add(-91 * 24 * time.Hour), NotAfter: now.Add(-time.Hour),
 		}, ClassIncident},
+		{"real ACME healthy but last renewal failed", CertFacts{
+			Issuer: "R11", Source: "acme", TLSOwner: "acme", Status: "healthy", Routed: true, RenewalFailed: true,
+			NotBefore: now.Add(-60 * 24 * time.Hour), NotAfter: now.Add(30 * 24 * time.Hour),
+		}, ClassIncident},
+		{"real ACME inside the failure window", CertFacts{
+			Issuer: "R11", Source: "acme", TLSOwner: "acme", Status: "expiring_soon", Routed: true, NearExpiry: true,
+			NotBefore: now.Add(-80 * 24 * time.Hour), NotAfter: now.Add(10 * 24 * time.Hour),
+		}, ClassIncident},
+		{"internal CA with a failed flag still never alerts", CertFacts{
+			Issuer: "Caddy Local Authority - ECC Intermediate", Source: "acme", TLSOwner: "internal", Status: "healthy", Routed: true, RenewalFailed: true,
+			NotBefore: now, NotAfter: now.Add(12 * time.Hour),
+		}, ""},
 		{"uploaded certificate in window", CertFacts{
 			Issuer: "Corp CA", Source: "custom", TLSOwner: "custom", Status: "expiring_soon", Routed: true,
 			NotBefore: now.Add(-300 * 24 * time.Hour), NotAfter: now.Add(20 * 24 * time.Hour),

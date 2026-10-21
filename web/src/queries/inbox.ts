@@ -21,10 +21,16 @@ export interface InboxPrefs {
   last_digest_at?: string
 }
 
+export interface InboxState {
+  read_ids: string[]
+  archived_ids: string[]
+}
+
 export const inboxKeys = {
   all: ['inbox'] as const,
-  list: (unreadOnly: boolean) =>
-    [...inboxKeys.all, 'list', unreadOnly] as const,
+  list: (unreadOnly: boolean, archived = false) =>
+    [...inboxKeys.all, 'list', unreadOnly, archived] as const,
+  state: () => [...inboxKeys.all, 'state'] as const,
   count: () => [...inboxKeys.all, 'count'] as const,
   prefs: () => [...inboxKeys.all, 'prefs'] as const,
 }
@@ -47,12 +53,12 @@ async function request<T>(
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
-export function useInbox(unreadOnly: boolean) {
+export function useInbox(unreadOnly: boolean, archived = false) {
   return useQuery({
-    queryKey: inboxKeys.list(unreadOnly),
+    queryKey: inboxKeys.list(unreadOnly, archived),
     queryFn: ({ signal }) =>
       request<InboxItem[]>(
-        `/api/v1/inbox?limit=50${unreadOnly ? '&unread=true' : ''}`,
+        `/api/v1/inbox?limit=50${unreadOnly ? '&unread=true' : ''}${archived ? '&archived=true' : ''}`,
         'load inbox',
         { signal },
       ),
@@ -85,6 +91,31 @@ export function useMarkInboxRead() {
   return useMutation({
     mutationFn: (body: { ids?: string[]; all?: boolean }) =>
       request<void>('/api/v1/inbox/read', 'mark read', {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => invalidateInbox(qc),
+  })
+}
+
+export function useInboxState() {
+  return useQuery({
+    queryKey: inboxKeys.state(),
+    queryFn: ({ signal }) =>
+      request<InboxState>('/api/v1/inbox/state', 'load inbox state', {
+        signal,
+      }),
+    retry: false,
+    refetchInterval: 30_000,
+  })
+}
+
+export function useArchiveInbox() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { ids: string[]; restore?: boolean }) =>
+      request<void>('/api/v1/inbox/archive', 'archive', {
         method: 'POST',
         headers: JSON_HEADERS,
         body: JSON.stringify(body),

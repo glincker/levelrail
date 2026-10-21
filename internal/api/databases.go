@@ -88,7 +88,7 @@ func (rt *Router) toDatabaseResourceWithStatus(ctx context.Context, d store.Desi
 
 // A lookup error reports TLS as not enabled rather than failing the request, since this is display-only.
 func (rt *Router) databaseTLSEnabled(ctx context.Context, d store.DesiredDatabase) bool {
-	if rt.secrets == nil || !database.SupportsTLS(d.Engine) {
+	if rt.secrets == nil || !database.ServerTLSEngine(d.Engine) {
 		return false
 	}
 	exists, err := rt.secrets.Exists(ctx, d.Name, database.TLSCertEnvKey)
@@ -107,7 +107,7 @@ func (rt *Router) databaseTLSStatuses(ctx context.Context, dbs []store.DesiredDa
 	}
 	names := make([]string, 0, len(dbs))
 	for _, d := range dbs {
-		if database.SupportsTLS(d.Engine) {
+		if database.ServerTLSEngine(d.Engine) {
 			names = append(names, d.Name)
 		}
 	}

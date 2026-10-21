@@ -16,16 +16,22 @@ type gitProviderResource struct {
 	CanListBranches    bool   `json:"can_list_branches"`
 	CanRegisterWebhook bool   `json:"can_register_webhook"`
 	CanAuthClone       bool   `json:"can_auth_clone"`
+	// Connection is the last known health of the connection: ok, needs_reauthorize, revoked or rate_limited.
+	Connection gitConnResource `json:"connection"`
+	// Connections counts configured connections; Authorized counts those with a token.
+	Connections int `json:"connections"`
+	Authorized  int `json:"authorized"`
 }
 
 // Replaces three separate provider status calls. AbilityReadSensitive, since it discloses only connection state and capabilities.
 func (rt *Router) handleListGitProviders(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	out := []gitProviderResource{
-		rt.githubProviderStatus(ctx),
-		rt.gitlabProviderStatus(ctx),
-		rt.bitbucketProviderStatus(ctx),
-		rt.giteaProviderStatus(ctx),
+	out := []gitProviderResource{rt.githubProviderStatus(ctx)}
+	for _, p := range connectionGitProviders {
+		out = append(out, rt.gitProviderStatusFor(ctx, p))
+	}
+	for i := range out {
+		out[i].Connection = rt.gitProviderHealth(ctx, out[i].Provider)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -42,77 +48,39 @@ func (rt *Router) githubProviderStatus(ctx context.Context) gitProviderResource 
 		return res
 	}
 	res.Connected = conn.InstallationID != nil
+	res.Connections, res.Authorized = 1, 1
 	res.CanListBranches = res.Connected
 	res.CanRegisterWebhook = res.Connected
 	res.CanAuthClone = res.Connected
 	return res
 }
 
-// Connected means OAuth is authorized. CanAuthClone stays false: GitLab has no authenticated clone path today.
-func (rt *Router) gitlabProviderStatus(ctx context.Context) gitProviderResource {
-	res := gitProviderResource{Provider: "gitlab"}
-	if _, err := rt.gitlabApp.GetGitLabAppConnection(ctx); err != nil {
-		if !errors.Is(err, store.ErrGitLabAppConnectionNotFound) {
-			rt.logger.Error("api: get gitlab app connection for git-providers status failed", slog.String("error", err.Error()))
-		}
-		return res
+// gitProviderHealth is the worst recorded health among a provider's connections.
+func (rt *Router) gitProviderHealth(ctx context.Context, provider string) gitConnResource {
+	if provider == gitProviderGitHub {
+		return rt.gitConnHealth(ctx, provider)
 	}
-	if rt.gitlabAppSecrets == nil {
-		return res
-	}
-	authorized, err := rt.gitlabAppSecrets.Exists(ctx, store.GitLabAppSecretsKey(), gitLabAppAccessTokenKey)
+	conns, err := rt.gitConns.ListGitConnections(ctx, provider)
+	worst := gitConnResource{Status: store.GitConnOK}
 	if err != nil {
-		rt.logger.Error("api: check gitlab app authorization for git-providers status failed", slog.String("error", err.Error()))
-		return res
+		return worst
 	}
-	res.Connected = authorized
-	res.CanListBranches = authorized
-	res.CanRegisterWebhook = authorized
-	return res
+	for _, c := range conns {
+		if h := rt.gitConnHealth(ctx, c.ID); gitConnSeverity(h.Status) > gitConnSeverity(worst.Status) {
+			worst = h
+		}
+	}
+	return worst
 }
 
-// Connected means authorized. CanAuthClone stays false: Bitbucket has no authenticated clone path today.
-func (rt *Router) bitbucketProviderStatus(ctx context.Context) gitProviderResource {
-	res := gitProviderResource{Provider: "bitbucket"}
-	if _, err := rt.bitbucketApp.GetBitbucketAppConnection(ctx); err != nil {
-		if !errors.Is(err, store.ErrBitbucketAppConnectionNotFound) {
-			rt.logger.Error("api: get bitbucket app connection for git-providers status failed", slog.String("error", err.Error()))
-		}
-		return res
+func gitConnSeverity(status string) int {
+	switch status {
+	case store.GitConnRevoked:
+		return 3
+	case store.GitConnNeedsReauthorize:
+		return 2
+	case store.GitConnRateLimited:
+		return 1
 	}
-	if rt.bitbucketAppSecrets == nil {
-		return res
-	}
-	authorized, err := rt.bitbucketAppSecrets.Exists(ctx, store.BitbucketAppSecretsKey(), bitbucketAppAccessTokenKey)
-	if err != nil {
-		rt.logger.Error("api: check bitbucket app authorization for git-providers status failed", slog.String("error", err.Error()))
-		return res
-	}
-	res.Connected = authorized
-	res.CanListBranches = authorized
-	res.CanRegisterWebhook = authorized
-	return res
-}
-
-// Connected means authorized. CanAuthClone stays false: Gitea has no authenticated clone path today.
-func (rt *Router) giteaProviderStatus(ctx context.Context) gitProviderResource {
-	res := gitProviderResource{Provider: "gitea"}
-	if _, err := rt.giteaApp.GetGiteaAppConnection(ctx); err != nil {
-		if !errors.Is(err, store.ErrGiteaAppConnectionNotFound) {
-			rt.logger.Error("api: get gitea app connection for git-providers status failed", slog.String("error", err.Error()))
-		}
-		return res
-	}
-	if rt.giteaAppSecrets == nil {
-		return res
-	}
-	authorized, err := rt.giteaAppSecrets.Exists(ctx, store.GiteaAppSecretsKey(), giteaAppAccessTokenKey)
-	if err != nil {
-		rt.logger.Error("api: check gitea app authorization for git-providers status failed", slog.String("error", err.Error()))
-		return res
-	}
-	res.Connected = authorized
-	res.CanListBranches = authorized
-	res.CanRegisterWebhook = authorized
-	return res
+	return 0
 }

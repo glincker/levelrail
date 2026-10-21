@@ -19,17 +19,25 @@
   },
   "mode": {
     "fresh": "Fresh container",
-    "exec": "Inside running container"
+    "exec": "Inside running container",
+    "http": "HTTP call to the app"
   },
   "concurrency": {
     "allow": "Allow overlap",
     "forbid": "Skip if still running",
-    "replace": "Cancel and replace"
+    "replace": "Cancel and replace",
+    "queue": "Queue behind it"
   },
   "concurrencyHint": {
     "allow": "Start the new run even if the previous one has not finished.",
     "forbid": "Skip this run if a previous one is still in flight, recorded as skipped.",
-    "replace": "Cancel the still-running previous run, then start this one."
+    "replace": "Cancel the still-running previous run, then start this one.",
+    "queue": "Wait for the previous run to finish, then run, so overlapping runs go one after another."
+  },
+  "preview": {
+    "title": "Next runs ({{zone}})",
+    "invalid": "Enter a valid schedule and time zone to preview the next runs.",
+    "none": "This schedule never runs."
   },
   "status": {
     "running": "Running",
@@ -83,7 +91,19 @@
     "modeLabel": "Where it runs",
     "modeHint": {
       "fresh": "A new container from the app's current image, with its env, secrets, volumes and network. It is removed when the run ends.",
-      "exec": "Inside the app's running container. Fails if the container is not running."
+      "exec": "Inside the app's running container. Fails if the container is not running.",
+      "http": "Calls a path on the app over HTTP. A sleeping app is woken first and the call waits for it. Any 2xx answer is a success."
+    },
+    "http": {
+      "method": "Method",
+      "path": "Path",
+      "pathPlaceholder": "e.g. /api/cron/digest",
+      "pathHint": "A path on this app, starting with /. The call goes straight to the app, not through its public domain.",
+      "pathInvalid": "Start with a single /.",
+      "body": "Body",
+      "bodyHint": "Optional. Sent as application/json.",
+      "background": "Background job",
+      "backgroundHint": "The app can answer 202 at once and keep working. The control plane waits for the answer up to the background timeout and records the outcome, so nobody has to hold the request open."
     },
     "timezone": "Time zone",
     "timezoneHint": "IANA name such as Europe/Berlin. The schedule is read in this zone, including daylight saving changes.",
@@ -129,12 +149,13 @@
       "status": "Status",
       "trigger": "Trigger",
       "duration": "Duration",
-      "exit": "Exit",
+      "exit": "Exit or HTTP",
       "attempts": "Attempts",
       "node": "Node"
     },
     "trendLabel": "Run durations for the last {{count}} finished runs",
     "trendCaption": "Run duration, oldest to newest, slowest {{max}}",
+    "httpStatus": "HTTP {{code}}",
     "viewLogs": "Logs",
     "logsTitle": "Run output",
     "logsEmpty": "This run produced no output.",

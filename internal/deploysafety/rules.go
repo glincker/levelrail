@@ -65,6 +65,27 @@ type WatchObservation struct {
 	OOMKilled    bool
 	Requests     float64
 	Errors5xx    float64
+	// P95Ms is the new release's p95 since cutover; BaselineP95Ms and
+	// BaselineRequests describe the release it replaced over the same span
+	// before cutover. A zero baseline means there is nothing to compare to.
+	P95Ms            float64
+	BaselineP95Ms    float64
+	BaselineRequests float64
+}
+
+// LatencyRegressed reports whether the new release's p95 is a real step up
+// from the baseline: both sides need MinRequests of traffic, and the rise
+// must clear both the ratio and the absolute floor.
+func LatencyRegressed(o WatchObservation, cfg Effective) (bool, string) {
+	minReq := float64(cfg.WatchMinRequests)
+	if cfg.WatchLatencyRatio <= 0 || o.BaselineP95Ms <= 0 || o.Requests < minReq || o.BaselineRequests < minReq {
+		return false, ""
+	}
+	floor := float64(cfg.WatchLatencyMinDelta) / float64(time.Millisecond)
+	if o.P95Ms < o.BaselineP95Ms*cfg.WatchLatencyRatio || o.P95Ms-o.BaselineP95Ms < floor {
+		return false, ""
+	}
+	return true, fmt.Sprintf("p95 latency is %.0fms after cutover against %.0fms before (limit %.1fx, %d requests)", o.P95Ms, o.BaselineP95Ms, cfg.WatchLatencyRatio, int(o.Requests))
 }
 
 // EvaluateWatch decides whether a live release must be rolled back, has

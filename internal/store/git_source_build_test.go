@@ -12,7 +12,7 @@ func TestGitSourceBuildSettings(t *testing.T) {
 	if err := db.SaveGitSource(ctx, GitSource{ServiceName: "web", RepoURL: "https://github.com/org/web.git", Branch: "main", BuildType: "railpack"}); err != nil {
 		t.Fatalf("SaveGitSource() error = %v", err)
 	}
-	if err := db.SetGitSourceBuild(ctx, "web", "dockerfile", "apps/api/deploy/Dockerfile", "apps/api"); err != nil {
+	if err := db.SetGitSourceBuild(ctx, "web", "dockerfile", "apps/api/deploy/Dockerfile", "apps/api", "", ""); err != nil {
 		t.Fatalf("SetGitSourceBuild() error = %v", err)
 	}
 	got, err := db.GetGitSource(ctx, "web")
@@ -29,7 +29,7 @@ func TestGitSourceBuildSettings(t *testing.T) {
 	if b.BaseDirectory != "apps/api" || b.Path != "deploy/Dockerfile" {
 		t.Fatalf("SpecBuild() = %+v", b)
 	}
-	if err := db.SetGitSourceBuild(ctx, "missing", "dockerfile", "", ""); !errors.Is(err, ErrGitSourceNotFound) {
+	if err := db.SetGitSourceBuild(ctx, "missing", "dockerfile", "", "", "", ""); !errors.Is(err, ErrGitSourceNotFound) {
 		t.Fatalf("missing source error = %v", err)
 	}
 }

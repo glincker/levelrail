@@ -132,3 +132,16 @@ func TestDeviceLoginDetail_NeverCarriesACode(t *testing.T) {
 		t.Fatalf("items = %+v", items)
 	}
 }
+
+func TestBuild_HealthyCertWithFailedRenewalIsAnAttentionItem(t *testing.T) {
+	notAfter := time.Now().Add(30 * 24 * time.Hour)
+	items := Build(Input{
+		Certs: []apiclient.CertificateResource{{
+			Domain: "a.example", Status: "healthy", NotAfter: notAfter, ExpiryClass: ClassIncident,
+			ACMEFailure: &apiclient.ACMEFailure{Error: "boom", Renewal: true, Reason: "Let's Encrypt refused"},
+		}},
+	})
+	if len(items) != 1 || items[0].Kind != "cert_renewal" || !strings.Contains(items[0].Detail, "last renewal failed") || !strings.Contains(items[0].Detail, "retrying") {
+		t.Fatalf("items = %+v", items)
+	}
+}

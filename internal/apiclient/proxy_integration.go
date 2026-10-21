@@ -17,6 +17,8 @@ type ProxyDetection struct {
 	EntrypointHTTPS string   `json:"entrypoint_https"`
 	CertResolver    string   `json:"cert_resolver"`
 	UpstreamHost    string   `json:"upstream_host"`
+	CertDir         string   `json:"cert_dir,omitempty"`
+	Webroot         string   `json:"webroot,omitempty"`
 	Complete        bool     `json:"complete"`
 	Missing         []string `json:"missing"`
 }
@@ -29,6 +31,18 @@ type ProxyIntegrationSettings struct {
 	EntrypointHTTPS string `json:"entrypoint_https"`
 	CertResolver    string `json:"cert_resolver"`
 	UpstreamHost    string `json:"upstream_host"`
+	Container       string `json:"container"`
+	CertDir         string `json:"cert_dir"`
+	Webroot         string `json:"webroot"`
+}
+
+// ProxyProvider is one choice in the proxy picker. Mode is builtin, managed
+// (files written and reloaded by this instance) or manual (a snippet).
+type ProxyProvider struct {
+	Kind     string `json:"kind"`
+	Mode     string `json:"mode"`
+	Detected bool   `json:"detected"`
+	Selected bool   `json:"selected"`
 }
 
 // ProxyIngress is how this instance's ingress is set up for the proxy.
@@ -75,15 +89,22 @@ type ProxyIntegration struct {
 	Ingress  ProxyIngress             `json:"ingress"`
 	Domains  []ProxyDomain            `json:"domains"`
 	Steps    []ProxyStep              `json:"steps"`
-	// DryRun and Changes are set by setup only.
+	// Provider is the selected provider kind; Providers is the picker list.
+	Provider  string          `json:"provider"`
+	Providers []ProxyProvider `json:"providers"`
+	// DryRun, Changes, Manual and Snippet are set by setup only.
 	DryRun  bool     `json:"dry_run,omitempty"`
 	Changes []string `json:"changes,omitempty"`
+	Manual  bool     `json:"manual,omitempty"`
+	Snippet string   `json:"snippet,omitempty"`
 }
 
 // ProxySetupRequest is POST /api/v1/system/proxy-integration/setup's body.
 type ProxySetupRequest struct {
 	Confirm    bool   `json:"confirm"`
 	DynamicDir string `json:"dynamic_dir,omitempty"`
+	Provider   string `json:"provider,omitempty"`
+	CertDir    string `json:"cert_dir,omitempty"`
 }
 
 // GetProxyIntegration returns detection, settings and per-domain status.

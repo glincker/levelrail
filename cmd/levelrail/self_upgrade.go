@@ -98,6 +98,7 @@ func runSelfUpgrade(ctx context.Context, args []string, dataDir string, stdin io
 		healthBase = "http://" + dashboardDialAddr(serviceHTTPAddr(ctx, name))
 	}
 	deps := selfUpgradeDeps(f, exe, name, dataDir, live, healthBase, journal, logger)
+	wireSafetyNet(&deps, name, dataDir, live, healthBase, logger)
 
 	if f.recoverRun {
 		return recoverSelfUpgrade(ctx, deps, journal, f, stdout)
@@ -291,7 +292,7 @@ func parseSelfUpgradeFlags(args []string, stdout io.Writer) (selfUpgradeFlags, e
 	fs.StringVar(&f.stopCmd, "stop-cmd", "", "")
 	fs.StringVar(&f.startCmd, "start-cmd", "", "")
 	fs.StringVar(&f.healthURL, "health-url", "", "")
-	fs.DurationVar(&f.timeout, "timeout", selfupgrade.DefaultHealthTimeout, "")
+	fs.DurationVar(&f.timeout, "timeout", verifyWindow(), "")
 	if err := fs.Parse(args); err != nil || (!f.recoverRun && !f.unpin && f.to == "" && !f.latest) {
 		_, _ = fmt.Fprint(stdout, selfUpgradeUsage)
 		return f, errors.New("invalid flags")
@@ -408,6 +409,7 @@ func retainNew(exe, name, target string, schema int, logger *slog.Logger) {
 // importSelfUpgradeJournal records attempts a host command journaled while
 // the database was being swapped or the service was down.
 func importSelfUpgradeJournal(ctx context.Context, db *store.DB, logger *slog.Logger) {
+	syncRestorePoints(ctx, dataDirFromEnv(), db, logger)
 	n, err := selfupgrade.ImportJournal(ctx, selfupgrade.NewJournal(dataDirFromEnv()), db)
 	if err != nil {
 		logger.Warn("self-upgrade history import failed", slog.String("error", err.Error()))
@@ -445,6 +447,13 @@ func recordAttempt(ctx context.Context, live string, journal *selfupgrade.Journa
 	defer func() { _ = db.Close() }()
 	if _, err := selfupgrade.ImportJournal(ctx, journal, db); err != nil {
 		logger.Warn("self-upgrade history not stored", slog.String("error", err.Error()))
+	}
+	syncRestorePoints(ctx, filepath.Dir(journal.Dir), db, logger)
+}
+
+func syncRestorePoints(ctx context.Context, dataDir string, db *store.DB, logger *slog.Logger) {
+	if err := selfupgrade.SyncRestorePoints(ctx, selfupgrade.NewRestorePoints(dataDir), db); err != nil {
+		logger.Warn("restore points not synced", slog.String("error", err.Error()))
 	}
 }
 

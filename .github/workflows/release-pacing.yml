@@ -1,0 +1,28 @@
+name: release-pacing
+
+# A cooldown failure on the release PR clears by itself: re-run the failed
+# pacing check hourly so armed auto-merge proceeds when the wait is over.
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  pull-requests: read
+
+jobs:
+  recheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Re-run a failed pacing check on the release PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          branch="$(gh pr list --repo "$REPO" --state open --json headRefName -q '.[].headRefName | select(startswith("release-please--branches--main"))' | head -1)"
+          [ -n "$branch" ] || { echo "no release PR open"; exit 0; }
+          run_id="$(gh run list --repo "$REPO" --workflow CI --branch "$branch" --event pull_request --limit 1 --json databaseId,conclusion -q '.[]|select(.conclusion=="failure")|.databaseId')"
+          [ -n "$run_id" ] || { echo "latest CI run did not fail"; exit 0; }
+          gh run rerun "$run_id" --repo "$REPO" --failed

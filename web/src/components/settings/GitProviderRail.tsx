@@ -11,11 +11,10 @@ import {
   useGitHubAppInstallations,
   useGitHubAppStatus,
 } from '../../queries/githubApp'
-import { useGitLabAppStatus } from '../../queries/gitlabApp'
-import { useGiteaAppStatus } from '../../queries/giteaApp'
-import { useBitbucketAppStatus } from '../../queries/bitbucketApp'
+import { useGitConnections } from '../../queries/gitConnections'
 
-export type RailProvider = 'github' | 'gitlab' | 'gitea' | 'bitbucket'
+export type RailProvider =
+  'github' | 'gitlab' | 'gitea' | 'forgejo' | 'bitbucket' | 'bitbucket_server'
 
 interface RailBodyProps {
   provider: RailProvider
@@ -91,49 +90,25 @@ function GitHubRail() {
   )
 }
 
-function GitLabRail() {
-  const { data: status } = useGitLabAppStatus()
+function ConnectionsRail({
+  provider,
+}: Readonly<{ provider: Exclude<RailProvider, 'github'> }>) {
+  const { data: connections } = useGitConnections(provider)
+  const authorized = connections.filter((c) => c.authorized)
+  const first = authorized.find((c) => c.is_default) ?? authorized[0]
   return (
     <GitProviderRailBody
-      provider="gitlab"
-      connected={status.connected && status.authorized}
-      instance={status.instance_url}
-    />
-  )
-}
-
-function GiteaRail() {
-  const { data: status } = useGiteaAppStatus()
-  return (
-    <GitProviderRailBody
-      provider="gitea"
-      connected={status.connected && status.authorized}
-      instance={status.instance_url}
-    />
-  )
-}
-
-function BitbucketRail() {
-  const { data: status } = useBitbucketAppStatus()
-  return (
-    <GitProviderRailBody
-      provider="bitbucket"
-      connected={status.connected && status.authorized}
-      instance="https://bitbucket.org"
+      provider={provider}
+      connected={authorized.length > 0}
+      account={authorized.length === 1 ? first?.account_name : undefined}
+      accounts={authorized.length}
+      instance={first?.instance_url}
     />
   )
 }
 
 /** GitProviderRail is the right rail of the four git provider pages, built from the status each page already loads. */
 export function GitProviderRail({ provider }: { provider: RailProvider }) {
-  switch (provider) {
-    case 'github':
-      return <GitHubRail />
-    case 'gitlab':
-      return <GitLabRail />
-    case 'gitea':
-      return <GiteaRail />
-    case 'bitbucket':
-      return <BitbucketRail />
-  }
+  if (provider === 'github') return <GitHubRail />
+  return <ConnectionsRail provider={provider} />
 }

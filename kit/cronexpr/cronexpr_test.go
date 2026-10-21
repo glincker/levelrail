@@ -184,3 +184,27 @@ func TestNextInLocation_TimezoneShiftsTheUTCInstant(t *testing.T) {
 		t.Fatalf("NextInLocation() = %v, want %v", got.UTC(), want)
 	}
 }
+
+func TestParse_Macros(t *testing.T) {
+	from := time.Date(2026, 3, 4, 10, 20, 0, 0, time.UTC)
+	tests := []struct {
+		expr string
+		want time.Time
+	}{
+		{"@hourly", time.Date(2026, 3, 4, 11, 0, 0, 0, time.UTC)},
+		{"@daily", time.Date(2026, 3, 5, 0, 0, 0, 0, time.UTC)},
+		{"@Midnight", time.Date(2026, 3, 5, 0, 0, 0, 0, time.UTC)},
+		{"@weekly", time.Date(2026, 3, 8, 0, 0, 0, 0, time.UTC)},
+		{"@monthly", time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)},
+		{"@yearly", time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)},
+	}
+	for _, tc := range tests {
+		s := mustParse(t, tc.expr)
+		if got := s.Next(from); !got.Equal(tc.want) {
+			t.Errorf("%s next = %v, want %v", tc.expr, got, tc.want)
+		}
+	}
+	if _, err := Parse("@sometimes"); err == nil {
+		t.Error("unknown macro parsed, want an error")
+	}
+}

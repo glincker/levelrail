@@ -8,7 +8,7 @@ Every app that serves traffic through a domain gets request rate, error rate and
 
 ## What you see
 
-Open an app and choose **Traffic** under **Observe**, or run `traffic <app>` in the CLI. For the window you pick (5 minutes, 1 hour or 24 hours):
+Open an app and choose **Traffic** under **Observe**, or run `traffic <app>` in the CLI. For the window you pick (5 minutes, 1 hour, 24 hours or 7 days):
 
 | Figure | Meaning |
 | --- | --- |
@@ -16,6 +16,7 @@ Open an app and choose **Traffic** under **Observe**, or run `traffic <app>` in 
 | Errors | 4xx and 5xx share of requests, and a count by status class |
 | Duration | p50, p95 and p99 latency |
 | Replicas | The same figures per upstream address, so one bad container stands out |
+| Top paths | The busiest route templates by request count, with 4xx and 5xx share |
 | Slowest routes | Route templates ranked by average duration |
 | Slow and failed requests | A sample of 5xx, upstream failures and slow requests |
 | Error budget | Burn rate and budget remaining when the app has an SLO alert |
@@ -34,6 +35,7 @@ All settings are environment variables on the control plane or agent.
 
 | Variable | Default | Effect |
 | --- | --- | --- |
+| `APP_TRAFFIC_RETENTION` | metrics minute tier (`APP_METRICS_RETENTION_1M`, 30d) | How long per-minute traffic aggregates (routes, replicas, audience) are kept |
 | `APP_REQUEST_SLOW_MS` | `1000` | Duration at which a request counts as slow |
 | `APP_REQUEST_SAMPLE_RATE` | `0.1` | Fraction of slow requests sampled. Failed requests are always eligible |
 | `APP_REQUEST_SAMPLE_TICK_MAX` | `50` | Samples kept per app per sampling tick. `0` turns sampling off |
@@ -58,15 +60,19 @@ A window with no requests neither fires nor resolves a rule. For error-budget al
 
 ## API
 
-`GET /api/v1/apps/{name}/traffic?window=5m|1h|24h` returns the totals, `status_classes`, `latency`, `replicas`, `slow_routes`, `samples` and, when an SLO burn rule exists, `slo`. It needs read access to the app. Time series for the charts come from `GET /api/v1/apps/{name}/requests`.
+`GET /api/v1/apps/{name}/traffic?window=5m|1h|24h|7d` returns the totals, `status_classes`, `latency`, `replicas`, `slow_routes`, `samples` and, when an SLO burn rule exists, `slo`. It needs read access to the app. Time series for the charts come from `GET /api/v1/apps/{name}/requests`.
 
 ## CLI
 
 ```
-traffic <app> [--window 5m|1h|24h] [--watch] [--interval 5s] [--json]
+traffic <app> [--window|--since 5m|1h|24h|7d] [--watch] [--interval 5s] [--json]
 ```
 
 With `--watch --json` each refresh is printed as one JSON line.
+
+## Measured overhead
+
+The ingress handler does one map lookup and a few counter increments per request under a short lock, and nothing is written to disk on the request path. Aggregates are drained once per tick into the node-local store. `BenchmarkRequestStatsObservePath` in `internal/ingress` measured about 410 ns and 4 allocations per request with 14 goroutines contending on one app, on an Apple M4 Max (one run, not a Linux VPS). Memory is bounded by the replica and route caps above. End to end proxy overhead under load has not been measured yet.
 
 ## Limits
 

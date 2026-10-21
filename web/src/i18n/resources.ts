@@ -1,4 +1,5 @@
 import type common from '../locales/en/common.json'
+import type gitRepos from '../locales/en/gitRepos.json'
 import type firewall from '../locales/en/firewall.json'
 import type storageBuckets from '../locales/en/storageBuckets.json'
 import type dashboards from '../locales/en/dashboards.json'
@@ -17,6 +18,7 @@ import type fixit from '../locales/en/fixit.json'
 import type network from '../locales/en/network.json'
 import type databases from '../locales/en/databases.json'
 import type https from '../locales/en/https.json'
+import type golive from '../locales/en/golive.json'
 import type nodes from '../locales/en/nodes.json'
 import type access from '../locales/en/access.json'
 import type logPipeline from '../locales/en/logPipeline.json'
@@ -30,7 +32,6 @@ import type migration from '../locales/en/migration.json'
 import type migrate from '../locales/en/migrate.json'
 import type domains from '../locales/en/domains.json'
 import type attention from '../locales/en/attention.json'
-import type setup from '../locales/en/setup.json'
 import type updates from '../locales/en/updates.json'
 import type infraCanvas from '../locales/en/infraCanvas.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
@@ -45,8 +46,12 @@ import type domainPolicies from '../locales/en/domainPolicies.json'
 import type observability from '../locales/en/observability.json'
 import type trialApp from '../locales/en/trialApp.json'
 import type previews from '../locales/en/previews.json'
+import type branchDeploys from '../locales/en/branchDeploys.json'
+import type deployContexts from '../locales/en/deployContexts.json'
 import type backups from '../locales/en/backups.json'
 import type sleepHistory from '../locales/en/sleepHistory.json'
+import type forms from '../locales/en/forms.json'
+import type splitTesting from '../locales/en/splitTesting.json'
 import type gitBuild from '../locales/en/gitBuild.json'
 import type frameworks from '../locales/en/frameworks.json'
 import type teams from '../locales/en/teams.json'
@@ -71,6 +76,7 @@ import type autoscale from '../locales/en/autoscale.json'
 import type envEditor from '../locales/en/envEditor.json'
 import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
 import type plugins from '../locales/en/plugins.json'
+import type mail from '../locales/en/mail.json'
 import type help from '../locales/en/help.json'
 import type traces from '../locales/en/traces.json'
 import type errors from '../locales/en/errors.json'
@@ -83,6 +89,7 @@ import type usage from '../locales/en/usage.json'
 import type costs from '../locales/en/costs.json'
 import type resources from '../locales/en/resources.json'
 import type deployDetail from '../locales/en/deployDetail.json'
+import type staticRoutes from '../locales/en/staticRoutes.json'
 import type deployTimeline from '../locales/en/deployTimeline.json'
 import type images from '../locales/en/images.json'
 import type buildCenter from '../locales/en/buildCenter.json'
@@ -103,6 +110,7 @@ declare module 'i18next' {
     defaultNS: 'common'
     resources: {
       common: typeof common
+      gitRepos: typeof gitRepos
       deploys: typeof deploys
       settings: typeof settings
       dashboard: typeof dashboard
@@ -114,6 +122,7 @@ declare module 'i18next' {
       network: typeof network
       databases: typeof databases
       https: typeof https
+      golive: typeof golive
       nodes: typeof nodes
       access: typeof access
       logPipeline: typeof logPipeline
@@ -127,7 +136,6 @@ declare module 'i18next' {
       migrate: typeof migrate
       domains: typeof domains
       attention: typeof attention
-      setup: typeof setup
       updates: typeof updates
       infraCanvas: typeof infraCanvas
       databaseAccess: typeof databaseAccess
@@ -141,8 +149,12 @@ declare module 'i18next' {
       domainPolicies: typeof domainPolicies
       observability: typeof observability
       previews: typeof previews
+      branchDeploys: typeof branchDeploys
+      deployContexts: typeof deployContexts
       backups: typeof backups
       sleepHistory: typeof sleepHistory
+      forms: typeof forms
+      splitTesting: typeof splitTesting
       gitBuild: typeof gitBuild
       frameworks: typeof frameworks
       teams: typeof teams
@@ -163,6 +175,7 @@ declare module 'i18next' {
       envEditor: typeof envEditor
       resourceAdvisor: typeof resourceAdvisor
       plugins: typeof plugins
+      mail: typeof mail
       help: typeof help
       traces: typeof traces
       errors: typeof errors
@@ -193,6 +206,7 @@ declare module 'i18next' {
       trialApp: typeof trialApp
       deployPolicies: typeof deployPolicies
       deployDetail: typeof deployDetail
+      staticRoutes: typeof staticRoutes
       firewall: typeof firewall
       rules: typeof rules
       storageBuckets: typeof storageBuckets

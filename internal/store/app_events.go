@@ -25,6 +25,10 @@ const (
 	AppEventSlept          = "slept"
 	AppEventWoke           = "woke"
 	AppEventFreezeOverride = "freeze_override"
+	// AppEventPublishLock, AppEventPublishUnlock and AppEventPublishHeld mark the publish lock being taken, lifted and a held build going live.
+	AppEventPublishLock   = "publish_lock"
+	AppEventPublishUnlock = "publish_unlock"
+	AppEventPublishHeld   = "publish_held"
 	// AppEventScanGateOverride marks an operator letting a scan-blocked release through.
 	AppEventScanGateOverride = "scan_gate_override"
 )

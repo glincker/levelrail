@@ -100,3 +100,15 @@ func TestTrafficPopulated(t *testing.T) {
 		t.Errorf("slo = %+v, want nil without a rule", got.SLO)
 	}
 }
+
+func TestTopRoutes_RanksByRequestsAndSkipsOverflow(t *testing.T) {
+	b := telemetry.Breakdown{Routes: []telemetry.RouteRow{
+		{Route: "/a", Requests: 5, LatencyMSSum: 50},
+		{Route: "/b", Requests: 9, Errors5xx: 3, LatencyMSSum: 90},
+		{Route: telemetry.OverflowRoute, Requests: 99},
+	}}
+	got := topRoutes(b, 10)
+	if len(got) != 2 || got[0].Route != "/b" || got[0].ErrorRate5xx < 0.33 || got[0].ErrorRate5xx > 0.34 {
+		t.Fatalf("topRoutes = %+v", got)
+	}
+}

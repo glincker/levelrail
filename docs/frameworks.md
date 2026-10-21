@@ -33,6 +33,7 @@ levelrail-cli apps create --name api --repo https://github.com/you/api.git \
 | React / Vite | none | `/` | static | static files |
 | Astro | none | `/` | static | static files |
 | Nuxt | 3000 | `/` | Railpack | Nitro server |
+| Remix | 3000 | `/` | Railpack | remix-serve |
 | SvelteKit | 3000 | `/` | Railpack | adapter-node server |
 | Node.js (Express) | 3000 | `/` | Railpack | server |
 | Go | 8080 | `/healthz` | Railpack | single binary |
@@ -65,6 +66,10 @@ Static output is the default and is served directly. For `output: 'server'` pick
 ### Nuxt
 
 The Nitro server listens on 3000. Set `NITRO_HOST=0.0.0.0` if the app is unreachable from the proxy.
+
+### Remix
+
+The preset runs `remix-serve ./build/server/index.js` after `remix vite:build`. Set `SESSION_SECRET` before the first deploy.
 
 ### SvelteKit
 

@@ -1,17 +1,23 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Link } from '@tanstack/react-router'
 import { useConnectedRepos } from '../../hooks/useConnectedRepos'
 import { sourceFromRepo } from '../../lib/newApp'
 import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
 import { ImportPlanPreview } from '../ImportPlanPreview'
 import type { ImportPlan, ImportPlanRequest } from '../../queries/imports'
+import { NewStaticSiteDrop } from '../dropdeploy/NewStaticSiteDrop'
+import { DeployFromComputer } from './DeployFromComputer'
 import { FeaturedTemplates } from './FeaturedTemplates'
 import { GitProviderCards } from './GitProviderCards'
 import { GitUrlForm } from './GitUrlForm'
 import { OtherWays } from './OtherWays'
 import { RepoList } from './RepoList'
+
+const PRIVATE_HINT = /not found|refused access|cannot see it|token/i
 
 /**
  * Step 1, "Where is it from": import from Git (connected repositories or a
@@ -67,7 +73,19 @@ export function SourceStep({
     <div className="space-y-8">
       {error ? (
         <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>
+            {PRIVATE_HINT.test(error) ? t('source.privateRepo') : error}
+          </AlertDescription>
+          {PRIVATE_HINT.test(error) ? (
+            <Button
+              size="sm"
+              className="mt-2"
+              render={<Link to="/settings/github-app" />}
+              nativeButton={false}
+            >
+              {t('source.privateRepoConnect')}
+            </Button>
+          ) : null}
         </Alert>
       ) : null}
 
@@ -121,6 +139,8 @@ export function SourceStep({
 
       <FeaturedTemplates />
       <OtherWays onPlan={onPlan} />
+      <NewStaticSiteDrop />
+      <DeployFromComputer />
     </div>
   )
 }

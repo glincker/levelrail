@@ -10,7 +10,10 @@ import { useRef } from 'react'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { nextPollInterval } from '../lib/proxyIntegration'
 
-export type ProxyKind = 'traefik' | 'nginx' | 'caddy' | 'none'
+export type ProxyKind = 'traefik' | 'nginx' | 'caddy' | 'haproxy' | 'none'
+export type ProxyProviderKind =
+  'embedded' | 'traefik' | 'nginx' | 'caddy' | 'haproxy'
+export type ProxyProviderMode = 'builtin' | 'managed' | 'manual'
 export type ProxyStepId =
   'detect' | 'tls_upstream' | 'routes' | 'dns' | 'verify'
 export type ProxyStepState = 'done' | 'todo' | 'blocked' | 'error'
@@ -26,17 +29,29 @@ export interface DetectedProxy {
   entrypoint_https: string
   cert_resolver: string
   upstream_host: string
+  cert_dir?: string
+  webroot?: string
   complete: boolean
   missing: string[]
 }
 
 export interface ProxySettings {
-  integration: 'off' | 'traefik_file'
+  integration: 'off' | 'traefik_file' | 'nginx_file'
   dynamic_dir: string
   entrypoint_http: string
   entrypoint_https: string
   cert_resolver: string
   upstream_host: string
+  container?: string
+  cert_dir?: string
+  webroot?: string
+}
+
+export interface ProxyProvider {
+  kind: ProxyProviderKind
+  mode: ProxyProviderMode
+  detected: boolean
+  selected: boolean
 }
 
 export interface ProxyIngress {
@@ -80,11 +95,24 @@ export interface ProxyIntegration {
   ingress: ProxyIngress
   domains: ProxyDomain[]
   steps: ProxyStep[]
+  provider?: ProxyProviderKind
+  providers?: ProxyProvider[]
 }
 
 export interface ProxySetupRequest {
-  confirm: true
+  confirm: boolean
   dynamic_dir?: string
+  provider?: ProxyProviderKind | 'auto'
+  cert_dir?: string
+}
+
+// Setup answers with the integration plus what it did or would do. A
+// manual provider (Caddy, HAProxy) returns a snippet and never applies.
+export interface ProxySetupResult extends ProxyIntegration {
+  dry_run?: boolean
+  changes?: string[]
+  manual?: boolean
+  snippet?: string
 }
 
 export const proxyIntegrationKeys = {
@@ -160,7 +188,7 @@ function useInvalidating<V, R>(fn: (vars: V) => Promise<R>) {
 }
 
 export function useSetupProxyIntegration() {
-  return useInvalidating<ProxySetupRequest, ProxyIntegration>((req) =>
+  return useInvalidating<ProxySetupRequest, ProxySetupResult>((req) =>
     post(`${BASE}/setup`, req),
   )
 }

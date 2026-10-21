@@ -7,6 +7,7 @@ import './resources'
 // New namespace: add here only. lazyBackend loads it on first useTranslation(ns) call.
 export const NAMESPACES = [
   'common',
+  'gitRepos',
   'deploys',
   'settings',
   'dashboard',
@@ -16,6 +17,7 @@ export const NAMESPACES = [
   'privateNetworks',
   'databases',
   'https',
+  'golive',
   'nodes',
   'access',
   'logPipeline',
@@ -26,7 +28,6 @@ export const NAMESPACES = [
   'migrate',
   'domains',
   'attention',
-  'setup',
   'updates',
   'infraCanvas',
   'exposure',
@@ -43,8 +44,11 @@ export const NAMESPACES = [
   'domainPolicies',
   'observability',
   'previews',
+  'branchDeploys',
+  'deployContexts',
   'backups',
   'sleepHistory',
+  'forms',
   'gitBuild',
   'frameworks',
   'teams',
@@ -62,6 +66,7 @@ export const NAMESPACES = [
   'envEditor',
   'resourceAdvisor',
   'plugins',
+  'mail',
   'help',
   'traces',
   'errors',
@@ -92,6 +97,7 @@ export const NAMESPACES = [
   'trialApp',
   'deployPolicies',
   'deployDetail',
+  'staticRoutes',
   'pipelines',
   'budget',
   'inbox',
@@ -104,6 +110,7 @@ export const NAMESPACES = [
   'passkeys',
   'account',
   'palette',
+  'splitTesting',
 ] as const
 
 // New language: add its code here and a locales/<code>/ folder; untranslated namespaces and keys fall back to en.

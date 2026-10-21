@@ -80,6 +80,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -784,7 +785,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
 	canaries := c.activeCanaries(ctx, services)
 	envDomainSets := c.environmentDomainSets(ctx)
-	maintenanceSettings, err = c.applySpendCaps(ctx, services, envDomainSets, settings.FallbackDomainsDisabled, now, maintenanceByDomain, maintenanceSettings, wafByDomain)
+	fallbackResolver := ingress.LoadFallbackResolver(ctx, c.store, c.publicHost)
+	maintenanceSettings, err = c.applySpendCaps(ctx, services, envDomainSets, settings.FallbackDomainsDisabled, fallbackResolver, now, maintenanceByDomain, maintenanceSettings, wafByDomain)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: apply spend caps: %w", err)
 	}
@@ -807,7 +809,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			if settings.FallbackDomainsDisabled {
 				continue
 			}
-			fallback, ok := ingress.FallbackDomain(c.publicHost, svc.Name)
+			fallback, ok := fallbackResolver.Domain(svc.Name)
 			if !ok {
 				continue
 			}
@@ -978,7 +980,12 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		for _, host := range site.Domains {
 			claimedHosts[host] = site.Name
 		}
-		staticRoutes = append(staticRoutes, ingress.StaticRoute{Hosts: site.Domains, RootDir: site.RootDir})
+		rules, rulesErr := staticroutes.LoadSidecar(site.RootDir)
+		if rulesErr != nil {
+			c.logger.WarnContext(ctx, "ingress: static site routing rules unreadable, serving files without them",
+				slog.String("static_site", site.Name), slog.String("error", rulesErr.Error()))
+		}
+		staticRoutes = append(staticRoutes, ingress.StaticRoute{Hosts: site.Domains, RootDir: site.RootDir, Rules: rules})
 	}
 
 	// Platform primary domain (store.IngressSettings.PrimaryDomain): one
@@ -1077,6 +1084,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		HTTPRedirect:         c.httpRedirect && !settings.TLSTerminatedUpstream,
 		FallbackCertLifetime: fallbackLifetimeString(c.fallbackCertLifetime),
 		PlainHTTP:            settings.TLSTerminatedUpstream,
+		HTTPBindHost:         hostFromAddr(c.httpListenAddr),
 		Routes:               routes,
 		StaticRoutes:         staticRoutes,
 		MaintenanceRoutes:    maintenanceRoutes,
@@ -1144,6 +1152,15 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		conditions = append(conditions, *cond)
 	}
 	return reconcile.Result{Conditions: conditions}, nil
+}
+
+// hostFromAddr is addr's host part, empty for ":80" or an unparseable addr.
+func hostFromAddr(addr string) string {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return ""
+	}
+	return host
 }
 
 // httpPortFromAddr extracts the numeric port from addr (a Caddy-style

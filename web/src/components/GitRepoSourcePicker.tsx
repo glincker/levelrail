@@ -27,7 +27,7 @@ export type GitRepoSourceProvider =
   'github' | 'gitlab' | 'bitbucket' | 'gitea' | 'manual'
 
 // providerRef carries what each provider's "use as source" endpoint needs
-// beyond a plain clone URL (owner+repo, project id, or workspace+slug).
+// beyond a plain clone URL (owner+repo, or a connection id plus project id or owner/name).
 // Manual picks have none, they use the generic PUT .../git-source call.
 export interface GitRepoSourceValue {
   provider: GitRepoSourceProvider
@@ -37,9 +37,13 @@ export interface GitRepoSourceValue {
   token?: string
   providerRef?:
     | { kind: 'github'; owner: string; repo: string }
-    | { kind: 'gitlab'; projectId: number }
-    | { kind: 'bitbucket'; workspace: string; repoSlug: string }
-    | { kind: 'gitea'; owner: string; repo: string }
+    | {
+        kind: 'gitlab' | 'bitbucket' | 'gitea'
+        /** The connected account the repository was picked from. */
+        connectionId: string
+        /** A project id for GitLab, owner/name for Bitbucket and Gitea. */
+        repo: string
+      }
 }
 
 // Defaults to "not connected" if the backend response omits an entry.

@@ -12,7 +12,7 @@ export function LockedFeatureMark({ id }: { id: string }) {
         className="ml-auto size-3.5 shrink-0 text-muted-foreground"
         aria-hidden="true"
       />
-      <Badge variant="muted" className="shrink-0">
+      <Badge variant="muted" className="shrink-0 whitespace-nowrap">
         {t('shell.locked.badge')}
       </Badge>
       <span id={id} className="sr-only">

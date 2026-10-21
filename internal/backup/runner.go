@@ -101,7 +101,11 @@ func (r *Runner) RunBackup(ctx context.Context, historyID, databaseName, engine,
 	}
 
 	startedAt := r.now()
-	objectKey := fmt.Sprintf("%s/%s-%s.dump", databaseName, databaseName, startedAt.UTC().Format("20060102T150405Z"))
+	sealer, err := r.dumpSealer(ctx, targetID)
+	if err != nil {
+		return err
+	}
+	objectKey := fmt.Sprintf("%s/%s-%s.dump%s", databaseName, databaseName, startedAt.UTC().Format("20060102T150405Z"), CodecSuffix(sealer.Codec()))
 
 	if err := r.Store.StartBackupHistory(ctx, store.BackupHistory{
 		ID:           historyID,
@@ -113,7 +117,12 @@ func (r *Runner) RunBackup(ctx context.Context, historyID, databaseName, engine,
 		return fmt.Errorf("backup: start history %q: %w", historyID, err)
 	}
 
-	size, checksum, summary, runErr := r.runDumpAndUpload(ctx, databaseName, engine, containerName, targetID, objectKey)
+	size, checksum, summary, runErr := r.runDumpAndUpload(ctx, databaseName, engine, containerName, targetID, objectKey, sealer)
+	if runErr == nil && sealer != nil {
+		if err := r.recordSeal(ctx, historyID, sealedResult{codec: sealer.Codec()}); err != nil {
+			runErr = err
+		}
+	}
 
 	status := store.BackupStatusSucceeded
 	errMsg := ""
@@ -153,7 +162,7 @@ type contentSummarizer interface {
 // second pass over the object: countingReader already sits between the
 // dump and the uploader to track size, so hashing there too costs nothing
 // extra in I/O, only a running hash.Hash.
-func (r *Runner) runDumpAndUpload(ctx context.Context, databaseName, engine, containerName, targetID, objectKey string) (size int64, checksum, summary string, err error) {
+func (r *Runner) runDumpAndUpload(ctx context.Context, databaseName, engine, containerName, targetID, objectKey string, sealer *Sealer) (size int64, checksum, summary string, err error) {
 	dest, err := r.ResolveDestination(ctx, targetID)
 	if err != nil {
 		return 0, "", "", err
@@ -167,7 +176,13 @@ func (r *Runner) runDumpAndUpload(ctx context.Context, databaseName, engine, con
 		_ = dump.Close()
 	}()
 
-	counted := &countingReader{r: dump, hash: sha256.New()}
+	var in io.Reader = dump
+	if sealer != nil {
+		sealed := sealer.Seal(dump)
+		defer func() { _ = sealed.Close() }()
+		in = sealed
+	}
+	counted := &countingReader{r: in, hash: sha256.New()}
 	if err := r.Uploader.Upload(ctx, dest, objectKey, counted, -1); err != nil {
 		return counted.n, "", "", fmt.Errorf("upload backup for %q to target %q: %w", databaseName, targetID, err)
 	}
@@ -369,4 +384,18 @@ func finishHistoryWithRetry(ctx context.Context, finish func() error) error {
 		err = finish()
 	}
 	return err
+}
+
+// dumpSealer returns the sealer for a target's database dumps, or nil when the
+// target keeps raw dumps. It fails closed: a target that asks for encryption
+// never silently gets a plaintext dump.
+func (r *Runner) dumpSealer(ctx context.Context, targetID string) (*Sealer, error) {
+	target, err := r.Store.GetBackupTarget(ctx, targetID)
+	if err != nil || !target.EncryptDumps {
+		return nil, nil
+	}
+	if r.Volume == nil || r.Volume.Sealer == nil || len(r.Volume.Sealer.Recipients) == 0 {
+		return nil, ErrDumpEncryptionUnavailable
+	}
+	return r.Volume.Sealer, nil
 }

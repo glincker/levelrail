@@ -8,6 +8,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { SSOTestResult } from './ssoOidc'
 
 export interface SAMLCertificateInfo {
   subject: string
@@ -173,6 +174,17 @@ export function useSaveSAMLConnection() {
             input,
           )
         : ssoRequest<SAMLConnection>(CONNECTIONS, 'POST', input),
+  )
+}
+
+export function samlTestStartURL(id: string): string {
+  return `${CONNECTIONS}/${encodeURIComponent(id)}/test/start`
+}
+
+// One-shot: the server forgets a result once it has been read.
+export function fetchSAMLTestResult(id: string): Promise<SSOTestResult> {
+  return ssoRequest<SSOTestResult>(
+    `${CONNECTIONS}/${encodeURIComponent(id)}/test/result`,
   )
 }
 

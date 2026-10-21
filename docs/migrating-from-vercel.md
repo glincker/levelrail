@@ -43,7 +43,7 @@ Collect this before touching Levelrail. Vercel keeps configuration in its dashbo
 | Environment variables | Plain env (`apps env import --file`), encrypted secrets (`apps secrets set --env-file`), or Vault references | Plain import skips keys that are already secrets. Export never includes secret values. |
 | Sensitive env vars | `apps secrets set`, envelope-encrypted and write-only | Never returned by the API after save. |
 | Shared env vars | Shared env scoped to a project, organization, or environment (`shared-env set`) | See [Projects and organizations](/projects-and-organizations). |
-| Preview deployments per pull request | Preview environments per PR, opt-in per app: `apps previews enable <app>`. Deployed as `<app>-pr-<number>`, torn down on close or merge | GitHub, GitLab, Bitbucket, and Gitea. The preview domain is `pr-<number>.<app>.<primary-domain>` and needs a control-plane primary domain. There is no per-branch preview URL. See [Git integrations](/git-integrations#preview-environments). |
+| Preview deployments per pull request | Preview environments per PR, opt-in per app: `apps previews enable <app>`. Deployed as `<app>-pr-<number>`, torn down on close or merge | GitHub, GitLab, Bitbucket, and Gitea. The preview domain is `pr-<number>.<app>.<primary-domain>` and needs a control-plane primary domain. Branches get their own stable URL through [branch deploys](/preview-environments#branch-deploys). See [Git integrations](/git-integrations#preview-environments). |
 | Preview-only env values | `apps preview-env set`, and branch-scoped `apps branch-env set` | Single-service previews only. |
 | PR comment with preview URL | A PR comment and a `levelrail/preview` commit status, when `apps previews pr-status enable` is on | One comment per PR, kept up to date. |
 | Deployment protection | Protected environments and deploy approvals | Deploy approvals are labeled stable in [feature status](/feature-status). |
@@ -111,7 +111,6 @@ Plan for these before you commit to moving.
 | Global CDN and edge caching | None built in. Caddy serves from the node or nodes you run. ISR and the Next.js data cache live on the container's filesystem, so use a volume if they must survive redeploys. Multiple replicas do not share that cache. |
 | Web Analytics and Speed Insights (real-user Core Web Vitals) | No browser-side analytics. Server-side request metrics exist (rate, 4xx and 5xx, p50, p95, p99 per app). The [integrations](/integrations) page lists third-party options such as PostHog. |
 | Blob, KV, Edge Config | No drop-in equivalents. Managed Redis exists, but you rewrite the client code. |
-| Per-branch preview URLs | Previews are per pull request only. |
 | Serverless scale to zero and autoscaling | Scale to zero exists per app as [Sleep when idle](/sleep-when-idle): an app with no requests stops and the next request starts it, with a cold start of a few seconds. There is no autoscaling, and replicas stay fixed. |
 | Vercel Cron calling HTTP routes | Scheduled tasks exec a command in the container instead. |
 | Build-time env for Railpack | None. Use a committed `.env.production`, see the build-time section in 2. |

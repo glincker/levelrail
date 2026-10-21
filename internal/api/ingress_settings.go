@@ -542,7 +542,8 @@ func (rt *Router) automaticDomains(r *http.Request, canSee func(string) bool) []
 	if err != nil || settings.FallbackDomainsDisabled {
 		return nil
 	}
-	if _, ok := ingress.SSLIPHost(rt.publicHost); !ok {
+	res := rt.fallbackResolver(r.Context())
+	if _, ok := ingress.SSLIPHost(rt.publicHost); !ok && res.Default().Provider != ingress.ProviderCustom {
 		return nil
 	}
 	svcs, err := rt.apps.ListDesiredServices(r.Context())
@@ -555,7 +556,7 @@ func (rt *Router) automaticDomains(r *http.Request, canSee func(string) bool) []
 		if len(svc.Domains) > 0 || !canSee(svc.Name) {
 			continue
 		}
-		if d, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
+		if d, ok := res.Domain(svc.Name); ok {
 			out = append(out, domainResource{Domain: d, ServiceName: svc.Name, Automatic: true, Kind: domainKindApp})
 		}
 	}

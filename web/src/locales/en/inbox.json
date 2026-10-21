@@ -1,4 +1,24 @@
 {
+  "defaults": {
+    "tab": "Defaults",
+    "description": "Alerts that ship turned on: certificate expiry at escalating lead times, failed restore drills, offline nodes and more. Turning one off keeps it off; edits are never overwritten.",
+    "loadError": "Could not load the default alerts.",
+    "reset": "Reset to defaults",
+    "resetToast": "Default alerts reset",
+    "resetError": "Could not reset the default alerts.",
+    "emptyTitle": "No default alerts",
+    "emptyBody": "Default alerts are created on first boot. Any you deleted stay deleted.",
+    "toggleLabel": "Enable {{name}}",
+    "enabledToast": "{{name}} is on",
+    "disabledToast": "{{name}} is off",
+    "toggleError": "Could not update {{name}}.",
+    "firing": "Firing",
+    "severity": {
+      "info": "Info",
+      "warning": "Warning",
+      "critical": "Critical"
+    }
+  },
   "tab": "Inbox",
   "title": "Alert inbox",
   "description": "Alerts that reached you, newest first. Silenced, grouped and rate limited noise is hidden. Read state follows your account.",
@@ -45,5 +65,45 @@
     "link": "Alert inbox",
     "unread_one": "{{count}} unread alert",
     "unread_other": "{{count}} unread alerts"
+  },
+  "page": {
+    "title": "Inbox",
+    "description": "Alerts, approval requests and failures that need you, with one action each.",
+    "kindFilter": "Filter by kind",
+    "showArchived": "Archived",
+    "listLabel": "Inbox items",
+    "detailLabel": "Inbox item",
+    "kind": {
+      "all": "All",
+      "alert": "Alerts",
+      "approval": "Approvals",
+      "deploy": "Failed deploys",
+      "upgrade": "Failed upgrades"
+    },
+    "approve": "Approve",
+    "matchLabel": "Number shown in the waiting browser",
+    "matchPlaceholder": "Number",
+    "deny": "Deny",
+    "retry": "Retry",
+    "fix": "Fix",
+    "retryStarted": "Retrying the deploy of {{app}}.",
+    "actionError": "That did not go through. Open the source to see why.",
+    "openSource": "Open source",
+    "archive": "Archive",
+    "restore": "Restore",
+    "keys": "Keys: j next, k previous, e archive.",
+    "emptyTitle": "Nothing needs you",
+    "emptyBody": "New alerts, approval requests and failed deploys show up here. Tune what reaches you with alert routing.",
+    "emptyAction": "Review alert settings",
+    "emptyArchivedTitle": "No archived items",
+    "emptyArchivedBody": "Items you archive with e are kept here until restored.",
+    "badge": "Inbox: {{count}} unread",
+    "badgeNone": "Inbox",
+    "entry": {
+      "signInTitle": "New browser sign-in from {{ip}}",
+      "approvalTitle": "{{app}} awaits approval",
+      "approvalDetail": "{{action}} {{image}}, requested by {{who}}",
+      "deployTitle": "Deploy of {{app}} failed"
+    }
   }
 }

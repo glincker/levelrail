@@ -18,6 +18,7 @@ import { useStartDatabase, useStopDatabase } from '../../queries/databases'
 import type { DatabaseResource } from '../../types/databaseDetail'
 import { engineHasBackups } from '@/lib/databaseCatalog'
 import { DeleteDatabaseDialog } from '../DeleteDatabaseDialog'
+import { ConnectDrawer } from './ConnectDrawer'
 
 // One primary action (Start when stopped, otherwise Back up now), the rest in
 // the overflow menu so Delete never carries the weight of the primary.
@@ -87,6 +88,7 @@ export function DatabaseActionBar({
 
   return (
     <>
+      <ConnectDrawer database={database} />
       {suspended ? (
         <Button size="sm" disabled={start.isPending} onClick={runStart}>
           <PlayIcon aria-hidden="true" />

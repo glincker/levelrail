@@ -13,6 +13,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	rt.registerNodeRoutes(mux)
 	rt.registerIngressRoutes(mux)
 	rt.registerSettingsRoutes(mux)
+	rt.registerMailRoutes(mux)
 	rt.registerGitProviderRoutes(mux)
 	rt.registerBackupRoutes(mux)
 	rt.registerAuditRoutes(mux)

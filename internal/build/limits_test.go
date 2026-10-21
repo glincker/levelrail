@@ -67,7 +67,7 @@ func (f fakeBuilder) BuildRailpack(ctx context.Context, _ RailpackRequest, p fun
 	return f.fn(ctx, p)
 }
 
-func fixed(l Limits) LimitsSource { return func(context.Context) Limits { return l } }
+func fixed(l Limits) LimitsSource { return func(context.Context, string) Limits { return l } }
 
 func TestLimitsFromEnv(t *testing.T) {
 	env := func(m map[string]string) func(string) (string, bool) {
@@ -78,10 +78,11 @@ func TestLimitsFromEnv(t *testing.T) {
 		env  map[string]string
 		want Limits
 	}{
-		{"defaults", nil, Limits{DefaultBuildMaxConcurrent, DefaultBuildTimeout}},
-		{"overrides", map[string]string{EnvBuildTimeout: "90s", EnvBuildMaxConcurrent: "5"}, Limits{5, 90 * time.Second}},
-		{"zero disables", map[string]string{EnvBuildTimeout: "0s", EnvBuildMaxConcurrent: "0"}, Limits{0, 0}},
-		{"malformed falls back", map[string]string{EnvBuildTimeout: "soon", EnvBuildMaxConcurrent: "-2"}, Limits{DefaultBuildMaxConcurrent, DefaultBuildTimeout}},
+		{"defaults", nil, Limits{MaxConcurrent: DefaultBuildMaxConcurrent, Timeout: DefaultBuildTimeout}},
+		{"overrides", map[string]string{EnvBuildTimeout: "90s", EnvBuildMaxConcurrent: "5"}, Limits{MaxConcurrent: 5, Timeout: 90 * time.Second}},
+		{"zero disables", map[string]string{EnvBuildTimeout: "0s", EnvBuildMaxConcurrent: "0"}, Limits{}},
+		{"resources", map[string]string{EnvBuildMemoryMB: "2048", EnvBuildCPUMillis: "1500"}, Limits{MaxConcurrent: DefaultBuildMaxConcurrent, Timeout: DefaultBuildTimeout, MemoryMB: 2048, CPUMillis: 1500}},
+		{"malformed falls back", map[string]string{EnvBuildTimeout: "soon", EnvBuildMaxConcurrent: "-2"}, Limits{MaxConcurrent: DefaultBuildMaxConcurrent, Timeout: DefaultBuildTimeout}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -226,4 +227,62 @@ func waitFor(t *testing.T, cond func() bool) {
 		}
 		time.Sleep(time.Millisecond)
 	}
+}
+
+type fakeCgroups struct {
+	parent  string
+	mem     int
+	cpu     int
+	cleaned bool
+}
+
+func (f *fakeCgroups) Provision(_ string, mem, cpu int) (string, func(), error) {
+	f.mem, f.cpu = mem, cpu
+	return f.parent, func() { f.cleaned = true }, nil
+}
+
+func TestLimiterMemoryKillGetsOwnStatusAndCgroup(t *testing.T) {
+	rec := &memRecorder{}
+	cg := &fakeCgroups{parent: "levelrail-builds/web"}
+	var gotParent string
+	inner := cgroupSpy{onBuild: func(r Request) { gotParent = r.CgroupParent }, err: errors.New("process did not complete successfully: exit code: 137")}
+	l := NewLimiter(inner, fixed(Limits{MemoryMB: 512, CPUMillis: 500}), WithRunRecorder(rec), WithCgroupProvisioner(cg))
+
+	_, err := l.Build(context.Background(), Request{Tag: "reg/web:abc"}, nil)
+	if !errors.Is(err, ErrBuildMemoryLimit) {
+		t.Fatalf("err = %v, want memory limit", err)
+	}
+	if rec.runs[0].Status != RunMemoryLimit {
+		t.Fatalf("status = %s", rec.runs[0].Status)
+	}
+	if gotParent != cg.parent || cg.mem != 512 || cg.cpu != 500 || !cg.cleaned {
+		t.Fatalf("parent=%q mem=%d cpu=%d cleaned=%v", gotParent, cg.mem, cg.cpu, cg.cleaned)
+	}
+}
+
+func TestLimiterWithoutResourceLimitsSkipsCgroup(t *testing.T) {
+	cg := &fakeCgroups{parent: "x"}
+	l := NewLimiter(cgroupSpy{}, fixed(Limits{}), WithCgroupProvisioner(cg))
+	if _, err := l.Build(context.Background(), Request{Tag: "reg/web:abc"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if cg.cleaned || cg.mem != 0 {
+		t.Fatal("cgroup provisioned without a resource limit")
+	}
+}
+
+type cgroupSpy struct {
+	onBuild func(Request)
+	err     error
+}
+
+func (c cgroupSpy) Build(_ context.Context, r Request, _ func(ProgressEvent)) (*Result, error) {
+	if c.onBuild != nil {
+		c.onBuild(r)
+	}
+	return nil, c.err
+}
+
+func (c cgroupSpy) BuildRailpack(context.Context, RailpackRequest, func(ProgressEvent)) (*Result, error) {
+	return nil, c.err
 }

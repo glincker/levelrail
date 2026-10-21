@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ArrowsClockwiseIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,11 +22,14 @@ import {
   useAppRotationPolicies,
   useDeleteRotationPolicy,
   useRotateNow,
+  useRotateSecretValue,
   useSetRotationPolicy,
   type RotationPolicy,
   type RotationStatus,
 } from '../../queries/secretRotation'
 import { formatDate } from '../../lib/format'
+import { useRestartApp } from '../../queries/apps'
+import { RotateValueDialog } from './RotateValueDialog'
 import { RotationPolicyDialog } from './RotationPolicyDialog'
 
 const PREVIOUS_SUFFIX = '_PREVIOUS'
@@ -60,6 +67,10 @@ export function SecretRotationSection({ appName }: { appName: string }) {
   const rotate = useRotateNow(appName)
   const [editing, setEditing] = useState<string | null>(null)
   const [rotating, setRotating] = useState<string | null>(null)
+  const [replacing, setReplacing] = useState<string | null>(null)
+  const [needsRedeploy, setNeedsRedeploy] = useState<string | null>(null)
+  const replace = useRotateSecretValue(appName)
+  const redeploy = useRestartApp()
 
   const byKey = useMemo(
     () => new Map((policies.data ?? []).map((p) => [p.key, p])),
@@ -82,6 +93,55 @@ export function SecretRotationSection({ appName }: { appName: string }) {
         <CardDescription>{t('description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        {needsRedeploy ? (
+          <Alert>
+            <WarningIcon />
+            <AlertTitle>
+              {t('redeploy.title', { key: needsRedeploy })}
+            </AlertTitle>
+            <AlertDescription className="space-y-2">
+              <p>{t('redeploy.description', { app: appName })}</p>
+              {redeploy.error ? (
+                <p role="alert" className="text-destructive">
+                  {redeploy.error.message}
+                </p>
+              ) : null}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  writeAction
+                  disabled={redeploy.isPending}
+                  onClick={() => {
+                    redeploy.mutate(appName, {
+                      onSuccess: () => {
+                        setNeedsRedeploy(null)
+                        toast.add({
+                          title: t('redeploy.done', { app: appName }),
+                          type: 'success',
+                        })
+                      },
+                    })
+                  }}
+                >
+                  {redeploy.isPending
+                    ? t('redeploy.pending')
+                    : t('redeploy.button', { app: appName })}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setNeedsRedeploy(null)
+                  }}
+                >
+                  {t('redeploy.dismiss')}
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        ) : null}
         {secretKeys.length === 0 ? (
           <EmptyState
             icon={<ArrowsClockwiseIcon />}
@@ -108,6 +168,24 @@ export function SecretRotationSection({ appName }: { appName: string }) {
                           } · ${t('columns.nextDue')}: ${formatDate(policy.next_due_at, t('unknownDate'))}`
                         : t('noPolicy')}
                     </p>
+                    <p className="text-xs text-muted-foreground">
+                      {policy?.last_rotated_at
+                        ? t('rotateValue.lastRotated', {
+                            date: formatDate(
+                              policy.last_rotated_at,
+                              t('unknownDate'),
+                            ),
+                          })
+                        : t('rotateValue.neverRotated')}
+                      {policy?.previous_expires_at
+                        ? ` · ${t('rotateValue.graceUntil', {
+                            date: formatDate(
+                              policy.previous_expires_at,
+                              t('unknownDate'),
+                            ),
+                          })}`
+                        : ''}
+                    </p>
                     {policy?.last_error ? (
                       <p role="alert" className="text-xs text-destructive">
                         {policy.last_error}
@@ -116,6 +194,18 @@ export function SecretRotationSection({ appName }: { appName: string }) {
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {policy ? <RotationStatusBadge policy={policy} /> : null}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      writeAction
+                      onClick={() => {
+                        setReplacing(key)
+                      }}
+                    >
+                      {t('actions.rotate')}
+                    </Button>
+
                     <Button
                       type="button"
                       size="sm"
@@ -198,6 +288,39 @@ export function SecretRotationSection({ appName }: { appName: string }) {
           }}
         />
       ) : null}
+
+      <RotateValueDialog
+        open={replacing !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            replace.reset()
+            setReplacing(null)
+          }
+        }}
+        title={t('rotateValue.title', { key: replacing ?? '' })}
+        description={t('rotateValue.description', { key: replacing ?? '' })}
+        consequences={[
+          t('rotateValue.consequenceNoRestart'),
+          t('rotateValue.consequenceAudit'),
+        ]}
+        valueLabel={t('rotateValue.valueLabel')}
+        valueHint={t('rotateValue.valueHint')}
+        pending={replace.isPending}
+        error={replace.error ? replace.error.message : null}
+        onSubmit={(value) => {
+          if (!replacing) return
+          const key = replacing
+          replace.mutate(
+            { key, value },
+            {
+              onSuccess: () => {
+                setReplacing(null)
+                setNeedsRedeploy(key)
+              },
+            },
+          )
+        }}
+      />
 
       <ConfirmDialog
         open={rotating !== null}

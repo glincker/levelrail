@@ -117,9 +117,18 @@ export function useFixes() {
   return useQuery(fixesQueryOptions())
 }
 
+// Doctor check codes that share a fix registered under another check id.
+const FIX_CHECK_ALIASES: Record<string, string> = {
+  agent_advertise_reachability: 'public_address',
+  mesh_hub_endpoint: 'public_address',
+  master_key_rotation: 'master_key_age',
+  docker_root_disk: 'disk_space',
+}
+
 export function useFixForCheck(checkId: string): Fix | undefined {
   const { data } = useFixes()
-  return data?.find((f) => f.check_id === checkId && f.failing)
+  const target = FIX_CHECK_ALIASES[checkId] ?? checkId
+  return data?.find((f) => f.check_id === target && f.failing)
 }
 
 export function useApplyFix() {

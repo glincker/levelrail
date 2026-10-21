@@ -121,7 +121,7 @@ describe('LoginScreen', () => {
     expect(screen.getAllByLabelText('Username')).toHaveLength(1)
   })
 
-  it('opens the setup form with the token pre-filled from ?setup=', async () => {
+  it('opens the setup form with the token pre-filled from the installer link', async () => {
     mockFetch(false)
     renderScreen('tok-from-installer')
     expect(await findTitle('Set up the admin account')).toBeInTheDocument()

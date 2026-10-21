@@ -11,6 +11,10 @@ func (rt *Router) registerGitProviderRoutes(mux *http.ServeMux) {
 	// handleListGitProviders's own doc comment.
 	mux.HandleFunc("GET /api/v1/git-providers", rt.requireAbility(AbilityReadSensitive, rt.handleListGitProviders))
 
+	// One searchable, filterable, paged repository listing for every provider
+	// (git_repo_list.go); the per-provider listings below share its cache.
+	mux.HandleFunc("GET /api/v1/git/repos", rt.requireAbility(AbilityReadSensitive, rt.handleListGitRepos))
+
 	// GitHub App connection: routes that read or change the connection are AbilityRoot, since an
 	// installed app can read private repos. register/start, callback and installed are full-page
 	// browser navigations; the session cookie is implicitly root.
@@ -29,45 +33,27 @@ func (rt *Router) registerGitProviderRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/github-app/repos/{owner}/{repo}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListGitHubAppBranches))
 	mux.HandleFunc("POST /api/v1/github-app/repos/{owner}/{repo}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseGitHubRepoAsSource))
 
-	// GitLab App: the OAuth-Application counterpart of the GitHub App
-	// routes above, same ability tiers for the same reasons. connect and
-	// callback are real, full-page browser navigations (GitLab's OAuth2
-	// authorization endpoint requires that), not fetch calls.
-	// use-as-source is AbilityWriteSensitive, matching PUT
-	// .../git-source's own tier: it performs that exact action.
-	mux.HandleFunc("GET /api/v1/gitlab-app", rt.requireAbility(AbilityRoot, rt.handleGetGitLabAppStatus))
-	mux.HandleFunc("PUT /api/v1/gitlab-app", rt.requireAbility(AbilityRoot, rt.handleConnectGitLabApp))
-	mux.HandleFunc("DELETE /api/v1/gitlab-app", rt.requireAbility(AbilityRoot, rt.handleDisconnectGitLabApp))
-	mux.HandleFunc("GET /api/v1/gitlab-app/connect", rt.requireAbility(AbilityRoot, rt.handleStartGitLabAppConnect))
-	mux.HandleFunc("GET /api/v1/gitlab-app/callback", rt.requireAbility(AbilityRoot, rt.handleGitLabAppCallback))
-	mux.HandleFunc("GET /api/v1/gitlab-app/projects", rt.requireAbility(AbilityReadSensitive, rt.handleListGitLabAppProjects))
-	mux.HandleFunc("GET /api/v1/gitlab-app/projects/{id}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListGitLabAppBranches))
-	mux.HandleFunc("POST /api/v1/gitlab-app/projects/{id}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseGitLabProjectAsSource))
-
-	// Bitbucket App: the OAuth-consumer counterpart of the GitLab App
-	// routes above, same ability tiers for the same reasons, same
-	// two-step "configure, then authorize" shape. Cloud only, no
-	// instance_url (docs/design/git-provider-integrations.md section 3).
-	mux.HandleFunc("GET /api/v1/bitbucket-app", rt.requireAbility(AbilityRoot, rt.handleGetBitbucketAppStatus))
-	mux.HandleFunc("PUT /api/v1/bitbucket-app", rt.requireAbility(AbilityRoot, rt.handleConnectBitbucketApp))
-	mux.HandleFunc("DELETE /api/v1/bitbucket-app", rt.requireAbility(AbilityRoot, rt.handleDisconnectBitbucketApp))
-	mux.HandleFunc("GET /api/v1/bitbucket-app/connect", rt.requireAbility(AbilityRoot, rt.handleStartBitbucketAppConnect))
-	mux.HandleFunc("GET /api/v1/bitbucket-app/callback", rt.requireAbility(AbilityRoot, rt.handleBitbucketAppCallback))
-	mux.HandleFunc("GET /api/v1/bitbucket-app/repos", rt.requireAbility(AbilityReadSensitive, rt.handleListBitbucketAppRepos))
-	mux.HandleFunc("GET /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListBitbucketAppBranches))
-	mux.HandleFunc("POST /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseBitbucketRepoAsSource))
-
-	// Gitea App: the OAuth-Application counterpart of the GitLab App
-	// routes above, same ability tiers and self-hosted instance_url shape
-	// (Gitea is almost always self-hosted). Repos are addressed by an
-	// "owner/repo" path pair like Bitbucket's workspace/repoSlug, not a
-	// numeric id like GitLab's.
-	mux.HandleFunc("GET /api/v1/gitea-app", rt.requireAbility(AbilityRoot, rt.handleGetGiteaAppStatus))
-	mux.HandleFunc("PUT /api/v1/gitea-app", rt.requireAbility(AbilityRoot, rt.handleConnectGiteaApp))
-	mux.HandleFunc("DELETE /api/v1/gitea-app", rt.requireAbility(AbilityRoot, rt.handleDisconnectGiteaApp))
-	mux.HandleFunc("GET /api/v1/gitea-app/connect", rt.requireAbility(AbilityRoot, rt.handleStartGiteaAppConnect))
-	mux.HandleFunc("GET /api/v1/gitea-app/callback", rt.requireAbility(AbilityRoot, rt.handleGiteaAppCallback))
-	mux.HandleFunc("GET /api/v1/gitea-app/repos", rt.requireAbility(AbilityReadSensitive, rt.handleListGiteaAppRepos))
-	mux.HandleFunc("GET /api/v1/gitea-app/repos/{owner}/{repo}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListGiteaAppBranches))
-	mux.HandleFunc("POST /api/v1/gitea-app/repos/{owner}/{repo}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseGiteaRepoAsSource))
+	// GitLab, Bitbucket and Gitea connections: many per provider. Listing and
+	// reading are AbilityReadSensitive like the repository lists they feed;
+	// creating, renaming, defaulting and disconnecting are AbilityRoot because a
+	// connection grants read access to private repositories control-plane wide.
+	// connect and callback are full-page browser navigations, so the session
+	// cookie is implicitly root.
+	mux.HandleFunc("POST /api/v1/git-connections/test", rt.requireAbility(AbilityRoot, rt.handleTestGitConnection))
+	mux.HandleFunc("GET /api/v1/git-connections", rt.requireAbility(AbilityReadSensitive, rt.handleListGitConnections))
+	mux.HandleFunc("POST /api/v1/git-connections", rt.requireAbility(AbilityRoot, rt.handleCreateGitConnection))
+	mux.HandleFunc("GET /api/v1/git-connections/{id}", rt.requireAbility(AbilityReadSensitive, rt.handleGetGitConnection))
+	mux.HandleFunc("PATCH /api/v1/git-connections/{id}", rt.requireAbility(AbilityRoot, rt.handleRenameGitConnection))
+	mux.HandleFunc("DELETE /api/v1/git-connections/{id}", rt.requireAbility(AbilityRoot, rt.handleDisconnectGitConnection))
+	mux.HandleFunc("POST /api/v1/git-connections/{id}/default", rt.requireAbility(AbilityRoot, rt.handleSetDefaultGitConnection))
+	mux.HandleFunc("GET /api/v1/git-connections/{id}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListGitConnectionBranches))
+	mux.HandleFunc("POST /api/v1/git-connections/{id}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseGitConnectionRepoAsSource))
+	mux.HandleFunc("GET /api/v1/gitlab-app/connect", rt.requireAbility(AbilityRoot, rt.handleStartGitConnect(gitProviderGitLab)))
+	mux.HandleFunc("GET /api/v1/gitlab-app/callback", rt.requireAbility(AbilityRoot, rt.handleGitConnectCallback(gitProviderGitLab)))
+	mux.HandleFunc("GET /api/v1/bitbucket-app/connect", rt.requireAbility(AbilityRoot, rt.handleStartGitConnect(gitProviderBitbucket)))
+	mux.HandleFunc("GET /api/v1/bitbucket-app/callback", rt.requireAbility(AbilityRoot, rt.handleGitConnectCallback(gitProviderBitbucket)))
+	mux.HandleFunc("GET /api/v1/gitea-app/connect", rt.requireAbility(AbilityRoot, rt.handleStartGitConnect(gitProviderGitea)))
+	mux.HandleFunc("GET /api/v1/gitea-app/callback", rt.requireAbility(AbilityRoot, rt.handleGitConnectCallback(gitProviderGitea)))
+	mux.HandleFunc("GET /api/v1/forgejo-app/connect", rt.requireAbility(AbilityRoot, rt.handleStartGitConnect(gitProviderForgejo)))
+	mux.HandleFunc("GET /api/v1/forgejo-app/callback", rt.requireAbility(AbilityRoot, rt.handleGitConnectCallback(gitProviderForgejo)))
 }

@@ -45,16 +45,16 @@ npx skills add glincker/levelrail
 
 ## Modes
 
-The MCP server exposes a subset of its tools depending on the mode. Token counts are estimates of the `tools/list` payload the client loads into context.
+The MCP server exposes a subset of its tools depending on the mode. Each mode loads a different slice of the tool list into the client context.
 
-| Mode | Tools | Estimated tokens | Use it for |
-| --- | --- | --- | --- |
-| `agent-core` (a tool profile, `--tool-profile agent-core`) | 15 | about 2,600 | Shipping and debugging one app. The default for `init`. |
-| `read-only` | 118 | about 46,200 | Observers that must not change anything. |
-| `standard` | 146 | about 61,200 | Read and mutating tools, no destructive ones. |
-| `full` | 156 | about 66,700 | Every tool, including destructive ones. |
+| Mode | Tools | Use it for |
+| --- | --- | --- |
+| `agent-core` (a tool profile, `--tool-profile agent-core`) | 15 | Shipping and debugging one app. The default for `init`. |
+| `read-only` | over 240 tools in on-demand toolsets | Observers that must not change anything. |
+| `standard` | over 240 tools in on-demand toolsets | Read and mutating tools, no destructive ones. |
+| `full` | over 240 tools in on-demand toolsets | Every tool, including destructive ones. |
 
-See [Agent tooling audit](/agent-tooling-audit) for how the numbers are measured.
+Exact per-toolset counts are in [MCP tool surface](/mcp-tool-surface); [Agent tooling audit](/agent-tooling-audit) explains how token costs are measured.
 
 ## Tokens
 

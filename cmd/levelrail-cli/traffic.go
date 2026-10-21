@@ -25,6 +25,7 @@ func runTraffic(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	var window, intervalStr string
 	var watch bool
 	fs.StringVar(&window, "window", "1h", "time window: 5m, 1h, 24h or 7d")
+	fs.StringVar(&window, "since", "1h", "alias of --window")
 	fs.BoolVar(&watch, "watch", false, "refresh the report until interrupted")
 	fs.StringVar(&intervalStr, "interval", defaultTrafficInterval.String(), "how often --watch refreshes")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, trafficUsage(prog)) }
@@ -107,6 +108,14 @@ func printTrafficHuman(out io.Writer, r apiclient.AppTrafficResource) {
 		}
 		_ = tw.Flush()
 	}
+	if len(r.TopRoutes) > 0 {
+		_, _ = fmt.Fprintln(out, "\ntop paths:")
+		_, _ = fmt.Fprintln(tw, "ROUTE\tREQ\tAVGMS\t4XX%\t5XX%")
+		for _, rt := range r.TopRoutes {
+			_, _ = fmt.Fprintf(tw, "%s\t%.0f\t%.0f\t%.2f\t%.2f\n", rt.Route, rt.Requests, rt.AvgMs, rt.ErrorRate4xx*100, rt.ErrorRate5xx*100)
+		}
+		_ = tw.Flush()
+	}
 	if len(r.SlowRoutes) > 0 {
 		_, _ = fmt.Fprintln(out, "\nslowest routes:")
 		_, _ = fmt.Fprintln(tw, "ROUTE\tREQ\tAVGMS\t5XX%")
@@ -141,7 +150,7 @@ func printTrafficLabels(out io.Writer, tw *tabwriter.Writer, title, header strin
 
 func trafficUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s traffic <app> [--window 1h] [--watch] [--json] [flags]
+  %[1]s traffic <app> [--window|--since 1h] [--watch] [--json] [flags]
 
 Shows an app's request rate, errors and latency percentiles (p50, p95, p99)
 as measured at the ingress, with a per replica breakdown, the slowest route

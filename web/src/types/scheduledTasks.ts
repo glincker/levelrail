@@ -14,11 +14,23 @@ export type ScheduledTaskRunStatus =
   | 'interrupted'
 
 // What happens when a job's next run finds the previous one still going.
-export type ScheduledTaskConcurrencyPolicy = 'allow' | 'forbid' | 'replace'
+export type ScheduledTaskConcurrencyPolicy =
+  'allow' | 'forbid' | 'replace' | 'queue'
 
 // fresh runs the command in a new container of the app's image with its
 // env, volumes and network; exec runs it inside the running container.
-export type ScheduledTaskMode = 'fresh' | 'exec'
+export type ScheduledTaskMode = 'fresh' | 'exec' | 'http'
+
+export type JobHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+// The request an http job sends. A background job is awaited by the control
+// plane under a longer timeout; the caller of run-now gets 202 either way.
+export interface ScheduledTaskHttp {
+  method?: JobHttpMethod
+  path: string
+  body?: string
+  background?: boolean
+}
 
 // What to do about occurrences missed while the control plane was down.
 export type ScheduledTaskCatchUp = 'skip' | 'run_once'
@@ -32,6 +44,7 @@ export interface ScheduledTask {
   name?: string
   mode?: ScheduledTaskMode
   command: string[]
+  http?: ScheduledTaskHttp
   schedule: string
   timezone?: string
   enabled: boolean
@@ -65,6 +78,7 @@ export interface ScheduledTaskRequest {
   name?: string
   mode?: ScheduledTaskMode
   command: string[]
+  http?: ScheduledTaskHttp
   schedule: string
   timezone?: string
   enabled: boolean

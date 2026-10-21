@@ -27,9 +27,11 @@ const (
 	KindScheduledTaskMissed      Kind = "scheduled_task_missed"
 	KindScheduledTaskRunningLong Kind = "scheduled_task_running_long"
 	KindNodeDiskSpace            Kind = "node_disk_space"
-	KindNodeResourceUsage        Kind = "node_resource_usage"
-	KindDomainHealth             Kind = "domain_health"
-	KindBackupMissing            Kind = "backup_missing"
+	// KindNodeHostGuardrail is registered for rules that watch per-node disk, inode, memory and swap guardrails.
+	KindNodeHostGuardrail Kind = "node_host_guardrail"
+	KindNodeResourceUsage Kind = "node_resource_usage"
+	KindDomainHealth      Kind = "domain_health"
+	KindBackupMissing     Kind = "backup_missing"
 
 	// KindControlPlaneBackupStale is platform-wide: it watches the newest control plane snapshot's age.
 	KindControlPlaneBackupStale Kind = "control_plane_backup_stale"
@@ -55,6 +57,10 @@ const (
 	// team budget is at its warn level, over its limit, or forecast to
 	// overrun (budget_threshold.go).
 	KindBudgetThreshold Kind = "budget_threshold"
+
+	// KindEmailDeliveryFailing is platform-wide: it fires while most recent
+	// outbound emails are failing (email_delivery_failing.go).
+	KindEmailDeliveryFailing Kind = "email_delivery_failing"
 )
 
 // Comparator is how a threshold Rule compares the latest sample value

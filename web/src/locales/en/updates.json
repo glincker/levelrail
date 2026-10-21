@@ -39,9 +39,12 @@
       "recheck": "Re-check",
       "rechecking": "Re-checking...",
       "openRollback": "Go to Roll back"
-    }
+    },
+    "retry": "Try again"
   },
   "history": {
+    "olderSummary": "Older releases ({{count}})",
+    "olderWhy": "These releases support an older database format than yours, so they are not offered as upgrades. Going back to one means restoring a backup, which loses data written since.",
     "title": "Release history and rollback",
     "description": "The last five releases. Pick one to preview exactly what returning to it would do. Nothing is applied from this page: a rollback is run on the server so the control plane never replaces itself.",
     "viewLabel": "Show",
@@ -208,7 +211,23 @@
       "first": "first report"
     }
   },
+  "restorePoints": {
+    "title": "Restore points",
+    "description": "A restore point (database copy, program and service file) is taken automatically before every upgrade. Restoring puts back the program, and the database only if the running one was already changed by a newer release.",
+    "empty": "No restore points yet. One is taken automatically before the next upgrade.",
+    "size": "{{mb}} MB",
+    "withData": "Also restores the database",
+    "binaryOnly": "Program only",
+    "restore": "Restore",
+    "pending": "Restoring...",
+    "confirmTitle": "Restore {{version}}?",
+    "confirmWithData": "The program and the database go back to how they were at {{time}}. Everything saved since then is discarded. The replaced database is kept on the host.",
+    "confirmBinaryOnly": "The program goes back to the earlier release. The database is already compatible, so no saved changes are lost.",
+    "started": "Restoring {{version}} on the host. The result appears in the upgrade attempts above."
+  },
   "selfUpgrade": {
+    "dbRestored": "The database was restored from the snapshot. {{minutes}} minutes of changes made since the snapshot were rolled back.",
+    "dbKept": "The database was already compatible with the previous release, so no changes were lost.",
     "title": "Upgrade this server",
     "description": "Downloads the release, checks its checksum and signature, backs up the database, tries the migrations on a copy, swaps the program and restarts. If the new release does not become healthy in time, the previous program and data come back automatically.",
     "loading": "Preparing the upgrade plan...",
@@ -227,7 +246,7 @@
     "hostOnly": "This host cannot run the upgrade from the dashboard: {{reason}}.",
     "hostCommand": "Run on the server as root",
     "attemptsTitle": "Upgrade attempts",
-    "noAttempts": "No self-upgrade has run on this server yet.",
+    "noAttempts": "No upgrades have run on this server yet.",
     "by": "by {{who}}",
     "rolledBackNote": "The previous release {{version}} is running again and its data was restored.",
     "outcome": {
@@ -252,7 +271,48 @@
       "rollback": "Roll back"
     },
     "notPinned": "Release signatures are verified by this server. The next upgrade checks the signature, then this install only accepts signed releases.",
-    "pinned": "Signed releases only, pinned since {{version}}. An unsigned release is refused."
+    "pinned": "Signed releases only, pinned since {{version}}. An unsigned release is refused.",
+    "noAttemptsHint": "When you upgrade from this page or on a schedule, each attempt shows up here with every step it took.",
+    "to": "to",
+    "unknownActor": "unknown",
+    "showOlder_one": "Show {{count}} older attempt",
+    "showOlder_other": "Show {{count}} older attempts",
+    "version": {
+      "dev_one": "dev build, {{commits}} commit after {{base}} ({{sha}})",
+      "dev_other": "dev build, {{commits}} commits after {{base}} ({{sha}})",
+      "unknown": "unknown"
+    },
+    "summary": {
+      "current": "Current version",
+      "lastOk": "Last successful upgrade",
+      "never": "Never",
+      "failed": "Failed in the last 30 days"
+    },
+    "failure": {
+      "title": "What went wrong",
+      "cause": {
+        "disk_full": "The server ran out of disk space.",
+        "network": "The release could not be downloaded.",
+        "checksum_mismatch": "The downloaded file did not match its checksum.",
+        "signature_invalid": "The release signature could not be verified, so it was refused.",
+        "binary_unusable": "The new program did not pass its start-up probe.",
+        "backup_failed": "The pre-upgrade backup could not be taken.",
+        "migration_incompatible": "The database migration dry run failed.",
+        "service_control": "The service could not be stopped or started.",
+        "swap_failed": "The new program could not be put in place.",
+        "not_healthy": "The new release did not become healthy.",
+        "guard_refused": "The upgrade was refused before it started.",
+        "unknown": "The step failed for a reason this page does not recognise."
+      },
+      "fix": "Free up disk space",
+      "retry": "Retry",
+      "rollback": "Roll back",
+      "fixed": "Cleanup finished. You can retry now.",
+      "stillFailing": "Cleanup ran but the problem is still there.",
+      "started": "Started on the host. Follow it in the timeline.",
+      "cliSummary": "Fix via CLI",
+      "cliHint": "Run on a machine logged in to this server:"
+    }
   },
   "readiness": {
     "title": "Server readiness",
@@ -285,6 +345,24 @@
     "blockedTitle_other": "{{count}} checks need attention before you can upgrade",
     "waitingTitle": "Waiting for the release to finish publishing",
     "schemaBlockedTitle": "Not offering {{version}}: it is older than your database",
+    "hero": {
+      "aheadTitle": "You are running a development build",
+      "aheadBody": "You are running a development build (schema {{schema}}). The latest release, {{latest}}, is older than your data, so there is nothing to upgrade to. The next release that includes your data format will be offered automatically.",
+      "aheadBodyNoSchema": "You are running a development build. The latest release, {{latest}}, is older than your data, so there is nothing to upgrade to. The next release that includes your data format will be offered automatically.",
+      "checkAgain": "Check again",
+      "checking": "Checking...",
+      "notes": "View release notes",
+      "rollback": "Roll back to {{version}}",
+      "rollbackNone": "Roll back",
+      "rollbackNoneWhy": "No restore point for an older version exists on this host yet.",
+      "planTitle": "Upgrade plan",
+      "planFromTo": "{{from}} to {{to}}",
+      "planMigrations_one": "1 database migration to apply",
+      "planMigrations_other": "{{count}} database migrations to apply",
+      "planMigrationsUnknown": "Database migrations: not reported by the release",
+      "planRestorePoint": "A restore point is taken first, so the previous version and its data can come back.",
+      "planVerify": "The new release has {{seconds}} seconds to prove it is healthy before it is kept."
+    },
     "confirmTitle": "Upgrade to {{version}}",
     "confirmDescription": "This server will go from {{current}} to {{target}}. Your apps keep running.",
     "willBackup": "A backup of the control plane database is taken and kept before anything changes.",
@@ -313,7 +391,9 @@
       "rolled_back": "Upgrade to {{version}} was rolled back",
       "refused": "Upgrade to {{version}} was refused",
       "failed": "Upgrade to {{version}} failed"
-    }
+    },
+    "retry": "Retry upgrade",
+    "rollBack": "Roll back"
   },
   "schedule": {
     "button": "Schedule upgrade",
@@ -508,5 +588,25 @@
     "sidebar": {
       "running": "Upgrading"
     }
+  },
+  "stepper": {
+    "label": "Upgrade steps",
+    "step": {
+      "check": "Check",
+      "preflight": "Preflight",
+      "download": "Download",
+      "apply": "Apply",
+      "verify": "Verify"
+    },
+    "status": {
+      "done": "done",
+      "current": "in progress",
+      "failed": "failed",
+      "blocked": "blocked",
+      "upcoming": "not started"
+    }
+  },
+  "cli": {
+    "summary": "Fix via CLI"
   }
 }

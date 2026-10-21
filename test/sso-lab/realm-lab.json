@@ -1,0 +1,158 @@
+{
+  "realm": "lab",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "groups": [
+    {
+      "name": "Engineering"
+    },
+    {
+      "name": "Admins"
+    },
+    {
+      "name": "Support"
+    }
+  ],
+  "users": [
+    {
+      "username": "ada",
+      "email": "ada@lab.example",
+      "firstName": "Ada",
+      "lastName": "Lab",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "ada-pass",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/Engineering"
+      ]
+    },
+    {
+      "username": "grace",
+      "email": "grace@lab.example",
+      "firstName": "Grace",
+      "lastName": "Lab",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "grace-pass",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/Admins"
+      ]
+    },
+    {
+      "username": "mallory",
+      "email": "mallory@other.example",
+      "firstName": "Mallory",
+      "lastName": "Lab",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "mallory-pass",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/Engineering"
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "lab-oidc",
+      "name": "Lab OIDC",
+      "protocol": "openid-connect",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "lab-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "lab-saml-sp",
+      "name": "Lab SAML SP (wildcard, manual use)",
+      "protocol": "saml",
+      "enabled": true,
+      "redirectUris": [
+        "*"
+      ],
+      "attributes": {
+        "saml.assertion.signature": "true",
+        "saml.server.signature": "false",
+        "saml.client.signature": "false",
+        "saml_name_id_format": "email",
+        "saml.force.post.binding": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "email",
+          "protocol": "saml",
+          "protocolMapper": "saml-user-property-mapper",
+          "config": {
+            "user.attribute": "email",
+            "attribute.name": "email",
+            "attribute.nameformat": "Basic"
+          }
+        },
+        {
+          "name": "displayName",
+          "protocol": "saml",
+          "protocolMapper": "saml-user-property-mapper",
+          "config": {
+            "user.attribute": "firstName",
+            "attribute.name": "displayName",
+            "attribute.nameformat": "Basic"
+          }
+        },
+        {
+          "name": "groups",
+          "protocol": "saml",
+          "protocolMapper": "saml-group-membership-mapper",
+          "config": {
+            "attribute.name": "groups",
+            "full.path": "false",
+            "single": "false",
+            "attribute.nameformat": "Basic"
+          }
+        }
+      ]
+    }
+  ]
+}

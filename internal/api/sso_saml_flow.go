@@ -45,6 +45,7 @@ type samlFlowStore struct {
 type samlFlow struct {
 	connectionID string
 	requestID    string
+	testUser     string
 	expires      time.Time
 }
 
@@ -67,15 +68,15 @@ func (s *samlFlowStore) put(browserHash string, f samlFlow, now time.Time) bool 
 	return true
 }
 
-func (s *samlFlowStore) consume(browserHash, connectionID string, now time.Time) (string, bool) {
+func (s *samlFlowStore) consume(browserHash, connectionID string, now time.Time) (samlFlow, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	f, ok := s.pending[browserHash]
 	delete(s.pending, browserHash)
 	if !ok || f.connectionID != connectionID || now.After(f.expires) {
-		return "", false
+		return samlFlow{}, false
 	}
-	return f.requestID, true
+	return f, true
 }
 
 type publicSAMLProvider struct {
@@ -171,6 +172,12 @@ func (rt *Router) handleSAMLLogin(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	rt.beginSAMLFlow(w, r, c, "")
+}
+
+// beginSAMLFlow sends the browser to the IdP. A non-empty testUser marks a
+// dry run for that root user: the response is evaluated, never signed in.
+func (rt *Router) beginSAMLFlow(w http.ResponseWriter, r *http.Request, c store.SSOConnection, testUser string) {
 	redirect, requestID, err := rt.authEngine.BeginSAMLLogin(r.Context(), c.LibraryID)
 	if err != nil {
 		rt.logger.Error("api: saml login: begin failed", slog.String("connection_id", c.ID), slog.String("error", err.Error()))
@@ -183,7 +190,7 @@ func (rt *Router) handleSAMLLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	now := time.Now()
-	if !rt.samlFlows.put(hashToken(secret), samlFlow{connectionID: c.ID, requestID: requestID, expires: now.Add(samlRequestTTL)}, now) {
+	if !rt.samlFlows.put(hashToken(secret), samlFlow{connectionID: c.ID, requestID: requestID, testUser: testUser, expires: now.Add(samlRequestTTL)}, now) {
 		redirectSAMLError(w, r, samlErrRateLimited)
 		return
 	}
@@ -221,11 +228,16 @@ func (rt *Router) handleSAMLACS(w http.ResponseWriter, r *http.Request) {
 		rt.samlReject(w, r, c, samlErrInvalidState, "no flow cookie")
 		return
 	}
-	requestID, ok := rt.samlFlows.consume(hashToken(cookie.Value), c.ID, time.Now())
+	flow, ok := rt.samlFlows.consume(hashToken(cookie.Value), c.ID, time.Now())
 	if !ok {
 		rt.samlReject(w, r, c, samlErrInvalidState, "no outstanding request for this browser")
 		return
 	}
+	if flow.testUser != "" {
+		rt.finishSAMLTest(w, r, c, flow, samlResponse)
+		return
+	}
+	requestID := flow.requestID
 	ident, err := rt.authEngine.VerifySAMLResponse(ctx, c.LibraryID, samlResponse, requestID)
 	if err != nil {
 		rt.samlReject(w, r, c, samlErrInvalid, err.Error())

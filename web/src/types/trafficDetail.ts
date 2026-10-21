@@ -75,6 +75,7 @@ export interface TrafficDetail {
   latency: TrafficLatency
   replicas: TrafficReplica[]
   slow_routes: TrafficRoute[]
+  top_routes: TrafficRoute[]
   samples: TrafficSample[]
   referrers: TrafficLabel[]
   countries: TrafficLabel[]

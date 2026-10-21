@@ -109,6 +109,11 @@ type Service struct {
 	// APP_CANARY_* defaults.
 	Canary *Canary `yaml:"canary,omitempty"`
 
+	// Contexts overrides env and build settings for deploy-preview,
+	// branch-deploy or a "branch:<pattern>" context. Production is the
+	// service's own settings.
+	Contexts map[string]ContextConfig `yaml:"contexts,omitempty"`
+
 	// DependsOn names sibling services: keys (within this same Spec, or
 	// within the same compose file for a compose-expanded service, see
 	// internal/compose.ExpandBuildService) this service waits on before
@@ -127,6 +132,12 @@ type Service struct {
 	// through the dashboard or CLI alone; an explicit empty list removes
 	// every spec-declared job.
 	Jobs []Job `yaml:"jobs,omitempty"`
+
+	// Routes, Headers and Static shape a build.type: static site: redirects
+	// and rewrites, response headers, and the SPA, clean URL and 404 options.
+	Routes  []Route        `yaml:"routes,omitempty"`
+	Headers []HeaderRule   `yaml:"headers,omitempty"`
+	Static  *StaticOptions `yaml:"static,omitempty"`
 }
 
 // Job is one entry under a service's jobs:. Durations use Go syntax
@@ -248,6 +259,12 @@ type Build struct {
 	// for image (nothing gets built) or compose (the compose file's own
 	// context: field already scopes each service).
 	BaseDirectory string `yaml:"baseDirectory,omitempty"`
+	// Command is the shell command that builds a static site, run in a
+	// sandboxed build container. Only meaningful for build.type: static.
+	Command string `yaml:"command,omitempty"`
+	// Publish is the directory the build writes the site to, relative to the
+	// base directory. Required with Command; the files in it are what is served.
+	Publish string `yaml:"publish,omitempty"`
 	// Image is a full registry reference (e.g.
 	// "ghcr.io/org/app:v1.2.3"), only meaningful for build.type: image:
 	// a CI pipeline (or anything else) already built and pushed this

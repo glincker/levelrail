@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { setVisibleInterval } from '../lib/pageVisibility'
 
 // Ticks `now` once a second while active, otherwise stays fixed at
 // whatever it last was. Shared by anything rendering a live-counting
@@ -11,8 +12,8 @@ export function useNowTick(active: boolean): number {
 
   useEffect(() => {
     if (!active) return
-    const id = window.setInterval(() => setNow(Date.now()), 1000)
-    return () => window.clearInterval(id)
+    const stop = setVisibleInterval(() => setNow(Date.now()), 1000)
+    return () => stop()
   }, [active])
 
   return now

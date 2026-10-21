@@ -1,0 +1,188 @@
+{
+  "title": "Forms",
+  "description": "Collect submissions from the HTML forms on your static site. Each form gets a public endpoint to post to.",
+  "loading": "Loading forms",
+  "loadError": "Could not load forms.",
+  "retry": "Try again",
+  "new": "New form",
+  "create": {
+    "title": "New form",
+    "description": "Pick a short name. It becomes part of the endpoint address and cannot be changed later.",
+    "name": "Form name",
+    "namePlaceholder": "contact",
+    "submit": "Create form",
+    "submitting": "Creating"
+  },
+  "empty": {
+    "title": "No forms yet",
+    "description": "Create a form, design its fields, paste the snippet into your site, and submissions land here.",
+    "cta": "Create your first form"
+  },
+  "endpoint": "Endpoint",
+  "snippet": "HTML snippet",
+  "copy": "Copy",
+  "copied": "Copied",
+  "copyFailed": "Could not copy",
+  "counts": "{{total}} submissions, {{spam}} spam",
+  "settings": {
+    "title": "Settings",
+    "redirect": "Redirect after submit",
+    "redirectHint": "Browsers are sent here after a post. Leave empty to show a plain thank-you page.",
+    "honeypot": "Spam trap field",
+    "honeypotHint": "A hidden field real visitors leave empty. Posts that fill it are kept as spam and never notify you.",
+    "channels": "Notify on new submissions",
+    "noChannels": "No notification channels are set up yet. Add one under Alerts to be told about new submissions.",
+    "save": "Save settings",
+    "saving": "Saving",
+    "saved": "Form settings saved."
+  },
+  "delete": {
+    "button": "Delete form",
+    "title": "Delete this form?",
+    "description": "The endpoint stops accepting posts right away.",
+    "consequence": "All stored submissions for this form are deleted and cannot be recovered.",
+    "confirm": "Delete form",
+    "pending": "Deleting"
+  },
+  "retention": "Submissions are deleted after {{days}} days. Only a salted hash of the sender address is stored, never the address.",
+  "inbox": {
+    "title": "Inbox",
+    "search": "Search submissions",
+    "filterAll": "All",
+    "filterInbox": "Not spam",
+    "filterSpam": "Spam",
+    "export": "Export CSV",
+    "loading": "Loading submissions",
+    "loadError": "Could not load submissions.",
+    "emptyTitle": "No submissions yet",
+    "emptyDescription": "Post to the endpoint above, or send a test from your site, and it appears here.",
+    "noMatchTitle": "Nothing matches",
+    "noMatchDescription": "Try a different search or filter.",
+    "spamBadge": "Spam",
+    "markSpam": "Mark as spam",
+    "markNotSpam": "Not spam",
+    "remove": "Delete",
+    "removeConfirm": "Delete this submission?",
+    "actionFailed": "That change did not save.",
+    "loadMore": "Load more",
+    "reason": {
+      "honeypot": "Filled the spam trap",
+      "too_many_links": "Too many links",
+      "empty": "No fields",
+      "manual": "Marked by you"
+    },
+    "testBadge": "Test"
+  },
+  "betaHint": "Beta: form capture works, but its designer and limits are still changing.",
+  "intro": "Static sites cannot run server code. Forms gives your site a public endpoint that stores submissions.",
+  "howItWorks": "How it works",
+  "hero": {
+    "alt": "A visitor fills in a form on your site and presses Send. The submission travels to your Levelrail endpoint, appears in the inbox and triggers a notification.",
+    "caption": "Design a form, paste it into your static site, and read submissions here.",
+    "site": "Your site",
+    "endpoint": "Endpoint",
+    "inbox": "Inbox",
+    "notice": "New submission"
+  },
+  "steps": {
+    "design": {
+      "title": "Design your form",
+      "body": "Pick the fields, labels and success message."
+    },
+    "embed": {
+      "title": "Paste the snippet into your site",
+      "body": "Copy the HTML or JavaScript into your page."
+    },
+    "read": {
+      "title": "Read submissions here",
+      "body": "Get notified when someone sends one."
+    }
+  },
+  "notStatic": {
+    "title": "Forms are for static sites",
+    "description": "This app runs its own server code, so it can handle form posts itself. Forms collects submissions for apps that deploy as a static site.",
+    "back": "Back to the app"
+  },
+  "sections": {
+    "design": {
+      "title": "Design",
+      "help": "Choose the fields visitors fill in and what they see after sending."
+    },
+    "embed": {
+      "title": "Embed",
+      "help": "Copy this into your static site. It follows your design as you edit."
+    },
+    "submissions": {
+      "title": "Submissions",
+      "help": "Everything visitors send lands here. Export it as CSV any time."
+    },
+    "settings": {
+      "title": "Settings",
+      "help": "Where visitors go afterwards, spam protection and who gets notified."
+    }
+  },
+  "designer": {
+    "label": "Label",
+    "name": "Field name",
+    "type": "Type",
+    "types": {
+      "text": "Text",
+      "email": "Email",
+      "textarea": "Long text",
+      "select": "Dropdown",
+      "checkbox": "Checkbox",
+      "number": "Number",
+      "url": "Web address",
+      "hidden": "Hidden"
+    },
+    "placeholder": "Placeholder",
+    "minLength": "Min length",
+    "maxLength": "Max length",
+    "options": "Options",
+    "optionsHint": "One option per line.",
+    "default": "Value",
+    "required": "Required",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "remove": "Remove field",
+    "addField": "Add field",
+    "customize": "Customize fields",
+    "usingDefault": "This form uses the default fields: name, email and message. Customize them to design your own.",
+    "success": "Success message",
+    "successDefault": "Thanks, your submission was received.",
+    "successLabel": "After sending",
+    "origins": "Allowed sites (optional)",
+    "originsHint": "One address per line, like https://example.com. Browsers on other sites are refused. Empty allows any site.",
+    "preview": "Live preview",
+    "send": "Send",
+    "save": "Save design",
+    "saving": "Saving",
+    "saved": "Form design saved.",
+    "reset": "Back to default fields"
+  },
+  "embed": {
+    "noPublicUrl": {
+      "title": "No public URL is set",
+      "body": "No public URL is set, this endpoint only works from this machine. Visitors to your live site cannot reach it.",
+      "fix": "Set the public URL"
+    },
+    "variants": {
+      "html": "HTML",
+      "fetch": "JavaScript",
+      "minimal": "Minimal"
+    },
+    "variantHint": {
+      "html": "HTML snippet",
+      "fetch": "HTML with a fetch script (stays on the page)",
+      "minimal": "Minimal markup (no labels, bring your own styling)"
+    }
+  },
+  "test": {
+    "button": "Send a test submission",
+    "sending": "Sending",
+    "sent": "Test submission {{id}} stored",
+    "ok": "It is marked as a test in the inbox below.",
+    "flagged": "It was flagged as spam.",
+    "failed": "Could not send the test."
+  }
+}

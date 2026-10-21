@@ -31,6 +31,11 @@ type GitSource struct {
 	// BaseDirectory is the build context, relative to the repository root.
 	// Empty means the repository root.
 	BaseDirectory string
+	// BuildCommand and PublishDir turn a static source into a built site:
+	// the command runs in a build container and PublishDir (relative to
+	// BaseDirectory) is what gets served. Both empty serves BuildPath as-is.
+	BuildCommand string
+	PublishDir   string
 	// AdditionalServices lets one push fan out to sibling services under
 	// the same store.App (apps_group.go): keyed by the sibling
 	// DesiredService's own name, each entry carries just enough to call
@@ -98,8 +103,12 @@ type GitSource struct {
 	DeployPaths       []string
 	DeployPathsIgnore []string
 	ReportStatus      bool
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
+	// ConnectionID is the git_provider_connections row the repository was
+	// picked from; empty for a pasted URL or a GitHub source. Set only via
+	// SetGitSourceConnection.
+	ConnectionID string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // GitSourceBuild is one additional service's own build config within
@@ -152,20 +161,22 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 		triggerMode = spec.TriggerModePush
 	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, base_directory, additional_services, services_spec, databases_spec, trigger_mode, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, additional_services, services_spec, databases_spec, trigger_mode, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (service_name) DO UPDATE SET
 			repo_url = excluded.repo_url,
 			branch = excluded.branch,
 			build_type = excluded.build_type,
 			build_path = excluded.build_path,
 			base_directory = excluded.base_directory,
+			build_command = excluded.build_command,
+			publish_dir = excluded.publish_dir,
 			additional_services = excluded.additional_services,
 			services_spec = excluded.services_spec,
 			databases_spec = excluded.databases_spec,
 			trigger_mode = excluded.trigger_mode,
 			updated_at = excluded.updated_at
-	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, g.BaseDirectory, additionalJSON, servicesJSON, databasesJSON, triggerMode)
+	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, g.BaseDirectory, g.BuildCommand, g.PublishDir, additionalJSON, servicesJSON, databasesJSON, triggerMode)
 	if err != nil {
 		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
 	}
@@ -176,7 +187,7 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 // ErrGitSourceNotFound if none is.
 func (db *DB) GetGitSource(ctx context.Context, serviceName string) (*GitSource, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at
+		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at, connection_id
 		FROM service_git_sources WHERE service_name = ?
 	`, serviceName)
 	g, err := scanGitSource(row.Scan)
@@ -289,11 +300,11 @@ func (db *DB) DeleteGitSource(ctx context.Context, serviceName string) error {
 
 // SetGitSourceBuild replaces only a connected source's build settings, so a
 // build-settings edit never rewrites its token, services or trigger mode.
-func (db *DB) SetGitSourceBuild(ctx context.Context, serviceName, buildType, buildPath, baseDirectory string) error {
+func (db *DB) SetGitSourceBuild(ctx context.Context, serviceName, buildType, buildPath, baseDirectory, buildCommand, publishDir string) error {
 	res, err := db.ExecContext(ctx, `
-		UPDATE service_git_sources SET build_type = ?, build_path = ?, base_directory = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		UPDATE service_git_sources SET build_type = ?, build_path = ?, base_directory = ?, build_command = ?, publish_dir = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 		WHERE service_name = ?
-	`, buildType, buildPath, baseDirectory, serviceName)
+	`, buildType, buildPath, baseDirectory, buildCommand, publishDir, serviceName)
 	if err != nil {
 		return fmt.Errorf("store: set git source %q build: %w", serviceName, err)
 	}
@@ -311,6 +322,7 @@ func (g GitSource) SpecBuild() (spec.Build, error) {
 	if err != nil {
 		return spec.Build{}, fmt.Errorf("git source %q build settings: %w", g.ServiceName, err)
 	}
+	b.Command, b.Publish = g.BuildCommand, g.PublishDir
 	return b, nil
 }
 
@@ -362,6 +374,72 @@ func (db *DB) SetGitSourceDeploySettings(ctx context.Context, serviceName string
 	return nil
 }
 
+// SetGitSourceConnection records which provider connection a source's
+// repository was picked from.
+func (db *DB) SetGitSourceConnection(ctx context.Context, serviceName, connectionID string) error {
+	res, err := db.ExecContext(ctx, `UPDATE service_git_sources SET connection_id = ? WHERE service_name = ?`, connectionID, serviceName)
+	if err != nil {
+		return fmt.Errorf("store: set git source %q connection: %w", serviceName, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrGitSourceNotFound
+	}
+	return nil
+}
+
+// ListGitSourcesByConnection returns the service names of every source
+// recorded against connectionID.
+func (db *DB) ListGitSourcesByConnection(ctx context.Context, connectionID string) ([]string, error) {
+	rows, err := db.QueryContext(ctx, `SELECT service_name FROM service_git_sources WHERE connection_id = ? ORDER BY service_name`, connectionID)
+	if err != nil {
+		return nil, fmt.Errorf("store: list git sources for connection %q: %w", connectionID, err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []string
+	for rows.Next() {
+		var n string
+		if err := rows.Scan(&n); err != nil {
+			return nil, fmt.Errorf("store: list git sources for connection %q: scan: %w", connectionID, err)
+		}
+		out = append(out, n)
+	}
+	return out, rows.Err()
+}
+
+// RelinkOrphanedGitSources points sources whose recorded connection no
+// longer exists, and whose repository is on host, at connectionID. It
+// returns how many sources it moved.
+func (db *DB) RelinkOrphanedGitSources(ctx context.Context, host, connectionID string) (int, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT s.service_name, s.repo_url FROM service_git_sources s
+		WHERE s.connection_id != '' AND NOT EXISTS (SELECT 1 FROM git_provider_connections c WHERE c.id = s.connection_id)`)
+	if err != nil {
+		return 0, fmt.Errorf("store: find orphaned git sources: %w", err)
+	}
+	var names []string
+	for rows.Next() {
+		var name, repoURL string
+		if err := rows.Scan(&name, &repoURL); err != nil {
+			_ = rows.Close()
+			return 0, fmt.Errorf("store: find orphaned git sources: scan: %w", err)
+		}
+		if RepoHost(repoURL) == host {
+			names = append(names, name)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return 0, fmt.Errorf("store: find orphaned git sources: %w", err)
+	}
+	_ = rows.Close()
+	for _, n := range names {
+		if err := db.SetGitSourceConnection(ctx, n, connectionID); err != nil {
+			return 0, fmt.Errorf("store: relink git source %q: %w", n, err)
+		}
+	}
+	return len(names), nil
+}
+
 // setGitSourceBoolColumn is SetGitSourcePreviewEnabled/
 // SetGitSourcePostPRComments's shared implementation: column is always
 // one of this file's own literal column names, never caller/request
@@ -398,7 +476,7 @@ func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 		pathsJSON, pathsIgnoreJSON    string
 		createdAt, updatedAt          string
 	)
-	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt); err != nil {
+	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &g.BuildCommand, &g.PublishDir, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt, &g.ConnectionID); err != nil {
 		return nil, err
 	}
 	g.PreviewEnabled = previewEnabled != 0

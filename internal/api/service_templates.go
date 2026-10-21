@@ -67,7 +67,7 @@ func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Requ
 			DocumentationURL:       tpl.DocumentationURL,
 			RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
 			RequiresGPU:            tpl.RequiresGPU,
-			RequiresConfiguration:  rt.templateRequiresConfig[tpl.ID],
+			RequiresConfiguration:  rt.templateNeedsConfig(tpl.ID),
 			Icon:                   manifestIcon(tpl.Manifest),
 			Installable:            tpl.Manifest != nil,
 		})
@@ -134,7 +134,7 @@ func (rt *Router) resolveTemplate(ctx context.Context, id string) (templateView,
 			Compose:                tpl.Compose,
 			RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
 			RequiresGPU:            tpl.RequiresGPU,
-			RequiresConfiguration:  rt.templateRequiresConfig[tpl.ID],
+			RequiresConfiguration:  rt.templateNeedsConfig(tpl.ID),
 			Manifest:               tpl.Manifest,
 			Requirements:           catalog.ComputeRequirements(tpl.Compose),
 		}, true, nil
@@ -246,6 +246,11 @@ func (rt *Router) generateOneClickAppName(ctx context.Context, templateID string
 // calling this once is instance state, not a package-level cache) with
 // a detection-only generate/persist pair that never touches real secret
 // storage.
+func (rt *Router) templateNeedsConfig(id string) bool {
+	rt.templateConfigOnce.Do(func() { rt.templateRequiresConfig = computeTemplateRequiresConfig() })
+	return rt.templateRequiresConfig[id]
+}
+
 func computeTemplateRequiresConfig() map[string]bool {
 	out := make(map[string]bool, len(catalog.Templates))
 	for _, tpl := range catalog.Templates {

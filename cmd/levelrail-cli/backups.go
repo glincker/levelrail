@@ -51,6 +51,8 @@ func runBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runBackupsCloneRestores(prog, args[1:], stdout, stderr, lookupEnv)
 	case "schedule":
 		return runBackupsSchedule(prog, args[1:], stdout, stderr, lookupEnv)
+	case "encryption":
+		return runBackupsEncryption(prog, args[1:], stdout, stderr, lookupEnv)
 	case "verify":
 		return runBackupsVerify(prog, args[1:], stdout, stderr, lookupEnv)
 	case "verifications":
@@ -82,6 +84,7 @@ func backupsUsage(prog string) string {
   %[1]s backups clone-restores <database> [flags]                          list restore-as-new attempt history for a database
   %[1]s backups schedule set<database> --target ID --cron EXPR [flags] configure a recurring backup
   %[1]s backups schedule clear <database> [flags]                       remove a recurring backup
+  %[1]s backups encryption get|set <destination> [on|off] [flags]       show or change database dump encryption for a destination
   %[1]s backups verify <database> --backup ID [flags]                   verify a backup is intact (no live restore)
   %[1]s backups verifications <database> --backup ID [flags]            list past verification attempts for a backup
 

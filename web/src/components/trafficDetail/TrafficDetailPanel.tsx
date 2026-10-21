@@ -250,6 +250,7 @@ export function TrafficDetailPanel({ app }: Readonly<{ app: string }>) {
             </>
           ) : null}
           <ReplicaTable rows={data.replicas} />
+          <SlowRouteTable rows={data.top_routes ?? []} top />
           <SlowRouteTable rows={data.slow_routes} />
           <div className="grid gap-4 lg:grid-cols-2">
             <AudienceTable kind="referrers" rows={data.referrers} />

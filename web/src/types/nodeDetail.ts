@@ -1,3 +1,4 @@
+import type { NodeFailureSummary } from './nodeFailure'
 import type { NodeAgentResource, NodeCertResource } from './nodeCert'
 
 // Wire type for a node, GET /api/v1/nodes and GET /api/v1/nodes/{id}
@@ -44,6 +45,8 @@ export interface NodeResource {
   // display/grouping metadata for the network topology view, not a
   // routing or access-control input. Set via PUT /api/v1/nodes/{id}/region.
   region?: string
+  provider?: string
+  zone?: string
   created_at: string
   // AlertStatus is only present on GET /api/v1/nodes/{id} (the single-
   // node fetch), never the list response, and is absent when telemetry
@@ -66,6 +69,8 @@ export interface NodeResource {
   // Absent from control planes that predate ADR 021.
   cert?: NodeCertResource
   agent?: NodeAgentResource
+  // Present while the node has a live failure state.
+  failure?: NodeFailureSummary
 }
 
 // GPU summary on a node (internal/api/gpu_placement.go's nodeGPUResource).

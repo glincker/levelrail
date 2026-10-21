@@ -284,6 +284,10 @@ Seven jobs also never skip because of an upstream failure: `Plan Go work`, `Buil
 | `dependabot-auto-merge.yml` | Dependabot PRs only (listed as skipped elsewhere) | |
 | SonarCloud | Every PR | A GitHub App, not an Actions job: it runs on the vendor's infrastructure, uses no Actions minutes, and is not a merge blocker |
 
+## First-hour smoke test
+
+The install-to-rollback journey is covered by `scripts/test-first-hour.sh`. How to run it and a ready-to-use nightly job are in [First-hour smoke test](/first-hour-smoke-test).
+
 ## Scheduled, not PR-triggered
 
 - `branch-cleanup.yml`: deletes a merged PR's head branch immediately, plus a
@@ -299,6 +303,8 @@ Seven jobs also never skip because of an upstream failure: `Plan Go work`, `Buil
 ## Versioning and releases
 
 Versions are automatic. [release-please](https://github.com/googleapis/release-please) reads the conventional commit messages on `main`, picks the next version, updates `CHANGELOG.md`, and keeps one open pull request titled `chore(main): release <version>`. Merging that PR tags the release, creates the GitHub Release, and dispatches `release.yml`, which builds every binary and publishes to Homebrew and npm.
+
+Releases are paced. While the project is pre-1.0, a `feat` bumps the patch (0.8.1, 0.8.2), not the minor, so versions go deep instead of wide; a minor jump such as 0.8.0 needs the `allow-minor-release` label on the release PR. The `Release pacing` check also fails until `RELEASE_COOLDOWN_HOURS` (repository variable, default 6) have passed since the last release, so two releases cannot land in the same hour. An hourly workflow re-runs the failed check, so an armed auto-merge goes through on its own once the wait ends. The `skip-release-cooldown` label overrides the wait for an urgent fix. `scripts/test-release-pacing.sh` is the self test.
 
 The one manual step is merging that PR. By default release-please uses the built-in `GITHUB_TOKEN`, and GitHub does not run CI on pull requests opened that way, so the required `CI required` check never reports and the PR stays blocked until someone reopens it or merges around the gate.
 
@@ -471,6 +477,12 @@ runs `vite build` once when the file is missing, about 20 s.
 pre-push bounds every `go test` it runs with `-timeout`, default `30m`,
 overridable with `LEVELRAIL_PUSH_TEST_TIMEOUT`. The default `go test`
 timeout of 10 minutes is shorter than a whole internal/api run.
+
+`scripts/test-fast.sh` runs `go test -short` for internal/api in up to 6
+shards from one binary, with CI's weights and quarantine skips (`-r REGEX`
+narrows tests). pre-push uses it. Failures print test names and keep the
+shard logs. Test builds hash passwords at bcrypt's minimum cost: over 10
+minutes serial became about 3.
 
 ## Expected effect of the lane changes
 

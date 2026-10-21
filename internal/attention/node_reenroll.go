@@ -1,6 +1,7 @@
 package attention
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -56,4 +57,19 @@ func renewalDetail(r *apiclient.NodeCertRenewal) string {
 		out += ". Next retry " + r.NextRetryAt.UTC().Format("2006-01-02 15:04 MST")
 	}
 	return out
+}
+
+// nodeFailureItem flags a node the failure policy has acted on or is waiting on.
+func nodeFailureItem(n apiclient.NodeResource, f *apiclient.NodeFailureSummary) Item {
+	detail := "unreachable, " + strconv.Itoa(f.Moved) + " resource(s) moved to healthy nodes"
+	sev := Warning
+	if f.NeedsYou > 0 {
+		sev = Critical
+		detail += ", " + strconv.Itoa(f.NeedsYou) + " with node-local data need your decision"
+	}
+	it := newItem(sev, KindNodeFailure, n.Name, detail)
+	it.ID = KindNodeFailure + ":" + n.ID
+	it.Link = linkNodes + "/" + n.ID
+	it.Params = map[string]string{"node_id": n.ID}
+	return it
 }

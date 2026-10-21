@@ -232,6 +232,7 @@ type Store interface {
 	AppGitHubActionsStore
 	CIOIDCTrustStore
 	ImageAutoUpdateStore
+	BuildHookStore
 	AppSleepStore
 	DataImportStore
 	MigrationHubStore
@@ -243,10 +244,9 @@ type Store interface {
 	CanaryStore
 	DatabaseQueryStore
 	PreviewEnvironmentStore
+	BranchDeployStore
 	GitHubAppStore
-	GitLabAppStore
-	BitbucketAppStore
-	GiteaAppStore
+	GitConnectionsStore
 	OAuthSettingsStore
 	OAuthIdentityStore
 	EmailSettingsStore

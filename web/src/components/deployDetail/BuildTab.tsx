@@ -3,7 +3,9 @@ import {
   HourglassIcon,
   PackageIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { useTranslation } from 'react-i18next'
 import { buttonVariants } from '@/components/ui/button'
+import { EffectiveConfigPanel } from '../EffectiveConfigPanel'
 import { BuildLogHints } from '../BuildLogHints'
 import { DeployStepFeed } from '../DeployStepFeed'
 import { LogTerminal } from '../LogTerminal'
@@ -59,6 +61,7 @@ export function BuildTab({
   resume: () => void
 }) {
   const { t } = useDeployDetailT()
+  const { t: tc } = useTranslation('deployContexts')
   const builder = gitSource
     ? t(`build.builderValue.${gitSource.build_type}`)
     : undefined
@@ -163,6 +166,14 @@ export function BuildTab({
           </div>
         </div>
       )}
+      <details className="rounded-lg border border-border p-3">
+        <summary className="cursor-pointer text-sm font-medium text-foreground">
+          {tc('effective.title')}
+        </summary>
+        <div className="pt-3">
+          <EffectiveConfigPanel appName={appName} />
+        </div>
+      </details>
     </div>
   )
 }

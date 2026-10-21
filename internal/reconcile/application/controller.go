@@ -44,8 +44,10 @@ import (
 	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	"github.com/GLINCKER/levelrail/internal/secretrotation"
 	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/vault"
 	"github.com/GLINCKER/levelrail/kit/probe"
 )
 
@@ -1571,9 +1573,17 @@ func (c *Controller) resolveVaultEnv(ctx context.Context, vaultEnv map[string]st
 		return nil, fmt.Errorf("resolve vault credential: %w", err)
 	}
 
+	now := time.Now()
+	var previous string
+	if !settings.PreviousExpiresAt.IsZero() && now.Before(settings.PreviousExpiresAt) {
+		previous, _ = c.secretResolver.Resolve(ctx, store.VaultSecretsKey(), store.VaultCredentialEnvKey+secretrotation.PreviousSuffix)
+	}
+
 	env := make(map[string]string, len(vaultEnv))
 	for envVar, ref := range vaultEnv {
-		value, err := c.vaultResolver.Resolve(ctx, settings, credential, ref.Path, ref.Key)
+		value, err := vault.ResolveWithGrace(now, settings.PreviousExpiresAt, credential, previous, func(cred string) (string, error) {
+			return c.vaultResolver.Resolve(ctx, settings, cred, ref.Path, ref.Key)
+		})
 		if err != nil {
 			return nil, fmt.Errorf("env var %q (vault path %q, key %q): %w", envVar, ref.Path, ref.Key, err)
 		}

@@ -47,27 +47,49 @@ func (r runRecorder) RecordBuildRun(ctx context.Context, run build.Run) error {
 
 // BuildLimitsSource resolves saved overrides over the env defaults on every build.
 func BuildLimitsSource(s BuildPerformanceStore, env build.Limits) build.LimitsSource {
-	return func(ctx context.Context) build.Limits {
+	return func(ctx context.Context, app string) build.Limits {
 		eff, _ := resolveBuildLimits(ctx, s, env)
+		eff, _ = resolveAppBuildLimits(ctx, s, eff, app)
 		return eff
 	}
 }
 
 func resolveBuildLimits(ctx context.Context, s BuildPerformanceStore, env build.Limits) (build.Limits, buildLimitOverrides) {
-	eff := env
+	return resolveScopedBuildLimits(ctx, s, env, func(k string) string { return k })
+}
+
+// resolveAppBuildLimits layers app's overrides over base. Concurrency is a
+// control-plane wide slot count, so it is never overridden per app.
+func resolveAppBuildLimits(ctx context.Context, s BuildPerformanceStore, base build.Limits, app string) (build.Limits, buildLimitOverrides) {
+	eff, ov := resolveScopedBuildLimits(ctx, s, base, func(k string) string { return store.BuildLimitAppKey(app, k) })
+	eff.MaxConcurrent, ov.MaxConcurrent = base.MaxConcurrent, nil
+	return eff, ov
+}
+
+func resolveScopedBuildLimits(ctx context.Context, s BuildPerformanceStore, base build.Limits, key func(string) string) (build.Limits, buildLimitOverrides) {
+	eff := base
 	var ov buildLimitOverrides
 	if s == nil {
 		return eff, ov
 	}
-	if v, ok, err := s.GetBuildLimitSetting(ctx, store.BuildLimitMaxConcurrent); err == nil && ok && v >= 0 {
-		eff.MaxConcurrent = int(v)
-		n := int(v)
-		ov.MaxConcurrent = &n
+	get := func(k string) (int, bool) {
+		v, ok, err := s.GetBuildLimitSetting(ctx, key(k))
+		if err != nil || !ok || v < 0 {
+			return 0, false
+		}
+		return int(v), true
 	}
-	if v, ok, err := s.GetBuildLimitSetting(ctx, store.BuildLimitTimeoutSeconds); err == nil && ok && v >= 0 {
-		eff.Timeout = time.Duration(v) * time.Second
-		n := int(v)
-		ov.TimeoutSeconds = &n
+	if n, ok := get(store.BuildLimitMaxConcurrent); ok {
+		eff.MaxConcurrent, ov.MaxConcurrent = n, &n
+	}
+	if n, ok := get(store.BuildLimitTimeoutSeconds); ok {
+		eff.Timeout, ov.TimeoutSeconds = time.Duration(n)*time.Second, &n
+	}
+	if n, ok := get(store.BuildLimitMemoryMB); ok {
+		eff.MemoryMB, ov.MemoryMB = n, &n
+	}
+	if n, ok := get(store.BuildLimitCPUMillis); ok {
+		eff.CPUMillis, ov.CPUMillis = n, &n
 	}
 	return eff, ov
 }
@@ -75,12 +97,43 @@ func resolveBuildLimits(ctx context.Context, s BuildPerformanceStore, env build.
 type buildLimitOverrides struct {
 	MaxConcurrent  *int `json:"max_concurrent,omitempty"`
 	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
+	MemoryMB       *int `json:"memory_mb,omitempty"`
+	CPUMillis      *int `json:"cpu_millis,omitempty"`
 }
 
 type buildLimitValues struct {
 	MaxConcurrent  int `json:"max_concurrent"`
 	TimeoutSeconds int `json:"timeout_seconds"`
+	MemoryMB       int `json:"memory_mb"`
+	CPUMillis      int `json:"cpu_millis"`
 }
+
+const (
+	maxBuildMemoryMB  = 1 << 20
+	maxBuildCPUMillis = 256 * 1000
+	maxBuildTimeoutS  = 7 * 24 * 3600
+)
+
+// valid reports whether every set override is in range; 0 means unlimited.
+func (o buildLimitOverrides) valid() bool {
+	in := func(p *int, hi int) bool { return p == nil || (*p >= 0 && *p <= hi) }
+	return in(o.MaxConcurrent, 64) && in(o.TimeoutSeconds, maxBuildTimeoutS) && in(o.MemoryMB, maxBuildMemoryMB) && in(o.CPUMillis, maxBuildCPUMillis)
+}
+
+func (o buildLimitOverrides) empty() bool {
+	return o.MaxConcurrent == nil && o.TimeoutSeconds == nil && o.MemoryMB == nil && o.CPUMillis == nil
+}
+
+func (o buildLimitOverrides) entries(key func(string) string) map[string]*int {
+	return map[string]*int{
+		key(store.BuildLimitMaxConcurrent):  o.MaxConcurrent,
+		key(store.BuildLimitTimeoutSeconds): o.TimeoutSeconds,
+		key(store.BuildLimitMemoryMB):       o.MemoryMB,
+		key(store.BuildLimitCPUMillis):      o.CPUMillis,
+	}
+}
+
+var buildLimitKeys = []string{store.BuildLimitMaxConcurrent, store.BuildLimitTimeoutSeconds, store.BuildLimitMemoryMB, store.BuildLimitCPUMillis}
 
 type buildLimitsResponse struct {
 	Effective buildLimitValues    `json:"effective"`
@@ -89,7 +142,7 @@ type buildLimitsResponse struct {
 }
 
 func toLimitValues(l build.Limits) buildLimitValues {
-	return buildLimitValues{MaxConcurrent: l.MaxConcurrent, TimeoutSeconds: int(l.Timeout.Seconds())}
+	return buildLimitValues{MaxConcurrent: l.MaxConcurrent, TimeoutSeconds: int(l.Timeout.Seconds()), MemoryMB: l.MemoryMB, CPUMillis: l.CPUMillis}
 }
 
 type buildStatsRun struct {
@@ -178,28 +231,16 @@ func (rt *Router) handleSetBuildLimits(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.MaxConcurrent == nil && req.TimeoutSeconds == nil {
-		writeError(w, http.StatusBadRequest, "set max_concurrent, timeout_seconds or both (0 means unlimited)")
+	if req.empty() {
+		writeError(w, http.StatusBadRequest, "set at least one of max_concurrent, timeout_seconds, memory_mb, cpu_millis (0 means unlimited)")
 		return
 	}
-	if (req.MaxConcurrent != nil && (*req.MaxConcurrent < 0 || *req.MaxConcurrent > 64)) ||
-		(req.TimeoutSeconds != nil && (*req.TimeoutSeconds < 0 || *req.TimeoutSeconds > 7*24*3600)) {
-		writeError(w, http.StatusBadRequest, "max_concurrent must be 0 to 64 and timeout_seconds 0 to 604800")
+	if !req.valid() {
+		writeError(w, http.StatusBadRequest, "max_concurrent must be 0 to 64, timeout_seconds 0 to 604800, memory_mb 0 to 1048576, cpu_millis 0 to 256000")
 		return
 	}
-	_, _, actor, _ := rt.currentActor(r)
-	now := time.Now()
-	if req.MaxConcurrent != nil {
-		if err := rt.buildPerf.SetBuildLimitSetting(r.Context(), store.BuildLimitMaxConcurrent, int64(*req.MaxConcurrent), actor, now); err != nil {
-			rt.internalError(w, "api: set build limit failed", err)
-			return
-		}
-	}
-	if req.TimeoutSeconds != nil {
-		if err := rt.buildPerf.SetBuildLimitSetting(r.Context(), store.BuildLimitTimeoutSeconds, int64(*req.TimeoutSeconds), actor, now); err != nil {
-			rt.internalError(w, "api: set build limit failed", err)
-			return
-		}
+	if !rt.storeBuildLimits(w, r, req, func(k string) string { return k }) {
+		return
 	}
 	writeJSON(w, http.StatusOK, rt.buildLimitsView(r.Context()))
 }
@@ -209,11 +250,100 @@ func (rt *Router) handleResetBuildLimits(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotImplemented, "build limits are not available on this control plane")
 		return
 	}
-	for _, k := range []string{store.BuildLimitMaxConcurrent, store.BuildLimitTimeoutSeconds} {
+	for _, k := range buildLimitKeys {
 		if err := rt.buildPerf.ClearBuildLimitSetting(r.Context(), k); err != nil {
 			rt.internalError(w, "api: reset build limits failed", err)
 			return
 		}
 	}
 	writeJSON(w, http.StatusOK, rt.buildLimitsView(r.Context()))
+}
+
+func (rt *Router) storeBuildLimits(w http.ResponseWriter, r *http.Request, req buildLimitOverrides, key func(string) string) bool {
+	_, _, actor, _ := rt.currentActor(r)
+	now := time.Now()
+	for k, v := range req.entries(key) {
+		if v == nil {
+			continue
+		}
+		if err := rt.buildPerf.SetBuildLimitSetting(r.Context(), k, int64(*v), actor, now); err != nil {
+			rt.internalError(w, "api: set build limit failed", err)
+			return false
+		}
+	}
+	return true
+}
+
+type appBuildLimitsResponse struct {
+	Effective buildLimitValues    `json:"effective"`
+	Global    buildLimitValues    `json:"global"`
+	Overrides buildLimitOverrides `json:"overrides"`
+}
+
+func (rt *Router) appBuildLimitsView(ctx context.Context, app string) appBuildLimitsResponse {
+	global, _ := resolveBuildLimits(ctx, rt.buildPerf, build.LimitsFromEnv(os.LookupEnv))
+	eff, ov := resolveAppBuildLimits(ctx, rt.buildPerf, global, app)
+	return appBuildLimitsResponse{Effective: toLimitValues(eff), Global: toLimitValues(global), Overrides: ov}
+}
+
+// appForBuildLimits answers 501 or 404 itself and returns false when the request cannot proceed.
+func (rt *Router) appForBuildLimits(w http.ResponseWriter, r *http.Request) (string, bool) {
+	if rt.buildPerf == nil {
+		writeError(w, http.StatusNotImplemented, "build limits are not available on this control plane")
+		return "", false
+	}
+	name := r.PathValue("name")
+	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return "", false
+	} else if err != nil {
+		rt.internalError(w, "api: build limits: load app failed", err)
+		return "", false
+	}
+	return name, true
+}
+
+func (rt *Router) handleGetAppBuildLimits(w http.ResponseWriter, r *http.Request) {
+	if name, ok := rt.appForBuildLimits(w, r); ok {
+		writeJSON(w, http.StatusOK, rt.appBuildLimitsView(r.Context(), name))
+	}
+}
+
+func (rt *Router) handleSetAppBuildLimits(w http.ResponseWriter, r *http.Request) {
+	name, ok := rt.appForBuildLimits(w, r)
+	if !ok {
+		return
+	}
+	var req buildLimitOverrides
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<12)).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	req.MaxConcurrent = nil
+	if req.empty() {
+		writeError(w, http.StatusBadRequest, "set at least one of timeout_seconds, memory_mb, cpu_millis (0 means unlimited)")
+		return
+	}
+	if !req.valid() {
+		writeError(w, http.StatusBadRequest, "timeout_seconds must be 0 to 604800, memory_mb 0 to 1048576, cpu_millis 0 to 256000")
+		return
+	}
+	if !rt.storeBuildLimits(w, r, req, func(k string) string { return store.BuildLimitAppKey(name, k) }) {
+		return
+	}
+	writeJSON(w, http.StatusOK, rt.appBuildLimitsView(r.Context(), name))
+}
+
+func (rt *Router) handleResetAppBuildLimits(w http.ResponseWriter, r *http.Request) {
+	name, ok := rt.appForBuildLimits(w, r)
+	if !ok {
+		return
+	}
+	for _, k := range buildLimitKeys {
+		if err := rt.buildPerf.ClearBuildLimitSetting(r.Context(), store.BuildLimitAppKey(name, k)); err != nil {
+			rt.internalError(w, "api: reset app build limits failed", err)
+			return
+		}
+	}
+	writeJSON(w, http.StatusOK, rt.appBuildLimitsView(r.Context(), name))
 }

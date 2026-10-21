@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
 import { formatAge } from '../../lib/format'
 import {
   nodeDetailQueryOptions,
@@ -7,19 +6,20 @@ import {
   nodeListQueryOptions,
   useNode,
   useNodeHealth,
-  useSetNodeRegion,
   useSetNodeWorkloads,
 } from '../../queries/nodes'
-import type { NodeResource } from '../../types/nodeDetail'
 import { ConditionsPanel } from '../../components/ConditionsPanel'
 import { NodeDetailHeader } from '../../components/nodes/NodeDetailHeader'
 import { NodeAgentCard } from '../../components/NodeAgentCard'
 import { NodeNeverConnectedAlert } from '../../components/NodeNeverConnected'
 import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
+import { NodeCapacityCard } from '../../components/nodes/NodeCapacityCard'
 import { NodeCapacityForecastCard } from '../../components/NodeCapacityForecastCard'
 import { NodeGpuCard } from '../../components/NodeGpuCard'
 import { NodeDrainsCard } from '../../components/NodeDrainsCard'
+import { NodeFailureCard } from '../../components/NodeFailureCard'
 import { NodeLabelsCard } from '../../components/NodeLabelsCard'
+import { NodeRegionCard } from '../../components/nodes/NodeRegionCard'
 import { NodeAllocationCard } from '../../components/nodes/NodeAllocationCard'
 import { NodeMeshCard } from '../../components/NodeMeshCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
@@ -27,11 +27,9 @@ import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
 import { NodeEventsCard } from '../../components/NodeEventsCard'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { InfoTip } from '../../components/kit/InfoTip'
-import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -235,9 +233,11 @@ function NodeDetailPage() {
       <NodeAllocationCard nodeId={id} />
       <NodeLabelsCard nodeId={id} />
       <NodeDrainsCard nodeId={id} />
+      <NodeFailureCard nodeId={id} />
 
       <NodePatchStatusCard nodeId={id} />
       <NodeEventsCard nodeId={id} />
+      <NodeCapacityCard nodeId={id} />
       <NodeCapacityForecastCard nodeId={id} />
 
       <NodeMetricsDashboard nodeId={id} />
@@ -302,76 +302,6 @@ function NodeDetailSkeleton() {
         </Card>
       ))}
     </div>
-  )
-}
-
-// Rendered with key={node.id} by its caller so switching to a different
-// node's detail page remounts this component instead of needing an
-// effect to resync local draft state with the new node's region.
-function NodeRegionCard({ node }: { node: NodeResource }) {
-  const setRegion = useSetNodeRegion()
-  const [regionDraft, setRegionDraft] = useState(node.region ?? '')
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Location</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <Field>
-          <FieldLabel
-            htmlFor="node-region"
-            className="flex items-center gap-1.5"
-          >
-            Region
-            <InfoTip label="What region does">
-              A free-text label such as "hetzner-fsn1" or "home-lab", used to
-              group this node into a zone on the network topology page. Display
-              only: it does not affect routing or access control.
-            </InfoTip>
-          </FieldLabel>
-          <div className="flex items-center gap-2">
-            <Input
-              id="node-region"
-              value={regionDraft}
-              placeholder="e.g. hetzner-fsn1"
-              disabled={setRegion.isPending}
-              onChange={(e) => setRegionDraft(e.target.value)}
-              className="max-w-xs"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={
-                setRegion.isPending || regionDraft === (node.region ?? '')
-              }
-              onClick={() => {
-                setRegion.mutate(
-                  { id: node.id, region: regionDraft.trim() },
-                  {
-                    onSuccess: () => {
-                      toast.add({ title: 'Region updated.', type: 'success' })
-                    },
-                  },
-                )
-              }}
-            >
-              Save
-            </Button>
-          </div>
-        </Field>
-        <FieldDescription>
-          Grouping metadata for the network topology view. Nodes with no region
-          set are grouped by node name instead.
-        </FieldDescription>
-        {setRegion.isError ? (
-          <Alert variant="destructive">
-            <AlertDescription>{setRegion.error.message}</AlertDescription>
-          </Alert>
-        ) : null}
-      </CardContent>
-    </Card>
   )
 }
 

@@ -12,6 +12,8 @@ import {
   retryNow,
   subscribeConnection,
 } from '../../lib/connectionStore'
+import { DockerDegradedBanner } from './DockerDegradedBanner'
+import { useDockerDegraded } from './useDockerDegraded'
 import { CleanUpDockerDialog } from '../CleanUpDockerDialog'
 import { pickBanner, type PlatformIssue } from './platformIssues'
 import { snoozeNow, useSnoozed } from './snoozeStore'
@@ -59,6 +61,7 @@ export function ShellBanner() {
     getConnectionSnapshot,
   )
   const issues = usePlatformIssues()
+  const degraded = useDockerDegraded()
   const onDashboard = useRouterState({
     select: (s) => s.location.pathname === '/',
   })
@@ -92,6 +95,9 @@ export function ShellBanner() {
         Can&apos;t reach the control plane. Live updates are paused.
       </Bar>
     )
+  }
+  if (degraded.active) {
+    return <DockerDegradedBanner state={degraded} />
   }
   if (kind === 'docker') {
     return (

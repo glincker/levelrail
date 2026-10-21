@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { StuckPanel } from '../../components/StuckPanel'
 import { DomainPolicyPage } from '../../components/domain/DomainPolicyPage'
 import { DOMAIN_TABS, type DomainTab } from '../../components/domain/domainTabs'
 import { domainPoliciesQueryOptions } from '../../queries/domainPolicies'
@@ -32,13 +33,16 @@ function DomainRoute() {
   const { app, tab } = Route.useSearch()
   const navigate = Route.useNavigate()
   return (
-    <DomainPolicyPage
-      app={app}
-      domain={domain}
-      tab={tab ?? 'overview'}
-      onTab={(next) => {
-        void navigate({ search: { app, tab: next }, replace: true })
-      }}
-    />
+    <div className="space-y-4">
+      {app ? <StuckPanel kind="domain" name={domain} appName={app} /> : null}
+      <DomainPolicyPage
+        app={app}
+        domain={domain}
+        tab={tab ?? 'overview'}
+        onTab={(next) => {
+          void navigate({ search: { app, tab: next }, replace: true })
+        }}
+      />
+    </div>
   )
 }

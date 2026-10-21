@@ -104,7 +104,9 @@ function NavLinkItem({
       ? t(trafficKey, { count })
       : item.badge === 'approvals'
         ? `${String(count)} pending approvals`
-        : `${String(count)} failing apps`
+        : item.badge === 'inbox'
+          ? `${String(count)} unread in inbox`
+          : `${String(count)} failing apps`
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
@@ -123,7 +125,11 @@ function NavLinkItem({
         <span>{label}</span>
         <NavBadge
           count={count}
-          tone={item.badge === 'approvals' ? 'warning' : 'danger'}
+          tone={
+            item.badge === 'approvals' || item.badge === 'inbox'
+              ? 'warning'
+              : 'danger'
+          }
           label={badgeLabel}
         />
       </SidebarMenuButton>

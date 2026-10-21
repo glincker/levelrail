@@ -10,6 +10,7 @@ import (
 const (
 	ProxyIntegrationOff         = "off"
 	ProxyIntegrationTraefikFile = "traefik_file"
+	ProxyIntegrationNginxFile   = "nginx_file"
 )
 
 // Proxy loaded verdicts for ProxyRouteStatus.ProxyLoaded.
@@ -34,16 +35,22 @@ type ProxyIntegrationSettings struct {
 	EntrypointHTTPS string
 	CertResolver    string
 	UpstreamHost    string
+	// Container, CertDir and Webroot are nginx only: the proxy container to
+	// validate and reload, the in-container certificate directory and the
+	// optional ACME webroot.
+	Container string
+	CertDir   string
+	Webroot   string
 }
 
 // Enabled reports whether managed routes are on.
 func (s ProxyIntegrationSettings) Enabled() bool {
-	return s.Mode == ProxyIntegrationTraefikFile
+	return s.Mode == ProxyIntegrationTraefikFile || s.Mode == ProxyIntegrationNginxFile
 }
 
 // ValidProxyIntegrationMode reports whether mode is a known value.
 func ValidProxyIntegrationMode(mode string) bool {
-	return mode == ProxyIntegrationOff || mode == ProxyIntegrationTraefikFile
+	return mode == ProxyIntegrationOff || mode == ProxyIntegrationTraefikFile || mode == ProxyIntegrationNginxFile
 }
 
 // ProxyRouteStatus is one domain's managed route: what was written and the
@@ -71,9 +78,9 @@ type ProxyRouteStatus struct {
 func (db *DB) GetProxyIntegrationSettings(ctx context.Context) (ProxyIntegrationSettings, error) {
 	var s ProxyIntegrationSettings
 	err := db.QueryRowContext(ctx, `
-		SELECT mode, dynamic_dir, entrypoint_http, entrypoint_https, cert_resolver, upstream_host
+		SELECT mode, dynamic_dir, entrypoint_http, entrypoint_https, cert_resolver, upstream_host, container, cert_dir, webroot
 		FROM proxy_integration_settings WHERE id = 1
-	`).Scan(&s.Mode, &s.DynamicDir, &s.EntrypointHTTP, &s.EntrypointHTTPS, &s.CertResolver, &s.UpstreamHost)
+	`).Scan(&s.Mode, &s.DynamicDir, &s.EntrypointHTTP, &s.EntrypointHTTPS, &s.CertResolver, &s.UpstreamHost, &s.Container, &s.CertDir, &s.Webroot)
 	if err != nil {
 		return ProxyIntegrationSettings{}, fmt.Errorf("store: get proxy integration settings: %w", err)
 	}
@@ -83,13 +90,14 @@ func (db *DB) GetProxyIntegrationSettings(ctx context.Context) (ProxyIntegration
 // UpdateProxyIntegrationSettings replaces the singleton row in full.
 func (db *DB) UpdateProxyIntegrationSettings(ctx context.Context, s ProxyIntegrationSettings) error {
 	if !ValidProxyIntegrationMode(s.Mode) {
-		return fmt.Errorf("store: proxy integration mode %q is not off or traefik_file", s.Mode)
+		return fmt.Errorf("store: proxy integration mode %q is not off, traefik_file or nginx_file", s.Mode)
 	}
 	_, err := db.ExecContext(ctx, `
 		UPDATE proxy_integration_settings
-		SET mode = ?, dynamic_dir = ?, entrypoint_http = ?, entrypoint_https = ?, cert_resolver = ?, upstream_host = ?
+		SET mode = ?, dynamic_dir = ?, entrypoint_http = ?, entrypoint_https = ?, cert_resolver = ?, upstream_host = ?,
+			container = ?, cert_dir = ?, webroot = ?
 		WHERE id = 1
-	`, s.Mode, s.DynamicDir, s.EntrypointHTTP, s.EntrypointHTTPS, s.CertResolver, s.UpstreamHost)
+	`, s.Mode, s.DynamicDir, s.EntrypointHTTP, s.EntrypointHTTPS, s.CertResolver, s.UpstreamHost, s.Container, s.CertDir, s.Webroot)
 	if err != nil {
 		return fmt.Errorf("store: update proxy integration settings: %w", err)
 	}

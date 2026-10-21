@@ -73,23 +73,33 @@ The script:
 
 Pass `--profile minimal|standard|suite` to choose how much starts (default `standard`); see [Server profiles](/profiles).
 
+<Accordion title="If the install fails">
+
+| Message | What to do |
+| --- | --- |
+| `control plane did not become healthy within 60s` | `systemctl status levelrail` and `journalctl -u levelrail -n 100 --no-pager`. Raise the wait with `LEVELRAIL_HEALTH_WAIT` if the first start is slow on a small server. |
+| `N preflight check(s) failed. Fix them, or re-run with --force to continue anyway.` | Fix each row marked `fail`, or re-run with `--force`. |
+| `could not list releases from GitHub. Set LEVELRAIL_VERSION=vX.Y.Z to pin one.` | Check outbound HTTPS from the server, or pin a release. |
+| `download failed: ...` | The release may not ship a binary for your architecture. Pin another release with `LEVELRAIL_VERSION`. |
+| `checksum mismatch for ...` | Run the installer again. Do not skip verification to get past this. |
+
+</Accordion>
+
 <Note>
 A missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECKSUM=1`. The installer picks the newest stable release; choose explicitly with `LEVELRAIL_CHANNEL=stable|beta`. A release with no binary for your architecture is skipped with a warning. Some providers never route a server's own public IP back to itself, so treat a failed reachability test as a hint, not proof.
 </Note>
 
 ### First sign-in
 
-<img src="/assets/screenshots/setup-wizard-light.png" alt="Levelrail setup wizard on a fresh install: server checks with a Continue button" className="block dark:hidden" />
-<img src="/assets/screenshots/setup-wizard.png" alt="Levelrail setup wizard on a fresh install: server checks with a Continue button" className="hidden dark:block" />
 
 <Steps>
 <Step title="Open the setup link">
-Open one of the `http://<ip>:8080/login?setup=<token>` links from the install summary. The public address is printed first, then private addresses. Container bridge addresses are hidden.
+Open one of the `http://<ip>:8080/login#setup=<token>` links from the install summary. The public address is printed first, then private addresses. Container bridge addresses are hidden.
 
 **8080 is only the default.** If that port was taken, `install.sh` picks the next free one (`LEVELRAIL_DASHBOARD_PORT`) and prints the real one. Use the port from your own output.
 </Step>
 <Step title="Create the admin account">
-After you create the admin account, the setup wizard opens and runs the server checks shown above.
+After you create the admin account, the first-run screen opens: enable HTTPS in one click, then deploy your first app.
 </Step>
 <Step title="Enable HTTPS">
 The dashboard shows a "connection is not encrypted" banner until you enable HTTPS. Once you have an `https://` **dashboard URL**, sign-in over plain HTTP is refused, so switch to the https address right after. The certificate contact email defaults to your admin account email; change it if you want notices elsewhere.
@@ -392,11 +402,7 @@ npm run dev       # Vite dev server
 npm run build     # type-check and production build
 ```
 
-The control plane listens on `:8080` by default. For a throwaway local instance, start it with `APP_DEV_MODE=1`: it creates a fixed `dev`/`dev` admin and fixed API tokens from `test/fixtures/dev-fixtures.yml` so you can skip sign-up.
-
-<Warning>
-Dev mode is for local use only. A release build (`-tags embedweb`) ignores `APP_DEV_MODE`, so it can never run this way in production.
-</Warning>
+The control plane listens on `:8080` by default. For a throwaway instance on your laptop, see [Run it on your laptop](/local-development).
 
 ## Installing just the CLI
 
@@ -420,6 +426,13 @@ export APP_API_URL=https://your-dashboard-domain
 </Step>
 <Step title="Log in">
 <Tabs>
+<Tab title="Pairing code (a person, fastest)">
+```bash
+levelrail-cli login --api-url https://your-dashboard-domain --code ABCD-EF23
+```
+
+Open the dashboard home, press **Show my command** on the **Connect your CLI** card and paste the line it prints. The code is single use, expires in minutes, and is issued only to a signed-in dashboard session, so it needs no password and no new-device approval. It works over plain HTTP. A password sign-in from a new device (`levelrail-cli login --api-url ...`) prints the dashboard page to approve it on and a two digit number to type there, and opens the page when a desktop browser is available.
+</Tab>
 <Tab title="Device login (a person)">
 ```bash
 levelrail-cli auth login --device
@@ -613,7 +626,7 @@ docker volume rm levelrail-data
 </Tab>
 </Tabs>
 
-Uninstalling does not touch Docker itself or any containers, images, or volumes Levelrail created for your deployed apps, and `install.sh uninstall` leaves `levelrail-cli` in place. Remove those separately if needed.
+Uninstalling does not touch Docker itself or any containers, images, or volumes Levelrail created for your deployed apps, and `install.sh uninstall` also removes `levelrail-cli` from `/usr/local/bin`. Remove the apps' containers separately if needed.
 
 ## Troubleshooting
 
@@ -655,5 +668,5 @@ Likely cause: the token is single-use and valid for 15 minutes, or the dashboard
 
 How to confirm: check the original install output for the full URL, or check Settings > Updates > Server readiness to see the current dashboard address.
 
-Fix: on the server, run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` to print a new token, then visit `http://<server>:<port>/login?setup=<token>` with the fresh token.
+Fix: on the server, run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` to print a new token, then visit `http://<server>:<port>/login#setup=<token>` with the fresh token.
 

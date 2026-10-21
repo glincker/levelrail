@@ -46,7 +46,7 @@ var (
 	hostPattern = regexp.MustCompile(`\b[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:com|net|org|io|dev|app|co|cloud|ai|xyz|me|us|uk|de|eu|sh|tech|info|biz|in|fr|nl|ru|cn|jp|site|online|page)\b`)
 	ipPattern   = regexp.MustCompile(`\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b`)
 
-	allowedHostSuffixes = []string{".example.com", ".example", ".invalid", ".internal", ".local", "docker.io", "example.com"}
+	allowedHostSuffixes = []string{".example.com", ".example", ".invalid", ".internal", ".local", "docker.io", "example.com", "sslip.io", "nip.io", "traefik.me"}
 	fileExtensions      = map[string]bool{
 		"gz": true, "json": true, "sql": true, "yaml": true, "yml": true, "md": true, "txt": true, "go": true, "ts": true, "tsx": true,
 		"js": true, "tgz": true, "zip": true, "dump": true, "log": true, "sum": true, "mod": true, "toml": true, "conf": true, "env": true,

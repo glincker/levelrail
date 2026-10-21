@@ -23,8 +23,8 @@ func TestController_Reconcile_HoldsHostWhenBackendDisappears(t *testing.T) {
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if routes := applier.routes(t); len(routes) != 1 {
-		t.Fatalf("running: routes = %d, want 1", len(routes))
+	if routes := applier.routes(t); len(routes) != 2 {
+		t.Fatalf("running: routes = %d, want 2", len(routes))
 	}
 
 	rt.mu.Lock()
@@ -36,8 +36,8 @@ func TestController_Reconcile_HoldsHostWhenBackendDisappears(t *testing.T) {
 		t.Fatal(err)
 	}
 	routes := applier.routes(t)
-	if len(routes) != 1 {
-		t.Fatalf("backend gone: routes = %d, want 1 hold route", len(routes))
+	if len(routes) != 2 {
+		t.Fatalf("backend gone: routes = %d, want hold + diagnostic routes", len(routes))
 	}
 	h, ok := pageHandler(routes[0].Handle[0])
 	if !ok || h.StatusCode != 503 || h.Headers["Retry-After"] == nil {

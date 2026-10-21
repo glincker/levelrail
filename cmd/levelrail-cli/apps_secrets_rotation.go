@@ -19,6 +19,8 @@ func appsSecretsRotationUsage(prog string) string {
   %[1]s apps secrets rotation remove <name> <key> [flags]              remove a policy
   %[1]s apps secrets rotation rotate <name> <key> --yes [flags]        rotate a generated secret now and restart the app
 
+  %[1]s apps secrets rotation replace <name> <key> [--value-file PATH|-] --yes [flags]   write a new value (generated without --value-file), keep the old one for the grace window, no restart
+
 Only secrets marked --auto are ever given a generated value. Values are never printed.
 `, prog)
 }
@@ -42,6 +44,8 @@ func runAppsSecretsRotation(prog string, args []string, stdout, stderr io.Writer
 		return runRotationRemove(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rotate":
 		return runRotationRotate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "replace":
+		return runRotationReplace(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps secrets rotation subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsSecretsRotationUsage(prog))

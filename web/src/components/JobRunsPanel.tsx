@@ -206,7 +206,13 @@ export function JobRunsPanel({ appName }: { appName: string }) {
       header: t('history.columns.exit'),
       priority: 3,
       cell: (run) => (
-        <span className="font-mono text-xs">{run.exit_code ?? '-'}</span>
+        <span className="font-mono text-xs">
+          {run.exit_code === undefined
+            ? '-'
+            : run.mode === 'http'
+              ? t('history.httpStatus', { code: run.exit_code })
+              : run.exit_code}
+        </span>
       ),
     },
     {

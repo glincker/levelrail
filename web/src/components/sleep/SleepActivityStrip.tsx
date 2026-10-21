@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { RelativeTime } from '../kit/RelativeTime'
 import { sleepCountdown } from '../../lib/sleepState'
 import type { SleepActivity } from '../../queries/appSleep'
+import { setVisibleInterval } from '../../lib/pageVisibility'
 
 const TICK_MS = 1000
 
@@ -30,8 +31,8 @@ export function SleepActivityStrip({ activity }: { activity: SleepActivity }) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (!willSleepAt) return
-    const id = window.setInterval(() => setNow(Date.now()), TICK_MS)
-    return () => window.clearInterval(id)
+    const stop = setVisibleInterval(() => setNow(Date.now()), TICK_MS)
+    return () => stop()
   }, [willSleepAt])
 
   const countdown = sleepCountdown(willSleepAt, now)

@@ -24,9 +24,9 @@ func TestParseBitbucketPushEvent(t *testing.T) {
 			want: PushEvent{Ref: "refs/heads/feature/x", After: "c0ffee"},
 		},
 		{
-			name:    "branch delete (new is null)",
-			body:    `{"push":{"changes":[{"new":null,"old":{"type":"branch","name":"main","target":{"hash":"def456"}}}]}}`,
-			wantErr: ErrPushEventFieldsMissing,
+			name: "branch delete (new is null)",
+			body: `{"push":{"changes":[{"new":null,"old":{"type":"branch","name":"feature/x","target":{"hash":"def456"}}}]}}`,
+			want: PushEvent{Ref: "refs/heads/feature/x", Before: "def456", Deleted: true},
 		},
 		{
 			name:    "no changes",

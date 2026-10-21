@@ -35,6 +35,10 @@ type CertFacts struct {
 	NotAfter  time.Time
 	// Routed is false for a certificate whose domain no app or site serves.
 	Routed bool
+	// RenewalFailed is true when the CA refused the last renewal; NearExpiry
+	// when an auto-renewed certificate is inside the failure window.
+	RenewalFailed bool
+	NearExpiry    bool
 }
 
 // ShortLivedCertLimit reads APP_ATTENTION_SHORT_LIVED_CERT.
@@ -48,10 +52,10 @@ func ShortLivedCertLimit() time.Duration {
 // CertExpiryClass returns ClassIncident when the certificate's expiry needs
 // an operator, else "". Internal-CA, proxy-owned and unrouted certificates
 // never raise one, and an auto-renewing ACME certificate only does once it
-// expired or its renewal stalled. Uploaded certificates do not renew
+// expired, its renewal stalled or failed, or it is inside the failure window. Uploaded certificates do not renew
 // themselves, so they count as soon as they enter the warning window.
 func CertExpiryClass(f CertFacts, shortLived time.Duration) string {
-	if f.Status == "" || f.Status == certStatusHealthy {
+	if f.Status == "" || (f.Status == certStatusHealthy && !f.RenewalFailed && !f.NearExpiry) {
 		return ""
 	}
 	switch {
@@ -65,7 +69,7 @@ func CertExpiryClass(f CertFacts, shortLived time.Duration) string {
 		return ""
 	case f.Source == certSourceCustom:
 		return ClassIncident
-	case f.Status == certStatusExpired || f.Renewal == certRenewalStalled:
+	case f.Status == certStatusExpired || f.Renewal == certRenewalStalled || f.RenewalFailed || f.NearExpiry:
 		return ClassIncident
 	}
 	return ""

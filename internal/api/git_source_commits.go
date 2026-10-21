@@ -253,7 +253,7 @@ func (rt *Router) buildGitCommitsResponse(ctx context.Context, name string, gs *
 	resp := gitSourceCommitsResponse{
 		RepoURL: redactURLCredentials(gs.RepoURL), Branch: branch, ConnectedBranch: gs.Branch,
 		Provider: b.Provider, Branches: b.Branches, BuildType: gs.BuildType, TriggerMode: gs.TriggerMode,
-		Build:    resolveGitSourceBuild(gs.BuildType, gs.BaseDirectory, gs.BuildPath),
+		Build:    resolveGitSourceBuild(gs.BuildType, gs.BaseDirectory, gs.BuildPath, gs.BuildCommand, gs.PublishDir),
 		Degraded: b.Degraded, FetchedAt: b.FetchedAt,
 		Commits: make([]gitCommitResource, 0, len(b.Commits)),
 	}

@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { BellRingingIcon } from '@phosphor-icons/react/dist/ssr'
 import { useTranslation } from 'react-i18next'
+import { AlertDefaultsPanel } from '../components/AlertDefaultsPanel'
 import { AlertInboxPanel } from '../components/AlertInboxPanel'
 import { AlertHistoryTable } from '../components/AlertHistoryTable'
 import { AlertSilencesPanel } from '../components/AlertSilencesPanel'
@@ -34,7 +35,11 @@ function AlertsPage() {
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="silences">Silences</TabsTrigger>
           <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+          <TabsTrigger value="defaults">{t('defaults.tab')}</TabsTrigger>
         </TabsList>
+        <TabsContent value="defaults" className="pt-3">
+          <AlertDefaultsPanel />
+        </TabsContent>
         <TabsContent value="inbox" className="pt-3">
           <AlertInboxPanel />
         </TabsContent>

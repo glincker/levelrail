@@ -3,9 +3,13 @@ import type { ReactNode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import i18next from 'i18next'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GitRepoSourcePicker } from './GitRepoSourcePicker'
 import type { GitProviderStatus } from '../types/gitProviders'
+import commonEn from '../locales/en/common.json'
+import gitReposEn from '../locales/en/gitRepos.json'
 
 // Same rationale as CreateAppFromGitFields.test.tsx's identical mock:
 // only Link's `to` prop matters here (the "Connect" deep links), no real
@@ -78,33 +82,86 @@ function jsonRoute(body: unknown, status = 200): () => Promise<Response> {
   return () => Promise.resolve(fakeJsonResponse(body, status))
 }
 
+const testI18n = i18next.createInstance()
+void testI18n.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  ns: ['common', 'gitRepos'],
+  defaultNS: 'common',
+  resources: { en: { common: commonEn, gitRepos: gitReposEn } },
+  interpolation: { escapeValue: false },
+})
+
+const baseItem = {
+  archived: false,
+  fork: false,
+  default_branch: 'main',
+  private: false,
+}
+
 const fakeGitHubRepo = {
+  ...baseItem,
+  key: 'acme/app',
   full_name: 'acme/app',
   name: 'app',
-  owner_login: 'acme',
-  private: false,
-  default_branch: 'main',
+  owner: 'acme',
   clone_url: 'https://github.com/acme/app.git',
   account_type: 'organization' as const,
 }
 
 const fakeGiteaRepo = {
+  ...baseItem,
+  key: 'acme/app',
   full_name: 'acme/app',
   name: 'app',
-  private: false,
-  default_branch: 'main',
+  owner: 'acme',
   clone_url: 'https://git.example.com/acme/app.git',
-  web_url: 'https://git.example.com/acme/app',
+  connection_id: 'gc_1',
+  connection_label: 'Work',
+  account: 'ann',
 }
 
 const fakeGitLabProject = {
-  id: 7,
+  ...baseItem,
+  key: '7',
+  full_name: 'acme/web',
   name: 'web',
-  path_with_namespace: 'acme/web',
+  owner: 'acme',
+  private: true,
+  project_id: 7,
   clone_url: 'https://gitlab.example.com/acme/web.git',
-  default_branch: 'main',
-  visibility: 'private',
-  web_url: 'https://gitlab.example.com/acme/web',
+  connection_id: 'gc_1',
+  connection_label: 'Work',
+  account: 'ann',
+}
+
+// The envelope GET /api/v1/git/repos returns around one page of items.
+function listBody(
+  provider: string,
+  items: unknown[],
+  extra: Record<string, unknown> = {},
+) {
+  return {
+    provider,
+    items,
+    total: items.length,
+    loaded: items.length,
+    limit: 100,
+    offset: 0,
+    next_offset: null,
+    has_more: false,
+    truncated: false,
+    cap: 10000,
+    cached_at: '2026-10-20T10:00:00Z',
+    stale: false,
+    refreshing: false,
+    owners: [],
+    ...extra,
+  }
+}
+
+function reposUrl(provider: string, extra = ''): string {
+  return `GET /api/v1/git/repos?provider=${provider}&limit=100${extra}`
 }
 
 function renderPicker() {
@@ -113,11 +170,13 @@ function renderPicker() {
   })
   const onSelect = vi.fn()
   const result = render(
-    <QueryClientProvider client={queryClient}>
-      <Suspense fallback={<div>loading</div>}>
-        <GitRepoSourcePicker onSelect={onSelect} />
-      </Suspense>
-    </QueryClientProvider>,
+    <I18nextProvider i18n={testI18n}>
+      <QueryClientProvider client={queryClient}>
+        <Suspense fallback={<div>loading</div>}>
+          <GitRepoSourcePicker onSelect={onSelect} />
+        </Suspense>
+      </QueryClientProvider>
+    </I18nextProvider>,
   )
   return { onSelect, container: result.container }
 }
@@ -169,7 +228,9 @@ async function pickOption(
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     fireEvent.click(trigger)
     try {
-      fireEvent.click(screen.getByText(optionText))
+      fireEvent.click(
+        screen.getByRole('button', { name: new RegExp(`^${optionText}`) }),
+      )
       settled()
       return
     } catch (err) {
@@ -293,7 +354,7 @@ describe('GitRepoSourcePicker', () => {
     ]
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
-      'GET /api/v1/github-app/repos': jsonRoute({ repos: [fakeGitHubRepo] }),
+      [reposUrl('github')]: jsonRoute(listBody('github', [fakeGitHubRepo])),
     })
 
     renderPicker()
@@ -325,7 +386,7 @@ describe('GitRepoSourcePicker', () => {
     ]
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
-      'GET /api/v1/github-app/repos': jsonRoute({ repos: [fakeGitHubRepo] }),
+      [reposUrl('github')]: jsonRoute(listBody('github', [fakeGitHubRepo])),
       'GET /api/v1/github-app/repos/acme/app/branches': jsonRoute([
         { name: 'main', commit_sha: 'abc123' },
       ]),
@@ -376,7 +437,7 @@ describe('GitRepoSourcePicker', () => {
     ]
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
-      'GET /api/v1/github-app/repos': jsonRoute({ repos: [fakeGitHubRepo] }),
+      [reposUrl('github')]: jsonRoute(listBody('github', [fakeGitHubRepo])),
       'GET /api/v1/github-app/repos/acme/app/branches': jsonRoute([
         { name: fakeGitHubRepo.default_branch, commit_sha: 'abc123' },
       ]),
@@ -397,7 +458,7 @@ describe('GitRepoSourcePicker', () => {
     expect(screen.getByRole('button', { name: 'Change' })).toBeTruthy()
   })
 
-  it('groups GitHub repos by connected account and filters the grid via chips, without hiding another account on a listing error', async () => {
+  it('offers owner filters from the server, narrows through the server, and keeps another account visible on a listing error', async () => {
     providers = [
       {
         provider: 'github',
@@ -410,55 +471,64 @@ describe('GitRepoSourcePicker', () => {
       disconnected('bitbucket'),
       disconnected('gitea'),
     ]
+    const person = {
+      ...baseItem,
+      key: 'acme-person/dotfiles',
+      full_name: 'acme-person/dotfiles',
+      name: 'dotfiles',
+      owner: 'acme-person',
+      private: true,
+      clone_url: 'https://github.com/acme-person/dotfiles.git',
+      account_type: 'user' as const,
+    }
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
-      'GET /api/v1/github-app/repos': jsonRoute({
-        repos: [
-          fakeGitHubRepo,
-          {
-            full_name: 'acme-person/dotfiles',
-            name: 'dotfiles',
-            owner_login: 'acme-person',
-            private: true,
-            default_branch: 'main',
-            clone_url: 'https://github.com/acme-person/dotfiles.git',
-            account_type: 'user',
-          },
-        ],
-        errors: [
-          { account_login: 'suspended-org', error: 'installation suspended' },
-        ],
-      }),
+      [reposUrl('github')]: jsonRoute(
+        listBody('github', [fakeGitHubRepo, person], {
+          owners: [
+            { login: 'acme', count: 1 },
+            { login: 'acme-person', count: 1 },
+          ],
+          errors: [
+            { account_login: 'suspended-org', error: 'installation suspended' },
+          ],
+        }),
+      ),
+      [reposUrl('github', '&owner=acme')]: jsonRoute(
+        listBody('github', [fakeGitHubRepo], {
+          owners: [
+            { login: 'acme', count: 1 },
+            { login: 'acme-person', count: 1 },
+          ],
+        }),
+      ),
     })
 
     renderPicker()
     await screen.findByText('Repository')
 
-    // Three accounts (two with repos, one suspended): the "All" chip
-    // plus one per account, not the single ungrouped grid a lone
-    // account would get. Chips only mount once the repos fetch itself
-    // resolves, so this waits rather than asserting immediately.
     expect(
-      await screen.findByRole('button', { name: 'All' }),
+      await screen.findByRole('button', { name: 'All owners' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'acme' })).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Personal (acme-person)' }),
+      screen.getByText('Could not list suspended-org: installation suspended'),
     ).toBeInTheDocument()
-    // "suspended-org" appears twice (its filter chip and its own group
-    // header), so this checks presence via getAllByText rather than the
-    // single-match getByText the other two account names use above.
-    expect(screen.getAllByText('suspended-org').length).toBeGreaterThan(0)
-    expect(screen.getByText('installation suspended')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /^acme\/app/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /^acme-person\/dotfiles/ }),
+    ).toBeInTheDocument()
 
-    // All accounts' repos show at once by default.
-    expect(screen.getByText('acme/app')).toBeInTheDocument()
-    expect(screen.getByText('acme-person/dotfiles')).toBeInTheDocument()
-
-    // Picking the "acme" chip narrows the grid to that account alone.
-    fireEvent.click(screen.getByRole('button', { name: 'acme' }))
-    expect(screen.getByText('acme/app')).toBeInTheDocument()
-    expect(screen.queryByText('acme-person/dotfiles')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'acme (1)' }))
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('button', { name: /^acme-person\/dotfiles/ }),
+      ).not.toBeInTheDocument()
+    })
+    expect(
+      screen.getByRole('button', { name: /^acme\/app/ }),
+    ).toBeInTheDocument()
   })
 
   it('shows a real branch select for a connected GitLab project, not the old free-text fallback', async () => {
@@ -476,8 +546,8 @@ describe('GitRepoSourcePicker', () => {
     ]
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
-      'GET /api/v1/gitlab-app/projects': jsonRoute([fakeGitLabProject]),
-      'GET /api/v1/gitlab-app/projects/7/branches': jsonRoute([
+      [reposUrl('gitlab')]: jsonRoute(listBody('gitlab', [fakeGitLabProject])),
+      'GET /api/v1/git-connections/gc_1/branches?repo=7': jsonRoute([
         { name: 'main', commit_sha: 'abc' },
         { name: 'dev', commit_sha: 'def' },
       ]),
@@ -496,7 +566,7 @@ describe('GitRepoSourcePicker', () => {
       provider: 'gitlab',
       repoUrl: 'https://gitlab.example.com/acme/web.git',
       branch: 'main',
-      providerRef: { kind: 'gitlab', projectId: 7 },
+      providerRef: { kind: 'gitlab', connectionId: 'gc_1', repo: '7' },
     })
 
     // The branch control is now a combobox (Select) fed by real branch
@@ -529,7 +599,7 @@ describe('GitRepoSourcePicker', () => {
     ]
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
-      'GET /api/v1/gitlab-app/projects': jsonRoute([fakeGitLabProject]),
+      [reposUrl('gitlab')]: jsonRoute(listBody('gitlab', [fakeGitLabProject])),
     })
 
     const { container } = renderPicker()
@@ -610,8 +680,8 @@ describe('GitRepoSourcePicker', () => {
     ]
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
-      'GET /api/v1/gitea-app/repos': jsonRoute([fakeGiteaRepo]),
-      'GET /api/v1/gitea-app/repos/acme/app/branches': jsonRoute([
+      [reposUrl('gitea')]: jsonRoute(listBody('gitea', [fakeGiteaRepo])),
+      'GET /api/v1/git-connections/gc_1/branches?repo=acme%2Fapp': jsonRoute([
         { name: 'main', commit_sha: 'abc123' },
       ]),
     })
@@ -635,7 +705,7 @@ describe('GitRepoSourcePicker', () => {
       provider: 'gitea',
       repoUrl: 'https://git.example.com/acme/app.git',
       branch: 'main',
-      providerRef: { kind: 'gitea', owner: 'acme', repo: 'app' },
+      providerRef: { kind: 'gitea', connectionId: 'gc_1', repo: 'acme/app' },
     })
   })
 })

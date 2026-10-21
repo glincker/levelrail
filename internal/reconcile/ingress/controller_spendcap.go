@@ -26,7 +26,7 @@ type SpendCapEnforcementLister interface {
 // maps: pause becomes a maintenance route, throttle a per-client rate limit
 // no looser than one already set. It returns the maintenance settings map,
 // which it allocates when the store had none.
-func (c *Controller) applySpendCaps(ctx context.Context, services []store.DesiredService, envSets map[string]map[string][]string, fallbackOff bool, now time.Time, maintenance map[string]bool, maintenanceSettings map[string]store.DomainMaintenance, waf map[string]store.DomainWAF) (map[string]store.DomainMaintenance, error) {
+func (c *Controller) applySpendCaps(ctx context.Context, services []store.DesiredService, envSets map[string]map[string][]string, fallbackOff bool, fallbacks ingress.FallbackResolver, now time.Time, maintenance map[string]bool, maintenanceSettings map[string]store.DomainMaintenance, waf map[string]store.DomainWAF) (map[string]store.DomainMaintenance, error) {
 	l, ok := c.store.(SpendCapEnforcementLister)
 	if !ok {
 		return maintenanceSettings, nil
@@ -56,7 +56,7 @@ func (c *Controller) applySpendCaps(ctx context.Context, services []store.Desire
 		}
 		hosts := routedDomains(svc, envSets)
 		if len(hosts) == 0 && !fallbackOff {
-			if h, ok := ingress.FallbackDomain(c.publicHost, svc.Name); ok {
+			if h, ok := fallbacks.Domain(svc.Name); ok {
 				hosts = []string{h}
 			}
 		}

@@ -1,0 +1,46 @@
+{
+  "title": "Branch deploys",
+  "description": "Give a branch its own stable URL that rebuilds on every push. Removed when the branch is deleted or goes idle.",
+  "settings": {
+    "mode": "Which branches get a deploy",
+    "modeOff": "None (off)",
+    "modeAll": "Every branch",
+    "modePatterns": "Only listed branches",
+    "patterns": "Branches and patterns",
+    "patternsHint": "One per line. Use an exact name or a pattern such as feature/* (a star matches any characters).",
+    "patternsPlaceholder": "staging\nfeature/*",
+    "productionNote": "The production branch ({{branch}}) is never listed here: it deploys as the app itself.",
+    "idleNote": "A branch deploy with no push for {{hours}} hours is removed.",
+    "save": "Save",
+    "saving": "Saving",
+    "saved": "Branch deploy settings saved.",
+    "saveError": "Could not save the settings."
+  },
+  "list": {
+    "title": "Live branch deploys",
+    "emptyTitle": "No branch deploys yet",
+    "emptyOff": "Turn on branch deploys above, then push to a matching branch.",
+    "emptyOn": "Push to a matching branch and its deploy shows up here.",
+    "noUrl": "No URL (set an apps base domain or a primary domain)",
+    "expires": "Removed if there is no new push:",
+    "open": "Open",
+    "openLabel": "Open the {{branch}} deploy",
+    "delete": "Delete",
+    "deleteLabel": "Delete the {{branch}} deploy",
+    "loadError": "Could not load branch deploys."
+  },
+  "status": {
+    "deploying": "Deploying",
+    "active": "Active",
+    "failed": "Failed"
+  },
+  "deleteDialog": {
+    "title": "Delete the {{branch}} deploy?",
+    "description": "Its URL stops working. The next push to the branch deploys it again.",
+    "consequence": "The deploy, its containers and its DNS record are removed.",
+    "confirm": "Delete deploy",
+    "pending": "Deleting",
+    "success": "Branch deploy deleted.",
+    "error": "Could not delete the branch deploy."
+  }
+}

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -110,9 +111,9 @@ func (rt *Router) handleRequestEmailChange(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	link := rt.emailLinkBase(r.Context()) + "/settings/account#confirm_email=" + token
-	body := fmt.Sprintf("Confirm that this is your new %s email address: %s\n\nThe link expires in %d minutes and works only while you are signed in. If you did not ask for this, ignore this message.",
-		rt.brand.Name, link, int(emailChangeTTL.Minutes()))
-	go rt.sendAccountMail(context.WithoutCancel(r.Context()), newEmail, fmt.Sprintf("[%s] Confirm your new email", rt.brand.Name), body)
+	go rt.sendAccountEvent(context.WithoutCancel(r.Context()), mailtemplates.EventEmailChangeConfirm, newEmail, map[string]string{
+		"confirm_link": link, "expires_in": fmt.Sprintf("%d minutes", int(emailChangeTTL.Minutes())),
+	})
 	rt.recordAccountAction(r, userID, true, accountEventEmailRequested, http.StatusAccepted)
 	w.WriteHeader(http.StatusAccepted)
 }
@@ -157,19 +158,18 @@ func (rt *Router) handleConfirmEmailChange(w http.ResponseWriter, r *http.Reques
 			rt.logger.Warn("api: email change: sync to auth library failed", slog.String("user_id", userID), slog.String("error", err.Error()))
 		}
 	}
-	notice := fmt.Sprintf("The email address on your %s account was changed to %s. If this was not you, contact an administrator.", rt.brand.Name, newEmail)
-	rt.sendAccountMail(context.WithoutCancel(r.Context()), old.Email, fmt.Sprintf("[%s] Your email address changed", rt.brand.Name), notice)
+	rt.sendAccountEvent(context.WithoutCancel(r.Context()), mailtemplates.EventEmailChanged, old.Email, map[string]string{"new_email": newEmail})
 	rt.recordAccountAction(r, userID, true, accountEventEmailChanged, http.StatusOK)
 	writeJSON(w, http.StatusOK, map[string]string{"email": newEmail})
 }
 
-func (rt *Router) sendAccountMail(ctx context.Context, to, subject, body string) {
+func (rt *Router) sendAccountEvent(ctx context.Context, key, to string, values map[string]string) {
 	if !rt.emailReady(ctx) || !strings.Contains(to, "@") {
 		return
 	}
 	ctx, cancel := context.WithTimeout(ctx, emailChangeSendWait)
 	defer cancel()
-	if err := rt.emailSender.Send(ctx, to, subject, body); err != nil {
+	if err := rt.sendMailEvent(ctx, key, to, values); err != nil {
 		rt.logger.Error("api: account email send failed", slog.String("error", err.Error()))
 	}
 }

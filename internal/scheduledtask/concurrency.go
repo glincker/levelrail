@@ -39,6 +39,8 @@ type inFlightRun struct {
 //   - forbid: if a previous run is still in flight, skip is true and the
 //     caller must record ScheduledTaskStatusSkippedConcurrency instead of
 //     running anything.
+//   - queue: waits for the in-flight run to finish, then proceeds, so
+//     overlapping occurrences run one after another.
 //   - replace: cancels the in-flight run's context (its own select loop
 //     observes this via isReplaced and records ScheduledTaskStatusReplaced)
 //     and waits for it to finish cleaning up before this run proceeds, so
@@ -61,6 +63,7 @@ func (r *Runner) beginRun(ctx context.Context, taskID, policy string) (runCtx co
 	if exists && policy == store.ScheduledTaskConcurrencyReplace {
 		prev.cancel(errReplacedByNewRun)
 	}
+	waits := exists && (policy == store.ScheduledTaskConcurrencyReplace || policy == store.ScheduledTaskConcurrencyQueue)
 
 	runCtx, cancel := context.WithCancelCause(ctx)
 	done := make(chan struct{})
@@ -68,8 +71,11 @@ func (r *Runner) beginRun(ctx context.Context, taskID, policy string) (runCtx co
 	r.inFlight[taskID] = entry
 	r.mu.Unlock()
 
-	if exists && policy == store.ScheduledTaskConcurrencyReplace {
-		<-prev.done
+	if waits {
+		select {
+		case <-prev.done:
+		case <-runCtx.Done():
+		}
 	}
 
 	cleanup = func() {

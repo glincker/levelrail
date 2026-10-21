@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
 import { TONE } from '../kit/tone'
 import type { Tone } from '../kit/tone'
 import { SuggestionsSection } from './SuggestionsSection'
-import { ReadinessRing } from '../setup/ReadinessRing'
+import { ReadinessRing } from './ReadinessRing'
 import { iamAnalysisQueryOptions } from '../../queries/iamBuilder'
 import type { FindingSeverity, IamFinding } from '../../queries/iamBuilder'
 

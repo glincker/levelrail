@@ -436,6 +436,23 @@ levelrail-cli nodes failure --zone a
 
 This answers the scheduling question from reported capacity. It does not measure how long requests fail while a zone is lost; that run is not yet measured (see [benchmarks](/benchmarks)). Nodes that report no capacity are ranked last and flagged as unverified.
 
+### When a node stays unreachable (beta)
+
+An opt-in, deterministic policy decides what happens once a node has sent no heartbeat for longer than its grace period. The default is `off`; `notify` only reports it and `auto` also moves what is safe to move.
+
+- Stateless apps (no volumes) are placed on a healthy node by the normal scheduler.
+- Apps with node-local volumes and all databases are never moved automatically, because that would lose or split their data. They show as **needs your decision** with three choices: **Wait**, **Restore on another node** (places it on a healthy node, then restore its data from a backup there) or **Mark node lost**, which also moves the stateless apps now.
+- A node that drops again while recovering does not cause new moves. When it returns, stale copies of anything moved are stopped first, and the node is made schedulable again after a hold period.
+- Every automatic action is written to the audit log.
+
+```bash
+levelrail-cli nodes failure-policy set <id> --mode auto --grace 300
+levelrail-cli nodes lost <id> --dry-run
+levelrail-cli nodes failure-resolve <id> app <name> --wait
+```
+
+Defaults come from `APP_NODE_FAILURE_MODE`, `APP_NODE_FAILURE_GRACE` (5m), `APP_NODE_FAILURE_RECOVERY_HOLD` (2m) and `APP_NODE_FAILURE_INTERVAL` (15s). The node page has a **Failure handling** card with the same settings, and unresolved nodes appear on the attention list. Each app lives on one node today, so there is no "other replicas keep serving" case yet. This has been tested with fakes, not on real hosts.
+
 ### The spread scheduler
 
 When a move or a drain has no explicit target, the scheduler picks the eligible node with the most headroom, breaking ties by load and then node id. A node is not eligible when it is cordoned, offline, missing a label the selector requires, or short of the CPU or memory the resource requests. See [Resource-aware placement](/resource-aware-placement).
@@ -848,6 +865,18 @@ levelrail-cli nodes resource-usage
 levelrail-cli nodes capacity-forecast <id>   # projects when disk or memory runs out
 ```
 
+### Capacity guardrails and free space
+
+Each node is watched for disk, inode, memory and swap headroom against warn and critical thresholds (env defaults `APP_NODE_DISK_WARN_FREE_PCT`, `APP_NODE_DISK_CRIT_FREE_PCT`, and the matching `INODE`, `MEM` and `SWAP` variables; per-node overrides live in the node's Capacity card). Warn raises an attention item and a notice. At critical, new builds and deploys on that node are refused with a clear reason while the running version keeps serving.
+
+The Free space button previews a cleanup grouped by class, then asks for confirmation. Only dangling images, idle build cache and stopped containers are removed. Images kept for rollback and volumes are shown but never deleted. Auto-clean is opt-in per node and off by default. Cleanup runs on the control plane node only for now; remote nodes report capacity and block, but you free their space on the host.
+
+```bash
+levelrail-cli nodes capacity <node>              # use "local" for the control plane node
+levelrail-cli nodes cleanup <node> --dry-run     # preview
+levelrail-cli nodes cleanup <node> --yes         # remove the safe classes
+```
+
 `GET /api/v1/nodes/resource-usage` is the fleet-wide counterpart: one snapshot with every node's latest CPU, memory and disk reading plus a rollup, read by the node list's CPU/Memory/Disk columns and the dashboard's fleet summary card. The same caveats apply: CPU and memory are summed from containers, and disk is a real host reading that today is populated only for the node running the control plane. See [Observability](/observability) for the response shape.
 
 ## OS patch status
@@ -950,6 +979,10 @@ Node routes require the `root` ability, not `read` or `write`, because node mana
 | `POST` | `/api/v1/nodes/{id}/mesh/rejoin` | `root` |
 | `GET` | `/api/v1/nodes/resource-usage` | `root` |
 | `GET` | `/api/v1/nodes/{id}/capacity-forecast` | `root` |
+| `GET` | `/api/v1/nodes/{id}/capacity` | `root` |
+| `PUT` | `/api/v1/nodes/{id}/guardrails` | `root` |
+| `POST` | `/api/v1/nodes/{id}/cleanup` | `root` |
+| `GET` | `/api/v1/nodes/{id}/cleanup-runs` | `root` |
 | `GET` | `/api/v1/network/topology` | `read` |
 | `POST` | `/api/v1/nodes/{id}/reenroll-token` | `root` (scoped to `node:{id}`) |
 | `POST` | `/api/v1/nodes/{id}/revoke-cert` | `root` (scoped to `node:{id}`) |

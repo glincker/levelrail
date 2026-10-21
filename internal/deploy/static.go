@@ -79,6 +79,10 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request, progress func(
 		return "", fmt.Errorf("deploy: service %q: build.type %q needs a static root directory configured (WithStaticRootDir)", req.ServiceName, spec.BuildStatic)
 	}
 
+	if req.Service.Build.RunsStaticBuild() {
+		return p.deployStaticBuilt(ctx, req, progress)
+	}
+
 	buildRoot, err := resolveBuildRoot(req.SourceDir, req.Service.Build.BaseDirectory)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
@@ -129,6 +133,9 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request, progress func(
 	if err := copyStaticDir(checkoutRoot, srcRel, staticRoot, destRel); err != nil {
 		return "", fmt.Errorf("deploy: service %q: copy static files: %w", req.ServiceName, err)
 	}
+	if err := p.prepareStaticRouting(req, destDir, progress); err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
 	duration := time.Since(start)
 	stats, err := HashStaticTree(destDir)
 	if err != nil {
@@ -138,16 +145,16 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request, progress func(
 	if err := commitPoint(req); err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
-	if err := p.staticSites.SaveStaticSite(ctx, store.StaticSite{
+	held, err := p.saveStaticSite(ctx, req, store.StaticSite{
 		Name:    req.ServiceName,
 		Domains: req.Service.Domains,
 		RootDir: destDir,
-	}); err != nil {
+	})
+	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: save static site: %w", req.ServiceName, err)
 	}
 
-	emitStatic(progress, stepStaticPublish, fmt.Sprintf("%d files, %d bytes, digest %s", stats.Files, stats.Bytes, stats.Digest), true)
-	p.recordStaticPublished(ctx, req, stats, duration)
+	p.finishStaticPublish(ctx, req, progress, stats, duration, held)
 
 	// Best-effort, secondary to the deploy itself, the identical
 	// "must never block the real operation" choice deployDockerfile

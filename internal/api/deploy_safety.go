@@ -201,6 +201,7 @@ func (rt *Router) ReleaseHandlers() map[string]deploy.ReleaseHandler {
 			}
 			t := rt.imageTrigger(ctx, *existing, false, "Released")
 			t.Automatic = true
+			t.Locks = rt.deployPublishLocks()
 			_, err = t.Deploy(ctx, *existing, req.Image)
 			return err
 		},

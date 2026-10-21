@@ -170,6 +170,7 @@ COSIGN_VERSION="v3.1.3"
 COSIGN_SHA256_AMD64="4629c757b7618056f8ddd7e2625ae9fdd94c0372a65049520bc7d9df9efc7f71"
 COSIGN_SHA256_ARM64="c5d324e091826b0d7a78eb16fef316450b4eb9aaec045611c08ba06f5e73220a"
 COSIGN_BIN="${LEVELRAIL_COSIGN_BIN:-/usr/local/bin/cosign}"
+COSIGN_MARK="${COSIGN_BIN}.installed-by-levelrail"
 NO_COSIGN=0
 [ "${LEVELRAIL_NO_COSIGN:-0}" != "1" ] || NO_COSIGN=1
 
@@ -199,6 +200,12 @@ Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall] [--for
   --yes      accepted for scripts, the installer never prompts
   --no-cosign  do not install cosign (checksum-only verification)
   --profile  minimal, standard (default) or suite: which optional subsystems start
+Environment (full list in the header of this file):
+  LEVELRAIL_VERSION=vX.Y.Z   install this release instead of the newest
+  LEVELRAIL_CHANNEL=beta     follow pre-releases
+  LEVELRAIL_BINARY_FILE=P    install a local binary (not signature or checksum verified)
+  LEVELRAIL_DASHBOARD_PORT / LEVELRAIL_HTTP_PORT / LEVELRAIL_HTTPS_PORT
+  LEVELRAIL_SKIP_REACHABILITY=1   skip the inbound port 80/443 probe
 EOF
 }
 
@@ -297,7 +304,10 @@ case "${LEVELRAIL_VERSION:-}" in
 *[!A-Za-z0-9._+-]*) fatal "LEVELRAIL_VERSION may only contain letters, digits, dot, dash, plus and underscore" ;;
 esac
 
-[ "$MODE" = "check" ] || [ "$(id -u)" -eq 0 ] || fatal "must run as root, e.g.: curl -fsSL <url> | sudo sh"
+if [ "$MODE" != "check" ] && [ "$(id -u)" -ne 0 ]; then
+	if [ -f "$0" ]; then fatal "must run as root, e.g.: sudo sh $0"; fi
+	fatal "must run as root, e.g.: curl -fsSL <url> | sudo sh"
+fi
 
 github_api() {
 	curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 30 \
@@ -509,7 +519,8 @@ offer_coexist() {
 			log "Not switching to coexist mode (--no-coexist). Re-run without it to run behind that service."
 			return 0
 		fi
-		log "Switching to coexist mode: ingress on ${COEXIST_HTTP_PORT}/${COEXIST_HTTPS_PORT}, dashboard on loopback only,"
+		if [ "$MODE" = "check" ]; then verb="Would switch"; else verb="Switching"; fi
+		log "${verb} to coexist mode: ingress on ${COEXIST_HTTP_PORT}/${COEXIST_HTTPS_PORT}, dashboard on loopback only,"
 		log "and your existing proxy forwards your domains to it (no automatic TLS from Levelrail then)."
 		apply_coexist
 	fi
@@ -524,6 +535,14 @@ offer_coexist() {
 		HTTPS_PORT="$free"
 		SETTINGS_CHANGED=1
 	fi
+}
+
+SUPPORTED_HOSTS="Supported hosts: Linux (x86_64 or aarch64) with systemd, such as Ubuntu, Debian, Fedora and the RHEL family. OpenRC (Alpine) and Docker-only hosts are not supported."
+
+# require_curl is checked even with --force: every later step downloads with it.
+require_curl() {
+	command -v curl >/dev/null 2>&1 ||
+		fatal "curl is required and not installed. Install it first (apt-get install -y curl, dnf install -y curl) and re-run."
 }
 
 PREFLIGHT_FAILS=0
@@ -643,16 +662,16 @@ preflight() {
 	if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
 		row systemd ok "running"
 	else
-		row systemd FAIL "systemd is required as the init system"
+		row systemd FAIL "systemd is required as the init system (OpenRC and Alpine are not supported)"
 	fi
 
-	if command -v curl >/dev/null 2>&1; then row curl ok "found"; else row curl FAIL "curl is required"; fi
+	if command -v curl >/dev/null 2>&1; then row curl ok "found"; else row curl FAIL "curl is required: apt-get install -y curl or dnf install -y curl"; fi
 
 	if command -v docker >/dev/null 2>&1; then
 		major="$(docker_major)"
 		case "$major" in
 		'' | *[!0-9]*) row docker warn "installed, version unknown" ;;
-		*) if [ "$major" -ge "$MIN_DOCKER_MAJOR" ]; then row docker ok "version $major"; else row docker FAIL "version $major, need >= $MIN_DOCKER_MAJOR"; fi ;;
+		*) if [ "$major" -ge "$MIN_DOCKER_MAJOR" ]; then row docker ok "version $major"; else row docker FAIL "version $major, need >= $MIN_DOCKER_MAJOR: upgrade Docker, or lower LEVELRAIL_MIN_DOCKER_MAJOR"; fi ;;
 		esac
 	else
 		row docker ok "not found, will install via get.docker.com"
@@ -675,7 +694,7 @@ preflight() {
 		if ! port_listening "$port"; then
 			row "port $port" ok "free"
 		elif service_active; then
-			row "port $port" ok "in use, presumably by ${SERVICE_NAME} (reinstall)"
+			row "port $port" ok "held by ${SERVICE_NAME} itself (already installed)"
 		else
 			row "port $port" FAIL "already in use by $(port_holders "$port"). Automatic TLS needs 80/443. Re-run with --coexist to run behind it, or set LEVELRAIL_HTTP_PORT/LEVELRAIL_HTTPS_PORT to pick other ports (accepting that automatic ACME certs won't work)"
 		fi
@@ -684,7 +703,7 @@ preflight() {
 	if ! port_listening "$DASHBOARD_PORT"; then
 		row "port $DASHBOARD_PORT" ok "free"
 	elif service_active; then
-		row "port $DASHBOARD_PORT" ok "in use, presumably by ${SERVICE_NAME} (reinstall)"
+		row "port $DASHBOARD_PORT" ok "held by ${SERVICE_NAME} itself (already installed)"
 	elif [ "$DASHBOARD_PORT_PINNED" -eq 0 ] && free_port="$(find_free_port "$DASHBOARD_PORT")"; then
 		row "port $DASHBOARD_PORT" ok "taken, using $free_port instead"
 		DASHBOARD_PORT="$free_port"
@@ -696,7 +715,9 @@ preflight() {
 	preflight_environment
 	[ "$MODE" != "check" ] || return 0
 
+	require_curl
 	if [ "$PREFLIGHT_FAILS" -gt 0 ]; then
+		log "$SUPPORTED_HOSTS"
 		[ "$FORCE" -eq 1 ] || fatal "${PREFLIGHT_FAILS} preflight check(s) failed. Fix them, or re-run with --force to continue anyway."
 		warn "${PREFLIGHT_FAILS} preflight check(s) failed, continuing because of --force"
 	fi
@@ -711,11 +732,13 @@ ensure_docker() {
 	systemctl enable --now docker
 }
 
+SAME_BINARY=0
 fetch_binary() {
 	dest="$1"
 	if [ -n "${LEVELRAIL_BINARY_FILE:-}" ]; then
 		[ -f "$LEVELRAIL_BINARY_FILE" ] || fatal "LEVELRAIL_BINARY_FILE not found: $LEVELRAIL_BINARY_FILE"
 		log "Using local binary ${LEVELRAIL_BINARY_FILE}."
+		warn "a local binary is not checksum or signature verified"
 		cp "$LEVELRAIL_BINARY_FILE" "$dest"
 		VERSION="${LEVELRAIL_VERSION:-local build}"
 		return
@@ -745,23 +768,31 @@ fetch_binary() {
 		;;
 	*) fatal "LEVELRAIL_RELEASE_BASE_URL must start with https://" ;;
 	esac
+	sums="${dest}.checksums"
+	expected=""
+	have_sums=0
+	if curl -fsSL --proto "$proto" --tlsv1.2 --connect-timeout 10 --max-time 60 -o "$sums" "${base_url}/checksums.txt" 2>/dev/null; then
+		have_sums=1
+		verify_signature "$sums" "$base_url" "$proto"
+		expected="$(grep " ${asset}\$" "$sums" | awk '{ print $1 }')"
+	fi
+	if [ -n "$expected" ] && [ -f "$BIN_PATH" ] && [ "$(sha256sum "$BIN_PATH" | awk '{ print $1 }')" = "$expected" ]; then
+		log "${VERSION} is already installed and its checksum matches, skipping the download."
+		cp "$BIN_PATH" "$dest"
+		SAME_BINARY=1
+		return
+	fi
 	log "Downloading ${asset} ${VERSION}..."
 	curl -fsSL --proto "$proto" --tlsv1.2 --connect-timeout 10 --max-time 300 -o "$dest" "${base_url}/${asset}" ||
 		fatal "download failed: ${base_url}/${asset}. The release may not ship this binary; pick another with LEVELRAIL_VERSION."
-
-	sums="${dest}.checksums"
-	if curl -fsSL --proto "$proto" --tlsv1.2 --connect-timeout 10 --max-time 60 -o "$sums" "${base_url}/checksums.txt" 2>/dev/null; then
-		verify_signature "$sums" "$base_url" "$proto"
-		expected="$(grep " ${asset}\$" "$sums" | awk '{ print $1 }')"
-		if [ -n "$expected" ]; then
-			actual="$(sha256sum "$dest" | awk '{ print $1 }')"
-			[ "$expected" = "$actual" ] || fatal "checksum mismatch for ${asset}: expected ${expected}, got ${actual}"
-			log "Checksum verified."
-		else
-			checksum_unavailable "${asset} is not listed in checksums.txt for ${VERSION}"
-		fi
-	else
+	if [ "$have_sums" -eq 0 ]; then
 		checksum_unavailable "no checksums.txt published for ${VERSION}"
+	elif [ -n "$expected" ]; then
+		actual="$(sha256sum "$dest" | awk '{ print $1 }')"
+		[ "$expected" = "$actual" ] || fatal "checksum mismatch for ${asset}: expected ${expected}, got ${actual}"
+		log "Checksum verified."
+	else
+		checksum_unavailable "${asset} is not listed in checksums.txt for ${VERSION}"
 	fi
 }
 
@@ -826,6 +857,7 @@ ensure_cosign() {
 		return 0
 	fi
 	rm -f "$cosign_tmp"
+	: >"$COSIGN_MARK" 2>/dev/null || true
 	log "Installed cosign ${COSIGN_VERSION}."
 }
 
@@ -924,10 +956,37 @@ retain_releases() {
 	esac
 }
 
+# supports_version greps for the usage text instead of running the binary: an
+# older release would ignore an unknown argument and start serving.
+supports_version() {
+	[ -f "$1" ] && grep -aq 'usage: levelrail version \[--json\]' "$1"
+}
+
+# binary_schema prints the schema version binary $1 supports, or nothing when
+# it cannot say. A running install's database is migrated to its own binary's
+# schema at every start, so for the installed binary this is the database's.
+binary_schema() {
+	supports_version "$1" || return 0
+	"$1" version --json 2>/dev/null | sed -n 's/.*"schema_version": *\([0-9][0-9]*\).*/\1/p' | head -n 1
+}
+
+# check_schema_compat refuses, before anything is stopped or replaced, a
+# release whose schema is older than the installed database's.
+check_schema_compat() {
+	[ -x "$BIN_PATH" ] || return 0
+	have="$(binary_schema "$BIN_PATH")"
+	want="$(binary_schema "$1")"
+	[ -n "$have" ] && [ -n "$want" ] || return 0
+	[ "$want" -ge "$have" ] && return 0
+	rm -f "${BIN_PATH}.pre-upgrade"
+	fatal "cannot move to ${VERSION}: your database is at schema ${have} and ${VERSION} supports schema ${want}, so it would refuse to start. Nothing was changed. Safe next step: stay on the installed release, or restore a backup taken on the older schema with 'sudo ${BIN_PATH} rollback --to ${VERSION} --restore-backup NAME' (see 'sudo ${BIN_PATH} rollback --help')."
+}
+
 install_binary() {
 	tmp_dir="$(mktemp -d)"
 	trap 'rm -rf "$tmp_dir"' EXIT
 	fetch_binary "$tmp_dir/$BINARY_NAME"
+	[ "$SAME_BINARY" -eq 1 ] || check_schema_compat "$tmp_dir/$BINARY_NAME"
 	mkdir -p "$INSTALL_DIR"
 	previous=""
 	if [ -x "$BIN_PATH" ]; then
@@ -1263,7 +1322,7 @@ local_ips() {
 dashboard_link() {
 	case "$1" in *:*) host="[$1]" ;; *) host="$1" ;; esac
 	if [ -n "$token" ]; then
-		printf '%s://%s:%s/login?setup=%s' "$DASHBOARD_SCHEME" "$host" "$DASHBOARD_PORT" "$token"
+		printf '%s://%s:%s/login#setup=%s' "$DASHBOARD_SCHEME" "$host" "$DASHBOARD_PORT" "$token"
 	else
 		printf '%s://%s:%s' "$DASHBOARD_SCHEME" "$host" "$DASHBOARD_PORT"
 	fi
@@ -1274,7 +1333,7 @@ dashboard_link() {
 print_coexist_summary() {
 	domain="${DOMAIN_HINT:-<your-domain>}"
 	login="http://127.0.0.1:${DASHBOARD_PORT}"
-	[ -z "$token" ] || login="${login}/login?setup=${token}"
+	[ -z "$token" ] || login="${login}/login#setup=${token}"
 	host="${PUBLIC_IP:-<server-ip>}"
 	cat <<EOF
 
@@ -1351,7 +1410,7 @@ EOF
 
 Manage it from your own machine with the CLI (no root needed there):
   curl -fsSL https://levelrail.com/install-cli.sh | sh
-  export APP_API_URL=${DASHBOARD_SCHEME}://<server-ip>:${DASHBOARD_PORT}
+  export APP_API_URL=${DASHBOARD_SCHEME}://${PUBLIC_IP:-<server-ip>}:${DASHBOARD_PORT}
   levelrail-cli auth login --device
 
   Service status: systemctl status ${SERVICE_NAME}
@@ -1401,10 +1460,22 @@ write_upgrade_marker() {
 do_check() {
 	load_settings
 	preflight
-	url="https://raw.githubusercontent.com/${REPO}/main/install.sh"
+	url="https://levelrail.com/install.sh"
 	domain_arg=""
 	[ -z "$DOMAIN_HINT" ] || domain_arg=" --domain ${DOMAIN_HINT}"
 	log ""
+	if [ "$PREFLIGHT_FAILS" -gt 0 ]; then
+		log "${PREFLIGHT_FAILS} check(s) failed: fix the FAIL rows above first."
+		log "$SUPPORTED_HOSTS"
+		exit 1
+	fi
+	if [ -x "$BIN_PATH" ] && service_active; then
+		installed="$(installed_version)"
+		log "${SERVICE_NAME} is already installed and running${installed:+ (${installed})}, and holds its own ports."
+		log "Upgrade with:"
+		log "  curl -fsSL ${url} | sudo sh -s upgrade"
+		return 0
+	fi
 	if [ "$COEXIST_ACTIVE" -eq 1 ] || [ "$COEXIST" -eq 1 ]; then
 		log "Recommended mode: behind your existing proxy (ingress ${COEXIST_HTTP_PORT}/${COEXIST_HTTPS_PORT}, dashboard on loopback)."
 		for port in 80 443; do
@@ -1418,11 +1489,12 @@ do_check() {
 		log "Next step:"
 		if [ -n "$DOMAIN_HINT" ]; then log "  curl -fsSL ${url} | sudo sh -s --${domain_arg}"; else log "  curl -fsSL ${url} | sudo sh"; fi
 	fi
-	if [ "$PREFLIGHT_FAILS" -gt 0 ]; then
-		log ""
-		log "${PREFLIGHT_FAILS} check(s) failed: fix those first."
-		exit 1
-	fi
+}
+
+# installed_version prints the installed release tag, or nothing if unknown.
+installed_version() {
+	supports_version "$BIN_PATH" || return 0
+	"$BIN_PATH" version 2>/dev/null | awk '{ print $1; exit }'
 }
 
 CLI_INSTALLER_URL="${LEVELRAIL_CLI_INSTALLER_URL:-https://levelrail.com/install-cli.sh}"
@@ -1475,6 +1547,7 @@ do_install() {
 
 do_upgrade() {
 	[ -x "$BIN_PATH" ] || fatal "${BIN_PATH} not found, nothing to upgrade. Run the installer without arguments first."
+	require_curl
 	detect_arch
 	[ -n "$GOARCH" ] || fatal "unsupported architecture: $(uname -m)"
 	load_settings
@@ -1484,6 +1557,11 @@ do_upgrade() {
 	pre_upgrade_bin="${BIN_PATH}.pre-upgrade"
 	cp -p "$BIN_PATH" "$pre_upgrade_bin"
 	install_binary
+	if [ "$SAME_BINARY" -eq 1 ] && [ -z "$SOCKET_ACTIVATION" ] && [ "$COEXIST" -eq 0 ] && [ "$SETTINGS_CHANGED" -eq 0 ] && service_active; then
+		rm -f "$pre_upgrade_bin"
+		log "Already on ${VERSION}, nothing to do."
+		return 0
+	fi
 	ensure_dropin
 	write_restart_policy
 	case "$SOCKET_ACTIVATION" in
@@ -1513,6 +1591,7 @@ do_upgrade() {
 }
 
 do_retain() {
+	require_curl
 	[ -x "$BIN_PATH" ] || fatal "${BIN_PATH} not found. Run the installer without arguments first."
 	supports_retain "$BIN_PATH" || fatal "the installed ${BINARY_NAME} predates release retention. Upgrade it first (install.sh upgrade), then retain."
 	[ -n "${LEVELRAIL_VERSION:-}" ] || fatal "set LEVELRAIL_VERSION=vX.Y.Z to the release you want to roll back to"
@@ -1522,13 +1601,20 @@ do_retain() {
 	trap 'rm -rf "$tmp_dir"' EXIT
 	fetch_binary "$tmp_dir/$BINARY_NAME"
 	schema=-1
-	if [ -z "${LEVELRAIL_BINARY_FILE:-}${LEVELRAIL_BINARY_URL:-}" ] &&
+	probed="$(binary_schema "$tmp_dir/$BINARY_NAME")"
+	[ -z "$probed" ] || schema="$probed"
+	if [ "$schema" -lt 0 ] && [ -z "${LEVELRAIL_BINARY_FILE:-}${LEVELRAIL_BINARY_URL:-}" ] &&
 		curl -fsSL --proto "$proto" --tlsv1.2 --connect-timeout 10 --max-time 30 -o "$tmp_dir/manifest.json" "${base_url}/release-manifest.json" 2>/dev/null; then
 		found="$(sed -n 's/.*"schema_version": *\([0-9][0-9]*\).*/\1/p' "$tmp_dir/manifest.json" | head -n 1)"
 		[ -z "$found" ] || schema="$found"
 	fi
 	mkdir -p "$RELEASES_DIR"
 	"$BIN_PATH" retain --version "$VERSION" --file "$tmp_dir/$BINARY_NAME" --schema-version "$schema" --releases-dir "$RELEASES_DIR"
+	installed="$(binary_schema "$BIN_PATH")"
+	if [ "$schema" -ge 0 ] && [ -n "$installed" ] && [ "$schema" -lt "$installed" ]; then
+		warn "rollback to ${VERSION} is blocked by the database schema (database ${installed}, ${VERSION} supports ${schema}). Rolling back needs a backup taken on that schema: sudo ${BINARY_NAME} rollback --to ${VERSION} --restore-backup NAME"
+		return 0
+	fi
 	log "Next, on this host: sudo ${BINARY_NAME} rollback --to ${VERSION}"
 }
 
@@ -1539,6 +1625,11 @@ do_install_cosign() {
 }
 
 do_uninstall() {
+	cli_path="${LEVELRAIL_CLI_INSTALL_DIR:-/usr/local/bin}/levelrail-cli"
+	if [ ! -f "$UNIT_PATH" ] && [ ! -e "$BIN_PATH" ] && [ ! -d "$RELEASES_DIR" ] && [ ! -e "$cli_path" ] && { [ "$PURGE" -eq 0 ] || [ ! -d "$DATA_DIR" ]; }; then
+		log "Nothing to remove: no ${SERVICE_NAME} installation found on this host."
+		return 0
+	fi
 	if [ -f "$UNIT_PATH" ]; then
 		systemctl disable --now "$SERVICE_NAME" >/dev/null 2>&1 || true
 		remove_socket_units
@@ -1546,14 +1637,22 @@ do_uninstall() {
 		rmdir "$DROPIN_DIR" 2>/dev/null || true
 		systemctl daemon-reload
 	fi
-	rm -f "$BIN_PATH"
-	log "Removed the ${SERVICE_NAME} service and ${BIN_PATH}."
+	rm -f "$BIN_PATH" "${BIN_PATH}.pre-upgrade" "$cli_path"
+	case "$RELEASES_DIR" in
+	"" | / | /usr | /usr/local | /usr/local/bin | /var | /etc | /home | /root) fatal "refusing to delete suspicious releases dir: '$RELEASES_DIR'" ;;
+	esac
+	rm -rf "$RELEASES_DIR"
+	log "Removed the ${SERVICE_NAME} service, ${BIN_PATH}, ${cli_path} and the retained releases in ${RELEASES_DIR}."
 	if [ "$PURGE" -eq 1 ]; then
 		case "$DATA_DIR" in
 		"" | / | /var | /var/lib | /usr | /etc | /home | /root) fatal "refusing to delete suspicious data dir: '$DATA_DIR'" ;;
 		esac
 		rm -rf "$DATA_DIR"
 		log "Deleted ${DATA_DIR}."
+		if [ -e "$COSIGN_MARK" ]; then
+			rm -f "$COSIGN_BIN" "$COSIGN_MARK"
+			log "Removed ${COSIGN_BIN}, which this installer installed."
+		fi
 	else
 		log "Kept ${DATA_DIR} (database, master key, certificates). Re-run with --purge to delete it."
 	fi

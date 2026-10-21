@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -130,5 +131,112 @@ func TestRun_Doctor_Help(t *testing.T) {
 	_, stderr := runCLIExpectOK(t, []string{"doctor", "-h"})
 	if !strings.Contains(stderr, "doctor") {
 		t.Errorf("stderr = %q, want usage text", stderr)
+	}
+}
+
+func TestRun_Doctor_LocalOnlyWithoutServer(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"doctor", "--local", "--output", "json"}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, stderr=%q", got, stderr.String())
+	}
+	var rep systemDoctorResource
+	if err := json.Unmarshal(stdout.Bytes(), &rep); err != nil {
+		t.Fatalf("decode: %v: %s", err, stdout.String())
+	}
+	want := map[string]bool{"docker": true, "disk_space": true, "port_80": true, "port_443": true}
+	for _, c := range rep.Checks {
+		delete(want, c.Code)
+	}
+	if len(want) != 0 {
+		t.Errorf("local report is missing checks %v", want)
+	}
+}
+
+func TestRun_Doctor_FixNeedsServer(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if got := run("levelrail-cli-test", []string{"doctor", "--local", "--fix"}, &stdout, &stderr, envMap()); got == exitOK {
+		t.Fatalf("--fix with no server exited 0, stdout=%q", stdout.String())
+	}
+}
+
+type doctorFixServer struct {
+	mu      sync.Mutex
+	applied []string
+	fixed   bool
+}
+
+func (s *doctorFixServer) handler(w http.ResponseWriter, r *http.Request) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	w.Header().Set("Content-Type", "application/json")
+	switch {
+	case r.URL.Path == "/api/v1/system/doctor":
+		status, fixID, kind := "warn", "disk.reclaim", "auto"
+		if s.fixed {
+			status, fixID, kind = "ok", "", ""
+		}
+		_ = json.NewEncoder(w).Encode(systemDoctorResource{OK: true, Checks: []doctorCheckResource{
+			{Code: "disk_space", Name: "Disk space", Status: status, Message: "low", FixID: fixID, FixKind: kind},
+			{Code: "firewall", Name: "Firewall", Status: "warn", Message: "blocked", FixID: "host.firewall.open_web_ports", FixKind: "guided"},
+			{Code: "dashboard_url_https", Name: "Dashboard https", Status: "warn", Message: "http", FixID: "settings.dashboard_url.https", FixKind: "auto"},
+		}})
+	case strings.HasSuffix(r.URL.Path, "/preview"):
+		id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/api/v1/fixes/"), "/preview")
+		f := map[string]any{"id": id, "title": id, "kind": "auto", "risk": "safe", "state": "offer", "failing": true, "changes": []any{}, "attempts": []any{}}
+		switch id {
+		case "host.firewall.open_web_ports":
+			f["kind"] = "guided"
+		case "settings.dashboard_url.https":
+			f["risk"] = "exposes"
+		}
+		_ = json.NewEncoder(w).Encode(f)
+	case strings.HasSuffix(r.URL.Path, "/apply"):
+		id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/api/v1/fixes/"), "/apply")
+		s.applied = append(s.applied, id)
+		s.fixed = true
+		_ = json.NewEncoder(w).Encode(map[string]any{"fix_id": id, "outcome": "fixed", "detail": "check passes"})
+	default:
+		http.NotFound(w, r)
+	}
+}
+
+func TestRun_Doctor_FixAppliesOnlySafeAutoFixes(t *testing.T) {
+	fs := &doctorFixServer{}
+	srv := httptest.NewServer(http.HandlerFunc(fs.handler))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"doctor", "--fix", "--yes", "--output", "json", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, stderr=%q", got, stderr.String())
+	}
+	if len(fs.applied) != 1 || fs.applied[0] != "disk.reclaim" {
+		t.Errorf("applied = %v, want only disk.reclaim (guided and exposing fixes are never auto applied)", fs.applied)
+	}
+	var out doctorOutput
+	if err := json.Unmarshal(stdout.Bytes(), &out); err != nil {
+		t.Fatalf("decode: %v: %s", err, stdout.String())
+	}
+	if len(out.Applied) != 1 || len(out.Skipped) != 2 {
+		t.Errorf("applied=%d skipped=%d, want 1 and 2", len(out.Applied), len(out.Skipped))
+	}
+	if out.Checks[0].Status != "ok" {
+		t.Errorf("report after fixing still shows disk_space %q", out.Checks[0].Status)
+	}
+}
+
+func TestRun_Doctor_FixWithoutYesNeedsTerminal(t *testing.T) {
+	fs := &doctorFixServer{}
+	srv := httptest.NewServer(http.HandlerFunc(fs.handler))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"doctor", "--fix", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got == exitOK {
+		t.Fatalf("--fix without --yes on a non-terminal exited 0")
+	}
+	if len(fs.applied) != 0 {
+		t.Errorf("applied %v without confirmation", fs.applied)
 	}
 }

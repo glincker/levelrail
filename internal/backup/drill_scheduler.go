@@ -117,6 +117,11 @@ func (s *DrillScheduler) Tick(ctx context.Context) error {
 
 // Run ticks until ctx is done.
 func (s *DrillScheduler) Run(ctx context.Context, every time.Duration) error {
+	if s.Runner != nil {
+		if _, err := s.Runner.SweepOrphans(ctx); err != nil {
+			s.log().Warn("backup: drill orphan sweep failed", slog.String("error", err.Error()))
+		}
+	}
 	loop := footprint.Track("backup drill scheduler", every)
 	defer loop.Active()()
 	t := time.NewTicker(every)

@@ -89,6 +89,8 @@ type Refresher struct {
 	Catalog *Catalog
 	Lister  TagLister
 	Logger  *slog.Logger
+	// FirstDelay is the wait before the first refresh; zero means a minute.
+	FirstDelay time.Duration
 }
 
 // RefreshIntervalFromEnv returns the configured interval, 0 when disabled.
@@ -135,7 +137,11 @@ func (r *Refresher) Run(ctx context.Context, interval time.Duration) {
 	if interval <= 0 {
 		return
 	}
-	timer := time.NewTimer(time.Minute)
+	first := r.FirstDelay
+	if first <= 0 {
+		first = time.Minute
+	}
+	timer := time.NewTimer(first)
 	defer timer.Stop()
 	for {
 		select {

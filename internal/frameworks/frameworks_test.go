@@ -75,3 +75,15 @@ func TestDockerfileTemplate(t *testing.T) {
 		t.Fatalf("go template missing distroless: %v", ok)
 	}
 }
+
+func TestDetectRemixBeatsVite(t *testing.T) {
+	for _, pkg := range []string{
+		`{"dependencies":{"@remix-run/react":"2"},"devDependencies":{"vite":"5"}}`,
+		`{"devDependencies":{"@remix-run/dev":"2","vite":"5"}}`,
+	} {
+		m, ok := Detect(func(rel string) (string, bool) { return pkg, rel == "package.json" })
+		if !ok || m.Preset.ID != "remix" {
+			t.Fatalf("pkg %s: got %q ok=%v, want remix", pkg, m.Preset.ID, ok)
+		}
+	}
+}

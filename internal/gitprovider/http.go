@@ -67,29 +67,43 @@ func (e *APIError) Error() string {
 // caller wraps a relative path while GitLab's and Bitbucket's wrap a full
 // URL.
 func Execute(client *http.Client, req *http.Request, prefix, api, label string, out any) error {
+	_, _, err := ExecuteETag(client, req, prefix, api, label, "", out)
+	return err
+}
+
+// ExecuteETag is Execute with conditional-request support: a non-empty
+// etag is sent as If-None-Match, a 304 reply returns notModified true with
+// out untouched, and the response's own ETag is returned for the next call.
+func ExecuteETag(client *http.Client, req *http.Request, prefix, api, label, etag string, out any) (newETag string, notModified bool, err error) {
+	if etag != "" {
+		req.Header.Set("If-None-Match", etag)
+	}
 	resp, err := client.Do(req) //nolint:gosec // req's URL was built by the caller from its own operator-configured API host, not attacker-controlled input
 	if err != nil {
-		return fmt.Errorf("%s: request %s: %w", prefix, label, err)
+		return "", false, fmt.Errorf("%s: request %s: %w", prefix, label, err)
 	}
 	defer func() {
 		_ = resp.Body.Close()
 	}()
 
+	if resp.StatusCode == http.StatusNotModified && etag != "" {
+		return etag, true, nil
+	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, MaxErrorBodySnippet))
-		return &APIError{
+		return "", false, &APIError{
 			Prefix: prefix, API: api, StatusCode: resp.StatusCode, Body: string(snippet),
 			RetryAfter:  resp.Header.Get("Retry-After"),
 			RateLimited: rateLimited(resp, string(snippet)),
 		}
 	}
 	if out == nil {
-		return nil
+		return resp.Header.Get("ETag"), false, nil
 	}
 	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
-		return fmt.Errorf("%s: decode response for %s: %w", prefix, label, err)
+		return "", false, fmt.Errorf("%s: decode response for %s: %w", prefix, label, err)
 	}
-	return nil
+	return resp.Header.Get("ETag"), false, nil
 }
 
 // Comment is one pull request comment as the preview upsert sees it.

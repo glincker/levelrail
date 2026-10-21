@@ -232,12 +232,11 @@ func (rt *Router) userHasSecondFactor(ctx context.Context, userID string) bool {
 }
 
 func (rt *Router) collectSetupGuideSource(ctx context.Context, in *setupguide.Input) {
-	for _, p := range []gitProviderResource{
-		rt.githubProviderStatus(ctx),
-		rt.gitlabProviderStatus(ctx),
-		rt.bitbucketProviderStatus(ctx),
-		rt.giteaProviderStatus(ctx),
-	} {
+	statuses := []gitProviderResource{rt.githubProviderStatus(ctx)}
+	for _, p := range connectionGitProviders {
+		statuses = append(statuses, rt.gitProviderStatusFor(ctx, p))
+	}
+	for _, p := range statuses {
 		if p.Connected {
 			in.GitConnected = true
 		}

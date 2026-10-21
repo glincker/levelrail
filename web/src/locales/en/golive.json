@@ -1,0 +1,68 @@
+{
+  "title": "Go live",
+  "pageTitle": "Go live: {{name}}",
+  "intro": "One checklist from your running app to https on your domain. Each step shows what was found and the one thing to do next.",
+  "domainLabel": "Domain",
+  "noDomain": "No domain yet. The first steps work without one.",
+  "loading": "Checking your setup",
+  "loadFailed": "The checklist could not be loaded: {{message}}",
+  "retry": "Retry",
+  "recheck": "Check again",
+  "liveBanner": "Live: {{url}}",
+  "openSite": "Open {{url}}",
+  "state": {
+    "not_live": "Not live",
+    "waiting_dns": "Waiting for DNS",
+    "waiting_certificate": "Waiting for certificate",
+    "live": "Live",
+    "needs_attention": "Needs attention"
+  },
+  "status": {
+    "ok": "Done",
+    "warn": "Warning",
+    "fail": "Needs action",
+    "pending": "Waiting",
+    "unknown": "Unknown"
+  },
+  "announce": "{{title}}: {{status}}",
+  "nextCheck": "Next check {{time}}",
+  "copy": "Copy",
+  "copied": "Copied",
+  "copyValue": "Copy {{label}}",
+  "blocked": "Not available yet: {{reason}}",
+  "actionFailed": "The action failed: {{message}}",
+  "scope": {
+    "control_plane_host": "Checked from this server. It cannot prove the wider internet can reach it. A Let's Encrypt certificate is that proof, because Let's Encrypt validated the domain from outside."
+  },
+  "records": "Records to create",
+  "provider": {
+    "title": "{{name}} firewall steps",
+    "ports": "Open these inbound ports",
+    "docs": "Open the {{name}} guide",
+    "portRule": "{{port}}/{{protocol}} from {{source}}"
+  },
+  "fix": {
+    "title": "Open ports 80 and 443?",
+    "description": "This changes the host firewall. Only these ports are opened, no other rule is touched, and a disabled firewall stays disabled.",
+    "willRun": "Will run: {{command}}",
+    "undo": "Undo with: {{command}}",
+    "notPersistent": "The rule is lost on reboot unless you save your firewall rules.",
+    "confirm": "Open ports",
+    "pending": "Opening",
+    "refused": "Not automatic: {{reason}}"
+  },
+  "timeline": {
+    "title": "Activity",
+    "empty": "Nothing has happened yet.",
+    "scheduled": "Scheduled"
+  },
+  "badge": {
+    "link": "Open the go live checklist for {{domain}}"
+  },
+  "cta": {
+    "title": "Your app is running: make it live on your domain",
+    "body": "Point a domain at it and get an automatic certificate, with live status at every step.",
+    "button": "Go live"
+  },
+  "diagnoseLink": "Open the go live checklist"
+}

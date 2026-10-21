@@ -64,6 +64,10 @@ type DrillRunner struct {
 	DBInfo     DatabaseInfo
 	ImageFor   func(engine, version string) string
 
+	// ScratchMemoryBytes and ScratchNanoCPUs cap scratch containers; zero uses the defaults.
+	ScratchMemoryBytes int64
+	ScratchNanoCPUs    int64
+
 	// OnFailure is called once for every failed drill.
 	OnFailure func(ctx context.Context, d store.BackupDrill)
 	Logger    *slog.Logger
@@ -326,6 +330,18 @@ func (r *DrillRunner) drillDatabase(ctx context.Context, d *store.BackupDrill, d
 	}
 	defer func() { _ = hs.rc.Close() }()
 
+	var src io.Reader = hs
+	size := func() int64 { return hs.n }
+	if bh.Codec != "" {
+		plain, perr := OpenSealed(hs, bh.Codec, r.Identities)
+		if perr != nil {
+			return perr
+		}
+		defer func() { _ = plain.Close() }()
+		sr := &sizeReader{r: plain}
+		src, size = sr, func() int64 { return sr.n }
+	}
+
 	engine, version := "", ""
 	if r.DBInfo != nil {
 		if e, v, ierr := r.DBInfo(ctx, bh.DatabaseName); ierr == nil {
@@ -338,17 +354,20 @@ func (r *DrillRunner) drillDatabase(ctx context.Context, d *store.BackupDrill, d
 	tail := &tailCapture{maxBytes: tailCaptureBytes}
 
 	if !scratchable {
-		if _, err := io.Copy(io.MultiWriter(header, tail), hs); err != nil {
+		if _, err := io.Copy(io.MultiWriter(header, tail), src); err != nil {
 			return fmt.Errorf("read stored object: %w", err)
+		}
+		if err := hs.drain(); err != nil {
+			return fmt.Errorf("read rest of stored object: %w", err)
 		}
 		if err := r.checkChecksum(d, hs, bh); err != nil {
 			return err
 		}
 		d.Stage = DrillStageContent
-		if ok, why := validateFormat(engine, header.bytes, tail.bytes(), hs.n); !ok {
+		if ok, why := validateFormat(engine, header.bytes, tail.bytes(), size()); !ok {
 			return errors.New(why)
 		}
-		d.ContentOK, d.Bytes = true, hs.n
+		d.ContentOK, d.Bytes = true, size()
 		return nil
 	}
 
@@ -357,6 +376,7 @@ func (r *DrillRunner) drillDatabase(ctx context.Context, d *store.BackupDrill, d
 	if err := scratchSearchSpec(engine, &spec); err != nil {
 		return err
 	}
+	r.hardenScratch(&spec)
 	id, err := r.Runtime.Create(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("create scratch %s container: %w", engine, err)
@@ -371,7 +391,7 @@ func (r *DrillRunner) drillDatabase(ctx context.Context, d *store.BackupDrill, d
 	}
 
 	d.Stage = DrillStageRestore
-	rerr := r.DBRestorer.Restore(ctx, engine, name, io.TeeReader(hs, io.MultiWriter(header, tail)))
+	rerr := r.DBRestorer.Restore(ctx, engine, name, io.TeeReader(src, io.MultiWriter(header, tail)))
 	drainErr := hs.drain()
 	if rerr != nil {
 		return fmt.Errorf("restore into scratch %s container: %w", engine, rerr)
@@ -385,7 +405,7 @@ func (r *DrillRunner) drillDatabase(ctx context.Context, d *store.BackupDrill, d
 	d.RestoreOK = true
 
 	d.Stage = DrillStageContent
-	if ok, why := validateFormat(engine, header.bytes, tail.bytes(), hs.n); !ok {
+	if ok, why := validateFormat(engine, header.bytes, tail.bytes(), size()); !ok {
 		return errors.New(why)
 	}
 	if store.IsSearchEngine(engine) {
@@ -393,14 +413,14 @@ func (r *DrillRunner) drillDatabase(ctx context.Context, d *store.BackupDrill, d
 		if err != nil {
 			return err
 		}
-		d.Files, d.Bytes, d.ContentOK = objects, hs.n, true
+		d.Files, d.Bytes, d.ContentOK = objects, size(), true
 		return nil
 	}
 	tables, err := r.countTables(ctx, name, engine)
 	if err != nil {
 		return fmt.Errorf("query restored database: %w", err)
 	}
-	d.Files, d.Bytes, d.ContentOK = tables, hs.n, true
+	d.Files, d.Bytes, d.ContentOK = tables, size(), true
 	return nil
 }
 

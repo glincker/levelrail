@@ -59,7 +59,8 @@ func (rt *Router) attentionFeedItems(r *http.Request, abilities []string, now ti
 	items = append(items, rt.maintenanceAttentionItems(r, abilities, now)...)
 	items = append(items, rt.gitHostAttentionItems(abilities)...)
 	items = append(items, rt.firewallAttentionItems(abilities)...)
-	return items
+	items = append(items, rt.nodeCapacityAttentionItems(r, abilities)...)
+	return withoutSilenced(items, rt.activeSilences(r.Context(), now), now)
 }
 
 func feedItem(severity, kind, subject, detail string, params map[string]string) attention.Item {

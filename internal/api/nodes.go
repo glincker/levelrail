@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -34,6 +35,8 @@ type NodeStore interface {
 	// UpdateNodeRegion sets a node's optional location label, backing
 	// PUT /api/v1/nodes/{id}/region.
 	UpdateNodeRegion(ctx context.Context, id, region string) error
+	// UpdateNodeFailureDomain replaces provider, region and zone together.
+	UpdateNodeFailureDomain(ctx context.Context, id, provider, region, zone string) error
 	// SetNodeSchedulable is the cordon/uncordon mutation.
 	SetNodeSchedulable(ctx context.Context, id string, schedulable bool) error
 	RevokeNodeCert(ctx context.Context, id string, now time.Time) error
@@ -60,6 +63,8 @@ type nodeResource struct {
 	// 0252), display/grouping metadata only. "" (omitted on the wire)
 	// means unset.
 	Region    string    `json:"region,omitempty"`
+	Provider  string    `json:"provider,omitempty"`
+	Zone      string    `json:"zone,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	// AlertStatus is only populated by handleGetNode (a single-node
 	// fetch), never handleListNodes: it costs a handful of live metrics
@@ -84,6 +89,8 @@ type nodeResource struct {
 	// self-reported build (node_cert.go, ADR 021).
 	Cert  *nodeCertResource  `json:"cert,omitempty"`
 	Agent *nodeAgentResource `json:"agent,omitempty"`
+	// Failure is set while the node has a live failure state (node_failure.go).
+	Failure *nodeFailureSummary `json:"failure,omitempty"`
 }
 
 // nodeAlertStatusResource is alerting.NodeAlertStatus's wire shape: each
@@ -139,6 +146,8 @@ func toNodeResource(n store.Node) nodeResource {
 		AcceptsAppWorkloads:   n.AcceptsAppWorkloads,
 		AcceptsBuildWorkloads: n.AcceptsBuildWorkloads,
 		Region:                n.Region,
+		Provider:              n.Provider,
+		Zone:                  n.Zone,
 		CreatedAt:             n.CreatedAt,
 	}
 }
@@ -229,9 +238,11 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 	if cs, ok := rt.nodes.(nodeResourceCountStore); ok {
 		counts, _ = cs.NodeResourceCounts(r.Context())
 	}
+	failures := rt.failureSummaries(r.Context())
 	out := make([]nodeResource, 0, len(nodes))
 	for _, n := range nodes {
 		res := toNodeResource(n)
+		res.Failure = failures[n.ID]
 		res.IsLocal = n.ID == rt.localNodeID
 		res.ResourceCount = counts[n.ID]
 		if res.IsLocal {
@@ -269,6 +280,7 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 	res.IsLocal = n.ID == rt.localNodeID
 	res.StatusReason = nodeStatusReason(*n, time.Now(), nodePendingStaleAfter())
 	res.GPU = rt.nodeGPUResources(r.Context())[n.ID]
+	res.Failure = rt.failureSummaries(r.Context())[n.ID]
 	res.Cert, res.Agent = rt.nodeCertAndAgent(*n, time.Now(), rt.renewalStates(r.Context()))
 	if rt.telemetry != nil {
 		th := rt.nodeAlertThresholds
@@ -372,14 +384,21 @@ func (rt *Router) handleSetNodeWorkloads(w http.ResponseWriter, r *http.Request)
 }
 
 // setNodeRegionRequest is the body PUT /api/v1/nodes/{id}/region expects.
+// Every field is optional: an omitted field keeps its stored value.
 type setNodeRegionRequest struct {
-	Region string `json:"region"`
+	Region   *string `json:"region,omitempty"`
+	Provider *string `json:"provider,omitempty"`
+	Zone     *string `json:"zone,omitempty"`
 }
 
+// maxNodeLabelLen bounds a failure-domain label so a node row stays small.
+const maxNodeLabelLen = 64
+
+func validNodeLabel(v string) bool { return len(v) <= maxNodeLabelLen }
+
 // handleSetNodeRegion handles PUT /api/v1/nodes/{id}/region: the only way
-// a node's operator-facing location label changes. Free text, no fixed
-// provider/region list validated against, per store.Node.Region's own doc
-// comment.
+// a node's failure-domain labels (region, provider, zone) change. Free text,
+// no fixed list validated against.
 func (rt *Router) handleSetNodeRegion(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
@@ -387,8 +406,32 @@ func (rt *Router) handleSetNodeRegion(w http.ResponseWriter, r *http.Request) {
 	if !decodeReq(w, r, &req) {
 		return
 	}
+	if (req.Region != nil && !validNodeLabel(*req.Region)) || (req.Provider != nil && !validNodeLabel(*req.Provider)) || (req.Zone != nil && !validNodeLabel(*req.Zone)) {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("labels must be at most %d characters", maxNodeLabelLen))
+		return
+	}
 
-	if err := rt.nodes.UpdateNodeRegion(r.Context(), id, req.Region); errors.Is(err, store.ErrNodeNotFound) {
+	cur, err := rt.nodes.GetNode(r.Context(), id)
+	if errors.Is(err, store.ErrNodeNotFound) {
+		writeError(w, http.StatusNotFound, "node not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set node region: load failed", slog.String("error", err.Error()), slog.String("node_id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	provider, region, zone := cur.Provider, cur.Region, cur.Zone
+	if req.Region != nil {
+		region = strings.TrimSpace(*req.Region)
+	}
+	if req.Provider != nil {
+		provider = strings.TrimSpace(*req.Provider)
+	}
+	if req.Zone != nil {
+		zone = strings.TrimSpace(*req.Zone)
+	}
+
+	if err := rt.nodes.UpdateNodeFailureDomain(r.Context(), id, provider, region, zone); errors.Is(err, store.ErrNodeNotFound) {
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	} else if err != nil {

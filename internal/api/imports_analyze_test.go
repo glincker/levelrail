@@ -60,7 +60,7 @@ func TestAnalyzeImport_Errors(t *testing.T) {
 		want int
 	}{
 		{"missing url", `{}`, nil, http.StatusBadRequest},
-		{"not http", `{"repo_url":"ssh://git@github.com/a/b"}`, nil, http.StatusBadRequest},
+		{"not http", `{"repo_url":"ftp://github.com/a/b"}`, nil, http.StatusBadRequest},
 		{"provider 404", `{"repo_url":"https://github.com/a/b","ref":"main"}`, &fakeLayoutSource{err: &repolayout.StatusError{Status: 404}}, http.StatusNotFound},
 		{"provider 403", `{"repo_url":"https://github.com/a/b","ref":"main"}`, &fakeLayoutSource{err: &repolayout.StatusError{Status: 403}}, http.StatusUnprocessableEntity},
 		{"no api host", `{"repo_url":"https://git.example.org/a/b"}`, nil, http.StatusUnprocessableEntity},

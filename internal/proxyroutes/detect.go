@@ -46,6 +46,8 @@ type Container struct {
 	// from the host, when one exists (see StaticConfigCandidates).
 	StaticFile   string
 	StaticConfig []byte
+	// NginxConf is the host copy of nginx.conf when it could be read.
+	NginxConf []byte
 }
 
 // HostDockerInternal is the name Docker resolves to the host when the
@@ -64,6 +66,8 @@ type Detection struct {
 	EntrypointHTTPS string   `json:"entrypoint_https"`
 	CertResolver    string   `json:"cert_resolver"`
 	UpstreamHost    string   `json:"upstream_host"`
+	CertDir         string   `json:"cert_dir,omitempty"`
+	Webroot         string   `json:"webroot,omitempty"`
 	Complete        bool     `json:"complete"`
 	Missing         []string `json:"missing"`
 
@@ -78,6 +82,8 @@ type Detection struct {
 
 	// dirMissing are the gaps an explicit dynamic_dir resolves.
 	dirMissing []string
+	// certMissing are the gaps an explicit cert_dir resolves.
+	certMissing []string
 }
 
 // traefikAPIEntrypoint is Traefik's built-in API entrypoint name.
@@ -153,17 +159,22 @@ func hostPath(mounts []Mount, inside string) (string, bool) {
 // Detect reads a proxy container's arguments, mounts, ports and extra hosts.
 // It never guesses: anything it cannot determine is listed in Missing.
 func Detect(c Container) Detection {
+	if p, ok := ProviderFor(c.Kind); ok {
+		return p.Detect(c)
+	}
+	d := Detection{Kind: c.Kind, Container: c.Name, Image: c.Image}
+	d.Missing = append(d.Missing, "managed routes are not available for "+c.Kind+": use the copy and paste guide")
+	d.finish()
+	return d
+}
+
+func detectTraefik(c Container) Detection {
 	d := Detection{Kind: c.Kind, Container: c.Name, Image: c.Image, HostNetwork: c.NetworkMode == "host"}
 	for _, m := range c.Mappings {
 		d.PublishedPorts = append(d.PublishedPorts, m.Public)
 	}
 	d.PublishedPorts = uniqueInts(d.PublishedPorts)
 	d.detectUpstream(c)
-	if c.Kind != KindTraefik {
-		d.Missing = append(d.Missing, "managed routes need Traefik's file provider; "+c.Kind+" is supported through the copy and paste guide only")
-		d.finish()
-		return d
-	}
 	flags := parseArgs(c.Args)
 	if c.StaticFile != "" {
 		// Traefik reads one static source: a found file replaces the flags.
@@ -184,6 +195,7 @@ func Detect(c Container) Detection {
 
 func (d *Detection) finish() {
 	d.Missing = append(d.Missing, d.dirMissing...)
+	d.Missing = append(d.Missing, d.certMissing...)
 	if d.PublishedPorts == nil {
 		d.PublishedPorts = []int{}
 	}

@@ -1,0 +1,223 @@
+{
+  "nav": {
+    "label": "Email sections",
+    "delivery": "Delivery",
+    "templates": "Templates",
+    "audiences": "Audiences",
+    "messages": "Messages"
+  },
+  "common": {
+    "loadError": "Could not load this page.",
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "saving": "Saving",
+    "people": "{{count}} people"
+  },
+  "templates": {
+    "eyebrow": "Email",
+    "title": "Email templates",
+    "description": "Every email the platform sends, in one branded layout. Edit the wording, preview it with sample data and reset to the default at any time.",
+    "kind": {
+      "system": "Account and security",
+      "announcement": "Announcement"
+    },
+    "customized": "Customized",
+    "builtIn": "Built in",
+    "edit": "Edit",
+    "listHeading": "Templates",
+    "layout": {
+      "title": "Shared layout",
+      "description": "The frame around every email: an optional header image and a footer line such as your postal address.",
+      "headerImage": "Header image address",
+      "headerImageHelp": "An https image shown above the brand name. Leave empty to show the brand name only.",
+      "footer": "Footer text",
+      "footerHelp": "Shown under every email. Global tokens such as {{examples}} work here.",
+      "save": "Save layout",
+      "saved": "Layout saved."
+    },
+    "editor": {
+      "back": "All templates",
+      "subject": "Subject",
+      "preheader": "Preheader",
+      "preheaderHelp": "The preview line some inboxes show next to the subject.",
+      "body": "Body",
+      "bodyHelp": "Blank lines start a new paragraph. Use # for a heading, - for a list, > for a callout, **bold**, [label](address) for links and !button Label|address for a button.",
+      "save": "Save template",
+      "saved": "Template saved.",
+      "reset": "Reset to default",
+      "resetTitle": "Reset this template?",
+      "resetDescription": "The built-in wording comes back. Your edits stay in the version history.",
+      "resetDone": "Template reset.",
+      "sendTest": "Send a test to me",
+      "testSent": "Test sent to {{email}}.",
+      "noProviderTitle": "No email provider is set up",
+      "noProviderBody": "Set up a provider first, then send a test.",
+      "fixProvider": "Open email settings"
+    },
+    "tokens": {
+      "title": "Tokens",
+      "description": "Click a token to insert it at the cursor. Unknown tokens are rejected when you save.",
+      "scope": {
+        "global": "Everywhere",
+        "recipient": "About the recipient",
+        "event": "For this email"
+      },
+      "insert": "Insert {{name}}"
+    },
+    "preview": {
+      "title": "Preview",
+      "desktop": "Desktop",
+      "mobile": "Mobile",
+      "light": "Light",
+      "dark": "Dark",
+      "frameTitle": "Email preview",
+      "plain": "Plain text version",
+      "error": "The preview needs a valid template: {{message}}"
+    },
+    "history": {
+      "title": "Version history",
+      "description": "The last 10 saved versions.",
+      "empty": "No saved versions yet. The first save creates one.",
+      "restore": "Restore",
+      "restored": "Version restored.",
+      "version": "Version {{version}}",
+      "by": "by {{who}}"
+    }
+  },
+  "audiences": {
+    "eyebrow": "Email",
+    "title": "Audiences",
+    "description": "Saved groups of people to write to. Rules pick users by role, team, project, sign-in domain or inactivity, and you can add extra addresses by hand.",
+    "create": "New audience",
+    "edit": "Edit",
+    "empty": {
+      "title": "No audiences yet",
+      "description": "Create a group such as all admins or everyone inactive for 90 days, then send it a message."
+    },
+    "columns": {
+      "name": "Audience",
+      "recipients": "Recipients",
+      "suppressed": "Opted out"
+    },
+    "dialog": {
+      "createTitle": "New audience",
+      "editTitle": "Edit audience",
+      "name": "Name",
+      "description": "Description",
+      "rules": "Who is included",
+      "everyone": "Every user",
+      "roles": "Roles",
+      "teams": "Teams",
+      "projects": "Projects (their team)",
+      "domains": "Sign-in email domains",
+      "domainsHelp": "One per line, for example example.com.",
+      "inactive": "Not signed in for (days)",
+      "inactiveHelp": "Narrows the selection, or selects everyone inactive that long when nothing else is chosen.",
+      "extra": "Extra addresses",
+      "extraHelp": "One per line. Added even if they are not users.",
+      "exclude": "Never include",
+      "excludeHelp": "One address per line.",
+      "save": "Save audience",
+      "saved": "Audience saved.",
+      "live": "{{deliverable}} will receive it, {{suppressed}} opted out.",
+      "liveSample": "First {{count}} recipients",
+      "noneChosen": "Pick at least one rule to see who is included."
+    },
+    "role": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "operator": "Operator",
+      "viewer": "Viewer"
+    },
+    "deleteTitle": "Delete this audience?",
+    "deleteDescription": "Past messages keep their history. This only removes the saved rules.",
+    "deleted": "Audience deleted.",
+    "suppressions": {
+      "title": "Opt-out list",
+      "description": "People here are skipped by announcements. Security and account emails always arrive.",
+      "empty": "Nobody has opted out.",
+      "add": "Add address",
+      "addPlaceholder": "name@example.com",
+      "remove": "Remove",
+      "reasonAdmin": "Added by an administrator",
+      "reasonUnsub": "Unsubscribed from a message",
+      "added": "Address added to the opt-out list."
+    }
+  },
+  "messages": {
+    "eyebrow": "Email",
+    "title": "Messages",
+    "description": "Write to an audience or to chosen people. Messages go out in the saved layout with a one-click unsubscribe link, rate limited, and every send is in the history.",
+    "compose": "New message",
+    "noProvider": {
+      "title": "Email is not set up",
+      "body": "Messages need an email provider. Set one up, send a test, then come back.",
+      "fix": "Open email settings"
+    },
+    "composer": {
+      "title": "New message",
+      "template": "Start from",
+      "subject": "Subject",
+      "body": "Message",
+      "bodyHelp": "Tokens such as {{example}} are filled in per person.",
+      "audience": "Audience",
+      "audiencePlaceholder": "Choose an audience",
+      "noAudience": "No audience",
+      "extra": "Extra recipients",
+      "extraHelp": "One address per line, optional.",
+      "when": "When",
+      "now": "Send now",
+      "later": "Schedule",
+      "review": "Review and send",
+      "sendTest": "Send a test to me",
+      "preview": "Preview",
+      "tokens": "Insert a token"
+    },
+    "confirm": {
+      "title": "Send this message?",
+      "summary": "This will email {{deliverable}} people, {{suppressed}} are suppressed.",
+      "capLeft": "{{count}} recipients left in today's limit.",
+      "schedule": "It will start at {{time}}.",
+      "send": "Send message",
+      "schedule_action": "Schedule message",
+      "none": "Nobody would receive this message."
+    },
+    "sent": "Message queued.",
+    "history": {
+      "title": "History",
+      "empty": {
+        "title": "No messages yet",
+        "description": "Sent and scheduled messages show up here with delivery counts."
+      },
+      "columns": {
+        "subject": "Subject",
+        "status": "Status",
+        "progress": "Delivered",
+        "when": "Created"
+      },
+      "progress": "{{sent}} sent, {{failed}} failed, {{suppressed}} skipped of {{total}}",
+      "details": "Details",
+      "cancel": "Cancel sending",
+      "cancelTitle": "Stop this message?",
+      "cancelDescription": "People who were not reached yet will not get it.",
+      "cancelled": "Message cancelled.",
+      "recipients": "Recipients",
+      "recipientStatus": {
+        "pending": "Waiting",
+        "sent": "Sent",
+        "failed": "Failed",
+        "suppressed": "Opted out",
+        "cancelled": "Cancelled"
+      }
+    },
+    "status": {
+      "scheduled": "Scheduled",
+      "sending": "Sending",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed"
+    }
+  }
+}

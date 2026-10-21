@@ -46,12 +46,20 @@ type proxyConflict struct {
 type proxySetupRequest struct {
 	Confirm    bool   `json:"confirm"`
 	DynamicDir string `json:"dynamic_dir"`
+	// Provider is traefik, nginx, caddy, haproxy or auto (the default).
+	Provider string `json:"provider"`
+	// CertDir overrides the nginx certificate directory (in the container).
+	CertDir string `json:"cert_dir"`
 }
 
 type proxySetupResponse struct {
 	proxyIntegrationResource
 	DryRun  bool     `json:"dry_run"`
 	Changes []string `json:"changes"`
+	// Manual and Snippet are set for caddy and haproxy: configuration to
+	// apply by hand, never applied here.
+	Manual  bool   `json:"manual,omitempty"`
+	Snippet string `json:"snippet,omitempty"`
 }
 
 const defaultProxyRouteRetry = 500 * time.Millisecond
@@ -85,22 +93,31 @@ func (rt *Router) handleUpdateProxyIntegrationSettings(w http.ResponseWriter, r 
 		Mode: strings.TrimSpace(body.Integration), DynamicDir: strings.TrimSpace(body.DynamicDir),
 		EntrypointHTTP: strings.TrimSpace(body.EntrypointHTTP), EntrypointHTTPS: strings.TrimSpace(body.EntrypointHTTPS),
 		CertResolver: strings.TrimSpace(body.CertResolver), UpstreamHost: strings.TrimSpace(body.UpstreamHost),
+		Container: strings.TrimSpace(body.Container), CertDir: strings.TrimSpace(body.CertDir), Webroot: strings.TrimSpace(body.Webroot),
 	}
 	if err := rt.validateProxySettings(s); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	previous, err := deps.store.GetProxyIntegrationSettings(r.Context())
+	if err != nil {
+		rt.internalError(w, "proxy integration: settings", err)
 		return
 	}
 	if err := deps.store.UpdateProxyIntegrationSettings(r.Context(), s); err != nil {
 		rt.internalError(w, "proxy integration: update settings", err)
 		return
 	}
-	rt.syncProxyRoutes(r.Context(), deps)
+	if c := rt.syncOrRevertProxyRoutes(r.Context(), deps, previous); c != nil {
+		writeJSON(w, http.StatusConflict, c)
+		return
+	}
 	writeJSON(w, http.StatusOK, toProxySettingsResource(s))
 }
 
 func (rt *Router) validateProxySettings(s store.ProxyIntegrationSettings) error {
 	if !store.ValidProxyIntegrationMode(s.Mode) {
-		return errors.New("integration must be off or traefik_file")
+		return errors.New("integration must be off, traefik_file or nginx_file")
 	}
 	if s.DynamicDir != "" && !filepath.IsAbs(s.DynamicDir) {
 		return fmt.Errorf("dynamic_dir %q must be an absolute path", s.DynamicDir)
@@ -113,6 +130,9 @@ func (rt *Router) validateProxySettings(s store.ProxyIntegrationSettings) error 
 	}
 	if _, err := proxyroutes.OpenDir(rt.proxyIntegration.syncer.NS, s.DynamicDir); err != nil {
 		return err
+	}
+	if s.Mode == store.ProxyIntegrationNginxFile {
+		return validateNginxSettings(s)
 	}
 	if err := proxyroutes.ValidateName("entrypoint_http", s.EntrypointHTTP); err != nil {
 		return err
@@ -128,11 +148,50 @@ func (rt *Router) validateProxySettings(s store.ProxyIntegrationSettings) error 
 	return proxyroutes.ValidateUpstreamHost(s.UpstreamHost)
 }
 
-func (rt *Router) syncProxyRoutes(ctx context.Context, deps *proxyIntegrationDeps) {
-	if _, err := deps.syncer.Sync(ctx); err != nil {
+func validateNginxSettings(s store.ProxyIntegrationSettings) error {
+	if s.Container == "" {
+		return errors.New("container is required for nginx: it is the container that is validated and reloaded")
+	}
+	if s.CertDir == "" {
+		return errors.New("cert_dir is required for nginx")
+	}
+	if err := proxyroutes.ValidateNginxPath("cert_dir", s.CertDir); err != nil {
+		return err
+	}
+	if s.Webroot != "" {
+		if err := proxyroutes.ValidateNginxPath("webroot", s.Webroot); err != nil {
+			return err
+		}
+	}
+	return proxyroutes.ValidateUpstreamHost(s.UpstreamHost)
+}
+
+// syncProxyRoutes runs one sync pass. A failure other than the proxy
+// rejecting the files is logged and left to the next pass.
+func (rt *Router) syncProxyRoutes(ctx context.Context, deps *proxyIntegrationDeps) error {
+	_, err := deps.syncer.Sync(ctx)
+	if err != nil {
 		rt.logger.WarnContext(ctx, "proxy integration: sync", "error", err.Error())
 	}
 	rt.nudgeReconciler()
+	var rej *proxyroutes.RejectedError
+	if errors.As(err, &rej) {
+		return err
+	}
+	return nil
+}
+
+// syncOrRevertProxyRoutes syncs and, when the proxy rejects the files,
+// puts previous back so a bad change never stays saved.
+func (rt *Router) syncOrRevertProxyRoutes(ctx context.Context, deps *proxyIntegrationDeps, previous store.ProxyIntegrationSettings) *proxyConflict {
+	err := rt.syncProxyRoutes(ctx, deps)
+	if err == nil {
+		return nil
+	}
+	if uerr := deps.store.UpdateProxyIntegrationSettings(ctx, previous); uerr != nil {
+		rt.logger.ErrorContext(ctx, "proxy integration: restore settings", "error", uerr.Error())
+	}
+	return rejectedProxy(err)
 }
 
 // handleApplyProxyIntegration handles POST /api/v1/system/proxy-integration/apply.
@@ -150,7 +209,10 @@ func (rt *Router) handleApplyProxyIntegration(w http.ResponseWriter, r *http.Req
 		writeJSON(w, http.StatusConflict, proxyConflict{Code: proxyCodeDisabled, Error: "managed proxy routes are off: run setup first"})
 		return
 	}
-	rt.syncProxyRoutes(r.Context(), deps)
+	if err := rt.syncProxyRoutes(r.Context(), deps); err != nil {
+		writeJSON(w, http.StatusConflict, rejectedProxy(err))
+		return
+	}
 	rt.respondProxyIntegration(r.Context(), w, deps, rt.detectProxy(r.Context()))
 }
 

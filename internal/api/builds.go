@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/sourceupload"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -122,6 +123,8 @@ type triggerBuildRequest struct {
 	// FromCache builds from the local source cache only and never contacts
 	// the git host; it fails when the ref is not cached.
 	FromCache bool `json:"from_cache,omitempty"`
+	// UploadHash builds a directory previously sent to POST /api/v1/apps/{name}/uploads instead of a git checkout.
+	UploadHash string `json:"upload_hash,omitempty"`
 	freezeOverride
 }
 
@@ -278,6 +281,10 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if rt.refuseNodeCritical(r.Context(), w, existing.NodeID) {
+		return
+	}
+
 	buildType := req.Build.Type
 	if buildType == "" {
 		buildType = spec.BuildDockerfile
@@ -301,6 +308,16 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var upload sourceupload.Meta
+	if req.UploadHash != "" {
+		var status int
+		var msg string
+		if upload, status, msg = rt.prepareUploadBuild(name, &req, buildType); status != 0 {
+			writeError(w, status, msg)
+			return
+		}
+	}
+
 	if buildType == spec.BuildImage {
 		if req.Build.Image == "" {
 			writeError(w, http.StatusBadRequest, "build.image is required for build.type \"image\"")
@@ -314,7 +331,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "from_cache needs a git source, not build.type \"image\"")
 			return
 		}
-	} else {
+	} else if req.UploadHash == "" {
 		if req.RepoURL == "" {
 			writeError(w, http.StatusBadRequest, "repo_url is required")
 			return
@@ -350,6 +367,11 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 
 	buildReq := manualBuildRequest(name, *existing, req, buildType)
 	source := store.DeployAttemptSourceManual
+	attemptCtx := r.Context()
+	if req.UploadHash != "" {
+		source = store.DeployAttemptSourceUpload
+		attemptCtx = withUploadCommitMeta(attemptCtx, upload)
+	}
 
 	rt.buildStartMu.Lock()
 	if rt.deploySafety != nil {
@@ -369,7 +391,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "a deploy for this app is already running")
 		return
 	}
-	run := rt.beginManualBuild(r.Context(), *existing, buildReq, buildType, source, req.DetectedFramework, freezeNote, allowPrivateRepoAuth)
+	run := rt.beginManualBuild(attemptCtx, *existing, buildReq, buildType, source, req.DetectedFramework, freezeNote, allowPrivateRepoAuth)
 	rt.buildStartMu.Unlock()
 
 	run.repoURL, run.ref, run.fromCache = req.RepoURL, req.Ref, req.FromCache

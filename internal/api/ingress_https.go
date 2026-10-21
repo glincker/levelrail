@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/certflow"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -313,6 +314,17 @@ func (rt *Router) handleEnableHTTPS(w http.ResponseWriter, r *http.Request) {
 	directory := rt.acmeDefaultDirectory
 	if req.Staging {
 		directory = ACMEStagingDirectoryURL
+	}
+	if req.Staging {
+		rows, rerr := rt.certTruthRows(r.Context(), time.Now())
+		if rerr != nil {
+			rt.internalError(w, "api: enable https: list certificates", rerr)
+			return
+		}
+		if c := certflow.StagingConflict(domain, existingCerts(rows)); c != nil {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": c.Error(), "code": certflow.CodeReplaces})
+			return
+		}
 	}
 	if !rt.allowHTTPSAttempt(time.Now(), !isStagingDirectory(directory)) {
 		writeError(w, http.StatusTooManyRequests, "too many certificate attempts in the last hour; each failed attempt counts against Let's Encrypt's own limits. Fix the cause (see the status hint), try staging, or wait before retrying")

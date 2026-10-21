@@ -1,3 +1,4 @@
+import { StuckPanel } from '../../components/StuckPanel'
 import { useState } from 'react'
 import {
   createFileRoute,
@@ -23,6 +24,10 @@ import {
   type DeployTab,
 } from '../../components/overview/DeploySheet'
 import { PendingDeployApprovalBanner } from '../../components/PendingDeployApprovalBanner'
+import {
+  PublishLockBanner,
+  PublishLockToggle,
+} from '../../components/PublishLockControls'
 import { AppMaintenanceBanner } from '../../components/maintenance/AppMaintenanceBanner'
 import { TrialAppBanner } from '../../components/TrialAppBanner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -41,6 +46,7 @@ const APP_SECTION_LABELS: Record<string, string> = {
   overview: 'Overview',
   deploys: 'Deploys',
   domains: 'Domains',
+  'go-live': 'Go live',
   network: 'Network',
   services: 'Services',
   environment: 'Environment',
@@ -53,6 +59,7 @@ const APP_SECTION_LABELS: Record<string, string> = {
   integrations: 'Integrations',
   'scheduled-tasks': 'Jobs',
   'feature-flags': 'Feature flags',
+  'split-testing': 'Split testing',
   metrics: 'Metrics',
   logs: 'Logs',
   alerts: 'Alerts',
@@ -124,6 +131,7 @@ function AppDetailLayout() {
     <>
       {app.is_trial ? <TrialAppBanner app={app} /> : null}
       <PendingDeployApprovalBanner appName={app.name} />
+      <PublishLockBanner appName={app.name} />
       <AppMaintenanceBanner appName={app.name} />
     </>
   )
@@ -137,6 +145,7 @@ function AppDetailLayout() {
         }}
       />
       <AppPaletteActions app={app} action={action} onDeploy={setDeployTab} />
+      <StuckPanel kind="app" name={app.name} />
       <Outlet />
     </>
   )
@@ -164,6 +173,7 @@ function AppDetailLayout() {
             className="hidden h-5 w-px bg-border lg:block"
           />
           <div className="flex items-center gap-2">
+            <PublishLockToggle appName={app.name} />
             <AppActionBar app={app} onDeploy={setDeployTab} />
           </div>
         </>

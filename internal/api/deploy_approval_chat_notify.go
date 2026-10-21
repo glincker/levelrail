@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -25,7 +26,7 @@ type ApprovalChatNotifier interface {
 // rt.notificationChannels isn't configured, same "optional signal"
 // shape as every other nil-is-valid Router dependency.
 func (rt *Router) notifyApprovalRequested(ctx context.Context, a store.DeployApproval) {
-	if rt.approvalChatNotifier == nil || rt.notificationChannels == nil {
+	if rt.notificationChannels == nil {
 		return
 	}
 	channels, err := rt.notificationChannels.ListNotificationChannels(ctx)
@@ -41,9 +42,28 @@ func (rt *Router) notifyApprovalRequested(ctx context.Context, a store.DeployApp
 		if !c.Enabled || !c.InteractiveApprovals {
 			continue
 		}
+		if c.Kind == alerting.NotifyEmail {
+			rt.emailApprovalRequest(ctx, c, a)
+			continue
+		}
+		if rt.approvalChatNotifier == nil {
+			continue
+		}
 		if err := rt.approvalChatNotifier.SendApprovalRequest(ctx, c, info); err != nil {
 			rt.logger.Error("api: send deploy approval chat request failed",
 				slog.String("channel_id", c.ID), slog.String("approval_id", a.ID), slog.String("error", err.Error()))
 		}
+	}
+}
+
+// emailApprovalRequest sends the deploy_approval template to an email channel, best effort.
+func (rt *Router) emailApprovalRequest(ctx context.Context, c alerting.NotificationChannel, a store.DeployApproval) {
+	if alerting.IsMaskedNotifyTarget(c.NotifyURL) || c.NotifyURL == "" {
+		return
+	}
+	vals := map[string]string{"app_name": a.ServiceName, "requester": a.RequestedByName, "approve_link": rt.emailLinkBase(ctx)}
+	if err := rt.sendMailEvent(ctx, mailtemplates.EventDeployApproval, c.NotifyURL, vals); err != nil {
+		rt.logger.Error("api: email deploy approval request failed",
+			slog.String("channel_id", c.ID), slog.String("approval_id", a.ID), slog.String("error", err.Error()))
 	}
 }

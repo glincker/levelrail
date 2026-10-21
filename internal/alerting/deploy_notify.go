@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
@@ -345,7 +346,12 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		if !ev.Succeeded {
 			subject = fmt.Sprintf("[Levelrail] deploy FAILED: %s", ev.AppName)
 		}
-		if err := sendEmailWithRetry(ctx, sender, t.NotifyURL, subject, summaryDeployText(ev)); err != nil {
+		status := "succeeded"
+		if !ev.Succeeded {
+			status = "failed"
+		}
+		vals := map[string]string{"app_name": ev.AppName, "deploy_status": status}
+		if err := sendTemplated(ctx, sender, mailtemplates.EventDeployNotification, t.NotifyURL, vals, subject, summaryDeployText(ev)); err != nil {
 			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
 		}
 		return nil
@@ -376,11 +382,26 @@ type DeployDispatcher struct {
 	logger     *slog.Logger
 	runtime    LogsSource
 	buildLogs  DeployLogSource
+	outcomes   *DeployOutcomeTracker
 }
 
 // DeployLogSource reads a deploy attempt's build output; *telemetry.DB satisfies it.
 type DeployLogSource interface {
 	QueryDeployLog(ctx context.Context, attemptID string) ([]telemetry.DeployLogEntry, error)
+}
+
+// WithOutcomeTracker feeds every terminal deploy outcome to t, which the deploy_failed rule reads.
+func (d *DeployDispatcher) WithOutcomeTracker(t *DeployOutcomeTracker) *DeployDispatcher {
+	d.outcomes = t
+	return d
+}
+
+// Outcomes returns the tracker fed by this dispatcher, or nil when none is attached.
+func (d *DeployDispatcher) Outcomes() DeployFailureSource {
+	if d.outcomes == nil {
+		return nil
+	}
+	return d.outcomes
 }
 
 // WithLogSources lets the dispatcher attach the tail of the failing build or
@@ -433,6 +454,9 @@ func NewDeployDispatcher(db *DB, client *http.Client, sender email.Sender, pushS
 // Dispatch sends ev to every enabled DeployTarget for its app. Call it only once the attempt is terminal.
 // Failures are logged, never returned: the deploy has already finished and must not look failed.
 func (d *DeployDispatcher) Dispatch(ctx context.Context, resourceID string, ev DeployOutcome) {
+	if d.outcomes != nil {
+		d.outcomes.Record(ev, time.Now())
+	}
 	d.attachLogs(ctx, resourceID, &ev)
 	targets, err := d.db.ListDeployTargetsForResource(ctx, resourceID)
 	if err != nil {

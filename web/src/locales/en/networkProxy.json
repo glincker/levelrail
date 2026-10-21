@@ -32,6 +32,7 @@
   },
   "automaticDomain": {
     "badge": "Automatic",
+    "betaHint": "Free test address from a public wildcard-DNS service. Works only while that service resolves on your network. Add your own domain for production.",
     "hint": "Assigned by Levelrail from this server's IP so the app works with no DNS setup. Add your own domain below to replace it.",
     "open": "Open",
     "tlsNote": "This automatic URL uses a self-signed certificate until HTTPS is enabled under Domains. Plain http gets a 308 redirect to it."

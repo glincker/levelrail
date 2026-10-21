@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -16,6 +17,9 @@ import (
 const (
 	EnvBuildTimeout       = "APP_BUILD_TIMEOUT"
 	EnvBuildMaxConcurrent = "APP_BUILD_MAX_CONCURRENT"
+	EnvBuildMemoryMB      = "APP_BUILD_MEMORY_MB"
+	EnvBuildCPUMillis     = "APP_BUILD_CPU_MILLIS"
+	EnvBuildCgroupRoot    = "APP_BUILD_CGROUP_ROOT"
 
 	DefaultBuildTimeout       = 30 * time.Minute
 	DefaultBuildMaxConcurrent = 2
@@ -26,10 +30,16 @@ const (
 // ErrBuildTimeout is the cause of a build stopped by its time limit.
 var ErrBuildTimeout = errors.New("build timed out")
 
-// Limits caps builds. A zero field means unlimited.
+// ErrBuildMemoryLimit marks a build killed for exceeding its memory limit.
+var ErrBuildMemoryLimit = errors.New("build exceeded its memory limit")
+
+// Limits caps builds. A zero field means unlimited. MemoryMB and CPUMillis
+// (1000 = one core) are per build; the rest are control-plane wide.
 type Limits struct {
 	MaxConcurrent int
 	Timeout       time.Duration
+	MemoryMB      int
+	CPUMillis     int
 }
 
 // LimitsFromEnv reads the env defaults; a malformed value falls back to the default.
@@ -45,12 +55,22 @@ func LimitsFromEnv(lookup func(string) (string, bool)) Limits {
 			l.MaxConcurrent = n
 		}
 	}
+	if v, ok := lookup(EnvBuildMemoryMB); ok && v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			l.MemoryMB = n
+		}
+	}
+	if v, ok := lookup(EnvBuildCPUMillis); ok && v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			l.CPUMillis = n
+		}
+	}
 	return l
 }
 
-// LimitsSource resolves the limits for the next build, so a settings change
-// applies without a restart.
-type LimitsSource func(ctx context.Context) Limits
+// LimitsSource resolves the limits for the next build of app, so a settings
+// change applies without a restart.
+type LimitsSource func(ctx context.Context, app string) Limits
 
 // Clock lets tests drive the timeout and queue wait without sleeping.
 type Clock interface {
@@ -98,6 +118,9 @@ func WithNodeResolver(n NodeResolver) LimiterOption { return func(l *Limiter) { 
 // WithImageSizer records the size of every built image.
 func WithImageSizer(s ImageSizer) LimiterOption { return func(l *Limiter) { l.sizer = s } }
 
+// WithCgroupProvisioner enforces the CPU and memory limits through a cgroup per build.
+func WithCgroupProvisioner(c CgroupProvisioner) LimiterOption { return func(l *Limiter) { l.cg = c } }
+
 // Limiter queues builds past the per-node concurrency limit, stops builds past the
 // time limit, and records each outcome with its cache hit counts.
 type Limiter struct {
@@ -109,6 +132,7 @@ type Limiter struct {
 
 	node  NodeResolver
 	sizer ImageSizer
+	cg    CgroupProvisioner
 
 	mu    sync.Mutex
 	slots map[string]*nodeSlots
@@ -131,20 +155,22 @@ func NewLimiter(inner Builder, limits LimitsSource, opts ...LimiterOption) *Limi
 
 // Build implements the deploy pipeline's ImageBuilder.
 func (l *Limiter) Build(ctx context.Context, req Request, progress func(ProgressEvent)) (*Result, error) {
-	return l.run(ctx, req.Tag, progress, func(c context.Context, p func(ProgressEvent)) (*Result, error) {
+	return l.run(ctx, req.Tag, progress, func(c context.Context, p func(ProgressEvent), cg string) (*Result, error) {
+		req.CgroupParent = cg
 		return l.inner.Build(c, req, p)
 	})
 }
 
 // BuildRailpack implements the deploy pipeline's ImageBuilder.
 func (l *Limiter) BuildRailpack(ctx context.Context, req RailpackRequest, progress func(ProgressEvent)) (*Result, error) {
-	return l.run(ctx, req.Tag, progress, func(c context.Context, p func(ProgressEvent)) (*Result, error) {
+	return l.run(ctx, req.Tag, progress, func(c context.Context, p func(ProgressEvent), cg string) (*Result, error) {
+		req.CgroupParent = cg
 		return l.inner.BuildRailpack(c, req, p)
 	})
 }
 
-func (l *Limiter) run(ctx context.Context, tag string, progress func(ProgressEvent), do func(context.Context, func(ProgressEvent)) (*Result, error)) (*Result, error) {
-	lim := l.limits(ctx)
+func (l *Limiter) run(ctx context.Context, tag string, progress func(ProgressEvent), do func(context.Context, func(ProgressEvent), string) (*Result, error)) (*Result, error) {
+	lim := l.limits(ctx, AppFromTag(tag))
 	queued := l.clock.Now()
 	nodeID := ""
 	if l.node != nil {
@@ -171,6 +197,17 @@ func (l *Limiter) run(ctx context.Context, tag string, progress func(ProgressEve
 		}()
 	}
 
+	cgroupParent := ""
+	if l.cg != nil && (lim.MemoryMB > 0 || lim.CPUMillis > 0) {
+		parent, cleanup, cerr := l.cg.Provision(tag, lim.MemoryMB, lim.CPUMillis)
+		if cerr != nil {
+			l.log.Warn("build: resource limits not enforced", slog.String("app", run.App), slog.String("error", cerr.Error()))
+		} else {
+			cgroupParent = parent
+			defer cleanup()
+		}
+	}
+
 	var steps stepCounter
 	var smu sync.Mutex
 	wrapped := func(ev ProgressEvent) {
@@ -182,7 +219,7 @@ func (l *Limiter) run(ctx context.Context, tag string, progress func(ProgressEve
 		}
 	}
 
-	res, err := do(bctx, wrapped)
+	res, err := do(bctx, wrapped, cgroupParent)
 	run.Duration = l.clock.Now().Sub(started)
 	smu.Lock()
 	run.CachedSteps, run.TotalSteps = steps.cached, steps.total()
@@ -199,6 +236,9 @@ func (l *Limiter) run(ctx context.Context, tag string, progress func(ProgressEve
 		err = fmt.Errorf("%w after %s: %w", ErrBuildTimeout, lim.Timeout, err)
 	case ctx.Err() != nil:
 		run.Status = RunCanceled
+	case lim.MemoryMB > 0 && isMemoryKill(err):
+		run.Status = RunMemoryLimit
+		err = fmt.Errorf("%w (%d MB): %w", ErrBuildMemoryLimit, lim.MemoryMB, err)
 	default:
 		run.Status = RunFailed
 	}
@@ -207,6 +247,17 @@ func (l *Limiter) run(ctx context.Context, tag string, progress func(ProgressEve
 	}
 	l.record(ctx, run)
 	return res, err
+}
+
+// isMemoryKill matches the SIGKILL and OOM wording BuildKit surfaces for a cgroup memory kill.
+func isMemoryKill(err error) bool {
+	m := strings.ToLower(err.Error())
+	for _, p := range []string{"oomkilled", "out of memory", "signal: killed", "exit code: 137", "exit code 137", "exit status 137"} {
+		if strings.Contains(m, p) {
+			return true
+		}
+	}
+	return false
 }
 
 // record never fails a build: a finished build whose stats could not be saved

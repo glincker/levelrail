@@ -125,7 +125,7 @@ func (s *bootState) startAlerting() {
 	alertingFederator := telemetry.NewLocalFederator(telemetryDB)
 	pluginSender := pluginSenderFor(pluginMgr)
 	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier {
-		return alerting.NewNotifierWithPlugins(notifyClient, emailSender, pushSender, pluginSender, r)
+		return alerting.NewNotifierWithPlugins(notifyClient, alerting.TemplatedSender{Sender: emailSender, Render: alertMailRenderer(db, *b)}, pushSender, pluginSender, r)
 	}
 	// db and apiRouter satisfy the alerting source interfaces structurally, so no adapters are needed.
 	tlsSuppress := alerting.CertSuppressor(func(c context.Context) func(string) bool {
@@ -141,10 +141,26 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
 	alertingEngine.SetBudgets(apiRouter)
+	alertingEngine.SetEmailDelivery(db)
+	alertingEngine.SetDatabaseHealth(apiRouter)
+	if src := s.deployDispatcher.Outcomes(); src != nil {
+		alertingEngine.SetDeployFailures(src)
+	}
+	routeDefaultAlerts(ctx, logger, alertingDB, db, emailSender)
 	go runUsageRollup(ctx, apiRouter)
+	go footprint.RunTrim(ctx, logger, os.Getenv)
 	go func() {
 		if err := footprint.Every(ctx, "database teardown retry", time.Minute, logger, apiRouter.RetryDatabaseTeardowns); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("database teardown retry stopped", slog.String("error", err.Error()))
+		}
+	}()
+	go func() {
+		prune := func(c context.Context) error {
+			_, err := pruneEmailDeliveries(c, db, emailLogRetention(), time.Now())
+			return err
+		}
+		if err := footprint.Every(ctx, "email delivery log prune", time.Hour, logger, prune); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("email delivery log prune stopped", slog.String("error", err.Error()))
 		}
 	}()
 	go runSpendCaps(ctx, apiRouter)
@@ -223,6 +239,15 @@ func (s *bootState) startSchedulers() {
 	}
 
 	// Always runs: scheduledTaskRunner needs no master key, so this loop is never gated.
+	localNodeID := ""
+	if meshCfg != nil {
+		localNodeID = meshCfg.localNodeID
+	}
+	scheduledTaskRunner.HTTPConfigs = db
+	scheduledTaskRunner.Target = jobHTTPTarget{
+		db: db, nudger: engine, local: client,
+		nodes: lbNodeUpstreams{db: db, local: client, registry: agentRegistry, localNodeID: localNodeID},
+	}
 	scheduledTaskScheduler := scheduledtask.NewScheduler(db, scheduledTaskRunner, logger)
 	scheduledTaskScheduler.Lookback = scheduledTaskRunner.Limits.CatchUpLookback
 	go func() {
@@ -302,6 +327,8 @@ func (s *bootState) startSchedulers() {
 		}
 	}()
 
+	go apiRouter.RunCertWatchdog(ctx)
+
 	// Only checks when an operator has opted into auto_update_enabled.
 	startUpgradeScheduler(ctx, logger, apiRouter)
 	updateCheckScheduler := updatecheck.NewScheduler(db, logger, b.RepoSlug())
@@ -371,12 +398,7 @@ func (s *bootState) serve() error {
 	client := s.client
 	engine := s.engine
 	httpServer := s.httpServer
-	events, errs := client.Events(ctx)
-	go func() {
-		if err, ok := <-errs; ok && err != nil {
-			logger.Error("docker event stream error", slog.String("error", err.Error()))
-		}
-	}()
+	events := resilientEvents(ctx, client.Events, logger)
 
 	serveErrs := make(chan error, 1)
 	go func() {

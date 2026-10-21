@@ -5,7 +5,7 @@
 // the API or the dashboard at all. Mirrors certificates.ts's own shape:
 // an ordinary suspense query, requires a session.
 
-import { queryOptions, useSuspenseQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const staticSitesKeys = {
@@ -41,6 +41,12 @@ export function staticSitesQueryOptions() {
     queryFn: fetchStaticSites,
     staleTime: 60_000,
   })
+}
+
+/** True when a static site exists for the app. False while loading or when the list cannot be read. */
+export function useIsStaticSite(name: string): boolean {
+  const q = useQuery({ ...staticSitesQueryOptions(), retry: false })
+  return q.data?.some((s) => s.name === name) ?? false
 }
 
 export function useStaticSites() {

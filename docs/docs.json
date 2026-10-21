@@ -79,6 +79,7 @@
               "index",
               "what-you-need",
               "installing",
+              "local-development",
               "getting-started",
               "quickstart-one-command",
               "tutorials/deploy-a-docker-app",
@@ -90,6 +91,7 @@
           {
             "group": "Add to your setup",
             "pages": [
+              "go-live",
               "domains-and-ingress",
               "app-exposure",
               "tutorials/index",
@@ -102,6 +104,7 @@
               "multi-node-quickstart",
               "tutorials/self-host-vaultwarden",
               "troubleshooting",
+              "doctor",
               "fix-it"
             ],
             "icon": "/assets/icons/plus-circle.svg"
@@ -146,7 +149,9 @@
             "group": "Essentials",
             "pages": [
               "troubleshooting",
+              "doctor",
               "email-notifications",
+              "email-templates",
               "alert-inbox",
               "event-webhooks",
               "attention-center"
@@ -156,10 +161,13 @@
             "group": "Deploying",
             "pages": [
               "deploying-apps",
+              "deploy-from-cli",
+              "drop-deploy",
               "compose-apps",
               "new-app-wizard",
               "importing-apps",
               "pages",
+              "static-routing",
               "deploy-safety",
               "deploy-failures",
               "git-host-outages",
@@ -168,10 +176,13 @@
               "build-center",
               "scheduled-deploys",
               "scheduled-jobs",
+              "scheduled-functions",
               "image-auto-update",
+              "build-hooks",
               "sleep-when-idle",
               "functions",
               "canary-deploys",
+              "split-testing",
               "deployments-page",
               "images",
               "deploy-previews",
@@ -187,7 +198,8 @@
               "screenshots",
               "docker",
               "zero-downtime-deploys",
-              "preview-environments"
+              "preview-environments",
+              "deploy-contexts"
             ],
             "icon": "/assets/icons/cloud-arrow-up.svg"
           },
@@ -197,8 +209,10 @@
               "domains-and-ingress",
               "standalone-domains",
               "dns",
+              "domain-diagnosis",
               "domain-traffic-controls",
               "cdn-and-caching",
+              "forms",
               "firewall",
               "acme-verification-runbook",
               "multi-node",
@@ -252,6 +266,7 @@
               "pipelines",
               "pipelines-oidc",
               "git-integrations",
+              "git-reliability",
               "git-push-deploy",
               "import-a-repo",
               "monorepos"
@@ -342,6 +357,7 @@
               "migrate-same-server",
               "migrate-over-ssh",
               "migrating-from-vercel",
+              "migrating-from-netlify",
               "migrating-from-cloud-run"
             ],
             "icon": "/assets/icons/arrows-left-right.svg"
@@ -428,6 +444,7 @@
               "heroku-alternative",
               "railway-alternative",
               "vercel-alternative",
+              "netlify-alternative",
               "cloud-run-alternative",
               "self-host-nextjs"
             ]
@@ -919,6 +936,7 @@
             "group": "Engineering notes",
             "pages": [
               "ci",
+              "first-hour-smoke-test",
               "vps-smoke",
               "i18n",
               "design-tokens",

@@ -358,9 +358,14 @@ func (m *Manager) Sweep(ctx context.Context) {
 	}
 }
 
+// sweepDockerTimeout keeps a hung Docker daemon from wedging the sweep goroutine.
+const sweepDockerTimeout = 30 * time.Second
+
 // sweepContainers force-removes capture containers older than twice the
 // capture timeout: leftovers of a control plane that died mid-capture.
 func (m *Manager) sweepContainers(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, sweepDockerTimeout)
+	defer cancel()
 	list, err := m.deps.Runner.ListContainersByLabel(ctx, m.roleLabel()+"="+roleValue)
 	if err != nil {
 		return fmt.Errorf("preview: list capture containers: %w", err)

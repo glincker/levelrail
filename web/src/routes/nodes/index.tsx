@@ -12,6 +12,7 @@ import { AddNodeWizard } from '../../components/AddNodeWizard'
 import { BuildStrainSuggestion } from '../../components/BuildStrainSuggestion'
 import { EmptyState } from '../../components/ui/empty-state'
 import { ZoneSpreadCard } from '../../components/nodes/ZoneSpreadCard'
+import { ResilienceCard } from '../../components/nodes/ResilienceCard'
 import { PageTemplate } from '../../components/shell/PageTemplate'
 import { LoadMore } from '../../components/ui/load-more'
 
@@ -75,6 +76,7 @@ function NodeListPage() {
       <PendingJoinTokensCard />
       <BuildStrainSuggestion nodes={nodes} />
       <ZoneSpreadCard />
+      <ResilienceCard />
       {nodes.length === 0 ? (
         <EmptyState
           icon={<HardDrivesIcon className="size-5" />}

@@ -24,7 +24,8 @@
     "watching": "Watching",
     "cleared": "Cleared",
     "watch_failed": "Watch tripped",
-    "rolled_back": "Rolled back"
+    "rolled_back": "Rolled back",
+    "watch_stopped": "Watch stopped"
   },
   "settings": {
     "title": "Deploy safety",
@@ -51,7 +52,11 @@
       },
       "watch_window": {
         "label": "Watch window",
-        "hint": "How long a new release is watched after cutover, e.g. 5m."
+        "hint": "How long a new release is watched after cutover, e.g. 10m."
+      },
+      "watch_latency_ratio": {
+        "label": "p95 latency multiple that counts as a regression",
+        "hint": "Compared with the previous release. 0 turns the latency check off."
       },
       "watch_max_restarts": {
         "label": "Restarts that trip the watch",
@@ -76,9 +81,70 @@
       "error": "Could not save deploy safety settings."
     }
   },
+  "autoRollback": {
+    "title": "Auto rollback",
+    "infoTipLabel": "About auto rollback",
+    "description": "After a release takes traffic it is watched for a window. A crashloop, OOM kill or a 5xx spike is a hard signal. A p95 latency regression against the previous release is a soft signal and never rolls back unless you opt in.",
+    "inheritHint": "Leave a field empty to use the platform default shown in it.",
+    "mode": {
+      "label": "Mode",
+      "default": "Platform default ({{value}})",
+      "off": "Off: do not watch",
+      "notify": "Notify: alert only",
+      "auto": "Auto: alert and roll back"
+    },
+    "soft": {
+      "label": "Let a latency regression roll back too",
+      "hint": "Only applies in auto mode. Otherwise a latency regression only sends an alert.",
+      "inherited": "Following the platform default ({{value}})."
+    },
+    "save": "Save",
+    "reset": "Use platform defaults",
+    "toast": {
+      "saved": "Auto rollback settings saved.",
+      "error": "Could not save auto rollback settings."
+    }
+  },
+  "watch": {
+    "watching": "Watching for {{window}} after cutover, {{left}} left.",
+    "min": "{{count}} min",
+    "sec": "{{count}} s",
+    "progress": "Post-deploy watch progress",
+    "tripped": "Watch tripped: {{message}} ({{reason}}).",
+    "rolledBack": "Rolled back automatically: {{message}} ({{reason}}).",
+    "stopped": "The watch was stopped before the window ended.",
+    "off": "Post-deploy watch is off for this app.",
+    "notice": "Heads up: {{message}}",
+    "stop": "Stop watching",
+    "stopped_toast": "Watch stopped.",
+    "stopError": "Could not stop the watch.",
+    "rollbackNow": "Roll back now",
+    "rollbackTitle": "Roll back this release?",
+    "rollbackDescription": "Traffic moves back to the retained previous release.",
+    "rollbackConsequence": "The previous release {{ref}} is redeployed through the same readiness gate.",
+    "rollbackConfirm": "Roll back",
+    "rollbackPending": "Rolling back",
+    "rollbackToast": "Rollback started.",
+    "rollbackError": "Could not roll back.",
+    "noTarget": "No retained earlier release to roll back to yet."
+  },
   "targets": {
     "title": "Pinned rollback targets",
     "empty": "No pinned releases yet. A release is pinned when it takes traffic.",
     "live": "Live"
+  },
+  "publishLock": {
+    "lock": "Lock publishing",
+    "unlock": "Unlock publishing",
+    "bannerTitle": "Publishing is locked",
+    "bannerBody_one": "{{by}} locked it. The live release stays pinned and {{count}} build is held.",
+    "bannerBody_other": "{{by}} locked it. The live release stays pinned and {{count}} builds are held.",
+    "reason": "Reason: {{reason}}",
+    "publish": "Publish",
+    "publishedToast": "Published. The held build is going live.",
+    "rollbackLock": "Roll back and lock",
+    "rollbackLockHint": "Redeploy this release and hold every later build",
+    "held": "Held, not live",
+    "error": "Could not change the publish lock."
   }
 }

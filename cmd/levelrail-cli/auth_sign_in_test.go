@@ -2,17 +2,52 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 )
 
+func approvalServer(t *testing.T, final string, pendingForever bool) *httptest.Server {
+	t.Helper()
+	polls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/v1/auth/login":
+			http.SetCookie(w, &http.Cookie{Name: "login_approval_binding", Value: "b", Path: "/api/v1/auth/login-approval", HttpOnly: true}) //nolint:gosec // plain HTTP test server, Secure would stop the jar resending it
+			_, _ = w.Write([]byte(`{"approval_required":true,"approval_id":"la_1","approval_match":37}`))
+		case "/api/v1/auth/login-approval/poll":
+			if c, err := r.Cookie("login_approval_binding"); err != nil || c.Value != "b" {
+				t.Errorf("poll without the approval cookie")
+			}
+			polls++
+			if polls == 1 || pendingForever {
+				_, _ = w.Write([]byte(`{"status":"pending"}`))
+				return
+			}
+			http.SetCookie(w, &http.Cookie{Name: "session_token", Value: "s", Path: "/", HttpOnly: true}) //nolint:gosec // plain HTTP test server
+			_, _ = w.Write([]byte(final))
+		case "/api/v1/auth/tokens":
+			_, _ = w.Write([]byte(`[]`))
+		case "/api/v1/instance":
+			w.WriteHeader(http.StatusNotFound)
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
 func TestSessionLogin_WaitsForNewDeviceApproval(t *testing.T) {
 	approvalPollInterval = time.Millisecond
-	t.Cleanup(func() { approvalPollInterval = 3 * time.Second })
+	t.Cleanup(func() { approvalPollInterval = 2 * time.Second })
 	tests := []struct {
 		name     string
 		final    string
@@ -21,48 +56,132 @@ func TestSessionLogin_WaitsForNewDeviceApproval(t *testing.T) {
 	}{
 		{"approved", `{"status":"approved","username":"admin"}`, exitOK, ""},
 		{"denied", `{"status":"denied"}`, exitAPIError, "denied"},
-		{"expired", `{"status":"expired"}`, exitAPIError, "in time"},
+		{"expired", `{"status":"expired"}`, exitAPIError, "expired"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			polls := 0
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				switch r.URL.Path {
-				case "/api/v1/auth/login":
-					http.SetCookie(w, &http.Cookie{Name: "login_approval_binding", Value: "b", Path: "/api/v1/auth/login-approval", HttpOnly: true}) //nolint:gosec // plain HTTP test server, Secure would stop the jar resending it
-					_, _ = w.Write([]byte(`{"approval_required":true,"approval_id":"la_1","approval_match":37}`))
-				case "/api/v1/auth/login-approval/poll":
-					if c, err := r.Cookie("login_approval_binding"); err != nil || c.Value != "b" {
-						t.Errorf("poll without the approval cookie")
-					}
-					if r.Header.Get("Content-Type") != "application/json" {
-						t.Errorf("poll Content-Type = %q, want application/json", r.Header.Get("Content-Type"))
-					}
-					polls++
-					if polls == 1 {
-						_, _ = w.Write([]byte(`{"status":"pending"}`))
-						return
-					}
-					http.SetCookie(w, &http.Cookie{Name: "session_token", Value: "s", Path: "/", HttpOnly: true}) //nolint:gosec // plain HTTP test server
-					_, _ = w.Write([]byte(tt.final))
-				case "/api/v1/auth/tokens":
-					_, _ = w.Write([]byte(`[]`))
-				default:
-					t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
-				}
-			}))
-			defer srv.Close()
+			srv := approvalServer(t, tt.final, false)
 			var stdout, stderr bytes.Buffer
-			got := run("levelrail-cli-test", []string{"tokens", "list", "--username", "admin", "--password", "x", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+			args := []string{"tokens", "list", "--username", "admin", "--password", "x", "--api-url", srv.URL}
+			got := run("levelrail-cli-test", args, &stdout, &stderr, func(k string) (string, bool) { return "1", k == envLoginApprovalWait })
 			if got != tt.wantExit {
 				t.Fatalf("exit = %d, want %d (stderr=%q)", got, tt.wantExit, stderr.String())
 			}
-			if !strings.Contains(stderr.String(), "la_1") || !strings.Contains(stderr.String(), "37") {
-				t.Errorf("stderr = %q, want the approval id and number", stderr.String())
+			for _, want := range []string{"la_1", "37", srv.URL + "/approve-sign-in?request=la_1", "Ctrl+C", "--code XXXX-XXXX"} {
+				if !strings.Contains(stderr.String(), want) {
+					t.Errorf("stderr = %q, want %q", stderr.String(), want)
+				}
 			}
 			if tt.wantErr != "" && !strings.Contains(stderr.String(), tt.wantErr) {
 				t.Errorf("stderr = %q, want %q", stderr.String(), tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestSessionLogin_ApprovalTimesOutWithRetryHint(t *testing.T) {
+	approvalPollInterval = time.Millisecond
+	t.Cleanup(func() { approvalPollInterval = 2 * time.Second })
+	srv := approvalServer(t, "", true)
+	var stdout, stderr bytes.Buffer
+	args := []string{"auth", "login", "--username", "admin", "--password", "x", "--api-url", srv.URL, "--wait", "--approval-timeout", "20ms"}
+	if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != exitAPIError {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitAPIError, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "nobody approved the sign-in within") || !strings.Contains(stderr.String(), "--code") {
+		t.Errorf("stderr = %q, want the timeout and the retry hint", stderr.String())
+	}
+}
+
+func TestSessionLogin_NonTTYFailsAtOnceWithTheFix(t *testing.T) {
+	srv := approvalServer(t, "", true)
+	var stdout, stderr bytes.Buffer
+	args := []string{"auth", "login", "--username", "admin", "--password", "x", "--api-url", srv.URL}
+	if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != exitAPIError {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitAPIError, stderr.String())
+	}
+	out := stderr.String()
+	if strings.Count(out, "\n") != 1 || !strings.Contains(out, "approval required") || !strings.Contains(out, "--code XXXX-XXXX") || strings.Contains(out, "Waiting") {
+		t.Errorf("stderr = %q, want one error line naming the fix", out)
+	}
+}
+
+func TestSessionLogin_OpenFlag(t *testing.T) {
+	approvalPollInterval = time.Millisecond
+	t.Cleanup(func() { approvalPollInterval = 2 * time.Second })
+	tests := []struct {
+		name     string
+		extra    []string
+		wantOpen bool
+	}{
+		{"explicit open", []string{"--open"}, true},
+		{"explicit off", []string{"--open=false"}, false},
+		{"auto is off in scripts", nil, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var opened string
+			openBrowserFunc = func(_ context.Context, u string) error { opened = u; return nil }
+			t.Cleanup(func() { openBrowserFunc = openBrowser })
+			srv := approvalServer(t, `{"status":"denied"}`, false)
+			var stdout, stderr bytes.Buffer
+			args := append([]string{"auth", "login", "--username", "admin", "--password", "x", "--api-url", srv.URL, "--wait"}, tt.extra...)
+			run("levelrail-cli-test", args, &stdout, &stderr, envMap())
+			if (opened != "") != tt.wantOpen {
+				t.Fatalf("opened = %q, want open=%v", opened, tt.wantOpen)
+			}
+			if tt.wantOpen && opened != srv.URL+"/approve-sign-in?request=la_1" {
+				t.Errorf("opened %q", opened)
+			}
+		})
+	}
+}
+
+func TestAuthLogin_PairingCode(t *testing.T) {
+	tests := []struct {
+		name     string
+		status   int
+		body     string
+		wantExit int
+		wantOut  string
+	}{
+		{"redeemed", 201, `{"token":"tok-secret","token_id":"tk_1","username":"admin","abilities":["read"],"expires_at":"2027-01-01T00:00:00Z"}`, exitOK, "logged in as"},
+		{"refused", 400, `{"error":"this pairing code is invalid or has expired","code":"pairing_invalid"}`, exitAPIError, ""},
+		{"rate limited", 429, `{"error":"slow down"}`, exitAPIError, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/api/v1/auth/cli-pairing/redeem" {
+					var got struct{ Code string }
+					_ = json.NewDecoder(r.Body).Decode(&got)
+					if got.Code != "ABCD-EF23" {
+						t.Errorf("code = %q", got.Code)
+					}
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(tt.status)
+					_, _ = w.Write([]byte(tt.body))
+					return
+				}
+				w.WriteHeader(http.StatusNotFound)
+			}))
+			defer srv.Close()
+			home := t.TempDir()
+			t.Setenv("HOME", home)
+			var stdout, stderr bytes.Buffer
+			got := run("levelrail-cli-test-pair", []string{"auth", "login", "--code", "ABCD-EF23", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+			if got != tt.wantExit {
+				t.Fatalf("exit = %d, want %d (stderr=%q)", got, tt.wantExit, stderr.String())
+			}
+			if strings.Contains(stdout.String()+stderr.String(), "tok-secret") {
+				t.Errorf("output leaks the token: %q %q", stdout.String(), stderr.String())
+			}
+			if tt.wantOut != "" && !strings.Contains(stdout.String(), tt.wantOut) {
+				t.Errorf("stdout = %q", stdout.String())
+			}
+			_, err := os.Stat(filepath.Join(home, ".config", "levelrail-cli-test-pair", credentialsFileName))
+			if (err == nil) != (tt.wantExit == exitOK) {
+				t.Errorf("credentials saved = %v, want %v", err == nil, tt.wantExit == exitOK)
 			}
 		})
 	}

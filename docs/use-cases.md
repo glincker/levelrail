@@ -53,7 +53,7 @@ every time something new needs HTTPS and a database.
   (15 second resolution) and full-text-searchable logs out of the box
   ([architecture.md](/architecture#observability)). You don't need a
   separate Grafana or log shipper to see why something was slow.
-- A template catalog. Postgres, Redis, and about 300 other
+- A template catalog. Postgres, Redis, and about 360 other
   one-click services are there for the database or tool a
   side project needs ([templates-and-registry.md](/templates-and-registry)).
 - Nothing paywalled. OAuth sign-in, two-factor auth, audit logging, and
@@ -167,7 +167,7 @@ avoids.
   Vercel's own AI integrations feel limited. The same HTTP API surface is
   exposed to AI agents, and AI is never in the reconcile path
   ([comparison.md](/comparison#where-levelrail-differs), labeled beta,
-  118 to 156 tools depending on mode, in
+  over 240 tools in on-demand toolsets, in
   [feature-status.md](/feature-status#ai-assistant-mcp-server-and-in-app-chat)).
 
 ### What to know before you rely on it
@@ -178,7 +178,7 @@ avoids.
   overview, and a move means working from the general
   [architecture](/architecture) and [app spec reference](/app-spec-reference)
   docs.
-- Template catalogs differ between platforms. Levelrail ships 300+, and
+- Template catalogs differ between platforms. Levelrail ships about 360, and
   only a sample is deployed by its end-to-end tests, so check that the
   services you need exist and boot (see [templates-and-registry.md](/templates-and-registry)
   and [feature-status.md](/feature-status#templates)).

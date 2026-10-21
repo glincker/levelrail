@@ -19,6 +19,16 @@ const (
 	StatusPassed  = "passed"
 	StatusFailed  = "failed"
 	StatusInfo    = "info"
+	// StatusStopped marks a watch an operator ended early.
+	StatusStopped = "stopped"
+)
+
+// Watch modes: off skips the watch, notify alerts on a trip, auto also
+// rolls back.
+const (
+	WatchModeOff    = "off"
+	WatchModeNotify = "notify"
+	WatchModeAuto   = "auto"
 )
 
 // Reasons a deploy fails its gate or a live release is rolled back. These
@@ -35,6 +45,8 @@ const (
 	ReasonWatchOOMKilled           = "PostDeployOOMKilled"
 	ReasonWatchExited              = "PostDeployExited"
 	ReasonWatchErrorRate           = "PostDeployErrorRate"
+	ReasonWatchLatency             = "PostDeployLatencyRegression"
+	ReasonWatchStopped             = "WatchStopped"
 	ReasonAutoRolledBack           = "AutoRolledBack"
 	ReasonNoRollbackTarget         = "NoRollbackTarget"
 )
@@ -46,4 +58,4 @@ var GateFailureReasons = []string{
 }
 
 // WatchTripReasons is every reason the post-deploy watch can trip on.
-var WatchTripReasons = []string{ReasonWatchCrashloop, ReasonWatchOOMKilled, ReasonWatchExited, ReasonWatchErrorRate}
+var WatchTripReasons = []string{ReasonWatchCrashloop, ReasonWatchOOMKilled, ReasonWatchExited, ReasonWatchErrorRate, ReasonWatchLatency}
