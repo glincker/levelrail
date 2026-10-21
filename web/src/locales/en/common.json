@@ -702,5 +702,15 @@
   },
   "cardSkeleton": {
     "loading": "Loading"
+  },
+  "cancelSuperseded": {
+    "title": "Replace superseded queued deploys",
+    "infoLabel": "About replacing queued deploys",
+    "infoBody": "Only deploys still waiting in the queue are replaced, and only by a newer one for the same branch. A deploy that already started building is never canceled automatically.",
+    "enabled": "Enabled",
+    "enabledHint": "When a newer commit for a branch is queued behind a running deploy, older queued deploys for that branch are marked superseded instead of building one after another.",
+    "on": "Superseded queued deploys will be replaced.",
+    "off": "Queued deploys are kept.",
+    "saveFailed": "Could not update the setting."
   }
 }

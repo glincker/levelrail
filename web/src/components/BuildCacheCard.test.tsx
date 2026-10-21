@@ -70,6 +70,15 @@ afterEach(() => {
 })
 
 describe('BuildCacheCard', () => {
+  it('shows a placeholder while settings are pending', () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => {})),
+    )
+    renderCard('web')
+    expect(screen.getByRole('status')).toBeInTheDocument()
+  })
+
   it('explains that a destination is needed first', async () => {
     mockFetch({
       'GET /api/v1/storage/destinations': () => jsonResponse([]),
