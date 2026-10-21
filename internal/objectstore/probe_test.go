@@ -77,6 +77,7 @@ func TestResolve(t *testing.T) {
 		{name: "b2 region template", preset: PresetB2, region: "us-west-004", wantEndpoint: "https://s3.us-west-004.backblazeb2.com", wantRegion: "us-west-004"},
 		{name: "b2 needs region", preset: PresetB2, wantErr: true},
 		{name: "wasabi default region", preset: PresetWasabi, wantEndpoint: "https://s3.us-east-1.wasabisys.com", wantRegion: "us-east-1"},
+		{name: "gcs fixed endpoint", preset: PresetGCS, wantEndpoint: "https://storage.googleapis.com", wantRegion: "auto"},
 		{name: "aws no endpoint", preset: PresetAWS, region: "eu-west-1", wantRegion: "eu-west-1"},
 		{name: "minio needs endpoint", preset: PresetMinIO, wantErr: true},
 		{name: "minio endpoint trimmed", preset: PresetMinIO, endpoint: "http://minio.local:9000/", wantEndpoint: "http://minio.local:9000", wantRegion: "us-east-1"},
@@ -94,5 +95,12 @@ func TestResolve(t *testing.T) {
 				t.Fatalf("got %+v, want endpoint %q region %q", got, tt.wantEndpoint, tt.wantRegion)
 			}
 		})
+	}
+}
+
+func TestGCSPresetIsPathStyle(t *testing.T) {
+	p, ok := PresetByID(PresetGCS)
+	if !ok || !p.PathStyle || p.Provider != "custom" || p.DefaultRegion != "auto" || p.EndpointTemplate != "https://storage.googleapis.com" {
+		t.Fatalf("gcs preset = %+v, ok=%v", p, ok)
 	}
 }

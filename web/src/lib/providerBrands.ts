@@ -76,6 +76,7 @@ const STORAGE_PRESET_BRAND: Record<StoragePreset, string> = {
   b2: 'backblaze',
   minio: 'minio',
   wasabi: '',
+  gcs: 'google-cloud-storage',
   custom: '',
 }
 

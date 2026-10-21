@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -61,6 +62,7 @@ const REGION_HINT: Partial<Record<StoragePreset, string>> = {
 }
 
 export function CreateStorageDestinationDialog() {
+  const { t } = useTranslation('settings')
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY)
   const { data: providers } = useStorageProviders()
@@ -239,6 +241,11 @@ export function CreateStorageDestinationDialog() {
                 set('accessKeyId', e.target.value)
               }}
             />
+            {form.preset === 'gcs' ? (
+              <FieldDescription>
+                {t('storagePage.gcsHmacHint')}
+              </FieldDescription>
+            ) : null}
           </Field>
           <Field>
             <FieldLabel htmlFor="storage-secret-key">

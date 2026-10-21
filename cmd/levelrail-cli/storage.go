@@ -13,7 +13,7 @@ import (
 
 func storageUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s storage providers                       list provider presets (aws, r2, b2, minio, wasabi, custom)
+  %[1]s storage providers                       list provider presets (aws, r2, b2, minio, wasabi, gcs, custom)
   %[1]s storage list                            list connected storage destinations
   %[1]s storage add --name N --provider P --bucket B --access-key-id ID --secret-access-key KEY [flags]
   %[1]s storage test <id>                       write, read back and delete a probe object
@@ -22,7 +22,7 @@ func storageUsage(prog string) string {
   %[1]s storage buckets <subcommand>            named buckets bound to apps (run "storage buckets help")
 
 Add flags:
-  --provider string        aws, r2, b2, minio, wasabi, or custom (default custom)
+  --provider string        aws, r2, b2, minio, wasabi, gcs, or custom (default custom)
   --account-id string      Cloudflare account id (r2)
   --region string          bucket region (aws, b2, wasabi)
   --endpoint string        endpoint URL (minio, custom; overrides the preset)
