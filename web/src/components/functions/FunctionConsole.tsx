@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { CodeBlock } from '@/components/ui/code-block'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
 import {
@@ -181,9 +182,7 @@ function ConsoleResult({ result }: Readonly<{ result: InvokeResult }>) {
           </div>
         ))}
       </dl>
-      <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 font-mono text-xs whitespace-pre-wrap break-all">
-        {result.body}
-      </pre>
+      <CodeBlock code={result.body} wrap />
       {result.body_truncated ? (
         <p className="text-xs text-muted-foreground">
           {t('console.truncated')}
