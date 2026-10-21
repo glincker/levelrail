@@ -1,6 +1,6 @@
 ---
 title: "Cloud integrations"
-description: What works today with AWS, Google Cloud, Cloudflare, DigitalOcean and Hetzner (nodes, DNS, backups, registries, events), and what is planned but not built.
+description: What works today with AWS, Google Cloud, Azure, Cloudflare, DigitalOcean and Hetzner (nodes, DNS, backups, registries, events), and what is planned but not built.
 "og:url": "https://docs.levelrail.com/cloud-integrations"
 ---
 
@@ -14,6 +14,7 @@ This page lists, per cloud, what Levelrail does today and what is only planned. 
 | --- | --- | --- | --- | --- |
 | AWS | EC2 | Route53 | S3 | Any registry that takes a username and password |
 | Google Cloud | Compute Engine | Planned (Cloud DNS) | Planned (GCS through S3 interoperability) | Planned (Artifact Registry preset) |
+| Azure | Virtual machines | Planned (Azure DNS) | Planned (Blob Storage) | Any registry that takes a username and password |
 | Cloudflare | Not applicable | DNS zones, records and DNS-01 | R2 | Not applicable |
 | DigitalOcean | Droplets | Not supported | Not verified (Spaces) | Not applicable |
 | Hetzner | Cloud servers | Not supported | Not verified (Object Storage) | Not applicable |
@@ -26,26 +27,39 @@ Works today:
 - **Route53.** Zones, records, weighted, failover and multivalue routing, health checks, DNS-01 for wildcards, and automatic records when adding a domain. See [DNS zones and records](/dns).
 - **S3.** Backup targets and storage destinations for database backups, app volume backups, [log archive](/log-archive), build cache and audit export. See [Backup targets](/backups-and-storage) and [Object storage](/object-storage).
 - **Private images.** Registry credentials take a host, username and password, so any registry that accepts those works.
+- **EC2 user-data snippet.** A bash script for installing the control plane on a fresh instance, with the Terraform example. See [Install on a cloud VM](/install-on-cloud). The snippet is documentation only and the Terraform example has not been run against an AWS account.
 
 Planned:
 
 - ECR token refresh preset. ECR passwords expire after 12 hours, so a static registry credential stops working until it is updated by hand.
-- EC2 user-data install script snippet for installing the control plane on a fresh instance.
-- Terraform snippets.
+- Terraform modules. The example on the install page is not a module.
 
 ## Google Cloud
 
 Works today:
 
 - **Compute Engine nodes.** Service account JSON key with the Compute Instance Admin role, and a `default` VPC network. No workload identity federation. This path has not been run against a real project, see [what was not tested](/node-provisioning#what-was-not-tested).
+- **Startup script snippet.** A bash startup script for installing the control plane, see [Install on a cloud VM](/install-on-cloud). Documentation only.
 
 Planned:
 
 - Google Cloud DNS as a DNS provider.
 - GCS backups and storage destinations through its S3 interoperability API.
 - Artifact Registry preset for registry credentials.
-- GCE startup script snippet for installing the control plane.
-- Terraform snippets.
+- Terraform modules.
+
+## Azure
+
+Works today:
+
+- **Virtual machine nodes.** A service principal with Contributor on one resource group, plus Reader at subscription scope for the size and region pickers. The provisioning code creates the VNet, subnet, public IP, NIC and VM. See [Node provisioning](/node-provisioning#provider-credentials). Not yet run against a real Azure subscription, see [what was not tested](/node-provisioning#what-was-not-tested).
+- **Custom data snippet.** A cloud-init file for installing the control plane on a fresh VM, see [Install on a cloud VM](/install-on-cloud). Documentation only.
+
+Planned:
+
+- Azure DNS as a DNS provider.
+- Blob Storage backups and storage destinations.
+- Azure Container Registry preset for registry credentials.
 
 ## Cloudflare
 
@@ -96,9 +110,11 @@ None of these exist yet.
 - Google Cloud DNS provider
 - GCS backups through S3 interoperability
 - Artifact Registry preset
+- Azure DNS provider
+- Azure Blob Storage backups
+- Azure Container Registry preset
 - ECR token refresh preset
-- EC2 user-data and GCE startup install scripts
-- Terraform snippets
+- Terraform modules
 - Community template repository, reviewed by pull request
 
 Not planned until there is demand: AWS Marketplace listing, a plugin runtime, Kubernetes CRDs.
