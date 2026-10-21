@@ -29,4 +29,32 @@ describe('deployFixLinks', () => {
       '/apps/$name/deploy-settings',
     )
   })
+
+  it('prefers the control plane fix kinds and dedupes their links', () => {
+    const fix = (
+      kind: 'set_secret' | 'edit_source' | 'rerun' | 'free_disk',
+    ) => ({
+      code: kind,
+      kind,
+      hint: 'h',
+      match: 'm',
+    })
+    const links = deployFixLinks('build', 'dockerfile-path', [
+      fix('set_secret'),
+      fix('edit_source'),
+      fix('free_disk'),
+      fix('rerun'),
+    ])
+    expect(links.map((l) => l.to)).toEqual([
+      '/apps/$name/environment',
+      '/apps/$name/source',
+    ])
+  })
+
+  it('falls back to the cause rules when the typed fixes need no setting change', () => {
+    const rerun = { code: 'r', kind: 'rerun' as const, hint: 'h', match: 'm' }
+    expect(deployFixLinks('build', 'missing-env-var', [rerun])[0]?.to).toBe(
+      '/apps/$name/environment',
+    )
+  })
 })

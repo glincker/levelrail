@@ -1,3 +1,4 @@
+import type { DeployFailureFix } from '../types/deployFailure'
 import type { DeployStage } from './deployStages'
 
 export type DeployFixTarget =
@@ -51,10 +52,27 @@ function byStage(stage: DeployStage['key']): DeployFixLink[] {
   return stage === 'build' ? [SOURCE] : [SETTINGS]
 }
 
+// Typed fix kinds from the control plane. 'rerun' needs no setting change.
+const BY_FIX_KIND: Partial<Record<DeployFailureFix['kind'], DeployFixLink>> = {
+  set_secret: ENV,
+  edit_source: SOURCE,
+  raise_memory: RESOURCES,
+  free_disk: SOURCE,
+}
+
 export function deployFixLinks(
   stage: DeployStage['key'],
   causeId?: string,
+  fixes?: DeployFailureFix[],
 ): DeployFixLink[] {
+  const typed = [
+    ...new Set(
+      (fixes ?? [])
+        .map((f) => BY_FIX_KIND[f.kind])
+        .filter((l): l is DeployFixLink => l !== undefined),
+    ),
+  ]
+  if (typed.length > 0) return typed
   const matched = causeId ? BY_CAUSE[causeId] : undefined
   return matched ?? byStage(stage)
 }

@@ -1,6 +1,7 @@
 import type { LogLine } from '../hooks/useLogStream'
 import type { ReconcileCondition } from '../types/deploy'
 import type { DeployAttempt } from '../types/deployAttempt'
+import type { DeployFailure, DeployFailureFix } from '../types/deployFailure'
 import type { DeployStage } from './deployStages'
 import { stripAnsiCodes } from './ansi'
 import { matchHintForText } from './buildLogHints'
@@ -11,6 +12,9 @@ export interface DeployFailureSummary {
   message: string
   cause?: { id: string; title: string; hint: string }
   evidence?: string
+  /** Set when the control plane classified the failure; the log rules are the fallback. */
+  docsUrl?: string
+  fixes?: DeployFailureFix[]
 }
 
 const MAX_SCANNED_LINES = 500
@@ -25,6 +29,7 @@ export function summarizeDeployFailure(input: {
   conditions: ReconcileCondition[]
   lines: LogLine[]
   attempt: DeployAttempt
+  failure?: DeployFailure
 }): DeployFailureSummary | null {
   const stage = input.stages.find((s) => s.status === 'failed')
   if (!stage) {
@@ -35,6 +40,22 @@ export function summarizeDeployFailure(input: {
     stageKey: stage.key,
     stageLabel: stage.label,
     message: message || NO_MESSAGE,
+  }
+
+  // The control plane sees the full signal set (logs, exit state, conditions),
+  // so its verdict beats the client-side log rules.
+  const server = input.failure
+  if (server?.cause) {
+    return {
+      ...summary,
+      cause: {
+        id: server.code,
+        title: server.cause,
+        hint: server.suggested_fix,
+      },
+      docsUrl: server.docs_url || undefined,
+      fixes: server.fixes,
+    }
   }
 
   const failing = input.conditions

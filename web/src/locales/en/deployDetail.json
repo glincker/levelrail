@@ -242,7 +242,8 @@
       "source": "Check build settings",
       "deploySettings": "Check deploy settings",
       "resources": "Adjust resources"
-    }
+    },
+    "docs": "Read the docs for this error"
   },
   "fixReturn": {
     "body": "You were fixing a failed deploy ({{target}}). Redeploy to apply your changes.",

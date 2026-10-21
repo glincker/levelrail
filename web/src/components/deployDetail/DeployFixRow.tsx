@@ -3,6 +3,7 @@ import { WrenchIcon } from '@phosphor-icons/react/dist/ssr'
 import { buttonVariants } from '@/components/ui/button'
 import { deployFixLinks } from '../../lib/deployFixLinks'
 import type { DeployStage } from '../../lib/deployStages'
+import type { DeployFailureFix } from '../../types/deployFailure'
 import { writeFixMarker } from '../../lib/fixReturnMarker'
 import { useDeployDetailT } from './useDeployDetailT'
 
@@ -11,16 +12,18 @@ export function DeployFixRow({
   appName,
   stage,
   causeId,
+  fixes,
   deployId,
 }: {
   appName: string
   stage: DeployStage['key']
   causeId?: string
+  fixes?: DeployFailureFix[]
   /** Failed deploy id, recorded so the app pages can offer a one-click redeploy. */
   deployId?: string
 }) {
   const { t } = useDeployDetailT()
-  const links = deployFixLinks(stage, causeId)
+  const links = deployFixLinks(stage, causeId, fixes)
   return (
     <div className="space-y-1.5" data-testid="deploy-fix-row">
       <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">

@@ -20,6 +20,7 @@ import { CopyReportButton } from './deployDetail/CopyReportButton'
 import { DeployFixRow } from './deployDetail/DeployFixRow'
 import { useDeployDetailT } from './deployDetail/useDeployDetailT'
 import { useTriggerDeploy } from '../queries/deploys'
+import { useDeployDetail } from '../queries/deployDetail'
 import { useGitSource } from '../queries/gitSources'
 import { useRebuildApp } from '../queries/rebuildApp'
 import { RetrySplitButton } from './RetrySplitButton'
@@ -57,12 +58,15 @@ export function DeployFailureSummaryCard({
   const rollback = useTriggerDeploy(appName)
   const rebuild = useRebuildApp(appName)
   const { data: gitSource } = useGitSource(appName)
+  // The single-deploy endpoint classifies with logs and exit state; the list row only has the attempt record.
+  const { data: detail } = useDeployDetail(appName, attempt.id, true)
 
   const summary = summarizeDeployFailure({
     stages,
     conditions,
     lines,
     attempt,
+    failure: detail?.failure ?? attempt.failure,
   })
   if (!summary) {
     return null
@@ -177,6 +181,16 @@ export function DeployFailureSummaryCard({
                       {summary.evidence}
                     </p>
                   ) : null}
+                  {summary.docsUrl?.startsWith('https://') ? (
+                    <a
+                      href={summary.docsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-block text-xs underline underline-offset-2"
+                    >
+                      {t('fix.docs')}
+                    </a>
+                  ) : null}
                 </dd>
               </div>
             ) : null}
@@ -186,6 +200,7 @@ export function DeployFailureSummaryCard({
             appName={appName}
             stage={summary.stageKey}
             causeId={summary.cause?.id}
+            fixes={summary.fixes}
             deployId={attempt.id}
           />
           <div className="flex flex-wrap items-center gap-2">
