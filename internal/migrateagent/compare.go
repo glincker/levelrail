@@ -25,6 +25,13 @@ const (
 	StatusScanError     = "scan_error"
 )
 
+// Where a target measurement came from. Only a measurement this control plane
+// took itself can advance the checklist.
+const (
+	TargetMeasured = "measured"
+	TargetOperator = "operator-supplied"
+)
+
 // AppVolume pairs an app's volume or bind path on this host with the target it
 // was copied from on the source.
 type AppVolume struct {
@@ -37,6 +44,8 @@ type TargetStat struct {
 	Files int64
 	Bytes int64
 	Err   string
+	// Operator marks numbers typed in by the caller instead of measured here.
+	Operator bool
 }
 
 // Comparison is the result for one volume.
@@ -48,6 +57,7 @@ type Comparison struct {
 	TargetFiles int64  `json:"target_files"`
 	TargetBytes int64  `json:"target_bytes"`
 	Status      string `json:"status"`
+	TargetFrom  string `json:"target_from,omitempty"`
 	Detail      string `json:"detail,omitempty"`
 }
 
@@ -82,6 +92,10 @@ func Compare(vols []AppVolume, scan []StatDoc, target map[string]TargetStat) []C
 			c.Status, c.Detail = StatusTargetMissing, firstNonEmpty(tgt.Err, "no measurement of the volume on this host")
 		default:
 			c.SourceFiles, c.SourceBytes, c.TargetFiles, c.TargetBytes = src.Files, src.Bytes, tgt.Files, tgt.Bytes
+			c.TargetFrom = TargetMeasured
+			if tgt.Operator {
+				c.TargetFrom = TargetOperator
+			}
 			switch {
 			case src.ChangedDuringScan:
 				c.Status, c.Detail = StatusChanged, "files changed on the source while they were counted"
@@ -126,11 +140,39 @@ type AdvanceResult struct {
 // ErrNotAgentStep means Reopen found a data_verified step the agent did not complete.
 var ErrNotAgentStep = errors.New("migrateagent: data_verified was not completed by the agent")
 
+// AdvanceOptions carries the operator's explicit acknowledgements.
+type AdvanceOptions struct {
+	// AckEmpty accepts volumes that hold no files on either side.
+	AckEmpty bool
+}
+
+// OverrideCount is how many comparisons used caller-supplied target numbers.
+func OverrideCount(cs []Comparison) int {
+	n := 0
+	for _, c := range cs {
+		if c.TargetFrom == TargetOperator {
+			n++
+		}
+	}
+	return n
+}
+
+// EmptyCount is how many matched volumes are empty on the source.
+func EmptyCount(cs []Comparison) int {
+	n := 0
+	for _, c := range cs {
+		if c.Status == StatusMatch && c.SourceFiles == 0 && c.SourceBytes == 0 {
+			n++
+		}
+	}
+	return n
+}
+
 // AutoAdvance completes data_verified when every volume matches. It never
 // touches a step after data_verified, and it never runs for any other step.
 // Databases are not measured by the agent, so their presence is recorded in the
 // evidence instead of being claimed as verified.
-func AutoAdvance(c *migrationplan.Checklist, cs []Comparison, databases int, now time.Time) AdvanceResult {
+func AutoAdvance(c *migrationplan.Checklist, cs []Comparison, databases int, opts AdvanceOptions, now time.Time) AdvanceResult {
 	if cur := c.Current(); cur != migrationplan.StepDataVerified {
 		return AdvanceResult{Reason: "the checklist is not waiting on data_verified (current step: " + cur + ")"}
 	}
@@ -139,6 +181,13 @@ func AutoAdvance(c *migrationplan.Checklist, cs []Comparison, databases int, now
 	}
 	if !ZeroDiffs(cs) {
 		return AdvanceResult{Reason: "volumes differ or could not be compared"}
+	}
+	if n := OverrideCount(cs); n > 0 {
+		return AdvanceResult{Reason: fmt.Sprintf("%d volume(s) use operator-supplied target numbers, so the agent cannot vouch for them: complete the data_verified step manually", n)}
+	}
+	empty := EmptyCount(cs)
+	if empty > 0 && !opts.AckEmpty {
+		return AdvanceResult{Reason: fmt.Sprintf("%d volume(s) are empty on the source: confirm they are meant to be empty and verify again with the empty-volume acknowledgement", empty)}
 	}
 	stats := make([]migrationplan.VolumeStat, 0, len(cs))
 	names := make([]string, 0, len(cs))
@@ -150,6 +199,9 @@ func AutoAdvance(c *migrationplan.Checklist, cs []Comparison, databases int, now
 	evidence, problems := migrationplan.VerifyData(nil, names, stats)
 	if len(problems) > 0 {
 		return AdvanceResult{Reason: strings.Join(problems, "; ")}
+	}
+	if empty > 0 {
+		evidence = append(evidence, fmt.Sprintf("%d empty volume(s) acknowledged by the operator", empty))
 	}
 	if databases > 0 {
 		evidence = append(evidence, fmt.Sprintf("%d database(s) on the source are not checked by the agent: verify them separately", databases))

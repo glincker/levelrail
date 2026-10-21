@@ -20,8 +20,8 @@ func mustURL(t testing.TB, raw string) *url.URL {
 
 func TestAllowedPermitsOnlyReadCalls(t *testing.T) {
 	for _, path := range []string{
-		"/version", "/info", "/containers/json?all=1", "/containers/abc123/json", "/containers/my-app_1.web/json",
-		"/volumes", "/volumes/data_vol", "/networks", "/images/json", "/system/df", "/v1.43/containers/json", "/v1.41/volumes/x",
+		"/version", "/containers/json?all=1", "/containers/abc123/json", "/containers/my-app_1.web/json",
+		"/volumes", "/volumes/data_vol", "/networks", "/v1.43/containers/json", "/v1.41/volumes/x",
 	} {
 		t.Run(path, func(t *testing.T) {
 			if err := Allowed(http.MethodGet, mustURL(t, path)); err != nil {
@@ -80,6 +80,10 @@ func TestAllowedRejectsEveryForbiddenCall(t *testing.T) {
 		{"POST", "/session"},
 		{"POST", "/version"},
 		{"PUT", "/info"},
+		{"GET", "/info"},
+		{"GET", "/images/json"},
+		{"GET", "/system/df"},
+		{"GET", "/v1.43/info"},
 		{"HEAD", "/containers/abc/json"},
 		{"GET", "/containers/../exec/abc/json"},
 		{"GET", "/containers/abc/../abc/exec"},

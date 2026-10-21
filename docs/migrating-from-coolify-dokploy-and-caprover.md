@@ -38,7 +38,7 @@ In the dashboard open **Migrate**, then **Source agent**, name the server and cr
 levelrail-cli migrate agent start --label old-box
 ```
 
-Run the printed command on the old server as root, with the `levelrail-migrate` binary downloaded there. The command carries a single-use token and the control plane's CA fingerprint, which the agent requires: it will not enroll against an unpinned control plane. The token expires after one hour by default and works once. The agent installs a hardened systemd unit and dials out to the control plane; the old server needs no inbound port.
+Run the printed command on the old server as root, with the `levelrail-migrate` binary downloaded there. The command carries a single-use token and the control plane's CA fingerprint, which the agent requires: it will not enroll against an unpinned control plane. The token expires after one hour by default and works once. The command carries the token, so it lands in your shell history: clear that history entry (or run the command with a leading space where your shell supports it) once the agent has enrolled. The agent installs a hardened systemd unit and dials out to the control plane; the old server needs no inbound port.
 
 Then check what it found and compare an app's volumes:
 
@@ -47,7 +47,11 @@ levelrail-cli migrate agent status
 levelrail-cli migrate agent verify SESSION APP
 ```
 
-If the app's volumes live on another node than the control plane, pass what you measured there with `--target NAME=FILES:BYTES`.
+If the app's volumes live on another node than the control plane, pass what you measured there with `--target NAME=FILES:BYTES`. The agent cannot vouch for numbers you typed, so the comparison is marked operator-supplied and `data_verified` is never completed automatically: tick it off yourself on the cutover checklist after checking the numbers.
+
+A volume with 0 files and 0 bytes on the source matches an empty volume here, which is also what a failed copy looks like. Such volumes block automatic completion until you confirm they are meant to be empty with `--ack-empty` (the dashboard has a checkbox for the same). The acknowledgement is written to the audit log. Every verification audit entry records how many `--target` overrides were used (`overrides=N`).
+
+Viewing a session's discovered containers, images and paths needs the same permission as creating a session; the session list stays readable with plain read access.
 
 ### Undo and remove
 

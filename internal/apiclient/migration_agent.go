@@ -76,6 +76,7 @@ type MigrationAgentComparison struct {
 	TargetFiles int64  `json:"target_files"`
 	TargetBytes int64  `json:"target_bytes"`
 	Status      string `json:"status"`
+	TargetFrom  string `json:"target_from,omitempty"`
 	Detail      string `json:"detail,omitempty"`
 }
 
@@ -131,12 +132,13 @@ func (c *Client) DiscoverMigrationAgent(ctx context.Context, id string) (Migrati
 }
 
 // VerifyMigrationAgent calls POST /api/v1/migration/agent/sessions/{id}/verify.
-func (c *Client) VerifyMigrationAgent(ctx context.Context, id, app string, targets []MigrationAgentVerifyTarget) (MigrationAgentVerifyResult, error) {
+func (c *Client) VerifyMigrationAgent(ctx context.Context, id, app string, targets []MigrationAgentVerifyTarget, ackEmpty bool) (MigrationAgentVerifyResult, error) {
 	var out MigrationAgentVerifyResult
 	body := struct {
 		App         string                       `json:"app"`
 		TargetStats []MigrationAgentVerifyTarget `json:"target_stats,omitempty"`
-	}{app, targets}
+		AckEmpty    bool                         `json:"ack_empty_volumes,omitempty"`
+	}{app, targets, ackEmpty}
 	err := c.do(ctx, http.MethodPost, migrationAgentPath+"/"+url.PathEscape(id)+"/verify", body, &out)
 	return out, err
 }

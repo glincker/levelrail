@@ -25,14 +25,11 @@ const nameChars = `[A-Za-z0-9][A-Za-z0-9_.-]*`
 // Default deny: a call is allowed only if a rule below matches both method and path.
 var allowRules = []rule{
 	{http.MethodGet, regexp.MustCompile(`^/version$`)},
-	{http.MethodGet, regexp.MustCompile(`^/info$`)},
 	{http.MethodGet, regexp.MustCompile(`^/containers/json$`)},
 	{http.MethodGet, regexp.MustCompile(`^/containers/` + nameChars + `/json$`)},
 	{http.MethodGet, regexp.MustCompile(`^/volumes$`)},
 	{http.MethodGet, regexp.MustCompile(`^/volumes/` + nameChars + `$`)},
 	{http.MethodGet, regexp.MustCompile(`^/networks$`)},
-	{http.MethodGet, regexp.MustCompile(`^/images/json$`)},
-	{http.MethodGet, regexp.MustCompile(`^/system/df$`)},
 }
 
 var versionPrefix = regexp.MustCompile(`^/v[0-9]+\.[0-9]+(/|$)`)

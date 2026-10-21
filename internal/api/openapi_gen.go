@@ -1143,7 +1143,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/migration/agent/sessions", Ability: "AbilityRead", Group: "Other", Handler: "handleListMigrationAgentSessions", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/agent/sessions", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateMigrationAgentSession", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/migration/agent/sessions/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRevokeMigrationAgentSession", Description: ""},
-	{Method: "GET", Path: "/api/v1/migration/agent/sessions/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMigrationAgentSession", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/agent/sessions/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleGetMigrationAgentSession", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/agent/sessions/{id}/discover", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDiscoverMigrationAgent", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/agent/sessions/{id}/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleVerifyMigrationAgent", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/plan", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleAppImportPlan", Description: ""},

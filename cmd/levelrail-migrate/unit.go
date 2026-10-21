@@ -8,8 +8,25 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
+
+var safeStateDir = regexp.MustCompile(`^/[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*$`)
+
+// validateStateDir guards os.RemoveAll and the unit file: an absolute, clean,
+// non-root path made of plain characters only.
+func validateStateDir(dir string) error {
+	if dir == "" || dir == "/" || !filepath.IsAbs(dir) || filepath.Clean(dir) != dir || !safeStateDir.MatchString(dir) {
+		return fmt.Errorf("state dir %q must be a clean absolute path other than / using letters, digits and _.- only", dir)
+	}
+	return nil
+}
+
+func quoteUnitValue(s string) string {
+	r := strings.NewReplacer(`\`, `\\`, `"`, `\"`, "%", "%%")
+	return `"` + r.Replace(s) + `"`
+}
 
 const unitDir = "/etc/systemd/system"
 
@@ -27,8 +44,8 @@ func renderUnit(exe, addr, stateDir string) string {
 		"[Service]",
 		"Type=simple",
 		"ExecStart=" + exe + " run",
-		"Environment=APP_CONTROL_PLANE_ADDR=" + addr,
-		"Environment=APP_MIGRATE_STATE_DIR=" + stateDir,
+		"Environment=" + quoteUnitValue("APP_CONTROL_PLANE_ADDR="+addr),
+		"Environment=" + quoteUnitValue("APP_MIGRATE_STATE_DIR="+stateDir),
 		"Restart=on-failure",
 		"RestartSec=5",
 		"NoNewPrivileges=yes",
@@ -38,6 +55,14 @@ func renderUnit(exe, addr, stateDir string) string {
 		"ReadWritePaths=" + stateDir,
 		"CapabilityBoundingSet=CAP_DAC_READ_SEARCH",
 		"AmbientCapabilities=CAP_DAC_READ_SEARCH",
+		"RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6",
+		"SystemCallFilter=@system-service",
+		"PrivateDevices=yes",
+		"ProtectKernelTunables=yes",
+		"ProtectKernelModules=yes",
+		"MemoryDenyWriteExecute=yes",
+		"LockPersonality=yes",
+		"ProtectProc=invisible",
 		"",
 		"[Install]",
 		"WantedBy=multi-user.target",
@@ -57,6 +82,9 @@ func install(ctx context.Context, cfg settings, logger *slog.Logger) error {
 	exe, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("find own path: %w", err)
+	}
+	if err := validateStateDir(cfg.stateDir); err != nil {
+		return err
 	}
 	if _, err := cfg.enrollAndSave(ctx, logger); err != nil {
 		return err
@@ -93,7 +121,11 @@ func remove(ctx context.Context, cfg settings, logger *slog.Logger) error {
 	if _, err := exec.LookPath("systemctl"); err == nil {
 		step("reload systemd", systemctl(ctx, "daemon-reload"))
 	}
-	step("identity and state", os.RemoveAll(cfg.stateDir))
+	if err := validateStateDir(cfg.stateDir); err != nil {
+		step("identity and state", fmt.Errorf("refusing to delete: %w", err))
+	} else {
+		step("identity and state", os.RemoveAll(cfg.stateDir))
+	}
 	exe, err := os.Executable()
 	if err == nil {
 		step("binary", os.Remove(exe))

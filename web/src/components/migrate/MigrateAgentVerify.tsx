@@ -30,6 +30,9 @@ function ComparisonRow({ c }: { c: AgentComparison }) {
           tb: c.target_bytes,
         })}
       </span>
+      {c.target_from === 'operator-supplied' ? (
+        <Badge variant="warning">{t('agent.operatorSupplied')}</Badge>
+      ) : null}
       {c.detail ? (
         <span className="text-muted-foreground">{c.detail}</span>
       ) : null}
@@ -99,6 +102,7 @@ export function MigrateAgentVerify({ sessionId }: { sessionId: string }) {
   const { t } = useTranslation('migrate')
   const checklists = useMigrateChecklists()
   const verify = useVerifyAgent()
+  const [ackEmpty, setAckEmpty] = useState(false)
   const [shown, setShown] = useState<{
     app: string
     result: AgentVerifyResult
@@ -110,7 +114,7 @@ export function MigrateAgentVerify({ sessionId }: { sessionId: string }) {
   function run(app: string) {
     setShown(null)
     verify.mutate(
-      { id: sessionId, app },
+      { id: sessionId, app, ackEmpty },
       {
         onSuccess: (result) => setShown({ app, result }),
         onError: (e) =>
@@ -130,6 +134,14 @@ export function MigrateAgentVerify({ sessionId }: { sessionId: string }) {
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">{t('agent.verifyHint')}</p>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={ackEmpty}
+          onChange={(e) => setAckEmpty(e.target.checked)}
+        />
+        <span>{t('agent.ackEmpty')}</span>
+      </label>
       <ul className="divide-y">
         {apps.map((c) => (
           <li key={c.app} className="flex items-center gap-3 py-2">

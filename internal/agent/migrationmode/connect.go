@@ -73,6 +73,9 @@ func SaveIdentity(path string, id *Identity) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return fmt.Errorf("migrationmode: create identity dir: %w", err)
 	}
+	if err := os.Chmod(filepath.Dir(path), 0o700); err != nil { //nolint:gosec // 0700 is the owner-only mode this fix enforces
+		return fmt.Errorf("migrationmode: restrict identity dir: %w", err)
+	}
 	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
 		return fmt.Errorf("migrationmode: write identity: %w", err)

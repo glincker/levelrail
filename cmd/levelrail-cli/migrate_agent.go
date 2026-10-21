@@ -147,15 +147,17 @@ func parseTargetStat(v string) (apiclient.MigrationAgentVerifyTarget, error) {
 func runMigrateAgentVerify(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var f dataFlags
 	var targets listFlag
+	var ackEmpty bool
 	fs := newDataFlagSet(prog, "agent verify", stderr)
 	f.register(fs)
-	fs.Var(&targets, "target", "NAME=FILES:BYTES measured on this side for a volume stored on another node, repeatable")
+	fs.Var(&targets, "target", "NAME=FILES:BYTES measured on this side for a volume stored on another node, repeatable. Typed numbers are not verified by the agent, so using this flag prevents data_verified from completing automatically")
+	fs.BoolVar(&ackEmpty, "ack-empty", false, "accept volumes that are empty on the source (0 files, 0 bytes), otherwise they block automatic completion")
 	positional, code, ok := parseInterspersed(fs, args)
 	if !ok {
 		return code
 	}
 	if len(positional) != 2 {
-		_, _ = fmt.Fprintf(stderr, "usage: %s migrate agent verify SESSION APP [--target NAME=FILES:BYTES]\n", prog)
+		_, _ = fmt.Fprintf(stderr, "usage: %s migrate agent verify SESSION APP [--target NAME=FILES:BYTES] [--ack-empty]\n", prog)
 		return exitUsage
 	}
 	var stats []apiclient.MigrationAgentVerifyTarget
@@ -168,7 +170,7 @@ func runMigrateAgentVerify(prog string, args []string, stdout, stderr io.Writer,
 		stats = append(stats, st)
 	}
 	client := apiClientFromFlags(prog, f.apiURL, "", f.profile, lookupEnv)
-	res, err := client.VerifyMigrationAgent(context.Background(), positional[0], positional[1], stats)
+	res, err := client.VerifyMigrationAgent(context.Background(), positional[0], positional[1], stats, ackEmpty)
 	if err != nil {
 		return reportError(stdout, stderr, f.jsonOut, err)
 	}
@@ -176,7 +178,11 @@ func runMigrateAgentVerify(prog string, args []string, stdout, stderr io.Writer,
 		return printJSONOrFail(stdout, stderr, res)
 	}
 	for _, c := range res.Comparisons {
-		_, _ = fmt.Fprintf(stdout, "%-24s %-20s source %d files %d bytes, here %d files %d bytes %s\n", c.Name, c.Status, c.SourceFiles, c.SourceBytes, c.TargetFiles, c.TargetBytes, c.Detail)
+		from := ""
+		if c.TargetFrom == "operator-supplied" {
+			from = " (target numbers supplied by you, not measured)"
+		}
+		_, _ = fmt.Fprintf(stdout, "%-24s %-20s source %d files %d bytes, here %d files %d bytes%s %s\n", c.Name, c.Status, c.SourceFiles, c.SourceBytes, c.TargetFiles, c.TargetBytes, from, c.Detail)
 	}
 	if res.Advance.Advanced {
 		_, _ = fmt.Fprintf(stdout, "\ndata_verified completed by the migration agent. Undo with: %s migrate agent reopen %s\n", prog, positional[1])

@@ -61,6 +61,9 @@ func (s *Service) Session(stream migrationpb.MigrationService_SessionServer) err
 	id := sess.ID
 	c := newLiveConn()
 	s.register(id, c)
+	if cur, gerr := s.st.GetMigrationAgentSession(ctx, id); gerr != nil || cur.State == store.MigrationAgentRevoked {
+		c.kickWith("revoked")
+	}
 	s.audit.Record(ctx, Event{Action: ActionSessionStarted, SessionID: id, Actor: "migration-agent", Remote: remoteAddr(ctx)})
 	endReason := "stream closed"
 	defer func() {

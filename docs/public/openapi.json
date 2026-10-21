@@ -80479,7 +80479,7 @@
         "x-required-ability": "write:sensitive"
       },
       "get": {
-        "description": "Requires the `read` ability.",
+        "description": "Requires the `write:sensitive` ability.",
         "operationId": "handleGetMigrationAgentSession",
         "parameters": [
           {
@@ -80544,7 +80544,7 @@
         "security": [
           {
             "bearerAuth": [
-              "read"
+              "write:sensitive"
             ]
           }
         ],
@@ -80552,7 +80552,7 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "read"
+        "x-required-ability": "write:sensitive"
       }
     },
     "/api/v1/migration/agent/sessions/{id}/discover": {
