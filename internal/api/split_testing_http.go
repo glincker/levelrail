@@ -113,7 +113,7 @@ func (s *splitService) fill(ctx context.Context, res splitTestResource, t store.
 			vr.Share = float64(vr.Requests) / float64(res.TotalRequests)
 		}
 		if v.Kind != splittest.KindProduction {
-			vr.Host, _ = s.splitHostFor(ctx, t.AppName, v)
+			vr.Host, _ = s.splitHostFor(ctx, t.AppName, splittest.Variant(v))
 			vr.Status = "ready"
 			if vr.Host == "" {
 				vr.Status = "unavailable"
