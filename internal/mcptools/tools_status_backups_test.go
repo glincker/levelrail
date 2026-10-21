@@ -21,6 +21,8 @@ func TestGetAttention(t *testing.T) {
 			_, _ = w.Write([]byte(`[]`))
 		case "/api/v1/certificates":
 			_, _ = w.Write([]byte(`[]`))
+		case "/api/v1/silences":
+			_, _ = w.Write([]byte(`[]`))
 		case "/api/v1/system/doctor":
 			_, _ = w.Write([]byte(`{"ok":false,"checks":[{"code":"disk","name":"Disk","status":"warn","message":"low space"}]}`))
 		case "/api/v1/deploys/failed":
