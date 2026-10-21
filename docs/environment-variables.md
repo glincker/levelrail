@@ -232,6 +232,8 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_SECRET_ROTATION_INTERVAL_SECONDS` | `3600` | How often the rotation sweep runs, in seconds. Positive integer. Control plane. See [Secret rotation policies](secret-rotation.md). |
 | `APP_SECRET_ROTATION_DUE_SOON_DAYS` | `7` | A policy shows as due soon this many days before its due date. Positive integer. Control plane. |
 | `APP_SECRET_ROTATION_MAX_PER_PASS` | `10` | Most scheduled rotations one sweep starts, so restarts spread out. Positive integer. Control plane. |
+| `APP_SECRET_ROTATION_GRACE_HOURS` | `24` | How long a manually rotated app secret or Vault credential keeps its previous value. Positive integer of hours. Control plane. |
+| `APP_SECRET_ROTATION_DEFAULT_INTERVAL_DAYS` | `90` | Rotation interval given to a secret that is rotated by hand before it has a policy. Positive integer. Control plane. |
 
 ## Behavior to know about
 

@@ -116,7 +116,7 @@ var Tree = map[string]*Node{
 		}},
 		"env": {Subs: map[string]*Node{"import": nil, "export": nil, "get": nil, "diff": nil, "pull": nil, "push": nil, "check": nil, "history": nil}},
 		"secrets": {Subs: map[string]*Node{"list": nil, "set": nil, "delete": nil, "lock": nil,
-			"rotation": {Subs: map[string]*Node{"list": nil, "due": nil, "set": nil, "remove": nil, "rotate": nil}}}},
+			"rotation": {Subs: map[string]*Node{"list": nil, "due": nil, "set": nil, "remove": nil, "rotate": nil, "replace": nil}}}},
 		"git-source":         {Subs: map[string]*Node{"validate": nil, "commits": nil, "get": nil, "show": nil, "detect": nil, "affected": nil, "set": nil, "settings": nil, "rotate-secret": nil, "register-webhook": nil, "delete": nil}},
 		"webhook-deliveries": {Subs: map[string]*Node{"list": nil, "replay": nil}},
 		"bulk":               nil,
@@ -214,7 +214,7 @@ var Tree = map[string]*Node{
 	"archive":               {Subs: map[string]*Node{"ls": nil, "create": nil, "restore": nil, "verify": nil, "download": nil, "delete": nil, "policy": nil}},
 	"control-plane-backups": {Subs: map[string]*Node{"list": nil, "create": nil, "download": nil, "verify": nil, "delete": nil, "schedule": {Subs: map[string]*Node{"show": nil, "set": nil}}, "run-now": nil, "drill": {Subs: map[string]*Node{"run": nil, "status": nil}}, "escrow": nil, "restore-plan": nil, "keys": {Subs: map[string]*Node{"generate": nil}}, "help-dr": nil}},
 	"cloudflare-tunnel":     {Subs: map[string]*Node{"get": nil, "set": nil, "disconnect": nil}},
-	"vault":                 {Subs: map[string]*Node{"get": nil, "set": nil, "disconnect": nil}},
+	"vault":                 {Subs: map[string]*Node{"get": nil, "set": nil, "disconnect": nil, "rotate-credential": nil}},
 	"ai": {Subs: map[string]*Node{
 		"chat":     nil,
 		"sessions": {Subs: map[string]*Node{"list": nil, "get": nil, "delete": nil, "resolve": nil}},

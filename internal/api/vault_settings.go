@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -20,6 +21,8 @@ type VaultSecrets interface {
 	SetValue(ctx context.Context, serviceName, envKey, plaintext string) error
 	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
 	DeleteAll(ctx context.Context, serviceName string) error
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+	DeleteValue(ctx context.Context, serviceName, envKey string) error
 }
 
 // vaultSettingsResource is the wire shape for GET, PUT, and DELETE
@@ -36,6 +39,9 @@ type vaultSettingsResource struct {
 	RoleID        string `json:"role_id,omitempty"`
 	MountPath     string `json:"mount_path"`
 	HasCredential bool   `json:"has_credential"`
+
+	CredentialRotatedAt string `json:"credential_rotated_at,omitempty"`
+	PreviousExpiresAt   string `json:"previous_expires_at,omitempty"`
 }
 
 func (rt *Router) toVaultSettingsResource(ctx context.Context, s store.VaultSettings) vaultSettingsResource {
@@ -46,6 +52,9 @@ func (rt *Router) toVaultSettingsResource(ctx context.Context, s store.VaultSett
 		Namespace:  s.Namespace,
 		RoleID:     s.RoleID,
 		MountPath:  s.MountPath,
+
+		CredentialRotatedAt: rfc3339OrEmpty(s.CredentialRotatedAt),
+		PreviousExpiresAt:   rfc3339OrEmpty(s.PreviousExpiresAt),
 	}
 
 	if rt.vaultSecrets != nil {
@@ -67,6 +76,7 @@ func (rt *Router) handleGetVaultSettings(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	settings = rt.expireVaultPrevious(r.Context(), settings)
 	writeJSON(w, http.StatusOK, rt.toVaultSettingsResource(r.Context(), settings))
 }
 
@@ -183,5 +193,9 @@ func (rt *Router) handleDisconnectVault(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	if err := rt.vault.SetVaultCredentialRotation(r.Context(), time.Time{}, time.Time{}); err != nil {
+		rt.logger.Warn("api: clear vault rotation state failed", slog.String("error", err.Error()))
+	}
+	settings.CredentialRotatedAt, settings.PreviousExpiresAt = time.Time{}, time.Time{}
 	writeJSON(w, http.StatusOK, rt.toVaultSettingsResource(r.Context(), settings))
 }

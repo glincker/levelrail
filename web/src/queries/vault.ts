@@ -28,6 +28,8 @@ export interface VaultSettings {
   role_id?: string
   mount_path: string
   has_credential: boolean
+  credential_rotated_at?: string
+  previous_expires_at?: string
 }
 
 export interface UpdateVaultSettingsRequest {
@@ -130,6 +132,38 @@ export async function disconnectVault(): Promise<VaultSettings> {
     )
   }
   return (await res.json()) as VaultSettings
+}
+
+// POST /api/v1/settings/vault/rotate-credential: replaces the stored
+// credential and keeps the previous one for the grace window.
+export async function rotateVaultCredential(
+  credential: string,
+): Promise<VaultSettings> {
+  const res = await fetch('/api/v1/settings/vault/rotate-credential', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credential }),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `rotate vault credential failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as VaultSettings
+}
+
+export function useRotateVaultCredential() {
+  const queryClient = useQueryClient()
+  return useMutation<VaultSettings, ApiError, string>({
+    mutationFn: rotateVaultCredential,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(vaultKeys.all, updated)
+    },
+  })
 }
 
 export function useDisconnectVault() {

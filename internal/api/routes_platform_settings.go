@@ -42,6 +42,7 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	// as Cloudflare Tunnel above.
 	mux.HandleFunc("GET /api/v1/settings/vault", rt.requireAbility(AbilityRead, rt.handleGetVaultSettings))
 	mux.HandleFunc("PUT /api/v1/settings/vault", rt.requireAbility(AbilityRoot, rt.handleUpdateVaultSettings))
+	mux.HandleFunc("POST /api/v1/settings/vault/rotate-credential", rt.requireAbility(AbilityRoot, rt.handleRotateVaultCredential))
 	mux.HandleFunc("DELETE /api/v1/settings/vault", rt.requireAbility(AbilityRoot, rt.handleDisconnectVault))
 
 	// Built-in container registry (instance-level, one registry per

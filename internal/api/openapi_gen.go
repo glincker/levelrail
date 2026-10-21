@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1606 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1611 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -804,6 +804,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/settings/vault", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleDisconnectVault", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/vault", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetVaultSettings", Description: "External HashiCorp Vault (instance-level, one connection per control plane): same GET AbilityRead / PUT+DELETE AbilityRoot tier as Cloudflare Tunnel above."},
 	{Method: "PUT", Path: "/api/v1/settings/vault", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateVaultSettings", Description: ""},
+	{Method: "POST", Path: "/api/v1/settings/vault/rotate-credential", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleRotateVaultCredential", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodes", Description: "Nodes: fleet-level infrastructure, not scoped to any one app, so every route here requires AbilityRoot specifically rather than AbilityRead/AbilityWrite: minting a join token or removing a node is a materially more sensitive operation than editing one app's config, the same reasoning secrets.go's AbilityWriteSensitive already applies one level down at the per-app layer."},
 	{Method: "GET", Path: "/api/v1/nodes/allocations", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeAllocations", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/failure-simulation", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleFailureSimulation", Description: ""},
@@ -1480,6 +1481,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/secrets/{key}", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetSecret", Description: "Secrets. Set-only: there is deliberately no GET, returning a value (even to its own owner over an authenticated session) is exactly the kind of exposure envelope encryption exists to avoid."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/secrets/{key}/lock", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetSecretLock", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/secrets/{key}/reveal", Ability: "AbilityReadSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleRevealSecret", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/secrets/{key}/rotate", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleRotateSecretValue", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/secrets/{key}/rotation", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleDeleteSecretRotation", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/secrets/{key}/rotation", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetSecretRotation", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/secrets/{key}/rotation/rotate", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleRotateSecretNow", Description: ""},

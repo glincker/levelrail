@@ -612,6 +612,9 @@ type VaultSettingsResource struct {
 	RoleID        string `json:"role_id,omitempty"`
 	MountPath     string `json:"mount_path"`
 	HasCredential bool   `json:"has_credential"`
+
+	CredentialRotatedAt string `json:"credential_rotated_at,omitempty"`
+	PreviousExpiresAt   string `json:"previous_expires_at,omitempty"`
 }
 
 // UpdateVaultSettingsRequest mirrors internal/api's

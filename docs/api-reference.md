@@ -674,6 +674,7 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/previews/{number}/env/{id} | AbilityWrite | handleDeletePRPreviewEnv |
 | POST | /api/v1/apps/{name}/git-source/validate | AbilityDeploy | handleValidateGitSourceAccess |
 | POST | /api/v1/apps/{name}/git-source/webhook/register | AbilityWriteSensitive | handleRegisterGitSourceWebhook |
+| POST | /api/v1/apps/{name}/secrets/{key}/rotate | AbilityWriteSensitive | handleRotateSecretValue |
 
 ## Telemetry
 
@@ -1044,6 +1045,7 @@ Endpoints for:
 | GET | /api/v1/settings/email/domain-check | AbilityRoot | handleEmailDomainCheck |
 | GET | /api/v1/settings/email/deliveries | AbilityRoot | handleListEmailDeliveries |
 | GET | /api/v1/settings/email/deliveries/{id} | AbilityRoot | handleGetEmailDelivery |
+| POST | /api/v1/settings/vault/rotate-credential | AbilityRoot | handleRotateVaultCredential |
 
 </Accordion>
 

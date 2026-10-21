@@ -23,6 +23,7 @@ func (rt *Router) registerAppSourceRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/secrets/{key}/rotation", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetSecretRotation))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/secrets/{key}/rotation", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteSecretRotation))
 	mux.HandleFunc("POST /api/v1/apps/{name}/secrets/{key}/rotation/rotate", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotateSecretNow))
+	mux.HandleFunc("POST /api/v1/apps/{name}/secrets/{key}/rotate", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotateSecretValue))
 	mux.HandleFunc("GET /api/v1/secret-rotation", rt.requireAbility(AbilityRoot, rt.handleListAllSecretRotation))
 
 	// Git source (a deferred follow-up, git_sources.go):

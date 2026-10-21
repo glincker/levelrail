@@ -306,3 +306,51 @@ func TestSweepDoesNotRetryFailedState(t *testing.T) {
 		t.Fatalf("rotated %d from failed state", got)
 	}
 }
+
+func TestRotateValueSetsSuppliedValueWithoutRestartAndExpiresGrace(t *testing.T) {
+	p := basePolicy()
+	p.AutoRotate = false
+	e, st, be, au := newRig(p)
+	if err := e.RotateValue(context.Background(), "web", "JWT_SECRET", "supplied-next", "alice"); err != nil {
+		t.Fatal(err)
+	}
+	if be.values["web/JWT_SECRET"] != "supplied-next" || be.values["web/JWT_SECRET_PREVIOUS"] != "old-value" {
+		t.Fatal("supplied value not stored with the previous kept")
+	}
+	if be.restarts != 0 {
+		t.Fatalf("restarts = %d, want 0 so the caller can offer a redeploy", be.restarts)
+	}
+	got := st.policies["web/JWT_SECRET"]
+	if got.State != store.SecretRotationIdle || !got.PreviousExpiresAt.Equal(t0.Add(24*time.Hour)) {
+		t.Fatalf("progress wrong: %+v", got)
+	}
+	if len(au.actions) != 1 || au.actions[0] != "secret.rotate:web/JWT_SECRET:alice" {
+		t.Fatalf("audit = %v", au.actions)
+	}
+
+	e.Now = func() time.Time { return t0.Add(23 * time.Hour) }
+	e.Sweep(context.Background())
+	if _, ok := be.values["web/JWT_SECRET_PREVIOUS"]; !ok {
+		t.Fatal("previous value dropped inside the grace window")
+	}
+	e.Now = func() time.Time { return t0.Add(25 * time.Hour) }
+	e.Sweep(context.Background())
+	if _, ok := be.values["web/JWT_SECRET_PREVIOUS"]; ok {
+		t.Fatal("previous value kept past the grace window")
+	}
+	if last := au.actions[len(au.actions)-1]; !strings.HasPrefix(last, ActionGraceExpired) {
+		t.Fatalf("grace expiry not audited: %v", au.actions)
+	}
+}
+
+func TestRotateValueGeneratesWhenEmpty(t *testing.T) {
+	p := basePolicy()
+	p.AutoRotate = false
+	e, _, be, _ := newRig(p)
+	if err := e.RotateValue(context.Background(), "web", "JWT_SECRET", "", "alice"); err != nil {
+		t.Fatal(err)
+	}
+	if v := be.values["web/JWT_SECRET"]; v == "old-value" || len(v) != 64 {
+		t.Fatal("expected a generated value")
+	}
+}

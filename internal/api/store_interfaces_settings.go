@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -61,6 +62,7 @@ type RegistryStore interface {
 type VaultSettingsStore interface {
 	GetVaultSettings(ctx context.Context) (store.VaultSettings, error)
 	UpdateVaultSettings(ctx context.Context, s store.VaultSettings) error
+	SetVaultCredentialRotation(ctx context.Context, rotatedAt, previousExpiresAt time.Time) error
 }
 
 // RegistryAuthTester asks the local Docker daemon to authenticate against a registry without
