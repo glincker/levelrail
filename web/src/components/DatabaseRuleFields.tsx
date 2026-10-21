@@ -19,6 +19,8 @@ import {
   databaseHint,
   type DatabaseRuleFormShape,
 } from '@/lib/databaseRuleKinds'
+import { AlertKindGuidance } from './AlertKindGuidance'
+import { isAlertKindCopyKind } from './alertKindCopy'
 
 /** Fields for the database_* rule kinds: which database, and a threshold where the kind has one. */
 export function DatabaseRuleFields({
@@ -92,6 +94,9 @@ export function DatabaseRuleFields({
           {t('databaseRule.hint.database_down')}
         </p>
       )}
+      {isAlertKindCopyKind(kind) ? (
+        <AlertKindGuidance kind={kind} withDescription={false} />
+      ) : null}
     </>
   )
 }

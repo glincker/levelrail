@@ -55,10 +55,11 @@ import { useScheduledTasks } from '../queries/scheduledTasks'
 import { useDatabases } from '../queries/databases'
 import { DatabaseRuleFields } from './DatabaseRuleFields'
 import {
-  databaseKindLabel,
   isDatabaseRuleKind,
   type DatabaseRuleFormShape,
 } from '@/lib/databaseRuleKinds'
+import { AlertKindGuidance } from './AlertKindGuidance'
+import { alertKindLabel, isAlertKindCopyKind } from './alertKindCopy'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
 import { METRIC_NAME_LABEL, METRIC_NAME_OPTIONS } from './metricName'
 import {
@@ -83,9 +84,8 @@ const GO_DURATION_REGEX = /^-?(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/
 
 const KIND_OPTIONS: {
   value: AlertRuleKind
-  label: string
+  label?: string
   Icon: typeof GaugeIcon
-  labelKey?: string
 }[] = [
   { value: 'threshold', label: 'Threshold', Icon: GaugeIcon },
   { value: 'crashloop', label: 'Crashloop', Icon: ArrowCounterClockwiseIcon },
@@ -110,7 +110,7 @@ const KIND_OPTIONS: {
     label: 'Job running too long',
     Icon: ClockCountdownIcon,
   },
-  { value: 'node_disk_space', label: 'Node disk space', Icon: HardDriveIcon },
+  { value: 'node_disk_space', Icon: HardDriveIcon },
   {
     value: 'node_resource_usage',
     label: 'Node CPU/memory usage',
@@ -120,26 +120,18 @@ const KIND_OPTIONS: {
   { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
   {
     value: 'database_disk_high',
-    label: '',
-    labelKey: 'databaseRule.kind.database_disk_high',
     Icon: ArchiveIcon,
   },
   {
     value: 'database_connections_high',
-    label: '',
-    labelKey: 'databaseRule.kind.database_connections_high',
     Icon: ArchiveIcon,
   },
   {
     value: 'database_down',
-    label: '',
-    labelKey: 'databaseRule.kind.database_down',
     Icon: ArchiveIcon,
   },
   {
     value: 'database_backup_stale',
-    label: '',
-    labelKey: 'databaseRule.kind.database_backup_stale',
     Icon: ArchiveIcon,
   },
   { value: 'node_offline', label: 'Node offline', Icon: HardDriveIcon },
@@ -163,7 +155,6 @@ const KIND_OPTIONS: {
   { value: 'budget_threshold', label: 'Budget threshold', Icon: GaugeIcon },
   {
     value: 'email_delivery_failing',
-    label: 'Email delivery failing',
     Icon: EnvelopeSimpleIcon,
   },
 ]
@@ -588,8 +579,8 @@ export function EditAlertRuleDialog({
                           className="size-3.5 text-muted-foreground"
                           aria-hidden="true"
                         />
-                        {option.labelKey
-                          ? databaseKindLabel(t, option.value)
+                        {isAlertKindCopyKind(option.value)
+                          ? alertKindLabel(t, option.value)
                           : option.label}
                       </SelectItem>
                     ))}
@@ -599,15 +590,17 @@ export function EditAlertRuleDialog({
             />
           </Field>
 
-          {kind === 'cert_expiry' ||
-          kind === 'patch_status' ||
-          kind === 'node_disk_space' ||
-          kind === 'node_resource_usage' ||
-          kind === 'node_offline' ||
-          kind === 'node_cert_expiring' ||
-          kind === 'budget_threshold' ||
-          kind === 'email_delivery_failing' ||
-          kind === 'version_skew' ? (
+          {kind === 'node_disk_space' ? (
+            <AlertKindGuidance kind="node_disk_space" />
+          ) : kind === 'email_delivery_failing' ? (
+            <AlertKindGuidance kind="email_delivery_failing" />
+          ) : kind === 'cert_expiry' ||
+            kind === 'patch_status' ||
+            kind === 'node_resource_usage' ||
+            kind === 'node_offline' ||
+            kind === 'node_cert_expiring' ||
+            kind === 'budget_threshold' ||
+            kind === 'version_skew' ? (
             <p className="text-sm text-muted-foreground">
               This kind watches every certificate or node on the whole control
               plane platform-wide, needing no metric or threshold of its own.

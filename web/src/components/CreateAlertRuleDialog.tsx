@@ -55,10 +55,11 @@ import { useScheduledTasks } from '../queries/scheduledTasks'
 import { useDatabases } from '../queries/databases'
 import { DatabaseRuleFields } from './DatabaseRuleFields'
 import {
-  databaseKindLabel,
   isDatabaseRuleKind,
   type DatabaseRuleFormShape,
 } from '@/lib/databaseRuleKinds'
+import { AlertKindGuidance } from './AlertKindGuidance'
+import { alertKindLabel, isAlertKindCopyKind } from './alertKindCopy'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
 import { METRIC_NAME_LABEL, METRIC_NAME_OPTIONS } from './metricName'
 import {
@@ -92,12 +93,6 @@ const GO_DURATION_REGEX = /^-?(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/
 // lives engine-wide, set by APP_ALERT_PATCH_STATUS_THRESHOLD).
 const DEFAULT_PATCH_STATUS_THRESHOLD = 1
 
-// DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT mirrors
-// internal/alerting.DefaultNodeDiskSpaceThresholdPercent the same way,
-// for the node_disk_space description below (the real, enforced value
-// lives engine-wide, set by APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT).
-const DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT = 90
-
 // DEFAULT_NODE_CPU_THRESHOLD_PERCENT/DEFAULT_NODE_MEMORY_THRESHOLD_GIB
 // mirror internal/alerting.DefaultNodeCPUThresholdPercent/
 // DefaultNodeMemoryThresholdBytes for the node_resource_usage
@@ -110,9 +105,8 @@ const DEFAULT_NODE_MEMORY_THRESHOLD_GIB = 4
 
 const KIND_OPTIONS: {
   value: AlertRuleKind
-  label: string
+  label?: string
   Icon: typeof GaugeIcon
-  labelKey?: string
 }[] = [
   { value: 'threshold', label: 'Threshold', Icon: GaugeIcon },
   { value: 'crashloop', label: 'Crashloop', Icon: ArrowCounterClockwiseIcon },
@@ -137,7 +131,7 @@ const KIND_OPTIONS: {
     label: 'Job running too long',
     Icon: ClockCountdownIcon,
   },
-  { value: 'node_disk_space', label: 'Node disk space', Icon: HardDriveIcon },
+  { value: 'node_disk_space', Icon: HardDriveIcon },
   {
     value: 'node_resource_usage',
     label: 'Node CPU/memory usage',
@@ -147,26 +141,18 @@ const KIND_OPTIONS: {
   { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
   {
     value: 'database_disk_high',
-    label: '',
-    labelKey: 'databaseRule.kind.database_disk_high',
     Icon: ArchiveIcon,
   },
   {
     value: 'database_connections_high',
-    label: '',
-    labelKey: 'databaseRule.kind.database_connections_high',
     Icon: ArchiveIcon,
   },
   {
     value: 'database_down',
-    label: '',
-    labelKey: 'databaseRule.kind.database_down',
     Icon: ArchiveIcon,
   },
   {
     value: 'database_backup_stale',
-    label: '',
-    labelKey: 'databaseRule.kind.database_backup_stale',
     Icon: ArchiveIcon,
   },
   { value: 'node_offline', label: 'Node offline', Icon: HardDriveIcon },
@@ -190,7 +176,6 @@ const KIND_OPTIONS: {
   { value: 'budget_threshold', label: 'Budget threshold', Icon: GaugeIcon },
   {
     value: 'email_delivery_failing',
-    label: 'Email delivery failing',
     Icon: EnvelopeSimpleIcon,
   },
 ]
@@ -635,8 +620,8 @@ export function CreateAlertRuleDialog({
                           className="size-3.5 text-muted-foreground"
                           aria-hidden="true"
                         />
-                        {option.labelKey
-                          ? databaseKindLabel(t, option.value)
+                        {isAlertKindCopyKind(option.value)
+                          ? alertKindLabel(t, option.value)
                           : option.label}
                       </SelectItem>
                     ))}
@@ -661,14 +646,7 @@ export function CreateAlertRuleDialog({
               APP_ALERT_PATCH_STATUS_THRESHOLD).
             </p>
           ) : kind === 'node_disk_space' ? (
-            <p className="text-sm text-muted-foreground">
-              Watches every node&apos;s disk usage on the whole control plane,
-              not just the ones this app happens to run on, and fires as soon as
-              any node&apos;s disk is at least{' '}
-              {DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT}% used (the control
-              plane&apos;s configured threshold, overridable via
-              APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT).
-            </p>
+            <AlertKindGuidance kind="node_disk_space" />
           ) : kind === 'node_cert_expiring' ? (
             <p className="text-sm text-muted-foreground">
               Watches every node&apos;s agent certificate and fires when one is
@@ -925,9 +903,7 @@ export function CreateAlertRuleDialog({
               volumes={volumes}
             />
           ) : kind === 'email_delivery_failing' ? (
-            <p className="text-sm text-muted-foreground">
-              {t('emailDeliveryFailing.hint')}
-            </p>
+            <AlertKindGuidance kind="email_delivery_failing" />
           ) : kind === 'budget_threshold' ? (
             <p className="text-sm text-muted-foreground">
               {t('budgetThreshold.hint')}

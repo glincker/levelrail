@@ -6,6 +6,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Switch } from '@/components/ui/switch'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { toast } from '@/components/ui/toast'
+import { AlertKindGuidance } from './AlertKindGuidance'
+import { isAlertKindCopyKind } from './alertKindCopy'
 import {
   useDefaultAlerts,
   useResetDefaultAlerts,
@@ -117,6 +119,9 @@ export function AlertDefaultsPanel() {
                     <Badge variant="destructive">{t('defaults.firing')}</Badge>
                   ) : null}
                 </div>
+                {isAlertKindCopyKind(a.kind) ? (
+                  <AlertKindGuidance kind={a.kind} />
+                ) : null}
               </div>
               <Switch
                 aria-label={t('defaults.toggleLabel', { name: a.name })}
