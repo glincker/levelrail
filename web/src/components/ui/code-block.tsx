@@ -83,7 +83,7 @@ function CopyButton({
   onCopy: () => void
   size: 'xs' | 'sm'
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation('common')
   return (
     <>
       <Button
@@ -117,7 +117,7 @@ function RevealButton({
   onToggle: () => void
   size: 'xs' | 'sm'
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation('common')
   return (
     <Button
       type="button"
@@ -162,7 +162,7 @@ export function CodeBlock({
   secret = false,
   className,
 }: CodeBlockProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation('common')
   const [wrapped, setWrapped] = useState(wrap)
   const [revealed, setRevealed] = useState(false)
   const copyText = prompt ? stripPrompt(code) : code
@@ -265,7 +265,7 @@ export function CommandBlock({
   secret = false,
   className,
 }: CommandBlockProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation('common')
   const [revealed, setRevealed] = useState(false)
   const { state, copy } = useCopyFeedback(code)
   const shown = secret && !revealed ? maskSecret(code) : code
