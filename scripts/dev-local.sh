@@ -27,7 +27,9 @@ stop() {
 
 start() {
 	[ -z "$(listening "$api_port")" ] || { echo "dev-local: port $api_port already in use, run restart" >&2; return 1; }
-	(cd "$repo_root" && go build -o "$dir/levelrail" ./cmd/levelrail) || return 1
+	# A linked worktree stamps the primary checkout's commit into the build; name the real one.
+	local ver; ver="${LOCAL_VERSION_BASE:-v0.8.0}-dev.$(git -C "$repo_root" rev-parse --short HEAD)"
+	(cd "$repo_root" && go build -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=$ver" -o "$dir/levelrail" ./cmd/levelrail) || return 1
 	# Env-gated experimental features are not on the Beta features page; turn them
 	# on locally so work in progress is visible. LOCAL_EXPERIMENTAL overrides.
 	(cd "$repo_root" && APP_EXPERIMENTAL="${LOCAL_EXPERIMENTAL:-load-balancer,ai-models,iac,cloudflare-tunnel,access-roles,global-environments,ai-control}" \
