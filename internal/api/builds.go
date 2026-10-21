@@ -125,6 +125,8 @@ type triggerBuildRequest struct {
 	FromCache bool `json:"from_cache,omitempty"`
 	// UploadHash builds a directory previously sent to POST /api/v1/apps/{name}/uploads instead of a git checkout.
 	UploadHash string `json:"upload_hash,omitempty"`
+	// NoCache disables the BuildKit layer cache; only build.type "dockerfile" supports it.
+	NoCache bool `json:"no_cache,omitempty"`
 	freezeOverride
 }
 
@@ -344,6 +346,10 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "ref is required")
 			return
 		}
+	}
+	if req.NoCache && buildType != spec.BuildDockerfile {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("no_cache is only supported for build.type \"dockerfile\", not %q", buildType))
+		return
 	}
 	if buildType == spec.BuildRailpack && req.Build.Path != "" {
 		// See triggerBuildBuildInput.Path's own doc comment: railpack has
