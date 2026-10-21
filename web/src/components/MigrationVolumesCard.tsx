@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CommandBlock } from '@/components/ui/code-block'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useVolumeGuide } from '../queries/migration'
@@ -61,12 +62,12 @@ export function MigrationVolumesCard() {
                 <p className="text-xs font-medium">
                   {g.app}: {g.source} to {g.container_path}
                 </p>
-                <pre
-                  className="mt-1 overflow-x-auto rounded-md bg-muted p-2 font-mono text-xs"
-                  aria-label={t('volumes.copyCommand')}
-                >
-                  {g.command}
-                </pre>
+                <CommandBlock
+                  className="mt-1"
+                  code={g.command}
+                  label={t('volumes.copyCommand')}
+                  wrap
+                />
               </div>
             ))}
           </div>
