@@ -71,20 +71,7 @@ export function ModelKeyRevealDialog({
           </div>
           {baseUrl ? (
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Try it</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    copy(curlExample(baseUrl, apiKey), 'curl command')
-                  }}
-                >
-                  <CopyIcon aria-hidden="true" />
-                  Copy curl
-                </Button>
-              </div>
+              <span className="text-xs text-muted-foreground">Try it</span>
               <CodeBlock
                 code={curlExample(baseUrl, apiKey)}
                 language="bash"
