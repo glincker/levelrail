@@ -470,5 +470,15 @@
     "on": "Los despliegues en cola superados se reemplazarán.",
     "off": "Los despliegues en cola se conservan.",
     "saveFailed": "No se pudo actualizar la configuración."
+  },
+  "codeBlock": {
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "copyFailed": "No se pudo copiar",
+    "wrap": "Ajustar",
+    "reveal": "Mostrar",
+    "hide": "Ocultar",
+    "region": "Código",
+    "commandRegion": "Comando"
   }
 }

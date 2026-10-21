@@ -714,5 +714,15 @@
     "on": "Superseded queued deploys will be replaced.",
     "off": "Queued deploys are kept.",
     "saveFailed": "Could not update the setting."
+  },
+  "codeBlock": {
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "wrap": "Wrap",
+    "reveal": "Reveal",
+    "hide": "Hide",
+    "region": "Code",
+    "commandRegion": "Command"
   }
 }
