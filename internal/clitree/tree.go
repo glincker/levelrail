@@ -391,7 +391,7 @@ var Tree = map[string]*Node{
 		"beta-features":     {Subs: map[string]*Node{"list": nil, "set": nil}},
 		"profile":           {Subs: map[string]*Node{"get": nil, "set": nil}},
 	}},
-	"git-providers": {Subs: map[string]*Node{"list": nil, "validate": nil, "repos": nil, "connections": nil, "add": nil, "rename": nil, "default": nil, "disconnect": nil, "branches": nil, "use-as-source": nil}},
+	"git-providers": {Subs: map[string]*Node{"list": nil, "validate": nil, "repos": nil, "connections": nil, "add": nil, "test": nil, "rename": nil, "default": nil, "disconnect": nil, "branches": nil, "use-as-source": nil}},
 	"github-app": {Subs: map[string]*Node{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil, "register-url": nil, "installations": {Subs: map[string]*Node{
 		"list": nil, "add": nil, "remove": nil,
 	}}}},

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1602 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1603 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1033,8 +1033,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/functions/{name}/route", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctionRoutes", Description: "Function paths: serve a function at <domain>/<path> through a forwarder rule on the domain."},
 	{Method: "PUT", Path: "/api/v1/functions/{name}/route", Ability: "AbilityDeploy", Group: "Other", Handler: "handleSetFunctionRoute", Description: ""},
 	{Method: "GET", Path: "/api/v1/gate/check", Ability: "Public", Group: "Other", Handler: "handleGateCheck", Description: "Unauthenticated by design: the check proves itself with the ingress's gate secret, and login requires a dashboard session before minting."},
-	{Method: "GET", Path: "/api/v1/git-connections", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleListGitConnections", Description: "GitLab, Bitbucket and Gitea connections: many per provider. Listing and reading are AbilityReadSensitive like the repository lists they feed; creating, renaming, defaulting and disconnecting are AbilityRoot because a connection grants read access to private repositories control-plane wide. connect and callback are full-page browser navigations, so the session cookie is implicitly root."},
+	{Method: "GET", Path: "/api/v1/git-connections", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleListGitConnections", Description: ""},
 	{Method: "POST", Path: "/api/v1/git-connections", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateGitConnection", Description: ""},
+	{Method: "POST", Path: "/api/v1/git-connections/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestGitConnection", Description: "GitLab, Bitbucket and Gitea connections: many per provider. Listing and reading are AbilityReadSensitive like the repository lists they feed; creating, renaming, defaulting and disconnecting are AbilityRoot because a connection grants read access to private repositories control-plane wide. connect and callback are full-page browser navigations, so the session cookie is implicitly root."},
 	{Method: "DELETE", Path: "/api/v1/git-connections/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisconnectGitConnection", Description: ""},
 	{Method: "GET", Path: "/api/v1/git-connections/{id}", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleGetGitConnection", Description: ""},
 	{Method: "PATCH", Path: "/api/v1/git-connections/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleRenameGitConnection", Description: ""},

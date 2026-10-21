@@ -99,6 +99,33 @@ export function useCreateGitConnection() {
   })
 }
 
+export type GitConnectionTestKind =
+  'bad_url' | 'bad_token' | 'tls' | 'unreachable'
+
+export interface GitConnectionTestResult {
+  ok: boolean
+  kind: GitConnectionTestKind | 'ok'
+  message: string
+  fix?: string
+  account?: string
+}
+
+// Checks an instance URL and optional token; nothing is saved.
+export function useTestGitConnection() {
+  return useMutation<
+    GitConnectionTestResult,
+    ApiError,
+    { provider: GitConnectionProvider; instance_url?: string; token?: string }
+  >({
+    mutationFn: (req) =>
+      request(
+        '/api/v1/git-connections/test',
+        json('POST', req),
+        'test connection failed',
+      ),
+  })
+}
+
 export function useRenameGitConnection() {
   const invalidate = useInvalidateGitConnections()
   return useMutation<

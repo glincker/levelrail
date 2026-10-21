@@ -68594,7 +68594,7 @@
     },
     "/api/v1/git-connections": {
       "get": {
-        "description": "GitLab, Bitbucket and Gitea connections: many per provider. Listing and reading are AbilityReadSensitive like the repository lists they feed; creating, renaming, defaulting and disconnecting are AbilityRoot because a connection grants read access to private repositories control-plane wide. connect and callback are full-page browser navigations, so the session cookie is implicitly root.\n\nRequires the `read:sensitive` ability.",
+        "description": "Requires the `read:sensitive` ability.",
         "operationId": "handleListGitConnections",
         "responses": {
           "200": {
@@ -68653,7 +68653,7 @@
             ]
           }
         ],
-        "summary": "GitLab, Bitbucket and Gitea connections: many per provider.",
+        "summary": "List Git Connections",
         "tags": [
           "Other"
         ],
@@ -68731,6 +68731,85 @@
           }
         ],
         "summary": "Create Git Connection",
+        "tags": [
+          "Other"
+        ],
+        "x-required-ability": "root"
+      }
+    },
+    "/api/v1/git-connections/test": {
+      "post": {
+        "description": "GitLab, Bitbucket and Gitea connections: many per provider. Listing and reading are AbilityReadSensitive like the repository lists they feed; creating, renaming, defaulting and disconnecting are AbilityRoot because a connection grants read access to private repositories control-plane wide. connect and callback are full-page browser navigations, so the session cookie is implicitly root.\n\nRequires the `root` ability.",
+        "operationId": "handleTestGitConnection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "GitLab, Bitbucket and Gitea connections: many per provider.",
         "tags": [
           "Other"
         ],

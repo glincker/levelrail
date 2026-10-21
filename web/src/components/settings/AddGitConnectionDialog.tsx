@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugsConnectedIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import { BrandTile } from '../BrandLogoBadge'
 import {
@@ -21,7 +21,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
-import { useCreateGitConnection } from '../../queries/gitConnections'
+import {
+  useCreateGitConnection,
+  useTestGitConnection,
+} from '../../queries/gitConnections'
 import type {
   GitConnectionProvider,
   GitProviderConnection,
@@ -61,6 +64,7 @@ export function AddGitConnectionDialog({
 }>) {
   const { t } = useTranslation('settings')
   const create = useCreateGitConnection()
+  const probe = useTestGitConnection()
   const [source, setSource] = useState(NEW_APP)
   const [instanceUrl, setInstanceUrl] = useState(DEFAULT_INSTANCE[provider])
   const [clientId, setClientId] = useState('')
@@ -86,6 +90,7 @@ export function AddGitConnectionDialog({
     setToken('')
     setLabel('')
     create.reset()
+    probe.reset()
   }
 
   function submit() {
@@ -260,6 +265,54 @@ export function AddGitConnectionDialog({
               {t('gitConnections.add.labelHelp')}
             </FieldDescription>
           </Field>
+          {needsInstance && !reusing ? (
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={instanceUrl.trim() === '' || probe.isPending}
+                onClick={() =>
+                  probe.mutate({
+                    provider,
+                    instance_url: instanceUrl.trim(),
+                    token: tokenAuth ? token.trim() || undefined : undefined,
+                  })
+                }
+              >
+                <PlugsConnectedIcon className="size-4" aria-hidden="true" />
+                {probe.isPending
+                  ? t('gitConnections.add.testing')
+                  : t('gitConnections.add.test')}
+              </Button>
+              {probe.data?.ok ? (
+                <p role="status" className="text-sm text-muted-foreground">
+                  {probe.data.account
+                    ? t('gitConnections.add.testOkAccount', {
+                        account: probe.data.account,
+                      })
+                    : t('gitConnections.add.testOk')}
+                </p>
+              ) : null}
+              {probe.data && !probe.data.ok && probe.data.kind !== 'ok' ? (
+                <div role="alert" className="space-y-1 text-sm">
+                  <p className="text-destructive">
+                    {t(
+                      `gitConnections.add.testKind.${probe.data.kind}.message`,
+                    )}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {t('gitConnections.add.fixLabel')}:{' '}
+                    {t(`gitConnections.add.testKind.${probe.data.kind}.fix`)}
+                  </p>
+                </div>
+              ) : null}
+              {probe.error ? (
+                <p role="alert" className="text-sm text-destructive">
+                  {probe.error.message}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           {create.error ? (
             <p role="alert" className="text-sm text-destructive">
               {create.error.message}

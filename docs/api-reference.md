@@ -1827,6 +1827,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/alert-defaults/reset | AbilityWrite | handleResetDefaultAlerts |
 | GET | /api/v1/inbox/state | AbilityRead | handleInboxState |
 | POST | /api/v1/inbox/archive | AbilityWrite | handleInboxArchive |
+| POST | /api/v1/git-connections/test | AbilityRoot | handleTestGitConnection |
 
 ## See also
 

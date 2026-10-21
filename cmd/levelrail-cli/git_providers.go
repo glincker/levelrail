@@ -19,7 +19,7 @@ func runGitProviders(prog string, args []string, stdout, stderr io.Writer, looku
 	}
 	if len(args) > 0 {
 		switch args[0] {
-		case "connections", "add", "rename", "default", "disconnect", "branches", "use-as-source":
+		case "connections", "add", "test", "rename", "default", "disconnect", "branches", "use-as-source":
 			return runGitConnectionsCmd(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 		}
 	}

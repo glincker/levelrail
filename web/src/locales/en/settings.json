@@ -2692,7 +2692,30 @@
       "tokenHelp": "Under Manage account, Personal access tokens. The token is never shown again.",
       "instanceHelpServer": "The base address of your server, for example https://bitbucket.example.com.",
       "connect": "Verify and connect",
-      "verifying": "Verifying"
+      "verifying": "Verifying",
+      "test": "Test connection",
+      "testing": "Testing",
+      "testOk": "Connected. The server answered and the details look right.",
+      "testOkAccount": "Connected as {{account}}.",
+      "fixLabel": "Fix",
+      "testKind": {
+        "bad_url": {
+          "message": "That address does not look like this kind of server.",
+          "fix": "Use the root address of the instance, for example https://git.example.com, without a repository path."
+        },
+        "bad_token": {
+          "message": "The server rejected the token.",
+          "fix": "Create a new personal access token with repository read access and paste it again."
+        },
+        "tls": {
+          "message": "The server's TLS certificate was rejected.",
+          "fix": "Install a trusted certificate on the server, or add your private CA to this control plane's trust store."
+        },
+        "unreachable": {
+          "message": "This control plane could not reach the server.",
+          "fix": "Check the hostname and port, and that the network or firewall allows outbound access to it."
+        }
+      }
     },
     "toast": {
       "added": "Account saved",

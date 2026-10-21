@@ -198,6 +198,29 @@ func (c *Client) CreateGitConnection(ctx context.Context, req CreateGitConnectio
 	return out, err
 }
 
+// TestGitConnectionRequest checks an instance URL and optional token without saving a connection.
+type TestGitConnectionRequest struct {
+	Provider    string `json:"provider"`
+	InstanceURL string `json:"instance_url,omitempty"`
+	Token       string `json:"token,omitempty"`
+}
+
+// TestGitConnectionResult is the typed outcome: Kind is ok, bad_url, bad_token, tls or unreachable.
+type TestGitConnectionResult struct {
+	OK      bool   `json:"ok"`
+	Kind    string `json:"kind"`
+	Message string `json:"message"`
+	Fix     string `json:"fix,omitempty"`
+	Account string `json:"account,omitempty"`
+}
+
+// TestGitConnection calls POST /api/v1/git-connections/test.
+func (c *Client) TestGitConnection(ctx context.Context, req TestGitConnectionRequest) (TestGitConnectionResult, error) {
+	var out TestGitConnectionResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/git-connections/test", req, &out)
+	return out, err
+}
+
 // RenameGitConnection calls PATCH /api/v1/git-connections/{id}.
 func (c *Client) RenameGitConnection(ctx context.Context, id, label string) (GitProviderConnectionResource, error) {
 	var out GitProviderConnectionResource

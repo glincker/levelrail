@@ -39,6 +39,7 @@ func (rt *Router) registerGitProviderRoutes(mux *http.ServeMux) {
 	// connection grants read access to private repositories control-plane wide.
 	// connect and callback are full-page browser navigations, so the session
 	// cookie is implicitly root.
+	mux.HandleFunc("POST /api/v1/git-connections/test", rt.requireAbility(AbilityRoot, rt.handleTestGitConnection))
 	mux.HandleFunc("GET /api/v1/git-connections", rt.requireAbility(AbilityReadSensitive, rt.handleListGitConnections))
 	mux.HandleFunc("POST /api/v1/git-connections", rt.requireAbility(AbilityRoot, rt.handleCreateGitConnection))
 	mux.HandleFunc("GET /api/v1/git-connections/{id}", rt.requireAbility(AbilityReadSensitive, rt.handleGetGitConnection))

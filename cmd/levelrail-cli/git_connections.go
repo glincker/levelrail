@@ -13,8 +13,9 @@ import (
 func gitConnectionsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s git-providers connections [--provider P] [flags]            list every GitLab, Bitbucket, Bitbucket Server, Gitea and Forgejo account
-  %[1]s git-providers add <gitlab|bitbucket|bitbucket_server|gitea|forgejo> [flags]
+  %[1]s git-providers add --type <gitlab|bitbucket|bitbucket_server|gitea|forgejo> [flags]
                                                                     register another account
+  %[1]s git-providers test --type T --instance-url URL [--pat TOKEN] check a URL and token, with a fix hint on failure
   %[1]s git-providers rename <id> <label> [flags]                    rename a connection
   %[1]s git-providers default <id> [flags]                           make a connection its provider's default
   %[1]s git-providers disconnect --id ID [flags]                     disconnect one account, others stay
@@ -55,7 +56,8 @@ func runGitConnectionsCmd(prog, sub string, args []string, stdout, stderr io.Wri
 	clientID := fs.String("client-id", "", "OAuth application client id (Bitbucket: the consumer key)")
 	clientSecret := fs.String("client-secret", "", "OAuth application client secret")
 	name := fs.String("label", "", "display label")
-	pat := fs.String("pat", "", "personal access token (Bitbucket Server)")
+	pat := fs.String("pat", "", "personal access token (Bitbucket Server; optional for test)")
+	provType := fs.String("type", "", "provider: gitlab, bitbucket, bitbucket_server, gitea or forgejo (add, test)")
 	reuse := fs.String("reuse", "", "reuse the OAuth application of this connection id")
 	req := bindUseAsSourceFlags(fs)
 
@@ -85,12 +87,42 @@ func runGitConnectionsCmd(prog, sub string, args []string, stdout, stderr io.Wri
 			return fail("list git connections", err)
 		}
 		return writeScheduledTaskResult(stdout, stderr, of, conns, func() { printGitConnectionsHuman(stdout, conns) })
+	case "test":
+		kind := *provType
+		if kind == "" && len(rest) == 1 {
+			kind = rest[0]
+		}
+		if kind == "" {
+			_, _ = fmt.Fprintf(stderr, "%s: %s requires --type\n\n", prog, label)
+			fs.Usage()
+			return exitUsage
+		}
+		res, err := client.TestGitConnection(ctx, apiclient.TestGitConnectionRequest{Provider: kind, InstanceURL: *instance, Token: *pat})
+		if err != nil {
+			return fail("test git connection", err)
+		}
+		code := writeScheduledTaskResult(stdout, stderr, of, res, func() {
+			_, _ = fmt.Fprintf(stdout, "%s: %s\n", res.Kind, res.Message)
+			if res.Fix != "" {
+				_, _ = fmt.Fprintf(stdout, "fix: %s\n", res.Fix)
+			}
+		})
+		if code == exitOK && !res.OK {
+			return exitCheckFailed
+		}
+		return code
 	case "add":
-		if !need(1, "a provider") {
+		kind := *provType
+		if kind == "" && len(rest) == 1 {
+			kind = rest[0]
+		}
+		if kind == "" {
+			_, _ = fmt.Fprintf(stderr, "%s: %s requires --type\n\n", prog, label)
+			fs.Usage()
 			return exitUsage
 		}
 		c, err := client.CreateGitConnection(ctx, apiclient.CreateGitConnectionRequest{
-			Provider: rest[0], InstanceURL: *instance, ClientID: *clientID, ClientSecret: *clientSecret, Label: *name, ReuseConnectionID: *reuse, Token: *pat,
+			Provider: kind, InstanceURL: *instance, ClientID: *clientID, ClientSecret: *clientSecret, Label: *name, ReuseConnectionID: *reuse, Token: *pat,
 		})
 		if err != nil {
 			return fail("add git connection", err)
