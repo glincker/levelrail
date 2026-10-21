@@ -28,17 +28,18 @@ Works today:
 - **S3.** Backup targets and storage destinations for database backups, app volume backups, [log archive](/log-archive), build cache and audit export. See [Backup targets](/backups-and-storage) and [Object storage](/object-storage).
 - **ECR.** The ECR preset calls GetAuthorizationToken with the same AWS connection (static key, assumable role or the control plane identity) and renews the 12 hour password before it expires. Status: exercised against test doubles only, not yet against a real AWS account. See [Cloud registry presets](#cloud-registry-presets).
 - **Private images.** Other registries still take a host, username and password.
+- **EC2 user-data snippet.** A bash script for installing the control plane on a fresh instance, with a Terraform example. See [Install on a cloud VM](/install-on-cloud). Documentation only, not run against a real account.
 
 Planned:
 
-- EC2 user-data install script snippet for installing the control plane on a fresh instance.
-- Terraform snippets.
+- Terraform modules. The example on the install page is not a module.
 
 ## Google Cloud
 
 Works today:
 
 - **Compute Engine nodes.** Service account JSON key with the Compute Instance Admin role, and a `default` VPC network. No workload identity federation. This path has not been run against a real project, see [what was not tested](/node-provisioning#what-was-not-tested).
+- **Startup script snippet.** A bash startup script for installing the control plane, see [Install on a cloud VM](/install-on-cloud). Documentation only.
 
 - **GCS storage destinations.** The Google Cloud Storage preset on the S3-compatible destination form uses `storage.googleapis.com`, path-style addressing and region `auto`. Create an HMAC key under Cloud Storage, Settings, Interoperability, for a service account that can write to the bucket. Service account JSON keys do not work here. Backup targets already had a GCS preset with the same endpoint. The Test button runs the same probe as every other destination. Status: tested against a local fake S3 server only, never against a real bucket.
 - **Artifact Registry.** The preset turns the Compute Engine service account JSON into a short-lived access token (username `oauth2accesstoken`) and renews it. Status: exercised against test doubles only, not yet against a real project.
@@ -50,8 +51,9 @@ In the codebase, not yet usable:
 Planned:
 
 - Connecting Cloud DNS: settings, UI, CLI, automatic records on domain add, and a DNS-01 module for ingress.
-- GCE startup script snippet for installing the control plane.
-- Terraform snippets.
+- Terraform modules.
+
+A GCE startup script for installing the control plane is on [Install on a cloud VM](/install-on-cloud) (documentation only).
 
 ## Azure
 
@@ -59,6 +61,7 @@ Works today:
 
 - **Virtual machine nodes.** Service principal with a client secret or workload identity federation, scoped to one resource group. See [Node provisioning](/node-provisioning#provider-credentials).
 - **ACR.** The ACR preset exchanges an Azure AD token from the same service principal for an ACR refresh token and renews it. You enter the registry host, for example `myregistry.azurecr.io`. Status: exercised against test doubles only, not yet against a real Azure account.
+- **Custom data snippet.** A cloud-init file for installing the control plane on a fresh VM, see [Install on a cloud VM](/install-on-cloud). Documentation only.
 
 Planned:
 
@@ -136,8 +139,7 @@ None of these exist yet.
 - Connecting the Cloud DNS provider (settings, UI, CLI, DNS-01)
 - Azure DNS provider
 - Azure Blob Storage backups
-- EC2 user-data and GCE startup install scripts
-- Terraform snippets
+- Terraform modules
 - Community template repository, reviewed by pull request
 
 Not planned until there is demand: AWS Marketplace listing, a plugin runtime, Kubernetes CRDs.
