@@ -39,6 +39,8 @@ type deployTriggerRequest struct {
 	// Rollback refuses an image that was never a previous deploy of this app
 	// at trigger time instead of failing later at pull time.
 	Rollback bool `json:"rollback,omitempty"`
+	// RerunOf is the deploy attempt of this app that this deploy retries.
+	RerunOf string `json:"rerun_of,omitempty"`
 	freezeOverride
 	policyOverride
 }
@@ -97,6 +99,11 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := validateImageReference(req.Image); err != nil {
 		writeCodedError(w, http.StatusBadRequest, errCodeInvalidImageRef, "image: "+err.Error())
+		return
+	}
+
+	if status, msg := rt.validateRerunOf(r.Context(), name, req.RerunOf); status != 0 {
+		writeError(w, status, msg)
 		return
 	}
 
@@ -171,7 +178,7 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		return
 	}
 
-	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note})
+	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note, rerunOf: req.RerunOf})
 	if err != nil {
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
 		if req.Pull {
@@ -199,10 +206,14 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 type confirmedDeployOptions struct {
 	pull   bool
 	reason string
+	// rerunOf is the validated attempt this deploy retries, empty if none.
+	rerunOf string
 }
 
 func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.DesiredService, image string, opts confirmedDeployOptions) (store.DesiredService, error) {
-	updated, err := rt.imageTrigger(ctx, existing, opts.pull, opts.reason).Deploy(ctx, existing, image)
+	trigger := rt.imageTrigger(ctx, existing, opts.pull, opts.reason)
+	trigger.RerunOf = opts.rerunOf
+	updated, err := trigger.Deploy(ctx, existing, image)
 	if err != nil {
 		return store.DesiredService{}, err
 	}

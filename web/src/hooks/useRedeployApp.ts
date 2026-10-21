@@ -11,7 +11,12 @@ import { isPendingApproval, useTriggerDeploy } from '../queries/deploys'
 export function useRedeployApp(
   name: string,
   image: string,
-  options?: { onViewApp?: () => void; onSuccess?: () => void },
+  options?: {
+    onViewApp?: () => void
+    onSuccess?: () => void
+    /** The failed attempt being retried, sent as rerun_of. */
+    rerunOf?: string
+  },
 ) {
   const { t } = useTranslation('common')
   const triggerDeploy = useTriggerDeploy(name)
@@ -19,7 +24,7 @@ export function useRedeployApp(
     isPending: triggerDeploy.isPending,
     redeploy: () => {
       triggerDeploy.mutate(
-        { image },
+        { image, rerunOf: options?.rerunOf },
         {
           onSuccess: (result) => {
             options?.onSuccess?.()

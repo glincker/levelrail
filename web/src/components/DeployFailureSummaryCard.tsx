@@ -54,7 +54,9 @@ export function DeployFailureSummaryCard({
   const headingId = useId()
   const messageId = useId()
   const [expanded, setExpanded] = useState(false)
-  const retry = useRedeployApp(appName, attempt.image)
+  const retry = useRedeployApp(appName, attempt.image, {
+    rerunOf: attempt.id,
+  })
   const rollback = useTriggerDeploy(appName)
   const rebuild = useRebuildApp(appName)
   const { data: gitSource } = useGitSource(appName)
@@ -86,7 +88,7 @@ export function DeployFailureSummaryCard({
 
   const runRebuild = (noCache: boolean) => {
     rebuild.mutate(
-      { noCache },
+      { noCache, rerunOf: attempt.id },
       {
         onSuccess: () => {
           toast.add({

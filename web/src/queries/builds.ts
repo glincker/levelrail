@@ -47,6 +47,8 @@ export interface TriggerBuildInput {
   uploadHash?: string
   /** Skips the BuildKit layer cache; the backend accepts it for dockerfile builds only. */
   noCache?: boolean
+  /** The deploy attempt this build retries or rebuilds, recorded for rerun lineage. */
+  rerunOf?: string
 }
 
 // TriggerBuildResult mirrors internal/api/builds.go's own
@@ -88,6 +90,7 @@ export async function triggerBuild(
         ...(input.ref ? { ref: input.ref } : {}),
         ...(input.uploadHash ? { upload_hash: input.uploadHash } : {}),
         ...(input.noCache ? { no_cache: true } : {}),
+        ...(input.rerunOf ? { rerun_of: input.rerunOf } : {}),
         ...(input.imageRepo ? { image_repo: input.imageRepo } : {}),
         ...(Object.keys(build).length > 0 ? { build } : {}),
         ...(input.detectedFramework

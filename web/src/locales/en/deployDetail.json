@@ -286,5 +286,8 @@
     "total": "{{phase}}: {{time}}",
     "noTiming": "no timing",
     "truncated": "Phases were detected in the first {{count}} lines only."
+  },
+  "chain": {
+    "position": "Attempt {{position}} of this chain"
   }
 }
