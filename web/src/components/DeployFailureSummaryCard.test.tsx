@@ -1,9 +1,37 @@
+import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
+import { CommonI18n } from '../test/commonI18n'
 import type { DeployAttempt } from '../types/deployAttempt'
 import type { DeployStage } from '../lib/deployStages'
 import { DeployFailureSummaryCard } from './DeployFailureSummaryCard'
+
+// No <RouterProvider> is mounted, so Link is stubbed to a plain anchor.
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
+  return {
+    ...actual,
+    Link: ({
+      children,
+      to,
+      ...rest
+    }: {
+      children?: ReactNode
+      to?: string
+    } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
+      <a href={to} {...rest}>
+        {children}
+      </a>
+    ),
+  }
+})
+vi.mock('../queries/gitSources', () => ({
+  useGitSource: () => ({ data: { build_type: 'dockerfile' } }),
+}))
+vi.mock('../queries/rebuildApp', () => ({
+  useRebuildApp: () => ({ isPending: false, mutate: vi.fn() }),
+}))
 
 const redeploy = vi.fn()
 vi.mock('../hooks/useRedeployApp', () => ({
@@ -38,14 +66,16 @@ const stages: DeployStage[] = [
 function renderCard(attempts: DeployAttempt[]) {
   return render(
     <QueryClientProvider client={new QueryClient()}>
-      <DeployFailureSummaryCard
-        appName="web"
-        attempt={failed}
-        attempts={attempts}
-        stages={stages}
-        conditions={[]}
-        lines={[]}
-      />
+      <CommonI18n>
+        <DeployFailureSummaryCard
+          appName="web"
+          attempt={failed}
+          attempts={attempts}
+          stages={stages}
+          conditions={[]}
+          lines={[]}
+        />
+      </CommonI18n>
     </QueryClientProvider>,
   )
 }
