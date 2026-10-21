@@ -6,7 +6,7 @@ import { toast } from '@/components/ui/toast'
 import { ApiError } from '../../lib/apiError'
 import { healthCheckFrom } from '../../lib/healthCheckDefaults'
 import { useCreateApp } from '../../queries/apps'
-import { SAMPLE_APP } from '../setup/types'
+import { SAMPLE_APP } from '../../lib/firstApp'
 
 const HTTP_CONFLICT = 409
 

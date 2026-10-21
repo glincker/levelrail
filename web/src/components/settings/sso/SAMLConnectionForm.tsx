@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { FlaskIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
 import type { SAMLConnection, SAMLConnectionInput } from '@/queries/sso'
 import {
   connectionInput,
+  samlTestStartURL,
   useDeleteSAMLConnection,
   useSaveSAMLConnection,
 } from '@/queries/sso'
@@ -328,10 +329,25 @@ export function SAMLConnectionForm({
         ) : (
           <span />
         )}
-        <Button type="submit" disabled={save.isPending}>
-          {t('form.save')}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {connection?.configured && connection.enabled ? (
+            <Button
+              type="button"
+              variant="outline"
+              render={<a href={samlTestStartURL(connection.id)} />}
+            >
+              <FlaskIcon aria-hidden="true" />
+              {t('saml.test.button')}
+            </Button>
+          ) : null}
+          <Button type="submit" disabled={save.isPending}>
+            {t('form.save')}
+          </Button>
+        </div>
       </div>
+      {connection?.configured && connection.enabled ? (
+        <p className="text-xs text-muted-foreground">{t('saml.test.hint')}</p>
+      ) : null}
       {connection ? (
         <ConfirmDialog
           open={confirmDelete}

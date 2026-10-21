@@ -292,6 +292,7 @@
       "manage": "Manage on the app",
       "open": "Open {{domain}} in a new tab",
       "dnsRecord": "Show DNS record",
+      "diagnose": "Diagnose",
       "copy": "Copy domain",
       "copied": "Domain copied",
       "recheck": "Re-check DNS",
@@ -359,6 +360,60 @@
       "dns01_unavailable": "Wildcard certificate needs a DNS provider. Enable one under DNS settings.",
       "target_unavailable": "Not routed: its target is unavailable."
     }
+  },
+  "proxyPicker": {
+    "title": "Proxy",
+    "description": "Choose which proxy answers on ports 80 and 443. Managed providers get their route files written and reloaded for you. Manual providers show the configuration to add yourself.",
+    "choose": "Proxy provider",
+    "loadFailed": "Could not read the proxy status.",
+    "retry": "Check again",
+    "detected": "Detected",
+    "provider": {
+      "embedded": "Built-in Caddy",
+      "traefik": "Traefik",
+      "nginx": "nginx",
+      "caddy": "Caddy (external)",
+      "haproxy": "HAProxy"
+    },
+    "mode": {
+      "builtin": "Built in",
+      "managed": "Managed",
+      "manual": "Manual"
+    },
+    "embeddedBody": "Levelrail's own ingress serves ports 80 and 443 and handles certificates. Nothing is written to another proxy.",
+    "useEmbedded": "Use the built-in ingress",
+    "usingEmbedded": "Built-in ingress in use",
+    "embeddedDone": "Routing now uses the built-in ingress. Route files written to your proxy were removed.",
+    "embeddedFailed": "Could not switch to the built-in ingress.",
+    "notDetected": "This proxy was not found on this server. Start it with ports 80 and 443 published, then check again.",
+    "manualBody": "Levelrail does not change {{proxy}}. Dry run shows the configuration for your domains, you add it by hand, then check again.",
+    "managedBody": "Levelrail writes one route file per domain into {{proxy}}, checks it, reloads the proxy and verifies each domain over HTTPS.",
+    "dryRun": "Dry run",
+    "dryRunning": "Checking...",
+    "apply": "Apply and verify",
+    "applying": "Applying...",
+    "recheck": "Re-check",
+    "applyDone": "Routes applied. Waiting for your proxy to pick them up.",
+    "applyFailed": "Could not apply the routes.",
+    "dryRunFailed": "The dry run found a problem.",
+    "manualNoApply": "Manual providers are never applied automatically.",
+    "changes": {
+      "title": "What would change",
+      "none": "Nothing to change. Routes are already in place.",
+      "manualTitle": "Add this to your proxy"
+    },
+    "inputs": {
+      "dir": "Route directory on this server",
+      "dirHint": "The folder your proxy reads route files from. It could not be detected.",
+      "certDir": "Certificate directory inside the proxy container",
+      "certDirHint": "For example /etc/letsencrypt/live. It could not be detected."
+    },
+    "rejected": {
+      "title": "The proxy refused the new routes",
+      "body": "Nothing was kept: the files were rolled back and your proxy keeps serving what it had. Fix the problem below, then try again."
+    },
+    "rootOnly": "Changing the proxy needs a root account or token.",
+    "fixViaCli": "Fix via CLI"
   },
   "proxySetup": {
     "title": "Make this domain live",
@@ -438,6 +493,7 @@
         "traefik": "Traefik",
         "nginx": "nginx",
         "caddy": "Caddy",
+        "haproxy": "HAProxy",
         "none": "None"
       }
     },
@@ -824,6 +880,34 @@
     "saving": "Saving...",
     "saved": "Edge settings saved.",
     "loadFailed": "Could not load the edge settings."
+  },
+  "diagnose": {
+    "title": "Diagnose {{domain}}",
+    "description": "Checks DNS, ports, the certificate and the last certificate error, and gives each problem a fix.",
+    "running_one": "Checking... {{count}} result so far",
+    "running_other": "Checking... {{count}} results so far",
+    "status": {
+      "healthy": "Everything checks out.",
+      "warnings": "It works, with things worth fixing.",
+      "problems": "Something is stopping this domain from working."
+    },
+    "propagation": {
+      "settled": "DNS settled",
+      "propagating": "DNS propagating",
+      "waiting": "Waiting for DNS"
+    },
+    "nextCheck": "Checking again in about {{seconds}}s.",
+    "recheck": "Re-check",
+    "tryAgain": "Try again",
+    "applying": "Applying...",
+    "applied": "{{label}}: done. Checking again.",
+    "fixViaCli": "Fix via CLI",
+    "copyRecord": "Copy the {{type}} record for {{name}}",
+    "nothingToFix": "Nothing to fix.",
+    "showPassed": "Show {{count}} other checks",
+    "hidePassed": "Hide other checks",
+    "notFound": "This domain is not attached to an app yet. Add it to an app first, then diagnose it.",
+    "failed": "Could not run the diagnosis: {{message}}"
   },
   "appLimits": {
     "title": "Request size cap",

@@ -61,6 +61,8 @@ const queryClient = new QueryClient({
     onSuccess: reportSuccess,
   }),
   mutationCache: new MutationCache({ onError: handleQueryError }),
+  // staleTime dedupes mounts of the same key; polling hooks keep their own intervals (paused when hidden).
+  defaultOptions: { queries: { staleTime: 10_000, gcTime: 5 * 60_000 } },
 })
 attachConnectionClient(queryClient)
 

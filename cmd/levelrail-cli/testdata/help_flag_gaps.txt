@@ -139,11 +139,16 @@ import_apps.go runImportApps --wait
 import_cutover.go runImportCutover --api-url
 import_cutover.go runImportCutover --profile
 import_cutover.go runImportCutover --wait
+jobs.go runJobsVerb --background
 jobs.go runJobsVerb --catch-up
 jobs.go runJobsVerb --catch-up-lookback
 jobs.go runJobsVerb --concurrency
+jobs.go runJobsVerb --count
 jobs.go runJobsVerb --cpu
 jobs.go runJobsVerb --disabled
+jobs.go runJobsVerb --http-body
+jobs.go runJobsVerb --http-method
+jobs.go runJobsVerb --http-path
 jobs.go runJobsVerb --limit
 jobs.go runJobsVerb --memory
 jobs.go runJobsVerb --mode

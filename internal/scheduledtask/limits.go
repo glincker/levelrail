@@ -18,6 +18,7 @@ type Limits struct {
 	MaxPerApp           int
 	MaxConcurrentPerApp int
 	MaxOutputBytes      int
+	BackgroundTimeout   time.Duration
 }
 
 // Defaults for Limits; each is overridable by the env var named next to it.
@@ -30,13 +31,15 @@ const (
 	defaultOutputRetention     = 30 * 24 * time.Hour
 	defaultMaxPerApp           = 20
 	defaultMaxConcurrentPerApp = 3
+	defaultBackgroundTimeout   = 15 * time.Minute
 )
 
 // LimitsFromEnv reads APP_JOBS_DEFAULT_TIMEOUT, APP_JOBS_MAX_RETRIES,
 // APP_JOBS_RETRY_BACKOFF, APP_JOBS_RETRY_BACKOFF_MAX,
 // APP_JOBS_CATCH_UP_LOOKBACK, APP_JOBS_HISTORY_KEEP,
 // APP_JOBS_OUTPUT_RETENTION, APP_JOBS_MAX_PER_APP,
-// APP_JOBS_MAX_CONCURRENT_PER_APP and APP_JOBS_MAX_OUTPUT_BYTES. A value
+// APP_JOBS_MAX_CONCURRENT_PER_APP, APP_JOBS_MAX_OUTPUT_BYTES and
+// APP_JOBS_BACKGROUND_TIMEOUT (how long a background HTTP job is awaited). A value
 // that does not parse or is not positive falls back to its default.
 func LimitsFromEnv(lookup func(string) (string, bool)) Limits {
 	dur := func(key string, def time.Duration) time.Duration {
@@ -66,6 +69,7 @@ func LimitsFromEnv(lookup func(string) (string, bool)) Limits {
 		MaxPerApp:           num("APP_JOBS_MAX_PER_APP", defaultMaxPerApp),
 		MaxConcurrentPerApp: num("APP_JOBS_MAX_CONCURRENT_PER_APP", defaultMaxConcurrentPerApp),
 		MaxOutputBytes:      num("APP_JOBS_MAX_OUTPUT_BYTES", maxOutputBytes),
+		BackgroundTimeout:   dur("APP_JOBS_BACKGROUND_TIMEOUT", defaultBackgroundTimeout),
 	}
 }
 

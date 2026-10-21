@@ -303,6 +303,8 @@ type BuildTriggerRequest struct {
 	// human-readable framework name a prior DetectFramework call reported
 	// for this exact repo/ref, stored on the resulting deploy_attempts row.
 	DetectedFramework string `json:"detected_framework,omitempty"`
+	// UploadHash builds a directory sent with UploadSource instead of a git checkout; RepoURL and Ref stay empty.
+	UploadHash string `json:"upload_hash,omitempty"`
 }
 
 // BuildTriggerRequestBuild is BuildTriggerRequest's nested build.* input
@@ -1815,15 +1817,24 @@ type GitSourceResource struct {
 	BuildPath   string `json:"build_path,omitempty"`
 	// BaseDirectory is the build context, relative to the repository root.
 	BaseDirectory string `json:"base_directory,omitempty"`
+	// BuildCommand and PublishDir build a static site before serving it.
+	BuildCommand string `json:"build_command,omitempty"`
+	PublishDir   string `json:"publish_dir,omitempty"`
 	// ResolvedBuild states what a deploy builds, in plain terms.
 	ResolvedBuild GitSourceResolvedBuild `json:"resolved_build"`
 	// TriggerMode mirrors store.GitSource.TriggerMode: "push" (default)
 	// or "release", see internal/api's normalizeGitSourceTriggerMode.
-	TriggerMode    string `json:"trigger_mode,omitempty"`
-	HasToken       bool   `json:"has_token"`
-	WebhookURL     string `json:"webhook_url"`
-	WebhookSecret  string `json:"webhook_secret,omitempty"`
-	PreviewEnabled bool   `json:"preview_enabled"`
+	TriggerMode string `json:"trigger_mode,omitempty"`
+	HasToken    bool   `json:"has_token"`
+	WebhookURL  string `json:"webhook_url"`
+	// WebhookURLWarning is private_address or no_public_url when WebhookURL cannot be reached by a git host.
+	WebhookURLWarning string `json:"webhook_url_warning,omitempty"`
+	// WebhookRegistration is the outcome of registering the webhook on the provider.
+	WebhookRegistration *GitWebhookRegistrationResource `json:"webhook_registration,omitempty"`
+	// Poll is the missed-webhook poller's view of the source.
+	Poll           *GitPollStatusResource `json:"poll,omitempty"`
+	WebhookSecret  string                 `json:"webhook_secret,omitempty"`
+	PreviewEnabled bool                   `json:"preview_enabled"`
 	// PostPRComments mirrors store.GitSource.PostPRComments: the opt-in
 	// toggle for a preview deploy's GitHub PR comment/commit status, set
 	// via SetPreviewPostPRComments (preview-settings, same route as
@@ -1863,6 +1874,8 @@ type SetGitSourceRequest struct {
 	BuildPath string `json:"build_path,omitempty"`
 	// BaseDirectory is the build context, relative to the repository root.
 	BaseDirectory string `json:"base_directory,omitempty"`
+	BuildCommand  string `json:"build_command,omitempty"`
+	PublishDir    string `json:"publish_dir,omitempty"`
 	Token         string `json:"token,omitempty"`
 	TriggerMode   string `json:"trigger_mode,omitempty"`
 }
@@ -1879,6 +1892,16 @@ type SetGitSourceBuildRequest struct {
 	BuildType     string `json:"build_type"`
 	BuildPath     string `json:"build_path"`
 	BaseDirectory string `json:"base_directory"`
+	BuildCommand  string `json:"build_command"`
+	PublishDir    string `json:"publish_dir"`
+}
+
+// StaticBuildSuggestion mirrors internal/repolayout's StaticBuildSuggestion.
+type StaticBuildSuggestion struct {
+	PresetID   string `json:"preset_id"`
+	PresetName string `json:"preset_name"`
+	Command    string `json:"command"`
+	PublishDir string `json:"publish_dir"`
 }
 
 // GitBuildSuggestion mirrors internal/repolayout's Suggestion.
@@ -1903,6 +1926,8 @@ type GitBuildDetection struct {
 	Truncated          bool                 `json:"truncated"`
 	NeedsBuildSettings bool                 `json:"needs_build_settings"`
 	Packages           []WorkspacePackage   `json:"packages"`
+	// StaticBuild prefills a static build when the repository root is a known static-site framework.
+	StaticBuild *StaticBuildSuggestion `json:"static_build,omitempty"`
 }
 
 // WorkspacePackage mirrors internal/repolayout's Package.
@@ -2067,6 +2092,8 @@ type ScheduledTaskResource struct {
 	NextRunAt              *time.Time `json:"next_run_at,omitempty"`
 	// RunID is set on the response to a run-now call.
 	RunID string `json:"run_id,omitempty"`
+	// HTTP is the request an http-mode job sends instead of a command.
+	HTTP *JobHTTP `json:"http,omitempty"`
 
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
@@ -2101,8 +2128,8 @@ type ScheduledTaskRequest struct {
 	Command  []string `json:"command"`
 	Schedule string   `json:"schedule"`
 	Enabled  bool     `json:"enabled"`
-	// ConcurrencyPolicy is one of "allow", "forbid", "replace", or empty
-	// (server-side default "allow").
+	// ConcurrencyPolicy is one of "allow", "forbid", "replace", "queue",
+	// or empty (server-side default "allow").
 	ConcurrencyPolicy string `json:"concurrency_policy,omitempty"`
 
 	// Scheduled job fields; zero values are omitted so an update leaves
@@ -2118,6 +2145,17 @@ type ScheduledTaskRequest struct {
 	CPULimitMillis         int    `json:"cpu_limit_millis,omitempty"`
 	MemoryLimitMB          int    `json:"memory_limit_mb,omitempty"`
 	WarnAfterSeconds       int    `json:"warn_after_seconds,omitempty"`
+	// HTTP makes the job call a path on the app (Mode "http").
+	HTTP *JobHTTP `json:"http,omitempty"`
+}
+
+// JobHTTP mirrors internal/api's jobHTTPResource. Background jobs are
+// awaited by the control plane under APP_JOBS_BACKGROUND_TIMEOUT.
+type JobHTTP struct {
+	Method     string `json:"method,omitempty"`
+	Path       string `json:"path"`
+	Body       string `json:"body,omitempty"`
+	Background bool   `json:"background,omitempty"`
 }
 
 // FeatureFlagResource mirrors internal/api's featureFlagResource
@@ -2218,6 +2256,17 @@ type BackupTargetResource struct {
 	Region    string `json:"region,omitempty"`
 	Bucket    string `json:"bucket"`
 	CreatedAt string `json:"created_at"`
+	// EncryptDumps is true when new database dumps are age-sealed.
+	EncryptDumps bool `json:"encrypt_dumps"`
+}
+
+// BackupTargetEncryptionResource mirrors internal/api's backupTargetEncryptionResource.
+type BackupTargetEncryptionResource struct {
+	TargetID        string `json:"target_id"`
+	Enabled         bool   `json:"enabled"`
+	KeyAvailable    bool   `json:"key_available"`
+	Recipient       string `json:"recipient,omitempty"`
+	KeyStoredOffBox bool   `json:"key_stored_off_box"`
 }
 
 // CreateBackupTargetRequest mirrors internal/api's
@@ -2231,6 +2280,7 @@ type CreateBackupTargetRequest struct {
 	Bucket          string `json:"bucket"`
 	AccessKeyID     string `json:"access_key_id"`
 	SecretAccessKey string `json:"secret_access_key"`
+	EncryptDumps    *bool  `json:"encrypt_dumps,omitempty"`
 }
 
 // UpdateBackupTargetRequest mirrors internal/api's
@@ -2957,6 +3007,8 @@ type NodeResource struct {
 	// agent's self-reported build (node_cert.go in this package).
 	Cert  *NodeCertResource  `json:"cert,omitempty"`
 	Agent *NodeAgentResource `json:"agent,omitempty"`
+	// Failure is set while the node has a live failure state.
+	Failure *NodeFailureSummary `json:"failure,omitempty"`
 }
 
 // NodeAlertStatusResource mirrors internal/api's nodeAlertStatusResource
@@ -3073,7 +3125,13 @@ type DoctorCheckResource struct {
 	Fix      string `json:"fix,omitempty"`
 	DocsPath string `json:"docs_path,omitempty"`
 	// Class is "incident" or "recommendation" for a check that is not ok.
-	Class string `json:"class,omitempty"`
+	Class    string `json:"class,omitempty"`
+	Group    string `json:"group,omitempty"`
+	CheckID  string `json:"check_id,omitempty"`
+	Evidence string `json:"evidence,omitempty"`
+	// FixID and FixKind name the typed fix (auto, guided or manual) for a failing check.
+	FixID   string `json:"fix_id,omitempty"`
+	FixKind string `json:"fix_kind,omitempty"`
 }
 
 // SystemDoctorResource mirrors internal/api's systemDoctorResponse
@@ -3083,6 +3141,8 @@ type DoctorCheckResource struct {
 type SystemDoctorResource struct {
 	OK     bool                  `json:"ok"`
 	Checks []DoctorCheckResource `json:"checks"`
+	// Silenced counts muted failing or warning checks; they stay in Checks.
+	Silenced int `json:"silenced,omitempty"`
 }
 
 // OpenAPIRouteResource mirrors internal/api's openAPISpecRoute exactly:
@@ -3825,6 +3885,12 @@ type CertificateResource struct {
 	// ExpiryClass is "incident" when this certificate's expiry needs an
 	// operator, empty otherwise.
 	ExpiryClass string `json:"expiry_class,omitempty"`
+	// Kind is who signed it: internal, staging, letsencrypt, custom, proxy or other.
+	Kind     string `json:"kind,omitempty"`
+	DaysLeft int    `json:"days_left"`
+	// LastRenewal is the last issue or renewal attempt.
+	LastRenewal *CertRenewal `json:"last_renewal,omitempty"`
+	NextRetryAt *time.Time   `json:"next_retry_at,omitempty"`
 }
 
 // RenewCertificateResource mirrors internal/api's
@@ -3868,18 +3934,49 @@ type UpdateOAuthProviderSettingsRequest struct {
 // /api/v1/settings/email. Credential fields are write-only; the
 // corresponding *Set booleans report presence instead.
 type EmailSettingsResource struct {
-	Backend               string `json:"backend"`
-	SMTPHost              string `json:"smtp_host,omitempty"`
-	SMTPPort              int    `json:"smtp_port,omitempty"`
-	SMTPUsername          string `json:"smtp_username,omitempty"`
-	SMTPFrom              string `json:"smtp_from,omitempty"`
-	SMTPPassword          string `json:"smtp_password,omitempty"`
-	SMTPPasswordSet       bool   `json:"smtp_password_set,omitempty"`
+	Backend string `json:"backend"`
+
+	FromName       string `json:"from_name,omitempty"`
+	FromAddress    string `json:"from_address,omitempty"`
+	ReplyTo        string `json:"reply_to,omitempty"`
+	EnvelopeFrom   string `json:"envelope_from,omitempty"`
+	SendsPerMinute int    `json:"sends_per_minute,omitempty"`
+	SendsPerDay    int    `json:"sends_per_day,omitempty"`
+	TLSMode        string `json:"tls_mode,omitempty"`
+	TLSSkipVerify  bool   `json:"tls_skip_verify,omitempty"`
+
+	SMTPHost        string `json:"smtp_host,omitempty"`
+	SMTPPort        int    `json:"smtp_port,omitempty"`
+	SMTPUsername    string `json:"smtp_username,omitempty"`
+	SMTPFrom        string `json:"smtp_from,omitempty"`
+	SMTPPassword    string `json:"smtp_password,omitempty"`
+	SMTPPasswordSet bool   `json:"smtp_password_set,omitempty"`
+
 	SESRegion             string `json:"ses_region,omitempty"`
 	SESAccessKeyID        string `json:"ses_access_key_id,omitempty"`
 	SESFrom               string `json:"ses_from,omitempty"`
 	SESSecretAccessKey    string `json:"ses_secret_access_key,omitempty"`
 	SESSecretAccessKeySet bool   `json:"ses_secret_access_key_set,omitempty"`
+
+	SESSMTPPort        int    `json:"ses_smtp_port,omitempty"`
+	SESSMTPUsername    string `json:"ses_smtp_username,omitempty"`
+	SESSMTPPassword    string `json:"ses_smtp_password,omitempty"`
+	SESSMTPPasswordSet bool   `json:"ses_smtp_password_set,omitempty"`
+
+	ResendFrom      string `json:"resend_from,omitempty"`
+	ResendAPIKey    string `json:"resend_api_key,omitempty"`
+	ResendAPIKeySet bool   `json:"resend_api_key_set,omitempty"`
+
+	PostmarkServerToken    string `json:"postmark_server_token,omitempty"`
+	PostmarkServerTokenSet bool   `json:"postmark_server_token_set,omitempty"`
+	SendGridAPIKey         string `json:"sendgrid_api_key,omitempty"`
+	SendGridAPIKeySet      bool   `json:"sendgrid_api_key_set,omitempty"`
+	MailgunAPIKey          string `json:"mailgun_api_key,omitempty"`
+	MailgunAPIKeySet       bool   `json:"mailgun_api_key_set,omitempty"`
+	MailgunDomain          string `json:"mailgun_domain,omitempty"`
+	MailgunRegion          string `json:"mailgun_region,omitempty"`
+
+	SESRegions []string `json:"ses_regions,omitempty"`
 }
 
 // IngressSettingsResource mirrors internal/api's ingressSettingsResource
@@ -4212,7 +4309,9 @@ type GitAppBranchResource struct {
 // the request body every provider's own use-as-source route shares
 // (github-app, gitlab-app, bitbucket-app).
 type UseRepoAsSourceRequest struct {
-	AppName     string `json:"app_name"`
+	AppName string `json:"app_name"`
+	// Repo names the repository on a provider connection: a project id for GitLab, owner/name otherwise.
+	Repo        string `json:"repo,omitempty"`
 	Branch      string `json:"branch,omitempty"`
 	BuildType   string `json:"build_type,omitempty"`
 	BuildPath   string `json:"build_path,omitempty"`
@@ -4228,40 +4327,6 @@ type UseGitHubRepoAsSourceResponse struct {
 	WebhookError      string `json:"webhook_error,omitempty"`
 }
 
-// GitLabAppProjectResource mirrors internal/api's
-// gitLabAppProjectResource: one entry of GET /api/v1/gitlab-app/projects.
-type GitLabAppProjectResource struct {
-	ID                int64  `json:"id"`
-	Name              string `json:"name"`
-	PathWithNamespace string `json:"path_with_namespace"`
-	CloneURL          string `json:"clone_url"`
-	DefaultBranch     string `json:"default_branch"`
-	Visibility        string `json:"visibility"`
-	WebURL            string `json:"web_url"`
-}
-
-// BitbucketAppRepoResource mirrors internal/api's
-// bitbucketAppRepoResource: one entry of GET /api/v1/bitbucket-app/repos.
-type BitbucketAppRepoResource struct {
-	FullName      string `json:"full_name"`
-	Name          string `json:"name"`
-	Private       bool   `json:"private"`
-	DefaultBranch string `json:"default_branch"`
-	CloneURL      string `json:"clone_url"`
-	WebURL        string `json:"web_url"`
-}
-
-// GiteaAppRepoResource mirrors internal/api's giteaAppRepoResource: one
-// entry of GET /api/v1/gitea-app/repos.
-type GiteaAppRepoResource struct {
-	FullName      string `json:"full_name"`
-	Name          string `json:"name"`
-	Private       bool   `json:"private"`
-	DefaultBranch string `json:"default_branch"`
-	CloneURL      string `json:"clone_url"`
-	WebURL        string `json:"web_url"`
-}
-
 // GitProviderResource mirrors internal/api's gitProviderResource: one
 // entry of GET /api/v1/git-providers, a capability summary for one git
 // provider (github, gitlab, bitbucket, gitea).
@@ -4271,6 +4336,18 @@ type GitProviderResource struct {
 	CanListBranches    bool   `json:"can_list_branches"`
 	CanRegisterWebhook bool   `json:"can_register_webhook"`
 	CanAuthClone       bool   `json:"can_auth_clone"`
+	// Connection is the last known health: ok, needs_reauthorize, revoked or rate_limited.
+	Connection GitConnectionResource `json:"connection"`
+	// Connections counts configured connections; Authorized counts those holding a token.
+	Connections int `json:"connections"`
+	Authorized  int `json:"authorized"`
+}
+
+// GitConnectionResource mirrors internal/api's gitConnResource.
+type GitConnectionResource struct {
+	Status      string     `json:"status"`
+	Detail      string     `json:"detail,omitempty"`
+	NextCheckAt *time.Time `json:"next_check_at,omitempty"`
 }
 
 // GitHubAppStatusResource mirrors internal/api's gitHubAppStatusResource:
@@ -4285,38 +4362,6 @@ type GitHubAppStatusResource struct {
 	AccountLogin       string `json:"account_login,omitempty"`
 	CreatedAt          string `json:"created_at,omitempty"`
 	BaseURL            string `json:"base_url,omitempty"`
-}
-
-// GitLabAppStatusResource mirrors internal/api's gitLabAppStatusResource:
-// GET /api/v1/gitlab-app's response.
-type GitLabAppStatusResource struct {
-	Connected   bool   `json:"connected"`
-	InstanceURL string `json:"instance_url,omitempty"`
-	ClientID    string `json:"client_id,omitempty"`
-	CreatedAt   string `json:"created_at,omitempty"`
-	Authorized  bool   `json:"authorized"`
-	BaseURL     string `json:"base_url,omitempty"`
-}
-
-// BitbucketAppStatusResource mirrors internal/api's
-// bitbucketAppStatusResource: GET /api/v1/bitbucket-app's response.
-type BitbucketAppStatusResource struct {
-	Connected  bool   `json:"connected"`
-	Key        string `json:"key,omitempty"`
-	CreatedAt  string `json:"created_at,omitempty"`
-	Authorized bool   `json:"authorized"`
-	BaseURL    string `json:"base_url,omitempty"`
-}
-
-// GiteaAppStatusResource mirrors internal/api's giteaAppStatusResource:
-// GET /api/v1/gitea-app's response.
-type GiteaAppStatusResource struct {
-	Connected   bool   `json:"connected"`
-	InstanceURL string `json:"instance_url,omitempty"`
-	ClientID    string `json:"client_id,omitempty"`
-	CreatedAt   string `json:"created_at,omitempty"`
-	Authorized  bool   `json:"authorized"`
-	BaseURL     string `json:"base_url,omitempty"`
 }
 
 // StaticSiteResource mirrors internal/api's staticSiteResource

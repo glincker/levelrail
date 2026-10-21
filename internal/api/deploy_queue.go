@@ -209,7 +209,11 @@ func (rt *Router) enqueueManualBuild(ctx context.Context, existing store.Desired
 	if req.Build.Type != spec.BuildImage {
 		hr.Branch = req.Ref
 	}
-	id, err := rt.enqueueDeploy(ctx, existing, store.DeployAttemptSourceManual, buildReq.ImageRepo+":"+buildReq.CommitSHA, hr)
+	source := store.DeployAttemptSourceManual
+	if req.UploadHash != "" {
+		source = store.DeployAttemptSourceUpload
+	}
+	id, err := rt.enqueueDeploy(ctx, existing, source, buildReq.ImageRepo+":"+buildReq.CommitSHA, hr)
 	if err != nil {
 		return triggerBuildResponse{}, err
 	}
@@ -357,7 +361,16 @@ func (rt *Router) replayManualBuild(ctx context.Context, name string, hr deploy.
 		buildType = spec.BuildDockerfile
 	}
 	buildReq := manualBuildRequest(name, *existing, req, buildType)
-	run := rt.beginManualBuild(ctx, *existing, buildReq, buildType, store.DeployAttemptSourceManual, req.DetectedFramework, hr.FreezeNote, hr.AllowPrivateRepoAuth)
+	source := store.DeployAttemptSourceManual
+	if req.UploadHash != "" {
+		source = store.DeployAttemptSourceUpload
+		if st := rt.uploadStore(); st != nil {
+			if m, gerr := st.Get(name, req.UploadHash); gerr == nil {
+				ctx = withUploadCommitMeta(ctx, m)
+			}
+		}
+	}
+	run := rt.beginManualBuild(ctx, *existing, buildReq, buildType, source, req.DetectedFramework, hr.FreezeNote, hr.AllowPrivateRepoAuth)
 	run.repoURL, run.ref, run.fromCache = req.RepoURL, req.Ref, req.FromCache
 	rt.runManualBuild(run)
 	return nil

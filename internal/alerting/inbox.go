@@ -41,6 +41,7 @@ type InboxItem struct {
 // InboxFilter narrows ListInbox.
 type InboxFilter struct {
 	UnreadOnly bool
+	Archived   bool
 	Before     *time.Time
 	Limit      int
 }
@@ -92,7 +93,8 @@ const inboxBase = `
 	FROM alert_history h
 	LEFT JOIN inbox_read_state s ON s.principal = ?
 	LEFT JOIN inbox_read r ON r.principal = ? AND r.history_id = h.id
-	WHERE h.outcome IN ('sent','quiet_hours','failed') AND h.event IN ('fired','resolved','flapping','group')`
+	WHERE h.outcome IN ('sent','quiet_hours','failed') AND h.event IN ('fired','resolved','flapping','group')
+	AND EXISTS (SELECT 1 FROM inbox_archive a WHERE a.principal = ? AND a.item_id = h.id) = ?`
 
 const inboxReadExpr = `(r.history_id IS NOT NULL OR (s.read_before IS NOT NULL AND h.at <= s.read_before))`
 
@@ -160,7 +162,11 @@ func (db *DB) ListInbox(ctx context.Context, principal string, f InboxFilter) ([
 	var out []InboxItem
 	for len(out) < limit {
 		q := `SELECT h.id, h.at, h.rule_id, h.rule_name, h.rule_kind, h.resource_id, h.app, h.node, h.severity, h.event, h.outcome, h.detail, h.silence_id, h.channel_id, h.error, ` + inboxReadExpr + inboxBase
-		args := []any{principal, principal}
+		archivedArg := 0
+		if f.Archived {
+			archivedArg = 1
+		}
+		args := []any{principal, principal, principal, archivedArg}
 		if before != nil {
 			q += ` AND h.at < ?`
 			args = append(args, fmtTime(*before))
@@ -257,6 +263,68 @@ func (db *DB) MarkAllInboxRead(ctx context.Context, principal string, now time.T
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("alerting: mark all inbox read: %w", err)
+	}
+	return nil
+}
+
+// InboxState is the explicit read and archived ids a principal holds, for items the server does not list itself.
+type InboxState struct {
+	ReadIDs     []string
+	ArchivedIDs []string
+}
+
+// GetInboxState returns the principal's per-item read and archive rows.
+func (db *DB) GetInboxState(ctx context.Context, principal string) (InboxState, error) {
+	st := InboxState{ReadIDs: []string{}, ArchivedIDs: []string{}}
+	for _, q := range []struct {
+		sql string
+		dst *[]string
+	}{
+		{`SELECT history_id FROM inbox_read WHERE principal = ? ORDER BY history_id LIMIT 2000`, &st.ReadIDs},
+		{`SELECT item_id FROM inbox_archive WHERE principal = ? ORDER BY item_id LIMIT 2000`, &st.ArchivedIDs},
+	} {
+		rows, err := db.QueryContext(ctx, q.sql, principal)
+		if err != nil {
+			return st, fmt.Errorf("alerting: get inbox state: %w", err)
+		}
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				_ = rows.Close()
+				return st, fmt.Errorf("alerting: scan inbox state: %w", err)
+			}
+			*q.dst = append(*q.dst, id)
+		}
+		err = rows.Err()
+		_ = rows.Close()
+		if err != nil {
+			return st, fmt.Errorf("alerting: iterate inbox state: %w", err)
+		}
+	}
+	return st, nil
+}
+
+// ArchiveInbox archives the given item ids for principal, or restores them when archived is false.
+func (db *DB) ArchiveInbox(ctx context.Context, principal string, ids []string, archived bool) error {
+	if len(ids) == 0 || len(ids) > inboxMaxMarkIDs {
+		return fmt.Errorf("%w: ids must hold 1 to %d entries", ErrInboxInvalid, inboxMaxMarkIDs)
+	}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("alerting: archive inbox: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	q := `DELETE FROM inbox_archive WHERE principal = ? AND item_id = ?`
+	if archived {
+		q = `INSERT OR IGNORE INTO inbox_archive (principal, item_id) VALUES (?, ?)`
+	}
+	for _, id := range ids {
+		if _, err := tx.ExecContext(ctx, q, principal, id); err != nil {
+			return fmt.Errorf("alerting: archive inbox: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("alerting: archive inbox: %w", err)
 	}
 	return nil
 }

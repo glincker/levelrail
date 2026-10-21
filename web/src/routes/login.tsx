@@ -1,11 +1,12 @@
+import { useEffect, useState } from 'react'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { isServerReturnPath, safeReturnPath } from '../lib/connectionState'
 import { getStoredUsername } from '../lib/authStore'
 import { brandQueryOptions } from '../queries/brand'
 import { LoginScreen } from '../components/LoginScreen'
+import { setupTokenFromHash } from '../lib/setupTokenHash'
 
 interface LoginSearch {
-  setup?: string
   redirect?: string
   session_link?: string
   approval?: string
@@ -14,10 +15,9 @@ interface LoginSearch {
 
 // Plain function rather than zod so validateSearch stays out of the eagerly loaded bundle.
 function validateLoginSearch(search: Record<string, unknown>): LoginSearch {
-  const { setup, session_link: sessionLink, approval } = search
+  const { session_link: sessionLink, approval } = search
   const redirectTo = safeReturnPath(search.redirect)
   return {
-    ...(typeof setup === 'string' && setup !== '' ? { setup } : {}),
     ...(redirectTo ? { redirect: redirectTo } : {}),
     ...(typeof sessionLink === 'string' && sessionLink !== ''
       ? { session_link: sessionLink }
@@ -49,8 +49,17 @@ export const Route = createFileRoute('/login')({
 })
 
 function LoginPage() {
+  const [setup] = useState(() => setupTokenFromHash(window.location.hash))
+  useEffect(() => {
+    if (setup) {
+      window.history.replaceState(
+        null,
+        '',
+        window.location.pathname + window.location.search,
+      )
+    }
+  }, [setup])
   const {
-    setup,
     session_link: sessionLink,
     approval,
     signed_out: signedOut,

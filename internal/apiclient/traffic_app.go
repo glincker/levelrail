@@ -85,6 +85,7 @@ type AppTrafficResource struct {
 	Latency        TrafficLatency       `json:"latency"`
 	Replicas       []TrafficReplica     `json:"replicas"`
 	SlowRoutes     []TrafficRoute       `json:"slow_routes"`
+	TopRoutes      []TrafficRoute       `json:"top_routes"`
 	Samples        []TrafficSample      `json:"samples"`
 	Referrers      []TrafficLabel       `json:"referrers"`
 	Countries      []TrafficLabel       `json:"countries"`

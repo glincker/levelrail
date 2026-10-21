@@ -22,7 +22,7 @@ func (rt *Router) addBuildSourceFacts(ctx context.Context, name string, f *diagn
 	}
 	f.BuildType, f.BuildPath = gs.BuildType, gs.BuildPath
 	if f.BuildPath == "" {
-		f.BuildPath = resolveGitSourceBuild(gs.BuildType, gs.BaseDirectory, "").DockerfilePath
+		f.BuildPath = resolveGitSourceBuild(gs.BuildType, gs.BaseDirectory, "", "", "").DockerfilePath
 	}
 	if requireHTTPOrHTTPSScheme(gs.RepoURL) != nil {
 		return

@@ -21,7 +21,7 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh
 
 <CardGroup cols={3}>
   <Card title="Services, domains and TLS">
-    Add a domain and Caddy issues and renews the certificate. Routing is handled in the control plane, with no separate proxy to run.
+    Add a domain and Caddy serves it with an internal (self-signed) certificate by default. Enable Let's Encrypt for trusted certificates; renewal is unverified in a live run. Routing is handled in the control plane, with no separate proxy to run.
   </Card>
   <Card title="Databases next to your app">
     Create a managed database, link it to a service, and connect over the internal network. Backups are scheduled and checked.
@@ -39,7 +39,7 @@ Railway is a managed cloud. Levelrail is software you run.
 | --- | --- | --- |
 | Where it runs | Vendor-managed cloud | Your Linux servers, one to many |
 | Pricing model | Usage-based | Your own server cost, nothing per service |
-| Previews | Environments per PR | Preview environments per pull request with automatic teardown |
+| Previews | Environments per PR | Preview environments per pull request with automatic teardown (stable on GitHub, beta on GitLab and Bitbucket) |
 | Data location | With the vendor | On your nodes: secrets, metrics and logs are stored locally unless you configure an export |
 
 [Read the full comparison](/comparison)
@@ -54,7 +54,7 @@ Railway is a managed cloud. Levelrail is software you run.
     GitHub, GitLab or Bitbucket.
   </Step>
   <Step title="Add a domain">
-    Point DNS and the certificate follows.
+    Point DNS, then enable public ACME for a trusted certificate (the default is self-signed).
   </Step>
 </Steps>
 

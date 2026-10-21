@@ -159,6 +159,9 @@ func printUpgradeAttempt(out io.Writer, a apiclient.SelfUpgradeAttempt) {
 	if a.Error != "" {
 		_, _ = fmt.Fprintf(out, "    error: %s\n", a.Error)
 	}
+	if a.DatabaseRestored {
+		_, _ = fmt.Fprintf(out, "    database restored: %d minutes of changes were rolled back\n", a.RolledBackMinutes)
+	}
 }
 
 func unackedBreaking(breaking []apiclient.SelfUpgradeBreaking, acked []string) []string {

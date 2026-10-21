@@ -5,6 +5,7 @@ export type FailureLabelKey =
   | 'registry'
   | 'nodes'
   | 'buildPerformance'
+  | 'raiseBuildLimit'
   | 'health'
   | 'appLogs'
   | 'resources'
@@ -50,6 +51,12 @@ const FREE_SPACE: FailureTarget = {
   labelKey: 'freeSpace',
 }
 
+// Lands on the app's build limits card, where one button raises the limit that was hit.
+const RAISE_BUILD_LIMIT: FailureTarget = {
+  path: (a) => `${app(a)}/deploys#build-limits`,
+  labelKey: 'raiseBuildLimit',
+}
+
 // Every code in internal/failure has a destination; unknown falls back to the log.
 const TARGETS: Record<string, FailureTarget> = {
   dockerfile_error: BUILD_SETTINGS,
@@ -57,14 +64,8 @@ const TARGETS: Record<string, FailureTarget> = {
   dependency_install_failed: DEPLOY_LOG,
   compile_error: DEPLOY_LOG,
   lockfile_out_of_sync: DEPLOY_LOG,
-  build_out_of_memory: {
-    path: () => '/settings/build-performance',
-    labelKey: 'buildPerformance',
-  },
-  build_timeout: {
-    path: () => '/settings/build-performance',
-    labelKey: 'buildPerformance',
-  },
+  build_out_of_memory: RAISE_BUILD_LIMIT,
+  build_timeout: RAISE_BUILD_LIMIT,
   image_pull_failed: REGISTRY,
   registry_auth_failed: REGISTRY,
   registry_push_failed: REGISTRY,
@@ -124,10 +125,7 @@ export function isUnknownFailure(code: string): boolean {
 
 const FIX_TARGETS: Record<string, FailureTarget> = {
   build_settings: BUILD_SETTINGS,
-  build_performance: {
-    path: () => '/settings/build-performance',
-    labelKey: 'buildPerformance',
-  },
+  build_performance: RAISE_BUILD_LIMIT,
   node_disk: FREE_SPACE,
   app_secrets: {
     path: (a) => `${app(a)}/environment`,

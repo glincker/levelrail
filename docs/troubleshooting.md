@@ -18,10 +18,10 @@ Four commands cover most investigations. All of them work from your laptop once 
 levelrail-cli attention              # everything failing right now: apps, nodes, certificates, doctor checks
 levelrail-cli apps status NAME       # the app's reconcile conditions, each with a reason string
 levelrail-cli apps logs NAME --follow
-levelrail-cli doctor                 # preflight checks for Docker, disk, ports, and the database
+levelrail-cli doctor                 # every health check, same as the dashboard Doctor page
 ```
 
-Many readiness and doctor findings come with a one-click or guided fix: see [Fix-it engine](/fix-it).
+Many readiness and doctor findings come with a one-click or guided fix: see [Fix-it engine](/fix-it). To run every check and its fixes in one place, use [Doctor](/doctor).
 
 Every reconcile pass writes a status condition with a reason, so `apps status` usually names the problem directly. The dashboard shows the same data on the app's Overview page and on the [Status page](/status-page) (`/status`, with a badge in the sidebar). `attention` and the Status page list failing apps, offline nodes, expired or expiring certificates, and doctor warnings or failures, critical first. The CLI exits 1 when any item is critical. A node listed as offline has a connection history: `levelrail-cli nodes events <id>`.
 
@@ -60,6 +60,8 @@ If this keeps happening on every deploy of a given app, turn on "Auto-rollback o
 <Step title="Still stuck?">
 
 [Deploying apps](/deploying-apps#deploy-and-watch-a-rollout) explains what a rollout does and how it fails, and `levelrail-cli apps diagnose <name>` runs the cause detection described under [Deploy preflight and failure diagnosis](#deploy-preflight-and-failure-diagnosis).
+
+For anything that is not ready, `levelrail-cli diagnose <app|database|domain|node> <name>` (or `GET /api/v1/diagnose/{kind}/{name}`) says how long it has been that way, the ranked likely causes with their evidence, and the next actions. The app, database and domain pages show the same thing as a "Why is this not running?" panel, expanded once a resource has been not ready for longer than `APP_STUCK_THRESHOLD` (default `5m`).
 
 </Step>
 </Steps>
@@ -132,7 +134,7 @@ To see whether renewal is failing, run `levelrail-cli domains certificates`. The
 </Accordion>
 
 
-<Accordion title="My domain won't resolve, or the setup wizard's DNS check stays red" id="my-domain-won-t-resolve-or-the-setup-wizard-s-dns-check-stay">
+<Accordion title="My domain won't resolve, or the DNS check stays red" id="my-domain-won-t-resolve-or-the-setup-wizard-s-dns-check-stay">
 
 Create an A (or AAAA for IPv6) record pointing the domain at your server's public IP, then check it actually propagated: `dig +short yourdomain.com` from your own machine, or [dnschecker.org](https://dnschecker.org/) to see it from multiple regions at once. A record you just created can take a few minutes to show up everywhere. If it never resolves, double check you edited the zone your domain's registrar actually uses, not a leftover one. See [Domains and ingress: setting up DNS](/domains-and-ingress#setting-up-dns). No domain yet? Use the zero-config `sslip.io` URL the dashboard already shows instead.
 

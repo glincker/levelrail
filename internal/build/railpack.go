@@ -56,6 +56,9 @@ type RailpackRequest struct {
 	// Tag is the image reference given to the built image, e.g.
 	// "levelrail/thesvg:abc1234". Required.
 	Tag string
+
+	// CgroupParent places every build step in a pre-sized cgroup. Set by the Limiter; local builds only.
+	CgroupParent string
 }
 
 // ErrRailpackSourceDirRequired and ErrRailpackTagRequired are returned by
@@ -231,6 +234,11 @@ func newRailpackSolveOpt(ctx context.Context, plan *rpplan.BuildPlan, req Railpa
 	def, err := llbState.Marshal(ctx, llb.Platform(platform))
 	if err != nil {
 		return nil, nil, fmt.Errorf("build: railpack: marshal LLB definition: %w", err)
+	}
+	if req.CgroupParent != "" {
+		if def, err = withCgroupParent(def, req.CgroupParent); err != nil {
+			return nil, nil, fmt.Errorf("build: railpack: apply build limits: %w", err)
+		}
 	}
 
 	opt := &bkclient.SolveOpt{

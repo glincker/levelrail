@@ -841,12 +841,33 @@ jobs:
       - name: Run install-cli.sh in a container
         run: scripts/test-install-cli.sh '${{ matrix.image }}' ./levelrail-cli-linux-amd64
 
+  # Only the release-please PR does work here; every other run skips, which
+  # GitHub reports as success. release-pacing.yml re-runs it once the wait ends.
+  release-pacing:
+    name: Release pacing
+    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'release-please--')
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Check cooldown and bump size
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          RELEASE_COOLDOWN_HOURS: ${{ vars.RELEASE_COOLDOWN_HOURS || '6' }}
+        run: bash scripts/release-pacing.sh
+
   # The single check to require in branch protection (docs/ci.md): always
   # runs, and fails if change detection did not succeed or any job it needs
   # failed or was cancelled. A skipped job had no work for this change.
   ci-required:
     name: CI required
-    needs: [changes, plan, build-vet, lint, kit, tfprovider, test-go, test-api, test-rest, coverage-gate, web-check, web-test, install-sh]
+    needs: [changes, plan, build-vet, lint, kit, tfprovider, test-go, test-api, test-rest, coverage-gate, web-check, web-test, install-sh, release-pacing]
     if: always()
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 3

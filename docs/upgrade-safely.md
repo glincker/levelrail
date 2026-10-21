@@ -105,13 +105,13 @@ Scheduling and the policy are root-only (a root session or a root-ability token)
 | backup | Snapshots the database (`VACUUM INTO`, integrity checked) and keeps a copy of the running binary | Nothing changed |
 | migration dry run | Applies the new release's migrations to a copy of the snapshot with the new binary | Nothing changed, the old version keeps running |
 | stop, swap, start | Stops the service, replaces the binary atomically, starts it | Automatic rollback |
-| health | Waits for `/healthz` and `/readyz` within the timeout | Automatic rollback |
+| health | Verifies within the window (`APP_UPGRADE_VERIFY_WINDOW`, 3 minutes by default): `/readyz` passes with the reconcile loop running, the database is at the new release's schema head, and agents that were connected before the upgrade have reconnected | Automatic rollback |
 
 Nothing on the host changes before the stop step. Everything before it is safe to interrupt.
 
 ## Automatic rollback
 
-If a step after the stop fails, or the new release is not healthy within `--timeout` (90 seconds by default):
+If a step after the stop fails, or verification does not pass within `--timeout` (the verify window, 3 minutes by default):
 
 - the previous binary is restored byte for byte and started;
 - if the new release already migrated the database, the pre-upgrade snapshot is put back and the database written by the failed run is kept beside it (`levelrail.db.before-rollback-<timestamp>`);
@@ -119,9 +119,15 @@ If a step after the stop fails, or the new release is not healthy within `--time
 
 The attempt is recorded as `rolled_back` with its step timeline, visible at Settings > Updates and with `levelrail-cli upgrade --attempts`.
 
-What is not kept: data the control plane wrote between the swap and the rollback, only when the schema changed. That window is the health timeout at most. App containers keep running throughout.
+What is not kept: data the control plane wrote since the pre-upgrade snapshot, only when the schema changed. The attempt records how many minutes of changes that was (shown on the attempt and in `upgrade --attempts`), so nothing is lost silently. App containers keep running throughout.
 
 If the rollback itself fails, the attempt is `failed` and the message names the previous binary (`<binary>.prev`) and the snapshot, so a person can finish the job by hand with `restore-snapshot`.
+
+## Restore points
+
+Before every upgrade a restore point is kept under `<data dir>/restore-points`: a consistent database copy, the running binary and the service unit file (files are mode 0600). The newest `APP_UPGRADE_RESTORE_POINTS` points (3 by default) are kept within `APP_UPGRADE_RESTORE_POINTS_MAX_MB` (2048 by default); the oldest are pruned first and the newest always stays.
+
+Settings > Updates lists them under the rollback section with a **Restore** button, and the CLI has `levelrail-cli updates restore-points list` and `levelrail-cli updates restore-points restore <id> --yes`. Restoring puts back the binary and unit file, and the database only when it was migrated past the restore point; the result says how many minutes of changes that discards. It is root only, audited, and refuses while an upgrade is running. On the host: `sudo <binary> restore-point --id <id>`.
 
 ## Breaking defaults
 

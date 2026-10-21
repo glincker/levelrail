@@ -33,7 +33,7 @@ func (p pipelineStatusReporter) ReportRun(ctx context.Context, req pipeline.Repo
 	if !gs.ReportStatus {
 		return pipeline.ReportReceipt{}, pipeline.ErrNoReportTarget
 	}
-	f, err := rt.resolveForge(ctx, gs.RepoURL)
+	f, err := rt.resolveForge(ctx, gs.RepoURL, gs.ConnectionID)
 	if errors.Is(err, errNoForge) {
 		return pipeline.ReportReceipt{}, pipeline.ErrNoReportTarget
 	}

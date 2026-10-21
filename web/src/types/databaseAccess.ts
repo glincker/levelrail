@@ -182,6 +182,8 @@ export interface DatabaseNetwork {
     required: boolean
     state?: string
     drift: boolean
+    toggleable?: boolean
+    mode?: string
   }
   caveats: string[]
 }

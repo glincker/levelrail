@@ -154,9 +154,14 @@ func (s *Service) removeOrphanFiles(ctx context.Context) error {
 	return nil
 }
 
+// sweepDockerTimeout keeps a hung Docker daemon from wedging the sweep goroutine.
+const sweepDockerTimeout = 30 * time.Second
+
 // sweepContainers force-removes scanner containers older than twice the scan
 // timeout: leftovers of a control plane that died mid-scan.
 func (s *Service) sweepContainers(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, sweepDockerTimeout)
+	defer cancel()
 	list, err := s.deps.Runner.ListContainersByLabel(ctx, s.roleLabel()+"="+roleValue)
 	if err != nil {
 		return fmt.Errorf("supplychain: list scanner containers: %w", err)

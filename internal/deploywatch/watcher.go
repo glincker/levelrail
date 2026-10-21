@@ -53,8 +53,11 @@ type Watcher struct {
 	// SampleInterval is the request sampler's tick; samples within one tick
 	// of cutover are left out of the 5xx rate.
 	SampleInterval time.Duration
-	Logger         *slog.Logger
-	now            func() time.Time
+	// Audit, when set, records automatic rollbacks in the audit log.
+	Audit  AuditSink
+	Logger *slog.Logger
+	now    func() time.Time
+	soft   softState
 }
 
 // Run ticks every interval until ctx is done.
@@ -109,9 +112,10 @@ func (w *Watcher) Tick(ctx context.Context) {
 }
 
 type watchState struct {
-	cutoverAt time.Time
-	started   bool
-	done      bool
+	cutoverAt    time.Time
+	started      bool
+	done         bool
+	softNotified bool
 }
 
 func readWatchState(events []store.DeployGateEvent) watchState {
@@ -122,8 +126,10 @@ func readWatchState(events []store.DeployGateEvent) watchState {
 			st.cutoverAt = e.At
 		case e.Phase == deploysafety.PhaseWatch && e.Status == deploysafety.StatusStarted:
 			st.started = true
-		case e.Phase == deploysafety.PhaseWatch && (e.Status == deploysafety.StatusPassed || e.Status == deploysafety.StatusFailed):
+		case e.Phase == deploysafety.PhaseWatch && (e.Status == deploysafety.StatusPassed || e.Status == deploysafety.StatusFailed || e.Status == deploysafety.StatusStopped):
 			st.done = true
+		case e.Phase == deploysafety.PhaseWatch && e.Status == deploysafety.StatusInfo && e.Reason == deploysafety.ReasonWatchLatency:
+			st.softNotified = true
 		}
 	}
 	return st
@@ -157,7 +163,7 @@ func (w *Watcher) watchOne(ctx context.Context, service, attemptID string, now t
 		return err
 	}
 	cfg := deploysafety.Resolve(w.Defaults, overrides)
-	if cfg.WatchWindow <= 0 {
+	if cfg.WatchWindow <= 0 || cfg.WatchMode == deploysafety.WatchModeOff {
 		return nil
 	}
 	if !st.started {
@@ -165,7 +171,7 @@ func (w *Watcher) watchOne(ctx context.Context, service, attemptID string, now t
 			fmt.Sprintf("watching for crashloops, OOM kills and a 5xx rate over %.0f%% for %s", cfg.WatchErrorRate*100, cfg.WatchWindow))
 	}
 
-	obs, err := w.observe(ctx, svc, st.cutoverAt, now)
+	obs, err := w.observe(ctx, svc, attempt.ID, cfg, st.cutoverAt, now)
 	if err != nil {
 		return err
 	}
@@ -176,11 +182,16 @@ func (w *Watcher) watchOne(ctx context.Context, service, attemptID string, now t
 			fmt.Sprintf("no crashloop, OOM kill or 5xx spike in the %s after cutover", cfg.WatchWindow))
 	case deploysafety.VerdictFail:
 		w.trip(ctx, svc, attempt, cfg, reason, message)
+	default:
+		w.softSignal(ctx, svc, attempt, cfg, obs, st)
+	}
+	if verdict != deploysafety.VerdictPending {
+		w.soft.forget(attempt.ID)
 	}
 	return nil
 }
 
-func (w *Watcher) observe(ctx context.Context, svc *store.DesiredService, since, now time.Time) (deploysafety.WatchObservation, error) {
+func (w *Watcher) observe(ctx context.Context, svc *store.DesiredService, attemptID string, cfg deploysafety.Effective, since, now time.Time) (deploysafety.WatchObservation, error) {
 	obs := deploysafety.WatchObservation{SinceCutover: now.Sub(since)}
 	resourceID := "service:" + svc.Name
 	if w.Restarts != nil {
@@ -214,6 +225,9 @@ func (w *Watcher) observe(ctx context.Context, svc *store.DesiredService, since,
 		}
 		if obs.Errors5xx, err = sumMetric(ctx, w.Metrics, resourceID, telemetry.MetricHTTPResponses5xx, from, now); err != nil {
 			return obs, err
+		}
+		if cfg.WatchLatencyRatio > 0 && obs.Requests >= float64(cfg.WatchMinRequests) {
+			w.observeLatency(ctx, svc.Name, attemptID, cfg, since, from, now, &obs)
 		}
 	}
 	return obs, nil
@@ -271,6 +285,7 @@ func (w *Watcher) trip(ctx context.Context, svc *store.DesiredService, attempt *
 		return
 	}
 	restored, ref, safe := deploy.RollbackDesired(*svc, *target, pin)
+	rollbackDetail := fmt.Sprintf("%s: %s", reason, message)
 	if !safe && !w.tagStillMatches(ctx, *target) {
 		msg := fmt.Sprintf("deploy %s has no rollback pin or digest and tag %s no longer matches its content", target.ID, target.Image)
 		w.record(ctx, attempt, deploysafety.PhaseRollback, deploysafety.StatusFailed, deploysafety.ReasonNoRollbackTarget, msg)
@@ -294,6 +309,7 @@ func (w *Watcher) trip(ctx context.Context, svc *store.DesiredService, attempt *
 	}
 	w.record(ctx, attempt, deploysafety.PhaseRollback, deploysafety.StatusPassed, deploysafety.ReasonAutoRolledBack,
 		fmt.Sprintf("rolled back to deploy %s (%s) with its config; it goes through the same readiness gate", target.ID, ref))
+	w.audit(ctx, svc.Name, attempt.ID, target.ID, rollbackDetail)
 	w.notify(ctx, svc.Name, svc.Image, fmt.Sprintf("%s: %s; rolled back automatically to deploy %s", reason, message, target.ID))
 }
 

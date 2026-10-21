@@ -133,6 +133,16 @@ export function signInRequestsQueryOptions() {
   })
 }
 
+export interface CLIPairing {
+  code: string
+  expires_at: string
+  server_url: string
+}
+
+export function createCLIPairing() {
+  return send<CLIPairing>('POST', '/api/v1/auth/cli-pairing')
+}
+
 export function revealLoginCode(id: string) {
   return send<{ code: string; expires_at: string }>(
     'POST',

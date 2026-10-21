@@ -86,6 +86,18 @@ func ParseBitbucketPushEvent(body []byte) (PushEvent, error) {
 		}
 		return ev, nil
 	}
+	for _, change := range payload.Push.Changes {
+		if change.New == nil && change.Old != nil && change.Old.Name != "" {
+			ev := PushEvent{Ref: "refs/heads/" + change.Old.Name, Before: change.Old.Target.Hash, Deleted: true}
+			if n := payload.Repository.FullName; n != "" {
+				ev.RepoNames = []string{n}
+			}
+			if u := payload.Repository.Links.HTML.Href; u != "" {
+				ev.RepoURLs = []string{u}
+			}
+			return ev, nil
+		}
+	}
 	return PushEvent{}, ErrPushEventFieldsMissing
 }
 
@@ -101,8 +113,11 @@ func ParseBitbucketPushEvent(body []byte) (PushEvent, error) {
 // verified signature/payload logic" boundary handleGitPushWebhook's own
 // doc comment already establishes.
 func ParsePushEventForProvider(body []byte, eventKeyHeader string) (PushEvent, error) {
-	if eventKeyHeader == bitbucketEventKeyHeader {
+	switch eventKeyHeader {
+	case bitbucketEventKeyHeader:
 		return ParseBitbucketPushEvent(body)
+	case bitbucketServerRefsChanged:
+		return ParseBitbucketServerPushEvent(body)
 	}
 	return ParsePushEvent(body)
 }

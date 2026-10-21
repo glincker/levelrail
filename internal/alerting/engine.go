@@ -53,6 +53,8 @@ type Engine struct {
 	domainApps     AppDomainSource
 	domainChecker  DomainCheckSource
 	backups        BackupSource
+	databaseHealth DatabaseHealthSource
+	deployFailures DeployFailureSource
 	traffic        trafficKinds
 	newNotifier    func(Rule) Notifier
 	logger         *slog.Logger
@@ -95,6 +97,8 @@ type Engine struct {
 	versionSkewSettings VersionSkewSettingsSource
 	versionSkewFetchers upgrade.Fetchers
 	versionSkewCache    *upgrade.Cache
+
+	emailDelivery EmailDeliverySource
 
 	budgets       BudgetSource
 	budgetTracker *budgetTracker
@@ -199,6 +203,15 @@ func (e *Engine) SetVersionSkew(settings VersionSkewSettingsSource, fetchers upg
 	e.versionSkewCache = upgrade.NewCache()
 }
 
+// SetEmailDelivery enables kind=email_delivery_failing rules.
+func (e *Engine) SetEmailDelivery(src EmailDeliverySource) { e.emailDelivery = src }
+
+// SetDeployFailures wires the source the deploy_failed rule reads.
+func (e *Engine) SetDeployFailures(src DeployFailureSource) { e.deployFailures = src }
+
+// SetDatabaseHealth wires the live probe the database_connections and database_disk rules read.
+func (e *Engine) SetDatabaseHealth(src DatabaseHealthSource) { e.databaseHealth = src }
+
 // SetBudgets enables kind=budget_threshold rules.
 func (e *Engine) SetBudgets(src BudgetSource) {
 	e.budgets = src
@@ -259,7 +272,11 @@ func (e *Engine) Tick(ctx context.Context) error {
 				e.logger.Warn("alerting: cert_expiry rule found but no cert source configured, skipping", slog.String("rule_id", r.ID))
 				continue
 			}
-			next, certNotices, err = EvaluateCertExpiry(ctx, e.certs, e.rules, r, e.certExpiryWarningWindow, e.certRenewalStalledThreshold, now, e.logger)
+			window := e.certExpiryWarningWindow
+			if r.ForDuration > 0 {
+				window = r.ForDuration // per-rule lead time, so escalating cert rules each warn at their own day count
+			}
+			next, certNotices, err = EvaluateCertExpiry(ctx, e.certs, e.rules, r, window, e.certRenewalStalledThreshold, now, e.logger)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
@@ -364,6 +381,21 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindDatabaseConnections, KindDatabaseDisk, KindDatabaseBackupFailing, KindDatabaseDown, KindDatabaseBackupStale, KindBackupFailed:
+			next, backupMissingNoticeText, err = EvaluateDatabaseRuleAll(ctx, e.databaseHealth, e.backups, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindDeployFailed:
+			if e.deployFailures == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateDeployFailed(ctx, e.deployFailures, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindSLOBurn:
 			if !e.sloThrottle.ready(r.ID, e.slo.EvalEvery, now) {
 				continue
@@ -432,6 +464,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindEmailDeliveryFailing:
+			if e.emailDelivery == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateEmailDeliveryFailing(ctx, e.emailDelivery, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindBudgetThreshold:
 			if e.budgets == nil {
 				continue
@@ -457,6 +498,8 @@ func (e *Engine) Tick(ctx context.Context) error {
 			} else {
 				certNotices = notices
 			}
+		case KindNodeHostGuardrail:
+			continue
 		default:
 			e.logger.Warn("alerting: rule has unknown kind, skipping", slog.String("rule_id", r.ID), slog.String("kind", string(r.Kind)))
 			continue
@@ -579,7 +622,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindRestoreDrillFailed) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {
@@ -626,6 +669,9 @@ func (e *Engine) attachChanges(ctx context.Context, ev *Event) {
 // returned so NoiseControl can record the outcome; it is already logged.
 func (e *Engine) sendEvent(ctx context.Context, ev Event) error {
 	r := ev.Rule
+	if strings.HasPrefix(r.ID, defaultRulePrefix) && r.ChannelID == "" && r.NotifyURL == "" {
+		return nil // seeded rule with no destination: in-app only: the noise router records history for the inbox
+	}
 	sendErr := e.revealRuleTarget(ctx, &r)
 	if sendErr == nil {
 		sendErr = e.newNotifier(r).Notify(ctx, ev)

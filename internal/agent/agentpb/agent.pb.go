@@ -2792,8 +2792,13 @@ type HostReport struct {
 	CpuCores       uint32 `protobuf:"varint,6,opt,name=cpu_cores,json=cpuCores,proto3" json:"cpu_cores,omitempty"`
 	DiskTotalBytes uint64 `protobuf:"varint,7,opt,name=disk_total_bytes,json=diskTotalBytes,proto3" json:"disk_total_bytes,omitempty"`
 	DiskFreeBytes  uint64 `protobuf:"varint,8,opt,name=disk_free_bytes,json=diskFreeBytes,proto3" json:"disk_free_bytes,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Inode and swap counts are zero when unreadable; no swap reads as total 0.
+	DiskInodesTotal uint64 `protobuf:"varint,9,opt,name=disk_inodes_total,json=diskInodesTotal,proto3" json:"disk_inodes_total,omitempty"`
+	DiskInodesFree  uint64 `protobuf:"varint,10,opt,name=disk_inodes_free,json=diskInodesFree,proto3" json:"disk_inodes_free,omitempty"`
+	SwapTotalBytes  uint64 `protobuf:"varint,11,opt,name=swap_total_bytes,json=swapTotalBytes,proto3" json:"swap_total_bytes,omitempty"`
+	SwapFreeBytes   uint64 `protobuf:"varint,12,opt,name=swap_free_bytes,json=swapFreeBytes,proto3" json:"swap_free_bytes,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *HostReport) Reset() {
@@ -2878,6 +2883,34 @@ func (x *HostReport) GetDiskTotalBytes() uint64 {
 func (x *HostReport) GetDiskFreeBytes() uint64 {
 	if x != nil {
 		return x.DiskFreeBytes
+	}
+	return 0
+}
+
+func (x *HostReport) GetDiskInodesTotal() uint64 {
+	if x != nil {
+		return x.DiskInodesTotal
+	}
+	return 0
+}
+
+func (x *HostReport) GetDiskInodesFree() uint64 {
+	if x != nil {
+		return x.DiskInodesFree
+	}
+	return 0
+}
+
+func (x *HostReport) GetSwapTotalBytes() uint64 {
+	if x != nil {
+		return x.SwapTotalBytes
+	}
+	return 0
+}
+
+func (x *HostReport) GetSwapFreeBytes() uint64 {
+	if x != nil {
+		return x.SwapFreeBytes
 	}
 	return 0
 }
@@ -6823,7 +6856,7 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x11runtime_installed\x18\x04 \x01(\bR\x10runtimeInstalled\"K\n" +
 	"\x12UnmanagedContainer\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +
-	"\fmemory_bytes\x18\x02 \x01(\x04R\vmemoryBytes\"\x9d\x03\n" +
+	"\fmemory_bytes\x18\x02 \x01(\x04R\vmemoryBytes\"\xc5\x04\n" +
 	"\n" +
 	"HostReport\x12,\n" +
 	"\x12memory_total_bytes\x18\x01 \x01(\x04R\x10memoryTotalBytes\x124\n" +
@@ -6833,7 +6866,12 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x10other_containers\x18\x05 \x03(\v2&.levelrail.agent.v1.UnmanagedContainerR\x0fotherContainers\x12\x1b\n" +
 	"\tcpu_cores\x18\x06 \x01(\rR\bcpuCores\x12(\n" +
 	"\x10disk_total_bytes\x18\a \x01(\x04R\x0ediskTotalBytes\x12&\n" +
-	"\x0fdisk_free_bytes\x18\b \x01(\x04R\rdiskFreeBytes\"\x9b\x01\n" +
+	"\x0fdisk_free_bytes\x18\b \x01(\x04R\rdiskFreeBytes\x12*\n" +
+	"\x11disk_inodes_total\x18\t \x01(\x04R\x0fdiskInodesTotal\x12(\n" +
+	"\x10disk_inodes_free\x18\n" +
+	" \x01(\x04R\x0ediskInodesFree\x12(\n" +
+	"\x10swap_total_bytes\x18\v \x01(\x04R\x0eswapTotalBytes\x12&\n" +
+	"\x0fswap_free_bytes\x18\f \x01(\x04R\rswapFreeBytes\"\x9b\x01\n" +
 	"\x0eContainerState\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +

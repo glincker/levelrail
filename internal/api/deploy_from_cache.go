@@ -74,7 +74,7 @@ func (rt *Router) lastGoodSourceCommit(ctx context.Context, name string) string 
 			continue
 		}
 		switch a.Source {
-		case store.DeployAttemptSourceWebhook, store.DeployAttemptSourceManual, store.DeployAttemptSourceSchedule:
+		case store.DeployAttemptSourceWebhook, store.DeployAttemptSourceManual, store.DeployAttemptSourceSchedule, store.DeployAttemptSourcePoll:
 			return a.CommitSHA
 		}
 	}

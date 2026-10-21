@@ -84,6 +84,8 @@ type nodeResource struct {
 	// self-reported build (node_cert.go, ADR 021).
 	Cert  *nodeCertResource  `json:"cert,omitempty"`
 	Agent *nodeAgentResource `json:"agent,omitempty"`
+	// Failure is set while the node has a live failure state (node_failure.go).
+	Failure *nodeFailureSummary `json:"failure,omitempty"`
 }
 
 // nodeAlertStatusResource is alerting.NodeAlertStatus's wire shape: each
@@ -229,9 +231,11 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 	if cs, ok := rt.nodes.(nodeResourceCountStore); ok {
 		counts, _ = cs.NodeResourceCounts(r.Context())
 	}
+	failures := rt.failureSummaries(r.Context())
 	out := make([]nodeResource, 0, len(nodes))
 	for _, n := range nodes {
 		res := toNodeResource(n)
+		res.Failure = failures[n.ID]
 		res.IsLocal = n.ID == rt.localNodeID
 		res.ResourceCount = counts[n.ID]
 		if res.IsLocal {
@@ -269,6 +273,7 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 	res.IsLocal = n.ID == rt.localNodeID
 	res.StatusReason = nodeStatusReason(*n, time.Now(), nodePendingStaleAfter())
 	res.GPU = rt.nodeGPUResources(r.Context())[n.ID]
+	res.Failure = rt.failureSummaries(r.Context())[n.ID]
 	res.Cert, res.Agent = rt.nodeCertAndAgent(*n, time.Now(), rt.renewalStates(r.Context()))
 	if rt.telemetry != nil {
 		th := rt.nodeAlertThresholds

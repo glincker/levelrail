@@ -9,10 +9,17 @@ import {
   type SnoozeDuration,
   type SnoozeMap,
 } from './snooze'
+import { setVisibleInterval } from '../../lib/pageVisibility'
+import {
+  isSilenceActive,
+  useSilences,
+  type IssueSilence,
+} from '../../queries/silences'
 
 export const SNOOZE_STORAGE_KEY = 'shell.issues.snoozed'
 
 const EMPTY: SnoozeMap = {}
+const NO_SILENCES: IssueSilence[] = []
 let current: SnoozeMap | undefined
 const listeners = new Set<() => void>()
 
@@ -54,16 +61,28 @@ export function resetSnoozeStoreForTests(): void {
 const TICK_MS = 60_000
 
 // Re-renders every minute so an expired snooze reappears without a reload.
+// Server silences (shared by every operator) and the legacy per-browser
+// snoozes both hide an issue; the header count and Status page read this.
 export function useSnoozed(): {
   map: SnoozeMap
   now: number
+  silences: IssueSilence[]
   isSnoozed: (id: string) => boolean
 } {
+  const { data } = useSilences()
+  const silences = data ?? NO_SILENCES
   const map = React.useSyncExternalStore(subscribe, load, load)
   const [now, setNow] = React.useState(() => Date.now())
   React.useEffect(() => {
-    const t = window.setInterval(() => setNow(Date.now()), TICK_MS)
-    return () => window.clearInterval(t)
+    const stop = setVisibleInterval(() => setNow(Date.now()), TICK_MS)
+    return () => stop()
   }, [])
-  return { map, now, isSnoozed: (id) => isSnoozed(map, id, now) }
+  return {
+    map,
+    now,
+    silences,
+    isSnoozed: (id) =>
+      isSnoozed(map, id, now) ||
+      silences.some((s) => s.issue_key === id && isSilenceActive(s, now)),
+  }
 }

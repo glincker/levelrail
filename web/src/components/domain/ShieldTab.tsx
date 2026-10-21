@@ -24,6 +24,7 @@ import type {
   ShieldLimits,
   ShieldSpec,
 } from '../../queries/domainPolicyTypes'
+import { setVisibleInterval } from '../../lib/pageVisibility'
 
 const DEFAULT_SHIELD: ShieldSpec = { enabled: false }
 const BOT_ROW_HEIGHT = 28
@@ -32,8 +33,8 @@ const CLOCK_TICK_MS = 15_000
 function useNow(): number {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS)
-    return () => clearInterval(id)
+    const stop = setVisibleInterval(() => setNow(Date.now()), CLOCK_TICK_MS)
+    return () => stop()
   }, [])
   return now
 }

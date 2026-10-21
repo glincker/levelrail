@@ -8,6 +8,7 @@ import {
 import { summarizeDatabaseStatus } from '../../lib/databaseStatus'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
+import { StuckPanel } from '../../components/StuckPanel'
 import { DatabaseActionBar } from '../../components/databases/DatabaseActionBar'
 import { DatabasePaletteActions } from '../../components/databases/DatabasePaletteActions'
 import {
@@ -65,6 +66,9 @@ function DatabaseDetailLayout() {
     >
       {database.external ? null : (
         <DatabasePaletteActions database={database} action={action} />
+      )}
+      {database.external ? null : (
+        <StuckPanel kind="database" name={database.name} />
       )}
       <Outlet />
     </PageTemplate>

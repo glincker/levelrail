@@ -19,6 +19,12 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('../../queries/attention', () => ({
   useAttentionItems: () => ({ items: attention.items, isLoading: false }),
 }))
+vi.mock('../../queries/silences', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../queries/silences')>()),
+  useSilences: () => ({ data: [] }),
+  useCreateSilence: () => ({ mutate: vi.fn(), isPending: false }),
+  useDeleteSilence: () => ({ mutate: vi.fn(), isPending: false }),
+}))
 vi.mock('../../lib/connection', () => ({
   isInsecureRemoteConnection: () => false,
 }))
@@ -34,6 +40,7 @@ vi.mock('../environments/EnvironmentSwitcher', () => ({
 vi.mock('../HelpMenu', () => ({ HelpMenu: () => null }))
 vi.mock('../ThemeToggle', () => ({ ThemeToggle: () => null }))
 vi.mock('./NotificationCenter', () => ({ NotificationCenter: () => null }))
+vi.mock('./InboxBadge', () => ({ InboxBadge: () => null }))
 vi.mock('./WhatsNewPanel', () => ({ WhatsNewPanel: () => null }))
 vi.mock('../CleanUpDockerDialog', () => ({ CleanUpDockerDialog: () => null }))
 

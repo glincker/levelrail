@@ -39,6 +39,14 @@ type UpdatePreflight struct {
 	ReleaseKind     string         `json:"release_kind,omitempty"`
 	Channel         string         `json:"channel,omitempty"`
 	Edge            *EdgeGuidance  `json:"edge,omitempty"`
+
+	State               string `json:"state,omitempty"`
+	StateReason         string `json:"state_reason,omitempty"`
+	DBSchema            *int   `json:"db_schema,omitempty"`
+	LatestSchema        *int   `json:"latest_schema,omitempty"`
+	MigrationsToApply   *int   `json:"migrations_to_apply,omitempty"`
+	VerifyWindowSeconds int    `json:"verify_window_seconds,omitempty"`
+	RollbackVersion     string `json:"rollback_version,omitempty"`
 }
 
 // EdgeGuidance is what the edge channel means for this install: a moving

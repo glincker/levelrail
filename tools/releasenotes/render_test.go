@@ -144,3 +144,25 @@ func TestDigestAt(t *testing.T) {
 		t.Fatalf("missing tag: got %q, %v", d, err)
 	}
 }
+
+func TestExtractAreasAndRender(t *testing.T) {
+	body := "## What changed\n\n| Area | What users get |\n| --- | --- |\n| Migrate | Import from Coolify |\n| Security | OIDC groups |\n\nafter"
+	areas := ExtractAreas(body)
+	if len(areas) != 2 || areas[0].Name != "Migrate" || areas[1].Text != "OIDC groups" {
+		t.Fatalf("areas = %+v", areas)
+	}
+	r := sampleRelease()
+	r.Changes = []Change{{Type: "feat", Subject: "release 0.14", PR: 5, Author: "alice", Areas: areas}}
+	out := Render(r)
+	for _, want := range []string{"  - **Migrate:** Import from Coolify", "## Downloads", "releases/download/v1.2.0-beta.3/acme-linux-amd64", "github.com/alice.png"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("output lacks %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestSameStream(t *testing.T) {
+	if sameStream("v0.7.0", "kit/v0.4.0") || !sameStream("v0.7.0", "v0.6.0") || !sameStream("kit/v0.4.0", "kit/v0.3.0") {
+		t.Fatal("stream grouping wrong")
+	}
+}

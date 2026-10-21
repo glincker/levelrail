@@ -35,6 +35,21 @@ func runAppsDeploySafety(prog string, args []string, stdout, stderr io.Writer, l
 
 type safetyFlags struct {
 	threshold, stable, drain, watch, restarts, errorRate, minRequests, autoRollback string
+	mode, latencyRatio, softRollback                                                string
+}
+
+func (f *safetyFlags) registerSoft(fs *flag.FlagSet) {
+	fs.StringVar(&f.mode, "mode", "", "off, notify (alert only) or auto (alert and roll back), or default")
+	fs.StringVar(&f.latencyRatio, "latency-ratio", "", "p95 latency multiple over the previous release that counts as a regression (0 turns it off)")
+	fs.StringVar(&f.softRollback, "soft-rollback", "", "let a latency regression roll back too, in auto mode (true or false)")
+}
+
+func (f *safetyFlags) registerWatch(fs *flag.FlagSet) {
+	f.registerSoft(fs)
+	fs.StringVar(&f.watch, "watch-window", "", "how long a new release is watched after cutover, e.g. 10m")
+	fs.StringVar(&f.restarts, "watch-max-restarts", "", "restarts inside the watch that trip it")
+	fs.StringVar(&f.errorRate, "watch-error-rate", "", "5xx share (0 to 1) inside the watch that trips it")
+	fs.StringVar(&f.minRequests, "watch-min-requests", "", "requests needed before the 5xx share or latency counts")
 }
 
 func (f *safetyFlags) register(fs *flag.FlagSet) {
@@ -46,6 +61,7 @@ func (f *safetyFlags) register(fs *flag.FlagSet) {
 	fs.StringVar(&f.errorRate, "watch-error-rate", "", "5xx share (0 to 1) inside the watch that trips it")
 	fs.StringVar(&f.minRequests, "watch-min-requests", "", "requests needed before the 5xx share counts")
 	fs.StringVar(&f.autoRollback, "auto-rollback", "", "roll back automatically when the watch trips (true or false)")
+	f.registerSoft(fs)
 }
 
 func runAppsDeploySafetyVerb(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -114,11 +130,28 @@ func (f *safetyFlags) apply(fs *flag.FlagSet, o *apiclient.DeploySafetyOverrides
 			o.WatchWindow, err = optionalDuration(fl.Name, raw, inherit)
 		case "watch-error-rate":
 			o.WatchErrorRate, err = optionalFloat(fl.Name, raw, inherit)
+		case "mode":
+			o.WatchMode, err = optionalMode(raw, inherit)
+		case "latency-ratio":
+			o.WatchLatencyRatio, err = optionalFloat(fl.Name, raw, inherit)
+		case "soft-rollback":
+			o.WatchSoftRollback, err = optionalBool(fl.Name, raw, inherit)
 		case "auto-rollback":
 			o.AutoRollback, err = optionalBool(fl.Name, raw, inherit)
 		}
 	})
 	return err
+}
+
+func optionalMode(raw string, inherit bool) (*string, error) {
+	if inherit {
+		return nil, nil
+	}
+	switch raw {
+	case "off", "notify", "auto":
+		return &raw, nil
+	}
+	return nil, newValidationError("--mode must be off, notify, auto or %q, got %q", inheritValue, raw)
 }
 
 func optionalInt(name, raw string, inherit bool) (*int, error) {
@@ -179,7 +212,9 @@ func printDeploySafety(w io.Writer, r apiclient.DeploySafetyResource) {
 	_, _ = fmt.Fprintf(w, "watch max restarts:  %d%s\n", e.WatchMaxRestarts, mark(o.WatchMaxRestarts != nil))
 	_, _ = fmt.Fprintf(w, "watch 5xx rate:      %.0f%%%s\n", e.WatchErrorRate*100, mark(o.WatchErrorRate != nil))
 	_, _ = fmt.Fprintf(w, "watch min requests:  %d%s\n", e.WatchMinRequests, mark(o.WatchMinRequests != nil))
-	_, _ = fmt.Fprintf(w, "auto-rollback:       %t%s\n", e.AutoRollback, mark(o.AutoRollback != nil))
+	_, _ = fmt.Fprintf(w, "watch mode:          %s%s\n", e.WatchMode, mark(o.WatchMode != nil || o.AutoRollback != nil))
+	_, _ = fmt.Fprintf(w, "watch latency ratio: %.1fx%s\n", e.WatchLatencyRatio, mark(o.WatchLatencyRatio != nil))
+	_, _ = fmt.Fprintf(w, "soft rollback:       %t%s\n", e.WatchSoftRollback, mark(o.WatchSoftRollback != nil))
 	_, _ = fmt.Fprintf(w, "rollback pins kept:  %d\n", e.RollbackPins)
 }
 
@@ -218,6 +253,9 @@ Set flags:
   --watch-error-rate F        5xx share between 0 and 1, e.g. 0.2
   --watch-min-requests N      requests needed before the 5xx share counts
   --auto-rollback BOOL        true or false
+  --mode MODE                 off, notify or auto (see "apps watch")
+  --latency-ratio F           p95 multiple over the previous release, 0 is off
+  --soft-rollback BOOL        let a latency regression roll back in auto mode
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

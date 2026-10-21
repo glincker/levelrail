@@ -91,6 +91,10 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	// patch-status/metrics above read, same AbilityRoot boundary and
 	// nil-telemetry 501 shape as every other node route.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/capacity-forecast", rt.requireAbility(AbilityRoot, rt.handleNodeCapacityForecast))
+	mux.HandleFunc("GET /api/v1/nodes/{id}/capacity", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleGetNodeCapacity))
+	mux.HandleFunc("PUT /api/v1/nodes/{id}/guardrails", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handlePutNodeGuardrails))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/cleanup", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeCleanup))
+	mux.HandleFunc("GET /api/v1/nodes/{id}/cleanup-runs", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleListNodeCleanupRuns))
 	// Agent certificate lifecycle (node_cert.go, ADR 021).
 	mux.HandleFunc("POST /api/v1/nodes/{id}/reenroll-token", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleCreateNodeReenrollToken))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/revoke-cert", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleRevokeNodeCert))

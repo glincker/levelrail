@@ -101,5 +101,28 @@
   },
   "passkey": {
     "discoverable": "Sign in with a passkey"
+  },
+  "approvalCard": {
+    "title": "Approve this sign-in?",
+    "lead": "A password sign-in from a new device is waiting. It stays blocked until you approve it here.",
+    "pageTitle": "Approve a sign-in",
+    "pageDescription": "Approve or deny a password sign-in from a new device, for example the CLI.",
+    "empty": "Nothing is waiting for approval. If you just started a sign-in, it appears here within a few seconds.",
+    "regionLabel": "Sign-in approvals"
+  },
+  "connectCli": {
+    "title": "Connect your CLI",
+    "lead": "Copy one command into your terminal to sign it in. No password, no approval step.",
+    "generate": "Show my command",
+    "regenerate": "New command",
+    "copy": "Copy",
+    "copied": "Command copied",
+    "copyFailed": "Could not copy, select the command and copy it yourself",
+    "commandLabel": "Command to run in your terminal",
+    "expiresIn": "Single use, expires in {{time}}.",
+    "expired": "This command has expired. Get a new one.",
+    "dismiss": "Dismiss",
+    "failed": "Could not create a pairing code",
+    "rateLimited": "Too many tries, wait a moment and try again"
   }
 }

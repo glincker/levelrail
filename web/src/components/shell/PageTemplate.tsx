@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { HelpLink } from '../HelpLink'
 import { Display, Eyebrow, Lede } from '@/components/ui/typography'
 import { cn } from '@/lib/utils'
+import { useRegisterPageTitle } from './pageTitleStore'
 
 const DESCRIPTION_LINE_PX = 24
 
@@ -65,6 +66,7 @@ export function PageTemplate({
   className,
   children,
 }: PageTemplateProps) {
+  useRegisterPageTitle(title)
   const descRef = useRef<HTMLDivElement>(null)
   const [wrapped, setWrapped] = useState(false)
   useLayoutEffect(() => {

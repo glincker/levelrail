@@ -127,6 +127,10 @@ func (s *bootState) bootIdentity() error {
 		logger.Warn("dev admin account not bootstrapped", slog.String("error", err.Error()))
 	}
 
+	if err := applyLocalMode(ctx, logger, db); err != nil {
+		return err
+	}
+
 	ensureSetupToken(ctx, logger, db)
 
 	// A missing dev-fixtures file is fine: it is an opt-in layer on dev mode.
@@ -170,6 +174,7 @@ func (s *bootState) openTelemetryStores() error {
 	s.deployRecorder = deployRecorder
 	s.logBroadcaster = logBroadcaster
 	s.alertingDB = alertingDB
+	seedDefaultAlerts(ctx, logger, alertingDB)
 	return nil
 }
 
@@ -260,7 +265,9 @@ func (s *bootState) loadSecretsAndNotifiers() {
 	setupNotificationChannelSecrets(ctx, logger, alertingDB, secretsManager)
 
 	// Always non-nil: email settings resolve on every send, so 'not configured' surfaces at send time.
-	emailSender := email.NewDynamicSender(emailConfigLoader(db, secretsManager, smtpConfigFromEnv()))
+	emailSender := email.NewDynamicSender(emailConfigLoader(db, secretsManager, smtpConfigFromEnv())).
+		WithRecorder(newEmailDeliveryRecorder(db)).
+		WithRetry(emailEnvInt("APP_EMAIL_RETRY_ATTEMPTS"), time.Duration(emailEnvInt("APP_EMAIL_RETRY_BASE_MS"))*time.Millisecond)
 	installGitNetguard()
 	notifyClient := netguard.NewClient()
 
@@ -281,7 +288,7 @@ func (s *bootState) loadSecretsAndNotifiers() {
 		}
 	}
 
-	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, emailSender, pushSender, logger).WithLogSources(telemetryDB, telemetryDB)
+	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, alerting.TemplatedSender{Sender: emailSender, Render: alertMailRenderer(db, *b)}, pushSender, logger).WithLogSources(telemetryDB, telemetryDB).WithOutcomeTracker(alerting.NewDeployOutcomeTracker())
 	s.secretsManager = secretsManager
 	s.masterKeyFilePath = masterKeyFilePath
 	s.emailSender = emailSender

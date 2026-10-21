@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -20,6 +19,8 @@ import { ResolvedLoginControls } from '../components/attention/ResolvedLoginCont
 import { CopyFailureDetail } from '../components/attention/CopyFailureDetail'
 import { CopyItemControls } from '../components/attention/CopyItemControls'
 import { useSnoozed } from '../components/shell/snoozeStore'
+import { SilenceMenu } from '../components/attention/SilenceMenu'
+import { SilencedSection } from '../components/attention/SilencedSection'
 
 export const Route = createFileRoute('/status')({
   component: StatusPage,
@@ -216,31 +217,14 @@ function severityIcon(severity: AttentionItem['severity']) {
 export function StatusPage() {
   const { items: all, isLoading } = useAttentionItems()
   const { t } = useTranslation('attention')
-  const { isSnoozed } = useSnoozed()
-  const [showSnoozed, setShowSnoozed] = useState(false)
-  const snoozed = all.filter((i) => i.copy && isSnoozed(i.id))
-  const items = showSnoozed ? all : all.filter((i) => !snoozed.includes(i))
+  const { isSnoozed, silences, now } = useSnoozed()
+  const items = all.filter((i) => !isSnoozed(i.id))
 
   return (
     <PageTemplate
       title="Status"
       description="Everything that needs attention right now. Refreshes every 30 seconds."
     >
-      {snoozed.length > 0 && !showSnoozed ? (
-        <p className="text-xs text-muted-foreground">
-          {t('copyFailure.snoozedCount', { count: snoozed.length })}{' '}
-          <button
-            type="button"
-            className="text-primary hover:underline"
-            onClick={() => {
-              setShowSnoozed(true)
-            }}
-          >
-            {t('copyFailure.showSnoozed')}
-          </button>
-        </p>
-      ) : null}
-
       {isLoading ? (
         <div
           role="status"
@@ -298,12 +282,27 @@ export function StatusPage() {
                     ) : null}
                   </div>
                 </div>
-                <ItemActions item={item} />
+                <div className="flex flex-wrap items-center gap-2">
+                  <ItemActions item={item} />
+                  {item.severity === 'info' ? null : (
+                    <SilenceMenu
+                      issueKey={item.id}
+                      severity={item.severity}
+                      title={item.title}
+                    />
+                  )}
+                </div>
               </li>
             )
           })}
         </ul>
       )}
+      <SilencedSection
+        items={all}
+        silences={silences}
+        now={now}
+        isSnoozed={isSnoozed}
+      />
     </PageTemplate>
   )
 }

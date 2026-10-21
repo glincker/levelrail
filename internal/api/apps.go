@@ -799,7 +799,7 @@ func (rt *Router) fallbackURLFor(ctx context.Context, svc store.DesiredService) 
 	if err != nil || s.FallbackDomainsDisabled {
 		return ""
 	}
-	if d, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
+	if d, ok := rt.autoHost(ctx, svc.Name); ok {
 		return rt.ingressHTTPSURL(s, d)
 	}
 	return ""
@@ -810,6 +810,9 @@ func (rt *Router) fallbackURLFor(ctx context.Context, svc store.DesiredService) 
 // else the ingress listen port, so a link reaches this ingress and not
 // whatever owns 443 on the host.
 func (rt *Router) ingressHTTPSURL(s store.IngressSettings, host string) string {
+	if u, ok := rt.localAppURL(host); ok {
+		return u
+	}
 	port := s.PublicLinkPort()
 	if port == 0 {
 		port = rt.doctorHTTPSPort
@@ -820,11 +823,14 @@ func (rt *Router) ingressHTTPSURL(s store.IngressSettings, host string) string {
 // publicHTTPSURL is "https://host" for a hostname served by this platform,
 // carrying the explicit public port only when one is configured.
 func (rt *Router) publicHTTPSURL(ctx context.Context, host string) string {
+	if u, ok := rt.localAppURL(host); ok {
+		return u
+	}
 	s, err := rt.ingressSettings.GetIngressSettings(ctx)
 	if err != nil {
 		return httpsURL(host, 0)
 	}
-	return httpsURL(host, s.PublicLinkPort())
+	return rt.ingressHTTPSURL(s, host)
 }
 
 // previewURLFor is publicHTTPSURL for a possibly empty preview domain.
@@ -1223,6 +1229,11 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 	}
 	if err := rt.removeStaticSite(ctx, name); err != nil {
 		rt.logger.Warn("api: delete app: remove static site failed", slog.String("error", err.Error()), slog.String("name", name))
+	}
+	if ds, ok := rt.ingressSettings.(dnsProviderStore); ok {
+		if err := ds.SetAppDNSProvider(ctx, name, store.DNSProviderChoice{}); err != nil {
+			rt.logger.Warn("api: delete app: clear dns provider override failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
 	}
 	// Nudge before the slow teardown so the ingress route drops right away.
 	rt.nudgeReconciler()

@@ -27,5 +27,9 @@ func (rt *Router) registerMultiNodeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/nodes/{id}/drains", rt.requireAbility(AbilityRoot, rt.handleListNodeDrains))
 	mux.HandleFunc("GET /api/v1/nodes/{id}/labels", rt.requireAbility(AbilityRoot, rt.handleGetNodeLabels))
 	mux.HandleFunc("PUT /api/v1/nodes/{id}/labels", rt.requireAbility(AbilityRoot, rt.handleSetNodeLabels))
+	mux.HandleFunc("GET /api/v1/nodes/{id}/failure", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleGetNodeFailure))
+	mux.HandleFunc("PUT /api/v1/nodes/{id}/failure-policy", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleSetNodeFailurePolicy))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/failure/lost", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleMarkNodeLost))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/failure/resolve", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleResolveNodeFailure))
 	mux.HandleFunc("GET /api/v1/mesh/connectivity", rt.requireAbility(AbilityRoot, rt.handleMeshConnectivity))
 }

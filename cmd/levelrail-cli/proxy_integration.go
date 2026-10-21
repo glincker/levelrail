@@ -13,11 +13,13 @@ import (
 func runProxyIntegration(prog, sub string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "proxy "+sub, "print the result as JSON to stdout and nothing else", stderr)
 	var confirm bool
-	var dir, domain string
+	var dir, domain, provider, certDir string
 	switch sub {
 	case "setup":
 		fs.BoolVar(&confirm, "confirm", false, "apply the changes; without it setup is a dry run")
-		fs.StringVar(&dir, "dynamic-dir", "", "host directory Traefik watches, when it cannot be detected")
+		fs.StringVar(&dir, "dynamic-dir", "", "host directory the proxy reads route files from, when it cannot be detected")
+		fs.StringVar(&provider, "provider", "", "traefik, nginx, caddy, haproxy or auto (default: the proxy detected on this server)")
+		fs.StringVar(&certDir, "cert-dir", "", "nginx: certificate directory inside the proxy container, when it cannot be detected")
 	case "verify":
 		fs.StringVar(&domain, "domain", "", "verify only this domain")
 	}
@@ -32,7 +34,7 @@ func runProxyIntegration(prog, sub string, args []string, stdout, stderr io.Writ
 	var err error
 	switch sub {
 	case "setup":
-		res, err = client.SetupProxyIntegration(ctx, apiclient.ProxySetupRequest{Confirm: confirm, DynamicDir: dir})
+		res, err = client.SetupProxyIntegration(ctx, apiclient.ProxySetupRequest{Confirm: confirm, DynamicDir: dir, Provider: provider, CertDir: certDir})
 	case "status":
 		res, err = client.GetProxyIntegration(ctx)
 	case "apply":
@@ -74,7 +76,12 @@ func printProxyIntegration(out io.Writer, prog, sub string, r apiclient.ProxyInt
 	for _, m := range d.Missing {
 		_, _ = fmt.Fprintf(out, "  missing: %s\n", m)
 	}
-	_, _ = fmt.Fprintf(out, "integration: %s\n", r.Settings.Integration)
+	_, _ = fmt.Fprintf(out, "integration: %s (provider %s)\n", r.Settings.Integration, orDash(r.Provider))
+	if sub == "setup" && r.Manual {
+		_, _ = fmt.Fprintln(out, "mode: manual, nothing is applied for this proxy. Add this to its configuration:")
+		_, _ = fmt.Fprintf(out, "\n%s\n", r.Snippet)
+		return
+	}
 	if sub == "setup" {
 		verb := "changed"
 		if r.DryRun {

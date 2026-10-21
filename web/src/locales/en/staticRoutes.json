@@ -1,0 +1,96 @@
+{
+  "title": "Routing rules",
+  "description": "Redirects, rewrites and headers this site was published with. They come from the _redirects and _headers files in the published directory and from app.yaml, and they change only when you deploy.",
+  "loadFailed": "Could not load the routing rules.",
+  "retry": "Try again",
+  "notStatic": {
+    "title": "This app is not a static site",
+    "description": "Routing rules apply to apps built with build.type: static. Container apps use the traffic controls on the Domains page."
+  },
+  "notPublished": {
+    "title": "Published before routing rules existed",
+    "description": "Deploy this site again to enable _redirects, _headers and the SPA, clean URL and 404 options. Nothing is lost: the site keeps serving its files as before."
+  },
+  "options": {
+    "title": "Serving options",
+    "spa": "Single page app fallback",
+    "cleanUrls": "Clean URLs",
+    "trailingSlash": "Trailing slash",
+    "notFound": "404 page",
+    "on": "On",
+    "off": "Off",
+    "slashOff": "Leave as requested",
+    "slashAdd": "Always add",
+    "slashRemove": "Always remove",
+    "defaultNotFound": "404.html when present"
+  },
+  "precedence": {
+    "title": "Order of evaluation",
+    "body": "Rules run first, in order, and the first match wins. A rule is skipped when a file exists at the requested path unless it is forced with !. Then files are served, then the single page app fallback, then the 404 page."
+  },
+  "rules": {
+    "title": "Redirects and rewrites",
+    "label": "Redirect and rewrite rules",
+    "from": "From",
+    "to": "To",
+    "status": "Status",
+    "source": "Defined in",
+    "forced": "forced",
+    "kindRewrite": "rewrite",
+    "kindRedirect": "redirect",
+    "kindPage": "page",
+    "empty": {
+      "title": "No redirect or rewrite rules",
+      "description": "Add a _redirects file to the published directory, or a routes list to app.yaml, and deploy."
+    }
+  },
+  "headers": {
+    "title": "Response headers",
+    "label": "Header rules",
+    "path": "Path",
+    "set": "Sets",
+    "remove": "Removes",
+    "source": "Defined in",
+    "empty": {
+      "title": "No header rules",
+      "description": "Add a _headers file to the published directory, or a headers list to app.yaml, and deploy."
+    }
+  },
+  "problems": {
+    "title": "Problems found when this deploy was published",
+    "description": "These lines were skipped and are not applied. Fix them in your repository and deploy again.",
+    "line": "line {{line}}",
+    "none": "No problems found."
+  },
+  "test": {
+    "title": "Test a URL",
+    "description": "Run a request through the live rules and files and see which one answers it.",
+    "pathLabel": "Path",
+    "pathPlaceholder": "/old-page",
+    "queryLabel": "Query string",
+    "queryPlaceholder": "id=42",
+    "run": "Test",
+    "running": "Testing",
+    "result": "Result",
+    "redirectTo": "Redirects to {{target}}",
+    "serves": "Serves {{file}}",
+    "plain": "Plain response with no page",
+    "matchedRule": "Rule: {{rule}}",
+    "noRule": "No rule matched, answered by files and options",
+    "trace": "Steps",
+    "headersApplied": "Headers added",
+    "invalidPath": "Enter a path that starts with /",
+    "failed": "The test could not run."
+  },
+  "lint": {
+    "title": "Check rules before deploying",
+    "description": "Paste the contents of a _redirects or _headers file to see how it parses. Nothing is deployed.",
+    "redirectsLabel": "_redirects",
+    "headersLabel": "_headers",
+    "run": "Check",
+    "running": "Checking",
+    "ok": "{{rules}} rules and {{headers}} header blocks parsed with no problems.",
+    "withProblems": "{{rules}} rules and {{headers}} header blocks parsed, {{problems}} lines skipped.",
+    "failed": "The check could not run."
+  }
+}

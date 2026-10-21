@@ -1,6 +1,7 @@
 import type * as React from 'react'
 import {
   ArrowsSplitIcon,
+  ClipboardTextIcon,
   BellIcon,
   BookOpenIcon,
   BracketsCurlyIcon,
@@ -11,6 +12,7 @@ import {
   CpuIcon,
   DatabaseIcon,
   FlagIcon,
+  FlaskIcon,
   FolderIcon,
   FolderOpenIcon,
   GaugeIcon,
@@ -21,6 +23,7 @@ import {
   GlobeIcon,
   GlobeHemisphereWestIcon,
   LightningIcon,
+  SignpostIcon,
   ListBulletsIcon,
   HardDrivesIcon,
   HeartbeatIcon,
@@ -53,6 +56,7 @@ import {
   FunnelIcon,
   LightbulbIcon,
   CoinsIcon,
+  TrayIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { GO_TARGETS } from '@/lib/shortcuts'
 import type { ExperimentalFeature } from '@/lib/experimental'
@@ -87,6 +91,7 @@ export type GlobalTo =
   | '/ai-assistant'
   | '/terminal'
   | '/pipelines'
+  | '/inbox'
   | '/approvals'
   | '/alerts'
   | '/settings'
@@ -105,6 +110,7 @@ export type PendingTo = '/dns'
 export type GlobalBadge =
   | 'failing-apps'
   | 'approvals'
+  | 'inbox'
   | 'domains-attention'
   | 'dns-attention'
   | 'proxy-attention'
@@ -341,6 +347,13 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         icon: <GavelIcon />,
         badge: 'approvals',
       },
+      {
+        id: 'inbox',
+        label: 'Inbox',
+        to: '/inbox',
+        icon: <TrayIcon />,
+        badge: 'inbox',
+      },
       { id: 'alerts', label: 'Alerts', to: '/alerts', icon: <BellIcon /> },
     ],
   },
@@ -417,8 +430,12 @@ export function visibleGlobalFooter(): GlobalNavItem[] {
   return GLOBAL_NAV_FOOTER
 }
 
-export function visibleAppSections(): AppNavSection[] {
-  return APP_NAV_SECTIONS
+export function visibleAppSections(isStatic = false): AppNavSection[] {
+  if (isStatic) return APP_NAV_SECTIONS
+  return APP_NAV_SECTIONS.map((s) => ({
+    ...s,
+    items: s.items.filter((i) => !i.staticOnly),
+  }))
 }
 
 export function allGlobalItems(): GlobalNavItem[] {
@@ -452,10 +469,13 @@ export type AppTo =
   | '/apps/$name/deploy-settings'
   | '/apps/$name/pipelines'
   | '/apps/$name/domains'
+  | '/apps/$name/go-live'
   | '/apps/$name/streams'
   | '/apps/$name/loadbalancer'
   | '/apps/$name/network'
   | '/apps/$name/cache'
+  | '/apps/$name/forms'
+  | '/apps/$name/static-routes'
   | '/apps/$name/environment'
   | '/apps/$name/services'
   | '/apps/$name/resources'
@@ -463,6 +483,7 @@ export type AppTo =
   | '/apps/$name/health'
   | '/apps/$name/scheduled-tasks'
   | '/apps/$name/feature-flags'
+  | '/apps/$name/split-testing'
   | '/apps/$name/integrations'
   | '/apps/$name/metrics'
   | '/apps/$name/logs'
@@ -481,6 +502,10 @@ export interface AppNavItem {
   to: AppTo
   icon: React.ReactNode
   feature?: ExperimentalFeature
+  /** Shown only for build.type: static apps. */
+  staticOnly?: boolean
+  /** Shows the Beta badge next to the label. */
+  beta?: boolean
 }
 
 export interface AppNavSection {
@@ -544,6 +569,7 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
     label: 'Traffic',
     icon: <ShareNetworkIcon />,
     items: [
+      item('go-live', 'Go live', '/apps/$name/go-live', <RocketLaunchIcon />),
       item('domains', 'Domains', '/apps/$name/domains', <GlobeIcon />),
       item('streams', 'Streams', '/apps/$name/streams', <PlugsIcon />),
       item(
@@ -555,6 +581,20 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
       ),
       item('network', 'Network', '/apps/$name/network', <ShareNetworkIcon />),
       item('cache', 'Cache', '/apps/$name/cache', <LightningIcon />),
+      {
+        ...item('forms', 'Forms', '/apps/$name/forms', <ClipboardTextIcon />),
+        staticOnly: true,
+        beta: true,
+      },
+      {
+        ...item(
+          'static-routes',
+          'Routing rules',
+          '/apps/$name/static-routes',
+          <SignpostIcon />,
+        ),
+        staticOnly: true,
+      },
     ],
   },
   {
@@ -583,6 +623,12 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
         'Feature flags',
         '/apps/$name/feature-flags',
         <FlagIcon />,
+      ),
+      item(
+        'split-testing',
+        'Split testing',
+        '/apps/$name/split-testing',
+        <FlaskIcon />,
       ),
       item(
         'integrations',

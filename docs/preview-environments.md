@@ -50,7 +50,7 @@ The comment never contains an env var name or value, so secrets set for a pull r
 
 ## Env overrides for one pull request
 
-Besides the app-wide `preview-env` and branch-pattern `branch-env` overrides, you can set values for a single pull request, for example to point one preview at a staging API. They win over every other source for that pull request and apply on its next deploy, so push a commit after setting them.
+Besides the app-wide `preview-env`, branch-pattern `branch-env` and per-context [deploy contexts](/deploy-contexts) overrides, you can set values for a single pull request, for example to point one preview at a staging API. They win over every other source for that pull request and apply on its next deploy, so push a commit after setting them.
 
 <Tabs>
 <Tab title="UI">
@@ -87,6 +87,22 @@ When a pull request closes or merges, Levelrail removes everything the preview c
 - the pull request's env overrides and their encrypted values.
 
 Cleanup is safe to repeat. A closed event delivered twice is ignored the second time. If a step fails, such as a volume that is still in use, the preview is marked failed with the reason and the next close event, manual **Tear down**, or the stale sweep finishes the job. A pull request reopened later starts from a fresh preview with no old overrides.
+
+## Branch deploys
+
+A branch deploy gives a branch its own stable URL, separate from pull request previews. It is off by default. Choose which branches get one on the app's Previews page (Branch deploys), or from the CLI:
+
+```bash
+levelrail-cli apps branch-deploys set web --mode patterns --branch staging --branch "feature/*"
+levelrail-cli apps branch-deploys list web
+levelrail-cli apps branch-deploys delete web staging
+```
+
+- Modes: `off`, `all`, or `patterns` (exact names or globs where `*` matches any characters, including `/`). The production branch never gets one.
+- The URL comes from the branch name and stays the same across pushes: `<app>-br-<branch>` under the apps base domain, or `br-<branch>.<app>.<primary-domain>` without one. A branch name with characters outside lowercase letters, digits and dashes gets a short hash suffix, so `feature/x` and `feature-x` never share a URL. Names are capped to one DNS label.
+- Each push to the branch rebuilds it. Branch-scoped env overrides (`apps branch-env`) and the app's preview policy (resource limits, basic auth gate, search engine hiding, idle sleep) apply.
+- It is removed when the branch is deleted (the provider's push event for the deletion) and after it sees no push for the idle TTL, `APP_BRANCH_DEPLOY_TTL` (default 336h). `APP_BRANCH_DEPLOY_MAX_PER_APP` caps live branch deploys per app (default 10); a push past the cap is ignored with a note.
+- Works with GitHub, GitLab, Gitea and Bitbucket push webhooks. It does not provision preview databases. Per-context env and build settings are covered in [deploy contexts](/deploy-contexts).
 
 ## Frequently asked questions
 

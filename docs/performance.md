@@ -58,6 +58,23 @@ Read this honestly:
 
 Reproduce it: `APP_FOOTPRINT_IDLE_SECONDS=20 go test ./cmd/levelrail -run '^TestFootprint$' -v -count=1`. It takes about four minutes and is skipped under `-short`.
 
+## Idle memory: where it goes
+
+Live heap at idle is only about 20 MB. Most of the resident memory was transient boot garbage the Go runtime kept: the template catalog compose parse (about 51 MB allocated), password hashing set up at boot (64 MB, inside the auth library), and the first Docker Hub tag refresh (about 27 MB, one minute after start). Changes: the template catalog flags are computed on first catalog read, the first tag refresh waits `APP_DBUPGRADE_REFRESH_FIRST_DELAY` (default 10m), GC runs at `APP_GC_PERCENT` (default 50, ignored when `GOGC` is set), and a `memory trim` loop returns idle heap to the OS every `APP_MEM_TRIM_INTERVAL` (default 2m, `0` disables) when more than `APP_MEM_TRIM_MIN_IDLE_MB` (default 24) is unreleased.
+
+One run each on an Apple M4 Max (macOS 27.2, Docker not reachable, dev mode with fixtures, 135 seconds after start, nothing else running). Footprint is macOS `footprint` (physical), the figure to trust on macOS; `ps` RSS is not, because macOS keeps freed pages resident until memory pressure.
+
+| | Before | After |
+| --- | --- | --- |
+| Physical footprint | 90 MB | 71 MB |
+| Heap in use | 29.9 MB | 28.6 MB |
+| Heap reserved from OS | 169 MB | 127 MB |
+| Goroutines | 153 | 155 |
+
+Wakeups per minute were not measured beyond `top` showing 0 idle wakeups over three 10 second samples in both runs. The new trim loop adds one wake every two minutes. Linux numbers are not measured here.
+
+Repeat it: build `./cmd/levelrail`, run it with `APP_PPROF_ADDR=127.0.0.1:<port>` (loopback only, off by default) plus the usual dev env and a private `APP_DATA_DIR`, wait two minutes, then read `/debug/pprof/heap?gc=1` and `/debug/pprof/allocs` with `go tool pprof -sample_index=alloc_space -top -cum`, and `footprint -p <pid>`.
+
 ## Caveats
 
 - One machine, one run per configuration. Expect run-to-run variance of roughly 10 to 15% on RSS and CPU.

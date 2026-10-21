@@ -45,6 +45,24 @@ type Schedule struct {
 	domRestricted, dowRestricted bool
 }
 
+// macros are the standard cron shortcuts, expanded before field parsing.
+var macros = map[string]string{
+	"@hourly":   "0 * * * *",
+	"@daily":    "0 0 * * *",
+	"@midnight": "0 0 * * *",
+	"@weekly":   "0 0 * * 0",
+	"@monthly":  "0 0 1 * *",
+	"@yearly":   "0 0 1 1 *",
+	"@annually": "0 0 1 1 *",
+}
+
+func expandMacro(expr string) string {
+	if full, ok := macros[strings.ToLower(strings.TrimSpace(expr))]; ok {
+		return full
+	}
+	return expr
+}
+
 // Parse parses a standard 5-field cron expression. Fields are separated
 // by whitespace; each field is one of "*", a single integer, an
 // "a-b" range, or any of those with a "/step" suffix (e.g. "*/15",
@@ -57,7 +75,7 @@ type Schedule struct {
 // numeric fields only, so name support would be untested surface with no
 // current caller.
 func Parse(expr string) (*Schedule, error) {
-	fields := strings.Fields(expr)
+	fields := strings.Fields(expandMacro(expr))
 	if len(fields) != 5 {
 		return nil, fmt.Errorf("cronexpr: expected 5 fields (minute hour day-of-month month day-of-week), got %d in %q", len(fields), expr)
 	}
@@ -222,7 +240,13 @@ func NextInLocation(schedule *Schedule, after time.Time, loc *time.Location) tim
 	local := after.In(loc)
 	wall := time.Date(local.Year(), local.Month(), local.Day(), local.Hour(), local.Minute(), local.Second(), local.Nanosecond(), time.UTC)
 	nextWall := schedule.Next(wall)
-	return time.Date(nextWall.Year(), nextWall.Month(), nextWall.Day(), nextWall.Hour(), nextWall.Minute(), nextWall.Second(), 0, loc)
+	next := time.Date(nextWall.Year(), nextWall.Month(), nextWall.Day(), nextWall.Hour(), nextWall.Minute(), nextWall.Second(), 0, loc)
+	// A wall time skipped by a DST jump normalizes backwards in Go, which would
+	// repeat an earlier instant; run it once at the shifted time after the gap.
+	if w := next.In(loc); w.Hour() != nextWall.Hour() || w.Minute() != nextWall.Minute() {
+		next = next.Add(time.Hour)
+	}
+	return next
 }
 
 // dayMatches applies the standard cron day-of-month/day-of-week

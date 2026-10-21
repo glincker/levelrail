@@ -200,19 +200,54 @@ afterEach(() => {
 })
 
 describe('UpgradeNow', () => {
-  it('never offers an upgrade the database cannot accept and explains why', async () => {
-    setup({ preflight: olderThanDatabase })
+  it('shows the development build hero instead of a blocked card', async () => {
+    setup({
+      preflight: {
+        ...olderThanDatabase,
+        state: 'ahead_of_releases',
+        db_schema: 2690,
+        rollback_version: 'v0.6.0',
+      },
+    })
     expect(
       await screen.findByText(
-        /Not offering v0.6.0: it is older than your database/,
+        /You are running a development build \(schema 2690\)/,
       ),
     ).toBeInTheDocument()
-    expect(screen.getByText(/supports 1010/)).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Go to Roll back' }),
-    ).toBeInTheDocument()
+      screen.getByRole('button', { name: 'Roll back to v0.6.0' }),
+    ).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Check again' })).toBeEnabled()
+    expect(screen.queryByText(/Not offering/)).toBeNull()
     expect(screen.queryByRole('button', { name: /Upgrade to/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Upgrade now' })).toBeNull()
+  })
+
+  it('disables Roll back with a reason when no restore point exists', async () => {
+    setup({ preflight: { ...olderThanDatabase, state: 'ahead_of_releases' } })
+    expect(
+      await screen.findByRole('button', { name: 'Roll back' }),
+    ).toBeDisabled()
+    expect(
+      screen.getByText(/No restore point for an older version/),
+    ).toBeInTheDocument()
+  })
+
+  it('previews the plan for a compatible upgrade', async () => {
+    setup({
+      preflight: {
+        ...green,
+        state: 'upgrade_available',
+        migrations_to_apply: 3,
+        restore_point_first: true,
+        verify_window_seconds: 180,
+      },
+    })
+    expect(await screen.findByText('v1.0.0 to v1.1.0')).toBeInTheDocument()
+    expect(
+      screen.getByText('3 database migrations to apply'),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/restore point is taken first/)).toBeInTheDocument()
+    expect(screen.getByText(/180 seconds/)).toBeInTheDocument()
   })
 
   it('explains that the next upgrade verifies and pins, with no command to run', async () => {

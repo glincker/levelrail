@@ -177,6 +177,7 @@ They use the same notification channels as every other alert.
 | `APP_JOBS_HISTORY_KEEP` | 200 | Runs kept per job. |
 | `APP_JOBS_OUTPUT_RETENTION` | 720h | How long a run's output is kept. |
 | `APP_JOBS_MAX_OUTPUT_BYTES` | 65536 | Output kept per run. |
+| `APP_JOBS_BACKGROUND_TIMEOUT` | 15m | How long a background [http job](/scheduled-functions) is awaited. |
 | `APP_SCHEDULED_TASK_SCHEDULER_INTERVAL` | 1m | How often the scheduler looks for due jobs. |
 
 ## Examples

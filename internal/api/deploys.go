@@ -128,7 +128,7 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		return
 	}
 	// Rollbacks skip guardrails: restoring a known state must never be blocked.
-	if rollbackTo == "" && rt.refuseLowDisk(w, diskguard.OpPull) {
+	if rollbackTo == "" && (rt.refuseLowDisk(w, diskguard.OpPull) || rt.refuseNodeCritical(r.Context(), w, existing.NodeID)) {
 		return
 	}
 	if rollbackTo == "" {

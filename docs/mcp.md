@@ -37,15 +37,9 @@ A call the server refuses for a missing ability returns a short structured error
 
 `tools/list` is what an assistant pays for on every conversation. Output schemas were about 60 percent of it, and results still carry structured content without them, so `levelrail-mcp` omits them by default. The in-process server used by the dashboard assistant keeps them.
 
-Estimated tokens (4 characters per token), with the write tools counted:
+The exact tool counts and estimated tokens per mode and per toolset are generated into [MCP tool surface](/mcp-tool-surface), so they stay in step with the code. In short: `read-only` lists the fewest tools, `standard` adds the mutating ones and `full` adds the destructive ones; the default listing stays small because output schemas are omitted unless you pass `--output-schemas`.
 
-| Mode | Tools | Default listing | With `--output-schemas` |
-| --- | --- | --- | --- |
-| `read-only` | 145 | about 22,300 | about 54,800 |
-| `standard` | 176 | about 29,200 | about 71,900 |
-| `full` | 186 | about 31,300 | about 77,400 |
-
-The numbers below are the static (`--all`) listing and a documented ceiling; the budget tests (`internal/mcptools/budget_test.go`) enforce both listings, print headroom on every run, and on failure name the heaviest tools and toolsets. Override a ceiling deliberately with `APP_MCP_TOKEN_BUDGET_<MODE>` or `APP_MCP_TOKEN_BUDGET_COMPACT_<MODE>` (mode upper case, dashes as underscores). Budgets are ratchets: lower them when a change shrinks the listing, never raise them. The default session, one toolset and every description (400 characters) have their own limits in the same tests.
+The budgets are the static (`--all`) listing and a documented ceiling; the budget tests (`internal/mcptools/budget_test.go`) enforce both listings, print headroom on every run, and on failure name the heaviest tools and toolsets. Override a ceiling deliberately with `APP_MCP_TOKEN_BUDGET_<MODE>` or `APP_MCP_TOKEN_BUDGET_COMPACT_<MODE>` (mode upper case, dashes as underscores). Budgets are ratchets: lower them when a change shrinks the listing, never raise them. The default session, one toolset and every description (400 characters) have their own limits in the same tests.
 
 New tools return compact rows with a row cap and a `truncated` flag rather than the raw API resource.
 

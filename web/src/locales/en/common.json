@@ -201,7 +201,7 @@
       "forPage": "Help for this page",
       "docs": "Documentation",
       "troubleshooting": "Troubleshooting",
-      "systemStatus": "System status",
+      "systemStatus": "Doctor",
       "report": "Report an issue",
       "community": "Ask the community"
     },
@@ -248,6 +248,7 @@
       "models": "AI models",
       "pipelines": "Pipelines",
       "approvals": "Deploy approvals",
+      "inbox": "Inbox",
       "alerts": "Alerts",
       "assistant": "AI assistant",
       "settings": "Settings",
@@ -261,6 +262,14 @@
       "comfortable": "Comfortable width",
       "wide": "Wide",
       "full": "Full width"
+    },
+    "logoStatus": {
+      "healthy": "Everything is healthy",
+      "update": "An update is available",
+      "degraded": "Degraded: some checks need attention",
+      "incident": "Incident: a health check is failing",
+      "busy": "An upgrade or restart is in progress",
+      "unknown": "Status unknown"
     }
   },
   "cliConsole": {
@@ -408,6 +417,22 @@
     "signInTab": "Sign in",
     "setupTab": "Set up admin account"
   },
+  "localMode": {
+    "title": "This is a local instance",
+    "body": "Everything here lives on this machine and is only reachable from it. Data directory:",
+    "resetUnavailable": "Reset is available when the instance was started with the dev command.",
+    "reset": "Reset",
+    "failed": "The reset could not be started.",
+    "dialog": {
+      "title": "Reset this local instance?",
+      "description": "All apps, database records, secrets and settings are deleted and the instance starts fresh.",
+      "consequence1": "Containers already created keep running until you remove them.",
+      "consequence2": "A new admin password is generated and printed in the terminal running the dev command.",
+      "confirm": "Reset instance",
+      "resetting": "Resetting...",
+      "cancel": "Cancel"
+    }
+  },
   "controlPlaneRestart": {
     "action": "Restart control plane",
     "title": "Restart the control plane?",
@@ -455,6 +480,8 @@
       },
       "ssoEmail": "Work email",
       "ssoContinue": "Continue with SSO",
+      "ssoCheck": "Continue",
+      "ssoContinueWith": "Continue with SSO ({{name}})",
       "ssoRouted": "Your organization signs in through {{provider}}.",
       "ssoNoRoute": "No single sign-on is set up for that email. Sign in with your password or another option."
     },
@@ -591,5 +618,8 @@
     "strategyReason": "Set by the template: {{reason}}",
     "recreateDowntime": "Recreate stops the old container before the new one starts, so each deploy has a brief downtime. A deploy that fails its readiness check rolls back to the previous image.",
     "memoryNote": "This limit is twice the template's recommended memory, to leave headroom. Edit it here to change it."
+  },
+  "pageLoading": {
+    "label": "Loading page"
   }
 }

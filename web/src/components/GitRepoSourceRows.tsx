@@ -3,15 +3,10 @@ import { Link } from '@tanstack/react-router'
 import { Combobox } from '@/components/ui/combobox'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { RepoPickerGrid } from './GitRepoPickerGrid'
-import {
-  fromGitLabProject,
-  type NormalizedRepoOption,
-} from '../lib/gitRepoOptions'
-import {
-  useGitLabAppBranches,
-  useGitLabAppProjects,
-} from '../queries/gitlabApp'
+import { GitConnectionBanner } from './GitConnectionHealth'
+import { GitRepoListPicker } from './GitRepoListPicker'
+import type { NormalizedRepoOption } from '../lib/gitRepoOptions'
+import { useGitConnectionBranches } from '../queries/gitConnections'
 import type { GitProviderStatus } from '../types/gitProviders'
 import type { GitRepoSourceValue } from './GitRepoSourcePicker'
 
@@ -61,18 +56,14 @@ export function GitLabProviderRow({
   runningRepoByUrl,
 }: ProviderRowProps) {
   const enabled = provider.connected
-  const projects = useGitLabAppProjects(enabled)
-  const [selectedProjectId, setSelectedProjectId] = useState('')
+  const [selected, setSelected] = useState<NormalizedRepoOption | null>(null)
   const [branch, setBranch] = useState('')
 
-  const options = useMemo(
-    () => (projects.data ?? []).map(fromGitLabProject),
-    [projects.data],
-  )
-  const selected = options.find((option) => option.key === selectedProjectId)
-  const branches = useGitLabAppBranches(
-    selected ? Number(selected.key) : 0,
-    provider.can_list_branches && selected !== undefined,
+  const ref = selected?.providerRef
+  const branches = useGitConnectionBranches(
+    ref && ref.kind !== 'github' ? ref.connectionId : '',
+    ref && ref.kind !== 'github' ? ref.repo : '',
+    provider.can_list_branches && selected !== null,
   )
   const branchOptions = useMemo(
     () => (branches.data ?? []).map((b) => ({ value: b.name, label: b.name })),
@@ -80,7 +71,7 @@ export function GitLabProviderRow({
   )
 
   function selectProject(option: NormalizedRepoOption) {
-    setSelectedProjectId(option.key)
+    setSelected(option)
     setBranch(option.defaultBranch)
     onSelect({
       provider: 'gitlab',
@@ -98,19 +89,17 @@ export function GitLabProviderRow({
 
   return (
     <div className="space-y-2">
+      <GitConnectionBanner provider={provider} />
       <Field>
         <FieldLabel htmlFor="git-picker-gitlab-project">Project</FieldLabel>
-        <RepoPickerGrid
+        <GitRepoListPicker
+          provider="gitlab"
+          enabled={enabled}
+          noun="projects"
           searchInputId="git-picker-gitlab-project"
-          options={options}
-          isLoading={projects.isLoading}
-          isError={projects.isError}
-          errorMessage={projects.error?.message}
-          selectedKey={selectedProjectId}
+          selectedKey={selected?.key ?? ''}
           disabled={disabled}
           runningRepoByUrl={runningRepoByUrl}
-          searchPlaceholder="Search projects..."
-          emptyMessage="No projects found."
           onSelect={selectProject}
         />
       </Field>

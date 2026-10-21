@@ -61,12 +61,23 @@ export interface GitBuildDetection {
   truncated: boolean
   needs_build_settings: boolean
   packages: WorkspacePackage[]
+  static_build?: StaticBuildSuggestion
+}
+
+// StaticBuildSuggestion prefills a static build from the repository's framework preset.
+export interface StaticBuildSuggestion {
+  preset_id: string
+  preset_name: string
+  command: string
+  publish_dir: string
 }
 
 export interface SetGitSourceBuildRequest {
   build_type: GitSourceBuildType
   build_path: string
   base_directory: string
+  build_command?: string
+  publish_dir?: string
 }
 
 export interface GitSourceBuild {
@@ -103,6 +114,9 @@ export interface GitSourceResource {
   // base_directory is the build context relative to the repository root;
   // empty or absent means the root.
   base_directory?: string
+  // build_command and publish_dir build a static site before serving it.
+  build_command?: string
+  publish_dir?: string
   resolved_build?: GitSourceResolvedBuild
   // additional_services fans one push out to sibling services under the
   // same app group (apps_group.go), keyed by the sibling's own service
@@ -120,6 +134,36 @@ export interface GitSourceResource {
   trigger_mode: GitSourceTriggerMode
   has_token: boolean
   webhook_url: string
+  // webhook_url_warning is set when webhook_url cannot be reached by a git
+  // host: a localhost or private address, or no public address at all.
+  webhook_url_warning?: 'private_address' | 'no_public_url'
+  webhook_url_source?: string
+  // webhook_registration is the outcome of registering the webhook on the provider.
+  webhook_registration?: {
+    state: 'registered' | 'failed'
+    error?: string
+    changed_at?: string
+  }
+  // poll is the missed-webhook poller's view of this source.
+  poll?: {
+    enabled: boolean
+    last_polled_at?: string
+    last_webhook_at?: string
+    last_seen_head?: string
+    error?: string
+  }
+  /** The provider connection the repository was picked from; absent for a pasted URL. */
+  connection_id?: string
+  connection?: {
+    id: string
+    provider?: 'gitlab' | 'bitbucket' | 'gitea'
+    label?: string
+    account_name?: string
+    host?: string
+    /** ok, needs_reauthorize, revoked, rate_limited, or needs_reconnect once the account was disconnected. */
+    state: string
+    detail?: string
+  }
   webhook_secret?: string
   // preview_enabled mirrors store.GitSource.PreviewEnabled: read-only
   // here, set via PUT /api/v1/apps/{name}/preview-settings
@@ -166,6 +210,8 @@ export interface SetGitSourceRequest {
   build_type?: GitSourceBuildType
   build_path?: string
   base_directory?: string
+  build_command?: string
+  publish_dir?: string
   token?: string
   additional_services?: Record<string, GitSourceBuild>
   services?: Record<string, GitSourceService>

@@ -10,7 +10,7 @@ import (
 )
 
 // setGitSourceBuild changes only the build settings of a connected source.
-func setGitSourceBuild(ctx context.Context, client *apiclient.Client, name, buildType, dockerfile, baseDirectory string) (gitSourceResource, error) {
+func setGitSourceBuild(ctx context.Context, client *apiclient.Client, name, buildType, dockerfile, baseDirectory string, static staticBuildFlags) (gitSourceResource, error) {
 	if buildType == "" {
 		current, err := client.GetGitSource(ctx, name)
 		if err != nil {
@@ -18,9 +18,44 @@ func setGitSourceBuild(ctx context.Context, client *apiclient.Client, name, buil
 		}
 		buildType = current.BuildType
 	}
+	command, publish, err := resolveStaticBuild(ctx, client, name, buildType, static)
+	if err != nil {
+		return gitSourceResource{}, err
+	}
 	return client.SetGitSourceBuild(ctx, name, apiclient.SetGitSourceBuildRequest{
-		BuildType: buildType, BuildPath: dockerfile, BaseDirectory: baseDirectory,
+		BuildType: buildType, BuildPath: dockerfile, BaseDirectory: baseDirectory, BuildCommand: command, PublishDir: publish,
 	})
+}
+
+// staticBuildFlags are the CLI's static build inputs; Infer asks the server
+// to detect the framework and fill whichever of the two is empty.
+type staticBuildFlags struct {
+	Command string
+	Publish string
+	Infer   bool
+}
+
+// resolveStaticBuild fills a missing command or publish directory from the
+// repository's framework preset, so an override is optional.
+func resolveStaticBuild(ctx context.Context, client *apiclient.Client, name, buildType string, f staticBuildFlags) (command, publish string, err error) {
+	command, publish = f.Command, f.Publish
+	if buildType != "static" || (command != "" && publish != "") || (command == "" && publish == "" && !f.Infer) {
+		return command, publish, nil
+	}
+	det, err := client.DetectGitSourceBuild(ctx, name, "")
+	if err != nil {
+		return "", "", fmt.Errorf("detect the static build for app %q: %w", name, err)
+	}
+	if det.StaticBuild == nil {
+		return "", "", fmt.Errorf("could not infer a static build for app %q: pass both --build-command and --publish-dir", name)
+	}
+	if command == "" {
+		command = det.StaticBuild.Command
+	}
+	if publish == "" {
+		publish = det.StaticBuild.PublishDir
+	}
+	return command, publish, nil
 }
 
 func printResolvedBuild(out io.Writer, gs gitSourceResource) {
@@ -29,6 +64,9 @@ func printResolvedBuild(out io.Writer, gs gitSourceResource) {
 	}
 	if gs.ResolvedBuild.Summary != "" {
 		_, _ = fmt.Fprintf(out, "builds:         %s\n", gs.ResolvedBuild.Summary)
+	}
+	if gs.BuildCommand != "" {
+		_, _ = fmt.Fprintf(out, "build_command:  %s\npublish_dir:    %s\n", gs.BuildCommand, gs.PublishDir)
 	}
 }
 

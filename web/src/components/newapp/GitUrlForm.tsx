@@ -10,7 +10,8 @@ import {
 } from '@/components/ui/collapsible'
 import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
 
-const URL_PATTERN = /^https?:\/\/[^\s/]+\/\S+$/i
+const URL_PATTERN =
+  /^(?:(?:https?|ssh|git):\/\/[^\s/]+\/\S+|[\w.-]+@[\w.-]+:\S+)$/i
 
 /** Paste-a-URL path: any https git URL, with optional branch and access token. */
 export function GitUrlForm({

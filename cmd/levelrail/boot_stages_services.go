@@ -58,6 +58,7 @@ func (s *bootState) buildRunners() error {
 			return err
 		}
 		backupRunner.Volume = volumeBackupOpts
+		backupVerifyRunner.Identities = backupIdentities(backupRunner)
 	}
 
 	// Shared by the manual trigger and the cron loop; needs no master key since exec'd commands carry no credential.
@@ -203,10 +204,11 @@ func (s *bootState) wireRouter() {
 	setupEventWebhooks(ctx, logger, b, db, secretsManager, apiRouter)
 	startScheduledMaintenance(ctx, logger, db, alertingDB, deployDispatcher, apiRouter)
 	startKeyLifecycle(ctx, logger, db, secretsManager, alertingDB, deployDispatcher, apiRouter)
-	startDiskGuard(ctx, logger, agentDataDir, alertingDB, deployDispatcher, apiRouter)
+	startDiskGuard(ctx, logger, agentDataDir, alertingDB, deployDispatcher, apiRouter, db)
 	setupCompliance(ctx, logger, db, secretsManager, agentDataDir, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
 	startCanaryReconciler(ctx, logger, db, apiRouter)
+	apiRouter.StartSplitTesting(ctx)
 	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
 	startExternalDatabaseMonitor(ctx, logger, db, secretsManager, client, agentRegistry)
@@ -267,6 +269,7 @@ func (s *bootState) startMesh() error {
 	apiRouter.SetMeshPaths(newMeshPathResolver(meshCfg, db))
 	apiRouter.SetMeshPeerStatus(agent.NewGRPCSink(agentRegistry))
 	go apiRouter.RunNodeMoves(ctx)
+	go apiRouter.RunNodeFailure(ctx)
 	// Resolved once: the bridge gateway IP does not change while the process runs.
 	meshDNSAddr := containerDNSAddr(ctx, client, meshCfg, logger)
 	if meshDNSAddr != "" && meshCfg != nil && meshCfg.resolver != nil {
@@ -286,14 +289,23 @@ func (s *bootState) startMesh() error {
 	apiRouter.SetOrphanReaper(orphanReaper)
 	janitorEngine := apiRouter.NewJanitor(db, client)
 
-	edge, err := loadIngressEdge(logger)
+	edge, err := loadIngressEdge(logger, b)
 	if err != nil {
 		return fmt.Errorf("ingress edge settings: %w", err)
 	}
 	edgeInfo := edge.doctorInfo()
 	edgeInfo.Snapshot = setupIngressSnapshot(ctx, logger, ingressDriver, db, secretsManager, edge)
 	apiRouter.SetDoctorIngressEdge(edgeInfo)
-	proxySyncer := newProxySyncer(b, db, logger)
+	apiRouter.SetIngressResilience(api.IngressResilience{
+		Status:  ingressDriver.SnapshotStatus,
+		Verify:  ingressDriver.VerifySnapshot,
+		SaveNow: ingressDriver.SaveSnapshotNow,
+		CertKeys: func(ctx context.Context) (int, error) {
+			keys, err := db.ListCertStorageKeys(ctx, "certificates", true)
+			return len(keys), err
+		},
+	})
+	proxySyncer := newProxySyncer(b, db, logger, proxyContainerExec{rt: client})
 	apiRouter.SetProxyIntegration(proxySyncer, db, proxyVerifyTimeout(logger))
 	routeCheck := newRouteCheck(logger)
 	apiRouter.SetProxyRouteCheck(routeCheck)

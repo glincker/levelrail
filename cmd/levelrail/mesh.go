@@ -337,7 +337,9 @@ func containerDNSAddr(ctx context.Context, client *docker.Client, meshCfg *meshS
 		return ""
 	}
 
-	gateway, err := client.BridgeGatewayIP(ctx)
+	bctx, bcancel := context.WithTimeout(ctx, bootDockerCallTimeout)
+	gateway, err := client.BridgeGatewayIP(bctx)
+	bcancel()
 	if err != nil {
 		logger.Warn("mesh dns: could not resolve a container-reachable address, containers will use Docker's own resolver",
 			slog.String("error", err.Error()))

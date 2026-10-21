@@ -176,6 +176,20 @@ export function getCheckCta(check: DoctorCheck): CheckCta | null {
       }
       return null
 
+    case 'git_connections':
+      if (check.status === 'warn') {
+        return {
+          message:
+            'A git provider needs to be reconnected. Open its settings page and press Reconnect.',
+          action: (
+            <Link to="/settings/github-app" className={inlineLinkClassName}>
+              Open git integrations
+            </Link>
+          ),
+        }
+      }
+      return null
+
     case 'stale_secrets':
       if (check.status === 'warn') {
         return {

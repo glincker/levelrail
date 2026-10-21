@@ -17,8 +17,8 @@ func TestRun_GitProviders(t *testing.T) {
 
 	stdout, _ := runCLIExpectOK(t, []string{"git-providers", "--api-url", srv.URL})
 
-	if gotPath != "/api/v1/git-providers" {
-		t.Errorf("path = %s, want /api/v1/git-providers", gotPath)
+	if gotPath != "/api/v1/git-connections" {
+		t.Errorf("last path = %s, want the connections list after the providers call", gotPath)
 	}
 	if !strings.Contains(stdout, "github") || !strings.Contains(stdout, "gitlab") || !strings.Contains(stdout, "bitbucket") {
 		t.Errorf("stdout = %q, want all three providers listed", stdout)

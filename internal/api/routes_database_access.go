@@ -32,4 +32,6 @@ func (rt *Router) registerDatabaseAccessRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/network/make-private", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleMakeDatabasePrivate))
 	mux.HandleFunc("PUT /api/v1/databases/{name}/network/scope", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleSetDatabaseScope))
 	mux.HandleFunc("PUT /api/v1/databases/{name}/network/tls", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleSetDatabaseTLS))
+	mux.HandleFunc("PUT /api/v1/databases/{name}/tls", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleSetDatabaseTLSEnabled))
+	mux.HandleFunc("GET /api/v1/databases/{name}/tunnel", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleDatabaseTunnel))
 }

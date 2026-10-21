@@ -1,10 +1,5 @@
-// Query-key factory and fetcher for GET /api/v1/system/doctor
-// (internal/api's preflight health-check bundle, already shipped as
-// levelrail-cli doctor with no dashboard page). Session-cookie
-// authenticated like every other settings page. Read-only: no mutations,
-// just a suspense query plus a manual refetch for the "Re-run checks"
-// button, since each check does a real Docker ping and disk stat call
-// and shouldn't be polled automatically.
+// Doctor report types and fetchers: GET /api/v1/system/doctor for the
+// one-shot report, the per-check re-run, and the stream event shape.
 
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
@@ -23,6 +18,24 @@ export interface DoctorCheck {
   docs_path?: string
   /** Set on a check that is not ok: a broken thing or hardening advice. */
   class?: 'incident' | 'recommendation'
+  /** Section the server filed the check under. */
+  group?: string
+  /** The registered check that produced this result: the id to re-run it by. */
+  check_id?: string
+  /** The raw fact behind the message: a path, a port holder, a count. */
+  evidence?: string
+  /** Typed fix for a failing check, when the server has one. */
+  fix_id?: string
+  fix_kind?: 'auto' | 'guided' | 'manual'
+}
+
+/** One server-sent message from /api/v1/system/doctor/stream. */
+export interface DoctorStreamEvent {
+  type: 'start' | 'check' | 'fixes' | 'done'
+  id?: string
+  checks?: DoctorCheck[]
+  ok?: boolean
+  total?: number
 }
 
 export interface DoctorReport {
@@ -51,6 +64,21 @@ export function systemDoctorQueryOptions() {
     queryFn: fetchSystemDoctor,
     staleTime: DEDUPE_STALE_MS,
   })
+}
+
+/** runDoctorCheck re-runs one registered check, the Re-check button's call. */
+export async function runDoctorCheck(id: string): Promise<DoctorCheck[]> {
+  const res = await fetch(
+    `/api/v1/system/doctor/checks/${encodeURIComponent(id)}/run`,
+    { method: 'POST' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `re-run check failed: ${res.status}`),
+    )
+  }
+  return ((await res.json()) as { checks: DoctorCheck[] }).checks
 }
 
 export function useSystemDoctor() {

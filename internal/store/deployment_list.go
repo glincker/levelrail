@@ -190,7 +190,7 @@ func deploymentTriggerSQL(triggers []string) string {
 		case DeploymentTriggerPreview:
 			ors = append(ors, "pv.pr_number IS NOT NULL")
 		case DeploymentTriggerGitPush:
-			ors = append(ors, "(d.source = 'webhook' AND pv.pr_number IS NULL)")
+			ors = append(ors, "(d.source IN ('webhook','poll') AND pv.pr_number IS NULL)")
 		case DeploymentTriggerRollback:
 			ors = append(ors, rollbackAttemptForD)
 		case DeploymentTriggerManual:
@@ -298,7 +298,7 @@ func DeploymentTrigger(source string, hasRollbackTarget bool, prNumber int) stri
 		return DeploymentTriggerPreview
 	}
 	switch source {
-	case DeployAttemptSourceWebhook, DeployAttemptSourceGitPush:
+	case DeployAttemptSourceWebhook, DeployAttemptSourceGitPush, DeployAttemptSourcePoll:
 		return DeploymentTriggerGitPush
 	case DeployAttemptSourceAutoRollback:
 		return DeploymentTriggerRollback

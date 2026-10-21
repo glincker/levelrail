@@ -102,7 +102,9 @@ func (r *runner) rollbackAndFinish(ctx context.Context, failedStep string, cause
 			if err != nil {
 				return "", fmt.Errorf("restore database snapshot: %w", err)
 			}
-			detail += ", database restored from " + a.BackupName + " (failed run kept at " + kept + ")"
+			a.DatabaseRestored = true
+			a.RolledBackMinutes = minutesSince(a.SnapshotAt, d.now())
+			detail += fmt.Sprintf(", database restored from %s (%d minutes of changes rolled back, failed run kept at %s)", a.BackupName, a.RolledBackMinutes, kept)
 		}
 		if err := d.Start(ctx); err != nil {
 			return "", fmt.Errorf("start previous release: %w", err)
@@ -118,7 +120,10 @@ func (r *runner) rollbackAndFinish(ctx context.Context, failedStep string, cause
 	if a.PrevBinary != "" {
 		_ = os.Remove(a.PrevBinary)
 	}
-	return r.close(OutcomeRolledBack, failedStep, fmt.Errorf("%w: rolled back to %s", cause, a.FromVersion))
+	if a.DatabaseRestored {
+		return r.close(OutcomeRolledBack, failedStep, fmt.Errorf("%w: rolled back to %s, database restored, %d minutes of changes were discarded", cause, a.FromVersion, a.RolledBackMinutes))
+	}
+	return r.close(OutcomeRolledBack, failedStep, fmt.Errorf("%w: rolled back to %s, the database needed no restore so no changes were lost", cause, a.FromVersion))
 }
 
 // schemaChanged reports whether the live database no longer matches the
@@ -130,6 +135,13 @@ func (r *runner) schemaChanged(ctx context.Context) bool {
 	}
 	cur, err := r.d.DBSchema(ctx)
 	return err != nil || cur != r.a.FromSchema
+}
+
+func minutesSince(from, now time.Time) int {
+	if from.IsZero() || now.Before(from) {
+		return 0
+	}
+	return int(now.Sub(from) / time.Minute)
 }
 
 func swapBinary(src, dst string) error {

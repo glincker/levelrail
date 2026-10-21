@@ -47,7 +47,7 @@ func TestDashboardHTTPSTarget(t *testing.T) {
 func TestSettingsFixesListed(t *testing.T) {
 	rt, _ := newFixitRouter(t)
 	views, err := rt.fixitEngine().List(context.Background(), SubjectSettings, true)
-	if err != nil || len(views) != 7 {
+	if err != nil || len(views) != 8 {
 		t.Fatalf("got %d views, err %v", len(views), err)
 	}
 }

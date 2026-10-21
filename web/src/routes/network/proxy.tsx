@@ -5,7 +5,7 @@ import {
   useNetworkProxy,
 } from '../../queries/networkProxy'
 import { ProxyReachabilityTable } from '../../components/network/ProxyReachabilityTable'
-import { ProxySetupCard } from '../../components/ProxySetupCard'
+import { ProxyProviderCard } from '../../components/ProxyProviderCard'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -34,7 +34,7 @@ function ProxyPage() {
   return (
     <div className="space-y-4">
       <PageHeader title={t('page.title')} description={t('page.description')} />
-      <ProxySetupCard />
+      <ProxyProviderCard />
       <ProxyReachabilityTable domains={data.domains} />
     </div>
   )

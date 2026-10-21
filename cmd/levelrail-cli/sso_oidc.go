@@ -113,6 +113,22 @@ func (c cliCtx) runSSOOIDC(args []string) int {
 				p, err := cl.SetOAuthSSOPolicy(ctx, provider, req)
 				return p, c.printOIDCPolicies(p), err
 			})
+	case "test":
+		return c.runAPI("sso oidc test", "sso oidc test <provider> [flags]", rest, nil,
+			func(ctx context.Context, cl *Client, fs *flag.FlagSet) (any, func(), error) {
+				provider, err := oneArg(fs, "provider")
+				if err != nil {
+					return nil, nil, err
+				}
+				p, err := cl.GetOAuthSSOPolicy(ctx, provider)
+				if err != nil {
+					return nil, nil, err
+				}
+				if !p.Enabled {
+					return nil, nil, newValidationError("enable provider %s before testing it", provider)
+				}
+				return printTestLogin(c, cl.URL("/api/v1/sso/oidc/"+apiclient.PathEscape(provider)+"/test/start"))
+			})
 	case "evaluate":
 		var email, groups string
 		var verified bool

@@ -52,8 +52,8 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 vi.mock('../CreateResourceWizard', () => ({
   CreateResourceWizard: ({ trigger }: { trigger: ReactNode }) => <>{trigger}</>,
 }))
-vi.mock('../setup/SetupWizard', () => ({
-  SetupWizard: () => <div>wizard</div>,
+vi.mock('../getStarted/FirstDeploy', () => ({
+  FirstDeploy: () => <button type="button">Deploy sample app</button>,
 }))
 vi.mock('../FleetResourceChart', () => ({ FleetResourceChart: () => null }))
 vi.mock('../FleetUtilizationSummary', () => ({
@@ -62,8 +62,6 @@ vi.mock('../FleetUtilizationSummary', () => ({
 vi.mock('../TopResourceConsumers', () => ({ TopResourceConsumers: () => null }))
 vi.mock('../../hooks/useBrand', () => ({ useBrand: () => ({ Name: 'Acme' }) }))
 vi.mock('../../hooks/useIsRoot', () => ({ useIsRoot: () => false }))
-
-const ONBOARDING = { completed: true, current_step: '' } as never
 
 function makeApp(name: string, healthy: boolean): AppListEntry {
   return {
@@ -114,7 +112,6 @@ function renderHome(apps: AppListEntry[]) {
             by_environment: {},
           }}
           sample={apps}
-          onboarding={ONBOARDING}
         />
       </QueryClientProvider>
     </I18nextProvider>,
@@ -137,11 +134,11 @@ afterEach(() => {
 })
 
 describe('DashboardHome', () => {
-  it('first run shows a single strong CTA and the adaptive quick start', () => {
+  it('first run shows the single first-deploy path and the adaptive quick start', async () => {
     routeFetch({})
     renderHome([])
     expect(
-      screen.getByRole('button', { name: 'Deploy your first app' }),
+      await screen.findByRole('button', { name: 'Deploy sample app' }),
     ).toBeInTheDocument()
     expect(screen.getByText('Import anything')).toBeInTheDocument()
     expect(screen.getByText('Deploy a template')).toBeInTheDocument()

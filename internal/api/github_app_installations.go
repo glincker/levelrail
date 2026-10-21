@@ -116,6 +116,7 @@ func (rt *Router) handleListGitHubAppInstallations(w http.ResponseWriter, r *htt
 // this account, checked explicitly since repo URLs don't carry an
 // installation id to key a foreign key off of.
 func (rt *Router) handleDeleteGitHubAppInstallation(w http.ResponseWriter, r *http.Request) {
+	rt.invalidateGitRepoCache(r.Context(), gitProviderGitHub)
 	idRaw := r.PathValue("id")
 	id, err := strconv.ParseInt(idRaw, 10, 64)
 	if err != nil || id <= 0 {

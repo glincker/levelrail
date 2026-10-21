@@ -39,7 +39,7 @@ type gitSourceResolvedBuild struct {
 
 // resolveGitSourceBuild never fails: an invalid stored combination is
 // reported through Summary so the dashboard can still render it.
-func resolveGitSourceBuild(buildType, baseDirectory, buildPath string) gitSourceResolvedBuild {
+func resolveGitSourceBuild(buildType, baseDirectory, buildPath, buildCommand, publishDir string) gitSourceResolvedBuild {
 	base := strings.Trim(baseDirectory, "/")
 	ctxDir := "."
 	if base != "" {
@@ -57,6 +57,9 @@ func resolveGitSourceBuild(buildType, baseDirectory, buildPath string) gitSource
 		}
 		return gitSourceResolvedBuild{ContextDir: ctxDir, DockerfilePath: df, Summary: fmt.Sprintf("Builds %s with %s as the build context.", df, where)}
 	case spec.BuildStatic:
+		if buildCommand != "" {
+			return gitSourceResolvedBuild{ContextDir: ctxDir, Summary: fmt.Sprintf("Runs %q in %s, then serves %s as a static site.", buildCommand, where, path.Join(base, publishDir))}
+		}
 		return gitSourceResolvedBuild{ContextDir: ctxDir, DockerfilePath: buildPath, Summary: fmt.Sprintf("Serves a static site built from %s.", where)}
 	default:
 		return gitSourceResolvedBuild{ContextDir: ctxDir, Summary: fmt.Sprintf("Auto-detects the framework in %s.", where)}
@@ -80,10 +83,18 @@ func validateGitSourceBuildPaths(buildType, baseDirectory, buildPath string) (ba
 	return base, p, nil
 }
 
+// validateGitSourceStaticBuild checks the static build pair against the build
+// type and Dockerfile/output path, with the same rules app.yaml gets.
+func validateGitSourceStaticBuild(name, buildType, buildPath, command, publish string) error {
+	return spec.ValidateStaticBuild(name, buildType, command, publish, buildPath, nil)
+}
+
 type setGitSourceBuildRequest struct {
 	BuildType     string `json:"build_type"`
 	BuildPath     string `json:"build_path"`
 	BaseDirectory string `json:"base_directory"`
+	BuildCommand  string `json:"build_command"`
+	PublishDir    string `json:"publish_dir"`
 }
 
 // handleSetGitSourceBuild handles PUT /api/v1/apps/{name}/git-source/build:
@@ -107,6 +118,10 @@ func (rt *Router) handleSetGitSourceBuild(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if err := validateGitSourceStaticBuild(name, buildType, p, req.BuildCommand, req.PublishDir); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	gs, err := rt.gitSources.GetGitSource(ctx, name)
 	if errors.Is(err, store.ErrGitSourceNotFound) {
 		writeError(w, http.StatusNotFound, "no git source connected for this app")
@@ -120,11 +135,12 @@ func (rt *Router) handleSetGitSourceBuild(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusConflict, "this app deploys from a services map, edit the build settings in that map instead")
 		return
 	}
-	if err := rt.gitSources.SetGitSourceBuild(ctx, name, buildType, p, base); err != nil {
+	if err := rt.gitSources.SetGitSourceBuild(ctx, name, buildType, p, base, req.BuildCommand, req.PublishDir); err != nil {
 		rt.internalError(w, "api: set git source build failed", err, slog.String("name", name))
 		return
 	}
 	gs.BuildType, gs.BuildPath, gs.BaseDirectory = buildType, p, base
+	gs.BuildCommand, gs.PublishDir = req.BuildCommand, req.PublishDir
 	hasToken := false
 	if rt.gitSourceSecrets != nil {
 		hasToken, err = rt.gitSourceSecrets.Exists(ctx, store.GitSourceSecretsKey(name), gitSourceTokenKey)
@@ -134,7 +150,7 @@ func (rt *Router) handleSetGitSourceBuild(w http.ResponseWriter, r *http.Request
 		}
 	}
 	rt.logger.Info("api: git source build settings updated", slog.String("name", name), slog.String("build_type", buildType), slog.String("base_directory", base), slog.String("build_path", p))
-	writeJSON(w, http.StatusOK, toGitSourceResource(*gs, hasToken, rt.gitSourceWebhookURL(ctx, name)))
+	writeJSON(w, http.StatusOK, rt.gitSourceResourceFor(ctx, *gs, hasToken, name))
 }
 
 type detectGitSourceRequest struct {
@@ -225,15 +241,29 @@ func (rt *Router) writeDetectError(w http.ResponseWriter, name, repoURL string, 
 
 func (rt *Router) repoLayoutHosts(ctx context.Context) repolayout.Hosts {
 	var hosts repolayout.Hosts
-	if rt.githubApp == nil {
+	if rt.githubApp != nil {
+		if conn, err := rt.githubApp.GetGitHubAppConnection(ctx); err == nil {
+			if u, perr := url.Parse(conn.InstanceURL); perr == nil {
+				hosts.GitHub = u.Host
+			}
+		}
+	}
+	if rt.gitConns == nil {
 		return hosts
 	}
-	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
+	conns, err := rt.gitConns.ListGitConnections(ctx, "")
 	if err != nil {
 		return hosts
 	}
-	if u, perr := url.Parse(conn.InstanceURL); perr == nil {
-		hosts.GitHub = u.Host
+	for _, c := range conns {
+		switch c.Provider {
+		case gitProviderGitLab:
+			hosts.GitLab = c.Host
+		case gitProviderGitea, gitProviderForgejo:
+			hosts.Gitea = c.Host
+		case gitProviderBitbucketServer:
+			hosts.BitbucketServer = c.Host
+		}
 	}
 	return hosts
 }

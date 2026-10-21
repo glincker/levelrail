@@ -1,0 +1,21 @@
+# Throwaway identity providers for proving SSO. Lab credentials only, never reuse them.
+name: sso-lab
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.8
+    container_name: lr-keycloak
+    command: ["start-dev", "--import-realm", "--https-port=8443", "--https-certificate-file=/certs/tls.crt", "--https-certificate-key-file=/certs/tls.key", "--hostname-strict=false"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "127.0.0.1:18443:8443"
+      - "127.0.0.1:18080:8080"
+    volumes:
+      - ./realm-lab.json:/opt/keycloak/data/import/realm-lab.json:ro
+      - ./certs:/certs:ro
+  simplesamlphp:
+    image: kristophjunge/test-saml-idp:1.15
+    container_name: lr-sp
+    ports:
+      - "127.0.0.1:18182:8443"

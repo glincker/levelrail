@@ -82,9 +82,10 @@ type forge struct {
 	bitbucket bitbucketForgeClient
 }
 
-// resolveForge finds the connected provider that hosts repoURL. It returns
+// resolveForge finds the connected provider that hosts repoURL, preferring
+// the connection the source recorded. It returns
 // errNoForge when none does.
-func (rt *Router) resolveForge(ctx context.Context, repoURL string) (*forge, error) {
+func (rt *Router) resolveForge(ctx context.Context, repoURL, connectionID string) (*forge, error) {
 	if repoURL == "" {
 		return nil, errNoForge
 	}
@@ -105,23 +106,27 @@ func (rt *Router) resolveForge(ctx context.Context, repoURL string) (*forge, err
 			}
 		}
 	}
-	if c, ok := rt.gitlabAppClient.(gitlabForgeClient); ok && rt.gitlabAppSecrets != nil {
-		if conn, token, err := rt.gitlabAccessToken(ctx); err == nil {
+	if c, ok := rt.gitlabAppClient.(gitlabForgeClient); ok {
+		if conn, token, err := rt.gitTokenForRepo(ctx, gitProviderGitLab, repoURL, connectionID); err == nil {
 			if path, ok := gitlabProjectPathFromURL(repoURL, conn.InstanceURL); ok {
 				return &forge{kind: forgeGitLab, instanceURL: conn.InstanceURL, token: token, repo: path, gitlab: c}, nil
 			}
 		}
 	}
-	if c, ok := rt.giteaAppClient.(giteaForgeClient); ok && rt.giteaAppSecrets != nil {
-		if conn, token, err := rt.giteaAccessToken(ctx); err == nil {
+	if c, ok := rt.giteaAppClient.(giteaForgeClient); ok {
+		for _, p := range []string{gitProviderGitea, gitProviderForgejo} {
+			conn, token, err := rt.gitTokenForRepo(ctx, p, repoURL, connectionID)
+			if err != nil {
+				continue
+			}
 			if full, ok := giteaFullNameFromURL(repoURL, conn.InstanceURL); ok {
 				return &forge{kind: forgeGitea, instanceURL: conn.InstanceURL, token: token, repo: full, gitea: c}, nil
 			}
 		}
 	}
-	if c, ok := rt.bitbucketAppClient.(bitbucketForgeClient); ok && rt.bitbucketAppSecrets != nil {
+	if c, ok := rt.bitbucketAppClient.(bitbucketForgeClient); ok {
 		if full, ok := bitbucketFullNameFromURL(repoURL); ok {
-			if token, err := rt.bitbucketAccessToken(ctx); err == nil {
+			if _, token, err := rt.gitTokenForRepo(ctx, gitProviderBitbucket, repoURL, connectionID); err == nil {
 				return &forge{kind: forgeBitbucket, token: token, repo: full, bitbucket: c}, nil
 			}
 		}
@@ -267,7 +272,7 @@ func (rt *Router) changedFilesFn(app string, q changeQuery) func(ctx context.Con
 		if err != nil {
 			return nil, fmt.Errorf("load git source: %w", err)
 		}
-		f, err := rt.resolveForge(ctx, gs.RepoURL)
+		f, err := rt.resolveForge(ctx, gs.RepoURL, gs.ConnectionID)
 		if err != nil {
 			return nil, err
 		}

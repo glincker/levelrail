@@ -17,6 +17,7 @@ import { useAppNetwork } from '../queries/appNetwork'
 import { DomainDnsCheck } from './DomainDnsCheck'
 import { DomainBasicAuthControl } from './DomainBasicAuthControl'
 import { DomainAuthGateControl } from './DomainAuthGateControl'
+import { FallbackBetaNote } from './FallbackBetaNote'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -193,6 +194,7 @@ function FallbackURLRow({ url }: { url: string }) {
           {copied ? 'Copied' : 'Copy'}
         </Button>
       </div>
+      <FallbackBetaNote url={url} />
     </div>
   )
 }

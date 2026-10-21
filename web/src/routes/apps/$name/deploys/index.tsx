@@ -13,6 +13,7 @@ import { DeployAttemptsList } from '../../../../components/DeployAttemptsList'
 import { AutoRollbackCard } from '../../../../components/AutoRollbackCard'
 import { AutoRollbackSLOBurnCard } from '../../../../components/AutoRollbackSLOBurnCard'
 import { ImageAutoUpdateCard } from '../../../../components/ImageAutoUpdateCard'
+import { BuildHooksCard } from '../../../../components/BuildHooksCard'
 import { AppSleepCard } from '../../../../components/AppSleepCard'
 import { AppAutoscaleCard } from '../../../../components/AppAutoscaleCard'
 import { AppBudgetCard } from '../../../../components/AppBudgetCard'
@@ -21,6 +22,7 @@ import { CanaryCard } from '../../../../components/CanaryCard'
 import { BadgeSettingsCard } from '../../../../components/BadgeSettingsCard'
 import { GitHubActionsCard } from '../../../../components/GitHubActionsCard'
 import { CIDeployCard } from '../../../../components/CIDeployCard'
+import { BuildLimitsCard } from '../../../../components/BuildLimitsCard'
 import { BuildTrendCard } from '../../../../components/BuildTrendCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -78,6 +80,7 @@ function DeploysSection() {
         }}
       />
       <BuildTrendCard appName={name} />
+      <BuildLimitsCard appName={name} />
       <AppSleepCard appName={name} />
       <SleepHistoryCard appName={name} hideWhenOff />
       <AppAutoscaleCard appName={name} />
@@ -99,6 +102,7 @@ function DeploysSection() {
             <AutoRollbackSLOBurnCard appName={name} />
             <CanaryCard appName={name} />
             <ImageAutoUpdateCard appName={name} />
+            <BuildHooksCard appName={name} />
             <BadgeSettingsCard appName={name} />
             <GitHubActionsCard appName={name} />
             <CIDeployCard appName={name} />

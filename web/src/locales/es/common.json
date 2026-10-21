@@ -374,5 +374,8 @@
       "installation": "Instalación",
       "credentials": "Credenciales de la aplicación"
     }
+  },
+  "pageLoading": {
+    "label": "Cargando página"
   }
 }

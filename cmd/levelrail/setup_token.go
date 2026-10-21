@@ -28,7 +28,7 @@ func dataDirFromEnv() string {
 
 // setupURLPath is the login path that pre-fills the setup form with token.
 func setupURLPath(token string) string {
-	return "/login?setup=" + token
+	return "/login#setup=" + token
 }
 
 func dashboardPort() string {

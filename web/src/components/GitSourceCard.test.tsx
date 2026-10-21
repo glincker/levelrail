@@ -47,7 +47,7 @@ vi.mock('./GitRepoSourcePicker', () => ({
             provider: 'gitlab',
             repoUrl: 'https://gitlab.example.com/acme/app.git',
             branch: 'main',
-            providerRef: { kind: 'gitlab', projectId: 7 },
+            providerRef: { kind: 'gitlab', connectionId: 'gc_gl', repo: '7' },
           })
         }}
       >
@@ -62,8 +62,8 @@ vi.mock('./GitRepoSourcePicker', () => ({
             branch: 'main',
             providerRef: {
               kind: 'bitbucket',
-              workspace: 'acme',
-              repoSlug: 'app',
+              connectionId: 'gc_bb',
+              repo: 'acme/app',
             },
           })
         }}
@@ -77,7 +77,11 @@ vi.mock('./GitRepoSourcePicker', () => ({
             provider: 'gitea',
             repoUrl: 'https://git.example.com/acme/app.git',
             branch: 'main',
-            providerRef: { kind: 'gitea', owner: 'acme', repo: 'app' },
+            providerRef: {
+              kind: 'gitea',
+              connectionId: 'gc_gi',
+              repo: 'acme/app',
+            },
           })
         }}
       >
@@ -206,7 +210,7 @@ describe('GitSourceCard', () => {
         )
       }
       if (
-        url === '/api/v1/gitlab-app/projects/7/use-as-source' &&
+        url === '/api/v1/git-connections/gc_gl/use-as-source' &&
         method === 'POST'
       ) {
         return Promise.resolve(
@@ -219,7 +223,7 @@ describe('GitSourceCard', () => {
         )
       }
       if (
-        url === '/api/v1/bitbucket-app/repos/acme/app/use-as-source' &&
+        url === '/api/v1/git-connections/gc_bb/use-as-source' &&
         method === 'POST'
       ) {
         return Promise.resolve(
@@ -232,7 +236,7 @@ describe('GitSourceCard', () => {
         )
       }
       if (
-        url === '/api/v1/gitea-app/repos/acme/app/use-as-source' &&
+        url === '/api/v1/git-connections/gc_gi/use-as-source' &&
         method === 'POST'
       ) {
         return Promise.resolve(
@@ -322,7 +326,7 @@ describe('GitSourceCard', () => {
       expect(
         callsTo(
           fetchMock,
-          '/api/v1/gitlab-app/projects/7/use-as-source',
+          '/api/v1/git-connections/gc_gl/use-as-source',
           'POST',
         ),
       ).toHaveLength(1)
@@ -345,7 +349,7 @@ describe('GitSourceCard', () => {
       expect(
         callsTo(
           fetchMock,
-          '/api/v1/bitbucket-app/repos/acme/app/use-as-source',
+          '/api/v1/git-connections/gc_bb/use-as-source',
           'POST',
         ),
       ).toHaveLength(1)
@@ -368,7 +372,7 @@ describe('GitSourceCard', () => {
       expect(
         callsTo(
           fetchMock,
-          '/api/v1/gitea-app/repos/acme/app/use-as-source',
+          '/api/v1/git-connections/gc_gi/use-as-source',
           'POST',
         ),
       ).toHaveLength(1)

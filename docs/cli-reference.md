@@ -133,6 +133,15 @@ levelrail-cli restore <database> (--backup ID | --latest) --confirm NAME [flags]
 ```
 `open` prints the app's public URLs. `login` is `auth login`. `backup` is `backups trigger` and uses the only configured backup target when there is exactly one. `restore` is `backups restore` and `--latest` picks the newest succeeded backup.
 
+## Local instance
+
+```
+levelrail-cli dev [--port N] [--data-dir DIR] [--no-open] [--reset] [--bin PATH]
+levelrail-cli dev status [--json]
+levelrail-cli dev stop
+```
+Run a private control plane on loopback with a generated admin and `<app>.localhost` addresses. See [Run it on your laptop](/local-development).
+
 ## Apps
 
 `apps list` prints every app the caller can read as a bare JSON array. On a fleet large enough that matters, add `--max-items N` to cap the page size; stdout stays a bare array and the paging info goes to stderr as `next_token=N total_count=M`; an empty `next_token` means there is no further page. Pass that `next_token` back in as `--starting-token` to fetch the next page (requires `--max-items`, since the server only pages a result when a limit is set):
@@ -233,6 +242,7 @@ levelrail-cli jobs list|get|create|update|run|history|logs|enable|disable|delete
 levelrail-cli apps sleep enable|disable|status|wake|now|history <app-name> [flags]
 levelrail-cli apps sleep list [flags]
 levelrail-cli apps canary start|status|weight|promote|abort <app-name> [flags]   (start takes --stages, --interval, --max-error-rate, --max-p95-ratio for a staged canary)
+levelrail-cli apps build-hooks list|create|rotate|revoke <app-name> [flags]
 levelrail-cli apps auto-update enable|disable|status|check <app-name> [flags]
 levelrail-cli apps auto-rollback-slo-burn set <app-name> off|auto|dry_run|pause_for_human [flags]
 levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
@@ -377,6 +387,11 @@ levelrail-cli apps preview-env clear <name> <key> [flags]
 levelrail-cli apps branch-env list <name> [flags]
 levelrail-cli apps branch-env set <name> <key> --branch PATTERN --value VALUE [--secret] [flags]
 levelrail-cli apps branch-env clear <name> <id> [flags]
+levelrail-cli apps branch-deploys list <name> [flags]
+levelrail-cli apps branch-deploys set <name> --mode off|all|patterns [--branch PATTERN]... [flags]
+levelrail-cli apps branch-deploys delete <name> <slug> [flags]
+levelrail-cli apps contexts list|clear|show <name> [flags]
+levelrail-cli apps contexts set <name> --context CTX [--env K=V]... [--build-command CMD] [--publish DIR] [--build-arg K=V]... [flags]
 ```
 
 - `apps env import` merges a .env file into an app's plain env vars and prints which keys are new, changed or unchanged. Keys that are already secrets are skipped. It reports how many changes are pending, or restarts the app right away with `--apply`.
@@ -385,6 +400,8 @@ levelrail-cli apps branch-env clear <name> <id> [flags]
 - `apps secrets set` sets or rotates one secret's encrypted value and declares the key as secret backed so it is injected; `--apply` restarts the app now. With `--env-file` it bulk imports every key in a .env format file as its own secret. Values are never returned: `list` shows key names and locked state only. `lock` toggles a secret's overwrite guard.
 - `apps vault-env` declares an env var resolved live from the configured external Vault (see [Vault](#vault)); only the reference is stored.
 - `apps preview-env` and `apps branch-env` override an env var for previews only. A branch override applies when the preview's own branch matches PATTERN (an exact name or a glob such as `release/*`); `--secret` stores it envelope encrypted. Neither affects the app's own running deploy.
+- `apps branch-deploys` chooses which branches get a stable per-branch deploy (see [Preview environments](/preview-environments#branch-deploys)), lists the live ones and removes one now.
+- `apps contexts` sets env and build overrides per deploy context and shows the effective config (see [Deploy contexts](/deploy-contexts)).
 
 ### Source, previews and webhooks
 
@@ -396,6 +413,7 @@ levelrail-cli apps git-source get <name> [flags]
 levelrail-cli apps git-source set <name> --repo-url URL [flags]
 levelrail-cli apps git-source settings <name> [flags]
 levelrail-cli apps git-source rotate-secret <name> [flags]
+levelrail-cli apps git-source register-webhook <name> [flags]
 levelrail-cli apps git-source delete <name> [flags]
 levelrail-cli apps webhook-deliveries list <app-name> [flags]
 levelrail-cli apps webhook-deliveries replay <app-name> <delivery-id> [flags]
@@ -729,6 +747,8 @@ Per domain settings take `<app> <domain>`, and the domain must already be one of
 levelrail-cli domains list [flags]
 levelrail-cli domains check <app> <domain> [flags]
 levelrail-cli domains doctor <app> <domain> [--json]
+levelrail-cli domains diagnose <domain> [--fix] [--json]
+levelrail-cli domains add <app> <domain>... [--dns auto|off|preview] [--json]
 levelrail-cli domains summary [--json]
 levelrail-cli domains activity <domain> [--limit N] [--before CURSOR] [--actions PREFIXES] [--json]
 levelrail-cli domains certificates [flags]
@@ -1252,6 +1272,9 @@ levelrail-cli nodes uncordon <id> [flags]
 levelrail-cli nodes add [--name NAME] [--mesh] [flags]
 levelrail-cli nodes drain <id> [--target NODE-ID] [--wait] [flags]
 levelrail-cli nodes drains <id> [flags]
+levelrail-cli nodes failure-policy get|set <id> [--mode off|notify|auto] [--grace SECONDS] [flags]
+levelrail-cli nodes lost <id> [--dry-run] [--yes] [flags]
+levelrail-cli nodes failure-resolve <id> app|database NAME --wait|--restore [--target NODE-ID] [flags]
 levelrail-cli nodes move app|database NAME [--to NODE-ID] [--wait] [flags]
 levelrail-cli nodes labels <id> [key=value ...] [flags]
 levelrail-cli nodes placement app|database NAME [key=value ...] [flags]
@@ -1263,6 +1286,8 @@ levelrail-cli nodes events <id> [--limit N] [flags]
 levelrail-cli nodes metrics <id> --metric NAME [flags]
 levelrail-cli nodes resource-usage [flags]
 levelrail-cli nodes capacity-forecast <id> [flags]
+levelrail-cli nodes capacity <node> [flags]
+levelrail-cli nodes cleanup <node> --dry-run|--yes [flags]
 levelrail-cli nodes mesh [flags]
 levelrail-cli nodes rotate-key <id> [flags]
 levelrail-cli nodes rejoin-mesh <id> [flags]
@@ -1302,7 +1327,10 @@ Compares the running version with the latest release, runs the preflight checks 
 levelrail-cli upgrade --plan [--version TAG]
 levelrail-cli upgrade --apply [--version TAG] [--ack-breaking ID,...] [--no-wait]
 levelrail-cli upgrade --attempts
+levelrail-cli upgrade status
 levelrail-cli upgrade backup-now
+levelrail-cli updates restore-points list
+levelrail-cli updates restore-points restore <id> --yes
 levelrail-cli upgrade schedule (--at TIME | --window) [--version TAG] [--timezone TZ] [--ack-breaking ID,...] [--ack-major] [--replace]
 levelrail-cli upgrade schedule show
 levelrail-cli upgrade schedule cancel
@@ -1484,6 +1512,14 @@ levelrail-cli tui [--read-only] [--refresh DURATION] [flags]
 
 Opens an interactive terminal UI over the same API: live apps, databases, deploys, nodes, domains, alerts and backups, a log tail, and confirm-gated restart, deploy, rollback, stop and start. Needs a TTY. See [Terminal UI](/cli-tui) for the key map.
 
+## Go live
+
+```
+levelrail-cli go-live <app> [domain] [--wait] [--timeout 5m] [flags]
+```
+
+Prints the [go live checklist](/go-live) for an app and domain (default: the app's only domain): app health, port, host firewall, DNS, certificate and the final HTTPS check, each with its status and next action. With `--wait` it polls and exits 7 until the domain is live or `--timeout` passes. Supports `--json`.
+
 ## Doctor
 
 ```
@@ -1491,6 +1527,14 @@ levelrail-cli doctor [flags]
 ```
 
 Runs a local preflight health check: Docker daemon reachability, disk space and write latency, write access on the data directory, port 80 and 443 availability for the embedded ingress, control plane database reachability, RAM and CPU against the recommended minimums, firewall status, outbound network reachability (public IP, external port reachability, ACME, clock skew, the agent advertise host, image registries), and GPU attach checks. Exit code is 0 if every check is ok or warn, 1 if any check fails.
+
+## Resilience
+
+```
+levelrail-cli resilience check [--simulate] [--fix] [flags]
+```
+
+Shows whether apps keep serving if the control plane is down: route snapshot, certificate cache, and per node agent link, each pass, warn, fail or unknown. `--simulate` is a dry run that verifies the saved snapshot would let ingress restart without the control plane and stops nothing. `--fix` rewrites the route snapshot from the applied config. Supports `--json` and `--output json`.
 
 ## Setup
 
@@ -1508,7 +1552,7 @@ The dashboard's Get started checklist from a terminal. `status` prints every ste
 
 ```
 levelrail-cli proxy [--domain D | --app NAME] [--proxy traefik|nginx|caddy] [--verify] [flags]
-levelrail-cli proxy setup [--confirm] [--dynamic-dir DIR] [flags]
+levelrail-cli proxy setup [--confirm] [--provider traefik|nginx|caddy|haproxy|auto] [--dynamic-dir DIR] [--cert-dir DIR] [flags]
 levelrail-cli proxy status [flags]
 levelrail-cli proxy apply [flags]
 levelrail-cli proxy verify [--domain D] [flags]
@@ -1516,6 +1560,8 @@ levelrail-cli proxy disable [flags]
 ```
 
 Without a subcommand: shows which container publishes ports 80 and 443 and the configuration to paste into that proxy, for the dashboard (`--domain`) or an app's domain (`--app`, upstream is the ingress HTTP port). `setup` detects a Traefik (Coolify's included) and, with `--confirm`, turns on `tls_terminated_upstream`, saves the detected entrypoints, certificate resolver, directory and upstream host, writes one route file per domain and verifies each over HTTPS; without `--confirm` it is a dry run. It exits with an API error and the precise gap (`detection_incomplete`, `upstream_unreachable` with the drop-in fix, `not_writable`) when it cannot proceed. `status` prints detection, per-domain state (`missing`, `written`, `stale`, `error`), certificate issuer and expiry, and the checklist. `apply` rewrites the files now, `verify` probes again, `disable` removes the files it wrote. Writes need a root scoped token. Details: [Run behind an existing proxy](/behind-an-existing-proxy#one-step-setup-traefik-including-coolify).
+
+`--provider` picks the proxy (`auto`, the default, uses the one detected). nginx is managed: `setup --confirm` writes one `.conf` per domain, validates it with `nginx -t` and rolls back on failure. Caddy and HAProxy only render a snippet to apply by hand.
 
 ## Containers
 
@@ -1741,26 +1787,27 @@ levelrail-cli settings ai-assistant get|set|clear [flags]
 ```
 levelrail-cli git-providers [list] [flags]
 levelrail-cli git-providers validate <github|gitlab|gitea|bitbucket> [flags]
+levelrail-cli git-providers repos <github|gitlab|gitea|bitbucket> [--connection ID] [--search Q] [--owner O] [--archived MODE] [--forks MODE] [--limit N] [--offset N] [--all] [--refresh] [flags]
 levelrail-cli github-app status|disconnect|repos [flags]
 levelrail-cli github-app branches <owner> <repo> [flags]
 levelrail-cli github-app use-as-source <owner> <repo> --app-name NAME [flags]
 levelrail-cli github-app register-url [--owner ORG] [--public] [--instance-url URL] [--name NAME] [flags]
 levelrail-cli github-app installations list|add [flags]
 levelrail-cli github-app installations remove <id> [flags]
-levelrail-cli gitlab-app status|disconnect|projects [flags]
-levelrail-cli gitlab-app branches <project-id> [flags]
-levelrail-cli gitlab-app use-as-source <project-id> --app-name NAME [flags]
-levelrail-cli bitbucket-app status|disconnect|repos [flags]
-levelrail-cli bitbucket-app branches <workspace> <repo-slug> [flags]
-levelrail-cli bitbucket-app use-as-source <workspace> <repo-slug> --app-name NAME [flags]
-levelrail-cli gitea-app status|disconnect|repos [flags]
-levelrail-cli gitea-app branches <owner> <repo> [flags]
-levelrail-cli gitea-app use-as-source <owner> <repo> --app-name NAME [flags]
+levelrail-cli git-providers connections [--provider P] [flags]
+levelrail-cli git-providers add <gitlab|bitbucket|bitbucket_server|gitea|forgejo> [--instance-url URL] [--client-id ID] [--client-secret S] [--pat TOKEN] [--label L] [--reuse ID] [flags]
+levelrail-cli git-providers rename <id> <label> [flags]
+levelrail-cli git-providers default <id> [flags]
+levelrail-cli git-providers disconnect --id ID [flags]
+levelrail-cli git-providers branches --id ID --repo REPO [flags]
+levelrail-cli git-providers use-as-source --id ID --repo REPO --app-name NAME [flags]
 ```
 
 - `git-providers` shows connection status and capabilities (list branches, register a webhook, authenticated clone) for GitHub, GitLab, Bitbucket and Gitea in one call.
+- `git-providers repos` lists every repository a provider connection can see from the control plane's cached list, with server-side search, owner, archived and fork filters. `--all` pages through every match, `--refresh` re-lists from the provider first.
 - Connecting a provider is dashboard only, because it is a browser redirect through the provider's own OAuth or manifest flow. Once connected, these commands browse its repos and branches, connect one as an app's git source with `use-as-source`, or check and forget the connection.
-- `disconnect` forgets the stored connection locally; it does not uninstall the App or revoke the token on the provider's side.
+- `disconnect` forgets the stored connection and revokes the token at GitLab. It does not uninstall the GitHub App, and Bitbucket and Gitea have no revocation API; the output says what applied.
+- `git-providers` shows a `HEALTH` column. A connection that needs the operator (`needs_reauthorize`, `revoked`) prints the page to open to reconnect, since connecting is a browser redirect.
 - `github-app register-url` prints the dashboard link that starts GitHub App registration, for your personal account or, with `--owner`, an organization. `--public` lets other accounts and organizations install the App. It makes no request; open the link in a signed-in browser.
 - `github-app installations add` prints the URL to install the App on another account or org; it does not open a browser. `installations remove` is refused (409) while a git source still points at a repo under it.
 
@@ -1803,8 +1850,11 @@ See [Compose apps](/compose-apps).
 
 ```
 levelrail-cli static-sites list [flags]
+levelrail-cli static-sites routes show <app> [flags]
+levelrail-cli static-sites routes test <app> <path> [--method M] [--request-query Q] [flags]
+levelrail-cli static-sites routes lint <app> [--redirects FILE] [--headers FILE] [flags]
 ```
-Lists every `build.type: static` app served directly through the embedded Caddy ingress, with no container involved.
+`list` shows every `build.type: static` app served directly through the embedded Caddy ingress, with no container involved. The `routes` commands show a site's redirect, rewrite and header rules, run one request through them, and check `_redirects` and `_headers` files without deploying. See [Static site routing rules](/static-routing).
 
 ## Response cache
 

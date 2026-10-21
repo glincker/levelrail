@@ -4,7 +4,7 @@ description: "Map identity provider groups to roles, create accounts on first si
 "og:url": "https://docs.levelrail.com/sso-oidc"
 ---
 
-> **Beta, off by default.** The sign-in policy below shares the `saml-scim` beta feature with [SAML](sso-saml.md) and [SCIM](scim.md): turn it on under **Settings, Beta features** or with `APP_EXPERIMENTAL=saml-scim`. While it is off, the policy settings page and routes answer `404` and the sign-in page shows no "Continue with SSO" button, but the policy you saved is still enforced at sign-in. It is tested against a fake OpenID Connect provider that signs real tokens, and has not been run against a live Okta, Microsoft Entra ID, Google or Keycloak tenant (see [What has not been verified](#what-has-not-been-verified)).
+> **Beta, off by default.** The sign-in policy below shares the `saml-scim` beta feature with [SAML](sso-saml.md) and [SCIM](scim.md): turn it on under **Settings, Beta features** or with `APP_EXPERIMENTAL=saml-scim`. While it is off, the policy settings page and routes answer `404` and the sign-in page shows no "Continue with SSO" button, but the policy you saved is still enforced at sign-in. The generic OpenID Connect provider has been run against Keycloak 26.0.8 (authorization code with PKCE) and is also covered by tests against a fake provider that signs real tokens. Okta, Microsoft Entra ID, Google and Cognito have not been tested (see [What has not been verified](#what-has-not-been-verified)).
 
 OAuth and OpenID Connect providers (enabled under **Settings, OAuth sign-in**, see [Identity and access](identity-and-access.md#oauth-sign-in)) get the same controls SAML connections have. For each provider you decide who may sign in, whether a first sign-in creates an account, which role each group earns and whether the role follows the group on later sign-ins.
 
@@ -36,7 +36,10 @@ levelrail-cli sso oidc list
 levelrail-cli sso oidc set oidc --jit=true --sync-roles=true --default-role role_viewer --groups-claim groups --allowed-domains example.com
 levelrail-cli sso mappings set --map Engineering=role_operator:10 --map everyone=role_viewer
 levelrail-cli sso oidc evaluate oidc --email dev@example.com --email-verified --groups Engineering
+levelrail-cli sso oidc test oidc
 ```
+
+`sso oidc test` prints the address that runs **Test login** in a browser signed in as root, since the provider's login page needs a browser.
 
 `sso oidc evaluate` runs the same rules as a real sign-in on the facts you give it and changes nothing. Every command takes `--json`.
 
@@ -82,7 +85,7 @@ That a domain has single sign-on at all is visible to anyone who tries it, as it
 | `GET` | `/api/v1/sso/oidc` | `root` |
 | `GET`, `PUT` | `/api/v1/sso/oidc/{provider}` | `root` |
 | `POST` | `/api/v1/sso/oidc/{provider}/evaluate` | `root` |
-| `GET` | `/api/v1/sso/oidc/{provider}/test/start`, `/test/result` | `root` |
+| `GET` | `/api/v1/sso/oidc/{provider}/test/start`, `/test/result` | `root`, needs a dashboard session |
 | `GET` | `/api/v1/auth/login-options?sso_domain=example.com` | public, rate limited |
 
 The policy responses carry no client secret or token. Client credentials stay on `PUT /api/v1/settings/oauth/{provider}`, where the secret is write-only.
@@ -95,6 +98,27 @@ The policy responses carry no client secret or token. Client credentials stay on
 - **Required SSO per domain.** [Require SSO](sso-saml.md#require-single-sign-on) is instance wide.
 - **Deprovisioning.** Removing someone at the identity provider does not end their session or disable the account here. Use [SCIM](scim.md) for that, or disable the account.
 
+## Tested against
+
+Last run on 2026-10-20 against Keycloak 26.0.8 in a local Docker lab (`test/sso-lab/`), driven by a scripted HTTP client that follows the provider's login form (no browser). The test is `internal/api/sso_oidc_live_test.go`, skipped under `-short` and run only with `LEVELRAIL_LIVE_IDP=1`:
+
+```bash
+scripts/sso-lab.sh up
+export LEVELRAIL_LIVE_IDP=1
+CGO_ENABLED=0 go test ./internal/api -run 'TestLiveOIDC' -count=1 -v
+scripts/sso-lab.sh down
+```
+
+Verified against Keycloak, with the client requiring PKCE `S256`:
+
+- The authorization code flow with PKCE signs in, through the generic OpenID Connect provider discovered from the issuer URL.
+- A first sign-in creates the account when account creation is on, applies the mapped role from the `groups` claim (Keycloak's group membership mapper), and a second sign-in links the same account.
+- An email outside the allowed domains is refused (`domain_not_allowed`) and leaves no account.
+- With account creation off, a person with no account is refused (`sso_not_provisioned`).
+- A group mapped to a root-holding role is refused when saved through the API, and refused at sign-in (`sso_no_role`) when forced into the table, so SSO never grants root.
+
 ## What has not been verified
 
-This is Beta. The ID token path, the policy and the audit trail are covered by unit tests against a fake OpenID Connect provider that signs real tokens, including tampered tokens and injected groups. Nothing has been run against live Okta, Microsoft Entra ID, Google Workspace, Keycloak or Cognito tenants, so claim names and token shapes at those providers are documented from their specifications, not observed. Report what you see on your tenant.
+- Okta, Microsoft Entra ID, Google Workspace and Amazon Cognito: no tenant was available, so their claim names and token shapes are documented from their specifications, not observed.
+- Keycloak was tested with plain http on a loopback address (the control plane's private-address guard was relaxed for the test). Discovery against an https issuer on a public address is covered by the same code path as other providers but was not run against Keycloak.
+- A live Test login in the browser was not driven end to end by a script: the dry-run callback and its evaluation are covered by unit tests against the fake provider.

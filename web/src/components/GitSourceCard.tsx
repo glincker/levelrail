@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Suspense, lazy, useMemo, useState } from 'react'
 import {
   CheckIcon,
   CopyIcon,
@@ -37,9 +37,7 @@ import {
 import { useSpecValidation } from '../queries/specValidation'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { connectGitHubRepoAsSource } from '../queries/githubApp'
-import { connectGitLabProjectAsSource } from '../queries/gitlabApp'
-import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
-import { connectGiteaRepoAsSource } from '../queries/giteaApp'
+import { connectRepoAsSource } from '../queries/gitConnections'
 import {
   GitRepoSourcePicker,
   type GitRepoSourceValue,
@@ -56,6 +54,13 @@ import type {
   GitSourceService,
   GitSourceTriggerMode,
 } from '../types/gitSource'
+
+// Lazy: the reliability panel only shows for connected sources, so keep it out of the source route chunk.
+const GitSourceReliability = lazy(() =>
+  import('./GitSourceReliability').then((m) => ({
+    default: m.GitSourceReliability,
+  })),
+)
 
 // Git source connect/manage card, PUT/GET/DELETE
 // /api/v1/apps/{name}/git-source (internal/api/git_sources.go): the
@@ -361,44 +366,14 @@ async function connectGitSource(
       )
       return { resource, autoRegistered, webhookError }
     }
-    if (form.providerRef.kind === 'gitlab') {
-      const resource = await connectGitLabProjectAsSource(
-        form.providerRef.projectId,
-        {
-          app_name: appName,
-          branch,
-          build_type: form.buildType,
-          build_path: buildPath,
-          trigger_mode: form.triggerMode,
-        },
-      )
-      return { resource, autoRegistered: true }
-    }
-    if (form.providerRef.kind === 'bitbucket') {
-      const resource = await connectBitbucketRepoAsSource(
-        form.providerRef.workspace,
-        form.providerRef.repoSlug,
-        {
-          app_name: appName,
-          branch,
-          build_type: form.buildType,
-          build_path: buildPath,
-          trigger_mode: form.triggerMode,
-        },
-      )
-      return { resource, autoRegistered: true }
-    }
-    const resource = await connectGiteaRepoAsSource(
-      form.providerRef.owner,
-      form.providerRef.repo,
-      {
-        app_name: appName,
-        branch,
-        build_type: form.buildType,
-        build_path: buildPath,
-        trigger_mode: form.triggerMode,
-      },
-    )
+    const resource = await connectRepoAsSource(form.providerRef.connectionId, {
+      app_name: appName,
+      repo: form.providerRef.repo,
+      branch,
+      build_type: form.buildType,
+      build_path: buildPath,
+      trigger_mode: form.triggerMode,
+    })
     return { resource, autoRegistered: true }
   }
 
@@ -1295,6 +1270,10 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
             </dl>
 
             <GitBuildSettings appName={app.name} source={query.data} />
+
+            <Suspense fallback={null}>
+              <GitSourceReliability appName={app.name} source={query.data} />
+            </Suspense>
 
             <Field>
               <FieldLabel htmlFor="git-source-webhook-url-connected">

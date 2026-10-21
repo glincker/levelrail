@@ -8,9 +8,12 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))
 	mux.HandleFunc("PUT /api/v1/settings/email", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailSettings))
-	// AbilityWrite, not AbilityRoot: same tier notification-channel
-	// testing uses, since sending a test doesn't change stored config.
-	mux.HandleFunc("POST /api/v1/settings/email/test", rt.requireAbility(AbilityWrite, rt.handleTestEmail))
+	// Root: a test send goes to any address, so it is not open to ordinary write tokens.
+	mux.HandleFunc("POST /api/v1/settings/email/test", rt.requireAbility(AbilityRoot, rt.handleTestEmail))
+	mux.HandleFunc("GET /api/v1/settings/email/status", rt.requireAbility(AbilityRead, rt.handleEmailStatus))
+	mux.HandleFunc("GET /api/v1/settings/email/domain-check", rt.requireAbility(AbilityRoot, rt.handleEmailDomainCheck))
+	mux.HandleFunc("GET /api/v1/settings/email/deliveries", rt.requireAbility(AbilityRoot, rt.handleListEmailDeliveries))
+	mux.HandleFunc("GET /api/v1/settings/email/deliveries/{id}", rt.requireAbility(AbilityRoot, rt.handleGetEmailDelivery))
 
 	// Observability settings: the external Grafana/dashboard link,
 	// same precedent as email settings just above. GET is AbilityRead;
@@ -84,6 +87,9 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	// own git-push-triggered write.
 	mux.HandleFunc("GET /api/v1/static-sites", rt.requireAbility(AbilityRead, rt.handleListStaticSites))
 	mux.HandleFunc("DELETE /api/v1/static-sites/{name}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteStaticSite))
+	mux.HandleFunc("GET /api/v1/apps/{name}/static-routes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetStaticRoutes))
+	mux.HandleFunc("POST /api/v1/apps/{name}/static-routes/test", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleTestStaticRoutes))
+	mux.HandleFunc("POST /api/v1/apps/{name}/static-routes/lint", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleLintStaticRoutes))
 
 	// Backup targets (connected S3-compatible buckets a database backup
 	// can be uploaded to). Create and delete need AbilityWriteSensitive:
@@ -96,6 +102,8 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/backup-targets/{id}", rt.requireAbility(AbilityRead, rt.handleGetBackupTarget))
 	mux.HandleFunc("PUT /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateBackupTarget))
 	mux.HandleFunc("DELETE /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteBackupTarget))
+	mux.HandleFunc("GET /api/v1/backup-targets/{id}/encryption", rt.requireAbility(AbilityRead, rt.handleGetBackupTargetEncryption))
+	mux.HandleFunc("PUT /api/v1/backup-targets/{id}/encryption", rt.requireAbility(AbilityRoot, rt.handleSetBackupTargetEncryption))
 	mux.HandleFunc("POST /api/v1/backup-targets/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestBackupTarget))
 
 	// Registry credentials (registry_credentials.go): same ability tiers

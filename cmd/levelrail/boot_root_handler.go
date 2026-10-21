@@ -23,6 +23,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/nodefailure"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -103,6 +104,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithRequestSummaryWindow(requestSummaryWindow()),
 		api.WithAlertRules(alertingDB),
 		api.WithAlertNoise(alertingDB),
+		api.WithAlertDefaults(alertingDB),
 		api.WithInbox(alertingDB),
 		api.WithStatusPage(db, statusPageConfig(logger), statusPageRateLimit(logger)),
 		api.WithDeployNotifyTargets(alertingDB),
@@ -136,6 +138,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
 		api.WithArchives(archive.New(db.DB, dataDir), db),
 		multiNodeOption(db),
+		api.WithNodeFailure(db, nodefailure.ConfigFromEnv(os.LookupEnv)),
 		api.WithNodeJoinTokenTTL(nodeJoinTokenTTL(logger)),
 		api.WithControlPlaneBackupScheduleDisabled(controlPlaneBackupInterval(logger) == 0),
 		api.WithDockerPinger(client),
@@ -201,6 +204,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
 		api.WithDeploySafety(db, client),
+		api.WithPublishLocks(db),
 		api.WithDeployMaxConcurrent(deployMaxConcurrent(logger)),
 		api.WithWakeToken(appWakeToken()),
 		api.WithLogBroadcaster(logBroadcaster),
@@ -317,6 +321,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 				Secrets:    secretsManager,
 				Downloader: routedStorage(agentRegistry),
 				Restorer:   &backup.ContainerRestorer{Runtime: client},
+				Identities: backupIdentities(backupRunner),
 			}),
 			// Creates the volume synchronously: a bare volume has no reconciler to wait on.
 			api.WithVolumeCloneRestoreRunner(&backup.VolumeCloneRestoreRunner{
@@ -356,18 +361,9 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			}),
 			// Reads and writes through secretsManager directly, so no separate runner type is needed.
 			api.WithGitHubAppSecrets(secretsManager),
-			// GitLab App connection: same secretsManager, same
-			// nil-interface hazard, the OAuth-Application counterpart of
-			// the GitHub App connection just above.
-			api.WithGitLabAppSecrets(secretsManager),
-			// Gitea App connection: same secretsManager, same
-			// nil-interface hazard, the GitLab-shaped self-hosted
-			// counterpart just above.
-			api.WithGiteaAppSecrets(secretsManager),
-			// Bitbucket App connection: same secretsManager, same
-			// nil-interface hazard, the third OAuth-consumer counterpart
-			// alongside the GitHub and GitLab App connections above.
-			api.WithBitbucketAppSecrets(secretsManager),
+			// GitLab, Bitbucket and Gitea connections share the secrets manager, same
+			// nil-interface hazard as the GitHub App connection just above.
+			api.WithGitConnectionSecrets(secretsManager),
 			api.WithAIVault(ai.NewVault(db, secretsManager, logger)),
 			api.WithAIUsage(db),
 			// Point-in-time restore (baseBackupRunner/pitrRunner just
@@ -421,6 +417,7 @@ func composeMux(apiHandler http.Handler, webhookHandler http.Handler, webHandler
 	mux.Handle("/api/", apiHandler)
 	mux.Handle("/public/", apiHandler)
 	mux.Handle("/gate/", apiHandler)
+	mux.Handle("/mail/unsubscribe", apiHandler)
 	if webhookHandler != nil {
 		mux.Handle("POST /webhook", webhookHandler)
 	}

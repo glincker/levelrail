@@ -132,7 +132,7 @@ func (r *RestoreRunner) RunRestore(ctx context.Context, historyID, databaseName,
 // way runDumpAndUpload is split out of RunBackup: keeps RunRestore's own
 // body a flat "start, run, finish" sequence.
 func (r *RestoreRunner) runDownloadAndRestore(ctx context.Context, databaseName, backupHistoryID, engine, containerName string) error {
-	return downloadAndRestore(ctx, r.Store, r.Secrets, r.Downloader, r.Restorer, databaseName, backupHistoryID, engine, containerName)
+	return downloadAndRestore(ctx, r.Store, r.Secrets, r.Downloader, r.Restorer, r.Identities, databaseName, backupHistoryID, engine, containerName)
 }
 
 // backupResolver is the subset of RestoreHistoryStore downloadAndRestore
@@ -151,7 +151,7 @@ type backupResolver interface {
 // in-place restore) and CloneRestoreRunner.RunCloneRestore (restore into a
 // freshly created database): the download-and-apply mechanics are
 // identical either way, only what happens before and after differ.
-func downloadAndRestore(ctx context.Context, resolver backupResolver, secrets SecretsResolver, downloader Downloader, restorer Restorer, databaseName, backupHistoryID, engine, containerName string) error {
+func downloadAndRestore(ctx context.Context, resolver backupResolver, secrets SecretsResolver, downloader Downloader, restorer Restorer, identities []age.Identity, databaseName, backupHistoryID, engine, containerName string) error {
 	bh, err := resolver.GetBackupHistory(ctx, backupHistoryID)
 	if err != nil {
 		return fmt.Errorf("get backup history %q: %w", backupHistoryID, err)
@@ -196,7 +196,17 @@ func downloadAndRestore(ctx context.Context, resolver backupResolver, secrets Se
 		_ = dump.Close()
 	}()
 
-	if err := restorer.Restore(ctx, engine, containerName, dump); err != nil {
+	var plain io.Reader = dump
+	if bh.Codec != "" {
+		sealed, err := OpenSealed(dump, bh.Codec, identities)
+		if err != nil {
+			return fmt.Errorf("open backup %q: %w", backupHistoryID, err)
+		}
+		defer func() { _ = sealed.Close() }()
+		plain = sealed
+	}
+
+	if err := restorer.Restore(ctx, engine, containerName, plain); err != nil {
 		return &restoreStepError{fmt.Errorf("restore database %q from backup %q: %w", databaseName, backupHistoryID, err)}
 	}
 	return nil

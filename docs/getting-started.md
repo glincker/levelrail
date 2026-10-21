@@ -8,58 +8,83 @@ description: Install Levelrail on a Linux server, sign in, and deploy your first
 "og:url": "https://docs.levelrail.com/getting-started"
 ---
 
-By the end of this page you have a Levelrail control plane on your own server and one app running on it with a health check, logs, and one-click rollback. Plan on about ten minutes.
+This page takes you from an empty Linux server to one app that is running, has a health check, and shows logs and metrics. It takes about ten minutes.
 
 ```mermaid
 flowchart LR
   A["Install<br/>one command"] --> B["Sign in<br/>setup token"]
-  B --> C["Setup wizard<br/>domain + git"]
+  B --> C["First-run screen<br/>HTTPS + first app"]
   C --> D["Deploy an app<br/>dashboard or CLI"]
-  D --> E["Live, with logs,<br/>metrics, rollback"]
+  D --> E["Running, with logs,<br/>metrics, rollback"]
 ```
 
 ## Before you start
 
-- A Linux server, `amd64` or `arm64`, with systemd and root access. 1 vCPU and 1 GB of RAM boots the platform, but 2 vCPU and 2 GB is more comfortable once you build images on it.
-- Ports 80 and 443 reachable from the internet. Port 80 is what Let's Encrypt uses to issue certificates.
-- Optional but recommended: a domain you can point at the server.
+- A Linux server, `amd64` or `arm64`, with systemd and root access. 1 vCPU and 1 GB of RAM boots the platform. 2 vCPU and 2 GB is more comfortable once you build images on it.
+- Ports 80 and 443 reachable from the internet. Let's Encrypt uses port 80 to issue certificates.
+- Optional: a domain you can point at the server. You can skip this and use a free `sslip.io` address.
 
-The full requirements list, with what the installer checks, is in [Installing](/installing#requirements).
+The full requirements, with what the installer checks, is in [Installing](/installing#requirements). No server yet? [Try it on your laptop](/local-development) first.
 
 ## Install
 
-`curl -fsSL https://levelrail.com/install.sh | sudo sh`
+```bash
+curl -fsSL https://levelrail.com/install.sh | sudo sh
+```
 
-The script checks the host, installs Docker if it is missing, downloads the newest release and verifies its checksum, starts a `levelrail` systemd service, and waits until it reports healthy. It ends by printing:
+The installer checks the host, installs Docker if it is missing, downloads the newest release and verifies its checksum, starts the `levelrail` systemd service, and waits until it is healthy. The last lines of output look like this (abridged):
 
-- the dashboard URL, for example `http://203.0.113.10:8080`
-- a one-time **setup token** link for creating the first admin
-- a reminder to back up `master.key` in the data directory
+```text
+Levelrail vX.Y.Z installed and running.
 
-Use the port from your own output. If 8080 was taken, the installer picked the next free one.
+Open the dashboard:
+  http://203.0.113.10:8080/login?setup=<token>
+
+IMPORTANT: back up /var/lib/levelrail-data/master.key somewhere safe.
+```
+
+Use the address from your own output. If port 8080 was taken, the installer picked the next free port and printed it.
+
+Back up `master.key` now. Every stored secret is encrypted with it, and nothing can recover it if it is lost.
 
 <Tip>
-Pin a release with `LEVELRAIL_VERSION=v0.2.0-beta.14`, or run it as a container instead. Both are covered in [Installing](/installing).
+To pin a release, set `LEVELRAIL_VERSION=v0.2.0-beta.14` before the command. You can also run Levelrail as a container. See [Installing](/installing).
 </Tip>
 
-## Sign in and run the setup wizard
+<Accordion title="If the install fails">
 
-Open the printed setup link, choose a password, and you are the admin. The first sign-in opens a setup wizard, not an empty app list:
+| Message | What to do |
+| --- | --- |
+| `control plane did not become healthy within 60s` | Run `systemctl status levelrail` and `journalctl -u levelrail -n 100 --no-pager`. A port that is already in use is the usual cause. |
+| `N preflight check(s) failed. Fix them, or re-run with --force` | Read the rows marked `fail` above that message and fix them. `--force` continues anyway. |
+| `could not list releases from GitHub` | The server cannot reach GitHub. Check outbound HTTPS, or set `LEVELRAIL_VERSION=vX.Y.Z`. |
+| `checksum mismatch for ...` | Run the installer again. Do not set `LEVELRAIL_SKIP_CHECKSUM=1` to get past it. |
 
-1. **Server check** runs the same checks as `levelrail-cli doctor`. Each failure shows a command to fix it and a docs link. Only Docker, the database, or the data directory failing blocks you.
-2. **Topology** (optional) explains single node versus [multi-node](/multi-node). Single node is the default and nothing needs deciding now.
-3. **Dashboard domain** (optional, recommended) offers one **Enable HTTPS** button that needs no DNS: your admin email is prefilled as the certificate contact (you can edit it), and the dashboard gets a free `<dashed-ip>.sslip.io` address with a real certificate. After HTTPS is on, signing in over plain HTTP stops working, so use the https address from then on. If the certificate fails (for example the address does not reach this server yet), use **Re-check** after fixing it. To use your own name instead, the step shows the exact DNS record to create, then watches DNS and the certificate until both are green. Use a dedicated name such as `console.example.com`, not a domain an app will serve.
-4. **Email** (optional) saves an SMTP server and sends a test message, so password resets and alert emails work. SES and Resend are set up under **Settings, Email**.
-5. **Git provider** (optional) connects GitHub, GitLab, Bitbucket, or Gitea.
-6. **First app** deploys a sample, a template, or your own repository, and waits until it is healthy. A failure shows the automatic diagnosis and a link to the logs.
-7. **Done** links to alerts, backup targets, and inviting teammates.
+</Accordion>
 
-<img src="/assets/screenshots/setup-wizard-light.png" alt="Levelrail setup wizard with the steps from server check to done" className="block dark:hidden" />
-<img src="/assets/screenshots/setup-wizard.png" alt="Levelrail setup wizard with the steps from server check to done" className="hidden dark:block" />
+## Sign in and deploy your first app
 
-Progress is saved on the server, so you can close the tab and resume from any browser. Reopen the wizard any time from **Settings, Setup wizard**.
+Open the printed setup link, choose a password, and you are the admin. The setup token travels in the link's `#` fragment, so it never reaches the server logs or a referrer header. The first sign-in opens one screen, not an empty app list:
 
-Lost the setup token? On the server run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token`.
+1. **Your app's address** is shown before you deploy: with no domain set, an app gets `https://<app>.<dashed-ip>.sslip.io`.
+2. **Enable HTTPS** is one button that needs no DNS. Your admin email is prefilled as the certificate contact, and the dashboard gets a free `<dashed-ip>.sslip.io` address with a real certificate. After HTTPS is on, signing in over plain HTTP stops working, so use the https address from then on. A banner on the dashboard keeps offering it until it is on.
+3. **Deploy** a sample app, a template, or your own repository. The screen waits until the app is healthy and ends on its live link. A failure shows the automatic diagnosis and a link to the logs.
+
+Everything else (email, git provider, backups, teammates, alerts) is on the **Get started** checklist in the sidebar, which reads your real server state and ticks steps off by itself. `levelrail-cli setup status` shows the same list.
+
+<Accordion title="If the setup link does not work">
+
+Print a new setup token on the server:
+
+```bash
+sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token
+```
+
+The dashboard port is in the systemd unit: `systemctl cat levelrail | grep APP_HTTP_ADDR`.
+
+If HTTPS fails on the first-run screen (for example, the `sslip.io` name does not reach this server yet), fix the cause and click **Re-check**. You can also run `levelrail-cli settings ingress https status` from a terminal.
+
+</Accordion>
 
 ## Deploy your first app
 
@@ -68,27 +93,46 @@ Pick the route that matches what you have.
 <Tabs>
 <Tab title="Git repository">
 
-In the dashboard choose **New app**, paste a repository URL, and review the deployment plan Levelrail shows before it creates anything: build method, port, environment variables, volumes, and warnings. Confirm and watch the build log stream live.
+In the dashboard, choose **New app** and paste a repository URL. Levelrail shows a deployment plan before it creates anything: build method, port, environment variables, volumes, and warnings. Confirm it, and the build log streams live.
 
-From a terminal, the same flow is:
+From the server (or any machine where you ran `levelrail-cli login --device`), the same flow is:
 
+```bash
+levelrail-cli import https://github.com/your-org/your-app
 ```
+
+Without a flag, this prints the plan and stops. Add `--deploy` to create the app and deploy it:
+
+```bash
 levelrail-cli import https://github.com/your-org/your-app --deploy
 ```
 
-Without `--deploy` it prints the plan and stops. This reads a public repository over HTTPS and needs no git provider account. To deploy automatically on every push (and to read private repositories), connect GitHub, GitLab, Bitbucket, or Gitea first: Levelrail has no `git push` remote of its own, so push deploys come from your provider's webhook. Every accepted input, including `docker run` commands, compose files, and Dockerfiles, is listed in [Importing apps](/importing-apps).
+This reads a public repository over HTTPS. To deploy on every push, or to read a private repository, connect GitHub, GitLab, Bitbucket, or Gitea first. Pushes reach Levelrail through the provider's webhook. The importer accepts repositories, `docker run` commands, compose files, and Dockerfiles. See [Importing apps](/importing-apps).
+
+<Accordion title="If the import fails">
+
+| Message | What to do |
+| --- | --- |
+| `plan import: request POST http://localhost:8080/api/v1/imports/plan: ... connection refused` | The control plane is not running on that address. Run `systemctl start levelrail`. If the dashboard uses another port, set `APP_API_URL` first. |
+| `start device login: ... connection refused` | `levelrail-cli login --device` points at the wrong address. Set `APP_API_URL=http://127.0.0.1:<dashboard port>` and run it again. |
+
+</Accordion>
 
 </Tab>
 <Tab title="Built image">
 
-```
+If your image is already in a registry, register it directly:
+
+```bash
 levelrail-cli apps create --name web --image ghcr.io/your-org/web:1.0 --port 8080
 ```
+
+`--port` is the port the container listens on. To build from source instead, pass `--repo <url>`, or run `apps create` inside a git checkout that has an `origin` remote.
 
 </Tab>
 <Tab title="Config file">
 
-`levelrail-cli init` detects your stack and writes an `app.yaml` for it, validated by the platform's own validator. A minimal spec looks like this:
+`levelrail-cli init` detects your stack and writes an `app.yaml` for it. It also writes `AGENTS.md` and `.mcp.json`, which you can delete if you do not use an AI agent. A minimal spec looks like this:
 
 ```yaml
 version: 1
@@ -103,9 +147,19 @@ services:
       readiness: { path: /healthz, interval: 5s, timeout: 2s }
 ```
 
+Check the file locally, with no server call:
+
+```bash
+levelrail-cli apps validate --file app.yaml
+```
+
+```text
+app.yaml: valid app.yaml, 1 service(s)
+```
+
 Then create the app from it:
 
-```
+```bash
 levelrail-cli apps create --file app.yaml --repo https://github.com/your-org/your-app --image-repo ghcr.io/your-org/your-app
 ```
 
@@ -115,55 +169,108 @@ Every field, including resources, environment, replicas, and deploy strategy, is
 </Tabs>
 
 <Accordion title="Prefer a guided prompt?">
-`levelrail-cli apps create --interactive` asks for the name, source, port, domain, health path, and limits, then either writes `app.yaml` or creates the app. `databases create --interactive` does the same for a [managed database](/managing-databases).
+`levelrail-cli apps create --interactive` asks for the name, source, port, domain, health path, and limits. It then writes `app.yaml` or creates the app. `levelrail-cli databases create --interactive` does the same for a [managed database](/managing-databases).
 </Accordion>
 
-### Check on it
+### Check that it is running
 
-```
+```bash
 levelrail-cli apps status web
 levelrail-cli apps logs web --follow
 ```
 
-Status shows the reconciler's conditions, each with a reason string, so a failing deploy tells you why instead of spinning. In the dashboard the same app has live metrics with deploy markers on the charts, the deploy history with one-click rollback, and a log viewer with search.
+`apps status` lists the reconciler's conditions. Each condition has a reason, so a failed deploy says why instead of retrying silently. In the dashboard, the same app shows live metrics with deploy markers on the charts, the deploy history, and a log viewer with search.
 
 <img src="/assets/screenshots/app-overview-light.png" alt="Levelrail app overview: live metrics and deploy history in one view" className="block dark:hidden" />
 <img src="/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" className="hidden dark:block" />
 
-To go back to the previous version, use the deploy history in the dashboard, or run `levelrail-cli apps deploys list web` and then `levelrail-cli apps deploys rollback-to web <deploy-id>`. Prior images are pinned, so garbage collection cannot remove a rollback target.
+Open the app in a browser:
+
+```bash
+levelrail-cli open web
+```
+
+It prints the custom domain first, then the automatic URL.
+
+<Accordion title="If the app does not come up">
+
+`apps status` names the failing condition. Common cases:
+
+- **Health check failed.** The app did not answer on the readiness path. Check that the path exists and returns a 2xx status, and that the app listens on the port you set.
+- **Container crashed.** Read `levelrail-cli apps logs web` for the last lines before the exit.
+- **Missing environment variable.** Add it with `levelrail-cli env set web NAME=value --apply`.
+
+For a full diagnosis, run `levelrail-cli apps diagnose web`. See [Deploy failures](/deploy-failures) for each failure code.
+
+</Accordion>
+
+To put it on your own domain with HTTPS, open the app's **Go live** page: one checklist covers the firewall, DNS and the certificate. See [Go live checklist](/go-live).
+
+### Roll back
+
+Use the deploy history in the dashboard, or run:
+
+```bash
+levelrail-cli apps deploys list web
+levelrail-cli apps deploys rollback-to web <deploy-id>
+```
+
+To go back to the previous successful deploy in one step, run `levelrail-cli rollback web`. Earlier images stay pinned, so cleanup cannot remove a rollback target.
 
 ## Use the CLI from your laptop
 
-`levelrail-cli` is a small client you install on your own machine. It talks to the control plane over HTTPS, with no SSH key and no inbound port.
+`levelrail-cli` runs on your own machine. It talks to the control plane over HTTPS, so you need no SSH key and no open port.
 
-```
+```bash
 curl -fsSL https://levelrail.com/install-cli.sh | sh
 export APP_API_URL=https://console.example.com
-levelrail-cli auth login --device
+levelrail-cli login --api-url https://console.example.com --code ABCD-EF23
 ```
 
-`--device` prints a short code and asks you to approve it in the dashboard, the same model as `gh auth login`, so it inherits your two-factor setup. For CI, create an API token under **Settings, API tokens** and pass it as `APP_API_TOKEN`.
+Right after setup, the dashboard home shows a **Connect your CLI** card. Press **Show my command** and paste the one line it prints into your terminal. The code is single use, expires in minutes and is only ever shown to a signed-in dashboard session, so it signs the CLI in with no password and no approval step:
 
-## Finish setting up for real use
+```text
+$ levelrail-cli login --api-url https://console.example.com --code ABCD-EF23
+logged in as "you@example.com"
+token tk_9fQ2x saved to ~/.config/levelrail-cli/credentials under profile "default", expires 2027-01-18
+```
 
-Once you are signed in, the dashboard home shows live stats, recent activity, and a **Needs attention** list built from the same server checks as the wizard:
+If you sign in with your password instead (`levelrail-cli login --api-url https://console.example.com`), a new device needs approval from a browser where you are signed in. The CLI tells you exactly where:
+
+```text
+This sign-in comes from a new device, so it needs your approval.
+
+  1. Open https://console.example.com/approve-sign-in?request=la_Kx3pQ
+     in the browser where you are signed in to the dashboard.
+  2. Type this number when asked: 42
+
+Or run "levelrail-cli auth approve la_Kx3pQ --match 42" with a token that holds signin:approve.
+Faster: open the dashboard, copy the command from the "Connect your CLI" card and run it (levelrail-cli login --api-url <url> --code XXXX-XXXX).
+Waiting up to 3m0s. Press Ctrl+C to cancel.
+```
+
+On a desktop terminal the CLI opens that page for you (`--open`, or `--open=false` to turn it off); over SSH and in scripts it does not. In a script it stops at once with the same instructions on one line, unless you pass `--wait`. Change the wait with `--approval-timeout` or `APP_LOGIN_APPROVAL_TIMEOUT`. `login --device` still works when you prefer to start from the CLI and approve in the dashboard. For CI, create an API token under **Settings, API tokens** and set it as `APP_API_TOKEN`.
+
+No git remote yet? Run `levelrail-cli deploy` in the project folder to upload and deploy it directly, see [Deploy from your computer](/deploy-from-cli).
+
+## Finish setting up
+
+After you sign in, the dashboard home shows live stats, recent activity, and a **Needs attention** list built from the same server checks as `levelrail-cli doctor`.
 
 <img src="/assets/screenshots/dashboard-home-light.png" alt="Levelrail dashboard home with app, request, and deploy stats and a Needs attention list" className="block dark:hidden" />
 <img src="/assets/screenshots/dashboard-home.png" alt="Levelrail dashboard home with app, request, and deploy stats and a Needs attention list" className="hidden dark:block" />
 
-The sidebar also has a **Get started** item, and the home page a "Setup N% ready" chip, until you hide the guide or every step is settled. It is a checklist driven by live state: each step flips to done on its own the moment the real thing exists, with no reload.
-
-The page opens with four steps under **Start here**: set the dashboard address and turn on HTTPS, secure the admin account, connect a git source (or skip it and deploy an image), and deploy your first app. The rest sit under **More recommended steps**, which stays collapsed until those four are settled. None of the extra steps blocks your first deploy. Terms used on the page: two-factor means a code from an authenticator app, a passkey is a sign-in with your device's fingerprint, face or PIN, DNS is the record that points a name at your server, and TLS is the encryption behind https.
+The **Get started** checklist starts with four steps: set the dashboard address and turn on HTTPS, secure the admin account, connect a git source (or skip it and deploy an image), and deploy your first app. Each step turns to done on its own when the matching item exists. The other steps are under **More recommended steps**. None of them blocks your first deploy.
 
 | Step | Done when | Optional |
 | --- | --- | --- |
-| Secure the admin account | The account has two-factor authentication or a passkey | no |
+| Secure the admin account | Two-factor authentication or a passkey is set up | no |
 | Set the public dashboard address | The dashboard URL is an `https://` address | no |
 | Connect a Git provider | GitHub, GitLab, Bitbucket, or Gitea is connected | yes |
 | Deploy your first app | At least one app exists | no |
 | Put the app on your domain | A domain is attached to an app | no |
 | Connect a DNS provider or proxy | Cloudflare or Route 53 is connected, or you run behind a proxy | yes |
-| Get a valid TLS certificate | Every domain has a healthy certificate (not needed behind a proxy that terminates TLS) | no |
+| Get a valid TLS certificate | Every domain has a healthy certificate (not needed behind a proxy that ends TLS) | no |
 | Add a backup target | A backup target exists | no |
 | Take the first backup | A control plane backup exists | no |
 | Verify a restore | A backup has passed verification | no |
@@ -171,19 +278,17 @@ The page opens with four steps under **Start here**: set the dashboard address a
 | Invite a teammate | A second user or a pending invite exists | yes |
 | Choose an upgrade policy | Automatic upgrades are enabled | yes |
 
-Each step has a one-line explanation, a time estimate, and a button that opens the exact page or dialog for it. A step that depends on another (a domain needs an app, a first backup needs a target) says what to do first. "Ready for production" is the share of required steps that are done. Steps that do not apply to you, such as TLS behind your own proxy, show as "Not needed" and stay out of that number.
+You can **Skip** a step, **Mark done** for something the checklist cannot detect, and **Undo** either. Steps that do not apply to you, such as TLS behind your own proxy, show as "Not needed" and do not count toward your readiness score.
 
-You can **Skip** a step, **Mark done** for something the guide cannot see, and **Undo** either. **Hide for now** removes the sidebar item and chip, and **Reset** clears every skip and manual mark. Both are stored on the server, so they follow you across browsers. Pages that belong to an unfinished step, such as backup targets, show a one-line reminder that links back to the guide.
+The same checklist works from a terminal:
 
-The same checklist is available from a terminal:
-
-```
+```bash
 levelrail-cli setup status
 levelrail-cli setup next
 levelrail-cli setup skip teammate
 ```
 
-Do the backup steps before anything else. Your control plane database and `master.key` are the two things you cannot recreate.
+Set up backups before anything else. Your control plane database and `master.key` are the two things you cannot recreate.
 
 ## Where to go next
 
@@ -227,4 +332,4 @@ Get alerted when something breaks.
 
 Not sure what is stable? See [Feature status](/feature-status). Hit a problem? See [Troubleshooting](/troubleshooting).
 
-Every CLI command, output format (`--output`, `--query`), and shell completion option is in the [CLI reference](/cli-reference). To build from source or run a development instance, see [Installing](/installing#option-3-build-from-source).
+Every command, output format (`--output`, `--query`), and shell completion option is in the [CLI reference](/cli-reference). To build from source or run a development instance, see [Installing](/installing#option-3-build-from-source).

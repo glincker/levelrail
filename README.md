@@ -1,8 +1,8 @@
 <div align="center">
 <img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="56" height="56">
 <h1>Levelrail</h1>
-<p><strong>The lightweight, self-hosted alternative to Vercel, Heroku, Railway, Coolify and Dokku.</strong><br>
-Push to git. Get HTTPS, logs, metrics and one-click rollback on your own servers.<br>
+<p><strong>The lightweight, self-hosted alternative to Vercel, Netlify, Heroku, Railway, Coolify and Dokku.</strong><br>
+Deploy on git push, with logs, metrics, HTTPS and one-click rollback, on your own servers. HTTPS is self-signed until you enable Let's Encrypt.<br>
 One Go binary &middot; Docker runtime &middot; agents instead of SSH &middot; observability built in &middot; no Kubernetes</p>
 <p>
   <a href="https://github.com/glincker/levelrail/releases"><img src="https://img.shields.io/github/v/release/glincker/levelrail?include_prereleases&label=release" alt="Latest release"></a>
@@ -34,23 +34,64 @@ One Go binary &middot; Docker runtime &middot; agents instead of SSH &middot; ob
 <img src="docs/assets/brand/social/github-social-1280x640.jpg" alt="Levelrail: your own Vercel, on your server. The lightweight, self-hosted alternative to Vercel, Heroku and Coolify." width="880">
 </div>
 
-Levelrail is an open source (Apache 2.0) **self-hosted PaaS**: a Vercel and Heroku alternative that runs on any Linux server you own, from a $5 VPS to a rack. It turns plain servers into a private cloud with Git deploys, automatic HTTPS, databases with verified backups, metrics, logs and alerts, without Kubernetes and without the monitoring stack you would otherwise bolt on.
+Levelrail is an open source (Apache 2.0) **self-hosted PaaS**: a Vercel and Heroku alternative that runs on any Linux server you own, from a small VPS to a rack (the one measured host is a 2 vCPU, 8 GB box). It turns plain servers into a private cloud with Git deploys (forge webhooks), HTTPS (self-signed by default, Let's Encrypt when enabled), databases with verified backups, metrics, logs and alerts, without Kubernetes and without the monitoring stack you would otherwise bolt on.
 
-## Install in one command
+## Quickstart
 
-Needs a Linux server (`amd64` or `arm64`) with systemd and root. Docker is installed for you if it is missing.
+You need a Linux server (`amd64` or `arm64`) with systemd and root. The installer adds Docker if it is missing.
+
+### 1. Install the server
 
 ```bash
 curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
-Open the URL it prints, pick a password, and deploy your first app from the setup wizard or the CLI:
+The last lines of output include the dashboard address and a one-time setup link:
+
+```text
+Levelrail vX.Y.Z installed and running.
+
+Open the dashboard:
+  http://203.0.113.10:8080/login?setup=<token>
+```
+
+### 2. Create the admin account
+
+Open the setup link and choose a password. The first sign-in opens one screen that turns on a free certificate for `<dashed-ip>.sslip.io` with one click (no DNS needed) and deploys your first app.
+
+### 3. Deploy an app
+
+On the server, the installer already put `levelrail-cli` in `/usr/local/bin`. Sign in once, then import a repository (`levelrail-cli apps create --interactive` asks for everything step by step):
 
 ```bash
+levelrail-cli login --api-url http://<server-ip>:8080 --code ABCD-EF23
 levelrail-cli import https://github.com/your-org/your-app --deploy
 ```
 
 Prefer containers, a pinned version or a source build? See [Installing](docs/installing.md). Want it as light as Dokku, or everything on? `install.sh --profile minimal|standard|suite`, see [Server profiles](docs/profiles.md). Coming from another platform? See [Migrate to Levelrail](docs/migrate-to-levelrail.md): Coolify, Dokploy, CapRover, Dokku and compose files each get a dry run first, and the old server keeps serving.
+
+After setup, the dashboard home shows a **Connect your CLI** card. Press **Show my command**, paste the line into your terminal, and the CLI signs in with a single-use code that expires in minutes (no password, no approval step):
+
+```text
+logged in as "you@example.com"
+token tk_9fQ2x saved to ~/.config/levelrail-cli/credentials under profile "default", expires 2027-01-18
+```
+
+Signing in with your password from a new device needs approval: the CLI prints the dashboard page to approve it on and the number to type. `login --device` also still works.
+
+Without `--deploy`, `import` only prints the deployment plan. To see the app's address, run `levelrail-cli open your-app`. It prints the custom domain first, then the automatic URL.
+
+### If something fails
+
+| Step | Error you see | Fix |
+| --- | --- | --- |
+| Install | `control plane did not become healthy within 60s` | `systemctl status levelrail` and `journalctl -u levelrail -n 100 --no-pager`. A port already in use is a common cause. |
+| Install | `could not list releases from GitHub. Set LEVELRAIL_VERSION=vX.Y.Z to pin one.` | The server cannot reach GitHub. Check outbound HTTPS, or pin a release. |
+| Install | `checksum mismatch for ...` | Do not continue. Run the installer again. Do not set `LEVELRAIL_SKIP_CHECKSUM=1` to get past it. |
+| Login | `start device login: ... connection refused` | The CLI points at the wrong address. Run `export APP_API_URL=http://127.0.0.1:<dashboard port>` and try again. |
+| Import | `plan import: ... connection refused` | The control plane is not running. Start it with `systemctl start levelrail`. |
+
+More fixes: [Troubleshooting](docs/troubleshooting.md). Full install options (Docker image, pinned version, source build): [Installing](docs/installing.md). Deploy from a local project with `levelrail-cli up`: [One command quickstart](docs/quickstart-one-command.md). Server profiles (`install.sh --profile minimal|standard|suite`): [Server profiles](docs/profiles.md). Migrating from another platform? `levelrail-cli import platform coolify|dokploy|caprover --dry-run` shows what would be created first, and the old server keeps serving. Full guide: [Migrate to Levelrail](docs/migrate-to-levelrail.md).
 
 <table>
   <tr>
@@ -67,12 +108,12 @@ Prefer containers, a pinned version or a source build? See [Installing](docs/ins
 
 ## Why people pick Levelrail
 
-- **Lightweight.** About 200 MB of RAM and roughly 2% of one CPU idle, measured on a real 2 vCPU server running three apps with the default feature set. [Numbers and method](docs/benchmarks.md).
+- **Lightweight.** About 200 MB of RAM and roughly 1.5% of one CPU idle, measured on a 2 vCPU, 8 GB Linux test box with no apps under load and the default feature set (one run, 2026-10-19). [Numbers and method](docs/benchmarks.md).
 - **Agents, not SSH.** Each node runs a small agent that dials out over mTLS and talks to Docker's Engine API directly. No inbound ports, no shelling out to the `docker` CLI, no polling loops.
 - **Observability included.** Per-node metrics at 15 second resolution, searchable logs, deploy markers, traces, SLO burn, alert inbox and an idle-footprint health page. No Grafana stack to install.
-- **Deploys that protect you.** Readiness-gated rollouts, pinned images so rollback always works, canary releases that roll back on errors, deploy diffs, approvals and freezes.
+- **Deploys that protect you.** Readiness-gated rollouts, pinned images for rollback, canary releases that roll back on errors, deploy diffs, approvals and freezes.
 - **Secure by default.** Hash-chained audit log you can verify, SSRF-guarded outbound calls, envelope-encrypted secrets with key rotation, scoped tokens, passkeys and TOTP 2FA, OAuth and OIDC sign-in, IAM policies, signed releases. SAML single sign-on and SCIM provisioning are available as a [beta feature](docs/sso-saml.md), off by default.
-- **Built for AI agents.** An MCP server with a small default tool list (about 2.4k tokens, more load on demand), a scoped-token permission model and an agent skill.
+- **Built for AI agents.** An MCP server with over 240 tools in on-demand toolsets (small default list, about 2.4k tokens; see [tool surface](docs/mcp-tool-surface.md)), a scoped-token permission model and an agent skill.
 
 ## Production ready, with receipts
 
@@ -102,16 +143,16 @@ Most self-hosted platforms in this category manage servers by SSHing in and shel
 | Audit log | Hash-chained, verifiable, CSV export, forwarding to syslog, webhook or bucket | See their docs | See their docs | See their docs | See their docs |
 | IAM | Allow and Deny policies per app or database, scoped tokens | See their docs | See their docs | See their docs | See their docs |
 
-This is positioning, not a ranking, and every project here is worth using. Where Levelrail trails: it is the youngest project here, with fewer users and less production mileage, and its SAML single sign-on and SCIM provisioning are beta ([details](docs/sso-saml.md)). Its template catalog (300+ entries) is in the same range as Coolify's, but only a sample is deployed end to end ([ADR 015](adr/015-service-template-catalog-reversal.md)). The full, sourced comparison is in [Comparison](docs/comparison.md).
+This is positioning, not a ranking, and every project here is worth using. Where Levelrail trails: it is the youngest project here, with fewer users and less production mileage, and its SAML single sign-on and SCIM provisioning are beta ([details](docs/sso-saml.md)). Its template catalog (about 360 entries) is in the same range as Coolify's, but only a sample is deployed end to end ([ADR 015](adr/015-service-template-catalog-reversal.md)). The full, sourced comparison is in [Comparison](docs/comparison.md).
 
 ## What you get
 
-- **Deploys:** Push to your git host (GitHub, GitLab, Bitbucket, Gitea webhooks), preview environments per pull request, framework presets (Next.js, Go, React, Spring Boot and more), Dockerfile, Compose or image deploys, canary and blue-green rollouts. [Deploying apps](docs/deploying-apps.md)
-- **Domains and TLS:** Embedded Caddy ingress, automatic certificates, wildcard and custom certificates, per-app abuse protection. [Domains](docs/domains-and-ingress.md)
+- **Deploys:** Push to your git host (GitHub, GitLab, Bitbucket, Gitea webhooks), deploys start from a forge webhook (a native `git push` remote is beta and off by default), preview environments per pull request (stable on GitHub, beta on GitLab and Bitbucket), framework presets (Next.js, Go, React, Spring Boot and more), Dockerfile, Compose or image deploys, canary and blue-green rollouts. Readiness-gated cutover is live-tested with zero failed requests on a single node; multi-node is beta. [Deploying apps](docs/deploying-apps.md)
+- **Domains and TLS:** Embedded Caddy ingress. The default certificate is internal (self-signed). Public Let's Encrypt is one toggle and was verified in one live run; renewal and DNS-01 wildcards are unverified. Custom certificates can be uploaded. Per-app abuse protection. [Domains](docs/domains-and-ingress.md)
 - **Databases:** Postgres, MySQL, MariaDB, MongoDB, Redis, KeyDB, Dragonfly and ClickHouse with scheduled backups, Postgres point-in-time recovery, restore, and password rotation. [Databases](docs/managing-databases.md)
 - **One search for everything:** Cmd+K across apps, databases, nodes, templates and actions, filtered by what you may do. [Search](docs/search.md)
 - **Servers:** Add nodes with a one-time token, WireGuard mesh, zones and failure-domain spreading, placement what-if. [Multi-node](docs/multi-node.md)
-- **Templates:** 300+ one-click services, with a smoke test that brings up the top 50 (48 pass today, [status](docs/templates-status.md)). [Catalog](docs/template-catalog.md)
+- **Templates:** about 360 one-click services, with a smoke test that brings up the top 50 (48 pass today, [status](docs/templates-status.md)). [Catalog](docs/template-catalog.md)
 - **Identity and access:** Password, passkeys, TOTP, OAuth with 20 providers plus generic OIDC, IAM policies, teams, a hash-chained audit log with CSV export. SAML single sign-on and SCIM provisioning are beta and off by default. [Identity and access](docs/identity-and-access.md), [SAML and SCIM](docs/sso-saml.md)
 - **Plugins:** A signed plugin marketplace with one-click install, dashboard panels and first-party alert channels. [Plugins](docs/plugins.md)
 - **Automation:** One HTTP API behind the dashboard, a CLI and an MCP server. AI never sits in the reconciliation path. [CLI](docs/cli-reference.md), [AI control](docs/ai-control.md)

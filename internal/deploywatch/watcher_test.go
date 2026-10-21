@@ -78,6 +78,7 @@ func newWatchFixture(t *testing.T, withPin bool) *watchFixture {
 
 	notes := &notifications{}
 	defaults := deploysafety.BuiltinDefaults()
+	defaults.WatchMode, defaults.AutoRollback = deploysafety.WatchModeAuto, true
 	w := &Watcher{Store: db, Defaults: defaults, Notify: notes.notify, now: func() time.Time { return now }}
 	return &watchFixture{db: db, watcher: w, notes: notes, now: now}
 }

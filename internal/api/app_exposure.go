@@ -15,7 +15,6 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/diagnose"
-	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/firewall"
@@ -320,7 +319,7 @@ func (rt *Router) fillExposureURLs(ctx context.Context, svc *store.DesiredServic
 		plan.URLs = append(plan.URLs, exposureURL{Kind: "domain", URL: rt.ingressHTTPSURL(ing, d)})
 	}
 	if len(svc.Domains) == 0 && !ing.FallbackDomainsDisabled {
-		if fb, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
+		if fb, ok := rt.autoHost(ctx, svc.Name); ok {
 			plan.URLs = append(plan.URLs, exposureURL{Kind: "fallback", URL: rt.ingressHTTPSURL(ing, fb)})
 		}
 	}

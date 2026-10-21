@@ -40,55 +40,18 @@ func emailConfigLoader(db *store.DB, secretsManager *secrets.Manager, envFallbac
 		if err != nil {
 			return email.Config{}, err
 		}
-
-		switch settings.Backend {
-		case store.EmailBackendSMTP:
-			if secretsManager == nil {
-				return email.Config{}, fmt.Errorf("email settings: smtp backend selected but no master key is configured")
-			}
-			password, err := resolveEmailSecret(ctx, secretsManager, "smtp_password")
-			if err != nil {
-				return email.Config{}, err
-			}
-			return email.Config{Backend: email.BackendSMTP, SMTP: &email.SMTPConfig{
-				Addr:     fmt.Sprintf("%s:%d", settings.SMTPHost, settings.SMTPPort),
-				Host:     settings.SMTPHost,
-				Username: settings.SMTPUsername,
-				Password: password,
-				From:     settings.SMTPFrom,
-			}}, nil
-		case store.EmailBackendSES:
-			if secretsManager == nil {
-				return email.Config{}, fmt.Errorf("email settings: ses backend selected but no master key is configured")
-			}
-			secret, err := resolveEmailSecret(ctx, secretsManager, "ses_secret_access_key")
-			if err != nil {
-				return email.Config{}, err
-			}
-			return email.Config{Backend: email.BackendSES, SES: &email.SESConfig{
-				Region:          settings.SESRegion,
-				AccessKeyID:     settings.SESAccessKeyID,
-				SecretAccessKey: secret,
-				From:            settings.SESFrom,
-			}}, nil
-		case store.EmailBackendResend:
-			if secretsManager == nil {
-				return email.Config{}, fmt.Errorf("email settings: resend backend selected but no master key is configured")
-			}
-			apiKey, err := resolveEmailSecret(ctx, secretsManager, "resend_api_key")
-			if err != nil {
-				return email.Config{}, err
-			}
-			return email.Config{Backend: email.BackendResend, Resend: &email.ResendConfig{
-				APIKey: apiKey,
-				From:   settings.ResendFrom,
-			}}, nil
-		default:
+		if settings.Backend == "" {
 			if envFallback == nil {
 				return email.Config{}, nil // NewSender turns this into email.ErrNotConfigured
 			}
 			return email.Config{Backend: email.BackendSMTP, SMTP: envFallback}, nil
 		}
+		if secretsManager == nil {
+			return email.Config{}, fmt.Errorf("email settings: %s backend selected but no master key is configured", settings.Backend)
+		}
+		return emailConfigFromSettings(settings, func(key string) (string, error) {
+			return resolveEmailSecret(ctx, secretsManager, key)
+		})
 	}
 }
 

@@ -81,7 +81,7 @@ func (n *NoiseControl) ApplyStreak(prev, next Rule, now time.Time) Rule {
 // plane rather than one app.
 func IsPlatformKind(k Kind) bool {
 	switch k {
-	case KindCertExpiry, KindPatchStatus, KindNodeDiskSpace, KindNodeResourceUsage, KindNodeOffline,
+	case KindCertExpiry, KindPatchStatus, KindNodeDiskSpace, KindNodeHostGuardrail, KindNodeResourceUsage, KindNodeOffline,
 		KindNodeCertExpiring, KindControlPlaneBackupStale, KindLogArchiveStale, KindExportBehind, KindRestoreDrillFailed,
 		KindCertExpiring, KindCertRenewalStalled, KindBudgetThreshold:
 		return true

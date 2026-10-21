@@ -42,6 +42,8 @@ A Node project without a Dockerfile works: it builds with Railpack. A project in
 levelrail-cli up --dry-run --with postgres --domain shop.example.com --memory 512Mi
 ```
 
+This output comes from a sample Node.js project with a `main` branch pushed to GitHub:
+
 ```text
 up: .
   note: detected Node.js (Express)
@@ -49,7 +51,7 @@ up: .
   port            3000                                     (detected)
   build           railpack                                 (detected)
   repo            https://github.com/acme/shop.git         (git remote)
-  ref             main                                     (default)
+  ref             main                                     (git remote)
   image repo      shop                                     (default)
   replicas        1                                        (default)
   strategy        blue-green                               (default)
@@ -62,6 +64,8 @@ plan (new app):
   levelrail-cli databases create --name shop-postgres --engine postgres --version <engine default>
   levelrail-cli apps connect shop shop-postgres --env-var DATABASE_URL
   levelrail-cli apps domains add shop shop.example.com
+  (up connects databases before the first build starts, so the first container already has its connection env)
+change any value with its flag, or commit an app.yaml; see "levelrail-cli up -h"
 ```
 
 On a terminal, `up` asks for confirmation before it changes anything. Pass `--yes` in scripts.
@@ -70,7 +74,18 @@ On a terminal, `up` asks for confirmation before it changes anything. Pass `--ye
 
 `up` is safe to repeat. A second run finds the app, database, connection and domain it already made, changes only settings that differ from what you asked for, and rebuilds from your latest push. Nothing is created twice.
 
-If a step fails partway, `up` stops and says what to run. For example, if the database exists but connecting it fails, no build starts, and the message names `levelrail-cli apps connect` and says re-running `up` is safe.
+If a step fails partway, `up` stops and says what to run next. For example, if the database exists but connecting it fails, no build starts, and the message names `levelrail-cli apps connect` and says re-running `up` is safe.
+
+## If this fails
+
+| Message | What to do |
+| --- | --- |
+| `no git remote "origin" found in ., so the server has nothing to build from; add one (git remote add origin URL) and push, or pass --repo URL` | Add the remote and push your branch, or pass `--repo`. |
+| `app "shop" is set up but the build did not start, re-run "levelrail-cli up" to retry` | The app exists and nothing is built yet. Run `levelrail-cli up` again. |
+| `app "shop" and database "shop-postgres" exist but connecting them failed, no build was started` | Run the `apps connect` command the message prints, or run `levelrail-cli up` again. |
+| `app "shop" is deployed but adding domain "shop.example.com" failed` | Run the `apps domains add` command the message prints. The app is already running. |
+
+If the build itself fails, the app still exists. Run `levelrail-cli apps diagnose shop` for the likely cause, and see [Deploy failures](/deploy-failures) for each failure code.
 
 ## Advanced flags
 

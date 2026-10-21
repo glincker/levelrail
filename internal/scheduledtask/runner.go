@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -89,6 +90,11 @@ type Runner struct {
 	Resolver NodeRuntimeResolver
 	Logger   *slog.Logger
 	Limits   Limits
+	// Target and HTTPConfigs serve http-mode jobs; Client overrides the
+	// HTTP client (nil uses http.DefaultClient).
+	Target      HTTPTarget
+	HTTPConfigs HTTPConfigStore
+	Client      *http.Client
 	// NamePrefix namespaces fresh job containers (the brand short name).
 	NamePrefix string
 
@@ -314,8 +320,9 @@ func (r *Runner) outputCap() int {
 }
 
 func modeOf(task store.ScheduledTask) string {
-	if task.Mode == store.ScheduledTaskModeFresh {
-		return store.ScheduledTaskModeFresh
+	switch task.Mode {
+	case store.ScheduledTaskModeFresh, store.ScheduledTaskModeHTTP:
+		return task.Mode
 	}
 	return store.ScheduledTaskModeExec
 }
@@ -391,6 +398,9 @@ func (r *Runner) sleep(ctx context.Context, d time.Duration) error {
 
 // attempt performs one try in the task's mode.
 func (r *Runner) attempt(runCtx context.Context, task store.ScheduledTask, runID string) result {
+	if task.Mode == store.ScheduledTaskModeHTTP {
+		return r.attemptHTTP(runCtx, task, runID)
+	}
 	svc, err := r.Apps.GetDesiredService(runCtx, task.ServiceName)
 	if err != nil {
 		if isReplaced(runCtx) {

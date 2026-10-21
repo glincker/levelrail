@@ -126,13 +126,14 @@ export function GeneralRail() {
 export function EmailRail({ settings }: { settings: EmailSettings }) {
   const { t } = useTranslation('settings')
   const from =
-    settings.backend === 'smtp'
+    settings.from_address ||
+    (settings.backend === 'smtp'
       ? settings.smtp_from
-      : settings.backend === 'ses'
+      : settings.backend === 'ses' || settings.backend === 'ses_smtp'
         ? settings.ses_from
         : settings.backend === 'resend'
           ? settings.resend_from
-          : undefined
+          : undefined)
 
   return (
     <PageRail>
@@ -142,7 +143,7 @@ export function EmailRail({ settings }: { settings: EmailSettings }) {
             <Badge variant="muted">{t('emailPage.status.none')}</Badge>
           ) : (
             <Badge variant="success">
-              {t(`emailPage.rail.backends.${settings.backend}`)}
+              {t(`emailDelivery.providers.${settings.backend}`)}
             </Badge>
           )}
         </PageRailRow>

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
@@ -37,6 +38,7 @@ func startDatabaseUpgrades(ctx context.Context, logger *slog.Logger, db *store.D
 	if secretsManager != nil {
 		rt.Restorer = &backup.RestoreRunner{
 			Store: db, Secrets: secretsManager, Downloader: backup.S3Downloader{}, Restorer: &backup.ContainerRestorer{Runtime: client},
+			Identities: backupIdentities(backupRunner),
 		}
 	}
 	advisor := dbupgrade.Advisor{Catalog: catalog, EOLWarn: dbupgrade.DurationFromEnv(dbupgrade.EnvEOLWarn, dbupgrade.DefaultEOLWarn, logger)}
@@ -63,6 +65,13 @@ func startDatabaseUpgrades(ctx context.Context, logger *slog.Logger, db *store.D
 	go versions.Run(ctx)
 	go manager.Run(ctx, dbupgrade.DurationFromEnv(dbupgrade.EnvInterval, dbupgrade.DefaultInterval, logger))
 
-	refresher := &dbupgrade.Refresher{Catalog: catalog, Lister: dbupgrade.DockerHubLister{}, Logger: logger}
+	refresher := &dbupgrade.Refresher{Catalog: catalog, Lister: dbupgrade.DockerHubLister{}, Logger: logger,
+		FirstDelay: dbupgrade.DurationFromEnv(envRefreshFirstDelay, defaultRefreshFirstDelay, logger)}
 	go refresher.Run(ctx, dbupgrade.RefreshIntervalFromEnv(logger))
 }
+
+// Tag lists are a transient multi-MB JSON decode, so the first one waits until boot has settled.
+const (
+	envRefreshFirstDelay     = "APP_DBUPGRADE_REFRESH_FIRST_DELAY"
+	defaultRefreshFirstDelay = 10 * time.Minute
+)

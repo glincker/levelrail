@@ -226,6 +226,8 @@ type deployAttemptResource struct {
 	DeployURL string `json:"deploy_url,omitempty"`
 	// Live is true for the deploy the app runs right now, served at the app's own URL.
 	Live bool `json:"live,omitempty"`
+	// PublishState is "held" for a finished build the app's publish lock kept off the live site.
+	PublishState string `json:"publish_state,omitempty"`
 	// SBOMPackages and VulnCounts are set when the build produced an SBOM and it was scanned.
 	SBOMPackages *int                `json:"sbom_packages,omitempty"`
 	VulnCounts   *supplychain.Counts `json:"vuln_counts,omitempty"`
@@ -324,11 +326,16 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 	}
 	supply := rt.supplyChainRecords(r.Context(), ids)
 	deployURLs := rt.deployURLsByAttempt(r.Context(), name)
+	held := rt.heldBuildIDs(r.Context(), name)
 	out := make([]deployAttemptResource, 0, len(attempts))
 	for _, a := range attempts {
 		res := toDeployAttemptResource(a)
 		res.DeployURL = deployURLs[a.ID]
 		res.Live = a.Status == store.DeployAttemptStatusSucceeded && a.Image == svc.Image
+		if held[a.ID] && (!res.Live || isStaticAttempt(a)) {
+			res.Live = false
+			res.PublishState = publishStateHeld
+		}
 		res.CacheWarning = warnings[a.ID]
 		rt.attachFailure(&res, a)
 		rt.applyWait(r.Context(), &res, a, attempts)

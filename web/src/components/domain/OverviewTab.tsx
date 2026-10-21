@@ -4,6 +4,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { DomainDnsCheck } from '../DomainDnsCheck'
 import { certificatesQueryOptions } from '../../queries/certificates'
+import { certTruth } from '../../lib/certTruth'
+import { CertTruthBadge } from '../CertTruthBadge'
+import { GetCertificateButton } from '../GetCertificateButton'
 import type { DomainPolicies } from '../../queries/domainPolicyTypes'
 import { PreviewPanel, Section } from './PolicyShared'
 
@@ -49,9 +52,7 @@ export function OverviewTab({
       <Section title={t('overview.certTitle')}>
         {cert ? (
           <div className="space-y-1 text-sm">
-            <Badge variant={cert.status === 'healthy' ? 'success' : 'warning'}>
-              {cert.status}
-            </Badge>
+            <CertTruthBadge cert={cert} />
             <p className="text-xs text-muted-foreground">
               {t('overview.certDetail', {
                 issuer: cert.issuer ?? cert.source,
@@ -64,6 +65,11 @@ export function OverviewTab({
             {t('overview.noCert')}
           </p>
         )}
+        {certTruth(cert).wantsRealCert ? (
+          <div className="mt-2">
+            <GetCertificateButton domain={domain} />
+          </div>
+        ) : null}
       </Section>
       <Section title={t('overview.dnsTitle')}>
         <DomainDnsCheck appName={app} domain={domain} />

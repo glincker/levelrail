@@ -4,6 +4,9 @@ import {
   useEmailSettings,
 } from '../../queries/emailSettings'
 import { EmailSettingsCard } from '../../components/EmailSettingsCard'
+import { EmailDomainCheckCard } from '../../components/email/EmailDomainCheckCard'
+import { EmailStatusHeader } from '../../components/email/EmailStatusHeader'
+import { EmailTestCard } from '../../components/email/EmailTestCard'
 import { EmailPageShell } from '../../components/settings/EmailPageShell'
 import {
   SettingsCardSkeleton,
@@ -31,7 +34,12 @@ function EmailSettingsPage() {
 
   return (
     <EmailPageShell settings={settings}>
-      <EmailSettingsCard settings={settings} />
+      <div className="space-y-6">
+        <EmailStatusHeader />
+        <EmailSettingsCard settings={settings} />
+        <EmailTestCard provider={settings.backend} />
+        <EmailDomainCheckCard provider={settings.backend} />
+      </div>
     </EmailPageShell>
   )
 }

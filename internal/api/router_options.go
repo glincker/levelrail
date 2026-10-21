@@ -212,28 +212,10 @@ func WithGitHubAppSecrets(s GitHubAppSecrets) Option {
 	return func(rt *Router) { rt.githubAppSecrets = s }
 }
 
-// WithGitLabAppSecrets enables the GitLab App routes that read or write
-// a credential (connect, connect-start, callback, project listing,
-// use-as-source). Without one configured, those return 501; GET/DELETE
-// /api/v1/gitlab-app work regardless.
-func WithGitLabAppSecrets(s GitLabAppSecrets) Option {
-	return func(rt *Router) { rt.gitlabAppSecrets = s }
-}
-
-// WithBitbucketAppSecrets enables the Bitbucket App routes that read or
-// write a credential (connect, connect-start, callback, repo/branch
-// listing, use-as-source). Without one configured, those return 501;
-// GET/DELETE /api/v1/bitbucket-app work regardless.
-func WithBitbucketAppSecrets(s BitbucketAppSecrets) Option {
-	return func(rt *Router) { rt.bitbucketAppSecrets = s }
-}
-
-// WithGiteaAppSecrets enables the Gitea App routes that read or write a
-// credential (connect, connect-start, callback, repo/branch listing,
-// use-as-source). Without one configured, those return 501; GET/DELETE
-// /api/v1/gitea-app work regardless.
-func WithGiteaAppSecrets(s GiteaAppSecrets) Option {
-	return func(rt *Router) { rt.giteaAppSecrets = s }
+// WithGitConnectionSecrets enables the GitLab, Bitbucket and Gitea connection
+// routes that read or write secrets. Without it they answer 501.
+func WithGitConnectionSecrets(s GitConnSecrets) Option {
+	return func(rt *Router) { rt.gitConnSecrets = s }
 }
 
 // WithGitHubAppManifestConfig overrides the permissions/events a fresh

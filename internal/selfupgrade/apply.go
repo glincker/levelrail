@@ -47,12 +47,30 @@ type Deps struct {
 	Stop        func(ctx context.Context) error
 	Start       func(ctx context.Context) error
 	WaitHealthy func(ctx context.Context, timeout time.Duration) error
+	// RestorePoint keeps the snapshot, binary and unit file as a restore point
+	// and returns its id. Optional.
+	RestorePoint func(ctx context.Context, a Attempt, snapshotPath string) (string, error)
+	// AgentsOnline counts connected agents before the stop, for Verify. Optional.
+	AgentsOnline func(ctx context.Context) (int, error)
+	// Verify judges the new release inside the health window. When nil,
+	// WaitHealthy alone decides.
+	Verify func(ctx context.Context, window time.Duration, want VerifyExpect) (string, error)
+	// RestoreUnit puts a saved unit file back and reloads the service manager.
+	RestoreUnit func(ctx context.Context, savedPath string) error
 	// RestoreDB puts the snapshot in place of the live database and returns
 	// where the replaced database was kept.
 	RestoreDB   func(ctx context.Context, snapshotPath string) (string, error)
 	WriteMarker func(ctx context.Context, a Attempt) error
 	ClearMarker func()
 	Audit       func(ctx context.Context, detail string) error
+}
+
+// VerifyExpect is what a healthy new release must show.
+type VerifyExpect struct {
+	// Schema is the database schema head of the new release.
+	Schema int
+	// AgentsOnline is how many agents were connected before the upgrade.
+	AgentsOnline int
 }
 
 // Request is one upgrade the operator asked for.
@@ -129,11 +147,26 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 			return "", err
 		}
 		a.BackupName, a.SnapshotPath = backup.Name, backup.SnapshotPath
+		a.SnapshotAt = d.now()
 		a.PrevBinary = d.BinaryPath + ".prev"
 		if err := copyExecutable(d.BinaryPath, a.PrevBinary); err != nil {
 			return "", fmt.Errorf("keep previous binary: %w", err)
 		}
-		return "database snapshot " + backup.Name + ", previous binary kept", nil
+		if d.AgentsOnline != nil {
+			if n, err := d.AgentsOnline(ctx); err == nil {
+				a.AgentsBefore = n
+			}
+		}
+		detail := "database snapshot " + backup.Name + ", previous binary kept"
+		if d.RestorePoint != nil {
+			id, err := d.RestorePoint(ctx, a, backup.SnapshotPath)
+			if err != nil {
+				return "", fmt.Errorf("keep restore point: %w", err)
+			}
+			a.RestorePointID = id
+			detail += ", restore point " + id
+		}
+		return detail, nil
 	}); err != nil {
 		return r.cleanFail(StepBackup, err)
 	}
@@ -173,6 +206,13 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 		return r.rollbackAndFinish(ctx, StepStart, err)
 	}
 	if err := r.step(StepHealth, func() (string, error) {
+		if d.Verify != nil {
+			detail, err := d.Verify(ctx, req.HealthTimeout, VerifyExpect{Schema: probe.Schema, AgentsOnline: a.AgentsBefore})
+			if err != nil {
+				return "", fmt.Errorf("%w: %w", ErrNotHealthy, err)
+			}
+			return detail, nil
+		}
 		if err := d.WaitHealthy(ctx, req.HealthTimeout); err != nil {
 			return "", fmt.Errorf("%w: %w", ErrNotHealthy, err)
 		}

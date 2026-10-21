@@ -57,6 +57,7 @@ export type BrandIconName =
   | 'google'
   | 'microsoft'
   | 'gitea'
+  | 'forgejo'
   | 'openid'
   | 'facebook'
   | 'linkedin'
@@ -136,6 +137,9 @@ export type BrandIconName =
   | 'deepseek'
   | 'xai'
   | 'fireworks'
+  | 'nginx'
+  | 'traefik'
+  | 'caddy'
   | 'ollama'
   | 'perplexity'
   | 'vllm'
@@ -194,6 +198,7 @@ const LOADERS: Record<
   google: () => import('@thesvg/react/google'),
   microsoft: () => import('@thesvg/react/microsoft'),
   gitea: () => import('@thesvg/react/gitea'),
+  forgejo: () => import('@thesvg/react/forgejo'),
   openid: () => import('@thesvg/react/openid'),
   facebook: () => import('@thesvg/react/facebook'),
   linkedin: () => import('@thesvg/react/linkedin'),
@@ -275,6 +280,9 @@ const LOADERS: Record<
   deepseek: () => import('@thesvg/react/deepseek'),
   xai: () => import('@thesvg/react/xai'),
   fireworks: () => import('@thesvg/react/fireworks'),
+  nginx: () => import('@thesvg/react/nginx'),
+  traefik: () => import('@thesvg/react/traefik'),
+  caddy: () => import('@thesvg/react/caddy'),
   ollama: () => import('@thesvg/react/ollama'),
   perplexity: () => import('@thesvg/react/perplexity'),
   vllm: () => import('@thesvg/react/vllm'),

@@ -55,6 +55,9 @@ func newSolveOpt(req Request, cache CacheConfig, out io.WriteCloser) (*bkclient.
 		attrs["attest:sbom"] = ""
 		attrs["attest:provenance"] = "mode=min"
 	}
+	if req.CgroupParent != "" {
+		attrs["cgroup-parent"] = req.CgroupParent
+	}
 	for k, v := range req.BuildArgs {
 		attrs["build-arg:"+k] = v
 	}

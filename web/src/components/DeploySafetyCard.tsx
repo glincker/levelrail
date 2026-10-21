@@ -5,14 +5,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { InfoTip } from '@/components/kit'
 import { useDeploySafety, useSetDeploySafety } from '../queries/deployGate'
 import type { DeploySafety, DeploySafetyOverrides } from '../types/deployGate'
 import {
-  EMPTY_OVERRIDES,
-  SAFETY_FIELDS,
+  GATE_FIELDS,
   defaultText,
   toDraft,
   toOverrides,
@@ -65,9 +63,6 @@ function SafetyForm({
   const { t } = useTranslation('deploySafety')
   const save = useSetDeploySafety(appName)
   const [draft, setDraft] = useState(() => toDraft(safety.overrides))
-  const [autoRollback, setAutoRollback] = useState(
-    safety.overrides.auto_rollback,
-  )
 
   function submit(next: DeploySafetyOverrides) {
     save.mutate(next, {
@@ -87,14 +82,14 @@ function SafetyForm({
       className="space-y-4"
       onSubmit={(e) => {
         e.preventDefault()
-        submit(toOverrides(draft, autoRollback))
+        submit(toOverrides(draft, safety.overrides, GATE_FIELDS))
       }}
     >
       <p className="text-sm text-muted-foreground">
         {t('settings.inheritHint')}
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
-        {SAFETY_FIELDS.map(({ key, numeric }) => (
+        {GATE_FIELDS.map(({ key, numeric }) => (
           <Field key={key}>
             <FieldLabel htmlFor={`deploy-safety-${key}`}>
               {t(`settings.field.${key}.label`)}
@@ -112,27 +107,6 @@ function SafetyForm({
           </Field>
         ))}
       </div>
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-foreground">
-            {t('settings.autoRollback.label')}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {autoRollback === null
-              ? t('settings.autoRollback.inherited', {
-                  value: safety.defaults.auto_rollback
-                    ? t('settings.on')
-                    : t('settings.off'),
-                })
-              : t('settings.autoRollback.hint')}
-          </p>
-        </div>
-        <Switch
-          checked={autoRollback ?? safety.defaults.auto_rollback}
-          onCheckedChange={setAutoRollback}
-          aria-label={t('settings.autoRollback.label')}
-        />
-      </div>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" size="sm" disabled={save.isPending}>
           {t('settings.save')}
@@ -142,7 +116,14 @@ function SafetyForm({
           size="sm"
           variant="outline"
           disabled={save.isPending}
-          onClick={() => submit(EMPTY_OVERRIDES)}
+          onClick={() =>
+            submit({
+              ...safety.overrides,
+              success_threshold: null,
+              stable_window: null,
+              drain_timeout: null,
+            })
+          }
         >
           {t('settings.reset')}
         </Button>

@@ -20,10 +20,10 @@ const gitLabStatusDescriptionMax = 255
 // application is authorized, or gs.RepoURL isn't hosted on the
 // connected instance (mirrors previewGitHubTarget).
 func (rt *Router) previewGitLabTarget(ctx context.Context, appName string, gs store.GitSource) (instanceURL, accessToken, projectPath string, ok bool) {
-	if !gs.PostPRComments || rt.gitlabAppSecrets == nil {
+	if !gs.PostPRComments || rt.gitConnSecrets == nil {
 		return "", "", "", false
 	}
-	conn, accessToken, err := rt.gitlabAccessToken(ctx)
+	conn, accessToken, err := rt.gitTokenForRepo(ctx, gitProviderGitLab, gs.RepoURL, gs.ConnectionID)
 	if err != nil {
 		rt.logger.Info("api: preview gitlab notification skipped: no usable gitlab connection",
 			slog.String("app_name", appName), slog.String("error", err.Error()))

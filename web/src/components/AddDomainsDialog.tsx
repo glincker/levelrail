@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Suspense, lazy, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -38,12 +38,19 @@ import {
   domainCheckKeys,
   domainCheckQueryOptions,
 } from '../queries/domainCheck'
+import { GetCertificateButton } from './GetCertificateButton'
 import type { EditDomainsResult } from '../queries/appEnvironmentDomains'
 import { DomainCheckPanel } from './DomainDnsCheck'
 import { DomainDnsStatusBadge } from './DomainDnsStatusBadge'
 import { GoLivePanel } from './GoLivePanel'
 import { ServerAddressLine } from './domains/ServerAddressCard'
 import { StandaloneAddBody } from './domains/StandaloneAddBody'
+
+const DomainDiagnosePanel = lazy(() =>
+  import('./domains/DomainDiagnosePanel').then((m) => ({
+    default: m.DomainDiagnosePanel,
+  })),
+)
 
 export interface AddDomainsApp {
   name: string
@@ -52,12 +59,15 @@ export interface AddDomainsApp {
 function ResultRow({
   appName,
   outcome,
+  diagnoseByDefault,
 }: {
   appName: string
   outcome: BulkAddOutcome<EditDomainsResult>
+  diagnoseByDefault: boolean
 }) {
   const { t } = useTranslation('domains')
   const [open, setOpen] = useState(false)
+  const [diagnoseOpen, setDiagnoseOpen] = useState(diagnoseByDefault)
   const check = useQuery({
     ...domainCheckQueryOptions(appName, outcome.domain),
     enabled: outcome.ok,
@@ -101,6 +111,18 @@ function ResultRow({
             ? t('page.addDialog.hideRecord')
             : t('page.addDialog.showRecord')}
         </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          aria-expanded={diagnoseOpen}
+          onClick={() => {
+            setDiagnoseOpen((v) => !v)
+          }}
+        >
+          {t('page.row.diagnose')}
+        </Button>
+        <GetCertificateButton domain={outcome.domain} variant="ghost" />
       </div>
       <div className="mt-2 pl-6">
         <GoLivePanel
@@ -110,6 +132,13 @@ function ResultRow({
           dns={outcome.result.dns_results?.[0]}
         />
       </div>
+      {diagnoseOpen ? (
+        <div className="mt-2 pl-6">
+          <Suspense fallback={null}>
+            <DomainDiagnosePanel domain={outcome.domain} />
+          </Suspense>
+        </div>
+      ) : null}
       {open ? (
         <div className="mt-2">
           <DomainCheckPanel
@@ -221,7 +250,12 @@ function AddDomainsBody({
         </p>
         <ul className="max-h-96 divide-y divide-border overflow-auto">
           {outcomes.map((o) => (
-            <ResultRow key={o.domain} appName={appName} outcome={o} />
+            <ResultRow
+              key={o.domain}
+              appName={appName}
+              outcome={o}
+              diagnoseByDefault={outcomes.length === 1}
+            />
           ))}
         </ul>
         <DialogFooter>

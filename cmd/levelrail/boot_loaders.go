@@ -22,11 +22,13 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/localmode"
 	"github.com/GLINCKER/levelrail/internal/pkgregistry"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -41,6 +43,9 @@ func loadBrand() (*brand.Brand, error) {
 		path = defaultBrandFile
 	}
 	b, err := brand.Load(path)
+	if err != nil && os.IsNotExist(errors.Unwrap(err)) && localmode.Enabled(os.Getenv) {
+		return brand.LoadEmbedded()
+	}
 	if err != nil && os.IsNotExist(errors.Unwrap(err)) {
 		return nil, fmt.Errorf("%w (running via install.sh sets this up automatically; running the binary directly needs either a brand.yaml file at %q or APP_BRAND_FILE pointing at one)", err, path)
 	}
@@ -200,8 +205,12 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithLogger(logger),
 		deploy.WithStaticSiteStore(db),
 		deploy.WithStaticRootDir(staticSitesDir),
+		deploy.WithStaticRouteLimits(staticroutes.LimitsFromEnv(os.LookupEnv)),
+		deploy.WithStaticExtractor(build.NewImageExtractor(rawDockerCli, build.StaticMaxBytesFromEnv(os.LookupEnv))),
+		deploy.WithStaticBuildImage(os.Getenv(deploy.EnvStaticBuildImage)),
 		deploy.WithStaticPublishRecorder(db),
 		deploy.WithAppStore(db),
+		deploy.WithPublishLocks(db),
 		deploy.WithVaultConfigChecker(db),
 		deploy.WithLoadBalancerStore(db),
 		deploy.WithSpendCapStore(db),
@@ -222,7 +231,8 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	router := build.NewRouter(buildClient, buildNodeSource(db, agentRegistry), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger))
 	limiter := build.NewLimiter(router, api.BuildLimitsSource(db, build.LimitsFromEnv(os.LookupEnv)),
 		build.WithRunRecorder(api.BuildRunRecorder(db)), build.WithLimiterLogger(logger),
-		build.WithNodeResolver(router.SelectedNode), build.WithImageSizer(router.ImageSize))
+		build.WithNodeResolver(router.SelectedNode), build.WithImageSizer(router.ImageSize),
+		build.WithCgroupProvisioner(build.NewCgroupProvisioner(os.Getenv(build.EnvBuildCgroupRoot))))
 	return deploy.New(limiter, db, deployOpts...), limiter, closer, nil
 }
 

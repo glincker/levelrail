@@ -111,6 +111,7 @@ type trafficResponse struct {
 	Latency        trafficLatency            `json:"latency"`
 	Replicas       []trafficReplica          `json:"replicas"`
 	SlowRoutes     []trafficRoute            `json:"slow_routes"`
+	TopRoutes      []trafficRoute            `json:"top_routes"`
 	Samples        []telemetry.RequestSample `json:"samples"`
 	Referrers      []trafficLabel            `json:"referrers"`
 	Countries      []trafficLabel            `json:"countries"`
@@ -175,6 +176,32 @@ func slowRoutes(b telemetry.Breakdown, minRequests float64, n int) []trafficRout
 	sort.Slice(rows, func(i, j int) bool {
 		if rows[i].AvgMs != rows[j].AvgMs {
 			return rows[i].AvgMs > rows[j].AvgMs
+		}
+		return rows[i].Route < rows[j].Route
+	})
+	if len(rows) > n {
+		rows = rows[:n]
+	}
+	return rows
+}
+
+func topRoutes(b telemetry.Breakdown, n int) []trafficRoute {
+	rows := make([]trafficRoute, 0, len(b.Routes))
+	for _, r := range b.Routes {
+		if r.Requests <= 0 || r.Route == telemetry.OverflowRoute {
+			continue
+		}
+		rows = append(rows, trafficRoute{
+			Route:        r.Route,
+			Requests:     r.Requests,
+			ErrorRate4xx: ratio(r.Errors4xx, r.Requests),
+			ErrorRate5xx: ratio(r.Errors5xx, r.Requests),
+			AvgMs:        r.LatencyMSSum / r.Requests,
+		})
+	}
+	sort.Slice(rows, func(i, j int) bool {
+		if rows[i].Requests != rows[j].Requests {
+			return rows[i].Requests > rows[j].Requests
 		}
 		return rows[i].Route < rows[j].Route
 	})
@@ -257,7 +284,7 @@ func (rt *Router) handleAppTraffic(w http.ResponseWriter, r *http.Request) {
 	from := to.Add(-window)
 	resp := trafficResponse{
 		App: name, Window: label, From: from, To: to,
-		Replicas: []trafficReplica{}, SlowRoutes: []trafficRoute{}, Samples: []telemetry.RequestSample{},
+		Replicas: []trafficReplica{}, SlowRoutes: []trafficRoute{}, TopRoutes: []trafficRoute{}, Samples: []telemetry.RequestSample{},
 		Referrers: []trafficLabel{}, Countries: []trafficLabel{},
 	}
 
@@ -285,6 +312,7 @@ func (rt *Router) handleAppTraffic(w http.ResponseWriter, r *http.Request) {
 	if src, ok := rt.telemetry.(telemetry.BreakdownSource); ok {
 		if b, berr := src.QueryBreakdown(ctx, rid, from, to); berr == nil {
 			resp.SlowRoutes = slowRoutes(b, trafficSlowRouteMin(), trafficTopRoutes)
+			resp.TopRoutes = topRoutes(b, trafficTopRoutes)
 		}
 	}
 	if src, ok := rt.telemetry.(telemetry.TrafficDetailSource); ok {

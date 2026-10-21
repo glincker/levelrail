@@ -128,9 +128,29 @@ The 5xx share comes from the ingress request metrics the app already has.
 The first metrics sample after cutover is left out, since it can still hold
 answers from the previous release.
 
-When the watch trips, the deploy attempt is marked failed with the reason,
-an alert goes out through the app's deploy notification channels, and with
-`APP_DEPLOY_AUTO_ROLLBACK=true` (the default) the app is rolled back to the
+A p95 latency regression is a soft signal: the new release's p95 must reach
+`APP_DEPLOY_WATCH_LATENCY_RATIO` (default `2`) times the previous release's
+p95 over the window before cutover, rise by at least
+`APP_DEPLOY_WATCH_LATENCY_MIN_DELTA` (default `100ms`), have
+`APP_DEPLOY_WATCH_MIN_REQUESTS` requests on both sides, and hold for
+`APP_DEPLOY_WATCH_SOFT_TICKS` (default `3`) checks in a row, so one slow
+request never counts. A soft signal only sends an alert (reason
+`PostDeployLatencyRegression`) unless the app opted in to soft rollback
+(`APP_DEPLOY_WATCH_SOFT_ROLLBACK`, or per app) and its mode is `auto`.
+A ratio of `0` turns the check off.
+
+The watch has a mode, set by `APP_DEPLOY_WATCH_MODE` (default `notify`) or
+per app: `off` does not watch, `notify` alerts on a trip, `auto` also rolls
+back. `APP_DEPLOY_AUTO_ROLLBACK=true` is still read and means `auto`.
+
+While a watch is open, the deploy detail page shows its progress with
+**Stop watching** and **Roll back now** buttons. The same are
+`levelrail-cli apps watch stop web` and `apps rollback`, and
+`POST /api/v1/apps/{name}/watch/stop`.
+
+When a hard signal trips the watch, the deploy attempt is marked failed with the reason,
+an alert goes out through the app's deploy notification channels, and in
+`auto` mode the app is rolled back to the
 newest pinned release that is still marked succeeded, with that release's
 config. A release the watch already tripped on is failed, so rollbacks never
 ping-pong, and a release that is itself an automatic rollback is never
@@ -171,7 +191,13 @@ levelrail-cli apps deploy-safety show web
 levelrail-cli apps deploy-safety set web --stable-window 30s --success-threshold 3
 levelrail-cli apps deploy-safety set web --auto-rollback false --watch-window default
 levelrail-cli apps deploy-safety targets web
+levelrail-cli apps watch set web --mode auto --watch-window 10m --latency-ratio 2
+levelrail-cli apps watch get web
 ```
+
+In **Deploy settings** the **Auto rollback** card holds the mode, window and
+thresholds. An automatic rollback is recorded in the deploy history (reason
+and the measured numbers) and in the audit log as `deploy.auto_rollback`.
 
 ## How this is tested
 

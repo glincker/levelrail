@@ -12,7 +12,20 @@
     "dockerfile": "Dockerfile",
     "baseDirectory": "Base directory",
     "context": "Build context",
-    "outputDirectory": "Output directory"
+    "outputDirectory": "Output directory",
+    "buildCommand": "Build command",
+    "publishDirectory": "Publish directory"
+  },
+  "staticBuild": {
+    "commandPlaceholder": "npm run build",
+    "publishPlaceholder": "dist",
+    "detected": "Detected {{name}}",
+    "use": "Use its build settings",
+    "command": "Build command",
+    "commandHelp": "Runs in a sandboxed build container with your dependencies installed. Leave both fields empty to serve files already committed to the repository.",
+    "publish": "Publish directory",
+    "publishHelp": "The folder the build writes, relative to the base directory, for example dist.",
+    "mismatch": "Set both the build command and the publish directory, or clear both."
   },
   "packs": {
     "railpack": "Auto-detect (Railpack)",
@@ -79,6 +92,7 @@
     "registry": "Check registry credentials",
     "nodes": "Check node resources",
     "buildPerformance": "Adjust build resources",
+    "raiseBuildLimit": "Raise the build limit",
     "health": "Check health settings",
     "appLogs": "View app logs",
     "resources": "Adjust resource limits",

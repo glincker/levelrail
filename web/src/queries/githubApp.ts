@@ -30,6 +30,7 @@ import type {
   GitHubAppUseRepoAsSourceResponse,
 } from '../types/githubApp'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { GitDisconnectResult } from '../types/gitProviders'
 import { gitSourceKeys } from './gitSources'
 
 export const githubAppKeys = {
@@ -112,12 +113,12 @@ export function useGitHubAppStatus() {
   return useSuspenseQuery(githubAppStatusQueryOptions())
 }
 
-// DELETE /api/v1/github-app (handleDisconnectGitHubApp). 204 on
-// success, no body to parse.
-export async function disconnectGitHubApp(): Promise<void> {
+// DELETE /api/v1/github-app (handleDisconnectGitHubApp). Says whether the
+// token was revoked at the provider.
+export async function disconnectGitHubApp(): Promise<GitDisconnectResult> {
   const res = await fetch('/api/v1/github-app', { method: 'DELETE' })
-  if (res.status === 204) {
-    return
+  if (res.ok) {
+    return (await res.json()) as GitDisconnectResult
   }
   throw new ApiError(
     res.status,
@@ -127,7 +128,7 @@ export async function disconnectGitHubApp(): Promise<void> {
 
 export function useDisconnectGitHubApp() {
   const queryClient = useQueryClient()
-  return useMutation<void, ApiError, void>({
+  return useMutation<GitDisconnectResult, ApiError, void>({
     mutationFn: disconnectGitHubApp,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: githubAppKeys.all })

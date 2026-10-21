@@ -6,6 +6,22 @@ import { NewAppWizard } from './NewAppWizard'
 import { jsonResponse, nextAnalysis } from '../../test/newAppFixtures'
 import { NewAppI18n } from '../../test/newAppI18n'
 import type { ImportAnalysis } from '../../queries/importAnalyze'
+import type { Brand } from '../../types/brand'
+
+vi.mock('../../hooks/useBrand', () => ({
+  useBrand: (): Brand => ({
+    Name: 'Test Brand',
+    ShortName: 'testbrand',
+    BinaryName: 'testbrand',
+    Domain: 'test.example',
+    SupportURL: '',
+    PrimaryColor: '#000000',
+    LogoSVG: '',
+    DocsURL: '',
+    DiscussionsURL: '',
+    RepoURL: '',
+  }),
+}))
 
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: ({ count }: { count: number }) => ({
@@ -61,30 +77,56 @@ function mockApi(opts: ApiOptions = {}) {
             ],
           ),
         )
-      case 'GET /api/v1/github-app/repos':
+      case 'GET /api/v1/git/repos?limit=100':
         return Promise.resolve(
           jsonResponse({
-            repos: [
+            provider: '',
+            total: 2,
+            loaded: 2,
+            limit: 100,
+            offset: 0,
+            next_offset: null,
+            has_more: false,
+            truncated: false,
+            cap: 10000,
+            cached_at: new Date().toISOString(),
+            stale: false,
+            refreshing: false,
+            owners: [],
+            connections: [],
+            items: [
               {
+                key: 'acme/shop',
                 full_name: 'acme/shop',
                 name: 'shop',
-                owner_login: 'acme',
+                owner: 'acme',
                 private: true,
+                archived: false,
+                fork: false,
                 default_branch: 'main',
                 clone_url: 'https://github.com/acme/shop.git',
                 account_type: 'organization',
                 language: 'TypeScript',
                 pushed_at: new Date().toISOString(),
+                provider: 'github',
+                connection_id: 'github:1',
+                account: 'acme',
               },
               {
+                key: 'acme/docs',
                 full_name: 'acme/docs',
                 name: 'docs',
-                owner_login: 'acme',
+                owner: 'acme',
                 private: false,
+                archived: false,
+                fork: false,
                 default_branch: 'main',
                 clone_url: 'https://github.com/acme/docs.git',
                 account_type: 'organization',
                 language: 'MDX',
+                provider: 'github',
+                connection_id: 'github:1',
+                account: 'acme',
               },
             ],
           }),

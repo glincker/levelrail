@@ -1,0 +1,103 @@
+{
+  "picker": {
+    "repositories": {
+      "searchPlaceholder": "Search repositories...",
+      "empty": "No repositories found.",
+      "noMatch": "No repositories match \"{{search}}\".",
+      "loadFailed": "Could not list repositories."
+    },
+    "projects": {
+      "searchPlaceholder": "Search projects...",
+      "empty": "No projects found.",
+      "noMatch": "No projects match \"{{search}}\".",
+      "loadFailed": "Could not list projects."
+    },
+    "refresh": "Refresh",
+    "refreshing": "Refreshing",
+    "refreshHint": "List the repositories again from the provider instead of using the saved list.",
+    "filters": {
+      "label": "Filters",
+      "allOwners": "All owners",
+      "hideArchived": "Hide archived",
+      "hideForks": "Hide forks",
+      "allAccounts": "All accounts"
+    },
+    "status": {
+      "showing": "Showing {{shown}} of {{total}}.",
+      "searchToNarrow": "Search or pick an owner to narrow the list.",
+      "loadedOf": "{{loaded}} loaded in total.",
+      "updated": "Updated {{time}}.",
+      "stale": "Saved list, refreshing in the background.",
+      "truncated": "This account has more than the {{cap}} repositories listed here. Search only covers the first {{cap}}; paste a repository URL to use one beyond that.",
+      "rateLimited": "The provider is rate limiting this control plane, so this is the saved list. Checking again after {{time}}.",
+      "rateLimitedEmpty": "The provider is rate limiting this control plane and there is no saved list yet. Try again after {{time}}.",
+      "rateLimitedNoTime": "The provider is rate limiting this control plane. Try again in a minute."
+    },
+    "loadMore": "Show more",
+    "loadingMore": "Loading",
+    "accountError": "Could not list {{account}}: {{error}}",
+    "badges": {
+      "archived": "Archived",
+      "fork": "Fork",
+      "private": "Private repository",
+      "running": "Running as {{name}}"
+    },
+    "retry": "Try again",
+    "account": "Account: {{name}}"
+  },
+  "connection": {
+    "label": "Connection health",
+    "healthy": "Healthy",
+    "providers": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "gitea": "Gitea",
+      "forgejo": "Forgejo",
+      "bitbucket_server": "Bitbucket Server"
+    },
+    "needs_reauthorize": {
+      "title": "{{provider}} needs to be reconnected",
+      "body": "The authorization was revoked, expired or is no longer accepted, so repositories cannot be listed or cloned until you reconnect."
+    },
+    "revoked": {
+      "title": "The {{provider}} connection was removed",
+      "body": "The installation or authorization no longer exists on the provider. Reconnect to use it again."
+    },
+    "rate_limited": {
+      "title": "{{provider}} is rate limiting this control plane",
+      "body": "Saved lists are still shown. It will be checked again after {{time}}."
+    },
+    "reconnect": "Reconnect {{provider}}",
+    "detail": "{{detail}}"
+  },
+  "reliability": {
+    "urlWarning": {
+      "private_address": "This control plane's webhook address is private or local, so GitHub, GitLab and other git hosts cannot call it. Pushes will not arrive.",
+      "no_public_url": "This control plane has no public address yet, so git hosts have no webhook address to call. Pushes will not arrive."
+    },
+    "urlFixHint": "Set a public URL for webhooks below, then register the webhook again.",
+    "registration": {
+      "registered": "Webhook registered on the provider.",
+      "failed": "The webhook was not registered on the provider: {{error}}",
+      "registerAgain": "Register again",
+      "registering": "Registering",
+      "done": "Webhook registered.",
+      "failedToast": "Could not register the webhook."
+    },
+    "poll": {
+      "last": "Last checked {{time}}.",
+      "never": "Not checked yet.",
+      "lastWebhook": "Last webhook {{time}}.",
+      "noWebhook": "No webhook has arrived yet.",
+      "error": "The last check failed: {{error}}",
+      "disabled": "Polling for missed pushes is off."
+    },
+    "connection": {
+      "needs_reconnect": "The account this repository was picked from was disconnected. The source stays, but webhooks and previews cannot use it until you connect an account on the same host again.",
+      "needs_reauthorize": "The account {{label}} needs to be reconnected before this source's webhooks and previews work.",
+      "revoked": "The account {{label}} was removed on the provider. Reconnect it to use this source again.",
+      "reconnect": "Reconnect {{provider}}"
+    }
+  }
+}

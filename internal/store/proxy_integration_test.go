@@ -28,6 +28,14 @@ func TestProxyIntegrationSettings_DefaultsRoundTripAndValidation(t *testing.T) {
 	if err := db.UpdateProxyIntegrationSettings(ctx, ProxyIntegrationSettings{Mode: "nginx"}); err == nil {
 		t.Error("unknown mode: expected an error")
 	}
+
+	nginx := ProxyIntegrationSettings{Mode: ProxyIntegrationNginxFile, DynamicDir: "/srv/nginx/conf.d", UpstreamHost: "host.docker.internal", Container: "edge-nginx", CertDir: "/etc/letsencrypt/live", Webroot: "/var/www/certbot"}
+	if err := db.UpdateProxyIntegrationSettings(ctx, nginx); err != nil {
+		t.Fatalf("nginx settings: %v", err)
+	}
+	if got, _ = db.GetProxyIntegrationSettings(ctx); got != nginx || !got.Enabled() {
+		t.Errorf("got %+v, want %+v", got, nginx)
+	}
 }
 
 func TestProxyRouteStatus_Lifecycle(t *testing.T) {

@@ -35,7 +35,7 @@
   },
   "fallback": {
     "title": "Automatic app hostnames",
-    "description": "Apps without a domain get https://<app>.<dashed-ip>.sslip.io with automatic TLS, so a fresh deploy is reachable with zero DNS.",
+    "description": "Apps without a domain get https://<app>.<dashed-ip>.<provider> from a free wildcard-DNS service with automatic TLS, so a fresh deploy is reachable with zero DNS.",
     "toggleLabel": "Give apps without a domain an automatic hostname",
     "publicHost": "Server address: {{host}} ({{source}})",
     "noPublicHost": "No public address detected. Set APP_PUBLIC_HOST on the control plane to turn this on.",
@@ -47,6 +47,38 @@
       "disabled": "detection disabled",
       "none": "not found"
     }
+  },
+  "dnsProvider": {
+    "defaultLabel": "Wildcard DNS provider (default for all apps)",
+    "appLabel": "Wildcard DNS provider for this app",
+    "inherit": "Use the default ({{provider}})",
+    "inheritNote": "This app follows the provider chosen in Settings, Domains.",
+    "custom": "Custom base domain",
+    "customNote": "Use your own wildcard record, so apps are named <app>.<your base domain>.",
+    "baseLabel": "Base domain",
+    "basePlaceholder": "apps.example.com",
+    "baseHint": "Point *.{{domain}} at this server with an A record, then run Test resolution.",
+    "betaHint": "Free public service. Fine for testing, not recommended for production traffic.",
+    "save": "Save",
+    "saved": "Wildcard DNS provider updated.",
+    "saveFailed": "Could not update the wildcard DNS provider.",
+    "test": "Test resolution",
+    "testing": "Testing...",
+    "status": {
+      "ok": "Resolves to this server",
+      "wrong_ip": "Resolves to a different address",
+      "not_resolving": "Does not resolve",
+      "unavailable": "Cannot be tested"
+    },
+    "fixHeading": "Fix:",
+    "fixSwitch": "Switch to {{provider}}",
+    "fixCustom": "Use your own domain",
+    "digToggle": "Check by hand with dig",
+    "confirmTitle": "Change the automatic hostname?",
+    "confirmBody": "This app is currently reachable at {{host}}.",
+    "confirmOldStops": "The old hostname stops working as soon as the new one is routed.",
+    "confirmNoDowntime": "The route updates in place with no downtime. Bookmarks and webhooks using the old hostname need updating.",
+    "confirmAction": "Change hostname"
   },
   "domain": {
     "automatic": "Automatic"
@@ -71,5 +103,81 @@
     "proxyUnknown": "Managed by your proxy. Not seen yet: verify the route on the proxy page.",
     "proxyLink": "Open the proxy page",
     "getTrusted": "Get a trusted certificate"
+  },
+  "domainCert": {
+    "action": "Get a real certificate",
+    "title": "Get a real certificate for {{domain}}",
+    "intro": "This checks that {{domain}} points here and that Let's Encrypt can reach this server, then asks for a trusted certificate. Until then visitors see a browser warning.",
+    "appliesToAll": "Public certificates are a server setting: turning them on applies to every domain on this server, and renewals are automatic.",
+    "checking": "Checking DNS, port 80, CAA records, your contact email and Let's Encrypt limits",
+    "checkFailed": "The checks could not run.",
+    "recheck": "Re-check",
+    "emailLabel": "Email for certificate notices",
+    "emailHelp": "Defaults to your admin account. Let's Encrypt only writes if a certificate is about to expire and could not renew.",
+    "stagingLabel": "Rehearse with Let's Encrypt staging first",
+    "stagingHelp": "Staging has no meaningful limits but signs with a test CA. Browsers will not trust the result, so run it again without staging afterwards.",
+    "stagingWarning": "Staging certificates are untrusted: visitors still see a warning.",
+    "ackPorts": "I know ports 80 and 443 are open (this server may not be able to reach itself)",
+    "nextSafe": "Next safe time to try: {{date}}",
+    "next": "Next step: {{fix}}",
+    "submit": "Get a real certificate",
+    "requesting": "Requesting",
+    "requestFailed": "Could not request the certificate.",
+    "item": {
+      "issuable": "Public name",
+      "upstream_proxy": "TLS ownership",
+      "dns": "DNS points here",
+      "ports": "Port 80 reachable",
+      "caa": "CAA records",
+      "email": "Contact email",
+      "rate_limit": "Let's Encrypt limits",
+      "staging": "Staging CA",
+      "replaces_certificate": "Working certificate"
+    },
+    "state": {
+      "pass": "Passed",
+      "warn": "Check",
+      "fail": "Blocked",
+      "skipped": "Skipped"
+    },
+    "progress": {
+      "pendingTitle": "Challenge pending",
+      "pendingBody": "Let's Encrypt is checking that you control {{domain}}. This usually takes under a minute.",
+      "issuedTitle": "Certificate issued",
+      "failedTitle": "Let's Encrypt did not issue the certificate",
+      "caSaid": "The CA said",
+      "issuer": "Issuer",
+      "expires": "Expires",
+      "renews": "Renews from",
+      "tryAgain": "Try again",
+      "close": "Close",
+      "stagingIssued": "This is a staging certificate, so browsers still show a warning. Run this again without staging to get a trusted one."
+    },
+    "kind": {
+      "none": "No certificate",
+      "internal": "Internal certificate",
+      "staging": "Staging",
+      "letsencrypt": "Let's Encrypt",
+      "custom": "Uploaded certificate",
+      "proxy": "Proxy certificate",
+      "other": "Public CA"
+    },
+    "kindHint": {
+      "none": "No certificate has been issued for this domain yet.",
+      "internal": "Signed by this server itself. Browsers do not trust it and show a warning.",
+      "staging": "Signed by the Let's Encrypt test CA. Browsers do not trust it.",
+      "letsencrypt": "Signed by Let's Encrypt and renewed automatically.",
+      "custom": "A certificate you uploaded. It does not renew itself.",
+      "proxy": "Issued and renewed by the proxy in front of this server.",
+      "other": "Signed by a public certificate authority."
+    },
+    "badge": {
+      "days_one": "{{count}} day left",
+      "days_other": "{{count}} days left",
+      "expired": "expired",
+      "renewed": "Renewed {{date}}",
+      "renewalFailed": "Last renewal failed {{date}}",
+      "retrying": "Retrying {{date}}"
+    }
   }
 }

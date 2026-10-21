@@ -81,8 +81,9 @@ func (rt *Router) standaloneDomainOwner(ctx context.Context, domain string) stri
 		}
 	}
 	if svcs, err := rt.apps.ListDesiredServices(ctx); err == nil {
+		res := rt.fallbackResolver(ctx)
 		for _, svc := range svcs {
-			if d, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok && strings.EqualFold(d, domain) {
+			if d, ok := res.Domain(svc.Name); ok && strings.EqualFold(d, domain) {
 				return fmt.Sprintf("app %q (its automatic hostname)", svc.Name)
 			}
 		}

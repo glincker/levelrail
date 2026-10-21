@@ -101,6 +101,7 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 		}
 		rt.logger.Warn("api: github repo connected as git source, but no primary domain is configured to register a webhook", slog.String("app_name", req.AppName))
 		resp.WebhookError = "set a primary domain in ingress settings, then register this webhook manually: no reachable url exists yet"
+		rt.recordWebhookRegistration(ctx, req.AppName, errWebhookNoPublicURL)
 		writeJSON(w, status, resp)
 		return
 	}
@@ -116,15 +117,18 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 		if errors.Is(err, githubapp.ErrPermissionDenied) {
 			rt.logger.Warn("api: github repo connected as git source, but webhook registration was denied by the installation's permissions", slog.String("owner", owner), slog.String("repo", repo), slog.String("app_name", req.AppName))
 			resp.WebhookError = "this github app installation doesn't have permission to register webhooks yet (it predates that permission being requested); add the webhook below manually, or reinstall the app to grant it and reconnect"
+			rt.recordWebhookRegistration(ctx, req.AppName, err)
 			writeJSON(w, status, resp)
 			return
 		}
+		rt.recordWebhookRegistration(ctx, req.AppName, err)
 		rt.logger.Error("api: register github repo webhook failed", slog.String("error", err.Error()), slog.String("owner", owner), slog.String("repo", repo), slog.String("app_name", req.AppName))
 		writeError(w, http.StatusBadGateway, "git source connected, but registering the webhook on github failed; add it manually")
 		return
 	}
 
 	resp.WebhookRegistered = true
+	rt.recordWebhookRegistration(ctx, req.AppName, nil)
 	rt.logger.Info("api: github repo connected as git source", slog.String("app_name", req.AppName), slog.String("owner", owner), slog.String("repo", repo), slog.Bool("creating", result.Creating))
 	writeJSON(w, status, resp)
 }

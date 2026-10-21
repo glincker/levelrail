@@ -35,6 +35,8 @@ type BackupTarget struct {
 	Region    string
 	Bucket    string
 	CreatedAt string
+	// EncryptDumps seals new database dumps sent to this target with age.
+	EncryptDumps bool
 }
 
 // BackupTargetSecretsKey is the internal/secrets serviceName a backup
@@ -54,9 +56,9 @@ func BackupTargetSecretsKey(targetID string) string {
 // a round trip to discover what ID got assigned.
 func (db *DB) SaveBackupTarget(ctx context.Context, t BackupTarget) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO backup_targets (id, name, provider, endpoint, region, bucket, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, t.ID, t.Name, t.Provider, t.Endpoint, t.Region, t.Bucket, t.CreatedAt)
+		INSERT INTO backup_targets (id, name, provider, endpoint, region, bucket, created_at, encrypt_dumps)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, t.ID, t.Name, t.Provider, t.Endpoint, t.Region, t.Bucket, t.CreatedAt, t.EncryptDumps)
 	if err != nil {
 		return fmt.Errorf("store: save backup target %q: %w", t.ID, err)
 	}
@@ -68,10 +70,10 @@ func (db *DB) SaveBackupTarget(ctx context.Context, t BackupTarget) error {
 func (db *DB) GetBackupTarget(ctx context.Context, id string) (BackupTarget, error) {
 	var t BackupTarget
 	err := db.QueryRowContext(ctx, `
-		SELECT id, name, provider, endpoint, region, bucket, created_at
+		SELECT id, name, provider, endpoint, region, bucket, created_at, encrypt_dumps
 		FROM backup_targets
 		WHERE id = ?
-	`, id).Scan(&t.ID, &t.Name, &t.Provider, &t.Endpoint, &t.Region, &t.Bucket, &t.CreatedAt)
+	`, id).Scan(&t.ID, &t.Name, &t.Provider, &t.Endpoint, &t.Region, &t.Bucket, &t.CreatedAt, &t.EncryptDumps)
 	if errors.Is(err, sql.ErrNoRows) {
 		return BackupTarget{}, ErrBackupTargetNotFound
 	}
@@ -85,7 +87,7 @@ func (db *DB) GetBackupTarget(ctx context.Context, id string) (BackupTarget, err
 // order, the same order a settings page listing them would want).
 func (db *DB) ListBackupTargets(ctx context.Context) ([]BackupTarget, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, name, provider, endpoint, region, bucket, created_at
+		SELECT id, name, provider, endpoint, region, bucket, created_at, encrypt_dumps
 		FROM backup_targets
 		ORDER BY created_at
 	`)
@@ -99,7 +101,7 @@ func (db *DB) ListBackupTargets(ctx context.Context) ([]BackupTarget, error) {
 	var out []BackupTarget
 	for rows.Next() {
 		var t BackupTarget
-		if err := rows.Scan(&t.ID, &t.Name, &t.Provider, &t.Endpoint, &t.Region, &t.Bucket, &t.CreatedAt); err != nil {
+		if err := rows.Scan(&t.ID, &t.Name, &t.Provider, &t.Endpoint, &t.Region, &t.Bucket, &t.CreatedAt, &t.EncryptDumps); err != nil {
 			return nil, fmt.Errorf("store: scan backup target row: %w", err)
 		}
 		out = append(out, t)
@@ -163,4 +165,14 @@ func (db *DB) DeleteBackupTarget(ctx context.Context, id string) error {
 		return ErrBackupTargetNotFound
 	}
 	return nil
+}
+
+// SetBackupTargetEncryptDumps turns dump encryption on or off for new backups
+// to a target; existing objects are not rewritten.
+func (db *DB) SetBackupTargetEncryptDumps(ctx context.Context, id string, enabled bool) error {
+	res, err := db.ExecContext(ctx, `UPDATE backup_targets SET encrypt_dumps = ? WHERE id = ?`, enabled, id)
+	if err != nil {
+		return fmt.Errorf("store: set backup target %q encryption: %w", id, err)
+	}
+	return rowsAffectedOrNotFound(res, ErrBackupTargetNotFound, "set backup target %q encryption", id)
 }

@@ -97,6 +97,15 @@ func deploymentImageRef(image, digest, reason string) string {
 	return repo + "@" + digest
 }
 
+// deploymentReasonCode is the attempt's wait reason, or the standing reason a
+// poll-started deploy keeps after the queue clears its wait reason.
+func deploymentReasonCode(a store.DeployAttempt) string {
+	if a.Reason == "" && a.Source == store.DeployAttemptSourcePoll {
+		return store.DeployReasonPolled
+	}
+	return a.Reason
+}
+
 func deploymentReasonText(code string) string {
 	switch code {
 	case "":
@@ -107,6 +116,8 @@ func deploymentReasonText(code string) string {
 		return "A newer deploy replaced this one"
 	case store.DeployReasonStale:
 		return "A newer commit had already deployed"
+	case store.DeployReasonPolled:
+		return "Detected by poll, webhook not received"
 	case store.DeployReasonCanceled:
 		return "Canceled by an operator before it cut traffic"
 	}
@@ -132,7 +143,7 @@ func (rt *Router) toDeploymentResource(d store.Deployment) deploymentResource {
 		ImageDigest: a.ImageDigest, DigestReason: a.DigestReason, RolloutState: a.RolloutState,
 		CommitSHA: a.CommitSHA, Branch: a.Branch, CommitMessage: a.CommitMessage, Author: a.Author,
 		StartedAt: a.StartedAt, FinishedAt: a.FinishedAt,
-		ReasonCode: a.Reason, Reason: deploymentReasonText(a.Reason),
+		ReasonCode: deploymentReasonCode(a), Reason: deploymentReasonText(deploymentReasonCode(a)),
 		RollbackOf: strOrNil(d.RollbackOf), RolledBackBy: strOrNil(d.RolledBackBy), SupersededBy: strOrNil(d.SupersededBy),
 		IsLive: d.IsLive, QueuedAt: a.QueuedAt, CanceledBy: strOrNil(a.CanceledBy),
 	}

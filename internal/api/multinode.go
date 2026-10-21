@@ -120,23 +120,28 @@ func (rt *Router) checkPlacement(ctx context.Context, kind, name, nodeID string)
 // spreadTarget picks the eligible node with the most headroom for kind/name,
 // never exclude, and records why.
 func (rt *Router) spreadTarget(ctx context.Context, kind, name, exclude, trigger string) (string, error) {
-	cands, err := rt.placementCandidates(ctx)
-	if err != nil {
-		return "", err
-	}
-	sel, err := rt.selectorFor(ctx, kind, name)
-	if err != nil {
-		return "", err
-	}
-	needs, err := rt.resourceNeeds(ctx, kind, name)
-	if err != nil {
-		return "", err
-	}
-	d, err := placement.Spread(cands, placement.Request{Selector: sel, Exclude: exclude, Needs: needs, Policy: rt.placementPolicy})
+	d, err := rt.spreadDecision(ctx, kind, name, exclude)
 	if err == nil {
 		rt.recordPlacement(ctx, kind, name, trigger, d)
 	}
 	return d.NodeID, err
+}
+
+// spreadDecision is spreadTarget without recording, for previews.
+func (rt *Router) spreadDecision(ctx context.Context, kind, name, exclude string) (placement.Decision, error) {
+	cands, err := rt.placementCandidates(ctx)
+	if err != nil {
+		return placement.Decision{}, err
+	}
+	sel, err := rt.selectorFor(ctx, kind, name)
+	if err != nil {
+		return placement.Decision{}, err
+	}
+	needs, err := rt.resourceNeeds(ctx, kind, name)
+	if err != nil {
+		return placement.Decision{}, err
+	}
+	return placement.Spread(cands, placement.Request{Selector: sel, Exclude: exclude, Needs: needs, Policy: rt.placementPolicy})
 }
 
 type labelsBody struct {

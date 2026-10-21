@@ -17,8 +17,9 @@ const defaultResendAPIURL = "https://api.resend.com/emails"
 
 // ResendConfig is a Resend sender's connection details.
 type ResendConfig struct {
-	APIKey string
-	From   string
+	APIKey  string
+	From    string
+	ReplyTo string
 }
 
 // resendSender sends via Resend's HTTP API: a single POST with a bearer
@@ -34,29 +35,35 @@ type resendEmailRequest struct {
 	To      []string `json:"to"`
 	Subject string   `json:"subject"`
 	Text    string   `json:"text"`
+	ReplyTo string   `json:"reply_to,omitempty"`
 }
 
 func (s resendSender) Send(ctx context.Context, to, subject, body string) error {
+	_, err := s.sendID(ctx, to, subject, body)
+	return err
+}
+
+func (s resendSender) sendID(ctx context.Context, to, subject, body string) (string, error) {
 	apiURL := s.apiURL
 	if apiURL == "" {
 		apiURL = defaultResendAPIURL
 	}
 
-	payload, err := json.Marshal(resendEmailRequest{From: s.cfg.From, To: []string{to}, Subject: subject, Text: body})
+	payload, err := json.Marshal(resendEmailRequest{From: s.cfg.From, To: []string{to}, Subject: subject, Text: body, ReplyTo: s.cfg.ReplyTo})
 	if err != nil {
-		return fmt.Errorf("email: encode resend request: %w", err)
+		return "", fmt.Errorf("email: encode resend request: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL, bytes.NewReader(payload))
 	if err != nil {
-		return fmt.Errorf("email: build resend request: %w", err)
+		return "", fmt.Errorf("email: build resend request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+s.cfg.APIKey)
 
 	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
 	if err != nil {
-		return fmt.Errorf("email: send via resend: %w", err)
+		return "", fmt.Errorf("email: send via resend: %w", err)
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -64,7 +71,11 @@ func (s resendSender) Send(ctx context.Context, to, subject, body string) error 
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
-		return fmt.Errorf("email: resend returned status %d: %s", resp.StatusCode, string(msg))
+		return "", &HTTPError{Provider: "resend", Status: resp.StatusCode, Body: string(msg)}
 	}
-	return nil
+	var out struct {
+		ID string `json:"id"`
+	}
+	_ = json.NewDecoder(io.LimitReader(resp.Body, 4096)).Decode(&out)
+	return out.ID, nil
 }

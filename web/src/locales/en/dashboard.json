@@ -189,7 +189,14 @@
     "diskDetail": "{{detail}} on the data volume. Builds and deploys may fail if it runs out.",
     "updateTitle": "Version {{version}} is available",
     "updateDetail": "This server runs {{current}}.",
-    "updateAction": "View update"
+    "updateAction": "View update",
+    "httpsTitle": "This dashboard is on plain HTTP",
+    "httpsDetail": "Passwords and sessions travel unencrypted. Turn on HTTPS with one click, no DNS needed.",
+    "httpsAction": "Enable HTTPS",
+    "doctorTitle_one": "Doctor found {{count}} problem",
+    "doctorTitle_other": "Doctor found {{count}} problems",
+    "doctorDetail": "Each one has a fix or a next step.",
+    "doctorAction": "Open Doctor"
   },
   "nextSteps": {
     "title": "Recommended next steps",
@@ -225,10 +232,5 @@
       "title": "Connect Git",
       "hint": "Deploy on every push"
     }
-  },
-  "welcome": {
-    "title": "Welcome to {{brand}}",
-    "description": "Deploy your first app in under a minute.",
-    "cta": "Deploy your first app"
   }
 }

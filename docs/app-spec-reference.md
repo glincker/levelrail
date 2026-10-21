@@ -399,6 +399,7 @@ Checked by `(*Spec).Validate` in `internal/spec/validate.go` for anything the sc
 - `build.path` is required when `build.type` is `compose`.
 - `build.image` is required when `build.type` is `image` and rejected for any other type. `build.path` and `build.baseDirectory` are rejected for `image`, and `build.baseDirectory` is rejected for `compose`.
 - `build.baseDirectory` must be relative and must not escape the repository root.
+- `routes`, `headers` and `static` are only meaningful when `build.type` is `static`; see [Static site routing rules](/static-routing).
 - `build.args` is only meaningful when `build.type` is `dockerfile`. Set with any other build type, it is rejected rather than silently ignored.
 
 **Port configuration**

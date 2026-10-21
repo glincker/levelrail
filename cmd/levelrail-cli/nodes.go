@@ -49,6 +49,10 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesResourceUsage(prog, rest, stdout, stderr, lookupEnv)
 	case "capacity-forecast":
 		return runNodesCapacityForecast(prog, rest, stdout, stderr, lookupEnv)
+	case "capacity":
+		return runNodesCapacity(prog, rest, stdout, stderr, lookupEnv)
+	case "cleanup":
+		return runNodesCleanup(prog, rest, stdout, stderr, lookupEnv)
 	case "mesh":
 		return runNodesMesh(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-key":
@@ -93,6 +97,12 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesSimulate(prog, rest, stdout, stderr, lookupEnv)
 	case "failure":
 		return runNodesFailure(prog, rest, stdout, stderr, lookupEnv)
+	case "failure-policy":
+		return runNodesFailurePolicy(prog, rest, stdout, stderr, lookupEnv)
+	case "lost":
+		return runNodesLost(prog, rest, stdout, stderr, lookupEnv)
+	case "failure-resolve":
+		return runNodesFailureResolve(prog, rest, stdout, stderr, lookupEnv)
 	case "allocations":
 		return runNodesAllocations(prog, rest, stdout, stderr, lookupEnv)
 	case "placement":
@@ -126,6 +136,9 @@ func nodesUsage(prog string) string {
   %[1]s nodes zones [flags]                                          failure domains with their nodes and workloads
   %[1]s nodes simulate [--cpu M] [--memory MiB] [--count N]          dry run: where new apps would land and why
   %[1]s nodes failure --zone Z | --node ID                           dry run: where workloads go if a zone or node dies
+  %[1]s nodes failure-policy get|set <id> [--mode M] [--grace S]    what happens when a node stays unreachable
+  %[1]s nodes lost <id> [--dry-run] [--yes]                          declare a node lost, showing the plan first
+  %[1]s nodes failure-resolve <id> <kind> <name> --wait|--restore    decide for an app or database with node-local data
   %[1]s nodes allocations [flags]                                requested versus allocatable CPU, memory and disk per node
   %[1]s nodes connectivity [flags]                                   WireGuard health of every node pair
   %[1]s nodes workloads <id> --accepts-app --accepts-build [flags]   set a node's accepted workload kinds
@@ -135,6 +148,8 @@ func nodesUsage(prog string) string {
   %[1]s nodes metrics <id> --metric NAME [flags]                     query a node's metric time series
   %[1]s nodes resource-usage [flags]                                 show every node's latest CPU/memory/disk usage, plus a fleet rollup
   %[1]s nodes capacity-forecast <id> [flags]                        project disk/memory usage forward, roughly how many days until full
+  %[1]s nodes capacity <node> [flags]                               show disk, inode, memory and swap headroom against thresholds
+  %[1]s nodes cleanup <node> --dry-run|--yes [flags]                preview or run the safe cleanup on the control plane node
   %[1]s nodes mesh [flags]                                           show this control plane's live WireGuard mesh state and peers
   %[1]s nodes rotate-key <id> [flags]                                rotate a node's WireGuard key (local or remote)
   %[1]s nodes rejoin-mesh <id> [flags]                               force an immediate mesh resync for a peer that looks stuck

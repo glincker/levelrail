@@ -323,6 +323,8 @@ type Repo struct {
 	HTMLURL       string
 	Language      string
 	PushedAt      string
+	Archived      bool
+	Fork          bool
 }
 
 type repoResponse struct {
@@ -336,6 +338,8 @@ type repoResponse struct {
 	HTMLURL       string `json:"html_url"`
 	Language      string `json:"language"`
 	PushedAt      string `json:"pushed_at"`
+	Archived      bool   `json:"archived"`
+	Fork          bool   `json:"fork"`
 }
 
 type listRepositoriesResponse struct {
@@ -354,37 +358,6 @@ const listPerPage = 100
 // operator-realistic installation or repository is expected to actually
 // hit this.
 const listPageCap = 20
-
-// ListInstallationRepos lists every repository accessible to token
-// (an installation access token from MintInstallationToken), across as
-// many pages as GitHub returns full pages for.
-func (c *Client) ListInstallationRepos(ctx context.Context, instanceURL, token string) ([]Repo, error) {
-	baseURL := c.APIBaseURL(instanceURL)
-	var out []Repo
-	for page := 1; page <= listPageCap; page++ {
-		var resp listRepositoriesResponse
-		path := fmt.Sprintf("/installation/repositories?per_page=%d&page=%d", listPerPage, page)
-		if err := c.do(ctx, baseURL, http.MethodGet, path, bearerPrefix+token, &resp); err != nil {
-			return nil, err
-		}
-		for _, r := range resp.Repositories {
-			out = append(out, Repo{
-				FullName:      r.FullName,
-				Name:          r.Name,
-				OwnerLogin:    r.Owner.Login,
-				Private:       r.Private,
-				DefaultBranch: r.DefaultBranch,
-				HTMLURL:       r.HTMLURL,
-				Language:      r.Language,
-				PushedAt:      r.PushedAt,
-			})
-		}
-		if len(resp.Repositories) < listPerPage {
-			break
-		}
-	}
-	return out, nil
-}
 
 // GetRepo looks up a single repository by owner/repo, authenticated
 // with an installation access token the same way ListInstallationRepos

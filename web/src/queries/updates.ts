@@ -94,7 +94,22 @@ export interface UpdatePreflight {
   release_kind?: ReleaseKind
   channel?: UpdateChannel
   edge?: EdgeGuidance
+  state?: InstallState
+  state_reason?: string
+  db_schema?: number | null
+  latest_schema?: number | null
+  migrations_to_apply?: number | null
+  restore_point_first?: boolean
+  verify_window_seconds?: number
+  rollback_version?: string
 }
+
+export type InstallState =
+  | 'upgrade_available'
+  | 'up_to_date'
+  | 'ahead_of_releases'
+  | 'blocked_older'
+  | 'unknown'
 
 // UpdateChannel mirrors internal/upgrade's Channel constants.
 export type UpdateChannel = 'stable' | 'beta' | 'edge'

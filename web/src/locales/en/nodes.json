@@ -509,5 +509,158 @@
     "revokeAll": "Revoke all",
     "revoked_one": "Revoked {{count}} join token",
     "revoked_other": "Revoked {{count}} join tokens"
+  },
+  "capacity": {
+    "title": "Capacity",
+    "freeSpace": "Free space",
+    "waiting": "Waiting for the first host reading from this node.",
+    "noReading": "No reading",
+    "freePct": "{{pct}}% free",
+    "usedPct": "{{pct}}% used",
+    "metrics": {
+      "disk": "Disk",
+      "inodes": "Inodes",
+      "memory": "Memory",
+      "swap": "Swap"
+    },
+    "levels": {
+      "warn": "Low",
+      "critical": "Critical"
+    },
+    "blocked": "New builds and deploys on this node are blocked: {{reason}}. The running version keeps serving. Free space to unblock.",
+    "cleanupUnsupported": "Cleanup runs on the control plane node only for now. Free space on this node directly.",
+    "dialogTitle": "Free space",
+    "dialogBody": "Review what would be removed. Rollback images and volumes are never deleted.",
+    "scanning": "Scanning the node...",
+    "neverRemoved": "Never removed",
+    "more": "and {{count}} more",
+    "cancel": "Cancel",
+    "confirm": "Free {{size}}",
+    "freeing": "Freeing...",
+    "freed": "Freed {{size}}",
+    "classes": {
+      "dangling_images": {
+        "title": "Dangling images",
+        "hint": "Untagged image layers no container uses."
+      },
+      "build_cache": {
+        "title": "Build cache",
+        "hint": "Idle build cache past its age limit or over budget."
+      },
+      "stopped_containers": {
+        "title": "Stopped containers",
+        "hint": "Exited containers no app still wants."
+      },
+      "rollback_images": {
+        "title": "Images kept for rollback",
+        "hint": "Tagged images that a rollback may need."
+      },
+      "orphaned_volumes": {
+        "title": "Orphaned volumes",
+        "hint": "Shown for review only. Volumes are never deleted from here."
+      }
+    },
+    "settings": "Thresholds and auto-clean",
+    "settingsHint": "Leave a field empty to use the control plane default. Disk, inode and memory values are percent free, swap is percent used.",
+    "useDefault": "Default",
+    "fields": {
+      "diskWarn": "Disk warn (free %)",
+      "diskCrit": "Disk critical (free %)",
+      "inodeWarn": "Inodes warn (free %)",
+      "inodeCrit": "Inodes critical (free %)",
+      "memWarn": "Memory warn (available %)",
+      "memCrit": "Memory critical (available %)",
+      "swapWarn": "Swap warn (used %)",
+      "swapCrit": "Swap critical (used %)"
+    },
+    "autoClean": "Auto-clean",
+    "autoCleanHint": "When this node is low, remove dangling images, idle build cache and stopped containers on its own. Off by default.",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Capacity settings saved",
+    "history": "Cleanup history",
+    "noRuns": "No cleanups yet.",
+    "triggers": {
+      "manual": "manual",
+      "auto": "auto"
+    }
+  },
+  "failure": {
+    "title": "Failure handling",
+    "description": "What happens when this node stays unreachable. Stateless apps can move to healthy nodes. Apps and databases with node-local data never move on their own.",
+    "loadFailed": "Could not load failure state.",
+    "retry": "Retry",
+    "healthy": "This node is reachable. Nothing to do.",
+    "phase": {
+      "healthy": "Healthy",
+      "grace": "Silent, in grace period",
+      "unreachable": "Unreachable",
+      "recovering": "Recovering",
+      "lost": "Marked lost"
+    },
+    "graceTimer": "Silent for {{silent}}s, {{left}}s of grace left",
+    "kind": {
+      "app": "app",
+      "database": "database"
+    },
+    "class": {
+      "reschedule": "Stateless: can start on a healthy node",
+      "needs_decision": "Has node-local data: needs your decision"
+    },
+    "status": {
+      "pending": "Pending",
+      "moving": "Moving",
+      "moved": "Moved",
+      "fenced": "Moved, old copy stopped",
+      "waiting": "Waiting",
+      "failed": "Could not move"
+    },
+    "target": "on {{node}}",
+    "wait": "Wait",
+    "restore": "Restore on another node",
+    "restoreHint": "The resource is placed on a healthy node. Restore its data from a backup there.",
+    "resolved": {
+      "wait": "Waiting for the node to return",
+      "restore": "Placed on another node. Restore its data from a backup there."
+    },
+    "markLost": "Mark node lost",
+    "lostTitle": "Mark this node lost?",
+    "lostDescription": "Stateless apps move to healthy nodes now. Anything with node-local data stays put until you decide. If the node returns, stale copies are stopped.",
+    "planMove": "{{name}} moves to {{node}}",
+    "planDecide": "{{name}} waits for your decision",
+    "lostDone": "Node marked lost",
+    "saving": "Saving",
+    "mode": "When the node is unreachable",
+    "modeDefault": "Control plane default ({{mode}})",
+    "modes": {
+      "off": "Do nothing",
+      "notify": "Only tell me",
+      "auto": "Move stateless apps automatically"
+    },
+    "grace": "Grace period (seconds)",
+    "graceHint": "0 uses the default. Otherwise at least 30.",
+    "save": "Save",
+    "saved": "Failure policy saved"
+  },
+  "resilience": {
+    "title": "Resilience check",
+    "description": "Will your apps keep serving if the control plane goes down? This checks the saved state a restart would rely on.",
+    "recheck": "Re-check",
+    "simulate": "Simulate control plane outage",
+    "simulatedNote": "Dry run: nothing was stopped. The saved state was opened the way a restart would open it.",
+    "fix": "Fix",
+    "status": {
+      "pass": "Pass",
+      "fail": "Fail",
+      "warn": "Warning",
+      "unknown": "Unknown"
+    },
+    "checks": {
+      "route_snapshot": "Route snapshot",
+      "cert_cache": "Certificate cache",
+      "agent_link": "Agent link",
+      "container_restart": "Containers after host reboot",
+      "telemetry_buffer": "Metrics and logs while disconnected"
+    }
   }
 }

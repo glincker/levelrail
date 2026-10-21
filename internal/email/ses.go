@@ -19,9 +19,14 @@ type sesSender struct {
 }
 
 func (s sesSender) Send(ctx context.Context, to, subject, body string) error {
+	_, err := s.sendID(ctx, to, subject, body)
+	return err
+}
+
+func (s sesSender) sendID(ctx context.Context, to, subject, body string) (string, error) {
 	client, err := s.client(ctx)
 	if err != nil {
-		return fmt.Errorf("email: build ses client: %w", err)
+		return "", fmt.Errorf("email: build ses client: %w", err)
 	}
 
 	input := &sesv2.SendEmailInput{
@@ -34,10 +39,14 @@ func (s sesSender) Send(ctx context.Context, to, subject, body string) error {
 			},
 		},
 	}
-	if _, err := client.SendEmail(ctx, input); err != nil {
-		return fmt.Errorf("email: send via ses: %w", err)
+	if s.cfg.ReplyTo != "" {
+		input.ReplyToAddresses = []string{s.cfg.ReplyTo}
 	}
-	return nil
+	out, err := client.SendEmail(ctx, input)
+	if err != nil {
+		return "", fmt.Errorf("email: send via ses: %w", err)
+	}
+	return aws.ToString(out.MessageId), nil
 }
 
 // client builds an SES v2 client scoped to s.cfg's own static

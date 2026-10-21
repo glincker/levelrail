@@ -28,6 +28,7 @@ type upFlags struct {
 	cpu                                       float64
 	with                                      []string
 	secrets                                   map[string]string
+	upload                                    bool
 }
 
 // upDatabase is one --with entry. An empty Version means the server's default for the engine.
@@ -83,7 +84,7 @@ func inferUp(dir string, f upFlags, git gitSource) (upInference, error) {
 	if inf.Flags.ref == "" {
 		inf.Flags.ref, inf.Sources["ref"] = "main", srcDefault
 	}
-	if inf.Flags.repo == "" {
+	if inf.Flags.repo == "" && !f.upload {
 		return inf, newValidationError("no git remote \"origin\" found in %s, so the server has nothing to build from; add one (git remote add origin URL) and push, or pass --repo URL", dir)
 	}
 	if !inf.Static {

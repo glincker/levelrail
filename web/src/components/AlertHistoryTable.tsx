@@ -1,5 +1,7 @@
 import { Fragment, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AlertKindGuidance } from './AlertKindGuidance'
+import { alertKindLabel, isAlertKindCopyKind } from './alertKindCopy'
 import {
   CaretDownIcon,
   CaretRightIcon,
@@ -63,6 +65,7 @@ const ALL = 'all'
 
 function HistoryRow({ entry }: { entry: AlertHistoryEntry }) {
   const [open, setOpen] = useState(false)
+  const { t: tKind } = useTranslation('observability')
   const detail = [entry.detail, entry.error].filter(Boolean).join(' - ')
   const canExpand = entry.event === 'fired' && Boolean(entry.app)
   return (
@@ -90,9 +93,16 @@ function HistoryRow({ entry }: { entry: AlertHistoryEntry }) {
         </TableCell>
         <TableCell className="font-medium text-foreground">
           {entry.rule_name}
-          <span className="ml-2 font-mono text-xs text-muted-foreground">
-            {entry.rule_kind}
+          <span className="ml-2 text-xs text-muted-foreground">
+            <span title={entry.rule_kind}>
+              {alertKindLabel(tKind, entry.rule_kind)}
+            </span>
           </span>
+          {isAlertKindCopyKind(entry.rule_kind) ? (
+            <div className="mt-1 font-normal">
+              <AlertKindGuidance kind={entry.rule_kind} />
+            </div>
+          ) : null}
         </TableCell>
         <TableCell className="text-muted-foreground">
           {entry.app ?? '-'}

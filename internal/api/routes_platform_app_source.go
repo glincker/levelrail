@@ -38,6 +38,7 @@ func (rt *Router) registerAppSourceRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/git-source/commits", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleListGitSourceCommits))
 	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/detect", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDetectGitSourceBuild))
 	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/affected", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGitSourceAffected))
+	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/webhook/register", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRegisterGitSourceWebhook))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteGitSource))
 	// Rotate webhook secret (git_sources.go): mints a fresh secret without
 	// touching repo_url/branch/build config, the narrow alternative to a
@@ -97,6 +98,11 @@ func (rt *Router) registerAppSourceRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/preview-settings", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetPreviewEnabled))
 	mux.HandleFunc("GET /api/v1/apps/{name}/previews", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListPreviewEnvironments))
 	mux.HandleFunc("POST /api/v1/apps/{name}/previews/{number}/teardown", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleTeardownPreviewEnvironment))
+
+	// Branch deploys: a stable per-branch deployment (branch_deploys.go), separate from per pull request previews.
+	mux.HandleFunc("GET /api/v1/apps/{name}/branch-deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListBranchDeploys))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/branch-deploys", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetBranchDeploySettings))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/branch-deploys/{slug}", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteBranchDeploy))
 
 	// Preview environment TTL sweep (preview_environments_sweep.go): the
 	// fallback for a pull-request-closed webhook delivery that never

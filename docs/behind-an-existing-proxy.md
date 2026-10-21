@@ -10,6 +10,35 @@ and generates the configuration to put the dashboard behind it.
 
 When the apps are staged and verified, [take over this server's ports](/migrate-same-server#4-take-over-this-servers-ports) in one guided, reversible step.
 
+## Choose your proxy
+
+Each proxy is a provider. Detection finds the one holding ports 80 and 443 and
+`--provider auto` (the default) uses it; you can also pick one explicitly.
+
+| Provider | What Levelrail does | Status |
+|---|---|---|
+| Built-in Caddy | Serves ports 80 and 443 and issues certificates itself. Nothing is written to another proxy. | built in |
+| Traefik | Writes one route file per domain into the file provider directory. Traefik watches the directory, so no reload is needed. | managed |
+| nginx | Writes one `.conf` per domain into `conf.d` or `sites-enabled`, checks it with `nginx -t`, then reloads nginx. See [nginx](#nginx-managed). | managed |
+| Caddy (external) | Renders a Caddyfile snippet. Nothing is applied. | manual |
+| HAProxy | Renders a frontend rule and a backend. Nothing is applied. | manual |
+
+In the dashboard, open Network, then Traffic, and use the Proxy card:
+
+1. Pick a provider. The detected one is marked.
+2. Press Dry run to see the files that would be written (managed) or the
+   snippet to add by hand (manual). Dry run changes nothing.
+3. Press Apply and verify. Levelrail writes the files, validates and reloads
+   the proxy where needed, then probes every domain over HTTPS. Manual
+   providers have no Apply button: add the snippet yourself, then press
+   Re-check.
+4. Press Re-check any time to read the proxy again. "Fix via CLI" under the
+   buttons shows the matching command.
+
+The CLI does the same: `levelrail-cli proxy setup --provider nginx` is a dry
+run, add `--confirm` to apply. `proxy status`, `proxy apply`, `proxy verify`
+and `proxy disable` work for every managed provider.
+
 ## One step setup (Traefik, including Coolify)
 
 When the proxy is Traefik with a file provider directory, Levelrail can manage
@@ -127,6 +156,43 @@ directory is not on a host mount detection can see, or with a TOML static file:
 
 `levelrail-cli proxy setup --dynamic-dir DIR` covers the common case of a
 directory detection could not map.
+
+## nginx (managed)
+
+For an nginx container that owns ports 80 and 443, Levelrail writes one file
+per domain and keeps your own nginx configuration untouched.
+
+```bash
+levelrail-cli proxy setup --provider nginx             # dry run
+levelrail-cli proxy setup --provider nginx --confirm   # apply
+```
+
+What each file holds: an HTTP server that redirects to HTTPS (and serves the
+ACME challenge from the certbot webroot when one is mounted), and a TLS server
+that proxies to this instance with WebSocket upgrade, `Host` and
+`X-Forwarded-*` headers.
+
+Detection reads the container through the Docker API and never guesses. It
+lists a gap, and setup stops with the exact text, when:
+
+- neither `/etc/nginx/conf.d` nor `/etc/nginx/sites-enabled` is on a host mount
+  (pass `--dynamic-dir`);
+- a readable `nginx.conf` does not include that directory;
+- nothing is mounted at `/etc/letsencrypt`, certbot's layout, so the certificate
+  paths are unknown (pass `--cert-dir`, the directory inside the container that
+  holds `<domain>/fullchain.pem` and `privkey.pem`);
+- container port 80 or 443 is not published, or the way the container reaches
+  this host cannot be read.
+
+Files follow the same safety model as Traefik (header `# managed by levelrail`,
+never touching a file without it), with these additions:
+
+- After writing, Levelrail runs `nginx -t` and, only when it passes,
+  `nginx -s reload`, both through the Docker Engine API (no `docker` CLI).
+- If `nginx -t` fails, every change is rolled back, nothing is reloaded, and the
+  API, CLI and dashboard report nginx's own error text. Saved settings and
+  `tls_terminated_upstream` are left as they were.
+- Turning the integration off removes the files and reloads nginx.
 
 ## From the dashboard
 
@@ -319,7 +385,12 @@ Still stuck? Check the [Installing behind an existing proxy](/installing#server-
 
 Managed routes: `GET /api/v1/system/proxy-integration` (detection, settings,
 ingress, per-domain state and the setup checklist), `POST .../setup` with
-`{"confirm": true}`, `POST .../apply`, `POST .../verify?domain=D`, and
+`{"confirm": true, "provider": "nginx"}` (`provider` is `traefik`, `nginx`,
+`caddy`, `haproxy` or `auto`; `cert_dir` and `dynamic_dir` fill gaps detection
+reports; without `confirm` it is a dry run, and `caddy` or `haproxy` answer with
+a `snippet` and `manual: true`). The GET answer lists the `providers` and the
+selected `provider`. A proxy that refuses written files answers `409` with code
+`proxy_rejected` and its own error text. Also `POST .../apply`, `POST .../verify?domain=D`, and
 `PUT /api/v1/settings/proxy-integration`. Reading needs the read ability,
 every write needs root. `APP_PROXY_VERIFY_TIMEOUT` bounds each probe
 (default `8s`).

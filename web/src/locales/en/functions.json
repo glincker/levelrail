@@ -1,6 +1,15 @@
 {
   "title": "Functions",
   "description": "Small handlers that cost nothing while idle. A function sleeps after a quiet period and the next request wakes it and waits for the answer.",
+  "banner": {
+    "title": "Functions",
+    "description": "Small handlers that cost nothing while idle. They sleep after a quiet period and wake on the next request.",
+    "diagram": {
+      "request": "request",
+      "function": "function",
+      "sleeps": "sleeps when idle, wakes on request"
+    }
+  },
   "window": {
     "label": "Statistics window",
     "1h": "Last hour",

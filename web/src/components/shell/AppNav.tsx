@@ -1,4 +1,5 @@
-import { useId } from 'react'
+import { useEffect, useId } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
   SidebarGroup,
@@ -9,6 +10,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
+import { BetaBadge } from '../BetaBadge'
 import {
   BETA_FEATURES_PATH,
   isFeatureLocked,
@@ -27,6 +29,7 @@ import {
 } from './navModel'
 import { useExperimentalFeatures } from '@/hooks/useExperimental'
 import { usePersistedToggles } from './usePersistedToggles'
+import { staticSitesQueryOptions } from '../../queries/staticSites'
 
 const APP_NAV_STORAGE_KEY = 'shell.nav.app.open'
 
@@ -78,6 +81,7 @@ function ItemLink({
       >
         {item.icon}
         <span>{item.label}</span>
+        {item.beta && <BetaBadge className="ml-auto" />}
       </SidebarMenuButton>
     </SidebarMenuItem>
   )
@@ -119,6 +123,19 @@ export function AppNav({ name }: { name: string }) {
   const [stored, setOpen] = usePersistedToggles(APP_NAV_STORAGE_KEY)
   const active = activeAppSection(pathname)
   const experimental = useExperimentalFeatures()
+  const { data: staticSites } = useQuery(staticSitesQueryOptions())
+  const isStatic = staticSites?.some((s) => s.name === name) ?? false
+  const sections = visibleAppSections(isStatic)
+  const activeSectionId = active?.section.id
+
+  // Persist the visited group as open so leaving it never collapses it and shifts the list.
+  useEffect(() => {
+    if (activeSectionId && stored[activeSectionId] !== true) {
+      setOpen(activeSectionId, true)
+    }
+    // Only a route change into a group re-opens it; a manual collapse stays collapsed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSectionId])
 
   return (
     <>
@@ -126,7 +143,7 @@ export function AppNav({ name }: { name: string }) {
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
-            {visibleAppSections().map((section) => {
+            {sections.map((section) => {
               const only = section.items[0]
               if (only && isSingleSection(section) && !rail) {
                 return (

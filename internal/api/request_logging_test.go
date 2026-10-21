@@ -190,12 +190,25 @@ func TestRequestLoggingMiddleware_HijackedConnectionStaysDebug(t *testing.T) {
 
 	// httptest.NewRecorder doesn't implement http.Hijacker, so this
 	// test drives a real listener to get a hijackable connection.
-	srv := httptest.NewServer(requestLoggingMiddleware(logger, tiny)(inner))
+	// The client can see the closed connection before the server goroutine
+	// logs, so wait for the middleware to return instead of racing it.
+	done := make(chan struct{})
+	mw := requestLoggingMiddleware(logger, tiny)(inner)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer close(done)
+		mw.ServeHTTP(w, r)
+	}))
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL)
 	if err == nil {
 		_ = resp.Body.Close()
+	}
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("middleware did not return after the hijacked connection closed")
 	}
 
 	if len(handler.all()) != 1 {

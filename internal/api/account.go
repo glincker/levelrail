@@ -59,7 +59,7 @@ func (rt *Router) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		rt.recordStepUp(r, userID, true)
 	}
 
-	newHash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	newHash, err := hashPassword(req.NewPassword)
 	if err != nil {
 		rt.logger.Error("api: change password: hash new password failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")

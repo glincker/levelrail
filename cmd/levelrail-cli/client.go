@@ -323,6 +323,7 @@ type (
 	ingressSettingsResource            = apiclient.IngressSettingsResource
 	httpsStatusResource                = apiclient.HTTPSStatusResource
 	imageAutoUpdateResource            = apiclient.ImageAutoUpdateResource
+	buildHookResource                  = apiclient.BuildHookResource
 	appSleepResource                   = apiclient.AppSleepResource
 	canaryResource                     = apiclient.CanaryResource
 	enableHTTPSRequest                 = apiclient.EnableHTTPSRequest
@@ -334,8 +335,6 @@ type (
 	renewCertificateResource           = apiclient.RenewCertificateResource
 	gitProviderResource                = apiclient.GitProviderResource
 	gitHubAppStatusResource            = apiclient.GitHubAppStatusResource
-	gitLabAppStatusResource            = apiclient.GitLabAppStatusResource
-	bitbucketAppStatusResource         = apiclient.BitbucketAppStatusResource
 	gitHubAppRepoResource              = apiclient.GitHubAppRepoResource
 	gitHubAppRepoListResource          = apiclient.GitHubAppRepoListResource
 	gitHubAppRepoListErrResource       = apiclient.GitHubAppRepoListErrResource
@@ -344,10 +343,6 @@ type (
 	gitAppBranchResource               = apiclient.GitAppBranchResource
 	useRepoAsSourceRequest             = apiclient.UseRepoAsSourceRequest
 	useGitHubRepoAsSourceResponse      = apiclient.UseGitHubRepoAsSourceResponse
-	gitLabAppProjectResource           = apiclient.GitLabAppProjectResource
-	bitbucketAppRepoResource           = apiclient.BitbucketAppRepoResource
-	giteaAppStatusResource             = apiclient.GiteaAppStatusResource
-	giteaAppRepoResource               = apiclient.GiteaAppRepoResource
 	serviceTemplateListItem            = apiclient.ServiceTemplateListItem
 	serviceTemplateDetail              = apiclient.ServiceTemplateDetail
 	customTemplateListItem             = apiclient.CustomTemplateListItem
@@ -367,8 +362,8 @@ type (
 )
 
 // NewClient identifies requests as this CLI so the audit log can tell CLI actions apart.
-func NewClient(baseURL, token string) *Client {
-	return apiclient.NewClient(baseURL, token, apiclient.WithUserAgent("levelrail-cli/"+version.Version))
+func NewClient(baseURL, token string, extra ...apiclient.Option) *Client {
+	return apiclient.NewClient(baseURL, token, append([]apiclient.Option{apiclient.WithUserAgent("levelrail-cli/" + version.Version)}, extra...)...)
 }
 
 // Aliases apiclient's helpers; this and CoolifyClient share one URL and error-body helper.

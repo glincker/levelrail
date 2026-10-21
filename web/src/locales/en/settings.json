@@ -506,6 +506,14 @@
         "title": "Gitea App",
         "description": "Self-hosted Gitea repository access for git-based deploys."
       },
+      "forgejo-app": {
+        "title": "Forgejo App",
+        "description": "Self-hosted Forgejo repository access for git-based deploys."
+      },
+      "bitbucket-server-app": {
+        "title": "Bitbucket Server",
+        "description": "Bitbucket Server and Data Center repository access with a personal access token."
+      },
       "notification-channels": {
         "title": "Notification channels",
         "description": "Slack, Discord, Telegram, webhook, and email alerts."
@@ -550,6 +558,18 @@
         "title": "Email",
         "description": "Outbound SMTP for alerts and password resets."
       },
+      "email-templates": {
+        "title": "Email templates",
+        "description": "Edit every email the platform sends, with live preview."
+      },
+      "email-audiences": {
+        "title": "Email audiences",
+        "description": "Saved groups of people to write to, with opt-outs."
+      },
+      "email-messages": {
+        "title": "Email messages",
+        "description": "Write to an audience and see delivery history."
+      },
       "cloudflare-tunnel": {
         "title": "Cloudflare Tunnel",
         "description": "Expose this control plane without opening an inbound port."
@@ -578,10 +598,6 @@
         "title": "Import from another platform",
         "description": "Bring apps over from Coolify, Dokploy or CapRover."
       },
-      "setup-wizard": {
-        "title": "Setup wizard",
-        "description": "Server checks, dashboard domain, git, and a first app."
-      },
       "general": {
         "title": "General",
         "description": "System status and configuration."
@@ -595,8 +611,8 @@
         "description": "Goroutines, database latency, reconcile lag and stream load, with fixes."
       },
       "system-status": {
-        "title": "System status",
-        "description": "Preflight checks: Docker, disk, ports, database, and firewall."
+        "title": "Doctor",
+        "description": "Health checks with fixes: Docker, disk, ports, certificates, backups, nodes."
       },
       "firewall": {
         "title": "Firewall",
@@ -828,8 +844,28 @@
           "Repositories your authorized account can read",
           "Branches and commits for deploys",
           "Webhook delivery for push events"
+        ],
+        "forgejo": [
+          "Repositories your authorized account can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ],
+        "bitbucket_server": [
+          "Repositories the token owner can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
         ]
       }
+    },
+    "forgejo": {
+      "title": "Forgejo App",
+      "description": "Connect a Forgejo OAuth2 application, Codeberg or self-hosted, for repository browsing and webhook-driven deploys.",
+      "banner": "Once the application is authorized, its repositories are available to pick from when you create an app."
+    },
+    "bitbucket_server": {
+      "title": "Bitbucket Server",
+      "description": "Connect Bitbucket Server or Data Center with a personal access token for repository browsing and webhook-driven deploys.",
+      "banner": "Once the token is verified, its repositories are available to pick from when you create an app."
     }
   },
   "securityPage": {
@@ -1105,6 +1141,217 @@
       "body": "Alert emails and password-reset links will not be sent until you pick SMTP, Amazon SES, or Resend below."
     }
   },
+  "emailDelivery": {
+    "title": "Email delivery",
+    "validation": {
+      "fromRequired": "A from address is required",
+      "hostRequired": "Host is required",
+      "portRequired": "Port is required",
+      "regionRequired": "Pick an AWS region",
+      "accessKeyRequired": "Access key ID is required",
+      "smtpUsernameRequired": "SMTP username is required",
+      "domainRequired": "Sending domain is required"
+    },
+    "secretSet": "Already configured. Leave blank to keep it.",
+    "secretUnset": "Not set yet.",
+    "username": "Username",
+    "password": "Password",
+    "apiKey": "API key",
+    "providers": {
+      "smtp": "SMTP",
+      "ses": "AWS SES (API)",
+      "ses_smtp": "AWS SES (SMTP)",
+      "resend": "Resend",
+      "postmark": "Postmark",
+      "sendgrid": "SendGrid",
+      "mailgun": "Mailgun"
+    },
+    "sender": {
+      "title": "Sender",
+      "description": "Who the mail comes from. Every provider uses these.",
+      "fromName": "From name",
+      "fromAddress": "From address",
+      "replyTo": "Reply-to address",
+      "envelopeFrom": "Envelope sender",
+      "envelopeHelp": "Where bounces go. Leave blank to use the from address.",
+      "optional": "Optional."
+    },
+    "provider": {
+      "title": "Provider",
+      "description": "How mail is delivered. Pick one and fill in its details."
+    },
+    "smtp": {
+      "presets": "Quick fill for a known relay",
+      "host": "Host",
+      "hostPlaceholder": "smtp.example.com",
+      "port": "Port"
+    },
+    "ses": {
+      "region": "Region",
+      "regionHelp": "The AWS region where your sender identity is verified.",
+      "regionPlaceholder": "Choose a region",
+      "accessKeyId": "Access key ID",
+      "secretAccessKey": "Secret access key"
+    },
+    "sesSmtp": {
+      "credentialsTitle": "SES SMTP credentials are not your IAM keys",
+      "credentialsBody": "Create SMTP credentials in the SES console (SMTP settings) and enter that username and password here. IAM access keys will be rejected.",
+      "derivedHost": "Connects to email-smtp.{{region}}.amazonaws.com.",
+      "port587": "587 (STARTTLS)",
+      "port465": "465 (TLS)"
+    },
+    "mailgun": {
+      "domain": "Sending domain",
+      "domainPlaceholder": "mg.example.com",
+      "region": "Region",
+      "us": "United States",
+      "eu": "Europe"
+    },
+    "postmark": {
+      "token": "Server token"
+    },
+    "limits": {
+      "title": "Delivery limits",
+      "description": "Caps that protect your provider account from a runaway loop. Sends over the cap fail fast and show in the log.",
+      "perMinute": "Sends per minute",
+      "perDay": "Sends per day",
+      "zeroHelp": "0 uses the server default, which is unlimited unless set."
+    },
+    "security": {
+      "title": "Security",
+      "description": "How the connection to the mail server is protected.",
+      "tlsMode": "TLS mode",
+      "modes": {
+        "auto": "Automatic (STARTTLS when offered)",
+        "starttls": "Require STARTTLS",
+        "tls": "TLS from the start (port 465)",
+        "none": "No encryption"
+      },
+      "verify": "Verify the server certificate",
+      "verifyOff": "Certificate checks are off. Anyone between this server and the mail server could read or change your mail. Only do this for a trusted private network.",
+      "apiNote": "This provider is reached over HTTPS with a verified certificate. There is nothing to configure here."
+    },
+    "status": {
+      "configured": "Configured",
+      "fromEnv": "SMTP from server environment",
+      "openLog": "Delivery log",
+      "lastSuccess": "Last successful send",
+      "lastFailure": "Last failure",
+      "never": "Never",
+      "sent24h": "Sent in 24 hours",
+      "failed24h": "Failed in 24 hours"
+    },
+    "test": {
+      "title": "Send a test email",
+      "description": "Sends one real message through the saved provider, the same path alerts and password resets use. Leave the address blank to send to yourself.",
+      "placeholder": "Your own address",
+      "send": "Send test email",
+      "sending": "Sending...",
+      "success": "Test email sent to {{to}}.",
+      "response": "Provider: {{provider}}. Message id: {{id}}.",
+      "noId": "none returned",
+      "fix": "Fix:"
+    },
+    "failure": {
+      "auth_failed": {
+        "title": "The provider rejected the credentials",
+        "fix": "Re-enter the password or API key and save again. Check that the username belongs to the same account.",
+        "fixSesSmtp": "SES SMTP credentials are generated in the SES console and are not the same as IAM access keys. Create SMTP credentials there and paste the username and password here."
+      },
+      "sender_not_verified": {
+        "title": "The sender address is not verified",
+        "fix": "Verify the from address or its whole domain in the provider console, then send the test again."
+      },
+      "region_mismatch": {
+        "title": "Sender verified in a different region",
+        "fix": "Pick the region where the sender identity is verified, or verify it in the selected region."
+      },
+      "port_blocked": {
+        "title": "Could not reach the mail server",
+        "fix": "Check the host and port. Many clouds block port 25, so try 587 or 465, and check any firewall in front of this server."
+      },
+      "tls_error": {
+        "title": "The secure connection failed",
+        "fix": "Match the TLS mode to the port (STARTTLS on 587, TLS on 465). For a private server with its own certificate, turn off certificate verification under Security."
+      },
+      "rate_limited": {
+        "title": "Sending is rate limited",
+        "fix": "The provider or the send cap set here is throttling. Wait a minute and retry, or raise the cap under Delivery limits."
+      },
+      "not_configured": {
+        "title": "No provider is set up",
+        "fix": "Choose a provider, fill in its details and save before sending a test."
+      },
+      "other": {
+        "title": "The send failed",
+        "fix": "Read the provider response below. If it is unclear, check the provider dashboard for the rejected message."
+      }
+    },
+    "domain": {
+      "title": "Sender domain check",
+      "description": "Looks up SPF, DKIM and DMARC for your from address domain, so mail lands in the inbox instead of spam.",
+      "run": "Check domain",
+      "recheck": "Check again",
+      "checking": "Checking...",
+      "checked": "Records found for {{domain}}.",
+      "pass": "Pass",
+      "warn": "Needs attention",
+      "types": {
+        "spf": "SPF",
+        "dkim": "DKIM",
+        "dmarc": "DMARC"
+      },
+      "codes": {
+        "spf_ok": "An SPF record is published.",
+        "spf_missing": "No SPF record. Publish a TXT record starting with v=spf1 that authorizes your provider.",
+        "spf_multiple": "More than one SPF record exists. Merge them into one, receivers reject duplicates.",
+        "spf_permissive": "SPF ends in +all, which authorizes any sender. Use ~all or -all.",
+        "spf_no_include": "SPF does not include {{include}}. Add include:{{include}} unless your provider uses its own return-path domain.",
+        "dkim_found": "A DKIM key is published.",
+        "dkim_not_found": "No DKIM key found at common selectors. Add the DKIM records your provider shows on its domain verification page.",
+        "dmarc_ok": "A DMARC policy that quarantines or rejects is published.",
+        "dmarc_monitor_only": "DMARC is in monitor mode (p=none). Move to quarantine or reject once SPF and DKIM pass.",
+        "dmarc_missing": "No DMARC record. Publish a TXT record at _dmarc with v=DMARC1; p=none to start monitoring."
+      },
+      "providerHints": {
+        "ses": "SES: verify the domain under Verified identities and publish the three DKIM CNAME records it gives you.",
+        "ses_smtp": "SES: verify the domain under Verified identities and publish the three DKIM CNAME records it gives you.",
+        "resend": "Resend: add the domain under Domains and publish the SPF and DKIM records it lists, then wait for it to show Verified.",
+        "postmark": "Postmark: add the domain under Sender Signatures and publish the DKIM and Return-Path records it lists.",
+        "sendgrid": "SendGrid: run Domain Authentication and publish the CNAME records it generates.",
+        "mailgun": "Mailgun: add the sending domain and publish the SPF, DKIM and tracking records from its DNS page."
+      }
+    },
+    "log": {
+      "title": "Email delivery log",
+      "description": "Every outbound email attempt with its outcome. Recipients are shortened unless the server is set to keep full addresses.",
+      "back": "Email settings",
+      "searchPlaceholder": "Search recipient, message id or error",
+      "allStatuses": "All statuses",
+      "allProviders": "All providers",
+      "columns": {
+        "time": "Time",
+        "status": "Status",
+        "to": "To",
+        "provider": "Provider",
+        "kind": "Kind"
+      },
+      "statuses": {
+        "sent": "Sent",
+        "failed": "Failed",
+        "bounced": "Bounced"
+      },
+      "noKind": "General",
+      "emptyTitle": "No deliveries yet",
+      "emptyBody": "Sends appear here as alerts, password resets and test emails go out. Send a test email from the settings page to see the first row.",
+      "retry": "Retry",
+      "detailTitle": "Delivery detail",
+      "attempts": "Attempts",
+      "messageId": "Provider message id",
+      "failureKind": "Why it failed",
+      "error": "Provider response"
+    }
+  },
   "channelsPage": {
     "eyebrow": "Notifications",
     "title": "Notification channels",
@@ -1222,7 +1469,20 @@
       "test": "Test connection",
       "testing": "Testing...",
       "testOk": "\"{{name}}\" connected successfully.",
-      "testFailed": "\"{{name}}\" failed to connect."
+      "testFailed": "\"{{name}}\" failed to connect.",
+      "encryption": "Dump encryption"
+    },
+    "encryption": {
+      "on": "Encrypted",
+      "off": "Not encrypted",
+      "enable": "Enable encryption",
+      "title": "Encrypt database dumps sent to \"{{name}}\"?",
+      "consequenceNew": "New database dumps to this destination are encrypted with age before upload, so the bucket never sees plaintext.",
+      "consequenceOld": "Dumps already stored there stay exactly as they are (unencrypted ones still restore normally).",
+      "consequenceKey": "Key loss warning: if the backup encryption key (backup-encryption.key in the data directory) is lost, encrypted backups cannot be restored. Keep a copy off this server.",
+      "confirm": "Enable encryption",
+      "pending": "Enabling...",
+      "enabled": "Database dumps to \"{{name}}\" are now encrypted."
     }
   },
   "certificatesPage": {
@@ -1962,31 +2222,80 @@
     "logArchiveBody": "Ships node-local logs to a destination on a schedule. Apps with their own policy (app Logs, Archive tab) are kept separate.",
     "buildCacheTitle": "Build cache for all apps"
   },
-  "systemStatusPage": {
-    "title": "System status",
-    "description": "Preflight checks: Docker, disk, ports, database, firewall, and outbound network reachability.",
-    "troubleshootingGuide": "Troubleshooting guide",
+  "doctorPage": {
+    "title": "Doctor",
+    "description": "One health check for this server: Docker, disk, ports, certificates, backups, nodes and more. The CLI doctor command runs the same checks.",
+    "guide": "Doctor guide",
     "rerun": "Re-run checks",
+    "filterLabel": "Filter checks by status",
+    "filter": {
+      "all": "All",
+      "fail": "Failing",
+      "warn": "Warnings"
+    },
+    "lastChecked": "Last checked {{time}}",
+    "checking": "Checking...",
+    "copyDiagnostics": "Copy diagnostics",
+    "copyDone": "Diagnostics copied",
+    "copyFailed": "Could not copy to the clipboard",
+    "noMatches": "No checks match this filter.",
     "allPassedTitle": "All checks passed",
-    "allPassedBody": "Docker, disk space, ports, the database, and every other preflight check are all healthy right now.",
-    "failedTitle": "One or more checks failed",
-    "failing": "Failing: {{names}}.",
-    "reviewBelow": "Review the checks below for details.",
+    "allPassedBody": "Nothing needs attention right now.",
+    "failedTitle_one": "{{count}} check failed",
+    "failedTitle_other": "{{count}} checks failed",
+    "warnTitle_one": "{{count}} check needs a look",
+    "warnTitle_other": "{{count}} checks need a look",
+    "reviewBelow": "Each problem below has a fix or a next step, and a Re-check button.",
+    "progress": "{{done}} of {{total}} checks finished",
+    "streamErrorTitle": "The check stream was interrupted",
+    "streamErrorBody": "Results so far are shown. Use Re-run checks to start again.",
+    "counts": {
+      "fail_one": "{{count}} failing",
+      "fail_other": "{{count}} failing",
+      "warn_one": "{{count}} warning",
+      "warn_other": "{{count}} warnings",
+      "ok": "{{count}} passing",
+      "unknown": "{{count}} not checked"
+    },
+    "fixAll_one": "Fix {{count}} safe issue",
+    "fixAll_other": "Fix all {{count}} safe issues",
+    "fixAllTitle_one": "Apply {{count}} safe fix?",
+    "fixAllTitle_other": "Apply {{count}} safe fixes?",
+    "fixAllBody": "Only one-click fixes that are safe are included. Anything that restarts a service or opens access stays a separate, deliberate step. These are the changes:",
+    "fixAllConfirm": "Apply fixes",
+    "fixAllPending": "Applying...",
+    "fixAllCli": "Prefer a terminal? Run this on the server, it prints the same plan and asks first.",
     "ingressTitle": "Ingress is a single point of failure",
     "ingressBody": "Domain-based HTTPS routing runs embedded in this control plane process. If it crashes or restarts, routing is down until it comes back up, even though already-running containers keep serving traffic on their own ports the whole time.",
     "survivesCrash": "What survives a control plane crash",
     "groups": {
-      "infrastructure": {
-        "title": "Infrastructure",
-        "description": "Can this box run and reach what it needs to run containers."
+      "runtime": {
+        "title": "Container runtime",
+        "description": "Docker reachability, version, privileges and leftover data."
       },
-      "security": {
-        "title": "Security",
-        "description": "Hardening checks: firewall status and secret rotation age."
+      "host": {
+        "title": "This server",
+        "description": "Disk, inodes, memory, CPU and the database."
       },
       "network": {
         "title": "Network and reachability",
-        "description": "Outbound network access and whether the internet can reach this box."
+        "description": "Ports, firewall, DNS, certificates and whether the internet can reach this box."
+      },
+      "security": {
+        "title": "Security",
+        "description": "Secret rotation, tokens and release signature checks."
+      },
+      "backups": {
+        "title": "Backups",
+        "description": "Control plane snapshots, database schedules and restore drills."
+      },
+      "nodes": {
+        "title": "Nodes and mesh",
+        "description": "Agent connectivity, agent versions and the WireGuard mesh."
+      },
+      "hardware": {
+        "title": "Hardware",
+        "description": "GPUs and network share client tools."
       },
       "other": {
         "title": "Other checks",
@@ -1996,7 +2305,7 @@
   },
   "firewallRules": {
     "liveStatus": "Live firewall status",
-    "liveStatusNote": "From this host's own preflight check. See Settings, System status for the full hardening checklist.",
+    "liveStatusNote": "From this host's own preflight check. See Settings, Doctor for the full hardening checklist.",
     "emptyTitle": "No firewall rules configured",
     "emptyBody": "Add a rule to allow or deny traffic to a specific port, optionally restricted to a source CIDR.",
     "cols": {
@@ -2307,5 +2616,114 @@
     "title": "Build cache",
     "titleAll": "Build cache for all apps",
     "description": "Keep BuildKit layers in a storage destination so rebuilds skip unchanged steps. A cache problem never fails a build, it is reported as a warning."
+  },
+  "gitConnections": {
+    "empty": {
+      "title": "No account connected",
+      "description": {
+        "gitlab": "Register a GitLab OAuth application, then authorize it. gitlab.com and self-managed instances can be connected side by side.",
+        "bitbucket": "Register a Bitbucket OAuth consumer, then authorize it. Add a second consumer later for another workspace.",
+        "gitea": "Register a Gitea OAuth application, then authorize it. Each Gitea or Forgejo server is its own connection.",
+        "forgejo": "Register a Forgejo OAuth application, then authorize it. Codeberg and self-hosted servers are each their own connection.",
+        "bitbucket_server": "Create a personal access token on your Bitbucket Server, then add it here. Each server or account is its own connection."
+      }
+    },
+    "default": "Default",
+    "account": "Signed in as {{name}}",
+    "accountUnknown": "Account not read yet",
+    "sources_one": "{{count}} git source",
+    "sources_other": "{{count}} git sources",
+    "scopeNote": "Connections belong to this control plane and are managed by admins. Anyone allowed to read repositories can browse what an account can see.",
+    "state": {
+      "ok": "Connected",
+      "notAuthorized": "Not authorized",
+      "needsReconnect": "Needs reconnect",
+      "rateLimited": "Rate limited"
+    },
+    "authorize": "Authorize",
+    "reconnect": "Reconnect",
+    "setDefault": "Set default",
+    "rename": {
+      "action": "Rename",
+      "label": "Connection label",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "disconnect": {
+      "action": "Disconnect",
+      "pending": "Disconnecting",
+      "title": "Disconnect {{label}}?",
+      "description": "This control plane stops using this account and revokes its token at the provider where that is supported. Other connected accounts are not touched.",
+      "sources_one": "{{count}} git source uses this account. It stays, shows needs reconnect, and works again once you connect an account on the same host.",
+      "sources_other": "{{count}} git sources use this account. They stay, show needs reconnect, and work again once you connect an account on the same host."
+    },
+    "add": {
+      "first": "Add an account",
+      "another": "Add another account",
+      "title": {
+        "gitlab": "Add a GitLab account",
+        "bitbucket": "Add a Bitbucket account",
+        "gitea": "Add a Gitea account",
+        "forgejo": "Add a Forgejo account",
+        "bitbucket_server": "Add a Bitbucket Server account"
+      },
+      "description": "Create the OAuth application on the provider with redirect URI {{callback}}, then enter it here. You will be sent to the provider to authorize it.",
+      "application": "OAuth application",
+      "newApplication": "Register a new OAuth application",
+      "reuse": "Reuse the application of {{label}}",
+      "applicationHelp": "Reuse the same application to sign in with a different account on the same instance.",
+      "instanceUrl": "Instance URL",
+      "instanceHelp": "gitlab.com or a self-managed address, for example https://git.example.com.",
+      "clientId": {
+        "gitlab": "Application ID",
+        "bitbucket": "Consumer key",
+        "gitea": "Client ID",
+        "forgejo": "Client ID",
+        "bitbucket_server": "Client ID"
+      },
+      "clientSecret": "Secret",
+      "label": "Label (optional)",
+      "labelHelp": "Defaults to the account name once you authorize. You can rename it later.",
+      "cancel": "Cancel",
+      "submit": "Save and authorize",
+      "saving": "Saving",
+      "tokenDescription": "Create a personal access token on the server with repository read and write permission, then paste it here. It is verified, then stored encrypted.",
+      "token": "Personal access token",
+      "tokenHelp": "Under Manage account, Personal access tokens. The token is never shown again.",
+      "instanceHelpServer": "The base address of your server, for example https://bitbucket.example.com.",
+      "connect": "Verify and connect",
+      "verifying": "Verifying",
+      "test": "Test connection",
+      "testing": "Testing",
+      "testOk": "Connected. The server answered and the details look right.",
+      "testOkAccount": "Connected as {{account}}.",
+      "fixLabel": "Fix",
+      "testKind": {
+        "bad_url": {
+          "message": "That address does not look like this kind of server.",
+          "fix": "Use the root address of the instance, for example https://git.example.com, without a repository path."
+        },
+        "bad_token": {
+          "message": "The server rejected the token.",
+          "fix": "Create a new personal access token with repository read access and paste it again."
+        },
+        "tls": {
+          "message": "The server's TLS certificate was rejected.",
+          "fix": "Install a trusted certificate on the server, or add your private CA to this control plane's trust store."
+        },
+        "unreachable": {
+          "message": "This control plane could not reach the server.",
+          "fix": "Check the hostname and port, and that the network or firewall allows outbound access to it."
+        }
+      }
+    },
+    "toast": {
+      "added": "Account saved",
+      "addedBody": "Authorize it with the provider to finish.",
+      "disconnected": "Account disconnected",
+      "renameFailed": "Could not rename the account",
+      "authorized": "Account authorized",
+      "authorizedBody": "Its repositories are now available to pick from."
+    }
   }
 }

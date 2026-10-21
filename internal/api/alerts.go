@@ -142,7 +142,7 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 
 	kind := alerting.Kind(a.Kind)
 	switch kind {
-	case alerting.KindThreshold, alerting.KindBudgetThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindExportBehind, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew,
+	case alerting.KindThreshold, alerting.KindBudgetThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeHostGuardrail, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindDatabaseDown, alerting.KindDatabaseBackupStale, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindExportBehind, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew, alerting.KindEmailDeliveryFailing, alerting.KindBackupFailed, alerting.KindDeployFailed,
 		alerting.KindLogPattern, alerting.KindLogLevelRate,
 		alerting.KindCertExpiring, alerting.KindCertRenewalStalled, alerting.KindDomainNotResolving:
 	default:
@@ -245,6 +245,18 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		if err := r.LogRule.Validate(r.Kind, alerting.LogRulePolicyFromEnv()); err != nil {
 			return alerting.Rule{}, fmt.Errorf("log_rule: %w", err)
 		}
+	case alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindDatabaseDown, alerting.KindDatabaseBackupStale:
+		if r.BackupDatabaseName == "" {
+			return alerting.Rule{}, fmt.Errorf("backup_database_name is required for a %s rule", r.Kind)
+		}
+		if r.Kind == alerting.KindDatabaseBackupStale {
+			if r.Threshold < 0 || r.Threshold > 8760 {
+				return alerting.Rule{}, errors.New("threshold is an age in hours between 0 and 8760")
+			}
+		} else if r.Threshold < 0 || r.Threshold > 100 {
+			return alerting.Rule{}, errors.New("threshold is a percentage between 0 and 100")
+		}
+		r.BackupResourceKind = store.BackupResourceKindDatabase
 	case alerting.KindBackupMissing:
 		switch r.BackupResourceKind {
 		case store.BackupResourceKindDatabase:
@@ -285,6 +297,20 @@ func (rt *Router) validateAlertRuleReferences(w http.ResponseWriter, r *http.Req
 			return false
 		} else if err != nil {
 			rt.logger.Error("api: "+op+": look up scheduled task failed", slog.String("error", err.Error()), slog.String("scheduled_task_id", rule.ScheduledTaskID))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return false
+		}
+	}
+
+	if alerting.IsDatabaseKind(rule.Kind) {
+		if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusBadRequest, "unknown backup_database_name"), databaseRef(rule.BackupDatabaseName)) {
+			return false
+		}
+		if _, err := rt.databases.GetDesiredDatabase(r.Context(), rule.BackupDatabaseName); errors.Is(err, store.ErrDatabaseNotFound) {
+			writeError(w, http.StatusBadRequest, "unknown backup_database_name")
+			return false
+		} else if err != nil {
+			rt.logger.Error("api: "+op+": look up database failed", slog.String("error", err.Error()))
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return false
 		}

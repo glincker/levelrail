@@ -29,6 +29,13 @@ vi.mock('../queries/attention', () => ({
   useAttentionItems: () => useAttentionItems() as unknown,
 }))
 
+vi.mock('../queries/silences', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../queries/silences')>()),
+  useSilences: () => ({ data: [] }),
+  useCreateSilence: () => ({ mutate: vi.fn(), isPending: false }),
+  useDeleteSilence: () => ({ mutate: vi.fn(), isPending: false }),
+}))
+
 const mutate = vi.fn()
 vi.mock('../queries/apps', () => ({
   useRestartApp: () => ({ mutate, isPending: false }),

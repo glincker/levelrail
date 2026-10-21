@@ -340,13 +340,13 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		} else if creds != nil {
 			opts = append(opts, database.WithPostgresCredentials(creds))
 		}
-		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name)...)
+		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)
 		opts = append(opts, database.WithSlowQueryThreshold(deps.databaseSlowQueryThresholdMs))
 	case store.EngineRedis:
 		// Redis needs no credentials to reconcile at all (this package's
 		// own doc comment), so TLS is the only per-engine option it ever
 		// gets here.
-		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name)...)
+		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)
 	case store.EngineMySQL:
 		creds, err := mysqlCredentialsFor(ctx, deps.secretsManager, desired.Name)
 		if err != nil {
@@ -355,6 +355,7 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		} else if creds != nil {
 			opts = append(opts, database.WithMySQLCredentials(creds))
 		}
+		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)
 		opts = append(opts, database.WithSlowQueryThreshold(deps.databaseSlowQueryThresholdMs))
 	case store.EngineMongoDB:
 		creds, err := mongoCredentialsFor(ctx, deps.secretsManager, desired.Name)
@@ -372,6 +373,7 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		} else if creds != nil {
 			opts = append(opts, database.WithMariaDBCredentials(creds))
 		}
+		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)
 	case store.EngineClickHouse:
 		creds, err := clickhouseCredentialsFor(ctx, deps.secretsManager, desired.Name)
 		if err != nil {
@@ -393,7 +395,17 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 }
 
 // Logs and skips on a transient error, like the other credential options.
-func databaseTLSOpt(ctx context.Context, deps dynamicSourceDeps, dbName string) []database.Option {
+func databaseTLSOpt(ctx context.Context, deps dynamicSourceDeps, dbName, engine string) []database.Option {
+	if engine != store.EnginePostgres {
+		mode, err := deps.db.GetDatabaseTLSMode(ctx, dbName)
+		if err != nil {
+			deps.logger.Warn("skipping tls mode for this reconcile pass", slog.String("database", dbName), slog.String("error", err.Error()))
+			return nil
+		}
+		if !store.DatabaseTLSEffective(engine, mode) {
+			return []database.Option{database.WithTLSDisabled()}
+		}
+	}
 	material, err := tlsMaterialFor(ctx, deps.secretsManager, dbName)
 	if err != nil {
 		deps.logger.Warn("skipping tls material for this reconcile pass",

@@ -15,6 +15,7 @@ import {
   type TimelinePage,
 } from '../lib/deployTimeline'
 import type { Deployment } from '../types/deployment'
+import { setVisibleInterval } from '../lib/pageVisibility'
 
 export const deployTimelineKeys = {
   all: ['deploy-timeline'] as const,
@@ -106,11 +107,9 @@ export function useDeployTimeline(filters: TimelineFilters) {
   const { events, state } = useStreamedDeploys(key)
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
-    const id = setInterval(() => {
-      setNow(Date.now())
-    }, NOW_TICK_MS)
+    const stop = setVisibleInterval(() => setNow(Date.now()), NOW_TICK_MS)
     return () => {
-      clearInterval(id)
+      stop()
     }
   }, [])
 

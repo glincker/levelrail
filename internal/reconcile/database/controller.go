@@ -257,6 +257,7 @@ type Controller struct {
 	clickhouseCreds *ClickHouseCredentials
 	apiKeyCreds     *APIKeyCredentials
 	tls             *TLSMaterial
+	tlsDisabled     bool
 	meshDNSAddr     string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 	meshEndpoints   meshEndpointResolver
 	meshPorts       MeshPortLookup
@@ -319,6 +320,11 @@ func WithClickHouseCredentials(creds *ClickHouseCredentials) Option {
 // feature.
 func WithTLS(material *TLSMaterial) Option {
 	return func(c *Controller) { c.tls = material }
+}
+
+// WithTLSDisabled marks TLS as deliberately off so a container still serving TLS is replaced; a nil WithTLS alone never downgrades.
+func WithTLSDisabled() Option {
+	return func(c *Controller) { c.tlsDisabled = true }
 }
 
 // WithMeshDNSAddr points every container this controller creates at addr,
@@ -445,8 +451,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"MYSQL_USER":          c.mysqlCreds.Username,
 			"MYSQL_PASSWORD":      c.mysqlCreds.Password,
 		}
-		command := mysqlCommand(c.effectiveSlowQueryThresholdMs())
-		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, nil)
+		command := mysqlCommand(c.effectiveSlowQueryThresholdMs(), c.tls)
+		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, c.tls)
 
 	case store.EngineMongoDB:
 		if c.mongoCreds == nil {
@@ -477,8 +483,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"MARIADB_PASSWORD":      c.mariadbCreds.Password,
 		}
 		// Same data path/port/slow-query flags as mysql, MariaDB is a compatible fork.
-		command := mysqlCommand(c.effectiveSlowQueryThresholdMs())
-		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, nil)
+		command := mysqlCommand(c.effectiveSlowQueryThresholdMs(), c.tls)
+		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, c.tls)
 
 	case store.EngineKeyDB:
 		// KeyDB is a Redis-protocol-compatible drop-in fork: same
@@ -700,6 +706,12 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		if err := c.provisionCerts(ctx, c.dbName, tlsMaterial); err != nil {
 			return notReady("TLSProvisionFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
+		if err := c.replaceContainer(ctx, state, spec); err != nil {
+			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+		}
+		justDeployed = true
+
+	case tlsMaterial == nil && c.tlsDisabled && state.Labels[tlsCertLabelKey] == tlsCertLabelValue:
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
 			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
@@ -940,14 +952,18 @@ const MySQLSlowQueryLogPath = "/var/lib/mysql/slow-query.log"
 // slow query log at MySQLSlowQueryLogPath; internal/slowquery's
 // ParseMySQL reads it back out. long-query-time is MySQL's own flag
 // name and takes seconds as a float, so thresholdMs is converted here.
-func mysqlCommand(thresholdMs int) []string {
+func mysqlCommand(thresholdMs int, tls *TLSMaterial) []string {
 	longQueryTimeSec := strconv.FormatFloat(float64(thresholdMs)/1000, 'f', -1, 64)
-	return []string{
+	command := []string{
 		"--slow-query-log=1",
 		"--long-query-time=" + longQueryTimeSec,
 		"--slow-query-log-file=" + MySQLSlowQueryLogPath,
 		"--log-output=FILE",
 	}
+	if tls != nil {
+		command = append(command, "--ssl-cert="+certsMountPath+"/"+tlsCertFile, "--ssl-key="+certsMountPath+"/"+tlsKeyFile)
+	}
+	return command
 }
 
 // redisCommandAndPort returns Redis's own container command and the port

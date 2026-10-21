@@ -7,13 +7,31 @@ import {
   updatesQueryOptions,
   type UpdateStatus,
 } from '@/queries/updates'
-import { selfUpgradeAttemptsQueryOptions } from '@/queries/selfUpgrade'
+import {
+  selfUpgradeAttemptsQueryOptions,
+  type SelfUpgradeAttempt,
+} from '@/queries/selfUpgrade'
 import { scheduleQueryOptions } from '@/queries/upgradeSchedule'
 import { formatRelative } from '@/components/kit/formatRelative'
 import { UpgradeNow } from '../UpgradeNow'
 import { UpdateChanges } from './UpdateChanges'
 import { deriveUpdateState } from './updateState'
 import { UpdateStatusView } from './UpdateStatusView'
+import { UpgradeStepper } from './UpgradeStepper'
+import { deriveStepper } from '@/lib/upgradeStepper'
+
+const RECENT_MS = 15 * 60_000
+
+function recentFinished(
+  list: SelfUpgradeAttempt[],
+): SelfUpgradeAttempt | undefined {
+  const last = list
+    .filter((a) => a.outcome !== 'running')
+    .sort((a, b) => Date.parse(b.started_at) - Date.parse(a.started_at))[0]
+  return last && Date.now() - Date.parse(last.started_at) < RECENT_MS
+    ? last
+    : undefined
+}
 
 // UpdateStatusHeader owns the page's top card: derived state, the manual
 // re-check, the change preview, and the existing upgrade controls.
@@ -37,6 +55,16 @@ export function UpdateStatusHeader({ initial }: { initial: UpdateStatus }) {
       schedule.data?.active?.state === 'running',
     upgradeRunning: (attempts.data ?? []).some((a) => a.outcome === 'running'),
     checkFailed: query.isRefetchError,
+  })
+
+  const list = attempts.data ?? []
+  const running = list.find((a) => a.outcome === 'running')
+  const recentDone = recentFinished(list)
+  const steps = deriveStepper({
+    updateAvailable: status.update_available,
+    checkFailed: query.isRefetchError,
+    preflightBlocked: preflight.data?.blocked === true,
+    attempt: running ?? recentDone,
   })
 
   const check = () => {
@@ -68,6 +96,7 @@ export function UpdateStatusHeader({ initial }: { initial: UpdateStatus }) {
       releaseUrl={status.release_url}
       onCheck={check}
     >
+      <UpgradeStepper steps={steps} />
       {showChanges ? <UpdateChanges status={status} /> : null}
       <UpgradeNow />
     </UpdateStatusView>
