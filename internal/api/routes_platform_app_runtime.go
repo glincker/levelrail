@@ -16,6 +16,12 @@ func (rt *Router) registerAppRuntimeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/functions/{name}/route", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListFunctionRoutes))
 	mux.HandleFunc("PUT /api/v1/functions/{name}/route", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetFunctionRoute))
 	mux.HandleFunc("DELETE /api/v1/functions/{name}/route", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteFunctionRoute))
+	// Function observe and try: recent edge calls, a test call through the real route, replay of stored input, and the per-function capture opt-in.
+	mux.HandleFunc("GET /api/v1/functions/{name}/invocations", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListFunctionInvocations))
+	mux.HandleFunc("POST /api/v1/functions/{name}/invoke", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleInvokeFunction))
+	mux.HandleFunc("POST /api/v1/functions/{name}/invocations/{id}/replay", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleReplayFunctionInvocation))
+	mux.HandleFunc("GET /api/v1/functions/{name}/capture", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetFunctionCapture))
+	mux.HandleFunc("PUT /api/v1/functions/{name}/capture", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetFunctionCapture))
 	mux.HandleFunc("GET /api/v1/apps/{name}/requests", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryRequests))
 	// Traffic: RED totals, per-replica latency, slowest route templates, slow or failed request samples and SLO burn over window=5m, 1h, 24h or 7d, plus top referrers and countries.
 	mux.HandleFunc("GET /api/v1/apps/{name}/traffic", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppTraffic))

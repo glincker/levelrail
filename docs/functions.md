@@ -136,6 +136,42 @@ can retry.
 If the app does not become ready within 30 seconds, the caller gets the
 "Waking up" page (503) and can retry.
 
+## Recent calls, test console and replay
+
+The Functions page lists the recent calls of a function: time, method, path, status, duration, whether it was a cold start, and request and response sizes. Each call links to the app logs filtered around the time of the call. The list comes from the edge access log, which lives in the control plane's memory and is lost on restart. Request bodies are never recorded.
+
+| Environment variable | Meaning |
+| --- | --- |
+| `APP_ACCESS_LOG_SIZE` | Calls kept per route, 0 turns recording off |
+| `APP_ACCESS_LOG_RETENTION` | Hide calls older than this duration, empty keeps them until the ring overwrites them |
+| `FUNCTION_LOG_PADDING` | Time added before and after a call when linking to logs |
+
+The test console sends a request through the function's real public route, so a sleeping function is woken first. It shows status, headers, body, duration and the cold start flag. The same call is available as `POST /api/v1/functions/{name}/invoke`.
+
+Replay is opt-in per function. With "Keep the input of test calls" on, calls sent from the console or the CLI keep their method, path, body and headers (without `Authorization`, `Cookie` and similar credential headers) so the Replay button, `POST /api/v1/functions/{name}/invocations/{id}/replay` or `functions invoke <name> --replay <id>` can repeat them. Traffic from other clients is never stored. Stored inputs live in memory only.
+
+| Environment variable | Meaning |
+| --- | --- |
+| `FUNCTION_INPUT_MAX_ENTRIES` | Stored inputs kept in total |
+| `FUNCTION_INPUT_MAX_BODY_BYTES` | Stored body size, longer bodies are cut |
+| `FUNCTION_INPUT_RETENTION` | How long a stored input stays replayable |
+| `FUNCTION_TEST_MAX_BODY_BYTES`, `FUNCTION_TEST_MAX_RESPONSE_BYTES`, `FUNCTION_TEST_TIMEOUT` | Caps for a test call |
+
+A call counts as a cold start when the wake hook held it and replayed it. From the CLI:
+
+```bash
+levelrail-cli functions invocations hello --limit 20
+levelrail-cli functions invoke hello --replay 3f9a1c2b7d4e5a60
+```
+
+## Run a handler locally
+
+```bash
+levelrail-cli functions dev ./hello --port 8080 --env-file .env.local
+```
+
+Runs the handler in a throwaway container for its runtime (picked from `package.json`, `requirements.txt` or `main.py`, or `go.mod`) with the directory mounted, `PORT` set and the env file passed in. Docker must be installed. `--image` overrides the image. Stop it with Ctrl-C.
+
 ## Limits
 
 - Functions are routed by host, one URL per function. Path prefixes on a shared

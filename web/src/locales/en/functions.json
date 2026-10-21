@@ -209,5 +209,46 @@
       "done": "Version change started",
       "failed": "Version change failed"
     }
+  },
+  "observe": {
+    "title": "Calls and test console",
+    "pick": "Function",
+    "tabCalls": "Recent calls",
+    "tabTest": "Test console",
+    "time": "Time",
+    "request": "Request",
+    "status": "Status",
+    "duration": "Duration",
+    "cold": "Cold start",
+    "coldYes": "Cold start",
+    "coldNo": "Warm",
+    "sizes": "In / out",
+    "logs": "Logs",
+    "openLogs": "Logs",
+    "replay": "Replay",
+    "replayed": "Replayed, answered {{status}}",
+    "replayFailed": "Replay failed: {{message}}",
+    "loadError": "Calls could not be loaded: {{message}}",
+    "emptyTitle": "No calls recorded yet",
+    "emptyBody": "Calls appear here while the control plane keeps them in memory. Send one from the test console.",
+    "tableLabel": "Recent calls of {{name}}",
+    "captureLabel": "Keep the input of test calls so they can be replayed",
+    "captureHint": "Off by default. Only calls sent from the test console or the CLI are kept, never other traffic. Credential headers are dropped."
+  },
+  "console": {
+    "method": "Method",
+    "path": "Path",
+    "headers": "Headers",
+    "headersPlaceholder": "Name: value, one per line",
+    "body": "Body",
+    "bodyPlaceholder": "JSON or plain text",
+    "send": "Send",
+    "sending": "Sending",
+    "wakeHint": "If the function is asleep this waits for it to wake first.",
+    "failed": "The call failed: {{message}}",
+    "result": "Response",
+    "warm": "Warm",
+    "stored": "Input stored for replay",
+    "truncated": "The body was cut at the size limit."
   }
 }

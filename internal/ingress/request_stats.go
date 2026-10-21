@@ -81,7 +81,7 @@ func (m requestStatsModule) ServeHTTP(w http.ResponseWriter, r *http.Request, ne
 	DefaultAccessLog().Record(m.Key, AccessRecord{
 		Time: start, Host: r.Host, Method: r.Method, Path: r.URL.Path, Status: status,
 		Millis: float64(elapsed) / float64(time.Millisecond), BytesIn: in, BytesOut: rec.bytes,
-		RequestID: requestID, TraceID: traceID, Upstream: upstreamErr,
+		RequestID: requestID, TraceID: traceID, Upstream: upstreamErr, Cold: rec.cold,
 	})
 	return err
 }
@@ -90,9 +90,14 @@ type statusRecorder struct {
 	*caddyhttp.ResponseWriterWrapper
 	status int
 	bytes  int64
+	cold   bool
 }
 
 func (s *statusRecorder) WriteHeader(code int) {
+	if h := s.Header(); h.Get(WakeHeldHeader) != "" {
+		s.cold = true
+		h.Del(WakeHeldHeader)
+	}
 	if s.status == 0 && (code >= 200 || code == http.StatusSwitchingProtocols) {
 		s.status = code
 	}

@@ -187,7 +187,8 @@ type Router struct {
 	logUsageCache          logUsageCache
 	traceKeys              traceKeyCache
 	errTrack               errorTrackingState
-	access                 AccessSource  // nil is valid: the access route answers 501
+	access                 AccessSource // nil is valid: the access route answers 501
+	fnInputs               functionInputs
 	requestSummaryWindow   time.Duration // 0 keeps defaultRequestSummaryWindow
 	// requestLogThresholds are requestLoggingMiddleware's Warn/Error
 	// duration bands (request_logging.go). Zero fields mean "use the

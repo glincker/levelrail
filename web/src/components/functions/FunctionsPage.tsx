@@ -12,6 +12,7 @@ import { PageTemplate } from '../shell/PageTemplate'
 import { useFunctions, type FunctionWindow } from '../../queries/functions'
 import { DeployFunctionDialog } from './DeployFunctionDialog'
 import { FunctionTemplates } from './FunctionTemplates'
+import { FunctionWorkbench } from './FunctionWorkbench'
 import { FunctionsTable } from './FunctionsTable'
 
 const WINDOWS: FunctionWindow[] = ['1h', '24h', '7d']
@@ -81,6 +82,7 @@ export function FunctionsPage() {
           </Tabs>
           {body}
         </div>
+        <FunctionWorkbench items={items} />
         <FunctionTemplates />
       </div>
     </PageTemplate>

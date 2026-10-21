@@ -34,6 +34,7 @@ type AccessRecord struct {
 	RequestID string    `json:"request_id"`
 	TraceID   string    `json:"trace_id,omitempty"`
 	Upstream  bool      `json:"upstream_error,omitempty"`
+	Cold      bool      `json:"cold_start,omitempty"`
 }
 
 // AccessFilter narrows a ring read.
@@ -77,12 +78,13 @@ func (r *accessRing) snapshot() []AccessRecord {
 // Memory is bounded by hosts times capacity and the log is lost on restart,
 // which is the point: it answers "what just happened", not history.
 type AccessLog struct {
-	mu    sync.RWMutex
-	cap   int
-	rings map[string]*accessRing
+	mu        sync.RWMutex
+	cap       int
+	retention time.Duration
+	rings     map[string]*accessRing
 }
 
-var defaultAccessLog = NewAccessLog(accessCapacityFromEnv())
+var defaultAccessLog = newAccessLogWithRetention(accessCapacityFromEnv(), accessRetentionFromEnv())
 
 // DefaultAccessLog is the process-wide log the request_stats handler feeds.
 func DefaultAccessLog() *AccessLog { return defaultAccessLog }
@@ -91,6 +93,21 @@ func DefaultAccessLog() *AccessLog { return defaultAccessLog }
 // disables recording.
 func NewAccessLog(capacity int) *AccessLog {
 	return &AccessLog{cap: capacity, rings: make(map[string]*accessRing)}
+}
+
+func newAccessLogWithRetention(capacity int, retention time.Duration) *AccessLog {
+	l := NewAccessLog(capacity)
+	l.retention = retention
+	return l
+}
+
+// accessRetentionFromEnv reads APP_ACCESS_LOG_RETENTION; zero keeps records until the ring overwrites them.
+func accessRetentionFromEnv() time.Duration {
+	d, err := time.ParseDuration(strings.TrimSpace(os.Getenv("APP_ACCESS_LOG_RETENTION")))
+	if err != nil || d < 0 {
+		return 0
+	}
+	return d
 }
 
 func accessCapacityFromEnv() int {
@@ -142,6 +159,9 @@ func (l *AccessLog) Query(keys []string, f AccessFilter) []AccessRecord {
 			continue
 		}
 		for _, rec := range r.snapshot() {
+			if l.retention > 0 && time.Since(rec.Time) > l.retention {
+				continue
+			}
 			if rec.Millis < f.MinMillis || rec.Status < f.MinStatus {
 				continue
 			}

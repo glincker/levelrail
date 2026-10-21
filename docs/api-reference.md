@@ -1836,6 +1836,15 @@ Routes that do not fit an existing group.
 | GET | /api/v1/silences | AbilityRead | handleListSilences |
 | POST | /api/v1/silences | AbilityWrite | handleCreateSilence |
 | DELETE | /api/v1/silences/{id} | AbilityWrite | handleDeleteSilence |
+| GET | /api/v1/functions/{name}/invocations | AbilityRead | handleListFunctionInvocations |
+| POST | /api/v1/functions/{name}/invoke | AbilityDeploy | handleInvokeFunction |
+| POST | /api/v1/functions/{name}/invocations/{id}/replay | AbilityDeploy | handleReplayFunctionInvocation |
+| GET | /api/v1/functions/{name}/capture | AbilityRead | handleGetFunctionCapture |
+| PUT | /api/v1/functions/{name}/capture | AbilityDeploy | handleSetFunctionCapture |
+| GET | /api/v1/functions/{name}/settings | AbilityRead | handleGetFunctionSettings |
+| PUT | /api/v1/functions/{name}/settings | AbilityDeploy | handlePutFunctionSettings |
+| GET | /api/v1/functions/{name}/versions | AbilityRead | handleListFunctionVersions |
+| POST | /api/v1/functions/{name}/rollback | AbilityDeploy | handleFunctionRollback |
 
 ## See also
 

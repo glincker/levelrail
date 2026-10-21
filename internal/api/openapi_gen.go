@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1611 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1620 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1033,9 +1033,18 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/frameworks/{id}/dockerfile", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFrameworkDockerfile", Description: ""},
 	{Method: "GET", Path: "/api/v1/functions", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctions", Description: "Functions: apps that sleep to zero and hold the waking request, with call count and p95 duration, plus starter handlers per runtime."},
 	{Method: "GET", Path: "/api/v1/functions/runtimes", Ability: "AbilityRead", Group: "Other", Handler: "handleFunctionRuntimes", Description: ""},
+	{Method: "GET", Path: "/api/v1/functions/{name}/capture", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFunctionCapture", Description: ""},
+	{Method: "PUT", Path: "/api/v1/functions/{name}/capture", Ability: "AbilityDeploy", Group: "Other", Handler: "handleSetFunctionCapture", Description: ""},
+	{Method: "GET", Path: "/api/v1/functions/{name}/invocations", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctionInvocations", Description: "Function observe and try: recent edge calls, a test call through the real route, replay of stored input, and the per-function capture opt-in."},
+	{Method: "POST", Path: "/api/v1/functions/{name}/invocations/{id}/replay", Ability: "AbilityDeploy", Group: "Other", Handler: "handleReplayFunctionInvocation", Description: ""},
+	{Method: "POST", Path: "/api/v1/functions/{name}/invoke", Ability: "AbilityDeploy", Group: "Other", Handler: "handleInvokeFunction", Description: ""},
+	{Method: "POST", Path: "/api/v1/functions/{name}/rollback", Ability: "AbilityDeploy", Group: "Other", Handler: "handleFunctionRollback", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/functions/{name}/route", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDeleteFunctionRoute", Description: ""},
 	{Method: "GET", Path: "/api/v1/functions/{name}/route", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctionRoutes", Description: "Function paths: serve a function at <domain>/<path> through a forwarder rule on the domain."},
 	{Method: "PUT", Path: "/api/v1/functions/{name}/route", Ability: "AbilityDeploy", Group: "Other", Handler: "handleSetFunctionRoute", Description: ""},
+	{Method: "GET", Path: "/api/v1/functions/{name}/settings", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFunctionSettings", Description: "Function controls: request timeout and concurrency limit, deploy versions, and rollback or pin through the app rollback."},
+	{Method: "PUT", Path: "/api/v1/functions/{name}/settings", Ability: "AbilityDeploy", Group: "Other", Handler: "handlePutFunctionSettings", Description: ""},
+	{Method: "GET", Path: "/api/v1/functions/{name}/versions", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctionVersions", Description: ""},
 	{Method: "GET", Path: "/api/v1/gate/check", Ability: "Public", Group: "Other", Handler: "handleGateCheck", Description: "Unauthenticated by design: the check proves itself with the ingress's gate secret, and login requires a dashboard session before minting."},
 	{Method: "GET", Path: "/api/v1/git-connections", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleListGitConnections", Description: ""},
 	{Method: "POST", Path: "/api/v1/git-connections", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateGitConnection", Description: ""},
