@@ -3,7 +3,9 @@ package alerting
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -82,6 +84,15 @@ func (db *DB) RecordHistory(ctx context.Context, e HistoryEntry) error {
 	if e.At.IsZero() {
 		e.At = time.Now()
 	}
+	if e.Event == EventResolved {
+		ok, err := db.ResolveAllowed(ctx, e.RuleID, e.ResourceID, Kind(e.RuleKind))
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return nil
+		}
+	}
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO alert_history (id, at, rule_id, rule_name, rule_kind, resource_id, app, node, severity, event, outcome, detail, silence_id, channel_id, error)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -91,6 +102,26 @@ func (db *DB) RecordHistory(ctx context.Context, e HistoryEntry) error {
 		return fmt.Errorf("alerting: record history for rule %q: %w", e.RuleID, err)
 	}
 	return nil
+}
+
+// ResolveAllowed reports whether a resolved row may follow the rule's last fired or resolved row.
+// A second resolved is never allowed, and a cert expiry resolve also needs a delivered firing before it.
+func (db *DB) ResolveAllowed(ctx context.Context, ruleID, resourceID string, kind Kind) (bool, error) {
+	var event, outcome string
+	err := db.QueryRowContext(ctx, `
+		SELECT event, outcome FROM alert_history
+		WHERE rule_id = ? AND resource_id = ? AND event IN (?, ?)
+		ORDER BY at DESC, rowid DESC LIMIT 1`, ruleID, resourceID, EventFired, EventResolved).Scan(&event, &outcome)
+	if errors.Is(err, sql.ErrNoRows) {
+		return kind != KindCertExpiry, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("alerting: read last lifecycle event for rule %q: %w", ruleID, err)
+	}
+	if event == EventResolved {
+		return false, nil
+	}
+	return kind != KindCertExpiry || outcome == OutcomeSent, nil
 }
 
 // ListHistory returns entries newest first.
