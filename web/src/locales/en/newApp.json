@@ -13,6 +13,8 @@
   },
   "source": {
     "analyzing": "Reading the repository...",
+    "privateRepo": "We could not read this repository. If it is private, connect your git provider and pick it from the list.",
+    "privateRepoConnect": "Connect a git provider",
     "analyze": "Analyze repository",
     "repos": {
       "search": "Search repositories or languages",
