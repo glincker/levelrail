@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/glincker/levelrail/compare/v0.7.0...v0.7.1) (2026-10-21)
+
+
+### Features
+
+* 0.8 with inbox, upgrade recovery, secret rotation and zone spread ([#1316](https://github.com/glincker/levelrail/issues/1316)) ([fec2538](https://github.com/glincker/levelrail/commit/fec2538615e5bdcb25169ccf852afb6a03140d64))
+
 ## [0.7.0](https://github.com/glincker/levelrail/compare/v0.6.0...v0.7.0) (2026-10-20)
 
 
