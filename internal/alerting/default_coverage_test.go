@@ -167,12 +167,24 @@ func TestRouteDefaultRules(t *testing.T) {
 		}
 	}
 
+	certRules := 0
+	for _, r := range rules {
+		if r.Kind == KindCertExpiry {
+			certRules++
+		}
+	}
 	n, err = db.RouteDefaultRules(ctx, "admin@example.com")
-	if err != nil || n != len(rules) {
-		t.Fatalf("routed %d of %d: %v", n, len(rules), err)
+	if err != nil || n != len(rules)-certRules {
+		t.Fatalf("routed %d of %d (cert rules stay in-app): %v", n, len(rules)-certRules, err)
 	}
 	rules, _ = db.ListDefaultRules(ctx)
 	for _, r := range rules {
+		if r.Kind == KindCertExpiry {
+			if r.ChannelID != "" || r.NotifyURL != "" {
+				t.Fatalf("cert rule %s must default to the Inbox, got channel %q", r.ID, r.ChannelID)
+			}
+			continue
+		}
 		if r.ChannelID != DefaultAdminEmailChannelID || r.NotifyKind != NotifyEmail || r.NotifyURL != "admin@example.com" {
 			t.Fatalf("rule %s not routed to admin email: %+v", r.ID, r)
 		}

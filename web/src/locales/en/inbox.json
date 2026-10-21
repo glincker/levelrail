@@ -105,5 +105,25 @@
       "approvalDetail": "{{action}} {{image}}, requested by {{who}}",
       "deployTitle": "Deploy of {{app}} failed"
     }
+  },
+  "certCard": {
+    "domain": "Domain",
+    "issuer": "Issuer",
+    "timeLeft": "Time left",
+    "daysLeft_one": "{{count}} day",
+    "daysLeft_other": "{{count}} days",
+    "expired": "Expired",
+    "why": "Why",
+    "renewNow": "Renew now",
+    "renewing": "Renewing...",
+    "checkDns": "Check DNS and retry",
+    "renewRequested": "Renewal requested for {{domain}}.",
+    "renewError": "Could not renew the certificate for {{domain}}.",
+    "noChannel": "No notification channel is connected, so this alert only shows here and on the dashboard.",
+    "connectChannel": "Connect a notification channel",
+    "alsoEmail": "Also email me",
+    "emailNoProvider": "Connect an email provider to enable this.",
+    "emailNotVerified": "Verify your email address to enable this.",
+    "emailError": "Could not update email notifications."
   }
 }

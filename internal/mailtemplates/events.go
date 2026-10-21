@@ -39,6 +39,8 @@ const (
 	EventEmailChanged       = "email_changed"
 	EventEmailChangeConfirm = "email_change_confirm"
 	EventAlertNotification  = "alert_notification"
+	EventCertExpiry         = "cert_expiry_alert"
+	EventCertExpiryPlain    = "cert_expiry_alert_plain"
 	EventDeployNotification = "deploy_notification"
 	EventDeployApproval     = "deploy_approval"
 	EventTestEmail          = "test_email"
@@ -115,6 +117,26 @@ var events = []Event{
 			Subject:   "[{{brand_name}}] {{alert_name}}",
 			Preheader: "{{severity}}: {{alert_summary}}",
 			Body:      "> **{{alert_name}}** ({{severity}})\n\n{{alert_summary}}\n\nApp: {{app_name}}\n\n!button Open the dashboard|{{dashboard_url}}",
+		},
+	},
+	{
+		Key: EventCertExpiry, Label: "Certificate expiry alert", Category: CategorySystem,
+		Description: "Sent when a certificate needs attention and the rule has email enabled.",
+		Tokens:      eventTokens("domain", "issuer", "days_left", "reason", "primary_label", "primary_url", "inbox_url", "settings_url"),
+		Default: Template{
+			Subject:   "[{{brand_name}}] Certificate for {{domain}} {{days_left}}",
+			Preheader: "{{reason}}",
+			Body:      "> **{{domain}}** {{days_left}}\n\nIssuer: {{issuer}}\n\nWhy: {{reason}}\n\n!button {{primary_label}}|{{primary_url}}\n\n!button Open in Inbox|{{inbox_url}}\n\n!button Notification settings|{{settings_url}}",
+		},
+	},
+	{
+		Key: EventCertExpiryPlain, Label: "Certificate expiry alert (no links)", Category: CategorySystem,
+		Description: "Used when the instance has no public address, so the email carries no dashboard links.",
+		Tokens:      eventTokens("domain", "issuer", "days_left", "reason"),
+		Default: Template{
+			Subject:   "[{{brand_name}}] Certificate for {{domain}} {{days_left}}",
+			Preheader: "{{reason}}",
+			Body:      "> **{{domain}}** {{days_left}}\n\nIssuer: {{issuer}}\n\nWhy: {{reason}}\n\nOpen the dashboard to renew or check DNS.",
 		},
 	},
 	{

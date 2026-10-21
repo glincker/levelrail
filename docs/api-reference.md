@@ -1859,6 +1859,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/migration/agent/sessions/{id}/discover | AbilityWriteSensitive | handleDiscoverMigrationAgent |
 | POST | /api/v1/migration/agent/sessions/{id}/verify | AbilityWriteSensitive | handleVerifyMigrationAgent |
 | DELETE | /api/v1/migration/agent/sessions/{id} | AbilityWriteSensitive | handleRevokeMigrationAgentSession |
+| GET | /api/v1/alert-defaults/cert-expiry/email | AbilityRead | handleGetCertExpiryEmail |
+| PUT | /api/v1/alert-defaults/cert-expiry/email | AbilityWrite | handleSetCertExpiryEmail |
 
 ## See also
 

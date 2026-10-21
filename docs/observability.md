@@ -1084,3 +1084,23 @@ To transform logs before storage or export, see [Log pipelines](/log-pipelines) 
     Telemetry design decisions and phase 2 rationale.
   </Card>
 </CardGroup>
+
+## Default certificate expiry alerts
+
+The seeded `Certificate expires within N days` rules (14, 7, 3 and 1 days) are tuned to stay quiet:
+
+- One alert per certificate. When a certificate matches several windows, only the tightest window notifies. Wider windows resolve silently, and severity rises as time runs out.
+- Certificates the platform handles itself are skipped: the internal self-signed certificate used for local, sslip and dev hosts, and ACME certificates whose automatic renewal is not yet overdue. You are alerted when renewal is failing, stalled or overdue, or when the certificate is inside the last-resort window.
+- Notify once when the state changes, then at most one reminder per interval until the certificate is renewed, which resolves the alert on its own.
+- The default destination is the Inbox and the dashboard. Email and other channels are opt-in per rule. The Inbox card shows the domain, issuer, time left and why, with a `Renew now` or `Check DNS and retry` button, a `Connect a notification channel` button when no channel exists, and an `Also email me` toggle that is available only when an email provider is connected and your address is verified.
+- Opt-in emails carry the same facts plus buttons that open the domain page, the Inbox and notification settings. The buttons need a public dashboard address (`APP_DASHBOARD_URL` or `APP_PUBLIC_HOST`); without one the email has no links. Links open pages only, the fix still needs a signed-in click.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_DEFAULT_ALERT_CERT_DAYS` | `14,7,3,1` | Windows seeded on first boot |
+| `APP_ALERT_CERT_LAST_RESORT_HOURS` | `72` | Alert regardless of renewal state inside this window |
+| `APP_ALERT_CERT_REMINDER_INTERVAL` | `24h` | Minimum gap between reminders |
+| `APP_ALERT_CERT_RENEW_RATIO` | `0.333` | Fraction of lifetime left at which the ingress renews |
+
+API: `GET` and `PUT /api/v1/alert-defaults/cert-expiry/email` read and set the email opt-in.
+
