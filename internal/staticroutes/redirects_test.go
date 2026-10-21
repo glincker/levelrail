@@ -116,10 +116,10 @@ func TestParseRedirectsLongValueRejected(t *testing.T) {
 
 func TestParseRedirectsMatchesPatternsCaseInsensitive(t *testing.T) {
 	rules, _ := ParseRedirects("/About /about-us", DefaultLimits())
-	if rules[0].pat.match("/about") == nil || rules[0].pat.match("/ABOUT/") == nil {
+	if rules[0].Pattern().Match("/about") == nil || rules[0].Pattern().Match("/ABOUT/") == nil {
 		t.Fatal("matching should ignore case and a trailing slash")
 	}
-	if rules[0].pat.match("/about/x") != nil {
+	if rules[0].Pattern().Match("/about/x") != nil {
 		t.Fatal("exact path must not match a deeper one")
 	}
 }

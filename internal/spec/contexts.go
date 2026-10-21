@@ -2,10 +2,54 @@ package spec
 
 import (
 	"fmt"
+	"path"
 	"strings"
-
-	"github.com/GLINCKER/levelrail/internal/deploycontext"
 )
+
+// Deploy context names. Production is the app's own settings and has no stored row.
+const (
+	ContextProduction    = "production"
+	ContextDeployPreview = "deploy-preview"
+	ContextBranchDeploy  = "branch-deploy"
+	ContextBranchPrefix  = "branch:"
+)
+
+// ContextOverrides is the settings one context can override. Empty fields inherit.
+type ContextOverrides struct {
+	Env          map[string]string
+	BuildCommand string
+	Publish      string
+	BuildArgs    map[string]string
+}
+
+// Empty reports whether c overrides nothing.
+func (c ContextOverrides) Empty() bool {
+	return len(c.Env) == 0 && c.BuildCommand == "" && c.Publish == "" && len(c.BuildArgs) == 0
+}
+
+// ContextBranchPattern returns the pattern of a "branch:<pattern>" context.
+func ContextBranchPattern(name string) (string, bool) {
+	p, ok := strings.CutPrefix(name, ContextBranchPrefix)
+	return p, ok && p != ""
+}
+
+// ValidateContextName checks that name is a settable context and its pattern is valid.
+func ValidateContextName(name string) error {
+	if name == ContextProduction {
+		return fmt.Errorf("context %q uses the app's own settings, set them on the app itself", ContextProduction)
+	}
+	if name == ContextDeployPreview || name == ContextBranchDeploy {
+		return nil
+	}
+	p, ok := ContextBranchPattern(name)
+	if !ok {
+		return fmt.Errorf("unknown context %q: use %s, %s or %s<pattern>", name, ContextDeployPreview, ContextBranchDeploy, ContextBranchPrefix)
+	}
+	if _, err := path.Match(p, "x"); err != nil {
+		return fmt.Errorf("context %q: invalid branch pattern: %w", name, err)
+	}
+	return nil
+}
 
 // ContextConfig overrides env and build settings for one deploy context.
 type ContextConfig struct {
@@ -21,12 +65,12 @@ type ContextBuild struct {
 }
 
 // DeployConfig converts c to the resolver's form.
-func (c ContextConfig) DeployConfig() deploycontext.Config {
-	return deploycontext.Config{Env: c.Env, BuildCommand: c.Build.Command, Publish: c.Build.Publish, BuildArgs: c.Build.Args}
+func (c ContextConfig) DeployConfig() ContextOverrides {
+	return ContextOverrides{Env: c.Env, BuildCommand: c.Build.Command, Publish: c.Build.Publish, BuildArgs: c.Build.Args}
 }
 
 // ValidateContextConfig checks one context's overrides against the app's build type.
-func ValidateContextConfig(label, buildType string, c deploycontext.Config) error {
+func ValidateContextConfig(label, buildType string, c ContextOverrides) error {
 	for k := range c.Env {
 		if k == "" || strings.ContainsAny(k, "= \t\r\n\x00") {
 			return fmt.Errorf("%s: env name %q is not valid", label, k)
@@ -60,7 +104,7 @@ func ValidateContextConfig(label, buildType string, c deploycontext.Config) erro
 
 func (svc Service) validateContexts(name string) error {
 	for ctxName, c := range svc.Contexts {
-		if err := deploycontext.Validate(ctxName); err != nil {
+		if err := ValidateContextName(ctxName); err != nil {
 			return fmt.Errorf("spec: service %q: contexts: %w", name, err)
 		}
 		if err := ValidateContextConfig(fmt.Sprintf("spec: service %q: contexts.%s", name, ctxName), svc.Build.Type, c.DeployConfig()); err != nil {

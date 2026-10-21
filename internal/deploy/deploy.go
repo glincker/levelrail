@@ -18,7 +18,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/extdb"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -193,7 +192,7 @@ type Pipeline struct {
 	staticSites   StaticSiteStore
 	staticRootDir string
 	// staticRouteLimits caps _redirects, _headers and spec routing rules.
-	staticRouteLimits staticroutes.Limits
+	staticRouteLimits spec.StaticLimits
 	staticRecorder    StaticPublishRecorder
 
 	staticExtractor  StaticExtractor // nil is valid: build.command then fails its deploy loudly

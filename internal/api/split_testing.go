@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"slices"
 	"strings"
 	"time"
 
@@ -22,7 +21,7 @@ type SplitTestStore interface {
 	GetRunningSplitTest(ctx context.Context, app string) (store.SplitTest, bool, error)
 	GetLatestSplitTest(ctx context.Context, app string) (store.SplitTest, bool, error)
 	ListRunningSplitTests(ctx context.Context) ([]store.SplitTest, error)
-	UpdateSplitTestVariants(ctx context.Context, id string, vs []splittest.Variant) error
+	UpdateSplitTestVariants(ctx context.Context, id string, vs []store.SplitVariant) error
 	EndSplitTest(ctx context.Context, id, reason string) error
 	AddSplitStats(ctx context.Context, testID string, counts map[string]uint64, at time.Time) error
 	ListSplitStats(ctx context.Context, testID string) ([]store.SplitStat, error)
@@ -148,7 +147,7 @@ func (s *splitService) Start(ctx context.Context, app string, req splitStartRequ
 	if err != nil {
 		return splitTestResource{}, splitErr(http.StatusBadRequest, "%s", err.Error())
 	}
-	t := store.SplitTest{ID: testID, AppName: app, Status: splittest.StatusRunning, Variants: vs, CookieName: cookie, CookieTTLSecs: int(ttl.Seconds())}
+	t := store.SplitTest{ID: testID, AppName: app, Status: splittest.StatusRunning, Variants: toStoreVariants(vs), CookieName: cookie, CookieTTLSecs: int(ttl.Seconds())}
 	if err := s.st.CreateSplitTest(ctx, t); err != nil {
 		if errors.Is(err, store.ErrSplitTestRunning) {
 			return splitTestResource{}, splitErr(http.StatusConflict, "a split test is already running for this app, stop or promote it first")
@@ -213,7 +212,7 @@ func buildSplitVariants(testID string, in []splitVariantInput) []splittest.Varia
 // weight 0 and their share moved to production, so a deleted branch deploy
 // can never send visitors to an error page.
 func (s *splitService) activeVariants(ctx context.Context, t store.SplitTest) ([]splittest.Variant, map[string]string) {
-	vs := slices.Clone(t.Variants)
+	vs := fromStoreVariants(t.Variants)
 	hosts := map[string]string{}
 	moved := 0
 	for i, v := range vs {
@@ -284,7 +283,7 @@ func (s *splitService) SetWeights(ctx context.Context, app string, req splitWeig
 	if !ok {
 		return splitTestResource{}, splitErr(http.StatusNotFound, "no split test is running for this app")
 	}
-	vs := slices.Clone(t.Variants)
+	vs := fromStoreVariants(t.Variants)
 	for key, w := range req.Weights {
 		v, found := splittest.Find(vs, key)
 		if !found {
@@ -299,10 +298,10 @@ func (s *splitService) SetWeights(ctx context.Context, app string, req splitWeig
 	if err := splittest.Validate(vs); err != nil {
 		return splitTestResource{}, splitErr(http.StatusBadRequest, "%s", err.Error())
 	}
-	if err := s.st.UpdateSplitTestVariants(ctx, t.ID, vs); err != nil {
+	if err := s.st.UpdateSplitTestVariants(ctx, t.ID, toStoreVariants(vs)); err != nil {
 		return splitTestResource{}, err
 	}
-	t.Variants = vs
+	t.Variants = toStoreVariants(vs)
 	if domains, err := s.appDomains(ctx, app); err == nil {
 		s.activate(ctx, t, domains)
 	}
@@ -340,7 +339,7 @@ func (s *splitService) Promote(ctx context.Context, app, variantKey string) (spl
 	if !ok {
 		return splitTestResource{}, splitErr(http.StatusNotFound, "no split test is running for this app")
 	}
-	v, found := splittest.Find(t.Variants, variantKey)
+	v, found := splittest.Find(fromStoreVariants(t.Variants), variantKey)
 	if !found {
 		return splitTestResource{}, splitErr(http.StatusBadRequest, "unknown variant %q", variantKey)
 	}
@@ -372,4 +371,21 @@ func (s *splitService) Promote(ctx context.Context, app, variantKey string) (spl
 	s.reg.Clear(t.ID)
 	s.nudge()
 	return s.Get(ctx, app)
+}
+
+// The store keeps its own variant type so it never imports the split rules.
+func toStoreVariants(vs []splittest.Variant) []store.SplitVariant {
+	out := make([]store.SplitVariant, len(vs))
+	for i, v := range vs {
+		out[i] = store.SplitVariant(v)
+	}
+	return out
+}
+
+func fromStoreVariants(vs []store.SplitVariant) []splittest.Variant {
+	out := make([]splittest.Variant, len(vs))
+	for i, v := range vs {
+		out[i] = splittest.Variant(v)
+	}
+	return out
 }

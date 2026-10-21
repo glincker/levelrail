@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/glincker/levelrail/compare/v0.7.0...v0.8.0) (2026-10-21)
+
+
+### Features
+
+* 0.8 with inbox, upgrade recovery, secret rotation and zone spread ([#1316](https://github.com/glincker/levelrail/issues/1316)) ([fec2538](https://github.com/glincker/levelrail/commit/fec2538615e5bdcb25169ccf852afb6a03140d64))
+
+
+### Bug Fixes
+
+* build the CLI for Windows again by splitting the unix-only inode call ([#1325](https://github.com/glincker/levelrail/issues/1325)) ([92c1bae](https://github.com/glincker/levelrail/commit/92c1baeb1b84a9bd7c39bfafc7753b699c83d6fb))
+
 ## [0.7.0](https://github.com/glincker/levelrail/compare/v0.6.0...v0.7.0) (2026-10-20)
 
 

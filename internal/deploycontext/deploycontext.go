@@ -4,18 +4,18 @@
 package deploycontext
 
 import (
-	"fmt"
 	"path"
 	"sort"
-	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 // Context names. Production is the app's own settings and has no stored row.
 const (
-	Production    = "production"
-	DeployPreview = "deploy-preview"
-	BranchDeploy  = "branch-deploy"
-	branchPrefix  = "branch:"
+	Production    = spec.ContextProduction
+	DeployPreview = spec.ContextDeployPreview
+	BranchDeploy  = spec.ContextBranchDeploy
+	branchPrefix  = spec.ContextBranchPrefix
 )
 
 // Sources reported for each resolved value, lowest to highest precedence.
@@ -34,28 +34,10 @@ const MaskedValue = "********"
 func BranchContext(pattern string) string { return branchPrefix + pattern }
 
 // BranchPattern returns the pattern of a "branch:<pattern>" context.
-func BranchPattern(name string) (string, bool) {
-	p, ok := strings.CutPrefix(name, branchPrefix)
-	return p, ok && p != ""
-}
+func BranchPattern(name string) (string, bool) { return spec.ContextBranchPattern(name) }
 
 // Validate checks that name is a settable context and its pattern is valid.
-func Validate(name string) error {
-	if name == Production {
-		return fmt.Errorf("context %q uses the app's own settings, set them on the app itself", Production)
-	}
-	if name == DeployPreview || name == BranchDeploy {
-		return nil
-	}
-	p, ok := BranchPattern(name)
-	if !ok {
-		return fmt.Errorf("unknown context %q: use %s, %s or %s<pattern>", name, DeployPreview, BranchDeploy, branchPrefix)
-	}
-	if _, err := path.Match(p, "x"); err != nil {
-		return fmt.Errorf("context %q: invalid branch pattern: %w", name, err)
-	}
-	return nil
-}
+func Validate(name string) error { return spec.ValidateContextName(name) }
 
 // For picks the context a deploy runs in: a pull request preview is
 // deploy-preview, any other non-production deploy is branch-deploy.
@@ -70,17 +52,7 @@ func For(prNumber int, branch, productionBranch string) string {
 }
 
 // Config is the settings one context can override. Empty fields inherit.
-type Config struct {
-	Env          map[string]string
-	BuildCommand string
-	Publish      string
-	BuildArgs    map[string]string
-}
-
-// Empty reports whether c overrides nothing.
-func (c Config) Empty() bool {
-	return len(c.Env) == 0 && c.BuildCommand == "" && c.Publish == "" && len(c.BuildArgs) == 0
-}
+type Config = spec.ContextOverrides
 
 // EnvValue is one env var as the resolver sees it.
 type EnvValue struct {

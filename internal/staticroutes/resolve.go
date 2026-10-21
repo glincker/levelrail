@@ -77,7 +77,7 @@ func (rs *Ruleset) resolvePath(fsys StatFS, req Request, p string, d *Decision) 
 	fileAtPath := rs.fileAt(fsys, p)
 	for i := range rs.Rules {
 		r := &rs.Rules[i]
-		caps := r.pat.match(p)
+		caps := r.Pattern().Match(p)
 		if caps == nil || !matchQuery(r, q, caps) {
 			continue
 		}
@@ -256,7 +256,7 @@ func (rs *Ruleset) applyHeaders(d *Decision, p string) {
 	idx := map[string]int{}
 	for i := range rs.Headers {
 		b := &rs.Headers[i]
-		if b.pat.match(p) == nil {
+		if b.Pattern().Match(p) == nil {
 			continue
 		}
 		for _, kv := range b.Set {

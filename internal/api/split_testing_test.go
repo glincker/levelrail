@@ -60,7 +60,7 @@ func (f *fakeSplitStore) ListRunningSplitTests(context.Context) ([]store.SplitTe
 	return out, nil
 }
 
-func (f *fakeSplitStore) UpdateSplitTestVariants(_ context.Context, id string, vs []splittest.Variant) error {
+func (f *fakeSplitStore) UpdateSplitTestVariants(_ context.Context, id string, vs []store.SplitVariant) error {
 	for i := range f.tests {
 		if f.tests[i].ID == id {
 			f.tests[i].Variants = vs

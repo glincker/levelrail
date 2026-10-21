@@ -73,7 +73,7 @@ func TestSidecarRoundTripAndMissing(t *testing.T) {
 	if err != nil || out == nil {
 		t.Fatalf("load: %v %v", out, err)
 	}
-	if len(out.Rules) != 1 || !out.Rules[0].Force || !out.Options.SPA || out.Rules[0].pat == nil || out.Headers[0].pat == nil {
+	if len(out.Rules) != 1 || !out.Rules[0].Force || !out.Options.SPA || out.Rules[0].Pattern() == nil || out.Headers[0].Pattern() == nil {
 		t.Fatalf("round trip lost data: %+v", out)
 	}
 }
