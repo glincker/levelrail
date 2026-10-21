@@ -9,6 +9,7 @@ import { formatAbsoluteTime, formatRelativeTime } from '@/lib/relativeTime'
 import type { AttemptOutcome, SelfUpgradeAttempt } from '@/queries/selfUpgrade'
 import { VersionLabel } from './VersionLabel'
 import { StepTimeline } from './StepTimeline'
+import { FailureActions } from './FailureActions'
 
 const OUTCOME_TONE: Record<AttemptOutcome, Tone> = {
   running: 'info',
@@ -82,6 +83,7 @@ export function AttemptRow({
           })}
         </p>
         <StepTimeline attempt={attempt} />
+        {attempt.failure ? <FailureActions attempt={attempt} /> : null}
         {attempt.outcome === 'rolled_back' ? (
           <p className="text-xs text-muted-foreground">
             {t('selfUpgrade.rolledBackNote', { version: attempt.from_version })}{' '}

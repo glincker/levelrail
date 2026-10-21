@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1596 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1599 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1603,6 +1603,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/updates/schedule", Ability: "AbilityRoot", Group: "System", Handler: "handleCreateUpgradeSchedule", Description: ""},
 	{Method: "POST", Path: "/api/v1/updates/self-upgrade", Ability: "AbilityRoot", Group: "System", Handler: "handleSelfUpgradeStart", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/self-upgrade/attempts", Ability: "AbilityRead", Group: "System", Handler: "handleSelfUpgradeAttempts", Description: ""},
+	{Method: "POST", Path: "/api/v1/updates/self-upgrade/attempts/{id}/fix", Ability: "AbilityWrite", Group: "System", Handler: "handleSelfUpgradeAttemptFix", Description: ""},
+	{Method: "POST", Path: "/api/v1/updates/self-upgrade/attempts/{id}/retry", Ability: "AbilityWrite", Group: "System", Handler: "handleSelfUpgradeAttemptRetry", Description: ""},
+	{Method: "POST", Path: "/api/v1/updates/self-upgrade/attempts/{id}/rollback", Ability: "AbilityWrite", Group: "System", Handler: "handleSelfUpgradeAttemptRollback", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/self-upgrade/plan", Ability: "AbilityRead", Group: "System", Handler: "handleSelfUpgradePlan", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/settings", Ability: "AbilityRoot", Group: "System", Handler: "handleGetUpdateSettings", Description: "Channel/auto-update settings are AbilityRoot on both verbs: see handleGetUpdateSettings' own doc comment (updates_settings.go)."},
 	{Method: "PUT", Path: "/api/v1/updates/settings", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateSettings", Description: ""},

@@ -112,6 +112,9 @@ System endpoints for:
 | GET | /api/v1/system/resilience | AbilityRead | handleGetResilience |
 | POST | /api/v1/system/resilience/simulate | AbilityWrite | handleSimulateResilience |
 | POST | /api/v1/system/resilience/snapshot | AbilityRoot | handleResilienceFix |
+| POST | /api/v1/updates/self-upgrade/attempts/{id}/fix | AbilityWrite | handleSelfUpgradeAttemptFix |
+| POST | /api/v1/updates/self-upgrade/attempts/{id}/retry | AbilityWrite | handleSelfUpgradeAttemptRetry |
+| POST | /api/v1/updates/self-upgrade/attempts/{id}/rollback | AbilityWrite | handleSelfUpgradeAttemptRollback |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

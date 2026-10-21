@@ -409,6 +409,7 @@ Usage:
   %[1]s upgrade [--no-backup] [flags]                          preflight checks, backup, and the command that upgrades (never upgrades itself)
   %[1]s upgrade --list [--channel stable|beta|all]             last 5 releases with a database schema compatibility verdict
   %[1]s upgrade --rollback-plan <version>                      read-only rollback preview, applied on the host
+  %[1]s upgrade retry|rollback <attempt>                       re-run a failed upgrade attempt, or restore its pre-upgrade restore point
   %[1]s upgrade --history [--json] | --ack <id>                recorded upgrades, rollbacks and installs, and acknowledging one
   %[1]s updates restore-points list|restore <id> [--yes]       pre-upgrade restore points and putting one back
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published

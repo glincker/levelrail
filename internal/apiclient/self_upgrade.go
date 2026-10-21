@@ -63,6 +63,32 @@ type SelfUpgradeAttempt struct {
 
 	DatabaseRestored  bool `json:"database_restored"`
 	RolledBackMinutes int  `json:"rolled_back_minutes"`
+
+	Failure *SelfUpgradeFailure `json:"failure,omitempty"`
+}
+
+// SelfUpgradeFailure is the typed cause and fix buttons of a failed attempt.
+type SelfUpgradeFailure struct {
+	Cause        string `json:"cause"`
+	Primary      string `json:"primary"`
+	FixID        string `json:"fix_id,omitempty"`
+	Retryable    bool   `json:"retryable"`
+	Rollbackable bool   `json:"rollbackable"`
+	CLI          string `json:"cli,omitempty"`
+}
+
+// RetrySelfUpgradeAttempt calls POST .../self-upgrade/attempts/{id}/retry.
+func (c *Client) RetrySelfUpgradeAttempt(ctx context.Context, id string) (SelfUpgradeStarted, error) {
+	var out SelfUpgradeStarted
+	err := c.do(ctx, http.MethodPost, "/api/v1/updates/self-upgrade/attempts/"+url.PathEscape(id)+"/retry", nil, &out)
+	return out, err
+}
+
+// RollbackSelfUpgradeAttempt calls POST .../self-upgrade/attempts/{id}/rollback.
+func (c *Client) RollbackSelfUpgradeAttempt(ctx context.Context, id string) (RestoreStarted, error) {
+	var out RestoreStarted
+	err := c.do(ctx, http.MethodPost, "/api/v1/updates/self-upgrade/attempts/"+url.PathEscape(id)+"/rollback", nil, &out)
+	return out, err
 }
 
 // RestorePoint is one kept pre-upgrade restore point.

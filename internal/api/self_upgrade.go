@@ -394,6 +394,8 @@ type selfUpgradeAttemptItem struct {
 	// database snapshot back and how many minutes of changes it discarded.
 	DatabaseRestored  bool `json:"database_restored"`
 	RolledBackMinutes int  `json:"rolled_back_minutes"`
+	// Failure types the failed step and names the buttons that can fix it.
+	Failure *selfupgrade.StepFailure `json:"failure,omitempty"`
 }
 
 // handleSelfUpgradeAttempts handles GET /api/v1/updates/self-upgrade/attempts.
@@ -431,6 +433,7 @@ func (rt *Router) handleSelfUpgradeAttempts(w http.ResponseWriter, r *http.Reque
 				item.Log = append(item.Log, selfUpgradeLogItem{At: l.At.UTC().Format(time.RFC3339), Step: l.Step, Line: l.Line})
 			}
 		}
+		item.Failure = rt.attemptFailure(item)
 		out = append(out, item)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"attempts": out})

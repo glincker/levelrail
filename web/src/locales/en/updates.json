@@ -285,6 +285,31 @@
       "lastOk": "Last successful upgrade",
       "never": "Never",
       "failed": "Failed in the last 30 days"
+    },
+    "failure": {
+      "title": "What went wrong",
+      "cause": {
+        "disk_full": "The server ran out of disk space.",
+        "network": "The release could not be downloaded.",
+        "checksum_mismatch": "The downloaded file did not match its checksum.",
+        "signature_invalid": "The release signature could not be verified, so it was refused.",
+        "binary_unusable": "The new program did not pass its start-up probe.",
+        "backup_failed": "The pre-upgrade backup could not be taken.",
+        "migration_incompatible": "The database migration dry run failed.",
+        "service_control": "The service could not be stopped or started.",
+        "swap_failed": "The new program could not be put in place.",
+        "not_healthy": "The new release did not become healthy.",
+        "guard_refused": "The upgrade was refused before it started.",
+        "unknown": "The step failed for a reason this page does not recognise."
+      },
+      "fix": "Free up disk space",
+      "retry": "Retry",
+      "rollback": "Roll back",
+      "fixed": "Cleanup finished. You can retry now.",
+      "stillFailing": "Cleanup ran but the problem is still there.",
+      "started": "Started on the host. Follow it in the timeline.",
+      "cliSummary": "Fix via CLI",
+      "cliHint": "Run on a machine logged in to this server:"
     }
   },
   "readiness": {

@@ -66,6 +66,37 @@ export interface SelfUpgradeAttempt {
   finished_at: string
   database_restored?: boolean
   rolled_back_minutes?: number
+  failure?: SelfUpgradeFailure
+}
+
+export interface SelfUpgradeFailure {
+  cause: string
+  primary: 'cleanup' | 'retry' | 'rollback' | 'none'
+  fix_id?: string
+  retryable: boolean
+  rollbackable: boolean
+  cli?: string
+}
+
+export type AttemptAction = 'fix' | 'retry' | 'rollback'
+
+export function useAttemptAction() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      id: string
+      action: AttemptAction
+    }): Promise<{ outcome?: string; detail?: string }> => {
+      const res = await fetch(
+        `/api/v1/updates/self-upgrade/attempts/${encodeURIComponent(input.id)}/${input.action}`,
+        { method: 'POST' },
+      )
+      if (!res.ok) throw await failure(res, `${input.action} upgrade attempt`)
+      return (await res.json()) as { outcome?: string; detail?: string }
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: selfUpgradeKeys.attempts() }),
+  })
 }
 
 export interface ReadinessCheck {
