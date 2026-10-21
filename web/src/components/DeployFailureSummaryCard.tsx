@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import {
   ArrowCounterClockwiseIcon,
   ArrowsClockwiseIcon,
@@ -17,6 +17,9 @@ import {
 } from '../lib/deployFailureSummary'
 import { useRedeployApp } from '../hooks/useRedeployApp'
 import { DiagnosisFixes } from './DiagnosisFixes'
+import { CopyReportButton } from './deployDetail/CopyReportButton'
+import { DeployFixRow } from './deployDetail/DeployFixRow'
+import { useDeployDetailT } from './deployDetail/useDeployDetailT'
 import { useTriggerDeploy } from '../queries/deploys'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -33,6 +36,7 @@ export function DeployFailureSummaryCard({
   stages,
   conditions,
   lines,
+  extraActions,
 }: {
   appName: string
   attempt: DeployAttempt
@@ -40,7 +44,10 @@ export function DeployFailureSummaryCard({
   stages: DeployStage[]
   conditions: ReconcileCondition[]
   lines: LogLine[]
+  // Slot for additional recovery actions (e.g. a retry menu) next to the built-in ones.
+  extraActions?: ReactNode
 }) {
+  const { t } = useDeployDetailT()
   const headingId = useId()
   const messageId = useId()
   const [expanded, setExpanded] = useState(false)
@@ -154,6 +161,11 @@ export function DeployFailureSummaryCard({
             ) : null}
           </dl>
           <DiagnosisFixes appName={appName} deployId={attempt.id} />
+          <DeployFixRow
+            appName={appName}
+            stage={summary.stageKey}
+            causeId={summary.cause?.id}
+          />
           <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
@@ -186,7 +198,31 @@ export function DeployFailureSummaryCard({
                 Roll back to last good
               </Button>
             ) : null}
+            <CopyReportButton
+              getInput={() => ({
+                appName,
+                deployId: attempt.id,
+                stageLabel: summary.stageLabel,
+                error: summary.message,
+                causeTitle: summary.cause?.title,
+                causeHint: summary.cause?.hint,
+                lines: lines.map((l) => l.line),
+                config: {
+                  Image: attempt.image,
+                  Source: attempt.source,
+                  Branch: attempt.branch,
+                  Commit: attempt.commit_sha?.slice(0, 12),
+                  Framework: attempt.detected_framework,
+                },
+              })}
+            />
+            {extraActions}
           </div>
+          {lastGood ? (
+            <p className="text-xs text-muted-foreground">
+              {t('rollback.note', { image: lastGood.image })}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
     </section>

@@ -35,6 +35,8 @@ export function LogRow({
   const level = detectLogLevel(logLine.line)
   const tag = level ? LEVEL_TAG[level] : null
   const isStderr = logLine.stream === 'stderr'
+  // Level-detected errors on stdout (build tools often print to stdout) get the same highlight.
+  const isError = isStderr || level === 'error'
   const isSystem = logLine.stream === 'system'
   const pretty = expanded ? prettyJsonLine(logLine.line) : null
 
@@ -94,7 +96,7 @@ export function LogRow({
         aria-expanded={expanded}
         style={{ height: LOG_ROW_HEIGHT_PX }}
         className={`flex w-full items-center gap-2 border-l-2 px-3 text-left whitespace-pre focus-visible:bg-neutral-900 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none focus-visible:ring-inset ${
-          isStderr
+          isError
             ? 'border-red-500 bg-red-950/30 text-red-400'
             : 'border-transparent text-neutral-200 hover:bg-neutral-900'
         }`}
