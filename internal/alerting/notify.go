@@ -38,6 +38,9 @@ type Event struct {
 	LogLines []string
 	// CertNotices is set only on a firing cert_expiry event.
 	CertNotices []string
+	// CertFacts and CertBaseURL drive the actionable cert expiry email; the base URL is empty when no public address is configured.
+	CertFacts   []CertFact
+	CertBaseURL string
 	// PatchNotices is set only on a firing patch_status event.
 	PatchNotices []string
 	// DiskSpaceNotices is set only on a firing node_disk_space event.
@@ -772,6 +775,10 @@ func (n emailNotifier) Notify(ctx context.Context, ev Event) error {
 		return fmt.Errorf("alerting: notify: no notify_url (destination email address) configured")
 	}
 
+	if !ev.Resolved && len(ev.CertFacts) > 0 {
+		return n.notifyCert(ctx, ev)
+	}
+
 	subject := fmt.Sprintf("[Levelrail] %s", ev.Rule.Name)
 	if ev.Resolved {
 		subject = fmt.Sprintf("[Levelrail][RESOLVED] %s", ev.Rule.Name)
@@ -847,4 +854,28 @@ func sendEmailWithRetry(ctx context.Context, sender email.Sender, to, subject, b
 		delay *= 2
 	}
 	return lastErr
+}
+
+func (n emailNotifier) notifyCert(ctx context.Context, ev Event) error {
+	f := ev.CertFacts[0]
+	left := fmt.Sprintf("expires in %d days", f.DaysLeft)
+	switch {
+	case f.DaysLeft < 0:
+		left = "has expired"
+	case f.DaysLeft == 0:
+		left = "expires today"
+	case f.DaysLeft == 1:
+		left = "expires in 1 day"
+	}
+	vals := map[string]string{"domain": f.Domain, "issuer": f.Issuer, "days_left": left, "reason": f.Reason}
+	key := mailtemplates.EventCertExpiryPlain
+	if l := BuildCertLinks(ev.CertBaseURL, f, ""); l.Primary != "" {
+		key = mailtemplates.EventCertExpiry
+		vals["primary_label"], vals["primary_url"], vals["inbox_url"], vals["settings_url"] = l.PrimaryLabel, l.Primary, l.Inbox, l.Settings
+	}
+	subject := fmt.Sprintf("Certificate for %s %s", f.Domain, left)
+	if err := sendTemplated(ctx, n.sender, key, n.to, vals, subject, f.Notice()); err != nil {
+		return fmt.Errorf("alerting: notify: %w", err)
+	}
+	return nil
 }

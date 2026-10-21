@@ -7,13 +7,16 @@ import { domainPoliciesQueryOptions } from '../../queries/domainPolicies'
 interface DomainSearch {
   app: string
   tab?: DomainTab
+  fix?: 'renew' | 'dns'
 }
 
 // Plain function rather than zod so validateSearch stays out of the eagerly loaded bundle.
 function validateDomainSearch(search: Record<string, unknown>): DomainSearch {
   const app = typeof search.app === 'string' ? search.app : ''
   const tab = DOMAIN_TABS.find((t) => t === search.tab)
-  return tab ? { app, tab } : { app }
+  const fix =
+    search.fix === 'renew' || search.fix === 'dns' ? search.fix : undefined
+  return { app, ...(tab ? { tab } : {}), ...(fix ? { fix } : {}) }
 }
 
 export const Route = createFileRoute('/domains/$domain')({

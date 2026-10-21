@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BellSlashIcon, CheckIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
@@ -18,6 +18,7 @@ import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import { formatAge } from '../lib/format'
+import { parseCertNotice } from './certNotice'
 import {
   useInbox,
   useInboxPrefs,
@@ -125,9 +126,17 @@ export function AlertInboxPanel() {
   )
 }
 
+const CertExpiryInboxCard = lazy(() =>
+  import('./CertExpiryInboxCard').then((m) => ({
+    default: m.CertExpiryInboxCard,
+  })),
+)
+
 function InboxRow({ item, onRead }: { item: InboxItem; onRead: () => void }) {
   const { t } = useTranslation('inbox')
   const target = item.app ?? item.node ?? ''
+  const certNotice =
+    item.rule_kind === 'cert_expiry' ? parseCertNotice(item.detail) : null
   return (
     <li className="flex items-start gap-3 px-3 py-2.5">
       <span
@@ -151,8 +160,15 @@ function InboxRow({ item, onRead }: { item: InboxItem; onRead: () => void }) {
         </p>
         <p className="text-xs text-muted-foreground">
           {formatAge(item.at)}
-          {item.detail ? ` - ${item.detail}` : ''}
+          {item.detail && !certNotice ? ` - ${item.detail}` : ''}
         </p>
+        {certNotice && item.event === 'fired' ? (
+          <div className="mt-2">
+            <Suspense fallback={null}>
+              <CertExpiryInboxCard notice={certNotice} />
+            </Suspense>
+          </div>
+        ) : null}
       </div>
       <Badge variant="outline">
         {t(`severity.${item.severity ?? 'warning'}`)}

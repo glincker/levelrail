@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1635 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1637 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -858,6 +858,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/ai/sessions/{id}/messages", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateAIChatMessage", Description: ""},
 	{Method: "GET", Path: "/api/v1/ai/usage", Ability: "AbilityRead", Group: "Other", Handler: "handleAIUsage", Description: ""},
 	{Method: "GET", Path: "/api/v1/alert-defaults", Ability: "AbilityRead", Group: "Other", Handler: "handleListDefaultAlerts", Description: ""},
+	{Method: "GET", Path: "/api/v1/alert-defaults/cert-expiry/email", Ability: "AbilityRead", Group: "Other", Handler: "handleGetCertExpiryEmail", Description: ""},
+	{Method: "PUT", Path: "/api/v1/alert-defaults/cert-expiry/email", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetCertExpiryEmail", Description: ""},
 	{Method: "POST", Path: "/api/v1/alert-defaults/reset", Ability: "AbilityWrite", Group: "Other", Handler: "handleResetDefaultAlerts", Description: ""},
 	{Method: "PUT", Path: "/api/v1/alert-defaults/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetDefaultAlertEnabled", Description: ""},
 	{Method: "GET", Path: "/api/v1/alert-history", Ability: "AbilityRead", Group: "Other", Handler: "handleListAlertHistory", Description: ""},

@@ -15,6 +15,8 @@ type AlertDefaults interface {
 	ListDefaultRules(ctx context.Context) ([]alerting.Rule, error)
 	SetDefaultRuleEnabled(ctx context.Context, id string, enabled bool) (*alerting.Rule, error)
 	ResetDefaultRules(ctx context.Context) ([]alerting.Rule, error)
+	CertExpiryEmail(ctx context.Context) (bool, error)
+	SetCertExpiryEmail(ctx context.Context, address string, on bool) error
 }
 
 // WithAlertDefaults enables the default alert list and toggle routes.

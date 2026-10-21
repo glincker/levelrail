@@ -15,6 +15,8 @@ func (rt *Router) registerAlertNoiseRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/alert-history", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppAlertHistory))
 	mux.HandleFunc("GET /api/v1/alert-defaults", rt.requireAbility(AbilityRead, rt.handleListDefaultAlerts))
 	mux.HandleFunc("POST /api/v1/alert-defaults/reset", rt.requireAbility(AbilityWrite, rt.handleResetDefaultAlerts))
+	mux.HandleFunc("GET /api/v1/alert-defaults/cert-expiry/email", rt.requireAbility(AbilityRead, rt.handleGetCertExpiryEmail))
+	mux.HandleFunc("PUT /api/v1/alert-defaults/cert-expiry/email", rt.requireAbility(AbilityWrite, rt.handleSetCertExpiryEmail))
 	mux.HandleFunc("PUT /api/v1/alert-defaults/{id}", rt.requireAbility(AbilityWrite, rt.handleSetDefaultAlertEnabled))
 	mux.HandleFunc("GET /api/v1/inbox", rt.requireAbility(AbilityRead, rt.handleListInbox))
 	mux.HandleFunc("GET /api/v1/inbox/unread-count", rt.requireAbility(AbilityRead, rt.handleInboxUnreadCount))

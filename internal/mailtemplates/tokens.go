@@ -49,6 +49,14 @@ var registry = []Token{
 	{"disown_link", "Link to report a sign-in as not yours", "https://deploy.example.com/sign-in-alert?token=abc", ScopeEvent},
 	{"new_email", "New email address", "sam.new@example.com", ScopeEvent},
 	{"confirm_link", "Link to confirm a new email address", "https://deploy.example.com/settings/account#confirm_email=abc", ScopeEvent},
+	{"domain", "Domain name", "app.example.com", ScopeEvent},
+	{"issuer", "Certificate issuer", "Let's Encrypt", ScopeEvent},
+	{"days_left", "Time left, as a phrase", "expires in 2 days", ScopeEvent},
+	{"reason", "Why attention is needed", "Renewal is failing", ScopeEvent},
+	{"primary_label", "Label of the main action", "Renew now", ScopeEvent},
+	{"primary_url", "Dashboard link for the main action", "https://deploy.example.com/domains/app.example.com", ScopeEvent},
+	{"inbox_url", "Dashboard link to the Inbox", "https://deploy.example.com/inbox", ScopeEvent},
+	{"settings_url", "Dashboard link to notification settings", "https://deploy.example.com/settings/notification-channels", ScopeEvent},
 	{"expires_in", "How long a link or code stays valid", "7 days", ScopeEvent},
 }
 
