@@ -1327,6 +1327,7 @@ Compares the running version with the latest release, runs the preflight checks 
 levelrail-cli upgrade --plan [--version TAG]
 levelrail-cli upgrade --apply [--version TAG] [--ack-breaking ID,...] [--no-wait]
 levelrail-cli upgrade --attempts
+levelrail-cli upgrade status
 levelrail-cli upgrade backup-now
 levelrail-cli updates restore-points list
 levelrail-cli updates restore-points restore <id> --yes

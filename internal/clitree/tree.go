@@ -291,7 +291,7 @@ var Tree = map[string]*Node{
 	"status":                   nil,
 	"version":                  nil,
 	"changelog":                nil,
-	"upgrade":                  {Subs: map[string]*Node{"schedule": {Subs: map[string]*Node{"show": nil, "cancel": nil}}, "auto": {Subs: map[string]*Node{"get": nil, "set": nil}}, "backup-now": nil, "retry": nil, "rollback": nil}},
+	"upgrade":                  {Subs: map[string]*Node{"schedule": {Subs: map[string]*Node{"show": nil, "cancel": nil}}, "auto": {Subs: map[string]*Node{"get": nil, "set": nil}}, "backup-now": nil, "status": nil, "retry": nil, "rollback": nil}},
 	"readiness":                nil,
 	"ai-control":               {Subs: map[string]*Node{"status": nil, "set": nil, "revoke-agents": nil}},
 	"network":                  {Subs: map[string]*Node{"mesh": {Subs: map[string]*Node{"status": nil, "enable": nil, "disable": nil}}}},

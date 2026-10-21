@@ -28,6 +28,8 @@ func runUpgradeSubcommand(prog string, args []string, stdout, stderr io.Writer, 
 		return runUpgradeAttemptAction(prog, args[0], args[1:], stdout, stderr, lookupEnv), true
 	case "backup-now":
 		return runUpgradeBackupNow(prog, args[1:], stdout, stderr, lookupEnv), true
+	case "status":
+		return runUpgradeStatus(prog, args[1:], stdout, stderr, lookupEnv), true
 	}
 	return 0, false
 }

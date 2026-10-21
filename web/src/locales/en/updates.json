@@ -43,6 +43,8 @@
     "retry": "Try again"
   },
   "history": {
+    "olderSummary": "Older releases ({{count}})",
+    "olderWhy": "These releases support an older database format than yours, so they are not offered as upgrades. Going back to one means restoring a backup, which loses data written since.",
     "title": "Release history and rollback",
     "description": "The last five releases. Pick one to preview exactly what returning to it would do. Nothing is applied from this page: a rollback is run on the server so the control plane never replaces itself.",
     "viewLabel": "Show",
@@ -343,6 +345,24 @@
     "blockedTitle_other": "{{count}} checks need attention before you can upgrade",
     "waitingTitle": "Waiting for the release to finish publishing",
     "schemaBlockedTitle": "Not offering {{version}}: it is older than your database",
+    "hero": {
+      "aheadTitle": "You are running a development build",
+      "aheadBody": "You are running a development build (schema {{schema}}). The latest release, {{latest}}, is older than your data, so there is nothing to upgrade to. The next release that includes your data format will be offered automatically.",
+      "aheadBodyNoSchema": "You are running a development build. The latest release, {{latest}}, is older than your data, so there is nothing to upgrade to. The next release that includes your data format will be offered automatically.",
+      "checkAgain": "Check again",
+      "checking": "Checking...",
+      "notes": "View release notes",
+      "rollback": "Roll back to {{version}}",
+      "rollbackNone": "Roll back",
+      "rollbackNoneWhy": "No restore point for an older version exists on this host yet.",
+      "planTitle": "Upgrade plan",
+      "planFromTo": "{{from}} to {{to}}",
+      "planMigrations_one": "1 database migration to apply",
+      "planMigrations_other": "{{count}} database migrations to apply",
+      "planMigrationsUnknown": "Database migrations: not reported by the release",
+      "planRestorePoint": "A restore point is taken first, so the previous version and its data can come back.",
+      "planVerify": "The new release has {{seconds}} seconds to prove it is healthy before it is kept."
+    },
     "confirmTitle": "Upgrade to {{version}}",
     "confirmDescription": "This server will go from {{current}} to {{target}}. Your apps keep running.",
     "willBackup": "A backup of the control plane database is taken and kept before anything changes.",

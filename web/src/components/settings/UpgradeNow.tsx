@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
 import { toast } from '../ui/toast'
@@ -24,6 +24,8 @@ import { UpgradeCheckRow } from './UpgradeCheckRow'
 import { UpgradeConfirmDialog } from './UpgradeConfirmDialog'
 import { EdgeUpdateGuidance } from './EdgeUpdateGuidance'
 import { UpgradeProgress } from './UpgradeProgress'
+import { UpgradeStateHero } from './UpgradeStateHero'
+import { UpgradePlanPreview } from './UpgradePlanPreview'
 
 const POLL_MS = UPGRADE_POLL_MS
 const RECENT_MS = 15 * 60_000
@@ -62,6 +64,8 @@ export function UpgradeNow() {
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [dismissed, setDismissed] = useState('')
+  const [rechecking, setRechecking] = useState(false)
+  const queryClient = useQueryClient()
 
   const attempts = useQuery({
     ...selfUpgradeAttemptsQueryOptions(false),
@@ -118,18 +122,20 @@ export function UpgradeNow() {
     const schemaBlock = pre?.checks.find(
       (c) => c.code === 'schema_compat' && c.status === 'fail',
     )
-    if (!recent && schemaBlock) {
+    if (!recent && pre && (pre.state === 'ahead_of_releases' || schemaBlock)) {
       return (
-        <div className="space-y-2">
-          <p className="text-sm font-medium">
-            {t('upgradeNow.schemaBlockedTitle', {
-              version: pre?.latest_version ?? '',
-            })}
-          </p>
-          <ul className="space-y-3" aria-label={t('preflight.checksLabel')}>
-            <UpgradeCheckRow check={schemaBlock} />
-          </ul>
-        </div>
+        <UpgradeStateHero
+          pre={pre}
+          checking={rechecking}
+          onCheckAgain={() => {
+            setRechecking(true)
+            void fetch('/api/v1/updates/preflight?refresh=1')
+              .then(() =>
+                queryClient.invalidateQueries({ queryKey: ['updates'] }),
+              )
+              .finally(() => setRechecking(false))
+          }}
+        />
       )
     }
     if (!recent) return null
@@ -228,6 +234,7 @@ export function UpgradeNow() {
           </ul>
         </div>
       ) : null}
+      <UpgradePlanPreview pre={pre} />
       {planData && planData.signature_pinned === false ? (
         <p className="flex items-start gap-2 text-sm text-muted-foreground">
           <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0" />

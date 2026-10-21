@@ -107,6 +107,8 @@ export function ReleaseHistory() {
     releaseHistoryQueryOptions(view),
   )
   const activeView: HistoryView = view ?? data?.view ?? 'stable'
+  const all = data ? [...data.releases, ...data.retained_only] : []
+  const older = all.filter((r) => r.state === 'blocked_older')
 
   return (
     <div className="space-y-4">
@@ -170,15 +172,38 @@ export function ReleaseHistory() {
               </p>
             </div>
           ) : (
-            <ul className="divide-y">
-              {[...data.releases, ...data.retained_only].map((r) => (
-                <ReleaseRow
-                  key={r.version}
-                  release={r}
-                  onPreview={setPreviewing}
-                />
-              ))}
-            </ul>
+            <>
+              <ul className="divide-y">
+                {all
+                  .filter((r) => r.state !== 'blocked_older')
+                  .map((r) => (
+                    <ReleaseRow
+                      key={r.version}
+                      release={r}
+                      onPreview={setPreviewing}
+                    />
+                  ))}
+              </ul>
+              {older.length > 0 ? (
+                <details className="rounded-md border px-3 py-2">
+                  <summary className="cursor-pointer text-sm font-medium">
+                    {t('history.olderSummary', { count: older.length })}
+                  </summary>
+                  <p className="pt-2 text-xs text-muted-foreground">
+                    {t('history.olderWhy')}
+                  </p>
+                  <ul className="divide-y">
+                    {older.map((r) => (
+                      <ReleaseRow
+                        key={r.version}
+                        release={r}
+                        onPreview={setPreviewing}
+                      />
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
+            </>
           )}
         </>
       )}

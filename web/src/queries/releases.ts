@@ -28,6 +28,7 @@ export interface ReleaseHistoryItem {
   schema_version: number | null
   schema_source: 'retained' | 'manifest' | 'unknown'
   verdict: SchemaVerdict
+  state?: string
   notes: string
 }
 

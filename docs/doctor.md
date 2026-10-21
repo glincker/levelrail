@@ -66,6 +66,7 @@ One or more checks failed. See above.
 | Group | Check | What it looks at |
 | --- | --- | --- |
 | Container runtime | `docker` | Daemon reachable, engine version |
+| | `install_state` | Whether an upgrade is available, you are up to date, or this is a development build whose database is newer than every release |
 | | `container_runtime`, `docker_privilege`, `docker_guard`, `container_hardening` | Engine kind, privileges, API guard, hardening |
 | | `network_pool` | Docker network address pool usage, with an auto fix for orphans |
 | | `docker_orphans` | Unreferenced images, build cache, anonymous volumes, orphan networks (`APP_DOCTOR_ORPHAN_WARN_BYTES`) |
