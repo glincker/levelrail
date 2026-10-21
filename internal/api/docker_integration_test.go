@@ -1,12 +1,16 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/dockerlint"
 )
 
@@ -49,6 +53,32 @@ func TestDockerHealthWithoutClient(t *testing.T) {
 	}
 	if res.Reachable {
 		t.Fatalf("no client configured must not report reachable: %+v", res)
+	}
+}
+
+type hungDockerPinger struct{ since time.Time }
+
+func (h *hungDockerPinger) Ping(context.Context) error {
+	return fmt.Errorf("ping: %w", docker.ErrDaemonUnresponsive)
+}
+
+func (h *hungDockerPinger) UnresponsiveSince() time.Time { return h.since }
+
+func TestDockerHealthReportsUnresponsive(t *testing.T) {
+	rt, db := newTestRouter(t)
+	WithDockerPinger(&hungDockerPinger{since: time.Now().Add(-time.Minute)})(rt)
+	cookie := loginTestSession(t, rt, db)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/docker/health", ""))
+	var res dockerHealthResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatal(err)
+	}
+	if res.Reachable || !res.Unresponsive || res.UnresponsiveSince == nil {
+		t.Fatalf("want unresponsive with since set: %+v", res)
+	}
+	if len(res.Checks) == 0 || res.Checks[0].Message != dockerNotRespondingMessage {
+		t.Fatalf("check message = %+v", res.Checks)
 	}
 }
 

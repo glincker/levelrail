@@ -22,6 +22,8 @@ export interface DockerHealth {
   disk_reclaimable_bytes: number
   checked_at: string
   checks: DockerHealthCheck[]
+  unresponsive: boolean
+  unresponsive_since?: string
 }
 
 export interface DockerLintFinding {
@@ -71,6 +73,19 @@ export function useDockerHealth() {
     queryKey: dockerIntegrationKeys.health,
     queryFn: () =>
       getJson<DockerHealth>('/api/v1/docker/health', 'docker health failed'),
+  })
+}
+
+const DOCKER_DEGRADED_POLL_MS = 15_000
+
+export function useDockerDegradedPoll() {
+  return useQuery({
+    queryKey: dockerIntegrationKeys.health,
+    queryFn: () =>
+      getJson<DockerHealth>('/api/v1/docker/health', 'docker health failed'),
+    retry: false,
+    refetchInterval: DOCKER_DEGRADED_POLL_MS,
+    refetchIntervalInBackground: false,
   })
 }
 

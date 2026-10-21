@@ -32,8 +32,9 @@ import (
 // API over the local socket. It never shells out to the `docker` CLI,
 // per the project's Docker Engine API only rule.
 type Client struct {
-	cli *dockerclient.Client
-	cdi cdiCache
+	cli   *dockerclient.Client
+	guard *guardTransport
+	cdi   cdiCache
 	// instanceLabelKey/instanceLabelValue, when both set (WithInstanceLabel),
 	// are stamped onto every container and network this Client creates
 	// (Create, EnsureNetwork) and used to scope every by-name lookup this
@@ -107,16 +108,26 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 		return nil, fmt.Errorf("docker: new client: %w", err)
 	}
 	hc := probe.HTTPClient()
-	hc.Transport = &guardTransport{base: hc.Transport, timeout: envDuration(envCallTimeout, defaultCallTimeout)}
+	guard := &guardTransport{base: hc.Transport, timeout: envDuration(envCallTimeout, defaultCallTimeout)}
+	hc.Transport = guard
 	cli, err := dockerclient.NewClientWithOpts(append(dockerOpts, dockerclient.WithHTTPClient(hc))...)
 	if err != nil {
 		return nil, fmt.Errorf("docker: new client: %w", err)
 	}
 	_ = probe.Close()
 	c.cli = cli
+	c.guard = guard
 	c.stop = make(chan struct{})
 	negotiateUpFront(cli, envDuration(envBootTimeout, defaultBootTimeout), c.stop)
 	return c, nil
+}
+
+// UnresponsiveSince reports when the daemon stopped answering, zero while it answers.
+func (c *Client) UnresponsiveSince() time.Time {
+	if c.guard == nil {
+		return time.Time{}
+	}
+	return c.guard.unresponsiveSince()
 }
 
 // Runtime reports which container engine and privilege mode this Client

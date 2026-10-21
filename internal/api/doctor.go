@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/kit/diskspace"
 )
 
@@ -112,6 +113,9 @@ func (rt *Router) doctorCheckDocker(ctx context.Context) doctorCheckResource {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "no Docker reachability check configured"}
 	}
 	if err := rt.pingDocker(ctx); err != nil {
+		if errors.Is(err, docker.ErrDaemonUnresponsive) {
+			return doctorCheckResource{Code: code, Name: name, Status: doctorStatusFail, Message: dockerNotRespondingMessage}
+		}
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusFail, Message: err.Error()}
 	}
 	msg := "reachable"

@@ -55,6 +55,7 @@ type guardTransport struct {
 	base      http.RoundTripper
 	timeout   time.Duration
 	downUntil atomic.Int64
+	downSince atomic.Int64
 }
 
 func (g *guardTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -81,7 +82,9 @@ func (g *guardTransport) timed(req *http.Request, d time.Duration) (*http.Respon
 	timer := time.AfterFunc(d, cancel)
 	resp, err := g.base.RoundTrip(req.WithContext(ctx))
 	if !timer.Stop() && req.Context().Err() == nil {
-		g.downUntil.Store(time.Now().Add(breakerHold).UnixNano())
+		now := time.Now()
+		g.downUntil.Store(now.Add(breakerHold).UnixNano())
+		g.downSince.CompareAndSwap(0, now.UnixNano())
 		cancel()
 		if resp != nil {
 			_ = resp.Body.Close()
@@ -93,8 +96,18 @@ func (g *guardTransport) timed(req *http.Request, d time.Duration) (*http.Respon
 		return nil, err
 	}
 	g.downUntil.Store(0)
+	g.downSince.Store(0)
 	resp.Body = &closeCancel{ReadCloser: resp.Body, cancel: cancel}
 	return resp, nil
+}
+
+// unresponsiveSince is when the daemon first stopped answering, zero while it answers.
+func (g *guardTransport) unresponsiveSince() time.Time {
+	n := g.downSince.Load()
+	if n == 0 {
+		return time.Time{}
+	}
+	return time.Unix(0, n)
 }
 
 type closeCancel struct {
