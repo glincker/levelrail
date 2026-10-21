@@ -103,25 +103,42 @@ func NewAzure(credentialJSON string) (*Azure, error) {
 	if err != nil {
 		return nil, err
 	}
-	var ts oauth2.TokenSource
-	if cred.ClientSecret == "" && cred.FederatedTokenFile != "" {
-		// oauth2.ReuseTokenSource caches the AAD access token until it
-		// expires, so azureFederatedTokenSource's own file read only
-		// happens on that same cadence, not on every provider API call.
-		ts = oauth2.ReuseTokenSource(nil, newAzureFederatedTokenSource(cred))
-	} else {
-		cfg := clientcredentials.Config{
-			ClientID:     cred.ClientID,
-			ClientSecret: cred.ClientSecret,
-			TokenURL:     "https://login.microsoftonline.com/" + cred.TenantID + "/oauth2/v2.0/token",
-			Scopes:       []string{"https://management.azure.com/.default"},
-		}
-		// context.Background: this token source is held for the
-		// provisioner's lifetime and refreshes itself on its own
-		// schedule, not tied to any single caller's request context.
-		ts = cfg.TokenSource(context.Background())
+	return newAzure(cred, azureTokenSource(cred, azureARMScope, ""), azureManagementBaseURL), nil
+}
+
+const azureARMScope = "https://management.azure.com/.default"
+
+// NewAzureTokenSource returns an AAD token source for scope from the same
+// stored Azure credential EC2-style provisioning uses. loginBase overrides
+// the login host and is empty outside tests.
+func NewAzureTokenSource(credentialJSON, scope, loginBase string) (oauth2.TokenSource, error) {
+	cred, err := parseAzureCredential(credentialJSON)
+	if err != nil {
+		return nil, err
 	}
-	return newAzure(cred, ts, azureManagementBaseURL), nil
+	return azureTokenSource(cred, scope, loginBase), nil
+}
+
+func azureTokenSource(cred azureCredential, scope, loginBase string) oauth2.TokenSource {
+	if loginBase == "" {
+		loginBase = "https://login.microsoftonline.com"
+	}
+	tokenURL := loginBase + "/" + cred.TenantID + "/oauth2/v2.0/token"
+	if cred.ClientSecret == "" && cred.FederatedTokenFile != "" {
+		// ReuseTokenSource limits federated file reads to token expiry.
+		fed := newAzureFederatedTokenSource(cred).(*azureFederatedTokenSource)
+		fed.scope = scope
+		fed.tokenURL = tokenURL
+		return oauth2.ReuseTokenSource(nil, fed)
+	}
+	cfg := clientcredentials.Config{
+		ClientID:     cred.ClientID,
+		ClientSecret: cred.ClientSecret,
+		TokenURL:     tokenURL,
+		Scopes:       []string{scope},
+	}
+	// Background ctx: the source outlives any single request.
+	return cfg.TokenSource(context.Background())
 }
 
 // newAzure is the seam azure_test.go uses to point at a fake token

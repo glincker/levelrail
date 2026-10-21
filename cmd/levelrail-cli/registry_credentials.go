@@ -28,6 +28,8 @@ func runRegistryCredentials(prog string, args []string, stdout, stderr io.Writer
 		return runRegistryCredentialsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "test":
 		return runRegistryCredentialsTest(prog, args[1:], stdout, stderr, lookupEnv)
+	case "refresh":
+		return runRegistryCredentialsRefresh(prog, args[1:], stdout, stderr, lookupEnv)
 	case "repositories":
 		return runRegistryCredentialsRepositories(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tags":
@@ -47,6 +49,7 @@ func registryCredentialsUsage(prog string) string {
   %[1]s registry-credentials update <id> --name NAME --registry-host HOST --username USER [flags]              update a registry credential, optionally rotating its password
   %[1]s registry-credentials delete <id> [flags]                                                               disconnect a registry credential
   %[1]s registry-credentials test <id> [flags]                                                                 authenticate a credential against its registry, without pulling anything
+  %[1]s registry-credentials refresh <id> [flags]                                                              mint a new login now for an ECR, Artifact Registry or ACR credential
   %[1]s registry-credentials repositories <id> [flags]                                                         list every repository in the credential's external registry
   %[1]s registry-credentials tags <id> <repository> [flags]                                                    list every tag pushed for one repository in that registry
 

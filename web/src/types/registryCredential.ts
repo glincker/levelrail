@@ -7,9 +7,7 @@
 // three-state bucketing, reused server-side for this resource's
 // expires_at too.
 export type RegistryCredentialExpiryStatus =
-  | 'healthy'
-  | 'expiring_soon'
-  | 'expired'
+  'healthy' | 'expiring_soon' | 'expired'
 
 export interface RegistryCredential {
   id: string
@@ -22,12 +20,34 @@ export interface RegistryCredential {
   // string. Both absent means no expiry was ever set.
   expires_at?: string
   expiry_status?: RegistryCredentialExpiryStatus
+  // Set for ECR, Artifact Registry and ACR credentials that refresh themselves.
+  preset?: RegistryPreset
+  region?: string
+  last_refreshed_at?: string
+  next_refresh_at?: string
+  last_refresh_error?: string
+}
+
+export type RegistryPreset = 'ecr' | 'artifact_registry' | 'acr'
+
+export interface RegistryPresetRequest {
+  preset: RegistryPreset
+  region?: string
+  registry_host?: string
+}
+
+export interface RegistryPresetTestResult {
+  registry_host: string
+  username: string
+  expires_at: string
 }
 
 export interface CreateRegistryCredentialRequest {
   name: string
-  registry_host: string
-  username: string
-  password: string
+  registry_host?: string
+  username?: string
+  password?: string
   expires_at?: string
+  preset?: RegistryPreset
+  region?: string
 }

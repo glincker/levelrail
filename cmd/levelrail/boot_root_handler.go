@@ -313,6 +313,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			// registryCredential field): same secretsManager, same
 			// nil-interface hazard as everything else in this block.
 			api.WithRegistryCredentialSecrets(secretsManager),
+			api.WithRegistryRefresher(newRegistryRefresher(db, secretsManager, logger)),
 			// Network shares (CIFS password only; NFS shares write no
 			// secret): same secretsManager, same nil-interface hazard.
 			api.WithNetworkShareSecrets(secretsManager),

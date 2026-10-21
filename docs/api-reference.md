@@ -1096,6 +1096,8 @@ Endpoints for:
 | POST | /api/v1/domains/{domain}/cert | AbilityRoot | handleGetCert |
 | GET | /api/v1/backup-targets/{id}/encryption | AbilityRead | handleGetBackupTargetEncryption |
 | PUT | /api/v1/backup-targets/{id}/encryption | AbilityRoot | handleSetBackupTargetEncryption |
+| POST | /api/v1/registry-credentials/presets/test | AbilityWriteSensitive | handleTestRegistryPreset |
+| POST | /api/v1/registry-credentials/{id}/refresh | AbilityWriteSensitive | handleRefreshRegistryCredential |
 
 ## Built-in Container Registry
 

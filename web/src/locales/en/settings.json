@@ -1427,6 +1427,35 @@
       "unused": "Nothing yet",
       "usedByMany_one": "{{count}} service",
       "usedByMany_other": "{{count}} services"
+    },
+    "cloud": {
+      "title": "Cloud registries that refresh themselves",
+      "description": "Connect ECR, Artifact Registry or ACR using the cloud account you already added. Logins are minted and renewed automatically before they expire.",
+      "nameLabel": "Credential name",
+      "regionLabel": "Region",
+      "hostLabel": "Registry host",
+      "hostPlaceholder": "myregistry.azurecr.io",
+      "test": "Test",
+      "connect": "Connect",
+      "testOk": "Login works for {{host}}, expires {{when}}.",
+      "refreshNow": "Refresh now",
+      "refreshHealthy": "Refreshing",
+      "refreshFailing": "Refresh failing",
+      "expires": "Expires {{when}}",
+      "lastRefresh": "Last refresh {{when}}",
+      "nextRefresh": "Next refresh {{when}}",
+      "ecr": {
+        "title": "Connect ECR",
+        "body": "Uses your AWS connection. The registry host is filled in from your account."
+      },
+      "artifact_registry": {
+        "title": "Connect Artifact Registry",
+        "body": "Uses your Google Cloud service account. Host defaults to <region>-docker.pkg.dev."
+      },
+      "acr": {
+        "title": "Connect ACR",
+        "body": "Uses your Azure connection. Enter the registry host, for example myregistry.azurecr.io."
+      }
     }
   },
   "backupTargetsPage": {

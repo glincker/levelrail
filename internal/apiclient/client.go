@@ -2424,6 +2424,13 @@ func (c *Client) TestRegistryCredential(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodPost, registryCredentialPath(id)+"/test", nil, nil)
 }
 
+// RefreshRegistryCredential calls POST /api/v1/registry-credentials/{id}/refresh.
+func (c *Client) RefreshRegistryCredential(ctx context.Context, id string) (RegistryCredentialResource, error) {
+	var out RegistryCredentialResource
+	err := c.do(ctx, http.MethodPost, registryCredentialPath(id)+"/refresh", nil, &out)
+	return out, err
+}
+
 // ListRegistryCredentialRepositories calls GET
 // /api/v1/registry-credentials/{id}/repositories: every repository in
 // the external registry this credential authenticates against, the same

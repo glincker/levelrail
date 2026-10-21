@@ -137,6 +137,7 @@ func (s *bootState) startAlerting() {
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetExportHealth(exportHealthSource{db: db})
+	alertingEngine.SetRegistryRefresh(registryRefreshSource{db: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
 	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))
 	certPolicy := alerting.CertPolicyFromEnv(os.Getenv)
@@ -150,6 +151,11 @@ func (s *bootState) startAlerting() {
 		alertingEngine.SetDeployFailures(src)
 	}
 	routeDefaultAlerts(ctx, logger, alertingDB, db, emailSender)
+	go func() {
+		if err := apiRouter.RunRegistryRefresher(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("registry credential refresh stopped", slog.String("error", err.Error()))
+		}
+	}()
 	go runUsageRollup(ctx, apiRouter)
 	go footprint.RunTrim(ctx, logger, os.Getenv)
 	go func() {
