@@ -19,6 +19,7 @@ import {
   CollapsiblePanel,
 } from '@/components/ui/collapsible'
 import type { OpenAPIRoute } from '@/queries/openapi'
+import { CodeBlock } from '@/components/ui/code-block'
 
 const methodBadgeVariant: Record<
   string,
@@ -180,9 +181,11 @@ export function ApiExplorerRoute({ route }: { route: OpenAPIRoute }) {
               <summary className="cursor-pointer select-none">
                 Example response
               </summary>
-              <pre className="mt-1 overflow-x-auto rounded-md bg-muted p-2">
-                {JSON.stringify(route.responseBody, null, 2)}
-              </pre>
+              <CodeBlock
+                className="mt-1"
+                code={JSON.stringify(route.responseBody, null, 2)}
+                language="json"
+              />
             </details>
           )}
 
@@ -211,9 +214,7 @@ export function ApiExplorerRoute({ route }: { route: OpenAPIRoute }) {
                 {result.status || 'network error'} ·{' '}
                 {Math.round(result.durationMs)}ms
               </Badge>
-              <pre className="max-h-80 overflow-auto rounded-md bg-muted p-2 text-xs">
-                {result.body}
-              </pre>
+              <CodeBlock code={result.body} />
             </div>
           )}
         </div>

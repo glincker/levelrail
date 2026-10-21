@@ -9,6 +9,7 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { useTranslation } from 'react-i18next'
 import { stripNoteComments } from '../../lib/releaseNotes'
+import { CodeBlock } from '@/components/ui/code-block'
 
 type AlertKind = 'note' | 'tip' | 'important' | 'warning' | 'caution'
 
@@ -181,12 +182,12 @@ function blocks(tokens: Token[], keyBase: string): ReactNode[] {
       }
       case 'code':
         return (
-          <pre
+          <CodeBlock
             key={key}
-            className="overflow-auto rounded bg-muted px-2 py-1 font-mono"
-          >
-            {(tok as Tokens.Code).text}
-          </pre>
+            code={(tok as Tokens.Code).text}
+            language={(tok as Tokens.Code).lang || undefined}
+            wrapToggle={false}
+          />
         )
       case 'hr':
         return <hr key={key} className="border-border" />
