@@ -3,7 +3,8 @@
 // Credentials are write-only: they appear on the create request and never
 // in a response.
 
-export type StoragePreset = 'aws' | 'r2' | 'b2' | 'minio' | 'wasabi' | 'custom'
+export type StoragePreset =
+  'aws' | 'r2' | 'b2' | 'minio' | 'wasabi' | 'gcs' | 'custom'
 
 export interface StorageProvider {
   id: StoragePreset

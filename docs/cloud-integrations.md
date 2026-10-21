@@ -1,6 +1,6 @@
 ---
 title: "Cloud integrations"
-description: What works today with AWS, Google Cloud, Cloudflare, DigitalOcean and Hetzner (nodes, DNS, backups, registries, events), and what is planned but not built.
+description: What works today with AWS, Google Cloud, Azure, Cloudflare, DigitalOcean and Hetzner (nodes, DNS, backups, registries, events), and what is planned but not built.
 "og:url": "https://docs.levelrail.com/cloud-integrations"
 ---
 
@@ -13,7 +13,8 @@ This page lists, per cloud, what Levelrail does today and what is only planned. 
 | Cloud | Nodes | DNS and certificates | Backups and storage | Registry |
 | --- | --- | --- | --- | --- |
 | AWS | EC2 | Route53 | S3 | Any registry that takes a username and password |
-| Google Cloud | Compute Engine | Planned (Cloud DNS) | Planned (GCS through S3 interoperability) | Planned (Artifact Registry preset) |
+| Google Cloud | Compute Engine | Cloud DNS provider code only, not connectable yet (see below) | GCS through S3 interoperability (HMAC keys) | Planned (Artifact Registry preset) |
+| Azure | VM provisioner in code, not verified | Planned (Azure DNS) | Planned (Blob Storage) | Not applicable |
 | Cloudflare | Not applicable | DNS zones, records and DNS-01 | R2 | Not applicable |
 | DigitalOcean | Droplets | Not supported | Not verified (Spaces) | Not applicable |
 | Hetzner | Cloud servers | Not supported | Not verified (Object Storage) | Not applicable |
@@ -39,13 +40,27 @@ Works today:
 
 - **Compute Engine nodes.** Service account JSON key with the Compute Instance Admin role, and a `default` VPC network. No workload identity federation. This path has not been run against a real project, see [what was not tested](/node-provisioning#what-was-not-tested).
 
+- **GCS storage destinations.** The Google Cloud Storage preset on the S3-compatible destination form uses `storage.googleapis.com`, path-style addressing and region `auto`. Create an HMAC key under Cloud Storage, Settings, Interoperability, for a service account that can write to the bucket. Service account JSON keys do not work here. Backup targets already had a GCS preset with the same endpoint. The Test button runs the same probe as every other destination. Status: tested against a local fake S3 server only, never against a real bucket.
+
+In the codebase, not yet usable:
+
+- **Cloud DNS provider code.** Zones, A, AAAA, CNAME and TXT records, and the record operations DNS-01 needs, written against the Cloud DNS REST API using the same service account JSON as Compute Engine. Tested against a local fake of the API only, never against a real project. It is not connected to anything yet: there is no settings page, CLI command or API route to enable it, and ingress does not use it for wildcard certificates, so you cannot use Cloud DNS from the product today.
+
 Planned:
 
-- Google Cloud DNS as a DNS provider.
-- GCS backups and storage destinations through its S3 interoperability API.
+- Connecting Cloud DNS: settings, UI, CLI, automatic records on domain add, and a DNS-01 module for ingress.
 - Artifact Registry preset for registry credentials.
 - GCE startup script snippet for installing the control plane.
 - Terraform snippets.
+
+## Azure
+
+Nothing here has been run against a real Azure account.
+
+Planned:
+
+- Azure DNS as a DNS provider. It can reuse the same provider interface Cloud DNS uses, but it is not built.
+- Azure Blob Storage for backups. Blob uses its own API rather than S3, so it needs a separate uploader. It is not built.
 
 ## Cloudflare
 
@@ -93,8 +108,9 @@ Not verified:
 
 None of these exist yet.
 
-- Google Cloud DNS provider
-- GCS backups through S3 interoperability
+- Connecting the Cloud DNS provider (settings, UI, CLI, DNS-01)
+- Azure DNS provider
+- Azure Blob Storage backups
 - Artifact Registry preset
 - ECR token refresh preset
 - EC2 user-data and GCE startup install scripts

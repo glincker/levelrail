@@ -2294,8 +2294,9 @@
     "mountAs": "secret id {{id}}"
   },
   "storagePage": {
+    "gcsHmacHint": "Use an HMAC key, not a service account JSON. In Google Cloud, open Cloud Storage, Settings, Interoperability and create a key for a service account that can write to the bucket.",
     "title": "Storage destinations",
-    "description": "S3-compatible object storage for log archives and backups. AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, or any custom endpoint.",
+    "description": "S3-compatible object storage for log archives and backups. AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, Google Cloud Storage, or any custom endpoint.",
     "notConfiguredTitle": "Storage is not configured on this server",
     "notConfiguredBody": "Set APP_MASTER_KEY and restart the control plane so bucket credentials can be encrypted.",
     "loadErrorTitle": "Storage destinations could not be loaded",
