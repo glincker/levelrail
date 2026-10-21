@@ -365,7 +365,9 @@ func wireOIDC(ctx context.Context, cfg *pipeline.Config, apiRouter *api.Router, 
 	apiRouter.SetOIDCManager(mgr, issuerURL, oidcJWKSRateLimit())
 	apiRouter.SetOIDCRotator(mgr)
 
-	gateway, err := client.BridgeGatewayIP(ctx)
+	bctx, bcancel := context.WithTimeout(ctx, bootDockerCallTimeout)
+	gateway, err := client.BridgeGatewayIP(bctx)
+	bcancel()
 	if err != nil {
 		logger.Warn("pipeline: oidc runtime token request endpoint not configured, jobs listing oidc.audiences will fail clearly instead of getting an unreachable URL",
 			slog.String("error", err.Error()))

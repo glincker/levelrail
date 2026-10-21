@@ -397,12 +397,7 @@ func (s *bootState) serve() error {
 	client := s.client
 	engine := s.engine
 	httpServer := s.httpServer
-	events, errs := client.Events(ctx)
-	go func() {
-		if err, ok := <-errs; ok && err != nil {
-			logger.Error("docker event stream error", slog.String("error", err.Error()))
-		}
-	}()
+	events := resilientEvents(ctx, client.Events, logger)
 
 	serveErrs := make(chan error, 1)
 	go func() {
