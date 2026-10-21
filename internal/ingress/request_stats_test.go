@@ -208,3 +208,13 @@ func TestDriver_RequestStats_RealCaddy(t *testing.T) {
 		t.Errorf("dead window = %+v", dead)
 	}
 }
+
+func BenchmarkRequestStatsObservePath(b *testing.B) {
+	s := NewRequestStats()
+	b.ReportAllocs()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			s.ObservePath("app.example.com", "/api/users/123", 200, 12*time.Millisecond, 100, 2000, false)
+		}
+	})
+}

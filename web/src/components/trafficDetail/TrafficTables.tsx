@@ -84,12 +84,20 @@ export function ReplicaTable({ rows }: Readonly<{ rows: TrafficReplica[] }>) {
   )
 }
 
-export function SlowRouteTable({ rows }: Readonly<{ rows: TrafficRoute[] }>) {
+export function SlowRouteTable({
+  rows,
+  top = false,
+}: Readonly<{ rows: TrafficRoute[]; top?: boolean }>) {
   const { t } = useTranslation('trafficDetail')
   return (
-    <Section title={t('routes.title')} hint={t('routes.hint')}>
+    <Section
+      title={t(top ? 'routes.topTitle' : 'routes.title')}
+      hint={t('routes.hint')}
+    >
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('routes.empty')}</p>
+        <p className="text-sm text-muted-foreground">
+          {t(top ? 'routes.topEmpty' : 'routes.empty')}
+        </p>
       ) : (
         <Table>
           <TableHeader>

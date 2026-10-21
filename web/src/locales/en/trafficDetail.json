@@ -61,6 +61,8 @@
   },
   "routes": {
     "title": "Slowest routes",
+    "topTitle": "Top paths",
+    "topEmpty": "No requests in this window.",
     "hint": "Route templates only. Ids and query strings are never stored.",
     "route": "Route",
     "requests": "Requests",
