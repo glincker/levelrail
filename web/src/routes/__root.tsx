@@ -1,3 +1,4 @@
+import { DelayedFallback } from '../components/ui/delayed-fallback'
 import * as React from 'react'
 import type { QueryClient } from '@tanstack/react-query'
 import {
@@ -154,7 +155,9 @@ function AppShell() {
         >
           <div className="mx-auto w-full min-w-0 max-w-(--glinr-content-max) has-[[data-page-width=full]]:max-w-none has-[[data-page-width=wide]]:max-w-(--glinr-content-max-wide)">
             <div className="mb-4 empty:hidden"></div>
-            <Outlet />
+            <React.Suspense fallback={<DelayedFallback />}>
+              <Outlet />
+            </React.Suspense>
           </div>
         </main>
         <React.Suspense fallback={null}>
