@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useEffect, useId } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
@@ -126,6 +126,16 @@ export function AppNav({ name }: { name: string }) {
   const { data: staticSites } = useQuery(staticSitesQueryOptions())
   const isStatic = staticSites?.some((s) => s.name === name) ?? false
   const sections = visibleAppSections(isStatic)
+  const activeSectionId = active?.section.id
+
+  // Persist the visited group as open so leaving it never collapses it and shifts the list.
+  useEffect(() => {
+    if (activeSectionId && stored[activeSectionId] !== true) {
+      setOpen(activeSectionId, true)
+    }
+    // Only a route change into a group re-opens it; a manual collapse stays collapsed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSectionId])
 
   return (
     <>

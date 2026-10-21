@@ -21,6 +21,7 @@ import { GlobalNav } from './shell/GlobalNav'
 import { GLOBAL_NAV_GROUPS, isGlobalItemActive } from './shell/navModel'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
 import { SidebarStatusBadge } from './shell/SidebarStatusBadge'
+import { scheduleScrollActiveNavItem } from './shell/scrollActiveNavItem'
 
 // Lazy: exactly one of these three renders at a time (mutually exclusive
 // by pathname below), so a session that never visits /databases or
@@ -80,14 +81,7 @@ export function AppSidebar() {
     SETTINGS_SCOPE_PATTERN.test(pathname) && !ownedByGlobalNav
 
   // Keep the current page's entry visible in a long sidebar.
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      document
-        .querySelector('[data-slot="sidebar-content"] [aria-current="page"]')
-        ?.scrollIntoView({ block: 'nearest' })
-    })
-    return () => cancelAnimationFrame(frame)
-  }, [pathname])
+  useEffect(() => scheduleScrollActiveNavItem(), [pathname])
 
   return (
     <Sidebar collapsible="icon" variant="floating">

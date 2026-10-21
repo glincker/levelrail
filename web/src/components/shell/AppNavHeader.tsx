@@ -26,7 +26,7 @@ export function AppNavHeader({ name }: { name: string }) {
   return (
     <div className="flex flex-col gap-1 px-2 pt-1">
       <SidebarMenuButton
-        render={<Link to="/apps" />}
+        render={<Link to="/apps" activeOptions={{ exact: true }} />}
         tooltip="Back to Apps"
         size="sm"
       >
