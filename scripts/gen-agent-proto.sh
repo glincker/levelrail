@@ -10,4 +10,4 @@ cd "$root"
 protoc -I . \
   --go_out="$out" --go_opt=module="$module" \
   --go-grpc_out="$out" --go-grpc_opt=module="$module" \
-  proto/agent/v1/agent.proto
+  proto/agent/v1/agent.proto proto/agent/v1/migration.proto

@@ -14,6 +14,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/GLINCKER/levelrail/internal/agent/migrationpb"
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
@@ -22,6 +23,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/integrity"
+	"github.com/GLINCKER/levelrail/internal/migrateagent"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -227,6 +229,8 @@ func (s *bootState) startAgentServer() error {
 	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(db), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithSessionObserver(meshEndpoints.Observe))...)
 	agentServerRef.Store(agentServer)
 	agentpb.RegisterAgentServiceServer(agentGRPCServer, agentServer)
+	migrationAgent := migrateagent.NewService(db, agentCA, migrateagent.ConfigFromEnv(), logger, nil)
+	migrationpb.RegisterMigrationServiceServer(agentGRPCServer, migrationAgent)
 	go func() {
 		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
 		if err := agentGRPCServer.Serve(agentListener); err != nil {
@@ -245,6 +249,7 @@ func (s *bootState) startAgentServer() error {
 	s.meshEndpoints = meshEndpoints
 	s.hostReports = hostReports
 	s.agentServer = agentServer
+	s.migrationAgent = migrationAgent
 	return nil
 }
 

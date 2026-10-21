@@ -354,6 +354,7 @@
               "migrate-from-docker-compose",
               "migration-reference",
               "migrating-from-coolify-dokploy-and-caprover",
+              "migration-agent-threat-model",
               "migrate-same-server",
               "migrate-over-ssh",
               "migrating-from-vercel",

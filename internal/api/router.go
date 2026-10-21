@@ -590,6 +590,7 @@ type Router struct {
 	appSleep                     AppSleepStore                                         // always set, sleep-when-idle settings
 	dataImports                  DataImportStore                                       // always set, live data copy status
 	migrationHub                 MigrationHubStore                                     // always set, server migration hub sessions
+	migrationAgent               MigrationAgentService                                 // nil until the control plane registers the migration agent service
 	migrationChecklists          MigrationChecklistStore                               // always set, per-app cutover checklists
 	appImports                   AppImportStore                                        // always set, guided app import sessions
 	appImportLive                *appImportState                                       // in-memory source tokens and discoveries

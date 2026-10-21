@@ -292,6 +292,7 @@ func migrateDataUsage(prog string) string {
   %[1]s migrate plan --url U --token T [--apply --only ID]    read-only plan with a verdict per item, then import chosen items
   %[1]s migrate status [APP]                                  cutover checklist per migrated app
   %[1]s migrate step APP STEP [--reset]                       complete or reopen a checklist step
+  %[1]s migrate agent start|status|verify|reopen|remove       read-only agent on the old server (discovery and volume compare)
 
 The source database password is read from %[2]s or --password-stdin.
 `, prog, envMigrateSourcePassword)

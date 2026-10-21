@@ -197,6 +197,7 @@ func (s *bootState) wireRouter() {
 	apiRouter.SetControlPlaneProbe(api.ControlPlaneProbe{DB: db, Reconcile: engine.Stats, ResyncInterval: resyncInterval, Telemetry: telemetryDB, MemoryLimit: footprint.CurrentMemoryLimit(), Integrity: s.integrity, Guard: engine.Guard()})
 	go db.RunWALMaintenance(ctx)
 	configureNodeCerts(apiRouter, agentServer, agentServer)
+	apiRouter.SetMigrationAgent(s.migrationAgent)
 	setupEdgeFirewall(ctx, logger, b, apiRouter, secretsManager)
 	apiRouter.SetNodeHostReports(hostReports)
 	gateSecret := setupBuiltinGate(ctx, logger, apiRouter)

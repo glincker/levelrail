@@ -307,6 +307,7 @@ func (rt *Router) handleMigrationChecklistStep(w http.ResponseWriter, r *http.Re
 	_, actorID, actorName, _ := rt.currentActor(r)
 	actor := firstNonEmpty(actorName, actorID)
 	now := time.Now().UTC()
+	before := c.States[step]
 	switch req.Action {
 	case "reset":
 		if err := c.Reset(step); err != nil {
@@ -327,17 +328,27 @@ func (rt *Router) handleMigrationChecklistStep(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusBadRequest, "action must be complete or reset")
 		return
 	}
+	saved, err := rt.persistChecklist(r.Context(), svc, row, c, now)
+	if err != nil {
+		rt.internalError(w, "api: migration checklist: save failed", err, slog.String("app", svc.Name))
+		return
+	}
+	rt.auditChecklistReopen(r, svc.Name, step, req.Action, before)
+	writeJSON(w, http.StatusOK, buildChecklistView(svc, &saved, c))
+}
+
+// persistChecklist stores c for svc, keeping the platform and source id already recorded.
+func (rt *Router) persistChecklist(ctx context.Context, svc store.DesiredService, row *store.MigrationChecklist, c migrationplan.Checklist, now time.Time) (store.MigrationChecklist, error) {
 	saved := store.MigrationChecklist{AppName: svc.Name, StepsJSON: c.Marshal(), CreatedAt: now, UpdatedAt: now}
 	if row != nil {
 		saved.Platform, saved.SourceID, saved.CreatedAt = row.Platform, row.SourceID, row.CreatedAt
 	} else {
 		saved.Platform, saved.SourceID, _ = strings.Cut(svc.Labels[platformimport.LabelSourceID], ":")
 	}
-	if err := rt.migrationChecklists.SaveMigrationChecklist(r.Context(), saved); err != nil {
-		rt.internalError(w, "api: migration checklist: save failed", err, slog.String("app", svc.Name))
-		return
+	if err := rt.migrationChecklists.SaveMigrationChecklist(ctx, saved); err != nil {
+		return store.MigrationChecklist{}, fmt.Errorf("save migration checklist: %w", err)
 	}
-	writeJSON(w, http.StatusOK, buildChecklistView(svc, &saved, c))
+	return saved, nil
 }
 
 func writeStepError(w http.ResponseWriter, err error) {

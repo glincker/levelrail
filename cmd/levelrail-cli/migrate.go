@@ -40,6 +40,8 @@ func runMigrate(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runMigrateStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "step":
 		return runMigrateStep(prog, args[1:], stdout, stderr, lookupEnv)
+	case "agent":
+		return runMigrateAgent(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown migrate source %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, migrateUsage(prog))

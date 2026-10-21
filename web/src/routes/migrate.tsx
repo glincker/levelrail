@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { ArrowsLeftRightIcon } from '@phosphor-icons/react/dist/ssr'
@@ -11,6 +11,12 @@ import { MigrateChecklistCard } from '../components/migrate/MigrateChecklistCard
 import { MigratePlan } from '../components/migrate/MigratePlan'
 import { PortTakeoverPanel } from '../components/PortTakeoverPanel'
 import { useMigrateChecklists } from '../queries/migrateWizard'
+
+const MigrateAgentPanel = lazy(() =>
+  import('../components/migrate/MigrateAgentPanel').then((m) => ({
+    default: m.MigrateAgentPanel,
+  })),
+)
 
 export const Route = createFileRoute('/migrate')({
   component: MigratePage,
@@ -58,6 +64,7 @@ function MigratePage() {
         <TabsList>
           <TabsTrigger value="plan">{t('tabs.plan')}</TabsTrigger>
           <TabsTrigger value="cutover">{t('tabs.cutover')}</TabsTrigger>
+          <TabsTrigger value="agent">{t('tabs.agent')}</TabsTrigger>
           <TabsTrigger value="takeover">{t('tabs.takeover')}</TabsTrigger>
         </TabsList>
         <TabsContent value="plan">
@@ -65,6 +72,11 @@ function MigratePage() {
         </TabsContent>
         <TabsContent value="cutover">
           <CutoverTab />
+        </TabsContent>
+        <TabsContent value="agent">
+          <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg" />}>
+            <MigrateAgentPanel />
+          </Suspense>
         </TabsContent>
         <TabsContent value="takeover">
           <PortTakeoverPanel />

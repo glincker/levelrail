@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1628 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1634 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1140,6 +1140,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/mesh/connectivity", Ability: "AbilityRoot", Group: "Other", Handler: "handleMeshConnectivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh/settings", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMeshSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/mesh/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateMeshSettings", Description: "Turning the mesh on or off changes how every node talks to this host, so AbilityRoot."},
+	{Method: "GET", Path: "/api/v1/migration/agent/sessions", Ability: "AbilityRead", Group: "Other", Handler: "handleListMigrationAgentSessions", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/agent/sessions", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateMigrationAgentSession", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/migration/agent/sessions/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRevokeMigrationAgentSession", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/agent/sessions/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMigrationAgentSession", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/agent/sessions/{id}/discover", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDiscoverMigrationAgent", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/agent/sessions/{id}/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleVerifyMigrationAgent", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/plan", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleAppImportPlan", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions", Ability: "AbilityRead", Group: "Other", Handler: "handleListAppImportSessions", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateAppImportSession", Description: ""},

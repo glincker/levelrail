@@ -23,6 +23,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/integrity"
 	"github.com/GLINCKER/levelrail/internal/janitor"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/GLINCKER/levelrail/internal/migrateagent"
 	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/plugin"
 	"github.com/GLINCKER/levelrail/internal/preview"
@@ -61,6 +62,7 @@ type bootState struct {
 	meshEndpoints       *meshEndpointBook
 	hostReports         *agent.HostReportStore
 	agentServer         *agent.Server
+	migrationAgent      *migrateagent.Service
 	secretsManager      *secrets.Manager
 	masterKeyFilePath   string
 	emailSender         *email.DynamicSender

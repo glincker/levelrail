@@ -13,6 +13,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/agent/pinned"
 )
 
 // ErrInvalidCSR is returned by SignClientCSR for a malformed request, a bad
@@ -22,21 +24,7 @@ var ErrInvalidCSR = errors.New("agent: invalid certificate signing request")
 // NewKeyAndCSR generates a fresh ed25519 private key on this machine and a
 // CSR for it. The key never leaves the caller; only the CSR is sent.
 func NewKeyAndCSR(commonName string) (keyPEM, csrDER []byte, err error) {
-	_, priv, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		return nil, nil, fmt.Errorf("agent: generate key: %w", err)
-	}
-	csrDER, err = x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{
-		Subject: pkix.Name{CommonName: commonName},
-	}, priv)
-	if err != nil {
-		return nil, nil, fmt.Errorf("agent: create CSR: %w", err)
-	}
-	keyDER, err := x509.MarshalPKCS8PrivateKey(priv)
-	if err != nil {
-		return nil, nil, fmt.Errorf("agent: marshal key: %w", err)
-	}
-	return pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER}), csrDER, nil
+	return pinned.NewKeyAndCSR(commonName)
 }
 
 // IssuedCert is a signed client certificate plus the fields the control
