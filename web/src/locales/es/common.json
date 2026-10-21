@@ -377,5 +377,11 @@
   },
   "pageLoading": {
     "label": "Cargando página"
+  },
+  "deployRetry": {
+    "retry": "Reintentar despliegue",
+    "more": "Más formas de reintentar",
+    "rebuild": "Reconstruir desde el origen",
+    "rebuildNoCache": "Reconstruir sin caché"
   }
 }

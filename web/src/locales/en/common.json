@@ -621,5 +621,11 @@
   },
   "pageLoading": {
     "label": "Loading page"
+  },
+  "deployRetry": {
+    "retry": "Retry deploy",
+    "more": "More ways to retry",
+    "rebuild": "Rebuild from source",
+    "rebuildNoCache": "Rebuild without cache"
   }
 }
