@@ -18,7 +18,7 @@ import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import { formatAge } from '../lib/format'
-import { parseCertNotice } from './certNotice'
+import { certNoticeFromItem } from './certNotice'
 import {
   useInbox,
   useInboxPrefs,
@@ -136,7 +136,7 @@ function InboxRow({ item, onRead }: { item: InboxItem; onRead: () => void }) {
   const { t } = useTranslation('inbox')
   const target = item.app ?? item.node ?? ''
   const certNotice =
-    item.rule_kind === 'cert_expiry' ? parseCertNotice(item.detail) : null
+    item.rule_kind === 'cert_expiry' ? certNoticeFromItem(item) : null
   return (
     <li className="flex items-start gap-3 px-3 py-2.5">
       <span

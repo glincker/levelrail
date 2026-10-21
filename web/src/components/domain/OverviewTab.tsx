@@ -7,7 +7,10 @@ import { certificatesQueryOptions } from '../../queries/certificates'
 import { certTruth } from '../../lib/certTruth'
 import { CertTruthBadge } from '../CertTruthBadge'
 import { GetCertificateButton } from '../GetCertificateButton'
+import { RenewCertificateButton } from '../RenewCertificateButton'
 import type { DomainPolicies } from '../../queries/domainPolicyTypes'
+import type { DomainFix } from './domainSearch'
+import { FixTarget } from './FixTarget'
 import { PreviewPanel, Section } from './PolicyShared'
 
 const SECTIONS = ['redirects', 'geo', 'headers', 'cache', 'forwarders'] as const
@@ -16,10 +19,12 @@ export function OverviewTab({
   app,
   domain,
   policies,
+  fix,
 }: {
   app: string
   domain: string
   policies: DomainPolicies
+  fix?: DomainFix
 }) {
   const { t } = useTranslation('domainPolicies')
   const { data: certs } = useQuery(certificatesQueryOptions())
@@ -65,14 +70,20 @@ export function OverviewTab({
             {t('overview.noCert')}
           </p>
         )}
-        {certTruth(cert).wantsRealCert ? (
-          <div className="mt-2">
-            <GetCertificateButton domain={domain} />
-          </div>
-        ) : null}
+        <div className="mt-2">
+          <FixTarget active={fix === 'renew'}>
+            {certTruth(cert).wantsRealCert ? (
+              <GetCertificateButton domain={domain} />
+            ) : cert ? (
+              <RenewCertificateButton appName={app} domain={domain} />
+            ) : null}
+          </FixTarget>
+        </div>
       </Section>
       <Section title={t('overview.dnsTitle')}>
-        <DomainDnsCheck appName={app} domain={domain} />
+        <FixTarget active={fix === 'dns'}>
+          <DomainDnsCheck appName={app} domain={domain} />
+        </FixTarget>
       </Section>
       <PreviewPanel steps={policies.preview} loading={false} />
     </div>

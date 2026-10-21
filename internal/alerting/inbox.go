@@ -161,7 +161,7 @@ func (db *DB) ListInbox(ctx context.Context, principal string, f InboxFilter) ([
 	before := f.Before
 	var out []InboxItem
 	for len(out) < limit {
-		q := `SELECT h.id, h.at, h.rule_id, h.rule_name, h.rule_kind, h.resource_id, h.app, h.node, h.severity, h.event, h.outcome, h.detail, h.silence_id, h.channel_id, h.error, ` + inboxReadExpr + inboxBase
+		q := `SELECT h.id, h.at, h.rule_id, h.rule_name, h.rule_kind, h.resource_id, h.app, h.node, h.severity, h.event, h.outcome, h.detail, h.silence_id, h.channel_id, h.error, h.cert_json, ` + inboxReadExpr + inboxBase
 		archivedArg := 0
 		if f.Archived {
 			archivedArg = 1
@@ -184,12 +184,13 @@ func (db *DB) ListInbox(ctx context.Context, principal string, f InboxFilter) ([
 		var last time.Time
 		for rows.Next() {
 			var (
-				it   InboxItem
-				at   string
-				read int
+				it       InboxItem
+				at       string
+				certJSON string
+				read     int
 			)
 			if err := rows.Scan(&it.ID, &at, &it.RuleID, &it.RuleName, &it.RuleKind, &it.ResourceID, &it.App, &it.Node, &it.Severity,
-				&it.Event, &it.Outcome, &it.Detail, &it.SilenceID, &it.ChannelID, &it.Error, &read); err != nil {
+				&it.Event, &it.Outcome, &it.Detail, &it.SilenceID, &it.ChannelID, &it.Error, &certJSON, &read); err != nil {
 				_ = rows.Close()
 				return nil, fmt.Errorf("alerting: scan inbox row: %w", err)
 			}
@@ -197,6 +198,7 @@ func (db *DB) ListInbox(ctx context.Context, principal string, f InboxFilter) ([
 				_ = rows.Close()
 				return nil, fmt.Errorf("alerting: parse inbox time: %w", err)
 			}
+			it.Cert = decodeCertPayload(certJSON)
 			it.Read = read != 0
 			n++
 			last = it.At

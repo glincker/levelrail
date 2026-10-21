@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -48,6 +49,8 @@ type HistoryEntry struct {
 	SilenceID  string
 	ChannelID  string
 	Error      string
+	// Cert is set on cert_expiry entries; older rows have none.
+	Cert *CertPayload
 }
 
 // HistoryFilter narrows ListHistory. Zero fields match everything.
@@ -82,11 +85,15 @@ func (db *DB) RecordHistory(ctx context.Context, e HistoryEntry) error {
 	if e.At.IsZero() {
 		e.At = time.Now()
 	}
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO alert_history (id, at, rule_id, rule_name, rule_kind, resource_id, app, node, severity, event, outcome, detail, silence_id, channel_id, error)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	certJSON, err := encodeCertPayload(e.Cert)
+	if err != nil {
+		return err
+	}
+	_, err = db.ExecContext(ctx, `
+		INSERT INTO alert_history (id, at, rule_id, rule_name, rule_kind, resource_id, app, node, severity, event, outcome, detail, silence_id, channel_id, error, cert_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		e.ID, fmtTime(e.At), e.RuleID, e.RuleName, e.RuleKind, e.ResourceID, e.App, e.Node, e.Severity,
-		e.Event, e.Outcome, e.Detail, e.SilenceID, e.ChannelID, e.Error)
+		e.Event, e.Outcome, e.Detail, e.SilenceID, e.ChannelID, e.Error, certJSON)
 	if err != nil {
 		return fmt.Errorf("alerting: record history for rule %q: %w", e.RuleID, err)
 	}
@@ -125,7 +132,7 @@ func (db *DB) ListHistory(ctx context.Context, f HistoryFilter) ([]HistoryEntry,
 	if f.Before != nil {
 		add("at < ?", fmtTime(*f.Before))
 	}
-	q := `SELECT id, at, rule_id, rule_name, rule_kind, resource_id, app, node, severity, event, outcome, detail, silence_id, channel_id, error FROM alert_history`
+	q := `SELECT id, at, rule_id, rule_name, rule_kind, resource_id, app, node, severity, event, outcome, detail, silence_id, channel_id, error, cert_json FROM alert_history`
 	if len(where) > 0 {
 		q += " WHERE " + strings.Join(where, " AND ")
 	}
@@ -141,13 +148,15 @@ func (db *DB) ListHistory(ctx context.Context, f HistoryFilter) ([]HistoryEntry,
 	var out []HistoryEntry
 	for rows.Next() {
 		var (
-			e  HistoryEntry
-			at string
+			e        HistoryEntry
+			at       string
+			certJSON string
 		)
 		if err := rows.Scan(&e.ID, &at, &e.RuleID, &e.RuleName, &e.RuleKind, &e.ResourceID, &e.App, &e.Node, &e.Severity,
-			&e.Event, &e.Outcome, &e.Detail, &e.SilenceID, &e.ChannelID, &e.Error); err != nil {
+			&e.Event, &e.Outcome, &e.Detail, &e.SilenceID, &e.ChannelID, &e.Error, &certJSON); err != nil {
 			return nil, fmt.Errorf("alerting: scan history row: %w", err)
 		}
+		e.Cert = decodeCertPayload(certJSON)
 		if e.At, err = time.Parse(time.RFC3339Nano, at); err != nil {
 			return nil, fmt.Errorf("alerting: parse history time: %w", err)
 		}
@@ -170,4 +179,27 @@ func (db *DB) PruneHistory(ctx context.Context, cutoff time.Time) (int64, error)
 		return 0, fmt.Errorf("alerting: prune history rows: %w", err)
 	}
 	return n, nil
+}
+
+func encodeCertPayload(c *CertPayload) (string, error) {
+	if c == nil {
+		return "", nil
+	}
+	b, err := json.Marshal(c)
+	if err != nil {
+		return "", fmt.Errorf("alerting: encode cert payload: %w", err)
+	}
+	return string(b), nil
+}
+
+// decodeCertPayload tolerates empty or unreadable values so a bad row never hides the entry.
+func decodeCertPayload(s string) *CertPayload {
+	if s == "" {
+		return nil
+	}
+	var c CertPayload
+	if json.Unmarshal([]byte(s), &c) != nil || c.Domain == "" {
+		return nil
+	}
+	return &c
 }

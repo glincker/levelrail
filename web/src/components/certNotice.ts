@@ -1,8 +1,11 @@
+import type { CertExpiryPayload } from '../types/alertNoise'
+
 export interface CertNotice {
   domain: string
   daysLeft: number
   issuer: string
   reason: string
+  dns?: boolean
 }
 
 const NOTICE_RE =
@@ -21,6 +24,22 @@ export function parseCertNotice(detail: string | undefined): CertNotice | null {
     daysLeft,
     issuer: m[4] ?? '',
     reason: m[5] ?? '',
+  }
+}
+
+export function certNoticeFromItem(item: {
+  detail?: string
+  cert?: CertExpiryPayload
+}): CertNotice | null {
+  const parsed = parseCertNotice(item.detail)
+  const c = item.cert
+  if (!c) return parsed
+  return {
+    domain: c.domain,
+    daysLeft: c.days_left,
+    issuer: c.issuer || parsed?.issuer || '',
+    reason: parsed?.reason ?? item.detail ?? '',
+    dns: c.failure_kind === 'dns',
   }
 }
 
