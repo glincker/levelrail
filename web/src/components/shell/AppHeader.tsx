@@ -9,6 +9,8 @@ import { EnvironmentSwitcher } from '../environments/EnvironmentSwitcher'
 import { DockToggle } from '../dock/DockToggle'
 import { HelpMenu } from '../HelpMenu'
 import { ThemeToggle } from '../ThemeToggle'
+import { CliModal } from '../cli/CliModal'
+import { CliStatusBadge } from '../cli/CliStatusBadge'
 import { InboxBadge } from './InboxBadge'
 import { NotificationCenter } from './NotificationCenter'
 import { StatusChip } from './StatusChip'
@@ -82,6 +84,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
           ) : null}
           <div className="ml-auto flex items-center gap-1 @xl:gap-2">
             <TeamSwitcher />
+            <CliStatusBadge />
             <StatusChip />
             <InboxBadge />
             <NotificationCenter />
@@ -94,6 +97,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
           </div>
         </div>
       </header>
+      <CliModal />
     </>
   )
 }
