@@ -1959,7 +1959,89 @@
   },
   "networkSharesPage": {
     "title": "Network shares",
-    "description": "NFS and CIFS/SMB exports, mounted as Docker volumes using Docker's own local-driver network passthrough. Attach one as a volume source when configuring an app's volumes."
+    "description": "NFS and CIFS/SMB exports, mounted as Docker volumes using Docker's own local-driver network passthrough. Attach one as a volume source when configuring an app's volumes.",
+    "banner": {
+      "description": "Mount storage from a NAS or file server as a Docker volume your apps can use.",
+      "whatFor": "A share lets an app read and write files that live on another machine, like media on a NAS or backups on a file server. Add one, then attach it from an app's volumes.",
+      "diagram": {
+        "app": "App",
+        "nfs": "NFS",
+        "smb": "SMB / CIFS",
+        "volume": "Mounted as a Docker volume"
+      }
+    },
+    "dialog": {
+      "open": "Add network share",
+      "title": "Add network share",
+      "description": "Connect storage from a NAS or file server so apps can mount it as a Docker volume.",
+      "protocol": "Protocol",
+      "nfs": {
+        "title": "NFS",
+        "body": "Linux and NAS, no password"
+      },
+      "smb": {
+        "title": "SMB / CIFS",
+        "body": "Windows, macOS and many NAS, needs a username"
+      },
+      "host": "Host",
+      "hostPlaceholder": "nas.lan or 192.168.1.50",
+      "hostHint": "The server's hostname or IP address (IPv4 or IPv6).",
+      "path": {
+        "nfs": "Export path",
+        "smb": "Share name"
+      },
+      "pathPlaceholder": {
+        "nfs": "/export/media",
+        "smb": "media"
+      },
+      "pathHint": {
+        "nfs": "The folder the server exports, starting with a slash.",
+        "smb": "The name of the shared folder on the server, without slashes."
+      },
+      "name": "Name",
+      "namePlaceholder": "media-nas",
+      "nameHint": "Used as the volume name. Lowercase letters, numbers and dashes.",
+      "nameFree": "This name is available.",
+      "username": "Username",
+      "password": "Password",
+      "passwordHint": "Stored encrypted. It is never shown again.",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "advanced": "Advanced",
+      "options": "Mount options",
+      "optionsOptional": "optional",
+      "optionsHint": "Comma-separated options passed straight to Docker's local driver. Pick a common one or type your own.",
+      "optionsPlaceholder": "ro,nfsvers=4",
+      "chips": {
+        "label": "Common options",
+        "ro": "Read-only",
+        "nfsvers4": "NFSv4",
+        "nfsvers3": "NFSv3",
+        "soft": "Soft mount",
+        "ids": "Set uid and gid",
+        "smbvers": "SMB 3.0"
+      },
+      "summary": "Mounts {{remote}} {{mode}} as Docker volume {{name}}",
+      "summaryEmpty": "Fill in the server and path to see what will be mounted.",
+      "readOnly": "read-only",
+      "readWrite": "read-write",
+      "cancel": "Cancel",
+      "submit": "Add network share",
+      "submitting": "Adding...",
+      "added": "Network share \"{{name}}\" added.",
+      "errors": {
+        "nameRequired": "Give the share a name.",
+        "nameFormat": "Use lowercase letters, numbers and dashes, starting and ending with a letter or number.",
+        "nameTaken": "A share with this name already exists.",
+        "hostRequired": "Enter the server's hostname or IP address.",
+        "hostFormat": "That is not a valid hostname or IP address.",
+        "pathRequired": "Enter the path on the server.",
+        "nfsPathFormat": "An NFS export path starts with a slash, for example /export/media.",
+        "smbPathFormat": "Enter just the share name, with no slashes or spaces.",
+        "usernameRequired": "SMB shares need a username.",
+        "passwordRequired": "SMB shares need a password."
+      }
+    }
   },
   "organizationsPage": {
     "title": "Organizations",
