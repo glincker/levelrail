@@ -28,21 +28,141 @@
   "deploy": {
     "open": "Deploy function",
     "title": "Deploy a function",
-    "description": "Builds the handler in your repository with Railpack, then keeps it asleep until a request arrives.",
-    "name": "Name",
-    "repo": "Repository URL",
-    "ref": "Branch, tag or commit",
-    "directory": "Handler directory (optional)",
-    "directoryHint": "Leave empty when the handler is at the repository root.",
-    "routeDomain": "Also serve on domain",
-    "routePath": "Path prefix",
-    "routeHint": "Optional. A domain already attached to an app, plus a path such as /hello, serves this function at domain/hello. The prefix is stripped before the request reaches the handler.",
-    "port": "Port",
-    "idle": "Sleep after idle minutes",
-    "submit": "Deploy",
+    "description": "Pick what to run, point at the code, and go live. Each step has a sensible default.",
     "cancel": "Cancel",
+    "back": "Back",
+    "next": "Continue",
+    "submit": "Deploy",
+    "submitting": "Deploying",
+    "stepLabel": "Step {{current}} of {{total}}",
+    "steps": {
+      "template": "What to run",
+      "source": "Where the code is",
+      "details": "Details"
+    },
     "started": "Build started for {{name}}. It goes live when the build finishes.",
-    "failed": "Could not deploy {{name}}: {{message}}"
+    "failed": "Could not deploy {{name}}: {{message}}",
+    "template": {
+      "heading": "What do you want to run?",
+      "groupStarters": "Starter handlers",
+      "groupIdeas": "Ideas to start from",
+      "groupOwn": "Bring your own"
+    },
+    "presets": {
+      "go": { "title": "Go", "body": "A tiny HTTP handler in Go, fast to start." },
+      "node": { "title": "Node.js", "body": "A ten line handler in Node.js." },
+      "python": { "title": "Python", "body": "A small handler in Python." },
+      "webhook": {
+        "title": "Webhook receiver",
+        "body": "Accept events from other services and act on them."
+      },
+      "scheduled": {
+        "title": "Scheduled job runner",
+        "body": "Run a task whenever a schedule calls it."
+      },
+      "form": { "title": "Form to email", "body": "Turn a form post into an email." },
+      "shortener": {
+        "title": "URL shortener",
+        "body": "Map short paths to long links."
+      },
+      "chatbot": { "title": "Chat bot", "body": "Answer chat platform messages." },
+      "repo": {
+        "title": "Use my own repository",
+        "body": "Deploy a handler you already have in git."
+      },
+      "image": {
+        "title": "Use a container image",
+        "body": "Run a prebuilt image from a registry."
+      }
+    },
+    "source": {
+      "headingRepo": "Where is the code?",
+      "headingImage": "Which container image?",
+      "starterTitle": "Starter code to begin with",
+      "starterBody": "Copy these files into a new repository and push it. Then pick that repository below.",
+      "search": "Search your repositories",
+      "loading": "Loading repositories",
+      "recent": "Most recently updated first",
+      "noRepos": "No repositories found. Connect a git provider in Settings, or paste a URL instead.",
+      "reposError": "Repositories could not be loaded: {{message}}",
+      "pasteInstead": "Paste a URL instead",
+      "pickInstead": "Pick from my repositories",
+      "repoUrl": "Repository URL",
+      "repoUrlPlaceholder": "https://github.com/you/hello",
+      "ref": "Branch",
+      "refHint": "Defaults to the repository's main branch.",
+      "directory": "Handler directory",
+      "directoryHint": "Leave empty when the handler is at the repository root.",
+      "detected": "Detected {{framework}}. Railpack will build it.",
+      "detecting": "Checking the repository",
+      "image": "Image",
+      "imagePlaceholder": "ghcr.io/you/hello:1.0",
+      "imageHint": "Include a tag such as :1.0. Without one the latest tag is used.",
+      "private": "Private"
+    },
+    "details": {
+      "name": "Name",
+      "nameHint": "Lowercase letters, numbers and dashes. It becomes part of the URL.",
+      "nameChecking": "Checking availability",
+      "nameFree": "{{name}} is available.",
+      "idle": "Sleep after",
+      "idleOption": {
+        "5": "5 minutes",
+        "10": "10 minutes",
+        "60": "1 hour",
+        "1440": "1 day",
+        "custom": "Custom"
+      },
+      "customIdle": "Minutes",
+      "idleHint": "A quiet function sleeps to save resources. The next request wakes it, which adds a short delay called a cold start.",
+      "route": "Serve at a path (optional)",
+      "routeHint": "Also answer at one of your domains, for example example.com/hello.",
+      "routeDomain": "Domain",
+      "routeNone": "Do not add a path",
+      "routePath": "Path",
+      "previewFunction": "Function URL",
+      "previewRoute": "Path URL",
+      "previewPending": "Assigned when the build finishes",
+      "advanced": "Advanced settings",
+      "port": "Port",
+      "portHint": "The port your handler listens on. It receives it as the PORT variable."
+    },
+    "summary": {
+      "title": "Ready to deploy",
+      "buildRailpack": "build with Railpack",
+      "buildImage": "run the image as is",
+      "text": "This will {{build}}, sleep after {{sleep}}, and be reachable at {{url}}.",
+      "sleepMinutes": "{{count}} minutes",
+      "sleepHour": "1 hour",
+      "sleepDay": "1 day",
+      "urlPending": "a URL assigned when the build finishes"
+    },
+    "result": {
+      "title": "Deploying {{name}}",
+      "building": "Building and starting your function. This usually takes a minute or two.",
+      "live": "{{name}} is live.",
+      "failed": "The build failed. Open the function to read the build log.",
+      "urlLabel": "Function URL",
+      "waitingUrl": "The URL appears here as soon as it is ready.",
+      "copy": "Copy URL",
+      "copied": "Copied",
+      "open": "Open function",
+      "done": "Close"
+    },
+    "validation": {
+      "repoRequired": "Choose a repository or paste its URL.",
+      "repoInvalid": "Enter a full URL that starts with https://.",
+      "imageRequired": "Enter the image to run.",
+      "imageInvalid": "Image names cannot contain spaces.",
+      "nameRequired": "Give the function a name.",
+      "nameInvalid": "Use lowercase letters, numbers and dashes, starting and ending with a letter or number.",
+      "nameTooLong": "Keep the name short enough to fit in a URL.",
+      "nameTaken": "That name is already used by another app. Pick a different one.",
+      "portInvalid": "Enter a port between 1 and 65535.",
+      "idleInvalid": "Enter a whole number of minutes, at least the minimum allowed.",
+      "domainRequired": "Choose a domain for the path.",
+      "pathInvalid": "Use a path such as /hello with letters, numbers, dashes or dots."
+    }
   },
   "templates": {
     "title": "Starter handlers",

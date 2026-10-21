@@ -28,8 +28,27 @@ picks the branch, `--wait 0` returns without waiting. The handler listens on the
 `PORT` variable, which is set to `--port` (default 8080). The first request after
 it sleeps wakes it.
 
-The dashboard has the same flow under Functions: the Deploy function button, and
-copyable starter handlers for each runtime.
+The dashboard has the same flow under Functions, as a three step guide behind the
+Deploy function button:
+
+1. **What to run.** Pick a starter (Go, Node.js, Python), an idea that prefills
+   the runtime, sleep period and a suggested name (webhook receiver, scheduled
+   job runner, form to email, URL shortener, chat bot), your own repository, or a
+   container image. Ideas show copyable starter code to push first.
+2. **Where the code is.** Choose from the repositories of your connected git
+   providers (search, most recently updated first) or paste a URL, then pick a
+   branch. The build is checked and the detected framework is shown. For an image,
+   enter the reference with a tag.
+3. **Details.** The name is suggested from the repository or image and checked for
+   availability. "Sleep after" is a select (5 minutes, 10 minutes, 1 hour, 1 day,
+   custom). Serving at a path uses a dropdown of domains already attached to an
+   app, with a live preview of the final URL. The port sits under Advanced
+   settings. A summary line states how it builds, when it sleeps and where it is
+   reachable before you press Deploy.
+
+After deploying, the dialog follows the build and shows the function URL with
+Copy and Open function buttons. The starter handlers also stay on the page for
+each runtime.
 
 ## Image functions, calling and statistics
 

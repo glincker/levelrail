@@ -90,6 +90,8 @@ export interface DeployFunctionInput {
   repoUrl: string
   ref: string
   directory: string
+  /** A prebuilt registry reference; when set, nothing is cloned or built. */
+  image?: string
   port: number
   idleMinutes: number
   routeDomain?: string
@@ -148,7 +150,7 @@ export async function deployFunction(
   if (!(await appExists(input.name))) {
     await createApp({
       name: input.name,
-      image: `${input.name}:pending`,
+      image: input.image || `${input.name}:pending`,
       port: input.port,
       env: { PORT: String(input.port) },
     })
@@ -160,6 +162,15 @@ export async function deployFunction(
       path: input.routePath,
       strip_prefix: true,
     })
+  }
+  if (input.image) {
+    await triggerBuild(input.name, {
+      repoUrl: '',
+      ref: '',
+      buildType: 'image',
+      image: input.image,
+    })
+    return
   }
   await triggerBuild(input.name, {
     repoUrl: input.repoUrl,
