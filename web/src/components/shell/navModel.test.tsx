@@ -8,8 +8,10 @@ import {
   allGlobalItems,
   defaultGroupOpen,
   isGlobalItemActive,
+  pinnedGlobalItems,
   resolveOpen,
 } from './navModel'
+import { ROUTE_ENTRIES } from '../commandPaletteData'
 import { isBoolRecord, readJson, writeJson } from './persist'
 
 const EXPECTED_GLOBAL = [
@@ -19,14 +21,12 @@ const EXPECTED_GLOBAL = [
   '/apps',
   '/deployments',
   '/functions',
-  '/deploy-timeline',
   '/projects',
   '/databases',
   '/backups',
   '/nodes',
   '/resource-advisor',
   '/usage',
-  '/costs',
   '/resources',
   '/network',
   '/network/proxy',
@@ -38,7 +38,6 @@ const EXPECTED_GLOBAL = [
   '/loadbalancers',
   '/images',
   '/inbox',
-  '/builds',
   '/settings/registry',
   '/settings/registry-credentials',
   '/settings/network-shares',
@@ -144,6 +143,44 @@ describe('global nav model', () => {
   ])('active match %s vs %s', (path, to, want) => {
     const item = allGlobalItems().find((i) => i.to === to)
     expect(item && isGlobalItemActive(path, item)).toBe(want)
+  })
+})
+
+describe('grouped nav entries', () => {
+  const REMOVED = ['/deploy-timeline', '/builds', '/costs']
+  const item = (to: string) => allGlobalItems().find((i) => i.to === to)
+
+  it.each([
+    ['/deployments', '/deployments', true],
+    ['/deploy-timeline', '/deployments', true],
+    ['/deploy-timeline?x', '/deployments', true],
+    ['/builds', '/deployments', true],
+    ['/builds/something', '/deployments', true],
+    ['/buildsx', '/deployments', false],
+    ['/usage', '/usage', true],
+    ['/costs', '/usage', true],
+    ['/costs/x', '/usage', true],
+    ['/costsx', '/usage', false],
+    ['/images', '/deployments', false],
+  ])('active match %s vs %s', (path, to, want) => {
+    const it2 = item(to)
+    expect(it2 && isGlobalItemActive(path, it2)).toBe(want)
+  })
+
+  it('keeps every removed destination reachable by alsoActive and the palette', () => {
+    const also = allGlobalItems().flatMap((i) => i.alsoActive ?? [])
+    const palette = ROUTE_ENTRIES.map((e) => e.to)
+    for (const to of REMOVED) {
+      expect(item(to), to).toBeUndefined()
+      expect(also, to).toContain(to)
+      expect(palette, to).toContain(to)
+    }
+  })
+
+  it('ignores stale pins for removed entries', () => {
+    const groups = GLOBAL_NAV_GROUPS
+    const pinned = pinnedGlobalItems(groups, ['builds', 'costs', 'deployments'])
+    expect(pinned.map((i) => i.id)).toEqual(['deployments'])
   })
 })
 

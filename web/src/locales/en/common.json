@@ -172,6 +172,19 @@
     "emergencyDocs": "Emergency access"
   },
   "shell": {
+    "sectionTabs": {
+      "deployments": {
+        "label": "Deployment sections",
+        "deploys": "Deploys",
+        "timeline": "Timeline",
+        "builds": "Builds"
+      },
+      "cost": {
+        "label": "Usage and cost sections",
+        "usage": "Usage",
+        "costs": "Cost explorer"
+      }
+    },
     "pins": {
       "group": "Pinned",
       "pin": "Pin {{label}}",

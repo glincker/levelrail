@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { MetricTile, SkeletonList } from '@/components/kit'
 import { PageTemplate } from '../shell/PageTemplate'
+import { DeploymentsSectionTabs } from '../shell/SectionTabGroups'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { useBuildCenter } from '../../queries/buildCenter'
 import { BuildCachePanel } from './BuildCachePanel'
@@ -20,7 +21,12 @@ export function BuildsPage() {
   const cacheFull = data?.rows.some((r) => r.hint?.fix === 'prune_cache')
 
   return (
-    <PageTemplate title={t('title')} description={t('subtitle')} width="wide">
+    <PageTemplate
+      title={t('title')}
+      description={t('subtitle')}
+      width="wide"
+      tabs={<DeploymentsSectionTabs />}
+    >
       <div className="flex flex-col gap-6">
         {builds.isPending ? <SkeletonList rows={6} /> : null}
 

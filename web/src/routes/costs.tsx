@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { CoinsIcon } from '@phosphor-icons/react/dist/ssr'
 import { PageTemplate } from '@/components/shell/PageTemplate'
+import { CostSectionTabs } from '@/components/shell/SectionTabGroups'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -91,6 +92,7 @@ function CostsPage() {
       description={t('description')}
       helpPath="/cost-explorer"
       helpLabel={t('title')}
+      tabs={<CostSectionTabs />}
     >
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         <ToggleGroup

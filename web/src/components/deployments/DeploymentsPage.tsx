@@ -1,5 +1,5 @@
 import { PageTemplate } from '../shell/PageTemplate'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useEnvironmentScope } from '../../lib/environmentScope'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
@@ -56,6 +56,8 @@ export interface DeploymentsPageProps {
   onViewApproval?: () => void
   /** Row clicks go to the deployment's own page when set; the drawer stays the fallback. */
   onOpenDetails?: (d: Deployment) => void
+  /** Section tab strip shown under the page hero. */
+  tabs?: ReactNode
 }
 
 function filtersOf(s: DeploymentsSearch): DeploymentFilters {
@@ -75,6 +77,7 @@ export function DeploymentsPage({
   onSearchChange,
   onViewApproval,
   onOpenDetails,
+  tabs,
 }: DeploymentsPageProps) {
   const filters = filtersOf(search)
   const openId = search.d
@@ -223,6 +226,7 @@ export function DeploymentsPage({
   return (
     <PageTemplate
       title="Deployments"
+      tabs={tabs}
       width="wide"
       actions={
         <>

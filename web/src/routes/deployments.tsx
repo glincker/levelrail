@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { deployLogsPath } from '../queries/deployments'
+import { DeploymentsSectionTabs } from '../components/shell/SectionTabGroups'
 import { DeploymentsPage } from '../components/deployments/DeploymentsPage'
 import {
   parseDeploymentsSearch,
@@ -22,6 +23,7 @@ function DeploymentsRoute() {
   const goTo = useNavigate()
   return (
     <DeploymentsPage
+      tabs={<DeploymentsSectionTabs />}
       search={parseDeploymentsSearch(search)}
       onViewApproval={() => {
         void goTo({ to: '/approvals' })

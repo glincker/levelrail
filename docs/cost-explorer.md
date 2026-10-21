@@ -8,7 +8,7 @@ The Cost explorer builds on [Usage and cost](/usage-and-cost). It uses the same 
 
 ## Exploring cost
 
-Open **Cost explorer** in the sidebar. Pick how to group the cost:
+Open **Usage and cost** in the sidebar, then the **Cost explorer** tab. Pick how to group the cost:
 
 | Group by | Meaning |
 | --- | --- |
