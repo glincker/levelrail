@@ -1,0 +1,85 @@
+/* Route view transitions. The shell (brand header, top bar, footer) is not
+   named, so it stays put; only the sidebar body and the page slide. Types come
+   from lib/routeTransition.ts. Browsers without view transitions or
+   :active-view-transition-type simply swap, and reduced motion never starts one. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+  ::view-transition-group(nav-panel),
+  ::view-transition-group(page-content) {
+    overflow: clip;
+  }
+  ::view-transition-old(nav-panel),
+  ::view-transition-new(nav-panel),
+  ::view-transition-old(page-content),
+  ::view-transition-new(page-content) {
+    animation-duration: var(--route-transition-ms, 200ms);
+    animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+    animation-fill-mode: both;
+  }
+  :root:active-view-transition-type(same)::view-transition-old(page-content) {
+    animation-name: route-fade-out;
+    animation-duration: 100ms;
+  }
+  :root:active-view-transition-type(same)::view-transition-new(page-content) {
+    animation-name: route-fade-in;
+    animation-duration: 140ms;
+  }
+  :root:active-view-transition-type(forward)::view-transition-old(nav-panel),
+  :root:active-view-transition-type(forward)::view-transition-old(
+      page-content
+    ) {
+    animation-name: route-out-left;
+  }
+  :root:active-view-transition-type(forward)::view-transition-new(nav-panel),
+  :root:active-view-transition-type(forward)::view-transition-new(
+      page-content
+    ) {
+    animation-name: route-in-right;
+  }
+  :root:active-view-transition-type(back)::view-transition-old(nav-panel),
+  :root:active-view-transition-type(back)::view-transition-old(page-content) {
+    animation-name: route-out-right;
+  }
+  :root:active-view-transition-type(back)::view-transition-new(nav-panel),
+  :root:active-view-transition-type(back)::view-transition-new(page-content) {
+    animation-name: route-in-left;
+  }
+}
+
+@keyframes route-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes route-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes route-out-left {
+  to {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+}
+@keyframes route-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+@keyframes route-out-right {
+  to {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+@keyframes route-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+}
