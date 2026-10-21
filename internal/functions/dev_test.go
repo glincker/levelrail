@@ -3,7 +3,6 @@ package functions
 import (
 	"os"
 	"path/filepath"
-	"slices"
 	"testing"
 	"time"
 )
@@ -33,12 +32,17 @@ func TestDetectDevSpec(t *testing.T) {
 	}
 }
 
-func TestDockerRunArgsSetsPortLastAfterEnvFile(t *testing.T) {
-	args := DevSpec{Image: "img", Command: []string{"run"}}.DockerRunArgs("/h", "/h/.env.local", 9000)
-	envFile := slices.Index(args, "--env-file")
-	port := slices.Index(args, "PORT=9000")
-	if envFile < 0 || port < envFile || args[len(args)-2] != "img" {
-		t.Errorf("args = %v", args)
+func TestShellCommandChangesIntoMount(t *testing.T) {
+	got := DevSpec{Command: "go run ."}.ShellCommand()
+	if len(got) != 3 || got[2] != "cd /app && go run ." {
+		t.Errorf("command = %v", got)
+	}
+}
+
+func TestParseEnvFile(t *testing.T) {
+	env := ParseEnvFile([]byte("# c\nA=1\n\nB = \"two\"\nbad\nC=x=y\n"))
+	if len(env) != 3 || env["A"] != "1" || env["B"] != "two" || env["C"] != "x=y" {
+		t.Errorf("env = %v", env)
 	}
 }
 

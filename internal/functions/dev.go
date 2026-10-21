@@ -4,14 +4,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
+	"strings"
 )
+
+// DevMountPath is where the handler directory is mounted in the dev container.
+const DevMountPath = "/app"
 
 // DevSpec is how to run a handler directory in a throwaway container.
 type DevSpec struct {
 	Runtime string
 	Image   string
-	Command []string
+	Command string
 }
 
 var devImages = map[string]string{
@@ -20,10 +23,10 @@ var devImages = map[string]string{
 	"go":     "golang:alpine",
 }
 
-var devCommands = map[string][]string{
-	"node":   {"npm", "start"},
-	"python": {"sh", "-c", "pip install --no-cache-dir -r requirements.txt && python main.py"},
-	"go":     {"go", "run", "."},
+var devCommands = map[string]string{
+	"node":   "npm start",
+	"python": "pip install --no-cache-dir -r requirements.txt && python main.py",
+	"go":     "go run .",
 }
 
 var devMarkers = []struct{ file, runtime string }{
@@ -47,13 +50,25 @@ func DetectDevSpec(dir, image string) (DevSpec, error) {
 	return DevSpec{}, fmt.Errorf("no package.json, requirements.txt, main.py or go.mod in %s", dir)
 }
 
-// DockerRunArgs builds the docker run arguments: the handler mounted at /app, PORT set last so it wins over the env file.
-func (s DevSpec) DockerRunArgs(absDir, envFile string, port int) []string {
-	p := strconv.Itoa(port)
-	args := []string{"run", "--rm", "-i", "-p", p + ":" + p, "-v", absDir + ":/app", "-w", "/app"}
-	if envFile != "" {
-		args = append(args, "--env-file", envFile)
+// ShellCommand runs the handler from the mounted directory; the Engine API has no working-dir field on ContainerSpec.
+func (s DevSpec) ShellCommand() []string {
+	return []string{"sh", "-c", "cd " + DevMountPath + " && " + s.Command}
+}
+
+// ParseEnvFile reads KEY=VALUE lines, skipping blanks and # comments.
+func ParseEnvFile(data []byte) map[string]string {
+	env := map[string]string{}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		k, v, ok := strings.Cut(line, "=")
+		k = strings.TrimSpace(k)
+		if !ok || k == "" {
+			continue
+		}
+		env[k] = strings.Trim(strings.TrimSpace(v), `"'`)
 	}
-	args = append(args, "-e", "PORT="+p, s.Image)
-	return append(args, s.Command...)
+	return env
 }

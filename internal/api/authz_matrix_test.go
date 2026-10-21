@@ -78,6 +78,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /api/v1/auth/session-links/{token}/consume": "retired form, always answers 405",
 	"GET /.well-known/jwks.json":                     "pipeline OIDC verification key set, meant to be fetched by AWS/GCP/Vault with no session; answers 404 rather than 401 when OIDC is unconfigured (router.go's oidcJWKS is nil), which leaks nothing either",
 	"POST /api/v1/webhooks/github/{name}":            "authenticated by the HMAC signature of the app's webhook secret",
+	"POST /api/v1/webhooks/functions/{name}":         "authenticated by the HMAC of timestamp and body with the function's own webhook secret, inside a replay window, rate limited per IP and function",
 	"POST /api/v1/hooks/pipeline/{id}/{token}":       "authenticated by the per-pipeline secret URL token (sha256 compared in constant time, uniform 404 on any mismatch), optionally plus a body HMAC, rate limited",
 	"POST /api/v1/ci/oidc-exchange":                  "authenticated by a CI provider OIDC identity token (signature, issuer, audience and expiry verified) that must match a per-app trust, rate limited",
 	"POST /api/v1/hooks/deploy/{id}/{token}":         "authenticated by the per-hook secret token in the path (hash compared in constant time); any mismatch answers a uniform 404",
