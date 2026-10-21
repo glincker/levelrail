@@ -33,10 +33,14 @@ func inboxUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s inbox list [--unread] [--kind alert|approval|deploy|upgrade] [--archived] [--limit N]
   %[1]s inbox read (--id ID)... | --all
-  %[1]s inbox archive (--id ID)... [--restore]
+  %[1]s inbox archive (--id ID)... [--restore] | (--resolved | --read) [--older-than 72h]
+  %[1]s inbox delete (--id ID)... --yes [--restore]
+  %[1]s inbox clear (--archived | --resolved | --read) [--older-than 72h] --yes
 
 The inbox gathers alerts, approval requests (sign-in and deploy), failed
 deploys and failed database upgrades. Read and archive state is yours alone.
+Only stored alert items can be deleted; approvals, failed deploys and failed
+upgrades are derived live and can only be archived. Deleting needs --yes.
 Approve or retry from the dashboard inbox page or with the commands the
 title points to.
 `, prog)
@@ -51,6 +55,10 @@ func runInbox(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 			return runAPICmd(prog, inboxReadCommand(), args[1:], stdout, stderr, lookupEnv)
 		case "archive":
 			return runAPICmd(prog, inboxArchiveCommand(), args[1:], stdout, stderr, lookupEnv)
+		case "delete":
+			return runAPICmd(prog, inboxDeleteCommand(), args[1:], stdout, stderr, lookupEnv)
+		case "clear":
+			return runAPICmd(prog, inboxBulkCommand("inbox clear", "delete", true), args[1:], stdout, stderr, lookupEnv)
 		}
 	}
 	return dispatchSub(prog, "inbox", inboxUsage, map[string]apiCmd{}, args, stdout, stderr, lookupEnv)
@@ -163,16 +171,18 @@ func printInboxEntries(out io.Writer, rows []inboxEntry) {
 func inboxArchiveCommand() apiCmd {
 	var ids stringList
 	var restore bool
+	scoped := inboxBulkCommand("inbox archive", "archive", false)
 	return apiCmd{
 		label: "inbox archive",
 		usage: inboxUsage,
 		setup: func(fs *flag.FlagSet) {
 			fs.Var(&ids, "id", "inbox item ID to archive (repeatable)")
 			fs.BoolVar(&restore, "restore", false, "move the items back to the inbox")
+			scoped.setup(fs)
 		},
-		run: func(ctx context.Context, c *Client, _ []string) (any, func(io.Writer), error) {
+		run: func(ctx context.Context, c *Client, args []string) (any, func(io.Writer), error) {
 			if len(ids) == 0 {
-				return nil, nil, newValidationError("give --id ID (repeatable)")
+				return scoped.run(ctx, c, args)
 			}
 			err := c.ArchiveInbox(ctx, ids, restore)
 			msg := "archived"

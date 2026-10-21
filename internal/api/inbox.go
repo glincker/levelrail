@@ -19,6 +19,8 @@ type InboxStore interface {
 	MarkAllInboxRead(ctx context.Context, principal string, now time.Time) error
 	GetInboxState(ctx context.Context, principal string) (alerting.InboxState, error)
 	ArchiveInbox(ctx context.Context, principal string, ids []string, archived bool) error
+	DeleteInbox(ctx context.Context, principal string, ids []string, restore bool, now time.Time) error
+	ClearInbox(ctx context.Context, principal, action string, sel alerting.InboxSelector, dryRun bool) (int, error)
 	GetInboxPrefs(ctx context.Context, principal string) (alerting.InboxPrefs, error)
 	SaveInboxPrefs(ctx context.Context, p alerting.InboxPrefs, now time.Time) error
 }
@@ -30,7 +32,8 @@ func WithInbox(s InboxStore) Option {
 
 type inboxItemResource struct {
 	alertHistoryResource
-	Read bool `json:"read"`
+	Read     bool `json:"read"`
+	Resolved bool `json:"resolved"`
 }
 
 type inboxPrefsResource struct {
@@ -156,7 +159,7 @@ func (rt *Router) handleListInbox(w http.ResponseWriter, r *http.Request) {
 		if e.App != "" && !canSee(e.App) {
 			continue
 		}
-		out = append(out, inboxItemResource{Read: e.Read, alertHistoryResource: alertHistoryResource{
+		out = append(out, inboxItemResource{Read: e.Read, Resolved: e.Resolved, alertHistoryResource: alertHistoryResource{
 			ID: e.ID, At: e.At.UTC(), RuleID: e.RuleID, RuleName: e.RuleName, RuleKind: e.RuleKind, ResourceID: e.ResourceID,
 			App: e.App, Node: e.Node, Severity: e.Severity, Event: e.Event, Outcome: e.Outcome, Detail: e.Detail,
 			SilenceID: e.SilenceID, ChannelID: e.ChannelID, Error: e.Error, Cert: certPayloadFrom(e.Cert)}})

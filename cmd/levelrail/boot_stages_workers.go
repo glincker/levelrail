@@ -324,6 +324,13 @@ func (s *bootState) startSchedulers() {
 		}
 	}()
 
+	inboxTidy := &alerting.TidyRunner{DB: alertingDB, Cfg: alerting.TidyConfigFromEnv(os.Getenv), Logger: logger}
+	go func() {
+		if err := inboxTidy.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("inbox tidy stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	startSecretRotation(ctx, logger, db, apiRouter, secretsManager != nil)
 
 	startDatabaseUpgrades(ctx, logger, db, secretsManager, client, engine.Nudge, backupRunner, backupVerifyRunner, alertingDB, deployDispatcher,

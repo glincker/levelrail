@@ -35,7 +35,8 @@ type InboxPrefs struct {
 // InboxItem is one history entry as seen by a principal.
 type InboxItem struct {
 	HistoryEntry
-	Read bool
+	Read     bool
+	Resolved bool
 }
 
 // InboxFilter narrows ListInbox.
@@ -94,7 +95,13 @@ const inboxBase = `
 	LEFT JOIN inbox_read_state s ON s.principal = ?
 	LEFT JOIN inbox_read r ON r.principal = ? AND r.history_id = h.id
 	WHERE h.outcome IN ('sent','quiet_hours','failed') AND h.event IN ('fired','resolved','flapping','group')
-	AND EXISTS (SELECT 1 FROM inbox_archive a WHERE a.principal = ? AND a.item_id = h.id) = ?`
+	AND EXISTS (SELECT 1 FROM inbox_archive a WHERE a.principal = ? AND a.item_id = h.id) = ?
+		AND NOT EXISTS (SELECT 1 FROM inbox_deleted d WHERE d.principal = ? AND d.item_id = h.id)`
+
+// A fired item counts as resolved once a later resolution exists for the same rule and target.
+const inboxResolvedExpr = `(h.event = 'resolved' OR (h.event = 'fired' AND EXISTS (
+		SELECT 1 FROM alert_history x WHERE x.rule_id = h.rule_id AND x.resource_id = h.resource_id AND x.app = h.app
+		AND x.event = 'resolved' AND x.at > h.at)))`
 
 const inboxReadExpr = `(r.history_id IS NOT NULL OR (s.read_before IS NOT NULL AND h.at <= s.read_before))`
 
@@ -150,23 +157,27 @@ func (db *DB) SaveInboxPrefs(ctx context.Context, p InboxPrefs, now time.Time) e
 
 // ListInbox returns the principal's items newest first, honoring its routing rules.
 func (db *DB) ListInbox(ctx context.Context, principal string, f InboxFilter) ([]InboxItem, error) {
-	prefs, err := db.GetInboxPrefs(ctx, principal)
-	if err != nil {
-		return nil, err
-	}
 	limit := f.Limit
 	if limit <= 0 || limit > inboxMaxLimit {
 		limit = inboxDefaultLimit
 	}
+	return db.listInbox(ctx, principal, f, limit)
+}
+
+func (db *DB) listInbox(ctx context.Context, principal string, f InboxFilter, limit int) ([]InboxItem, error) {
+	prefs, err := db.GetInboxPrefs(ctx, principal)
+	if err != nil {
+		return nil, err
+	}
 	before := f.Before
 	var out []InboxItem
 	for len(out) < limit {
-		q := `SELECT h.id, h.at, h.rule_id, h.rule_name, h.rule_kind, h.resource_id, h.app, h.node, h.severity, h.event, h.outcome, h.detail, h.silence_id, h.channel_id, h.error, h.cert_json, ` + inboxReadExpr + inboxBase
+		q := `SELECT h.id, h.at, h.rule_id, h.rule_name, h.rule_kind, h.resource_id, h.app, h.node, h.severity, h.event, h.outcome, h.detail, h.silence_id, h.channel_id, h.error, h.cert_json, ` + inboxReadExpr + `, ` + inboxResolvedExpr + inboxBase
 		archivedArg := 0
 		if f.Archived {
 			archivedArg = 1
 		}
-		args := []any{principal, principal, principal, archivedArg}
+		args := []any{principal, principal, principal, archivedArg, principal}
 		if before != nil {
 			q += ` AND h.at < ?`
 			args = append(args, fmtTime(*before))
@@ -188,9 +199,10 @@ func (db *DB) ListInbox(ctx context.Context, principal string, f InboxFilter) ([
 				at       string
 				certJSON string
 				read     int
+				resolved int
 			)
 			if err := rows.Scan(&it.ID, &at, &it.RuleID, &it.RuleName, &it.RuleKind, &it.ResourceID, &it.App, &it.Node, &it.Severity,
-				&it.Event, &it.Outcome, &it.Detail, &it.SilenceID, &it.ChannelID, &it.Error, &certJSON, &read); err != nil {
+				&it.Event, &it.Outcome, &it.Detail, &it.SilenceID, &it.ChannelID, &it.Error, &certJSON, &read, &resolved); err != nil {
 				_ = rows.Close()
 				return nil, fmt.Errorf("alerting: scan inbox row: %w", err)
 			}
@@ -200,6 +212,7 @@ func (db *DB) ListInbox(ctx context.Context, principal string, f InboxFilter) ([
 			}
 			it.Cert = decodeCertPayload(certJSON)
 			it.Read = read != 0
+			it.Resolved = resolved != 0
 			n++
 			last = it.At
 			if len(out) < limit && prefs.Visible(it.HistoryEntry) {
@@ -316,14 +329,8 @@ func (db *DB) ArchiveInbox(ctx context.Context, principal string, ids []string, 
 		return fmt.Errorf("alerting: archive inbox: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	q := `DELETE FROM inbox_archive WHERE principal = ? AND item_id = ?`
-	if archived {
-		q = `INSERT OR IGNORE INTO inbox_archive (principal, item_id) VALUES (?, ?)`
-	}
-	for _, id := range ids {
-		if _, err := tx.ExecContext(ctx, q, principal, id); err != nil {
-			return fmt.Errorf("alerting: archive inbox: %w", err)
-		}
+	if err := archiveTx(ctx, tx, principal, ids, archived, time.Now()); err != nil {
+		return err
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("alerting: archive inbox: %w", err)

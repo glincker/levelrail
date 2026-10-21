@@ -1,34 +1,59 @@
-import { useCallback, useEffect, useState } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   ArchiveIcon,
   CheckIcon,
+  TrashIcon,
   TrayIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { Switch } from '@/components/ui/switch'
-import { cn } from '@/lib/utils'
+import { toast, toastAction } from '@/components/ui/toast'
 import {
   INBOX_KINDS,
   filterInboxEntries,
   type InboxEntry,
   type InboxKind,
 } from '../../lib/inboxEntries'
+import {
+  UNDO_SECONDS,
+  canDelete,
+  deleteWithUndo,
+  groupEntries,
+  selectedEntries,
+  toggleAll,
+  toggleSelection,
+  type SelectionState,
+} from '../../lib/inboxManage'
 import { formatAge } from '../../lib/format'
-import { useArchiveInbox, useMarkInboxRead } from '../../queries/inbox'
+import {
+  useArchiveInbox,
+  useDeleteInbox,
+  useMarkInboxRead,
+} from '../../queries/inbox'
 import { useInboxEntries } from '../../queries/inboxFeed'
 import { InboxAction } from './InboxAction'
-import { SignInDecision } from './SignInDecision'
 
-const SEVERITY_DOT: Record<InboxEntry['severity'], string> = {
-  critical: 'bg-destructive',
-  warning: 'bg-amber-500',
-  info: 'bg-sky-500',
-}
+const InboxList = lazy(() =>
+  import('./InboxList').then((m) => ({ default: m.InboxList })),
+)
+const InboxBulkBar = lazy(() => import('./InboxBulkBar'))
+const InboxTidyMenu = lazy(() => import('./InboxTidyMenu'))
+
+const NO_SELECTION: SelectionState = { selected: new Set(), anchor: null }
 
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
@@ -44,12 +69,25 @@ export function InboxView() {
   const [archived, setArchived] = useState(false)
   const [kind, setKind] = useState<InboxKind | 'all'>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const { entries, isPending } = useInboxEntries(archived)
+  const [pick, setPick] = useState<SelectionState>(NO_SELECTION)
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
+  const lastUndo = useRef<(() => Promise<void>) | null>(null)
+  const { entries, isPending, hasMore, loadMore } = useInboxEntries(archived)
   const mark = useMarkInboxRead()
   const archive = useArchiveInbox()
+  const del = useDeleteInbox()
   const list = filterInboxEntries(entries, { unreadOnly, kind, archived })
+  const rows = useMemo(() => groupEntries(list), [list])
+  const listIds = list.map((e) => e.id)
   const selected = list.find((e) => e.id === selectedId) ?? list.at(0)
+  const inView = entries.filter((e) => e.archived === archived)
   const unread = entries.filter((e) => !e.read && !e.archived)
+  const tabBase = filterInboxEntries(entries, {
+    unreadOnly,
+    kind: 'all',
+    archived,
+  })
+  const picked = selectedEntries(list, pick.selected)
 
   const select = useCallback(
     (e: InboxEntry) => {
@@ -58,6 +96,20 @@ export function InboxView() {
     },
     [mark],
   )
+  const dropFromSelection = useCallback((ids: string[]) => {
+    setPick((s) => ({
+      anchor: s.anchor,
+      selected: new Set([...s.selected].filter((id) => !ids.includes(id))),
+    }))
+  }, [])
+  const archiveMany = useCallback(
+    (ents: InboxEntry[]) => {
+      const ids = ents.map((e) => e.id)
+      archive.mutate({ ids, restore: archived })
+      dropFromSelection(ids)
+    },
+    [archive, archived, dropFromSelection],
+  )
   const toggleArchive = useCallback(
     (e: InboxEntry) => {
       const idx = list.findIndex((x) => x.id === e.id)
@@ -65,6 +117,33 @@ export function InboxView() {
       setSelectedId((list[idx + 1] ?? list[idx - 1])?.id ?? null)
     },
     [archive, list],
+  )
+  const deleteMany = useCallback(
+    (ents: InboxEntry[]) => {
+      if (!canDelete(ents)) return
+      const ids = ents.map((e) => e.id)
+      deleteWithUndo(ids, {
+        remove: (x) => del.mutateAsync({ ids: x }),
+        restore: (x) => del.mutateAsync({ ids: x, restore: true }),
+        notify: (undo) => {
+          lastUndo.current = undo
+          toast.add({
+            title: t('page.deleted', { count: ids.length }),
+            timeout: UNDO_SECONDS * 1000,
+            actionProps: toastAction(t('page.undo'), () => {
+              void undo()
+            }),
+          })
+        },
+      })
+        .then(() => {
+          dropFromSelection(ids)
+        })
+        .catch(() => {
+          toast.add({ title: t('page.deleteError'), type: 'error' })
+        })
+    },
+    [del, dropFromSelection, t],
   )
 
   useEffect(() => {
@@ -78,13 +157,24 @@ export function InboxView() {
       } else if (ev.key === 'e' && selected) {
         toggleArchive(selected)
         ev.preventDefault()
+      } else if (ev.key === '#' && selected?.deletable) {
+        deleteMany([selected])
+        ev.preventDefault()
+      } else if (ev.key === 'z' && lastUndo.current) {
+        void lastUndo.current()
+        lastUndo.current = null
+        ev.preventDefault()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => {
       window.removeEventListener('keydown', onKey)
     }
-  }, [list, selected, select, toggleArchive])
+  }, [list, selected, select, toggleArchive, deleteMany])
+
+  const total = inView.length
+  const allChecked =
+    list.length > 0 && list.every((e) => pick.selected.has(e.id))
 
   return (
     <div className="space-y-4">
@@ -106,6 +196,11 @@ export function InboxView() {
               }}
             >
               {t(`page.kind.${k}`)}
+              <span className="text-xs text-muted-foreground">
+                {k === 'all'
+                  ? tabBase.length
+                  : tabBase.filter((e) => e.kind === k).length}
+              </span>
             </Button>
           ))}
         </div>
@@ -134,7 +229,56 @@ export function InboxView() {
           <CheckIcon />
           {t('markAllRead')}
         </Button>
+        <Suspense fallback={null}>
+          <InboxTidyMenu />
+        </Suspense>
       </div>
+
+      <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+        <label className="flex items-center gap-2">
+          <Checkbox
+            aria-label={t('bulk.selectAll')}
+            checked={allChecked}
+            disabled={list.length === 0}
+            onCheckedChange={() => {
+              setPick({
+                selected: toggleAll(listIds, pick.selected),
+                anchor: null,
+              })
+            }}
+          />
+          {t('bulk.selectAll')}
+        </label>
+        <span aria-live="polite">
+          {t(hasMore ? 'page.countMore' : 'page.count', {
+            count: total,
+            unread: unread.length,
+          })}
+        </span>
+      </div>
+
+      {picked.length > 0 ? (
+        <Suspense fallback={null}>
+          <InboxBulkBar
+            count={picked.length}
+            canDelete={canDelete(picked)}
+            archivedView={archived}
+            busy={archive.isPending || mark.isPending || del.isPending}
+            onArchive={() => {
+              archiveMany(picked)
+            }}
+            onMarkRead={() => {
+              mark.mutate({ ids: picked.map((e) => e.id) })
+            }}
+            onDelete={() => {
+              deleteMany(picked)
+            }}
+            onClear={() => {
+              setPick(NO_SELECTION)
+            }}
+          />
+        </Suspense>
+      ) : null}
 
       {isPending ? (
         <ListSkeleton rows={5} />
@@ -160,55 +304,39 @@ export function InboxView() {
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-          <ul
-            aria-label={t('page.listLabel')}
-            className="divide-y rounded-lg border"
-          >
-            {list.map((e) => (
-              <li key={e.id}>
-                <button
-                  type="button"
-                  aria-current={e.id === selected?.id}
-                  onClick={() => {
-                    select(e)
-                  }}
-                  className={cn(
-                    'flex w-full items-start gap-3 px-3 py-2.5 text-left hover:bg-muted',
-                    e.id === selected?.id && 'bg-muted',
-                  )}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      'mt-1.5 size-2 shrink-0 rounded-full',
-                      e.read
-                        ? 'bg-muted-foreground/30'
-                        : SEVERITY_DOT[e.severity],
-                    )}
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span
-                      className={cn(
-                        'block truncate text-sm',
-                        e.read ? 'text-muted-foreground' : 'font-medium',
-                      )}
-                    >
-                      {e.title}
-                    </span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {t(`page.kind.${e.kind}`)}
-                      {e.at ? ` - ${formatAge(e.at)}` : ''}
-                    </span>
-                  </span>
-                </button>
-                {e.action?.type === 'signIn' && !e.archived ? (
-                  <div className="px-3 pb-2.5 pl-8">
-                    <SignInDecision id={e.action.approvalId} />
-                  </div>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+          <Suspense fallback={<ListSkeleton rows={5} />}>
+            <InboxList
+              rows={rows}
+              selectedId={selected?.id}
+              checked={pick.selected}
+              expanded={expanded}
+              hasMore={hasMore}
+              loadMore={loadMore}
+              onOpen={select}
+              onCheck={(id, shift) => {
+                setPick((s) => toggleSelection(s, listIds, id, shift))
+              }}
+              onCheckMany={(ids, on) => {
+                setPick((s) => {
+                  const next = new Set(s.selected)
+                  for (const id of ids) {
+                    if (on) next.add(id)
+                    else next.delete(id)
+                  }
+                  return { selected: next, anchor: s.anchor }
+                })
+              }}
+              onToggleGroup={(key) => {
+                setExpanded((s) => {
+                  const next = new Set(s)
+                  if (!next.delete(key)) next.add(key)
+                  return next
+                })
+              }}
+              onArchiveMany={archiveMany}
+              onDeleteMany={deleteMany}
+            />
+          </Suspense>
           {selected ? (
             <section
               aria-label={t('page.detailLabel')}
@@ -259,6 +387,19 @@ export function InboxView() {
                   <ArchiveIcon />
                   {t(selected.archived ? 'page.restore' : 'page.archive')}
                 </Button>
+                {selected.deletable ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={del.isPending}
+                    onClick={() => {
+                      deleteMany([selected])
+                    }}
+                  >
+                    <TrashIcon />
+                    {t('bulk.delete')}
+                  </Button>
+                ) : null}
               </div>
               <p className="text-xs text-muted-foreground">{t('page.keys')}</p>
             </section>

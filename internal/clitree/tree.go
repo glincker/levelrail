@@ -300,7 +300,7 @@ var Tree = map[string]*Node{
 	"audit-purge":              nil,
 	"audit-verify":             nil,
 	"attention":                nil,
-	"inbox":                    {Subs: map[string]*Node{"list": nil, "read": nil, "archive": nil}},
+	"inbox":                    {Subs: map[string]*Node{"list": nil, "read": nil, "archive": nil, "delete": nil, "clear": nil}},
 	"diagnose":                 nil,
 	"tui":                      nil,
 	"advisor":                  {Subs: map[string]*Node{"findings": nil, "summary": nil, "apply": nil, "dismiss": nil, "snooze": nil, "restore": nil, "enable": nil, "disable": nil}},

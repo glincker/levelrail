@@ -89,3 +89,31 @@ func (c *Client) SetInboxPrefs(ctx context.Context, p InboxPrefs) (InboxPrefs, e
 	err := c.do(ctx, http.MethodPut, "/api/v1/inbox/preferences", p, &out)
 	return out, err
 }
+
+// InboxClearResult mirrors internal/api's inboxClearResource.
+type InboxClearResult struct {
+	Count  int  `json:"count"`
+	DryRun bool `json:"dry_run"`
+}
+
+// InboxClearRequest selects items for POST /api/v1/inbox/clear.
+type InboxClearRequest struct {
+	Action           string `json:"action"`
+	Scope            string `json:"scope"`
+	OlderThanSeconds int64  `json:"older_than_seconds,omitempty"`
+	DryRun           bool   `json:"dry_run,omitempty"`
+	ConfirmCount     int    `json:"confirm_count,omitempty"`
+}
+
+// DeleteInbox calls POST /api/v1/inbox/delete; restore undoes a delete.
+func (c *Client) DeleteInbox(ctx context.Context, ids []string, restore bool) error {
+	body := map[string]any{"ids": ids, "restore": restore}
+	return c.do(ctx, http.MethodPost, "/api/v1/inbox/delete", body, nil)
+}
+
+// ClearInbox calls POST /api/v1/inbox/clear.
+func (c *Client) ClearInbox(ctx context.Context, req InboxClearRequest) (InboxClearResult, error) {
+	var out InboxClearResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/inbox/clear", req, &out)
+	return out, err
+}
