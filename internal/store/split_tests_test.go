@@ -5,8 +5,6 @@ import (
 	"errors"
 	"testing"
 	"time"
-
-	"github.com/GLINCKER/levelrail/internal/splittest"
 )
 
 func sampleSplit(t *testing.T, app string) SplitTest {
@@ -16,10 +14,10 @@ func sampleSplit(t *testing.T, app string) SplitTest {
 		t.Fatal(err)
 	}
 	return SplitTest{
-		ID: id, AppName: app, Status: splittest.StatusRunning, CookieName: "lr_split", CookieTTLSecs: 3600,
-		Variants: []splittest.Variant{
-			{ID: "a", Label: "Control", Kind: splittest.KindProduction, Weight: 50},
-			{ID: "b", Label: "New", Kind: splittest.KindBranch, Ref: "new", Weight: 50},
+		ID: id, AppName: app, Status: SplitStatusRunning, CookieName: "lr_split", CookieTTLSecs: 3600,
+		Variants: []SplitVariant{
+			{ID: "a", Label: "Control", Kind: "production", Weight: 50},
+			{ID: "b", Label: "New", Kind: "branch", Ref: "new", Weight: 50},
 		},
 	}
 }
@@ -62,7 +60,7 @@ func TestSplitTestLifecycle(t *testing.T) {
 		t.Fatal("ended test must not be running")
 	}
 	latest, ok, _ := db.GetLatestSplitTest(ctx, "web")
-	if !ok || latest.Status != splittest.StatusStopped || latest.EndReason != "stopped" || latest.EndedAt.IsZero() {
+	if !ok || latest.Status != SplitStatusStopped || latest.EndReason != "stopped" || latest.EndedAt.IsZero() {
 		t.Fatalf("latest = %+v ok=%v", latest, ok)
 	}
 	if err := db.CreateSplitTest(ctx, sampleSplit(t, "web")); err != nil {

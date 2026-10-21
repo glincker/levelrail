@@ -8,19 +8,19 @@ import (
 	"os"
 
 	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/staticroutes"
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 const stepStaticRoutes = "Compile routing rules"
 
 // WithStaticRouteLimits sets the caps on a static site's routing rules.
-func WithStaticRouteLimits(l staticroutes.Limits) Option {
+func WithStaticRouteLimits(l spec.StaticLimits) Option {
 	return func(p *Pipeline) { p.staticRouteLimits = l }
 }
 
-func (p *Pipeline) routeLimits() staticroutes.Limits {
+func (p *Pipeline) routeLimits() spec.StaticLimits {
 	if p.staticRouteLimits.MaxRules == 0 {
-		return staticroutes.DefaultLimits()
+		return spec.DefaultStaticLimits()
 	}
 	return p.staticRouteLimits
 }
@@ -40,26 +40,26 @@ func (p *Pipeline) prepareStaticRouting(req Request, destDir string, progress fu
 	for _, f := range []struct {
 		name string
 		dst  *string
-	}{{staticroutes.SourceRedirects, &in.Redirects}, {staticroutes.SourceHeaders, &in.Headers}} {
+	}{{spec.StaticSourceRedirects, &in.Redirects}, {spec.StaticSourceHeaders, &in.Headers}} {
 		text, err := readRulesFile(root, f.name, l.MaxFileBytes)
 		if err != nil {
 			return err
 		}
 		*f.dst = text
 	}
-	rs, err := staticroutes.Compile(in, l)
+	rs, err := spec.CompileStatic(in, l)
 	if err != nil {
 		return fmt.Errorf("routing rules: %w", err)
 	}
 	for _, pr := range rs.Problems {
 		emitStatic(progress, stepStaticRoutes, fmt.Sprintf("%s: %s:%d: %s (line skipped)", pr.Severity, pr.Source, pr.Line, pr.Message), false)
 	}
-	for _, name := range []string{staticroutes.SourceRedirects, staticroutes.SourceHeaders} {
+	for _, name := range []string{spec.StaticSourceRedirects, spec.StaticSourceHeaders} {
 		if err := root.Remove(name); err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("remove %s from the published files: %w", name, err)
 		}
 	}
-	if err := staticroutes.WriteSidecar(destDir, rs); err != nil {
+	if err := spec.WriteStaticSidecar(destDir, rs); err != nil {
 		return err
 	}
 	emitStatic(progress, stepStaticRoutes, fmt.Sprintf("%d rules, %d header blocks, %d problems", len(rs.Rules), len(rs.Headers), len(rs.Problems)), true)
