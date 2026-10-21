@@ -37,20 +37,21 @@ export function StreamDropBanner({
     retryAt === null ? null : Math.max(0, Math.ceil((retryAt - now) / 1000))
 
   return (
-    <div
-      role="status"
-      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-tone-warning-border bg-tone-warning-soft px-3 py-2 text-sm"
-    >
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-tone-warning-border bg-tone-warning-soft px-3 py-2 text-sm">
       <WifiSlashIcon className="size-4 shrink-0" aria-hidden="true" />
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-foreground">{t('stream.title')}</p>
-        <p className="text-muted-foreground">
-          {seconds === null
-            ? t('stream.bodyNoRetry')
-            : t('stream.body', {
-                when: t('stream.retryIn', { seconds }),
-              })}
-        </p>
+        {/* Only the static text is live; the per-second countdown would be re-announced every tick. */}
+        <div role="status">
+          <p className="font-medium text-foreground">{t('stream.title')}</p>
+          <p className="text-muted-foreground">{t('stream.bodyNoRetry')}</p>
+        </div>
+        {seconds === null ? null : (
+          <p className="text-muted-foreground" aria-hidden="true">
+            {t('stream.nextAttempt', {
+              when: t('stream.retryIn', { seconds }),
+            })}
+          </p>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" size="sm" onClick={onRetry}>

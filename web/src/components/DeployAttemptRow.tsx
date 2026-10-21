@@ -466,10 +466,10 @@ export function DeployAttemptRow({
         >
           <ScrollIcon className="size-3.5" data-icon="inline-start" />
           {attempt.status === 'running'
-            ? 'Watch'
+            ? t('deployHistory.watchLog')
             : attempt.status === 'failed'
               ? t('deployHistory.failedLog')
-              : 'Logs'}
+              : t('deployHistory.viewLogs')}
         </Button>
         <ActionMenu
           trigger={

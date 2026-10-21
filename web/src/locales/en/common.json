@@ -22,6 +22,8 @@
     "earlier": "Earlier deploys",
     "failedLog": "View failing stage log",
     "failedLogLabel": "View the failing stage log for {{title}}",
+    "watchLog": "Watch",
+    "viewLogs": "Logs",
     "settingsLink": "Deploy settings",
     "settingsLinkHint": "Build, run, safety and automation options for this app live in one place.",
     "settingsLinkCta": "Open deploy settings"
@@ -66,7 +68,10 @@
   },
   "logs": {
     "previousContainerEnded": "Previous container instance ended",
-    "copyLineAria": "Copy this log line"
+    "copyLineAria": "Copy this log line",
+    "copyLine": "Copy line",
+    "copied": "Copied",
+    "lineCopied": "Line copied"
   },
   "sessionLink": {
     "signingIn": "Signing you in...",
