@@ -102,7 +102,9 @@
       "notCapturedBody": "The build did not record any log lines. The deploy itself completed, so the Roll out tab shows what happened next.",
       "waitingTitle": "Waiting for build output",
       "waitingBody": "Lines appear here as soon as the builder starts writing them."
-    }
+    },
+    "detected": "Detected: {{value}}",
+    "detectedBuilder": "Override it in the build settings."
   },
   "trace": {
     "step": {
@@ -222,5 +224,37 @@
     "noDomains": "No domains configured.",
     "preview": "Preview",
     "supplyChain": "Supply chain"
+  },
+  "stream": {
+    "title": "The live log stream dropped",
+    "body": "Lines may be missing until it reconnects. Next attempt {{when}}.",
+    "bodyNoRetry": "Lines may be missing until it reconnects.",
+    "retryIn": "in {{seconds}}s",
+    "retryNow": "Retry now",
+    "switchToPolling": "Switch to polling",
+    "download": "Download full log"
+  },
+  "fix": {
+    "title": "Fix and redeploy",
+    "hint": "Open the setting that most likely caused this, change it, then redeploy.",
+    "link": {
+      "environment": "Edit environment variables",
+      "source": "Check build settings",
+      "deploySettings": "Check deploy settings",
+      "resources": "Adjust resources"
+    }
+  },
+  "report": {
+    "copy": "Copy as report",
+    "copied": "Report copied",
+    "failed": "Could not copy the report",
+    "stage": "Failing stage"
+  },
+  "cache": {
+    "summary": "Cache: {{cached}} of {{total}} steps reused",
+    "unknown": "Cache: unknown"
+  },
+  "rollback": {
+    "note": "Restores image {{image}}. Env vars, volumes and migrations are not reverted."
   }
 }
