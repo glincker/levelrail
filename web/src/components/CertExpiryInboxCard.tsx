@@ -56,7 +56,7 @@ export function CertExpiryInboxCard({ notice }: { notice: CertNotice }) {
   const setEmail = useSetCertExpiryEmail()
   const app =
     certs.data?.find((c) => c.domain === notice.domain)?.apps?.[0] ?? ''
-  const dns = isDnsReason(notice.reason)
+  const dns = notice.dns ?? isDnsReason(notice.reason)
   const noChannel = channels.data !== undefined && channels.data.length === 0
   const emailReady = email.data?.available === true
   const emailHint =

@@ -159,7 +159,7 @@ func (rt *Router) handleListInbox(w http.ResponseWriter, r *http.Request) {
 		out = append(out, inboxItemResource{Read: e.Read, alertHistoryResource: alertHistoryResource{
 			ID: e.ID, At: e.At.UTC(), RuleID: e.RuleID, RuleName: e.RuleName, RuleKind: e.RuleKind, ResourceID: e.ResourceID,
 			App: e.App, Node: e.Node, Severity: e.Severity, Event: e.Event, Outcome: e.Outcome, Detail: e.Detail,
-			SilenceID: e.SilenceID, ChannelID: e.ChannelID, Error: e.Error}})
+			SilenceID: e.SilenceID, ChannelID: e.ChannelID, Error: e.Error, Cert: certPayloadFrom(e.Cert)}})
 	}
 	writeJSON(w, http.StatusOK, out)
 }

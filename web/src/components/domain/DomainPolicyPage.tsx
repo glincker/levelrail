@@ -18,17 +18,20 @@ import { HeadersTab } from './HeadersTab'
 import { OverviewTab } from './OverviewTab'
 import { PortsTab } from './PortsTab'
 import { RedirectsTab } from './RedirectsTab'
+import type { DomainFix } from './domainSearch'
 import { DOMAIN_TABS, type DomainTab } from './domainTabs'
 
 export function DomainPolicyPage({
   app,
   domain,
   tab,
+  fix,
   onTab,
 }: {
   app: string
   domain: string
   tab: DomainTab
+  fix?: DomainFix
   onTab: (tab: DomainTab) => void
 }) {
   const { t } = useTranslation('domainPolicies')
@@ -146,7 +149,7 @@ export function DomainPolicyPage({
           ))}
         </TabsList>
         <TabsContent value="overview" className="pt-2">
-          <OverviewTab app={app} domain={domain} policies={data} />
+          <OverviewTab app={app} domain={domain} policies={data} fix={fix} />
         </TabsContent>
         <TabsContent value="redirects" className="pt-2">
           <RedirectsTab app={app} domain={domain} />

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CertExpiryInboxCard } from './CertExpiryInboxCard'
-import { parseCertNotice } from './certNotice'
+import { certNoticeFromItem, parseCertNotice } from './certNotice'
 import { AllI18n } from '../test/allI18n'
 
 function urlOf(input: RequestInfo | URL): string {
@@ -56,7 +56,7 @@ function stubApi(opts: {
   )
 }
 
-function renderCard(reason: string) {
+function renderCard(reason: string, dns?: boolean) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
@@ -69,6 +69,7 @@ function renderCard(reason: string) {
             daysLeft: 2,
             issuer: 'R3',
             reason,
+            dns,
           }}
         />
       </QueryClientProvider>
@@ -165,5 +166,63 @@ describe('CertExpiryInboxCard', () => {
     })
     expect(link.getAttribute('href')).toContain('/domains/app.example.com?')
     expect(link.getAttribute('href')).toContain('fix=dns')
+  })
+
+  it('prefers the structured failure kind over the failure text', async () => {
+    stubApi({
+      channels: [{ id: 'c1' }],
+      email: { enabled: false, available: true },
+    })
+    const notice = certNoticeFromItem({
+      detail: 'app.example.com: expires in 2 days (issuer R3). Renewal failed.',
+      cert: {
+        domain: 'app.example.com',
+        issuer: 'R3',
+        not_after: '2026-11-01T00:00:00Z',
+        days_left: 2,
+        failure_kind: 'dns',
+      },
+    })
+    expect(notice?.dns).toBe(true)
+    renderCard(notice?.reason ?? '', notice?.dns)
+
+    expect(
+      await screen.findByRole('link', { name: 'Check DNS and retry' }),
+    ).toBeTruthy()
+  })
+})
+
+describe('certNoticeFromItem', () => {
+  const detail =
+    'app.example.com: expires in 5 days (issuer R3). Automatic renewal is overdue.'
+
+  it('uses structured fields when present', () => {
+    const n = certNoticeFromItem({
+      detail,
+      cert: {
+        domain: 'other.example.com',
+        issuer: 'ZeroSSL',
+        not_after: '2026-11-01T00:00:00Z',
+        days_left: 9,
+        failure_kind: 'renewal_failing',
+      },
+    })
+    expect(n).toMatchObject({
+      domain: 'other.example.com',
+      issuer: 'ZeroSSL',
+      daysLeft: 9,
+      dns: false,
+    })
+  })
+
+  it('falls back to the detail text for alerts without structured fields', () => {
+    const n = certNoticeFromItem({ detail })
+    expect(n).toMatchObject({
+      domain: 'app.example.com',
+      issuer: 'R3',
+      daysLeft: 5,
+    })
+    expect(n?.dns).toBeUndefined()
+    expect(certNoticeFromItem({ detail: 'unrelated' })).toBeNull()
   })
 })

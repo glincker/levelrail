@@ -26,6 +26,13 @@ const (
 	CertActionDNS   = "dns"
 )
 
+// Failure kinds carried on the structured cert payload.
+const (
+	CertFailureRenewalFailing = "renewal_failing"
+	CertFailureDNS            = "dns"
+	CertFailureOther          = "other"
+)
+
 // CertExpiryPolicy decides which certificates a cert_expiry rule reports. The zero value keeps the legacy behavior of reporting every non-healthy certificate.
 type CertExpiryPolicy struct {
 	Enabled bool
@@ -47,6 +54,27 @@ type CertFact struct {
 	DaysLeft int
 	Reason   string
 	Action   string
+	// NotAfter and FailureKind feed CertPayload.
+	NotAfter    time.Time
+	FailureKind string
+}
+
+// CertPayload is the structured cert data stored beside an alert history entry so clients need not parse its text.
+type CertPayload struct {
+	Domain      string    `json:"domain"`
+	Issuer      string    `json:"issuer,omitempty"`
+	NotAfter    time.Time `json:"not_after"`
+	DaysLeft    int       `json:"days_left"`
+	FailureKind string    `json:"failure_kind"`
+}
+
+// Payload returns the structured form of the fact; an unset failure kind reads as other.
+func (f CertFact) Payload() CertPayload {
+	kind := f.FailureKind
+	if kind == "" {
+		kind = CertFailureOther
+	}
+	return CertPayload{Domain: f.Domain, Issuer: f.Issuer, NotAfter: f.NotAfter.UTC(), DaysLeft: f.DaysLeft, FailureKind: kind}
 }
 
 // CertPolicyFromEnv reads the policy tunables; invalid values keep the defaults.
@@ -81,15 +109,17 @@ func (p CertExpiryPolicy) tightest(left time.Duration) time.Duration {
 // assess reports whether a human needs to act on info, and why.
 func (p CertExpiryPolicy) assess(info CertInfo, now time.Time, grace time.Duration, stalled bool) (CertFact, bool) {
 	left := info.NotAfter.Sub(now)
-	fact := CertFact{Domain: info.Domain, Issuer: info.Issuer, DaysLeft: int(math.Floor(left.Hours() / 24)), Action: CertActionRenew}
+	fact := CertFact{Domain: info.Domain, Issuer: info.Issuer, DaysLeft: int(math.Floor(left.Hours() / 24)), Action: CertActionRenew, NotAfter: info.NotAfter, FailureKind: CertFailureOther}
 	if info.Internal {
 		return fact, false
 	}
 	if p.ACME != nil {
 		if msg, failing := p.ACME.ACMEFailing(info.Domain); failing {
 			fact.Reason = "Renewal is failing: " + msg
+			fact.FailureKind = CertFailureRenewalFailing
 			if looksLikeDNSFailure(msg) {
 				fact.Action = CertActionDNS
+				fact.FailureKind = CertFailureDNS
 			}
 			return fact, true
 		}
