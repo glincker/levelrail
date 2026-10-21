@@ -18,7 +18,7 @@ CREATE TABLE git_provider_connections_new (
 INSERT INTO git_provider_connections_new (id, provider, label, host, instance_url, client_id, secrets_key, account_id, account_name, scopes, is_default, created_by, created_at)
 SELECT id, provider, label, host, instance_url, client_id, secrets_key, account_id, account_name, scopes, is_default, created_by, created_at FROM git_provider_connections;
 
-DROP TABLE git_provider_connections;
+DROP TABLE git_provider_connections; -- compat-break: table rebuilt under the same name to widen its provider check
 
 ALTER TABLE git_provider_connections_new RENAME TO git_provider_connections;
 

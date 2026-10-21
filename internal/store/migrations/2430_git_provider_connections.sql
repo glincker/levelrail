@@ -70,6 +70,6 @@ UPDATE git_connection_status SET provider = (
 DELETE FROM git_connection_status WHERE provider IN ('gitlab', 'bitbucket', 'gitea');
 DELETE FROM git_repo_list_cache WHERE provider IN ('gitlab', 'bitbucket', 'gitea');
 
-DROP TABLE gitlab_app_connections;
-DROP TABLE bitbucket_app_connections;
-DROP TABLE gitea_app_connections;
+DROP TABLE gitlab_app_connections; -- compat-break: rows copied into git_provider_connections above
+DROP TABLE bitbucket_app_connections; -- compat-break: rows copied into git_provider_connections above
+DROP TABLE gitea_app_connections; -- compat-break: rows copied into git_provider_connections above

@@ -29,6 +29,6 @@ CREATE TABLE email_settings_new (
 INSERT INTO email_settings_new (id, backend, smtp_host, smtp_port, smtp_username, smtp_from, ses_region, ses_access_key_id, ses_from, resend_from)
 SELECT id, backend, smtp_host, smtp_port, smtp_username, smtp_from, ses_region, ses_access_key_id, ses_from, resend_from FROM email_settings;
 
-DROP TABLE email_settings;
+DROP TABLE email_settings; -- compat-break: table rebuilt under the same name to add columns
 
 ALTER TABLE email_settings_new RENAME TO email_settings;

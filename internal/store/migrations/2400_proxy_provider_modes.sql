@@ -15,5 +15,5 @@ CREATE TABLE proxy_integration_settings_new (
 INSERT INTO proxy_integration_settings_new (id, mode, dynamic_dir, entrypoint_http, entrypoint_https, cert_resolver, upstream_host)
 SELECT id, mode, dynamic_dir, entrypoint_http, entrypoint_https, cert_resolver, upstream_host FROM proxy_integration_settings;
 
-DROP TABLE proxy_integration_settings;
+DROP TABLE proxy_integration_settings; -- compat-break: table rebuilt under the same name to widen its columns
 ALTER TABLE proxy_integration_settings_new RENAME TO proxy_integration_settings;
