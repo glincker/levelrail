@@ -25,7 +25,6 @@ const EXPECTED_GLOBAL = [
   '/nodes',
   '/resource-advisor',
   '/usage',
-  '/costs',
   '/resources',
   '/network',
   '/network/proxy',

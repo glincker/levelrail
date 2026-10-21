@@ -141,6 +141,8 @@ export const DEPLOYMENT_GROUP_PATHS = [
   '/builds',
 ] as const
 
+export const COST_GROUP_PATHS = ['/usage', '/costs'] as const
+
 export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
   {
     id: 'home',
@@ -312,12 +314,7 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Usage and cost',
         to: '/usage',
         icon: <CoinsIcon />,
-      },
-      {
-        id: 'costs',
-        label: 'Cost explorer',
-        to: '/costs',
-        icon: <ChartLineUpIcon />,
+        alsoActive: COST_GROUP_PATHS,
       },
       {
         id: 'resources',
