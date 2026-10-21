@@ -288,7 +288,7 @@ func (s *bootState) loadSecretsAndNotifiers() {
 		}
 	}
 
-	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, alerting.TemplatedSender{Sender: emailSender, Render: alertMailRenderer(db, *b)}, pushSender, logger).WithLogSources(telemetryDB, telemetryDB)
+	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, alerting.TemplatedSender{Sender: emailSender, Render: alertMailRenderer(db, *b)}, pushSender, logger).WithLogSources(telemetryDB, telemetryDB).WithOutcomeTracker(alerting.NewDeployOutcomeTracker())
 	s.secretsManager = secretsManager
 	s.masterKeyFilePath = masterKeyFilePath
 	s.emailSender = emailSender

@@ -33,7 +33,7 @@ var ErrDatabaseHealthUnavailable = errors.New("alerting: database health unavail
 // IsDatabaseKind reports whether k is one of the database rule kinds.
 func IsDatabaseKind(k Kind) bool {
 	switch k {
-	case KindDatabaseConnections, KindDatabaseDisk, KindDatabaseBackupFailing, KindDatabaseDown, KindDatabaseBackupStale:
+	case KindDatabaseConnections, KindDatabaseDisk, KindDatabaseBackupFailing, KindDatabaseDown, KindDatabaseBackupStale, KindBackupFailed:
 		return true
 	}
 	return false

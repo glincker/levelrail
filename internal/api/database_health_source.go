@@ -65,3 +65,26 @@ func (rt *Router) DatabaseDiskUsedPercent(ctx context.Context, name string) (flo
 	}
 	return pct, err
 }
+
+// DatabaseUp implements alerting.DatabaseLivenessSource from the container's own state: a running container is up, a stopped or exited one is down.
+// A suspended database, a missing runtime or an unreadable container reads as unavailable so the rule goes quiet instead of guessing.
+func (rt *Router) DatabaseUp(ctx context.Context, name string) (bool, error) {
+	if rt.databases == nil || rt.execRuntime == nil {
+		return false, alerting.ErrDatabaseHealthUnavailable
+	}
+	d, err := rt.databases.GetDesiredDatabase(ctx, name)
+	if err != nil {
+		if errors.Is(err, store.ErrDatabaseNotFound) {
+			return false, alerting.ErrDatabaseHealthUnavailable
+		}
+		return false, fmt.Errorf("load database %q: %w", name, err)
+	}
+	if d.Suspended {
+		return false, alerting.ErrDatabaseHealthUnavailable
+	}
+	state := rt.databaseContainerState(ctx, d)
+	if state == nil {
+		return false, alerting.ErrDatabaseHealthUnavailable
+	}
+	return state.Running, nil
+}

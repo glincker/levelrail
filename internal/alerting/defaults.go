@@ -91,6 +91,10 @@ func DefaultRuleSpecs(cfg DefaultsConfig) []DefaultRuleSpec {
 		{"node-cert-expiring", "Node certificate expiring", KindNodeCertExpiring, SeverityWarning},
 		{"export-behind", "Export destination failing", KindExportBehind, SeverityWarning},
 		{"log-archive-stale", "Log archive failing", KindLogArchiveStale, SeverityWarning},
+		{"backup-failed", "A database backup failed", KindBackupFailed, SeverityCritical},
+		{"deploy-failed", "A deploy failed", KindDeployFailed, SeverityWarning},
+		{"database-down", "A database is down", KindDatabaseDown, SeverityCritical},
+		{"database-backup-stale", "A database backup is stale", KindDatabaseBackupStale, SeverityWarning},
 	}
 	for _, p := range platform {
 		specs = append(specs, DefaultRuleSpec{Key: defaultRulePrefix + p.key, Rule: Rule{Name: p.name, Kind: p.kind, Severity: p.severity}})

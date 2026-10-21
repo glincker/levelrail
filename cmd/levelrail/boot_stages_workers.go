@@ -143,6 +143,10 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetBudgets(apiRouter)
 	alertingEngine.SetEmailDelivery(db)
 	alertingEngine.SetDatabaseHealth(apiRouter)
+	if src := s.deployDispatcher.Outcomes(); src != nil {
+		alertingEngine.SetDeployFailures(src)
+	}
+	routeDefaultAlerts(ctx, logger, alertingDB, db, emailSender)
 	go runUsageRollup(ctx, apiRouter)
 	go func() {
 		if err := footprint.Every(ctx, "database teardown retry", time.Minute, logger, apiRouter.RetryDatabaseTeardowns); err != nil && !errors.Is(err, context.Canceled) {

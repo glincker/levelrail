@@ -54,6 +54,7 @@ type Engine struct {
 	domainChecker  DomainCheckSource
 	backups        BackupSource
 	databaseHealth DatabaseHealthSource
+	deployFailures DeployFailureSource
 	traffic        trafficKinds
 	newNotifier    func(Rule) Notifier
 	logger         *slog.Logger
@@ -204,6 +205,9 @@ func (e *Engine) SetVersionSkew(settings VersionSkewSettingsSource, fetchers upg
 
 // SetEmailDelivery enables kind=email_delivery_failing rules.
 func (e *Engine) SetEmailDelivery(src EmailDeliverySource) { e.emailDelivery = src }
+
+// SetDeployFailures wires the source the deploy_failed rule reads.
+func (e *Engine) SetDeployFailures(src DeployFailureSource) { e.deployFailures = src }
 
 // SetDatabaseHealth wires the live probe the database_connections and database_disk rules read.
 func (e *Engine) SetDatabaseHealth(src DatabaseHealthSource) { e.databaseHealth = src }
@@ -377,8 +381,17 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
-		case KindDatabaseConnections, KindDatabaseDisk, KindDatabaseBackupFailing, KindDatabaseDown, KindDatabaseBackupStale:
-			next, backupMissingNoticeText, err = EvaluateDatabaseRule(ctx, e.databaseHealth, e.backups, r, now)
+		case KindDatabaseConnections, KindDatabaseDisk, KindDatabaseBackupFailing, KindDatabaseDown, KindDatabaseBackupStale, KindBackupFailed:
+			next, backupMissingNoticeText, err = EvaluateDatabaseRuleAll(ctx, e.databaseHealth, e.backups, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindDeployFailed:
+			if e.deployFailures == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateDeployFailed(ctx, e.deployFailures, r, now)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
@@ -609,7 +622,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindRestoreDrillFailed) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {
@@ -656,6 +669,9 @@ func (e *Engine) attachChanges(ctx context.Context, ev *Event) {
 // returned so NoiseControl can record the outcome; it is already logged.
 func (e *Engine) sendEvent(ctx context.Context, ev Event) error {
 	r := ev.Rule
+	if strings.HasPrefix(r.ID, defaultRulePrefix) && r.ChannelID == "" && r.NotifyURL == "" {
+		return nil // seeded rule with no destination: in-app only: the noise router records history for the inbox
+	}
 	sendErr := e.revealRuleTarget(ctx, &r)
 	if sendErr == nil {
 		sendErr = e.newNotifier(r).Notify(ctx, ev)
