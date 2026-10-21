@@ -43,7 +43,7 @@ export function AlertInboxPanel() {
   const [unreadOnly, setUnreadOnly] = useState(false)
   const inbox = useInbox(unreadOnly)
   const mark = useMarkInboxRead()
-  const items = inbox.data ?? []
+  const items = inbox.data?.pages.flat() ?? []
   const unread = items.filter((i) => !i.read).length
 
   return (

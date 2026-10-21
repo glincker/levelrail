@@ -12,6 +12,8 @@ import { useInbox, useInboxState } from './inbox'
 export function useInboxEntries(archived = false): {
   entries: InboxEntry[]
   isPending: boolean
+  hasMore: boolean
+  loadMore: () => void
 } {
   const { t } = useTranslation('inbox', { useSuspense: false })
   const opts = { retry: false, refetchInterval: pollUnlessMissing(30_000) }
@@ -25,7 +27,7 @@ export function useInboxEntries(archived = false): {
   const signIns = useQuery({ ...signInRequestsQueryOptions(), ...opts })
   const feed = useQuery({ ...attentionFeedQueryOptions(), ...opts })
   const entries = buildInboxEntries({
-    alerts: alerts.data,
+    alerts: alerts.data?.pages.flat(),
     failedDeploys: failed.data,
     approvals: approvals.data,
     signIns: signIns.data?.approvals,
@@ -33,5 +35,12 @@ export function useInboxEntries(archived = false): {
     state: state.data,
     t: (key, o) => t(key, { ...o, defaultValue: key }),
   })
-  return { entries, isPending: alerts.isPending && state.isPending }
+  return {
+    entries,
+    isPending: alerts.isPending && state.isPending,
+    hasMore: alerts.hasNextPage,
+    loadMore: () => {
+      if (!alerts.isFetchingNextPage) void alerts.fetchNextPage()
+    },
+  }
 }

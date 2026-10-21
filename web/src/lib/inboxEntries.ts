@@ -29,6 +29,9 @@ export interface InboxEntry {
   href: string
   read: boolean
   archived: boolean
+  deletable: boolean
+  resolved: boolean
+  groupKey?: string
   action?: InboxAction
 }
 
@@ -51,11 +54,18 @@ export function buildInboxEntries(src: InboxSources): InboxEntry[] {
   const read = new Set(src.state?.read_ids ?? [])
   const archived = new Set(src.state?.archived_ids ?? [])
   const out: InboxEntry[] = []
-  const mark = (e: Omit<InboxEntry, 'read' | 'archived'>, isRead = false) =>
+  const mark = (
+    e: Omit<InboxEntry, 'read' | 'archived' | 'deletable' | 'resolved'> & {
+      resolved?: boolean
+    },
+    isRead = false,
+  ) =>
     out.push({
       ...e,
+      resolved: e.resolved ?? false,
       read: isRead || read.has(e.id),
       archived: archived.has(e.id),
+      deletable: e.kind === 'alert',
     })
 
   for (const a of src.alerts ?? []) {
@@ -68,6 +78,14 @@ export function buildInboxEntries(src: InboxSources): InboxEntry[] {
         detail: a.detail ?? '',
         at: a.at,
         href: a.app ? `/apps/${a.app}/alerts` : '/alerts',
+        resolved: a.resolved,
+        groupKey: [
+          a.rule_id,
+          a.app ?? '',
+          a.node ?? '',
+          a.resource_id ?? '',
+          a.event,
+        ].join('|'),
       },
       a.read,
     )

@@ -1862,6 +1862,8 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/migration/agent/sessions/{id} | AbilityWriteSensitive | handleRevokeMigrationAgentSession |
 | GET | /api/v1/alert-defaults/cert-expiry/email | AbilityRead | handleGetCertExpiryEmail |
 | PUT | /api/v1/alert-defaults/cert-expiry/email | AbilityWrite | handleSetCertExpiryEmail |
+| POST | /api/v1/inbox/delete | AbilityWrite | handleInboxDelete |
+| POST | /api/v1/inbox/clear | AbilityWrite | handleInboxClear |
 
 ## See also
 
