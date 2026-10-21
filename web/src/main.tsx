@@ -20,6 +20,7 @@ import {
 import { safeReturnPath } from './lib/connectionState'
 import { RouteErrorFallback } from './components/RouteErrorFallback'
 import { PageSpinner } from './components/ui/page-spinner'
+import { RootFallback } from './components/ui/shell-skeleton'
 import { prefetchNamespaces, scheduleIdle } from './i18n/prefetch'
 import { routeViewTransition } from './lib/routeTransition'
 
@@ -125,7 +126,7 @@ void import('./i18n').then(({ default: i18n, NAMESPACES }) => {
       {/* The common namespace (defaultNS) loads via lazyBackend on this
           first render; every other namespace suspends the same way the
           first time a route under it calls useTranslation. */}
-      <Suspense fallback={<PageSpinner />}>
+      <Suspense fallback={<RootFallback />}>
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />
         </QueryClientProvider>
