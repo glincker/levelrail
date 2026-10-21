@@ -464,7 +464,7 @@ func TestGitRepoList_MergesAccountsAndKeepsSameNamedReposApart(t *testing.T) {
 	secrets := newFakeGitConnSecrets()
 	rt, db := newGitConnTestRouter(t, secrets)
 	rt.gitlabAppClient = fake
-	rt.repoCache = newRepoCacheForTest(0)
+	rt.repoCache = newRepoCacheForTest()
 	cookie := loginTestSession(t, rt, db)
 	a := seedGitConn(t, db, secrets, gitProviderGitLab, "gitlab.com", "ann", true)
 	b := seedGitConn(t, db, secrets, gitProviderGitLab, "git.corp.example", "bob", true)
@@ -504,7 +504,7 @@ func TestGitRepoList_DisconnectDropsOnlyThatConnectionsCache(t *testing.T) {
 	secrets := newFakeGitConnSecrets()
 	rt, db := newGitConnTestRouter(t, secrets)
 	rt.gitlabAppClient = fake
-	rt.repoCache = newRepoCacheForTest(0)
+	rt.repoCache = newRepoCacheForTest()
 	cookie := loginTestSession(t, rt, db)
 	a := seedGitConn(t, db, secrets, gitProviderGitLab, "gitlab.com", "ann", true)
 	seedGitConn(t, db, secrets, gitProviderGitLab, "git.corp.example", "bob", true)

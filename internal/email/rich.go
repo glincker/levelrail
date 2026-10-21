@@ -93,6 +93,7 @@ func (s smtpSender) SendMessage(ctx context.Context, m Message) error {
 	return err
 }
 
+//nolint:unparam // satisfies idSender; SMTP returns no message id
 func (s smtpSender) sendMessageID(ctx context.Context, m Message) (string, error) {
 	rcpt, msg, err := buildSMTPMultipart(s.cfg.From, withReplyTo(m, s.cfg.ReplyTo))
 	if err != nil {

@@ -216,7 +216,7 @@ func TestGitHubUnauthorizedListIsNeedsReauthorizeAndRecovers(t *testing.T) {
 		reposErr:  &gitprovider.APIError{Prefix: "githubapp", API: "github", StatusCode: http.StatusUnauthorized, Body: "Bad credentials"},
 	}
 	rt, db := newTestRouterWithGitHubApp(t, fakeSecrets, fake)
-	rt.repoCache = newRepoCacheForTest(0)
+	rt.repoCache = newRepoCacheForTest()
 	cookie := loginTestSession(t, rt, db)
 	seedInstalledGitHubApp(t, db, fakeSecrets)
 

@@ -91,7 +91,7 @@ func countMatching(ps []gitlabapp.Project, keep func(gitlabapp.Project) bool) in
 func TestGitRepoList_ManualRefreshAndInvalidationOnDisconnect(t *testing.T) {
 	fake := &fakeGitLabAppClient{projects: manyGitLabProjects(5)}
 	rt, db := newTestRouterWithGitLabApp(t, authorizedGitLabSecrets(t), fake)
-	rt.repoCache = newRepoCacheForTest(0)
+	rt.repoCache = newRepoCacheForTest()
 	cookie := loginTestSession(t, rt, db)
 	conn := seedGitLabAppConnection(t, db)
 
@@ -134,7 +134,7 @@ func TestGitRepoList_RateLimitedIsTyped429WithRetryAfter(t *testing.T) {
 func TestGitRepoList_RateLimitedRefreshServesStaleList(t *testing.T) {
 	fake := &fakeGitLabAppClient{projects: manyGitLabProjects(3)}
 	rt, db := newTestRouterWithGitLabApp(t, authorizedGitLabSecrets(t), fake)
-	rt.repoCache = newRepoCacheForTest(0)
+	rt.repoCache = newRepoCacheForTest()
 	cookie := loginTestSession(t, rt, db)
 	seedGitLabAppConnection(t, db)
 	getRepoList(t, rt, cookie, "provider=gitlab")
