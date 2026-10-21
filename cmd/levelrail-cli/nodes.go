@@ -31,6 +31,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesRevokeJoinToken(prog, rest, stdout, stderr, lookupEnv)
 	case "cordon":
 		return runNodesCordon(prog, rest, stdout, stderr, lookupEnv)
+	case "set-labels":
+		return runNodesSetLabels(prog, rest, stdout, stderr, lookupEnv)
 	case "uncordon":
 		return runNodesUncordon(prog, rest, stdout, stderr, lookupEnv)
 	case "drain":
@@ -126,6 +128,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes join-tokens [flags]                                    list pending (unused, unexpired) join tokens
   %[1]s nodes revoke-join-token <id>|--all [flags]                   revoke pending join tokens at once
   %[1]s nodes cordon <id> [flags]                                    mark a node unschedulable, without evacuating it
+  %[1]s nodes set-labels <id> [--region R] [--provider P] [--zone Z]  set a node's failure-domain labels
   %[1]s nodes uncordon <id> [flags]                                  mark a node schedulable again
   %[1]s nodes drain <id> [--target ID] [--wait] [flags]              cordon, then move every database and app off a node
   %[1]s nodes drains <id> [flags]                                    show a node's drains and their moves

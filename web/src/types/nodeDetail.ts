@@ -45,6 +45,8 @@ export interface NodeResource {
   // display/grouping metadata for the network topology view, not a
   // routing or access-control input. Set via PUT /api/v1/nodes/{id}/region.
   region?: string
+  provider?: string
+  zone?: string
   created_at: string
   // AlertStatus is only present on GET /api/v1/nodes/{id} (the single-
   // node fetch), never the list response, and is absent when telemetry

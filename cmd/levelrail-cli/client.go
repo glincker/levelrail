@@ -206,6 +206,7 @@ type (
 	changelogResource           = apiclient.ChangelogResource
 	changelogEntryResource      = apiclient.ChangelogEntryResource
 	nodeResource                = apiclient.NodeResource
+	setNodeFailureDomainReq     = apiclient.SetNodeFailureDomainRequest
 	setNodeWorkloadsRequest     = apiclient.SetNodeWorkloadsRequest
 	createNodeJoinTokenResponse = apiclient.CreateNodeJoinTokenResponse
 	drainNodeResponse           = apiclient.DrainNodeResponse

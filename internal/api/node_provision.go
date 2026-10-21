@@ -586,6 +586,7 @@ func (rt *Router) refreshNodeProvision(ctx context.Context, p store.NodeProvisio
 				rt.logger.Error("api: node provision: apply role to node failed", slog.String("provision_id", p.ID), slog.String("node_id", n.ID), slog.String("error", werr.Error()))
 				return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusEnrolling, p.IPAddress, "", "node enrolled but its role could not be applied yet, retrying: "+werr.Error())
 			}
+			rt.fillProvisionedDomain(ctx, p, n)
 			return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusReady, p.IPAddress, n.ID, "")
 		}
 	} else {
@@ -662,4 +663,24 @@ func randomNodeProvisionID() (string, error) {
 		return "", fmt.Errorf("api: generate node provision id: %w", err)
 	}
 	return "npv_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// fillProvisionedDomain stamps provider, region and zone on a freshly enrolled
+// node, keeping any value the operator already set.
+func (rt *Router) fillProvisionedDomain(ctx context.Context, p store.NodeProvision, n store.Node) {
+	region, zone := provision.FailureDomain(p.Provider, p.Region)
+	provider, region, zone := firstSet(n.Provider, p.Provider), firstSet(n.Region, region), firstSet(n.Zone, zone)
+	if provider == n.Provider && region == n.Region && zone == n.Zone {
+		return
+	}
+	if err := rt.nodes.UpdateNodeFailureDomain(ctx, n.ID, provider, region, zone); err != nil {
+		rt.logger.Warn("api: node provision: fill failure domain failed", slog.String("provision_id", p.ID), slog.String("node_id", n.ID), slog.String("error", err.Error()))
+	}
+}
+
+func firstSet(current, fallback string) string {
+	if current != "" {
+		return current
+	}
+	return fallback
 }

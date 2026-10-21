@@ -3317,6 +3317,14 @@ func (c *Client) SetNodeWorkloads(ctx context.Context, id string, req SetNodeWor
 	return out, err
 }
 
+// SetNodeFailureDomain calls PUT /api/v1/nodes/{id}/region: updates the node's
+// region, provider and zone labels, leaving nil fields unchanged.
+func (c *Client) SetNodeFailureDomain(ctx context.Context, id string, req SetNodeFailureDomainRequest) (NodeResource, error) {
+	var out NodeResource
+	err := c.do(ctx, http.MethodPut, nodePath(id)+"/region", req, &out)
+	return out, err
+}
+
 // CreateNodeJoinToken calls POST /api/v1/nodes/join-tokens: mints a
 // one-time enrollment token, returned in plaintext exactly once.
 func (c *Client) CreateNodeJoinToken(ctx context.Context) (CreateNodeJoinTokenResponse, error) {

@@ -87,9 +87,11 @@ export function ZoneSpreadCard() {
               <div className="flex items-baseline justify-between gap-2">
                 <p className="text-sm font-medium text-foreground">
                   {name}
-                  {z.region ? (
+                  {z.region || z.providers?.length ? (
                     <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      {z.region}
+                      {[...(z.providers ?? []), z.region]
+                        .filter(Boolean)
+                        .join(' / ')}
                     </span>
                   ) : null}
                 </p>

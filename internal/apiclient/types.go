@@ -2993,6 +2993,9 @@ type NodeResource struct {
 	Schedulable           bool      `json:"schedulable"`
 	AcceptsAppWorkloads   bool      `json:"accepts_app_workloads"`
 	AcceptsBuildWorkloads bool      `json:"accepts_build_workloads"`
+	Region                string    `json:"region,omitempty"`
+	Provider              string    `json:"provider,omitempty"`
+	Zone                  string    `json:"zone,omitempty"`
 	CreatedAt             time.Time `json:"created_at"`
 	// AlertStatus is only set by GET /api/v1/nodes/{id} (a single-node
 	// fetch), never the list endpoint; nil when telemetry isn't
@@ -4495,4 +4498,12 @@ type MajorUpgradeResource struct {
 	Error          string `json:"error,omitempty"`
 	StartedAt      string `json:"started_at"`
 	FinishedAt     string `json:"finished_at,omitempty"`
+}
+
+// SetNodeFailureDomainRequest is the body of PUT /api/v1/nodes/{id}/region. A nil
+// field keeps the stored value; a pointer to "" clears it.
+type SetNodeFailureDomainRequest struct {
+	Region   *string `json:"region,omitempty"`
+	Provider *string `json:"provider,omitempty"`
+	Zone     *string `json:"zone,omitempty"`
 }

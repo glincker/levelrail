@@ -1090,6 +1090,9 @@ func (f *fakeDrainNodeStore) UpdateNodeWorkloads(context.Context, string, bool, 
 	return nil
 }
 func (f *fakeDrainNodeStore) UpdateNodeRegion(context.Context, string, string) error { return nil }
+func (f *fakeDrainNodeStore) UpdateNodeFailureDomain(context.Context, string, string, string, string) error {
+	return nil
+}
 
 // TestHandleDrainNode_PartialFailure is the exact scenario worth
 // covering: moving service 2 of 3 off a node fails partway through.

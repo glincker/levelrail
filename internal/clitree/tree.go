@@ -271,7 +271,7 @@ var Tree = map[string]*Node{
 	"tags":         {Subs: map[string]*Node{"list": nil, "create": nil, "delete": nil, "apps": nil}},
 	"nodes": {Subs: map[string]*Node{
 		"list": nil, "get": nil, "delete": nil, "join-token": nil, "join-tokens": nil, "revoke-join-token": nil,
-		"cordon": nil, "uncordon": nil, "drain": nil, "workloads": nil,
+		"cordon": nil, "uncordon": nil, "drain": nil, "workloads": nil, "set-labels": nil,
 		"health": nil, "patch-status": nil, "events": nil, "metrics": nil, "resource-usage": nil,
 		"capacity-forecast": nil, "capacity": nil, "cleanup": nil,
 		"add": nil, "move": nil, "moves": nil, "drains": nil, "labels": nil, "zones": nil, "simulate": nil, "failure": nil, "failure-policy": {Subs: map[string]*Node{"get": nil, "set": nil}}, "lost": nil, "failure-resolve": nil, "placement": nil, "allocations": nil, "connectivity": nil,

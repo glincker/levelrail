@@ -662,5 +662,19 @@
       "container_restart": "Containers after host reboot",
       "telemetry_buffer": "Metrics and logs while disconnected"
     }
+  },
+  "region": {
+    "title": "Failure domain",
+    "region": "Region",
+    "regionHint": "A label such as eu-central or home-lab. New replicas prefer a region that holds fewer of the app's other replicas.",
+    "regionPlaceholder": "e.g. eu-central",
+    "provider": "Provider",
+    "providerPlaceholder": "e.g. hetzner",
+    "zone": "Zone",
+    "zoneHint": "The smallest failure domain, such as a datacenter or availability zone. Replicas spread across zones first.",
+    "zonePlaceholder": "e.g. fsn1",
+    "description": "Filled in automatically for nodes created from a cloud provider. Clear a field to remove that label.",
+    "save": "Save",
+    "saved": "Failure domain updated."
   }
 }
