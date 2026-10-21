@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CheckIcon, ClipboardTextIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -6,9 +6,8 @@ import {
   buildDeployReport,
   type DeployReportInput,
 } from '../../lib/deployReport'
+import { COPY_FEEDBACK_MS } from '../../lib/copyFeedback'
 import { useDeployDetailT } from './useDeployDetailT'
-
-const COPIED_RESET_MS = 1500
 
 /** CopyReportButton copies a redacted Markdown report; the text is built on click so it is always current. */
 export function CopyReportButton({
@@ -18,15 +17,19 @@ export function CopyReportButton({
 }) {
   const { t } = useDeployDetailT()
   const [copied, setCopied] = useState(false)
+  const timer = useRef<number | undefined>(undefined)
+
+  useEffect(() => () => window.clearTimeout(timer.current), [])
 
   const copy = () => {
     void navigator.clipboard
       .writeText(buildDeployReport(getInput()))
       .then(() => {
         setCopied(true)
-        window.setTimeout(() => {
+        window.clearTimeout(timer.current)
+        timer.current = window.setTimeout(() => {
           setCopied(false)
-        }, COPIED_RESET_MS)
+        }, COPY_FEEDBACK_MS)
       })
       .catch(() => {
         toast.add({ title: t('report.failed'), type: 'error' })
@@ -34,13 +37,20 @@ export function CopyReportButton({
   }
 
   return (
-    <Button type="button" variant="outline" size="sm" onClick={copy}>
+    <>
+      <Button type="button" variant="outline" size="sm" onClick={copy}>
+        {copied ? (
+          <CheckIcon aria-hidden="true" />
+        ) : (
+          <ClipboardTextIcon aria-hidden="true" />
+        )}
+        {copied ? t('report.copied') : t('report.copy')}
+      </Button>
       {copied ? (
-        <CheckIcon aria-hidden="true" />
-      ) : (
-        <ClipboardTextIcon aria-hidden="true" />
-      )}
-      {copied ? t('report.copied') : t('report.copy')}
-    </Button>
+        <span role="status" className="sr-only">
+          {t('report.copied')}
+        </span>
+      ) : null}
+    </>
   )
 }
