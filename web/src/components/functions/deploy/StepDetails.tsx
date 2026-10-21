@@ -143,7 +143,7 @@ function RouteFields({
         {t('deploy.details.route')}
       </legend>
       <FieldHelp>{t('deploy.details.routeHint')}</FieldHelp>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="fn-route-domain">
             {t('deploy.details.routeDomain')}
@@ -192,7 +192,7 @@ function RouteFields({
           <dt className="text-muted-foreground">
             {t('deploy.details.previewFunction')}
           </dt>
-          <dd className="font-mono break-all">
+          <dd className="min-w-0 font-mono break-all">
             {preview.functionUrl ?? t('deploy.details.previewPending')}
           </dd>
         </div>
@@ -201,7 +201,7 @@ function RouteFields({
             <dt className="text-muted-foreground">
               {t('deploy.details.previewRoute')}
             </dt>
-            <dd className="font-mono break-all">{preview.routeUrl}</dd>
+            <dd className="min-w-0 font-mono break-all">{preview.routeUrl}</dd>
           </div>
         ) : null}
       </dl>

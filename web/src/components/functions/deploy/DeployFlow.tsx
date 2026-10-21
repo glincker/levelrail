@@ -189,12 +189,16 @@ export function DeployFlow({ onClose }: Readonly<{ onClose: () => void }>) {
   const shown = showErrors ? errors : {}
 
   return (
-    <form noValidate onSubmit={onSubmit} className="space-y-4">
+    <form
+      noValidate
+      onSubmit={onSubmit}
+      className="flex min-h-0 min-w-0 flex-1 flex-col gap-4"
+    >
       <DialogHeader>
         <DialogTitle>{t('deploy.title')}</DialogTitle>
         <DialogDescription>{t('deploy.description')}</DialogDescription>
       </DialogHeader>
-      <ol className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+      <ol className="hidden flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground sm:flex">
         {STEP_ORDER.map((s, i) => (
           <li
             key={s}
@@ -205,42 +209,44 @@ export function DeployFlow({ onClose }: Readonly<{ onClose: () => void }>) {
           </li>
         ))}
       </ol>
-      <span className="sr-only">
+      <p className="text-xs font-medium text-muted-foreground sm:sr-only">
         {t('deploy.stepLabel', {
           current: index + 1,
           total: STEP_ORDER.length,
         })}
-      </span>
-      {step === 'template' ? (
-        <StepTemplate selectedId={presetId} onSelect={choosePreset} />
-      ) : null}
-      {step === 'source' ? (
-        <StepSource
-          preset={preset}
-          values={values}
-          errors={shown}
-          update={updateSource}
-          onDetectedPort={onDetectedPort}
-        />
-      ) : null}
-      {step === 'details' ? (
-        <>
-          <StepDetails
+      </p>
+      <div className="min-h-0 min-w-0 -mx-1 flex-1 space-y-4 overflow-y-auto px-1">
+        {step === 'template' ? (
+          <StepTemplate selectedId={presetId} onSelect={choosePreset} />
+        ) : null}
+        {step === 'source' ? (
+          <StepSource
+            preset={preset}
             values={values}
             errors={shown}
-            domains={domains}
-            preview={preview}
-            nameState={nameState}
-            update={update}
-            onName={(name) => {
-              setNameTouched(true)
-              update({ name })
-            }}
+            update={updateSource}
+            onDetectedPort={onDetectedPort}
           />
-          <DeploySummary values={values} preview={preview} />
-        </>
-      ) : null}
-      <DialogFooter>
+        ) : null}
+        {step === 'details' ? (
+          <>
+            <StepDetails
+              values={values}
+              errors={shown}
+              domains={domains}
+              preview={preview}
+              nameState={nameState}
+              update={update}
+              onName={(name) => {
+                setNameTouched(true)
+                update({ name })
+              }}
+            />
+            <DeploySummary values={values} preview={preview} />
+          </>
+        ) : null}
+      </div>
+      <DialogFooter className="sm:flex-wrap">
         <Button type="button" variant="outline" onClick={onClose}>
           {t('deploy.cancel')}
         </Button>

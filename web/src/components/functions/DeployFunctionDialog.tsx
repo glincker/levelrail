@@ -18,7 +18,7 @@ export function DeployFunctionDialog() {
         <RocketLaunchIcon aria-hidden="true" />
         {t('deploy.open')}
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="flex max-h-[90dvh] min-w-0 flex-col overflow-hidden sm:max-h-[90dvh] sm:max-w-xl">
         <Suspense fallback={<PageSpinner />}>
           <DeployFlow
             onClose={() => {

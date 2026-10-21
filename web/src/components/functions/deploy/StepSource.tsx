@@ -29,7 +29,7 @@ function StarterCode({ runtime }: Readonly<{ runtime: string }>) {
   const files = data?.runtimes.find((r) => r.id === runtime)?.files ?? []
   if (files.length === 0) return null
   return (
-    <div className="space-y-2 rounded-lg border border-input bg-muted/40 p-3">
+    <div className="min-w-0 space-y-2 rounded-lg border border-input bg-muted/40 p-3">
       <p className="text-sm font-medium">{t('deploy.source.starterTitle')}</p>
       <p className="text-xs text-muted-foreground">
         {t('deploy.source.starterBody')}
@@ -37,13 +37,13 @@ function StarterCode({ runtime }: Readonly<{ runtime: string }>) {
       {files.map((f) => (
         <div
           key={f.path}
-          className="rounded-md border border-input bg-background"
+          className="min-w-0 rounded-md border border-input bg-background"
         >
           <div className="flex items-center justify-between border-b border-input px-2 py-1">
             <code className="text-xs">{f.path}</code>
             <CopyButton text={f.content} />
           </div>
-          <pre className="max-h-32 overflow-auto p-2 text-xs">
+          <pre className="max-h-32 max-w-full overflow-auto p-2 text-xs">
             <code>{f.content}</code>
           </pre>
         </div>
@@ -152,7 +152,7 @@ export function StepSource({
 
   if (values.source === 'image') {
     return (
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-4">
         <h3 className="text-base font-semibold">
           {t('deploy.source.headingImage')}
         </h3>
@@ -176,7 +176,7 @@ export function StepSource({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <h3 className="text-base font-semibold">
         {t('deploy.source.headingRepo')}
       </h3>
@@ -199,9 +199,6 @@ export function StepSource({
       ) : (
         <RepoPicker
           selectedUrl={values.repoUrl}
-          onNoRepos={() => {
-            setPaste(true)
-          }}
           onPick={(repo: GitRepoItem) => {
             setDefaultBranch(repo.default_branch || FALLBACK_BRANCH)
             update({
@@ -224,7 +221,7 @@ export function StepSource({
           : t('deploy.source.pasteInstead')}
       </button>
       {values.repoUrl.trim() !== '' ? (
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <BranchField
             values={values}
             update={update}

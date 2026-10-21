@@ -16,11 +16,9 @@ const PICKER_LIMIT = 30
 export function RepoPicker({
   selectedUrl,
   onPick,
-  onNoRepos,
 }: Readonly<{
   selectedUrl: string
   onPick: (repo: GitRepoItem) => void
-  onNoRepos: () => void
 }>) {
   const { t } = useTranslation('functions')
   const [search, setSearch] = useState('')
@@ -37,9 +35,10 @@ export function RepoPicker({
   const empty = !query.isPending && !query.error && items.length === 0
 
   return (
-    <div className="space-y-2">
+    <div className="min-w-0 space-y-2">
       <Input
         aria-label={t('deploy.source.search')}
+        className="w-full"
         placeholder={t('deploy.source.search')}
         value={search}
         onChange={(e) => {
@@ -55,21 +54,8 @@ export function RepoPicker({
           {t('deploy.source.reposError', { message: query.error.message })}
         </p>
       ) : null}
-      {empty ? (
-        <div className="space-y-2">
-          <FieldHelp>{t('deploy.source.noRepos')}</FieldHelp>
-          {debounced === '' ? (
-            <button
-              type="button"
-              className="text-xs underline"
-              onClick={onNoRepos}
-            >
-              {t('deploy.source.pasteInstead')}
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-      <ul className="max-h-48 divide-y divide-input overflow-y-auto rounded-lg border border-input">
+      {empty ? <FieldHelp>{t('deploy.source.noRepos')}</FieldHelp> : null}
+      <ul className="min-w-0 max-h-48 divide-y divide-input overflow-y-auto rounded-lg border border-input empty:hidden">
         {items.map((repo) => {
           const selected = repo.clone_url === selectedUrl
           return (

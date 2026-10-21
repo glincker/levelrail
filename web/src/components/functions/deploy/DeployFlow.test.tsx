@@ -5,10 +5,19 @@ import { NewSurfacesProviders } from '../../../test/NewSurfacesProviders'
 import { jsonResponse } from '../../../test/newSurfacesI18n'
 import { DeployFlow } from './DeployFlow'
 
-function renderFlow() {
+function renderFlow(withRepos = false) {
   vi.stubGlobal(
     'fetch',
-    vi.fn(() => Promise.resolve(jsonResponse([]))),
+    vi.fn((input: string) => {
+      const url = input
+      if (withRepos && url.includes('runtimes')) {
+        return Promise.resolve(jsonResponse({ runtimes: [] }))
+      }
+      if (withRepos && url.includes('git')) {
+        return Promise.resolve(jsonResponse({ items: [], next_cursor: '' }))
+      }
+      return Promise.resolve(jsonResponse([]))
+    }),
   )
   render(
     <NewSurfacesProviders>
@@ -52,5 +61,21 @@ describe('DeployFlow', () => {
     expect(
       screen.getByText(/run the image as is, sleep after 10 minutes/),
     ).toBeTruthy()
+  })
+
+  it('keeps the primary button on every step and one paste link', async () => {
+    renderFlow(true)
+    fireEvent.click(screen.getByText('Webhook receiver'))
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeTruthy()
+    await screen.findByText(/No repositories found/)
+    expect(screen.getAllByText('Paste a URL instead')).toHaveLength(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    expect(screen.getByText('Use a container image')).toBeTruthy()
+    fireEvent.click(screen.getByText('Use a container image'))
+    fireEvent.change(screen.getByLabelText('Image'), {
+      target: { value: 'ghcr.io/you/hello:1.0' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(screen.getByRole('button', { name: 'Deploy' })).toBeTruthy()
   })
 })

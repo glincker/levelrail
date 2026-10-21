@@ -44,7 +44,7 @@ export function DeployResult({
   }
 
   return (
-    <div className="space-y-4" aria-live="polite">
+    <div className="min-w-0 space-y-4" aria-live="polite">
       <h3 className="text-base font-semibold">
         {t('deploy.result.title', { name })}
       </h3>
@@ -82,7 +82,7 @@ export function DeployResult({
           </p>
         )}
       </div>
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
         <Button type="button" variant="outline" onClick={onClose}>
           {t('deploy.result.done')}
         </Button>

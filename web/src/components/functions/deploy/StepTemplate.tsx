@@ -32,7 +32,7 @@ function PresetCard({
         onSelect(preset.id)
       }}
       className={cn(
-        'flex items-start gap-3 rounded-lg border border-input p-3 text-left transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none',
+        'flex min-w-0 items-start gap-3 rounded-lg border border-input p-3 text-left transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none',
         selected && 'border-primary bg-muted',
       )}
     >
@@ -40,7 +40,7 @@ function PresetCard({
         aria-hidden="true"
         className="mt-0.5 size-5 shrink-0 text-muted-foreground"
       />
-      <span className="space-y-0.5">
+      <span className="min-w-0 space-y-0.5">
         <span className="block text-sm font-medium">
           {t(`deploy.presets.${preset.id}.title`)}
         </span>
@@ -58,7 +58,7 @@ export function StepTemplate({
 }: Readonly<{ selectedId: string; onSelect: (id: string) => void }>) {
   const { t } = useTranslation('functions')
   return (
-    <div className="space-y-5">
+    <div className="min-w-0 space-y-5">
       <h3 className="text-base font-semibold">
         {t('deploy.template.heading')}
       </h3>
