@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { PageTemplate } from '../shell/PageTemplate'
+import { PageBanner } from '../PageBanner'
+import { FunctionsDiagram } from '../banners/FunctionsDiagram'
 import { useFunctions, type FunctionWindow } from '../../queries/functions'
 import { DeployFunctionDialog } from './DeployFunctionDialog'
 import { FunctionTemplates } from './FunctionTemplates'
@@ -21,8 +22,10 @@ export function FunctionsPage() {
   const [window, setWindow] = useState<FunctionWindow>('24h')
   const query = useFunctions(window)
   const items = query.data?.functions ?? []
+  const isEmpty = query.isSuccess && items.length === 0
+  const size = isEmpty ? 'hero' : 'compact'
 
-  let body
+  let body = null
   if (query.isPending) {
     body = <Skeleton className="h-32 w-full" />
   } else if (query.isError) {
@@ -44,45 +47,44 @@ export function FunctionsPage() {
         }
       />
     )
-  } else if (items.length === 0) {
-    body = (
-      <EmptyState
-        icon={<LightningIcon />}
-        title={t('empty.title')}
-        description={t('empty.body')}
-      />
-    )
-  } else {
+  } else if (!isEmpty) {
     body = <FunctionsTable items={items} />
   }
 
   return (
-    <PageTemplate
-      title={t('title')}
-      description={t('description')}
-      icon={<LightningIcon />}
-      actions={<DeployFunctionDialog />}
-    >
+    <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
+      <PageBanner
+        icon={<LightningIcon />}
+        titleKey="functions:banner.title"
+        descriptionKey={
+          isEmpty ? 'functions:banner.description' : 'functions:description'
+        }
+        action={<DeployFunctionDialog />}
+        illustration={<FunctionsDiagram size={size} />}
+        size={size}
+      />
       <div className="space-y-8">
-        <div className="space-y-3">
-          <Tabs
-            value={window}
-            onValueChange={(v) => {
-              setWindow(v as FunctionWindow)
-            }}
-          >
-            <TabsList aria-label={t('window.label')}>
-              {WINDOWS.map((w) => (
-                <TabsTrigger key={w} value={w}>
-                  {t(`window.${w}`)}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-          {body}
-        </div>
+        {isEmpty ? null : (
+          <div className="space-y-3">
+            <Tabs
+              value={window}
+              onValueChange={(v) => {
+                setWindow(v as FunctionWindow)
+              }}
+            >
+              <TabsList aria-label={t('window.label')}>
+                {WINDOWS.map((w) => (
+                  <TabsTrigger key={w} value={w}>
+                    {t(`window.${w}`)}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+            {body}
+          </div>
+        )}
         <FunctionTemplates />
       </div>
-    </PageTemplate>
+    </div>
   )
 }
