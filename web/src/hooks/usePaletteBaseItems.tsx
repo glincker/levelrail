@@ -1,8 +1,12 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { KeyboardIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  KeyboardIcon,
+  TerminalWindowIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { usePageActions } from '@/lib/pageActions'
+import { openCliModal } from '@/lib/cliModalStore'
 import { useTheme, type Theme } from '../components/ThemeProvider'
 import {
   ROUTE_ENTRIES,
@@ -31,6 +35,7 @@ export function usePaletteBaseItems(
   const navigate = useNavigate()
   const { t } = useTranslation('palette')
   const { t: tCommon } = useTranslation()
+  const { t: tCli } = useTranslation('signIn', { useSuspense: false })
   const { theme, setTheme } = useTheme()
   const pageActions = usePageActions()
   const experimental = useExperimentalFeatures()
@@ -73,6 +78,14 @@ export function usePaletteBaseItems(
         run: onShowShortcuts,
       })
     }
+    items.push({
+      key: 'action-cli-setup',
+      label: tCli('cliModal.openAction'),
+      keywords: tCli('cliModal.openKeywords'),
+      group: 'Actions',
+      icon: <TerminalWindowIcon />,
+      run: openCliModal,
+    })
     items.push(...traffic.base, ...resourceItems)
     return items
   }, [
@@ -86,5 +99,6 @@ export function usePaletteBaseItems(
     experimental,
     t,
     tCommon,
+    tCli,
   ])
 }
