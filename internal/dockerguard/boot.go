@@ -125,16 +125,43 @@ func RunningInContainer() bool {
 	return err == nil
 }
 
+const (
+	bootTimeoutEnv     = "APP_DOCKER_BOOT_TIMEOUT"
+	defaultBootTimeout = 10 * time.Second
+)
+
+// BootTimeout bounds every Docker call made while the control plane boots.
+func BootTimeout() time.Duration {
+	if d, err := time.ParseDuration(os.Getenv(bootTimeoutEnv)); err == nil && d > 0 {
+		return d
+	}
+	return defaultBootTimeout
+}
+
+// PrivilegeSource is the slice of the Docker client LogPrivilege reads.
+type PrivilegeSource interface {
+	Runtime() docker.RuntimeInfo
+	DaemonSecurity(ctx context.Context) (docker.DaemonSecurity, error)
+}
+
 // LogPrivilege records how much a compromise of this process would hold.
-func LogPrivilege(ctx context.Context, logger *slog.Logger, client *docker.Client) {
+// It returns false when the daemon did not answer within BootTimeout, so
+// boot can continue degraded instead of hanging.
+func LogPrivilege(ctx context.Context, logger *slog.Logger, client PrivilegeSource) bool {
 	su := docker.CurrentServiceUser()
 	rt := client.Runtime()
 	attrs := []slog.Attr{
 		slog.String("user", su.Name), slog.Bool("root", su.Root), slog.Bool("docker_group", su.DockerGroup),
 		slog.String("runtime", string(rt.Kind)), slog.Bool("rootless_socket", rt.Rootless),
 	}
-	if sec, err := client.DaemonSecurity(ctx); err == nil {
+	cctx, cancel := context.WithTimeout(ctx, BootTimeout())
+	defer cancel()
+	sec, err := client.DaemonSecurity(cctx)
+	if err != nil {
+		logger.Warn("docker is not responding, booting degraded: re-check from the dashboard once it recovers", slog.String("error", err.Error()))
+	} else {
 		attrs = append(attrs, slog.Bool("daemon_rootless", sec.Rootless), slog.Bool("userns_remap", sec.UsernsRemap))
 	}
 	logger.LogAttrs(ctx, slog.LevelInfo, "docker privilege", attrs...)
+	return err == nil
 }
