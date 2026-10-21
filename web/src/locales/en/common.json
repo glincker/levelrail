@@ -65,7 +65,8 @@
     "needsAction": "Needs action"
   },
   "logs": {
-    "previousContainerEnded": "Previous container instance ended"
+    "previousContainerEnded": "Previous container instance ended",
+    "copyLineAria": "Copy this log line"
   },
   "sessionLink": {
     "signingIn": "Signing you in...",
