@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { CodeBlock } from '@/components/ui/code-block'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import type { ProxySetupResult } from '../../queries/proxyIntegration'
@@ -46,9 +47,10 @@ export function ProxyProviderResult({
         <h3 className="text-sm font-medium text-foreground">
           {t('proxyPicker.changes.manualTitle')}
         </h3>
-        <pre className="max-h-72 overflow-auto rounded-md border border-border bg-muted/30 p-3 font-mono text-xs">
-          {result.snippet}
-        </pre>
+        <CodeBlock
+          code={result.snippet ?? ''}
+          label={t('proxyPicker.changes.manualTitle')}
+        />
         <p className="text-xs text-muted-foreground">
           {t('proxyPicker.manualNoApply')}
         </p>

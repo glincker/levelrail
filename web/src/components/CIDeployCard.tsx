@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CodeBlock } from '@/components/ui/code-block'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -215,17 +216,24 @@ function WorkflowPanel({ appName }: { appName: string }) {
           {t('ciDeploy.copy')}
         </Button>
       </div>
-      <pre className="max-h-80 overflow-auto rounded-lg border bg-muted/40 p-3 text-xs">
-        <code>{workflow.data.yaml}</code>
-      </pre>
+      <CodeBlock
+        code={workflow.data.yaml}
+        language="yaml"
+        label={t('ciDeploy.workflowTitle')}
+        maxHeight="lg"
+      />
       <Collapsible>
         <CollapsibleTrigger className="text-xs text-muted-foreground hover:text-foreground">
           {t('ciDeploy.cliToggle')}
         </CollapsibleTrigger>
         <CollapsiblePanel>
-          <pre className="mt-2 overflow-auto rounded-lg border bg-muted/40 p-3 text-xs">
-            <code>{`levelrail-cli apps github-actions trust add ${appName} --repo owner/name\nlevelrail-cli apps github-actions workflow ${appName}`}</code>
-          </pre>
+          <CodeBlock
+            className="mt-2"
+            code={`levelrail-cli apps github-actions trust add ${appName} --repo owner/name\nlevelrail-cli apps github-actions workflow ${appName}`}
+            language="bash"
+            label={t('ciDeploy.cliToggle')}
+            prompt
+          />
         </CollapsiblePanel>
       </Collapsible>
     </div>

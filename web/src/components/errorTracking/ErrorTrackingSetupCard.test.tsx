@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { ErrorTrackingSetupCard } from './ErrorTrackingSetupCard'
+import commonEn from '../../locales/en/common.json'
 import errorsEn from '../../locales/en/errors.json'
 
 vi.mock('@/components/ui/toast', () => ({ toast: { add: vi.fn() } }))
@@ -13,9 +14,9 @@ const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['errors'],
+  ns: ['errors', 'common'],
   defaultNS: 'errors',
-  resources: { en: { errors: errorsEn } },
+  resources: { en: { errors: errorsEn, common: commonEn } },
   interpolation: { escapeValue: false },
 })
 
@@ -67,6 +68,7 @@ describe('ErrorTrackingSetupCard', () => {
     await user.click(
       await screen.findByRole('button', { name: 'Turn on error tracking' }),
     )
+    await user.click(await screen.findByRole('button', { name: 'Reveal' }))
     await waitFor(() => {
       expect(
         screen.getByText(

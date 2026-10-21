@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CommandBlock } from '@/components/ui/code-block'
 import { useTranslation } from 'react-i18next'
 import { CheckCircleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -225,9 +226,11 @@ export function DnsProviderPicker({ app }: { app?: string }) {
                   {t('dnsProvider.digToggle')}
                 </CollapsibleTrigger>
                 <CollapsiblePanel>
-                  <pre className="mt-1 overflow-auto rounded-lg border bg-muted/40 p-2 text-xs">
-                    <code>{result.dig_command}</code>
-                  </pre>
+                  <CommandBlock
+                    className="mt-1"
+                    code={result.dig_command}
+                    label={t('dnsProvider.digToggle')}
+                  />
                 </CollapsiblePanel>
               </Collapsible>
             ) : null}
