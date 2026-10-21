@@ -142,6 +142,32 @@ func TestSeedDefaults(t *testing.T) {
 	}
 }
 
+func TestResetDefaultRules(t *testing.T) {
+	ctx := context.Background()
+	db := newTestDB(t)
+	if err := db.SeedDefaults(ctx, DefaultsConfig{}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.SetDefaultRuleEnabled(ctx, "default-node-offline", false); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.DeleteRule(ctx, "default-restore-drill-failed"); err != nil {
+		t.Fatal(err)
+	}
+	rules, err := db.ResetDefaultRules(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rules) != len(DefaultRuleSpecs(DefaultsConfig{})) {
+		t.Fatalf("got %d rules after reset", len(rules))
+	}
+	for _, r := range rules {
+		if !r.Enabled {
+			t.Fatalf("rule %s still disabled after reset", r.ID)
+		}
+	}
+}
+
 func TestSetDefaultRuleEnabled(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)

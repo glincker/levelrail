@@ -19,6 +19,7 @@ import {
   GlobeIcon,
   ArchiveIcon,
   RocketLaunchIcon,
+  EnvelopeSimpleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sheet,
@@ -128,6 +129,11 @@ const KIND_OPTIONS: {
     Icon: RocketLaunchIcon,
   },
   { value: 'budget_threshold', label: 'Budget threshold', Icon: GaugeIcon },
+  {
+    value: 'email_delivery_failing',
+    label: 'Email delivery failing',
+    Icon: EnvelopeSimpleIcon,
+  },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -534,6 +540,7 @@ export function EditAlertRuleDialog({
           kind === 'node_offline' ||
           kind === 'node_cert_expiring' ||
           kind === 'budget_threshold' ||
+          kind === 'email_delivery_failing' ||
           kind === 'version_skew' ? (
             <p className="text-sm text-muted-foreground">
               This kind watches every certificate or node on the whole control

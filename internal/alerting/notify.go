@@ -14,6 +14,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
@@ -775,7 +776,15 @@ func (n emailNotifier) Notify(ctx context.Context, ev Event) error {
 	if ev.Resolved {
 		subject = fmt.Sprintf("[Levelrail][RESOLVED] %s", ev.Rule.Name)
 	}
-	if err := sendEmailWithRetry(ctx, n.sender, n.to, subject, summaryText(ev)); err != nil {
+	status := "firing"
+	if ev.Resolved {
+		status = "resolved"
+	}
+	vals := map[string]string{
+		"alert_name": ev.Rule.Name, "severity": ev.Rule.Severity + " (" + status + ")",
+		"alert_summary": summaryText(ev), "app_name": ev.Rule.ResourceID,
+	}
+	if err := sendTemplated(ctx, n.sender, mailtemplates.EventAlertNotification, n.to, vals, subject, summaryText(ev)); err != nil {
 		return fmt.Errorf("alerting: notify: %w", err)
 	}
 	return nil

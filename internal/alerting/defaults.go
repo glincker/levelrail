@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -85,6 +86,8 @@ func DefaultRuleSpecs(cfg DefaultsConfig) []DefaultRuleSpec {
 		{"restore-drill-failed", "Restore drill failed", KindRestoreDrillFailed, SeverityCritical},
 		{"control-plane-backup-stale", "Control plane backup is stale", KindControlPlaneBackupStale, SeverityWarning},
 		{"node-offline", "Node offline", KindNodeOffline, SeverityCritical},
+		{"node-disk-space", "Node disk space critical", KindNodeDiskSpace, SeverityCritical},
+		{"email-delivery-failing", "Outbound email is failing", KindEmailDeliveryFailing, SeverityWarning},
 		{"node-cert-expiring", "Node certificate expiring", KindNodeCertExpiring, SeverityWarning},
 		{"export-behind", "Export destination failing", KindExportBehind, SeverityWarning},
 		{"log-archive-stale", "Log archive failing", KindLogArchiveStale, SeverityWarning},
@@ -165,4 +168,28 @@ func (db *DB) SetDefaultRuleEnabled(ctx context.Context, id string, enabled bool
 		return nil, err
 	}
 	return r, nil
+}
+
+// ResetDefaultRules rewrites every default rule to its shipped definition, re-creating deleted ones, and returns them.
+func (db *DB) ResetDefaultRules(ctx context.Context) ([]Rule, error) {
+	var errs []error
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	for _, spec := range DefaultRuleSpecs(DefaultsConfigFromEnv(os.Getenv)) {
+		r := spec.Rule
+		r.ID, r.ResourceID, r.Enabled = spec.Key, DefaultRuleResource, true
+		if existing, err := db.GetRule(ctx, spec.Key); err == nil {
+			r.ChannelID, r.NotifyURL, r.NotifyKind = existing.ChannelID, existing.NotifyURL, existing.NotifyKind
+		}
+		if err := db.SaveRule(ctx, r); err != nil {
+			errs = append(errs, fmt.Errorf("alerting: reset default rule %q: %w", spec.Key, err))
+			continue
+		}
+		if _, err := db.ExecContext(ctx, `INSERT OR IGNORE INTO alert_default_seeds (key, rule_id, seeded_at) VALUES (?, ?, ?)`, spec.Key, spec.Key, now); err != nil {
+			errs = append(errs, fmt.Errorf("alerting: record default seed %q: %w", spec.Key, err))
+		}
+	}
+	if err := errors.Join(errs...); err != nil {
+		return nil, err
+	}
+	return db.ListDefaultRules(ctx)
 }

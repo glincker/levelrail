@@ -14,6 +14,7 @@ func alertsDefaultsUsage(prog string) string {
   %[1]s alerts defaults list
   %[1]s alerts defaults enable <id>
   %[1]s alerts defaults disable <id>
+  %[1]s alerts defaults reset
 
 Default alerts are seeded on first boot: certificate expiry at 14, 7, 3 and
 1 days, restore drill failures, node offline and more. Disabling one keeps
@@ -26,6 +27,8 @@ func runAlertsDefaults(prog string, args []string, stdout, stderr io.Writer, loo
 		switch args[0] {
 		case "list":
 			return runAPICmd(prog, defaultsListCommand(), args[1:], stdout, stderr, lookupEnv)
+		case "reset":
+			return runAPICmd(prog, defaultsResetCommand(), args[1:], stdout, stderr, lookupEnv)
 		case "enable":
 			return runAPICmd(prog, defaultsToggleCommand(true), args[1:], stdout, stderr, lookupEnv)
 		case "disable":
@@ -73,6 +76,17 @@ func defaultsToggleCommand(enabled bool) apiCmd {
 			}
 			a, err := c.SetDefaultAlertEnabled(ctx, args[0], enabled)
 			return a, func(w io.Writer) { _, _ = fmt.Fprintf(w, "%s: enabled=%t\n", a.ID, a.Enabled) }, err
+		},
+	}
+}
+
+func defaultsResetCommand() apiCmd {
+	return apiCmd{
+		label: "alerts defaults reset",
+		usage: alertsDefaultsUsage,
+		run: func(ctx context.Context, c *Client, _ []string) (any, func(io.Writer), error) {
+			list, err := c.ResetDefaultAlerts(ctx)
+			return list, func(w io.Writer) { printDefaultAlerts(w, list) }, err
 		},
 	}
 }

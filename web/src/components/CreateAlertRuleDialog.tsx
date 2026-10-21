@@ -20,6 +20,7 @@ import {
   GlobeIcon,
   ArchiveIcon,
   RocketLaunchIcon,
+  EnvelopeSimpleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -156,6 +157,11 @@ const KIND_OPTIONS: {
     Icon: RocketLaunchIcon,
   },
   { value: 'budget_threshold', label: 'Budget threshold', Icon: GaugeIcon },
+  {
+    value: 'email_delivery_failing',
+    label: 'Email delivery failing',
+    Icon: EnvelopeSimpleIcon,
+  },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -838,6 +844,10 @@ export function CreateAlertRuleDialog({
               databases={databases}
               volumes={volumes}
             />
+          ) : kind === 'email_delivery_failing' ? (
+            <p className="text-sm text-muted-foreground">
+              {t('emailDeliveryFailing.hint')}
+            </p>
           ) : kind === 'budget_threshold' ? (
             <p className="text-sm text-muted-foreground">
               {t('budgetThreshold.hint')}

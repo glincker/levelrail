@@ -42,7 +42,7 @@ func alertsUsage(prog string) string {
   %[1]s alerts history [flags]                         firings and what happened to each notification
   %[1]s alerts inbox list|count|read|prefs             your alert inbox, read state, routing and daily digest
 
-  %[1]s alerts defaults list|enable|disable <id>       the alerts seeded on first boot
+  %[1]s alerts defaults list|enable|disable|reset        the alerts seeded on first boot
 
 Alert rules themselves live under "%[1]s apps alerts".
 Run "%[1]s alerts <subcommand> -h" for its flags.

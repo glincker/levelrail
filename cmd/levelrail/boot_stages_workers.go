@@ -125,7 +125,7 @@ func (s *bootState) startAlerting() {
 	alertingFederator := telemetry.NewLocalFederator(telemetryDB)
 	pluginSender := pluginSenderFor(pluginMgr)
 	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier {
-		return alerting.NewNotifierWithPlugins(notifyClient, emailSender, pushSender, pluginSender, r)
+		return alerting.NewNotifierWithPlugins(notifyClient, alerting.TemplatedSender{Sender: emailSender, Render: alertMailRenderer(db, *b)}, pushSender, pluginSender, r)
 	}
 	// db and apiRouter satisfy the alerting source interfaces structurally, so no adapters are needed.
 	tlsSuppress := alerting.CertSuppressor(func(c context.Context) func(string) bool {

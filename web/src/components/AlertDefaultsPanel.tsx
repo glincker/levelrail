@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { BellSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Switch } from '@/components/ui/switch'
@@ -7,6 +8,7 @@ import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { toast } from '@/components/ui/toast'
 import {
   useDefaultAlerts,
+  useResetDefaultAlerts,
   useSetDefaultAlertEnabled,
   type DefaultAlert,
 } from '../queries/alertDefaults'
@@ -21,6 +23,16 @@ export function AlertDefaultsPanel() {
   const { t } = useTranslation('inbox')
   const defaults = useDefaultAlerts()
   const set = useSetDefaultAlertEnabled()
+  const reset = useResetDefaultAlerts()
+
+  function resetAll() {
+    reset.mutate(undefined, {
+      onSuccess: () =>
+        toast.add({ title: t('defaults.resetToast'), type: 'success' }),
+      onError: () =>
+        toast.add({ title: t('defaults.resetError'), type: 'error' }),
+    })
+  }
 
   function severityLabel(severity: string): string {
     switch (severity) {
@@ -69,9 +81,19 @@ export function AlertDefaultsPanel() {
   const list = defaults.data
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        {t('defaults.description')}
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          {t('defaults.description')}
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={reset.isPending}
+          onClick={resetAll}
+        >
+          {t('defaults.reset')}
+        </Button>
+      </div>
       {list.length === 0 ? (
         <EmptyState
           icon={<BellSimpleIcon className="size-5" aria-hidden="true" />}

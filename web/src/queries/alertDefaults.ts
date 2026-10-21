@@ -64,3 +64,16 @@ export function useSetDefaultAlertEnabled() {
     onSuccess: () => qc.invalidateQueries({ queryKey: defaultAlertKeys.all }),
   })
 }
+
+export function useResetDefaultAlerts() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      request<DefaultAlert[]>(
+        '/api/v1/alert-defaults/reset',
+        'Resetting default alerts',
+        { method: 'POST' },
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: defaultAlertKeys.all }),
+  })
+}

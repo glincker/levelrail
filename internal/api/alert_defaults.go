@@ -14,6 +14,7 @@ import (
 type AlertDefaults interface {
 	ListDefaultRules(ctx context.Context) ([]alerting.Rule, error)
 	SetDefaultRuleEnabled(ctx context.Context, id string, enabled bool) (*alerting.Rule, error)
+	ResetDefaultRules(ctx context.Context) ([]alerting.Rule, error)
 }
 
 // WithAlertDefaults enables the default alert list and toggle routes.
@@ -79,4 +80,21 @@ func (rt *Router) handleSetDefaultAlertEnabled(w http.ResponseWriter, r *http.Re
 		return
 	}
 	writeJSON(w, http.StatusOK, toDefaultAlertResource(*rule))
+}
+
+func (rt *Router) handleResetDefaultAlerts(w http.ResponseWriter, r *http.Request) {
+	if rt.alertDefaults == nil {
+		writeError(w, http.StatusNotImplemented, "alerting is not configured on this control plane")
+		return
+	}
+	rules, err := rt.alertDefaults.ResetDefaultRules(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: reset default alerts failed", err)
+		return
+	}
+	out := make([]defaultAlertResource, 0, len(rules))
+	for _, rule := range rules {
+		out = append(out, toDefaultAlertResource(rule))
+	}
+	writeJSON(w, http.StatusOK, out)
 }

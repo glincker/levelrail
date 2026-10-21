@@ -1824,6 +1824,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/mail/broadcasts/test | AbilityRoot | handleTestMailBroadcast |
 | GET | /api/v1/mail/broadcasts/{id} | AbilityRoot | handleGetMailBroadcast |
 | POST | /api/v1/mail/broadcasts/{id}/cancel | AbilityRoot | handleCancelMailBroadcast |
+| POST | /api/v1/alert-defaults/reset | AbilityWrite | handleResetDefaultAlerts |
 
 ## See also
 

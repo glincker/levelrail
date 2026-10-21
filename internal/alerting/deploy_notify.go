@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
@@ -345,7 +346,12 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		if !ev.Succeeded {
 			subject = fmt.Sprintf("[Levelrail] deploy FAILED: %s", ev.AppName)
 		}
-		if err := sendEmailWithRetry(ctx, sender, t.NotifyURL, subject, summaryDeployText(ev)); err != nil {
+		status := "succeeded"
+		if !ev.Succeeded {
+			status = "failed"
+		}
+		vals := map[string]string{"app_name": ev.AppName, "deploy_status": status}
+		if err := sendTemplated(ctx, sender, mailtemplates.EventDeployNotification, t.NotifyURL, vals, subject, summaryDeployText(ev)); err != nil {
 			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
 		}
 		return nil

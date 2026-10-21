@@ -225,7 +225,7 @@ var Tree = map[string]*Node{
 		"maintenance": {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil}},
 		"history":     nil,
 		"inbox":       {Subs: map[string]*Node{"list": nil, "count": nil, "read": nil, "prefs": nil}},
-		"defaults":    {Subs: map[string]*Node{"list": nil, "enable": nil, "disable": nil}},
+		"defaults":    {Subs: map[string]*Node{"list": nil, "enable": nil, "disable": nil, "reset": nil}},
 	}},
 	"status-page": {Subs: map[string]*Node{
 		"get": nil, "set": nil, "preview": nil,

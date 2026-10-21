@@ -30,3 +30,10 @@ func (c *Client) SetDefaultAlertEnabled(ctx context.Context, id string, enabled 
 	err := c.do(ctx, http.MethodPut, "/api/v1/alert-defaults/"+url.PathEscape(id), map[string]bool{"enabled": enabled}, &out)
 	return out, err
 }
+
+// ResetDefaultAlerts calls POST /api/v1/alert-defaults/reset.
+func (c *Client) ResetDefaultAlerts(ctx context.Context) ([]DefaultAlert, error) {
+	var out []DefaultAlert
+	err := c.do(ctx, http.MethodPost, "/api/v1/alert-defaults/reset", nil, &out)
+	return out, err
+}
