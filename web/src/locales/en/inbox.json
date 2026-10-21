@@ -65,5 +65,42 @@
     "link": "Alert inbox",
     "unread_one": "{{count}} unread alert",
     "unread_other": "{{count}} unread alerts"
+  },
+  "page": {
+    "title": "Inbox",
+    "description": "Alerts, approval requests and failures that need you, with one action each.",
+    "kindFilter": "Filter by kind",
+    "showArchived": "Archived",
+    "listLabel": "Inbox items",
+    "detailLabel": "Inbox item",
+    "kind": {
+      "all": "All",
+      "alert": "Alerts",
+      "approval": "Approvals",
+      "deploy": "Failed deploys",
+      "upgrade": "Failed upgrades"
+    },
+    "approve": "Approve",
+    "deny": "Deny",
+    "retry": "Retry",
+    "fix": "Fix",
+    "retryStarted": "Retrying the deploy of {{app}}.",
+    "actionError": "That did not go through. Open the source to see why.",
+    "openSource": "Open source",
+    "archive": "Archive",
+    "restore": "Restore",
+    "keys": "Keys: j next, k previous, e archive.",
+    "emptyTitle": "Nothing needs you",
+    "emptyBody": "New alerts, approval requests and failed deploys show up here. Tune what reaches you with alert routing.",
+    "emptyAction": "Review alert settings",
+    "emptyArchivedTitle": "No archived items",
+    "emptyArchivedBody": "Items you archive with e are kept here until restored.",
+    "badge": "Inbox: {{count}} unread",
+    "badgeNone": "Inbox",
+    "entry": {
+      "approvalTitle": "{{app}} awaits approval",
+      "approvalDetail": "{{action}} {{image}}, requested by {{who}}",
+      "deployTitle": "Deploy of {{app}} failed"
+    }
   }
 }

@@ -57,6 +57,25 @@ func (c *Client) MarkInboxRead(ctx context.Context, ids []string, all bool) erro
 	return c.do(ctx, http.MethodPost, "/api/v1/inbox/read", body, nil)
 }
 
+// InboxState mirrors internal/api's inboxStateResource.
+type InboxState struct {
+	ReadIDs     []string `json:"read_ids"`
+	ArchivedIDs []string `json:"archived_ids"`
+}
+
+// GetInboxState calls GET /api/v1/inbox/state.
+func (c *Client) GetInboxState(ctx context.Context) (InboxState, error) {
+	var out InboxState
+	err := c.do(ctx, http.MethodGet, "/api/v1/inbox/state", nil, &out)
+	return out, err
+}
+
+// ArchiveInbox calls POST /api/v1/inbox/archive; restore undoes an archive.
+func (c *Client) ArchiveInbox(ctx context.Context, ids []string, restore bool) error {
+	body := map[string]any{"ids": ids, "restore": restore}
+	return c.do(ctx, http.MethodPost, "/api/v1/inbox/archive", body, nil)
+}
+
 // GetInboxPrefs calls GET /api/v1/inbox/preferences.
 func (c *Client) GetInboxPrefs(ctx context.Context) (InboxPrefs, error) {
 	var out InboxPrefs

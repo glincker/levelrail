@@ -34,6 +34,7 @@ vi.mock('../environments/EnvironmentSwitcher', () => ({
 vi.mock('../HelpMenu', () => ({ HelpMenu: () => null }))
 vi.mock('../ThemeToggle', () => ({ ThemeToggle: () => null }))
 vi.mock('./NotificationCenter', () => ({ NotificationCenter: () => null }))
+vi.mock('./InboxBadge', () => ({ InboxBadge: () => null }))
 vi.mock('./WhatsNewPanel', () => ({ WhatsNewPanel: () => null }))
 vi.mock('../CleanUpDockerDialog', () => ({ CleanUpDockerDialog: () => null }))
 

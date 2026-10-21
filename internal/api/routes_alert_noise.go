@@ -19,6 +19,8 @@ func (rt *Router) registerAlertNoiseRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/inbox", rt.requireAbility(AbilityRead, rt.handleListInbox))
 	mux.HandleFunc("GET /api/v1/inbox/unread-count", rt.requireAbility(AbilityRead, rt.handleInboxUnreadCount))
 	mux.HandleFunc("POST /api/v1/inbox/read", rt.requireAbility(AbilityWrite, rt.handleInboxMarkRead))
+	mux.HandleFunc("GET /api/v1/inbox/state", rt.requireAbility(AbilityRead, rt.handleInboxState))
+	mux.HandleFunc("POST /api/v1/inbox/archive", rt.requireAbility(AbilityWrite, rt.handleInboxArchive))
 	mux.HandleFunc("GET /api/v1/inbox/preferences", rt.requireAbility(AbilityRead, rt.handleGetInboxPrefs))
 	mux.HandleFunc("PUT /api/v1/inbox/preferences", rt.requireAbility(AbilityWrite, rt.handlePutInboxPrefs))
 }

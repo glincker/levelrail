@@ -209,6 +209,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAuditPurge(prog, args[1:], stdout, stderr, lookupEnv)
 	case "diagnose":
 		return runDiagnose(prog, args[1:], stdout, stderr, lookupEnv)
+	case "inbox":
+		return runInbox(prog, args[1:], stdout, stderr, lookupEnv)
 	case "attention":
 		return runAttention(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tui":

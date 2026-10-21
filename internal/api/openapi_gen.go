@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1600 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1602 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1062,9 +1062,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/imports/platform/databases/{name}/copy", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCopyDatabaseData", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/platform/discover", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDiscoverPlatformImport", Description: ""},
 	{Method: "GET", Path: "/api/v1/inbox", Ability: "AbilityRead", Group: "Other", Handler: "handleListInbox", Description: ""},
+	{Method: "POST", Path: "/api/v1/inbox/archive", Ability: "AbilityWrite", Group: "Other", Handler: "handleInboxArchive", Description: ""},
 	{Method: "GET", Path: "/api/v1/inbox/preferences", Ability: "AbilityRead", Group: "Other", Handler: "handleGetInboxPrefs", Description: ""},
 	{Method: "PUT", Path: "/api/v1/inbox/preferences", Ability: "AbilityWrite", Group: "Other", Handler: "handlePutInboxPrefs", Description: ""},
 	{Method: "POST", Path: "/api/v1/inbox/read", Ability: "AbilityWrite", Group: "Other", Handler: "handleInboxMarkRead", Description: ""},
+	{Method: "GET", Path: "/api/v1/inbox/state", Ability: "AbilityRead", Group: "Other", Handler: "handleInboxState", Description: ""},
 	{Method: "GET", Path: "/api/v1/inbox/unread-count", Ability: "AbilityRead", Group: "Other", Handler: "handleInboxUnreadCount", Description: ""},
 	{Method: "GET", Path: "/api/v1/ingress/connectivity", Ability: "AbilityRead", Group: "Other", Handler: "handleIngressConnectivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/instance", Ability: "Public", Group: "Other", Handler: "handleInstance", Description: "CLI device login (device_auth.go): \"levelrail-cli auth login --device\" prints a code, the operator approves it here. start/token are necessarily public (no credential exists yet); requests/ approve/deny are requireAuth session-only, the same tier tokens.go's own session-only routes use, since approving a device only ever mints a token scoped to the approving operator's own abilities."},
