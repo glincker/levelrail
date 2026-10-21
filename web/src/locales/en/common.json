@@ -699,5 +699,8 @@
       "ciDeploy": "Gives your CI system a token and a command to deploy this app."
     },
     "whatItDoes": "What this does:"
+  },
+  "cardSkeleton": {
+    "loading": "Loading"
   }
 }
