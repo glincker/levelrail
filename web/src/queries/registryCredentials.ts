@@ -12,6 +12,8 @@ import {
 import type {
   CreateRegistryCredentialRequest,
   RegistryCredential,
+  RegistryPresetRequest,
+  RegistryPresetTestResult,
 } from '../types/registryCredential'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
@@ -260,5 +262,62 @@ export function useRegistryCredentialTags(
     ...registryCredentialTagsQueryOptions(id, repository ?? ''),
     enabled: enabled && repository !== null && repository !== '',
     retry: false,
+  })
+}
+
+// POST /api/v1/registry-credentials/presets/test: mints a login to prove the
+// cloud connection works; nothing is stored and no password comes back.
+export async function testRegistryPreset(
+  req: RegistryPresetRequest,
+): Promise<RegistryPresetTestResult> {
+  const res = await fetch('/api/v1/registry-credentials/presets/test', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `test registry preset failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as RegistryPresetTestResult
+}
+
+export function useTestRegistryPreset() {
+  return useMutation<RegistryPresetTestResult, ApiError, RegistryPresetRequest>(
+    { mutationFn: testRegistryPreset },
+  )
+}
+
+// POST /api/v1/registry-credentials/{id}/refresh: mint a new login now.
+export async function refreshRegistryCredential(
+  id: string,
+): Promise<RegistryCredential> {
+  const res = await fetch(
+    `/api/v1/registry-credentials/${encodeURIComponent(id)}/refresh`,
+    { method: 'POST' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `refresh registry credential failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as RegistryCredential
+}
+
+export function useRefreshRegistryCredential() {
+  const queryClient = useQueryClient()
+  return useMutation<RegistryCredential, ApiError, string>({
+    mutationFn: refreshRegistryCredential,
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: registryCredentialKeys.list(),
+      })
+    },
   })
 }

@@ -90,6 +90,7 @@ func DefaultRuleSpecs(cfg DefaultsConfig) []DefaultRuleSpec {
 		{"email-delivery-failing", "Outbound email is failing", KindEmailDeliveryFailing, SeverityWarning},
 		{"node-cert-expiring", "Node certificate expiring", KindNodeCertExpiring, SeverityWarning},
 		{"export-behind", "Export destination failing", KindExportBehind, SeverityWarning},
+		{"registry-refresh-failing", "Registry credential refresh failing", KindRegistryRefreshFailing, SeverityWarning},
 		{"log-archive-stale", "Log archive failing", KindLogArchiveStale, SeverityWarning},
 		{"backup-failed", "A database backup failed", KindBackupFailed, SeverityCritical},
 		{"deploy-failed", "A deploy failed", KindDeployFailed, SeverityWarning},

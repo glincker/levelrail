@@ -13,6 +13,7 @@ import (
 	cerrdefs "github.com/containerd/errdefs"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/registrytoken"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -62,6 +63,14 @@ type registryCredentialResource struct {
 	// to infer one from an opaque credential string, so "unknown" is a
 	// real, distinct state from "healthy".
 	ExpiryStatus string `json:"expiry_status,omitempty"`
+	// Preset is "ecr", "artifact_registry" or "acr" for a self-refreshing
+	// credential. The remaining fields describe its refresh state; none of
+	// them is secret.
+	Preset           string     `json:"preset,omitempty"`
+	Region           string     `json:"region,omitempty"`
+	LastRefreshedAt  *time.Time `json:"last_refreshed_at,omitempty"`
+	NextRefreshAt    *time.Time `json:"next_refresh_at,omitempty"`
+	LastRefreshError string     `json:"last_refresh_error,omitempty"`
 }
 
 // toRegistryCredentialResource maps a stored credential to its wire
@@ -78,6 +87,16 @@ func (rt *Router) toRegistryCredentialResource(c store.RegistryCredential) regis
 		Username:     c.Username,
 		CreatedAt:    c.CreatedAt,
 		ExpiresAt:    c.ExpiresAt,
+
+		Preset:           c.Preset,
+		LastRefreshedAt:  c.LastRefreshedAt,
+		NextRefreshAt:    c.NextRefreshAt,
+		LastRefreshError: c.LastRefreshError,
+	}
+	if c.Preset != "" {
+		if cfg, err := registrytoken.ParseConfig(c.PresetConfig); err == nil {
+			res.Region = cfg.Region
+		}
 	}
 	if c.ExpiresAt != nil {
 		warningWindow := rt.certExpiryWarningWindow
@@ -98,11 +117,18 @@ type createRegistryCredentialRequest struct {
 	Username     string     `json:"username"`
 	Password     string     `json:"password"`
 	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
+	// Preset and Region select a self-refreshing cloud login; password and
+	// username are then minted, not supplied.
+	Preset string `json:"preset,omitempty"`
+	Region string `json:"region,omitempty"`
 }
 
 func validateCreateRegistryCredentialRequest(req createRegistryCredentialRequest) error {
 	if req.Name == "" {
 		return errors.New("name is required")
+	}
+	if req.Preset != "" {
+		return nil
 	}
 	if req.RegistryHost == "" {
 		return errors.New("registry_host is required")
@@ -207,6 +233,10 @@ func (rt *Router) handleCreateRegistryCredential(w http.ResponseWriter, r *http.
 	if !errors.Is(err, store.ErrRegistryCredentialNotFound) {
 		rt.logger.Error("api: create registry credential: check existing failed", slog.String("error", err.Error()), slog.String("name", req.Name))
 		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	if req.Preset != "" {
+		rt.createPresetRegistryCredential(w, r, req)
 		return
 	}
 

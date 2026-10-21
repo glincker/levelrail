@@ -117,6 +117,8 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteRegistryCredential))
 	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryCredential))
 	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/usage", rt.requireAbility(AbilityRead, rt.handleRegistryCredentialUsage))
+	mux.HandleFunc("POST /api/v1/registry-credentials/presets/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryPreset))
+	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/refresh", rt.requireAbility(AbilityWriteSensitive, rt.handleRefreshRegistryCredential))
 	mux.HandleFunc("POST /api/v1/registry-credentials/test", rt.requireAbility(AbilityWriteSensitive, rt.handleProbeRegistryCredential))
 	mux.HandleFunc("GET /api/v1/registry-vendors", rt.requireAbility(AbilityRead, rt.handleListRegistryVendors))
 	// Private package registries for builds: secrets mounted into

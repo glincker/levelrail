@@ -92,6 +92,8 @@ type Engine struct {
 
 	exportHealth ExportHealthSource
 
+	registryRefresh RegistryRefreshSource
+
 	restoreDrills RestoreDrillSource
 
 	nodeCertWarning, nodeCertCritical time.Duration
@@ -194,6 +196,9 @@ func (e *Engine) SetControlPlaneBackups(src ControlPlaneBackupSource, maxAge tim
 
 // SetLogArchive enables kind=log_archive_stale rules.
 func (e *Engine) SetLogArchive(src LogArchiveSource) { e.logArchive = src }
+
+// SetRegistryRefresh enables kind=registry_refresh_failing rules.
+func (e *Engine) SetRegistryRefresh(src RegistryRefreshSource) { e.registryRefresh = src }
 
 // SetExportHealth enables kind=export_behind rules.
 func (e *Engine) SetExportHealth(src ExportHealthSource) { e.exportHealth = src }
@@ -522,6 +527,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindRegistryRefreshFailing:
+			if e.registryRefresh == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateRegistryRefreshFailing(ctx, e.registryRefresh, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindRestoreDrillFailed:
 			if e.restoreDrills == nil {
 				continue
@@ -713,7 +727,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {

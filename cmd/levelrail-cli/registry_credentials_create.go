@@ -12,7 +12,9 @@ import (
 // unlike "registry-credentials update" where rotating it is optional.
 func runRegistryCredentialsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "registry-credentials create", "print the created registry credential as JSON to stdout and nothing else", stderr)
-	var name, registryHost, username, password, expiresAt string
+	var name, registryHost, username, password, expiresAt, preset, region string
+	fs.StringVar(&preset, "preset", "", "mint a self-refreshing login from a connected cloud account: ecr, artifact_registry or acr")
+	fs.StringVar(&region, "region", "", "cloud region for --preset (ECR region, Artifact Registry location)")
 	fs.StringVar(&name, "name", "", "display name for the registry credential (required)")
 	fs.StringVar(&registryHost, "registry-host", "", "registry hostname, e.g. ghcr.io (required)")
 	fs.StringVar(&username, "username", "", "registry username (required)")
@@ -28,14 +30,17 @@ func runRegistryCredentialsCreate(prog string, args []string, stdout, stderr io.
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
 	}
-	if registryHost == "" {
+	if preset == "" && registryHost == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--registry-host is required"))
 	}
-	if username == "" {
+	if preset == "" && username == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--username is required"))
 	}
-	if password == "" {
+	if preset == "" && password == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--password is required"))
+	}
+	if preset == "acr" && registryHost == "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--registry-host is required for --preset acr"))
 	}
 	var expiresAtPtr *time.Time
 	if expiresAt != "" {
@@ -49,7 +54,7 @@ func runRegistryCredentialsCreate(prog string, args []string, stdout, stderr io.
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	created, err := client.CreateRegistryCredential(context.Background(), createRegistryCredentialRequest{
-		Name: name, RegistryHost: registryHost, Username: username, Password: password, ExpiresAt: expiresAtPtr,
+		Name: name, RegistryHost: registryHost, Username: username, Password: password, ExpiresAt: expiresAtPtr, Preset: preset, Region: region,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create registry credential %q: %w", name, err))
@@ -76,6 +81,8 @@ Flags:
   --username string         registry username (required)
   --password string         registry password or token (required)
   --expires-at string       optional RFC3339 expiry the operator already knows
+  --preset string           ecr, artifact_registry or acr: mint and auto-refresh the login from the connected cloud account (no username or password needed)
+  --region string           region for --preset; --registry-host overrides the default host
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")

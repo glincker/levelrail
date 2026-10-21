@@ -12,9 +12,9 @@ This page lists, per cloud, what Levelrail does today and what is only planned. 
 
 | Cloud | Nodes | DNS and certificates | Backups and storage | Registry |
 | --- | --- | --- | --- | --- |
-| AWS | EC2 | Route53 | S3 | Any registry that takes a username and password |
-| Google Cloud | Compute Engine | Cloud DNS provider code only, not connectable yet (see below) | GCS through S3 interoperability (HMAC keys) | Planned (Artifact Registry preset) |
-| Azure | VM provisioner in code, not verified | Planned (Azure DNS) | Planned (Blob Storage) | Not applicable |
+| AWS | EC2 | Route53 | S3 | ECR, refreshed automatically |
+| Google Cloud | Compute Engine | Cloud DNS provider code only, not connectable yet (see below) | GCS through S3 interoperability (HMAC keys) | Artifact Registry, refreshed automatically |
+| Azure | VM provisioner in code, not verified | Planned (Azure DNS) | Planned (Blob Storage) | ACR, refreshed automatically |
 | Cloudflare | Not applicable | DNS zones, records and DNS-01 | R2 | Not applicable |
 | DigitalOcean | Droplets | Not supported | Not verified (Spaces) | Not applicable |
 | Hetzner | Cloud servers | Not supported | Not verified (Object Storage) | Not applicable |
@@ -26,11 +26,11 @@ Works today:
 - **EC2 nodes.** Provision a server and enroll it as a node, with a static key, an assumable role, or the control plane's own AWS identity. Needs a default VPC in the target region. Sizes are a short curated `t3.*` list. See [Node provisioning](/node-provisioning#provider-credentials). Status: exercised against test doubles only, not yet against a real AWS account.
 - **Route53.** Zones, records, weighted, failover and multivalue routing, health checks, DNS-01 for wildcards, and automatic records when adding a domain. See [DNS zones and records](/dns).
 - **S3.** Backup targets and storage destinations for database backups, app volume backups, [log archive](/log-archive), build cache and audit export. See [Backup targets](/backups-and-storage) and [Object storage](/object-storage).
-- **Private images.** Registry credentials take a host, username and password, so any registry that accepts those works.
+- **ECR.** The ECR preset calls GetAuthorizationToken with the same AWS connection (static key, assumable role or the control plane identity) and renews the 12 hour password before it expires. Status: exercised against test doubles only, not yet against a real AWS account. See [Cloud registry presets](#cloud-registry-presets).
+- **Private images.** Other registries still take a host, username and password.
 
 Planned:
 
-- ECR token refresh preset. ECR passwords expire after 12 hours, so a static registry credential stops working until it is updated by hand.
 - EC2 user-data install script snippet for installing the control plane on a fresh instance.
 - Terraform snippets.
 
@@ -41,6 +41,7 @@ Works today:
 - **Compute Engine nodes.** Service account JSON key with the Compute Instance Admin role, and a `default` VPC network. No workload identity federation. This path has not been run against a real project, see [what was not tested](/node-provisioning#what-was-not-tested).
 
 - **GCS storage destinations.** The Google Cloud Storage preset on the S3-compatible destination form uses `storage.googleapis.com`, path-style addressing and region `auto`. Create an HMAC key under Cloud Storage, Settings, Interoperability, for a service account that can write to the bucket. Service account JSON keys do not work here. Backup targets already had a GCS preset with the same endpoint. The Test button runs the same probe as every other destination. Status: tested against a local fake S3 server only, never against a real bucket.
+- **Artifact Registry.** The preset turns the Compute Engine service account JSON into a short-lived access token (username `oauth2accesstoken`) and renews it. Status: exercised against test doubles only, not yet against a real project.
 
 In the codebase, not yet usable:
 
@@ -49,18 +50,42 @@ In the codebase, not yet usable:
 Planned:
 
 - Connecting Cloud DNS: settings, UI, CLI, automatic records on domain add, and a DNS-01 module for ingress.
-- Artifact Registry preset for registry credentials.
 - GCE startup script snippet for installing the control plane.
 - Terraform snippets.
 
 ## Azure
 
-Nothing here has been run against a real Azure account.
+Works today:
+
+- **Virtual machine nodes.** Service principal with a client secret or workload identity federation, scoped to one resource group. See [Node provisioning](/node-provisioning#provider-credentials).
+- **ACR.** The ACR preset exchanges an Azure AD token from the same service principal for an ACR refresh token and renews it. You enter the registry host, for example `myregistry.azurecr.io`. Status: exercised against test doubles only, not yet against a real Azure account.
 
 Planned:
 
 - Azure DNS as a DNS provider. It can reuse the same provider interface Cloud DNS uses, but it is not built.
 - Azure Blob Storage for backups. Blob uses its own API rather than S3, so it needs a separate uploader. It is not built.
+
+## Cloud registry presets
+
+Connect ECR, Artifact Registry or ACR from Settings, Registry credentials, or with the CLI. Each preset needs only the matching cloud connection that node provisioning already uses, plus a region or registry host. Test mints a login without saving anything.
+
+```
+levelrail-cli registry-credentials create --name prod-ecr --preset ecr --region eu-west-1
+levelrail-cli registry-credentials create --name gar --preset artifact_registry --region europe
+levelrail-cli registry-credentials create --name acr --preset acr --registry-host myregistry.azurecr.io
+levelrail-cli registry-credentials refresh <id>
+```
+
+A background refresher renews each credential before it expires and shows the expiry, last refresh and next refresh. The password is stored with the usual envelope encryption and is never returned by the API, logged or written to audit detail. When a refresh fails, the "Registry credential refresh failing" alert rule raises an Inbox item, and the Refresh now button (or `registry-credentials refresh`) retries it. Timings, all Go durations:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_REGISTRY_REFRESH_LEAD` | `30m` | How long before expiry to renew. A login shorter than this renews at half its remaining life. |
+| `APP_REGISTRY_REFRESH_INTERVAL` | `1m` | How often the refresher looks for due credentials. |
+| `APP_REGISTRY_REFRESH_RETRY` | `5m` | Wait before retrying a failed refresh. |
+| `APP_REGISTRY_ACR_FALLBACK_TTL` | `3h` | Assumed lifetime if an ACR token carries no expiry. |
+
+Nothing here has run against a real AWS, Google Cloud or Azure account. The token exchanges are covered by tests against fake endpoints.
 
 ## Cloudflare
 
@@ -111,8 +136,6 @@ None of these exist yet.
 - Connecting the Cloud DNS provider (settings, UI, CLI, DNS-01)
 - Azure DNS provider
 - Azure Blob Storage backups
-- Artifact Registry preset
-- ECR token refresh preset
 - EC2 user-data and GCE startup install scripts
 - Terraform snippets
 - Community template repository, reviewed by pull request

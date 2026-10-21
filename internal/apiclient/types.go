@@ -2314,6 +2314,12 @@ type RegistryCredentialResource struct {
 	CreatedAt    string     `json:"created_at"`
 	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
 	ExpiryStatus string     `json:"expiry_status,omitempty"`
+
+	Preset           string     `json:"preset,omitempty"`
+	Region           string     `json:"region,omitempty"`
+	LastRefreshedAt  *time.Time `json:"last_refreshed_at,omitempty"`
+	NextRefreshAt    *time.Time `json:"next_refresh_at,omitempty"`
+	LastRefreshError string     `json:"last_refresh_error,omitempty"`
 }
 
 // FirewallRuleResource mirrors internal/api's firewallRuleResource.
@@ -2382,8 +2388,12 @@ type CreateRegistryCredentialRequest struct {
 	Name         string     `json:"name"`
 	RegistryHost string     `json:"registry_host"`
 	Username     string     `json:"username"`
-	Password     string     `json:"password"`
+	Password     string     `json:"password,omitempty"`
 	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
+	// Preset (ecr, artifact_registry, acr) and Region mint a self-refreshing
+	// login from the connected cloud account instead of a typed password.
+	Preset string `json:"preset,omitempty"`
+	Region string `json:"region,omitempty"`
 }
 
 // UpdateRegistryCredentialRequest mirrors internal/api's

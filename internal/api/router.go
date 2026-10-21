@@ -512,6 +512,7 @@ type Router struct {
 	eventWebhooks                EventWebhookService             // nil is valid: event webhook routes return 501
 	scheduledMaintenance         ScheduledMaintenanceStore       // nil is valid: scheduled maintenance routes return 501
 	registryCredentials          RegistryCredentialStore         // always set, same "core Store interface" shape as backupTargets above
+	registryRefresher            RegistryTokenRefresher          // nil is valid: registry presets return 501
 	registryCredentialSecrets    RegistryCredentialSecretsSetter // nil is valid: POST /api/v1/registry-credentials returns 501, same shape as backupSecrets above
 	networkShares                NetworkShareStore               // always set, same "core Store interface" shape as registryCredentials above
 	networkShareSecrets          NetworkShareSecretsSetter       // nil is valid: POST /api/v1/network-shares (for a cifs share) returns 501, same shape as registryCredentialSecrets above
