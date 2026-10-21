@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatSleepDuration } from '../lib/sleepTimeline'
+import { setVisibleInterval } from '../lib/pageVisibility'
 
 const TICK_MS = 30_000
 
@@ -9,8 +10,8 @@ export function AsleepFor({ since }: { since: string }) {
   const { t } = useTranslation('sleepHistory')
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), TICK_MS)
-    return () => window.clearInterval(id)
+    const stop = setVisibleInterval(() => setNow(Date.now()), TICK_MS)
+    return () => stop()
   }, [])
   return (
     <>

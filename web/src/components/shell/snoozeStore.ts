@@ -9,6 +9,7 @@ import {
   type SnoozeDuration,
   type SnoozeMap,
 } from './snooze'
+import { setVisibleInterval } from '../../lib/pageVisibility'
 
 export const SNOOZE_STORAGE_KEY = 'shell.issues.snoozed'
 
@@ -62,8 +63,8 @@ export function useSnoozed(): {
   const map = React.useSyncExternalStore(subscribe, load, load)
   const [now, setNow] = React.useState(() => Date.now())
   React.useEffect(() => {
-    const t = window.setInterval(() => setNow(Date.now()), TICK_MS)
-    return () => window.clearInterval(t)
+    const stop = setVisibleInterval(() => setNow(Date.now()), TICK_MS)
+    return () => stop()
   }, [])
   return { map, now, isSnoozed: (id) => isSnoozed(map, id, now) }
 }

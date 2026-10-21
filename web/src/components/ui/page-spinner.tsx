@@ -1,17 +1,28 @@
-import { SpinnerIcon } from '@phosphor-icons/react/dist/ssr'
+import { useTranslation } from 'react-i18next'
+import { Skeleton } from './skeleton'
 
-// Route pendingComponent fallback for detail-shell layouts (app/database/
-// node) that render a header plus several unrelated cards: no single
-// repeated row shape to skeleton, so a centered spinner stands in for the
-// whole page during the loader's pending phase.
+// Route pendingComponent fallback: a header, stat row and two cards so the
+// page does not jump when the loader resolves.
 export function PageSpinner() {
+  const { t } = useTranslation('common')
   return (
     <div
-      className="flex h-64 items-center justify-center text-muted-foreground"
+      className="space-y-6"
       role="status"
-      aria-label="Loading"
+      aria-busy="true"
+      aria-label={t('pageLoading.label')}
     >
-      <SpinnerIcon className="size-6 animate-spin" />
+      <div className="space-y-2">
+        <Skeleton className="h-7 w-56" decorative />
+        <Skeleton className="h-4 w-80 max-w-full" decorative />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Skeleton key={i} className="h-20 w-full" decorative />
+        ))}
+      </div>
+      <Skeleton className="h-48 w-full" decorative />
+      <Skeleton className="h-32 w-full" decorative />
     </div>
   )
 }

@@ -10,14 +10,15 @@ import {
   pickTrackedApp,
   pollInterval,
 } from '../../lib/firstApp'
+import { setVisibleInterval } from '../../lib/pageVisibility'
 
 const CLOCK_TICK_MS = 5_000
 
 function useNow(): number {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS)
-    return () => clearInterval(id)
+    const stop = setVisibleInterval(() => setNow(Date.now()), CLOCK_TICK_MS)
+    return () => stop()
   }, [])
   return now
 }
