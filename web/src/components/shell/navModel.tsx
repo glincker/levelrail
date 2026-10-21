@@ -704,3 +704,18 @@ export function resolveOpen(
 ): boolean {
   return stored[id] ?? fallback
 }
+
+// Pinned ids resolve against what is visible now, in pin order; ids for
+// items that no longer exist are dropped. The nested Projects tree is not pinnable.
+export function pinnedGlobalItems(
+  groups: readonly GlobalNavGroup[],
+  pins: readonly string[],
+): GlobalNavItem[] {
+  const byId = new Map(
+    groups.flatMap((g) => g.items).map((i) => [i.id, i] as const),
+  )
+  return pins.flatMap((id) => {
+    const found = byId.get(id)
+    return found && found.id !== 'projects' ? [found] : []
+  })
+}

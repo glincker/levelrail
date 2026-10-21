@@ -172,6 +172,11 @@
     "emergencyDocs": "Emergency access"
   },
   "shell": {
+    "pins": {
+      "group": "Pinned",
+      "pin": "Pin {{label}}",
+      "limit": "Pin limit reached ({{max}}). Unpin one first."
+    },
     "locked": {
       "badge": "Beta",
       "description": "This is a beta feature and it is turned off. Open it to go to Beta features and turn it on.",
