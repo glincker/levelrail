@@ -22,6 +22,7 @@ import { formatAge } from '../../lib/format'
 import { useArchiveInbox, useMarkInboxRead } from '../../queries/inbox'
 import { useInboxEntries } from '../../queries/inboxFeed'
 import { InboxAction } from './InboxAction'
+import { SignInDecision } from './SignInDecision'
 
 const SEVERITY_DOT: Record<InboxEntry['severity'], string> = {
   critical: 'bg-destructive',
@@ -200,6 +201,11 @@ export function InboxView() {
                     </span>
                   </span>
                 </button>
+                {e.action?.type === 'signIn' && !e.archived ? (
+                  <div className="px-3 pb-2.5 pl-8">
+                    <SignInDecision id={e.action.approvalId} />
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>

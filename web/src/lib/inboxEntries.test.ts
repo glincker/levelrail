@@ -27,6 +27,26 @@ const approval = {
   created_at: '2026-10-20T11:00:00Z',
 } as DeployApprovalResource
 
+describe('sign-in approvals', () => {
+  it('become approval entries with a signIn action', () => {
+    const [e] = buildInboxEntries({
+      t,
+      signIns: [
+        {
+          id: 's1',
+          requester_ip: '1.2.3.4',
+          user_agent: 'ua',
+          created_at: '2026-10-20T12:00:00Z',
+          expires_at: '2026-10-20T12:05:00Z',
+        },
+      ],
+    })
+    expect(e?.id).toBe('signin:s1')
+    expect(e?.kind).toBe('approval')
+    expect(e?.action).toEqual({ type: 'signIn', approvalId: 's1' })
+  })
+})
+
 describe('buildInboxEntries', () => {
   it('merges sources newest first and applies read and archive state', () => {
     const entries = buildInboxEntries({

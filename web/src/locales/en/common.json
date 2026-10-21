@@ -248,6 +248,7 @@
       "models": "AI models",
       "pipelines": "Pipelines",
       "approvals": "Deploy approvals",
+      "inbox": "Inbox",
       "alerts": "Alerts",
       "assistant": "AI assistant",
       "settings": "Settings",

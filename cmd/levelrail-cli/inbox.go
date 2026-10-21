@@ -107,12 +107,15 @@ func inboxFeedListCommand() apiCmd {
 					rows = append(rows, inboxEntry{ID: "approval:" + a.ID, Kind: inboxKindApproval, Severity: attention.Warning, Title: a.ServiceName + " awaits approval", Read: seen["approval:"+a.ID]})
 				}
 			}
+			if reqs, serr := c.ListSignInRequests(ctx); serr == nil {
+				for _, a := range reqs.Approvals {
+					rows = append(rows, inboxEntry{ID: "signin:" + a.ID, Kind: inboxKindApproval, Severity: attention.Warning, Title: "New browser sign-in from " + a.RequesterIP, At: a.CreatedAt, Read: seen["signin:"+a.ID]})
+				}
+			}
 			if feed, ferr := c.GetAttentionFeed(ctx); ferr == nil {
 				for _, f := range feed {
 					k := ""
 					switch f.Kind {
-					case attention.KindLoginApproval:
-						k = inboxKindApproval
 					case attention.KindDBUpgradeFailed:
 						k = inboxKindUpgrade
 					}

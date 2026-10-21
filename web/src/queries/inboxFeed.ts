@@ -5,6 +5,7 @@ import { pollUnlessMissing } from '../lib/pollUnlessMissing'
 import { attentionFeedQueryOptions } from './attentionFeed'
 import { deployApprovalListQueryOptions } from './deployApprovals'
 import { failedDeploysQueryOptions } from './failedDeploys'
+import { signInRequestsQueryOptions } from './signIn'
 import { useInbox, useInboxState } from './inbox'
 
 // Each source is optional: a forbidden or failing endpoint drops only its own rows.
@@ -21,11 +22,13 @@ export function useInboxEntries(archived = false): {
     ...deployApprovalListQueryOptions('pending'),
     ...opts,
   })
+  const signIns = useQuery({ ...signInRequestsQueryOptions(), ...opts })
   const feed = useQuery({ ...attentionFeedQueryOptions(), ...opts })
   const entries = buildInboxEntries({
     alerts: alerts.data,
     failedDeploys: failed.data,
     approvals: approvals.data,
+    signIns: signIns.data?.approvals,
     feed: feed.data,
     state: state.data,
     t: (key, o) => t(key, { ...o, defaultValue: key }),

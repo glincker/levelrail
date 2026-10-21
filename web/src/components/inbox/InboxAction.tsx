@@ -8,6 +8,7 @@ import {
   useRejectDeployApproval,
 } from '../../queries/deployApprovals'
 import { useTriggerDeploy } from '../../queries/deploys'
+import { SignInDecision } from './SignInDecision'
 
 export function InboxAction({
   action,
@@ -19,6 +20,8 @@ export function InboxAction({
   switch (action.type) {
     case 'deployApproval':
       return <ApprovalAction id={action.approvalId} onDone={onDone} />
+    case 'signIn':
+      return <SignInDecision id={action.approvalId} onDone={onDone} />
     case 'retryDeploy':
       return (
         <RetryAction app={action.app} image={action.image} onDone={onDone} />

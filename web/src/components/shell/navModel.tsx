@@ -56,6 +56,7 @@ import {
   FunnelIcon,
   LightbulbIcon,
   CoinsIcon,
+  TrayIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { GO_TARGETS } from '@/lib/shortcuts'
 import type { ExperimentalFeature } from '@/lib/experimental'
@@ -90,6 +91,7 @@ export type GlobalTo =
   | '/ai-assistant'
   | '/terminal'
   | '/pipelines'
+  | '/inbox'
   | '/approvals'
   | '/alerts'
   | '/settings'
@@ -108,6 +110,7 @@ export type PendingTo = '/dns'
 export type GlobalBadge =
   | 'failing-apps'
   | 'approvals'
+  | 'inbox'
   | 'domains-attention'
   | 'dns-attention'
   | 'proxy-attention'
@@ -343,6 +346,13 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/approvals',
         icon: <GavelIcon />,
         badge: 'approvals',
+      },
+      {
+        id: 'inbox',
+        label: 'Inbox',
+        to: '/inbox',
+        icon: <TrayIcon />,
+        badge: 'inbox',
       },
       { id: 'alerts', label: 'Alerts', to: '/alerts', icon: <BellIcon /> },
     ],

@@ -1,6 +1,7 @@
 import type { FailedDeploy } from '../queries/failedDeploys'
 import type { AttentionFeedItem } from '../queries/attentionFeed'
 import type { InboxItem, InboxState } from '../queries/inbox'
+import type { SignInApprovalRequest } from '../queries/signIn'
 import type { DeployApprovalResource } from '../types/deployApproval'
 
 export type InboxKind = 'alert' | 'approval' | 'deploy' | 'upgrade'
@@ -14,6 +15,7 @@ export const INBOX_KINDS: InboxKind[] = [
 
 export type InboxAction =
   | { type: 'deployApproval'; approvalId: string }
+  | { type: 'signIn'; approvalId: string }
   | { type: 'retryDeploy'; app: string; image: string }
   | { type: 'link'; to: string }
 
@@ -34,6 +36,7 @@ export interface InboxSources {
   alerts?: InboxItem[]
   failedDeploys?: FailedDeploy[]
   approvals?: DeployApprovalResource[]
+  signIns?: SignInApprovalRequest[]
   feed?: AttentionFeedItem[]
   state?: InboxState
   t: (key: string, opts?: Record<string, string>) => string
@@ -41,7 +44,6 @@ export interface InboxSources {
 
 // Feed kinds that belong in the inbox; ids match internal/attention's kind:subject.
 const FEED_KINDS: Record<string, InboxKind> = {
-  login_approval: 'approval',
   db_upgrade_failed: 'upgrade',
 }
 
@@ -84,6 +86,18 @@ export function buildInboxEntries(src: InboxSources): InboxEntry[] {
       at: a.created_at,
       href: '/approvals',
       action: { type: 'deployApproval', approvalId: a.id },
+    })
+  }
+  for (const s of src.signIns ?? []) {
+    mark({
+      id: `signin:${s.id}`,
+      kind: 'approval',
+      severity: 'warning',
+      title: src.t('page.entry.signInTitle', { ip: s.requester_ip }),
+      detail: s.user_agent,
+      at: s.created_at,
+      href: '/security',
+      action: { type: 'signIn', approvalId: s.id },
     })
   }
   for (const d of src.failedDeploys ?? []) {

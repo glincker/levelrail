@@ -81,6 +81,8 @@
       "upgrade": "Failed upgrades"
     },
     "approve": "Approve",
+    "matchLabel": "Number shown in the waiting browser",
+    "matchPlaceholder": "Number",
     "deny": "Deny",
     "retry": "Retry",
     "fix": "Fix",
@@ -98,6 +100,7 @@
     "badge": "Inbox: {{count}} unread",
     "badgeNone": "Inbox",
     "entry": {
+      "signInTitle": "New browser sign-in from {{ip}}",
       "approvalTitle": "{{app}} awaits approval",
       "approvalDetail": "{{action}} {{image}}, requested by {{who}}",
       "deployTitle": "Deploy of {{app}} failed"
