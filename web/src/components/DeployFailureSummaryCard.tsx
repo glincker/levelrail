@@ -1,7 +1,6 @@
 import { useId, useState, type ReactNode } from 'react'
 import {
   ArrowCounterClockwiseIcon,
-  ArrowsClockwiseIcon,
   LightbulbIcon,
   TerminalIcon,
   WarningCircleIcon,
@@ -21,6 +20,9 @@ import { CopyReportButton } from './deployDetail/CopyReportButton'
 import { DeployFixRow } from './deployDetail/DeployFixRow'
 import { useDeployDetailT } from './deployDetail/useDeployDetailT'
 import { useTriggerDeploy } from '../queries/deploys'
+import { useGitSource } from '../queries/gitSources'
+import { useRebuildApp } from '../queries/rebuildApp'
+import { RetrySplitButton } from './RetrySplitButton'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
@@ -53,6 +55,8 @@ export function DeployFailureSummaryCard({
   const [expanded, setExpanded] = useState(false)
   const retry = useRedeployApp(appName, attempt.image)
   const rollback = useTriggerDeploy(appName)
+  const rebuild = useRebuildApp(appName)
+  const { data: gitSource } = useGitSource(appName)
 
   const summary = summarizeDeployFailure({
     stages,
@@ -74,6 +78,25 @@ export function DeployFailureSummaryCard({
     const el = document.getElementById(deployStageAnchorId(summary.stageKey))
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     el?.focus({ preventScroll: true })
+  }
+
+  const runRebuild = (noCache: boolean) => {
+    rebuild.mutate(
+      { noCache },
+      {
+        onSuccess: () => {
+          toast.add({
+            title: noCache
+              ? 'Rebuild without cache started.'
+              : 'Rebuild started.',
+            type: 'success',
+          })
+        },
+        onError: (error) => {
+          toast.add({ title: error.message, type: 'error' })
+        },
+      },
+    )
   }
 
   const rollBack = () => {
@@ -176,16 +199,18 @@ export function DeployFailureSummaryCard({
               <TerminalIcon aria-hidden="true" />
               View full logs
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={retry.isPending}
-              onClick={retry.redeploy}
-            >
-              <ArrowsClockwiseIcon aria-hidden="true" />
-              Retry deploy
-            </Button>
+            <RetrySplitButton
+              pending={retry.isPending || rebuild.isPending}
+              canRebuild={gitSource !== undefined}
+              noCacheSupported={gitSource?.build_type === 'dockerfile'}
+              onRetry={retry.redeploy}
+              onRebuild={() => {
+                runRebuild(false)
+              }}
+              onRebuildNoCache={() => {
+                runRebuild(true)
+              }}
+            />
             {lastGood ? (
               <Button
                 type="button"

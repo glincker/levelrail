@@ -21,12 +21,15 @@ export function RetrySplitButton({
   onRebuildNoCache,
   pending = false,
   canRebuild,
+  noCacheSupported = true,
 }: {
   onRetry: () => void
   onRebuild: () => void
   onRebuildNoCache: () => void
   pending?: boolean
   canRebuild: boolean
+  // The build API only honours no_cache for Dockerfile builds.
+  noCacheSupported?: boolean
 }) {
   const { t } = useTranslation('common')
   return (
@@ -63,10 +66,12 @@ export function RetrySplitButton({
               <HammerIcon aria-hidden="true" />
               {t('deployRetry.rebuild')}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onRebuildNoCache}>
-              <TrashIcon aria-hidden="true" />
-              {t('deployRetry.rebuildNoCache')}
-            </DropdownMenuItem>
+            {noCacheSupported ? (
+              <DropdownMenuItem onClick={onRebuildNoCache}>
+                <TrashIcon aria-hidden="true" />
+                {t('deployRetry.rebuildNoCache')}
+              </DropdownMenuItem>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}
