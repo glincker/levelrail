@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { CodeBlock } from '@/components/ui/code-block'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import type { DbCell } from '../../types/databaseViewer'
@@ -175,9 +176,12 @@ export function ResultGrid({
               {t('viewer.grid.rowCount', { count: rows.length })}
             </DialogDescription>
           </DialogHeader>
-          <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">
-            {expanded?.value}
-          </pre>
+          <CodeBlock
+            code={expanded?.value ?? ''}
+            wrap
+            maxHeight="lg"
+            wrapToggle={false}
+          />
           <div className="flex justify-end">
             <Button
               type="button"
