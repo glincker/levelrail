@@ -86,9 +86,7 @@ export function DeployFailureSummaryCard({
       {
         onSuccess: () => {
           toast.add({
-            title: noCache
-              ? 'Rebuild without cache started.'
-              : 'Rebuild started.',
+            title: noCache ? t('rebuild.startedNoCache') : t('rebuild.started'),
             type: 'success',
           })
         },

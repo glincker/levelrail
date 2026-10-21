@@ -227,8 +227,8 @@
   },
   "stream": {
     "title": "The live log stream dropped",
-    "body": "Lines may be missing until it reconnects. Next attempt {{when}}.",
     "bodyNoRetry": "Lines may be missing until it reconnects.",
+    "nextAttempt": "Next attempt {{when}}.",
     "retryIn": "in {{seconds}}s",
     "retryNow": "Retry now",
     "switchToPolling": "Switch to polling",
@@ -251,6 +251,10 @@
     "dismiss": "Dismiss",
     "region": "Redeploy with your changes",
     "started": "Redeploying with your changes."
+  },
+  "rebuild": {
+    "started": "Rebuild started.",
+    "startedNoCache": "Rebuild without cache started."
   },
   "report": {
     "copy": "Copy as report",

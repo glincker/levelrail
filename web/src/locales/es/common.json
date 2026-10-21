@@ -22,6 +22,8 @@
     "earlier": "Despliegues anteriores",
     "failedLog": "Ver registro de la etapa fallida",
     "failedLogLabel": "Ver el registro de la etapa fallida de {{title}}",
+    "watchLog": "Ver en vivo",
+    "viewLogs": "Registros",
     "settingsLink": "Ajustes de despliegue",
     "settingsLinkHint": "Las opciones de compilación, ejecución, seguridad y automatización de esta aplicación están en un solo lugar.",
     "settingsLinkCta": "Abrir ajustes de despliegue"
@@ -65,7 +67,11 @@
     "needsAction": "Requiere acción"
   },
   "logs": {
-    "previousContainerEnded": "La instancia anterior del contenedor terminó"
+    "previousContainerEnded": "La instancia anterior del contenedor terminó",
+    "copyLineAria": "Copiar esta línea del registro",
+    "copyLine": "Copiar línea",
+    "copied": "Copiado",
+    "lineCopied": "Línea copiada"
   },
   "sessionLink": {
     "signingIn": "Iniciando tu sesión...",

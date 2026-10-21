@@ -6,6 +6,7 @@ import {
   DEPLOY_ATTEMPT_STATUS_LABEL,
   DEPLOY_ATTEMPT_STATUS_TONE,
 } from '../lib/deployAttemptPresentation'
+import { commitSubject } from '../lib/deploymentPresentation'
 import { cn } from '@/lib/utils'
 
 const TONE_TEXT: Record<string, string> = {
@@ -47,6 +48,12 @@ export function DeployPinnedStatus({
         <Link
           to="/apps/$name/deploys/$deployId/logs"
           params={{ name: appName, deployId: attempt.id }}
+          aria-label={t('deployHistory.failedLogLabel', {
+            title:
+              (attempt.commit_message &&
+                commitSubject(attempt.commit_message)) ||
+              attempt.image,
+          })}
           className="relative z-10 text-sm font-medium text-foreground underline underline-offset-2"
         >
           {t('deployHistory.failedLog')}
