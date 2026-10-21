@@ -20,6 +20,20 @@ set -uo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
+# Opt-in: detach the checks and return at once, but never for pushes to main or master.
+if [ "${LEVELRAIL_PUSH_BACKGROUND:-off}" = on ] && [ -z "${LEVELRAIL_PUSH_DETACHED:-}" ]; then
+	to_main=0
+	while read -r _ _ remote_ref _; do
+		case "$remote_ref" in refs/heads/main | refs/heads/master) to_main=1 ;; esac
+	done
+	if [ "$to_main" -eq 0 ]; then
+		bg_log="$(git rev-parse --git-dir)/pre-push-last.log"
+		LEVELRAIL_PUSH_DETACHED=1 nohup "$0" "$@" </dev/null >"$bg_log" 2>&1 &
+		echo "pre-push: checks running in background, log: $bg_log"
+		exit 0
+	fi
+fi
+
 fail=0
 coverage_out="$(mktemp -t levelrail-coverage.XXXXXX)"
 push_log="$(mktemp -t levelrail-push-log.XXXXXX)"
