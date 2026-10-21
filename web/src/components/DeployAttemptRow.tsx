@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ScrollIcon,
+  ArrowsClockwiseIcon,
   ArrowCounterClockwiseIcon,
   DotsThreeIcon,
   ProhibitIcon,
@@ -314,6 +315,21 @@ export function DeployAttemptRow({
             <Badge variant="muted" className="shrink-0">
               {stageLabel}
             </Badge>
+          ) : null}
+          {attempt.rerun_of ? (
+            <Link
+              to="/apps/$name/deploys/$deployId/logs"
+              params={{ name: appName, deployId: attempt.rerun_of }}
+              className="relative z-10 inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+              aria-label={t('deployHistory.rerunOfLabel', {
+                id: attempt.rerun_of,
+              })}
+            >
+              <ArrowsClockwiseIcon className="size-3" aria-hidden="true" />
+              {t('deployHistory.rerunOf', {
+                id: attempt.rerun_of.slice(0, 12),
+              })}
+            </Link>
           ) : null}
         </div>
 

@@ -8,12 +8,13 @@ import { fetchGitSource } from './gitSources'
 
 export interface RebuildAppInput {
   noCache: boolean
+  rerunOf?: string
 }
 
 /** Rebuilds a git-source app from its branch head through POST /api/v1/apps/{name}/builds. */
 export async function rebuildApp(
   appName: string,
-  { noCache }: RebuildAppInput,
+  { noCache, rerunOf }: RebuildAppInput,
 ): Promise<TriggerBuildResult> {
   const gs = await fetchGitSource(appName)
   return triggerBuild(appName, {
@@ -23,6 +24,7 @@ export async function rebuildApp(
     buildPath: gs.build_path,
     baseDirectory: gs.base_directory,
     noCache,
+    rerunOf,
   })
 }
 
