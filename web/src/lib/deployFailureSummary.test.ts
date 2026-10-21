@@ -188,3 +188,53 @@ describe('findLastGoodAttempt', () => {
     expect(findLastGoodAttempt(list, list[2]!)).toBeUndefined()
   })
 })
+
+describe('summarizeDeployFailure with a control plane failure', () => {
+  const stages: DeployStage[] = [
+    { key: 'build', label: 'Build', status: 'failed', detail: 'boom' },
+    { key: 'rollout', label: 'Roll out', status: 'skipped' },
+  ]
+  const attempt = {
+    id: 'a',
+    service_name: 'web',
+    image: 'web:1',
+    status: 'failed',
+    started_at: '2026-09-24T10:00:00Z',
+    error: 'boom',
+  } as DeployAttempt
+
+  it('uses the server cause, docs link and fixes over the log rules', () => {
+    const summary = summarizeDeployFailure({
+      stages,
+      conditions: [],
+      lines: [],
+      attempt: { ...attempt, error: 'KeyError: SECRET' },
+      failure: {
+        code: 'missing_secret',
+        cause: 'A required secret is not set',
+        suggested_fix: 'Add it under environment variables.',
+        docs_url: 'https://example.com/docs/secrets',
+        retryable: false,
+        fixes: [{ code: 's', kind: 'set_secret', hint: 'h', match: 'SECRET' }],
+        deploy_id: 'a',
+        app: 'web',
+        at: '2026-09-24T10:01:00Z',
+      },
+    })
+    expect(summary?.cause?.title).toBe('A required secret is not set')
+    expect(summary?.cause?.id).toBe('missing_secret')
+    expect(summary?.docsUrl).toBe('https://example.com/docs/secrets')
+    expect(summary?.fixes).toHaveLength(1)
+  })
+
+  it('keeps the log rules when no server failure is given', () => {
+    const summary = summarizeDeployFailure({
+      stages,
+      conditions: [],
+      lines: [],
+      attempt: { ...attempt, error: 'process exited with code 137' },
+    })
+    expect(summary?.cause?.id).toBe('oom-killed')
+    expect(summary?.docsUrl).toBeUndefined()
+  })
+})

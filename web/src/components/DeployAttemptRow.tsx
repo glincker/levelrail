@@ -32,6 +32,7 @@ import { DeployFailureActions } from './DeployFailureActions'
 import { DeployFromCacheButton } from './DeployFromCacheButton'
 import { InfoTip, ActionMenu, RelativeTime } from './kit'
 import { RolloutChip } from './DeployDigestChips'
+import { DeployPinnedStatus } from './DeployPinnedStatus'
 import { cn } from '@/lib/utils'
 import { commitSubject } from '../lib/deploymentPresentation'
 import { unpinnedImage } from '../lib/imageDigest'
@@ -76,9 +77,11 @@ export function DeployAttemptRow({
   protectedEnv,
   ackProtected,
   visitUrl,
+  pinned = false,
 }: {
   appName: string
   visitUrl?: string
+  pinned?: boolean
   attempt: DeployAttempt
   isLatestAttempt: boolean
   conditions: ReconcileCondition[]
@@ -314,6 +317,14 @@ export function DeployAttemptRow({
           ) : null}
         </div>
 
+        {pinned ? (
+          <DeployPinnedStatus
+            appName={appName}
+            attempt={attempt}
+            stageLabel={stageLabel}
+          />
+        ) : null}
+
         <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           {attempt.branch ? (
             <span className="inline-flex items-center gap-1">
@@ -454,7 +465,11 @@ export function DeployAttemptRow({
           render={<Link {...detail} />}
         >
           <ScrollIcon className="size-3.5" data-icon="inline-start" />
-          {attempt.status === 'running' ? 'Watch' : 'Logs'}
+          {attempt.status === 'running'
+            ? t('deployHistory.watchLog')
+            : attempt.status === 'failed'
+              ? t('deployHistory.failedLog')
+              : t('deployHistory.viewLogs')}
         </Button>
         <ActionMenu
           trigger={

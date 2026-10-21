@@ -36,6 +36,7 @@ import { SupplyChainSection } from '../../../../../components/SupplyChainSection
 import { SecretScanSection } from '../../../../../components/SecretScanSection'
 import { DeployStatusCard } from '../../../../../components/deployDetail/DeployStatusCard'
 import { DeployLiveStatus } from '../../../../../components/deployDetail/DeployLiveStatus'
+import { StreamDropBanner } from '../../../../../components/deployDetail/StreamDropBanner'
 import { BuildTab } from '../../../../../components/deployDetail/BuildTab'
 import { RolloutTab } from '../../../../../components/deployDetail/RolloutTab'
 import { buildTimelineRows } from '../../../../../components/deployDetail/timelineRows'
@@ -105,6 +106,7 @@ function DeployLogsPage() {
     lastEventAt,
     retryAt,
     retry,
+    switchToPolling,
   } = useLogStream(buildDeployLogStreamUrl(name, deployId), {
     closed: streamClosed,
     pollUrl: deployLogDownloadURL(name, deployId),
@@ -244,6 +246,15 @@ function DeployLogsPage() {
             />
           </div>
         </div>
+
+        <StreamDropBanner
+          transport={transport}
+          connectionState={connectionState}
+          retryAt={retryAt}
+          onRetry={retry}
+          onSwitchToPolling={switchToPolling}
+          downloadUrl={deployLogDownloadURL(name, deployId)}
+        />
 
         {tab === 'build' ? (
           <div

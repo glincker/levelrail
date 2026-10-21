@@ -16,7 +16,17 @@
     "promoteHint": "Makes this exact build the live release, pinned by digest",
     "promoted": "Promotion triggered.",
     "promotedPending": "Promotion is waiting for approval.",
-    "promoteFailed": "Could not promote."
+    "promoteFailed": "Could not promote.",
+    "deployNow": "Deploy now",
+    "latest": "Latest deploy",
+    "earlier": "Earlier deploys",
+    "failedLog": "View failing stage log",
+    "failedLogLabel": "View the failing stage log for {{title}}",
+    "watchLog": "Watch",
+    "viewLogs": "Logs",
+    "settingsLink": "Deploy settings",
+    "settingsLinkHint": "Build, run, safety and automation options for this app live in one place.",
+    "settingsLinkCta": "Open deploy settings"
   },
   "actions": {
     "copy": "Copy",
@@ -57,7 +67,11 @@
     "needsAction": "Needs action"
   },
   "logs": {
-    "previousContainerEnded": "Previous container instance ended"
+    "previousContainerEnded": "Previous container instance ended",
+    "copyLineAria": "Copy this log line",
+    "copyLine": "Copy line",
+    "copied": "Copied",
+    "lineCopied": "Line copied"
   },
   "sessionLink": {
     "signingIn": "Signing you in...",
@@ -621,5 +635,69 @@
   },
   "pageLoading": {
     "label": "Loading page"
+  },
+  "deployRetry": {
+    "retry": "Retry deploy",
+    "more": "More ways to retry",
+    "rebuild": "Rebuild from source",
+    "rebuildNoCache": "Rebuild without cache"
+  },
+  "deploySettings": {
+    "nav": {
+      "label": "Deploy settings sections"
+    },
+    "flow": {
+      "title": "How your deploy works",
+      "build": "Build",
+      "push": "Push",
+      "rollout": "Rollout",
+      "healthCheck": "Health check",
+      "buildHint": "Turns your source into an image.",
+      "pushHint": "Stores the image so any node can run it.",
+      "rolloutHint": "Starts new replicas and moves traffic over.",
+      "healthCheckHint": "Confirms the new release is healthy before it stays live."
+    },
+    "recommended": "Fields left empty use the platform default, shown in grey inside the field.",
+    "groups": {
+      "build": {
+        "title": "Build",
+        "description": "How your source becomes an image: hooks, caching and what gets scanned."
+      },
+      "run": {
+        "title": "Run",
+        "description": "How the new release starts: port, rollout strategy and pre-deploy commands."
+      },
+      "safety": {
+        "title": "Safety",
+        "description": "What protects live traffic: health checks, rollback, canary and freezes."
+      },
+      "automation": {
+        "title": "Automation",
+        "description": "What deploys for you: schedules, previews, image updates and CI."
+      }
+    },
+    "cards": {
+      "buildHooks": "Runs your own commands at set points in a build, such as before or after the build step.",
+      "buildCache": "Reuses unchanged layers between builds so repeat builds finish sooner.",
+      "supplyChain": "Scans each built image for known vulnerabilities and can block risky releases.",
+      "secretScan": "Looks for leaked credentials in your source before it ships.",
+      "port": "Sets the port your app listens on so traffic reaches the right place.",
+      "strategy": "Chooses how a new release replaces the old one, and how many replicas run.",
+      "hooks": "Runs a command, such as a database migration, before a new release starts.",
+      "safety": "Sets how long a new release must stay healthy before the old one is retired.",
+      "watch": "Keeps watching a release after it goes live and rolls back if it degrades.",
+      "autoRollback": "Redeploys the last working image when a crashloop alert fires.",
+      "sloBurn": "Rolls back automatically when the error budget burns too fast after a deploy.",
+      "canary": "Sends a small share of traffic to a new image before everyone gets it.",
+      "freeze": "Blocks automatic deploys during windows you choose, such as a holiday.",
+      "scheduled": "Queues a deploy to run at a later time you pick.",
+      "cancelSuperseded": "Cancels older queued deploys when a newer one arrives.",
+      "preview": "Builds a temporary copy of your app for each pull request.",
+      "imageAutoUpdate": "Redeploys automatically when a newer image for your tag is published.",
+      "badge": "Shows a live deploy status badge you can embed in a README.",
+      "githubActions": "Lets a GitHub Actions workflow deploy this app.",
+      "ciDeploy": "Gives your CI system a token and a command to deploy this app."
+    },
+    "whatItDoes": "What this does:"
   }
 }
