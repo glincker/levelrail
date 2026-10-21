@@ -70,3 +70,11 @@ env. All user-facing strings go through the existing i18n namespaces.
 Scoped vitest for new `lib/` modules and touched components, `tsc` and eslint
 on touched files, `go build` and the scoped Go test for the API change. Then
 `baseline-ui`, `fixing-accessibility`, `fixing-motion-performance`.
+
+## Addendum: competitor research (2026-10-21)
+
+Added after comparing Coolify, Dokploy, CapRover, Render, Railway, Vercel.
+- Show the detected builder ("Detected: Node, Railpack") with override on the deploy page and in Build settings.
+- Rollback clarity: say which image is restored and that env vars, volumes and migrations are not reverted.
+- Terminal: log search, error line highlight, jump to first error; keep it fast on very large logs (other platforms freeze the browser).
+- The copy-as-report must redact secrets (other platforms leak them in build errors).
