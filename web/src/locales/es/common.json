@@ -458,5 +458,15 @@
   },
   "cardSkeleton": {
     "loading": "Cargando"
+  },
+  "cancelSuperseded": {
+    "title": "Reemplazar despliegues en cola superados",
+    "infoLabel": "Acerca de reemplazar despliegues en cola",
+    "infoBody": "Solo se reemplazan los despliegues que todavía esperan en la cola, y solo por uno más nuevo de la misma rama. Un despliegue que ya empezó a compilarse nunca se cancela automáticamente.",
+    "enabled": "Activado",
+    "enabledHint": "Cuando llega un commit más nuevo de una rama mientras hay un despliegue en curso, los despliegues en cola más antiguos de esa rama se marcan como superados en lugar de compilarse uno tras otro.",
+    "on": "Los despliegues en cola superados se reemplazarán.",
+    "off": "Los despliegues en cola se conservan.",
+    "saveFailed": "No se pudo actualizar la configuración."
   }
 }

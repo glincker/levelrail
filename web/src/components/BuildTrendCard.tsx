@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { TimerIcon } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
+import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { BuildSpeedAdvice } from './BuildSpeedAdvice'
 import { formatBuildSeconds } from '../lib/buildDuration'
 import { useBuildStats, type BuildRun } from '../queries/buildPerformance'
@@ -54,6 +54,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 export function BuildTrendCard({ appName }: { appName: string }) {
   const { t } = useTranslation('buildPerformance')
   const { data, isPending, error } = useBuildStats(appName)
+  if (isPending) return <CardSkeleton titleWidth="w-32" rows={2} />
 
   return (
     <Card>
@@ -64,7 +65,6 @@ export function BuildTrendCard({ appName }: { appName: string }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {isPending ? <Skeleton className="h-20 w-full" /> : null}
         {error ? (
           <p role="alert" className="text-sm text-muted-foreground">
             {t('trend.loadError')}
