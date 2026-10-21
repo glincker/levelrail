@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Controller,
@@ -52,6 +53,12 @@ import { useUpdateAlertRule } from '../queries/alerts'
 import { useNotificationChannelsOptional } from '../queries/notificationChannels'
 import { useScheduledTasks } from '../queries/scheduledTasks'
 import { useDatabases } from '../queries/databases'
+import { DatabaseRuleFields } from './DatabaseRuleFields'
+import {
+  databaseKindLabel,
+  isDatabaseRuleKind,
+  type DatabaseRuleFormShape,
+} from '@/lib/databaseRuleKinds'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
 import { METRIC_NAME_LABEL, METRIC_NAME_OPTIONS } from './metricName'
 import {
@@ -78,6 +85,7 @@ const KIND_OPTIONS: {
   value: AlertRuleKind
   label: string
   Icon: typeof GaugeIcon
+  labelKey?: string
 }[] = [
   { value: 'threshold', label: 'Threshold', Icon: GaugeIcon },
   { value: 'crashloop', label: 'Crashloop', Icon: ArrowCounterClockwiseIcon },
@@ -110,6 +118,30 @@ const KIND_OPTIONS: {
   },
   { value: 'domain_health', label: 'Domain health', Icon: GlobeIcon },
   { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
+  {
+    value: 'database_disk_high',
+    label: '',
+    labelKey: 'databaseRule.kind.database_disk_high',
+    Icon: ArchiveIcon,
+  },
+  {
+    value: 'database_connections_high',
+    label: '',
+    labelKey: 'databaseRule.kind.database_connections_high',
+    Icon: ArchiveIcon,
+  },
+  {
+    value: 'database_down',
+    label: '',
+    labelKey: 'databaseRule.kind.database_down',
+    Icon: ArchiveIcon,
+  },
+  {
+    value: 'database_backup_stale',
+    label: '',
+    labelKey: 'databaseRule.kind.database_backup_stale',
+    Icon: ArchiveIcon,
+  },
   { value: 'node_offline', label: 'Node offline', Icon: HardDriveIcon },
   {
     value: 'node_cert_expiring',
@@ -162,6 +194,10 @@ const editAlertRuleSchema = z
       'node_resource_usage',
       'domain_health',
       'backup_missing',
+      'database_disk_high',
+      'database_connections_high',
+      'database_down',
+      'database_backup_stale',
       'node_offline',
       'node_cert_expiring',
       'control_plane_backup_stale',
@@ -267,6 +303,28 @@ const editAlertRuleSchema = z
           code: 'custom',
           message: 'Must be a positive whole number',
           path: ['restartCountThreshold'],
+        })
+      }
+      return
+    }
+
+    if (isDatabaseRuleKind(data.kind)) {
+      if (!data.backupDatabaseName) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose which database to watch',
+          path: ['backupDatabaseName'],
+        })
+      }
+      const max = data.kind === 'database_backup_stale' ? 8760 : 100
+      if (
+        data.kind !== 'database_down' &&
+        (data.threshold < 0 || data.threshold > max)
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Must be between 0 and ${max}`,
+          path: ['threshold'],
         })
       }
       return
@@ -379,6 +437,7 @@ export function EditAlertRuleDialog({
   rule: AlertRule
   volumes?: AppVolume[]
 }) {
+  const { t } = useTranslation('observability')
   const [open, setOpen] = useState(false)
   const updateRule = useUpdateAlertRule(appName)
   const channelsQuery = useNotificationChannelsOptional()
@@ -447,6 +506,11 @@ export function EditAlertRuleDialog({
         values.sloTarget,
         values.sloLatencyMs,
       )
+    } else if (isDatabaseRuleKind(values.kind)) {
+      req.backup_database_name = values.backupDatabaseName
+      if (values.kind !== 'database_down') {
+        req.threshold = values.threshold
+      }
     } else if (values.kind === 'backup_missing') {
       req.backup_resource_kind = values.backupResourceKind || undefined
       req.for_duration = values.forDuration.trim() || undefined
@@ -524,7 +588,9 @@ export function EditAlertRuleDialog({
                           className="size-3.5 text-muted-foreground"
                           aria-hidden="true"
                         />
-                        {option.label}
+                        {option.labelKey
+                          ? databaseKindLabel(t, option.value)
+                          : option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -736,6 +802,17 @@ export function EditAlertRuleDialog({
                 <FieldError errors={[formState.errors.restartCountThreshold]} />
               </Field>
             </>
+          ) : isDatabaseRuleKind(kind) ? (
+            <DatabaseRuleFields
+              idPrefix="edit-rule"
+              kind={kind}
+              control={control as unknown as Control<DatabaseRuleFormShape>}
+              errors={
+                formState.errors as unknown as FieldErrors<DatabaseRuleFormShape>
+              }
+              register={register}
+              databases={databases}
+            />
           ) : kind === 'backup_missing' ? (
             <BackupMissingFields
               idPrefix="edit-rule"

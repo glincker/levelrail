@@ -142,7 +142,7 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 
 	kind := alerting.Kind(a.Kind)
 	switch kind {
-	case alerting.KindThreshold, alerting.KindBudgetThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeHostGuardrail, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindExportBehind, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew, alerting.KindEmailDeliveryFailing,
+	case alerting.KindThreshold, alerting.KindBudgetThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeHostGuardrail, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindDatabaseDown, alerting.KindDatabaseBackupStale, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindExportBehind, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew, alerting.KindEmailDeliveryFailing,
 		alerting.KindLogPattern, alerting.KindLogLevelRate,
 		alerting.KindCertExpiring, alerting.KindCertRenewalStalled, alerting.KindDomainNotResolving:
 	default:
@@ -245,11 +245,15 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		if err := r.LogRule.Validate(r.Kind, alerting.LogRulePolicyFromEnv()); err != nil {
 			return alerting.Rule{}, fmt.Errorf("log_rule: %w", err)
 		}
-	case alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing:
+	case alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindDatabaseDown, alerting.KindDatabaseBackupStale:
 		if r.BackupDatabaseName == "" {
 			return alerting.Rule{}, fmt.Errorf("backup_database_name is required for a %s rule", r.Kind)
 		}
-		if r.Threshold < 0 || r.Threshold > 100 {
+		if r.Kind == alerting.KindDatabaseBackupStale {
+			if r.Threshold < 0 || r.Threshold > 8760 {
+				return alerting.Rule{}, errors.New("threshold is an age in hours between 0 and 8760")
+			}
+		} else if r.Threshold < 0 || r.Threshold > 100 {
 			return alerting.Rule{}, errors.New("threshold is a percentage between 0 and 100")
 		}
 		r.BackupResourceKind = store.BackupResourceKindDatabase

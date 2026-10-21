@@ -11,10 +11,15 @@ import (
 
 // Database rule kinds. They target BackupDatabaseName and reuse Threshold (percent) and ForDuration, so they need no schema change.
 const (
-	KindDatabaseConnections   Kind = "database_connections"
-	KindDatabaseDisk          Kind = "database_disk"
+	KindDatabaseConnections   Kind = "database_connections_high"
+	KindDatabaseDisk          Kind = "database_disk_high"
 	KindDatabaseBackupFailing Kind = "database_backup_failing"
+	KindDatabaseDown          Kind = "database_down"
+	KindDatabaseBackupStale   Kind = "database_backup_stale"
 )
+
+// DefaultDatabaseBackupStaleHours is the age of the newest successful backup past which database_backup_stale fires when Threshold is unset.
+const DefaultDatabaseBackupStaleHours = 26.0
 
 // Defaults when a rule leaves Threshold unset.
 const (
@@ -27,13 +32,22 @@ var ErrDatabaseHealthUnavailable = errors.New("alerting: database health unavail
 
 // IsDatabaseKind reports whether k is one of the database rule kinds.
 func IsDatabaseKind(k Kind) bool {
-	return k == KindDatabaseConnections || k == KindDatabaseDisk || k == KindDatabaseBackupFailing
+	switch k {
+	case KindDatabaseConnections, KindDatabaseDisk, KindDatabaseBackupFailing, KindDatabaseDown, KindDatabaseBackupStale:
+		return true
+	}
+	return false
 }
 
 // DatabaseHealthSource reads live connection and disk figures from a managed database.
 type DatabaseHealthSource interface {
 	DatabaseConnections(ctx context.Context, name string) (used, limit int, err error)
 	DatabaseDiskUsedPercent(ctx context.Context, name string) (float64, error)
+}
+
+// DatabaseLivenessSource is an optional extension of DatabaseHealthSource that lets database_down rules probe reachability.
+type DatabaseLivenessSource interface {
+	DatabaseUp(ctx context.Context, name string) (bool, error)
 }
 
 // DatabaseBackupSource is the slice of the store the backup-failing rule reads.
@@ -83,6 +97,49 @@ func EvaluateDatabaseRule(ctx context.Context, health DatabaseHealthSource, back
 			return out, "", nil
 		}
 		return out, fmt.Sprintf("%s: data disk %.0f%% full (alert at %.0f%%)", name, pct, at), nil
+	case KindDatabaseDown:
+		live, ok := health.(DatabaseLivenessSource)
+		if !ok || health == nil {
+			return quietDatabaseRule(next), "", nil
+		}
+		up, err := live.DatabaseUp(ctx, name)
+		if errors.Is(err, ErrDatabaseHealthUnavailable) {
+			return quietDatabaseRule(next), "", nil
+		}
+		if err != nil {
+			return r, "", fmt.Errorf("alerting: evaluate rule %q: probe %q: %w", r.ID, name, err)
+		}
+		v := 0.0
+		if !up {
+			v = 1
+		}
+		next.LastValue = &v
+		next = advanceState(next, r, !up, r.ForDuration, now)
+		if up {
+			return next, "", nil
+		}
+		return next, fmt.Sprintf("%s: database is not accepting connections", name), nil
+	case KindDatabaseBackupStale:
+		if backups == nil {
+			return quietDatabaseRule(next), "", nil
+		}
+		history, err := backups.ListBackupHistory(ctx, name, 50, nil)
+		if err != nil {
+			return r, "", fmt.Errorf("alerting: evaluate rule %q: list backup history of %q: %w", r.ID, name, err)
+		}
+		maxAge := time.Duration(thresholdOr(r.Threshold, DefaultDatabaseBackupStaleHours) * float64(time.Hour))
+		age, found := newestSuccessAge(history, now)
+		stale := found && age > maxAge
+		v := 0.0
+		if found {
+			v = age.Hours()
+		}
+		next.LastValue = &v
+		next = advanceState(next, r, stale, r.ForDuration, now)
+		if !stale {
+			return next, "", nil
+		}
+		return next, fmt.Sprintf("%s: last successful backup was %.0fh ago (alert at %.0fh)", name, age.Hours(), maxAge.Hours()), nil
 	case KindDatabaseBackupFailing:
 		if backups == nil {
 			return quietDatabaseRule(next), "", nil
@@ -133,4 +190,24 @@ func thresholdOr(v, def float64) float64 {
 		return def
 	}
 	return v
+}
+
+func newestSuccessAge(history []store.BackupHistory, now time.Time) (time.Duration, bool) {
+	var newest time.Time
+	for _, h := range history {
+		if h.Status != store.BackupStatusSucceeded {
+			continue
+		}
+		t, err := time.Parse(time.RFC3339, h.FinishedAt)
+		if err != nil {
+			continue
+		}
+		if t.After(newest) {
+			newest = t
+		}
+	}
+	if newest.IsZero() {
+		return 0, false
+	}
+	return now.Sub(newest), true
 }

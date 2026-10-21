@@ -157,6 +157,28 @@
     "error": "Reconnecting...",
     "notRunning": "Not running"
   },
+  "databaseRule": {
+    "kind": {
+      "database_disk_high": "Database disk high",
+      "database_connections_high": "Database connections high",
+      "database_down": "Database down",
+      "database_backup_stale": "Database backup stale"
+    },
+    "database": "Database",
+    "choose": "Choose a database",
+    "noDatabases": "No databases yet. Create one from the Databases page first.",
+    "thresholdPercent": "Alert at (percent)",
+    "thresholdHours": "Alert when the last good backup is older than (hours)",
+    "hint": {
+      "database_disk_high": "Fires while the data disk is at or above this percentage. Leave 0 for the default (85).",
+      "database_connections_high": "Fires while open connections are at or above this percentage of the limit. Leave 0 for the default (80).",
+      "database_down": "Fires while the database is not accepting connections.",
+      "database_backup_stale": "Fires when the newest successful backup is older than this. Leave 0 for the default (26 hours)."
+    },
+    "pickDatabase": "Choose which database to watch",
+    "badPercent": "Must be between 0 and 100",
+    "badHours": "Must be between 0 and 8760"
+  },
   "budgetThreshold": {
     "hint": "Fires while any project or team budget (Usage and cost) has reached its warning level, gone over its limit, or is forecast to overrun this month. It notifies again only when a new level is crossed."
   },

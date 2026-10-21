@@ -285,7 +285,11 @@
     "serverTitle": "Encrypted connections",
     "serverHint": "Turns TLS on or off on the database server. Turning it off removes the certificate, and the database restarts to apply the change.",
     "switchedToast": "TLS setting saved, the database will restart",
-    "switchFailedToast": "Could not change TLS"
+    "switchFailedToast": "Could not change TLS",
+    "status": "Server TLS: {{state}}",
+    "on": "on",
+    "off": "off",
+    "recheck": "Re-check"
   },
   "rotation": {
     "title": "Owner password",

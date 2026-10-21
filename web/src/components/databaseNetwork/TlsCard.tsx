@@ -1,11 +1,13 @@
 import { useTranslation } from 'react-i18next'
 import { LockSimpleIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import type { DatabaseNetwork } from '../../types/databaseAccess'
 import {
+  useDatabaseNetwork,
   useSetRequireTls,
   useSetTlsEnabled,
 } from '../../queries/databaseAccess'
@@ -21,6 +23,7 @@ export function TlsCard({
   const { t } = useTranslation('databaseAccess')
   const setTls = useSetRequireTls(databaseName)
   const switchTls = useSetTlsEnabled(databaseName)
+  const recheck = useDatabaseNetwork(databaseName)
   const { tls } = network
   const always = tls.supported === false && tls.required
   const disabledReason = always
@@ -100,6 +103,22 @@ export function TlsCard({
         ) : (
           <p className="text-xs text-muted-foreground">{t('tls.warning')}</p>
         )}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-xs text-muted-foreground">
+            {t('tls.status', {
+              state: tls.state || (tls.enabled ? t('tls.on') : t('tls.off')),
+            })}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={recheck.isFetching}
+            onClick={() => void recheck.refetch()}
+          >
+            {t('tls.recheck')}
+          </Button>
+        </div>
         {tls.drift ? (
           <p className="text-xs text-destructive" role="alert">
             {t('tls.drift')}
