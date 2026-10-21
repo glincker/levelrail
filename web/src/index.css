@@ -5,6 +5,7 @@
 @import './styles/glinr-fonts.css';
 @import './styles/glinr-tokens.css';
 @import './styles/glinr-theme.css';
+@import './styles/routeTransitions.css';
 
 @custom-variant dark (&:is(.dark *));
 
