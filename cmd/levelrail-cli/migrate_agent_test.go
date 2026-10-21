@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -31,6 +32,7 @@ func TestParseTargetStat(t *testing.T) {
 
 func TestMigrateAgentCommands(t *testing.T) {
 	var paths []string
+	var gotVerifyBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		paths = append(paths, r.Method+" "+r.URL.Path)
 		switch {
@@ -40,6 +42,8 @@ func TestMigrateAgentCommands(t *testing.T) {
 		case r.Method == http.MethodDelete:
 			w.WriteHeader(http.StatusNoContent)
 		case strings.HasSuffix(r.URL.Path, "/verify"):
+			raw, _ := io.ReadAll(r.Body)
+			gotVerifyBody = string(raw)
 			_, _ = w.Write([]byte(`{"comparisons":[{"name":"v","status":"match"}],"advance":{"advanced":true},"databases_on_source":2,"checklist":{"app":"a"}}`))
 		case strings.Contains(r.URL.Path, "/steps/data_verified"):
 			_, _ = w.Write([]byte(`{"app":"a","current":"data_verified"}`))
@@ -68,6 +72,12 @@ func TestMigrateAgentCommands(t *testing.T) {
 	}
 	if code, out := run("verify", "ms_1", "a", "--target", "v=1:2"); code != exitOK || !strings.Contains(out, "completed by the migration agent") || !strings.Contains(out, "2 database") {
 		t.Fatalf("verify: %d %s", code, out)
+	}
+	if code, out := run("verify", "ms_1", "a", "--ack-empty"); code != exitOK || !strings.Contains(gotVerifyBody, `"ack_empty_volumes":true`) || strings.Contains(gotVerifyBody, "target_stats") {
+		t.Fatalf("verify --ack-empty: %d %s body=%s", code, out, gotVerifyBody)
+	}
+	if code, out := run("verify", "ms_1", "a", "--target", "v=1:2"); code != exitOK || !strings.Contains(gotVerifyBody, `"target_stats"`) || strings.Contains(gotVerifyBody, "ack_empty_volumes") {
+		t.Fatalf("verify --target: %d %s body=%s", code, out, gotVerifyBody)
 	}
 	if code, out := run("reopen", "a"); code != exitOK || !strings.Contains(out, "reopened") {
 		t.Fatalf("reopen: %d %s", code, out)

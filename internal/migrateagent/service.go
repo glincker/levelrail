@@ -53,12 +53,13 @@ type Signer interface {
 // Service implements migrationpb.MigrationServiceServer and the live-session hub.
 type Service struct {
 	migrationpb.UnimplementedMigrationServiceServer
-	st    Store
-	ca    Signer
-	cfg   Config
-	log   *slog.Logger
-	audit *Auditor
-	now   func() time.Time
+	st          Store
+	ca          Signer
+	cfg         Config
+	log         *slog.Logger
+	audit       *Auditor
+	now         func() time.Time
+	enrollLimit *ipLimiter
 
 	mu   sync.Mutex
 	live map[string]*liveConn
@@ -72,8 +73,9 @@ func NewService(st Store, ca Signer, cfg Config, logger *slog.Logger, now func()
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Service{st: st, ca: ca, cfg: cfg.withDefaults(), log: logger, now: now, live: map[string]*liveConn{},
-		audit: &Auditor{Saver: st, Logger: logger, Now: now}}
+	cfg = cfg.withDefaults()
+	return &Service{st: st, ca: ca, cfg: cfg, log: logger, now: now, live: map[string]*liveConn{},
+		enrollLimit: newIPLimiter(cfg.EnrollRate, cfg.EnrollWindow), audit: &Auditor{Saver: st, Logger: logger, Now: now}}
 }
 
 // Auditor exposes the audit writer so API handlers record their events the same way.
@@ -193,7 +195,13 @@ func (s *Service) Revoke(ctx context.Context, id, actor string) error {
 	return nil
 }
 
+// refuseEnroll audits only refusals for a session that exists, so a caller with
+// no valid id cannot write database rows or choose what the log says.
 func (s *Service) refuseEnroll(ctx context.Context, id, reason string) error {
+	if id == "" {
+		s.log.Debug("migrateagent: enroll refused", slog.String("reason", reason))
+		return status.Error(codes.Unauthenticated, "invalid migration token")
+	}
 	s.audit.Record(ctx, Event{Action: ActionEnrollRefused, SessionID: id, Actor: "migration-agent", Status: 401,
 		Remote: remoteAddr(ctx), Detail: map[string]any{"reason": reason}})
 	return status.Error(codes.Unauthenticated, "invalid migration token")
@@ -201,9 +209,15 @@ func (s *Service) refuseEnroll(ctx context.Context, id, reason string) error {
 
 // Enroll redeems a single-use token for a short-lived client certificate.
 func (s *Service) Enroll(ctx context.Context, req *migrationpb.EnrollRequest) (*migrationpb.EnrollResponse, error) {
+	if !s.enrollLimit.allow(hostOnly(remoteAddr(ctx)), s.now()) {
+		return nil, status.Error(codes.ResourceExhausted, "too many enroll attempts")
+	}
 	id, secret, ok := ParseToken(req.GetJoinToken())
 	if !ok {
 		return nil, s.refuseEnroll(ctx, "", "malformed token")
+	}
+	if lim := s.cfg.AgentFieldMax; len(req.GetVersion()) > lim || len(req.GetOs()) > lim || len(req.GetArch()) > lim {
+		return nil, status.Error(codes.InvalidArgument, "agent version, os or arch is too long")
 	}
 	sess, err := s.st.GetMigrationAgentSession(ctx, id)
 	stored := sess.TokenHash
@@ -215,8 +229,10 @@ func (s *Service) Enroll(ctx context.Context, req *migrationpb.EnrollRequest) (*
 	case err != nil && !errors.Is(err, store.ErrMigrationAgentNotFound):
 		s.log.Error("migrateagent: enroll lookup failed", slog.String("session_id", id), slog.String("error", err.Error()))
 		return nil, status.Error(codes.Internal, "internal error")
-	case err != nil || !match:
-		return nil, s.refuseEnroll(ctx, id, "unknown session or wrong secret")
+	case err != nil:
+		return nil, s.refuseEnroll(ctx, "", "unknown session")
+	case !match:
+		return nil, s.refuseEnroll(ctx, id, "wrong secret")
 	case sess.State != store.MigrationAgentPending || sess.TokenUsedAt != nil:
 		return nil, s.refuseEnroll(ctx, id, "token already used or session "+sess.State)
 	case !s.now().Before(sess.TokenExpiresAt):

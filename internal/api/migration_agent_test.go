@@ -20,6 +20,7 @@ type fakeMigrationAgent struct {
 	revoked []string
 	scan    []migrateagent.StatDoc
 	offline bool
+	volumes string
 }
 
 func (f *fakeMigrationAgent) Create(context.Context, string, string) (migrateagent.Created, error) {
@@ -58,7 +59,11 @@ func (f *fakeMigrationAgent) Scan(context.Context, string, []string) (migrateage
 
 func (f *fakeMigrationAgent) Auditor() *migrateagent.Auditor { return f.aud }
 func (f *fakeMigrationAgent) Config() migrateagent.Config {
-	return migrateagent.Config{SessionMax: 72 * time.Hour, VolumesDir: "/nonexistent"}
+	dir := f.volumes
+	if dir == "" {
+		dir = "/nonexistent"
+	}
+	return migrateagent.Config{SessionMax: 72 * time.Hour, VolumesDir: dir}
 }
 
 func TestMigrationAgentVerifyAdvancesAndUndoes(t *testing.T) {
@@ -66,7 +71,8 @@ func TestMigrationAgentVerifyAdvancesAndUndoes(t *testing.T) {
 	src := newImportSourceServer(t)
 	db := openTestDB(t)
 	rt := NewRouter(nil, testBrand(), db, WithSecretSetter(&fakeSecretSetter{}), WithAgentCAFingerprint("abc123def456"))
-	fake := &fakeMigrationAgent{aud: &migrateagent.Auditor{Saver: db}, scan: []migrateagent.StatDoc{{Target: "uploads", Files: 3, Bytes: 90}}}
+	fake := &fakeMigrationAgent{aud: &migrateagent.Auditor{Saver: db}, scan: []migrateagent.StatDoc{{Target: "uploads", Files: 3, Bytes: 90}},
+		volumes: volumesWithFiles(t, "app-shop-web-uploads", 3, 30)}
 	rt.SetMigrationAgent(fake)
 	cookie := loginTestSession(t, rt, db)
 	do := func(method, path, body string) *httptest.ResponseRecorder {
@@ -97,7 +103,13 @@ func TestMigrationAgentVerifyAdvancesAndUndoes(t *testing.T) {
 		t.Fatalf("a diff must not advance: %+v", diff)
 	}
 
-	ok := verify(`{"name":"app-shop-web-uploads","files":3,"bytes":90}`)
+	forged := verify(`{"name":"app-shop-web-uploads","files":3,"bytes":90}`)
+	if forged.Advance.Advanced || forged.Comparisons[0].Status != migrateagent.StatusMatch ||
+		forged.Comparisons[0].TargetFrom != migrateagent.TargetOperator || forged.Checklist.Current != migrationplan.StepDataVerified {
+		t.Fatalf("caller-supplied numbers must never auto-complete the step: %+v", forged)
+	}
+
+	ok := verify(``)
 	if !ok.Advance.Advanced || ok.Checklist.Current != migrationplan.StepShadowRunning || ok.Databases != 1 {
 		t.Fatalf("zero diffs must advance: %+v", ok)
 	}
@@ -111,7 +123,7 @@ func TestMigrationAgentVerifyAdvancesAndUndoes(t *testing.T) {
 		t.Fatalf("step not attributed to the agent with evidence: %+v", st)
 	}
 
-	again := verify(`{"name":"app-shop-web-uploads","files":3,"bytes":90}`)
+	again := verify(``)
 	if again.Advance.Advanced || again.Checklist.Current != migrationplan.StepShadowRunning {
 		t.Fatalf("a second verify must not move later steps: %+v", again)
 	}
@@ -130,8 +142,15 @@ func TestMigrationAgentVerifyAdvancesAndUndoes(t *testing.T) {
 		t.Fatal(err)
 	}
 	seen := map[string]bool{}
+	overrides := 0
 	for _, e := range entries {
 		seen[e.Action] = true
+		if e.Action == migrateagent.ActionVerified && strings.Contains(e.Detail, `"overrides":1`) {
+			overrides++
+		}
+	}
+	if overrides != 2 {
+		t.Errorf("verify audits with overrides=1: got %d, want 2", overrides)
 	}
 	for _, want := range []string{migrateagent.ActionVerified, migrateagent.ActionStepAdvanced, migrateagent.ActionStepReopened} {
 		if !seen[want] {

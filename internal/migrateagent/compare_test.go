@@ -91,7 +91,7 @@ func TestAutoAdvance(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			c := checklistAt(t, tc.done...)
-			res := AutoAdvance(&c, tc.cs, tc.dbs, time.Now())
+			res := AutoAdvance(&c, tc.cs, tc.dbs, AdvanceOptions{}, time.Now())
 			if res.Advanced != tc.advanced {
 				t.Fatalf("advanced=%v reason=%q want %v", res.Advanced, res.Reason, tc.advanced)
 			}
@@ -108,7 +108,7 @@ func TestAutoAdvance(t *testing.T) {
 
 func TestAutoAdvanceNeverTouchesLaterSteps(t *testing.T) {
 	c := checklistAt(t, migrationplan.StepImported)
-	AutoAdvance(&c, matching(1), 0, time.Now())
+	AutoAdvance(&c, matching(1), 0, AdvanceOptions{}, time.Now())
 	for _, s := range []string{migrationplan.StepShadowRunning, migrationplan.StepDNSSwitched, migrationplan.StepOldStopped} {
 		if c.States[s].Status == migrationplan.StatusDone {
 			t.Fatalf("%s was completed by the agent", s)
@@ -118,7 +118,7 @@ func TestAutoAdvanceNeverTouchesLaterSteps(t *testing.T) {
 
 func TestDatabaseNoteInEvidence(t *testing.T) {
 	c := checklistAt(t, migrationplan.StepImported)
-	res := AutoAdvance(&c, matching(1), 1, time.Now())
+	res := AutoAdvance(&c, matching(1), 1, AdvanceOptions{}, time.Now())
 	last := res.Evidence[len(res.Evidence)-1]
 	if !res.Advanced || last == "" || last[0] != '1' {
 		t.Fatalf("database caveat missing from evidence: %v", res.Evidence)
@@ -127,7 +127,7 @@ func TestDatabaseNoteInEvidence(t *testing.T) {
 
 func TestReopenUndoesAgentAdvanceOnly(t *testing.T) {
 	c := checklistAt(t, migrationplan.StepImported)
-	AutoAdvance(&c, matching(1), 0, time.Now())
+	AutoAdvance(&c, matching(1), 0, AdvanceOptions{}, time.Now())
 	if err := c.Complete(migrationplan.StepShadowRunning, "op", "", nil, time.Now()); err != nil {
 		t.Fatal(err)
 	}

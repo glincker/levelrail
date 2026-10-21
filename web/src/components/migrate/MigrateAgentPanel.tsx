@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
+import { ApiError } from '../../lib/apiError'
 import {
   useAgentDetail,
   useAgentSessions,
@@ -173,6 +174,13 @@ function SessionCard({ session }: { session: AgentSession }) {
                 : t('agent.discover')}
             </Button>
           </div>
+        ) : null}
+        {detail.error ? (
+          <p className="text-sm text-muted-foreground">
+            {detail.error instanceof ApiError && detail.error.status === 403
+              ? t('agent.detailForbidden')
+              : detail.error.message}
+          </p>
         ) : null}
         {inv && inv.containers.length > 0 ? (
           <div>

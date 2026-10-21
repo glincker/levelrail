@@ -76,6 +76,7 @@ export interface AgentComparison {
   target_files: number
   target_bytes: number
   status: ComparisonStatus
+  target_from?: string
   detail?: string
 }
 
@@ -136,7 +137,12 @@ export function useAgentDetail(id: string | undefined) {
         { signal },
         'load session',
       ),
-    refetchInterval: 10000,
+    retry: (count, err) =>
+      !(
+        err instanceof ApiError &&
+        (err.status === 403 || err.status === 401)
+      ) && count < 2,
+    refetchInterval: (q) => (q.state.error ? false : 10000),
   })
 }
 
@@ -187,10 +193,16 @@ export function useRevokeAgent() {
 export function useVerifyAgent() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (vars: { id: string; app: string }) =>
+    mutationFn: (vars: { id: string; app: string; ackEmpty?: boolean }) =>
       request<AgentVerifyResult>(
         `${base}/${encodeURIComponent(vars.id)}/verify`,
-        { method: 'POST', body: JSON.stringify({ app: vars.app }) },
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            app: vars.app,
+            ack_empty_volumes: vars.ackEmpty === true,
+          }),
+        },
         'verification',
       ),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['migrate-checklists'] }),

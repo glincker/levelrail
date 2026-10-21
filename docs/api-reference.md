@@ -1855,7 +1855,7 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/function-invocations/{id} | AbilityDeploy | handleDeleteFunctionInvocation |
 | POST | /api/v1/migration/agent/sessions | AbilityWriteSensitive | handleCreateMigrationAgentSession |
 | GET | /api/v1/migration/agent/sessions | AbilityRead | handleListMigrationAgentSessions |
-| GET | /api/v1/migration/agent/sessions/{id} | AbilityRead | handleGetMigrationAgentSession |
+| GET | /api/v1/migration/agent/sessions/{id} | AbilityWriteSensitive | handleGetMigrationAgentSession |
 | POST | /api/v1/migration/agent/sessions/{id}/discover | AbilityWriteSensitive | handleDiscoverMigrationAgent |
 | POST | /api/v1/migration/agent/sessions/{id}/verify | AbilityWriteSensitive | handleVerifyMigrationAgent |
 | DELETE | /api/v1/migration/agent/sessions/{id} | AbilityWriteSensitive | handleRevokeMigrationAgentSession |

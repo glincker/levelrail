@@ -28,6 +28,14 @@ type settings struct {
 	heartbeat, scanTimeout     time.Duration
 	reconnectMax               time.Duration
 	maxResponse                int64
+	scanLimits                 migrationmode.ScanLimits
+}
+
+func envInt(key string, def int) int {
+	if n, err := strconv.Atoi(os.Getenv(key)); err == nil && n > 0 {
+		return n
+	}
+	return def
 }
 
 func envOr(key, def string) string {
@@ -65,8 +73,10 @@ func loadSettings() settings {
 		socket:        envOr("APP_MIGRATE_DOCKER_SOCKET", "/var/run/docker.sock"),
 		heartbeat:     envDuration("APP_MIGRATE_HEARTBEAT", 15*time.Second),
 		scanTimeout:   envDuration("APP_MIGRATE_SCAN_TIMEOUT", 10*time.Minute),
-		reconnectMax:  envDuration("APP_MIGRATE_RECONNECT_MAX", 30*time.Second),
-		maxResponse:   maxResp,
+		scanLimits: migrationmode.ScanLimits{MaxTargets: envInt("APP_MIGRATE_SCAN_MAX_TARGETS", 64),
+			MaxEntries: int64(envInt("APP_MIGRATE_SCAN_MAX_ENTRIES", 20_000_000)), MaxDepth: envInt("APP_MIGRATE_SCAN_MAX_DEPTH", 128)},
+		reconnectMax: envDuration("APP_MIGRATE_RECONNECT_MAX", 30*time.Second),
+		maxResponse:  maxResp,
 	}
 }
 
@@ -131,7 +141,7 @@ func (s settings) handler(logger *slog.Logger) *migrationmode.Handler {
 		logger.Warn("docker call denied", slog.String("method", method), slog.String("path", path), slog.String("reason", reason))
 	}
 	return &migrationmode.Handler{
-		Docker: migrationmode.NewDocker(s.socket, s.maxResponse, onDeny), Scanner: migrationmode.NewScanner(),
+		Docker: migrationmode.NewDocker(s.socket, s.maxResponse, onDeny), Scanner: migrationmode.NewScannerWithLimits(s.scanLimits),
 		ScanTimeout: s.scanTimeout, Now: time.Now, Log: logger,
 	}
 }

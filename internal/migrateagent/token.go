@@ -10,7 +10,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"regexp"
 	"strings"
+)
+
+var (
+	sessionIDRe = regexp.MustCompile(`^ms_[0-9a-f]{16}$`)
+	secretRe    = regexp.MustCompile(`^[A-Za-z0-9_-]{43}$`)
 )
 
 const (
@@ -42,7 +48,7 @@ func ParseToken(token string) (id, secret string, ok bool) {
 		return "", "", false
 	}
 	id, secret, found = strings.Cut(rest, ".")
-	if !found || !strings.HasPrefix(id, "ms_") || len(id) < 8 || len(secret) < 32 {
+	if !found || !sessionIDRe.MatchString(id) || !secretRe.MatchString(secret) {
 		return "", "", false
 	}
 	return id, secret, true

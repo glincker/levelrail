@@ -208,8 +208,11 @@ type migrationVerifyTarget struct {
 
 type migrationVerifyRequest struct {
 	App string `json:"app"`
-	// TargetStats override the control plane's own measurement, for volumes that live on another node.
+	// TargetStats override the control plane's own measurement, for volumes that live on
+	// another node. They are shown as operator-supplied and never auto-complete the step.
 	TargetStats []migrationVerifyTarget `json:"target_stats,omitempty"`
+	// AckEmptyVolumes accepts matched volumes that are empty on the source.
+	AckEmptyVolumes bool `json:"ack_empty_volumes,omitempty"`
 }
 
 type migrationVerifyResponse struct {
@@ -232,7 +235,8 @@ func appVolumes(svc store.DesiredService) []migrateagent.AppVolume {
 
 // handleVerifyMigrationAgent handles POST /api/v1/migration/agent/sessions/{id}/verify:
 // scan the source volumes of one imported app, compare them with this host and,
-// on zero diffs, complete data_verified as the migration agent.
+// on zero diffs, complete data_verified as the migration agent. Caller-supplied
+// target numbers or empty volumes without an acknowledgement never auto-advance.
 func (rt *Router) handleVerifyMigrationAgent(w http.ResponseWriter, r *http.Request) {
 	svc, ok := rt.migrationAgentOrError(w)
 	if !ok {
@@ -285,6 +289,7 @@ func (rt *Router) handleVerifyMigrationAgent(w http.ResponseWriter, r *http.Requ
 	measured := map[string]migrateagent.TargetStat{}
 	for _, v := range vols {
 		if o, ok := override[v.Name]; ok {
+			o.Operator = true
 			measured[v.Name] = o
 			continue
 		}
@@ -297,13 +302,13 @@ func (rt *Router) handleVerifyMigrationAgent(w http.ResponseWriter, r *http.Requ
 			dbs++
 		}
 	}
-	resp, ok := rt.applyAgentVerification(w, r, svc, id, *app, cs, dbs)
+	resp, ok := rt.applyAgentVerification(w, r, svc, id, *app, cs, dbs, migrateagent.AdvanceOptions{AckEmpty: req.AckEmptyVolumes})
 	if ok {
 		writeJSON(w, http.StatusOK, resp)
 	}
 }
 
-func (rt *Router) applyAgentVerification(w http.ResponseWriter, r *http.Request, svc MigrationAgentService, sessionID string, app store.DesiredService, cs []migrateagent.Comparison, dbs int) (migrationVerifyResponse, bool) {
+func (rt *Router) applyAgentVerification(w http.ResponseWriter, r *http.Request, svc MigrationAgentService, sessionID string, app store.DesiredService, cs []migrateagent.Comparison, dbs int, opts migrateagent.AdvanceOptions) (migrationVerifyResponse, bool) {
 	ctx := r.Context()
 	c, row, err := rt.loadChecklist(ctx, app)
 	if err != nil {
@@ -311,7 +316,7 @@ func (rt *Router) applyAgentVerification(w http.ResponseWriter, r *http.Request,
 		return migrationVerifyResponse{}, false
 	}
 	now := time.Now().UTC()
-	adv := migrateagent.AutoAdvance(&c, cs, dbs, now)
+	adv := migrateagent.AutoAdvance(&c, cs, dbs, opts, now)
 	view := buildChecklistView(app, row, c)
 	if adv.Advanced {
 		saved, err := rt.persistChecklist(ctx, app, row, c, now)
@@ -331,7 +336,8 @@ func (rt *Router) applyAgentVerification(w http.ResponseWriter, r *http.Request,
 	}
 	aud := svc.Auditor()
 	aud.Record(ctx, migrateagent.Event{Action: migrateagent.ActionVerified, SessionID: sessionID, Actor: actor,
-		Detail: map[string]any{"app": app.Name, "volumes": len(cs), "matched": matched}})
+		Detail: map[string]any{"app": app.Name, "volumes": len(cs), "matched": matched,
+			"overrides": migrateagent.OverrideCount(cs), "ack_empty_volumes": opts.AckEmpty, "empty_volumes": migrateagent.EmptyCount(cs)}})
 	if adv.Advanced {
 		aud.Record(ctx, migrateagent.Event{Action: migrateagent.ActionStepAdvanced, SessionID: sessionID, Actor: migrateagent.Actor,
 			Detail: map[string]any{"app": app.Name, "step": migrationplan.StepDataVerified, "triggered_by": actor}})
