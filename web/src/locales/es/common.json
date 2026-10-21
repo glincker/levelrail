@@ -172,6 +172,11 @@
     "emergencyDocs": "Acceso de emergencia"
   },
   "shell": {
+    "pins": {
+      "group": "Fijados",
+      "pin": "Fijar {{label}}",
+      "limit": "Límite de fijados alcanzado ({{max}}). Quita uno primero."
+    },
     "locked": {
       "badge": "Beta",
       "description": "Esta es una función beta y está desactivada. Ábrela para ir a Funciones beta y activarla.",
