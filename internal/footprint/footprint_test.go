@@ -3,9 +3,31 @@ package footprint
 import (
 	"context"
 	"errors"
+	"runtime/debug"
 	"testing"
 	"time"
 )
+
+func TestApplyGCPercent(t *testing.T) {
+	old := debug.SetGCPercent(100)
+	defer debug.SetGCPercent(old)
+	cases := []struct {
+		name string
+		env  map[string]string
+		want int
+	}{
+		{"default", nil, DefaultGCPercent},
+		{"override", map[string]string{EnvGCPercent: "80"}, 80},
+		{"bad value falls back", map[string]string{EnvGCPercent: "-3"}, DefaultGCPercent},
+		{"GOGC wins", map[string]string{"GOGC": "200"}, 0},
+	}
+	for _, c := range cases {
+		got := ApplyGCPercent(func(k string) string { return c.env[k] })
+		if got != c.want {
+			t.Errorf("%s: got %d want %d", c.name, got, c.want)
+		}
+	}
+}
 
 func TestLimitFor(t *testing.T) {
 	cases := []struct {

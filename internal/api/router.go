@@ -163,7 +163,8 @@ type Router struct {
 	nodeProvisionerFactory NodeProvisionerFactory      // nil uses defaultNodeProvisionerFactory, overridable in this package's own tests
 	sshProvisions          SSHNodeProvisionStore       // always set, same "core Store interface" shape as nodeProvisions above
 	sshProvisioner         SSHProvisioner              // nil uses sshprovision.New(), overridable in this package's own tests
-	templateRequiresConfig map[string]bool             // always set (NewRouter computes it once, catalog.Templates is static for the process lifetime), see service_templates.go's computeTemplateRequiresConfig
+	templateConfigOnce     sync.Once                   // templateRequiresConfig is built on first catalog read, not at boot
+	templateRequiresConfig map[string]bool
 	projects               ProjectStore
 	organizations          OrganizationStore
 	environments           EnvironmentStore
@@ -952,7 +953,6 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		packageRegistries:           s,
 		sshProvisions:               s,
 		nodeProviderCatalog:         newProviderCatalogCache(),
-		templateRequiresConfig:      computeTemplateRequiresConfig(),
 		registry:                    s,
 		vault:                       s,
 		registryCatalog:             registrycatalog.NewClient(),

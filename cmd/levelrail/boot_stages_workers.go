@@ -148,6 +148,7 @@ func (s *bootState) startAlerting() {
 	}
 	routeDefaultAlerts(ctx, logger, alertingDB, db, emailSender)
 	go runUsageRollup(ctx, apiRouter)
+	go footprint.RunTrim(ctx, logger, os.Getenv)
 	go func() {
 		if err := footprint.Every(ctx, "database teardown retry", time.Minute, logger, apiRouter.RetryDatabaseTeardowns); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("database teardown retry stopped", slog.String("error", err.Error()))
