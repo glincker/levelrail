@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -39,7 +40,9 @@ function isMode(v: string | null): v is WatchMode {
 /** PostDeployWatchCard sets what happens when a new release misbehaves after it takes traffic. */
 export function PostDeployWatchCard({ appName }: { appName: string }) {
   const { t } = useTranslation('deploySafety')
-  const { data } = useDeploySafety(appName)
+  const { data, isPending } = useDeploySafety(appName)
+
+  if (isPending) return <CardSkeleton titleWidth="w-48" rows={3} />
 
   return (
     <Card>

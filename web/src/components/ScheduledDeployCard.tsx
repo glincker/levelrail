@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { ClockCountdownIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
+import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -38,7 +40,7 @@ export function ScheduledDeployCard({ appName }: { appName: string }) {
   const save = useSetAppSchedule(appName)
   const [draft, setDraft] = useState<AppScheduleInput | null>(null)
 
-  if (schedule.isLoading) return null
+  if (schedule.isLoading) return <CardSkeleton titleWidth="w-44" rows={3} />
 
   const current = schedule.data
   const values: AppScheduleInput = draft ?? {
@@ -166,7 +168,7 @@ function ScheduleHistoryList({ appName }: { appName: string }) {
   const history = useAppScheduleHistory(appName, true)
   const entries = history.data ?? []
 
-  if (history.isLoading) return null
+  if (history.isLoading) return <ListSkeleton rows={1} />
   if (entries.length === 0) {
     return (
       <p className="text-sm text-muted-foreground italic">

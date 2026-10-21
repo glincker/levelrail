@@ -455,5 +455,8 @@
       "ciDeploy": "Da a tu sistema de CI un token y un comando para desplegar esta aplicación."
     },
     "whatItDoes": "Qué hace esto:"
+  },
+  "cardSkeleton": {
+    "loading": "Cargando"
   }
 }

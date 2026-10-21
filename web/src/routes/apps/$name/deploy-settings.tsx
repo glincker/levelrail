@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { PortEditor } from '../../../components/PortEditor'
@@ -29,9 +30,12 @@ import { autoRollbackSLOBurnQueryOptions } from '../../../queries/autoRollbackSL
 import { imageAutoUpdateQueryOptions } from '../../../queries/imageAutoUpdate'
 import { canaryQueryOptions } from '../../../queries/canary'
 import { badgeQueryOptions } from '../../../queries/badge'
+import { buildHooksQueryOptions } from '../../../queries/buildHooks'
+import { CardSkeleton } from '@/components/ui/card-skeleton'
 
 // The one home for deploy settings, grouped by when they act: Build,
-// Run, Safety, Automation. The deploys page only links here.
+// Run, Safety, Automation. The deploys page only links here. Suspense cards
+// that the loader does not prime get a CardSkeleton so only they wait.
 export const Route = createFileRoute('/apps/$name/deploy-settings')({
   loader: async ({ context: { queryClient }, params: { name } }) => {
     await Promise.all([
@@ -40,6 +44,7 @@ export const Route = createFileRoute('/apps/$name/deploy-settings')({
       queryClient.ensureQueryData(imageAutoUpdateQueryOptions(name)),
       queryClient.ensureQueryData(canaryQueryOptions(name)),
       queryClient.ensureQueryData(badgeQueryOptions(name)),
+      queryClient.ensureQueryData(buildHooksQueryOptions(name)),
     ])
   },
   component: DeploySettingsSection,
@@ -115,10 +120,14 @@ function DeploySettingsSection() {
           <BadgeSettingsCard appName={name} />
         </CardHelp>
         <CardHelp card="githubActions">
-          <GitHubActionsCard appName={name} />
+          <Suspense fallback={<CardSkeleton titleWidth="w-44" rows={2} />}>
+            <GitHubActionsCard appName={name} />
+          </Suspense>
         </CardHelp>
         <CardHelp card="ciDeploy">
-          <CIDeployCard appName={name} />
+          <Suspense fallback={<CardSkeleton titleWidth="w-36" rows={4} />}>
+            <CIDeployCard appName={name} />
+          </Suspense>
         </CardHelp>
       </SettingsGroup>
     </div>
