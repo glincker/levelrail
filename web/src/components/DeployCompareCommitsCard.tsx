@@ -5,6 +5,7 @@ import type { DeployCompare } from '../types/deployCompare'
 import { useReleaseNotes } from '../queries/releaseNotes'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { CodeBlock } from '@/components/ui/code-block'
 import { toast } from '@/components/ui/toast'
 
 export function DeployCompareCommitsCard({
@@ -104,9 +105,12 @@ export function DeployCompareCommitsCard({
 
         {notes.data ? (
           <div className="space-y-2">
-            <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">
-              {notes.data.markdown}
-            </pre>
+            <CodeBlock
+              code={notes.data.markdown}
+              language="markdown"
+              wrap
+              maxHeight="lg"
+            />
             <Button
               variant="outline"
               size="sm"

@@ -1,11 +1,7 @@
 import { useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTranslation } from 'react-i18next'
-import {
-  CaretDownIcon,
-  CaretUpIcon,
-  CopyIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CaretDownIcon, CaretUpIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -13,8 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { toast } from '@/components/ui/toast'
+import { CodeBlock } from '@/components/ui/code-block'
 import { cn } from '@/lib/utils'
 import type { DbCell } from '../../types/databaseViewer'
 
@@ -56,15 +51,6 @@ export function ResultGrid({
     estimateSize: () => ROW_HEIGHT_PX,
     overscan: OVERSCAN_ROWS,
   })
-
-  function copy(value: string) {
-    void navigator.clipboard
-      .writeText(value)
-      .then(() => {
-        toast.add({ title: t('viewer.grid.copied'), type: 'success' })
-      })
-      .catch(() => undefined)
-  }
 
   return (
     <>
@@ -175,22 +161,12 @@ export function ResultGrid({
               {t('viewer.grid.rowCount', { count: rows.length })}
             </DialogDescription>
           </DialogHeader>
-          <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">
-            {expanded?.value}
-          </pre>
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                copy(expanded?.value ?? '')
-              }}
-            >
-              <CopyIcon className="size-3.5" aria-hidden="true" />
-              {t('viewer.grid.copy')}
-            </Button>
-          </div>
+          <CodeBlock
+            code={expanded?.value ?? ''}
+            wrap
+            maxHeight="lg"
+            wrapToggle={false}
+          />
         </DialogContent>
       </Dialog>
     </>

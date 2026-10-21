@@ -5,6 +5,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { CodeBlock } from '@/components/ui/code-block'
 import { toast } from '@/components/ui/toast'
 import {
   useReplayWebhookDelivery,
@@ -103,9 +104,12 @@ function DeliveryRow({
         <summary className="cursor-pointer text-muted-foreground underline underline-offset-2">
           Payload{delivery.payload_truncated ? ' (truncated)' : ''}
         </summary>
-        <pre className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted p-2 font-mono text-[11px] text-foreground">
-          {delivery.payload || '(empty)'}
-        </pre>
+        <CodeBlock
+          className="mt-1"
+          code={delivery.payload || '(empty)'}
+          wrap
+          maxHeight="md"
+        />
       </details>
     </li>
   )

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { CommandBlock } from '@/components/ui/code-block'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AppImportSSHVolumes } from './AppImportSSHVolumes'
@@ -118,12 +119,11 @@ export function AppImportVolumes({
                         })}
                       </Label>
                       {g ? (
-                        <pre
-                          className="overflow-x-auto rounded-md bg-muted p-2 font-mono text-xs"
-                          aria-label={t('appImport.volumes.command')}
-                        >
-                          {g.command}
-                        </pre>
+                        <CommandBlock
+                          code={g.command}
+                          label={t('appImport.volumes.command')}
+                          wrap
+                        />
                       ) : null}
                     </div>
                   )
