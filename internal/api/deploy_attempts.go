@@ -91,6 +91,7 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 			Branch:            commitMetaFrom(ctx).Branch,
 			CommitMessage:     commitMetaFrom(ctx).Message,
 			Author:            commitMetaFrom(ctx).Author,
+			RerunOf:           rerunOfFrom(ctx),
 		}); err != nil {
 			rt.logger.Error("api: trigger build: save deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
 			rt.cancels.Release(id)
@@ -220,6 +221,10 @@ type deployAttemptResource struct {
 	SupersededBy string `json:"superseded_by,omitempty"`
 	// CanceledBy is who canceled the deploy.
 	CanceledBy string `json:"canceled_by,omitempty"`
+	// RerunOf is the attempt this one retried or rebuilt; ChainPosition is
+	// its 1-based place in that chain, set by the list and single endpoints.
+	RerunOf       string `json:"rerun_of,omitempty"`
+	ChainPosition int    `json:"chain_position,omitempty"`
 	// PreviewImageURL is set when a deploy preview thumbnail exists.
 	PreviewImageURL string `json:"preview_image_url,omitempty"`
 	// DeployURL is this deploy's own immutable address while a retained copy exists.
@@ -283,6 +288,7 @@ func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
 		QueuedAt:          a.QueuedAt,
 		SupersededBy:      a.SupersededBy,
 		CanceledBy:        a.CanceledBy,
+		RerunOf:           a.RerunOf,
 	}
 }
 
@@ -328,8 +334,10 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 	deployURLs := rt.deployURLsByAttempt(r.Context(), name)
 	held := rt.heldBuildIDs(r.Context(), name)
 	out := make([]deployAttemptResource, 0, len(attempts))
+	chainPos := rerunChainPositions(attempts)
 	for _, a := range attempts {
 		res := toDeployAttemptResource(a)
+		res.ChainPosition = chainPos(a.ID)
 		res.DeployURL = deployURLs[a.ID]
 		res.Live = a.Status == store.DeployAttemptStatusSucceeded && a.Image == svc.Image
 		if held[a.ID] && (!res.Live || isStaticAttempt(a)) {

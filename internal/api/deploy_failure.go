@@ -129,6 +129,7 @@ func (rt *Router) handleGetDeploy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := toDeployAttemptResource(a)
+	res.ChainPosition = rerunChainPositions(attempts)(a.ID)
 	rt.applyWait(ctx, &res, a, attempts)
 	res.Outcome = computeDeployOutcome(a, idx == 0, conds)
 	res.Phase = res.Status

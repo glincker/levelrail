@@ -127,6 +127,8 @@ type triggerBuildRequest struct {
 	UploadHash string `json:"upload_hash,omitempty"`
 	// NoCache disables the BuildKit layer cache; only build.type "dockerfile" supports it.
 	NoCache bool `json:"no_cache,omitempty"`
+	// RerunOf is the deploy attempt of this app that this build retries or rebuilds.
+	RerunOf string `json:"rerun_of,omitempty"`
 	freezeOverride
 }
 
@@ -278,6 +280,11 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if status, msg := rt.validateRerunOf(r.Context(), name, req.RerunOf); status != 0 {
+		writeError(w, status, msg)
+		return
+	}
+	r = r.WithContext(withRerunOf(r.Context(), req.RerunOf))
 	freezeNote, ok := rt.freezeGate(w, r, name, req.freezeOverride)
 	if !ok {
 		return
