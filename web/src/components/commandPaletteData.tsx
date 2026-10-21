@@ -33,6 +33,7 @@ import {
   CpuIcon,
   GavelIcon,
   RocketLaunchIcon,
+  HammerIcon,
   RobotIcon,
   TerminalWindowIcon,
   BellIcon,
@@ -180,6 +181,13 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
   ),
   nav('nav-backups', 'Backups', <CloudArrowUpIcon />, '/backups'),
   nav('nav-deployments', 'Deployments', <RocketLaunchIcon />, '/deployments'),
+  nav(
+    'nav-deploy-timeline',
+    'Deploy timeline',
+    <ClockCounterClockwiseIcon />,
+    '/deploy-timeline',
+  ),
+  nav('nav-builds', 'Builds', <HammerIcon />, '/builds'),
   nav('nav-functions', 'Functions', <LightningIcon />, '/functions'),
   nav('nav-approvals', 'Deploy approvals', <GavelIcon />, '/approvals'),
   nav(

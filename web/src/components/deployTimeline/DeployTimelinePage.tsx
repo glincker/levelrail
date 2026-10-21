@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusPill, SkeletonList } from '@/components/kit'
 import { PageTemplate } from '../shell/PageTemplate'
+import { DeploymentsSectionTabs } from '../shell/SectionTabGroups'
 import { useDeployTimeline } from '../../queries/deployTimeline'
 import { useProjectListOptional } from '../../queries/projects'
 import { useNodeListOptional } from '../../queries/nodes'
@@ -48,6 +49,7 @@ export function DeployTimelinePage() {
       title={t('title')}
       description={t('subtitle')}
       width="wide"
+      tabs={<DeploymentsSectionTabs />}
       actions={
         <StatusPill
           size="sm"

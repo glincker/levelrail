@@ -30,7 +30,6 @@ import {
   KeyIcon,
   PackageIcon,
   CubeIcon,
-  HammerIcon,
   PlugsConnectedIcon,
   PlugsIcon,
   PulseIcon,
@@ -121,6 +120,8 @@ export interface GlobalNavItem {
   to: GlobalTo | PendingTo
   icon: React.ReactNode
   exact?: boolean
+  // Sibling pages shown as tabs under this entry: also mark it active.
+  alsoActive?: readonly string[]
   badge?: GlobalBadge
   feature?: ExperimentalFeature
   // Hidden until the router actually has this route (it lands in another PR).
@@ -132,6 +133,13 @@ export interface GlobalNavGroup {
   label: string
   items: GlobalNavItem[]
 }
+
+// Pages reached through a SectionTabs strip instead of their own sidebar entry.
+export const DEPLOYMENT_GROUP_PATHS = [
+  '/deployments',
+  '/deploy-timeline',
+  '/builds',
+] as const
 
 export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
   {
@@ -170,18 +178,13 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Deployments',
         to: '/deployments',
         icon: <RocketLaunchIcon />,
+        alsoActive: DEPLOYMENT_GROUP_PATHS,
       },
       {
         id: 'functions',
         label: 'Functions',
         to: '/functions',
         icon: <LightningIcon />,
-      },
-      {
-        id: 'deploy-timeline',
-        label: 'Deploy timeline',
-        to: '/deploy-timeline',
-        icon: <ClockCounterClockwiseIcon />,
       },
       {
         id: 'projects',
@@ -194,12 +197,6 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Images',
         to: '/images',
         icon: <CubeIcon />,
-      },
-      {
-        id: 'builds',
-        label: 'Builds',
-        to: '/builds',
-        icon: <HammerIcon />,
       },
       {
         id: 'registry',
@@ -447,7 +444,18 @@ export function isGlobalItemActive(
   item: GlobalNavItem,
 ): boolean {
   if (item.exact) return pathname === item.to
-  return pathname === item.to || pathname.startsWith(`${item.to}/`)
+  if (pathname === item.to || pathname.startsWith(`${item.to}/`)) return true
+  return (item.alsoActive ?? []).some((p) => matchesPrefix(pathname, p))
+}
+
+// Tolerates a trailing query or hash so callers can pass a raw location string.
+export function matchesPrefix(path: string, prefix: string): boolean {
+  return (
+    path === prefix ||
+    path.startsWith(`${prefix}/`) ||
+    path.startsWith(`${prefix}?`) ||
+    path.startsWith(`${prefix}#`)
+  )
 }
 
 // Typed Link needs a route-tree path; pending routes are only rendered once
