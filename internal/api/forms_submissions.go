@@ -21,6 +21,7 @@ type formSubmissionResource struct {
 	ID         int64             `json:"id"`
 	Fields     map[string]string `json:"fields"`
 	Spam       bool              `json:"spam"`
+	Test       bool              `json:"test,omitempty"`
 	SpamReason string            `json:"spam_reason,omitempty"`
 	IPHash     string            `json:"ip_hash,omitempty"`
 	CreatedAt  time.Time         `json:"created_at"`
@@ -37,7 +38,7 @@ type formSpamRequest struct {
 }
 
 func submissionView(s store.FormSubmission) formSubmissionResource {
-	return formSubmissionResource{ID: s.ID, Fields: s.Fields, Spam: s.Spam, SpamReason: s.SpamReason, IPHash: s.IPHash, CreatedAt: s.CreatedAt}
+	return formSubmissionResource{ID: s.ID, Fields: s.Fields, Spam: s.Spam, Test: s.Test, SpamReason: s.SpamReason, IPHash: s.IPHash, CreatedAt: s.CreatedAt}
 }
 
 // parseSubmissionQuery reads q, spam=true|false and before from the URL; limit is the page size.

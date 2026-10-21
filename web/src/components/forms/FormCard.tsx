@@ -1,38 +1,72 @@
-import { useState } from 'react'
+import { useCallback, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CopyIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { PaperPlaneTiltIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
 import { useFormActions, type AppForm } from '../../queries/forms'
+import type { FormSchema } from '../../lib/formSnippet'
+import { FormDesigner } from './FormDesigner'
+import { FormEmbed } from './FormEmbed'
 import { FormInbox } from './FormInbox'
 import { FormSettings } from './FormSettings'
 
-function CopyBlock({ label, value }: { label: string; value: string }) {
-  const { t } = useTranslation('forms')
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(value)
-      toast.add({ title: t('copied'), type: 'success' })
-    } catch {
-      toast.add({ title: t('copyFailed'), type: 'error' })
-    }
-  }
+function Section({
+  title,
+  help,
+  action,
+  children,
+}: {
+  title: string
+  help: string
+  action?: ReactNode
+  children: ReactNode
+}) {
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">{label}</span>
-        <Button variant="ghost" size="xs" onClick={() => void copy()}>
-          <CopyIcon />
-          {t('copy')}
-        </Button>
-      </div>
-      <pre className="overflow-x-auto rounded-lg border border-border bg-muted/40 p-3 text-xs">
-        <code>{value}</code>
-      </pre>
-    </div>
+    <section className="space-y-3 border-t border-border pt-4">
+      <header className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold">{title}</h3>
+          <p className="text-xs text-muted-foreground">{help}</p>
+        </div>
+        {action}
+      </header>
+      {children}
+    </section>
+  )
+}
+
+function TestButton({ app, form }: { app: string; form: string }) {
+  const { t } = useTranslation('forms')
+  const { sendTest } = useFormActions(app)
+  const send = () =>
+    sendTest.mutate(form, {
+      onSuccess: (r) =>
+        toast.add({
+          title: t('test.sent', { id: r.submission_id }),
+          description: r.spam ? t('test.flagged') : t('test.ok'),
+          type: r.spam ? 'warning' : 'success',
+        }),
+      onError: (e) =>
+        toast.add({
+          title: t('test.failed'),
+          description: e.message,
+          type: 'error',
+        }),
+    })
+  return (
+    <Button
+      writeAction
+      variant="outline"
+      size="sm"
+      disabled={sendTest.isPending}
+      onClick={send}
+    >
+      <PaperPlaneTiltIcon />
+      {sendTest.isPending ? t('test.sending') : t('test.button')}
+    </Button>
   )
 }
 
@@ -48,6 +82,8 @@ export function FormCard({
   const { t } = useTranslation('forms')
   const { remove } = useFormActions(app)
   const [confirming, setConfirming] = useState(false)
+  const [draft, setDraft] = useState<FormSchema | undefined>()
+  const onDraft = useCallback((s: FormSchema) => setDraft(s), [])
 
   return (
     <Card>
@@ -77,13 +113,34 @@ export function FormCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
-        <CopyBlock label={t('endpoint')} value={form.endpoint} />
-        <CopyBlock label={t('snippet')} value={form.snippet} />
-        <FormSettings app={app} form={form} />
-        <p className="text-xs text-muted-foreground">
-          {t('retention', { days: retentionDays })}
-        </p>
-        <FormInbox app={app} form={form.name} />
+        <Section
+          title={t('sections.design.title')}
+          help={t('sections.design.help')}
+        >
+          <FormDesigner app={app} form={form} onDraft={onDraft} />
+        </Section>
+        <Section
+          title={t('sections.embed.title')}
+          help={t('sections.embed.help')}
+        >
+          <FormEmbed form={form} draft={draft} />
+        </Section>
+        <Section
+          title={t('sections.submissions.title')}
+          help={t('sections.submissions.help')}
+          action={<TestButton app={app} form={form.name} />}
+        >
+          <FormInbox app={app} form={form.name} />
+          <p className="text-xs text-muted-foreground">
+            {t('retention', { days: retentionDays })}
+          </p>
+        </Section>
+        <Section
+          title={t('sections.settings.title')}
+          help={t('sections.settings.help')}
+        >
+          <FormSettings app={app} form={form} />
+        </Section>
       </CardContent>
       <ConfirmDialog
         open={confirming}

@@ -26,9 +26,31 @@ func setFormsCORS(w http.ResponseWriter) {
 	h.Set("Access-Control-Expose-Headers", "Retry-After")
 }
 
-func (rt *Router) handleFormPreflight(w http.ResponseWriter, _ *http.Request) {
+func (rt *Router) handleFormPreflight(w http.ResponseWriter, r *http.Request) {
 	setFormsCORS(w)
+	rt.narrowFormsCORS(w, r)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// narrowFormsCORS replaces the wildcard origin with the caller's when the form lists allowed origins.
+func (rt *Router) narrowFormsCORS(w http.ResponseWriter, r *http.Request) {
+	if rt.forms == nil {
+		return
+	}
+	f, err := rt.forms.GetForm(r.Context(), r.PathValue("app"), r.PathValue("name"))
+	if err != nil {
+		return
+	}
+	s, _ := forms.ParseSchema(f.Schema)
+	if len(s.AllowedOrigins) == 0 {
+		return
+	}
+	w.Header().Add("Vary", "Origin")
+	if origin := r.Header.Get("Origin"); formOriginAllowed(s, origin) && origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	} else {
+		w.Header().Del("Access-Control-Allow-Origin")
+	}
 }
 
 // handleFormSubmit is the public capture endpoint. Unknown forms answer 404 and
@@ -57,16 +79,27 @@ func (rt *Router) handleFormSubmit(w http.ResponseWriter, r *http.Request) {
 		formsRetryAfter(w, retry)
 		return
 	}
+	schema, _ := forms.ParseSchema(f.Schema)
+	rt.narrowFormsCORS(w, r)
+	if !formOriginAllowed(schema, r.Header.Get("Origin")) {
+		writeError(w, http.StatusForbidden, "this site is not allowed to post to this form")
+		return
+	}
 	fields, err := forms.ParseRequest(r, fr.cfg)
 	if err != nil {
 		writeError(w, formParseStatus(err), formParseMessage(err))
+		return
+	}
+	fields, problems := forms.ValidateSubmission(schema, f.HoneypotField, fields)
+	if problems != nil {
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": "some fields are invalid", "fields": problems})
 		return
 	}
 	if _, err := fr.svc.Submit(r.Context(), f, fields, clientIP(r)); err != nil {
 		rt.internalError(w, "api: form submit", err, slog.String("form_id", f.ID))
 		return
 	}
-	respondFormSuccess(w, r, f)
+	respondFormSuccess(w, r, f, schema)
 }
 
 func formsRetryAfter(w http.ResponseWriter, retry time.Duration) {
@@ -106,9 +139,9 @@ func formParseMessage(err error) string {
 }
 
 // respondFormSuccess redirects browser form posts to the form's redirect_url and answers API clients with JSON.
-func respondFormSuccess(w http.ResponseWriter, r *http.Request, f store.Form) {
+func respondFormSuccess(w http.ResponseWriter, r *http.Request, f store.Form, schema forms.Schema) {
 	if wantsJSON(r) {
-		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "message": schema.SuccessMessage})
 		return
 	}
 	if f.RedirectURL != "" {
@@ -117,7 +150,7 @@ func respondFormSuccess(w http.ResponseWriter, r *http.Request, f store.Form) {
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'none'")
-	_, _ = w.Write([]byte(formThanksHTML))
+	_, _ = w.Write([]byte(formThanksPage(schema.SuccessMessage)))
 }
 
 func wantsJSON(r *http.Request) bool {

@@ -30,6 +30,8 @@ type Form struct {
 	// IPSalt keys the submitter hash so hashes cannot be matched across forms.
 	IPSalt    string
 	CreatedAt time.Time
+	// Schema is the designer JSON; "{}" means the default fields.
+	Schema string
 }
 
 // FormSubmission is one captured post; Fields holds string values only.
@@ -41,6 +43,8 @@ type FormSubmission struct {
 	SpamReason string
 	IPHash     string
 	CreatedAt  time.Time
+	// Test marks a submission sent from the dashboard test button.
+	Test bool
 }
 
 // FormSubmissionQuery filters a submission listing; Spam nil returns both.
@@ -58,12 +62,19 @@ type FormCounts struct {
 	Spam  int
 }
 
-const formColumns = `id, app_name, name, redirect_url, honeypot_field, notify_channel_ids, ip_salt, created_at`
+const formColumns = `id, app_name, name, redirect_url, honeypot_field, notify_channel_ids, ip_salt, created_at, schema`
+
+func schemaOrEmpty(s string) string {
+	if strings.TrimSpace(s) == "" {
+		return "{}"
+	}
+	return s
+}
 
 func scanForm(scan func(dest ...any) error) (Form, error) {
 	var f Form
 	var channels, created string
-	if err := scan(&f.ID, &f.AppName, &f.Name, &f.RedirectURL, &f.HoneypotField, &channels, &f.IPSalt, &created); err != nil {
+	if err := scan(&f.ID, &f.AppName, &f.Name, &f.RedirectURL, &f.HoneypotField, &channels, &f.IPSalt, &created, &f.Schema); err != nil {
 		return Form{}, err
 	}
 	if err := json.Unmarshal([]byte(channels), &f.NotifyChannelIDs); err != nil {
@@ -83,8 +94,8 @@ func (db *DB) CreateForm(ctx context.Context, f Form) error {
 	if err != nil {
 		return fmt.Errorf("store: create form %q: %w", f.Name, err)
 	}
-	_, err = db.ExecContext(ctx, `INSERT INTO forms (`+formColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		f.ID, f.AppName, f.Name, f.RedirectURL, f.HoneypotField, string(channels), f.IPSalt, f.CreatedAt.UTC().Format(time.RFC3339Nano))
+	_, err = db.ExecContext(ctx, `INSERT INTO forms (`+formColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		f.ID, f.AppName, f.Name, f.RedirectURL, f.HoneypotField, string(channels), f.IPSalt, f.CreatedAt.UTC().Format(time.RFC3339Nano), schemaOrEmpty(f.Schema))
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE") {
 			return ErrFormExists
@@ -100,8 +111,8 @@ func (db *DB) UpdateForm(ctx context.Context, f Form) error {
 	if err != nil {
 		return fmt.Errorf("store: update form %q: %w", f.ID, err)
 	}
-	res, err := db.ExecContext(ctx, `UPDATE forms SET redirect_url = ?, honeypot_field = ?, notify_channel_ids = ? WHERE id = ?`,
-		f.RedirectURL, f.HoneypotField, string(channels), f.ID)
+	res, err := db.ExecContext(ctx, `UPDATE forms SET redirect_url = ?, honeypot_field = ?, notify_channel_ids = ?, schema = ? WHERE id = ?`,
+		f.RedirectURL, f.HoneypotField, string(channels), schemaOrEmpty(f.Schema), f.ID)
 	if err != nil {
 		return fmt.Errorf("store: update form %q: %w", f.ID, err)
 	}

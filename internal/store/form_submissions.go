@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-const submissionColumns = `id, form_id, fields, spam, spam_reason, ip_hash, created_at`
+const submissionColumns = `id, form_id, fields, spam, spam_reason, ip_hash, created_at, test`
 
 func scanSubmission(scan func(dest ...any) error) (FormSubmission, error) {
 	var s FormSubmission
 	var fields, created string
-	var spam int
-	if err := scan(&s.ID, &s.FormID, &fields, &spam, &s.SpamReason, &s.IPHash, &created); err != nil {
+	var spam, test int
+	if err := scan(&s.ID, &s.FormID, &fields, &spam, &s.SpamReason, &s.IPHash, &created, &test); err != nil {
 		return FormSubmission{}, err
 	}
 	if err := json.Unmarshal([]byte(fields), &s.Fields); err != nil {
@@ -24,7 +24,7 @@ func scanSubmission(scan func(dest ...any) error) (FormSubmission, error) {
 	if err != nil {
 		return FormSubmission{}, fmt.Errorf("created_at: %w", err)
 	}
-	s.Spam, s.CreatedAt = spam != 0, t
+	s.Spam, s.Test, s.CreatedAt = spam != 0, test != 0, t
 	return s, nil
 }
 
@@ -39,8 +39,12 @@ func (db *DB) AddFormSubmission(ctx context.Context, s FormSubmission, maxStored
 	if s.Spam {
 		spam = 1
 	}
-	res, err := db.ExecContext(ctx, `INSERT INTO form_submissions (form_id, fields, spam, spam_reason, ip_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-		s.FormID, string(fields), spam, s.SpamReason, s.IPHash, s.CreatedAt.UTC().Format(time.RFC3339Nano))
+	test := 0
+	if s.Test {
+		test = 1
+	}
+	res, err := db.ExecContext(ctx, `INSERT INTO form_submissions (form_id, fields, spam, spam_reason, ip_hash, created_at, test) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		s.FormID, string(fields), spam, s.SpamReason, s.IPHash, s.CreatedAt.UTC().Format(time.RFC3339Nano), test)
 	if err != nil {
 		return FormSubmission{}, fmt.Errorf("store: add form submission: %w", err)
 	}

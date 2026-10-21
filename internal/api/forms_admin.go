@@ -15,19 +15,35 @@ import (
 const maxFormNotifyChannels = 10
 
 type formResource struct {
-	ID               string    `json:"id"`
-	App              string    `json:"app"`
-	Name             string    `json:"name"`
-	RedirectURL      string    `json:"redirect_url"`
-	HoneypotField    string    `json:"honeypot_field"`
-	NotifyChannelIDs []string  `json:"notify_channel_ids"`
-	EndpointPath     string    `json:"endpoint_path"`
-	Endpoint         string    `json:"endpoint"`
-	Snippet          string    `json:"snippet"`
-	Submissions      int       `json:"submissions"`
-	SpamSubmissions  int       `json:"spam_submissions"`
-	CreatedAt        time.Time `json:"created_at"`
+	ID               string       `json:"id"`
+	App              string       `json:"app"`
+	Name             string       `json:"name"`
+	RedirectURL      string       `json:"redirect_url"`
+	HoneypotField    string       `json:"honeypot_field"`
+	NotifyChannelIDs []string     `json:"notify_channel_ids"`
+	EndpointPath     string       `json:"endpoint_path"`
+	Endpoint         string       `json:"endpoint"`
+	Snippet          string       `json:"snippet"`
+	Snippets         formSnippets `json:"snippets"`
+	Schema           forms.Schema `json:"schema"`
+	// EndpointSource is "domain", "public_url" or "local"; local endpoints only work from this machine.
+	EndpointSource  string    `json:"endpoint_source"`
+	Submissions     int       `json:"submissions"`
+	SpamSubmissions int       `json:"spam_submissions"`
+	CreatedAt       time.Time `json:"created_at"`
 }
+
+type formSnippets struct {
+	HTML    string `json:"html"`
+	Fetch   string `json:"fetch"`
+	Minimal string `json:"minimal"`
+}
+
+const (
+	endpointSourceDomain    = "domain"
+	endpointSourcePublicURL = "public_url"
+	endpointSourceLocal     = "local"
+)
 
 type formsListResponse struct {
 	Forms         []formResource `json:"forms"`
@@ -45,25 +61,39 @@ func formEndpointPath(app, name string) string {
 	return "/api/v1/forms/" + app + "/" + name
 }
 
-// formsBase is the origin public form posts should target.
-func (rt *Router) formsBase(r *http.Request) string {
+type formsBase struct{ URL, Source string }
+
+// formsBase picks the origin public posts should target: the app's own https domain, else
+// the configured dashboard URL, else this request's host (flagged local, it may be a bare IP).
+func (rt *Router) formsBase(r *http.Request, app string) formsBase {
+	if svc, err := rt.apps.GetDesiredService(r.Context(), app); err == nil && svc != nil {
+		for _, d := range svc.Domains {
+			if d = strings.TrimSpace(d); d != "" && !strings.HasPrefix(d, "*") {
+				return formsBase{URL: "https://" + d, Source: endpointSourceDomain}
+			}
+		}
+	}
 	if base := rt.dashboardURL(); base != "" {
-		return strings.TrimRight(base, "/")
+		return formsBase{URL: strings.TrimRight(base, "/"), Source: endpointSourcePublicURL}
 	}
 	scheme := "https://"
 	if host := strings.Split(r.Host, ":")[0]; host == "localhost" || host == "127.0.0.1" {
 		scheme = "http://"
 	}
-	return scheme + r.Host
+	return formsBase{URL: scheme + r.Host, Source: endpointSourceLocal}
 }
 
-func (rt *Router) formView(r *http.Request, f store.Form, c store.FormCounts) formResource {
+func (rt *Router) formView(f store.Form, c store.FormCounts, base formsBase) formResource {
 	path := formEndpointPath(f.AppName, f.Name)
-	endpoint := rt.formsBase(r) + path
+	endpoint := base.URL + path
+	schema, _ := forms.ParseSchema(f.Schema)
 	return formResource{
 		ID: f.ID, App: f.AppName, Name: f.Name, RedirectURL: f.RedirectURL, HoneypotField: f.HoneypotField,
 		NotifyChannelIDs: f.NotifyChannelIDs, EndpointPath: path, Endpoint: endpoint,
-		Snippet: forms.Snippet(endpoint, f), Submissions: c.Total, SpamSubmissions: c.Spam, CreatedAt: f.CreatedAt,
+		Snippet:  forms.Snippet(endpoint, f),
+		Snippets: formSnippets{HTML: forms.Snippet(endpoint, f), Fetch: forms.SnippetFetch(endpoint, f), Minimal: forms.SnippetMinimal(endpoint, f)},
+		Schema:   schema, EndpointSource: base.Source,
+		Submissions: c.Total, SpamSubmissions: c.Spam, CreatedAt: f.CreatedAt,
 	}
 }
 
@@ -115,9 +145,10 @@ func (rt *Router) handleListForms(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: list forms", err, slog.String("app", app))
 		return
 	}
+	base := rt.formsBase(r, app)
 	out := make([]formResource, 0, len(list))
 	for _, f := range list {
-		out = append(out, rt.formView(r, f, counts[f.ID]))
+		out = append(out, rt.formView(f, counts[f.ID], base))
 	}
 	writeJSON(w, http.StatusOK, formsListResponse{Forms: out, RetentionDays: int(rt.formsRuntime().cfg.Retention / (24 * time.Hour))})
 }
@@ -163,7 +194,7 @@ func (rt *Router) handleCreateForm(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		rt.internalError(w, "api: create form", err, slog.String("app", app))
 	default:
-		writeJSON(w, http.StatusCreated, rt.formView(r, f, store.FormCounts{}))
+		writeJSON(w, http.StatusCreated, rt.formView(f, store.FormCounts{}, rt.formsBase(r, app)))
 	}
 }
 
@@ -184,7 +215,7 @@ func (rt *Router) handleUpdateForm(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: update form", err, slog.String("form_id", f.ID))
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.formView(r, f, store.FormCounts{}))
+	writeJSON(w, http.StatusOK, rt.formView(f, store.FormCounts{}, rt.formsBase(r, f.AppName)))
 }
 
 // applyFormRequest copies the editable fields of req onto f, writing the 400 itself on bad input.

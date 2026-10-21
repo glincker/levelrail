@@ -11,6 +11,7 @@ import {
 } from '@tanstack/react-query'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { FormSchema } from '../lib/formSnippet'
 
 export interface AppForm {
   id: string
@@ -22,6 +23,10 @@ export interface AppForm {
   endpoint_path: string
   endpoint: string
   snippet: string
+  snippets: { html: string; fetch: string; minimal: string }
+  schema: FormSchema
+  /** "local" means no public URL is configured and the endpoint only works from this machine. */
+  endpoint_source: 'domain' | 'public_url' | 'local'
   submissions: number
   spam_submissions: number
   created_at: string
@@ -36,8 +41,15 @@ export interface FormSubmission {
   id: number
   fields: Record<string, string>
   spam: boolean
+  test?: boolean
   spam_reason?: string
   created_at: string
+}
+
+export interface FormTestResult {
+  submission_id: number
+  spam: boolean
+  fields: Record<string, string>
 }
 
 export interface FormSubmissionsPage {
@@ -202,7 +214,33 @@ export function useFormActions(app: string) {
     },
     onSuccess: refresh,
   })
-  return { create, save, remove, setSpam, removeSubmission }
+  const saveFields = useMutation<
+    AppForm,
+    ApiError,
+    { form: string; schema: FormSchema }
+  >({
+    mutationFn: async ({ form, schema }) =>
+      (await (
+        await send(`${formsBase(app, form)}/fields`, 'PUT', schema)
+      ).json()) as AppForm,
+    onSuccess: refresh,
+  })
+  const sendTest = useMutation<FormTestResult, ApiError, string>({
+    mutationFn: async (form) =>
+      (await (
+        await send(`${formsBase(app, form)}/test`, 'POST')
+      ).json()) as FormTestResult,
+    onSuccess: refresh,
+  })
+  return {
+    create,
+    save,
+    saveFields,
+    sendTest,
+    remove,
+    setSpam,
+    removeSubmission,
+  }
 }
 
 export function exportUrl(

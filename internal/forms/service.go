@@ -55,17 +55,26 @@ func (s *Service) Config() Config { return s.cfg }
 // Submit classifies and stores one post. A failed notification never fails the submission:
 // the row is already saved, so it is logged and the visitor still gets success.
 func (s *Service) Submit(ctx context.Context, f store.Form, fields map[string]string, clientIP string) (store.FormSubmission, error) {
+	return s.submit(ctx, f, fields, clientIP, false)
+}
+
+// SubmitTest stores a dashboard test post, flagged as a test and never notified.
+func (s *Service) SubmitTest(ctx context.Context, f store.Form, fields map[string]string) (store.FormSubmission, error) {
+	return s.submit(ctx, f, fields, "", true)
+}
+
+func (s *Service) submit(ctx context.Context, f store.Form, fields map[string]string, clientIP string, test bool) (store.FormSubmission, error) {
 	clean, spam, reason := Classify(fields, f.HoneypotField, s.cfg.SpamMaxLinks)
 	now := s.Now().UTC()
 	sub, err := s.store.AddFormSubmission(ctx, store.FormSubmission{
 		FormID: f.ID, Fields: clean, Spam: spam, SpamReason: reason,
-		IPHash: HashIP(f.IPSalt, clientIP), CreatedAt: now,
+		IPHash: HashIP(f.IPSalt, clientIP), CreatedAt: now, Test: test,
 	}, s.cfg.MaxStoredPerForm)
 	if err != nil {
 		return store.FormSubmission{}, fmt.Errorf("forms: store submission for %q: %w", f.ID, err)
 	}
 	s.maybePrune(ctx, now)
-	if !spam && s.notifier != nil && len(f.NotifyChannelIDs) > 0 {
+	if !spam && !test && s.notifier != nil && len(f.NotifyChannelIDs) > 0 {
 		s.Dispatch(func() {
 			nctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), notifyTimeout)
 			defer cancel()

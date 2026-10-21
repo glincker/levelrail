@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,11 +21,19 @@ func formsUsage(prog string) string {
   %[1]s forms create <app> <name> [--redirect-url URL] [--honeypot FIELD] [--notify CHANNEL_ID,...]
   %[1]s forms update <app> <name> [--redirect-url URL] [--honeypot FIELD] [--notify CHANNEL_ID,...]
   %[1]s forms snippet <app> <name>
+  %[1]s forms fields get <app> <name>
+  %[1]s forms fields set <app> <name> --file schema.json
+  %[1]s forms test <app> <name>
   %[1]s forms delete <app> <name>
   %[1]s forms submissions <app> <name> [--search TEXT] [--spam true|false] [--limit N]
   %[1]s forms spam|unspam <app> <name> <submission-id>
   %[1]s forms remove <app> <name> <submission-id>
   %[1]s forms export <app> <name> [--search TEXT] [--spam true|false]
+
+schema.json holds {"fields":[{"name","type","label","required","placeholder","min_length","max_length","options"}],
+"success_message":"","allowed_origins":["https://example.com"]}. Types: text, email, textarea, select,
+checkbox, number, url, hidden. With fields set, undeclared submitted names are dropped. No fields keeps
+the default name, email and message.
 
 A form is a public endpoint a static site posts to (form-urlencoded, multipart or JSON).
 Submissions keep a salted hash of the sender address, never the address itself, and are
@@ -40,6 +51,7 @@ type formsCall struct {
 	redirect, honeypot     string
 	notify, search, spamIn string
 	limit                  int
+	file                   string
 }
 
 func parseFormsCall(prog, label string, args []string, stderr io.Writer, lookupEnv func(string) (string, bool), wantArgs int) (formsCall, int, bool) {
@@ -50,6 +62,7 @@ func parseFormsCall(prog, label string, args []string, stderr io.Writer, lookupE
 	fs.StringVar(&c.notify, "notify", "", "comma-separated notification channel ids to alert on new submissions")
 	fs.StringVar(&c.search, "search", "", "only submissions containing this text")
 	fs.StringVar(&c.spamIn, "spam", "", "only spam (true) or only non-spam (false) submissions")
+	fs.StringVar(&c.file, "file", "", "path to a schema JSON file (forms fields set)")
 	fs.IntVar(&c.limit, "limit", 0, "maximum submissions to list")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, formsUsage(prog)) }
 	token, apiURL, profile, jsonOut, of, code, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiP, profileP, jsonP, outP, queryP}, prog, stderr)
@@ -107,6 +120,10 @@ func runForms(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runFormsSave(prog, args[0], rest, stdout, stderr, lookupEnv)
 	case "snippet":
 		return runFormsSnippet(prog, rest, stdout, stderr, lookupEnv)
+	case "fields":
+		return runFormsFields(prog, rest, stdout, stderr, lookupEnv)
+	case "test":
+		return runFormsTest(prog, rest, stdout, stderr, lookupEnv)
 	case "delete":
 		return runFormsDelete(prog, rest, stdout, stderr, lookupEnv)
 	case "submissions", "export":
@@ -261,4 +278,60 @@ func sortedFieldKeys(m map[string]string) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+func runFormsFields(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) == 0 || (args[0] != "get" && args[0] != "set") {
+		_, _ = fmt.Fprint(stderr, formsUsage(prog))
+		return exitUsage
+	}
+	verb := args[0]
+	c, code, ok := parseFormsCall(prog, "forms fields "+verb, args[1:], stderr, lookupEnv, 2)
+	if !ok {
+		return code
+	}
+	app, name := c.args[0], c.args[1]
+	if verb == "get" {
+		raw, err := c.client.GetFormFields(bg(), app, name)
+		if err != nil {
+			return reportError(stdout, stderr, c.jsonO, fmt.Errorf("get form fields: %w", err))
+		}
+		var pretty bytes.Buffer
+		if json.Indent(&pretty, raw, "", "  ") != nil {
+			pretty.Write(raw)
+		}
+		_, _ = fmt.Fprintln(stdout, pretty.String())
+		return exitOK
+	}
+	if c.file == "" {
+		return reportError(stdout, stderr, c.jsonO, newValidationError("forms fields set needs --file schema.json"))
+	}
+	data, err := os.ReadFile(c.file)
+	if err != nil {
+		return reportError(stdout, stderr, c.jsonO, fmt.Errorf("read schema file: %w", err))
+	}
+	if !json.Valid(data) {
+		return reportError(stdout, stderr, c.jsonO, newValidationError("%s is not valid JSON", c.file))
+	}
+	f, err := c.client.SetFormFields(bg(), app, name, data)
+	if err != nil {
+		return reportError(stdout, stderr, c.jsonO, fmt.Errorf("set form fields: %w", err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, c.of, f, func() {
+		_, _ = fmt.Fprintf(stdout, "form %s fields saved\n\n%s\n", f.Name, f.Snippet)
+	})
+}
+
+func runFormsTest(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	c, code, ok := parseFormsCall(prog, "forms test", args, stderr, lookupEnv, 2)
+	if !ok {
+		return code
+	}
+	res, err := c.client.SendFormTest(bg(), c.args[0], c.args[1])
+	if err != nil {
+		return reportError(stdout, stderr, c.jsonO, fmt.Errorf("forms test: %w", err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, c.of, res, func() {
+		_, _ = fmt.Fprintf(stdout, "test submission %d stored (marked as a test)\n", res.SubmissionID)
+	})
 }

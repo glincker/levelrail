@@ -504,6 +504,8 @@ export interface AppNavItem {
   feature?: ExperimentalFeature
   /** Shown only for build.type: static apps. */
   staticOnly?: boolean
+  /** Shows the Beta badge next to the label. */
+  beta?: boolean
 }
 
 export interface AppNavSection {
@@ -579,7 +581,11 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
       ),
       item('network', 'Network', '/apps/$name/network', <ShareNetworkIcon />),
       item('cache', 'Cache', '/apps/$name/cache', <LightningIcon />),
-      item('forms', 'Forms', '/apps/$name/forms', <ClipboardTextIcon />),
+      {
+        ...item('forms', 'Forms', '/apps/$name/forms', <ClipboardTextIcon />),
+        staticOnly: true,
+        beta: true,
+      },
       {
         ...item(
           'static-routes',

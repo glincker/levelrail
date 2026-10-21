@@ -28,6 +28,38 @@ The form gets a public endpoint, `POST /api/v1/forms/<app>/<name>`, and a copyab
 
 Form names use lowercase letters, digits, dashes and underscores. The name is part of the address, so it cannot be changed; create a new form and delete the old one instead.
 
+## Design the fields
+
+The Forms tab appears only for static-site apps. In **Design**, add, remove and reorder fields. Each field has a type (text, email, long text, dropdown, checkbox, number, web address or hidden), a label, a name, a required flag, a placeholder and optional minimum and maximum length. A live preview sits beside the editor and the snippet under **Embed** follows your edits in three variants: HTML, HTML with a `fetch` script, and minimal markup without labels.
+
+A form that never sets fields keeps the default name, email and message fields. Once fields are set, the server validates each post (required, type, length, dropdown choice). Invalid posts answer 422 with `{"error":..., "fields":{"email":"invalid_email"}}`. Submitted names that are not declared are dropped, not stored; the spam trap field is always checked first.
+
+Optional extras: a **success message** (shown on the thank-you page and returned as `message` to JSON clients) and **allowed sites**. When allowed sites are set, browser posts from other origins get 403 and CORS only echoes the allowed origin; requests with no `Origin` header (curl, servers) still pass.
+
+```bash
+levelrail-cli forms fields get mysite contact > schema.json
+levelrail-cli forms fields set mysite contact --file schema.json
+```
+
+```json
+{
+  "fields": [
+    { "name": "email", "type": "email", "label": "Email", "required": true },
+    { "name": "plan", "type": "select", "options": ["free", "pro"] }
+  ],
+  "success_message": "Thanks, we will reply soon.",
+  "allowed_origins": ["https://mysite.example"]
+}
+```
+
+## The endpoint address
+
+The snippet uses the app's first https domain. With no domain it uses the configured dashboard (public) URL. With neither, the page shows a warning and a **Set the public URL** button, because that endpoint only works from the machine running Levelrail.
+
+## Test it
+
+**Send a test submission** stores a sample post through the real handler, marked **Test** in the inbox, without notifying channels. CLI: `levelrail-cli forms test <app> <name>`.
+
 ## What the endpoint accepts
 
 | Content type | Notes |
@@ -38,7 +70,7 @@ Form names use lowercase letters, digits, dashes and underscores. The name is pa
 
 A browser post is redirected (303) to the form's redirect URL, or shown a plain thank-you page when none is set. A request that sends JSON or `Accept: application/json` gets `{"ok":true}` instead, so a `fetch` call from your own script does not navigate away.
 
-The endpoint answers cross-origin requests (`Access-Control-Allow-Origin: *`) because it is write-only: it takes no credentials and never returns stored data. Unknown form names answer 404, and one form's address can never read another form's submissions.
+Unless the form lists allowed sites, the endpoint answers cross-origin requests (`Access-Control-Allow-Origin: *`) because it is write-only: it takes no credentials and never returns stored data. Unknown form names answer 404, and one form's address can never read another form's submissions.
 
 ## Spam protection
 
@@ -89,6 +121,8 @@ levelrail-cli forms list <app>
 levelrail-cli forms create <app> <name> [--redirect-url URL] [--honeypot FIELD] [--notify CHANNEL_ID,...]
 levelrail-cli forms update <app> <name> [--redirect-url URL] [--honeypot FIELD] [--notify CHANNEL_ID,...]
 levelrail-cli forms snippet <app> <name>
+levelrail-cli forms fields get|set <app> <name> [--file schema.json]
+levelrail-cli forms test <app> <name>
 levelrail-cli forms submissions <app> <name> [--search TEXT] [--spam true|false] [--limit N]
 levelrail-cli forms spam|unspam|remove <app> <name> <submission-id>
 levelrail-cli forms export <app> <name> [--search TEXT] [--spam true|false] > submissions.csv

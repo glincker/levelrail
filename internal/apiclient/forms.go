@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -19,6 +20,7 @@ type Form struct {
 	EndpointPath     string    `json:"endpoint_path"`
 	Endpoint         string    `json:"endpoint"`
 	Snippet          string    `json:"snippet"`
+	EndpointSource   string    `json:"endpoint_source"`
 	Submissions      int       `json:"submissions"`
 	SpamSubmissions  int       `json:"spam_submissions"`
 	CreatedAt        time.Time `json:"created_at"`
@@ -43,6 +45,7 @@ type FormSubmission struct {
 	ID         int64             `json:"id"`
 	Fields     map[string]string `json:"fields"`
 	Spam       bool              `json:"spam"`
+	Test       bool              `json:"test,omitempty"`
 	SpamReason string            `json:"spam_reason,omitempty"`
 	IPHash     string            `json:"ip_hash,omitempty"`
 	CreatedAt  time.Time         `json:"created_at"`
@@ -139,4 +142,33 @@ func (c *Client) MarkFormSubmissionSpam(ctx context.Context, app, form string, i
 // DeleteFormSubmission removes one submission.
 func (c *Client) DeleteFormSubmission(ctx context.Context, app, form string, id int64) error {
 	return c.do(ctx, http.MethodDelete, formPath(app, form)+"/submissions/"+strconv.FormatInt(id, 10), nil, nil)
+}
+
+// FormTestResult is the outcome of a test submission.
+type FormTestResult struct {
+	SubmissionID int64             `json:"submission_id"`
+	Spam         bool              `json:"spam"`
+	SpamReason   string            `json:"spam_reason,omitempty"`
+	Fields       map[string]string `json:"fields"`
+}
+
+// GetFormFields returns the form's designer schema as JSON.
+func (c *Client) GetFormFields(ctx context.Context, app, form string) (json.RawMessage, error) {
+	var out json.RawMessage
+	err := c.do(ctx, http.MethodGet, formPath(app, form)+"/fields", nil, &out)
+	return out, err
+}
+
+// SetFormFields replaces the form's designer schema (fields, success message, allowed origins).
+func (c *Client) SetFormFields(ctx context.Context, app, form string, schema json.RawMessage) (Form, error) {
+	var out Form
+	err := c.do(ctx, http.MethodPut, formPath(app, form)+"/fields", schema, &out)
+	return out, err
+}
+
+// SendFormTest posts a sample submission, marked as a test, through the real storage path.
+func (c *Client) SendFormTest(ctx context.Context, app, form string) (FormTestResult, error) {
+	var out FormTestResult
+	err := c.do(ctx, http.MethodPost, formPath(app, form)+"/test", nil, &out)
+	return out, err
 }

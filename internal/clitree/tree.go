@@ -286,7 +286,7 @@ var Tree = map[string]*Node{
 		"traffic":        nil,
 	}},
 	"traffic":                  nil,
-	"forms":                    {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "snippet": nil, "delete": nil, "submissions": nil, "spam": nil, "unspam": nil, "remove": nil, "export": nil}},
+	"forms":                    {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "snippet": nil, "fields": {Subs: map[string]*Node{"get": nil, "set": nil}}, "test": nil, "delete": nil, "submissions": nil, "spam": nil, "unspam": nil, "remove": nil, "export": nil}},
 	"cache":                    {Subs: map[string]*Node{"status": nil, "rules": {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}}, "purge": nil, "history": nil}},
 	"status":                   nil,
 	"version":                  nil,

@@ -53,18 +53,3 @@ func csvCell(v string) string {
 	}
 	return v
 }
-
-// Snippet returns a copy-paste HTML form that posts to endpoint with the honeypot field in place.
-func Snippet(endpoint string, f store.Form) string {
-	hp := f.HoneypotField
-	if hp == "" {
-		hp = DefaultHoneypot
-	}
-	return fmt.Sprintf(`<form action="%s" method="POST">
-  <p hidden><label>Leave empty <input name="%s" tabindex="-1" autocomplete="off"></label></p>
-  <label>Name <input type="text" name="name" required></label>
-  <label>Email <input type="email" name="email" required></label>
-  <label>Message <textarea name="message"></textarea></label>
-  <button type="submit">Send</button>
-</form>`, endpoint, hp)
-}

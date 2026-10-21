@@ -10,6 +10,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
+import { BetaBadge } from '../BetaBadge'
 import {
   BETA_FEATURES_PATH,
   isFeatureLocked,
@@ -80,6 +81,7 @@ function ItemLink({
       >
         {item.icon}
         <span>{item.label}</span>
+        {item.beta && <BetaBadge className="ml-auto" />}
       </SidebarMenuButton>
     </SidebarMenuItem>
   )

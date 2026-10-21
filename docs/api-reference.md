@@ -622,6 +622,9 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/split | AbilityDeploy | handleSetSplitWeights |
 | DELETE | /api/v1/apps/{name}/split | AbilityDeploy | handleStopSplit |
 | POST | /api/v1/apps/{name}/split/promote | AbilityDeploy | handlePromoteSplit |
+| GET | /api/v1/apps/{name}/forms/{form}/fields | AbilityRead | handleGetFormFields |
+| PUT | /api/v1/apps/{name}/forms/{form}/fields | AbilityDeploy | handleSetFormFields |
+| POST | /api/v1/apps/{name}/forms/{form}/test | AbilityDeploy | handleSendFormTest |
 
 </Accordion>
 
