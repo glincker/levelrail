@@ -7,8 +7,10 @@ import type { DetectedProxy } from '../../queries/proxyIntegration'
 function Fact({ label, value }: { label: string; value: string }) {
   const { t } = useTranslation('domains')
   return (
-    <div className="flex items-baseline gap-2 py-1">
-      <dt className="w-36 shrink-0 text-xs text-muted-foreground">{label}</dt>
+    <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 py-1">
+      <dt className="w-full shrink-0 text-xs text-muted-foreground sm:w-36">
+        {label}
+      </dt>
       <dd className="min-w-0 flex-1 font-mono text-xs break-all text-foreground">
         {value || (
           <span className="font-sans text-muted-foreground">
@@ -23,10 +25,16 @@ function Fact({ label, value }: { label: string; value: string }) {
   )
 }
 
-export function ProxyDetectedFacts({ detected }: { detected: DetectedProxy }) {
+export function ProxyDetectedFacts({
+  detected,
+  quietMissing = false,
+}: {
+  detected: DetectedProxy
+  quietMissing?: boolean
+}) {
   const { t } = useTranslation('domains')
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
         {t('proxySetup.facts.title')}
       </h3>
@@ -65,7 +73,7 @@ export function ProxyDetectedFacts({ detected }: { detected: DetectedProxy }) {
           value={detected.upstream_host}
         />
       </dl>
-      {detected.complete ? null : (
+      {detected.complete || quietMissing ? null : (
         <Alert variant="destructive">
           <WarningIcon />
           <AlertTitle>{t('proxySetup.facts.missingTitle')}</AlertTitle>

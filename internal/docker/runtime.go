@@ -269,6 +269,9 @@ type ContainerSpec struct {
 	// with none added back, no-new-privileges, a PID limit and a small
 	// noexec /tmp. Used for untrusted workloads such as plugins.
 	Hardened bool
+	// RestartPolicy is a Docker restart policy name. Empty keeps "no": only a
+	// container no reconciler owns, such as a managed proxy, sets it.
+	RestartPolicy string
 	// User runs the container process as this uid[:gid]. Empty keeps the image's user.
 	User string
 }
