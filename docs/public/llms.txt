@@ -77,6 +77,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Load balancing](https://docs.levelrail.com/load-balancing): balance traffic across an app's replicas with health checks, retries, and sticky sessions.
 - [ACME verification runbook](https://docs.levelrail.com/acme-verification-runbook): diagnose and fix failed TLS certificate issuance.
 - [Multi-node](https://docs.levelrail.com/multi-node): add servers, the WireGuard mesh, and node placement.
+- [Add a node anywhere](https://docs.levelrail.com/add-node-anywhere): one guided flow to add an EC2, Google Cloud, VPS or home server node, with provider, region and zone auto-detect, preflight checks with fixes and failure-domain aware placement (beta).
 - [Multi-node quickstart](https://docs.levelrail.com/multi-node-quickstart): the short path to a second server and today's known multi-node gaps.
 - [Node provisioning](https://docs.levelrail.com/node-provisioning): automate creating a server at a cloud provider and enrolling it as a node.
 - [Multi-cloud provisioning quickstart](https://docs.levelrail.com/multi-cloud-provisioning): pick a cloud provider and add a provisioned node in a few commands.

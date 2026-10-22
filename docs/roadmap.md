@@ -59,6 +59,7 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 
 - Agent transport: in-process for a single node, gRPC with mTLS for remote nodes, with reconnection and version negotiation.
 - Node registry, join tokens, cordon, drain, heartbeats and connection history.
+- Guided add-node flow with provider, region and zone auto-detect from cloud metadata, preflight checks with fixes, and provider-aware spread (beta, see [add a node anywhere](/add-node-anywhere)).
 - Manual placement, moving an app with its volumes, WireGuard mesh with cross-node service DNS, and distributed certificate storage.
 
 The join flow is verified across two real Docker daemons, but not across a real WAN. The mesh itself is not verified on real hosts. See [multi-node](/multi-node).
