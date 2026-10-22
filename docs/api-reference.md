@@ -115,6 +115,8 @@ System endpoints for:
 | POST | /api/v1/updates/self-upgrade/attempts/{id}/fix | AbilityWrite | handleSelfUpgradeAttemptFix |
 | POST | /api/v1/updates/self-upgrade/attempts/{id}/retry | AbilityWrite | handleSelfUpgradeAttemptRetry |
 | POST | /api/v1/updates/self-upgrade/attempts/{id}/rollback | AbilityWrite | handleSelfUpgradeAttemptRollback |
+| POST | /api/v1/system/proxy-integration/install | AbilityRoot | handleInstallProxy |
+| GET | /api/v1/updates/self-upgrade/status | AbilityRead | handleSelfUpgradeStatus |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -283,6 +285,10 @@ Endpoints for:
 | GET | /api/v1/settings/dns-provider | AbilityRead | handleGetDNSProvider |
 | PUT | /api/v1/settings/dns-provider | AbilityRoot | handleSetDNSProvider |
 | POST | /api/v1/settings/dns-provider/test | AbilityRoot | handleTestDNSProvider |
+| GET | /api/v1/settings/google-cloud-dns | AbilityRead | handleGetGoogleCloudDNSSettings |
+| PUT | /api/v1/settings/google-cloud-dns | AbilityRoot | handleUpdateGoogleCloudDNSSettings |
+| DELETE | /api/v1/settings/google-cloud-dns | AbilityRoot | handleDisconnectGoogleCloudDNS |
+| POST | /api/v1/settings/google-cloud-dns/test | AbilityRoot | handleTestGoogleCloudDNS |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -675,6 +681,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/git-source/validate | AbilityDeploy | handleValidateGitSourceAccess |
 | POST | /api/v1/apps/{name}/git-source/webhook/register | AbilityWriteSensitive | handleRegisterGitSourceWebhook |
 | POST | /api/v1/apps/{name}/secrets/{key}/rotate | AbilityWriteSensitive | handleRotateSecretValue |
+| POST | /api/v1/webhooks/functions/{name} | Public | handleFunctionWebhook |
 
 ## Telemetry
 
@@ -811,6 +818,12 @@ Endpoints for:
 | PUT | /api/v1/databases/{name}/password-rotation/policy | AbilityRoot | handleSetDatabasePasswordPolicy |
 | PUT | /api/v1/databases/{name}/tls | AbilityRoot | handleSetDatabaseTLSEnabled |
 | GET | /api/v1/databases/{name}/tunnel | AbilityRoot | handleDatabaseTunnel |
+| GET | /api/v1/databases/{name}/provision | AbilityRead | handleGetDatabaseProvision |
+| GET | /api/v1/databases/{name}/provision/stream | AbilityRead | handleDatabaseProvisionStream |
+| POST | /api/v1/databases/{name}/provision/retry | AbilityWrite | handleRetryDatabaseProvision |
+| POST | /api/v1/databases/{name}/provision/discard | AbilityWrite | handleDiscardPendingDatabase |
+| PUT | /api/v1/databases/{name}/pending-settings | AbilityWrite | handleUpdatePendingDatabase |
+| POST | /api/v1/databases/{name}/credentials/reveal | AbilityRoot | handleRevealDatabaseCredentials |
 
 ## Projects / Organizations / Environments
 
@@ -1094,6 +1107,8 @@ Endpoints for:
 | POST | /api/v1/domains/{domain}/cert | AbilityRoot | handleGetCert |
 | GET | /api/v1/backup-targets/{id}/encryption | AbilityRead | handleGetBackupTargetEncryption |
 | PUT | /api/v1/backup-targets/{id}/encryption | AbilityRoot | handleSetBackupTargetEncryption |
+| POST | /api/v1/registry-credentials/presets/test | AbilityWriteSensitive | handleTestRegistryPreset |
+| POST | /api/v1/registry-credentials/{id}/refresh | AbilityWriteSensitive | handleRefreshRegistryCredential |
 
 ## Built-in Container Registry
 
@@ -1836,6 +1851,43 @@ Routes that do not fit an existing group.
 | GET | /api/v1/silences | AbilityRead | handleListSilences |
 | POST | /api/v1/silences | AbilityWrite | handleCreateSilence |
 | DELETE | /api/v1/silences/{id} | AbilityWrite | handleDeleteSilence |
+| GET | /api/v1/functions/{name}/invocations | AbilityRead | handleListFunctionInvocations |
+| POST | /api/v1/functions/{name}/invoke | AbilityDeploy | handleInvokeFunction |
+| POST | /api/v1/functions/{name}/invocations/{id}/replay | AbilityDeploy | handleReplayFunctionInvocation |
+| GET | /api/v1/functions/{name}/capture | AbilityRead | handleGetFunctionCapture |
+| PUT | /api/v1/functions/{name}/capture | AbilityDeploy | handleSetFunctionCapture |
+| GET | /api/v1/functions/{name}/settings | AbilityRead | handleGetFunctionSettings |
+| PUT | /api/v1/functions/{name}/settings | AbilityDeploy | handlePutFunctionSettings |
+| GET | /api/v1/functions/{name}/versions | AbilityRead | handleListFunctionVersions |
+| POST | /api/v1/functions/{name}/rollback | AbilityDeploy | handleFunctionRollback |
+| GET | /api/v1/functions/{name}/triggers | AbilityRead | handleGetFunctionTriggers |
+| PUT | /api/v1/functions/{name}/triggers/webhook | AbilityDeploy | handlePutFunctionWebhook |
+| DELETE | /api/v1/functions/{name}/triggers/webhook | AbilityDeploy | handleDeleteFunctionWebhook |
+| POST | /api/v1/functions/{name}/async | AbilityDeploy | handleEnqueueFunctionInvocation |
+| GET | /api/v1/function-invocations | AbilityRead | handleListQueuedFunctionCalls |
+| POST | /api/v1/function-invocations/{id}/retry | AbilityDeploy | handleRetryFunctionInvocation |
+| DELETE | /api/v1/function-invocations/{id} | AbilityDeploy | handleDeleteFunctionInvocation |
+| POST | /api/v1/migration/agent/sessions | AbilityWriteSensitive | handleCreateMigrationAgentSession |
+| GET | /api/v1/migration/agent/sessions | AbilityRead | handleListMigrationAgentSessions |
+| GET | /api/v1/migration/agent/sessions/{id} | AbilityWriteSensitive | handleGetMigrationAgentSession |
+| POST | /api/v1/migration/agent/sessions/{id}/discover | AbilityWriteSensitive | handleDiscoverMigrationAgent |
+| POST | /api/v1/migration/agent/sessions/{id}/verify | AbilityWriteSensitive | handleVerifyMigrationAgent |
+| DELETE | /api/v1/migration/agent/sessions/{id} | AbilityWriteSensitive | handleRevokeMigrationAgentSession |
+| GET | /api/v1/alert-defaults/cert-expiry/email | AbilityRead | handleGetCertExpiryEmail |
+| PUT | /api/v1/alert-defaults/cert-expiry/email | AbilityWrite | handleSetCertExpiryEmail |
+| POST | /api/v1/inbox/delete | AbilityWrite | handleInboxDelete |
+| POST | /api/v1/inbox/clear | AbilityWrite | handleInboxClear |
+| POST | /api/v1/git-sources/preview | AbilityWrite | handlePreviewRepo |
+| GET | /api/v1/functions/starters | AbilityRead | handleFunctionStarters |
+| GET | /api/v1/functions/{name}/kv | AbilityRead | handleListFunctionKV |
+| GET | /api/v1/functions/{name}/kv/value | AbilityRead | handleGetFunctionKVValue |
+| PUT | /api/v1/functions/{name}/kv/value | AbilityDeploy | handlePutFunctionKVValue |
+| DELETE | /api/v1/functions/{name}/kv/value | AbilityDeploy | handleDeleteFunctionKVValue |
+| POST | /api/v1/functions/{name}/kv/token | AbilityWriteSensitive | handleRotateFunctionKVToken |
+| GET | /api/v1/function-kv/entry | Public | handleFunctionKVEntry |
+| PUT | /api/v1/function-kv/entry | Public | handleFunctionKVEntry |
+| DELETE | /api/v1/function-kv/entry | Public | handleFunctionKVEntry |
+| GET | /api/v1/function-kv/keys | Public | handleFunctionKVKeys |
 
 ## See also
 

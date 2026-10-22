@@ -82,7 +82,7 @@ func (n *NoiseControl) ApplyStreak(prev, next Rule, now time.Time) Rule {
 func IsPlatformKind(k Kind) bool {
 	switch k {
 	case KindCertExpiry, KindPatchStatus, KindNodeDiskSpace, KindNodeHostGuardrail, KindNodeResourceUsage, KindNodeOffline,
-		KindNodeCertExpiring, KindControlPlaneBackupStale, KindLogArchiveStale, KindExportBehind, KindRestoreDrillFailed,
+		KindNodeCertExpiring, KindControlPlaneBackupStale, KindLogArchiveStale, KindExportBehind, KindRegistryRefreshFailing, KindRestoreDrillFailed,
 		KindCertExpiring, KindCertRenewalStalled, KindBudgetThreshold:
 		return true
 	default:
@@ -167,7 +167,7 @@ func (n *NoiseControl) silencedBy(ctx context.Context, ac AlertContext, now time
 	return silenceHit{id: hit.ID, detail: hit.Detail}, ok
 }
 
-func (n *NoiseControl) record(ctx context.Context, sc alertScope, r Rule, event, outcome, detail, silenceID string, sendErr error, now time.Time) {
+func (n *NoiseControl) record(ctx context.Context, sc alertScope, r Rule, event, outcome, detail, silenceID string, sendErr error, now time.Time, opts ...func(*HistoryEntry)) {
 	e := HistoryEntry{
 		At: now, RuleID: r.ID, RuleName: r.Name, RuleKind: string(r.Kind), ResourceID: r.ResourceID,
 		App: sc.ac.App, Node: firstNonEmpty(sc.ac.NodeName, sc.ac.NodeID), Severity: severityOrDefault(r.Severity),
@@ -176,8 +176,25 @@ func (n *NoiseControl) record(ctx context.Context, sc alertScope, r Rule, event,
 	if sendErr != nil {
 		e.Error = sendErr.Error()
 	}
+	for _, o := range opts {
+		o(&e)
+	}
 	if err := n.store.RecordHistory(ctx, e); err != nil {
 		n.logger.Error("alerting: record history failed", slog.String("rule_id", r.ID), slog.String("error", err.Error()))
+	}
+}
+
+// certHistory keeps the notice text as the human message and attaches the first fact as structured data.
+func certHistory(ev Event) func(*HistoryEntry) {
+	return func(e *HistoryEntry) {
+		if ev.Resolved || len(ev.CertFacts) == 0 {
+			return
+		}
+		if e.Detail == "" {
+			e.Detail = ev.CertFacts[0].Notice()
+		}
+		p := ev.CertFacts[0].Payload()
+		e.Cert = &p
 	}
 }
 
@@ -207,6 +224,15 @@ func targetKey(r Rule) string {
 // Route decides what happens to one firing or resolved event.
 func (n *NoiseControl) Route(ctx context.Context, ev Event, now time.Time, send SendFunc) {
 	r := ev.Rule
+	if ev.Resolved && r.Kind == KindCertExpiry {
+		if g, ok := n.store.(interface {
+			ResolveAllowed(ctx context.Context, ruleID, resourceID string, kind Kind) (bool, error)
+		}); ok {
+			if allowed, err := g.ResolveAllowed(ctx, r.ID, r.ResourceID, r.Kind); err == nil && !allowed {
+				return
+			}
+		}
+	}
 	sc := n.describe(ctx, r)
 
 	n.mu.Lock()
@@ -293,10 +319,10 @@ func (n *NoiseControl) sendNow(ctx context.Context, sc alertScope, ev Event, eve
 		return
 	}
 	if err := send(ctx, ev); err != nil {
-		n.record(ctx, sc, r, event, OutcomeFailed, detail, "", err, now)
+		n.record(ctx, sc, r, event, OutcomeFailed, detail, "", err, now, certHistory(ev))
 		return
 	}
-	n.record(ctx, sc, r, event, OutcomeSent, detail, "", nil, now)
+	n.record(ctx, sc, r, event, OutcomeSent, detail, "", nil, now, certHistory(ev))
 }
 
 // Recheck releases a held firing notification once its silence, window
@@ -407,7 +433,7 @@ func (n *NoiseControl) flushGroup(ctx context.Context, evs []Event, now time.Tim
 		case len(evs) > 1:
 			n.record(ctx, sc, e.Rule, EventFired, OutcomeGrouped, groupDetail(len(evs)), "", nil, now)
 		default:
-			n.record(ctx, sc, e.Rule, EventFired, OutcomeSent, "", "", nil, now)
+			n.record(ctx, sc, e.Rule, EventFired, OutcomeSent, "", "", nil, now, certHistory(e))
 		}
 	}
 }

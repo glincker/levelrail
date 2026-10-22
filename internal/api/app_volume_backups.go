@@ -59,8 +59,7 @@ func (rt *Router) handleTriggerVolumeBackup(w http.ResponseWriter, r *http.Reque
 
 	cfg, err := rt.serviceVolumeBackupSchedule.GetServiceVolumeBackupSchedule(r.Context(), serviceName, volumeName)
 	if err != nil && !errors.Is(err, store.ErrServiceVolumeBackupNotFound) {
-		rt.logger.Error("api: trigger volume backup: load sqlite path failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: trigger volume backup: load sqlite path failed", err)
 		return
 	}
 
@@ -97,8 +96,7 @@ func (rt *Router) handleListVolumeBackupHistory(w http.ResponseWriter, r *http.R
 
 	history, err := rt.serviceVolumeBackupHistory.ListServiceVolumeBackupHistory(r.Context(), serviceName, volumeName, limit, before)
 	if err != nil {
-		rt.logger.Error("api: list volume backup history failed", slog.String("error", err.Error()), slog.String("service", serviceName), slog.String("volume", volumeName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list volume backup history failed", err, slog.String("service", serviceName), slog.String("volume", volumeName))
 		return
 	}
 	out := make([]backupHistoryResource, 0, len(history))
@@ -132,8 +130,7 @@ func (rt *Router) handleGetVolumeBackupSchedule(w http.ResponseWriter, r *http.R
 
 	cfg, err := rt.serviceVolumeBackupSchedule.GetServiceVolumeBackupSchedule(r.Context(), serviceName, volumeName)
 	if err != nil && !errors.Is(err, store.ErrServiceVolumeBackupNotFound) {
-		rt.logger.Error("api: get volume backup schedule failed", slog.String("error", err.Error()), slog.String("service", serviceName), slog.String("volume", volumeName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get volume backup schedule failed", err, slog.String("service", serviceName), slog.String("volume", volumeName))
 		return
 	}
 
@@ -183,8 +180,7 @@ func (rt *Router) handleSetVolumeBackupSchedule(w http.ResponseWriter, r *http.R
 	}
 
 	if err := rt.serviceVolumeBackupSchedule.SetServiceVolumeBackupSchedule(r.Context(), serviceName, volumeName, req.TargetID, req.Schedule, req.Retain, req.RetainDays, req.SqlitePath); err != nil {
-		rt.logger.Error("api: set volume backup schedule failed", slog.String("error", err.Error()), slog.String("service", serviceName), slog.String("volume", volumeName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set volume backup schedule failed", err, slog.String("service", serviceName), slog.String("volume", volumeName))
 		return
 	}
 
@@ -208,8 +204,7 @@ func (rt *Router) handleClearVolumeBackupSchedule(w http.ResponseWriter, r *http
 	}
 
 	if err := rt.serviceVolumeBackupSchedule.SetServiceVolumeBackupSchedule(r.Context(), serviceName, volumeName, "", "", 0, 0, ""); err != nil {
-		rt.logger.Error("api: clear volume backup schedule failed", slog.String("error", err.Error()), slog.String("service", serviceName), slog.String("volume", volumeName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear volume backup schedule failed", err, slog.String("service", serviceName), slog.String("volume", volumeName))
 		return
 	}
 
@@ -224,8 +219,7 @@ func (rt *Router) loadVolumeBackupHistory(w http.ResponseWriter, r *http.Request
 		return store.BackupHistory{}, false
 	}
 	if err != nil {
-		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("backup_id", historyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, logContext, err, slog.String("backup_id", historyID))
 		return store.BackupHistory{}, false
 	}
 	if h.ServiceName != serviceName || h.VolumeName != volumeName {

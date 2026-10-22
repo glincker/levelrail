@@ -106,8 +106,7 @@ func registryStatus(conditions []reconcile.Condition) (status, message string) {
 func (rt *Router) handleGetRegistrySettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.registry.GetRegistrySettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get registry settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get registry settings failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toRegistrySettingsResource(r.Context(), settings))
@@ -146,8 +145,7 @@ func (rt *Router) handleUpdateRegistrySettings(w http.ResponseWriter, r *http.Re
 	key := store.RegistrySettingsSecretsKey()
 	hasCredentials, err := rt.registrySecrets.Exists(r.Context(), key, store.RegistryPasswordEnvKey)
 	if err != nil {
-		rt.logger.Error("api: check registry credentials failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: check registry credentials failed", err)
 		return
 	}
 
@@ -155,13 +153,11 @@ func (rt *Router) handleUpdateRegistrySettings(w http.ResponseWriter, r *http.Re
 	if req.Enabled && !hasCredentials {
 		password, err := generateRegistryPassword()
 		if err != nil {
-			rt.logger.Error("api: generate registry password failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: generate registry password failed", err)
 			return
 		}
 		if err := rt.registrySecrets.SetValue(r.Context(), key, store.RegistryPasswordEnvKey, password); err != nil {
-			rt.logger.Error("api: save registry password failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: save registry password failed", err)
 			return
 		}
 		generatedPassword = password
@@ -172,8 +168,7 @@ func (rt *Router) handleUpdateRegistrySettings(w http.ResponseWriter, r *http.Re
 		settings.CreatedAt = time.Now().UTC().Format(time.RFC3339)
 	}
 	if err := rt.registry.UpdateRegistrySettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: update registry settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update registry settings failed", err)
 		return
 	}
 
@@ -195,14 +190,12 @@ func (rt *Router) handleDisableRegistry(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := rt.registrySecrets.DeleteAll(r.Context(), store.RegistrySettingsSecretsKey()); err != nil {
-		rt.logger.Error("api: clear registry credentials failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear registry credentials failed", err)
 		return
 	}
 	settings := store.RegistrySettings{}
 	if err := rt.registry.UpdateRegistrySettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: disable registry failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: disable registry failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toRegistrySettingsResource(r.Context(), settings))

@@ -52,8 +52,7 @@ func (rt *Router) loadDatabaseForRunner(w http.ResponseWriter, r *http.Request, 
 		return nil, false
 	}
 	if err != nil {
-		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, logContext, err, slog.String("name", name))
 		return nil, false
 	}
 	return db, true
@@ -67,8 +66,7 @@ func (rt *Router) loadBackupTarget(w http.ResponseWriter, r *http.Request, targe
 		writeError(w, http.StatusNotFound, "backup target not found")
 		return false
 	} else if err != nil {
-		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("target_id", targetID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, logContext, err, slog.String("target_id", targetID))
 		return false
 	}
 	return true
@@ -92,8 +90,7 @@ func (rt *Router) prepareBackupTrigger(w http.ResponseWriter, r *http.Request, t
 	}
 	historyID, err := randomBackupHistoryID()
 	if err != nil {
-		rt.logger.Error(logContext+": generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, logContext+": generate id failed", err)
 		return "", false
 	}
 	return historyID, true
@@ -304,8 +301,7 @@ func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list backup history: load database failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list backup history: load database failed", err, slog.String("name", name))
 		return
 	}
 
@@ -316,8 +312,7 @@ func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request
 
 	history, err := rt.backupHistory.ListBackupHistory(r.Context(), name, limit, before)
 	if err != nil {
-		rt.logger.Error("api: list backup history failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list backup history failed", err, slog.String("name", name))
 		return
 	}
 	out := make([]backupHistoryResource, 0, len(history))
@@ -350,8 +345,7 @@ func (rt *Router) handleListAllBackups(w http.ResponseWriter, r *http.Request) {
 	}
 	history, err := rt.pageBackups(r.Context(), limit, before, canSeeApp, canSeeDB)
 	if err != nil {
-		rt.logger.Error("api: list all backup history failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list all backup history failed", err)
 		return
 	}
 	out := make([]backupHistoryResource, 0, len(history))
@@ -411,8 +405,7 @@ func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set backup schedule: load database failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set backup schedule: load database failed", err, slog.String("name", name))
 		return
 	} else if refuseNoBackups(w, d.Engine) {
 		return
@@ -434,8 +427,7 @@ func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set backup schedule failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set backup schedule failed", err, slog.String("name", name))
 		return
 	}
 
@@ -464,8 +456,7 @@ func (rt *Router) handleClearBackupSchedule(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: clear backup schedule: load database failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear backup schedule: load database failed", err, slog.String("name", name))
 		return
 	}
 
@@ -473,8 +464,7 @@ func (rt *Router) handleClearBackupSchedule(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: clear backup schedule failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear backup schedule failed", err, slog.String("name", name))
 		return
 	}
 

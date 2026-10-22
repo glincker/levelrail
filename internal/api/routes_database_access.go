@@ -17,6 +17,7 @@ func (rt *Router) registerDatabaseAccessRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/password-rotation", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleRotateDatabasePassword))
 	mux.HandleFunc("PUT /api/v1/databases/{name}/password-rotation/policy", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleSetDatabasePasswordPolicy))
 
+	mux.HandleFunc("POST /api/v1/databases/{name}/credentials/reveal", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleRevealDatabaseCredentials))
 	mux.HandleFunc("GET /api/v1/databases/{name}/access/temp", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleListDatabaseTempCredentials))
 	mux.HandleFunc("POST /api/v1/databases/{name}/access/temp", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleIssueDatabaseTempCredential))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/access/temp/{id}", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleRevokeDatabaseTempCredential))

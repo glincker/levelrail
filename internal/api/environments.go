@@ -51,8 +51,7 @@ func (rt *Router) handleListEnvironments(w http.ResponseWriter, r *http.Request)
 	}
 	envs, err := rt.environments.ListEnvironmentsByProject(r.Context(), projectID)
 	if err != nil {
-		rt.logger.Error("api: list environments failed", slog.String("error", err.Error()), slog.String("project_id", projectID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list environments failed", err, slog.String("project_id", projectID))
 		return
 	}
 	out := make([]environmentResource, 0, len(envs))
@@ -81,15 +80,13 @@ func (rt *Router) handleCreateEnvironment(w http.ResponseWriter, r *http.Request
 
 	id, err := randomEnvironmentID()
 	if err != nil {
-		rt.logger.Error("api: create environment: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create environment: generate id failed", err)
 		return
 	}
 
 	e := store.Environment{ID: id, ProjectID: projectID, Name: req.Name, Protected: req.Protected, CreatedAt: time.Now().UTC().Format(time.RFC3339)}
 	if err := rt.environments.SaveEnvironment(r.Context(), e); err != nil {
-		rt.logger.Error("api: create environment failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create environment failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusCreated, toEnvironmentResource(e))

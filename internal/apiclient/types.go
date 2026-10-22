@@ -1571,11 +1571,12 @@ type DatabaseResource struct {
 	// ExistingVolume is request-only: "reuse" or "discard" the data volume a
 	// deleted database of the same name left behind.
 	ExistingVolume string `json:"existing_volume,omitempty"`
-	// Resources, PubliclyAccessible, PublicPort, and the Backup* fields
-	// are set through their own dedicated routes (SetDatabaseResources,
-	// SetDatabasePublicAccess, SetBackupSchedule), never through this
-	// resource's own create/update body; see internal/api's
-	// databaseResource for the identical boundary server-side.
+	// Resources and the Backup* fields may be sent at create time and are
+	// stored with the record; the dedicated PUT routes still work for a
+	// database that exists. ProvisionState is "pending" or "failed" while no
+	// container exists yet.
+	ProvisionState     string            `json:"provision_state,omitempty"`
+	ProvisionReason    string            `json:"provision_reason,omitempty"`
 	Resources          *ServiceResources `json:"resources,omitempty"`
 	PubliclyAccessible bool              `json:"publicly_accessible,omitempty"`
 	PublicPort         int               `json:"public_port,omitempty"`
@@ -2314,6 +2315,12 @@ type RegistryCredentialResource struct {
 	CreatedAt    string     `json:"created_at"`
 	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
 	ExpiryStatus string     `json:"expiry_status,omitempty"`
+
+	Preset           string     `json:"preset,omitempty"`
+	Region           string     `json:"region,omitempty"`
+	LastRefreshedAt  *time.Time `json:"last_refreshed_at,omitempty"`
+	NextRefreshAt    *time.Time `json:"next_refresh_at,omitempty"`
+	LastRefreshError string     `json:"last_refresh_error,omitempty"`
 }
 
 // FirewallRuleResource mirrors internal/api's firewallRuleResource.
@@ -2382,8 +2389,12 @@ type CreateRegistryCredentialRequest struct {
 	Name         string     `json:"name"`
 	RegistryHost string     `json:"registry_host"`
 	Username     string     `json:"username"`
-	Password     string     `json:"password"`
+	Password     string     `json:"password,omitempty"`
 	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
+	// Preset (ecr, artifact_registry, acr) and Region mint a self-refreshing
+	// login from the connected cloud account instead of a typed password.
+	Preset string `json:"preset,omitempty"`
+	Region string `json:"region,omitempty"`
 }
 
 // UpdateRegistryCredentialRequest mirrors internal/api's

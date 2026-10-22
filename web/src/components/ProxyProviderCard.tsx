@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { lazy, Suspense, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SpinnerIcon, SwapIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
@@ -26,6 +26,7 @@ import {
   type ProxyIntegration,
   type ProxyProvider,
   type ProxyProviderKind,
+  type ProxySettings,
   type ProxySetupResult,
 } from '../queries/proxyIntegration'
 import { ProxyDetectedFacts } from './proxy/ProxyDetectedFacts'
@@ -35,6 +36,9 @@ import {
 } from './proxy/ProxyProviderResult'
 import { ProxyProviderPicker } from './proxy/ProxyProviderPicker'
 import { ProxySteps } from './proxy/ProxySteps'
+import { isAbsoluteDir, manualDefaults } from '../lib/proxyManualFields'
+
+const ProxyMissingState = lazy(() => import('./proxy/ProxyMissingState'))
 
 const FALLBACK_PROVIDERS: ProxyProvider[] = [
   { kind: 'embedded', mode: 'builtin', detected: false, selected: true },
@@ -59,11 +63,13 @@ function QuietNote({ children }: { children: React.ReactNode }) {
 function DirField({
   label,
   hint,
+  error,
   value,
   onChange,
 }: {
   label: string
   hint: string
+  error?: string
   value: string
   onChange: (v: string) => void
 }) {
@@ -75,9 +81,16 @@ function DirField({
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        aria-invalid={error ? true : undefined}
         className="font-mono"
       />
-      <p className="text-xs text-muted-foreground">{hint}</p>
+      <p
+        className={
+          error ? 'text-xs text-destructive' : 'text-xs text-muted-foreground'
+        }
+      >
+        {error ?? hint}
+      </p>
     </div>
   )
 }
@@ -92,7 +105,7 @@ export function ProxyProviderCard() {
   const setup = useSetupProxyIntegration()
   const update = useUpdateProxySettings()
   const [choice, setChoice] = useState<ProxyProviderKind | null>(null)
-  const [dir, setDir] = useState('')
+  const [dir, setDir] = useState<string | null>(null)
   const [certDir, setCertDir] = useState('')
   const [result, setResult] = useState<ProxySetupResult | null>(null)
   const [failure, setFailure] = useState<ProxyFailure | null>(null)
@@ -125,7 +138,8 @@ export function ProxyProviderCard() {
   const embedded = selected === 'embedded'
   const missingProxy = !embedded && data.detected.kind !== selected && managed
   const pending = setup.isPending || update.isPending
-  const showDir = managed && !data.detected.dynamic_dir
+  const showDir = managed && !data.detected.dynamic_dir && !missingProxy
+  const dirValue = dir ?? manualDefaults(selected).dynamic_dir
   const showCertDir = selected === 'nginx' && !data.detected.cert_dir
 
   const run = (confirm: boolean) => {
@@ -133,7 +147,7 @@ export function ProxyProviderCard() {
       {
         confirm,
         provider: selected,
-        dynamic_dir: dir.trim() || undefined,
+        dynamic_dir: (showDir ? dirValue : (dir ?? '')).trim() || undefined,
         cert_dir: certDir.trim() || undefined,
       },
       {
@@ -168,6 +182,7 @@ export function ProxyProviderCard() {
       { ...data.settings, integration: 'off' },
       {
         onSuccess: () => {
+          setChoice('embedded')
           restartPolling()
           toast.add({ title: t('proxyPicker.embeddedDone'), type: 'success' })
         },
@@ -182,6 +197,28 @@ export function ProxyProviderCard() {
     )
   }
 
+  const saveManual = (settings: ProxySettings) => {
+    update.mutate(settings, {
+      onSuccess: () => {
+        void refetch()
+        restartPolling()
+        toast.add({ title: t('proxyMissing.manual.saved'), type: 'success' })
+      },
+      onError: (error) => {
+        toast.add({
+          title: t('proxyMissing.manual.saveFailed'),
+          description: error.message,
+          type: 'error',
+        })
+      },
+    })
+  }
+
+  const recheck = () => {
+    void refetch()
+    restartPolling()
+  }
+
   const choose = (kind: ProxyProviderKind) => {
     setChoice(kind)
     setResult(null)
@@ -190,7 +227,7 @@ export function ProxyProviderCard() {
 
   const proxyName = t(`proxyPicker.provider.${selected}`)
   return (
-    <Card>
+    <Card className="min-w-0">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <SwapIcon className="size-4" aria-hidden="true" />
@@ -198,7 +235,7 @@ export function ProxyProviderCard() {
         </CardTitle>
         <CardDescription>{t('proxyPicker.description')}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-5">
+      <CardContent className="min-w-0 space-y-5">
         <ProxyProviderPicker
           providers={providers}
           value={selected}
@@ -212,21 +249,43 @@ export function ProxyProviderCard() {
               : t('proxyPicker.managedBody', { proxy: proxyName })}
         </p>
         {embedded ? null : (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid min-w-0 gap-6 lg:grid-cols-2">
             <ProxySteps steps={data.steps} />
-            <ProxyDetectedFacts detected={data.detected} />
+            <ProxyDetectedFacts
+              detected={data.detected}
+              quietMissing={missingProxy}
+            />
           </div>
         )}
         {missingProxy ? (
-          <p className="text-sm text-destructive">
-            {t('proxyPicker.notDetected')}
-          </p>
+          <Suspense fallback={null}>
+            <ProxyMissingState
+              kind={selected}
+              proxyName={proxyName}
+              data={data}
+              canChange={isRoot}
+              busy={pending}
+              checking={isFetching}
+              onBackToBuiltIn={switchToEmbedded}
+              onInstalled={(plan) => {
+                setDir(plan.route_dir)
+                recheck()
+              }}
+              onSaveManual={saveManual}
+              onRecheck={recheck}
+            />
+          </Suspense>
         ) : null}
         {showDir ? (
           <DirField
             label={t('proxyPicker.inputs.dir')}
             hint={t('proxyPicker.inputs.dirHint')}
-            value={dir}
+            error={
+              isAbsoluteDir(dirValue)
+                ? undefined
+                : t('proxyMissing.manual.errors.absolute')
+            }
+            value={dirValue}
             onChange={setDir}
           />
         ) : null}
@@ -265,7 +324,15 @@ export function ProxyProviderCard() {
               {manual ? null : (
                 <Button
                   type="button"
-                  disabled={!isRoot || pending || missingProxy}
+                  disabled={
+                    !isRoot ||
+                    pending ||
+                    missingProxy ||
+                    (showDir && !isAbsoluteDir(dirValue))
+                  }
+                  aria-describedby={
+                    missingProxy ? 'proxy-apply-why' : undefined
+                  }
                   onClick={() => run(true)}
                 >
                   {setup.isPending && setup.variables?.confirm ? (
@@ -282,14 +349,16 @@ export function ProxyProviderCard() {
             type="button"
             variant="ghost"
             disabled={isFetching}
-            onClick={() => {
-              void refetch()
-              restartPolling()
-            }}
+            onClick={recheck}
           >
             {t('proxyPicker.recheck')}
           </Button>
         </div>
+        {missingProxy && !embedded ? (
+          <p id="proxy-apply-why" className="text-xs text-muted-foreground">
+            {t('proxyPicker.applyWaiting', { proxy: proxyName })}
+          </p>
+        ) : null}
         {isRoot ? null : (
           <p className="text-xs text-muted-foreground">
             {t('proxyPicker.rootOnly')}
@@ -302,7 +371,9 @@ export function ProxyProviderCard() {
             </CollapsibleTrigger>
             <CollapsiblePanel>
               <code className="mt-1 block text-xs">
-                proxy setup --provider {selected} --confirm
+                {missingProxy
+                  ? `proxy install --provider ${selected} --confirm`
+                  : `proxy setup --provider ${selected} --confirm`}
               </code>
             </CollapsiblePanel>
           </Collapsible>

@@ -131,8 +131,7 @@ func (rt *Router) writeGitHubAppTokenError(w http.ResponseWriter, logMsg string,
 		writeError(w, http.StatusConflict, "the github app is connected but not installed on any account yet")
 		return
 	}
-	rt.logger.Error(logMsg, slog.String("error", err.Error()))
-	writeError(w, http.StatusInternalServerError, "internal error")
+	rt.internalError(w, logMsg, err)
 }
 
 // gitHubAppRepoResource is one entry of GET /api/v1/github-app/repos.

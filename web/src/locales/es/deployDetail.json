@@ -1,0 +1,290 @@
+{
+  "tabs": {
+    "build": "Compilación",
+    "image": "Imagen",
+    "rollout": "Puesta en marcha",
+    "supply": "Cadena de suministro"
+  },
+  "state": {
+    "title": "Estado del despliegue",
+    "now": "Ahora mismo",
+    "next": {
+      "queued": "Empieza automáticamente cuando termina el despliegue que tiene delante.",
+      "held": "Libéralo desde el historial de despliegues o espera a que termine la ventana de congelación.",
+      "building": "Cuando la compilación termine con éxito, el nuevo contenedor arranca y debe superar su comprobación de salud antes de recibir tráfico.",
+      "buildingStatic": "Cuando la compilación termine con éxito, los archivos generados se publican directamente. No se inicia ningún contenedor.",
+      "failed": "Abre la pestaña Compilación para leer el paso que falla, corrígelo y vuelve a desplegar.",
+      "rolloutFailed": "La versión anterior sigue sirviendo. Revisa los registros del contenedor y la ruta de salud, y luego vuelve a desplegar o revierte.",
+      "rollingOut": "Cuando la comprobación de salud pase, el tráfico cambia a la nueva versión y el contenedor anterior se elimina.",
+      "staticPublished": "No hay nada más que esperar. Visita el sitio para confirmar que se sirven los archivos nuevos."
+    },
+    "label": {
+      "queued": "En cola",
+      "held": "Retenido",
+      "canceled": "Cancelado",
+      "superseded": "Superado",
+      "failed": "Compilación fallida",
+      "building": "Compilando",
+      "rolloutFailed": "Puesta en marcha fallida",
+      "published": "Publicado",
+      "live": "En directo",
+      "rollingOut": "Desplegando",
+      "buildDone": "Compilación terminada"
+    },
+    "headline": {
+      "queued": "Este despliegue está en cola detrás de otro despliegue.",
+      "queuedWhy": "Este despliegue está en cola: {{reason}}.",
+      "held": "Este despliegue está retenido. {{reason}}",
+      "canceled": "Este despliegue se canceló antes de cambiar nada.",
+      "superseded": "Un despliegue más nuevo reemplazó a este antes de aplicarse.",
+      "failed": "La compilación falló, así que no se desplegó nada.",
+      "failedWhy": "La compilación falló: {{error}}",
+      "building": "Compilando desde hace {{elapsed}}.",
+      "rolloutFailed": "La compilación terminó, pero la puesta en marcha falló.",
+      "rolloutFailedWhy": "La compilación terminó, pero la puesta en marcha falló: {{reason}}",
+      "staticPublished": "Sitio estático: publicado directamente por el ingress, sin contenedor que comprobar.",
+      "live": "Este despliegue está sirviendo tráfico.",
+      "rollingOut": "La compilación terminó. Esperando a que el nuevo contenedor supere su primera comprobación de salud, {{elapsed}} hasta ahora.",
+      "rollingOutNoImage": "La compilación terminó. La puesta en marcha está en espera porque todavía no existe una imagen de contenedor para esta aplicación, {{elapsed}} hasta ahora.",
+      "untracked": "La compilación terminó. Los resultados de la puesta en marcha solo se registran para el último despliegue.",
+      "untrackedImage": "Se desplegó una imagen ya compilada. Los resultados de la puesta en marcha solo se registran para el último despliegue."
+    },
+    "mismatch": {
+      "buildOkRolloutPending": "La compilación terminó, pero la puesta en marcha no se ha completado. El estado de la compilación y el de la puesta en marcha se registran por separado, así que ambos son ciertos a la vez.",
+      "buildOkRolloutFailed": "La compilación fue correcta, pero el nuevo contenedor no llegó a estar sano, así que la versión anterior sigue sirviendo.",
+      "staticChip": "El estado de la aplicación dice \"{{chip}}\" porque informa de la disponibilidad del contenedor. Un sitio estático no tiene contenedor, así que esa etiqueta no bloquea este despliegue."
+    },
+    "stuck": {
+      "title": "Esto está tardando más de lo esperado",
+      "noImage": "La puesta en marcha lleva más de {{limit}} y la aplicación indica que no se ha compilado ninguna imagen para ella. El paso de compilación no produjo una imagen ejecutable, así que no hay nada que arrancar.",
+      "health": "La puesta en marcha lleva más de {{limit}}. Es probable que el nuevo contenedor no responda a su comprobación de salud o que se reinicie continuamente."
+    },
+    "action": {
+      "containerLogs": "Ver registros del contenedor",
+      "healthPath": "Revisar la ruta de salud",
+      "network": "Abrir la pestaña Red",
+      "rollback": "Revertir desde el historial",
+      "redeploy": "Revisar el código y volver a desplegar",
+      "buildTab": "Abrir la pestaña Compilación"
+    }
+  },
+  "live": {
+    "live": "En directo",
+    "lastEvent": "último evento hace {{ago}}",
+    "noEvents": "todavía no hay eventos",
+    "reconnecting": "Reconectando",
+    "reconnectIn": "reintento en {{seconds}} s",
+    "retryNow": "Reintentar ahora",
+    "polling": "Flujo en directo no disponible, actualizando cada 3 s",
+    "closed": "El despliegue terminó, el flujo en directo se ha cerrado",
+    "connecting": "Conectando"
+  },
+  "build": {
+    "source": "Origen",
+    "repo": "Repositorio",
+    "branch": "Rama",
+    "commit": "Commit",
+    "builder": "Compilador",
+    "framework": "Framework detectado",
+    "image": "Imagen",
+    "steps": "Pasos de compilación ({{count}})",
+    "traceSteps": "Traza del pipeline ({{count}})",
+    "download": "Descargar",
+    "builderValue": {
+      "dockerfile": "Dockerfile",
+      "railpack": "Railpack",
+      "static": "Archivos estáticos"
+    },
+    "empty": {
+      "noStepTitle": "Este despliegue no tuvo paso de compilación",
+      "noStepBody": "Se desplegó una imagen ya compilada tal cual, así que no hay salida de compilación. La traza del pipeline (digest, descarga, arranque, comprobaciones de salud, cambio de tráfico) aparece aquí en cuanto empieza el despliegue.",
+      "notCapturedTitle": "No se capturó la salida de la compilación",
+      "notCapturedBody": "La compilación no registró ninguna línea de log. El despliegue en sí se completó, así que la pestaña Puesta en marcha muestra lo que pasó después.",
+      "waitingTitle": "Esperando la salida de la compilación",
+      "waitingBody": "Las líneas aparecen aquí en cuanto el compilador empieza a escribirlas."
+    },
+    "detected": "Detectado: {{value}}",
+    "detectedBuilder": "Cámbialo en los ajustes de compilación."
+  },
+  "trace": {
+    "step": {
+      "resolve_digest": "Resolver la etiqueta a digest",
+      "registry_auth": "Comprobación de autenticación del registro",
+      "image_pull": "Descarga de la imagen",
+      "image_pull_layer": "Capa",
+      "image_inspect": "Inspección de la imagen",
+      "config_validate": "Validación de la configuración",
+      "ensure_network": "Asegurar la red",
+      "ensure_volume": "Asegurar el volumen",
+      "container_create": "Crear el contenedor",
+      "container_start": "Arrancar el contenedor",
+      "docker_event": "Evento de Docker",
+      "readiness_probe": "Sonda de disponibilidad",
+      "readiness_gate": "Puerta de disponibilidad",
+      "stability_gate": "Puerta de estabilidad",
+      "cutover": "Cambio de tráfico",
+      "drain_old": "Drenar el contenedor anterior",
+      "retain_image": "Conservar la imagen para revertir",
+      "compose_parse": "Analizar el archivo compose",
+      "compose_plan": "Plan de compose",
+      "compose_service": "Servicio de compose",
+      "depends_on": "Orden de dependencias",
+      "deploy_summary": "Resultado del despliegue"
+    },
+    "group": {
+      "compose": "Compose",
+      "image": "Imagen",
+      "prepare": "Preparación",
+      "container": "Contenedor",
+      "readiness": "Disponibilidad",
+      "cutover": "Cambio de tráfico",
+      "summary": "Resultado"
+    },
+    "attempts_one": "reintentado {{count}} vez",
+    "attempts_other": "reintentado {{count}} veces",
+    "pullProgress": "Progreso de descarga de la imagen",
+    "folded": {
+      "image_pull_layer_one": "{{count}} capa",
+      "image_pull_layer_other": "{{count}} capas",
+      "readiness_probe_one": "{{count}} intento de sonda",
+      "readiness_probe_other": "{{count}} intentos de sonda",
+      "docker_event_one": "{{count}} evento del daemon",
+      "docker_event_other": "{{count}} eventos del daemon"
+    }
+  },
+  "rollout": {
+    "title": "Cronología de la puesta en marcha",
+    "stageStatus": {
+      "pending": "Pendiente",
+      "running": "En curso",
+      "done": "Hecho",
+      "failed": "Fallido",
+      "skipped": "Omitido",
+      "unknown": "No registrado"
+    },
+    "stage": {
+      "build": "Compilación",
+      "publish": "Publicación",
+      "health-check": "Comprobación de salud",
+      "cutover": "Cambio de tráfico",
+      "cleanup": "Limpieza"
+    },
+    "reason": {
+      "pendingHealth": "Empieza cuando la compilación haya generado una imagen.",
+      "runningHealth": "Esperando a que el nuevo contenedor supere su sonda de disponibilidad antes de recibir tráfico.",
+      "runningNoImage": "No puede arrancar: todavía no existe una imagen de contenedor para esta aplicación.",
+      "pendingCutover": "Empieza cuando pasa la comprobación de salud.",
+      "pendingCleanup": "Empieza cuando el tráfico ya se ha movido al nuevo contenedor.",
+      "doneBuild": "La compilación terminó.",
+      "donePublish": "Archivos publicados directamente por el ingress.",
+      "skippedBuild": "No se ejecutó ningún paso de compilación en este despliegue.",
+      "stuck": "Lleva en curso más de {{limit}}."
+    },
+    "staticNote": "Sitio estático: publicado directamente por el ingress, sin contenedor que comprobar.",
+    "started": "Iniciado {{at}}",
+    "finished": "Terminado {{at}}",
+    "duration": "Duró {{duration}}",
+    "runningFor": "En curso desde hace {{duration}}",
+    "details": "Detalles",
+    "technical": "Detalles técnicos",
+    "gate": "Puerta de disponibilidad y vigilancia",
+    "probes": "Intentos de sonda de salud",
+    "conditionLine": "{{reason}} ({{status}}): {{message}}",
+    "noConditions": "El reconciliador todavía no ha informado de ningún estado para esta aplicación."
+  },
+  "page": {
+    "notInHistory": "Este intento de despliegue no está en el historial actual de esta aplicación.",
+    "currentChip": "Actual"
+  },
+  "drawer": {
+    "whatWentWrong": "Qué salió mal",
+    "failedAtStep": "Falló en el paso: {{step}}",
+    "noErrorRecorded": "El despliegue falló. No se registró ningún error.",
+    "lastLogLines": "Últimas líneas del log",
+    "tailFailed": "No se pudieron cargar las últimas líneas del log.",
+    "viewFullLogs": "Ver el log completo",
+    "live": "En directo",
+    "timing": "Tiempos",
+    "started": "Inicio",
+    "finished": "Fin",
+    "duration": "Duración",
+    "notFinished": "No terminado",
+    "source": "Origen",
+    "trigger": "Disparador",
+    "rollbackTo": "Revertir a",
+    "branch": "Rama",
+    "commit": "Commit",
+    "message": "Mensaje",
+    "author": "Autor",
+    "pullRequest": "Pull request",
+    "app": "Aplicación",
+    "image": "Imagen",
+    "domains": "Dominios",
+    "loadingDomains": "Cargando dominios",
+    "noDomains": "No hay dominios configurados.",
+    "preview": "Vista previa",
+    "supplyChain": "Cadena de suministro"
+  },
+  "stream": {
+    "title": "Se interrumpió el flujo de logs en directo",
+    "bodyNoRetry": "Pueden faltar líneas hasta que se reconecte.",
+    "nextAttempt": "Próximo intento {{when}}.",
+    "retryIn": "en {{seconds}} s",
+    "retryNow": "Reintentar ahora",
+    "switchToPolling": "Cambiar a consultas periódicas",
+    "download": "Descargar el log completo"
+  },
+  "fix": {
+    "title": "Corregir y volver a desplegar",
+    "hint": "Abre el ajuste que probablemente causó esto, cámbialo y luego vuelve a desplegar.",
+    "link": {
+      "environment": "Editar variables de entorno",
+      "source": "Revisar los ajustes de compilación",
+      "deploySettings": "Revisar los ajustes de despliegue",
+      "resources": "Ajustar los recursos"
+    },
+    "docs": "Leer la documentación de este error"
+  },
+  "fixReturn": {
+    "body": "Estabas corrigiendo un despliegue fallido ({{target}}). Vuelve a desplegar para aplicar tus cambios.",
+    "redeploy": "Volver a desplegar ahora",
+    "back": "Volver al despliegue fallido",
+    "dismiss": "Descartar",
+    "region": "Volver a desplegar con tus cambios",
+    "started": "Volviendo a desplegar con tus cambios."
+  },
+  "rebuild": {
+    "started": "Recompilación iniciada.",
+    "startedNoCache": "Recompilación sin caché iniciada."
+  },
+  "report": {
+    "copy": "Copiar como informe",
+    "copied": "Informe copiado",
+    "failed": "No se pudo copiar el informe",
+    "stage": "Etapa que falla"
+  },
+  "cache": {
+    "summary": "Caché: {{cached}} de {{total}} pasos reutilizados",
+    "unknown": "Caché: desconocida"
+  },
+  "rollback": {
+    "note": "Restaura la imagen {{image}}. Las variables de entorno, los volúmenes y las migraciones no se revierten."
+  },
+  "phases": {
+    "label": "Fases de compilación",
+    "all": "Todas",
+    "install": "Instalación",
+    "build": "Compilación",
+    "push": "Publicación",
+    "other": "Otras",
+    "chip": "{{phase}} ({{count}})",
+    "showSteps": "Mostrar pasos",
+    "hideSteps": "Ocultar pasos",
+    "stepsLabel": "Pasos de compilación",
+    "cached": "En caché",
+    "jump": "Ir a la primera línea de {{label}}",
+    "total": "{{phase}}: {{time}}",
+    "noTiming": "sin tiempo",
+    "truncated": "Las fases solo se detectaron en las primeras {{count}} líneas."
+  }
+}

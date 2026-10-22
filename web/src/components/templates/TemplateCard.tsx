@@ -1,6 +1,10 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  DatabaseIcon,
+  HardDrivesIcon,
+  RocketLaunchIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -92,6 +96,18 @@ function Chips({ template }: { template: ServiceTemplateListItem }) {
       )}
       {!!template.recommended_memory_bytes && (
         <MemoryChip bytes={template.recommended_memory_bytes} />
+      )}
+      {template.needs_database && (
+        <Badge variant="muted" className="gap-1 text-xs">
+          <DatabaseIcon className="size-3" aria-hidden="true" />
+          {t('marketplace.card.database')}
+        </Badge>
+      )}
+      {template.has_volume && (
+        <Badge variant="muted" className="gap-1 text-xs">
+          <HardDrivesIcon className="size-3" aria-hidden="true" />
+          {t('marketplace.card.volume')}
+        </Badge>
       )}
       {template.requires_gpu && (
         <Badge variant="muted" className="text-xs">

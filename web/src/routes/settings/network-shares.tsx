@@ -1,13 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
-import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import { networkShareListQueryOptions } from '../../queries/networkShares'
-import { NetworkShareTable } from '../../components/NetworkShareTable'
-import { CreateNetworkShareDialog } from '../../components/CreateNetworkShareDialog'
+import { NetworkSharesPage } from '../../components/networkShares/NetworkSharesPage'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageHeader } from '@/components/shell/PageHeader'
-import { PageTemplate } from '@/components/shell/PageTemplate'
 
 // Account-level, same reasoning settings/registry-credentials.tsx's own
 // doc comment gives: a network share isn't scoped to one app, it's a
@@ -15,27 +11,13 @@ import { PageTemplate } from '@/components/shell/PageTemplate'
 export const Route = createFileRoute('/settings/network-shares')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(networkShareListQueryOptions()),
-  component: NetworkSharesPage,
+  component: NetworkSharesRoute,
   pendingComponent: NetworkSharesPending,
 })
 
-function NetworkSharesPage() {
-  const { t } = useTranslation('settings')
+function NetworkSharesRoute() {
   const { data: shares } = useSuspenseQuery(networkShareListQueryOptions())
-
-  return (
-    <PageTemplate
-      icon={<HardDrivesIcon />}
-      title={t('networkSharesPage.title')}
-      description={t('networkSharesPage.description')}
-      actions={<CreateNetworkShareDialog />}
-    >
-      <NetworkShareTable
-        shares={shares}
-        action={<CreateNetworkShareDialog />}
-      />
-    </PageTemplate>
-  )
+  return <NetworkSharesPage shares={shares} />
 }
 
 // Route-level fallback for the loader's pending phase, matching

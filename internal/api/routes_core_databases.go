@@ -13,6 +13,11 @@ func (rt *Router) registerDatabaseRoutes(mux *http.ServeMux) {
 	// Resource-scoped, same reasoning as the apps routes above.
 	mux.HandleFunc("GET /api/v1/databases/{name}", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetDatabase))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleDeleteDatabase))
+	mux.HandleFunc("GET /api/v1/databases/{name}/provision", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetDatabaseProvision))
+	mux.HandleFunc("GET /api/v1/databases/{name}/provision/stream", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.withStreamReauth(databaseResourceFromPath, rt.handleDatabaseProvisionStream)))
+	mux.HandleFunc("POST /api/v1/databases/{name}/provision/retry", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleRetryDatabaseProvision))
+	mux.HandleFunc("POST /api/v1/databases/{name}/provision/discard", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleDiscardPendingDatabase))
+	mux.HandleFunc("PUT /api/v1/databases/{name}/pending-settings", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleUpdatePendingDatabase))
 	mux.HandleFunc("GET /api/v1/databases/{name}/status", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleDatabaseStatus))
 
 	// Telemetry query, the database counterpart to

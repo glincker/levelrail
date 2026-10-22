@@ -164,6 +164,12 @@ export interface CreateDatabaseRequest {
   project_id?: string
   node_id?: string
   existing_volume?: 'reuse' | 'discard'
+  // Stored with the record and applied by the reconciler after the container runs.
+  resources?: { memory_bytes?: number; nano_cpus?: number }
+  backup_target_id?: string
+  backup_schedule?: string
+  backup_retain?: number
+  backup_retain_days?: number
 }
 
 // POST /api/v1/databases. Rejects a name that already exists with a 409
@@ -181,7 +187,10 @@ export async function createDatabase(
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as {
       error?: string
+      message?: string
       code?: string
+      fix?: { id: string; label: string }
+      request_id?: string
       volumes?: ExistingVolumeInfo[]
     } | null
     if (res.status === 409 && body?.code === 'existing_volume') {
@@ -189,7 +198,10 @@ export async function createDatabase(
     }
     throw new ApiError(
       res.status,
-      body?.error ?? `create database failed: ${res.status}`,
+      body?.message ?? body?.error ?? `create database failed: ${res.status}`,
+      body?.code
+        ? { code: body.code, fix: body.fix, requestId: body.request_id }
+        : undefined,
     )
   }
   return (await res.json()) as DatabaseResource

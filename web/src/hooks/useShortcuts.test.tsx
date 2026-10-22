@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render } from '@testing-library/react'
 import { useShortcuts } from './useShortcuts'
 import { LONG_PRESS_MS } from '@/lib/shortcuts'
+import * as cliStore from '@/lib/cliModalStore'
 
 const navigate = vi.fn()
 const experimentalFeatures = vi.fn<() => string[]>(() => [])
@@ -115,5 +116,22 @@ describe('useShortcuts: long-press l opens the stage overlay', () => {
     fireEvent.keyDown(window, { key: 'g' })
     fireEvent.keyDown(window, { key: 'a' })
     expect(navigate).toHaveBeenCalledWith({ to: '/apps' })
+  })
+})
+
+describe('useShortcuts: g then c opens the CLI setup modal', () => {
+  afterEach(() => {
+    cliStore.setCliModalOpen(false)
+    document.body.innerHTML = ''
+  })
+
+  it('opens the modal and does not navigate', () => {
+    const spy = vi.spyOn(cliStore, 'openCliModal')
+    render(<Harness onOpenStageOverlay={vi.fn()} />)
+    fireEvent.keyDown(window, { key: 'g' })
+    fireEvent.keyDown(window, { key: 'c' })
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(navigate).not.toHaveBeenCalled()
+    spy.mockRestore()
   })
 })

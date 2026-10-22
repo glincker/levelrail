@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ScrollIcon,
+  ArrowsClockwiseIcon,
   ArrowCounterClockwiseIcon,
   DotsThreeIcon,
   ProhibitIcon,
@@ -32,6 +33,7 @@ import { DeployFailureActions } from './DeployFailureActions'
 import { DeployFromCacheButton } from './DeployFromCacheButton'
 import { InfoTip, ActionMenu, RelativeTime } from './kit'
 import { RolloutChip } from './DeployDigestChips'
+import { DeployPinnedStatus } from './DeployPinnedStatus'
 import { cn } from '@/lib/utils'
 import { commitSubject } from '../lib/deploymentPresentation'
 import { unpinnedImage } from '../lib/imageDigest'
@@ -76,9 +78,11 @@ export function DeployAttemptRow({
   protectedEnv,
   ackProtected,
   visitUrl,
+  pinned = false,
 }: {
   appName: string
   visitUrl?: string
+  pinned?: boolean
   attempt: DeployAttempt
   isLatestAttempt: boolean
   conditions: ReconcileCondition[]
@@ -312,7 +316,30 @@ export function DeployAttemptRow({
               {stageLabel}
             </Badge>
           ) : null}
+          {attempt.rerun_of ? (
+            <Link
+              to="/apps/$name/deploys/$deployId/logs"
+              params={{ name: appName, deployId: attempt.rerun_of }}
+              className="relative z-10 inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+              aria-label={t('deployHistory.rerunOfLabel', {
+                id: attempt.rerun_of,
+              })}
+            >
+              <ArrowsClockwiseIcon className="size-3" aria-hidden="true" />
+              {t('deployHistory.rerunOf', {
+                id: attempt.rerun_of.slice(0, 12),
+              })}
+            </Link>
+          ) : null}
         </div>
+
+        {pinned ? (
+          <DeployPinnedStatus
+            appName={appName}
+            attempt={attempt}
+            stageLabel={stageLabel}
+          />
+        ) : null}
 
         <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           {attempt.branch ? (
@@ -454,7 +481,11 @@ export function DeployAttemptRow({
           render={<Link {...detail} />}
         >
           <ScrollIcon className="size-3.5" data-icon="inline-start" />
-          {attempt.status === 'running' ? 'Watch' : 'Logs'}
+          {attempt.status === 'running'
+            ? t('deployHistory.watchLog')
+            : attempt.status === 'failed'
+              ? t('deployHistory.failedLog')
+              : t('deployHistory.viewLogs')}
         </Button>
         <ActionMenu
           trigger={

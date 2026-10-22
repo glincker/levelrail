@@ -48,7 +48,12 @@ type databaseResource struct {
 	Resources *store.ServiceResources `json:"resources,omitempty"`
 	// ExistingVolume is request-only: "reuse" or "discard" what a deleted
 	// database of the same name left behind (see database_leftover_volume.go).
+	// It is stored with the record and applied by the reconciler.
 	ExistingVolume string `json:"existing_volume,omitempty"`
+	// ProvisionState is response-only: "pending" or "failed" while the
+	// database has no running container yet, empty once it is created.
+	ProvisionState  string `json:"provision_state,omitempty"`
+	ProvisionReason string `json:"provision_reason,omitempty"`
 	// ResourcesAppliedLive: see appResource's identically-named field
 	// doc comment. Only ever set by handleSetDatabaseResources; every
 	// other handler returning a databaseResource leaves it false.
@@ -83,6 +88,7 @@ func (rt *Router) toDatabaseResourceWithStatus(ctx context.Context, d store.Desi
 	res := toDatabaseResource(d)
 	rt.placementResolver(ctx).stampDatabase(&res)
 	res.TLSEnabled = rt.databaseTLSEnabled(ctx, d)
+	rt.stampProvisionState(ctx, &res)
 	return res
 }
 
@@ -123,6 +129,9 @@ func (d databaseResource) toDesiredDatabase() store.DesiredDatabase {
 		Name:    d.Name,
 		Engine:  d.Engine,
 		Version: d.Version,
+		// Size preset and leftover-volume choice are desired state: stored now, applied by the reconciler.
+		Resources:      d.Resources,
+		ExistingVolume: d.ExistingVolume,
 	}
 }
 
@@ -192,11 +201,15 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 	tlsStatuses := rt.databaseTLSStatuses(r.Context(), dbs)
 
 	placement := rt.placementResolver(r.Context())
+	pending := rt.pendingDatabases(r.Context())
 	out := make([]databaseListResource, 0, len(dbs))
 	for _, d := range dbs {
 		res := toDatabaseResource(d)
 		placement.stampDatabase(&res)
 		res.TLSEnabled = tlsStatuses[d.Name]
+		if pending[d.Name] {
+			rt.stampProvisionState(r.Context(), &res)
+		}
 		out = append(out, databaseListResource{
 			databaseResource: res,
 			Status:           summarizeAppConditions(conditionsByController[databaseControllerName(d.Name)]),
@@ -211,6 +224,15 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, req databaseResource) bool {
 	if err := validateDatabaseResource(req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return false
+	}
+	if choice, ok := validExistingVolume(req.ExistingVolume); ok {
+		req.ExistingVolume = choice
+	} else {
+		writeError(w, http.StatusBadRequest, "existing_volume must be \"reuse\" or \"discard\"")
+		return false
+	}
+	if !rt.validateCreateBackup(w, r, req) {
 		return false
 	}
 	req.ProjectID = defaultProjectFor(r, req.ProjectID)
@@ -243,15 +265,19 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 	}
 	defer quotaRelease()
 
-	if !rt.resolveExistingVolume(w, r, req) {
-		return false
-	}
-	req.ExistingVolume = ""
-
 	if err := rt.databases.SaveDesiredDatabase(r.Context(), req.toDesiredDatabase()); err != nil {
 		rt.logger.Error("api: create database failed", slog.String("error", err.Error()), slog.String("name", req.Name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return false
+	}
+	req.ExistingVolume = ""
+	req.ProvisionState = provisionStatePending
+
+	if req.BackupSchedule != "" {
+		if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), req.Name, req.BackupTargetID, req.BackupSchedule, req.BackupRetain, req.BackupRetainDays); err != nil {
+			rt.internalError(w, "api: create database: store backup schedule failed", err, slog.String("name", req.Name))
+			return false
+		}
 	}
 
 	if req.ProjectID != "" {
@@ -270,6 +296,7 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 			return false
 		}
 	}
+	rt.beginProvision(r.Context(), req.Name)
 	return true
 }
 

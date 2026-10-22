@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { tokenListQueryOptions } from '../../queries/tokens'
@@ -7,8 +6,6 @@ import { CliServerCard } from '../../components/settings/CliServerCard'
 import { useTranslation } from 'react-i18next'
 import {
   CaretDownIcon,
-  CheckIcon,
-  CopyIcon,
   TerminalWindowIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -17,7 +14,7 @@ import {
 } from '../../queries/deviceAuth'
 import { DeviceAuthRequestTable } from '../../components/DeviceAuthRequestTable'
 import { HelpLink } from '../../components/HelpLink'
-import { Button } from '@/components/ui/button'
+import { CommandBlock } from '@/components/ui/code-block'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
 import {
@@ -28,44 +25,9 @@ import {
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { FormSection } from '@/components/ui/form-section'
+import { CLI_INSTALL_COMMAND } from '../../lib/cliInstall'
 import { CliAccessRail } from '../../components/settings/CliAccessRail'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
-
-// Matches the copy-row idiom GitSourceWebhookBanner already established
-// (code block + copy button in a muted bordered row); kept local since
-// this page is the only place showing a shell command rather than a
-// webhook URL/secret.
-function CopyCommand({ command }: { command: string }) {
-  const { t } = useTranslation('settings')
-  const [copied, setCopied] = useState(false)
-  return (
-    <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
-      <code className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
-        {command}
-      </code>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        onClick={() => {
-          void navigator.clipboard.writeText(command).then(() => {
-            setCopied(true)
-            setTimeout(() => {
-              setCopied(false)
-            }, 2000)
-          })
-        }}
-      >
-        {copied ? (
-          <CheckIcon aria-hidden="true" />
-        ) : (
-          <CopyIcon aria-hidden="true" />
-        )}
-        {copied ? t('cliAccessPage.copied') : t('cliAccessPage.copy')}
-      </Button>
-    </div>
-  )
-}
 
 interface CliAccessSearch {
   user_code?: string
@@ -153,7 +115,7 @@ function CliAccessPage() {
               title={t('cliAccessPage.steps.install.title')}
               description={t('cliAccessPage.steps.install.body')}
             >
-              <CopyCommand command="curl -fsSL https://levelrail.com/install-cli.sh | sh" />
+              <CommandBlock code={CLI_INSTALL_COMMAND} />
               <p className="text-xs text-muted-foreground">
                 {t('cliAccessPage.steps.install.note')}
               </p>
@@ -163,14 +125,14 @@ function CliAccessPage() {
               title={t('cliAccessPage.steps.point.title')}
               description={t('cliAccessPage.steps.point.body')}
             >
-              <CopyCommand command={`export APP_API_URL=${apiUrl}`} />
+              <CommandBlock code={`export APP_API_URL=${apiUrl}`} />
             </FormSection>
             <FormSection
               step={3}
               title={t('cliAccessPage.steps.login.title')}
               description={t('cliAccessPage.steps.login.body')}
             >
-              <CopyCommand command="levelrail-cli auth login --device" />
+              <CommandBlock code="levelrail-cli auth login --device" />
             </FormSection>
           </div>
         </CollapsiblePanel>

@@ -68,7 +68,9 @@
     "approved": "Sign-in approved",
     "denied": "Sign-in denied",
     "actionFailed": "Could not update the sign-in request",
-    "empty": "No sign-in is waiting for you."
+    "empty": "No sign-in is waiting for you.",
+    "matchGroup": "Two digit number",
+    "matchDigit": "Digit {{n}} of 2"
   },
   "devices": {
     "title": "Trusted browsers",
@@ -121,8 +123,77 @@
     "commandLabel": "Command to run in your terminal",
     "expiresIn": "Single use, expires in {{time}}.",
     "expired": "This command has expired. Get a new one.",
-    "dismiss": "Dismiss",
     "failed": "Could not create a pairing code",
     "rateLimited": "Too many tries, wait a moment and try again"
+  },
+  "cliModal": {
+    "badge": "Connect CLI",
+    "badgeLabel": "Connect the command line tool. No CLI is connected yet.",
+    "title": "Command line tool",
+    "description": "Install the CLI, connect it to this server, and manage the ones already connected.",
+    "openAction": "Open CLI setup",
+    "openKeywords": "cli terminal command line install connect pair token",
+    "install": {
+      "title": "1. Install",
+      "lead": "Run this once in your terminal to install the CLI.",
+      "label": "Install command"
+    },
+    "connect": {
+      "title": "2. Connect",
+      "lead": "Get a one-line command that signs your terminal in to this server. No password, no approval step."
+    },
+    "manage": {
+      "title": "Connected CLIs",
+      "empty": "No CLI is connected yet. Connect one above.",
+      "loading": "Loading connected CLIs...",
+      "lastUsed": "Last used {{when}}",
+      "neverUsed": "Never used",
+      "lastIp": "From {{ip}}",
+      "expires": "Expires {{when}}",
+      "noExpiry": "Does not expire",
+      "revoke": "Revoke",
+      "revokeLabel": "Revoke {{name}}",
+      "revokeTitle": "Revoke this CLI?",
+      "revokeBody": "{{name}} will stop working right away. You can connect it again at any time.",
+      "revokeConfirm": "Revoke",
+      "revoking": "Revoking...",
+      "revokeCancel": "Cancel",
+      "revokeFailed": "Could not revoke this CLI",
+      "revoked": "CLI revoked",
+      "fullPage": "Manage all CLI access"
+    }
+  },
+  "request": {
+    "headline": "Approve this sign-in?",
+    "subtitle": "Sign-in request",
+    "cardLabel": "Sign-in request from {{device}}",
+    "factDevice": "Device",
+    "factWhere": "Where",
+    "factWhen": "When",
+    "factExpires": "Expires in",
+    "deviceCli": "Command line client",
+    "deviceMcp": "MCP client",
+    "deviceUnknown": "Unknown device",
+    "scope": {
+      "this-computer": "This computer",
+      "local-network": "Local network"
+    },
+    "expiresInMinutes_one": "Expires in about {{count}} minute",
+    "expiresInMinutes_other": "Expires in about {{count}} minutes",
+    "risk": "Only approve if you started this sign-in yourself, the number must match.",
+    "numberPrompt": "Type the number shown on the device that is signing in",
+    "notMe": "This wasn't me",
+    "details": "Details",
+    "copyId": "Copy request id",
+    "copied": "Request id copied",
+    "approvedTitle": "Signed in on {{device}}",
+    "approvedBody": "You can close this tab.",
+    "deniedTitle": "Sign-in denied",
+    "reviewSecurity": "Review your security settings",
+    "expiredTitle": "This request expired",
+    "expiredBody": "Start the sign-in again on the device if it was you.",
+    "handledTitle": "Already handled",
+    "handledBody": "This sign-in was already approved, denied or has ended.",
+    "failedTitle": "Could not approve this sign-in"
   }
 }

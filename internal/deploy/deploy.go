@@ -171,6 +171,8 @@ type Request struct {
 	// Commit, when set, runs right before desired state is written and can
 	// veto it (ErrCanceled), the last point a deploy is cancelable.
 	Commit func() error
+	// NoCache disables BuildKit's layer cache for a dockerfile build.
+	NoCache bool
 }
 
 // Pipeline builds a service (when its build type requires a build) and
@@ -308,6 +310,7 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		BuildArgs:      req.Service.Build.Args,
 		S3Cache:        s3Cache,
 		Attest:         p.attest,
+		NoCache:        req.NoCache,
 	}
 	progress, err = p.applyBuildSecrets(ctx, req.ServiceName, &buildReq, progress)
 	if err != nil {

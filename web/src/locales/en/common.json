@@ -1,4 +1,10 @@
 {
+  "draft": {
+    "message": "You have an unsaved draft from {{time}}.",
+    "continue": "Continue where you left off",
+    "startOver": "Start over",
+    "dismiss": "Dismiss"
+  },
   "deployHistory": {
     "filters": {
       "search": "Search message, commit, author",
@@ -16,7 +22,19 @@
     "promoteHint": "Makes this exact build the live release, pinned by digest",
     "promoted": "Promotion triggered.",
     "promotedPending": "Promotion is waiting for approval.",
-    "promoteFailed": "Could not promote."
+    "promoteFailed": "Could not promote.",
+    "deployNow": "Deploy now",
+    "latest": "Latest deploy",
+    "earlier": "Earlier deploys",
+    "failedLog": "View failing stage log",
+    "failedLogLabel": "View the failing stage log for {{title}}",
+    "watchLog": "Watch",
+    "viewLogs": "Logs",
+    "settingsLink": "Deploy settings",
+    "settingsLinkHint": "Build, run, safety and automation options for this app live in one place.",
+    "settingsLinkCta": "Open deploy settings",
+    "rerunOf": "Retry of {{id}}",
+    "rerunOfLabel": "Open the logs of {{id}}, the deploy this one re-ran"
   },
   "actions": {
     "copy": "Copy",
@@ -57,7 +75,11 @@
     "needsAction": "Needs action"
   },
   "logs": {
-    "previousContainerEnded": "Previous container instance ended"
+    "previousContainerEnded": "Previous container instance ended",
+    "copyLineAria": "Copy this log line",
+    "copyLine": "Copy line",
+    "copied": "Copied",
+    "lineCopied": "Line copied"
   },
   "sessionLink": {
     "signingIn": "Signing you in...",
@@ -96,7 +118,16 @@
     "noMatchBody": "No app fits the current status and search. Clear the filters to see all {{total}}.",
     "clearFilters": "Clear filters",
     "errorBody": "The app list could not be loaded. {{message}}",
-    "retry": "Retry"
+    "retry": "Retry",
+    "banner": {
+      "description": "Deploy from a git link, a container image or a template, then open it in your browser.",
+      "compactDescription": "Everything running on this server.",
+      "diagram": {
+        "git": "git branch",
+        "app": "app",
+        "browser": "browser"
+      }
+    }
   },
   "appSectionHelp": "Read the guide for this page",
   "appActions": {
@@ -155,7 +186,64 @@
     "lockedOut": "Locked out? On the server, run",
     "emergencyDocs": "Emergency access"
   },
+  "appTabs": {
+    "sections": "App sections",
+    "pages": "Pages in {{section}}",
+    "more": "More",
+    "moreLabel": "Other sections",
+    "showAll": "Show all tabs ({{count}} hidden)",
+    "showLess": "Hide tabs that do not apply",
+    "groups": {
+      "basics": "Basics",
+      "network": "Network",
+      "data": "Data",
+      "observe": "Observe",
+      "advanced": "Advanced"
+    }
+  },
+  "recommended": {
+    "title": "Recommended next",
+    "dismiss": "Dismiss: {{title}}",
+    "failed_deploy": {
+      "title": "The last deploy failed",
+      "button": "View the build log"
+    },
+    "add_domain": {
+      "title": "No domain yet",
+      "button": "Add a domain"
+    },
+    "enable_backups": {
+      "title": "A database has no backup schedule",
+      "button": "Turn on backups"
+    },
+    "add_health_check": {
+      "title": "No health check",
+      "button": "Add a health check"
+    },
+    "enable_previews": {
+      "title": "Previews are off for your pull requests",
+      "button": "Enable previews"
+    }
+  },
   "shell": {
+    "sectionTabs": {
+      "deployments": {
+        "label": "Deployment sections",
+        "deploys": "Deploys",
+        "timeline": "Timeline",
+        "builds": "Builds"
+      },
+      "cost": {
+        "label": "Usage and cost sections",
+        "usage": "Usage",
+        "costs": "Cost explorer"
+      }
+    },
+    "pins": {
+      "group": "Pinned",
+      "pin": "Pin {{label}}",
+      "limit": "Pin limit reached ({{max}}). Unpin one first."
+    },
     "locked": {
       "badge": "Beta",
       "description": "This is a beta feature and it is turned off. Open it to go to Beta features and turn it on.",
@@ -621,5 +709,125 @@
   },
   "pageLoading": {
     "label": "Loading page"
+  },
+  "deployRetry": {
+    "retry": "Retry deploy",
+    "more": "More ways to retry",
+    "rebuild": "Rebuild from source",
+    "rebuildNoCache": "Rebuild without cache"
+  },
+  "deploySettings": {
+    "nav": {
+      "label": "Deploy settings sections"
+    },
+    "flow": {
+      "title": "How your deploy works",
+      "build": "Build",
+      "push": "Push",
+      "rollout": "Rollout",
+      "healthCheck": "Health check",
+      "buildHint": "Turns your source into an image.",
+      "pushHint": "Stores the image so any node can run it.",
+      "rolloutHint": "Starts new replicas and moves traffic over.",
+      "healthCheckHint": "Confirms the new release is healthy before it stays live."
+    },
+    "recommended": "Fields left empty use the platform default, shown in grey inside the field.",
+    "groups": {
+      "build": {
+        "title": "Build",
+        "description": "How your source becomes an image: hooks, caching and what gets scanned."
+      },
+      "run": {
+        "title": "Run",
+        "description": "How the new release starts: port, rollout strategy and pre-deploy commands."
+      },
+      "safety": {
+        "title": "Safety",
+        "description": "What protects live traffic: health checks, rollback, canary and freezes."
+      },
+      "automation": {
+        "title": "Automation",
+        "description": "What deploys for you: schedules, previews, image updates and CI."
+      }
+    },
+    "cards": {
+      "buildHooks": "Runs your own commands at set points in a build, such as before or after the build step.",
+      "buildCache": "Reuses unchanged layers between builds so repeat builds finish sooner.",
+      "supplyChain": "Scans each built image for known vulnerabilities and can block risky releases.",
+      "secretScan": "Looks for leaked credentials in your source before it ships.",
+      "port": "Sets the port your app listens on so traffic reaches the right place.",
+      "strategy": "Chooses how a new release replaces the old one, and how many replicas run.",
+      "hooks": "Runs a command, such as a database migration, before a new release starts.",
+      "safety": "Sets how long a new release must stay healthy before the old one is retired.",
+      "watch": "Keeps watching a release after it goes live and rolls back if it degrades.",
+      "autoRollback": "Redeploys the last working image when a crashloop alert fires.",
+      "sloBurn": "Rolls back automatically when the error budget burns too fast after a deploy.",
+      "canary": "Sends a small share of traffic to a new image before everyone gets it.",
+      "freeze": "Blocks automatic deploys during windows you choose, such as a holiday.",
+      "scheduled": "Queues a deploy to run at a later time you pick.",
+      "cancelSuperseded": "Cancels older queued deploys when a newer one arrives.",
+      "preview": "Builds a temporary copy of your app for each pull request.",
+      "imageAutoUpdate": "Redeploys automatically when a newer image for your tag is published.",
+      "badge": "Shows a live deploy status badge you can embed in a README.",
+      "githubActions": "Lets a GitHub Actions workflow deploy this app.",
+      "ciDeploy": "Gives your CI system a token and a command to deploy this app."
+    },
+    "whatItDoes": "What this does:"
+  },
+  "cardSkeleton": {
+    "loading": "Loading"
+  },
+  "cancelSuperseded": {
+    "title": "Replace superseded queued deploys",
+    "infoLabel": "About replacing queued deploys",
+    "infoBody": "Only deploys still waiting in the queue are replaced, and only by a newer one for the same branch. A deploy that already started building is never canceled automatically.",
+    "enabled": "Enabled",
+    "enabledHint": "When a newer commit for a branch is queued behind a running deploy, older queued deploys for that branch are marked superseded instead of building one after another.",
+    "on": "Superseded queued deploys will be replaced.",
+    "off": "Queued deploys are kept.",
+    "saveFailed": "Could not update the setting."
+  },
+  "codeBlock": {
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "wrap": "Wrap",
+    "reveal": "Reveal",
+    "hide": "Hide",
+    "region": "Code",
+    "commandRegion": "Command"
+  },
+  "banners": {
+    "loadBalancers": {
+      "title": "Load balancers",
+      "description": "Spread an app's traffic across its replicas with health checks and graceful cutovers.",
+      "compactDescription": "Every app that balances traffic, with live upstream health.",
+      "diagram": {
+        "browser": "browser",
+        "balancer": "balancer",
+        "server": "server"
+      }
+    },
+    "projects": {
+      "title": "Projects",
+      "description": "Optional labels to group an app with its database and cache. Nothing about how they run changes.",
+      "compactDescription": "Labels that group related apps and databases.",
+      "count_one": "{{count}} project",
+      "count_other": "{{count}} projects",
+      "diagram": {
+        "project": "project",
+        "members": "apps and databases"
+      }
+    }
+  },
+  "apiError": {
+    "recheckDocker": "Re-check Docker",
+    "rechecking": "Checking...",
+    "fixing": "Fixing...",
+    "fixFailed": "The fix did not work.",
+    "requestId": "Request ID: {{id}}",
+    "copyRequestId": "Copy request ID",
+    "copied": "Copied",
+    "generic": "Something went wrong on the server."
   }
 }

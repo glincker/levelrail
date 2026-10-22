@@ -45,6 +45,8 @@ const (
 	KindLogArchiveStale Kind = "log_archive_stale"
 	// KindExportBehind is platform-wide: it fires when an export destination (audit or log sink) keeps failing.
 	KindExportBehind Kind = "export_behind"
+	// KindRegistryRefreshFailing is platform-wide: it fires while a cloud registry credential cannot refresh.
+	KindRegistryRefreshFailing Kind = "registry_refresh_failing"
 	// KindRestoreDrillFailed is platform-wide: it fires while a resource's latest restore drill is failed.
 	KindRestoreDrillFailed Kind = "restore_drill_failed"
 

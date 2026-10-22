@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { CodeBlock } from '@/components/ui/code-block'
 import { toast } from '@/components/ui/toast'
 import type {
   DatabaseNetwork,
@@ -146,9 +147,7 @@ function RulesEditor({
       {plan ? (
         <div className="space-y-2">
           <p className="text-xs font-medium">{t('rules.previewTitle')}</p>
-          <pre className="overflow-x-auto rounded-md bg-muted p-2 font-mono text-xs">
-            {plan.commands.join('\n')}
-          </pre>
+          <CodeBlock code={plan.commands.join('\n')} language="bash" />
           <Alert>
             <AlertTitle>{t('rules.effect')}</AlertTitle>
             <AlertDescription>{plan.drops}</AlertDescription>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CodeBlock } from '@/components/ui/code-block'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { PlusIcon, TreeStructureIcon } from '@phosphor-icons/react/dist/ssr'
@@ -100,12 +101,12 @@ export function PipelinesEmptyState() {
         helpPath="/pipelines"
         helpLabel="Pipelines docs"
       >
-        <pre
-          aria-label="Example pipeline"
-          className="w-full max-w-md overflow-x-auto rounded-md border border-border bg-muted p-3 text-left font-mono text-xs text-foreground"
-        >
-          <code>{MINIMAL_PIPELINE_YAML}</code>
-        </pre>
+        <CodeBlock
+          className="w-full max-w-md text-left"
+          code={MINIMAL_PIPELINE_YAML}
+          language="yaml"
+          label="Example pipeline"
+        />
       </EmptyState>
       <AppPickerDialog open={picking} onOpenChange={setPicking} />
     </>

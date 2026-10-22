@@ -1,6 +1,11 @@
+import { useMemo } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeftIcon, RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ArrowLeftIcon,
+  ArrowSquareOutIcon,
+  RocketLaunchIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   serviceTemplateQueryOptions,
   useServiceTemplate,
@@ -10,12 +15,18 @@ import { TemplateEnvNames } from '../../components/templates/TemplateEnvNames'
 import { TemplateFacts } from '../../components/templates/TemplateFacts'
 import { TemplateRequirementsCard } from '../../components/templates/TemplateRequirementsCard'
 import { TemplateServices } from '../../components/templates/TemplateServices'
+import { TemplateWhatYouGet } from '../../components/templates/TemplateWhatYouGet'
+import { TemplateDeployForm } from '../../components/templates/TemplateDeployForm'
 import { RelatedTemplates } from '../../components/templates/RelatedTemplates'
 import { useDeployTemplateNow } from '../../hooks/useDeployTemplateNow'
 import { TemplateLogoTile } from '../../components/TemplateLogoTile'
 import { RamFitBadge } from '../../components/RamFitBadge'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
-import { TemplateInstallForm } from '../../components/TemplateInstallForm'
+import {
+  appSlug,
+  computeTemplateSummary,
+  primaryVersion,
+} from '../../lib/templateSummary'
 import { formatBytes } from '../../lib/format'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -23,14 +34,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
-// Standalone, linkable page for a single catalog template, the one place
-// besides the in-wizard preview step (BrowseTemplatesFields) a template
-// can be viewed: this route exists so a template can be shared or
-// bookmarked without opening the "New resource" dialog first. Deploy
-// semantics aren't duplicated here either: the one-click path reuses
-// useDeployTemplateNow (the same hook the wizard grid and the /templates
-// catalog page use), and the configuration path reuses the existing
-// wizard itself, pre-filled via CreateResourceWizard's initialTemplateId.
 export const Route = createFileRoute('/templates/$id')({
   loader: ({ context: { queryClient }, params: { id } }) =>
     queryClient.ensureQueryData(serviceTemplateQueryOptions(id)),
@@ -45,13 +48,26 @@ function TemplateDetailRoute() {
   const { data: template } = useServiceTemplate(id)
   const deployTemplateNow = useDeployTemplateNow()
   const preview = useComposePreview(template?.compose ?? '', [])
+  const services = useMemo(
+    () => (preview.data?.valid ? preview.data.services : []),
+    [preview.data],
+  )
+  const summary = useMemo(
+    () =>
+      computeTemplateSummary({
+        compose: template?.compose ?? '',
+        services,
+        recommendedMemoryBytes: template?.recommended_memory_bytes,
+      }),
+    [template, services],
+  )
 
   if (!template) {
     return <TemplateDetailSkeleton />
   }
 
   const deploying = deployTemplateNow.pendingId === template.id
-  const services = preview.data?.valid ? preview.data.services : []
+  const version = primaryVersion(services)
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -63,13 +79,18 @@ function TemplateDetailRoute() {
         {t('detail.back')}
       </Link>
 
-      <header className="flex flex-wrap items-start gap-4 rounded-xl border border-border bg-card p-5">
+      <header className="flex flex-wrap items-start gap-4 rounded-xl border border-border bg-card p-4 sm:p-5">
         <TemplateLogoTile id={template.id} name={template.name} size="lg" />
-        <div className="min-w-0 flex-1 space-y-2">
+        <div className="min-w-0 flex-1 basis-56 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-semibold text-foreground">
               {template.name}
             </h1>
+            {version ? (
+              <Badge variant="muted" className="font-mono">
+                {version}
+              </Badge>
+            ) : null}
             <Badge variant="outline">{template.category}</Badge>
           </div>
           <p className="text-sm text-muted-foreground">{template.slogan}</p>
@@ -89,6 +110,17 @@ function TemplateDetailRoute() {
             {template.requires_gpu ? (
               <Badge variant="muted">{t('detail.needsGpu')}</Badge>
             ) : null}
+            {template.documentation_url ? (
+              <a
+                href={template.documentation_url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex items-center gap-1 text-sm text-primary underline underline-offset-4"
+              >
+                {t('detail.facts.docsLink')}
+                <ArrowSquareOutIcon className="size-3.5" aria-hidden="true" />
+              </a>
+            ) : null}
           </div>
         </div>
       </header>
@@ -102,68 +134,65 @@ function TemplateDetailRoute() {
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
+          <TemplateWhatYouGet
+            summary={summary}
+            slug={appSlug(template.id, template.name)}
+          />
           <TemplateRequirementsCard requirements={template.requirements} />
-          {preview.isPending ? (
-            <div role="status" aria-label={t('detail.deployed.loading')}>
-              <Skeleton className="h-24 w-full" />
-            </div>
-          ) : services.length > 0 ? (
-            <>
-              <TemplateServices services={services} />
-              <TemplateEnvNames services={services} />
-            </>
-          ) : (
-            <p className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-              {t('detail.deployed.unavailable')}
-            </p>
-          )}
           {template.manifest ? (
-            <TemplateInstallForm manifest={template.manifest} />
-          ) : null}
-          <RelatedTemplates id={template.id} category={template.category} />
-        </div>
-
-        <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-          <section className="space-y-3 rounded-lg border border-border bg-card p-4">
-            <h2 className="text-sm font-medium">{t('detail.deploy.title')}</h2>
-            {template.manifest ? null : template.requires_configuration ? (
-              <>
-                <p className="text-xs text-muted-foreground">
-                  {t('detail.deploy.configureHint')}
-                </p>
+            <TemplateDeployForm manifest={template.manifest} />
+          ) : (
+            <section className="space-y-4 rounded-xl border border-border bg-card p-4 sm:p-5">
+              <h2 className="text-base font-semibold">
+                {t('detail.deploy.title')}
+              </h2>
+              {preview.isPending ? (
+                <div role="status" aria-label={t('detail.deployed.loading')}>
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              ) : (
+                <TemplateEnvNames services={services} />
+              )}
+              <p className="text-sm text-muted-foreground">
+                {template.requires_configuration
+                  ? t('detail.deploy.configureHint')
+                  : t('detail.deploy.trial')}
+              </p>
+              {template.requires_configuration ? (
                 <CreateResourceWizard
                   initialSelected="browse-templates"
                   initialTemplateId={template.id}
                   trigger={
-                    <Button type="button" className="w-full">
-                      <RocketLaunchIcon />
+                    <Button type="button">
+                      <RocketLaunchIcon aria-hidden="true" />
                       {t('detail.deploy.configure')}
                     </Button>
                   }
                 />
-              </>
-            ) : (
-              <>
+              ) : (
                 <Button
                   type="button"
-                  className="w-full"
                   disabled={deploying}
                   onClick={() => {
                     deployTemplateNow.deploy(template.id)
                   }}
                 >
-                  <RocketLaunchIcon />
+                  <RocketLaunchIcon aria-hidden="true" />
                   {deploying
                     ? t('detail.deploy.deploying')
                     : t('detail.deploy.now')}
                 </Button>
-                <p className="text-xs text-muted-foreground">
-                  {t('detail.deploy.trial')}
-                </p>
-              </>
-            )}
-          </section>
+              )}
+            </section>
+          )}
+          {services.length > 0 ? (
+            <TemplateServices services={services} />
+          ) : null}
+          <RelatedTemplates id={template.id} category={template.category} />
+        </div>
+
+        <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
           <TemplateFacts
             services={services}
             documentationUrl={template.documentation_url}
@@ -175,8 +204,6 @@ function TemplateDetailRoute() {
   )
 }
 
-// Mirrors the real page's back link, logo/title/badges card, and the
-// deploy button row.
 function TemplateDetailSkeleton() {
   return (
     <div className="mx-auto max-w-5xl space-y-6" aria-hidden="true">
@@ -192,20 +219,19 @@ function TemplateDetailSkeleton() {
           <Skeleton className="h-4 w-40" />
         </div>
       </div>
-      <div className="flex justify-end">
-        <Skeleton className="h-9 w-36 rounded-md" />
-      </div>
+      <Skeleton className="h-40 w-full rounded-xl" />
     </div>
   )
 }
 
 function TemplateDetailError({ error }: { error: unknown }) {
+  const { t } = useTranslation('templates')
   return (
     <Alert variant="destructive">
       <AlertDescription>
         <p>{routeErrorMessage(error)}</p>
         <Link to="/templates" className="mt-2 inline-block underline">
-          Back to templates
+          {t('detail.back')}
         </Link>
       </AlertDescription>
     </Alert>

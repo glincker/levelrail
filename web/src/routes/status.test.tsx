@@ -76,7 +76,9 @@ describe('StatusPage', () => {
   it('shows the healthy empty state', () => {
     useAttentionItems.mockReturnValue({ items: [], isLoading: false })
     render(<StatusPage />)
-    expect(screen.getByText('All systems healthy')).toBeVisible()
+    expect(
+      screen.getByText('attention:statusPage.healthyDescription'),
+    ).toBeVisible()
   })
 
   it('renders items with severity and uniquely named actions', async () => {

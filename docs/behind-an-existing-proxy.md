@@ -194,6 +194,47 @@ never touching a file without it), with these additions:
   `tls_terminated_upstream` are left as they were.
 - Turning the integration off removes the files and reloads nginx.
 
+## When the proxy you chose is not running
+
+Pick Traefik or nginx on Network, Proxy while nothing of that kind holds ports 80
+and 443 and the page shows "Traefik is not running on this server yet" with three
+choices instead of an error:
+
+- **Install and start Traefik for me.** Shows the exact plan first (image,
+  ports, mounts and the static configuration file), then starts the container
+  only after you confirm. It uses the Docker Engine API, never the docker CLI.
+  The container is named with the brand short name prefix, carries a label that
+  marks it as managed by this control plane, restarts unless stopped and
+  publishes ports 80 and 443. The route directory and `traefik.yml` live under
+  the data directory (`proxy/traefik/`). A Let's Encrypt resolver is written
+  only when public certificates are already enabled. Afterwards detection runs
+  again and the route directory is filled in for you. Running it twice does not
+  create a second container, and a container this control plane did not create is
+  never stopped, removed or reused.
+- **Go back to the built-in Caddy.** Switches the provider back. Nothing is
+  deleted.
+- **It runs somewhere else.** Shows the container name, route directory,
+  entrypoints, certificate resolver and upstream host with defaults and inline
+  checks, plus Re-check.
+
+The install refuses, with a specific message and no change, when port 80 or 443 is
+already in use (including by the built-in Caddy, which this switch does not hand
+over), when the control plane itself runs inside Docker, or when a container with
+that name already exists. Automatic install is Traefik only: nginx needs
+certificates you provide.
+
+Image: `APP_PROXY_TRAEFIK_IMAGE` overrides the pinned official image.
+
+```bash
+levelrail-cli proxy install                # dry run: the exact plan
+levelrail-cli proxy install --confirm      # create and start the container
+```
+
+`POST /api/v1/system/proxy-integration/install` with `{"provider": "traefik",
+"confirm": false}` returns the plan; with `confirm: true` it applies it through the
+typed fix `proxy.install.traefik` (audited, root only) and answers `409` with a
+`code` such as `port_in_use` when it refuses.
+
 ## From the dashboard
 
 Open Domains, then "Put the dashboard behind your existing proxy". Enter the domain,

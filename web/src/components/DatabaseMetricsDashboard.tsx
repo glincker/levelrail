@@ -1,5 +1,16 @@
 import { useMemo, useState } from 'react'
-import { PulseIcon } from '@phosphor-icons/react/dist/ssr'
+import { useTranslation } from 'react-i18next'
+import { Link } from '@tanstack/react-router'
+import { PlayIcon, PulseIcon } from '@phosphor-icons/react/dist/ssr'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { engineHasBackups } from '@/lib/databaseCatalog'
+import { useDatabase, useStartDatabase } from '../queries/databases'
+import {
+  metricsEmptyReason,
+  panelsForEngine,
+  type PanelId,
+} from './databases/metrics/metricPanels'
 import { MetricChartCard } from './MetricChartCard'
 import { chartPalette } from '../lib/chartPalette'
 import { TimeRangeControls } from './TimeRangeControls'
@@ -33,6 +44,7 @@ interface SeriesConfig {
 }
 
 interface ChartGroupConfig {
+  id: PanelId
   title: string
   unit: ChartUnit
   primary: SeriesConfig
@@ -41,6 +53,7 @@ interface ChartGroupConfig {
 
 const CHART_GROUPS: ChartGroupConfig[] = [
   {
+    id: 'cpu',
     title: 'CPU',
     unit: 'percent',
     primary: {
@@ -50,6 +63,7 @@ const CHART_GROUPS: ChartGroupConfig[] = [
     },
   },
   {
+    id: 'memory',
     title: 'Memory',
     unit: 'bytes',
     primary: {
@@ -64,6 +78,7 @@ const CHART_GROUPS: ChartGroupConfig[] = [
     },
   },
   {
+    id: 'network',
     title: 'Network I/O',
     unit: 'bytes',
     primary: {
@@ -78,6 +93,7 @@ const CHART_GROUPS: ChartGroupConfig[] = [
     },
   },
   {
+    id: 'disk',
     title: 'Disk I/O',
     unit: 'bytes',
     primary: {
@@ -122,9 +138,10 @@ function ChartCard({
     Boolean(group.secondary),
   )
 
+  const { t } = useTranslation('databases')
   return (
     <MetricChartCard
-      title={group.title}
+      title={t(`metrics.panels.${group.id}`)}
       unit={group.unit}
       primaryLabel={group.primary.label}
       primaryColor={group.primary.color}
@@ -143,16 +160,21 @@ export function DatabaseMetricsDashboard({
 }: {
   databaseName: string
 }) {
+  const { t } = useTranslation('databases')
+  const { data: database } = useDatabase(databaseName)
+  const start = useStartDatabase()
   const [rangeKey, setRangeKey] = useState<TimeRangeKey>(DEFAULT_TIME_RANGE_KEY)
-  // Bumped by the Refresh button to recompute "now" without changing
-  // rangeKey, the same refetch-loop-avoidance reasoning
-  // MetricsDashboard.tsx's own header comment gives.
+  // Bumped by Refresh to recompute "now" without changing rangeKey, which
+  // would otherwise refetch in a loop.
   const [refreshNonce, setRefreshNonce] = useState(0)
   const range = useMemo(
     () => resolveTimeRange(rangeKey),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [rangeKey, refreshNonce],
   )
+  const hasDisk = engineHasBackups(database.engine)
+  const panelIds = panelsForEngine(hasDisk)
+  const emptyReason = metricsEmptyReason(database)
 
   return (
     <section className="rounded-lg border border-border p-4">
@@ -163,31 +185,85 @@ export function DatabaseMetricsDashboard({
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />
-            Metrics
+            {t('metrics.title')}
           </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            As of {range.to.toLocaleTimeString()}.
-          </p>
+          {emptyReason ? null : (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t('metrics.asOf', { time: range.to.toLocaleTimeString() })}
+            </p>
+          )}
         </div>
-        <TimeRangeControls
-          rangeKey={rangeKey}
-          onRangeChange={setRangeKey}
-          onRefresh={() => {
-            setRefreshNonce((n) => n + 1)
-          }}
-        />
+        {emptyReason ? null : (
+          <TimeRangeControls
+            rangeKey={rangeKey}
+            onRangeChange={setRangeKey}
+            onRefresh={() => {
+              setRefreshNonce((n) => n + 1)
+            }}
+          />
+        )}
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-        {CHART_GROUPS.map((group) => (
-          <ChartCard
-            key={group.title}
-            databaseName={databaseName}
-            group={group}
-            range={range}
-          />
-        ))}
-      </div>
+      {emptyReason ? (
+        <EmptyState
+          className="mt-4"
+          icon={<PulseIcon className="size-5" />}
+          title={t(`metrics.empty.${emptyReason}.title`)}
+          description={t(`metrics.empty.${emptyReason}.body`)}
+          action={
+            emptyReason === 'stopped' ? (
+              <Button
+                size="sm"
+                disabled={start.isPending}
+                onClick={() => {
+                  start.mutate(databaseName)
+                }}
+              >
+                <PlayIcon aria-hidden="true" />
+                {start.isPending
+                  ? t('metrics.empty.starting')
+                  : t('metrics.empty.start')}
+              </Button>
+            ) : (
+              <Link
+                to="/databases/$name/overview"
+                params={{ name: databaseName }}
+                className={buttonVariants({ size: 'sm' })}
+              >
+                {t('metrics.empty.viewProgress')}
+              </Link>
+            )
+          }
+        />
+      ) : (
+        <>
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            {panelIds.map((id) => {
+              const group = CHART_GROUPS.find((g) => g.id === id)
+              return group ? (
+                <ChartCard
+                  key={id}
+                  databaseName={databaseName}
+                  group={group}
+                  range={range}
+                />
+              ) : null
+            })}
+          </div>
+          <p className="mt-4 text-xs text-muted-foreground">
+            {hasDisk ? t('metrics.gapsSql') : t('metrics.gapsMemory')}{' '}
+            {hasDisk ? (
+              <Link
+                to="/databases/$name/slow-queries"
+                params={{ name: databaseName }}
+                className="text-primary underline underline-offset-2"
+              >
+                {t('metrics.slowQueriesLink')}
+              </Link>
+            ) : null}
+          </p>
+        </>
+      )}
     </section>
   )
 }

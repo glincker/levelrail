@@ -291,6 +291,14 @@
     "off": "off",
     "recheck": "Re-check"
   },
+  "reveal": {
+    "title": "Reveal password",
+    "description": "Shows the generated owner password once on request. It is audited and hides itself after 30 seconds.",
+    "show": "Reveal",
+    "hide": "Hide",
+    "autoHide": "Hides automatically after 30 seconds.",
+    "failed": "Could not reveal the password"
+  },
   "rotation": {
     "title": "Owner password",
     "description": "The password your apps use to reach this database. Rotating it changes the password in the database, checks a real login, then updates every app that uses it.",

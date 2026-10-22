@@ -46,8 +46,7 @@ func (rt *Router) toCloudflareDNSResource(ctx context.Context, s store.Cloudflar
 func (rt *Router) handleGetCloudflareDNSSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.cloudflareDNS.GetCloudflareDNSSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get cloudflare dns settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get cloudflare dns settings failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toCloudflareDNSResource(r.Context(), settings))
@@ -83,8 +82,7 @@ func (rt *Router) handleUpdateCloudflareDNSSettings(w http.ResponseWriter, r *ht
 	if !hasToken {
 		exists, err := rt.cloudflareDNSSecrets.Exists(r.Context(), key, store.CloudflareDNSTokenEnvKey)
 		if err != nil {
-			rt.logger.Error("api: check cloudflare dns token failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: check cloudflare dns token failed", err)
 			return
 		}
 		hasToken = exists
@@ -96,16 +94,14 @@ func (rt *Router) handleUpdateCloudflareDNSSettings(w http.ResponseWriter, r *ht
 
 	if req.Token != "" {
 		if err := rt.cloudflareDNSSecrets.SetValue(r.Context(), key, store.CloudflareDNSTokenEnvKey, req.Token); err != nil {
-			rt.logger.Error("api: save cloudflare dns token failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: save cloudflare dns token failed", err)
 			return
 		}
 	}
 
 	settings := store.CloudflareDNSSettings{Enabled: req.Enabled}
 	if err := rt.cloudflareDNS.UpdateCloudflareDNSSettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: update cloudflare dns settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update cloudflare dns settings failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toCloudflareDNSResource(r.Context(), settings))
@@ -122,14 +118,12 @@ func (rt *Router) handleDisconnectCloudflareDNS(w http.ResponseWriter, r *http.R
 	}
 
 	if err := rt.cloudflareDNSSecrets.DeleteAll(r.Context(), store.CloudflareDNSSecretsKey()); err != nil {
-		rt.logger.Error("api: clear cloudflare dns token failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear cloudflare dns token failed", err)
 		return
 	}
 	settings := store.CloudflareDNSSettings{Enabled: false}
 	if err := rt.cloudflareDNS.UpdateCloudflareDNSSettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: disconnect cloudflare dns failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: disconnect cloudflare dns failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toCloudflareDNSResource(r.Context(), settings))

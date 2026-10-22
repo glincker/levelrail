@@ -117,8 +117,7 @@ func (rt *Router) handleFleetResourceUsage(w http.ResponseWriter, r *http.Reques
 
 	nodes, err := rt.nodes.ListNodes(r.Context())
 	if err != nil {
-		rt.logger.Error("api: fleet resource usage: list nodes failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: fleet resource usage: list nodes failed", err)
 		return
 	}
 
@@ -135,8 +134,7 @@ func (rt *Router) handleFleetResourceUsage(w http.ResponseWriter, r *http.Reques
 
 	services, err := rt.apps.ListDesiredServices(r.Context())
 	if err != nil {
-		rt.logger.Error("api: fleet resource usage: list services failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: fleet resource usage: list services failed", err)
 		return
 	}
 	// nodeForService resolves the empty-string local-node sentinel

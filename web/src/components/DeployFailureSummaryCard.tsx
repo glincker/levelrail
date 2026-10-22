@@ -1,7 +1,6 @@
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import {
   ArrowCounterClockwiseIcon,
-  ArrowsClockwiseIcon,
   LightbulbIcon,
   TerminalIcon,
   WarningCircleIcon,
@@ -17,7 +16,14 @@ import {
 } from '../lib/deployFailureSummary'
 import { useRedeployApp } from '../hooks/useRedeployApp'
 import { DiagnosisFixes } from './DiagnosisFixes'
+import { CopyReportButton } from './deployDetail/CopyReportButton'
+import { DeployFixRow } from './deployDetail/DeployFixRow'
+import { useDeployDetailT } from './deployDetail/useDeployDetailT'
 import { useTriggerDeploy } from '../queries/deploys'
+import { useDeployDetail } from '../queries/deployDetail'
+import { useGitSource } from '../queries/gitSources'
+import { useRebuildApp } from '../queries/rebuildApp'
+import { RetrySplitButton } from './RetrySplitButton'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
@@ -33,6 +39,7 @@ export function DeployFailureSummaryCard({
   stages,
   conditions,
   lines,
+  extraActions,
 }: {
   appName: string
   attempt: DeployAttempt
@@ -40,18 +47,28 @@ export function DeployFailureSummaryCard({
   stages: DeployStage[]
   conditions: ReconcileCondition[]
   lines: LogLine[]
+  // Slot for additional recovery actions (e.g. a retry menu) next to the built-in ones.
+  extraActions?: ReactNode
 }) {
+  const { t } = useDeployDetailT()
   const headingId = useId()
   const messageId = useId()
   const [expanded, setExpanded] = useState(false)
-  const retry = useRedeployApp(appName, attempt.image)
+  const retry = useRedeployApp(appName, attempt.image, {
+    rerunOf: attempt.id,
+  })
   const rollback = useTriggerDeploy(appName)
+  const rebuild = useRebuildApp(appName)
+  const { data: gitSource } = useGitSource(appName)
+  // The single-deploy endpoint classifies with logs and exit state; the list row only has the attempt record.
+  const { data: detail } = useDeployDetail(appName, attempt.id, true)
 
   const summary = summarizeDeployFailure({
     stages,
     conditions,
     lines,
     attempt,
+    failure: detail?.failure ?? attempt.failure,
   })
   if (!summary) {
     return null
@@ -67,6 +84,23 @@ export function DeployFailureSummaryCard({
     const el = document.getElementById(deployStageAnchorId(summary.stageKey))
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     el?.focus({ preventScroll: true })
+  }
+
+  const runRebuild = (noCache: boolean) => {
+    rebuild.mutate(
+      { noCache, rerunOf: attempt.id },
+      {
+        onSuccess: () => {
+          toast.add({
+            title: noCache ? t('rebuild.startedNoCache') : t('rebuild.started'),
+            type: 'success',
+          })
+        },
+        onError: (error) => {
+          toast.add({ title: error.message, type: 'error' })
+        },
+      },
+    )
   }
 
   const rollBack = () => {
@@ -149,11 +183,28 @@ export function DeployFailureSummaryCard({
                       {summary.evidence}
                     </p>
                   ) : null}
+                  {summary.docsUrl?.startsWith('https://') ? (
+                    <a
+                      href={summary.docsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-block text-xs underline underline-offset-2"
+                    >
+                      {t('fix.docs')}
+                    </a>
+                  ) : null}
                 </dd>
               </div>
             ) : null}
           </dl>
           <DiagnosisFixes appName={appName} deployId={attempt.id} />
+          <DeployFixRow
+            appName={appName}
+            stage={summary.stageKey}
+            causeId={summary.cause?.id}
+            fixes={summary.fixes}
+            deployId={attempt.id}
+          />
           <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
@@ -164,16 +215,18 @@ export function DeployFailureSummaryCard({
               <TerminalIcon aria-hidden="true" />
               View full logs
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={retry.isPending}
-              onClick={retry.redeploy}
-            >
-              <ArrowsClockwiseIcon aria-hidden="true" />
-              Retry deploy
-            </Button>
+            <RetrySplitButton
+              pending={retry.isPending || rebuild.isPending}
+              canRebuild={gitSource !== undefined}
+              noCacheSupported={gitSource?.build_type === 'dockerfile'}
+              onRetry={retry.redeploy}
+              onRebuild={() => {
+                runRebuild(false)
+              }}
+              onRebuildNoCache={() => {
+                runRebuild(true)
+              }}
+            />
             {lastGood ? (
               <Button
                 type="button"
@@ -186,7 +239,31 @@ export function DeployFailureSummaryCard({
                 Roll back to last good
               </Button>
             ) : null}
+            <CopyReportButton
+              getInput={() => ({
+                appName,
+                deployId: attempt.id,
+                stageLabel: summary.stageLabel,
+                error: summary.message,
+                causeTitle: summary.cause?.title,
+                causeHint: summary.cause?.hint,
+                lines: lines.map((l) => l.line),
+                config: {
+                  Image: attempt.image,
+                  Source: attempt.source,
+                  Branch: attempt.branch,
+                  Commit: attempt.commit_sha?.slice(0, 12),
+                  Framework: attempt.detected_framework,
+                },
+              })}
+            />
+            {extraActions}
           </div>
+          {lastGood ? (
+            <p className="text-xs text-muted-foreground">
+              {t('rollback.note', { image: lastGood.image })}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
     </section>

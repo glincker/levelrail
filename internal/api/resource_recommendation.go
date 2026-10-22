@@ -93,8 +93,7 @@ func (rt *Router) handleAppResourceRecommendation(w http.ResponseWriter, r *http
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: resource recommendation: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: resource recommendation: load app failed", err, slog.String("name", name))
 		return
 	}
 

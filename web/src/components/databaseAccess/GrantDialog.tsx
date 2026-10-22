@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { CodeBlock } from '@/components/ui/code-block'
 import { toast } from '@/components/ui/toast'
 import type { GrantResult, GrantTemplate } from '../../types/databaseAccess'
 import { useGrantAccess } from '../../queries/databaseAccess'
@@ -162,9 +163,11 @@ export function GrantDialog({
           {preview ? (
             <div className="space-y-1">
               <p className="text-xs font-medium">{t('grant.previewTitle')}</p>
-              <pre className="max-h-48 overflow-auto rounded-md bg-muted p-2 font-mono text-xs">
-                {JSON.stringify(preview.document, null, 2)}
-              </pre>
+              <CodeBlock
+                code={JSON.stringify(preview.document, null, 2)}
+                language="json"
+                maxHeight="sm"
+              />
               {preview.notes.map((n) => (
                 <p key={n} className="text-xs text-muted-foreground">
                   {n}

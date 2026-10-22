@@ -91,29 +91,38 @@ describe('GetStartedHub', () => {
     expect(
       await screen.findByText('40% ready for production'),
     ).toBeInTheDocument()
-    expect(screen.getByText('Start here')).toBeInTheDocument()
+    expect(screen.getByText('Ship your first app')).toBeInTheDocument()
     expect(screen.getByText(/203\.0\.113\.7/)).toBeInTheDocument()
     expect(
       screen.getByText(/Do "Deploy your first app" first/),
     ).toBeInTheDocument()
   })
 
-  it('keeps the other steps collapsed while an essential step is open', async () => {
+  it('lists shipping the first app before the production steps', async () => {
     const g = guide(
       [
+        step({ id: 'public_address' }),
+        step({ id: 'secure_admin' }),
         step({ id: 'first_app' }),
         step({ id: 'backup_target' }),
-        step({ id: 'secure_admin', state: 'done' }),
       ],
       'first_app',
     )
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(g)))
-    const { container } = renderHub()
-    await screen.findByText('Start here')
-    const more = container.querySelector('details')
-    expect(more).not.toBeNull()
-    expect(more).not.toHaveAttribute('open')
-    expect(screen.getByText('More recommended steps')).toBeInTheDocument()
+    renderHub()
+    const ship = await screen.findByText('Ship your first app')
+    const ready = screen.getByText('Make it production ready')
+    expect(
+      ship.compareDocumentPosition(ready) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    const deploy = screen.getByText('Deploy your first app')
+    const address = screen.getByText(
+      'Set the dashboard address and turn on HTTPS',
+    )
+    expect(
+      deploy.compareDocumentPosition(address) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 
   it('flips a step to skipped without a reload and offers undo', async () => {

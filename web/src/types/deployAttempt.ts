@@ -79,6 +79,10 @@ export interface DeployAttempt {
   queued_at?: string
   /** 1-based place in the app's queue, set only while queued. */
   queue_position?: number
+  /** The attempt this one retried or rebuilt, absent when it is not a rerun. */
+  rerun_of?: string
+  /** 1-based position in the rerun chain, computed by the server. */
+  chain_position?: number
   /** Why a queued or held deploy waits, e.g. "waiting for #dep_x". */
   wait_reason?: string
   /** The deploy a queued one waits for. */

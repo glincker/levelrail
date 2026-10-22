@@ -104,7 +104,21 @@ Register an OAuth2 application in Gitea, then paste its `instance_url`, `client_
 
 To disconnect GitHub, call `DELETE /api/v1/github-app`. To disconnect one GitLab, Bitbucket or Gitea account, call `DELETE /api/v1/git-connections/{id}` (or press Disconnect on its row). Either removes the connection and its secrets from the control plane, revokes the OAuth token at GitLab, and answers `{disconnected, token_revoked, note, affected_sources}`. It does not uninstall the GitHub App or delete the application on the provider's side; the note says where to do that. Other connected accounts are not touched.
 
+### Connect with a token instead
+
+GitLab, Bitbucket Cloud, Gitea and Forgejo can also connect with an access token, with no OAuth application and no public domain, so it works on a plain `http://` install. In the dashboard choose Add account, then Connect with a token, or press it on a provider's settings page. The panel shows where to create the token and which scopes to tick:
+
+| Host | Scopes | Paste |
+| --- | --- | --- |
+| GitLab | `api` | the `glpat-` token |
+| Bitbucket Cloud | `read:user:bitbucket`, `read:repository:bitbucket`, `write:repository:bitbucket`, `read:pullrequest:bitbucket`, `write:pullrequest:bitbucket`, `read:webhook:bitbucket`, `write:webhook:bitbucket` | `email:token` |
+| Gitea, Forgejo | `read:user`, `write:repository` | the generated token |
+
+Check Token asks the host for the account, the scopes (GitLab reports them) and how many repositories the token reaches before anything is saved. Connecting stores the token encrypted and the account shows up like any other, with health. From the CLI: `git-providers test --type gitlab --instance-url URL --pat TOKEN`, then `git-providers add` with the same flags. A self-hosted server on a private network needs `APP_GIT_ALLOW_PRIVATE_NETWORKS=true` on the control plane. Tokens do not refresh: when one expires or is revoked the account shows Needs reconnect, and you add a new token.
+
 ## Connecting more than one account
+
+The quickest way to see and manage every account is the **Git connections** page (**Settings, Git connections**, `/settings/git-connections`). It lists each GitHub, GitLab, Bitbucket, Bitbucket Server, Gitea and Forgejo (including Codeberg) account in one place with its health, repository count and the apps using it. Its **Add account** menu starts the connect flow for any host and, where the host needs one, asks for a primary domain first. In the repository picker, when more than one account is connected, account chips filter the list and the last choice is remembered per user.
 
 GitHub supports many installations. GitLab, Bitbucket and Gitea support many accounts too: a personal and a work Bitbucket workspace, several GitLab groups or accounts, gitlab.com next to a self-managed GitLab, or two Gitea servers. Each one is a **connection** with its own label, host, signed-in account, scopes and health.
 

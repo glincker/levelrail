@@ -69,7 +69,7 @@ describe('DatabaseActionBar', () => {
   it('offers backup setup when no target is configured', () => {
     renderBar({ ...base, backup_target_id: undefined })
     expect(
-      screen.getByRole('link', { name: 'Set up backups' }),
+      screen.getByRole('button', { name: 'Set up backups' }),
     ).toBeInTheDocument()
   })
 

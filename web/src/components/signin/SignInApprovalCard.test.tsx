@@ -4,6 +4,7 @@ import { SignInApprovalCard } from './SignInApprovalCard'
 import { renderWithProviders, stubFetch } from './signInTestUtils'
 
 const now = new Date().toISOString()
+const later = new Date(Date.now() + 300_000).toISOString()
 const pending = {
   codes: [],
   approvals: [
@@ -12,7 +13,7 @@ const pending = {
       requester_ip: '198.51.100.2',
       user_agent: 'Terminal CLI',
       created_at: now,
-      expires_at: now,
+      expires_at: later,
     },
   ],
 }
@@ -28,9 +29,8 @@ describe('SignInApprovalCard', () => {
     expect(
       await screen.findByRole('heading', { name: 'Approve this sign-in?' }),
     ).toBeInTheDocument()
-    expect(
-      screen.getByText(/198\.51\.100\.2, Terminal CLI/),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Terminal CLI')).toBeInTheDocument()
+    expect(screen.getByText('198.51.100.2')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Approve' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Deny' })).toBeInTheDocument()
   })

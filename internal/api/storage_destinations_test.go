@@ -134,7 +134,7 @@ func TestStorageDestinationCreateValidation(t *testing.T) {
 		{"custom needs endpoint", `{"name":"x","preset":"custom","bucket":"b","access_key_id":"a","secret_access_key":"b"}`},
 		{"missing credentials", `{"name":"x","preset":"aws","region":"us-east-1","bucket":"b"}`},
 		{"bad scheme", `{"name":"x","preset":"custom","endpoint":"file:///etc","bucket":"b","access_key_id":"a","secret_access_key":"b"}`},
-		{"unknown preset", `{"name":"x","preset":"gcs","bucket":"b","access_key_id":"a","secret_access_key":"b"}`},
+		{"unknown preset", `{"name":"x","preset":"bogus","bucket":"b","access_key_id":"a","secret_access_key":"b"}`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

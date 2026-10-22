@@ -413,11 +413,35 @@ The control plane listens on `:8080` by default. For a throwaway instance on you
 
 <Steps>
 <Step title="Install the binary">
+<Tabs>
+<Tab title="Linux">
 ```bash
 curl -fsSL https://levelrail.com/install-cli.sh | sh
 ```
 
-Detects your OS and architecture, verifies the release checksum (and its cosign signature, if `cosign` is installed) the same way `install.sh` does, and installs to `~/.local/bin`, no root needed. For a system-wide install, run with `sudo` and set `LEVELRAIL_CLI_INSTALL_DIR=/usr/local/bin`.
+Detects amd64 or arm64, verifies the release checksum (and its cosign signature, if `cosign` is installed) the same way `install.sh` does, and installs to `~/.local/bin`, no root needed. For a system-wide install, run with `sudo`: root installs to `/usr/local/bin`.
+</Tab>
+<Tab title="macOS">
+```bash
+curl -fsSL https://levelrail.com/install-cli.sh | sh
+```
+
+Works on Intel and Apple silicon, with the same checksum and signature checks. It installs to `~/.local/bin` (or `/usr/local/bin` with `sudo`). The installer never edits your shell profile on its own: if the folder is not on your `PATH` it prints the exact line for your shell (`~/.zshrc` for zsh, `~/.bash_profile` for bash, `~/.config/fish/config.fish` for fish). Set `LEVELRAIL_MODIFY_PATH=1` to have it append that line for you:
+
+```bash
+curl -fsSL https://levelrail.com/install-cli.sh | LEVELRAIL_MODIFY_PATH=1 sh
+```
+</Tab>
+<Tab title="Windows">
+```powershell
+irm https://levelrail.com/install-cli.ps1 | iex
+```
+
+Run it in PowerShell, no administrator rights needed. It installs `levelrail-cli.exe` to `%LOCALAPPDATA%\Levelrail\bin`, verifies the SHA-256 checksum (and the cosign signature if `cosign` is installed), and adds that folder to your user `PATH`, so open a new terminal after it finishes. Pin a version with `$env:LEVELRAIL_VERSION = "v0.3.0"` before the command. To remove it, save the script and run `.\install-cli.ps1 -Uninstall`. Prefer WSL? The Linux command works there too.
+</Tab>
+</Tabs>
+
+If `levelrail-cli` is not found afterwards, the install folder is not on your `PATH` yet: open a new terminal, or add the folder yourself.
 </Step>
 <Step title="Point it at your instance">
 ```bash
@@ -454,6 +478,7 @@ See the [CLI reference](/cli-reference) for every command.
 | Method | Command |
 | --- | --- |
 | Homebrew (macOS and Linux) | `brew install glincker/tap/levelrail-cli` |
+| Scoop and winget (Windows) | Planned. Use the PowerShell installer above for now. |
 | Go | `go install github.com/GLINCKER/levelrail/cmd/levelrail-cli@latest` |
 | Direct download | Pick `levelrail-cli-<os>-<arch>` (`linux`, `darwin`, or `windows`; `amd64` or `arm64`) from the [releases page](https://github.com/glincker/levelrail/releases). Windows files end in `.exe`. |
 
@@ -480,11 +505,11 @@ journalctl -u levelrail -f
 Once you have an admin account and an API token (see [Getting started](/getting-started#use-the-cli-from-your-laptop)):
 
 ```bash
-levelrail-cli version   # compare running vs. latest published release
+levelrail-cli version --server   # compare the CLI with the running control plane and latest release
 levelrail-cli status    # check Docker reachability and system config
 ```
 
-These call `GET /api/v1/updates` and `GET /api/v1/system/status`. A reply means the control plane is reachable and you are authenticated.
+`version` without `--server` runs offline. `--server` and `status` call `GET /api/v1/updates` and `GET /api/v1/system/status`. A reply means the control plane is reachable and you are authenticated.
 </Tab>
 </Tabs>
 

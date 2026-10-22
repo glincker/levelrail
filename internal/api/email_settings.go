@@ -138,14 +138,12 @@ func (rt *Router) withSecretFlags(ctx context.Context, res emailSettingsResource
 func (rt *Router) handleGetEmailSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.emailSettings.GetEmailSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get email settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get email settings failed", err)
 		return
 	}
 	res, err := rt.withSecretFlags(r.Context(), toEmailSettingsResource(settings))
 	if err != nil {
-		rt.logger.Error("api: get email settings: secrets check failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get email settings: secrets check failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, res)
@@ -272,8 +270,7 @@ func (rt *Router) handleUpdateEmailSettings(w http.ResponseWriter, r *http.Reque
 			continue
 		}
 		if err := rt.emailSecrets.SetValue(r.Context(), key, f.envKey, v); err != nil {
-			rt.logger.Error("api: update email settings: set secret failed", slog.String("key", f.envKey), slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: update email settings: set secret failed", err, slog.String("key", f.envKey))
 			return
 		}
 	}
@@ -310,15 +307,13 @@ func (rt *Router) handleUpdateEmailSettings(w http.ResponseWriter, r *http.Reque
 		MailgunRegion:   mailgunRegion,
 	}
 	if err := rt.emailSettings.UpdateEmailSettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: update email settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update email settings failed", err)
 		return
 	}
 
 	res, err := rt.withSecretFlags(r.Context(), toEmailSettingsResource(settings))
 	if err != nil {
-		rt.logger.Error("api: update email settings: secrets check failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update email settings: secrets check failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, res)

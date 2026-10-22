@@ -506,13 +506,24 @@
     "colEngine": "Engine",
     "colBackups": "Backups",
     "colNode": "Node",
-    "backupsOn": "Scheduled",
-    "backupsOff": "No schedule",
+    "backupsOn": "Backups on",
+    "backupsOff": "No backups",
     "emptyTitle": "No databases yet",
     "emptyBody": "Create a managed Postgres, MySQL or Redis database and connect an app to it. Credentials are injected for you.",
     "errorTitle": "Could not load databases",
     "errorBody": "The databases list did not load. Check that the control plane is reachable, then try again.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "description": "Managed databases next to your apps, with backups and point in time restore.",
+    "colSize": "Memory",
+    "sizeShared": "Shared",
+    "sizeGb": "{{value}} GB",
+    "sizeMb": "{{value}} MB",
+    "showing": "Showing {{shown}} of {{total}}",
+    "showMore": "Show more",
+    "loading": "Loading databases",
+    "notCreated": "Not created yet",
+    "failedToCreate": "Failed to create",
+    "pendingActionHint": "Available once the database is created"
   },
   "detail": {
     "backupNow": "Back up now",
@@ -547,7 +558,42 @@
     "credentials": "Credentials",
     "credentialsHint": "Passwords are never shown here. Create a login or a temporary credential on the Access tab.",
     "openAccess": "Manage access",
-    "copyAddress": "Address"
+    "copyAddress": "Address",
+    "passwordNever": "Passwords are never shown here. Use the placeholder and create a login on the Access tab.",
+    "maskPassword": "Mask password",
+    "showPlaceholder": "Show placeholder",
+    "unavailable": "Connection details could not be loaded.",
+    "retry": "Try again",
+    "tab": {
+      "uri": "Connection string",
+      "env": "Env vars",
+      "node": "Node",
+      "python": "Python",
+      "go": "Go",
+      "cli": "{{engine}} CLI"
+    }
+  },
+  "status": {
+    "healthy": "Healthy",
+    "healthyHint": "Running and passing every health check.",
+    "settingUp": "Setting up",
+    "settingUpHint": "Getting ready. This page updates on its own.",
+    "stopped": "Stopped",
+    "stoppedHint": "Not running. Start it to accept connections.",
+    "attention": "Needs attention",
+    "attentionHint": "Something failed. The logs show why.",
+    "viewLogs": "View logs",
+    "lastBackup": "Last backup",
+    "noBackupYet": "No backup yet",
+    "backupSize": "Backup size",
+    "none": "None",
+    "schedule": "Backup schedule",
+    "notScheduled": "Not scheduled",
+    "details": "Details"
+  },
+  "quickActions": {
+    "label": "Quick actions",
+    "metrics": "Open metrics"
   },
   "conditions": {
     "title": "Health checks",
@@ -602,5 +648,243 @@
     "toastConnectedBody": "{{app}} gets the connection string as {{envVar}} on its next start.",
     "toastFailed": "Could not connect the app.",
     "loadFailed": "Could not load connected apps."
+  },
+  "banner": {
+    "title": "Databases",
+    "description": "Create a managed database beside your apps. Credentials are injected for you, backups run on a schedule, and you can restore to a point in time.",
+    "whatFor": "Pick an engine, accept the defaults, and your first database is running in under a minute. Already have one elsewhere? Connect it as an external database.",
+    "diagram": {
+      "app": "app",
+      "database": "database",
+      "backups": "backups",
+      "restore": "point in time restore"
+    }
+  },
+  "flow": {
+    "title": "Create a database",
+    "description": "Pick an engine and review the defaults. You can change everything later.",
+    "engine": "Engine",
+    "name": "Name",
+    "nameHint": "Lowercase letters, numbers and dashes.",
+    "nameFree": "Name is available",
+    "version": "Version",
+    "versionHint": "The recommended version is selected for you.",
+    "size": "Size",
+    "sizeHint": "Memory and CPU limits. Resize any time from the database page.",
+    "presetSpec": "{{memory}} MB, {{cpus}} CPU",
+    "presets": {
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large"
+    },
+    "backups": "Automatic backups",
+    "backupsHint": "Backups go to your first backup destination.",
+    "noTarget": "No backup destination yet, so backups stay off.",
+    "noTargetLink": "Add a destination",
+    "schedule": "Backup schedule",
+    "schedules": {
+      "daily": "Every day at 03:00",
+      "sixHourly": "Every 6 hours",
+      "weekly": "Every Sunday at 03:00"
+    },
+    "advanced": {
+      "title": "Advanced options",
+      "node": "Node",
+      "autoNode": "Choose automatically",
+      "project": "Project",
+      "noProject": "No project"
+    },
+    "engines": {
+      "postgres": "Relational, the safe default",
+      "redis": "In-memory cache and queues",
+      "mysql": "Relational, widely supported",
+      "mongodb": "Document store",
+      "mariadb": "MySQL compatible",
+      "keydb": "Multithreaded Redis fork",
+      "dragonfly": "Fast Redis compatible store",
+      "valkey": "Open Redis fork",
+      "clickhouse": "Analytics and columnar",
+      "meilisearch": "Search engine",
+      "qdrant": "Vector search",
+      "typesense": "Search engine",
+      "memcached": "Simple memory cache"
+    },
+    "secretsWarning": "No secrets master key is configured, so this database is created but will not start until one is.",
+    "secretsLink": "Configure it in Settings.",
+    "errors": {
+      "name": {
+        "required": "Enter a name.",
+        "format": "Use lowercase letters, numbers and dashes, starting with a letter or number.",
+        "taken": "A database with this name already exists."
+      },
+      "version": {
+        "required": "Choose a version."
+      }
+    },
+    "summary": {
+      "empty": "Choose an engine and a name to see a summary.",
+      "withBackups": "{{engine}} {{version}} named {{name}}, {{memory}} MB, backups {{schedule}}.",
+      "noBackups": "{{engine}} {{version}} named {{name}}, {{memory}} MB, no backups."
+    },
+    "cancel": "Cancel",
+    "submit": "Create database",
+    "submitting": "Creating...",
+    "created": "Database \"{{name}}\" is being created.",
+    "createdPartial": "Database \"{{name}}\" created, but size or backups could not be applied. Check its settings.",
+    "dockerDown": "Docker is not responding on this server. Databases cannot be created until it is back."
+  },
+  "provision": {
+    "title": "Setting up your database",
+    "readyTitle": "Your database is ready",
+    "failedTitle": "Setup stopped",
+    "elapsed": "Elapsed {{time}}",
+    "pullProgress": "Image download progress",
+    "failedAt": "Stopped at {{step}}:",
+    "containerOutput": "Container output",
+    "cause": {
+      "permission": {
+        "title": "Permission or capability denied",
+        "hint": "The container was denied a permission or capability. Check the host security profile and volume ownership."
+      },
+      "out_of_memory": {
+        "title": "Out of memory",
+        "hint": "The database ran out of memory. Raise its memory limit."
+      },
+      "port_in_use": {
+        "title": "Port already in use",
+        "hint": "Another process already uses the port. Free it or pick another port."
+      },
+      "bad_volume": {
+        "title": "Data volume corrupt or incompatible",
+        "hint": "Restore a backup or start from a fresh volume."
+      },
+      "bad_config": {
+        "title": "Configuration rejected",
+        "hint": "The database rejected its configuration. Review the settings you changed."
+      }
+    },
+    "retry": "Retry",
+    "confirmRemoveVolume": "This deletes the old data volume for good. Continue?",
+    "confirmYes": "Delete volume and retry",
+    "cancel": "Cancel",
+    "open": "Open database",
+    "connectApp": "Connect an app",
+    "details": "Details",
+    "steps": {
+      "accepted": "Request accepted",
+      "docker_check": "Check Docker",
+      "pull_image": "Download the image",
+      "create_volume": "Create storage",
+      "credentials_and_tls": "Credentials and TLS",
+      "create_container": "Create the container",
+      "start": "Start the database",
+      "wait_ready": "Wait for connections",
+      "apply_settings": "Apply size and backups",
+      "ready": "Ready"
+    },
+    "host": "Host",
+    "port": "Port",
+    "url": "Connection string",
+    "passwordNote": "The password is never shown here. Open the database access page to manage credentials.",
+    "editVersion": "Version",
+    "editMemory": "Memory (MiB)",
+    "editSchedule": "Backup schedule (cron)",
+    "saveAndRetry": "Save and retry",
+    "leftoverVolume": "A deleted database of this name left the volume {{name}} ({{size}}) behind.",
+    "editSettings": "Edit settings",
+    "discard": "Discard",
+    "confirmDiscard": "This deletes the saved settings of this database. Nothing was created. Continue?",
+    "discardYes": "Discard database"
+  },
+  "backupSetup": {
+    "title": "Set up backups for {{name}}",
+    "stepOf": "Step {{current}} of {{total}}",
+    "next": "Next",
+    "cancel": "Cancel",
+    "close": "Close",
+    "runInBackground": "Close, keep running",
+    "saveAndRun": "Save and run first backup",
+    "saved": "Backups scheduled for {{name}}. First backup started.",
+    "target": {
+      "label": "Where should backups go?",
+      "none": "No backup destination is connected yet. Connect a bucket first, then come back here.",
+      "connect": "Connect a destination"
+    },
+    "schedule": {
+      "label": "How often?",
+      "daily": "Every day at 03:00",
+      "weekly": "Every Sunday at 03:00",
+      "custom": "Custom schedule",
+      "cronLabel": "Cron expression",
+      "cronHint": "Five fields: minute, hour, day of month, month, day of week."
+    },
+    "retention": {
+      "label": "How many backups to keep",
+      "hint": "Older backups beyond this count are deleted automatically."
+    },
+    "run": {
+      "progress": "Running the first backup. This can take a few minutes for large databases.",
+      "done": "First backup finished ({{size}}). Your schedule is active.",
+      "failed": "The first backup failed: {{error}}"
+    },
+    "drill": {
+      "none": "Restore drill: not run yet. A drill proves a backup can really be restored.",
+      "running": "Restore drill: running now.",
+      "passed": "Restore drill: the last drill passed.",
+      "failed": "Restore drill: the last drill failed. Check it before relying on these backups."
+    }
+  },
+  "sizing": {
+    "usageTitle": "Current usage",
+    "usageDescription": "Last hour of real usage, so you can size limits from data.",
+    "stopped": "The database is stopped, so there is no live usage to show. Start it to see memory and CPU.",
+    "noData": "No usage samples yet. They appear within a minute of the database running.",
+    "memory": "Memory",
+    "cpu": "CPU",
+    "noLimit": "no limit",
+    "usedOfLimit": "{{used}} used, limit {{limit}}",
+    "peak": "Peak in the last hour: {{value}}",
+    "headroom": {
+      "tight": "Tight: peak usage is close to the limit. Raise it before the database is killed.",
+      "ok": "Reasonable headroom for the current load.",
+      "ample": "Plenty of headroom. You could lower this and save memory."
+    },
+    "confirmTitle": "Apply these limits?",
+    "confirmSummary": "Memory {{memory}}, CPU {{cpu}}.",
+    "impact": {
+      "live": "Applied to the running container right away, usually with no downtime. If it cannot be applied live, it waits for the next restart, which means about 5 seconds of downtime.",
+      "stopped": "The database is stopped, so nothing is interrupted. The limits take effect the next time it starts.",
+      "none": "Memory and CPU stay the same. Other settings apply on the next restart (about 5 seconds of downtime)."
+    },
+    "shrinkWarning": "The new memory limit is below the peak seen in the last hour. The database may be killed for running out of memory.",
+    "cancel": "Cancel",
+    "apply": "Apply changes",
+    "applying": "Applying..."
+  },
+  "metrics": {
+    "title": "Metrics",
+    "asOf": "As of {{time}}.",
+    "panels": {
+      "memory": "Memory",
+      "cpu": "CPU",
+      "network": "Network I/O",
+      "disk": "Disk I/O"
+    },
+    "gapsSql": "Connection counts and queries per second are not collected yet. To find slow statements, use",
+    "gapsMemory": "Connection counts, operations per second and key evictions are not collected yet. Memory against its limit is the best early signal for this engine.",
+    "slowQueriesLink": "the slow queries view.",
+    "empty": {
+      "stopped": {
+        "title": "This database is stopped",
+        "body": "There is nothing to chart while it is stopped. Start it and charts fill in within a minute or two."
+      },
+      "provisioning": {
+        "title": "This database is still being created",
+        "body": "Metrics start once the database is running. Check progress on the overview page."
+      },
+      "start": "Start database",
+      "starting": "Starting...",
+      "viewProgress": "View progress"
+    }
   }
 }

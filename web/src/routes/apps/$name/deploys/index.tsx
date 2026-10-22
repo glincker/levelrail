@@ -1,36 +1,15 @@
 import { useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
-import { CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { Link, createFileRoute } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
+import { GearSixIcon } from '@phosphor-icons/react/dist/ssr'
 import { deployAttemptsQueryOptions } from '../../../../queries/deployAttempts'
-import { autoRollbackQueryOptions } from '../../../../queries/autoRollback'
-import { autoRollbackSLOBurnQueryOptions } from '../../../../queries/autoRollbackSLOBurn'
-import { imageAutoUpdateQueryOptions } from '../../../../queries/imageAutoUpdate'
-import { appSleepQueryOptions } from '../../../../queries/appSleep'
-import { canaryQueryOptions } from '../../../../queries/canary'
-import { badgeQueryOptions } from '../../../../queries/badge'
 import { useDeployProgress } from '../../../../hooks/useDeployProgress'
 import { DeployAttemptsList } from '../../../../components/DeployAttemptsList'
-import { AutoRollbackCard } from '../../../../components/AutoRollbackCard'
-import { AutoRollbackSLOBurnCard } from '../../../../components/AutoRollbackSLOBurnCard'
-import { ImageAutoUpdateCard } from '../../../../components/ImageAutoUpdateCard'
-import { BuildHooksCard } from '../../../../components/BuildHooksCard'
-import { AppSleepCard } from '../../../../components/AppSleepCard'
-import { AppAutoscaleCard } from '../../../../components/AppAutoscaleCard'
-import { AppBudgetCard } from '../../../../components/AppBudgetCard'
-import { SleepHistoryCard } from '../../../../components/SleepHistoryCard'
-import { CanaryCard } from '../../../../components/CanaryCard'
-import { BadgeSettingsCard } from '../../../../components/BadgeSettingsCard'
-import { GitHubActionsCard } from '../../../../components/GitHubActionsCard'
-import { CIDeployCard } from '../../../../components/CIDeployCard'
 import { BuildLimitsCard } from '../../../../components/BuildLimitsCard'
 import { BuildTrendCard } from '../../../../components/BuildTrendCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Collapsible,
-  CollapsiblePanel,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
+import { Button } from '@/components/ui/button'
 import {
   DeploySheet,
   type DeployTab,
@@ -52,12 +31,6 @@ export const Route = createFileRoute('/apps/$name/deploys/')({
   loader: async ({ context: { queryClient }, params: { name } }) => {
     await Promise.all([
       queryClient.ensureQueryData(deployAttemptsQueryOptions(name)),
-      queryClient.ensureQueryData(autoRollbackQueryOptions(name)),
-      queryClient.ensureQueryData(autoRollbackSLOBurnQueryOptions(name)),
-      queryClient.ensureQueryData(imageAutoUpdateQueryOptions(name)),
-      queryClient.ensureQueryData(appSleepQueryOptions(name)),
-      queryClient.ensureQueryData(canaryQueryOptions(name)),
-      queryClient.ensureQueryData(badgeQueryOptions(name)),
     ])
   },
   component: DeploysSection,
@@ -66,6 +39,7 @@ export const Route = createFileRoute('/apps/$name/deploys/')({
 
 function DeploysSection() {
   const { name } = Route.useParams()
+  const { t } = useTranslation('common')
   const { attempts, conditions } = useDeployProgress(name)
   const [tab, setTab] = useState<DeployTab | null>(null)
 
@@ -81,34 +55,27 @@ function DeploysSection() {
       />
       <BuildTrendCard appName={name} />
       <BuildLimitsCard appName={name} />
-      <AppSleepCard appName={name} />
-      <SleepHistoryCard appName={name} hideWhenOff />
-      <AppAutoscaleCard appName={name} />
-      <AppBudgetCard appName={name} />
-      <Collapsible>
-        <CollapsibleTrigger className="group/deploy-settings flex items-center gap-2 text-sm font-medium text-foreground">
-          <CaretRightIcon
-            aria-hidden="true"
-            className="size-4 transition-transform group-data-panel-open/deploy-settings:rotate-90 motion-reduce:transition-none"
-          />
-          Deploy settings
-          <span className="text-xs font-normal text-muted-foreground">
-            Rollback, canary, auto update, badge
-          </span>
-        </CollapsibleTrigger>
-        <CollapsiblePanel>
-          <div className="space-y-4 pt-4">
-            <AutoRollbackCard appName={name} />
-            <AutoRollbackSLOBurnCard appName={name} />
-            <CanaryCard appName={name} />
-            <ImageAutoUpdateCard appName={name} />
-            <BuildHooksCard appName={name} />
-            <BadgeSettingsCard appName={name} />
-            <GitHubActionsCard appName={name} />
-            <CIDeployCard appName={name} />
+      <Card>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              {t('deployHistory.settingsLink')}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t('deployHistory.settingsLinkHint')}
+            </p>
           </div>
-        </CollapsiblePanel>
-      </Collapsible>
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link to="/apps/$name/deploy-settings" params={{ name }} />}
+          >
+            <GearSixIcon className="size-3.5" data-icon="inline-start" />
+            {t('deployHistory.settingsLinkCta')}
+          </Button>
+        </CardContent>
+      </Card>
       <DeploySheet
         appName={name}
         tab={tab}

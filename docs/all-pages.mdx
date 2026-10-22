@@ -68,7 +68,8 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 - [Troubleshooting](/troubleshooting): Fixes for the most common problems when deploying, logging in, or running Levelrail.
 - [Doctor](/doctor): One health check for the server, in the dashboard and the CLI, with a fix or a next step for every problem.
-- [Email notifications](/email-notifications): Configure SMTP, AWS SES, or Resend as the backend for alert emails and password resets, and send a test email to confirm it works.
+- [Email notifications](/email-notifications): Choose an email provider for alert emails, password resets and invites, check your sender domain, send a test, and read the delivery log.
+- [Email templates and messages](/email-templates): Edit every email the platform sends, build audiences, and send announcements with opt-outs, scheduling and delivery history.
 - [Alert inbox](/alert-inbox): An in-app inbox of the alerts that reached you, with per-account read state, routing rules and an optional daily digest, plus the guardrails on mass actions.
 - [Event webhooks](/event-webhooks): Push signed events to your own HTTPS endpoint when something changes, with retries, a dead letter state, a delivery log and one click replay.
 - [Attention center](/attention-center): How the dashboard surfaces what waits on an operator: CLI login approvals, deploy approvals, expiring tokens, failed data copies, overdue backups and renewals.
@@ -82,6 +83,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [New app wizard](/new-app-wizard): How the New app wizard reads a repository, pre-fills build, port, health path, env keys and databases with evidence, and deploys with one click.
 - [Importing apps](/importing-apps): Import an app from a repo URL, a docker run command, an image, a compose file or a Dockerfile, review the deployment plan, then deploy it.
 - [Static pages](/pages): Deploy static HTML sites directly from git with no container, served by the embedded ingress with full TLS and domain routing.
+- [Static site routing rules](/static-routing): Redirects, rewrites, response headers, single page app fallback, a custom 404 page and clean URLs for a static site, kept in your repository and published with each deploy.
 - [Deploy safety](/deploy-safety): What stands between a deploy trigger and serving: readiness gate, drain, pinned rollback targets, post-deploy watch with auto rollback, and freeze windows.
 - [Deploy failures](/deploy-failures): The structured failure object every failed or blocked deploy carries, and what each failure code means.
 - [Deploying through git host outages](/git-host-outages): What still deploys when GitHub, GitLab or your own git server is down, how the source cache works, and how to deploy from it.
@@ -90,10 +92,13 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [build-center](/build-center)
 - [Scheduled deploys](/scheduled-deploys): Redeploy the latest commit on a branch on a recurring cron schedule, with freeze-window and restart-safe catch-up semantics.
 - [Scheduled jobs](/scheduled-jobs): Run commands on a cron schedule against your app, in a fresh container with the app's env, secrets and volumes, with run history, logs, retries and alerts.
+- [Scheduled and background functions](/scheduled-functions): Call a path on your app on a cron schedule, wake it if it sleeps, and let long calls finish in the background with retries, overlap control and run history.
 - [Image auto-update](/image-auto-update): Redeploy an image-based app automatically when its tag points at a new digest, with the same freeze and protection gates as a manual deploy.
+- [Build hooks](/build-hooks): Secret URLs that build and deploy an app when POSTed to, for headless CMS publishes and cron triggers.
 - [Sleep when idle](/sleep-when-idle): Stop an app that has had no requests for a while so it uses no memory or CPU, and wake it on the next request.
 - [Functions](/functions): Deploy a ten line handler in Node, Python or Go as a function that sleeps when idle and answers the first request after a cold start, like a serverless function on your own server.
 - [Canary deploys](/canary-deploys): Send a share of an app's traffic to a new image in stages, promote it, or let the control plane roll it back when errors or latency rise.
+- [Split testing](/split-testing): Send a share of an app's visitors to a branch deploy or a retained release, sticky per visitor, then promote the winner.
 - [Deployments page](/deployments-page): The cross-app Deployments page lists every deploy live, with filters kept in the URL, a details drawer, redeploy and rollback actions, and keyboard shortcuts.
 - [Images](/images): See every container image on a node with its size, layers and deploy lineage, promote an image between environments by digest without rebuilding, free disk space without losing a rollback target, and check image signatures.
 - [Deploy previews](/deploy-previews): Deploy thumbnails in three tiers, from free page metadata to a real screenshot in a short-lived browser container, with costs, cleanup and settings.
@@ -110,6 +115,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Running Levelrail in Docker](/docker): Run Levelrail control plane and node agent as Docker containers.
 - [Zero-downtime deploys with Docker: readiness-gated cutover and rollback](/zero-downtime-deploys): How Levelrail ships without downtime: blue-green, rolling or recreate strategies gated on real readiness probes and digest-pinned images.
 - [Preview environments per pull request on your own servers](/preview-environments): Levelrail deploys a preview environment for each pull request on GitHub, GitLab, Bitbucket and Gitea and tears it down when the pull request closes.
+- [Deploy contexts: env and build settings per kind of deploy](/deploy-contexts): Set env vars and static build settings separately for pull request previews, branch deploys and specific branches, and see the effective config for any deploy.
 
 ### Networking and multi-node
 
@@ -240,6 +246,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Migrate from Docker Compose](/migrate-from-docker-compose): Turn a docker-compose.yml into Levelrail apps and managed databases with a plan first, then copy data and switch DNS while the old stack keeps running.
 - [Migration reference](/migration-reference): Flags, mapping tables, database copy and hub details, cutover verdicts and environment variables for the Levelrail migration importer.
 - [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover): This page moved. Start at the Levelrail migration overview, then follow the guide for Coolify, Dokploy, CapRover, Dokku or Docker Compose.
+- [Migration agent threat model](/migration-agent-threat-model): What the read-only migration agent on the old server can and cannot do, how it is constrained, and the risks that remain.
 - [Migrate on the same server](/migrate-same-server): Move from Coolify, Dokploy or CapRover to Levelrail on the same machine: install in coexist mode, import, verify, take over ports 80 and 443 with a verified rollback, and what can go wrong.
 - [Migrate over SSH](/migrate-over-ssh): Import apps, env, images and volumes from an old Coolify, Dokploy, CapRover or Dokku host with only an SSH login, read only, with no agent and no command run on the old host
 - [Migrating a Next.js app from Vercel](/migrating-from-vercel): A runbook for moving a Vercel Next.js app to Levelrail: inventory, concept mapping, a DNS cutover and rollback plan, gaps with no equivalent and a shadow run.

@@ -1,6 +1,7 @@
 import * as React from 'react'
 import {
   GaugeIcon,
+  GitBranchIcon,
   LockKeyIcon,
   StackIcon,
   DatabaseIcon,
@@ -33,6 +34,9 @@ import {
   CpuIcon,
   GavelIcon,
   RocketLaunchIcon,
+  HammerIcon,
+  CoinsIcon,
+  ChartLineUpIcon,
   RobotIcon,
   TerminalWindowIcon,
   BellIcon,
@@ -180,6 +184,15 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
   ),
   nav('nav-backups', 'Backups', <CloudArrowUpIcon />, '/backups'),
   nav('nav-deployments', 'Deployments', <RocketLaunchIcon />, '/deployments'),
+  nav(
+    'nav-deploy-timeline',
+    'Deploy timeline',
+    <ClockCounterClockwiseIcon />,
+    '/deploy-timeline',
+  ),
+  nav('nav-usage', 'Usage and cost', <CoinsIcon />, '/usage'),
+  nav('nav-costs', 'Cost explorer', <ChartLineUpIcon />, '/costs'),
+  nav('nav-builds', 'Builds', <HammerIcon />, '/builds'),
   nav('nav-functions', 'Functions', <LightningIcon />, '/functions'),
   nav('nav-approvals', 'Deploy approvals', <GavelIcon />, '/approvals'),
   nav(
@@ -248,6 +261,13 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'Storage destinations',
     <CloudArrowUpIcon />,
     '/settings/storage',
+    'Settings',
+  ),
+  nav(
+    'settings-git-connections',
+    'Git connections',
+    <GitBranchIcon />,
+    '/settings/git-connections',
     'Settings',
   ),
   nav(

@@ -54,8 +54,7 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: set secret: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set secret: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -74,8 +73,7 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: set secret failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("key", key))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set secret failed", err, slog.String("name", name), slog.String("key", key))
 		return
 	}
 
@@ -201,15 +199,13 @@ func (rt *Router) handleListSecrets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: list secrets: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list secrets: load app failed", err, slog.String("name", name))
 		return
 	}
 
 	keys, err := rt.secrets.ListKeys(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: list secrets failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list secrets failed", err, slog.String("name", name))
 		return
 	}
 
@@ -247,8 +243,7 @@ func (rt *Router) handleSetSecretLock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: set secret lock: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set secret lock: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -263,8 +258,7 @@ func (rt *Router) handleSetSecretLock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: set secret lock failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("key", key))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set secret lock failed", err, slog.String("name", name), slog.String("key", key))
 		return
 	}
 

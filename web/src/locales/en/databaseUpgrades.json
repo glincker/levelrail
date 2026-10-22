@@ -121,5 +121,25 @@
       "backup_restore": "Rolled back from backup restore"
     },
     "reason": "Reason: {{reason}}"
+  },
+  "steps": {
+    "backup": {
+      "title": "Back up first",
+      "body": "A fresh backup is taken so you can always return to this exact data.",
+      "skipped": "Skipped by policy. Turn on backup before upgrade in the policy card to be safe."
+    },
+    "change": {
+      "title": "Change the version",
+      "body": "The database restarts on the new version. Expect a short outage while it comes up.",
+      "skipped": ""
+    },
+    "verify": {
+      "title": "Verify",
+      "body": "The upgrade is checked by restoring the backup and probing the new version.",
+      "skipped": "Skipped by policy. Nothing confirms the new version works until you check."
+    },
+    "majorWarning": "This is a major version jump. Data files change format and there is no in-place way back. Take and test a backup, and check that your application supports the new version before continuing.",
+    "rollbackAuto": "Rollback: if the upgrade fails, the previous version is restored automatically. A manual one-click rollback is not offered, so restore from the step 1 backup if you need to go back later.",
+    "rollbackManual": "Rollback: automatic revert is off, and there is no manual one-click rollback. If something goes wrong, restore the step 1 backup. Turn on revert on failure in the policy card for an automatic path."
   }
 }

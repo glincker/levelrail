@@ -15,13 +15,26 @@ import (
 
 const functionsUsage = `Usage:
   %[1]s functions init <node|python|go> [dir]     write a starter handler
+  %[1]s functions init <starter> [dir]            write a tested utility: url-shortener, webhook-receiver, form-to-email, scheduled-job-runner, chat-bot
+  %[1]s functions kv enable|list|get|put|delete <name> ...   the function's key-value store
   %[1]s functions deploy <name> --repo <repo URL> [--ref main] [--dir sub/dir] [--port 8080] [--idle 10m] [--env KEY=VALUE ...]
   %[1]s functions deploy <name> --image <ref> [--port 8080] [--idle 10m] [--env KEY=VALUE ...]
   %[1]s functions deploy <name> ... --domain example.com --path /hello   also serve it at example.com/hello
   %[1]s functions list [--window 1h|24h|7d]       state, calls and p95 duration
+  %[1]s functions invocations <name> [--limit 20]   recent calls with status, duration and cold start
   %[1]s functions runtimes
   %[1]s functions invoke <name> [--path /] [--method GET] [--data BODY] [--insecure]
+  %[1]s functions invoke <name> --replay <id>     repeat a recorded call whose input was stored
+  %[1]s functions dev <dir> [--port 8080] [--env-file .env.local]   run the handler locally in its runtime container
   %[1]s functions delete <name>
+  %[1]s functions settings <name> [--timeout 45s] [--concurrency 20] [--idle 10m]   show or change runtime limits
+  %[1]s functions versions <name>                 deploy history, newest first
+  %[1]s functions rollback <name> [--to <deploy id>] [--pin]   return to a version, --pin also locks publishing
+  %[1]s functions triggers list <name>            webhook, schedules and queue depth of a function
+  %[1]s functions triggers webhook <name> [--path /] [--rotate] [--disable]   signed webhook trigger
+  %[1]s functions triggers enqueue <name> [--path /] [--method POST] [--data BODY]   async call with retries
+  %[1]s functions triggers dead-letters [--function <name>]   calls that ran out of retries
+  %[1]s functions triggers retry <id> | discard <id>
 
 A function is an app (a handler repo built with Railpack, or an image) that sleeps when idle and starts on the next
 request. A request that arrives while it is asleep waits for the cold start
@@ -43,7 +56,15 @@ func runFunctions(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runFunctionsInit(prog, args[1:], stdout, stderr)
 	case "runtimes":
 		return runFunctionsRuntimes(stdout)
-	case "deploy", "list", "invoke", "delete":
+	case "settings", "versions", "rollback":
+		return runFunctionsControls(prog, args[0], args[1:], stdout, stderr, lookupEnv)
+	case "dev":
+		return runFunctionsDev(prog, args[1:], stdout, stderr)
+	case "kv":
+		return runFunctionsKV(prog, args[1:], stdout, stderr, lookupEnv)
+	case "triggers":
+		return runFunctionsTriggers(prog, args[1:], stdout, stderr, lookupEnv)
+	case "deploy", "list", "invoke", "delete", "invocations":
 		return runFunctionsVerb(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown functions subcommand %q\n\n", prog, args[0])
@@ -78,11 +99,13 @@ func runFunctionsVerb(prog, verb string, args []string, stdout, stderr io.Writer
 	routeDomain := fs.String("domain", "", "serve the function at this domain's --path, for a domain already attached to an app (deploy)")
 	method := fs.String("method", http.MethodGet, "HTTP method (invoke)")
 	data := fs.String("data", "", "request body (invoke)")
+	replay := fs.String("replay", "", "id of a recorded call with stored input to repeat (invoke)")
 	insecure := fs.Bool("insecure", false, "skip TLS verification, for a local self-signed certificate (invoke)")
 	repo := fs.String("repo", "", "repository URL of the handler, built with Railpack (deploy)")
 	ref := fs.String("ref", "", "branch, tag or commit to build, default the current branch (deploy)")
 	dir := fs.String("dir", "", "directory inside the repo that holds the handler (deploy)")
 	wait := fs.Duration("wait", 10*time.Minute, "wait this long for the build to go live, 0 to return at once (deploy)")
+	limit := fs.Int("limit", 0, "number of calls to show, 0 for the server default (invocations)")
 	window := fs.String("window", "24h", "call statistics window: 1h, 24h or 7d (list)")
 	envs := map[string]string{}
 	fs.Func("env", "environment variable KEY=VALUE, repeatable (deploy)", func(v string) error {
@@ -94,7 +117,7 @@ func runFunctionsVerb(prog, verb string, args []string, stdout, stderr io.Writer
 		return nil
 	})
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s functions %s [<name>] [flags]\n\nFlags:\n", prog, verb)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s functions %s [<name>] [flags]\n\ninvocations: --limit N. invoke: --replay ID.\n\nFlags:\n", prog, verb)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -133,6 +156,8 @@ func runFunctionsVerb(prog, verb string, args []string, stdout, stderr io.Writer
 		return exitUsage
 	}
 	switch verb {
+	case "invocations":
+		return listFunctionInvocations(ctx, client, name, *limit, of, stdout, stderr, jsonOut)
 	case "deploy":
 		if *routeDomain != "" && (*path == "/" || *path == "") {
 			return reportError(stdout, stderr, jsonOut, newValidationError("--domain needs --path below /, for example --path /hello"))
@@ -160,6 +185,9 @@ func runFunctionsVerb(prog, verb string, args []string, stdout, stderr io.Writer
 		_, _ = fmt.Fprintf(stdout, "function %q deleted\n", name)
 		return exitOK
 	default:
+		if *replay != "" {
+			return replayFunction(ctx, client, name, *replay, stdout, stderr, jsonOut)
+		}
 		return invokeFunction(ctx, client, name, *method, *path, *data, *insecure, stdout, stderr, jsonOut)
 	}
 }
@@ -222,4 +250,44 @@ func invokeFunction(ctx context.Context, client *Client, name, method, path, dat
 		return exitAPIError
 	}
 	return exitOK
+}
+
+func replayFunction(ctx context.Context, client *Client, name, id string, stdout, stderr io.Writer, jsonOut bool) int {
+	res, err := client.ReplayFunctionInvocation(ctx, name, id)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("replay %q on %q: %w", id, name, err))
+	}
+	cold := "warm"
+	if res.ColdStart {
+		cold = "cold start"
+	}
+	_, _ = fmt.Fprintf(stderr, "%d in %.0fms (%s)\n", res.Status, res.DurationMs, cold)
+	_, _ = io.WriteString(stdout, res.Body)
+	if res.Status >= 500 {
+		return exitAPIError
+	}
+	return exitOK
+}
+
+func listFunctionInvocations(ctx context.Context, client *Client, name string, limit int, of outputFlags, stdout, stderr io.Writer, jsonOut bool) int {
+	res, err := client.ListFunctionInvocations(ctx, name, limit)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list invocations of %q: %w", name, err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, res.Invocations, func() {
+		if len(res.Invocations) == 0 {
+			_, _ = fmt.Fprintln(stdout, "no recorded calls")
+			return
+		}
+		for _, inv := range res.Invocations {
+			cold, replay := "", ""
+			if inv.ColdStart {
+				cold = " cold"
+			}
+			if inv.Replayable {
+				replay = " replayable"
+			}
+			_, _ = fmt.Fprintf(stdout, "%-16s %s %-6s %-24s %d %6.0fms%s%s\n", inv.ID, inv.Time.Format(time.RFC3339), inv.Method, inv.Path, inv.Status, inv.DurationMs, cold, replay)
+		}
+	})
 }

@@ -74,6 +74,8 @@ export interface TriggerDeployInput {
   pull?: boolean
   overrideFreeze?: boolean
   overrideReason?: string
+  /** The deploy attempt this retries, recorded for rerun lineage. */
+  rerunOf?: string
 }
 
 // TriggerDeployResult mirrors internal/api's deployTriggerResult
@@ -112,6 +114,7 @@ export async function triggerDeploy(
         pull: input.pull ?? false,
         override_freeze: input.overrideFreeze ?? false,
         override_reason: input.overrideReason ?? '',
+        ...(input.rerunOf ? { rerun_of: input.rerunOf } : {}),
       }),
     },
   )

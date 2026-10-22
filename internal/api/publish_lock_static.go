@@ -51,8 +51,7 @@ func (rt *Router) publishHeldStatic(w http.ResponseWriter, r *http.Request, svc 
 		return true
 	}
 	if err := saver.SaveStaticSite(r.Context(), *site); err != nil {
-		rt.logger.Error("api: publish held static build failed", slog.String("error", err.Error()), slog.String("deploy_id", deployID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: publish held static build failed", err, slog.String("deploy_id", deployID))
 		return true
 	}
 	rt.nudgeReconciler()

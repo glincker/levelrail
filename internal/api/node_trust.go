@@ -142,8 +142,7 @@ func (rt *Router) trustNode(w http.ResponseWriter, r *http.Request) (*store.Node
 		return nil, nil, false
 	}
 	if err != nil {
-		rt.logger.Error("api: node trust: look up node failed", slog.String("node_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, errInternal)
+		rt.internalError(w, "api: node trust: look up node failed", err, slog.String("node_id", id))
 		return nil, nil, false
 	}
 	return n, ts, true
@@ -163,14 +162,12 @@ func (rt *Router) handleGetNodeTrust(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	sum, err := ts.SummarizeNodeConnections(ctx, n.ID, now.Add(-trustWindow))
 	if err != nil {
-		rt.logger.Error("api: node trust: summarize failed", slog.String("node_id", n.ID), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, errInternal)
+		rt.internalError(w, "api: node trust: summarize failed", err, slog.String("node_id", n.ID))
 		return
 	}
 	state, err := ts.GetNodeTrustState(ctx, n.ID)
 	if err != nil {
-		rt.logger.Error("api: node trust: load state failed", slog.String("node_id", n.ID), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, errInternal)
+		rt.internalError(w, "api: node trust: load state failed", err, slog.String("node_id", n.ID))
 		return
 	}
 	issued := rt.latestIssuedAt(ctx, ts, n)
@@ -310,8 +307,7 @@ func (rt *Router) handleListNodeSecurityEvents(w http.ResponseWriter, r *http.Re
 	}
 	evs, err := ts.ListNodeSecurityEvents(r.Context(), n.ID, f)
 	if err != nil {
-		rt.logger.Error("api: list node security events failed", slog.String("node_id", n.ID), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, errInternal)
+		rt.internalError(w, "api: list node security events failed", err, slog.String("node_id", n.ID))
 		return
 	}
 	out := make([]nodeSecurityEventResource, 0, len(evs))
@@ -335,8 +331,7 @@ func (rt *Router) handleRenewNodeCert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: renew node cert: look up node failed", slog.String("node_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, errInternal)
+		rt.internalError(w, "api: renew node cert: look up node failed", err, slog.String("node_id", id))
 		return
 	}
 	if rt.isLocalNodeRecord(n) {

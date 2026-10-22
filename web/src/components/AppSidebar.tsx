@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import { SignOutIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -16,9 +17,11 @@ import { Button } from '@/components/ui/button'
 import { useBrand } from '../hooks/useBrand'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { useLogout } from '../queries/auth'
+import { updatesQueryOptions } from '../queries/updates'
 import { appScopeName, databaseScopeName } from '../lib/sidebarScope'
 import { GlobalNav } from './shell/GlobalNav'
-import { GLOBAL_NAV_GROUPS, isGlobalItemActive } from './shell/navModel'
+import { sidebarArea } from './shell/sidebarArea'
+import { scheduleIdle } from '../i18n/prefetch'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
 import { SidebarStatusBadge } from './shell/SidebarStatusBadge'
 import { scheduleScrollActiveNavItem } from './shell/scrollActiveNavItem'
@@ -27,19 +30,31 @@ import { scheduleScrollActiveNavItem } from './shell/scrollActiveNavItem'
 // by pathname below), so a session that never visits /databases or
 // /settings should not pay for their query modules in the eagerly-loaded
 // root chunk either.
-const AppScopedSidebar = lazy(() =>
-  import('./AppScopedSidebar').then((m) => ({ default: m.AppScopedSidebar })),
-)
-const DatabaseScopedSidebar = lazy(() =>
+const loadAppScoped = () =>
+  import('./AppScopedSidebar').then((m) => ({ default: m.AppScopedSidebar }))
+const loadDatabaseScoped = () =>
   import('./DatabaseScopedSidebar').then((m) => ({
     default: m.DatabaseScopedSidebar,
-  })),
-)
-const SettingsScopedSidebar = lazy(() =>
+  }))
+const loadSettingsScoped = () =>
   import('./SettingsScopedSidebar').then((m) => ({
     default: m.SettingsScopedSidebar,
-  })),
-)
+  }))
+const AppScopedSidebar = lazy(loadAppScoped)
+const DatabaseScopedSidebar = lazy(loadDatabaseScoped)
+const SettingsScopedSidebar = lazy(loadSettingsScoped)
+
+// Fetch the scoped chunks while idle so switching areas never shows an empty sidebar.
+let scopedChunksWarmed = false
+function warmScopedSidebars() {
+  if (scopedChunksWarmed) return
+  scopedChunksWarmed = true
+  scheduleIdle(() => {
+    void loadAppScoped()
+    void loadDatabaseScoped()
+    void loadSettingsScoped()
+  })
+}
 
 // Matches /apps/<name> and any nested path under it, capturing <name>.
 // Deliberately excludes the bare /apps list route (no trailing segment)
@@ -53,13 +68,6 @@ const SettingsScopedSidebar = lazy(() =>
 // pathname can never match both, and the checks below stay a simple
 // if/else-if rather than needing extra precedence handling.
 
-// Anchors on /settings itself (no captured name, unlike the two
-// patterns above), covering both the hub (/settings) and every leaf
-// page under it (/settings/github-app, etc). Checked after the app/
-// database patterns below purely by convention, since /settings/ can
-// never overlap with /apps/ or /databases/.
-const SETTINGS_SCOPE_PATTERN = /^\/settings(\/|$)/
-
 // Renders one of four nav modes by pathname (global, app-scoped,
 // database-scoped, settings-scoped) in a single component so the brand
 // header, account footer, and outer chrome stay written once instead of
@@ -69,19 +77,15 @@ export function AppSidebar() {
   const { t } = useTranslation()
   const username = useAuthUsername()
   const logout = useLogout()
+  const version = useQuery(updatesQueryOptions()).data?.current_version
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const scopedAppName = appScopeName(pathname)
   const scopedDatabaseName = databaseScopeName(pathname)
-  // Pages the main nav lists (registry, node providers, IAM policies...) live
-  // under /settings but keep the main sidebar, so opening one never swaps it.
-  const ownedByGlobalNav = GLOBAL_NAV_GROUPS.some((g) =>
-    g.items.some((i) => isGlobalItemActive(pathname, i)),
-  )
-  const isSettingsScoped =
-    SETTINGS_SCOPE_PATTERN.test(pathname) && !ownedByGlobalNav
+  const isSettingsScoped = sidebarArea(pathname) === 'settings'
 
   // Keep the current page's entry visible in a long sidebar.
   useEffect(() => scheduleScrollActiveNavItem(), [pathname])
+  useEffect(warmScopedSidebars, [])
 
   return (
     <Sidebar collapsible="icon" variant="floating">
@@ -102,7 +106,9 @@ export function AppSidebar() {
                   {brand.ShortName || brand.Name}
                 </span>
                 <span className="truncate text-[11px] text-sidebar-foreground/60">
-                  {t('shell.account.controlPlane')}
+                  {version
+                    ? `${t('shell.account.controlPlane')} v${version.replace(/^v/, '').split(/[-+]/)[0]}`
+                    : t('shell.account.controlPlane')}
                 </span>
               </span>
             </SidebarMenuButton>
@@ -110,7 +116,7 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="[view-transition-name:nav-panel]">
         {scopedAppName ? (
           <Suspense fallback={null}>
             <AppScopedSidebar name={decodeURIComponent(scopedAppName)} />

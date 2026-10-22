@@ -46,8 +46,7 @@ func (rt *Router) handleListOrphanedVolumes(w http.ResponseWriter, r *http.Reque
 
 	orphans, err := rt.computeOrphanedVolumes(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list orphaned volumes failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list orphaned volumes failed", err)
 		return
 	}
 
@@ -110,8 +109,7 @@ func (rt *Router) handleCleanupOrphanedVolumes(w http.ResponseWriter, r *http.Re
 
 	orphans, err := rt.computeOrphanedVolumes(r.Context())
 	if err != nil {
-		rt.logger.Error("api: cleanup orphaned volumes: compute failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: cleanup orphaned volumes: compute failed", err)
 		return
 	}
 	stillOrphaned := make(map[string]docker.NamedVolume, len(orphans))

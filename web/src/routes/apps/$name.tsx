@@ -1,5 +1,6 @@
 import { StuckPanel } from '../../components/StuckPanel'
-import { useState } from 'react'
+import { DelayedFallback } from '../../components/ui/delayed-fallback'
+import { Suspense, useState } from 'react'
 import {
   createFileRoute,
   Link,
@@ -16,6 +17,7 @@ import { useAppAsleep } from '../../queries/appSleep'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { AppActionBar } from '../../components/apps/AppActionBar'
+import { AppTabStrip } from '../../components/apps/AppTabStrip'
 import { AppPaletteActions } from '../../components/apps/AppPaletteActions'
 import { parseAppAction, type AppPaletteAction } from '../../lib/paletteAction'
 import { AppHeaderBadges } from '../../components/apps/AppHeaderBadges'
@@ -29,6 +31,7 @@ import {
   PublishLockToggle,
 } from '../../components/PublishLockControls'
 import { AppMaintenanceBanner } from '../../components/maintenance/AppMaintenanceBanner'
+import { FixReturnBanner } from '../../components/deployDetail/FixReturnBanner'
 import { TrialAppBanner } from '../../components/TrialAppBanner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -133,6 +136,7 @@ function AppDetailLayout() {
       <PendingDeployApprovalBanner appName={app.name} />
       <PublishLockBanner appName={app.name} />
       <AppMaintenanceBanner appName={app.name} />
+      <FixReturnBanner appName={app.name} image={app.image} />
     </>
   )
   const content = (
@@ -146,7 +150,10 @@ function AppDetailLayout() {
       />
       <AppPaletteActions app={app} action={action} onDeploy={setDeployTab} />
       <StuckPanel kind="app" name={app.name} />
-      <Outlet />
+      <AppTabStrip name={app.name} />
+      <Suspense fallback={<DelayedFallback />}>
+        <Outlet />
+      </Suspense>
     </>
   )
 

@@ -208,12 +208,21 @@ func runDatabasesCreateWizard(stdin io.Reader, stdout, stderr io.Writer, cf cred
 	return createDatabaseFromWizard(ctx, client, answers, stdout, stderr, of)
 }
 
-// Resources, public access and backup schedule are follow-up calls, since the create body has no field for them.
+// Resources and backup schedule travel in the create request so the server stores them with the record; public access stays a follow-up.
 func createDatabaseFromWizard(ctx context.Context, client *Client, a databaseWizardAnswers, stdout, stderr io.Writer, of outputFlags) int {
 	jsonOut := of.Format == outputJSON
 	plan, err := a.toCreatePlan()
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
+	}
+	resources, err := a.toResources()
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("database %q resource limits are invalid: %w", a.name, err))
+	}
+	plan.Resources = resources
+	if a.backupTargetID != "" {
+		plan.BackupTargetID, plan.BackupSchedule = a.backupTargetID, a.backupSchedule
+		plan.BackupRetain, plan.BackupRetainDays = a.backupRetain, a.backupRetainDays
 	}
 
 	created, err := client.CreateDatabase(ctx, plan)
@@ -221,13 +230,7 @@ func createDatabaseFromWizard(ctx context.Context, client *Client, a databaseWiz
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create database %q: %w", a.name, err))
 	}
 
-	if err := applyDatabaseWizardResources(ctx, client, a, created, stderr, jsonOut); err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
-	}
 	if err := applyDatabaseWizardPublicAccess(ctx, client, a, created, stderr, jsonOut); err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
-	}
-	if err := applyDatabaseWizardBackupSchedule(ctx, client, a, created, stderr, jsonOut); err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
@@ -247,26 +250,6 @@ func createDatabaseFromWizard(ctx context.Context, client *Client, a databaseWiz
 	return exitOK
 }
 
-// applyDatabaseWizardResources sets created's resource limits from a's
-// answers, when any were given. Returns nil, untouched, when a asked
-// for no limits at all.
-func applyDatabaseWizardResources(ctx context.Context, client *Client, a databaseWizardAnswers, created databaseResource, stderr io.Writer, jsonOut bool) error {
-	resources, err := a.toResources()
-	if err != nil {
-		return fmt.Errorf("database %q was created but its resource limits are invalid: %w", created.Name, err)
-	}
-	if resources == nil {
-		return nil
-	}
-	if !jsonOut {
-		_, _ = fmt.Fprintf(stderr, "applying resource limits to %q...\n", created.Name)
-	}
-	if _, err := client.SetDatabaseResources(ctx, created.Name, resources); err != nil {
-		return fmt.Errorf("database %q was created but setting resource limits failed: %w", created.Name, err)
-	}
-	return nil
-}
-
 // applyDatabaseWizardPublicAccess enables created's public access when
 // a.public was answered yes, a no-op otherwise.
 func applyDatabaseWizardPublicAccess(ctx context.Context, client *Client, a databaseWizardAnswers, created databaseResource, stderr io.Writer, jsonOut bool) error {
@@ -279,22 +262,6 @@ func applyDatabaseWizardPublicAccess(ctx context.Context, client *Client, a data
 	// Empty bind address is the server default (private); public access is set via the databases public-access command.
 	if _, err := client.SetDatabasePublicAccess(ctx, created.Name, a.publicPort, ""); err != nil {
 		return fmt.Errorf("database %q was created but enabling public access failed: %w", created.Name, err)
-	}
-	return nil
-}
-
-// applyDatabaseWizardBackupSchedule configures created's backup
-// schedule when a.backupTargetID was answered, a no-op otherwise.
-func applyDatabaseWizardBackupSchedule(ctx context.Context, client *Client, a databaseWizardAnswers, created databaseResource, stderr io.Writer, jsonOut bool) error {
-	if a.backupTargetID == "" {
-		return nil
-	}
-	if !jsonOut {
-		_, _ = fmt.Fprintf(stderr, "configuring a backup schedule for %q...\n", created.Name)
-	}
-	req := setBackupScheduleRequest{TargetID: a.backupTargetID, Schedule: a.backupSchedule, Retain: a.backupRetain, RetainDays: a.backupRetainDays}
-	if _, err := client.SetBackupSchedule(ctx, created.Name, req); err != nil {
-		return fmt.Errorf("database %q was created but configuring its backup schedule failed: %w", created.Name, err)
 	}
 	return nil
 }

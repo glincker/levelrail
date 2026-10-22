@@ -43,21 +43,18 @@ func (rt *Router) handleProjectLifecycle(w http.ResponseWriter, r *http.Request,
 		writeError(w, http.StatusNotFound, "project not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: project lifecycle: get project failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: project lifecycle: get project failed", err, slog.String("id", id))
 		return
 	}
 
 	apps, err := rt.apps.ListDesiredServicesByProject(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: project lifecycle: list apps failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: project lifecycle: list apps failed", err, slog.String("id", id))
 		return
 	}
 	databases, err := rt.databases.ListDesiredDatabasesByProject(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: project lifecycle: list databases failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: project lifecycle: list databases failed", err, slog.String("id", id))
 		return
 	}
 

@@ -1,0 +1,7 @@
+{
+  "name": "handler",
+  "version": "1.0.0",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": { "start": "node index.js", "test": "node --test" }
+}

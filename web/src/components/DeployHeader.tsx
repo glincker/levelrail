@@ -1,6 +1,7 @@
 import { Display } from '@/components/ui/typography'
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowCounterClockwiseIcon,
   ArrowLeftIcon,
@@ -67,6 +68,7 @@ export function DeployHeader({
   /** Replaces the raw attempt badge with the page's single derived state. */
   displayStatus?: { tone: Tone; label: string; live?: boolean }
 }) {
+  const { t } = useTranslation('deployDetail')
   const navigate = useNavigate()
   const rollback = useRollbackToDeploy(appName)
   const [cancelOpen, setCancelOpen] = useState(false)
@@ -142,6 +144,14 @@ export function DeployHeader({
               live={displayStatus?.live ?? running}
             />
             {isLive ? <StatusPill tone="success" label="Current" /> : null}
+            {attempt.chain_position && attempt.chain_position > 1 ? (
+              <StatusPill
+                tone="neutral"
+                label={t('chain.position', {
+                  position: attempt.chain_position,
+                })}
+              />
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
             {branchName ? (

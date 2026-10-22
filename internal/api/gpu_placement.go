@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"sort"
 	"strings"
@@ -175,8 +176,7 @@ func (rt *Router) settleGPUCreatePlacement(w http.ResponseWriter, r *http.Reques
 	if nodeIDKeyPresent(body) {
 		msg, err := rt.gpuPlacementError(r.Context(), &store.DesiredService{Name: req.Name, Resources: req.Resources}, req.NodeID)
 		if err != nil {
-			rt.logger.Error("api: create app: gpu check failed", "error", err.Error(), "name", req.Name)
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: create app: gpu check failed", err, slog.Any("name", req.Name))
 			return false
 		}
 		if msg != "" {
@@ -187,8 +187,7 @@ func (rt *Router) settleGPUCreatePlacement(w http.ResponseWriter, r *http.Reques
 	}
 	planner, err := rt.newGPUPlanner(r.Context())
 	if err != nil {
-		rt.logger.Error("api: create app: gpu planner failed", "error", err.Error(), "name", req.Name)
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create app: gpu planner failed", err, slog.Any("name", req.Name))
 		return false
 	}
 	if planner.fit(req.NodeID, claim) == nil {
@@ -201,8 +200,7 @@ func (rt *Router) settleGPUCreatePlacement(w http.ResponseWriter, r *http.Reques
 			writeError(w, http.StatusConflict, blocked.Error()+". Add or fix a GPU node, or pass node_id explicitly.")
 			return false
 		}
-		rt.logger.Error("api: create app: gpu auto-place failed", "error", err.Error(), "name", req.Name)
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create app: gpu auto-place failed", err, slog.Any("name", req.Name))
 		return false
 	}
 	req.NodeID = target

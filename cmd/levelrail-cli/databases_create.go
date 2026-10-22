@@ -97,18 +97,19 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 	fs := flag.NewFlagSet(prog+" databases create", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	var tokenFlag, apiURLFlag, profileFlag, name, engine, version, nodeID, existingVolume string
-	var jsonOut, interactive bool
+	var jsonOut, interactive, wait bool
 	fs.StringVar(&name, "name", "", "database name (required)")
 	fs.StringVar(&engine, "engine", "", "database engine: "+strings.Join(supportedEngineParams, ", ")+" (required)")
 	fs.StringVar(&version, "version", "", "engine version, e.g. \"16\"; postgres also takes \"<major>-pgvector\", \"<major>-timescaledb\" or \"<major>-postgis\", e.g. \"17-timescaledb\" (required)")
 	fs.StringVar(&nodeID, "node-id", "", "node to place this database on (default: auto-placed on the least-loaded registered node, or the local node if only one exists)")
-	fs.StringVar(&existingVolume, "existing-volume", "", "when a deleted database of this name left its data volume behind: reuse (attach the old data) or discard (delete it, start empty); required if one exists")
+	fs.StringVar(&existingVolume, "existing-volume", "", "when a deleted database of this name left its data volume behind: reuse (attach the old data) or discard (delete it, start empty); stored with the database, without it creation stops at a leftover volume until you choose")
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
 	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&jsonOut, "json", false, "print the created database as JSON to stdout and nothing else")
 	outputFlagP, queryFlagP := bindOutputQueryFlags(fs)
 	fs.BoolVar(&interactive, "interactive", false, "run a step-by-step wizard instead of specifying flags: prompts for name, engine, version, resource limits, public access, and a backup schedule, then creates the database via the API")
+	fs.BoolVar(&wait, "wait", false, "after creating, print each provisioning step until the database is ready or fails")
 	fs.BoolVar(&interactive, "i", false, "shorthand for --interactive")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesCreateUsage(prog)) }
 
@@ -162,6 +163,9 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
+	if wait && !jsonOut {
+		return waitProvision(context.Background(), client, created.Name, stderr, lookupEnv)
+	}
 	return exitOK
 }
 
@@ -186,6 +190,7 @@ Flags:
                                     least-loaded registered node (or the local node if only one exists)
   --existing-volume string  reuse or discard the data volume a deleted database of this name
                                     left behind (create is refused until you choose, when one exists)
+  --wait                   after creating, print each provisioning step until the database is ready or fails
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")

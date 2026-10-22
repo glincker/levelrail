@@ -1,7 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ShieldWarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { SignInRequestsList } from '../attention/SignInRequestsBanner'
 import { signInRequestsQueryOptions } from '../../queries/signIn'
 
@@ -23,6 +22,10 @@ export function SignInApprovalCard({
   })
   const approvals = data?.approvals ?? []
   const count = approvals.length
+  const [shown, setShown] = useState(false)
+  if (count > 0 && !shown) {
+    setShown(true)
+  }
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (focusOnArrival && count > 0) {
@@ -31,22 +34,13 @@ export function SignInApprovalCard({
   }, [focusOnArrival, count])
   return (
     <div aria-live="polite" aria-label={t('approvalCard.regionLabel')}>
-      {count > 0 ? (
+      {count > 0 || shown ? (
         <section
           ref={ref}
           tabIndex={-1}
-          aria-labelledby="sign-in-approval-title"
-          className="space-y-3 rounded-lg border border-primary/40 bg-primary/10 p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={t('approvalCard.title')}
+          className="outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <div className="flex items-center gap-2">
-            <ShieldWarningIcon aria-hidden="true" className="size-5 shrink-0" />
-            <h2 id="sign-in-approval-title" className="font-semibold">
-              {t('approvalCard.title')}
-            </h2>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {t('approvalCard.lead')}
-          </p>
           <SignInRequestsList codes={[]} approvals={approvals} />
         </section>
       ) : showEmpty ? (

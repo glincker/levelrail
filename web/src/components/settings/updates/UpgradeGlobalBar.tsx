@@ -12,6 +12,7 @@ import { toast } from '../../ui/toast'
 import { useUpgradeStatus } from '../../../hooks/useUpgradeStatus'
 import { usePrefersReducedMotion } from '../../../hooks/usePrefersReducedMotion'
 import { clearUpgrade } from '../../../lib/upgradeTracker'
+import { markSeen } from '../../../lib/upgradeSeen'
 import { formatElapsed, useNow } from '../../../lib/upgradeTime'
 import { scaleClass } from './progressScale'
 
@@ -31,7 +32,9 @@ export function UpgradeGlobalBar() {
 
   useEffect(() => {
     if (!finished) return
+    const attemptId = s.attempt?.id ?? ''
     const id = window.setTimeout(() => {
+      if (attemptId) markSeen('toast', attemptId)
       toast.add({
         title: t(`progress.end.${outcome ?? 'failed'}`, { version: s.target }),
         type:
@@ -44,7 +47,7 @@ export function UpgradeGlobalBar() {
       clearUpgrade()
     }, COLLAPSE_MS)
     return () => window.clearTimeout(id)
-  }, [finished, outcome, s.target, t])
+  }, [finished, outcome, s.target, s.attempt?.id, t])
 
   if (s.state === 'idle') return null
   const reconnecting = s.state === 'reconnecting'

@@ -15,12 +15,16 @@ import {
   toDraft,
   toOverrides,
 } from '../lib/deploySafetyForm'
+import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { RollbackTargetsList } from './RollbackTargetsList'
 
 /** DeploySafetyCard edits one app's readiness gate, drain and post-deploy watch thresholds. */
 export function DeploySafetyCard({ appName }: { appName: string }) {
   const { t } = useTranslation('deploySafety')
-  const { data, isError } = useDeploySafety(appName)
+  const { data, isError, isPending } = useDeploySafety(appName)
+
+  // Hold the card's height until the first response instead of an empty body.
+  if (isPending) return <CardSkeleton titleWidth="w-48" rows={4} />
 
   return (
     <Card>

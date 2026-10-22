@@ -140,8 +140,7 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 					writeError(w, http.StatusConflict, fmt.Sprintf("service %q secret %q is locked", key, envKey))
 					return
 				}
-				rt.logger.Error("api: deploy spec: set secret failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("service_key", key), slog.String("env_key", envKey))
-				writeError(w, http.StatusInternalServerError, "internal error")
+				rt.internalError(w, "api: deploy spec: set secret failed", err, slog.String("name", name), slog.String("service_key", key), slog.String("env_key", envKey))
 				return
 			}
 		}

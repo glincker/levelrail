@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"strings"
 
@@ -103,8 +102,7 @@ func (rt *Router) resolveCreateNodePlacement(w http.ResponseWriter, r *http.Requ
 		return false
 	}
 	if err != nil {
-		rt.logger.Error(logContext+": auto-place node failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, logContext+": auto-place node failed", err)
 		return false
 	}
 	*nodeID = placed

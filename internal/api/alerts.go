@@ -142,7 +142,7 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 
 	kind := alerting.Kind(a.Kind)
 	switch kind {
-	case alerting.KindThreshold, alerting.KindBudgetThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeHostGuardrail, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindDatabaseDown, alerting.KindDatabaseBackupStale, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindExportBehind, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew, alerting.KindEmailDeliveryFailing, alerting.KindBackupFailed, alerting.KindDeployFailed,
+	case alerting.KindThreshold, alerting.KindBudgetThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeHostGuardrail, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindDatabaseDown, alerting.KindDatabaseBackupStale, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindExportBehind, alerting.KindRegistryRefreshFailing, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew, alerting.KindEmailDeliveryFailing, alerting.KindBackupFailed, alerting.KindDeployFailed,
 		alerting.KindLogPattern, alerting.KindLogLevelRate,
 		alerting.KindCertExpiring, alerting.KindCertRenewalStalled, alerting.KindDomainNotResolving:
 	default:
@@ -296,8 +296,7 @@ func (rt *Router) validateAlertRuleReferences(w http.ResponseWriter, r *http.Req
 			writeError(w, http.StatusBadRequest, "unknown scheduled_task_id")
 			return false
 		} else if err != nil {
-			rt.logger.Error("api: "+op+": look up scheduled task failed", slog.String("error", err.Error()), slog.String("scheduled_task_id", rule.ScheduledTaskID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: "+op+": look up scheduled task failed", err, slog.String("scheduled_task_id", rule.ScheduledTaskID))
 			return false
 		}
 	}
@@ -310,8 +309,7 @@ func (rt *Router) validateAlertRuleReferences(w http.ResponseWriter, r *http.Req
 			writeError(w, http.StatusBadRequest, "unknown backup_database_name")
 			return false
 		} else if err != nil {
-			rt.logger.Error("api: "+op+": look up database failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: "+op+": look up database failed", err)
 			return false
 		}
 	}
@@ -326,8 +324,7 @@ func (rt *Router) validateAlertRuleReferences(w http.ResponseWriter, r *http.Req
 				writeError(w, http.StatusBadRequest, "unknown backup_database_name")
 				return false
 			} else if err != nil {
-				rt.logger.Error("api: "+op+": look up database failed", slog.String("error", err.Error()), slog.String("backup_database_name", rule.BackupDatabaseName))
-				writeError(w, http.StatusInternalServerError, "internal error")
+				rt.internalError(w, "api: "+op+": look up database failed", err, slog.String("backup_database_name", rule.BackupDatabaseName))
 				return false
 			}
 		case store.BackupResourceKindVolume:
@@ -357,8 +354,7 @@ func (rt *Router) validateAlertRuleReferences(w http.ResponseWriter, r *http.Req
 			writeError(w, http.StatusBadRequest, "unknown channel_id")
 			return false
 		} else if err != nil {
-			rt.logger.Error("api: "+op+": look up channel failed", slog.String("error", err.Error()), slog.String("channel_id", rule.ChannelID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: "+op+": look up channel failed", err, slog.String("channel_id", rule.ChannelID))
 			return false
 		}
 	}
@@ -379,8 +375,7 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: create alert rule: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create alert rule: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -392,8 +387,7 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 
 	id, err := alerting.NewRuleID()
 	if err != nil {
-		rt.logger.Error("api: create alert rule: generate id failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create alert rule: generate id failed", err, slog.String("name", name))
 		return
 	}
 
@@ -408,8 +402,7 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := rt.alertRules.SaveRule(r.Context(), rule); err != nil {
-		rt.logger.Error("api: create alert rule failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("rule_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create alert rule failed", err, slog.String("name", name), slog.String("rule_id", id))
 		return
 	}
 
@@ -417,8 +410,7 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 	// which rule itself doesn't have until read back through the join.
 	saved, err := rt.alertRules.GetRule(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: create alert rule: reload after save failed", slog.String("error", err.Error()), slog.String("rule_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create alert rule: reload after save failed", err, slog.String("rule_id", id))
 		return
 	}
 
@@ -455,8 +447,7 @@ func (rt *Router) handleUpdateAlertRule(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: update alert rule: load rule failed", slog.String("error", err.Error()), slog.String("rule_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update alert rule: load rule failed", err, slog.String("rule_id", id))
 		return
 	}
 	if existing.ResourceID != resourceIDForApp(name) {
@@ -481,15 +472,13 @@ func (rt *Router) handleUpdateAlertRule(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := rt.alertRules.SaveRule(r.Context(), rule); err != nil {
-		rt.logger.Error("api: update alert rule failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("rule_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update alert rule failed", err, slog.String("name", name), slog.String("rule_id", id))
 		return
 	}
 
 	saved, err := rt.alertRules.GetRule(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: update alert rule: reload after save failed", slog.String("error", err.Error()), slog.String("rule_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update alert rule: reload after save failed", err, slog.String("rule_id", id))
 		return
 	}
 
@@ -509,15 +498,13 @@ func (rt *Router) handleListAlertRules(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list alert rules: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list alert rules: load app failed", err, slog.String("name", name))
 		return
 	}
 
 	rules, err := rt.alertRules.ListRulesForResource(r.Context(), resourceIDForApp(name))
 	if err != nil {
-		rt.logger.Error("api: list alert rules failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list alert rules failed", err, slog.String("name", name))
 		return
 	}
 
@@ -547,8 +534,7 @@ func (rt *Router) handleDeleteAlertRule(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: delete alert rule: load rule failed", slog.String("error", err.Error()), slog.String("rule_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete alert rule: load rule failed", err, slog.String("rule_id", id))
 		return
 	}
 	if rule.ResourceID != resourceIDForApp(name) {
@@ -557,8 +543,7 @@ func (rt *Router) handleDeleteAlertRule(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := rt.alertRules.DeleteRule(r.Context(), id); err != nil {
-		rt.logger.Error("api: delete alert rule failed", slog.String("error", err.Error()), slog.String("rule_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete alert rule failed", err, slog.String("rule_id", id))
 		return
 	}
 

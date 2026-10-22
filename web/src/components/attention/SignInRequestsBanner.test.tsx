@@ -6,6 +6,12 @@ import { I18nextProvider, initReactI18next } from 'react-i18next'
 import signInEn from '../../locales/en/signIn.json'
 import { SignInRequestsBanner } from './SignInRequestsBanner'
 
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children }: { children: React.ReactNode }) => (
+    <a href="/security">{children}</a>
+  ),
+}))
+
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
@@ -57,6 +63,7 @@ function renderBanner() {
 }
 
 const now = new Date().toISOString()
+const later = new Date(Date.now() + 300_000).toISOString()
 const waiting = {
   codes: [
     {
@@ -72,9 +79,9 @@ const waiting = {
     {
       id: 'la_1',
       requester_ip: '198.51.100.2',
-      user_agent: 'Safari',
+      user_agent: 'Safari on macOS',
       created_at: now,
-      expires_at: now,
+      expires_at: later,
     },
   ],
 }
@@ -105,7 +112,8 @@ describe('SignInRequestsBanner', () => {
     expect(
       await screen.findByText(/203\.0\.113\.7, Firefox/),
     ).toBeInTheDocument()
-    expect(screen.getByText(/198\.51\.100\.2, Safari/)).toBeInTheDocument()
+    expect(screen.getByText('Safari, macOS')).toBeInTheDocument()
+    expect(screen.getByText('198.51.100.2')).toBeInTheDocument()
     expect(screen.queryByText('ABCD-EF12')).not.toBeInTheDocument()
     expect(calls.some((c) => c.includes('/reveal'))).toBe(false)
     fireEvent.click(screen.getByRole('button', { name: 'Show code' }))
@@ -121,17 +129,45 @@ describe('SignInRequestsBanner', () => {
     renderBanner()
     fireEvent.click(await screen.findByRole('button', { name: 'Approve' }))
     expect(calls.some((c) => c.includes('/approve'))).toBe(false)
-    expect(screen.queryByRole('button', { name: /^\d+$/ })).toBeNull()
-    const confirm = screen.getByRole('button', { name: 'Confirm approval' })
-    const input = screen.getByRole('textbox', {
-      name: 'Number shown in the waiting browser',
+    const approve = screen.getByRole('button', { name: 'Approve' })
+    const first = screen.getByRole('textbox', { name: 'Digit 1 of 2' })
+    fireEvent.change(first, { target: { value: '4' } })
+    expect(approve).toBeDisabled()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Digit 2 of 2' }), {
+      target: { value: '2' },
     })
-    fireEvent.change(input, { target: { value: '4' } })
-    expect(confirm).toBeDisabled()
-    fireEvent.change(input, { target: { value: '42' } })
-    fireEvent.click(confirm)
+    fireEvent.click(approve)
     const key = 'POST /api/v1/auth/login-approvals/la_1/approve'
     await waitFor(() => expect(calls).toContain(key))
     expect(JSON.parse(bodies[key] ?? '{}')).toEqual({ match: 42 })
+  })
+})
+
+describe('SignInRequestsBanner states', () => {
+  it('shows the expired state with no buttons', async () => {
+    stubFetch({
+      'GET /api/v1/auth/sign-in-requests': {
+        codes: [],
+        approvals: [{ ...waiting.approvals[0], expires_at: now }],
+      },
+    })
+    renderBanner()
+    expect(await screen.findByText('This request expired')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Deny' })).toBeNull()
+  })
+
+  it('denies without a number and shows the result', async () => {
+    const calls = stubFetch({ 'GET /api/v1/auth/sign-in-requests': waiting })
+    renderBanner()
+    fireEvent.click(await screen.findByRole('button', { name: 'Deny' }))
+    await waitFor(() =>
+      expect(calls).toContain('POST /api/v1/auth/login-approvals/la_1/deny'),
+    )
+    expect(
+      await screen.findByRole('link', {
+        name: 'Review your security settings',
+      }),
+    ).toBeInTheDocument()
   })
 })

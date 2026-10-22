@@ -124,8 +124,7 @@ func (rt *Router) handleCreateInvite(w http.ResponseWriter, r *http.Request) {
 
 	callerAbilities, err := rt.callerAbilities(r)
 	if err != nil {
-		rt.logger.Error("api: create invite: resolve caller abilities failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create invite: resolve caller abilities failed", err)
 		return
 	}
 	for _, a := range abilities {
@@ -137,14 +136,12 @@ func (rt *Router) handleCreateInvite(w http.ResponseWriter, r *http.Request) {
 
 	plaintext, err := randomToken()
 	if err != nil {
-		rt.logger.Error("api: create invite: generate token failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create invite: generate token failed", err)
 		return
 	}
 	id, err := randomInviteID()
 	if err != nil {
-		rt.logger.Error("api: create invite: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create invite: generate id failed", err)
 		return
 	}
 
@@ -164,8 +161,7 @@ func (rt *Router) handleCreateInvite(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "a pending invite already exists for this email")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: create invite: save failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create invite: save failed", err)
 		return
 	}
 
@@ -228,14 +224,12 @@ func (rt *Router) emailLinkBase(ctx context.Context) string {
 func (rt *Router) handleListInvites(w http.ResponseWriter, r *http.Request) {
 	invites, err := rt.invites.ListPendingInvites(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list invites failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list invites failed", err)
 		return
 	}
 	callerAbilities, err := rt.callerAbilities(r)
 	if err != nil {
-		rt.logger.Error("api: list invites: resolve caller abilities failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list invites: resolve caller abilities failed", err)
 		return
 	}
 	callerID, _ := rt.currentSessionUserID(r)
@@ -267,15 +261,13 @@ func (rt *Router) handleRevokeInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: revoke invite: load invite failed", slog.String("invite_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: revoke invite: load invite failed", err, slog.String("invite_id", id))
 		return
 	}
 
 	callerAbilities, err := rt.callerAbilities(r)
 	if err != nil {
-		rt.logger.Error("api: revoke invite: resolve caller abilities failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: revoke invite: resolve caller abilities failed", err)
 		return
 	}
 	callerID, _ := rt.currentSessionUserID(r)
@@ -295,8 +287,7 @@ func (rt *Router) handleRevokeInvite(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, store.ErrInviteAlreadyRevoked):
 		writeError(w, http.StatusBadRequest, "invite already revoked")
 	default:
-		rt.logger.Error("api: revoke invite failed", slog.String("invite_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: revoke invite failed", err, slog.String("invite_id", id))
 	}
 }
 
@@ -347,8 +338,7 @@ func (rt *Router) handleAcceptInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: accept invite: load invite failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: accept invite: load invite failed", err)
 		return
 	}
 	if inv.AcceptedAt != nil || inv.RevokedAt != nil || time.Now().After(inv.ExpiresAt) {
@@ -370,16 +360,14 @@ func (rt *Router) handleAcceptInvite(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "a user with this email already exists")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: accept invite: create user failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: accept invite: create user failed", err)
 		return
 	}
 
 	rt.assignInviteRole(r.Context(), user.ID, inv)
 
 	if err := rt.establishSession(w, r, user); err != nil {
-		rt.logger.Error("api: accept invite: establish session failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: accept invite: establish session failed", err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, loginResponse{Email: user.Email, DisplayName: user.DisplayName})

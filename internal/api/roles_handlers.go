@@ -14,14 +14,12 @@ import (
 func (rt *Router) handleListRoles(w http.ResponseWriter, r *http.Request) {
 	stored, err := rt.roles.ListRoles(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list roles failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list roles failed", err)
 		return
 	}
 	counts, err := rt.roles.RoleUserCounts(r.Context())
 	if err != nil {
-		rt.logger.Error("api: count role users failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: count role users failed", err)
 		return
 	}
 	out := make([]Role, 0, len(stored))
@@ -49,8 +47,7 @@ func (rt *Router) writeRoleStoreError(w http.ResponseWriter, op string, err erro
 	case errors.Is(err, store.ErrRoleInUse):
 		writeError(w, http.StatusConflict, "the role is assigned to users: reassign them first")
 	default:
-		rt.logger.Error("api: "+op+" failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: "+op+" failed", err)
 	}
 }
 
@@ -70,8 +67,7 @@ func (rt *Router) handleCreateRole(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := randomOpaqueID("role_")
 	if err != nil {
-		rt.logger.Error("api: create role: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create role: generate id failed", err)
 		return
 	}
 	role := store.Role{ID: id, Name: name, Description: req.Description, Abilities: req.Abilities, Visibility: visibility}
@@ -176,8 +172,7 @@ func (rt *Router) handleSetUserRole(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "user not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set user role: load user failed", slog.String("user_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set user role: load user failed", err, slog.String("user_id", id))
 		return
 	}
 	role, err := rt.roles.GetRole(r.Context(), req.RoleID)
@@ -206,8 +201,7 @@ func (rt *Router) handleSetUserRole(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := rt.auth.GetUserByID(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: set user role: reload failed", slog.String("user_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set user role: reload failed", err, slog.String("user_id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.userResourceFor(r.Context(), *user, nil))

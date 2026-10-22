@@ -108,8 +108,7 @@ func (rt *Router) handleStopAppWatch(w http.ResponseWriter, r *http.Request) {
 		Reason: deploysafety.ReasonWatchStopped, Message: "watch stopped by an operator before the window ended", At: time.Now(),
 	})
 	if err != nil {
-		rt.logger.Error("api: deploy watch: stop failed", slog.String("error", err.Error()), slog.String("name", svc.Name), slog.String("deploy_id", attempt.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy watch: stop failed", err, slog.String("name", svc.Name), slog.String("deploy_id", attempt.ID))
 		return
 	}
 	if out, _, ok := rt.appWatch(w, r, svc.Name); ok {

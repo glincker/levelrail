@@ -78,8 +78,7 @@ func (rt *Router) handleGetDomainErrorPages(w http.ResponseWriter, r *http.Reque
 
 	rows, err := rt.domainErrorPages.ListDomainErrorPages(r.Context(), domain)
 	if err != nil {
-		rt.logger.Error("api: list domain error pages failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list domain error pages failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, toDomainErrorPagesResource(domain, rows))
@@ -111,15 +110,13 @@ func (rt *Router) handleSetDomainErrorPage(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := rt.domainErrorPages.SetDomainErrorPage(r.Context(), domain, req.StatusCode, req.Body); err != nil {
-		rt.logger.Error("api: set domain error page failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set domain error page failed", err, slog.String("domain", domain))
 		return
 	}
 
 	rows, err := rt.domainErrorPages.ListDomainErrorPages(r.Context(), domain)
 	if err != nil {
-		rt.logger.Error("api: list domain error pages failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list domain error pages failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, toDomainErrorPagesResource(domain, rows))
@@ -144,20 +141,17 @@ func (rt *Router) handleClearDomainErrorPages(w http.ResponseWriter, r *http.Req
 			return
 		}
 		if err := rt.domainErrorPages.DeleteDomainErrorPage(r.Context(), domain, code); err != nil {
-			rt.logger.Error("api: clear domain error page failed", slog.String("error", err.Error()), slog.String("domain", domain))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: clear domain error page failed", err, slog.String("domain", domain))
 			return
 		}
 	} else if err := rt.domainErrorPages.DeleteDomainErrorPages(r.Context(), domain); err != nil {
-		rt.logger.Error("api: clear domain error pages failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear domain error pages failed", err, slog.String("domain", domain))
 		return
 	}
 
 	rows, err := rt.domainErrorPages.ListDomainErrorPages(r.Context(), domain)
 	if err != nil {
-		rt.logger.Error("api: list domain error pages failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list domain error pages failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, toDomainErrorPagesResource(domain, rows))

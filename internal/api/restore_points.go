@@ -42,8 +42,7 @@ func (rt *Router) handleRestorePointList(w http.ResponseWriter, r *http.Request)
 	}
 	pts, err := rp.List()
 	if err != nil {
-		rt.logger.Error("api: list restore points failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list restore points failed", err)
 		return
 	}
 	head, _ := store.MaxSchemaVersion()

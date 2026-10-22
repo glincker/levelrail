@@ -33,7 +33,7 @@ func (c *Client) CreatePullRequestComment(ctx context.Context, accessToken, full
 		return 0, fmt.Errorf("bitbucketapp: marshal pull request comment request: %w", err)
 	}
 	var out prCommentResponse
-	if err := c.do(ctx, http.MethodPost, c.prCommentsURL(fullName, prID), bearerPrefix+accessToken, bytes.NewReader(payload), &out); err != nil {
+	if err := c.do(ctx, http.MethodPost, c.prCommentsURL(fullName, prID), authValue(accessToken), bytes.NewReader(payload), &out); err != nil {
 		return 0, err
 	}
 	return out.ID, nil
@@ -46,7 +46,7 @@ func (c *Client) ListPullRequestComments(ctx context.Context, accessToken, fullN
 	next := c.prCommentsURL(fullName, prID) + "?pagelen=" + strconv.Itoa(gitprovider.CommentPageSize)
 	for page := 0; next != "" && page < gitprovider.MaxCommentPages; page++ {
 		var batch prCommentPage
-		if err := c.do(ctx, http.MethodGet, next, bearerPrefix+accessToken, nil, &batch); err != nil {
+		if err := c.do(ctx, http.MethodGet, next, authValue(accessToken), nil, &batch); err != nil {
 			return nil, err
 		}
 		for _, cm := range batch.Values {
@@ -64,5 +64,5 @@ func (c *Client) UpdatePullRequestComment(ctx context.Context, accessToken, full
 		return fmt.Errorf("bitbucketapp: marshal pull request comment request: %w", err)
 	}
 	u := c.prCommentsURL(fullName, prID) + "/" + strconv.FormatInt(commentID, 10)
-	return c.do(ctx, http.MethodPut, u, bearerPrefix+accessToken, bytes.NewReader(payload), nil)
+	return c.do(ctx, http.MethodPut, u, authValue(accessToken), bytes.NewReader(payload), nil)
 }

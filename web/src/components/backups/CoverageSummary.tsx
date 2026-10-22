@@ -19,9 +19,11 @@ function Stat({ label, value }: { label: string; value: string }) {
 export function CoverageSummary({
   summary,
   onProtect,
+  showAction = true,
 }: {
   summary: Summary
-  onProtect: () => void
+  onProtect?: () => void
+  showAction?: boolean
 }) {
   const { t } = useTranslation('backups')
   const headline = coverageHeadline(summary)
@@ -45,7 +47,7 @@ export function CoverageSummary({
             })}
           </p>
         </div>
-        {summary.unprotected > 0 ? (
+        {showAction && summary.unprotected > 0 ? (
           <Button type="button" onClick={onProtect}>
             <ShieldCheckIcon className="size-4" aria-hidden="true" />
             {t('summary.protectEverything')}

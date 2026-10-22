@@ -446,8 +446,7 @@ func (rt *Router) decodeUseAsSourceRequest(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "app not found")
 		return req, "", "", false
 	} else if err != nil {
-		rt.logger.Error(logPrefix+": load app failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, logPrefix+": load app failed", err, slog.String("app_name", req.AppName))
 		return req, "", "", false
 	}
 
@@ -518,8 +517,7 @@ func (rt *Router) handleGetGitSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get git source failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get git source failed", err, slog.String("name", name))
 		return
 	}
 
@@ -527,8 +525,7 @@ func (rt *Router) handleGetGitSource(w http.ResponseWriter, r *http.Request) {
 	if rt.gitSourceSecrets != nil {
 		hasToken, err = rt.gitSourceSecrets.Exists(r.Context(), store.GitSourceSecretsKey(name), gitSourceTokenKey)
 		if err != nil {
-			rt.logger.Error("api: get git source: check token failed", slog.String("error", err.Error()), slog.String("name", name))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: get git source: check token failed", err, slog.String("name", name))
 			return
 		}
 	}
@@ -562,8 +559,7 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set git source: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set git source: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -636,8 +632,7 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 		TriggerMode: triggerMode,
 	})
 	if err != nil {
-		rt.logger.Error("api: set git source failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set git source failed", err, slog.String("name", name))
 		return
 	}
 
@@ -765,29 +760,25 @@ func (rt *Router) handleRotateGitSourceWebhookSecret(w http.ResponseWriter, r *h
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: rotate git source webhook secret: load git source failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: rotate git source webhook secret: load git source failed", err, slog.String("name", name))
 		return
 	}
 
 	newSecret, err := randomWebhookSecret()
 	if err != nil {
-		rt.logger.Error("api: rotate git source webhook secret: generate secret failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: rotate git source webhook secret: generate secret failed", err, slog.String("name", name))
 		return
 	}
 
 	key := store.GitSourceSecretsKey(name)
 	if err := rt.gitSourceSecrets.SetValue(r.Context(), key, gitSourceSecretKey, newSecret); err != nil {
-		rt.logger.Error("api: rotate git source webhook secret: save secret failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: rotate git source webhook secret: save secret failed", err, slog.String("name", name))
 		return
 	}
 
 	hasToken, err := rt.gitSourceSecrets.Exists(r.Context(), key, gitSourceTokenKey)
 	if err != nil {
-		rt.logger.Error("api: rotate git source webhook secret: check deploy token failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: rotate git source webhook secret: check deploy token failed", err, slog.String("name", name))
 		return
 	}
 
@@ -812,8 +803,7 @@ func (rt *Router) handleDeleteGitSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: delete git source failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete git source failed", err, slog.String("name", name))
 		return
 	}
 

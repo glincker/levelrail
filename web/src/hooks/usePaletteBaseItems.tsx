@@ -1,8 +1,12 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { KeyboardIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  KeyboardIcon,
+  TerminalWindowIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { usePageActions } from '@/lib/pageActions'
+import { openCliModal } from '@/lib/cliModalStore'
 import { useTheme, type Theme } from '../components/ThemeProvider'
 import {
   ROUTE_ENTRIES,
@@ -15,6 +19,7 @@ import {
   useTrafficPaletteItems,
 } from '../components/trafficPaletteItems'
 import { useResourcePaletteItems } from '../components/resourcePaletteItems'
+import { useAppTabPaletteItems } from '../components/apps/useAppTabPaletteItems'
 import { useExperimentalFeatures } from './useExperimental'
 
 const NEXT_THEME: Record<Theme, Theme> = {
@@ -31,6 +36,7 @@ export function usePaletteBaseItems(
   const navigate = useNavigate()
   const { t } = useTranslation('palette')
   const { t: tCommon } = useTranslation()
+  const { t: tCli } = useTranslation('signIn', { useSuspense: false })
   const { theme, setTheme } = useTheme()
   const pageActions = usePageActions()
   const experimental = useExperimentalFeatures()
@@ -43,6 +49,7 @@ export function usePaletteBaseItems(
     currentDomain,
   })
   const resourceItems = useResourcePaletteItems()
+  const appTabItems = useAppTabPaletteItems()
 
   return React.useMemo<PaletteItem[]>(() => {
     const go =
@@ -73,7 +80,15 @@ export function usePaletteBaseItems(
         run: onShowShortcuts,
       })
     }
-    items.push(...traffic.base, ...resourceItems)
+    items.push({
+      key: 'action-cli-setup',
+      label: tCli('cliModal.openAction'),
+      keywords: tCli('cliModal.openKeywords'),
+      group: 'Actions',
+      icon: <TerminalWindowIcon />,
+      run: openCliModal,
+    })
+    items.push(...traffic.base, ...resourceItems, ...appTabItems)
     return items
   }, [
     navigate,
@@ -81,10 +96,12 @@ export function usePaletteBaseItems(
     theme,
     traffic.base,
     resourceItems,
+    appTabItems,
     onShowShortcuts,
     pageActions,
     experimental,
     t,
     tCommon,
+    tCli,
   ])
 }

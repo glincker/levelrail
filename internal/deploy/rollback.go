@@ -49,6 +49,8 @@ type ImageTrigger struct {
 	Auth *docker.RegistryAuth
 	// Reason is recorded on the attempt, e.g. a freeze override.
 	Reason string
+	// RerunOf links the recorded attempt to the one it retries.
+	RerunOf string
 	// Locks, when set, holds the deploy instead of making it live while the
 	// app's publish lock is on. Set it on automatic triggers only.
 	Locks PublishLocks
@@ -98,7 +100,7 @@ func (t ImageTrigger) Deploy(ctx context.Context, existing store.DesiredService,
 		source = store.DeployAttemptSourceImage
 	}
 	deploytrace.ConfigStep(ctx, tr, updated)
-	if id := recordImageDeployAttempt(ctx, t.Store, updated, resolution, seq, source, t.Reason, heldID, logger); id != "" {
+	if id := recordImageDeployAttempt(ctx, t.Store, updated, resolution, seq, source, t.Reason, heldID, t.RerunOf, logger); id != "" {
 		if sink, ok := t.Store.(deploytrace.Sink); ok {
 			tr.Flush(ctx, sink, id, existing.Name)
 		}
@@ -118,7 +120,7 @@ func TriggerImageDeploy(ctx context.Context, st ImageDeployStore, nudger Reconci
 
 // recordImageDeployAttempt saves and immediately finishes an attempt for a
 // trigger with no build. Failures are logged: desired state already landed.
-func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc store.DesiredService, res ImageResolution, seq int64, source, reason, id string, logger *slog.Logger) string {
+func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc store.DesiredService, res ImageResolution, seq int64, source, reason, id, rerunOf string, logger *slog.Logger) string {
 	if id == "" {
 		var err error
 		if id, err = store.NewDeployAttemptID(); err != nil {
@@ -132,7 +134,7 @@ func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc stor
 		Source: source,
 		Status: store.DeployAttemptStatusRunning, StartedAt: now,
 		Snapshot:    store.NewDeployAttemptSnapshot(svc),
-		ImageDigest: res.Digest, DigestReason: res.Reason, Sequence: seq, Reason: reason,
+		ImageDigest: res.Digest, DigestReason: res.Reason, Sequence: seq, Reason: reason, RerunOf: rerunOf,
 	}); err != nil {
 		logger.Error("deploy: record deploy attempt: save failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 		return ""

@@ -266,7 +266,7 @@ func TestCreateDatabaseFromWizard(t *testing.T) {
 		}
 	})
 
-	t.Run("full answers: resources, public access, and backup schedule all applied", func(t *testing.T) {
+	t.Run("full answers: resources and backup ride the create request, public access follows", func(t *testing.T) {
 		var paths []string
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			paths = append(paths, r.Method+" "+r.URL.Path)
@@ -298,9 +298,7 @@ func TestCreateDatabaseFromWizard(t *testing.T) {
 		}
 		want := []string{
 			"POST /api/v1/databases",
-			"PUT /api/v1/databases/cache/resources",
 			"PUT /api/v1/databases/cache/public-access",
-			"PUT /api/v1/databases/cache/backup-schedule",
 			"GET /api/v1/databases/cache",
 		}
 		if len(paths) != len(want) {

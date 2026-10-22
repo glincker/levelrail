@@ -179,8 +179,7 @@ func (rt *Router) handleListPreviewEnvironments(w http.ResponseWriter, r *http.R
 
 	previews, err := rt.previewEnvironments.ListPreviewEnvironmentsByApp(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: list preview environments failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list preview environments failed", err, slog.String("name", name))
 		return
 	}
 
@@ -222,8 +221,7 @@ func (rt *Router) handleTeardownPreviewEnvironment(w http.ResponseWriter, r *htt
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: teardown preview environment: load failed", slog.String("error", err.Error()), slog.String("name", name), slog.Int("pr_number", prNumber))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: teardown preview environment: load failed", err, slog.String("name", name), slog.Int("pr_number", prNumber))
 		return
 	}
 
@@ -282,8 +280,7 @@ func (rt *Router) handleSetPreviewEnabled(w http.ResponseWriter, r *http.Request
 			writeError(w, http.StatusNotFound, "no git source connected for this app")
 			return
 		} else if err != nil {
-			rt.logger.Error("api: set preview enabled failed", slog.String("error", err.Error()), slog.String("name", name))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: set preview enabled failed", err, slog.String("name", name))
 			return
 		}
 	}
@@ -292,16 +289,14 @@ func (rt *Router) handleSetPreviewEnabled(w http.ResponseWriter, r *http.Request
 			writeError(w, http.StatusNotFound, "no git source connected for this app")
 			return
 		} else if err != nil {
-			rt.logger.Error("api: set preview pr comments failed", slog.String("error", err.Error()), slog.String("name", name))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: set preview pr comments failed", err, slog.String("name", name))
 			return
 		}
 	}
 
 	gs, err := rt.gitSources.GetGitSource(ctx, name)
 	if err != nil {
-		rt.logger.Error("api: set preview settings: reload git source failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set preview settings: reload git source failed", err, slog.String("name", name))
 		return
 	}
 

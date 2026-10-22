@@ -155,6 +155,11 @@ func (b *Brand) AgentName() string {
 	return strings.ToLower(b.ShortName) + "-agent"
 }
 
+// MigrateName returns the read-only migration agent's binary and unit stem, the lowercased ShortName plus "-migrate".
+func (b *Brand) MigrateName() string {
+	return strings.ToLower(b.ShortName) + "-migrate"
+}
+
 // RepoSlug returns the lowercased "owner/name" parsed from RepoURL, or "" if it has no such path.
 func (b *Brand) RepoSlug() string {
 	if b == nil {

@@ -657,6 +657,9 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 	if spec.NetworkMode != "" {
 		hostConfig.NetworkMode = container.NetworkMode(spec.NetworkMode)
 	}
+	if spec.RestartPolicy != "" {
+		hostConfig.RestartPolicy = container.RestartPolicy{Name: container.RestartPolicyMode(spec.RestartPolicy)}
+	}
 	if spec.Hardened {
 		hostConfig.ReadonlyRootfs = true
 		hostConfig.Tmpfs = map[string]string{"/tmp": hardenedTmpfsOpts}

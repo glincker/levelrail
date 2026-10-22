@@ -81,5 +81,14 @@
     "confirm": "Free {{size}}",
     "pending": "Freeing cache",
     "done": "Removed {{count}} cache records, freed {{size}}"
+  },
+  "banner": {
+    "description": "Builds turn your source into a runnable image. Queue, history and cache for every app land here after the first deploy.",
+    "diagram": {
+      "source": "source",
+      "build": "build",
+      "image": "image",
+      "cache": "cache"
+    }
   }
 }

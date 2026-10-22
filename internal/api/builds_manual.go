@@ -28,6 +28,7 @@ func manualBuildRequest(name string, existing store.DesiredService, req triggerB
 		Service:     specServiceFromDesired(existing, buildCfg),
 		CommitSHA:   req.Ref,
 		ImageRepo:   imageRepo,
+		NoCache:     req.NoCache,
 	}
 }
 

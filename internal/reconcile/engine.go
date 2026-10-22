@@ -84,6 +84,8 @@ type Engine struct {
 	guard *Guard
 
 	drainTimeout time.Duration
+
+	requeue requeueState
 }
 
 // Source dynamically supplies the current set of controllers to reconcile,
@@ -238,6 +240,7 @@ func (e *Engine) reconcileOne(ctx context.Context, c Controller) {
 	e.lastResult[c.Name()] = result
 	e.lastErr[c.Name()] = err
 	e.mu.Unlock()
+	e.scheduleRequeue(c.Name(), result.RequeueAfter)
 
 	// Persisting status is best-effort and secondary to the reconcile
 	// itself: a database hiccup must never stop the controller from

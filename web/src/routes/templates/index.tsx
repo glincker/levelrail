@@ -1,8 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { PackageIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { TemplateMarketplace } from '../../components/TemplateMarketplace'
+import { PageBanner } from '../../components/PageBanner'
+import { LazyTemplatesDiagram } from '../../components/banners/LazyDiagrams'
 import { Button } from '@/components/ui/button'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { useDeployTemplateNow } from '../../hooks/useDeployTemplateNow'
@@ -40,7 +42,15 @@ function TemplatesPage() {
     <PageTemplate
       title={t('page.title')}
       description={t('page.description')}
-      actions={newFromTemplate}
+      banner={
+        <PageBanner
+          icon={<PackageIcon />}
+          titleKey="templates:page.title"
+          descriptionKey="templates:banner.description"
+          action={newFromTemplate}
+          illustration={<LazyTemplatesDiagram size="hero" />}
+        />
+      }
     >
       <TemplateMarketplace
         onSelect={(id) => {

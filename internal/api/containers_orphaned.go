@@ -63,8 +63,7 @@ func (rt *Router) handleOrphanedContainerAction(w http.ResponseWriter, r *http.R
 		return
 	}
 	if err := do(r.Context(), c.ID); err != nil {
-		rt.logger.Error("api: "+verb+" orphaned container failed", slog.String("error", err.Error()), slog.String("container", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: "+verb+" orphaned container failed", err, slog.String("container", name))
 		return
 	}
 	rt.logger.Info("api: "+pastTense+" orphaned container", slog.String("container", name))

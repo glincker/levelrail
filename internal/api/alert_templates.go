@@ -138,8 +138,7 @@ func (rt *Router) handleApplyAlertTemplate(w http.ResponseWriter, r *http.Reques
 		}
 		rule, err := t.toRule(id)
 		if err != nil {
-			rt.logger.Error("api: alert template is invalid", slog.String("rule", t.Name), slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: alert template is invalid", err, slog.String("rule", t.Name))
 			return
 		}
 		if !rt.validateAlertRuleReferences(w, r, name, "apply alert template", rule) {

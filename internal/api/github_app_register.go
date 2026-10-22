@@ -125,8 +125,7 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 		writeError(w, http.StatusConflict, "a github app is already connected; disconnect it first before registering a new one")
 		return
 	} else if !errors.Is(err, store.ErrGitHubAppConnectionNotFound) {
-		rt.logger.Error("api: check existing github app connection failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: check existing github app connection failed", err)
 		return
 	}
 
@@ -136,8 +135,7 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 			writeError(w, http.StatusConflict, "set a primary domain in ingress settings before connecting a github app: github needs a real, reachable callback url")
 			return
 		}
-		rt.logger.Error("api: get ingress settings for github app registration failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get ingress settings for github app registration failed", err)
 		return
 	}
 
@@ -161,8 +159,7 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 
 	state, err := rt.githubAppState.begin(instanceURL)
 	if err != nil {
-		rt.logger.Error("api: begin github app registration failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: begin github app registration failed", err)
 		return
 	}
 
@@ -174,15 +171,13 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 	manifest.Public = public
 	manifestJSON, err := json.Marshal(manifest)
 	if err != nil {
-		rt.logger.Error("api: marshal github app manifest failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: marshal github app manifest failed", err)
 		return
 	}
 
 	nonce, err := randomNonce()
 	if err != nil {
-		rt.logger.Error("api: generate csp nonce for github app manifest form failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: generate csp nonce for github app manifest form failed", err)
 		return
 	}
 
@@ -233,8 +228,7 @@ func (rt *Router) handleGetGitHubAppManifestPreview(w http.ResponseWriter, r *ht
 		writeError(w, http.StatusConflict, "a github app is already connected; disconnect it first before registering a new one")
 		return
 	} else if !errors.Is(err, store.ErrGitHubAppConnectionNotFound) {
-		rt.logger.Error("api: check existing github app connection failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: check existing github app connection failed", err)
 		return
 	}
 
@@ -244,8 +238,7 @@ func (rt *Router) handleGetGitHubAppManifestPreview(w http.ResponseWriter, r *ht
 			writeError(w, http.StatusConflict, "set a primary domain in ingress settings before connecting a github app: github needs a real, reachable callback url")
 			return
 		}
-		rt.logger.Error("api: get ingress settings for github app manifest preview failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get ingress settings for github app manifest preview failed", err)
 		return
 	}
 
@@ -378,18 +371,15 @@ func (rt *Router) handleGitHubAppCallback(w http.ResponseWriter, r *http.Request
 
 	secretsKey := store.GitHubAppSecretsKey()
 	if err := rt.githubAppSecrets.SetValue(ctx, secretsKey, "client_secret", creds.ClientSecret); err != nil {
-		rt.logger.Error("api: store github app client_secret failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: store github app client_secret failed", err)
 		return
 	}
 	if err := rt.githubAppSecrets.SetValue(ctx, secretsKey, "webhook_secret", creds.WebhookSecret); err != nil {
-		rt.logger.Error("api: store github app webhook_secret failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: store github app webhook_secret failed", err)
 		return
 	}
 	if err := rt.githubAppSecrets.SetValue(ctx, secretsKey, "private_key", creds.PrivateKeyPEM); err != nil {
-		rt.logger.Error("api: store github app private_key failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: store github app private_key failed", err)
 		return
 	}
 
@@ -400,8 +390,7 @@ func (rt *Router) handleGitHubAppCallback(w http.ResponseWriter, r *http.Request
 		InstanceURL: instanceURL,
 		CreatedAt:   time.Now().UTC().Format(time.RFC3339),
 	}); err != nil {
-		rt.logger.Error("api: save github app connection failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: save github app connection failed", err)
 		return
 	}
 
@@ -458,22 +447,19 @@ func (rt *Router) handleGitHubAppInstalled(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get github app connection for installation callback failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get github app connection for installation callback failed", err)
 		return
 	}
 
 	privateKeyPEM, err := rt.githubAppSecrets.Resolve(ctx, store.GitHubAppSecretsKey(), "private_key")
 	if err != nil {
-		rt.logger.Error("api: resolve github app private key for installation callback failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: resolve github app private key for installation callback failed", err)
 		return
 	}
 
 	appJWT, err := githubapp.SignAppJWT(conn.AppID, []byte(privateKeyPEM), time.Now())
 	if err != nil {
-		rt.logger.Error("api: sign github app jwt for installation callback failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: sign github app jwt for installation callback failed", err)
 		return
 	}
 
@@ -502,8 +488,7 @@ func (rt *Router) handleGitHubAppInstalled(w http.ResponseWriter, r *http.Reques
 	// columns; UpsertGitHubAppInstallation below is the real multi-org
 	// record and is what repo listing and the installations UI read.
 	if err := rt.githubApp.UpdateGitHubAppInstallation(ctx, installationID, info.AccountLogin); err != nil {
-		rt.logger.Error("api: record github app installation failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: record github app installation failed", err)
 		return
 	}
 	// GitHub's own API always sends "User" or "Organization" (lowercased
@@ -516,8 +501,7 @@ func (rt *Router) handleGitHubAppInstalled(w http.ResponseWriter, r *http.Reques
 		accountType = "organization"
 	}
 	if err := rt.githubApp.UpsertGitHubAppInstallation(ctx, installationID, info.AccountLogin, accountType); err != nil {
-		rt.logger.Error("api: upsert github app installation failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: upsert github app installation failed", err)
 		return
 	}
 

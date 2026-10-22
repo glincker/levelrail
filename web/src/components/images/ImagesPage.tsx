@@ -8,9 +8,9 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { MetricTile, RelativeTime, SkeletonList } from '@/components/kit'
 import { PageTemplate } from '../shell/PageTemplate'
+import { ImagesBanner } from './ImagesBanner'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { useNodeListOptional } from '../../queries/nodes'
 import {
@@ -146,48 +146,55 @@ export function ImagesPage() {
   const data = inventory.data
   const removable = data?.images.filter((i) => !i.protected) ?? []
 
+  const actions = (
+    <div className="flex flex-wrap items-center gap-2">
+      {nodes && nodes.length > 0 ? (
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          {t('node.label')}
+          <select
+            className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            value={node}
+            onChange={(e) => {
+              setNode(e.target.value)
+            }}
+          >
+            <option value="">{t('node.local')}</option>
+            {nodes.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      {isRoot && data ? (
+        <Button
+          disabled={removable.length === 0}
+          onClick={() => {
+            setCleanupOpen(true)
+          }}
+        >
+          <BroomIcon aria-hidden="true" />
+          {removable.length === 0
+            ? t('cleanup.nothing')
+            : t('cleanup.button', {
+                size: sizeLabel(data.totals.reclaimable_bytes),
+              })}
+        </Button>
+      ) : null}
+    </div>
+  )
+
   return (
     <PageTemplate
       title={t('title')}
       description={t('subtitle')}
       width="wide"
-      actions={
-        <div className="flex flex-wrap items-center gap-2">
-          {nodes && nodes.length > 0 ? (
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-              {t('node.label')}
-              <select
-                className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                value={node}
-                onChange={(e) => {
-                  setNode(e.target.value)
-                }}
-              >
-                <option value="">{t('node.local')}</option>
-                {nodes.map((n) => (
-                  <option key={n.id} value={n.id}>
-                    {n.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          {isRoot && data ? (
-            <Button
-              disabled={removable.length === 0}
-              onClick={() => {
-                setCleanupOpen(true)
-              }}
-            >
-              <BroomIcon aria-hidden="true" />
-              {removable.length === 0
-                ? t('cleanup.nothing')
-                : t('cleanup.button', {
-                    size: sizeLabel(data.totals.reclaimable_bytes),
-                  })}
-            </Button>
-          ) : null}
-        </div>
+      banner={
+        <ImagesBanner
+          empty={data !== undefined && data.images.length === 0}
+          action={actions}
+        />
       }
     >
       <div className="flex flex-col gap-4">
@@ -242,13 +249,7 @@ export function ImagesPage() {
               />
             </div>
             <SignaturePolicyCard mode={data.signatures.mode} />
-            {data.images.length === 0 ? (
-              <EmptyState
-                icon={<StackIcon className="size-5" />}
-                title={t('empty.title')}
-                description={t('empty.description')}
-              />
-            ) : (
+            {data.images.length === 0 ? null : (
               <ImageTable images={data.images} onOpen={setSelected} />
             )}
             <ImageCleanupDialog

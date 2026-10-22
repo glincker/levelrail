@@ -37,8 +37,7 @@ func (rt *Router) handleDownloadVolumeBackup(w http.ResponseWriter, r *http.Requ
 
 	stream, err := rt.backupDownloader.Download(r.Context(), historyID)
 	if err != nil {
-		rt.logger.Error("api: download volume backup failed", slog.String("error", err.Error()), slog.String("backup_id", historyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: download volume backup failed", err, slog.String("backup_id", historyID))
 		return
 	}
 	defer func() {

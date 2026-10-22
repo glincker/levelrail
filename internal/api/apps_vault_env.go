@@ -47,8 +47,7 @@ func (rt *Router) handleSetAppVaultEnv(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: set app vault env: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app vault env: load app failed", err, slog.String("name", name))
 		return
 	}
 	for _, ref := range existing.SecretEnv {
@@ -59,8 +58,7 @@ func (rt *Router) handleSetAppVaultEnv(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rt.apps.SetServiceVaultEnvVar(r.Context(), name, key, &store.VaultEnvRef{Path: req.Path, Key: req.Key}); err != nil {
-		rt.logger.Error("api: set app vault env failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("key", key))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app vault env failed", err, slog.String("name", name), slog.String("key", key))
 		return
 	}
 
@@ -81,8 +79,7 @@ func (rt *Router) handleClearAppVaultEnv(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: clear app vault env failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("key", key))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear app vault env failed", err, slog.String("name", name), slog.String("key", key))
 		return
 	}
 

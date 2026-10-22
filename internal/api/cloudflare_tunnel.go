@@ -92,8 +92,7 @@ func cloudflareTunnelStatus(conditions []reconcile.Condition) (status, message s
 func (rt *Router) handleGetCloudflareTunnelSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.cloudflareTunnel.GetCloudflareTunnelSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get cloudflare tunnel settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get cloudflare tunnel settings failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toCloudflareTunnelResource(r.Context(), settings))
@@ -129,8 +128,7 @@ func (rt *Router) handleUpdateCloudflareTunnelSettings(w http.ResponseWriter, r 
 	if !hasToken {
 		exists, err := rt.cloudflareTunnelSecrets.Exists(r.Context(), key, store.CloudflareTunnelTokenEnvKey)
 		if err != nil {
-			rt.logger.Error("api: check cloudflare tunnel token failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: check cloudflare tunnel token failed", err)
 			return
 		}
 		hasToken = exists
@@ -142,16 +140,14 @@ func (rt *Router) handleUpdateCloudflareTunnelSettings(w http.ResponseWriter, r 
 
 	if req.Token != "" {
 		if err := rt.cloudflareTunnelSecrets.SetValue(r.Context(), key, store.CloudflareTunnelTokenEnvKey, req.Token); err != nil {
-			rt.logger.Error("api: save cloudflare tunnel token failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: save cloudflare tunnel token failed", err)
 			return
 		}
 	}
 
 	settings := store.CloudflareTunnelSettings{Enabled: req.Enabled}
 	if err := rt.cloudflareTunnel.UpdateCloudflareTunnelSettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: update cloudflare tunnel settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update cloudflare tunnel settings failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toCloudflareTunnelResource(r.Context(), settings))
@@ -169,14 +165,12 @@ func (rt *Router) handleDisconnectCloudflareTunnel(w http.ResponseWriter, r *htt
 	}
 
 	if err := rt.cloudflareTunnelSecrets.DeleteAll(r.Context(), store.CloudflareTunnelSecretsKey()); err != nil {
-		rt.logger.Error("api: clear cloudflare tunnel token failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear cloudflare tunnel token failed", err)
 		return
 	}
 	settings := store.CloudflareTunnelSettings{Enabled: false}
 	if err := rt.cloudflareTunnel.UpdateCloudflareTunnelSettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: disconnect cloudflare tunnel failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: disconnect cloudflare tunnel failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toCloudflareTunnelResource(r.Context(), settings))

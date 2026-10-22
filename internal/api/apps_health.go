@@ -42,8 +42,7 @@ func (rt *Router) handleGetAppHealth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get app health: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get app health: load app failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, appHealthResource{Name: name, Health: svc.Health})
@@ -80,8 +79,7 @@ func (rt *Router) saveAppHealth(w http.ResponseWriter, r *http.Request, name str
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: set app health failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app health failed", err, slog.String("name", name))
 		return
 	}
 	rt.nudgeReconciler()

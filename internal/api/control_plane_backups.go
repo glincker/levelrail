@@ -47,8 +47,7 @@ func (rt *Router) writeCPBackupError(w http.ResponseWriter, action string, err e
 	case errors.Is(err, cpbackup.ErrInvalidName), errors.Is(err, cpbackup.ErrNotFound):
 		writeError(w, http.StatusNotFound, "backup not found")
 	default:
-		rt.logger.Error("api: control plane backup failed", slog.String("action", action), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: control plane backup failed", err, slog.String("action", action))
 	}
 }
 

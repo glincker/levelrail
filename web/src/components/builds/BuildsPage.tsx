@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { HammerIcon } from '@phosphor-icons/react/dist/ssr'
+import { BroomIcon, HammerIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { MetricTile, SkeletonList } from '@/components/kit'
+import { PageBanner } from '../PageBanner'
+import { LazyBuildsDiagram } from '../banners/LazyDiagrams'
 import { PageTemplate } from '../shell/PageTemplate'
+import { DeploymentsSectionTabs } from '../shell/SectionTabGroups'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { useBuildCenter } from '../../queries/buildCenter'
 import { BuildCachePanel } from './BuildCachePanel'
@@ -17,10 +19,41 @@ export function BuildsPage() {
   const isRoot = useIsRoot()
   const builds = useBuildCenter()
   const data = builds.data
+  const isEmpty = data !== undefined && data.rows.length === 0
+  const size = isEmpty ? 'hero' : 'compact'
   const cacheFull = data?.rows.some((r) => r.hint?.fix === 'prune_cache')
 
   return (
-    <PageTemplate title={t('title')} description={t('subtitle')} width="wide">
+    <PageTemplate
+      title={t('title')}
+      description={t('subtitle')}
+      width="wide"
+      banner={
+        <PageBanner
+          icon={<HammerIcon />}
+          titleKey="buildCenter:title"
+          descriptionKey={
+            isEmpty ? 'buildCenter:banner.description' : 'buildCenter:subtitle'
+          }
+          action={
+            isRoot ? (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setPruneOpen(true)
+                }}
+              >
+                <BroomIcon />
+                {t('actions.freeCache')}
+              </Button>
+            ) : null
+          }
+          illustration={<LazyBuildsDiagram size={size} />}
+          size={size}
+        />
+      }
+    >
+      <DeploymentsSectionTabs />
       <div className="flex flex-col gap-6">
         {builds.isPending ? <SkeletonList rows={6} /> : null}
 
@@ -104,13 +137,7 @@ export function BuildsPage() {
               </p>
             </div>
 
-            {data.rows.length === 0 ? (
-              <EmptyState
-                icon={<HammerIcon className="size-5" />}
-                title={t('empty.title')}
-                description={t('empty.description')}
-              />
-            ) : (
+            {isEmpty ? null : (
               <BuildsTable
                 rows={data.rows}
                 running={data.counts.running}

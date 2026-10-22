@@ -127,8 +127,7 @@ func (rt *Router) streamResourceLogsWithStatus(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusNotFound, noun+" not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: "+opName+": load "+noun+" failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: "+opName+": load "+noun+" failed", err, slog.String("name", name))
 		return
 	}
 
@@ -158,8 +157,7 @@ func (rt *Router) streamResourceLogsWithStatus(w http.ResponseWriter, r *http.Re
 		// means the store itself is unhealthy, worth surfacing as a real
 		// error rather than silently opening a live view with no
 		// context.
-		rt.logger.Error("api: "+opName+": backfill query failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: "+opName+": backfill query failed", err, slog.String("name", name))
 		return
 	}
 

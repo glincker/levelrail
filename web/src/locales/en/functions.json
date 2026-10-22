@@ -1,6 +1,36 @@
 {
   "title": "Functions",
   "description": "Small handlers that cost nothing while idle. A function sleeps after a quiet period and the next request wakes it and waits for the answer.",
+  "triggers": {
+    "title": "Triggers",
+    "pick": "Function",
+    "error": "Triggers could not be loaded: {{message}}",
+    "queue": "Async queue: {{queued}} waiting, {{running}} running, {{dead}} dead-lettered.",
+    "webhook": {
+      "title": "Signed webhook",
+      "path": "Path the webhook forwards to",
+      "enable": "Enable webhook",
+      "disable": "Turn off",
+      "rotate": "Rotate secret",
+      "on": "Calls are queued and forwarded to {{path}}. Signatures older than {{seconds}} seconds are rejected.",
+      "secretOnce": "Signing secret. It is shown once, copy it now.",
+      "signing": "Send X-Signature-Timestamp (unix seconds) and X-Signature: sha256=HMAC-SHA256(secret, timestamp + dot + body)."
+    },
+    "schedules": {
+      "title": "Schedules",
+      "none": "No scheduled HTTP jobs call this function.",
+      "manage": "Manage schedules in the Jobs tab of the app"
+    },
+    "dead": {
+      "title": "Dead letters",
+      "description": "Async calls that ran out of retries. Retry puts one back in the queue.",
+      "empty": "No dead-lettered calls.",
+      "error": "Dead letters could not be loaded: {{message}}",
+      "detail": "{{attempts}} of {{max}} attempts, HTTP {{code}} {{error}}",
+      "retry": "Retry",
+      "discard": "Discard"
+    }
+  },
   "window": {
     "label": "Statistics window",
     "1h": "Last hour",
@@ -28,7 +58,161 @@
   "deploy": {
     "open": "Deploy function",
     "title": "Deploy a function",
-    "description": "Builds the handler in your repository with Railpack, then keeps it asleep until a request arrives.",
+    "description": "Pick what to run, point at the code, and go live. Each step has a sensible default.",
+    "cancel": "Cancel",
+    "back": "Back",
+    "next": "Continue",
+    "submit": "Deploy",
+    "submitting": "Deploying",
+    "stepLabel": "Step {{current}} of {{total}}",
+    "steps": {
+      "template": "What to run",
+      "source": "Where the code is",
+      "details": "Details"
+    },
+    "started": "Build started for {{name}}. It goes live when the build finishes.",
+    "failed": "Could not deploy {{name}}: {{message}}",
+    "template": {
+      "heading": "What do you want to run?",
+      "groupStarters": "Starter handlers",
+      "groupIdeas": "Ideas to start from",
+      "groupOwn": "Bring your own"
+    },
+    "presets": {
+      "go": {
+        "title": "Go",
+        "body": "A tiny HTTP handler in Go, fast to start."
+      },
+      "node": {
+        "title": "Node.js",
+        "body": "A ten line handler in Node.js."
+      },
+      "python": {
+        "title": "Python",
+        "body": "A small handler in Python."
+      },
+      "webhook": {
+        "title": "Webhook receiver",
+        "body": "Accept events from other services and act on them."
+      },
+      "scheduled": {
+        "title": "Scheduled job runner",
+        "body": "Run a task whenever a schedule calls it."
+      },
+      "form": {
+        "title": "Form to email",
+        "body": "Turn a form post into an email."
+      },
+      "shortener": {
+        "title": "URL shortener",
+        "body": "Map short paths to long links."
+      },
+      "chatbot": {
+        "title": "Chat bot",
+        "body": "Answer chat platform messages."
+      },
+      "repo": {
+        "title": "Use my own repository",
+        "body": "Deploy a handler you already have in git."
+      },
+      "image": {
+        "title": "Use a container image",
+        "body": "Run a prebuilt image from a registry."
+      }
+    },
+    "source": {
+      "headingRepo": "Where is the code?",
+      "headingImage": "Which container image?",
+      "starterTitle": "Starter code to begin with",
+      "starterBody": "Copy these files into a new repository and push it. Then pick that repository below.",
+      "utilityBody": "A complete, tested handler. Copy the files into a new repository and push it, then pick that repository below.",
+      "utilityEnv": "Environment variables it reads",
+      "utilityRequired": "required",
+      "utilityKv": "Uses the key-value store: after deploying, open the function's Key-value store tab and enable it.",
+      "utilityCli": "Or from a terminal",
+      "search": "Search your repositories",
+      "loading": "Loading repositories",
+      "recent": "Most recently updated first",
+      "noRepos": "No repositories found. Connect a git provider in Settings, or paste a URL instead.",
+      "reposError": "Repositories could not be loaded: {{message}}",
+      "pasteInstead": "Paste a URL instead",
+      "pickInstead": "Pick from my repositories",
+      "repoUrl": "Repository URL",
+      "repoUrlPlaceholder": "https://github.com/you/hello",
+      "ref": "Branch",
+      "refHint": "Defaults to the repository's main branch.",
+      "directory": "Handler directory",
+      "directoryHint": "Leave empty when the handler is at the repository root.",
+      "detected": "Detected {{framework}}. Railpack will build it.",
+      "detecting": "Checking the repository",
+      "image": "Image",
+      "imagePlaceholder": "ghcr.io/you/hello:1.0",
+      "imageHint": "Include a tag such as :1.0. Without one the latest tag is used.",
+      "private": "Private"
+    },
+    "details": {
+      "name": "Name",
+      "nameHint": "Lowercase letters, numbers and dashes. It becomes part of the URL.",
+      "nameChecking": "Checking availability",
+      "nameFree": "{{name}} is available.",
+      "idle": "Sleep after",
+      "idleOption": {
+        "5": "5 minutes",
+        "10": "10 minutes",
+        "60": "1 hour",
+        "1440": "1 day",
+        "custom": "Custom"
+      },
+      "customIdle": "Minutes",
+      "idleHint": "A quiet function sleeps to save resources. The next request wakes it, which adds a short delay called a cold start.",
+      "route": "Serve at a path (optional)",
+      "routeHint": "Also answer at one of your domains, for example example.com/hello.",
+      "routeDomain": "Domain",
+      "routeNone": "Do not add a path",
+      "routePath": "Path",
+      "previewFunction": "Function URL",
+      "previewRoute": "Path URL",
+      "previewPending": "Assigned when the build finishes",
+      "advanced": "Advanced settings",
+      "port": "Port",
+      "portHint": "The port your handler listens on. It receives it as the PORT variable."
+    },
+    "summary": {
+      "title": "Ready to deploy",
+      "buildRailpack": "build with Railpack",
+      "buildImage": "run the image as is",
+      "text": "This will {{build}}, sleep after {{sleep}}, and be reachable at {{url}}.",
+      "sleepMinutes": "{{count}} minutes",
+      "sleepHour": "1 hour",
+      "sleepDay": "1 day",
+      "urlPending": "a URL assigned when the build finishes"
+    },
+    "result": {
+      "title": "Deploying {{name}}",
+      "building": "Building and starting your function. This usually takes a minute or two.",
+      "live": "{{name}} is live.",
+      "failed": "The build failed. Open the function to read the build log.",
+      "urlLabel": "Function URL",
+      "waitingUrl": "The URL appears here as soon as it is ready.",
+      "copy": "Copy URL",
+      "copied": "Copied",
+      "open": "Open function",
+      "done": "Close"
+    },
+    "validation": {
+      "repoRequired": "Choose a repository or paste its URL.",
+      "repoInvalid": "Enter a full URL that starts with https://.",
+      "imageRequired": "Enter the image to run.",
+      "imageInvalid": "Image names cannot contain spaces.",
+      "nameRequired": "Give the function a name.",
+      "nameInvalid": "Use lowercase letters, numbers and dashes, starting and ending with a letter or number.",
+      "nameTooLong": "Keep the name short enough to fit in a URL.",
+      "nameTaken": "That name is already used by another app. Pick a different one.",
+      "portInvalid": "Enter a port between 1 and 65535.",
+      "idleInvalid": "Enter a whole number of minutes, at least the minimum allowed.",
+      "domainRequired": "Choose a domain for the path.",
+      "pathInvalid": "Use a path such as /hello with letters, numbers, dashes or dots."
+    },
     "name": "Name",
     "repo": "Repository URL",
     "ref": "Branch, tag or commit",
@@ -38,11 +222,7 @@
     "routePath": "Path prefix",
     "routeHint": "Optional. A domain already attached to an app, plus a path such as /hello, serves this function at domain/hello. The prefix is stripped before the request reaches the handler.",
     "port": "Port",
-    "idle": "Sleep after idle minutes",
-    "submit": "Deploy",
-    "cancel": "Cancel",
-    "started": "Build started for {{name}}. It goes live when the build finishes.",
-    "failed": "Could not deploy {{name}}: {{message}}"
+    "idle": "Sleep after idle minutes"
   },
   "templates": {
     "title": "Starter handlers",
@@ -51,5 +231,131 @@
     "copied": "Copied",
     "cliLabel": "Or from the terminal",
     "error": "Starter handlers could not be loaded: {{message}}"
+  },
+  "kv": {
+    "loading": "Loading keys",
+    "error": "Could not load the key-value store: {{message}}",
+    "usage": "{{keys}} of {{maxKeys}} keys, {{bytes}} of {{maxBytes}} bytes used",
+    "disabled": "The store is off for this function. Enable it to give the function KV_URL and KV_TOKEN; it restarts with them.",
+    "enable": "Enable store",
+    "rotate": "Rotate token",
+    "tokenIssued": "Token issued. The function restarts with the new KV_TOKEN.",
+    "add": "Add key",
+    "empty": "No keys yet.",
+    "prefixLabel": "Filter by prefix",
+    "keyLabel": "Key",
+    "valueLabel": "Value",
+    "ttlLabel": "Expires after (seconds)",
+    "ttlPlaceholder": "Never",
+    "save": "Save key",
+    "saved": "Key saved",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteTitle": "Delete {{key}}?",
+    "deleteBody": "The function loses this value immediately.",
+    "loadFailed": "Could not load the value",
+    "binary": "(binary)",
+    "never": "Never",
+    "bytes": "{{count}} B",
+    "columns": {
+      "key": "Key",
+      "value": "Value",
+      "size": "Size",
+      "expires": "Expires",
+      "actions": "Actions"
+    }
+  },
+  "detail": {
+    "back": "All functions",
+    "notFound": "This function was not found. It may have been deleted or stopped sleeping.",
+    "seconds": "{{count}} s",
+    "tabs": {
+      "overview": "Overview",
+      "settings": "Settings",
+      "environment": "Environment and secrets",
+      "versions": "Versions",
+      "kv": "Key-value store"
+    },
+    "overview": {
+      "title": "Status",
+      "image": "Image",
+      "openApp": "Open as app"
+    },
+    "settings": {
+      "port": "Port",
+      "timeout": "Request timeout (seconds)",
+      "concurrency": "Max concurrency",
+      "limitsTitle": "Request limits",
+      "limitsHelp": "Apply while a request waits for a sleeping function to start. 0 uses the server default. A request over the concurrency limit gets a 429 with Retry-After.",
+      "timeoutHelp": "Longest wait for a cold start, at most {{max}} s. Now {{effective}} s (0 means the adaptive default).",
+      "concurrencyHelp": "Requests held at once, at most {{max}}. Now {{effective}} (0 means no limit).",
+      "save": "Save limits",
+      "saved": "Limits saved",
+      "saveFailed": "Limits could not be saved"
+    },
+    "versions": {
+      "title": "Versions",
+      "help": "Roll back to an earlier deploy, or pin it: pinning rolls back and locks publishing so new builds stay held until you unlock.",
+      "empty": "No deploys yet.",
+      "live": "Live",
+      "rollback": "Roll back",
+      "pin": "Pin this version",
+      "done": "Version change started",
+      "failed": "Version change failed"
+    }
+  },
+  "observe": {
+    "title": "Calls and test console",
+    "pick": "Function",
+    "tabCalls": "Recent calls",
+    "tabTest": "Test console",
+    "time": "Time",
+    "request": "Request",
+    "status": "Status",
+    "duration": "Duration",
+    "cold": "Cold start",
+    "coldYes": "Cold start",
+    "coldNo": "Warm",
+    "sizes": "In / out",
+    "logs": "Logs",
+    "openLogs": "Logs",
+    "replay": "Replay",
+    "replayed": "Replayed, answered {{status}}",
+    "replayFailed": "Replay failed: {{message}}",
+    "loadError": "Calls could not be loaded: {{message}}",
+    "emptyTitle": "No calls recorded yet",
+    "emptyBody": "Calls appear here while the control plane keeps them in memory. Send one from the test console.",
+    "tableLabel": "Recent calls of {{name}}",
+    "captureLabel": "Keep the input of test calls so they can be replayed",
+    "captureHint": "Off by default. Only calls sent from the test console or the CLI are kept, never other traffic. Credential headers are dropped."
+  },
+  "console": {
+    "method": "Method",
+    "path": "Path",
+    "headers": "Headers",
+    "headersPlaceholder": "Name: value, one per line",
+    "body": "Body",
+    "bodyPlaceholder": "JSON or plain text",
+    "send": "Send",
+    "sending": "Sending",
+    "wakeHint": "If the function is asleep this waits for it to wake first.",
+    "failed": "The call failed: {{message}}",
+    "result": "Response",
+    "warm": "Warm",
+    "stored": "Input stored for replay",
+    "truncated": "The body was cut at the size limit."
+  },
+  "banner": {
+    "title": "Functions",
+    "description": "Small handlers that cost nothing while idle. They sleep after a quiet period and wake on the next request.",
+    "diagram": {
+      "browser": "browser",
+      "request": "request",
+      "function": "function",
+      "response": "response",
+      "coldStart": "cold start about 1s",
+      "sleeps": "sleeps when idle"
+    }
   }
 }

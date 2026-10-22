@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { lazy, Suspense, useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowClockwiseIcon,
@@ -11,7 +11,7 @@ import {
   TrashIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { ActionMenu } from '@/components/kit'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useTriggerBackup } from '../../queries/backupHistory'
 import { useStartDatabase, useStopDatabase } from '../../queries/databases'
@@ -19,6 +19,12 @@ import type { DatabaseResource } from '../../types/databaseDetail'
 import { engineHasBackups } from '@/lib/databaseCatalog'
 import { DeleteDatabaseDialog } from '../DeleteDatabaseDialog'
 import { ConnectDrawer } from './ConnectDrawer'
+
+const BackupSetupDialog = lazy(() =>
+  import('./backupSetup/BackupSetupDialog').then((m) => ({
+    default: m.BackupSetupDialog,
+  })),
+)
 
 // One primary action (Start when stopped, otherwise Back up now), the rest in
 // the overflow menu so Delete never carries the weight of the primary.
@@ -36,6 +42,7 @@ export function DatabaseActionBar({
   const start = useStartDatabase()
   const [restarting, setRestarting] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [setupOpen, setSetupOpen] = useState(false)
   const targetId = database.backup_target_id
 
   function onError(error: Error) {
@@ -86,6 +93,25 @@ export function DatabaseActionBar({
     }
   }
 
+  if (database.provision_state) {
+    return (
+      <>
+        <Button
+          size="sm"
+          disabled
+          title={t('list.pendingActionHint')}
+          data-testid="pending-actions-disabled"
+        >
+          <CloudArrowUpIcon aria-hidden="true" />
+          {t('detail.backupNow')}
+        </Button>
+        <p className="text-xs text-muted-foreground">
+          {t('list.pendingActionHint')}
+        </p>
+      </>
+    )
+  }
+
   return (
     <>
       <ConnectDrawer database={database} />
@@ -102,16 +128,25 @@ export function DatabaseActionBar({
             : t('detail.backupNow')}
         </Button>
       ) : (
-        <Link
-          to="/databases/$name/overview"
-          params={{ name }}
-          hash="backups"
-          className={buttonVariants({ size: 'sm' })}
+        <Button
+          size="sm"
+          onClick={() => {
+            setSetupOpen(true)
+          }}
         >
           <CloudArrowUpIcon aria-hidden="true" />
           {t('detail.backupSetup')}
-        </Link>
+        </Button>
       )}
+      {setupOpen ? (
+        <Suspense fallback={null}>
+          <BackupSetupDialog
+            database={database}
+            open={setupOpen}
+            onOpenChange={setSetupOpen}
+          />
+        </Suspense>
+      ) : null}
       <ActionMenu
         trigger={
           <Button variant="ghost" size="icon-sm" aria-label={t('detail.more')}>

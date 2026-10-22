@@ -181,8 +181,7 @@ func (rt *Router) requireAppExists(w http.ResponseWriter, r *http.Request, name 
 		if errors.Is(err, store.ErrServiceNotFound) {
 			writeError(w, http.StatusNotFound, "app not found")
 		} else {
-			rt.logger.Error("api: git remote: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: git remote: load app failed", err, slog.String("name", name))
 		}
 		return false
 	}

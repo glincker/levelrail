@@ -69,8 +69,7 @@ func (rt *Router) handleSetGitDeploySettings(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: load git source for deploy settings failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: load git source for deploy settings failed", err, slog.String("name", name))
 		return
 	}
 	next := toGitDeploySettings(*gs)
@@ -88,8 +87,7 @@ func (rt *Router) handleSetGitDeploySettings(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if err := rt.gitSources.SetGitSourceDeploySettings(ctx, name, next.DeployPaths, next.DeployPathsIgnore, next.ReportStatus); err != nil {
-		rt.logger.Error("api: set git deploy settings failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set git deploy settings failed", err, slog.String("name", name))
 		return
 	}
 	rt.logger.Info("api: git deploy settings updated", slog.String("name", name), slog.Int("paths", len(next.DeployPaths)), slog.Int("paths_ignore", len(next.DeployPathsIgnore)), slog.Bool("report_status", next.ReportStatus))

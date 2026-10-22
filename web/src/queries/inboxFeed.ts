@@ -5,6 +5,7 @@ import { pollUnlessMissing } from '../lib/pollUnlessMissing'
 import { attentionFeedQueryOptions } from './attentionFeed'
 import { deployApprovalListQueryOptions } from './deployApprovals'
 import { failedDeploysQueryOptions } from './failedDeploys'
+import { selfUpgradeAttemptsQueryOptions } from './selfUpgrade'
 import { signInRequestsQueryOptions } from './signIn'
 import { useInbox, useInboxState } from './inbox'
 
@@ -12,6 +13,8 @@ import { useInbox, useInboxState } from './inbox'
 export function useInboxEntries(archived = false): {
   entries: InboxEntry[]
   isPending: boolean
+  hasMore: boolean
+  loadMore: () => void
 } {
   const { t } = useTranslation('inbox', { useSuspense: false })
   const opts = { retry: false, refetchInterval: pollUnlessMissing(30_000) }
@@ -24,14 +27,26 @@ export function useInboxEntries(archived = false): {
   })
   const signIns = useQuery({ ...signInRequestsQueryOptions(), ...opts })
   const feed = useQuery({ ...attentionFeedQueryOptions(), ...opts })
+  const upgrades = useQuery({
+    ...selfUpgradeAttemptsQueryOptions(false),
+    ...opts,
+  })
   const entries = buildInboxEntries({
-    alerts: alerts.data,
+    alerts: alerts.data?.pages.flat(),
     failedDeploys: failed.data,
     approvals: approvals.data,
     signIns: signIns.data?.approvals,
     feed: feed.data,
+    upgrades: upgrades.data,
     state: state.data,
     t: (key, o) => t(key, { ...o, defaultValue: key }),
   })
-  return { entries, isPending: alerts.isPending && state.isPending }
+  return {
+    entries,
+    isPending: alerts.isPending && state.isPending,
+    hasMore: alerts.hasNextPage,
+    loadMore: () => {
+      if (!alerts.isFetchingNextPage) void alerts.fetchNextPage()
+    },
+  }
 }

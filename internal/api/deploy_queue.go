@@ -147,6 +147,7 @@ func (rt *Router) enqueueDeploy(ctx context.Context, svc store.DesiredService, s
 		Status: store.DeployAttemptStatusQueued, StartedAt: now, QueuedAt: &now,
 		Snapshot: store.NewDeployAttemptSnapshot(svc), HeldRequest: string(payload),
 		Branch: meta.Branch, CommitMessage: meta.Message, Author: meta.Author,
+		RerunOf: rerunOfFrom(ctx),
 	}); err != nil {
 		return "", fmt.Errorf("save queued deploy attempt: %w", err)
 	}
@@ -360,6 +361,7 @@ func (rt *Router) replayManualBuild(ctx context.Context, name string, hr deploy.
 	if buildType == "" {
 		buildType = spec.BuildDockerfile
 	}
+	ctx = withRerunOf(ctx, req.RerunOf)
 	buildReq := manualBuildRequest(name, *existing, req, buildType)
 	source := store.DeployAttemptSourceManual
 	if req.UploadHash != "" {

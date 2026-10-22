@@ -10,6 +10,8 @@ import {
   RegistryStatusBadge,
 } from '../../components/RegistrySettingsCard'
 import { PageTemplate } from '@/components/shell/PageTemplate'
+import { PageBanner } from '../../components/PageBanner'
+import { LazyRegistryDiagram } from '../../components/banners/LazyPass3Diagrams'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
@@ -38,12 +40,25 @@ function RegistrySettingsPage() {
   const { t } = useTranslation('settings')
   const { data: settings } = useRegistrySettings()
 
+  const size = settings.enabled ? 'compact' : 'hero'
+
   return (
     <PageTemplate
-      icon={<HardDrivesIcon />}
       title={t('builtInRegistryPage.title')}
-      description={t('builtInRegistryPage.description')}
-      status={<RegistryStatusBadge status={settings.status} />}
+      banner={
+        <PageBanner
+          icon={<HardDrivesIcon />}
+          titleKey="settings:builtInRegistryPage.title"
+          descriptionKey={
+            settings.enabled
+              ? 'settings:builtInRegistryPage.description'
+              : 'settings:builtInRegistryPage.banner.description'
+          }
+          action={<RegistryStatusBadge status={settings.status} />}
+          illustration={<LazyRegistryDiagram size={size} />}
+          size={size}
+        />
+      }
     >
       <RegistrySettingsCard settings={settings} />
     </PageTemplate>

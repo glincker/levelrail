@@ -69,6 +69,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesPublicAccess(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-password":
 		return runDatabasesRotatePassword(prog, rest, stdout, stderr, lookupEnv)
+	case "credentials":
+		return runDatabasesCredentials(prog, rest, stdout, stderr, lookupEnv)
 	case "users":
 		return runDatabasesUsers(prog, rest, stdout, stderr, lookupEnv)
 	case "access":
@@ -138,6 +140,7 @@ func databasesUsage(prog string) string {
   %[1]s databases clear-node <name> [flags]  move a database back to the local node
   %[1]s databases public-access set <name> [flags]    expose a database on a host port
   %[1]s databases public-access clear <name> [flags]  return a database to internal-network-only
+  %[1]s databases credentials <name> [flags]  print the owner password (owner only, audited)
   %[1]s databases users list|create|rotate|disable|enable|delete <name> ...  manage database logins
   %[1]s databases rotate-password <name> [--dry-run|--status|--every-days N] [flags]  rotate the owner password, restart linked apps
   %[1]s databases access temp|list|revoke|who|grant <name> ...  temporary credentials and who can access

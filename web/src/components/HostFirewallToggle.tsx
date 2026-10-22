@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { CodeBlock } from '@/components/ui/code-block'
 import { toast } from '@/components/ui/toast'
 import { useHostFirewall, useSetHostFirewall } from '../queries/hostFirewall'
 
@@ -76,9 +77,7 @@ export function HostFirewallToggle() {
               )}
             </DialogDescription>
           </DialogHeader>
-          <pre className="max-h-48 overflow-auto rounded-md bg-muted p-3 font-mono text-xs">
-            {commands.join('\n')}
-          </pre>
+          <CodeBlock code={commands.join('\n')} language="bash" />
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirming(false)}>
               {t('hostFirewall.cancel')}

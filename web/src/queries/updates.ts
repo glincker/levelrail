@@ -24,6 +24,7 @@ export interface UpdateStatus {
   release_kind?: ReleaseKind
   channel?: UpdateChannel
   image?: string | null
+  checked_at?: string | null
 }
 
 // Mirrors internal/api's edgeGuidance.

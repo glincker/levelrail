@@ -102,7 +102,7 @@ describe('applyNewApp', () => {
 
     const result = await applyNewApp(nextAnalysis, source, e)
 
-    expect(result).toEqual({ appName: 'shop', deployId: 'att1' })
+    expect(result).toEqual({ appName: 'shop', deployId: 'att1', options: [] })
     expect(calls.map((c) => c.key)).toEqual([
       'GET /api/v1/databases/shop-postgres',
       'POST /api/v1/databases',

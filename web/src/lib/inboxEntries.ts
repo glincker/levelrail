@@ -1,6 +1,7 @@
 import type { FailedDeploy } from '../queries/failedDeploys'
 import type { AttentionFeedItem } from '../queries/attentionFeed'
 import type { InboxItem, InboxState } from '../queries/inbox'
+import type { SelfUpgradeAttempt } from '../queries/selfUpgrade'
 import type { SignInApprovalRequest } from '../queries/signIn'
 import type { DeployApprovalResource } from '../types/deployApproval'
 
@@ -29,6 +30,9 @@ export interface InboxEntry {
   href: string
   read: boolean
   archived: boolean
+  deletable: boolean
+  resolved: boolean
+  groupKey?: string
   action?: InboxAction
 }
 
@@ -38,6 +42,7 @@ export interface InboxSources {
   approvals?: DeployApprovalResource[]
   signIns?: SignInApprovalRequest[]
   feed?: AttentionFeedItem[]
+  upgrades?: SelfUpgradeAttempt[]
   state?: InboxState
   t: (key: string, opts?: Record<string, string>) => string
 }
@@ -51,11 +56,18 @@ export function buildInboxEntries(src: InboxSources): InboxEntry[] {
   const read = new Set(src.state?.read_ids ?? [])
   const archived = new Set(src.state?.archived_ids ?? [])
   const out: InboxEntry[] = []
-  const mark = (e: Omit<InboxEntry, 'read' | 'archived'>, isRead = false) =>
+  const mark = (
+    e: Omit<InboxEntry, 'read' | 'archived' | 'deletable' | 'resolved'> & {
+      resolved?: boolean
+    },
+    isRead = false,
+  ) =>
     out.push({
       ...e,
+      resolved: e.resolved ?? false,
       read: isRead || read.has(e.id),
       archived: archived.has(e.id),
+      deletable: e.kind === 'alert',
     })
 
   for (const a of src.alerts ?? []) {
@@ -68,6 +80,14 @@ export function buildInboxEntries(src: InboxSources): InboxEntry[] {
         detail: a.detail ?? '',
         at: a.at,
         href: a.app ? `/apps/${a.app}/alerts` : '/alerts',
+        resolved: a.resolved,
+        groupKey: [
+          a.rule_id,
+          a.app ?? '',
+          a.node ?? '',
+          a.resource_id ?? '',
+          a.event,
+        ].join('|'),
       },
       a.read,
     )
@@ -112,6 +132,23 @@ export function buildInboxEntries(src: InboxSources): InboxEntry[] {
       action: d.image
         ? { type: 'retryDeploy', app: d.service_name, image: d.image }
         : { type: 'link', to: `/apps/${d.service_name}/deploys` },
+    })
+  }
+  for (const u of src.upgrades ?? []) {
+    if (u.outcome !== 'succeeded') continue
+    mark({
+      id: `upgrade:${u.id}`,
+      kind: 'upgrade',
+      severity: 'info',
+      title: src.t('page.entry.upgradeSucceeded', { version: u.to_version }),
+      detail: src.t('page.entry.upgradeDetail', {
+        from: u.from_version,
+        to: u.to_version,
+      }),
+      at: u.finished_at || u.started_at,
+      href: '/settings/updates',
+      resolved: true,
+      action: { type: 'link', to: '/settings/updates' },
     })
   }
   for (const f of src.feed ?? []) {

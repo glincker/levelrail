@@ -36,6 +36,10 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/settings/route53-dns", rt.requireAbility(AbilityRead, rt.handleGetRoute53DNSSettings))
 	mux.HandleFunc("PUT /api/v1/settings/route53-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateRoute53DNSSettings))
 	mux.HandleFunc("DELETE /api/v1/settings/route53-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectRoute53DNS))
+	mux.HandleFunc("GET /api/v1/settings/google-cloud-dns", rt.requireAbility(AbilityRead, rt.handleGetGoogleCloudDNSSettings))
+	mux.HandleFunc("PUT /api/v1/settings/google-cloud-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateGoogleCloudDNSSettings))
+	mux.HandleFunc("DELETE /api/v1/settings/google-cloud-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectGoogleCloudDNS))
+	mux.HandleFunc("POST /api/v1/settings/google-cloud-dns/test", rt.requireAbility(AbilityRoot, rt.handleTestGoogleCloudDNS))
 
 	// External HashiCorp Vault (instance-level, one connection per
 	// control plane): same GET AbilityRead / PUT+DELETE AbilityRoot tier
@@ -117,6 +121,8 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteRegistryCredential))
 	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryCredential))
 	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/usage", rt.requireAbility(AbilityRead, rt.handleRegistryCredentialUsage))
+	mux.HandleFunc("POST /api/v1/registry-credentials/presets/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryPreset))
+	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/refresh", rt.requireAbility(AbilityWriteSensitive, rt.handleRefreshRegistryCredential))
 	mux.HandleFunc("POST /api/v1/registry-credentials/test", rt.requireAbility(AbilityWriteSensitive, rt.handleProbeRegistryCredential))
 	mux.HandleFunc("GET /api/v1/registry-vendors", rt.requireAbility(AbilityRead, rt.handleListRegistryVendors))
 	// Private package registries for builds: secrets mounted into

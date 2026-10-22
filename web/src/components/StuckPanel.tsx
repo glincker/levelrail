@@ -6,7 +6,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
+import { ContainerOutput } from './databases/ContainerOutput'
 import { fetchApp } from '../queries/apps'
+import { useDatabaseProvision } from '../queries/databaseProvision'
 import { triggerDeploy } from '../queries/deploys'
 import { useApplyFix } from '../queries/fixit'
 import {
@@ -82,6 +84,7 @@ export function StuckPanel({
               />
             ))
           )}
+          {kind === 'database' ? <DatabaseCrashOutput name={name} /> : null}
           {data.timeline.length > 0 ? (
             <div>
               <p className="text-xs font-medium text-muted-foreground">
@@ -104,6 +107,12 @@ export function StuckPanel({
       ) : null}
     </section>
   )
+}
+
+function DatabaseCrashOutput({ name }: { name: string }) {
+  const { data } = useDatabaseProvision(name)
+  if (!data?.failure) return null
+  return <ContainerOutput failure={data.failure} />
 }
 
 function CauseCard({

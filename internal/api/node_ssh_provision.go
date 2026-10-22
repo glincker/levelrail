@@ -214,8 +214,7 @@ func (rt *Router) handleCreateSSHNodeProvision(w http.ResponseWriter, r *http.Re
 	creds.InsecureSkipHostKeyCheck = req.InsecureSkipHostKeyCheck
 
 	if taken, err := rt.nodeNameTaken(r.Context(), req.Name); err != nil {
-		rt.logger.Error("api: ssh node provision: check name collision failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: ssh node provision: check name collision failed", err)
 		return
 	} else if taken {
 		writeError(w, http.StatusConflict, "a node or an in-progress provision already uses this name")
@@ -224,15 +223,13 @@ func (rt *Router) handleCreateSSHNodeProvision(w http.ResponseWriter, r *http.Re
 
 	token, err := rt.mintNodeJoinToken(r.Context(), sshNodeProvisionJoinTokenTTL)
 	if err != nil {
-		rt.logger.Error("api: ssh node provision: mint join token failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: ssh node provision: mint join token failed", err)
 		return
 	}
 
 	id, err := randomSSHNodeProvisionID()
 	if err != nil {
-		rt.logger.Error("api: ssh node provision: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: ssh node provision: generate id failed", err)
 		return
 	}
 	now := time.Now()
@@ -241,8 +238,7 @@ func (rt *Router) handleCreateSSHNodeProvision(w http.ResponseWriter, r *http.Re
 		Status: store.SSHNodeProvisionStatusConnecting, CreatedAt: now, UpdatedAt: now,
 	}
 	if err := rt.sshProvisions.SaveSSHNodeProvision(r.Context(), rec); err != nil {
-		rt.logger.Error("api: ssh node provision: save failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: ssh node provision: save failed", err)
 		return
 	}
 
@@ -434,8 +430,7 @@ func sshProvisionAgentImage(agentName string) string {
 func (rt *Router) handleListSSHNodeProvisions(w http.ResponseWriter, r *http.Request) {
 	provisions, err := rt.sshProvisions.ListSSHNodeProvisions(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list ssh node provisions failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list ssh node provisions failed", err)
 		return
 	}
 	out := make([]sshNodeProvisionResource, 0, len(provisions))
@@ -460,8 +455,7 @@ func (rt *Router) handleGetSSHNodeProvision(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get ssh node provision failed", slog.String("provision_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get ssh node provision failed", err, slog.String("provision_id", id))
 		return
 	}
 

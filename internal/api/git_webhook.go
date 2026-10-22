@@ -69,16 +69,14 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: git push webhook: load git source failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: git push webhook: load git source failed", err, slog.String("name", name))
 		return
 	}
 
 	secretsKey := store.GitSourceSecretsKey(name)
 	secret, err := rt.gitSourceSecrets.Resolve(r.Context(), secretsKey, gitSourceSecretKey)
 	if err != nil {
-		rt.logger.Error("api: git push webhook: resolve webhook secret failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: git push webhook: resolve webhook secret failed", err, slog.String("name", name))
 		return
 	}
 

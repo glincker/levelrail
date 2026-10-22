@@ -49,6 +49,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
+	"github.com/GLINCKER/levelrail/internal/dbprovision"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -265,6 +266,9 @@ type Controller struct {
 	// isn't set, meaning "use defaultSlowQueryThresholdMs"; see
 	// effectiveSlowQueryThresholdMs.
 	slowQueryThresholdMs int
+	provRec              *dbprovision.Recorder
+	prov                 *dbprovision.Tracker
+	probe                func(ctx context.Context, addr string) error
 }
 
 // Option configures optional Controller behavior.
@@ -385,8 +389,49 @@ func New(dbName string, dbStore Store, runtime docker.Runtime, opts ...Option) *
 // Name implements reconcile.Controller.
 func (c *Controller) Name() string { return "database/" + c.dbName }
 
+// WithProvisionRecorder makes the controller report each creation step to rec.
+func WithProvisionRecorder(rec *dbprovision.Recorder) Option {
+	return func(c *Controller) { c.provRec = rec }
+}
+
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
+	if c.provRec == nil {
+		return c.reconcileOnce(ctx)
+	}
+	c.prov = c.provRec.Open(ctx, c.dbName)
+	defer func() { c.prov = nil }()
+	res, err := c.reconcileOnce(ctx)
+	c.finishProvision(ctx, res, err)
+	return res, err
+}
+
+func (c *Controller) finishProvision(ctx context.Context, res reconcile.Result, err error) {
+	if c.prov == nil || len(res.Conditions) == 0 {
+		return
+	}
+	cond := res.Conditions[0]
+	switch cond.Status {
+	case reconcile.ConditionTrue:
+		c.prov.Finish()
+	case reconcile.ConditionFalse:
+		msg := cond.Message
+		if msg == "" && err != nil {
+			msg = err.Error()
+		}
+		if msg == "" {
+			msg = cond.Reason
+		}
+		if step := dbprovision.FailStepForReason(cond.Reason, c.prov.PullFinished(), msg); step != "" {
+			if crashLoopReasons(cond.Reason) {
+				c.captureCrash(ctx)
+			}
+			c.prov.Fail(step, errors.New(msg))
+		}
+	}
+}
+
+func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error) {
 	desired, err := c.store.GetDesiredDatabase(ctx, c.dbName)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		// Not a failure: a controller can be registered for a database
@@ -584,20 +629,34 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	// engine) still reconciles exactly as it always has.
 	pitrActive := desired.Engine == store.EnginePostgres && desired.PITREnabled
 
-	if dataPath != "" {
-		if err := c.runtime.EnsureVolume(ctx, volName); err != nil {
-			return notReady("VolumeFailed", err), fmt.Errorf("database/%s: ensure volume %q: %w", c.dbName, volName, err)
+	c.prov.Start(dbprovision.StepDockerCheck, "checking Docker")
+	state, err := c.runtime.InspectByName(ctx, target)
+	if err != nil {
+		if c.prov != nil {
+			return c.waitForDocker(err), nil
 		}
+		return notReady("InspectFailed", err), fmt.Errorf("database/%s: inspect %q: %w", c.dbName, target, err)
+	}
+	c.prov.Done(dbprovision.StepDockerCheck, "Docker answered")
+
+	if dataPath != "" {
+		c.prov.Start(dbprovision.StepCreateVolume, volName)
+		fresh := state == nil
+		if res, stop := c.settleVolume(ctx, desired, volName, fresh); stop {
+			return res, nil
+		}
+		if err := c.runtime.EnsureVolume(ctx, volName); err != nil {
+			return notReady(reasonVolumeFailed, err), fmt.Errorf("database/%s: ensure volume %q: %w", c.dbName, volName, err)
+		}
+		c.markVolumeResolved(ctx, desired, fresh)
+		c.prov.Done(dbprovision.StepCreateVolume, volName)
+	} else {
+		c.prov.Skip(dbprovision.StepCreateVolume, "no persistent storage for this engine")
 	}
 	if pitrActive {
 		if err := c.runtime.EnsureVolume(ctx, walArchiveVolumeName(c.dbName)); err != nil {
-			return notReady("VolumeFailed", err), fmt.Errorf("database/%s: ensure wal archive volume: %w", c.dbName, err)
+			return notReady(reasonVolumeFailed, err), fmt.Errorf("database/%s: ensure wal archive volume: %w", c.dbName, err)
 		}
-	}
-
-	state, err := c.runtime.InspectByName(ctx, target)
-	if err != nil {
-		return notReady("InspectFailed", err), fmt.Errorf("database/%s: inspect %q: %w", c.dbName, target, err)
 	}
 
 	spec := docker.ContainerSpec{
@@ -612,8 +671,14 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		// No persistence (Memcached): no data volume to create or mount.
 		spec.Volumes = nil
 	}
+	// Newer official images drop privileges with setpriv, which needs SETPCAP
+	// to shrink the bounding set; the minimal cap list leaves it out.
+	spec.CapAdd = append(spec.CapAdd, "SETPCAP")
 	for _, fn := range customize {
 		fn(&spec)
+	}
+	if c.prov != nil {
+		spec.OnPull = c.prov.Pull
 	}
 	if tlsMaterial != nil {
 		spec.Labels[tlsCertLabelKey] = tlsCertLabelValue
@@ -667,6 +732,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	justDeployed := false
 	switch {
 	case state == nil:
+		c.prov.Start(dbprovision.StepCredentials, "")
 		if tlsMaterial != nil {
 			// Only on a brand new container: the certs volume is stable
 			// across replacements (see containerName's own doc comment on
@@ -682,6 +748,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 				return notReady("TLSProvisionFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
 			}
 		}
+		c.prov.Done(dbprovision.StepCredentials, "credentials ready")
 		if err := c.createAndStart(ctx, spec); err != nil {
 			reason := "CreateFailed"
 			var startErr *startAfterCreateError
@@ -770,6 +837,11 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 			return notReady("VanishedAfterStart", nil), fmt.Errorf("database/%s: %q not running immediately after starting it", c.dbName, target)
 		}
 	}
+	if res, ok := c.probeReady(ctx, state, meshPort); !ok {
+		return res, nil
+	}
+	c.prov.Start(dbprovision.StepApplySettings, settingsSummary(desired))
+	c.prov.Done(dbprovision.StepApplySettings, settingsSummary(desired))
 
 	if pitrActive {
 		if err := c.ensureWALArchiveWritable(ctx, target); err != nil {
@@ -825,13 +897,17 @@ func (e *startAfterCreateError) Error() string { return e.err.Error() }
 func (e *startAfterCreateError) Unwrap() error { return e.err }
 
 func (c *Controller) createAndStart(ctx context.Context, spec docker.ContainerSpec) error {
+	c.prov.Start(dbprovision.StepCreateContainer, spec.Name)
 	id, err := c.runtime.Create(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("create %q: %w", spec.Name, err)
 	}
+	c.prov.Done(dbprovision.StepCreateContainer, spec.Name)
+	c.prov.Start(dbprovision.StepStart, spec.Name)
 	if err := c.runtime.Start(ctx, id); err != nil {
 		return &startAfterCreateError{fmt.Errorf("start %q after create: %w", spec.Name, err)}
 	}
+	c.prov.Done(dbprovision.StepStart, spec.Name)
 	return nil
 }
 

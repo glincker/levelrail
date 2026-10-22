@@ -8,6 +8,7 @@ import { endpointHostname, isHostOrSubdomain } from './brandLogos'
 const DNS_PROVIDER_BRAND: Record<string, string> = {
   cloudflare: 'cloudflare',
   route53: 'route53',
+  googleclouddns: 'google-cloud',
 }
 
 export function dnsProviderBrand(provider: string): string {
@@ -76,6 +77,7 @@ const STORAGE_PRESET_BRAND: Record<StoragePreset, string> = {
   b2: 'backblaze',
   minio: 'minio',
   wasabi: '',
+  gcs: 'google-cloud-storage',
   custom: '',
 }
 

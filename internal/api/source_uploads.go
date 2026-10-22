@@ -117,8 +117,7 @@ func (rt *Router) handleUploadSource(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: upload source: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: upload source: load app failed", err, slog.String("name", name))
 		return
 	}
 	limit := envInt64Positive(envUploadMaxBytes, defaultUploadMaxBytes)

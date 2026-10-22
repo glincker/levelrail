@@ -189,6 +189,7 @@ func (rt *Router) fixitFixes() []fixit.Fix {
 			Check: rt.backupDrillFinding,
 		}),
 		rt.openWebPortsFix(),
+		rt.proxyInstallFix(),
 	}...)
 }
 

@@ -158,6 +158,7 @@ type GitProviderConnectionResource struct {
 	SourceCount   int                   `json:"source_count"`
 	Connection    GitConnectionResource `json:"connection"`
 	AuthorizePath string                `json:"authorize_path"`
+	AuthMethod    string                `json:"auth_method,omitempty"`
 }
 
 // CreateGitConnectionRequest registers an OAuth application as a new connection.
@@ -168,7 +169,7 @@ type CreateGitConnectionRequest struct {
 	ClientSecret      string `json:"client_secret,omitempty"`
 	Label             string `json:"label,omitempty"`
 	ReuseConnectionID string `json:"reuse_connection_id,omitempty"`
-	// Token is a personal access token, used instead of the OAuth fields by Bitbucket Server.
+	// Token is a personal access token, used instead of the OAuth fields (any host).
 	Token string `json:"token,omitempty"`
 }
 
@@ -212,6 +213,18 @@ type TestGitConnectionResult struct {
 	Message string `json:"message"`
 	Fix     string `json:"fix,omitempty"`
 	Account string `json:"account,omitempty"`
+	// Token is set when a token was checked: its scopes and how many repositories it reaches.
+	Token *GitTokenDetails `json:"token,omitempty"`
+}
+
+// GitTokenDetails mirrors internal/api's gitTokenDetails.
+type GitTokenDetails struct {
+	Scopes       []string `json:"scopes,omitempty"`
+	ScopesKnown  bool     `json:"scopes_known"`
+	Missing      []string `json:"missing_scopes,omitempty"`
+	RepoAccess   bool     `json:"repo_access"`
+	RepoCount    int      `json:"repo_count"`
+	RepoCountCap bool     `json:"repo_count_capped,omitempty"`
 }
 
 // TestGitConnection calls POST /api/v1/git-connections/test.

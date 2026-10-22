@@ -12,7 +12,7 @@
   },
   "empty": {
     "title": "Connect a DNS provider",
-    "body": "Connect Cloudflare or Route53 under Domains, DNS provider, then manage zones and records here with the same credentials.",
+    "body": "Connect Cloudflare, Route53 or Google Cloud DNS under Domains, DNS provider, then manage zones and records here with the same credentials.",
     "action": "Open Domains",
     "noZonesTitle": "No zones yet",
     "noZonesBody": "Create a zone for a domain you own, then point your registrar at its name servers.",
@@ -324,7 +324,7 @@
     "manage": "Manage DNS records",
     "titleForZone": "DNS records for {{zone}}",
     "hide": "Hide",
-    "noProvider": "No DNS provider is configured for records management. Enable Cloudflare DNS or Route53 DNS above to list and edit this zone's records here.",
+    "noProvider": "No DNS provider is configured for records management. Enable Cloudflare DNS, Route53 DNS or Google Cloud DNS above to list and edit this zone's records here.",
     "noRecords": "No records found.",
     "colType": "Type",
     "colName": "Name",
@@ -332,5 +332,12 @@
     "colTtl": "TTL",
     "colStatus": "Status",
     "addRecord": "Add a record"
+  },
+  "banner": {
+    "description": "Connect a DNS provider to manage zones and records here, and see when name server changes have propagated.",
+    "diagram": {
+      "records": "Records",
+      "server": "Server"
+    }
   }
 }

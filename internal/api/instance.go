@@ -152,14 +152,12 @@ func (rt *Router) handleConfirmSameInstance(w http.ResponseWriter, r *http.Reque
 func (rt *Router) tokenBindingRejects(w http.ResponseWriter, r *http.Request, rec *store.APIToken) bool {
 	info, err := rt.instanceInfo(r.Context())
 	if err != nil {
-		rt.logger.Error("api: instance identity lookup failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: instance identity lookup failed", err)
 		return true
 	}
 	ok, err := rt.instance.BindOrCheckToken(r.Context(), rec.ID, info.InstanceID, clientIP(r))
 	if err != nil && !ok {
-		rt.logger.Error("api: token binding check failed", slog.String("error", err.Error()), slog.String("token_id", rec.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: token binding check failed", err, slog.String("token_id", rec.ID))
 		return true
 	}
 	if !ok {

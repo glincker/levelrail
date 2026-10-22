@@ -364,6 +364,21 @@ func (rt *Router) handleDeleteMaintenanceWindow(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusNoContent)
 }
 
+type certPayloadResource struct {
+	Domain      string    `json:"domain"`
+	Issuer      string    `json:"issuer,omitempty"`
+	NotAfter    time.Time `json:"not_after"`
+	DaysLeft    int       `json:"days_left"`
+	FailureKind string    `json:"failure_kind"`
+}
+
+func certPayloadFrom(c *alerting.CertPayload) *certPayloadResource {
+	if c == nil {
+		return nil
+	}
+	return &certPayloadResource{Domain: c.Domain, Issuer: c.Issuer, NotAfter: c.NotAfter, DaysLeft: c.DaysLeft, FailureKind: c.FailureKind}
+}
+
 type alertHistoryResource struct {
 	ID         string    `json:"id"`
 	At         time.Time `json:"at"`
@@ -380,6 +395,8 @@ type alertHistoryResource struct {
 	SilenceID  string    `json:"silence_id,omitempty"`
 	ChannelID  string    `json:"channel_id,omitempty"`
 	Error      string    `json:"error,omitempty"`
+	// Cert is the structured cert expiry data; absent on other alerts and on rows from before it existed.
+	Cert *certPayloadResource `json:"cert,omitempty"`
 
 	// Changes is set on fired entries when ?include=changes is passed: what
 	// changed on the app in the window before the alert fired.
@@ -475,7 +492,7 @@ func (rt *Router) writeAlertHistory(w http.ResponseWriter, r *http.Request, app 
 		}
 		out = append(out, alertHistoryResource{Changes: chg, ChangesOmitted: omitted, ID: e.ID, At: e.At.UTC(), RuleID: e.RuleID, RuleName: e.RuleName, RuleKind: e.RuleKind,
 			ResourceID: e.ResourceID, App: e.App, Node: e.Node, Severity: e.Severity, Event: e.Event, Outcome: e.Outcome,
-			Detail: e.Detail, SilenceID: e.SilenceID, ChannelID: e.ChannelID, Error: e.Error})
+			Detail: e.Detail, SilenceID: e.SilenceID, ChannelID: e.ChannelID, Error: e.Error, Cert: certPayloadFrom(e.Cert)})
 	}
 	writeJSON(w, http.StatusOK, out)
 }

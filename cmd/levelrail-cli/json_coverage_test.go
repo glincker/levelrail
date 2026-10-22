@@ -17,6 +17,7 @@ var jsonExempt = map[string]string{
 	"control-plane-backups help-dr": "prints a static runbook, no data to structure",
 	"tui":                           "interactive full-screen UI, needs a TTY and has no machine output",
 	"functions init":                "writes local starter files, no API call or data to structure",
+	"functions dev":                 "runs a local container in the foreground, output is the handler logs",
 	"functions runtimes":            "prints the static built-in runtime list, no API call",
 }
 

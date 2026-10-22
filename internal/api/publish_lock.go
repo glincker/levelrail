@@ -71,8 +71,7 @@ func (rt *Router) publishLockApp(w http.ResponseWriter, r *http.Request) (*store
 		return nil, false
 	}
 	if err != nil {
-		rt.logger.Error("api: publish lock: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: publish lock: load app failed", err, slog.String("name", name))
 		return nil, false
 	}
 	return svc, true
@@ -81,8 +80,7 @@ func (rt *Router) publishLockApp(w http.ResponseWriter, r *http.Request) (*store
 func (rt *Router) writePublishLock(w http.ResponseWriter, r *http.Request, name string) {
 	lock, err := rt.publishLocks.GetPublishLock(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: get publish lock failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get publish lock failed", err, slog.String("name", name))
 		return
 	}
 	held := []string{}
@@ -130,8 +128,7 @@ func (rt *Router) handlePutPublishLock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := rt.lockApp(r, *svc, reason); err != nil {
-		rt.logger.Error("api: set publish lock failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set publish lock failed", err, slog.String("name", svc.Name))
 		return
 	}
 	rt.writePublishLock(w, r, svc.Name)
@@ -146,8 +143,7 @@ func (rt *Router) handleDeletePublishLock(w http.ResponseWriter, r *http.Request
 	}
 	cleared, err := rt.publishLocks.ClearPublishLock(r.Context(), svc.Name)
 	if err != nil {
-		rt.logger.Error("api: clear publish lock failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear publish lock failed", err, slog.String("name", svc.Name))
 		return
 	}
 	if cleared {
@@ -174,14 +170,12 @@ func (rt *Router) handlePublishHeldBuild(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: load held build failed", slog.String("error", err.Error()), slog.String("deploy_id", deployID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: load held build failed", err, slog.String("deploy_id", deployID))
 		return
 	}
 	held.NodeID = svc.NodeID
 	if err := rt.apps.SaveDesiredService(r.Context(), *held); err != nil {
-		rt.logger.Error("api: publish held build failed", slog.String("error", err.Error()), slog.String("deploy_id", deployID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: publish held build failed", err, slog.String("deploy_id", deployID))
 		return
 	}
 	rt.nudgeReconciler()
@@ -201,8 +195,7 @@ func (rt *Router) handleRollbackAndLock(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err := rt.lockApp(r, *svc, "Rolled back and locked"); err != nil {
-		rt.logger.Error("api: rollback and lock failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: rollback and lock failed", err, slog.String("name", svc.Name))
 		return
 	}
 	rt.handleRollbackToDeploy(w, r)

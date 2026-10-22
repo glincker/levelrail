@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { COPY_FEEDBACK_MS } from '../lib/copyFeedback'
 import { stripAnsiCodes } from '../lib/ansi'
+import { splitByNeedle } from '../lib/logHighlight'
 import { detectLogLevel, prettyJsonLine, type LogLevel } from '../lib/logLevel'
 import type { LogLine } from '../hooks/useLogStream'
 
@@ -21,6 +23,7 @@ export function LogRow({
   expanded,
   onToggle,
   measure,
+  highlight = '',
 }: {
   logLine: LogLine
   index: number
@@ -28,13 +31,19 @@ export function LogRow({
   expanded: boolean
   onToggle: () => void
   measure: (el: HTMLDivElement | null) => void
+  /** Active filter text; matches inside the line are wrapped in <mark>. */
+  highlight?: string
 }) {
   const { t } = useTranslation('common')
   const [copied, setCopied] = useState(false)
+  const timer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(timer.current), [])
   const text = stripAnsiCodes(logLine.line)
   const level = detectLogLevel(logLine.line)
   const tag = level ? LEVEL_TAG[level] : null
   const isStderr = logLine.stream === 'stderr'
+  // Level-detected errors on stdout (build tools often print to stdout) get the same highlight.
+  const isError = isStderr || level === 'error'
   const isSystem = logLine.stream === 'system'
   const pretty = expanded ? prettyJsonLine(logLine.line) : null
 
@@ -70,9 +79,10 @@ export function LogRow({
   const handleCopy = () => {
     void navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
-      window.setTimeout(() => {
+      window.clearTimeout(timer.current)
+      timer.current = window.setTimeout(() => {
         setCopied(false)
-      }, 1500)
+      }, COPY_FEEDBACK_MS)
     })
   }
 
@@ -80,6 +90,7 @@ export function LogRow({
     <div
       data-index={index}
       ref={measure}
+      className="group"
       style={{
         position: 'absolute',
         top: 0,
@@ -94,7 +105,7 @@ export function LogRow({
         aria-expanded={expanded}
         style={{ height: LOG_ROW_HEIGHT_PX }}
         className={`flex w-full items-center gap-2 border-l-2 px-3 text-left whitespace-pre focus-visible:bg-neutral-900 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none focus-visible:ring-inset ${
-          isStderr
+          isError
             ? 'border-red-500 bg-red-950/30 text-red-400'
             : 'border-transparent text-neutral-200 hover:bg-neutral-900'
         }`}
@@ -105,7 +116,29 @@ export function LogRow({
           <span aria-hidden="true">{tag?.label ?? ''}</span>
           {level ? <span className="sr-only">{level}</span> : null}
         </span>
-        <span className="truncate">{text}</span>
+        <span className="truncate">
+          {splitByNeedle(text, highlight).map((seg, i) =>
+            seg.match ? (
+              <mark key={i} className="rounded-sm bg-amber-400/30 text-inherit">
+                {seg.text}
+              </mark>
+            ) : (
+              seg.text
+            ),
+          )}
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={handleCopy}
+        aria-label={t('logs.copyLineAria')}
+        className="absolute -top-0.5 right-2 flex h-6 min-w-6 items-center justify-center rounded bg-neutral-800 px-1.5 text-neutral-300 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none hover:text-neutral-100"
+      >
+        {copied ? (
+          <CheckIcon className="size-3" aria-hidden="true" />
+        ) : (
+          <CopyIcon className="size-3" aria-hidden="true" />
+        )}
       </button>
       {expanded ? (
         <div className="border-l-2 border-neutral-700 bg-neutral-900 px-3 py-2">
@@ -122,12 +155,14 @@ export function LogRow({
             ) : (
               <CopyIcon className="size-3" aria-hidden="true" />
             )}
-            {copied ? 'Copied' : 'Copy line'}
+            {copied ? t('logs.copied') : t('logs.copyLine')}
           </button>
-          <span role="status" className="sr-only">
-            {copied ? 'Line copied' : ''}
-          </span>
         </div>
+      ) : null}
+      {copied ? (
+        <span role="status" className="sr-only">
+          {t('logs.lineCopied')}
+        </span>
       ) : null}
     </div>
   )

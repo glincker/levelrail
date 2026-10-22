@@ -33,4 +33,7 @@ type Condition struct {
 // Result is what a Controller returns from one Reconcile call.
 type Result struct {
 	Conditions []Condition
+	// RequeueAfter asks the engine for another pass of this controller
+	// sooner than the next resync; repeated requests back off.
+	RequeueAfter time.Duration
 }

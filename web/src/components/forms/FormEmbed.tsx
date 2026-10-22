@@ -1,10 +1,10 @@
 import { useState } from 'react'
+import { CodeBlock } from '@/components/ui/code-block'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { CopyIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import { DASHBOARD_URL_ANCHOR } from '../DashboardUrlCard'
 import type { AppForm } from '../../queries/forms'
@@ -14,27 +14,10 @@ type Variant = 'html' | 'fetch' | 'minimal'
 const VARIANTS: Variant[] = ['html', 'fetch', 'minimal']
 
 export function CopyBlock({ label, value }: { label: string; value: string }) {
-  const { t } = useTranslation('forms')
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(value)
-      toast.add({ title: t('copied'), type: 'success' })
-    } catch {
-      toast.add({ title: t('copyFailed'), type: 'error' })
-    }
-  }
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">{label}</span>
-        <Button variant="ghost" size="xs" onClick={() => void copy()}>
-          <CopyIcon />
-          {t('copy')}
-        </Button>
-      </div>
-      <pre className="overflow-x-auto rounded-lg border border-border bg-muted/40 p-3 text-xs">
-        <code>{value}</code>
-      </pre>
+      <span className="text-sm font-medium">{label}</span>
+      <CodeBlock code={value} label={label} />
     </div>
   )
 }

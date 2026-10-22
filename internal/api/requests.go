@@ -67,8 +67,7 @@ func (rt *Router) handleQueryRequests(w http.ResponseWriter, r *http.Request) {
 	}
 	name := r.PathValue("name")
 	if _, found, err := rt.lookupAppResource(r.Context(), name); err != nil {
-		rt.logger.Error("api: query requests: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: query requests: load app failed", err, slog.String("name", name))
 		return
 	} else if !found {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -102,8 +101,7 @@ func (rt *Router) handleQueryRequests(w http.ResponseWriter, r *http.Request) {
 	points, err := telemetry.QueryRequests(r.Context(), rt.telemetry, name, from, to, step)
 	if err != nil {
 		if points == nil {
-			rt.logger.Error("api: query requests failed", slog.String("error", err.Error()), slog.String("name", name))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: query requests failed", err, slog.String("name", name))
 			return
 		}
 		rt.logger.Warn("api: query requests: partial result", slog.String("error", err.Error()), slog.String("name", name))

@@ -53,8 +53,7 @@ func (rt *Router) handleSystemPrune(w http.ResponseWriter, r *http.Request) {
 
 	keep, err := rt.desiredContainerNames(r.Context())
 	if err != nil {
-		rt.logger.Error("api: system prune: compute desired container names failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: system prune: compute desired container names failed", err)
 		return
 	}
 

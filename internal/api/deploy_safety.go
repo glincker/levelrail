@@ -59,8 +59,7 @@ func (rt *Router) freezeGate(w http.ResponseWriter, r *http.Request, name string
 	}
 	status, err := deploy.CheckFreeze(r.Context(), rt.deploySafety, name, time.Now())
 	if err != nil {
-		rt.logger.Error("api: check deploy freeze failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: check deploy freeze failed", err, slog.String("name", name))
 		return "", false
 	}
 	if !status.Frozen {
@@ -276,8 +275,7 @@ func (rt *Router) handleGetAppDeployFreeze(w http.ResponseWriter, r *http.Reques
 	}
 	own, global, err := rt.loadFreeze(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: get deploy freeze failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get deploy freeze failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, deployFreezeView(own, global))
@@ -301,8 +299,7 @@ func (rt *Router) handleGetGlobalDeployFreeze(w http.ResponseWriter, r *http.Req
 	}
 	_, global, err := rt.loadFreeze(r.Context(), "")
 	if err != nil {
-		rt.logger.Error("api: get global deploy freeze failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get global deploy freeze failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, deployFreezeView(global, nil))
@@ -328,8 +325,7 @@ func (rt *Router) freezeApp(w http.ResponseWriter, r *http.Request) (string, boo
 			writeError(w, http.StatusNotFound, "app not found")
 			return "", false
 		}
-		rt.logger.Error("api: deploy freeze: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy freeze: load app failed", err, slog.String("name", name))
 		return "", false
 	}
 	return name, true
@@ -356,14 +352,12 @@ func (rt *Router) putFreeze(w http.ResponseWriter, r *http.Request, scope, name 
 		windows = append(windows, win)
 	}
 	if _, err := rt.deploySafety.ReplaceDeployFreezeWindows(r.Context(), scope, windows); err != nil {
-		rt.logger.Error("api: save deploy freeze failed", slog.String("error", err.Error()), slog.String("scope", scope))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: save deploy freeze failed", err, slog.String("scope", scope))
 		return
 	}
 	own, global, err := rt.loadFreeze(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: reload deploy freeze failed", slog.String("error", err.Error()), slog.String("scope", scope))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: reload deploy freeze failed", err, slog.String("scope", scope))
 		return
 	}
 	if name == "" {

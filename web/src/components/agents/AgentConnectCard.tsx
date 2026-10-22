@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
-import { Button } from '@/components/ui/button'
+import { CodeBlock } from '@/components/ui/code-block'
 import {
   Card,
   CardContent,
@@ -41,14 +40,7 @@ export function AgentConnectCard({
   apiURL: string
 }) {
   const [mode, setMode] = useState<AgentModeId>('agent-core')
-  const [copied, setCopied] = useState(false)
   const snippet = buildMcpConfig({ serverKey, binary, mode, apiURL })
-
-  function copySnippet() {
-    void navigator.clipboard.writeText(snippet).then(() => {
-      setCopied(true)
-    })
-  }
 
   return (
     <Card>
@@ -90,24 +82,7 @@ export function AgentConnectCard({
           </Select>
         </div>
 
-        <div className="relative">
-          <pre
-            aria-label="MCP config"
-            className="overflow-x-auto rounded-lg bg-muted/50 p-3 pr-20 text-xs"
-          >
-            <code>{snippet}</code>
-          </pre>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="absolute top-2 right-2"
-            onClick={copySnippet}
-          >
-            {copied ? <CheckIcon /> : <CopyIcon />}
-            {copied ? 'Copied' : 'Copy'}
-          </Button>
-        </div>
+        <CodeBlock code={snippet} language="json" label="MCP config" />
 
         <Table>
           <TableHeader>

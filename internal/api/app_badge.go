@@ -37,8 +37,7 @@ func (rt *Router) handleGetBadgeSettings(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get badge settings failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get badge settings failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, badgeSettingsResource{Enabled: svc.BadgeEnabled})
@@ -59,8 +58,7 @@ func (rt *Router) handleSetBadgeSettings(w http.ResponseWriter, r *http.Request)
 			writeError(w, http.StatusNotFound, "app not found")
 			return
 		}
-		rt.logger.Error("api: set badge settings failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set badge settings failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, badgeSettingsResource(req))

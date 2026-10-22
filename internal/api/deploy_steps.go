@@ -63,8 +63,7 @@ func (rt *Router) handleDeployStepStream(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: deploy step stream: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy step stream: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -74,8 +73,7 @@ func (rt *Router) handleDeployStepStream(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: deploy step stream: load attempt failed", slog.String("error", err.Error()), slog.String("deploy_id", deployID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy step stream: load attempt failed", err, slog.String("deploy_id", deployID))
 		return
 	}
 	if attempt.ServiceName != name {
@@ -141,8 +139,7 @@ func (rt *Router) serveLiveDeploySteps(w http.ResponseWriter, r *http.Request, d
 		// to the attempt row's own already-persisted terminal state.
 		attempt, err := rt.deployAttempts.GetDeployAttempt(r.Context(), deployID)
 		if err != nil {
-			rt.logger.Error("api: deploy step stream: load attempt failed", slog.String("error", err.Error()), slog.String("deploy_id", deployID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: deploy step stream: load attempt failed", err, slog.String("deploy_id", deployID))
 			return
 		}
 		rt.serveFinishedDeploySteps(r.Context(), w, *attempt)

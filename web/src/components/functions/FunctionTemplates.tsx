@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useBrand } from '@/hooks/useBrand'
 import { useFunctionRuntimes } from '../../queries/functions'
 
-function CopyButton({ text }: Readonly<{ text: string }>) {
+export function CopyButton({ text }: Readonly<{ text: string }>) {
   const { t } = useTranslation('functions')
   const [copied, setCopied] = useState(false)
   return (

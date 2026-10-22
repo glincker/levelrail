@@ -1,0 +1,33 @@
+/* Isometric illustration surfaces shared by PageBanner scenes. */
+:root {
+  --iso-top: oklch(0.82 0.06 220);
+  --iso-l: oklch(0.62 0.07 230);
+  --iso-r: oklch(0.5 0.07 235);
+  --iso-sleep-top: oklch(0.89 0 0);
+  --iso-sleep-l: oklch(0.73 0 0);
+  --iso-sleep-r: oklch(0.62 0 0);
+  --iso-floor-top: oklch(0.96 0.006 230);
+  --iso-floor-l: oklch(0.88 0.01 230);
+  --iso-floor-r: oklch(0.8 0.012 230);
+  --iso-dot: oklch(0.7 0.02 230 / 0.55);
+  --iso-accent-top: oklch(0.9 0.17 105);
+  --iso-accent-l: oklch(0.68 0.13 105);
+  --iso-accent-r: oklch(0.52 0.1 105);
+  --iso-glow-warm: oklch(0.9 0.06 60 / 0.4);
+  --iso-glow-cool: oklch(0.85 0.05 240 / 0.35);
+}
+
+.dark {
+  --iso-top: oklch(0.72 0.08 220);
+  --iso-l: oklch(0.5 0.07 230);
+  --iso-r: oklch(0.38 0.06 235);
+  --iso-sleep-top: oklch(0.5 0 0);
+  --iso-sleep-l: oklch(0.38 0 0);
+  --iso-sleep-r: oklch(0.3 0 0);
+  --iso-floor-top: oklch(0.27 0.01 230);
+  --iso-floor-l: oklch(0.21 0.01 230);
+  --iso-floor-r: oklch(0.17 0.01 230);
+  --iso-dot: oklch(1 0 0 / 0.14);
+  --iso-glow-warm: oklch(0.5 0.08 60 / 0.2);
+  --iso-glow-cool: oklch(0.4 0.07 240 / 0.28);
+}

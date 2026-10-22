@@ -77,8 +77,7 @@ func (rt *Router) handleGetDomainWAF(w http.ResponseWriter, r *http.Request) {
 
 	row, _, err := rt.domainWAF.GetDomainWAF(r.Context(), domain)
 	if err != nil {
-		rt.logger.Error("api: get domain waf failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get domain waf failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, toDomainWAFResource(domain, row))
@@ -114,15 +113,13 @@ func (rt *Router) handleSetDomainWAF(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rt.domainWAF.SetDomainWAF(r.Context(), domain, req.WAFEnabled, req.WAFMode, req.RateLimitRPS, req.RateLimitBurst); err != nil {
-		rt.logger.Error("api: set domain waf failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set domain waf failed", err, slog.String("domain", domain))
 		return
 	}
 
 	row, _, err := rt.domainWAF.GetDomainWAF(r.Context(), domain)
 	if err != nil {
-		rt.logger.Error("api: get domain waf failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get domain waf failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, toDomainWAFResource(domain, row))
@@ -140,8 +137,7 @@ func (rt *Router) handleClearDomainWAF(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rt.domainWAF.DeleteDomainWAF(r.Context(), domain); err != nil {
-		rt.logger.Error("api: clear domain waf failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear domain waf failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, toDomainWAFResource(domain, store.DomainWAF{}))

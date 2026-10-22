@@ -7,10 +7,41 @@ func (rt *Router) registerAppRuntimeRoutes(mux *http.ServeMux) {
 	// Functions: apps that sleep to zero and hold the waking request, with call count and p95 duration, plus starter handlers per runtime.
 	mux.HandleFunc("GET /api/v1/functions", rt.requireAbility(AbilityRead, rt.handleListFunctions))
 	mux.HandleFunc("GET /api/v1/functions/runtimes", rt.requireAbility(AbilityRead, rt.handleFunctionRuntimes))
+	mux.HandleFunc("GET /api/v1/functions/starters", rt.requireAbility(AbilityRead, rt.handleFunctionStarters))
+	// Function controls: request timeout and concurrency limit, deploy versions, and rollback or pin through the app rollback.
+	mux.HandleFunc("GET /api/v1/functions/{name}/settings", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetFunctionSettings))
+	mux.HandleFunc("PUT /api/v1/functions/{name}/settings", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutFunctionSettings))
+	mux.HandleFunc("GET /api/v1/functions/{name}/versions", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListFunctionVersions))
+	mux.HandleFunc("POST /api/v1/functions/{name}/rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleFunctionRollback))
 	// Function paths: serve a function at <domain>/<path> through a forwarder rule on the domain.
 	mux.HandleFunc("GET /api/v1/functions/{name}/route", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListFunctionRoutes))
 	mux.HandleFunc("PUT /api/v1/functions/{name}/route", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetFunctionRoute))
 	mux.HandleFunc("DELETE /api/v1/functions/{name}/route", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteFunctionRoute))
+	// Function observe and try: recent edge calls, a test call through the real route, replay of stored input, and the per-function capture opt-in.
+	mux.HandleFunc("GET /api/v1/functions/{name}/invocations", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListFunctionInvocations))
+	mux.HandleFunc("POST /api/v1/functions/{name}/invoke", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleInvokeFunction))
+	mux.HandleFunc("POST /api/v1/functions/{name}/invocations/{id}/replay", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleReplayFunctionInvocation))
+	mux.HandleFunc("GET /api/v1/functions/{name}/capture", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetFunctionCapture))
+	mux.HandleFunc("PUT /api/v1/functions/{name}/capture", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetFunctionCapture))
+	// Function triggers: signed webhook per function, async invocation queue with retries, dead-letter list and retry.
+	mux.HandleFunc("GET /api/v1/functions/{name}/triggers", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetFunctionTriggers))
+	mux.HandleFunc("PUT /api/v1/functions/{name}/triggers/webhook", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutFunctionWebhook))
+	mux.HandleFunc("DELETE /api/v1/functions/{name}/triggers/webhook", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteFunctionWebhook))
+	mux.HandleFunc("POST /api/v1/functions/{name}/async", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleEnqueueFunctionInvocation))
+	mux.HandleFunc("GET /api/v1/function-invocations", rt.requireAbility(AbilityRead, rt.handleListQueuedFunctionCalls))
+	mux.HandleFunc("POST /api/v1/function-invocations/{id}/retry", rt.requireAbility(AbilityDeploy, rt.handleRetryFunctionInvocation))
+	mux.HandleFunc("DELETE /api/v1/function-invocations/{id}", rt.requireAbility(AbilityDeploy, rt.handleDeleteFunctionInvocation))
+	mux.HandleFunc("POST /api/v1/webhooks/functions/{name}", rt.handleFunctionWebhook)
+	// Function key-value store: browse and edit from the dashboard and CLI, and the bearer-token entry points a function itself calls.
+	mux.HandleFunc("GET /api/v1/functions/{name}/kv", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListFunctionKV))
+	mux.HandleFunc("GET /api/v1/functions/{name}/kv/value", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetFunctionKVValue))
+	mux.HandleFunc("PUT /api/v1/functions/{name}/kv/value", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutFunctionKVValue))
+	mux.HandleFunc("DELETE /api/v1/functions/{name}/kv/value", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteFunctionKVValue))
+	mux.HandleFunc("POST /api/v1/functions/{name}/kv/token", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotateFunctionKVToken))
+	mux.HandleFunc("GET /api/v1/function-kv/entry", rt.handleFunctionKVEntry)
+	mux.HandleFunc("PUT /api/v1/function-kv/entry", rt.handleFunctionKVEntry)
+	mux.HandleFunc("DELETE /api/v1/function-kv/entry", rt.handleFunctionKVEntry)
+	mux.HandleFunc("GET /api/v1/function-kv/keys", rt.handleFunctionKVKeys)
 	mux.HandleFunc("GET /api/v1/apps/{name}/requests", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryRequests))
 	// Traffic: RED totals, per-replica latency, slowest route templates, slow or failed request samples and SLO burn over window=5m, 1h, 24h or 7d, plus top referrers and countries.
 	mux.HandleFunc("GET /api/v1/apps/{name}/traffic", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppTraffic))

@@ -81,7 +81,7 @@ describe('DeploymentsPage', () => {
   it('shows the empty state when nothing has ever deployed', async () => {
     mockApi([])
     renderPage()
-    expect(await screen.findByText('No deployments yet')).toBeInTheDocument()
+    expect(await screen.findByTestId('page-banner-full')).toBeInTheDocument()
   })
 
   it('offers to clear filters when nothing matches', async () => {

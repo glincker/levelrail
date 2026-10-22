@@ -131,6 +131,13 @@ type DesiredDatabase struct {
 	// two. PITREnabledAt is "" whenever PITREnabled is false.
 	PITREnabled   bool
 	PITREnabledAt string
+
+	// ExistingVolume is the owner's stored choice ("reuse" or "discard")
+	// about a data volume a deleted database of this name left behind;
+	// VolumeResolved latches once the reconciler settled that question so a
+	// retry never prompts about its own volume.
+	ExistingVolume string
+	VolumeResolved bool
 }
 
 // SaveDesiredDatabase creates or fully replaces the desired state for a
@@ -144,14 +151,15 @@ func (db *DB) SaveDesiredDatabase(ctx context.Context, d DesiredDatabase) error 
 	}
 
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO desired_databases (name, engine, version, resources, node_id, project_id, updated_at)
-		VALUES (?, ?, ?, ?, '', NULL, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_databases (name, engine, version, resources, node_id, project_id, existing_volume, volume_resolved, updated_at)
+		VALUES (?, ?, ?, ?, '', NULL, ?, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			engine = excluded.engine,
 			version = excluded.version,
 			resources = excluded.resources,
+			existing_volume = CASE WHEN excluded.existing_volume <> '' THEN excluded.existing_volume ELSE desired_databases.existing_volume END,
 			updated_at = excluded.updated_at
-	`, d.Name, d.Engine, d.Version, string(resourcesJSON))
+	`, d.Name, d.Engine, d.Version, string(resourcesJSON), d.ExistingVolume)
 	if err != nil {
 		return fmt.Errorf("store: save desired database %q: %w", d.Name, err)
 	}
@@ -287,6 +295,9 @@ func (db *DB) DeleteDesiredDatabase(ctx context.Context, name string) error {
 	res, err := db.ExecContext(ctx, `DELETE FROM desired_databases WHERE name = ?`, name)
 	if err != nil {
 		return fmt.Errorf("store: delete desired database %q: %w", name, err)
+	}
+	if _, err := db.ExecContext(ctx, `DELETE FROM database_provision_events WHERE database_name = ?`, name); err != nil {
+		return fmt.Errorf("store: delete provision events for database %q: %w", name, err)
 	}
 	n, err := res.RowsAffected()
 	if err != nil {
@@ -569,6 +580,7 @@ func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, er
 		SELECT `+desiredDatabaseColumns+`
 		FROM desired_databases
 		WHERE backup_schedule != '' AND backup_target_id IS NOT NULL
+		AND name NOT IN (`+pendingDatabaseNamesSQL+`)
 		ORDER BY name
 	`)
 	if err != nil {
@@ -597,7 +609,7 @@ func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, er
 // ListDesiredDatabasesByNode, ListDesiredDatabasesByProject,
 // ListScheduledDatabases), the database-kind counterpart to
 // desiredServiceColumns in service.go.
-const desiredDatabaseColumns = "name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended, pitr_enabled, pitr_enabled_at"
+const desiredDatabaseColumns = "name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended, pitr_enabled, pitr_enabled_at, existing_volume, volume_resolved"
 
 // scanDesiredDatabase reads the column shape desiredDatabaseColumns
 // selects, via either row.Scan or rows.Scan (same signature), so the
@@ -615,7 +627,7 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 		suspended                 bool
 		pitrEnabled               bool
 	)
-	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended, &pitrEnabled, &d.PITREnabledAt); err != nil {
+	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended, &pitrEnabled, &d.PITREnabledAt, &d.ExistingVolume, &d.VolumeResolved); err != nil {
 		return nil, err
 	}
 	d.Suspended = suspended

@@ -58,8 +58,7 @@ func (rt *Router) handleGetAppEgressPolicy(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get app egress policy: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get app egress policy: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -102,8 +101,7 @@ func (rt *Router) handleSetAppEgressPolicy(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set app egress policy failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app egress policy failed", err, slog.String("name", name))
 		return
 	}
 
@@ -119,8 +117,7 @@ func (rt *Router) handleClearAppEgressPolicy(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: clear app egress policy failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear app egress policy failed", err, slog.String("name", name))
 		return
 	}
 

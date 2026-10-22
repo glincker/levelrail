@@ -653,6 +653,10 @@
       "audit-log": {
         "title": "Audit log",
         "description": "Who changed what, across every session and API token."
+      },
+      "git-connections": {
+        "title": "Git connections",
+        "description": "Every GitHub, GitLab, Bitbucket, Gitea and Forgejo account in one place."
       }
     },
     "search": "Search settings",
@@ -1066,7 +1070,24 @@
         "title": "Live streams near the cap",
         "hint": "New log and event streams are refused at the cap. Raise APP_MAX_LIVE_STREAMS if the host has headroom."
       }
-    }
+    },
+    "banner": {
+      "description": "Live saturation of this instance, with a one-click fix for each finding.",
+      "diagram": {
+        "database": "database",
+        "disk": "disk",
+        "certificates": "certificates"
+      }
+    },
+    "recheck": "Re-check now",
+    "rechecking": "Checking",
+    "errorTitle": "Could not read control plane health",
+    "retry": "Try again",
+    "findingsTitle": "Needs attention",
+    "findingsCount_one": "{{count}} finding",
+    "findingsCount_other": "{{count}} findings",
+    "metricsTitle": "Runtime and database",
+    "readingChip": "Now {{value}} / limit {{limit}}"
   },
   "generalPage": {
     "rail": {
@@ -1427,6 +1448,35 @@
       "unused": "Nothing yet",
       "usedByMany_one": "{{count}} service",
       "usedByMany_other": "{{count}} services"
+    },
+    "cloud": {
+      "title": "Cloud registries that refresh themselves",
+      "description": "Connect ECR, Artifact Registry or ACR using the cloud account you already added. Logins are minted and renewed automatically before they expire.",
+      "nameLabel": "Credential name",
+      "regionLabel": "Region",
+      "hostLabel": "Registry host",
+      "hostPlaceholder": "myregistry.azurecr.io",
+      "test": "Test",
+      "connect": "Connect",
+      "testOk": "Login works for {{host}}, expires {{when}}.",
+      "refreshNow": "Refresh now",
+      "refreshHealthy": "Refreshing",
+      "refreshFailing": "Refresh failing",
+      "expires": "Expires {{when}}",
+      "lastRefresh": "Last refresh {{when}}",
+      "nextRefresh": "Next refresh {{when}}",
+      "ecr": {
+        "title": "Connect ECR",
+        "body": "Uses your AWS connection. The registry host is filled in from your account."
+      },
+      "artifact_registry": {
+        "title": "Connect Artifact Registry",
+        "body": "Uses your Google Cloud service account. Host defaults to <region>-docker.pkg.dev."
+      },
+      "acr": {
+        "title": "Connect ACR",
+        "body": "Uses your Azure connection. Enter the registry host, for example myregistry.azurecr.io."
+      }
     }
   },
   "backupTargetsPage": {
@@ -1840,7 +1890,15 @@
   },
   "builtInRegistryPage": {
     "title": "Container registry",
-    "description": "The built-in image registry: a build cache and distribution backend for multi-node deployments, with no external registry to sign up for. It is served over TLS through the embedded ingress and enforces its own login even if the published port is reached directly."
+    "description": "The built-in image registry: a build cache and distribution backend for multi-node deployments, with no external registry to sign up for. It is served over TLS through the embedded ingress and enforces its own login even if the published port is reached directly.",
+    "banner": {
+      "description": "Turn on the built-in image registry to share builds between nodes without signing up for an external registry.",
+      "diagram": {
+        "push": "Push",
+        "pull": "Pull",
+        "registry": "Registry"
+      }
+    }
   },
   "vaultPage": {
     "title": "Vault",
@@ -1947,7 +2005,14 @@
   },
   "nodeProvidersPage": {
     "title": "Cloud node providers",
-    "description": "API tokens for creating servers automatically from the Nodes page. Used only to create and inspect VMs, day to day operation never touches SSH."
+    "description": "API tokens for creating servers automatically from the Nodes page. Used only to create and inspect VMs, day to day operation never touches SSH.",
+    "banner": {
+      "description": "Connect a cloud provider with an API token to create servers from the Nodes page. Day to day operation never touches SSH.",
+      "diagram": {
+        "cloud": "Cloud",
+        "node": "Node"
+      }
+    }
   },
   "containersPage": {
     "title": "Containers",
@@ -1959,7 +2024,89 @@
   },
   "networkSharesPage": {
     "title": "Network shares",
-    "description": "NFS and CIFS/SMB exports, mounted as Docker volumes using Docker's own local-driver network passthrough. Attach one as a volume source when configuring an app's volumes."
+    "description": "NFS and CIFS/SMB exports, mounted as Docker volumes using Docker's own local-driver network passthrough. Attach one as a volume source when configuring an app's volumes.",
+    "banner": {
+      "description": "Mount storage from a NAS or file server as a Docker volume your apps can use.",
+      "whatFor": "A share lets an app read and write files that live on another machine, like media on a NAS or backups on a file server. Add one, then attach it from an app's volumes.",
+      "diagram": {
+        "app": "App",
+        "nfs": "NFS",
+        "smb": "SMB / CIFS",
+        "volume": "Mounted as a Docker volume"
+      }
+    },
+    "dialog": {
+      "open": "Add network share",
+      "title": "Add network share",
+      "description": "Connect storage from a NAS or file server so apps can mount it as a Docker volume.",
+      "protocol": "Protocol",
+      "nfs": {
+        "title": "NFS",
+        "body": "Linux and NAS, no password"
+      },
+      "smb": {
+        "title": "SMB / CIFS",
+        "body": "Windows, macOS and many NAS, needs a username"
+      },
+      "host": "Host",
+      "hostPlaceholder": "nas.lan or 192.168.1.50",
+      "hostHint": "The server's hostname or IP address (IPv4 or IPv6).",
+      "path": {
+        "nfs": "Export path",
+        "smb": "Share name"
+      },
+      "pathPlaceholder": {
+        "nfs": "/export/media",
+        "smb": "media"
+      },
+      "pathHint": {
+        "nfs": "The folder the server exports, starting with a slash.",
+        "smb": "The name of the shared folder on the server, without slashes."
+      },
+      "name": "Name",
+      "namePlaceholder": "media-nas",
+      "nameHint": "Used as the volume name. Lowercase letters, numbers and dashes.",
+      "nameFree": "This name is available.",
+      "username": "Username",
+      "password": "Password",
+      "passwordHint": "Stored encrypted. It is never shown again.",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "advanced": "Advanced",
+      "options": "Mount options",
+      "optionsOptional": "optional",
+      "optionsHint": "Comma-separated options passed straight to Docker's local driver. Pick a common one or type your own.",
+      "optionsPlaceholder": "ro,nfsvers=4",
+      "chips": {
+        "label": "Common options",
+        "ro": "Read-only",
+        "nfsvers4": "NFSv4",
+        "nfsvers3": "NFSv3",
+        "soft": "Soft mount",
+        "ids": "Set uid and gid",
+        "smbvers": "SMB 3.0"
+      },
+      "summary": "Mounts {{remote}} {{mode}} as Docker volume {{name}}",
+      "summaryEmpty": "Fill in the server and path to see what will be mounted.",
+      "readOnly": "read-only",
+      "readWrite": "read-write",
+      "cancel": "Cancel",
+      "submit": "Add network share",
+      "submitting": "Adding...",
+      "added": "Network share \"{{name}}\" added.",
+      "errors": {
+        "nameRequired": "Give the share a name.",
+        "nameFormat": "Use lowercase letters, numbers and dashes, starting and ending with a letter or number.",
+        "nameTaken": "A share with this name already exists.",
+        "hostRequired": "Enter the server's hostname or IP address.",
+        "hostFormat": "That is not a valid hostname or IP address.",
+        "pathRequired": "Enter the path on the server.",
+        "nfsPathFormat": "An NFS export path starts with a slash, for example /export/media.",
+        "smbPathFormat": "Enter just the share name, with no slashes or spaces.",
+        "usernameRequired": "SMB shares need a username.",
+        "passwordRequired": "SMB shares need a password."
+      }
+    }
   },
   "organizationsPage": {
     "title": "Organizations",
@@ -2212,8 +2359,9 @@
     "mountAs": "secret id {{id}}"
   },
   "storagePage": {
+    "gcsHmacHint": "Use an HMAC key, not a service account JSON. In Google Cloud, open Cloud Storage, Settings, Interoperability and create a key for a service account that can write to the bucket.",
     "title": "Storage destinations",
-    "description": "S3-compatible object storage for log archives and backups. AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, or any custom endpoint.",
+    "description": "S3-compatible object storage for log archives and backups. AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, Google Cloud Storage, or any custom endpoint.",
     "notConfiguredTitle": "Storage is not configured on this server",
     "notConfiguredBody": "Set APP_MASTER_KEY and restart the control plane so bucket credentials can be encrypted.",
     "loadErrorTitle": "Storage destinations could not be loaded",
@@ -2535,7 +2683,23 @@
     "cancel": "Cancel",
     "planTitle": "Plan",
     "resultTitle": "Result",
-    "resultCounts": "{{applied}} applied, {{failed}} failed, {{skipped}} skipped"
+    "resultCounts": "{{applied}} applied, {{failed}} failed, {{skipped}} skipped",
+    "banner": {
+      "description": "Describe projects, apps, domains and databases as YAML, review the plan, then apply.",
+      "diagram": {
+        "host": "host",
+        "docker": "Docker",
+        "ingress": "ingress"
+      }
+    },
+    "optionsTitle": "Options",
+    "optionsDescription": "Control how the apply treats apps it already knows about.",
+    "filesChosen_one": "{{count}} file ready",
+    "filesChosen_other": "{{count}} files ready",
+    "noFiles": "Paste YAML below or upload files to plan.",
+    "planAgain": "Plan again",
+    "planFailed": "The plan could not be built. Fix the files and plan again.",
+    "applyFailed": "The apply did not finish. Plan again to review the current state."
   },
   "githubManualDialog": {
     "title": "Connect a GitHub App manually",
@@ -2714,8 +2878,59 @@
         "unreachable": {
           "message": "This control plane could not reach the server.",
           "fix": "Check the hostname and port, and that the network or firewall allows outbound access to it."
+        },
+        "bad_scope": {
+          "message": "The token is missing a scope this control plane needs.",
+          "fix": "Create the token again with every scope listed in the steps above ticked, then paste the new one."
         }
-      }
+      },
+      "callbackLabel": "Callback URL",
+      "callbackCopy": "Copy",
+      "callbackCopied": "Copied"
+    },
+    "token": {
+      "title": "Connect with a token",
+      "description": "Paste an access token instead of registering an OAuth application. It works on a plain http install with no public domain.",
+      "host": "Host",
+      "guideLabel": "How to create the token",
+      "server": "Server:",
+      "serverEmpty": "enter the server URL above",
+      "serverHelp": "The address you open in a browser, for example http://git.lan:3000. http and https both work.",
+      "tick": "Tick these scopes:",
+      "scopes": "Scopes to tick",
+      "noDomain": "The token is stored encrypted and is never shown again. No public domain or callback URL is needed.",
+      "steps": {
+        "gitlab": {
+          "open": "Open your GitLab access token page:",
+          "create": "Select Add new token, name it {{name}}, and pick an expiry date you can live with.",
+          "copy": "Select Create personal access token and copy the token that starts with glpat-."
+        },
+        "bitbucket": {
+          "open": "Open Atlassian API tokens:",
+          "create": "Select Create API token with scopes, name it {{name}}, choose Bitbucket as the app, and pick your workspace.",
+          "copy": "Create the token, then paste it below as your Atlassian email, a colon, and the token (email:token)."
+        },
+        "gitea": {
+          "open": "Open your Gitea applications page:",
+          "create": "Under Generate New Token, name it {{name}}.",
+          "copy": "Select Generate Token and copy it now, Gitea shows it once."
+        },
+        "forgejo": {
+          "open": "Open your Forgejo applications page:",
+          "create": "Under Generate New Token, name it {{name}}.",
+          "copy": "Select Generate Token and copy it now, Forgejo shows it once."
+        }
+      },
+      "field": "Access token",
+      "fieldEmailToken": "Email and API token (email:token)",
+      "check": "Check token",
+      "scopesFound": "Scopes: {{scopes}}",
+      "scopesUnknown": "This host does not report a token's scopes. Repository access is checked instead.",
+      "repos_one": "Can reach {{count}}{{plus}} repository.",
+      "repos_other": "Can reach {{count}}{{plus}} repositories.",
+      "noRepos": "No repositories are reachable yet. Tick the repository scopes, or make sure the account is a member of a project.",
+      "connected": "Account connected",
+      "connectedBody": "The token was checked and stored encrypted."
     },
     "toast": {
       "added": "Account saved",
@@ -2724,6 +2939,78 @@
       "renameFailed": "Could not rename the account",
       "authorized": "Account authorized",
       "authorizedBody": "Its repositories are now available to pick from."
+    }
+  },
+  "gitConnectionsHub": {
+    "title": "Git connections",
+    "description": "Every Git account connected to this server, across all hosts.",
+    "loadFailed": "Could not load your Git accounts. Try again in a moment.",
+    "attention_one": "{{count}} account needs attention. Reconnect it so its apps keep deploying.",
+    "attention_other": "{{count}} accounts need attention. Reconnect them so their apps keep deploying.",
+    "openSettings": "Provider settings",
+    "scopes": "Scopes: {{scopes}}",
+    "banner": {
+      "description": "Connect GitHub, GitLab, Bitbucket, Gitea or Forgejo accounts, as many as you need, and pick repositories from any of them.",
+      "whatFor": "Connect one account per person, team or organization. Apps stay tied to the account they were created from, so you can add or remove accounts without touching your apps.",
+      "diagram": {
+        "repos": "Repos",
+        "server": "Server",
+        "branches": "Branches"
+      }
+    },
+    "add": {
+      "action": "Add account",
+      "withToken": "Connect with a token",
+      "withTokenAsks": "GitLab, Bitbucket, Gitea or Forgejo. Paste a token, no OAuth app or public domain needed.",
+      "domainTitle": "Set a primary domain first",
+      "domainBody": "This host sends you back to your server after you sign in, so the server needs a public domain.",
+      "continue": "Continue"
+    },
+    "stats": {
+      "repos": "Repos",
+      "apps": "Apps"
+    },
+    "health": {
+      "connected": "Connected",
+      "needsReconnect": "Needs reconnect",
+      "notAuthorized": "Not authorized",
+      "rateLimited": "Rate limited"
+    },
+    "disconnect": {
+      "description": "Apps are never deleted. Any app that used this account keeps running and needs another account connected before its next deploy.",
+      "affected": "These apps need another account: {{apps}}"
+    },
+    "hosts": {
+      "github": {
+        "name": "GitHub",
+        "asks": "You will create or pick a GitHub App and install it on an account or organization.",
+        "access": "Access follows the repositories the App is installed on."
+      },
+      "gitlab": {
+        "name": "GitLab",
+        "asks": "You will paste an OAuth application ID and secret, then sign in.",
+        "access": "Access follows the OAuth scopes you granted."
+      },
+      "bitbucket": {
+        "name": "Bitbucket",
+        "asks": "You will paste an OAuth consumer key and secret, then sign in.",
+        "access": "Access follows the OAuth permissions you granted."
+      },
+      "bitbucket_server": {
+        "name": "Bitbucket Server",
+        "asks": "You will paste your server URL and a personal access token.",
+        "access": "Access follows the token's permissions."
+      },
+      "gitea": {
+        "name": "Gitea",
+        "asks": "You will enter your Gitea URL and an OAuth application ID and secret, then sign in.",
+        "access": "Access follows the OAuth scopes you granted."
+      },
+      "forgejo": {
+        "name": "Forgejo and Codeberg",
+        "asks": "You will enter the server URL (codeberg.org works) and an OAuth application ID and secret, then sign in.",
+        "access": "Access follows the OAuth scopes you granted."
+      }
     }
   }
 }

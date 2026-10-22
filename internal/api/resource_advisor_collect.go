@@ -85,6 +85,7 @@ func (rt *Router) advisorInput(ctx context.Context, th resourceadvisor.Threshold
 	if err != nil {
 		return in, fmt.Errorf("resource advisor: list databases: %w", err)
 	}
+	dbs = rt.withoutPendingDatabases(ctx, dbs)
 	routed := map[string]bool{}
 	if owners, err := rt.domainOwners(ctx); err == nil {
 		for _, apps := range owners {

@@ -100,7 +100,16 @@ export function useCreateGitConnection() {
 }
 
 export type GitConnectionTestKind =
-  'bad_url' | 'bad_token' | 'tls' | 'unreachable'
+  'bad_url' | 'bad_token' | 'bad_scope' | 'tls' | 'unreachable'
+
+export interface GitTokenDetails {
+  scopes?: string[]
+  scopes_known: boolean
+  missing_scopes?: string[]
+  repo_access: boolean
+  repo_count: number
+  repo_count_capped?: boolean
+}
 
 export interface GitConnectionTestResult {
   ok: boolean
@@ -108,6 +117,7 @@ export interface GitConnectionTestResult {
   message: string
   fix?: string
   account?: string
+  token?: GitTokenDetails
 }
 
 // Checks an instance URL and optional token; nothing is saved.

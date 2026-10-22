@@ -1,3 +1,4 @@
+import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { Link } from '@tanstack/react-router'
 import {
   DownloadSimpleIcon,
@@ -149,7 +150,7 @@ export function SupplyChainSection({
     )
   }
   if (sbom.isPending) {
-    return <p className="text-sm text-muted-foreground">Loading</p>
+    return <CardSkeleton titleWidth="w-40" rows={3} />
   }
   if (sbom.isError) {
     return (

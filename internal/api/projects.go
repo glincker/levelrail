@@ -69,8 +69,7 @@ func (rt *Router) handleListProjects(w http.ResponseWriter, r *http.Request) {
 		projects, err = rt.filterProjects(r, projects)
 	}
 	if err != nil {
-		rt.logger.Error("api: list projects failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list projects failed", err)
 		return
 	}
 	out := make([]projectResource, 0, len(projects))
@@ -97,8 +96,7 @@ func (rt *Router) handleGetProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get project failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get project failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, toProjectResource(p))
@@ -127,8 +125,7 @@ func (rt *Router) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 
 	id, err := randomProjectID()
 	if err != nil {
-		rt.logger.Error("api: create project: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create project: generate id failed", err)
 		return
 	}
 
@@ -138,8 +135,7 @@ func (rt *Router) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: time.Now().UTC().Format(time.RFC3339),
 	}
 	if err := rt.projects.SaveProject(r.Context(), p); err != nil {
-		rt.logger.Error("api: create project failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create project failed", err, slog.String("id", id))
 		return
 	}
 	if err := rt.organizations.SetProjectOrganization(r.Context(), id, team); err != nil {

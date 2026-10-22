@@ -100,8 +100,7 @@ func (rt *Router) handleQueryNodeMetrics(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: query node metrics: load node failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: query node metrics: load node failed", err, slog.String("node_id", id))
 		return
 	}
 
@@ -138,8 +137,7 @@ func (rt *Router) handleQueryNodeMetrics(w http.ResponseWriter, r *http.Request)
 
 	services, err := rt.apps.ListDesiredServicesByNode(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: query node metrics: list placed services failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: query node metrics: list placed services failed", err, slog.String("node_id", id))
 		return
 	}
 

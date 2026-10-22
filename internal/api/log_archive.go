@@ -85,8 +85,7 @@ func (rt *Router) authorizeAppOrEmpty(w http.ResponseWriter, r *http.Request, ap
 	}
 	_, found, err := rt.lookupAppResource(r.Context(), app)
 	if err != nil {
-		rt.logger.Error("api: log archive: load app failed", slog.String("error", err.Error()), slog.String("name", app))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: log archive: load app failed", err, slog.String("name", app))
 		return false
 	}
 	if !found {
@@ -104,8 +103,7 @@ func (rt *Router) handleListLogArchivePolicies(w http.ResponseWriter, r *http.Re
 	}
 	policies, err := d.Archive.ListLogArchivePolicies(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list log archive policies failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list log archive policies failed", err)
 		return
 	}
 	out := make([]logArchivePolicyResource, 0, len(policies))
@@ -162,14 +160,12 @@ func (rt *Router) handleSetLogArchivePolicy(w http.ResponseWriter, r *http.Reque
 	enabled := req.Enabled == nil || *req.Enabled
 	p := store.LogArchivePolicy{ID: id, AppName: req.AppName, TargetID: req.TargetID, Enabled: enabled, IntervalSeconds: int64(interval / time.Second), RetentionDays: req.RetentionDays, WatermarkNs: now.UnixNano(), CreatedAt: now.Format(time.RFC3339)}
 	if err := d.Archive.UpsertLogArchivePolicy(r.Context(), p); err != nil {
-		rt.logger.Error("api: set log archive policy failed", slog.String("error", err.Error()), slog.String("app", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set log archive policy failed", err, slog.String("app", req.AppName))
 		return
 	}
 	saved, err := d.Archive.GetLogArchivePolicy(r.Context(), req.AppName)
 	if err != nil {
-		rt.logger.Error("api: reload log archive policy failed", slog.String("error", err.Error()), slog.String("app", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: reload log archive policy failed", err, slog.String("app", req.AppName))
 		return
 	}
 	writeJSON(w, http.StatusOK, toLogArchivePolicyResource(saved))
@@ -191,8 +187,7 @@ func (rt *Router) handleDeleteLogArchivePolicy(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: delete log archive policy failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete log archive policy failed", err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -263,8 +258,7 @@ func (rt *Router) handleListLogArchiveRuns(w http.ResponseWriter, r *http.Reques
 	}
 	runs, err := d.Archive.ListLogArchiveRuns(r.Context(), app, all, limit)
 	if err != nil {
-		rt.logger.Error("api: list log archive runs failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list log archive runs failed", err)
 		return
 	}
 	out := make([]logArchiveRunResource, 0, len(runs))

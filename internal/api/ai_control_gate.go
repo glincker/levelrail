@@ -177,8 +177,7 @@ func (rt *Router) aiControlRejects(w http.ResponseWriter, r *http.Request, rec *
 		allowed, reason, err = evaluateAgentAccess(s, experimental.Enabled(experimental.AIControl), newAgentRequest(r, required), kindOf)
 	}
 	if err != nil {
-		rt.logger.Error("api: ai control decision failed", slog.String("error", err.Error()), slog.String("token_id", rec.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: ai control decision failed", err, slog.String("token_id", rec.ID))
 		return true
 	}
 	if allowed {

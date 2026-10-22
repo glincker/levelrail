@@ -4,6 +4,7 @@ import type {
   IacItemResult,
   IacPlan,
 } from '../queries/iac'
+import { CodeBlock } from '@/components/ui/code-block'
 
 const actionStyle: Record<string, string> = {
   create: 'text-green-700 dark:text-green-400',
@@ -72,11 +73,14 @@ function ChangeRow({ change }: { change: IacChange }) {
         </p>
       ) : null}
       {change.fields?.length || change.kept?.length ? (
-        <pre className="mt-2 overflow-x-auto font-mono text-xs text-muted-foreground">
-          {[...(change.fields ?? []), ...(change.kept ?? [])]
+        <CodeBlock
+          className="mt-2"
+          code={[...(change.fields ?? []), ...(change.kept ?? [])]
             .map(fieldText)
             .join('\n')}
-        </pre>
+          language="diff"
+          wrap
+        />
       ) : null}
       {change.warnings?.map((w) => (
         <p key={w} className="mt-1 text-xs text-amber-700 dark:text-amber-400">

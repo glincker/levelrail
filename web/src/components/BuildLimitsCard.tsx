@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
+import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { toast } from '@/components/ui/toast'
 import { useIsRoot } from '../hooks/useIsRoot'
 import {
@@ -221,6 +221,7 @@ function LimitsForm({ app, limits }: { app: string; limits: AppBuildLimits }) {
 export function BuildLimitsCard({ appName }: { appName: string }) {
   const { t } = useTranslation('buildPerformance')
   const { data, isPending, error } = useAppBuildLimits(appName)
+  if (isPending) return <CardSkeleton titleWidth="w-44" rows={3} />
   return (
     <Card id="build-limits">
       <CardHeader>
@@ -233,7 +234,6 @@ export function BuildLimitsCard({ appName }: { appName: string }) {
         </p>
       </CardHeader>
       <CardContent>
-        {isPending ? <Skeleton className="h-24 w-full" /> : null}
         {error ? (
           <p role="alert" className="text-sm text-muted-foreground">
             {t('limits.loadError')}

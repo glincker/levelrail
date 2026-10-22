@@ -137,8 +137,12 @@ func (s *bootState) startAlerting() {
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetExportHealth(exportHealthSource{db: db})
+	alertingEngine.SetRegistryRefresh(registryRefreshSource{db: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
 	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))
+	certPolicy := alerting.CertPolicyFromEnv(os.Getenv)
+	certPolicy.BaseURL = dashboardBaseURL()
+	alertingEngine.SetCertExpiryPolicy(certPolicy)
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
 	alertingEngine.SetBudgets(apiRouter)
 	alertingEngine.SetEmailDelivery(db)
@@ -147,6 +151,11 @@ func (s *bootState) startAlerting() {
 		alertingEngine.SetDeployFailures(src)
 	}
 	routeDefaultAlerts(ctx, logger, alertingDB, db, emailSender)
+	go func() {
+		if err := apiRouter.RunRegistryRefresher(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("registry credential refresh stopped", slog.String("error", err.Error()))
+		}
+	}()
 	go runUsageRollup(ctx, apiRouter)
 	go footprint.RunTrim(ctx, logger, os.Getenv)
 	go func() {
@@ -248,6 +257,12 @@ func (s *bootState) startSchedulers() {
 		db: db, nudger: engine, local: client,
 		nodes: lbNodeUpstreams{db: db, local: client, registry: agentRegistry, localNodeID: localNodeID},
 	}
+	s.functionQueue.Target = scheduledTaskRunner.Target
+	go func() {
+		if err := s.functionQueue.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("function queue stopped", slog.String("error", err.Error()))
+		}
+	}()
 	scheduledTaskScheduler := scheduledtask.NewScheduler(db, scheduledTaskRunner, logger)
 	scheduledTaskScheduler.Lookback = scheduledTaskRunner.Limits.CatchUpLookback
 	go func() {
@@ -306,6 +321,13 @@ func (s *bootState) startSchedulers() {
 	go func() {
 		if err := digestRunner.Run(ctx, 10*time.Minute); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("inbox digest stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	inboxTidy := &alerting.TidyRunner{DB: alertingDB, Cfg: alerting.TidyConfigFromEnv(os.Getenv), Logger: logger}
+	go func() {
+		if err := inboxTidy.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("inbox tidy stopped", slog.String("error", err.Error()))
 		}
 	}()
 

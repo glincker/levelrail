@@ -192,20 +192,17 @@ func (rt *Router) handleCreateNodeReenrollToken(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: reenroll token: look up node failed", slog.String("node_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: reenroll token: look up node failed", err, slog.String("node_id", id))
 		return
 	}
 	plaintext, err := randomToken()
 	if err != nil {
-		rt.logger.Error("api: reenroll token: generate token failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: reenroll token: generate token failed", err)
 		return
 	}
 	tokenID, err := randomNodeJoinTokenID()
 	if err != nil {
-		rt.logger.Error("api: reenroll token: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: reenroll token: generate id failed", err)
 		return
 	}
 	now := time.Now()
@@ -214,8 +211,7 @@ func (rt *Router) handleCreateNodeReenrollToken(w http.ResponseWriter, r *http.R
 		Purpose: store.NodeJoinTokenPurposeReenroll, NodeID: id,
 	}
 	if err := rt.nodes.SaveNodeJoinToken(r.Context(), rec); err != nil {
-		rt.logger.Error("api: reenroll token: save failed", slog.String("node_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: reenroll token: save failed", err, slog.String("node_id", id))
 		return
 	}
 	rt.recordOperatorEvent(r, id, store.SecurityKindReenroll, "token_issued")
@@ -239,8 +235,7 @@ func (rt *Router) handleRevokeNodeCert(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: revoke node cert failed", slog.String("node_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: revoke node cert failed", err, slog.String("node_id", id))
 		return
 	}
 	if rt.nodeCerts.sessions != nil {

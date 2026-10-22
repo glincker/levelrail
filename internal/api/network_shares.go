@@ -121,8 +121,7 @@ func validateNetworkShareFields(name, protocol, host, remotePath, username, pass
 func (rt *Router) handleListNetworkShares(w http.ResponseWriter, r *http.Request) {
 	shares, err := rt.networkShares.ListNetworkShares(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list network shares failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list network shares failed", err)
 		return
 	}
 	out := make([]networkShareResource, 0, len(shares))
@@ -142,8 +141,7 @@ func (rt *Router) handleGetNetworkShare(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get network share failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get network share failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, toNetworkShareResource(s))
@@ -175,22 +173,19 @@ func (rt *Router) handleCreateNetworkShare(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if !errors.Is(err, store.ErrNetworkShareNotFound) {
-		rt.logger.Error("api: create network share: check existing failed", slog.String("error", err.Error()), slog.String("name", req.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create network share: check existing failed", err, slog.String("name", req.Name))
 		return
 	}
 
 	id, err := randomNetworkShareID()
 	if err != nil {
-		rt.logger.Error("api: create network share: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create network share: generate id failed", err)
 		return
 	}
 
 	if req.Protocol == store.NetworkShareProtocolCIFS {
 		if err := rt.networkShareSecrets.SetValue(r.Context(), store.NetworkShareSecretsKey(id), "password", req.Password); err != nil {
-			rt.logger.Error("api: create network share: set password failed", slog.String("error", err.Error()), slog.String("id", id))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: create network share: set password failed", err, slog.String("id", id))
 			return
 		}
 	}
@@ -206,8 +201,7 @@ func (rt *Router) handleCreateNetworkShare(w http.ResponseWriter, r *http.Reques
 		CreatedAt:    time.Now().UTC().Format(time.RFC3339),
 	}
 	if err := rt.networkShares.SaveNetworkShare(r.Context(), share); err != nil {
-		rt.logger.Error("api: create network share: save failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create network share: save failed", err, slog.String("id", id))
 		return
 	}
 
@@ -239,8 +233,7 @@ func (rt *Router) handleUpdateNetworkShare(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "network share not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: update network share: load failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update network share: load failed", err, slog.String("id", id))
 		return
 	}
 
@@ -257,8 +250,7 @@ func (rt *Router) handleUpdateNetworkShare(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusConflict, "a network share with this name already exists")
 		return
 	} else if err != nil && !errors.Is(err, store.ErrNetworkShareNotFound) {
-		rt.logger.Error("api: update network share: check existing failed", slog.String("error", err.Error()), slog.String("name", req.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update network share: check existing failed", err, slog.String("name", req.Name))
 		return
 	}
 
@@ -268,8 +260,7 @@ func (rt *Router) handleUpdateNetworkShare(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		if err := rt.networkShareSecrets.SetValue(r.Context(), store.NetworkShareSecretsKey(id), "password", req.Password); err != nil {
-			rt.logger.Error("api: update network share: set password failed", slog.String("error", err.Error()), slog.String("id", id))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: update network share: set password failed", err, slog.String("id", id))
 			return
 		}
 	}
@@ -279,15 +270,13 @@ func (rt *Router) handleUpdateNetworkShare(w http.ResponseWriter, r *http.Reques
 			writeError(w, http.StatusNotFound, "network share not found")
 			return
 		}
-		rt.logger.Error("api: update network share failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update network share failed", err, slog.String("id", id))
 		return
 	}
 
 	updated, err := rt.networkShares.GetNetworkShare(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: update network share: reload after update failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update network share: reload after update failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, toNetworkShareResource(updated))
@@ -310,8 +299,7 @@ func (rt *Router) handleDeleteNetworkShare(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: delete network share failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete network share failed", err, slog.String("id", id))
 		return
 	}
 
@@ -334,8 +322,7 @@ func (rt *Router) handleTestNetworkShare(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: test network share: load failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: test network share: load failed", err, slog.String("id", id))
 		return
 	}
 

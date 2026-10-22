@@ -35,7 +35,7 @@ func (c *Client) diffstatFiles(ctx context.Context, accessToken, first string) (
 			return out, nil
 		}
 		var resp diffstatResponse
-		if err := c.do(ctx, http.MethodGet, next, bearerPrefix+accessToken, nil, &resp); err != nil {
+		if err := c.do(ctx, http.MethodGet, next, authValue(accessToken), nil, &resp); err != nil {
 			return nil, err
 		}
 		for _, v := range resp.Values {

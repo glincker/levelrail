@@ -360,6 +360,24 @@ type Account struct {
 	Login string
 }
 
+// TokenInfo is what GitLab reports about a personal, project or group access token.
+type TokenInfo struct {
+	Name   string
+	Scopes []string
+}
+
+// TokenInfo reads the scopes of the token itself (GitLab 15.5 and newer).
+func (c *Client) TokenInfo(ctx context.Context, instanceURL, accessToken string) (TokenInfo, error) {
+	var resp struct {
+		Name   string   `json:"name"`
+		Scopes []string `json:"scopes"`
+	}
+	if err := c.do(ctx, http.MethodGet, apiBaseURL(instanceURL)+"/personal_access_tokens/self", "Bearer "+accessToken, nil, &resp); err != nil {
+		return TokenInfo{}, err
+	}
+	return TokenInfo{Name: resp.Name, Scopes: resp.Scopes}, nil
+}
+
 // CurrentUser returns the user an access token belongs to.
 func (c *Client) CurrentUser(ctx context.Context, instanceURL, accessToken string) (Account, error) {
 	var resp struct {

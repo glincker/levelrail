@@ -1,3 +1,4 @@
+import { DelayedFallback } from '../components/ui/delayed-fallback'
 import * as React from 'react'
 import type { QueryClient } from '@tanstack/react-query'
 import {
@@ -23,6 +24,7 @@ import { MAIN_CONTENT_ID, SkipLink } from '../components/shell/SkipLink'
 import { DeviceLoginBanner } from '../components/attention/DeviceLoginBanner'
 import { SignInRequestsBanner } from '../components/attention/SignInRequestsBanner'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
+import { UpgradeOutcomeToast } from '../components/settings/updates/UpgradeOutcomeToast'
 import { UpgradeGlobalBar } from '../components/settings/updates/UpgradeGlobalBar'
 import { LocalModeBanner } from '../components/LocalModeBanner'
 import { RestartBanner } from '../components/RestartBanner'
@@ -143,6 +145,7 @@ function AppShell() {
         <RestartBanner />
         <LocalModeBanner />
         <UpgradeGlobalBar />
+        <UpgradeOutcomeToast />
         <MaintenanceBanner />
         <DomainMaintenanceBanner />
         <DeviceLoginBanner />
@@ -150,11 +153,13 @@ function AppShell() {
         <main
           id={MAIN_CONTENT_ID}
           tabIndex={-1}
-          className="mr-[var(--dock-push-r,0px)] mb-[var(--dock-push-b,0px)] flex-1 overflow-y-auto px-4 py-4 outline-none md:px-(--glinr-page-pad-x) md:py-6"
+          className="mr-[var(--dock-push-r,0px)] mb-[var(--dock-push-b,0px)] flex-1 overflow-y-auto px-4 py-4 outline-none [view-transition-name:page-content] md:px-(--glinr-page-pad-x) md:py-6"
         >
           <div className="mx-auto w-full min-w-0 max-w-(--glinr-content-max) has-[[data-page-width=full]]:max-w-none has-[[data-page-width=wide]]:max-w-(--glinr-content-max-wide)">
             <div className="mb-4 empty:hidden"></div>
-            <Outlet />
+            <React.Suspense fallback={<DelayedFallback />}>
+              <Outlet />
+            </React.Suspense>
           </div>
         </main>
         <React.Suspense fallback={null}>

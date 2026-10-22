@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useDatabase, useDatabaseStatus } from '../../../queries/databases'
@@ -19,7 +20,18 @@ import { useProjectListOptional } from '../../../queries/projects'
 import { ExternalDatabaseOverview } from '../../../components/ExternalDatabaseOverview'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DatabaseLinksCard } from '../../../components/databases/DatabaseLinksCard'
-import { ConnectionDetailsCard } from '../../../components/databases/ConnectionDetailsCard'
+const ConnectionCard = lazy(() =>
+  import('../../../components/databases/overview/ConnectionCard').then((m) => ({
+    default: m.ConnectionCard,
+  })),
+)
+const ProvisioningPanel = lazy(() =>
+  import('../../../components/databases/ProvisioningPanel').then((m) => ({
+    default: m.ProvisioningPanel,
+  })),
+)
+import { StatusHeader } from '../../../components/databases/overview/StatusHeader'
+import { Skeleton } from '@/components/ui/skeleton'
 import { OptimiseHint } from '../../../components/resourceAdvisor/ResourceAdvisorTile'
 
 // Reads database and conditions from the cache the layout route primed.
@@ -46,9 +58,13 @@ function OverviewSection() {
   return (
     <div className="space-y-6">
       <OptimiseHint kind="database" name={name} />
+      <Suspense fallback={null}>
+        <ProvisioningPanel name={name} hideWhenReady />
+      </Suspense>
+      <StatusHeader database={database} conditions={conditions} />
       <Card>
         <CardHeader>
-          <CardTitle>{t('overview.title')}</CardTitle>
+          <CardTitle>{t('status.details')}</CardTitle>
         </CardHeader>
         <CardContent>
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -115,7 +131,20 @@ function OverviewSection() {
         </CardContent>
       </Card>
 
-      <ConnectionDetailsCard database={database} />
+      {database.provision_state ? null : (
+        <Suspense
+          fallback={
+            <Card aria-hidden="true">
+              <CardContent className="space-y-3">
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-10 w-full" />
+              </CardContent>
+            </Card>
+          }
+        >
+          <ConnectionCard database={database} />
+        </Suspense>
+      )}
 
       <DatabaseLinksCard database={database.name} />
 

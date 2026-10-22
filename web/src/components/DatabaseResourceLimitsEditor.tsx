@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { CpuIcon } from '@phosphor-icons/react/dist/ssr'
@@ -28,6 +29,12 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { NodeCapacityHint } from './NodeCapacityHint'
+import { ResourceChangeConfirm } from './databases/resources/ResourceChangeConfirm'
+import {
+  impactKind,
+  shrinksBelowPeak,
+} from './databases/resources/sizingHelpers'
+import { useResourceUsage } from './databases/resources/useResourceUsage'
 
 // Database counterpart to ResourceLimitsEditor.tsx (apps): same schema,
 // same lossless-MiB-integer field choice (see that component's own
@@ -181,15 +188,18 @@ export function DatabaseResourceLimitsEditor({
       resetOptions: { keepDirtyValues: true },
     })
 
-  const onSubmit = handleSubmit((values) => {
+  const [pending, setPending] = useState<ServiceResources | null>(null)
+  const usage = useResourceUsage(database)
+
+  function apply(resources: ServiceResources) {
     setResources.mutate(
-      { name: database.name, resources: toResources(values) },
+      { name: database.name, resources },
       {
         onSuccess: (updated) => {
-          // See ResourceLimitsEditor's identical branch: the backend
-          // pushes new limits onto a running container live whenever one
-          // exists, so only say "will apply later" when it genuinely
-          // couldn't.
+          setPending(null)
+          // The backend pushes new limits onto a running container live
+          // whenever one exists, so only say "will apply later" when it
+          // genuinely couldn't.
           toast.add({
             title: updated.resources_applied_live
               ? 'Resource limits updated.'
@@ -199,10 +209,37 @@ export function DatabaseResourceLimitsEditor({
         },
       },
     )
+  }
+
+  const onSubmit = handleSubmit((values) => {
+    setPending(toResources(values))
   })
+
+  const before = {
+    memoryBytes: database.resources?.memory_bytes ?? 0,
+    nanoCpus: database.resources?.nano_cpus ?? 0,
+  }
+  const after = {
+    memoryBytes: pending?.memory_bytes ?? 0,
+    nanoCpus: pending?.nano_cpus ?? 0,
+  }
 
   return (
     <Card>
+      <ResourceChangeConfirm
+        open={pending !== null}
+        impact={impactKind(Boolean(database.suspended), before, after)}
+        shrinks={shrinksBelowPeak(usage.memPeak, after.memoryBytes)}
+        memory={after.memoryBytes}
+        cpu={after.nanoCpus}
+        pending={setResources.isPending}
+        onConfirm={() => {
+          if (pending) apply(pending)
+        }}
+        onCancel={() => {
+          setPending(null)
+        }}
+      />
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CpuIcon className="size-4" />

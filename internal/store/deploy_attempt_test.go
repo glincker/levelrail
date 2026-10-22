@@ -643,3 +643,59 @@ func TestSetDeployAttemptCommit_NotFound(t *testing.T) {
 		t.Errorf("error = %v, want ErrDeployAttemptNotFound", err)
 	}
 }
+
+func TestDeployAttemptRerunOfRoundTrip(t *testing.T) {
+	tests := []struct {
+		name    string
+		rerunOf string
+	}{
+		{name: "not a rerun", rerunOf: ""},
+		{name: "rerun", rerunOf: "dep_origin"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db := openTestDB(t)
+			ctx := context.Background()
+			in := DeployAttempt{
+				ID: "dep_x", ServiceName: "web", Image: "web:1", Status: DeployAttemptStatusRunning,
+				StartedAt: time.Now().UTC(), RerunOf: tc.rerunOf,
+			}
+			if err := db.SaveDeployAttempt(ctx, in); err != nil {
+				t.Fatalf("SaveDeployAttempt() error = %v", err)
+			}
+			got, err := db.GetDeployAttempt(ctx, "dep_x")
+			if err != nil {
+				t.Fatalf("GetDeployAttempt() error = %v", err)
+			}
+			if got.RerunOf != tc.rerunOf {
+				t.Errorf("RerunOf = %q, want %q", got.RerunOf, tc.rerunOf)
+			}
+			list, err := db.ListDeployAttempts(ctx, "web")
+			if err != nil || len(list) != 1 || list[0].RerunOf != tc.rerunOf {
+				t.Errorf("ListDeployAttempts() = %+v, %v", list, err)
+			}
+		})
+	}
+}
+
+func TestRerunChainPosition(t *testing.T) {
+	parents := map[string]string{"c": "b", "b": "a", "x": "y", "y": "x"}
+	tests := []struct {
+		name     string
+		id       string
+		maxDepth int
+		want     int
+	}{
+		{name: "root", id: "a", maxDepth: 50, want: 1},
+		{name: "chain of three", id: "c", maxDepth: 50, want: 3},
+		{name: "cycle", id: "x", maxDepth: 50, want: 2},
+		{name: "depth cap", id: "c", maxDepth: 2, want: 2},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := RerunChainPosition(tc.id, func(id string) string { return parents[id] }, tc.maxDepth); got != tc.want {
+				t.Errorf("RerunChainPosition() = %d, want %d", got, tc.want)
+			}
+		})
+	}
+}

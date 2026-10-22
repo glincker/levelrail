@@ -21,6 +21,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/nodefailure"
@@ -55,6 +56,7 @@ type rootDeps struct {
 	agentCAFingerprint  string
 	emailSender         email.Sender
 	scheduledTaskRunner *scheduledtask.Runner
+	functionQueue       *functions.Queue
 	engine              *reconcile.Engine
 	ingressDriver       *ingressdriver.Driver
 	pushVAPIDPublicKey  string
@@ -82,6 +84,10 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 	agentCAFingerprint := d.agentCAFingerprint
 	emailSender := d.emailSender
 	scheduledTaskRunner := d.scheduledTaskRunner
+	fq := d.functionQueue
+	if fq == nil {
+		fq = &functions.Queue{Config: functions.TriggerConfigFromEnv(os.LookupEnv)}
+	}
 	engine := d.engine
 	ingressDriver := d.ingressDriver
 	pushVAPIDPublicKey := d.pushVAPIDPublicKey
@@ -176,6 +182,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		// Applied unconditionally: scheduledTaskRunner is always non-nil.
 		api.WithScheduledTaskRunner(scheduledTaskRunner),
 		api.WithJobLimits(jobsPerAppCap(scheduledTaskRunner)),
+		api.WithFunctionTriggers(db, fq.Config, fq.Kick),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
 		api.WithCertRenewalTracking(alertingDB, certRenewalStalledThreshold(logger)),
 		api.WithNodeAlertThresholds(
@@ -250,6 +257,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		// through secretsManager.
 		opts = append(opts, api.WithCloudflareDNSTokenResolver(secretsManager))
 		opts = append(opts, api.WithRoute53DNSCredentialResolver(secretsManager))
+		opts = append(opts, api.WithGoogleCloudDNSSecrets(secretsManager))
 		// A cloud node provider's API token (Hetzner, DigitalOcean) goes
 		// through the same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithNodeProviderSecrets(secretsManager))
@@ -306,6 +314,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			// registryCredential field): same secretsManager, same
 			// nil-interface hazard as everything else in this block.
 			api.WithRegistryCredentialSecrets(secretsManager),
+			api.WithRegistryRefresher(newRegistryRefresher(db, secretsManager, logger)),
 			// Network shares (CIFS password only; NFS shares write no
 			// secret): same secretsManager, same nil-interface hazard.
 			api.WithNetworkShareSecrets(secretsManager),

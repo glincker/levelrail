@@ -206,7 +206,7 @@ func (rt *Router) teardownOneEphemeralDatabase(ctx context.Context, d store.Prev
 		}
 	}
 
-	_, volumes := databaseVolumeNames(d.DatabaseName)
+	volumes := databaseVolumeNames(d.DatabaseName)
 	if failed := rt.removeExistingVolumes(ctx, volumes); len(failed) > 0 {
 		return fmt.Errorf("remove data volumes: %v", failed)
 	}

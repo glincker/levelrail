@@ -126,8 +126,7 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 
 	callerAbilities, err := rt.callerAbilities(r)
 	if err != nil {
-		rt.logger.Error("api: create token: resolve caller abilities failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create token: resolve caller abilities failed", err)
 		return
 	}
 	for _, a := range req.Abilities {
@@ -191,8 +190,7 @@ func (rt *Router) handleListTokens(w http.ResponseWriter, r *http.Request) {
 	callerID, _ := rt.currentSessionUserID(r)
 	out, err := rt.libraryListTokens(r.Context(), callerID, rt.callerIsAdmin(r))
 	if err != nil {
-		rt.logger.Error("api: list tokens failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list tokens failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -214,8 +212,7 @@ func (rt *Router) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if oerr != nil {
-			rt.logger.Error("api: revoke token: load failed", slog.String("error", oerr.Error()), slog.String("token_id", id))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: revoke token: load failed", oerr, slog.String("token_id", id))
 			return
 		}
 	}
@@ -225,8 +222,7 @@ func (rt *Router) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: revoke token failed", slog.String("error", err.Error()), slog.String("token_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: revoke token failed", err, slog.String("token_id", id))
 		return
 	}
 	rt.recordAudit(r.Context(), r, AbilityWrite, auditActorSession, callerID, "", http.StatusNoContent)

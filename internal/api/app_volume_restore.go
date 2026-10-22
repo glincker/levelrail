@@ -58,8 +58,7 @@ func (rt *Router) handleTriggerVolumeRestore(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: trigger volume restore: load backup history failed", slog.String("error", err.Error()), slog.String("backup_id", req.BackupID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: trigger volume restore: load backup history failed", err, slog.String("backup_id", req.BackupID))
 		return
 	}
 	if backup.ServiceName != serviceName || backup.VolumeName != volumeName {
@@ -73,8 +72,7 @@ func (rt *Router) handleTriggerVolumeRestore(w http.ResponseWriter, r *http.Requ
 
 	historyID, err := randomRestoreHistoryID()
 	if err != nil {
-		rt.logger.Error("api: trigger volume restore: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: trigger volume restore: generate id failed", err)
 		return
 	}
 
@@ -106,8 +104,7 @@ func (rt *Router) handleListVolumeRestoreHistory(w http.ResponseWriter, r *http.
 
 	history, err := rt.serviceVolumeRestoreHistory.ListServiceVolumeRestoreHistory(r.Context(), serviceName, volumeName)
 	if err != nil {
-		rt.logger.Error("api: list volume restore history failed", slog.String("error", err.Error()), slog.String("service", serviceName), slog.String("volume", volumeName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list volume restore history failed", err, slog.String("service", serviceName), slog.String("volume", volumeName))
 		return
 	}
 	out := make([]restoreHistoryResource, 0, len(history))

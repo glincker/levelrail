@@ -98,8 +98,7 @@ func validatePackageRegistryRequest(req *createPackageRegistryRequest) error {
 func (rt *Router) handleListPackageRegistries(w http.ResponseWriter, r *http.Request) {
 	list, err := rt.packageRegistries.ListPackageRegistries(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list package registries failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list package registries failed", err)
 		return
 	}
 	out := make([]packageRegistryResource, 0, len(list))
@@ -132,8 +131,7 @@ func (rt *Router) handleCreatePackageRegistry(w http.ResponseWriter, r *http.Req
 	}
 	id := "pkgreg_" + base64.RawURLEncoding.EncodeToString(buf)
 	if err := rt.registryCredentialSecrets.SetValue(r.Context(), store.PackageRegistrySecretsKey(id), store.PackageRegistrySecretEnvKey, req.Secret); err != nil {
-		rt.logger.Error("api: save package registry secret failed", slog.String("id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: save package registry secret failed", err, slog.String("id", id))
 		return
 	}
 	p := store.PackageRegistry{
@@ -157,8 +155,7 @@ func (rt *Router) handleDeletePackageRegistry(w http.ResponseWriter, r *http.Req
 			writeError(w, http.StatusNotFound, "package registry not found")
 			return
 		}
-		rt.logger.Error("api: delete package registry failed", slog.String("id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete package registry failed", err, slog.String("id", id))
 		return
 	}
 	if deleter, ok := rt.registryCredentialSecrets.(interface {
@@ -186,8 +183,7 @@ func (rt *Router) handleTestPackageRegistry(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: test package registry: load failed", slog.String("id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: test package registry: load failed", err, slog.String("id", id))
 		return
 	}
 	secret, err := rt.registryCredentialSecrets.Resolve(r.Context(), store.PackageRegistrySecretsKey(id), store.PackageRegistrySecretEnvKey)
@@ -243,8 +239,7 @@ func (rt *Router) handleRegistryCredentialUsage(w http.ResponseWriter, r *http.R
 	id := r.PathValue("id")
 	names, err := rt.packageRegistries.ListServicesUsingRegistryCredential(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: registry credential usage failed", slog.String("id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: registry credential usage failed", err, slog.String("id", id))
 		return
 	}
 	if names == nil {

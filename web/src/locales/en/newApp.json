@@ -41,10 +41,13 @@
       "connectTitle": "Connect a git provider",
       "connectBody": "Connect an account to choose from your repositories, or paste a repository URL below.",
       "connect": "Connect",
+      "manageAll": "Manage all Git connections",
       "connectLabel": "Connect {{provider}}",
       "connected": "Connected",
       "pickTitle": "Your repositories",
-      "urlTitle": "Paste a repository URL"
+      "urlTitle": "Paste a repository URL",
+      "needsAddress": "GitHub sign-in needs a public address for this server.",
+      "useUrlInstead": "Continue with a repository URL instead"
     },
     "templates": {
       "title": "Start from a template",
@@ -329,5 +332,133 @@
     "hash": "Archive hash",
     "files": "Files",
     "redeploy": "Deploy again from the project folder with:"
+  },
+  "importDatabase": {
+    "title": "Needs a database?",
+    "optional": "Optional",
+    "detected": "This repository looks like it uses {{engine}}, so it is suggested here.",
+    "engines": "Database engine",
+    "useExisting": "Use an existing one",
+    "summary": "Creates a {{engine}} {{version}} database and sets {{envVar}} for this app.",
+    "summaryBackups": "Creates a {{engine}} {{version}} database with daily backups and sets {{envVar}} for this app.",
+    "name": "Database name",
+    "nameFree": "This database name is available.",
+    "nameError": {
+      "required": "Give the database a name.",
+      "format": "Use lowercase letters, numbers and dashes.",
+      "taken": "A database with this name already exists."
+    },
+    "backups": "Back it up daily",
+    "noDestination": "Daily backups need a backup destination (none set up yet).",
+    "existingLabel": "Existing database",
+    "existingPick": "Choose a database",
+    "existingNone": "There are no databases yet.",
+    "injected": "Variables added to the app",
+    "from": "from {{database}}"
+  },
+  "import": {
+    "loading": "Reading the repository",
+    "urlInvalid": "That does not look like a repository URL yet.",
+    "summary": "Builds with {{builder}} from {{branch}} and deploys to {{target}}",
+    "builders": {
+      "railpack": "Railpack",
+      "dockerfile": "your Dockerfile",
+      "static": "static hosting",
+      "compose": "Docker Compose"
+    },
+    "card": {
+      "languages": "Languages",
+      "branch": "Branch",
+      "commitBy": "by {{author}}, {{when}}",
+      "visibility": {
+        "public": "Public",
+        "private": "Private"
+      }
+    },
+    "detected": {
+      "line": "Detected: {{stack}}, builds with {{builder}}, listens on {{port}}",
+      "edit": "Edit",
+      "monorepo": "This repository has several apps. Pick the one to deploy."
+    },
+    "notice": {
+      "private_needs_account": "This repository looks private. Connect an account that can see it, or use a deploy token.",
+      "invalid_url": "That does not look like a repository URL yet.",
+      "not_found": "We could not find that repository. Check the URL and try again.",
+      "rate_limited": "Preview unavailable right now, you can still continue.",
+      "unsupported_host": "This host has no preview. You can still continue without one.",
+      "connect": "Connect an account",
+      "useToken": "Use a deploy token",
+      "tokenLabel": "Deploy token",
+      "tokenApply": "Preview",
+      "continue": "Continue"
+    },
+    "form": {
+      "name": "App name",
+      "nameFree": "This name is available.",
+      "nameError": {
+        "required": "Give the app a name.",
+        "format": "Use lowercase letters, numbers and dashes.",
+        "taken": "An app with this name already exists."
+      },
+      "env": "Environment variables",
+      "envRequired": "This variable is needed to start the app.",
+      "addVar": "Add variable",
+      "varName": "Variable name",
+      "varValue": "Variable value",
+      "domain": "Address",
+      "freeAddress": "a free address",
+      "customDomain": "Use a custom domain",
+      "domainPlaceholder": "app.example.com",
+      "domainHint": "Point a CNAME at this server after the first deploy.",
+      "domainError": "Enter a domain like app.example.com.",
+      "advanced": "Advanced",
+      "port": "Port",
+      "health": "Health check path",
+      "memory": "Memory (MB)",
+      "directory": "Directory",
+      "buildType": "Build type",
+      "deploy": "Deploy",
+      "deploying": "Deploying..."
+    }
+  },
+  "deployOptions": {
+    "title": "Deploy options",
+    "beta": "Beta",
+    "push": {
+      "label": "Deploy automatically when I push to {{branch}}",
+      "on": "A push to this branch builds and deploys the app. The webhook is checked after the app is created.",
+      "off": "Pushes will not deploy. Only a tag or published release will."
+    },
+    "previews": {
+      "label": "Preview every pull request",
+      "hint": "Each pull request gets its own temporary URL, removed when it closes.",
+      "unsupported": "Previews need a GitHub, GitLab, Bitbucket or Gitea repository."
+    },
+    "health": {
+      "label": "Health check path",
+      "hint": "A new version must answer 200 here before it receives traffic. Leave empty to use the detected path."
+    },
+    "jobs": {
+      "title": "Add a background worker or scheduled job",
+      "hint": "Scheduled jobs call a path on your app on a schedule, here as HTTP requests. There is no separate worker process type, so run a long-lived worker as its own app.",
+      "path": "Path to call",
+      "schedule": "Schedule",
+      "cron": "Cron expression",
+      "remove": "Remove this job",
+      "add": "Add a scheduled job",
+      "pathError": "Start the path with /, for example /api/cron/cleanup.",
+      "cronError": "That cron expression is not valid.",
+      "presets": {
+        "every5": "Every 5 minutes",
+        "hourly": "Hourly",
+        "daily": "Daily at 03:00 UTC",
+        "custom": "Custom cron"
+      }
+    },
+    "failed": {
+      "deployOnPush": "Deploy on push could not be set up: {{reason}}.",
+      "previews": "Previews could not be enabled: {{reason}}.",
+      "job": "The job {{path}} was not created: {{reason}}."
+    }
   }
 }

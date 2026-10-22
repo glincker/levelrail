@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { CodeBlock } from '@/components/ui/code-block'
 import { toast } from '@/components/ui/toast'
 import { useRunDatabaseQuery, useSaveQuery } from '../../queries/databaseViewer'
 import type { DbQueryResponse } from '../../types/databaseViewer'
@@ -338,9 +339,10 @@ function ResultsView({
         <p className="text-xs font-medium text-muted-foreground">
           {t('viewer.console.plan')}
         </p>
-        <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 font-mono text-xs">
-          {result.rows.map((r) => r[0] ?? '').join('\n')}
-        </pre>
+        <CodeBlock
+          code={result.rows.map((r) => r[0] ?? '').join('\n')}
+          maxHeight="lg"
+        />
       </div>
     )
   }

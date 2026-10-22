@@ -90,8 +90,8 @@ func TestHandleListContainers_ListerError(t *testing.T) {
 	cookie := loginTestSession(t, rt, db)
 
 	rec := listContainers(t, rt, cookie)
-	if rec.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
+	if rec.Code != http.StatusGatewayTimeout {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusGatewayTimeout)
 	}
 }
 
