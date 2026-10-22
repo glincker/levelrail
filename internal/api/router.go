@@ -235,6 +235,7 @@ type Router struct {
 	restart                restartState                                                  // see system_restart.go
 	cpHealth               cpHealthState                                                 // see system_cp_health.go
 	memAttribution         memoryAttributionCache                                        // see node_memory_attribution.go
+	nodeOnb                *nodeOnboardingState                                          // nil is valid: onboarding routes report that no agent has sent facts
 	nodeHostReports        NodeHostReports                                               // nil is valid: remote rows keep the placed-services-only shape
 	dockerGuard            DockerGuardController                                         // nil is valid: the docker guard routes report it as not configured
 	dockerPinger           DockerPinger                                                  // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
@@ -602,6 +603,7 @@ type Router struct {
 	advisor                      *advisorCache                                         // resource advisor findings, cached for a short TTL
 	externalDatabases            ExternalDatabaseStore                                 // always set, databases connected but not run
 	dnsResolver                  datamigrate.Resolver                                  // nil means the real resolver
+	migrationProber              *datamigrate.Prober                                   // nil means the real network, set in tests
 	sleepPortWake                appsleep.PortWaker                                    // nil disables port wake in the sleep routes
 	sleepActivity                SleepActivity                                         // nil falls back to the stored idle baseline
 	wakeToken                    string                                                // empty disables the wake hook

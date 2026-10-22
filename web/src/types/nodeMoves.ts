@@ -1,3 +1,4 @@
+import type { DomainRisk } from './nodeOnboarding'
 export type NodeMoveKind = 'app' | 'database'
 
 export type NodeMovePhase =
@@ -75,6 +76,7 @@ export interface Placement {
   node_selector: NodeLabels
   eligible_node_ids: string[]
   rejected: PlacementRejection[]
+  domain_warnings?: DomainRisk[]
 }
 
 export type MeshPairStatus = 'ok' | 'degraded' | 'down' | 'unknown'
@@ -114,4 +116,7 @@ export interface NodeJoinTokenRequest {
   control_plane_addr?: string
   node_name?: string
   mesh?: boolean
+  provider?: string
+  region?: string
+  zone?: string
 }

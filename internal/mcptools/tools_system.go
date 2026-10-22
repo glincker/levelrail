@@ -44,7 +44,7 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_firewall_exposure",
-		Description: "Published container ports reachable from outside, per node, with severity. Docker bypasses ufw for these. Read-only; no MCP tool can apply a rule.",
+		Description: "Published container ports reachable from outside, per node, with severity and a plain explanation. Docker bypasses ufw for these. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, exposureSummary, error) {
 		report, err := client.GetExposure(ctx, "", false)
 		if err != nil {

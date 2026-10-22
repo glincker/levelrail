@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/nodepreflight"
 	"log/slog"
 	"net/http"
 	"os"
@@ -200,6 +201,7 @@ func (s *bootState) wireRouter() {
 	apiRouter.SetMigrationAgent(s.migrationAgent)
 	setupEdgeFirewall(ctx, logger, b, apiRouter, secretsManager)
 	apiRouter.SetNodeHostReports(hostReports)
+	apiRouter.SetNodeOnboarding(s.onboardingReports, nodepreflight.ConfigFromEnv(os.LookupEnv))
 	gateSecret := setupBuiltinGate(ctx, logger, apiRouter)
 	apiRouter.SetDockerGuard(guard.Controller)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
@@ -272,6 +274,7 @@ func (s *bootState) startMesh() error {
 	apiRouter.SetMeshPaths(newMeshPathResolver(meshCfg, db))
 	apiRouter.SetMeshPeerStatus(agent.NewGRPCSink(agentRegistry))
 	go apiRouter.RunNodeMoves(ctx)
+	go apiRouter.RunNodeOnboarding(ctx)
 	go apiRouter.RunNodeFailure(ctx)
 	// Resolved once: the bridge gateway IP does not change while the process runs.
 	meshDNSAddr := containerDNSAddr(ctx, client, meshCfg, logger)
@@ -374,6 +377,7 @@ func (s *bootState) startReconciler() {
 		firewallRulePrefix:           b.RuleCommentPrefix(),
 		instanceID:                   instanceID,
 		livenessTracker:              application.NewLivenessTracker(),
+		imageIDs:                     application.NewImageIDCache(reconcile.FullResyncFromEnv(os.Getenv)),
 		restartBackoff:               newRestartBackoff(logger),
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),

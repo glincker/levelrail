@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/toast'
 import { AppImportCutoverGuide } from './AppImportCutoverGuide'
+import { MigrationDomainProbes } from './MigrationDomainProbes'
 import {
   appImportReceiptUrl,
   useAppImportCutover,
@@ -32,7 +33,15 @@ const checkVariant = {
   fail: 'destructive',
 } as const
 
-function DomainRow({ d }: { d: AppImportCutoverDomain }) {
+function DomainRow({
+  d,
+  sessionId,
+  targetIp,
+}: {
+  d: AppImportCutoverDomain
+  sessionId: string
+  targetIp: string
+}) {
   const { t } = useTranslation('migration')
   const showChange = d.change && (d.verdict === 'go' || d.verdict === 'wait')
   return (
@@ -56,6 +65,11 @@ function DomainRow({ d }: { d: AppImportCutoverDomain }) {
           </li>
         ))}
       </ul>
+      <MigrationDomainProbes
+        sessionId={sessionId}
+        domain={d.domain}
+        targetIp={targetIp || undefined}
+      />
       {showChange && d.change ? (
         <div className="mt-2 rounded-md bg-muted p-2 break-all font-mono text-xs">
           <p>
@@ -81,10 +95,12 @@ function ItemCard({
   item,
   sessionId,
   disabled,
+  targetIp,
 }: {
   item: AppImportCutoverItem
   sessionId: string
   disabled: boolean
+  targetIp: string
 }) {
   const { t } = useTranslation('migration')
   const route = useRouteAppImport()
@@ -154,7 +170,12 @@ function ItemCard({
       ) : null}
       <ul className="space-y-2">
         {item.domains.map((d) => (
-          <DomainRow key={d.domain} d={d} />
+          <DomainRow
+            key={d.domain}
+            d={d}
+            sessionId={sessionId}
+            targetIp={targetIp.trim()}
+          />
         ))}
       </ul>
       <AppImportCutoverGuide
@@ -258,6 +279,7 @@ export function AppImportCutover({
                   item={it}
                   sessionId={session.id}
                   disabled={session.running}
+                  targetIp={targetIp}
                 />
               ))}
             </ul>

@@ -91,6 +91,7 @@ import type resources from '../locales/en/resources.json'
 import type deployDetail from '../locales/en/deployDetail.json'
 import type staticRoutes from '../locales/en/staticRoutes.json'
 import type deployTimeline from '../locales/en/deployTimeline.json'
+import type deployEvents from '../locales/en/deployEvents.json'
 import type images from '../locales/en/images.json'
 import type buildCenter from '../locales/en/buildCenter.json'
 import type functions from '../locales/en/functions.json'
@@ -188,6 +189,7 @@ declare module 'i18next' {
       costs: typeof costs
       resources: typeof resources
       deployTimeline: typeof deployTimeline
+      deployEvents: typeof deployEvents
       images: typeof images
       buildCenter: typeof buildCenter
       functions: typeof functions

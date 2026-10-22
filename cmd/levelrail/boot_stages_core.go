@@ -226,7 +226,8 @@ func (s *bootState) startAgentServer() error {
 	)
 	meshEndpoints := newMeshEndpointBook(logger)
 	hostReports := agent.NewHostReportStore()
-	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(db), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithSessionObserver(meshEndpoints.Observe))...)
+	onboardingReports := agent.NewOnboardingStore()
+	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(db), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithOnboardingSink(onboardingReports), agent.WithSessionObserver(meshEndpoints.Observe))...)
 	agentServerRef.Store(agentServer)
 	agentpb.RegisterAgentServiceServer(agentGRPCServer, agentServer)
 	migrationAgent := migrateagent.NewService(db, agentCA, migrateagent.ConfigFromEnv(), logger, nil)
@@ -248,6 +249,7 @@ func (s *bootState) startAgentServer() error {
 	s.agentRegistry = agentRegistry
 	s.meshEndpoints = meshEndpoints
 	s.hostReports = hostReports
+	s.onboardingReports = onboardingReports
 	s.agentServer = agentServer
 	s.migrationAgent = migrationAgent
 	return nil

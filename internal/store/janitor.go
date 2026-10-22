@@ -189,6 +189,7 @@ var attemptDependents = []struct{ table, column string }{
 	{"deploy_gate_events", "deploy_attempt_id"},
 	{"deploy_exit_captures", "attempt_id"},
 	{"deploy_trace_steps", "attempt_id"},
+	{"deploy_timelines", "attempt_id"},
 	{"deploy_attempts", "id"},
 }
 

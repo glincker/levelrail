@@ -267,7 +267,7 @@ var Tree = map[string]*Node{
 	"pipelines":    {Subs: map[string]*Node{"list": nil, "validate": nil, "save": nil, "delete": nil, "run": nil, "runs": nil, "logs": nil, "cancel": nil, "approve": nil, "sync": nil, "artifacts": nil, "triggers": nil, "templates": nil, "fixes": nil, "insights": nil, "oidc": nil}},
 	"preview":      {Subs: map[string]*Node{"status": nil, "enable": nil, "disable": nil, "capture": nil, "prune": nil}},
 	"environments": {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil}},
-	"deployments":  {Subs: map[string]*Node{"list": nil, "watch": nil, "summary": nil}},
+	"deployments":  {Subs: map[string]*Node{"list": nil, "watch": nil, "summary": nil, "timeline": nil}},
 	"lb":           {Subs: map[string]*Node{"list": nil, "show": nil, "set": nil, "clear": nil, "status": nil, "check": nil, "history": nil, "upstream": nil, "export": nil, "import": nil}},
 	"tags":         {Subs: map[string]*Node{"list": nil, "create": nil, "delete": nil, "apps": nil}},
 	"nodes": {Subs: map[string]*Node{
