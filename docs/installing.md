@@ -505,11 +505,11 @@ journalctl -u levelrail -f
 Once you have an admin account and an API token (see [Getting started](/getting-started#use-the-cli-from-your-laptop)):
 
 ```bash
-levelrail-cli version   # compare running vs. latest published release
+levelrail-cli version --server   # compare the CLI with the running control plane and latest release
 levelrail-cli status    # check Docker reachability and system config
 ```
 
-These call `GET /api/v1/updates` and `GET /api/v1/system/status`. A reply means the control plane is reachable and you are authenticated.
+`version` without `--server` runs offline. `--server` and `status` call `GET /api/v1/updates` and `GET /api/v1/system/status`. A reply means the control plane is reachable and you are authenticated.
 </Tab>
 </Tabs>
 

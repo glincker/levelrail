@@ -33,7 +33,7 @@ out="$(HOME="$home" SHELL=/bin/zsh PATH=/usr/bin:/bin LEVELRAIL_BINARY_FILE="$bi
 [ -x "$home/.local/bin/levelrail-cli" ] || fail "binary not installed in ~/.local/bin: $out"
 echo "$out" | grep -q '\.zshrc' || fail "no .zshrc hint: $out"
 [ ! -e "$home/.zshrc" ] || fail "profile was edited without LEVELRAIL_MODIFY_PATH=1"
-"$home/.local/bin/levelrail-cli" version --help >/dev/null 2>&1 || fail "levelrail-cli version failed"
+"$home/.local/bin/levelrail-cli" version >/dev/null 2>&1 || fail "levelrail-cli version failed"
 
 echo "== LEVELRAIL_MODIFY_PATH=1 appends once (zsh)"
 for _ in 1 2; do
@@ -77,7 +77,7 @@ if sudo -n true 2>/dev/null; then
 	sudo_installed=1
 	sudo env LEVELRAIL_BINARY_FILE="$binary" sh "$script" >/dev/null 2>&1
 	[ -x /usr/local/bin/levelrail-cli ] || fail "sudo install did not land in /usr/local/bin"
-	/usr/local/bin/levelrail-cli version --help >/dev/null 2>&1 || fail "sudo-installed levelrail-cli version failed"
+	/usr/local/bin/levelrail-cli version >/dev/null 2>&1 || fail "sudo-installed levelrail-cli version failed"
 else
 	echo "== sudo not available without a password, skipping the root install"
 fi

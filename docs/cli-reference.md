@@ -1389,9 +1389,9 @@ Checks whether the server is ready: who holds ports 80 and 443, Docker version a
 ## Version
 
 ```
-levelrail-cli version [flags]
+levelrail-cli version [--server] [flags]
 ```
-Shows the control plane's running version, and whether a newer release has been published to the project's GitHub repository.
+Prints this CLI's version, commit and build date. It runs offline: no server, login or config is needed. With `--server` it also asks the control plane for its running version, whether that matches the CLI, and whether a newer release has been published to the project's GitHub repository. `--server` fails with `could not reach the server at <url>` when the control plane is unreachable; the plain command still exits 0. `--json` returns both parts.
 
 ## Changelog
 

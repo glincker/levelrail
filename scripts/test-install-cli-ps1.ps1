@@ -49,7 +49,7 @@ try {
     $out = Invoke-Installer -ViaIex
     if (-not (Test-Path -LiteralPath $exe)) { Fail "binary not installed at ${exe}: $out" }
     if ((Count-PathEntries (Get-UserPath)) -ne 1) { Fail "user PATH should hold $installDir once: $(Get-UserPath)" }
-    & $exe version --help *> $null
+    & $exe version *> $null
     if ($LASTEXITCODE -ne 0) { Fail 'installed levelrail-cli.exe did not run' }
 
     Write-Host '== re-run is idempotent and does not duplicate PATH'
