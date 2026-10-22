@@ -1890,7 +1890,15 @@
   },
   "builtInRegistryPage": {
     "title": "Container registry",
-    "description": "The built-in image registry: a build cache and distribution backend for multi-node deployments, with no external registry to sign up for. It is served over TLS through the embedded ingress and enforces its own login even if the published port is reached directly."
+    "description": "The built-in image registry: a build cache and distribution backend for multi-node deployments, with no external registry to sign up for. It is served over TLS through the embedded ingress and enforces its own login even if the published port is reached directly.",
+    "banner": {
+      "description": "Turn on the built-in image registry to share builds between nodes without signing up for an external registry.",
+      "diagram": {
+        "push": "Push",
+        "pull": "Pull",
+        "registry": "Registry"
+      }
+    }
   },
   "vaultPage": {
     "title": "Vault",
@@ -1997,7 +2005,14 @@
   },
   "nodeProvidersPage": {
     "title": "Cloud node providers",
-    "description": "API tokens for creating servers automatically from the Nodes page. Used only to create and inspect VMs, day to day operation never touches SSH."
+    "description": "API tokens for creating servers automatically from the Nodes page. Used only to create and inspect VMs, day to day operation never touches SSH.",
+    "banner": {
+      "description": "Connect a cloud provider with an API token to create servers from the Nodes page. Day to day operation never touches SSH.",
+      "diagram": {
+        "cloud": "Cloud",
+        "node": "Node"
+      }
+    }
   },
   "containersPage": {
     "title": "Containers",

@@ -67,5 +67,12 @@
   "errors": {
     "load": "Could not load private networks.",
     "unavailable": "Private networks are not available on this control plane."
+  },
+  "banner": {
+    "description": "Group apps into private networks and decide which apps may talk to each other. Create the first network below.",
+    "diagram": {
+      "apps": "Apps",
+      "mesh": "Private mesh"
+    }
   }
 }

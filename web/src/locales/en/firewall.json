@@ -9,13 +9,18 @@
     "scope": "Host",
     "allHosts": "All hosts",
     "range": "Time range",
-    "ranges": { "1h": "Past hour", "6h": "Past 6 hours", "24h": "Past day" },
+    "ranges": {
+      "1h": "Past hour",
+      "6h": "Past 6 hours",
+      "24h": "Past day"
+    },
     "tabs": {
       "overview": "Overview",
       "traffic": "Traffic",
       "rules": "Rules",
       "audit": "Audit log"
-    }
+    },
+    "help": "Firewall guide"
   },
   "outcome": {
     "allowed": "Allowed",
@@ -308,5 +313,12 @@
     "countryInvalid": "Enter a two letter country code such as DE.",
     "pathSlash": "A path starts with /.",
     "wildcards": "Use at most 8 wildcards."
+  },
+  "banner": {
+    "diagram": {
+      "allowed": "Allowed",
+      "blocked": "Blocked",
+      "server": "Server"
+    }
   }
 }

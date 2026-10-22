@@ -16,7 +16,9 @@ import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { GraphIcon } from '@phosphor-icons/react/dist/ssr'
+import { PageBanner } from '../../components/PageBanner'
+import { LazyTopologyDiagram } from '../../components/banners/LazyPass3Diagrams'
 
 // The whole-server network page: this server and any enrolled nodes as
 // cards, the mesh switch, and the mesh health panels once the mesh runs.
@@ -36,11 +38,15 @@ function NetworkPage() {
   const localNodeId = topology.nodes.find((n) => n.is_local)?.id
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title={t('page.title')}
-        description={t('page.description', { zone: topology.zone })}
-        actions={
+    <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
+      <PageBanner
+        icon={<GraphIcon />}
+        titleKey="network:page.title"
+        descriptionKey="network:page.description"
+        descriptionText={t('page.description', { zone: topology.zone })}
+        illustration={<LazyTopologyDiagram size="compact" />}
+        size="compact"
+        action={
           <Link
             to="/network/private"
             className={buttonVariants({ variant: 'outline' })}

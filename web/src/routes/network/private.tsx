@@ -4,7 +4,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { ShareNetworkIcon } from '@phosphor-icons/react/dist/ssr'
+import { PageBanner } from '../../components/PageBanner'
+import { LazyPrivateNetworksDiagram } from '../../components/banners/LazyPass3Diagrams'
 import { PrivateNetworkMap } from '../../components/network/private/PrivateNetworkMap'
 import { PrivateNetworksPanel } from '../../components/network/private/PrivateNetworksPanel'
 import { PrivateRulesPanel } from '../../components/network/private/PrivateRulesPanel'
@@ -48,12 +50,22 @@ function PrivateNetworksPage() {
 
   const appNames = map.data.apps.map((a) => a.name)
 
+  const empty = list.data.networks.length === 0
+  const size = empty ? 'hero' : 'compact'
+
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title={t('page.title')}
-        description={t('page.description')}
-        actions={
+    <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
+      <PageBanner
+        icon={<ShareNetworkIcon />}
+        titleKey="privateNetworks:page.title"
+        descriptionKey={
+          empty
+            ? 'privateNetworks:banner.description'
+            : 'privateNetworks:page.description'
+        }
+        illustration={<LazyPrivateNetworksDiagram size={size} />}
+        size={size}
+        action={
           isRoot ? (
             <Button
               variant="outline"
