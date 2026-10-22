@@ -1,6 +1,13 @@
 import { useEffect, useId } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Link, useRouterState } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
+import {
+  EyeIcon,
+  HardDrivesIcon,
+  RocketLaunchIcon,
+  ShareNetworkIcon,
+  WrenchIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import { Link } from '@tanstack/react-router'
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -20,16 +27,23 @@ import { LockedFeatureMark } from './LockedFeatureMark'
 import { AppNavHeader } from './AppNavHeader'
 import { CollapsibleSection } from './CollapsibleSection'
 import {
-  activeAppSection,
   isSingleSection,
   resolveOpen,
-  visibleAppSections,
   type AppNavItem,
   type AppNavSection,
 } from './navModel'
+import { useAppTabs } from '../apps/useAppTabs'
+import type { AppTabGroupId } from '@/lib/appTabGroups'
 import { useExperimentalFeatures } from '@/hooks/useExperimental'
 import { usePersistedToggles } from './usePersistedToggles'
-import { staticSitesQueryOptions } from '../../queries/staticSites'
+
+const GROUP_ICONS: Record<AppTabGroupId, React.ReactNode> = {
+  basics: <RocketLaunchIcon />,
+  network: <ShareNetworkIcon />,
+  data: <HardDrivesIcon />,
+  observe: <EyeIcon />,
+  advanced: <WrenchIcon />,
+}
 
 const APP_NAV_STORAGE_KEY = 'shell.nav.app.open'
 
@@ -117,16 +131,23 @@ function SectionRail({
 }
 
 export function AppNav({ name }: { name: string }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname })
   const { state } = useSidebar()
   const rail = state === 'collapsed'
   const [stored, setOpen] = usePersistedToggles(APP_NAV_STORAGE_KEY)
-  const active = activeAppSection(pathname)
+  const { t } = useTranslation('common')
   const experimental = useExperimentalFeatures()
-  const { data: staticSites } = useQuery(staticSitesQueryOptions())
-  const isStatic = staticSites?.some((s) => s.name === name) ?? false
-  const sections = visibleAppSections(isStatic)
-  const activeSectionId = active?.section.id
+  const tabs = useAppTabs(name)
+  const sections: AppNavSection[] = tabs.groups.map((g) => ({
+    id: g.id,
+    label: t(`appTabs.groups.${g.id}`),
+    icon: GROUP_ICONS[g.id],
+    items: g.items,
+  }))
+  const activeSectionId = tabs.activeGroup
+  const active = {
+    section: { id: activeSectionId },
+    item: { id: tabs.activeSlug },
+  }
 
   // Persist the visited group as open so leaving it never collapses it and shifts the list.
   useEffect(() => {

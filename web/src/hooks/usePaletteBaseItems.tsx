@@ -19,6 +19,7 @@ import {
   useTrafficPaletteItems,
 } from '../components/trafficPaletteItems'
 import { useResourcePaletteItems } from '../components/resourcePaletteItems'
+import { useAppTabPaletteItems } from '../components/apps/useAppTabPaletteItems'
 import { useExperimentalFeatures } from './useExperimental'
 
 const NEXT_THEME: Record<Theme, Theme> = {
@@ -48,6 +49,7 @@ export function usePaletteBaseItems(
     currentDomain,
   })
   const resourceItems = useResourcePaletteItems()
+  const appTabItems = useAppTabPaletteItems()
 
   return React.useMemo<PaletteItem[]>(() => {
     const go =
@@ -86,7 +88,7 @@ export function usePaletteBaseItems(
       icon: <TerminalWindowIcon />,
       run: openCliModal,
     })
-    items.push(...traffic.base, ...resourceItems)
+    items.push(...traffic.base, ...resourceItems, ...appTabItems)
     return items
   }, [
     navigate,
@@ -94,6 +96,7 @@ export function usePaletteBaseItems(
     theme,
     traffic.base,
     resourceItems,
+    appTabItems,
     onShowShortcuts,
     pageActions,
     experimental,

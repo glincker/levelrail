@@ -180,6 +180,45 @@
     "lockedOut": "Locked out? On the server, run",
     "emergencyDocs": "Emergency access"
   },
+  "appTabs": {
+    "sections": "App sections",
+    "pages": "Pages in {{section}}",
+    "more": "More",
+    "moreLabel": "Other sections",
+    "showAll": "Show all tabs ({{count}} hidden)",
+    "showLess": "Hide tabs that do not apply",
+    "groups": {
+      "basics": "Basics",
+      "network": "Network",
+      "data": "Data",
+      "observe": "Observe",
+      "advanced": "Advanced"
+    }
+  },
+  "recommended": {
+    "title": "Recommended next",
+    "dismiss": "Dismiss: {{title}}",
+    "failed_deploy": {
+      "title": "The last deploy failed",
+      "button": "View the build log"
+    },
+    "add_domain": {
+      "title": "No domain yet",
+      "button": "Add a domain"
+    },
+    "enable_backups": {
+      "title": "A database has no backup schedule",
+      "button": "Turn on backups"
+    },
+    "add_health_check": {
+      "title": "No health check",
+      "button": "Add a health check"
+    },
+    "enable_previews": {
+      "title": "Previews are off for your pull requests",
+      "button": "Enable previews"
+    }
+  },
   "shell": {
     "sectionTabs": {
       "deployments": {
