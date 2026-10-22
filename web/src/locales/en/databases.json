@@ -506,13 +506,21 @@
     "colEngine": "Engine",
     "colBackups": "Backups",
     "colNode": "Node",
-    "backupsOn": "Scheduled",
-    "backupsOff": "No schedule",
+    "backupsOn": "Backups on",
+    "backupsOff": "No backups",
     "emptyTitle": "No databases yet",
     "emptyBody": "Create a managed Postgres, MySQL or Redis database and connect an app to it. Credentials are injected for you.",
     "errorTitle": "Could not load databases",
     "errorBody": "The databases list did not load. Check that the control plane is reachable, then try again.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "description": "Managed databases next to your apps, with backups and point in time restore.",
+    "colSize": "Memory",
+    "sizeShared": "Shared",
+    "sizeGb": "{{value}} GB",
+    "sizeMb": "{{value}} MB",
+    "showing": "Showing {{shown}} of {{total}}",
+    "showMore": "Show more",
+    "loading": "Loading databases"
   },
   "detail": {
     "backupNow": "Back up now",
@@ -602,5 +610,88 @@
     "toastConnectedBody": "{{app}} gets the connection string as {{envVar}} on its next start.",
     "toastFailed": "Could not connect the app.",
     "loadFailed": "Could not load connected apps."
+  },
+  "banner": {
+    "title": "Databases",
+    "description": "Create a managed database beside your apps. Credentials are injected for you, backups run on a schedule, and you can restore to a point in time.",
+    "whatFor": "Pick an engine, accept the defaults, and your first database is running in under a minute. Already have one elsewhere? Connect it as an external database.",
+    "diagram": {
+      "app": "app",
+      "database": "database",
+      "backups": "backups",
+      "restore": "point in time restore"
+    }
+  },
+  "flow": {
+    "title": "Create a database",
+    "description": "Pick an engine and review the defaults. You can change everything later.",
+    "engine": "Engine",
+    "name": "Name",
+    "nameHint": "Lowercase letters, numbers and dashes.",
+    "nameFree": "Name is available",
+    "version": "Version",
+    "versionHint": "The recommended version is selected for you.",
+    "size": "Size",
+    "sizeHint": "Memory and CPU limits. Resize any time from the database page.",
+    "presetSpec": "{{memory}} MB, {{cpus}} CPU",
+    "presets": {
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large"
+    },
+    "backups": "Automatic backups",
+    "backupsHint": "Backups go to your first backup destination.",
+    "noTarget": "No backup destination yet, so backups stay off.",
+    "noTargetLink": "Add a destination",
+    "schedule": "Backup schedule",
+    "schedules": {
+      "daily": "Every day at 03:00",
+      "sixHourly": "Every 6 hours",
+      "weekly": "Every Sunday at 03:00"
+    },
+    "advanced": {
+      "title": "Advanced options",
+      "node": "Node",
+      "autoNode": "Choose automatically",
+      "project": "Project",
+      "noProject": "No project"
+    },
+    "engines": {
+      "postgres": "Relational, the safe default",
+      "redis": "In-memory cache and queues",
+      "mysql": "Relational, widely supported",
+      "mongodb": "Document store",
+      "mariadb": "MySQL compatible",
+      "keydb": "Multithreaded Redis fork",
+      "dragonfly": "Fast Redis compatible store",
+      "valkey": "Open Redis fork",
+      "clickhouse": "Analytics and columnar",
+      "meilisearch": "Search engine",
+      "qdrant": "Vector search",
+      "typesense": "Search engine",
+      "memcached": "Simple memory cache"
+    },
+    "secretsWarning": "No secrets master key is configured, so this database is created but will not start until one is.",
+    "secretsLink": "Configure it in Settings.",
+    "errors": {
+      "name": {
+        "required": "Enter a name.",
+        "format": "Use lowercase letters, numbers and dashes, starting with a letter or number.",
+        "taken": "A database with this name already exists."
+      },
+      "version": {
+        "required": "Choose a version."
+      }
+    },
+    "summary": {
+      "empty": "Choose an engine and a name to see a summary.",
+      "withBackups": "{{engine}} {{version}} named {{name}}, {{memory}} MB, backups {{schedule}}.",
+      "noBackups": "{{engine}} {{version}} named {{name}}, {{memory}} MB, no backups."
+    },
+    "cancel": "Cancel",
+    "submit": "Create database",
+    "submitting": "Creating...",
+    "created": "Database \"{{name}}\" is being created.",
+    "createdPartial": "Database \"{{name}}\" created, but size or backups could not be applied. Check its settings."
   }
 }
