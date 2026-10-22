@@ -66,7 +66,7 @@ Go toolchain) sorts changed files into areas:
 | `docs/*.md` (except `docs/changelog/`, which the in-app help does not bundle) | Web bundle build and the help page tests |
 | `scripts/test-ci-*.sh`, `scripts/ci-test-weights.txt`, `scripts/refresh-test-weights.sh` | The planner table tests (`Build, vet`), no Go test lane |
 | `.github/actions/setup-go-cached/` | Every Go lane (live suites in smoke mode) |
-| `install.sh`, `scripts/test-install-sh.sh`, `deploy/packaging/` | install.sh end to end on Ubuntu and Debian |
+| `install.sh`, `install-cli.sh`, `install-cli.ps1`, `scripts/test-install-*`, `deploy/packaging/` | installers end to end: Ubuntu and Debian containers, plus the CLI installer natively on macOS and Windows |
 | Other `.github/workflows/*` | actionlint on the changed files |
 | `.github/flaky-tests.txt` | The packages named in the changed lines, plus the quarantine lane |
 | Anything else (`adr/`, `LICENSE`, other `.github/` files) | Nothing beyond the always-on checks |
@@ -270,7 +270,7 @@ never reach it. It has its own lane instead:
 
 ## Required checks
 
-`CI required` is the aggregator and the one check meant to gate a merge. It always runs and needs `changes`, `plan`, `build-vet`, `lint`, `kit`, the Go test jobs, `coverage-gate`, `web-check` and `install-sh`. It fails if change detection did not succeed or any job it needs failed or was cancelled, and a job that was skipped because its area had no work counts as passing. Because branch protection can name just this one context, the job set can be split or renamed without touching the ruleset. Branch protection itself is configured in GitHub, not in this repository.
+`CI required` is the aggregator and the one check meant to gate a merge. It always runs and needs `changes`, `plan`, `build-vet`, `lint`, `kit`, the Go test jobs, `coverage-gate`, `web-check`, `install-sh` and the macOS and Windows CLI installer jobs. It fails if change detection did not succeed or any job it needs failed or was cancelled, and a job that was skipped because its area had no work counts as passing. Because branch protection can name just this one context, the job set can be split or renamed without touching the ruleset. Branch protection itself is configured in GitHub, not in this repository.
 
 Seven jobs also never skip because of an upstream failure: `Plan Go work`, `Build, vet`, `Lint`, `Test (internal/api)`, `Test (everything else)`, `Coverage gate` and `Web (tsc, eslint)`. Each runs, and fails, whenever an upstream job failed or was cancelled, and is skipped only when its area has no work for the diff. GitHub reports a job skipped by its own `if` as success for a required check, so auto-merge does not wait on it.
 
