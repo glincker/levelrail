@@ -275,8 +275,7 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 
 	if req.BackupSchedule != "" {
 		if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), req.Name, req.BackupTargetID, req.BackupSchedule, req.BackupRetain, req.BackupRetainDays); err != nil {
-			rt.logger.Error("api: create database: store backup schedule failed", slog.String("error", err.Error()), slog.String("name", req.Name))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: create database: store backup schedule failed", err, slog.String("name", req.Name))
 			return false
 		}
 	}
