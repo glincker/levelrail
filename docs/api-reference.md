@@ -117,6 +117,7 @@ System endpoints for:
 | POST | /api/v1/updates/self-upgrade/attempts/{id}/rollback | AbilityWrite | handleSelfUpgradeAttemptRollback |
 | POST | /api/v1/system/proxy-integration/install | AbilityRoot | handleInstallProxy |
 | GET | /api/v1/updates/self-upgrade/status | AbilityRead | handleSelfUpgradeStatus |
+| GET | /api/v1/system/footprint | AbilityRead | handleGetIdleFootprint |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -1902,6 +1903,11 @@ Routes that do not fit an existing group.
 | GET | /api/v1/deployments/{id}/timeline | AbilityRead | handleGetDeployTimeline |
 | GET | /api/v1/deployments/{id}/timeline/stream | AbilityRead | handleDeployTimelineStream |
 | GET | /api/v1/deployments/{id}/timeline/compare | AbilityRead | handleCompareDeployTimelines |
+| GET | /api/v1/benchmarks | AbilityRead | handleListBenchmarks |
+| POST | /api/v1/benchmarks | AbilityWrite | handleUploadBenchmark |
+| GET | /api/v1/benchmarks/compare | AbilityRead | handleCompareBenchmarks |
+| GET | /api/v1/benchmarks/{id} | AbilityRead | handleGetBenchmark |
+| DELETE | /api/v1/benchmarks/{id} | AbilityRoot | handleDeleteBenchmark |
 
 ## See also
 

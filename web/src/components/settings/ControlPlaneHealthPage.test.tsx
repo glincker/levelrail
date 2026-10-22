@@ -93,6 +93,39 @@ describe('ControlPlaneHealthPage', () => {
     ).toBeTruthy()
   })
 
+  it('loads the footprint card lazily when the server reports one', async () => {
+    state.health = {
+      ...health([]),
+      idle_footprint: {
+        status: 'over_tolerance',
+        platform: 'linux/arm64',
+        current: {
+          rss_bytes: 300 << 20,
+          cpu_percent: 1,
+          cpu_window_seconds: 60,
+          goroutines: 900,
+          open_fds: 30,
+          threads: 4,
+          apps: 0,
+        },
+        baseline: { apps: 0, peak_rss_mb: 212 },
+        checks: [
+          {
+            name: 'goroutines',
+            unit: 'count',
+            current: 900,
+            baseline: 129,
+            limit: 139,
+            ok: false,
+          },
+        ],
+      },
+    }
+    render(<ControlPlaneHealthPage />)
+    expect(await screen.findByText('Over tolerance')).toBeTruthy()
+    expect(screen.getByText('Footprint')).toBeTruthy()
+  })
+
   it('uses the hero banner and a fix button when a finding needs attention', () => {
     state.health = health([
       {

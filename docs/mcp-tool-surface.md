@@ -51,11 +51,11 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | security | 3 | 142 |
 | settings | 3 | 159 |
 | storage | 5 | 558 |
-| system | 13 | 706 |
+| system | 13 | 735 |
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 145 |
-| **total** | **248** | **24624** |
+| **total** | **248** | **24653** |
 
 ## Default session (progressive disclosure)
 

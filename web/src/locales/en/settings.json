@@ -657,6 +657,10 @@
       "git-connections": {
         "title": "Git connections",
         "description": "Every GitHub, GitLab, Bitbucket, Gitea and Forgejo account in one place."
+      },
+      "benchmarks": {
+        "title": "Benchmarks",
+        "description": "Stored benchmark runs with host, build, limits and a compare view."
       }
     },
     "search": "Search settings",
@@ -1087,7 +1091,27 @@
     "findingsCount_one": "{{count}} finding",
     "findingsCount_other": "{{count}} findings",
     "metricsTitle": "Runtime and database",
-    "readingChip": "Now {{value}} / limit {{limit}}"
+    "readingChip": "Now {{value}} / limit {{limit}}",
+    "footprint": {
+      "title": "Footprint",
+      "status": {
+        "within_tolerance": "Within tolerance",
+        "over_tolerance": "Over tolerance",
+        "tolerance_unset": "Tolerances not set",
+        "no_baseline": "No baseline"
+      },
+      "basis": "Control plane process on {{platform}} against the committed idle baseline ({{apps}} apps, {{liveApps}} apps now).",
+      "noBaseline": "No committed idle baseline exists for {{platform}}, so only the live reading is shown.",
+      "metric": {
+        "rss": "Resident memory",
+        "cpu": "CPU",
+        "goroutines": "Goroutines",
+        "open_fds": "Open file descriptors"
+      },
+      "vs": "(baseline {{baseline}}, limit {{limit}})",
+      "meterLabel": "{{metric}} against its limit",
+      "footnote": "CPU is averaged over the last {{seconds}} s. Memory is held to the baseline peak. Limits come from the IDLE_TOL_* settings. The node agent is not measured here."
+    }
   },
   "generalPage": {
     "rail": {
