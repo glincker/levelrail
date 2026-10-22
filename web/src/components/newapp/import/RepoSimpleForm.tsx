@@ -27,6 +27,11 @@ import {
 import type { DatabaseEdit, NewAppEdits } from '../../../lib/newApp'
 import { DatabaseSection } from './DatabaseSection'
 import type { ImportAnalysis } from '../../../queries/importAnalyze'
+import { DeployOptions } from './DeployOptions'
+import {
+  DEFAULT_DEPLOY_OPTIONS,
+  type DeployOptionsValue,
+} from '../../../lib/deployOptions'
 
 const SECRET_KEY = /secret|token|password|passwd|key|credential/i
 const BUILD_TYPES = ['railpack', 'dockerfile', 'static'] as const
@@ -69,6 +74,9 @@ export function RepoSimpleForm({
   const [advanced, setAdvanced] = useState<SimpleFormValues['advanced']>({})
   const [submitted, setSubmitted] = useState(false)
   const [databases, setDatabases] = useState<DatabaseEdit[] | null>(null)
+  const [options, setOptions] = useState<DeployOptionsValue>(
+    DEFAULT_DEPLOY_OPTIONS,
+  )
 
   const nameError = validateAppName(name, takenNames)
   const domainError =
@@ -99,7 +107,12 @@ export function RepoSimpleForm({
       customDomain: customOpen ? customDomain : '',
       advanced,
     })
-    onSubmit(databases ? { ...edits, databases } : edits)
+    const merged = {
+      ...edits,
+      healthPath: options.healthPath.trim() || edits.healthPath,
+      deployOptions: options,
+    }
+    onSubmit(databases ? { ...merged, databases } : merged)
   }
 
   const num = (v: string) => {
@@ -255,6 +268,13 @@ export function RepoSimpleForm({
           </div>
         )}
       </Field>
+
+      <DeployOptions
+        analysis={analysis}
+        branch={branch}
+        value={options}
+        onChange={setOptions}
+      />
 
       <Collapsible open={advancedOpen} onOpenChange={onAdvancedOpen}>
         <CollapsibleTrigger className="text-sm text-muted-foreground underline underline-offset-2">

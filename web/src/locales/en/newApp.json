@@ -420,5 +420,45 @@
       "deploy": "Deploy",
       "deploying": "Deploying..."
     }
+  },
+  "deployOptions": {
+    "title": "Deploy options",
+    "beta": "Beta",
+    "push": {
+      "label": "Deploy automatically when I push to {{branch}}",
+      "on": "A push to this branch builds and deploys the app. The webhook is checked after the app is created.",
+      "off": "Pushes will not deploy. Only a tag or published release will."
+    },
+    "previews": {
+      "label": "Preview every pull request",
+      "hint": "Each pull request gets its own temporary URL, removed when it closes.",
+      "unsupported": "Previews need a GitHub, GitLab, Bitbucket or Gitea repository."
+    },
+    "health": {
+      "label": "Health check path",
+      "hint": "A new version must answer 200 here before it receives traffic. Leave empty to use the detected path."
+    },
+    "jobs": {
+      "title": "Add a background worker or scheduled job",
+      "hint": "Scheduled jobs call a path on your app on a schedule, here as HTTP requests. There is no separate worker process type, so run a long-lived worker as its own app.",
+      "path": "Path to call",
+      "schedule": "Schedule",
+      "cron": "Cron expression",
+      "remove": "Remove this job",
+      "add": "Add a scheduled job",
+      "pathError": "Start the path with /, for example /api/cron/cleanup.",
+      "cronError": "That cron expression is not valid.",
+      "presets": {
+        "every5": "Every 5 minutes",
+        "hourly": "Hourly",
+        "daily": "Daily at 03:00 UTC",
+        "custom": "Custom cron"
+      }
+    },
+    "failed": {
+      "deployOnPush": "Deploy on push could not be set up: {{reason}}.",
+      "previews": "Previews could not be enabled: {{reason}}.",
+      "job": "The job {{path}} was not created: {{reason}}."
+    }
   }
 }
