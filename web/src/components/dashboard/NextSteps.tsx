@@ -12,6 +12,7 @@ import { SkeletonList } from '@/components/kit'
 import { TONE } from '@/components/kit/tone'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { SnoozeButton } from './SnoozeButton'
 import { cn } from '@/lib/utils'
 import type { AppListEntry } from '../../types/appDetail'
 import type { AppsSummary } from '../../queries/appPages'
@@ -103,14 +104,19 @@ function StepRow({
           ) : null}
         </span>
       </div>
-      <Button
-        size="sm"
-        variant={attention ? 'default' : 'outline'}
-        className="shrink-0 self-start whitespace-nowrap @md:self-auto"
-        onClick={onRun}
-      >
-        {label}
-      </Button>
+      <span className="flex shrink-0 items-center gap-1 self-start @md:self-auto">
+        <Button
+          size="sm"
+          variant={attention ? 'default' : 'outline'}
+          className="whitespace-nowrap"
+          onClick={onRun}
+        >
+          {label}
+        </Button>
+        {attention && tone !== 'danger' ? (
+          <SnoozeButton ids={[step.id]} />
+        ) : null}
+      </span>
     </li>
   )
 }
@@ -147,23 +153,28 @@ function GroupRow({
             </span>
           </span>
         </div>
-        <Button
-          size="sm"
-          variant="default"
-          aria-expanded={open}
-          className="self-start @md:self-auto"
-          onClick={() => {
-            setOpen((v) => !v)
-          }}
-        >
-          {open
-            ? t('nextSteps.group.hide')
-            : t('nextSteps.group.show', { count })}
-          <CaretDownIcon
-            aria-hidden="true"
-            className={cn('transition-transform', open && 'rotate-180')}
-          />
-        </Button>
+        <span className="flex shrink-0 items-center gap-1 self-start @md:self-auto">
+          <Button
+            size="sm"
+            variant="default"
+            aria-expanded={open}
+            className="whitespace-nowrap"
+            onClick={() => {
+              setOpen((v) => !v)
+            }}
+          >
+            {open
+              ? t('nextSteps.group.hide')
+              : t('nextSteps.group.show', { count })}
+            <CaretDownIcon
+              aria-hidden="true"
+              className={cn('transition-transform', open && 'rotate-180')}
+            />
+          </Button>
+          {group.tone !== 'danger' ? (
+            <SnoozeButton ids={group.items.map((i) => i.id)} />
+          ) : null}
+        </span>
       </div>
       {open ? (
         <ul className="mt-2 divide-y divide-border border-l border-border">

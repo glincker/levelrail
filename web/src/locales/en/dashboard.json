@@ -253,7 +253,9 @@
     "update": "{{version}} available",
     "notices_one": "{{count}} notice",
     "notices_other": "{{count}} notices",
-    "hideNotices": "Hide notices"
+    "hideNotices": "Hide notices",
+    "showSnoozed_one": "Show {{count}} snoozed",
+    "showSnoozed_other": "Show {{count}} snoozed"
   },
   "apps": {
     "title": "Apps",
@@ -316,5 +318,11 @@
     "description": "The previous source is filled in. Enter the password again, it is never stored. If the source requires encryption the copy retries with TLS on its own.",
     "loading": "Loading the previous attempt...",
     "missing": "This database has no copy to retry."
+  },
+  "snooze": {
+    "label": "Snooze for a day",
+    "done_one": "Snoozed for a day.",
+    "done_other": "Snoozed {{count}} items for a day.",
+    "undo": "Undo"
   }
 }
