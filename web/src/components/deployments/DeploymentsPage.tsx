@@ -1,4 +1,6 @@
 import { PageTemplate } from '../shell/PageTemplate'
+import { PageBanner } from '../PageBanner'
+import { LazyDeploymentsDiagram } from '../banners/LazyDiagrams'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useEnvironmentScope } from '../../lib/environmentScope'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
@@ -223,27 +225,48 @@ export function DeploymentsPage({
         ? { tone: 'warning' as const, label: 'Reconnecting' }
         : { tone: 'neutral' as const, label: 'Connecting' }
 
+  const isEmpty =
+    !listQuery.isPending &&
+    !listQuery.isError &&
+    rows.length === 0 &&
+    !listQuery.hasNextPage &&
+    !filtered
+  const bannerSize = isEmpty ? 'hero' : 'compact'
+
   return (
     <PageTemplate
       title="Deployments"
-      tabs={tabs}
       width="wide"
-      actions={
-        <>
-          <StatusPill
-            size="sm"
-            tone={streamView.tone}
-            label={streamView.label}
-            live={stream.state === 'live'}
-          />
-          <CancelSupersededPopover
-            apps={facetsFrom(all).app}
-            selected={filters.app}
-          />
-          <ShortcutsHelp />
-        </>
+      banner={
+        <PageBanner
+          icon={<RocketLaunchIcon />}
+          titleKey="deploys:banner.title"
+          descriptionKey={
+            isEmpty
+              ? 'deploys:banner.description'
+              : 'deploys:banner.compactDescription'
+          }
+          action={
+            <>
+              <StatusPill
+                size="sm"
+                tone={streamView.tone}
+                label={streamView.label}
+                live={stream.state === 'live'}
+              />
+              <CancelSupersededPopover
+                apps={facetsFrom(all).app}
+                selected={filters.app}
+              />
+              <ShortcutsHelp />
+            </>
+          }
+          illustration={<LazyDeploymentsDiagram size={bannerSize} />}
+          size={bannerSize}
+        />
       }
     >
+      {tabs}
       <div ref={topRef} className="hidden" />
       <DeploymentsSummary
         summary={summary.data}
@@ -328,13 +351,7 @@ export function DeploymentsPage({
               </Button>
             }
           />
-        ) : (
-          <EmptyState
-            icon={<RocketLaunchIcon />}
-            title="No deployments yet"
-            description="Push to a connected repository or deploy an app and it will show up here."
-          />
-        )
+        ) : null
       ) : (
         <div>
           <DeploymentList

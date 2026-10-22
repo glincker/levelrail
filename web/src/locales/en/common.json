@@ -751,5 +751,28 @@
     "hide": "Hide",
     "region": "Code",
     "commandRegion": "Command"
+  },
+  "banners": {
+    "loadBalancers": {
+      "title": "Load balancers",
+      "description": "Spread an app's traffic across its replicas with health checks and graceful cutovers.",
+      "compactDescription": "Every app that balances traffic, with live upstream health.",
+      "diagram": {
+        "browser": "browser",
+        "balancer": "balancer",
+        "server": "server"
+      }
+    },
+    "projects": {
+      "title": "Projects",
+      "description": "Optional labels to group an app with its database and cache. Nothing about how they run changes.",
+      "compactDescription": "Labels that group related apps and databases.",
+      "count_one": "{{count}} project",
+      "count_other": "{{count}} projects",
+      "diagram": {
+        "project": "project",
+        "members": "apps and databases"
+      }
+    }
   }
 }

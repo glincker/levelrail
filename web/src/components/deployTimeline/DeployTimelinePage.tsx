@@ -1,10 +1,15 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ClockCounterClockwiseIcon,
+  WarningCircleIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusPill, SkeletonList } from '@/components/kit'
 import { PageTemplate } from '../shell/PageTemplate'
+import { PageBanner } from '../PageBanner'
+import { LazyDeploymentsDiagram } from '../banners/LazyDiagrams'
 import { DeploymentsSectionTabs } from '../shell/SectionTabGroups'
 import { useDeployTimeline } from '../../queries/deployTimeline'
 import { useProjectListOptional } from '../../queries/projects'
@@ -44,21 +49,42 @@ export function DeployTimelinePage() {
     return [...names].sort()
   }, [items, filters.app])
 
+  const unfiltered =
+    filters.app === '' &&
+    filters.project === '' &&
+    filters.node === '' &&
+    filters.status === ''
+  const isEmpty = query.isSuccess && lanes.length === 0 && unfiltered
+  const size = isEmpty ? 'hero' : 'compact'
+
   return (
     <PageTemplate
       title={t('title')}
       description={t('subtitle')}
       width="wide"
-      tabs={<DeploymentsSectionTabs />}
-      actions={
-        <StatusPill
-          size="sm"
-          tone={STREAM_TONE[streamState]}
-          label={t(`stream.${streamState}`)}
-          live={streamState === 'live'}
+      banner={
+        <PageBanner
+          icon={<ClockCounterClockwiseIcon />}
+          titleKey="deployTimeline:title"
+          descriptionKey={
+            isEmpty
+              ? 'deployTimeline:banner.description'
+              : 'deployTimeline:subtitle'
+          }
+          action={
+            <StatusPill
+              size="sm"
+              tone={STREAM_TONE[streamState]}
+              label={t(`stream.${streamState}`)}
+              live={streamState === 'live'}
+            />
+          }
+          illustration={<LazyDeploymentsDiagram size={size} />}
+          size={size}
         />
       }
     >
+      <DeploymentsSectionTabs />
       <div className="flex flex-col gap-4">
         <TimelineFilters
           filters={filters}
@@ -86,7 +112,7 @@ export function DeployTimelinePage() {
               </Button>
             }
           />
-        ) : lanes.length === 0 ? (
+        ) : isEmpty ? null : lanes.length === 0 ? (
           <TimelineEmpty
             zoom={filters.zoom}
             windowStart={windowStart}

@@ -336,5 +336,15 @@
       "copied": "URL copied.",
       "copyFailed": "Could not copy to the clipboard."
     }
+  },
+  "banner": {
+    "title": "Deployments",
+    "description": "Every release across your apps, live while it builds, with one-click rollback. Deploy an app and it shows up here.",
+    "compactDescription": "Releases across every app, with rollback.",
+    "diagram": {
+      "image": "image",
+      "server": "server",
+      "rollback": "rollback"
+    }
   }
 }

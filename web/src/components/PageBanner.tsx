@@ -16,6 +16,7 @@ export function PageBanner({
   icon,
   titleKey,
   descriptionKey,
+  descriptionText,
   action,
   illustration,
   size = 'hero',
@@ -24,6 +25,7 @@ export function PageBanner({
   icon?: ReactNode
   titleKey: string
   descriptionKey: string
+  descriptionText?: string
   action?: ReactNode
   illustration?: ReactNode
   size?: PageBannerSize
@@ -31,7 +33,8 @@ export function PageBanner({
 }) {
   const { t } = useTranslation()
   const title = t(titleKey, { defaultValue: titleKey })
-  const description = t(descriptionKey, { defaultValue: descriptionKey })
+  const description =
+    descriptionText ?? t(descriptionKey, { defaultValue: descriptionKey })
   useRegisterPageTitle(title)
   const compact = size === 'compact'
 

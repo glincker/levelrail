@@ -33,6 +33,7 @@ import {
   AppsStatusChips,
   ViewToggle,
 } from '../../components/apps/AppsStatusChips'
+import { AppsEmptyActions } from '../../components/apps/AppsEmptyActions'
 import { AppsListBody, ListHeader } from '../../components/apps/AppsListBody'
 import {
   EMPTY_FILTERS,
@@ -178,6 +179,7 @@ function AppListPage() {
           <ViewToggle mode={mode} onChange={changeMode} />
         </span>
       ) : null}
+      {noApps ? <AppsEmptyActions /> : null}
       <Button
         size="sm"
         variant="outline"
@@ -209,6 +211,7 @@ function AppListPage() {
               ? 'common:appsList.banner.description'
               : 'common:appsList.banner.compactDescription'
           }
+          descriptionText={noApps ? undefined : countLabel}
           action={headerActions}
           illustration={<LazyAppsDiagram size={bannerSize} />}
           size={bannerSize}
