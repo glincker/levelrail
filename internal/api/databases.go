@@ -272,6 +272,7 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 	}
 	req.ExistingVolume = ""
 	req.ProvisionState = provisionStatePending
+	rt.enableTLSAtCreate(r.Context(), req.Name, req.Engine)
 
 	if req.BackupSchedule != "" {
 		if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), req.Name, req.BackupTargetID, req.BackupSchedule, req.BackupRetain, req.BackupRetainDays); err != nil {

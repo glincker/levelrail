@@ -42,3 +42,14 @@ func TestDatabaseTLSEffective(t *testing.T) {
 		}
 	}
 }
+
+func TestDatabaseTLSOnAtCreate(t *testing.T) {
+	for engine, want := range map[string]bool{
+		EngineMySQL: true, EngineMariaDB: true, EngineMongoDB: true,
+		EnginePostgres: false, EngineRedis: false, EngineClickHouse: false,
+	} {
+		if got := DatabaseTLSOnAtCreate(engine); got != want {
+			t.Errorf("DatabaseTLSOnAtCreate(%q) = %v, want %v", engine, got, want)
+		}
+	}
+}

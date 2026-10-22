@@ -88,6 +88,7 @@ type fakeRuntime struct {
 	// path, not just ExecWithInput above.
 	execCalls      int
 	lastExecArgCmd []string
+	execArgCmds    [][]string
 	execErr        error
 }
 
@@ -263,6 +264,7 @@ func (f *fakeRuntime) Exec(_ context.Context, _ string, cmd []string) (io.ReadCl
 	defer f.mu.Unlock()
 	f.execCalls++
 	f.lastExecArgCmd = cmd
+	f.execArgCmds = append(f.execArgCmds, cmd)
 	if f.execErr != nil {
 		return nil, f.execErr
 	}

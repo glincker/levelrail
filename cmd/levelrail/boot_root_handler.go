@@ -380,6 +380,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			// restore endpoint.
 			api.WithBaseBackupRunner(baseBackupRunner),
 			api.WithPITRRestoreRunner(pitrRunner),
+			api.WithMySQLPITRRestoreRunner(newMySQLPITRRunner(db, secretsManager, client, routedStorage(agentRegistry), logger)),
 			api.WithMajorUpgrader(newMajorUpgradeRunner(db, client, engine.Nudge, logger)),
 		)
 		// Optional: without a dial address the

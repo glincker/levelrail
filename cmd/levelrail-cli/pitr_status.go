@@ -36,6 +36,9 @@ func runPITRStatus(prog string, args []string, stdout, stderr io.Writer, lookupE
 			return
 		}
 		_, _ = fmt.Fprintf(stdout, "enabled since %s\n", status.EnabledAt)
+		if status.RestoreMode == "new_database" {
+			_, _ = fmt.Fprintln(stdout, "restores create a new database: pass --restore-as to \"pitr restore\"")
+		}
 		switch {
 		case status.WindowError != "":
 			_, _ = fmt.Fprintf(stdout, "recoverable window unavailable right now: %s\n", status.WindowError)

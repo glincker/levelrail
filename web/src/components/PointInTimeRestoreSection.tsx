@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import {
   ClockCounterClockwiseIcon,
   InfoIcon,
@@ -20,6 +20,8 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
 import { formatDate } from '../lib/format'
+import { isoToLocalInputValue, localInputValueToISO } from '../lib/pitrTime'
+import { PITRBinlogCopy } from './PITRBinlogCopy'
 import { WalShipStatusItem } from './WalShipStatusItem'
 import { ApiError } from '../lib/apiError'
 import {
@@ -39,9 +41,19 @@ import {
 import type { DatabaseResource } from '../types/databaseDetail'
 import type { BaseBackupHistoryRecord } from '../types/pitr'
 
-// Point-in-time restore (internal/api/pitr.go), Postgres only today
-// (WAL archiving is the only mechanism internal/reconcile/database's
-// controller implements PITR through, and only for that engine): a
+// MySQL and MariaDB restore into a new database, so their dialog is a separate chunk.
+const PITRRestoreIntoNewDialog = lazy(() =>
+  import('./PITRRestoreIntoNewDialog').then((m) => ({
+    default: m.PITRRestoreIntoNewDialog,
+  })),
+)
+
+const PITR_ENGINES = new Set(['postgres', 'mysql', 'mariadb'])
+const NEW_DATABASE_ENGINES = new Set(['mysql', 'mariadb'])
+
+// Point-in-time restore (internal/api/pitr.go) for Postgres (WAL archiving,
+// restores in place) and MySQL or MariaDB (binlog archiving, restores into
+// a new database): a
 // separate card from BackupsSection rather than folded into it, since
 // the two restore modes have genuinely different inputs (a specific past
 // backup vs. an arbitrary timestamp within a continuously recoverable
@@ -58,13 +70,24 @@ export function PointInTimeRestoreSection({
 }: {
   database: DatabaseResource
 }) {
-  if (database.engine !== 'postgres') {
+  if (!PITR_ENGINES.has(database.engine)) {
     return null
   }
-  return <PointInTimeRestoreCard databaseName={database.name} />
+  return (
+    <PointInTimeRestoreCard
+      databaseName={database.name}
+      engine={database.engine}
+    />
+  )
 }
 
-function PointInTimeRestoreCard({ databaseName }: { databaseName: string }) {
+function PointInTimeRestoreCard({
+  databaseName,
+  engine,
+}: {
+  databaseName: string
+  engine: string
+}) {
   const status = usePITRStatus(databaseName)
   const enablePITR = useEnablePITR(databaseName)
   const disablePITR = useDisablePITR(databaseName)
@@ -102,8 +125,11 @@ function PointInTimeRestoreCard({ databaseName }: { databaseName: string }) {
         {!status.isLoading && !status.data?.enabled ? (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground">
-              Enable continuous WAL archiving so this database can be restored
-              to any exact moment, not just to when a backup happened to run.
+              {NEW_DATABASE_ENGINES.has(engine) ? (
+                <PITRBinlogCopy />
+              ) : (
+                'Enable continuous WAL archiving so this database can be restored to any exact moment, not just to when a backup happened to run.'
+              )}
             </p>
             <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
               <InfoIcon
@@ -142,14 +168,20 @@ function PointInTimeRestoreCard({ databaseName }: { databaseName: string }) {
         ) : null}
 
         {status.data?.enabled ? (
-          <EnabledPITRContent databaseName={databaseName} />
+          <EnabledPITRContent databaseName={databaseName} engine={engine} />
         ) : null}
       </CardContent>
     </Card>
   )
 }
 
-function EnabledPITRContent({ databaseName }: { databaseName: string }) {
+function EnabledPITRContent({
+  databaseName,
+  engine,
+}: {
+  databaseName: string
+  engine: string
+}) {
   const status = usePITRStatus(databaseName)
   const baseBackups = useBaseBackupHistory(databaseName)
   const triggerBaseBackup = useTriggerBaseBackup(databaseName)
@@ -214,11 +246,22 @@ function EnabledPITRContent({ databaseName }: { databaseName: string }) {
           <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             Restore to a point in time
           </h3>
-          <PITRRestoreDialog
-            databaseName={databaseName}
-            pitrWindow={pitrWindow}
-            succeededBackups={succeededBackups}
-          />
+          {NEW_DATABASE_ENGINES.has(engine) ? (
+            <Suspense fallback={null}>
+              <PITRRestoreIntoNewDialog
+                databaseName={databaseName}
+                engine={engine}
+                pitrWindow={pitrWindow}
+                succeededBackups={succeededBackups}
+              />
+            </Suspense>
+          ) : (
+            <PITRRestoreDialog
+              databaseName={databaseName}
+              pitrWindow={pitrWindow}
+              succeededBackups={succeededBackups}
+            />
+          )}
         </div>
         <PITRRestoreHistoryTableView
           history={restoreHistory.data ?? []}
@@ -227,26 +270,6 @@ function EnabledPITRContent({ databaseName }: { databaseName: string }) {
       </div>
     </div>
   )
-}
-
-// isoToLocalInputValue/localInputValueToISO convert between an
-// <input type="datetime-local"> value (no timezone, local wall-clock
-// time) and an RFC3339 UTC string the API expects: the picker always
-// shows and accepts the viewer's own local time, translated at the
-// boundary, the same way every other timestamp display in this app
-// already defers to Date's own locale formatting (formatDate).
-function isoToLocalInputValue(iso: string): string {
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-}
-
-function localInputValueToISO(value: string): string | null {
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) {
-    return null
-  }
-  return d.toISOString()
 }
 
 function PITRRestoreDialog({

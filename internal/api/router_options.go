@@ -317,6 +317,12 @@ func WithPITRRestoreRunner(r PITRRestoreRunner) Option {
 	return func(rt *Router) { rt.pitrRestoreRunner = r }
 }
 
+// WithMySQLPITRRestoreRunner enables point-in-time restore for MySQL and MariaDB,
+// which restores into a new database instead of overwriting the source.
+func WithMySQLPITRRestoreRunner(r MySQLPITRRestoreRunner) Option {
+	return func(rt *Router) { rt.mysqlPITRRestoreRunner = r }
+}
+
 // WithServiceVolumeBackupRunner enables
 // POST /api/v1/apps/{name}/volumes/{volume}/backups. Without one
 // configured (the default), that route returns 501, the same

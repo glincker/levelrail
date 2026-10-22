@@ -1317,6 +1317,9 @@ type TriggerRestoreRequest struct {
 // PITRStatusResource mirrors internal/api's pitrStatusResource
 // (internal/api/pitr.go): GET /api/v1/databases/{name}/pitr.
 type PITRStatusResource struct {
+	Engine string `json:"engine,omitempty"`
+	// RestoreMode is "in_place" (Postgres) or "new_database" (MySQL, MariaDB).
+	RestoreMode   string `json:"restore_mode,omitempty"`
 	Enabled       bool   `json:"enabled"`
 	EnabledAt     string `json:"enabled_at,omitempty"`
 	HasBaseBackup bool   `json:"has_base_backup"`
@@ -1375,6 +1378,7 @@ type PITRRestoreHistoryResource struct {
 type TriggerPITRRestoreRequest struct {
 	BaseBackupID string `json:"base_backup_id"`
 	TargetTime   string `json:"target_time"`
+	RestoreAs    string `json:"restore_as,omitempty"`
 }
 
 // VolumeBackupScheduleResource mirrors internal/api's
