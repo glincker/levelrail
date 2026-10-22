@@ -17,6 +17,9 @@ func (rt *Router) createPATGitConnection(w http.ResponseWriter, r *http.Request,
 	req.Token = strings.TrimSpace(req.Token)
 	req.Label = strings.TrimSpace(req.Label)
 	req.InstanceURL = strings.TrimRight(strings.TrimSpace(req.InstanceURL), "/")
+	if adapter.provider == gitProviderBitbucket {
+		req.InstanceURL = "https://bitbucket.org"
+	}
 	if req.InstanceURL == "" || req.Token == "" {
 		writeError(w, http.StatusBadRequest, "instance_url and token are required")
 		return
@@ -48,6 +51,18 @@ func (rt *Router) createPATGitConnection(w http.ResponseWriter, r *http.Request,
 		rt.logger.Warn("api: verify git personal access token failed", slog.String("provider", adapter.provider), slog.String("instance_url", redactURLCredentials(req.InstanceURL)), slog.String("error", errString(err)))
 		writeError(w, http.StatusBadGateway, adapter.label+" did not accept the token; check the instance URL and that the token can read repositories")
 		return
+	}
+	if !adapter.patAuth {
+		details, derr := rt.inspectGitToken(ctx, adapter.provider, conn, req.Token)
+		if derr != nil {
+			writeError(w, http.StatusBadGateway, adapter.label+" accepted the token but would not list repositories; the token needs repository read access")
+			return
+		}
+		if len(details.Missing) > 0 {
+			writeError(w, http.StatusBadRequest, "the token is missing the scopes: "+strings.Join(details.Missing, ", "))
+			return
+		}
+		conn.Scopes = joinGitScopes(details.Scopes)
 	}
 	if existing, found, err := rt.gitConns.FindGitConnectionByAccount(ctx, adapter.provider, host, acct.ID, "", ""); err == nil && found {
 		writeError(w, http.StatusConflict, "this account is already connected as "+existing.Label)

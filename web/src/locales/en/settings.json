@@ -2863,8 +2863,59 @@
         "unreachable": {
           "message": "This control plane could not reach the server.",
           "fix": "Check the hostname and port, and that the network or firewall allows outbound access to it."
+        },
+        "bad_scope": {
+          "message": "The token is missing a scope this control plane needs.",
+          "fix": "Create the token again with every scope listed in the steps above ticked, then paste the new one."
         }
-      }
+      },
+      "callbackLabel": "Callback URL",
+      "callbackCopy": "Copy",
+      "callbackCopied": "Copied"
+    },
+    "token": {
+      "title": "Connect with a token",
+      "description": "Paste an access token instead of registering an OAuth application. It works on a plain http install with no public domain.",
+      "host": "Host",
+      "guideLabel": "How to create the token",
+      "server": "Server:",
+      "serverEmpty": "enter the server URL above",
+      "serverHelp": "The address you open in a browser, for example http://git.lan:3000. http and https both work.",
+      "tick": "Tick these scopes:",
+      "scopes": "Scopes to tick",
+      "noDomain": "The token is stored encrypted and is never shown again. No public domain or callback URL is needed.",
+      "steps": {
+        "gitlab": {
+          "open": "Open your GitLab access token page:",
+          "create": "Select Add new token, name it {{name}}, and pick an expiry date you can live with.",
+          "copy": "Select Create personal access token and copy the token that starts with glpat-."
+        },
+        "bitbucket": {
+          "open": "Open Atlassian API tokens:",
+          "create": "Select Create API token with scopes, name it {{name}}, choose Bitbucket as the app, and pick your workspace.",
+          "copy": "Create the token, then paste it below as your Atlassian email, a colon, and the token (email:token)."
+        },
+        "gitea": {
+          "open": "Open your Gitea applications page:",
+          "create": "Under Generate New Token, name it {{name}}.",
+          "copy": "Select Generate Token and copy it now, Gitea shows it once."
+        },
+        "forgejo": {
+          "open": "Open your Forgejo applications page:",
+          "create": "Under Generate New Token, name it {{name}}.",
+          "copy": "Select Generate Token and copy it now, Forgejo shows it once."
+        }
+      },
+      "field": "Access token",
+      "fieldEmailToken": "Email and API token (email:token)",
+      "check": "Check token",
+      "scopesFound": "Scopes: {{scopes}}",
+      "scopesUnknown": "This host does not report a token's scopes. Repository access is checked instead.",
+      "repos_one": "Can reach {{count}}{{plus}} repository.",
+      "repos_other": "Can reach {{count}}{{plus}} repositories.",
+      "noRepos": "No repositories are reachable yet. Tick the repository scopes, or make sure the account is a member of a project.",
+      "connected": "Account connected",
+      "connectedBody": "The token was checked and stored encrypted."
     },
     "toast": {
       "added": "Account saved",
@@ -2894,6 +2945,8 @@
     },
     "add": {
       "action": "Add account",
+      "withToken": "Connect with a token",
+      "withTokenAsks": "GitLab, Bitbucket, Gitea or Forgejo. Paste a token, no OAuth app or public domain needed.",
       "domainTitle": "Set a primary domain first",
       "domainBody": "This host sends you back to your server after you sign in, so the server needs a public domain.",
       "continue": "Continue"

@@ -1,8 +1,8 @@
-import { Suspense, useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -28,6 +28,8 @@ import {
 } from '../../lib/gitAccounts'
 import type { GitProviderName } from '../../types/gitProviders'
 
+const ConnectWithTokenDialog = lazy(() => import('./ConnectWithTokenDialog'))
+
 const HOST_BRAND = {
   github: 'github',
   gitlab: 'gitlab',
@@ -42,6 +44,7 @@ export function AddAccountMenu() {
   const navigate = useNavigate()
   const ingress = useQuery(ingressSettingsQueryOptions())
   const [pending, setPending] = useState<GitProviderName | null>(null)
+  const [tokenOpen, setTokenOpen] = useState(false)
   const hasDomain = Boolean(ingress.data?.primary_domain)
 
   function go(provider: GitProviderName) {
@@ -84,8 +87,27 @@ export function AddAccountMenu() {
               </span>
             </DropdownMenuItem>
           ))}
+          <DropdownMenuItem
+            onClick={() => setTokenOpen(true)}
+            className="items-start"
+          >
+            <KeyIcon className="mt-0.5 size-5" aria-hidden="true" />
+            <span className="min-w-0">
+              <span className="block font-medium text-foreground">
+                {t('gitConnectionsHub.add.withToken')}
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                {t('gitConnectionsHub.add.withTokenAsks')}
+              </span>
+            </span>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      {tokenOpen ? (
+        <Suspense fallback={null}>
+          <ConnectWithTokenDialog open onOpenChange={setTokenOpen} />
+        </Suspense>
+      ) : null}
       <Dialog
         open={pending !== null}
         onOpenChange={(open) => {
