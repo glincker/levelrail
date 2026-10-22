@@ -18,6 +18,7 @@ import type { ChartMarker } from '../../lib/metricChart'
 import type { DeployAttempt } from '../../types/deployAttempt'
 import type { TrafficDetail, TrafficWindow } from '../../types/trafficDetail'
 import { formatMs, formatPercent, formatRate } from './format'
+import { ErrorSpikesCard } from './ErrorSpikesCard'
 import { ShieldBlockedCard } from './ShieldBlockedCard'
 import {
   AudienceTable,
@@ -220,6 +221,7 @@ export function TrafficDetailPanel({ app }: Readonly<{ app: string }>) {
             />
           </div>
           <SloCard app={app} slo={data.slo} />
+          <ErrorSpikesCard spikes={data.error_spikes ?? []} />
           <ShieldBlockedCard app={app} shield={data.shield} />
           {range ? (
             <>

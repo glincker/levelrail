@@ -60,6 +60,20 @@ export interface TrafficShield {
   by_reason: TrafficShieldReason[]
 }
 
+export interface TrafficErrorSpike {
+  start: string
+  end: string
+  requests: number
+  errors_5xx: number
+  peak_error_rate_5xx: number
+  baseline_error_rate_5xx: number
+  deploy_id?: string
+  deploy_at?: string
+  deploy_status?: string
+  deploy_image?: string
+  deploy_commit?: string
+}
+
 export interface TrafficDetail {
   app: string
   window: TrafficWindow
@@ -81,4 +95,5 @@ export interface TrafficDetail {
   countries: TrafficLabel[]
   slo?: TrafficSLO
   shield: TrafficShield
+  error_spikes: TrafficErrorSpike[]
 }
