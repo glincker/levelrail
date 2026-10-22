@@ -995,6 +995,8 @@
       "certificate": "certificate",
       "server": "server",
       "browser": "browser"
-    }
+    },
+    "noApps": "Deploy an app first, then point a domain at it.",
+    "noAppsAction": "New app"
   }
 }

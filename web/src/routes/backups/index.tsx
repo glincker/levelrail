@@ -1,9 +1,15 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  CloudArrowUpIcon,
+  ShieldCheckIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { PageTemplate } from '@/components/shell/PageTemplate'
-import { EmptyState } from '@/components/ui/empty-state'
+import { Button } from '@/components/ui/button'
+import { PageBanner } from '../../components/PageBanner'
+import { HelpLink } from '../../components/HelpLink'
+import { LazyBackupsDiagram } from '../../components/banners/LazyDiagrams'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useBackupCoverage } from '../../queries/backupCoverage'
 import { CoverageList } from '../../components/backups/CoverageList'
@@ -32,14 +38,46 @@ function BackupsPage() {
   const coverage = useBackupCoverage()
   const [protectOpen, setProtectOpen] = useState(false)
   const data = coverage.data
+  const hasTargets = (data?.targets.length ?? 0) > 0
+  const isEmpty =
+    data !== undefined && (!hasTargets || data.resources.length === 0)
+  const size = isEmpty ? 'hero' : 'compact'
+  const canProtect = hasTargets && (data?.summary.unprotected ?? 0) > 0
 
   return (
     <PageTemplate
       title={t('page.title')}
       description={t('page.description')}
-      icon={<CloudArrowUpIcon />}
-      helpPath="/backups-and-storage"
-      helpLabel={t('page.helpLabel')}
+      banner={
+        <PageBanner
+          icon={<CloudArrowUpIcon />}
+          titleKey="backups:page.title"
+          descriptionKey={
+            isEmpty ? 'backups:banner.description' : 'backups:page.description'
+          }
+          action={
+            <>
+              <HelpLink
+                path="/backups-and-storage"
+                label={t('page.helpLabel')}
+              />
+              {canProtect ? (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setProtectOpen(true)
+                  }}
+                >
+                  <ShieldCheckIcon />
+                  {t('summary.protectEverything')}
+                </Button>
+              ) : null}
+            </>
+          }
+          illustration={<LazyBackupsDiagram size={size} />}
+          size={size}
+        />
+      }
     >
       {coverage.isError ? (
         <p role="alert" className="text-sm text-destructive">
@@ -54,19 +92,10 @@ function BackupsPage() {
         <FirstRunSetup unprotected={data.summary.total} />
       ) : (
         <>
-          <CoverageSummary
-            summary={data.summary}
-            onProtect={() => {
-              setProtectOpen(true)
-            }}
-          />
-          {data.resources.length === 0 ? (
-            <EmptyState
-              icon={<CloudArrowUpIcon className="size-5" />}
-              title={t('page.noResourcesTitle')}
-              description={t('page.noResourcesDescription')}
-            />
-          ) : (
+          {isEmpty ? null : (
+            <CoverageSummary summary={data.summary} showAction={false} />
+          )}
+          {isEmpty ? null : (
             <CoverageList
               rows={data.resources}
               targets={data.targets}

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
@@ -122,7 +122,26 @@ function DomainsPage() {
               ? 'domains:banner.description'
               : 'domains:page.description'
           }
-          action={addButton}
+          action={
+            noDomains && apps.length === 0 ? (
+              <>
+                <p className="w-full text-sm text-foreground">
+                  {t('banner.noApps')}
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  render={<Link to="/apps/new" />}
+                  nativeButton={false}
+                >
+                  {t('banner.noAppsAction')}
+                </Button>
+                {addButton}
+              </>
+            ) : (
+              addButton
+            )
+          }
           illustration={<LazyDomainsDiagram size={bannerSize} />}
           size={bannerSize}
         />

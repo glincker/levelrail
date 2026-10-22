@@ -2,10 +2,10 @@ import { useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowsSplitIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
 import { HelpLink } from './HelpLink'
-import { GhostPreview } from './GhostPreview'
+import { PageBanner } from './PageBanner'
+import { LazyLoadBalancersDiagram } from './banners/LazyDiagrams'
 import { ConfigureLoadBalancerDialog } from './ConfigureLoadBalancerDialog'
 import {
   LoadBalancerOverviewHeader,
@@ -17,73 +17,7 @@ import {
   OVERVIEW_PAGE_LIMIT,
   useLoadBalancerList,
   type LoadBalancerOverviewState,
-  type LoadBalancerSummary,
 } from '../queries/loadBalancers'
-
-// Sample rows for the empty state's faded preview; never sent anywhere.
-const SAMPLE_ITEMS: LoadBalancerSummary[] = [
-  {
-    app: 'storefront-web',
-    service: 'web',
-    algorithm: 'round_robin',
-    state: 'balancing',
-    upstreams_total: 3,
-    upstreams_healthy: 3,
-    config_updated_at: '2026-01-01T00:00:00Z',
-    active_health_check: true,
-  },
-  {
-    app: 'checkout-api',
-    service: 'api',
-    algorithm: 'least_conn',
-    state: 'degraded',
-    upstreams_total: 4,
-    upstreams_healthy: 3,
-    reason: 'one upstream failing its health check',
-    config_updated_at: '2026-01-01T00:00:00Z',
-    active_health_check: true,
-  },
-  {
-    app: 'docs-site',
-    service: 'static',
-    algorithm: 'round_robin',
-    state: 'balancing',
-    upstreams_total: 2,
-    upstreams_healthy: 2,
-    config_updated_at: '2026-01-01T00:00:00Z',
-    active_health_check: false,
-  },
-  {
-    app: 'worker-queue',
-    service: 'worker',
-    algorithm: 'least_conn',
-    state: 'balancing',
-    upstreams_total: 5,
-    upstreams_healthy: 5,
-    config_updated_at: '2026-01-01T00:00:00Z',
-    active_health_check: true,
-  },
-  {
-    app: 'billing-service',
-    service: 'api',
-    algorithm: 'round_robin',
-    state: 'balancing',
-    upstreams_total: 3,
-    upstreams_healthy: 3,
-    config_updated_at: '2026-01-01T00:00:00Z',
-    active_health_check: true,
-  },
-  {
-    app: 'search-gateway',
-    service: 'gateway',
-    algorithm: 'least_conn',
-    state: 'balancing',
-    upstreams_total: 2,
-    upstreams_healthy: 2,
-    config_updated_at: '2026-01-01T00:00:00Z',
-    active_health_check: true,
-  },
-]
 
 const STATE_FILTERS: (LoadBalancerOverviewState | '')[] = [
   '',
@@ -162,36 +96,7 @@ export function LoadBalancerOverview() {
       </p>
     )
   } else if (items.length === 0 && !filtered) {
-    content = (
-      <GhostPreview
-        sample={
-          <div>
-            <LoadBalancerOverviewHeader />
-            {SAMPLE_ITEMS.map((item) => (
-              <LoadBalancerOverviewRow key={item.app} item={item} />
-            ))}
-          </div>
-        }
-      >
-        <EmptyState
-          icon={<ArrowsSplitIcon className="size-5" />}
-          title="No load balancers yet"
-          description="A load balancer spreads an app's traffic across its replicas, with health checks, retries and graceful cutovers. Turn one on per app and it shows up here with live upstream health."
-          action={
-            <Button
-              size="sm"
-              onClick={() => {
-                setPickerOpen(true)
-              }}
-            >
-              Configure a load balancer
-            </Button>
-          }
-          helpPath="/load-balancing"
-          helpLabel="Load balancing guide"
-        />
-      </GhostPreview>
-    )
+    content = null
   } else if (items.length === 0) {
     content = (
       <p className="rounded-lg border border-border bg-muted/30 px-4 py-4 text-center text-sm text-muted-foreground">
@@ -202,34 +107,38 @@ export function LoadBalancerOverview() {
     content = <LoadBalancerTable items={items} />
   }
 
+  const isEmpty = query.isSuccess && items.length === 0 && !filtered
+  const size = isEmpty ? 'hero' : 'compact'
   const showControls = !query.isPending && (total > 0 || filtered)
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-(length:--glinr-type-size-page) leading-(--glinr-type-leading-page) font-(weight:--glinr-type-heading-weight) text-foreground">
-            Load balancers
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Every app that balances traffic across replicas, with live upstream
-            health. Open one to change its settings.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <HelpLink path="/load-balancing" label="Load balancing guide" />
-          {showControls ? (
-            <Button
-              size="sm"
-              onClick={() => {
-                setPickerOpen(true)
-              }}
-            >
-              Configure a load balancer
-            </Button>
-          ) : null}
-        </div>
-      </div>
+    <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
+      <PageBanner
+        icon={<ArrowsSplitIcon />}
+        titleKey="common:banners.loadBalancers.title"
+        descriptionKey={
+          isEmpty
+            ? 'common:banners.loadBalancers.description'
+            : 'common:banners.loadBalancers.compactDescription'
+        }
+        action={
+          <>
+            <HelpLink path="/load-balancing" label="Load balancing guide" />
+            {query.isPending ? null : (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setPickerOpen(true)
+                }}
+              >
+                Configure a load balancer
+              </Button>
+            )}
+          </>
+        }
+        illustration={<LazyLoadBalancersDiagram size={size} />}
+        size={size}
+      />
 
       {showControls ? (
         <div className="flex flex-wrap items-center gap-2">

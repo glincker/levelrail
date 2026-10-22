@@ -9,7 +9,9 @@ import {
   RowSkeleton,
 } from '../../components/ProjectRow'
 import { CreateProjectDialog } from '../../components/CreateProjectDialog'
-import { EmptyState } from '../../components/ui/empty-state'
+import { useTranslation } from 'react-i18next'
+import { PageBanner } from '../../components/PageBanner'
+import { LazyProjectsDiagram } from '../../components/banners/LazyDiagrams'
 import { PageTemplate } from '../../components/shell/PageTemplate'
 
 // Typed loader primes the Query cache, the component only reads that
@@ -51,29 +53,34 @@ function ProjectListPage() {
     overscan: 8,
   })
 
+  const { t } = useTranslation('common')
+  const isEmpty = projects.length === 0
+  const size = isEmpty ? 'hero' : 'compact'
+
   return (
     <PageTemplate
-      title="Projects"
-      description="Optional labels to group related apps and databases. An app or database with no project is just as valid, it still shows up on its own list either way."
-      actions={
-        <>
-          {projects.length > 0 ? (
-            <span className="text-sm text-muted-foreground">
-              {projects.length} {projects.length === 1 ? 'project' : 'projects'}
-            </span>
-          ) : null}
-          <CreateProjectDialog />
-        </>
+      title={t('banners.projects.title')}
+      banner={
+        <PageBanner
+          icon={<FolderIcon />}
+          titleKey="common:banners.projects.title"
+          descriptionKey={
+            isEmpty
+              ? 'common:banners.projects.description'
+              : 'common:banners.projects.compactDescription'
+          }
+          descriptionText={
+            isEmpty
+              ? undefined
+              : t('banners.projects.count', { count: projects.length })
+          }
+          action={<CreateProjectDialog />}
+          illustration={<LazyProjectsDiagram size={size} />}
+          size={size}
+        />
       }
     >
-      {projects.length === 0 ? (
-        <EmptyState
-          icon={<FolderIcon className="size-5" />}
-          title="No projects yet"
-          description="Group a web app with its database and cache under one project for organization. Nothing about how they run changes."
-          action={<CreateProjectDialog />}
-        />
-      ) : (
+      {isEmpty ? null : (
         <div
           ref={parentRef}
           className="h-[70vh] overflow-auto rounded-lg border border-border bg-card"
