@@ -32,7 +32,6 @@ var (
 	sigLongHex   = regexp.MustCompile(`\b[0-9a-fA-F]{8,}\b`)
 	sigToken     = regexp.MustCompile(`\b[A-Za-z0-9_\-]{24,}\b`)
 	sigNumber    = regexp.MustCompile(`-?\b\d+(?:\.\d+)?(?:ms|us|ns|s|m|h|kb|mb|gb|kib|mib|gib|b|%)?\b`)
-	sigSpace     = regexp.MustCompile(`\s+`)
 	sigLevelTok  = regexp.MustCompile(`(?i)(?:\blevel[=:]\s*"?(?:` + levelTokens + `)\b"?|\[\s*(?:` + levelTokens + `)\s*\]|^\s*(?:` + levelTokens + `)\s*:)`)
 
 	secretKV    = regexp.MustCompile(`(?i)\b(password|passwd|pwd|secret|token|api[_-]?key|apikey|access[_-]?key|authorization|auth|cookie|session[_-]?id|private[_-]?key)(["']?\s*[=:]\s*)("[^"]*"|'[^']*'|(?:bearer|basic)\s+\S+|\S+)`)
@@ -118,8 +117,54 @@ func Normalize(msg string) string {
 		return m
 	})
 	s = sigNumber.ReplaceAllString(s, "<num>")
-	s = stripLeadingStamp(strings.TrimSpace(sigSpace.ReplaceAllString(s, " ")))
+	s = stripLeadingStamp(condenseSpaces(s))
 	return truncateRunes(s, maxTemplateLen)
+}
+
+func condenseSpaces(s string) string {
+	needsRewrite := false
+	inSpace := false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		isSpace := (c == ' ' || c == '\t' || c == '\n' || c == '\r')
+		if isSpace {
+			if inSpace || i == 0 || i == len(s)-1 {
+				needsRewrite = true
+				break
+			}
+			if c != ' ' {
+				needsRewrite = true
+				break
+			}
+			inSpace = true
+		} else {
+			inSpace = false
+		}
+	}
+	if !needsRewrite {
+		return s
+	}
+
+	var b strings.Builder
+	b.Grow(len(s))
+	inSpace = true // skip leading spaces
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+			if !inSpace {
+				b.WriteByte(' ')
+				inSpace = true
+			}
+		} else {
+			b.WriteByte(c)
+			inSpace = false
+		}
+	}
+	res := b.String()
+	if len(res) > 0 && res[len(res)-1] == ' ' {
+		return res[:len(res)-1]
+	}
+	return res
 }
 
 // stripBareLevel drops a lone upper case level word near the start of the
