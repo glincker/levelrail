@@ -333,6 +333,29 @@
     "files": "Files",
     "redeploy": "Deploy again from the project folder with:"
   },
+  "importDatabase": {
+    "title": "Needs a database?",
+    "optional": "Optional",
+    "detected": "This repository looks like it uses {{engine}}, so it is suggested here.",
+    "engines": "Database engine",
+    "useExisting": "Use an existing one",
+    "summary": "Creates a {{engine}} {{version}} database and sets {{envVar}} for this app.",
+    "summaryBackups": "Creates a {{engine}} {{version}} database with daily backups and sets {{envVar}} for this app.",
+    "name": "Database name",
+    "nameFree": "This database name is available.",
+    "nameError": {
+      "required": "Give the database a name.",
+      "format": "Use lowercase letters, numbers and dashes.",
+      "taken": "A database with this name already exists."
+    },
+    "backups": "Back it up daily",
+    "noDestination": "Daily backups need a backup destination (none set up yet).",
+    "existingLabel": "Existing database",
+    "existingPick": "Choose a database",
+    "existingNone": "There are no databases yet.",
+    "injected": "Variables added to the app",
+    "from": "from {{database}}"
+  },
   "import": {
     "loading": "Reading the repository",
     "urlInvalid": "That does not look like a repository URL yet.",
