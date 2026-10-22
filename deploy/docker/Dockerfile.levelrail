@@ -9,11 +9,11 @@ COPY web/ ./
 # vite-plugins/docsManifest.ts reads ../../docs (repo root) to bundle
 # the in-app help pages, so the sibling docs/ dir must exist here too.
 COPY docs/ /src/docs/
-# docs/public/install.sh and install-cli.sh are symlinks to these
+# docs/public/install.sh, install-cli.sh and install-cli.ps1 are symlinks to these
 # repo-root scripts (served by the docs site); the manifest plugin
 # stats every file under docs/public, so the symlink targets must
 # resolve inside the build context too.
-COPY install.sh install-cli.sh /src/
+COPY install.sh install-cli.sh install-cli.ps1 /src/
 # A silently empty/partial dist (e.g. the symlink bug #911 fixed) must
 # fail the build here, not ship as a binary with no embedded frontend.
 RUN npm run build && test -s dist/index.html
