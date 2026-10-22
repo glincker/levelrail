@@ -68,7 +68,9 @@
     "approved": "Sign-in approved",
     "denied": "Sign-in denied",
     "actionFailed": "Could not update the sign-in request",
-    "empty": "No sign-in is waiting for you."
+    "empty": "No sign-in is waiting for you.",
+    "matchGroup": "Two digit number",
+    "matchDigit": "Digit {{n}} of 2"
   },
   "devices": {
     "title": "Trusted browsers",
@@ -160,5 +162,38 @@
       "revoked": "CLI revoked",
       "fullPage": "Manage all CLI access"
     }
+  },
+  "request": {
+    "headline": "Approve this sign-in?",
+    "subtitle": "Sign-in request",
+    "cardLabel": "Sign-in request from {{device}}",
+    "factDevice": "Device",
+    "factWhere": "Where",
+    "factWhen": "When",
+    "factExpires": "Expires in",
+    "deviceCli": "Command line client",
+    "deviceMcp": "MCP client",
+    "deviceUnknown": "Unknown device",
+    "scope": {
+      "this-computer": "This computer",
+      "local-network": "Local network"
+    },
+    "expiresInMinutes_one": "Expires in about {{count}} minute",
+    "expiresInMinutes_other": "Expires in about {{count}} minutes",
+    "risk": "Only approve if you started this sign-in yourself, the number must match.",
+    "numberPrompt": "Type the number shown on the device that is signing in",
+    "notMe": "This wasn't me",
+    "details": "Details",
+    "copyId": "Copy request id",
+    "copied": "Request id copied",
+    "approvedTitle": "Signed in on {{device}}",
+    "approvedBody": "You can close this tab.",
+    "deniedTitle": "Sign-in denied",
+    "reviewSecurity": "Review your security settings",
+    "expiredTitle": "This request expired",
+    "expiredBody": "Start the sign-in again on the device if it was you.",
+    "handledTitle": "Already handled",
+    "handledBody": "This sign-in was already approved, denied or has ended.",
+    "failedTitle": "Could not approve this sign-in"
   }
 }
