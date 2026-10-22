@@ -114,7 +114,7 @@ type migrationJobOutput struct {
 func registerMigrationJobTool(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_migration_job_status",
-		Description: "Migration job progress, failed items, next steps and whether the old instance is safe to delete. Read only.",
+		Description: "Migration job progress, failures, next steps and safe-to-delete state. Read only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appImportPlanInput) (*mcp.CallToolResult, migrationJobOutput, error) {
 		job, err := client.MigrationJob(ctx, in.ID)
 		if err != nil {
