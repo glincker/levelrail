@@ -300,7 +300,7 @@ func FailStepForReason(reason string, pullFinished bool, errText string) string 
 		return StepCreateContainer
 	case "StartFailed", "StartFailedAfterCreate":
 		return StepStart
-	case "VanishedAfterStart":
+	case "VanishedAfterStart", ReasonCrashLoop:
 		return StepWaitReady
 	case "UnknownEngine", "StoreError":
 		return StepAccepted
@@ -363,6 +363,10 @@ type Failure struct {
 	// Fixes lists every choice when the stop needs the owner to decide.
 	Fixes  []Fix       `json:"fixes,omitempty"`
 	Volume *VolumeInfo `json:"volume,omitempty"`
+	// LogTail is the redacted last output of the crashed container.
+	LogTail string `json:"log_tail,omitempty"`
+	// Cause is the classified crash reason, when the output matched one.
+	Cause *Cause `json:"cause,omitempty"`
 }
 
 // Attempt is the latest provisioning attempt of a database.
@@ -385,7 +389,14 @@ func View(id string, events []store.DatabaseProvisionEvent) Attempt {
 		a.Steps = append(a.Steps, StepView{Step: s, Status: StatusPending})
 		idx[s] = i
 	}
+	var crash *CrashInfo
 	for _, e := range events {
+		if e.Step == StepLogTail {
+			if info, ok := decodeCrash(e.Detail); ok {
+				crash = &info
+			}
+			continue
+		}
 		i, ok := idx[e.Step]
 		if !ok {
 			continue
@@ -403,6 +414,10 @@ func View(id string, events []store.DatabaseProvisionEvent) Attempt {
 	for _, sv := range a.Steps {
 		if sv.Status == StatusFailed {
 			a.Failure = &Failure{Step: sv.Step, Reason: sv.Detail, Fix: ClassifyFix(sv.Step, sv.Detail)}
+			if crash != nil {
+				a.Failure.LogTail = crash.Tail
+				a.Failure.Cause = Classify(crash.Tail, crash.ExitCode, crash.OOMKilled)
+			}
 			if v, ok := ParseLeftover(sv.Detail); ok {
 				a.Failure.Volume = &v
 				a.Failure.Fixes = []Fix{

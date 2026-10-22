@@ -402,11 +402,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	c.prov = c.provRec.Open(ctx, c.dbName)
 	defer func() { c.prov = nil }()
 	res, err := c.reconcileOnce(ctx)
-	c.finishProvision(res, err)
+	c.finishProvision(ctx, res, err)
 	return res, err
 }
 
-func (c *Controller) finishProvision(res reconcile.Result, err error) {
+func (c *Controller) finishProvision(ctx context.Context, res reconcile.Result, err error) {
 	if c.prov == nil || len(res.Conditions) == 0 {
 		return
 	}
@@ -423,6 +423,9 @@ func (c *Controller) finishProvision(res reconcile.Result, err error) {
 			msg = cond.Reason
 		}
 		if step := dbprovision.FailStepForReason(cond.Reason, c.prov.PullFinished(), msg); step != "" {
+			if crashLoopReasons(cond.Reason) {
+				c.captureCrash(ctx)
+			}
 			c.prov.Fail(step, errors.New(msg))
 		}
 	}

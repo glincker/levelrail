@@ -23,6 +23,7 @@ import {
   type ProvisionFix,
   type ProvisionStep,
 } from '../../queries/databaseProvision'
+import { ContainerOutput } from './ContainerOutput'
 import { PendingSettingsForm, ReadyConnection } from './ProvisioningExtras'
 import {
   connectionFor,
@@ -197,6 +198,7 @@ export function ProvisioningView({
               })}{' '}
               {attempt.failure.reason}
             </p>
+            <ContainerOutput failure={attempt.failure} />
             {volume ? (
               <p className="text-xs text-muted-foreground">
                 {t('provision.leftoverVolume', {

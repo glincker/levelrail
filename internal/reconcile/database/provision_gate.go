@@ -153,6 +153,9 @@ func (c *Controller) probeReady(ctx context.Context, state *docker.ContainerStat
 	if !state.Created.IsZero() && time.Since(state.Created) > durationFromEnv(EnvReadyTimeout, defaultReadyTimeout) {
 		return notReady(reasonNotAccepting, fmt.Errorf("the database did not accept connections on port %d in time: %w", port, err)), false
 	}
+	if res, loop := c.crashLoopResult(ctx, containerName(c.dbName)); loop {
+		return res, false
+	}
 	c.prov.Start(dbprovision.StepWaitReady, "waiting for port "+strconv.Itoa(port)+" to accept connections")
 	res = notReady("Starting", errors.New("waiting for the database to accept connections"))
 	res.RequeueAfter = durationFromEnv(EnvReadyProbeInterval, defaultReadyProbe)

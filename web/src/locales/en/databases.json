@@ -705,6 +705,29 @@
     "elapsed": "Elapsed {{time}}",
     "pullProgress": "Image download progress",
     "failedAt": "Stopped at {{step}}:",
+    "containerOutput": "Container output",
+    "cause": {
+      "permission": {
+        "title": "Permission or capability denied",
+        "hint": "The container was denied a permission or capability. Check the host security profile and volume ownership."
+      },
+      "out_of_memory": {
+        "title": "Out of memory",
+        "hint": "The database ran out of memory. Raise its memory limit."
+      },
+      "port_in_use": {
+        "title": "Port already in use",
+        "hint": "Another process already uses the port. Free it or pick another port."
+      },
+      "bad_volume": {
+        "title": "Data volume corrupt or incompatible",
+        "hint": "Restore a backup or start from a fresh volume."
+      },
+      "bad_config": {
+        "title": "Configuration rejected",
+        "hint": "The database rejected its configuration. Review the settings you changed."
+      }
+    },
     "retry": "Retry",
     "confirmRemoveVolume": "This deletes the old data volume for good. Continue?",
     "confirmYes": "Delete volume and retry",
