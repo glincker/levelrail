@@ -15,11 +15,11 @@ import { TemplateLogo } from './TemplateLogo'
 // Same anatomy as APP_LIST_GRID: avatar, name with status beneath, then
 // lg-only columns, trailing chevron. Shared by the sticky header and rows.
 export const DATABASE_LIST_GRID =
-  'grid grid-cols-[2rem_minmax(0,1fr)_1rem] lg:grid-cols-[2rem_minmax(0,1.6fr)_8rem_9rem_7rem_1rem] items-center gap-3'
+  'grid grid-cols-[2.75rem_minmax(0,1fr)_1rem] lg:grid-cols-[2.75rem_minmax(0,1.6fr)_8rem_9rem_7rem_1rem] items-center gap-3'
 
 function EngineLogo({ engine }: { engine: string }) {
   return (
-    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+    <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted text-muted-foreground">
       <TemplateLogo
         id={logoIdForImage(engine) ?? ''}
         className="size-4"
@@ -141,7 +141,7 @@ export function RowSkeleton() {
       className={`${DATABASE_LIST_GRID} border-b border-border px-4 py-3`}
       aria-hidden="true"
     >
-      <div className="size-8 animate-pulse rounded-lg bg-muted" />
+      <div className="size-10 animate-pulse rounded-lg bg-muted" />
       <div className="h-4 w-32 animate-pulse rounded bg-muted" />
       <div className="hidden h-4 w-16 animate-pulse rounded bg-muted lg:block" />
       <div className="hidden h-4 w-20 animate-pulse rounded bg-muted lg:block" />

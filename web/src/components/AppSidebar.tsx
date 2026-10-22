@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import { SignOutIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -16,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { useBrand } from '../hooks/useBrand'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { useLogout } from '../queries/auth'
+import { updatesQueryOptions } from '../queries/updates'
 import { appScopeName, databaseScopeName } from '../lib/sidebarScope'
 import { GlobalNav } from './shell/GlobalNav'
 import { sidebarArea } from './shell/sidebarArea'
@@ -75,6 +77,7 @@ export function AppSidebar() {
   const { t } = useTranslation()
   const username = useAuthUsername()
   const logout = useLogout()
+  const version = useQuery(updatesQueryOptions()).data?.current_version
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const scopedAppName = appScopeName(pathname)
   const scopedDatabaseName = databaseScopeName(pathname)
@@ -103,7 +106,9 @@ export function AppSidebar() {
                   {brand.ShortName || brand.Name}
                 </span>
                 <span className="truncate text-[11px] text-sidebar-foreground/60">
-                  {t('shell.account.controlPlane')}
+                  {version
+                    ? `${t('shell.account.controlPlane')} v${version.replace(/^v/, '')}`
+                    : t('shell.account.controlPlane')}
                 </span>
               </span>
             </SidebarMenuButton>

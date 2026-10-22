@@ -35,7 +35,7 @@ export function DatabasesDiagram({
   const hero = size === 'hero'
   return (
     <svg
-      viewBox={hero ? '0 0 520 300' : '70 50 390 160'}
+      viewBox={hero ? '0 0 520 300' : '60 46 420 168'}
       className="h-full w-full max-w-full"
       fill="none"
       role="presentation"

@@ -52,7 +52,7 @@ export function SidebarStatusBadgeView({ status }: { status: ShellStatus }) {
       title={label}
       data-status={status}
       className={cn(
-        'absolute -right-1 -bottom-1 grid size-3.5 place-items-center rounded-full border-2 border-sidebar text-primary-foreground',
+        'absolute right-0 bottom-0 grid size-3.5 place-items-center rounded-full border-2 border-sidebar text-primary-foreground',
         status === 'busy' ? 'bg-sidebar' : tone.solid,
       )}
     >
