@@ -109,8 +109,7 @@ func (rt *Router) handleVerifyBackup(w http.ResponseWriter, r *http.Request) {
 
 	verificationID, err := randomBackupVerificationID()
 	if err != nil {
-		rt.logger.Error("api: verify backup: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: verify backup: generate id failed", err)
 		return
 	}
 
@@ -156,8 +155,7 @@ func (rt *Router) loadDatabaseBackupHistory(w http.ResponseWriter, r *http.Reque
 		return store.BackupHistory{}, false
 	}
 	if err != nil {
-		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("backup_id", historyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, logContext, err, slog.String("backup_id", historyID))
 		return store.BackupHistory{}, false
 	}
 	if h.DatabaseName != databaseName {
@@ -174,8 +172,7 @@ func (rt *Router) loadDatabaseBackupHistory(w http.ResponseWriter, r *http.Reque
 func (rt *Router) writeBackupVerificationsList(w http.ResponseWriter, r *http.Request, historyID, logContext string) {
 	verifications, err := rt.backupVerifications.ListBackupVerifications(r.Context(), historyID, defaultBackupHistoryLimit)
 	if err != nil {
-		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("backup_id", historyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, logContext, err, slog.String("backup_id", historyID))
 		return
 	}
 	out := make([]backupVerificationResource, 0, len(verifications))

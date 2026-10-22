@@ -84,8 +84,7 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: trigger deploy: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: trigger deploy: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -277,8 +276,7 @@ func (rt *Router) handleGetAutoRollback(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get auto-rollback: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get auto-rollback: load app failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, autoRollbackSettingResource{Enabled: svc.AutoRollbackOnCrashloop})
@@ -303,8 +301,7 @@ func (rt *Router) handleSetAutoRollback(w http.ResponseWriter, r *http.Request) 
 			writeError(w, http.StatusNotFound, "app not found")
 			return
 		}
-		rt.logger.Error("api: set auto-rollback failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set auto-rollback failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, autoRollbackSettingResource(req))
@@ -344,8 +341,7 @@ func (rt *Router) handleGetAutoRollbackSLOBurn(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get auto-rollback-slo-burn: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get auto-rollback-slo-burn: load app failed", err, slog.String("name", name))
 		return
 	}
 	mode := svc.AutoRollbackOnSLOBurn
@@ -379,8 +375,7 @@ func (rt *Router) handleSetAutoRollbackSLOBurn(w http.ResponseWriter, r *http.Re
 			writeError(w, http.StatusNotFound, "app not found")
 			return
 		}
-		rt.logger.Error("api: set auto-rollback-slo-burn failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set auto-rollback-slo-burn failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, autoRollbackSLOBurnSettingResource(req))
@@ -497,15 +492,13 @@ func (rt *Router) handleDeployHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: deploy history: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy history: load app failed", err, slog.String("name", name))
 		return
 	}
 
 	conditions, err := rt.deploys.GetConditions(r.Context(), applicationControllerName(name))
 	if err != nil {
-		rt.logger.Error("api: deploy history failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy history failed", err, slog.String("name", name))
 		return
 	}
 	// This app's own controller never sees CrossNodeIngress, reported

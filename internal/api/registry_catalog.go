@@ -81,8 +81,7 @@ func (rt *Router) handleListRegistryRepositories(w http.ResponseWriter, r *http.
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: resolve registry catalog password failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: resolve registry catalog password failed", err)
 		return
 	}
 
@@ -121,8 +120,7 @@ func (rt *Router) handleListRegistryTags(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: resolve registry catalog password failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: resolve registry catalog password failed", err)
 		return
 	}
 
@@ -154,8 +152,7 @@ func (rt *Router) registryCatalogUsable(w http.ResponseWriter, r *http.Request) 
 
 	settings, err := rt.registry.GetRegistrySettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get registry settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get registry settings failed", err)
 		return store.RegistrySettings{}, false
 	}
 	if !settings.Enabled {
@@ -237,15 +234,13 @@ func (rt *Router) loadRegistryCredentialForBrowse(w http.ResponseWriter, r *http
 		return store.RegistryCredential{}, "", false
 	}
 	if err != nil {
-		rt.logger.Error("api: load registry credential for browse failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: load registry credential for browse failed", err, slog.String("id", id))
 		return store.RegistryCredential{}, "", false
 	}
 
 	password, err := rt.registryCredentialSecrets.Resolve(r.Context(), store.RegistryCredentialSecretsKey(id), "password")
 	if err != nil {
-		rt.logger.Error("api: resolve registry credential password for browse failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: resolve registry credential password for browse failed", err, slog.String("id", id))
 		return store.RegistryCredential{}, "", false
 	}
 

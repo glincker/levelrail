@@ -42,8 +42,7 @@ func (rt *Router) handleListNodeEvents(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list node events: look up node failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, errInternal)
+		rt.internalError(w, "api: list node events: look up node failed", err, slog.String("node_id", id))
 		return
 	}
 
@@ -59,8 +58,7 @@ func (rt *Router) handleListNodeEvents(w http.ResponseWriter, r *http.Request) {
 
 	events, err := lister.ListNodeStatusEvents(r.Context(), id, limit)
 	if err != nil {
-		rt.logger.Error("api: list node events failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, errInternal)
+		rt.internalError(w, "api: list node events failed", err, slog.String("node_id", id))
 		return
 	}
 	out := make([]nodeStatusEventResource, 0, len(events))

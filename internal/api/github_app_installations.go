@@ -2,7 +2,6 @@ package api
 
 import (
 	"errors"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -71,8 +70,7 @@ func (rt *Router) handleListGitHubAppInstallations(w http.ResponseWriter, r *htt
 	ctx := r.Context()
 	installations, err := rt.githubApp.ListGitHubAppInstallations(ctx)
 	if err != nil {
-		rt.logger.Error("api: list github app installations failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list github app installations failed", err)
 		return
 	}
 
@@ -127,8 +125,7 @@ func (rt *Router) handleDeleteGitHubAppInstallation(w http.ResponseWriter, r *ht
 	ctx := r.Context()
 	installations, err := rt.githubApp.ListGitHubAppInstallations(ctx)
 	if err != nil {
-		rt.logger.Error("api: list github app installations for delete failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list github app installations for delete failed", err)
 		return
 	}
 	var target *store.GitHubAppInstallation
@@ -145,8 +142,7 @@ func (rt *Router) handleDeleteGitHubAppInstallation(w http.ResponseWriter, r *ht
 
 	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
 	if err != nil && !errors.Is(err, store.ErrGitHubAppConnectionNotFound) {
-		rt.logger.Error("api: get github app connection for delete installation failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get github app connection for delete installation failed", err)
 		return
 	}
 	instanceURL := conn.InstanceURL
@@ -156,8 +152,7 @@ func (rt *Router) handleDeleteGitHubAppInstallation(w http.ResponseWriter, r *ht
 
 	sources, err := rt.gitSources.ListGitSources(ctx)
 	if err != nil {
-		rt.logger.Error("api: list git sources for delete installation check failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list git sources for delete installation check failed", err)
 		return
 	}
 	var blocking []string
@@ -177,8 +172,7 @@ func (rt *Router) handleDeleteGitHubAppInstallation(w http.ResponseWriter, r *ht
 			writeError(w, http.StatusNotFound, "installation not found")
 			return
 		}
-		rt.logger.Error("api: delete github app installation failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete github app installation failed", err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

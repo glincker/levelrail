@@ -109,8 +109,7 @@ func (rt *Router) handleCreateFeatureFlag(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: create feature flag: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create feature flag: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -132,15 +131,13 @@ func (rt *Router) handleCreateFeatureFlag(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusConflict, "a feature flag with this key already exists")
 		return
 	} else if !errors.Is(err, store.ErrFeatureFlagNotFound) {
-		rt.logger.Error("api: create feature flag: check existing failed", slog.String("error", err.Error()), slog.String("key", key))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create feature flag: check existing failed", err, slog.String("key", key))
 		return
 	}
 
 	id, err := randomFeatureFlagID()
 	if err != nil {
-		rt.logger.Error("api: create feature flag: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create feature flag: generate id failed", err)
 		return
 	}
 
@@ -157,8 +154,7 @@ func (rt *Router) handleCreateFeatureFlag(w http.ResponseWriter, r *http.Request
 		UpdatedAt:         now,
 	}
 	if err := rt.featureFlags.SaveFeatureFlag(r.Context(), flag); err != nil {
-		rt.logger.Error("api: create feature flag failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create feature flag failed", err, slog.String("name", name))
 		return
 	}
 
@@ -173,15 +169,13 @@ func (rt *Router) handleListFeatureFlags(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list feature flags: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list feature flags: load app failed", err, slog.String("name", name))
 		return
 	}
 
 	flags, err := rt.featureFlags.ListFeatureFlagsForService(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: list feature flags failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list feature flags failed", err, slog.String("name", name))
 		return
 	}
 
@@ -206,8 +200,7 @@ func (rt *Router) loadOwnedFeatureFlag(w http.ResponseWriter, r *http.Request, a
 		return store.FeatureFlag{}, false
 	}
 	if err != nil {
-		rt.logger.Error("api: "+op+": load feature flag failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: "+op+": load feature flag failed", err, slog.String("id", id))
 		return store.FeatureFlag{}, false
 	}
 	if f.ServiceName != appName {
@@ -251,15 +244,13 @@ func (rt *Router) handleUpdateFeatureFlag(w http.ResponseWriter, r *http.Request
 			writeError(w, http.StatusNotFound, "feature flag not found")
 			return
 		}
-		rt.logger.Error("api: update feature flag failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update feature flag failed", err, slog.String("id", id))
 		return
 	}
 
 	updated, err := rt.featureFlags.GetFeatureFlag(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: update feature flag: reload after update failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update feature flag: reload after update failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, toFeatureFlagResource(updated))
@@ -278,8 +269,7 @@ func (rt *Router) handleDeleteFeatureFlag(w http.ResponseWriter, r *http.Request
 			writeError(w, http.StatusNotFound, "feature flag not found")
 			return
 		}
-		rt.logger.Error("api: delete feature flag failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete feature flag failed", err, slog.String("id", id))
 		return
 	}
 
@@ -303,8 +293,7 @@ func (rt *Router) handleEvaluateFeatureFlag(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: evaluate feature flag failed", slog.String("error", err.Error()), slog.String("key", key))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: evaluate feature flag failed", err, slog.String("key", key))
 		return
 	}
 

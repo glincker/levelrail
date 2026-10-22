@@ -425,8 +425,7 @@ func (rt *Router) writeGitConnTokenError(w http.ResponseWriter, logMsg string, e
 	case errors.Is(err, errGitConnNotAuthorized):
 		writeError(w, http.StatusConflict, "this connection is not authorized yet; authorize it first")
 	default:
-		rt.logger.Error(logMsg, slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, errInternal)
+		rt.internalError(w, logMsg, err)
 	}
 }
 

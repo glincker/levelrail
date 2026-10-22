@@ -86,8 +86,7 @@ func (rt *Router) handleListAppContexts(w http.ResponseWriter, r *http.Request) 
 	}
 	rows, err := rt.contextConfigs.ListAppContextConfigs(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: list app contexts failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list app contexts failed", err, slog.String("name", name))
 		return
 	}
 	out := make([]contextConfigResource, 0, len(rows))
@@ -120,8 +119,7 @@ func (rt *Router) handleSetAppContext(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set app context: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app context: load app failed", err, slog.String("name", name))
 		return
 	}
 	buildType := spec.BuildDockerfile
@@ -150,8 +148,7 @@ func (rt *Router) handleSetAppContext(w http.ResponseWriter, r *http.Request) {
 	}
 	row := store.AppContextConfig{AppName: name, Context: req.Context, Env: env, BuildCommand: req.BuildCommand, PublishDir: req.PublishDir, BuildArgs: req.BuildArgs}
 	if err := rt.contextConfigs.SaveAppContextConfig(r.Context(), row); err != nil {
-		rt.logger.Error("api: set app context failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("context", req.Context))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app context failed", err, slog.String("name", name), slog.String("context", req.Context))
 		return
 	}
 	shown, _ := envredact.Map(env, nil)
@@ -169,8 +166,7 @@ func (rt *Router) handleDeleteAppContext(w http.ResponseWriter, r *http.Request)
 	}
 	found, err := rt.contextConfigs.DeleteAppContextConfig(r.Context(), name, contextName)
 	if err != nil {
-		rt.logger.Error("api: delete app context failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete app context failed", err, slog.String("name", name))
 		return
 	}
 	if !found {
@@ -198,14 +194,12 @@ func (rt *Router) handleGetEffectiveConfig(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: effective config: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: effective config: load app failed", err, slog.String("name", name))
 		return
 	}
 	in, err := rt.effectiveInputs(r.Context(), name, svc, contextName, branch)
 	if err != nil {
-		rt.logger.Error("api: effective config failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: effective config failed", err, slog.String("name", name))
 		return
 	}
 	eff := deploycontext.Resolve(in)

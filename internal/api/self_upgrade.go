@@ -420,8 +420,7 @@ func (rt *Router) handleSelfUpgradeAttempts(w http.ResponseWriter, r *http.Reque
 	}
 	rows, err := rt.selfUpgrade.store.ListSelfUpgradeAttempts(r.Context(), selfUpgradeListLimit)
 	if err != nil {
-		rt.logger.Error("api: list self-upgrade attempts failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list self-upgrade attempts failed", err)
 		return
 	}
 	out := make([]selfUpgradeAttemptItem, 0, len(rows))

@@ -72,8 +72,7 @@ func (rt *Router) handleGetDomainRedirect(w http.ResponseWriter, r *http.Request
 
 	row, found, err := rt.domainRedirect.GetDomainRedirect(r.Context(), domain)
 	if err != nil {
-		rt.logger.Error("api: get domain redirect failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get domain redirect failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, toDomainRedirectResource(domain, row, found))
@@ -111,15 +110,13 @@ func (rt *Router) handleSetDomainRedirect(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := rt.domainRedirect.SetDomainRedirect(r.Context(), domain, req.TargetURL, statusCode); err != nil {
-		rt.logger.Error("api: set domain redirect failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set domain redirect failed", err, slog.String("domain", domain))
 		return
 	}
 
 	row, found, err := rt.domainRedirect.GetDomainRedirect(r.Context(), domain)
 	if err != nil {
-		rt.logger.Error("api: get domain redirect failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get domain redirect failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, toDomainRedirectResource(domain, row, found))
@@ -133,8 +130,7 @@ func (rt *Router) handleClearDomainRedirect(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err := rt.domainRedirect.DeleteDomainRedirect(r.Context(), domain); err != nil {
-		rt.logger.Error("api: clear domain redirect failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear domain redirect failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, toDomainRedirectResource(domain, store.DomainRedirect{}, false))

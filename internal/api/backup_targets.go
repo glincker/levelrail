@@ -178,8 +178,7 @@ func validateUpdateBackupTargetRequest(req updateBackupTargetRequest) error {
 func (rt *Router) handleListBackupTargets(w http.ResponseWriter, r *http.Request) {
 	targets, err := rt.backupTargets.ListBackupTargets(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list backup targets failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list backup targets failed", err)
 		return
 	}
 	out := make([]backupTargetResource, 0, len(targets))
@@ -199,8 +198,7 @@ func (rt *Router) handleGetBackupTarget(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get backup target failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get backup target failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, toBackupTargetResource(t))
@@ -240,20 +238,17 @@ func (rt *Router) handleCreateBackupTarget(w http.ResponseWriter, r *http.Reques
 
 	id, err := randomBackupTargetID()
 	if err != nil {
-		rt.logger.Error("api: create backup target: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create backup target: generate id failed", err)
 		return
 	}
 
 	secretsKey := store.BackupTargetSecretsKey(id)
 	if err := rt.backupSecrets.SetValue(r.Context(), secretsKey, "access_key_id", req.AccessKeyID); err != nil {
-		rt.logger.Error("api: create backup target: set access_key_id failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create backup target: set access_key_id failed", err, slog.String("id", id))
 		return
 	}
 	if err := rt.backupSecrets.SetValue(r.Context(), secretsKey, "secret_access_key", req.SecretAccessKey); err != nil {
-		rt.logger.Error("api: create backup target: set secret_access_key failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create backup target: set secret_access_key failed", err, slog.String("id", id))
 		return
 	}
 
@@ -268,8 +263,7 @@ func (rt *Router) handleCreateBackupTarget(w http.ResponseWriter, r *http.Reques
 		EncryptDumps: encryptDumps,
 	}
 	if err := rt.backupTargets.SaveBackupTarget(r.Context(), target); err != nil {
-		rt.logger.Error("api: create backup target: save failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create backup target: save failed", err, slog.String("id", id))
 		return
 	}
 
@@ -289,8 +283,7 @@ func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "backup target not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: update backup target: load failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update backup target: load failed", err, slog.String("id", id))
 		return
 	}
 
@@ -310,13 +303,11 @@ func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Reques
 		}
 		secretsKey := store.BackupTargetSecretsKey(id)
 		if err := rt.backupSecrets.SetValue(r.Context(), secretsKey, "access_key_id", req.AccessKeyID); err != nil {
-			rt.logger.Error("api: update backup target: set access_key_id failed", slog.String("error", err.Error()), slog.String("id", id))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: update backup target: set access_key_id failed", err, slog.String("id", id))
 			return
 		}
 		if err := rt.backupSecrets.SetValue(r.Context(), secretsKey, "secret_access_key", req.SecretAccessKey); err != nil {
-			rt.logger.Error("api: update backup target: set secret_access_key failed", slog.String("error", err.Error()), slog.String("id", id))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: update backup target: set secret_access_key failed", err, slog.String("id", id))
 			return
 		}
 	}
@@ -326,15 +317,13 @@ func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Reques
 			writeError(w, http.StatusNotFound, "backup target not found")
 			return
 		}
-		rt.logger.Error("api: update backup target failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update backup target failed", err, slog.String("id", id))
 		return
 	}
 
 	updated, err := rt.backupTargets.GetBackupTarget(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: update backup target: reload after update failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update backup target: reload after update failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, toBackupTargetResource(updated))
@@ -392,8 +381,7 @@ func (rt *Router) handleTestBackupTarget(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, "backup target not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: test backup target: load failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: test backup target: load failed", err, slog.String("id", id))
 		return
 	}
 

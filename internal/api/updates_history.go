@@ -102,8 +102,7 @@ func (rt *Router) handleUpgradeHistory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	entries, err := rt.upgradeHistory.ListUpgradeHistory(ctx, upgradeHistoryLimit)
 	if err != nil {
-		rt.logger.Error("api: list upgrade history failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list upgrade history failed", err)
 		return
 	}
 	retained := map[string]bool{}
@@ -149,8 +148,7 @@ func (rt *Router) handleAckUpgrade(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: acknowledge upgrade failed", slog.String("id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: acknowledge upgrade failed", err, slog.String("id", id))
 		return
 	}
 	if changed {

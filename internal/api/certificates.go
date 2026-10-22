@@ -113,8 +113,7 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 
 	infos, err := alerting.ListCertificates(r.Context(), rt.certs, warningWindow, time.Now(), rt.logger)
 	if err != nil {
-		rt.logger.Error("api: list certificates failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list certificates failed", err)
 		return
 	}
 

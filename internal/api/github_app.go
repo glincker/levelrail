@@ -123,8 +123,7 @@ func (rt *Router) handleGetGitHubAppStatus(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get github app connection status failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get github app connection status failed", err)
 		return
 	}
 
@@ -224,8 +223,7 @@ func (rt *Router) handleDisconnectGitHubApp(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: disconnect github app failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: disconnect github app failed", err)
 		return
 	}
 
@@ -239,8 +237,7 @@ func (rt *Router) handleDisconnectGitHubApp(w http.ResponseWriter, r *http.Reque
 	// holding.
 	if rt.githubAppSecrets != nil {
 		if err := rt.githubAppSecrets.DeleteAll(ctx, store.GitHubAppSecretsKey()); err != nil {
-			rt.logger.Error("api: delete github app secrets failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: delete github app secrets failed", err)
 			return
 		}
 	}

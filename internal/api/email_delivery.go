@@ -116,8 +116,7 @@ type emailStatusResponse struct {
 func (rt *Router) handleEmailStatus(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.emailSettings.GetEmailSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: email status: get settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: email status: get settings failed", err)
 		return
 	}
 	out := emailStatusResponse{Provider: settings.Backend, From: settings.EffectiveFrom()}
@@ -130,8 +129,7 @@ func (rt *Router) handleEmailStatus(w http.ResponseWriter, r *http.Request) {
 	if rt.emailDeliveries != nil {
 		st, err := rt.emailDeliveries.EmailDeliveryStats(r.Context(), time.Now().Add(-24*time.Hour))
 		if err != nil {
-			rt.logger.Error("api: email status: stats failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: email status: stats failed", err)
 			return
 		}
 		out.Sent24h, out.Failed24h = st.Sent, st.Failed
@@ -150,8 +148,7 @@ func (rt *Router) handleEmailStatus(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleEmailDomainCheck(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.emailSettings.GetEmailSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: email domain check: get settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: email domain check: get settings failed", err)
 		return
 	}
 	domain := email.DomainOf(settings.EffectiveFrom())
@@ -209,8 +206,7 @@ func (rt *Router) handleListEmailDeliveries(w http.ResponseWriter, r *http.Reque
 	f.Limit = limit
 	rows, err := rt.emailDeliveries.ListEmailDeliveries(r.Context(), f)
 	if err != nil {
-		rt.logger.Error("api: list email deliveries failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list email deliveries failed", err)
 		return
 	}
 	if rows == nil {
@@ -235,8 +231,7 @@ func (rt *Router) handleGetEmailDelivery(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get email delivery failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get email delivery failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, d)

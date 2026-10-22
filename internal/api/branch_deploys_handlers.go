@@ -142,14 +142,12 @@ func (rt *Router) handleSetBranchDeploySettings(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusNotFound, "no git source connected for this app")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: branch deploys: load git source failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: branch deploys: load git source failed", err, slog.String("name", name))
 		return
 	}
 	cfg := store.BranchDeploySettings{AppName: name, Mode: req.Mode, Patterns: patterns, UpdatedAt: time.Now().UTC().Format(time.RFC3339Nano)}
 	if err := rt.branchDeploys.SaveBranchDeploySettings(ctx, cfg); err != nil {
-		rt.logger.Error("api: branch deploys: save settings failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: branch deploys: save settings failed", err, slog.String("name", name))
 		return
 	}
 	out, status, msg := rt.branchDeploysResponseFor(r, name)
@@ -169,8 +167,7 @@ func (rt *Router) handleDeleteBranchDeploy(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: branch deploys: load for delete failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: branch deploys: load for delete failed", err, slog.String("name", name))
 		return
 	}
 	status, msg := rt.teardownBranchDeploy(r.Context(), *row)

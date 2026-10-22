@@ -52,8 +52,7 @@ func (rt *Router) toOAuthProviderSettingsResource(ctx context.Context, s store.O
 func (rt *Router) handleListOAuthSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.oauthSettings.ListOAuthProviderSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list oauth settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list oauth settings failed", err)
 		return
 	}
 	out := make([]oauthProviderSettingsResource, 0, len(settings))
@@ -135,8 +134,7 @@ func (rt *Router) handleUpdateOAuthProviderSettings(w http.ResponseWriter, r *ht
 
 	if req.ClientSecret != "" {
 		if err := rt.oauthSecrets.SetValue(r.Context(), store.OAuthProviderSecretsKey(provider), store.OAuthProviderSecretEnvKey, req.ClientSecret); err != nil {
-			rt.logger.Error("api: save oauth client secret failed", slog.String("provider", provider), slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: save oauth client secret failed", err, slog.String("provider", provider))
 			return
 		}
 	}
@@ -150,8 +148,7 @@ func (rt *Router) handleUpdateOAuthProviderSettings(w http.ResponseWriter, r *ht
 		DisplayName:        req.DisplayName,
 	}
 	if err := rt.oauthSettings.UpdateOAuthProviderSettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: update oauth settings failed", slog.String("provider", provider), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update oauth settings failed", err, slog.String("provider", provider))
 		return
 	}
 	rt.authLibOAuthInvalidate(provider)

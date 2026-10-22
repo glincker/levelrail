@@ -147,8 +147,7 @@ func (rt *Router) handleCreateTag(w http.ResponseWriter, r *http.Request) {
 
 	id, err := randomTagID()
 	if err != nil {
-		rt.logger.Error("api: create tag: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create tag: generate id failed", err)
 		return
 	}
 
@@ -158,8 +157,7 @@ func (rt *Router) handleCreateTag(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusConflict, "a tag with this name already exists")
 			return
 		}
-		rt.logger.Error("api: create tag failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create tag failed", err)
 		return
 	}
 
@@ -170,8 +168,7 @@ func (rt *Router) handleCreateTag(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleListTags(w http.ResponseWriter, r *http.Request) {
 	tags, err := rt.tags.ListTags(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list tags failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list tags failed", err)
 		return
 	}
 	out := make([]tagResource, 0, len(tags))
@@ -189,8 +186,7 @@ func (rt *Router) handleDeleteTag(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "tag not found")
 			return
 		}
-		rt.logger.Error("api: delete tag failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete tag failed", err, slog.String("id", id))
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -213,15 +209,13 @@ func (rt *Router) handleListAppsByTag(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "tag not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list apps by tag: load tag failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list apps by tag: load tag failed", err, slog.String("id", id))
 		return
 	}
 
 	names, err := rt.tags.ListAppNamesByTag(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: list apps by tag failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list apps by tag failed", err, slog.String("id", id))
 		return
 	}
 
@@ -239,15 +233,13 @@ func (rt *Router) handleListAppTags(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list app tags: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list app tags: load app failed", err, slog.String("name", name))
 		return
 	}
 
 	tags, err := rt.tags.ListTagsForApp(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: list app tags failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list app tags failed", err, slog.String("name", name))
 		return
 	}
 	out := make([]tagResource, 0, len(tags))
@@ -276,8 +268,7 @@ func (rt *Router) handleAttachAppTag(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: attach app tag: load app failed", slog.String("error", err.Error()), slog.String("name", appName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: attach app tag: load app failed", err, slog.String("name", appName))
 		return
 	}
 
@@ -317,8 +308,7 @@ func (rt *Router) handleDetachAppTag(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "tag not attached to this app")
 			return
 		}
-		rt.logger.Error("api: detach app tag failed", slog.String("error", err.Error()), slog.String("name", appName), slog.String("tag_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: detach app tag failed", err, slog.String("name", appName), slog.String("tag_id", id))
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

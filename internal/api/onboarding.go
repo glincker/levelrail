@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -71,8 +70,7 @@ func validateOnboardingProgress(req onboardingProgressRequest) error {
 func (rt *Router) writeOnboardingState(w http.ResponseWriter, r *http.Request) {
 	state, err := rt.onboarding.GetOnboardingState(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get onboarding state failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get onboarding state failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, toOnboardingStateResource(state))
@@ -86,8 +84,7 @@ func (rt *Router) handleGetOnboardingState(w http.ResponseWriter, r *http.Reques
 // handleCompleteOnboarding handles POST /api/v1/onboarding/complete.
 func (rt *Router) handleCompleteOnboarding(w http.ResponseWriter, r *http.Request) {
 	if err := rt.onboarding.MarkOnboardingCompleted(r.Context()); err != nil {
-		rt.logger.Error("api: complete onboarding failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: complete onboarding failed", err)
 		return
 	}
 	rt.writeOnboardingState(w, r)
@@ -105,8 +102,7 @@ func (rt *Router) handleUpdateOnboardingProgress(w http.ResponseWriter, r *http.
 		return
 	}
 	if err := rt.onboarding.SetOnboardingProgress(r.Context(), req.CurrentStep, req.Steps); err != nil {
-		rt.logger.Error("api: update onboarding progress failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update onboarding progress failed", err)
 		return
 	}
 	rt.writeOnboardingState(w, r)

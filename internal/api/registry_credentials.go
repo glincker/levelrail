@@ -146,8 +146,7 @@ func validateCreateRegistryCredentialRequest(req createRegistryCredentialRequest
 func (rt *Router) handleListRegistryCredentials(w http.ResponseWriter, r *http.Request) {
 	creds, err := rt.registryCredentials.ListRegistryCredentials(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list registry credentials failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list registry credentials failed", err)
 		return
 	}
 	out := make([]registryCredentialResource, 0, len(creds))
@@ -168,8 +167,7 @@ func (rt *Router) handleGetRegistryCredential(w http.ResponseWriter, r *http.Req
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get registry credential failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get registry credential failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toRegistryCredentialResource(c))
@@ -231,8 +229,7 @@ func (rt *Router) handleCreateRegistryCredential(w http.ResponseWriter, r *http.
 		return
 	}
 	if !errors.Is(err, store.ErrRegistryCredentialNotFound) {
-		rt.logger.Error("api: create registry credential: check existing failed", slog.String("error", err.Error()), slog.String("name", req.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create registry credential: check existing failed", err, slog.String("name", req.Name))
 		return
 	}
 	if req.Preset != "" {
@@ -242,14 +239,12 @@ func (rt *Router) handleCreateRegistryCredential(w http.ResponseWriter, r *http.
 
 	id, err := randomRegistryCredentialID()
 	if err != nil {
-		rt.logger.Error("api: create registry credential: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create registry credential: generate id failed", err)
 		return
 	}
 
 	if err := rt.registryCredentialSecrets.SetValue(r.Context(), store.RegistryCredentialSecretsKey(id), "password", req.Password); err != nil {
-		rt.logger.Error("api: create registry credential: set password failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create registry credential: set password failed", err, slog.String("id", id))
 		return
 	}
 
@@ -262,8 +257,7 @@ func (rt *Router) handleCreateRegistryCredential(w http.ResponseWriter, r *http.
 		ExpiresAt:    req.ExpiresAt,
 	}
 	if err := rt.registryCredentials.SaveRegistryCredential(r.Context(), cred); err != nil {
-		rt.logger.Error("api: create registry credential: save failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create registry credential: save failed", err, slog.String("id", id))
 		return
 	}
 
@@ -282,8 +276,7 @@ func (rt *Router) handleUpdateRegistryCredential(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusNotFound, "registry credential not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: update registry credential: load failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update registry credential: load failed", err, slog.String("id", id))
 		return
 	}
 
@@ -300,8 +293,7 @@ func (rt *Router) handleUpdateRegistryCredential(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusConflict, "a registry credential with this name already exists")
 		return
 	} else if err != nil && !errors.Is(err, store.ErrRegistryCredentialNotFound) {
-		rt.logger.Error("api: update registry credential: check existing failed", slog.String("error", err.Error()), slog.String("name", req.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update registry credential: check existing failed", err, slog.String("name", req.Name))
 		return
 	}
 
@@ -311,8 +303,7 @@ func (rt *Router) handleUpdateRegistryCredential(w http.ResponseWriter, r *http.
 			return
 		}
 		if err := rt.registryCredentialSecrets.SetValue(r.Context(), store.RegistryCredentialSecretsKey(id), "password", req.Password); err != nil {
-			rt.logger.Error("api: update registry credential: set password failed", slog.String("error", err.Error()), slog.String("id", id))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: update registry credential: set password failed", err, slog.String("id", id))
 			return
 		}
 	}
@@ -322,15 +313,13 @@ func (rt *Router) handleUpdateRegistryCredential(w http.ResponseWriter, r *http.
 			writeError(w, http.StatusNotFound, "registry credential not found")
 			return
 		}
-		rt.logger.Error("api: update registry credential failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update registry credential failed", err, slog.String("id", id))
 		return
 	}
 
 	updated, err := rt.registryCredentials.GetRegistryCredential(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: update registry credential: reload after update failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update registry credential: reload after update failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toRegistryCredentialResource(updated))
@@ -353,8 +342,7 @@ func (rt *Router) handleDeleteRegistryCredential(w http.ResponseWriter, r *http.
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: delete registry credential failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete registry credential failed", err, slog.String("id", id))
 		return
 	}
 
@@ -382,15 +370,13 @@ func (rt *Router) handleTestRegistryCredential(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: test registry credential: load failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: test registry credential: load failed", err, slog.String("id", id))
 		return
 	}
 
 	password, err := rt.registryCredentialSecrets.Resolve(r.Context(), store.RegistryCredentialSecretsKey(id), "password")
 	if err != nil {
-		rt.logger.Error("api: test registry credential: resolve password failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: test registry credential: resolve password failed", err, slog.String("id", id))
 		return
 	}
 

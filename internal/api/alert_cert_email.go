@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"net/http"
 )
 
@@ -40,8 +39,7 @@ func (rt *Router) handleGetCertExpiryEmail(w http.ResponseWriter, r *http.Reques
 	}
 	on, err := rt.alertDefaults.CertExpiryEmail(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get cert expiry email failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get cert expiry email failed", err)
 		return
 	}
 	_, reason := rt.certEmailReadiness(r.Context(), r)
@@ -69,8 +67,7 @@ func (rt *Router) handleSetCertExpiryEmail(w http.ResponseWriter, r *http.Reques
 		}
 	}
 	if err := rt.alertDefaults.SetCertExpiryEmail(r.Context(), address, *req.Enabled); err != nil {
-		rt.logger.Error("api: set cert expiry email failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set cert expiry email failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, certExpiryEmailResource{Enabled: *req.Enabled, Available: true})

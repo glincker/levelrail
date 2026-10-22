@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -38,8 +37,7 @@ func toUpdateSettingsResource(s store.UpdateSettings) updateSettingsResource {
 func (rt *Router) handleGetUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.updateSettings.GetUpdateSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get update settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get update settings failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, toUpdateSettingsResource(settings))
@@ -62,8 +60,7 @@ func (rt *Router) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 
 	settings := store.UpdateSettings{Channel: req.Channel, AutoUpdateEnabled: req.AutoUpdateEnabled}
 	if err := rt.updateSettings.UpdateUpdateSettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: update update settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update update settings failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, toUpdateSettingsResource(settings))

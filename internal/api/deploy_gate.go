@@ -199,20 +199,17 @@ func (rt *Router) handleGetDeployGate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	events, err := rt.deployGate.ListGateEvents(ctx, attempt.ID)
 	if err != nil {
-		rt.logger.Error("api: deploy gate: list events failed", slog.String("error", err.Error()), slog.String("deploy_id", attempt.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy gate: list events failed", err, slog.String("deploy_id", attempt.ID))
 		return
 	}
 	_, effective, err := rt.effectiveSafety(ctx, attempt.ServiceName)
 	if err != nil {
-		rt.logger.Error("api: deploy gate: load settings failed", slog.String("error", err.Error()), slog.String("name", attempt.ServiceName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy gate: load settings failed", err, slog.String("name", attempt.ServiceName))
 		return
 	}
 	pin, err := rt.deployGate.GetRollbackPin(ctx, attempt.ServiceName, attempt.ID)
 	if err != nil {
-		rt.logger.Error("api: deploy gate: load pin failed", slog.String("error", err.Error()), slog.String("deploy_id", attempt.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy gate: load pin failed", err, slog.String("deploy_id", attempt.ID))
 		return
 	}
 	stage := deploysafety.Stage(events)
@@ -264,8 +261,7 @@ func (rt *Router) loadAppForGate(w http.ResponseWriter, r *http.Request) (*store
 		return nil, false
 	}
 	if err != nil {
-		rt.logger.Error("api: deploy safety: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy safety: load app failed", err, slog.String("name", name))
 		return nil, false
 	}
 	return svc, true
@@ -274,8 +270,7 @@ func (rt *Router) loadAppForGate(w http.ResponseWriter, r *http.Request) (*store
 func (rt *Router) writeDeploySafety(w http.ResponseWriter, r *http.Request, name string) {
 	overrides, effective, err := rt.effectiveSafety(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: deploy safety: load settings failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy safety: load settings failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, deploySafetyResource{
@@ -316,8 +311,7 @@ func (rt *Router) handlePutDeploySafety(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err := rt.deployGate.SaveDeploySafetySettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: deploy safety: save failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy safety: save failed", err, slog.String("name", svc.Name))
 		return
 	}
 	rt.writeDeploySafety(w, r, svc.Name)
@@ -335,8 +329,7 @@ func (rt *Router) handleListRollbackTargets(w http.ResponseWriter, r *http.Reque
 	}
 	pins, err := rt.deployGate.ListRollbackPins(r.Context(), svc.Name)
 	if err != nil {
-		rt.logger.Error("api: rollback targets: list failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: rollback targets: list failed", err, slog.String("name", svc.Name))
 		return
 	}
 	out := make([]rollbackTargetResource, 0, len(pins))

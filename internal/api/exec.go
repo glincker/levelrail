@@ -92,8 +92,7 @@ func (rt *Router) handleSetExecAccess(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "app not found")
 			return
 		}
-		rt.logger.Error("api: set exec access failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set exec access failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, execAccessResource(req))
@@ -293,8 +292,7 @@ func (rt *Router) loadExecApp(w http.ResponseWriter, r *http.Request, name strin
 		return nil, false
 	}
 	if err != nil {
-		rt.logger.Error("api: exec app: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: exec app: load app failed", err, slog.String("name", name))
 		return nil, false
 	}
 	return svc, true
@@ -376,6 +374,5 @@ func (rt *Router) writeExecOutcome(w http.ResponseWriter, out *cappedWriter, err
 		return
 	}
 
-	rt.logger.Error("api: exec app: reading command output failed", slog.String("error", err.Error()))
-	writeError(w, http.StatusInternalServerError, "internal error")
+	rt.internalError(w, "api: exec app: reading command output failed", err)
 }

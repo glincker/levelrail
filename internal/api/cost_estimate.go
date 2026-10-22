@@ -72,8 +72,7 @@ func (rt *Router) handleAppCostEstimate(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: cost estimate: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: cost estimate: load app failed", err, slog.String("name", name))
 		return
 	}
 

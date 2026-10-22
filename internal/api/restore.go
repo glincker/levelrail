@@ -124,8 +124,7 @@ func (rt *Router) handleTriggerRestore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: trigger restore: load backup history failed", slog.String("error", err.Error()), slog.String("backup_id", req.BackupID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: trigger restore: load backup history failed", err, slog.String("backup_id", req.BackupID))
 		return
 	}
 	if backup.DatabaseName != name {
@@ -139,8 +138,7 @@ func (rt *Router) handleTriggerRestore(w http.ResponseWriter, r *http.Request) {
 
 	historyID, err := randomRestoreHistoryID()
 	if err != nil {
-		rt.logger.Error("api: trigger restore: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: trigger restore: generate id failed", err)
 		return
 	}
 
@@ -170,15 +168,13 @@ func (rt *Router) handleListRestoreHistory(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list restore history: load database failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list restore history: load database failed", err, slog.String("name", name))
 		return
 	}
 
 	history, err := rt.restoreHistory.ListRestoreHistory(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: list restore history failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list restore history failed", err, slog.String("name", name))
 		return
 	}
 	out := make([]restoreHistoryResource, 0, len(history))

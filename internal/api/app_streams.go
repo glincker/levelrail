@@ -131,16 +131,14 @@ func (rt *Router) handleCreateAppStream(w http.ResponseWriter, r *http.Request) 
 
 	id, err := randomAppStreamID()
 	if err != nil {
-		rt.logger.Error("api: create app stream: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create app stream: generate id failed", err)
 		return
 	}
 	stream.ID = id
 	stream.CreatedAt = time.Now().UTC().Format(time.RFC3339)
 
 	if err := rt.appStreams.SaveAppStream(r.Context(), stream); err != nil {
-		rt.logger.Error("api: create app stream: save failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create app stream: save failed", err, slog.String("id", id))
 		return
 	}
 

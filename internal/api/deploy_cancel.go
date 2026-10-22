@@ -20,8 +20,7 @@ func (rt *Router) lookupAppAttempt(w http.ResponseWriter, r *http.Request) (*sto
 			writeError(w, http.StatusNotFound, "app not found")
 			return nil, false
 		}
-		rt.logger.Error("api: deploy action: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy action: load app failed", err, slog.String("name", name))
 		return nil, false
 	}
 	a, err := rt.deployAttempts.GetDeployAttempt(r.Context(), deployID)
@@ -30,8 +29,7 @@ func (rt *Router) lookupAppAttempt(w http.ResponseWriter, r *http.Request) (*sto
 		return nil, false
 	}
 	if err != nil {
-		rt.logger.Error("api: deploy action: load attempt failed", slog.String("error", err.Error()), slog.String("deploy_id", deployID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy action: load attempt failed", err, slog.String("deploy_id", deployID))
 		return nil, false
 	}
 	return a, true
@@ -57,8 +55,7 @@ func (rt *Router) handleCancelDeploy(w http.ResponseWriter, r *http.Request) {
 	case store.DeployAttemptStatusQueued, store.DeployAttemptStatusHeld:
 		moved, err := rt.deploySafety.CancelDeployAttempt(ctx, a.ID, a.Status, by, time.Now())
 		if err != nil {
-			rt.logger.Error("api: cancel deploy failed", slog.String("error", err.Error()), slog.String("attempt_id", a.ID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: cancel deploy failed", err, slog.String("attempt_id", a.ID))
 			return
 		}
 		if !moved {
@@ -75,8 +72,7 @@ func (rt *Router) handleCancelDeploy(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if _, err := rt.deploySafety.CancelDeployAttempt(ctx, a.ID, store.DeployAttemptStatusRunning, by, time.Now()); err != nil {
-			rt.logger.Error("api: record canceled deploy failed", slog.String("error", err.Error()), slog.String("attempt_id", a.ID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: record canceled deploy failed", err, slog.String("attempt_id", a.ID))
 			return
 		}
 	default:
@@ -103,8 +99,7 @@ func (rt *Router) writeCancelConflict(w http.ResponseWriter, r *http.Request, id
 func (rt *Router) writeAttempt(w http.ResponseWriter, r *http.Request, id string) {
 	a, err := rt.deployAttempts.GetDeployAttempt(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: reload deploy attempt failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: reload deploy attempt failed", err, slog.String("attempt_id", id))
 		return
 	}
 	res := toDeployAttemptResource(*a)
@@ -131,8 +126,7 @@ func (rt *Router) handleGetCancelSuperseded(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get cancel-superseded failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get cancel-superseded failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, cancelSupersededResource{Enabled: on})
@@ -157,8 +151,7 @@ func (rt *Router) handleSetCancelSuperseded(w http.ResponseWriter, r *http.Reque
 			writeError(w, http.StatusNotFound, "app not found")
 			return
 		}
-		rt.logger.Error("api: set cancel-superseded failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set cancel-superseded failed", err, slog.String("name", name))
 		return
 	}
 	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventConfigChange, Title: "Cancel superseded deploys " + onOff(req.Enabled)})

@@ -55,8 +55,7 @@ func (rt *Router) handleListProbeAttempts(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: list probe attempts: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list probe attempts: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -66,8 +65,7 @@ func (rt *Router) handleListProbeAttempts(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: list probe attempts: load attempt failed", slog.String("error", err.Error()), slog.String("deploy_id", deployID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list probe attempts: load attempt failed", err, slog.String("deploy_id", deployID))
 		return
 	}
 	if attempt.ServiceName != name {
@@ -77,8 +75,7 @@ func (rt *Router) handleListProbeAttempts(w http.ResponseWriter, r *http.Request
 
 	attempts, err := rt.probeAttempts.ListProbeAttempts(r.Context(), deployID)
 	if err != nil {
-		rt.logger.Error("api: list probe attempts failed", slog.String("error", err.Error()), slog.String("deploy_id", deployID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list probe attempts failed", err, slog.String("deploy_id", deployID))
 		return
 	}
 

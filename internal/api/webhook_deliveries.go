@@ -68,8 +68,7 @@ func (rt *Router) handleListWebhookDeliveries(w http.ResponseWriter, r *http.Req
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list webhook deliveries: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list webhook deliveries: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -98,8 +97,7 @@ func (rt *Router) handleListWebhookDeliveries(w http.ResponseWriter, r *http.Req
 
 	deliveries, err := rt.webhookDeliveries.ListWebhookDeliveries(r.Context(), name, limit, before)
 	if err != nil {
-		rt.logger.Error("api: list webhook deliveries failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list webhook deliveries failed", err, slog.String("name", name))
 		return
 	}
 
@@ -144,8 +142,7 @@ func (rt *Router) handleReplayWebhookDelivery(w http.ResponseWriter, r *http.Req
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: replay webhook delivery: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: replay webhook delivery: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -155,8 +152,7 @@ func (rt *Router) handleReplayWebhookDelivery(w http.ResponseWriter, r *http.Req
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: replay webhook delivery: load delivery failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: replay webhook delivery: load delivery failed", err, slog.String("id", id))
 		return
 	}
 	// Delivery IDs are globally unique but the route is app-scoped: a
@@ -174,8 +170,7 @@ func (rt *Router) handleReplayWebhookDelivery(w http.ResponseWriter, r *http.Req
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: replay webhook delivery: load git source failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: replay webhook delivery: load git source failed", err, slog.String("name", name))
 		return
 	}
 

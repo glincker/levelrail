@@ -44,8 +44,7 @@ func (rt *Router) handleSetAppPreviewEnvOverride(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set app preview env override failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("key", key))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app preview env override failed", err, slog.String("name", name), slog.String("key", key))
 		return
 	}
 
@@ -66,8 +65,7 @@ func (rt *Router) handleClearAppPreviewEnvOverride(w http.ResponseWriter, r *htt
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: clear app preview env override failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("key", key))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear app preview env override failed", err, slog.String("name", name), slog.String("key", key))
 		return
 	}
 

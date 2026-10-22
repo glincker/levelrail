@@ -37,15 +37,13 @@ func (rt *Router) handleRestartProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "project not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: restart project: get project failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: restart project: get project failed", err, slog.String("id", id))
 		return
 	}
 
 	services, err := rt.apps.ListDesiredServicesByProject(ctx, id)
 	if err != nil {
-		rt.logger.Error("api: restart project: list services failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: restart project: list services failed", err, slog.String("id", id))
 		return
 	}
 

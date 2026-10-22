@@ -55,8 +55,7 @@ func (rt *Router) handleSetAppStorage(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "unknown storage_target_id")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set app storage: look up backup target failed", slog.String("error", err.Error()), slog.String("storage_target_id", req.StorageTargetID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app storage: look up backup target failed", err, slog.String("storage_target_id", req.StorageTargetID))
 		return
 	}
 
@@ -64,8 +63,7 @@ func (rt *Router) handleSetAppStorage(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set app storage failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app storage failed", err, slog.String("name", name))
 		return
 	}
 
@@ -88,8 +86,7 @@ func (rt *Router) handleClearAppStorage(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: clear app storage failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear app storage failed", err, slog.String("name", name))
 		return
 	}
 

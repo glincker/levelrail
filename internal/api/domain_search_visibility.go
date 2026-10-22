@@ -32,8 +32,7 @@ func (rt *Router) handleGetDomainSearchVisibility(w http.ResponseWriter, r *http
 	}
 	hidden, err := rt.domainSearchVisibility.IsDomainHidden(r.Context(), domain)
 	if err != nil {
-		rt.logger.Error("api: read domain search visibility failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: read domain search visibility failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, domainSearchVisibilityResource{Domain: domain, Hidden: hidden})
@@ -51,8 +50,7 @@ func (rt *Router) handleSetDomainSearchVisibility(w http.ResponseWriter, r *http
 		return
 	}
 	if err := rt.domainSearchVisibility.SetDomainHidden(r.Context(), domain, *req.Hidden); err != nil {
-		rt.logger.Error("api: set domain search visibility failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set domain search visibility failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, domainSearchVisibilityResource{Domain: domain, Hidden: *req.Hidden})

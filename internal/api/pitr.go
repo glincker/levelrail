@@ -182,8 +182,7 @@ func (rt *Router) handleEnablePITR(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: enable pitr failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: enable pitr failed", err, slog.String("name", name))
 		return
 	}
 
@@ -202,8 +201,7 @@ func (rt *Router) handleDisablePITR(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: disable pitr failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: disable pitr failed", err, slog.String("name", name))
 		return
 	}
 
@@ -307,8 +305,7 @@ func (rt *Router) handleListBaseBackupHistory(w http.ResponseWriter, r *http.Req
 
 	history, err := rt.baseBackupHistory.ListBaseBackupHistory(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: list base backup history failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list base backup history failed", err, slog.String("name", name))
 		return
 	}
 	out := make([]baseBackupHistoryResource, 0, len(history))
@@ -368,8 +365,7 @@ func (rt *Router) handleTriggerPITRRestore(w http.ResponseWriter, r *http.Reques
 
 	historyID, err := randomPITRRestoreHistoryID()
 	if err != nil {
-		rt.logger.Error("api: trigger pitr restore: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: trigger pitr restore: generate id failed", err)
 		return
 	}
 
@@ -399,8 +395,7 @@ func (rt *Router) handleListPITRRestoreHistory(w http.ResponseWriter, r *http.Re
 
 	history, err := rt.pitrRestoreHistory.ListPITRRestoreHistory(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: list pitr restore history failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list pitr restore history failed", err, slog.String("name", name))
 		return
 	}
 	out := make([]pitrRestoreHistoryResource, 0, len(history))

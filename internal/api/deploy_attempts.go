@@ -307,15 +307,13 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: list deploy attempts: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list deploy attempts: load app failed", err, slog.String("name", name))
 		return
 	}
 
 	attempts, err := rt.deployAttempts.ListDeployAttempts(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: list deploy attempts failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list deploy attempts failed", err, slog.String("name", name))
 		return
 	}
 
@@ -395,8 +393,7 @@ func (rt *Router) handleDeployLogStream(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: deploy log stream: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy log stream: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -406,8 +403,7 @@ func (rt *Router) handleDeployLogStream(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: deploy log stream: load attempt failed", slog.String("error", err.Error()), slog.String("deploy_id", deployID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy log stream: load attempt failed", err, slog.String("deploy_id", deployID))
 		return
 	}
 	// Attempt IDs are globally unique but the route is app-scoped: a
@@ -437,8 +433,7 @@ func (rt *Router) serveFinishedDeployLog(ctx context.Context, w http.ResponseWri
 	}
 	entries, err := rt.deployLogStore.QueryDeployLog(ctx, deployID)
 	if err != nil {
-		rt.logger.Error("api: deploy log stream: query persisted log failed", slog.String("error", err.Error()), slog.String("deploy_id", deployID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy log stream: query persisted log failed", err, slog.String("deploy_id", deployID))
 		return
 	}
 

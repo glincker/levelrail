@@ -231,8 +231,7 @@ func (rt *Router) requireJobApp(w http.ResponseWriter, r *http.Request, name, op
 		writeError(w, http.StatusNotFound, "app not found")
 		return false
 	} else if err != nil {
-		rt.logger.Error("api: "+op+": load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: "+op+": load app failed", err, slog.String("name", name))
 		return false
 	}
 	return true
@@ -264,8 +263,7 @@ func (rt *Router) handleCreateScheduledTask(w http.ResponseWriter, r *http.Reque
 
 	count, err := rt.scheduledTasks.CountScheduledTasksForService(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: create scheduled task: count failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create scheduled task: count failed", err, slog.String("name", name))
 		return
 	}
 	if count >= rt.maxJobsPerApp() {
@@ -279,21 +277,18 @@ func (rt *Router) handleCreateScheduledTask(w http.ResponseWriter, r *http.Reque
 
 	id, err := randomScheduledTaskID()
 	if err != nil {
-		rt.logger.Error("api: create scheduled task: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create scheduled task: generate id failed", err)
 		return
 	}
 	now := time.Now().UTC()
 	task := req.toTask(store.ScheduledTask{ID: id, ServiceName: name, Source: store.ScheduledTaskSourceAPI, CreatedAt: now, UpdatedAt: now})
 	if err := rt.scheduledTasks.SaveScheduledTask(r.Context(), task); err != nil {
-		rt.logger.Error("api: create scheduled task failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create scheduled task failed", err, slog.String("name", name))
 		return
 	}
 	if err := rt.persistJobHTTP(r.Context(), task, req.HTTP); err != nil {
 		_ = rt.scheduledTasks.DeleteScheduledTask(r.Context(), id)
-		rt.logger.Error("api: create scheduled task: save http target failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create scheduled task: save http target failed", err, slog.String("name", name))
 		return
 	}
 	saved, err := rt.scheduledTasks.GetScheduledTask(r.Context(), id)
@@ -328,8 +323,7 @@ func (rt *Router) handleListScheduledTasks(w http.ResponseWriter, r *http.Reques
 	}
 	tasks, err := rt.scheduledTasks.ListScheduledTasksForService(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: list scheduled tasks failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list scheduled tasks failed", err, slog.String("name", name))
 		return
 	}
 	out := make([]scheduledTaskResource, 0, len(tasks))
@@ -352,8 +346,7 @@ func (rt *Router) loadOwnedScheduledTask(w http.ResponseWriter, r *http.Request,
 		return store.ScheduledTask{}, false
 	}
 	if err != nil {
-		rt.logger.Error("api: "+op+": load scheduled task failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: "+op+": load scheduled task failed", err, slog.String("id", id))
 		return store.ScheduledTask{}, false
 	}
 	if task.ServiceName != appName {
@@ -429,19 +422,16 @@ func (rt *Router) handleUpdateScheduledTask(w http.ResponseWriter, r *http.Reque
 			writeError(w, http.StatusNotFound, "scheduled task not found")
 			return
 		}
-		rt.logger.Error("api: update scheduled task failed", slog.String("error", err.Error()), slog.String("id", existing.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update scheduled task failed", err, slog.String("id", existing.ID))
 		return
 	}
 	if err := rt.persistJobHTTP(r.Context(), updated, req.HTTP); err != nil {
-		rt.logger.Error("api: update scheduled task: save http target failed", slog.String("error", err.Error()), slog.String("id", existing.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update scheduled task: save http target failed", err, slog.String("id", existing.ID))
 		return
 	}
 	reloaded, err := rt.scheduledTasks.GetScheduledTask(r.Context(), existing.ID)
 	if err != nil {
-		rt.logger.Error("api: update scheduled task: reload failed", slog.String("error", err.Error()), slog.String("id", existing.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update scheduled task: reload failed", err, slog.String("id", existing.ID))
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.jobResource(r.Context(), reloaded))
@@ -480,8 +470,7 @@ func (rt *Router) handleSetScheduledTaskEnabled(enabled bool) http.HandlerFunc {
 		updated := existing
 		updated.Enabled = enabled
 		if err := rt.scheduledTasks.UpdateScheduledTaskConfig(r.Context(), updated, time.Now().UTC()); err != nil {
-			rt.logger.Error("api: toggle scheduled task failed", slog.String("error", err.Error()), slog.String("id", existing.ID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: toggle scheduled task failed", err, slog.String("id", existing.ID))
 			return
 		}
 		reloaded, err := rt.scheduledTasks.GetScheduledTask(r.Context(), existing.ID)
@@ -508,8 +497,7 @@ func (rt *Router) handleDeleteScheduledTask(w http.ResponseWriter, r *http.Reque
 			writeError(w, http.StatusNotFound, "scheduled task not found")
 			return
 		}
-		rt.logger.Error("api: delete scheduled task failed", slog.String("error", err.Error()), slog.String("id", existing.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete scheduled task failed", err, slog.String("id", existing.ID))
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -580,8 +568,7 @@ func (rt *Router) handleListScheduledTaskRuns(w http.ResponseWriter, r *http.Req
 	}
 	runs, err := rt.scheduledTasks.ListScheduledTaskRuns(r.Context(), filter)
 	if err != nil {
-		rt.logger.Error("api: list job runs failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list job runs failed", err, slog.String("name", name))
 		return
 	}
 	out := make([]scheduledTaskRunResource, 0, len(runs))
@@ -607,8 +594,7 @@ func (rt *Router) handleGetScheduledTaskRun(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get job run failed", slog.String("error", err.Error()), slog.String("run_id", r.PathValue("run")))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get job run failed", err, slog.String("run_id", r.PathValue("run")))
 		return
 	}
 	res := toJobRunResource(run, true)
@@ -647,8 +633,7 @@ func (rt *Router) handleRunScheduledTaskNow(w http.ResponseWriter, r *http.Reque
 	if starter, ok := rt.scheduledTaskRunner.(ScheduledTaskStarter); ok {
 		runID, err := starter.Start(context.WithoutCancel(r.Context()), task, trigger)
 		if err != nil {
-			rt.logger.Error("api: run scheduled task failed", slog.String("error", err.Error()), slog.String("id", task.ID), slog.String("name", name))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: run scheduled task failed", err, slog.String("id", task.ID), slog.String("name", name))
 			return
 		}
 		resp.RunID = runID

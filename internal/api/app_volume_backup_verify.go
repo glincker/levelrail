@@ -35,8 +35,7 @@ func (rt *Router) handleVerifyVolumeBackup(w http.ResponseWriter, r *http.Reques
 
 	verificationID, err := randomBackupVerificationID()
 	if err != nil {
-		rt.logger.Error("api: verify volume backup: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: verify volume backup: generate id failed", err)
 		return
 	}
 

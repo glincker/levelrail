@@ -270,8 +270,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: trigger build: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: trigger build: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -392,8 +391,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			resp, err := rt.enqueueManualBuild(r.Context(), *existing, req, buildReq, freezeNote, allowPrivateRepoAuth)
 			rt.buildStartMu.Unlock()
 			if err != nil {
-				rt.logger.Error("api: trigger build: queue failed", slog.String("error", err.Error()), slog.String("name", name))
-				writeError(w, http.StatusInternalServerError, "internal error")
+				rt.internalError(w, "api: trigger build: queue failed", err, slog.String("name", name))
 				return
 			}
 			writeJSON(w, http.StatusAccepted, resp)

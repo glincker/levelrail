@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"slices"
 
@@ -67,8 +66,7 @@ func (rt *Router) handleGetAIControl(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	rt.logger.Error("api: get ai control failed", slog.String("error", err.Error()))
-	writeError(w, http.StatusInternalServerError, "internal error")
+	rt.internalError(w, "api: get ai control failed", err)
 }
 
 // handleUpdateAIControl handles PUT /api/v1/settings/ai-control.
@@ -95,8 +93,7 @@ func (rt *Router) handleUpdateAIControl(w http.ResponseWriter, r *http.Request) 
 	kinds := slices.Compact(slices.Sorted(slices.Values(req.AllowedEnvKinds)))
 	_, _, actorName, _ := rt.currentActor(r)
 	if err := rt.aiControl.UpdateAIControlSettings(r.Context(), req.Mode, kinds, actorName); err != nil {
-		rt.logger.Error("api: update ai control failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update ai control failed", err)
 		return
 	}
 	rt.aiControlCache.invalidate()
@@ -107,8 +104,7 @@ func (rt *Router) handleUpdateAIControl(w http.ResponseWriter, r *http.Request) 
 func (rt *Router) handleRevokeAgentTokens(w http.ResponseWriter, r *http.Request) {
 	n, err := rt.aiControl.RevokeAgentTokens(r.Context(), AIAssistantTokenName, AIAssistantAgentName)
 	if err != nil {
-		rt.logger.Error("api: revoke agent tokens failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: revoke agent tokens failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, revokeAgentTokensResponse{Revoked: n})

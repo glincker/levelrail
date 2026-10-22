@@ -62,8 +62,7 @@ func (rt *Router) toGoogleCloudDNSResource(ctx context.Context, s store.GoogleCl
 func (rt *Router) handleGetGoogleCloudDNSSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.googleCloudDNS.GetGoogleCloudDNSSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get google cloud dns settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, googleCloudDNSInternalError)
+		rt.internalError(w, "api: get google cloud dns settings failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toGoogleCloudDNSResource(r.Context(), settings))
@@ -83,8 +82,7 @@ func (rt *Router) handleUpdateGoogleCloudDNSSettings(w http.ResponseWriter, r *h
 	ctx := r.Context()
 	current, err := rt.googleCloudDNS.GetGoogleCloudDNSSettings(ctx)
 	if err != nil {
-		rt.logger.Error("api: get google cloud dns settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, googleCloudDNSInternalError)
+		rt.internalError(w, "api: get google cloud dns settings failed", err)
 		return
 	}
 	next := store.GoogleCloudDNSSettings{Enabled: req.Enabled, ProjectID: current.ProjectID, ClientEmail: current.ClientEmail}
@@ -97,16 +95,14 @@ func (rt *Router) handleUpdateGoogleCloudDNSSettings(w http.ResponseWriter, r *h
 			return
 		}
 		if err := rt.googleCloudDNSSecrets.SetValue(ctx, key, store.GoogleCloudDNSKeyEnvKey, req.ServiceAccountJSON); err != nil {
-			rt.logger.Error("api: save google cloud dns key failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, googleCloudDNSInternalError)
+			rt.internalError(w, "api: save google cloud dns key failed", err)
 			return
 		}
 		next.ProjectID, next.ClientEmail = id.ProjectID, id.ClientEmail
 	} else if req.Enabled {
 		has, err := rt.googleCloudDNSSecrets.Exists(ctx, key, store.GoogleCloudDNSKeyEnvKey)
 		if err != nil {
-			rt.logger.Error("api: check google cloud dns key failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, googleCloudDNSInternalError)
+			rt.internalError(w, "api: check google cloud dns key failed", err)
 			return
 		}
 		if !has {
@@ -115,8 +111,7 @@ func (rt *Router) handleUpdateGoogleCloudDNSSettings(w http.ResponseWriter, r *h
 		}
 	}
 	if err := rt.googleCloudDNS.UpdateGoogleCloudDNSSettings(ctx, next); err != nil {
-		rt.logger.Error("api: update google cloud dns settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, googleCloudDNSInternalError)
+		rt.internalError(w, "api: update google cloud dns settings failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toGoogleCloudDNSResource(ctx, next))
@@ -129,14 +124,12 @@ func (rt *Router) handleDisconnectGoogleCloudDNS(w http.ResponseWriter, r *http.
 		return
 	}
 	if err := rt.googleCloudDNSSecrets.DeleteAll(r.Context(), store.GoogleCloudDNSSecretsKey()); err != nil {
-		rt.logger.Error("api: clear google cloud dns key failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, googleCloudDNSInternalError)
+		rt.internalError(w, "api: clear google cloud dns key failed", err)
 		return
 	}
 	settings := store.GoogleCloudDNSSettings{}
 	if err := rt.googleCloudDNS.UpdateGoogleCloudDNSSettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: disconnect google cloud dns failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, googleCloudDNSInternalError)
+		rt.internalError(w, "api: disconnect google cloud dns failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toGoogleCloudDNSResource(r.Context(), settings))

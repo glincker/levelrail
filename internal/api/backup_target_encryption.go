@@ -65,8 +65,7 @@ func (rt *Router) handleGetBackupTargetEncryption(w http.ResponseWriter, r *http
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get backup target encryption failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get backup target encryption failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.targetEncryptionResource(r, t))
@@ -94,14 +93,12 @@ func (rt *Router) handleSetBackupTargetEncryption(w http.ResponseWriter, r *http
 			writeError(w, http.StatusNotFound, "backup target not found")
 			return
 		}
-		rt.logger.Error("api: set backup target encryption failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set backup target encryption failed", err, slog.String("id", id))
 		return
 	}
 	t, err := rt.backupTargets.GetBackupTarget(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: reload backup target after encryption change failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: reload backup target after encryption change failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.targetEncryptionResource(r, t))

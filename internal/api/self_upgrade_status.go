@@ -34,8 +34,7 @@ func (rt *Router) handleSelfUpgradeStatus(w http.ResponseWriter, r *http.Request
 	}
 	rows, err := rt.selfUpgrade.store.ListSelfUpgradeAttempts(r.Context(), selfUpgradeListLimit)
 	if err != nil {
-		rt.logger.Error("api: read self-upgrade status failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: read self-upgrade status failed", err)
 		return
 	}
 	out.Running, out.LastFinished = pickStatusAttempts(rows)

@@ -79,8 +79,7 @@ func (rt *Router) handleDiagnoseApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: diagnose app: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: diagnose app: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -90,15 +89,13 @@ func (rt *Router) handleDiagnoseApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: diagnose app: load deploy attempt failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: diagnose app: load deploy attempt failed", err, slog.String("name", name))
 		return
 	}
 
 	conditions, err := rt.deploys.GetConditions(ctx, applicationControllerName(name))
 	if err != nil {
-		rt.logger.Error("api: diagnose app: load conditions failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: diagnose app: load conditions failed", err, slog.String("name", name))
 		return
 	}
 

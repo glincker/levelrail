@@ -128,19 +128,16 @@ func (rt *Router) createPresetRegistryCredential(w http.ResponseWriter, r *http.
 	}
 	cfgJSON, err := registrytoken.EncodeConfig(preq.config())
 	if err != nil {
-		rt.logger.Error("api: create registry preset: encode config failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create registry preset: encode config failed", err)
 		return
 	}
 	id, err := randomRegistryCredentialID()
 	if err != nil {
-		rt.logger.Error("api: create registry preset: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create registry preset: generate id failed", err)
 		return
 	}
 	if err := rt.registryCredentialSecrets.SetValue(r.Context(), store.RegistryCredentialSecretsKey(id), "password", minted.Password); err != nil {
-		rt.logger.Error("api: create registry preset: set password failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create registry preset: set password failed", err, slog.String("id", id))
 		return
 	}
 	now := time.Now().UTC()
@@ -152,8 +149,7 @@ func (rt *Router) createPresetRegistryCredential(w http.ResponseWriter, r *http.
 		Preset: req.Preset, PresetConfig: cfgJSON, LastRefreshedAt: &now, NextRefreshAt: &next,
 	}
 	if err := rt.registryCredentials.SaveRegistryCredential(r.Context(), cred); err != nil {
-		rt.logger.Error("api: create registry preset: save failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create registry preset: save failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusCreated, rt.toRegistryCredentialResource(cred))
@@ -171,8 +167,7 @@ func (rt *Router) handleRefreshRegistryCredential(w http.ResponseWriter, r *http
 		writeError(w, http.StatusNotFound, "registry credential not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: refresh registry credential: load failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: refresh registry credential: load failed", err, slog.String("id", id))
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), registryCredentialTestTimeout)

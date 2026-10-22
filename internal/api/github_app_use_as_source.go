@@ -82,8 +82,7 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 		TriggerMode: triggerMode,
 	})
 	if err != nil {
-		rt.logger.Error("api: use github repo as source: connect git source failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: use github repo as source: connect git source failed", err, slog.String("app_name", req.AppName))
 		return
 	}
 	status := http.StatusOK
@@ -95,8 +94,7 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 	_, err = rt.controlPlaneBaseURL(ctx)
 	if err != nil {
 		if !errors.Is(err, errNoPrimaryDomain) {
-			rt.logger.Error("api: get base url for github webhook registration failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: get base url for github webhook registration failed", err)
 			return
 		}
 		rt.logger.Warn("api: github repo connected as git source, but no primary domain is configured to register a webhook", slog.String("app_name", req.AppName))
@@ -108,8 +106,7 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 
 	webhookSecret, err := rt.gitSourceSecrets.Resolve(ctx, store.GitSourceSecretsKey(req.AppName), gitSourceSecretKey)
 	if err != nil {
-		rt.logger.Error("api: resolve git source webhook secret for github hook registration failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: resolve git source webhook secret for github hook registration failed", err, slog.String("app_name", req.AppName))
 		return
 	}
 

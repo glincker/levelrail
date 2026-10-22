@@ -57,8 +57,7 @@ func (rt *Router) handleGetAppSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get app schedule failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get app schedule failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, toAppScheduleResource(*sch))
@@ -80,8 +79,7 @@ func (rt *Router) handleSetAppSchedule(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set app schedule: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app schedule: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -89,8 +87,7 @@ func (rt *Router) handleSetAppSchedule(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "this app has no connected git source; connect one via PUT /api/v1/apps/{name}/git-source before scheduling deploys")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set app schedule: load git source failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app schedule: load git source failed", err, slog.String("name", name))
 		return
 	}
 
@@ -127,8 +124,7 @@ func (rt *Router) handleSetAppSchedule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rt.appSchedules.SetAppSchedule(r.Context(), name, req.Cron, req.Branch, timezone, enabled); err != nil {
-		rt.logger.Error("api: set app schedule failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app schedule failed", err, slog.String("name", name))
 		return
 	}
 
@@ -173,8 +169,7 @@ func (rt *Router) handleListAppScheduleHistory(w http.ResponseWriter, r *http.Re
 
 	entries, err := rt.appSchedules.ListAppScheduleHistory(r.Context(), name, limit)
 	if err != nil {
-		rt.logger.Error("api: list app schedule history failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list app schedule history failed", err, slog.String("name", name))
 		return
 	}
 

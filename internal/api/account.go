@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -40,8 +39,7 @@ func (rt *Router) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	user, err := rt.auth.GetUserByID(r.Context(), userID)
 	if err != nil {
-		rt.logger.Error("api: change password: load user failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: change password: load user failed", err)
 		return
 	}
 	if user.PasswordHash != nil {
@@ -61,14 +59,12 @@ func (rt *Router) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	newHash, err := hashPassword(req.NewPassword)
 	if err != nil {
-		rt.logger.Error("api: change password: hash new password failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: change password: hash new password failed", err)
 		return
 	}
 	newHashStr := string(newHash)
 	if err := rt.auth.UpdateUserPasswordHash(r.Context(), userID, &newHashStr); err != nil {
-		rt.logger.Error("api: change password: save failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: change password: save failed", err)
 		return
 	}
 
@@ -100,8 +96,7 @@ func (rt *Router) handleGetSession(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := rt.auth.GetUserByID(r.Context(), sess.userID)
 	if err != nil {
-		rt.logger.Error("api: get session: load user failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get session: load user failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, sessionInfoResponse{

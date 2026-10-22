@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -39,8 +38,7 @@ func (rt *Router) handleImportPlan(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		rt.logger.Error("api: import plan failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: import plan failed", err)
 		return
 	}
 	rt.resolveImportRef(r.Context(), plan)

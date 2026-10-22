@@ -62,8 +62,7 @@ func (rt *Router) writeCPDRError(w http.ResponseWriter, action string, err error
 	case errors.Is(err, cpbackup.ErrEscrowSameBucket):
 		writeError(w, http.StatusConflict, err.Error())
 	default:
-		rt.logger.Error("api: control plane disaster recovery failed", slog.String("action", action), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: control plane disaster recovery failed", err, slog.String("action", action))
 	}
 }
 

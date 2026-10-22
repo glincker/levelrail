@@ -83,8 +83,7 @@ func (rt *Router) handleCreateDeployNotifyTarget(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: create deploy notify target: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create deploy notify target: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -96,8 +95,7 @@ func (rt *Router) handleCreateDeployNotifyTarget(w http.ResponseWriter, r *http.
 
 	id, err := alerting.NewDeployTargetID()
 	if err != nil {
-		rt.logger.Error("api: create deploy notify target: generate id failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create deploy notify target: generate id failed", err, slog.String("name", name))
 		return
 	}
 
@@ -117,14 +115,12 @@ func (rt *Router) handleCreateDeployNotifyTarget(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusBadRequest, "unknown channel_id")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: create deploy notify target: look up channel failed", slog.String("error", err.Error()), slog.String("channel_id", target.ChannelID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create deploy notify target: look up channel failed", err, slog.String("channel_id", target.ChannelID))
 		return
 	}
 
 	if err := rt.deployNotifyTargets.SaveDeployTarget(r.Context(), target); err != nil {
-		rt.logger.Error("api: create deploy notify target failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("target_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create deploy notify target failed", err, slog.String("name", name), slog.String("target_id", id))
 		return
 	}
 
@@ -132,8 +128,7 @@ func (rt *Router) handleCreateDeployNotifyTarget(w http.ResponseWriter, r *http.
 	// which target itself doesn't have until read back through the join.
 	saved, err := rt.deployNotifyTargets.GetDeployTarget(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: create deploy notify target: reload after save failed", slog.String("error", err.Error()), slog.String("target_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create deploy notify target: reload after save failed", err, slog.String("target_id", id))
 		return
 	}
 
@@ -157,15 +152,13 @@ func (rt *Router) handleListDeployNotifyTargets(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list deploy notify targets: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list deploy notify targets: load app failed", err, slog.String("name", name))
 		return
 	}
 
 	targets, err := rt.deployNotifyTargets.ListDeployTargetsForResource(r.Context(), resourceIDForApp(name))
 	if err != nil {
-		rt.logger.Error("api: list deploy notify targets failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list deploy notify targets failed", err, slog.String("name", name))
 		return
 	}
 
@@ -198,8 +191,7 @@ func (rt *Router) handleDeleteDeployNotifyTarget(w http.ResponseWriter, r *http.
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: delete deploy notify target: load target failed", slog.String("error", err.Error()), slog.String("target_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete deploy notify target: load target failed", err, slog.String("target_id", id))
 		return
 	}
 	if target.ResourceID != resourceIDForApp(name) {
@@ -208,8 +200,7 @@ func (rt *Router) handleDeleteDeployNotifyTarget(w http.ResponseWriter, r *http.
 	}
 
 	if err := rt.deployNotifyTargets.DeleteDeployTarget(r.Context(), id); err != nil {
-		rt.logger.Error("api: delete deploy notify target failed", slog.String("error", err.Error()), slog.String("target_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete deploy notify target failed", err, slog.String("target_id", id))
 		return
 	}
 
