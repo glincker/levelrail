@@ -43,6 +43,9 @@ export interface ServiceTemplateListItem {
   icon?: string
   // A manifest template: POST .../install takes its env prompts and domains.
   installable?: boolean
+  // Card hints read from the template's Compose body.
+  needs_database?: boolean
+  has_volume?: boolean
 }
 
 // Mirrors serviceTemplateDetail's wire shape: the list item's fields plus
