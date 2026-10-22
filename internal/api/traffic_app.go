@@ -82,6 +82,7 @@ type trafficReplica struct {
 
 type trafficRoute struct {
 	Route        string  `json:"route"`
+	Kind         string  `json:"kind"`
 	Requests     float64 `json:"requests"`
 	ErrorRate4xx float64 `json:"error_rate_4xx"`
 	ErrorRate5xx float64 `json:"error_rate_5xx"`
@@ -97,26 +98,27 @@ type trafficSLO struct {
 }
 
 type trafficResponse struct {
-	App            string                    `json:"app"`
-	Window         string                    `json:"window"`
-	From           time.Time                 `json:"from"`
-	To             time.Time                 `json:"to"`
-	HasTraffic     bool                      `json:"has_traffic"`
-	Requests       float64                   `json:"requests"`
-	RatePerSec     float64                   `json:"rate_per_sec"`
-	Statuses       trafficStatusClasses      `json:"status_classes"`
-	ErrorRate4xx   float64                   `json:"error_rate_4xx"`
-	ErrorRate5xx   float64                   `json:"error_rate_5xx"`
-	UpstreamErrors float64                   `json:"upstream_errors"`
-	Latency        trafficLatency            `json:"latency"`
-	Replicas       []trafficReplica          `json:"replicas"`
-	SlowRoutes     []trafficRoute            `json:"slow_routes"`
-	TopRoutes      []trafficRoute            `json:"top_routes"`
-	Samples        []telemetry.RequestSample `json:"samples"`
-	Referrers      []trafficLabel            `json:"referrers"`
-	Countries      []trafficLabel            `json:"countries"`
-	SLO            *trafficSLO               `json:"slo,omitempty"`
-	Shield         trafficShield             `json:"shield"`
+	App            string                      `json:"app"`
+	Window         string                      `json:"window"`
+	From           time.Time                   `json:"from"`
+	To             time.Time                   `json:"to"`
+	HasTraffic     bool                        `json:"has_traffic"`
+	Requests       float64                     `json:"requests"`
+	RatePerSec     float64                     `json:"rate_per_sec"`
+	Statuses       trafficStatusClasses        `json:"status_classes"`
+	ErrorRate4xx   float64                     `json:"error_rate_4xx"`
+	ErrorRate5xx   float64                     `json:"error_rate_5xx"`
+	UpstreamErrors float64                     `json:"upstream_errors"`
+	Latency        trafficLatency              `json:"latency"`
+	Replicas       []trafficReplica            `json:"replicas"`
+	SlowRoutes     []trafficRoute              `json:"slow_routes"`
+	TopRoutes      []trafficRoute              `json:"top_routes"`
+	KindTotals     map[string]trafficKindTotal `json:"kind_totals"`
+	Samples        []telemetry.RequestSample   `json:"samples"`
+	Referrers      []trafficLabel              `json:"referrers"`
+	Countries      []trafficLabel              `json:"countries"`
+	SLO            *trafficSLO                 `json:"slo,omitempty"`
+	Shield         trafficShield               `json:"shield"`
 }
 
 func trafficSlowRouteMin() float64 {
@@ -165,8 +167,13 @@ func slowRoutes(b telemetry.Breakdown, minRequests float64, n int) []trafficRout
 		if r.Requests < minRequests || r.Route == telemetry.OverflowRoute {
 			continue
 		}
+		kind := classifyRoute(r.Route)
+		if kind == routeKindAsset {
+			continue
+		}
 		rows = append(rows, trafficRoute{
 			Route:        r.Route,
+			Kind:         kind,
 			Requests:     r.Requests,
 			ErrorRate4xx: ratio(r.Errors4xx, r.Requests),
 			ErrorRate5xx: ratio(r.Errors5xx, r.Requests),
@@ -185,19 +192,36 @@ func slowRoutes(b telemetry.Breakdown, minRequests float64, n int) []trafficRout
 	return rows
 }
 
+// topRoutes returns the n busiest routes of each kind, so a flood of static
+// files cannot push the pages out of the list.
 func topRoutes(b telemetry.Breakdown, n int) []trafficRoute {
-	rows := make([]trafficRoute, 0, len(b.Routes))
+	byKind := map[string][]trafficRoute{}
 	for _, r := range b.Routes {
 		if r.Requests <= 0 || r.Route == telemetry.OverflowRoute {
 			continue
 		}
-		rows = append(rows, trafficRoute{
+		kind := classifyRoute(r.Route)
+		byKind[kind] = append(byKind[kind], trafficRoute{
 			Route:        r.Route,
+			Kind:         kind,
 			Requests:     r.Requests,
 			ErrorRate4xx: ratio(r.Errors4xx, r.Requests),
 			ErrorRate5xx: ratio(r.Errors5xx, r.Requests),
 			AvgMs:        r.LatencyMSSum / r.Requests,
 		})
+	}
+	var rows []trafficRoute
+	for _, list := range byKind {
+		sort.Slice(list, func(i, j int) bool {
+			if list[i].Requests != list[j].Requests {
+				return list[i].Requests > list[j].Requests
+			}
+			return list[i].Route < list[j].Route
+		})
+		if len(list) > n {
+			list = list[:n]
+		}
+		rows = append(rows, list...)
 	}
 	sort.Slice(rows, func(i, j int) bool {
 		if rows[i].Requests != rows[j].Requests {
@@ -205,10 +229,27 @@ func topRoutes(b telemetry.Breakdown, n int) []trafficRoute {
 		}
 		return rows[i].Route < rows[j].Route
 	})
-	if len(rows) > n {
-		rows = rows[:n]
-	}
 	return rows
+}
+
+type trafficKindTotal struct {
+	Requests     float64 `json:"requests"`
+	ErrorRate5xx float64 `json:"error_rate_5xx"`
+}
+
+// kindTotals sums every route of a kind, not only the listed top ones.
+func kindTotals(b telemetry.Breakdown) map[string]trafficKindTotal {
+	reqs, errs := map[string]float64{}, map[string]float64{}
+	for _, r := range b.Routes {
+		kind := classifyRoute(r.Route)
+		reqs[kind] += r.Requests
+		errs[kind] += r.Errors5xx
+	}
+	out := make(map[string]trafficKindTotal, len(reqs))
+	for kind, n := range reqs {
+		out[kind] = trafficKindTotal{Requests: n, ErrorRate5xx: ratio(errs[kind], n)}
+	}
+	return out
 }
 
 func sumMetric(ctx context.Context, q telemetry.MetricsQuerier, app, metric string, from, to time.Time) float64 {
@@ -284,7 +325,7 @@ func (rt *Router) handleAppTraffic(w http.ResponseWriter, r *http.Request) {
 	from := to.Add(-window)
 	resp := trafficResponse{
 		App: name, Window: label, From: from, To: to,
-		Replicas: []trafficReplica{}, SlowRoutes: []trafficRoute{}, TopRoutes: []trafficRoute{}, Samples: []telemetry.RequestSample{},
+		Replicas: []trafficReplica{}, SlowRoutes: []trafficRoute{}, TopRoutes: []trafficRoute{}, KindTotals: map[string]trafficKindTotal{}, Samples: []telemetry.RequestSample{},
 		Referrers: []trafficLabel{}, Countries: []trafficLabel{},
 	}
 
@@ -313,6 +354,7 @@ func (rt *Router) handleAppTraffic(w http.ResponseWriter, r *http.Request) {
 		if b, berr := src.QueryBreakdown(ctx, rid, from, to); berr == nil {
 			resp.SlowRoutes = slowRoutes(b, trafficSlowRouteMin(), trafficTopRoutes)
 			resp.TopRoutes = topRoutes(b, trafficTopRoutes)
+			resp.KindTotals = kindTotals(b)
 		}
 	}
 	if src, ok := rt.telemetry.(telemetry.TrafficDetailSource); ok {
