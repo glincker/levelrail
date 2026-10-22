@@ -20,11 +20,6 @@ const (
 	defaultLivenessFailures = 3
 )
 
-// livenessStopTimeout is how long a container gets to exit on its own
-// before Docker kills it during a liveness-triggered restart, the same
-// grace removeContainers already gives a stale container.
-const livenessStopTimeout = 10 * time.Second
-
 // livenessSeverity orders one pass's outcomes so a multi-replica service
 // reports the worst thing that happened rather than the last.
 type livenessSeverity int
@@ -197,7 +192,7 @@ func (c *Controller) checkReplicaLiveness(ctx context.Context, target string, cf
 		return livenessOutcome{}
 	}
 
-	state, err := c.runtime.InspectByName(ctx, target)
+	state, err := c.inspectByName(ctx, target)
 	if err != nil {
 		return livenessOutcome{severity: livenessProbeUnavailable, err: fmt.Errorf("liveness probe: inspect %q: %w", target, err)}
 	}
@@ -243,10 +238,10 @@ func (c *Controller) handleLivenessFailure(ctx context.Context, target string, s
 // ensureReplicaRunning already knows how to recover: start it, or
 // recreate it if Start keeps failing.
 func (c *Controller) restartReplica(ctx context.Context, state *docker.ContainerState) error {
-	if err := c.runtime.Stop(ctx, state.ID, livenessStopTimeout); err != nil {
+	if err := c.stopContainer(ctx, state.ID); err != nil {
 		return fmt.Errorf("stop %q: %w", state.Name, err)
 	}
-	if err := c.runtime.Start(ctx, state.ID); err != nil {
+	if err := c.startContainer(ctx, state.ID); err != nil {
 		return fmt.Errorf("start %q: %w", state.Name, err)
 	}
 	return nil
