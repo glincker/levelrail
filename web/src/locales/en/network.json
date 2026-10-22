@@ -93,5 +93,12 @@
     "enableConsequence3": "Apps and databases get internal addresses reachable across servers.",
     "disableConsequence1": "Apps and databases on other servers lose their cross-server internal addresses.",
     "disableConsequence2": "Everything on this server keeps working locally."
+  },
+  "banner": {
+    "diagram": {
+      "app": "App",
+      "node": "Node",
+      "server": "Server"
+    }
   }
 }

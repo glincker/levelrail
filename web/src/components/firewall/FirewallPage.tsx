@@ -3,7 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { HelpLink } from '@/components/HelpLink'
 import { PageTemplate } from '@/components/shell/PageTemplate'
+import { PageBanner } from '../PageBanner'
+import { LazyFirewallDiagram } from '../banners/LazyPass3Diagrams'
 import { cn } from '@/lib/utils'
 import { domainsQueryOptions } from '../../queries/domains'
 import type { FwRange } from '../../queries/firewallEdge'
@@ -107,14 +110,25 @@ export function FirewallPage({
 
   return (
     <PageTemplate
-      icon={<ShieldCheckIcon />}
       title={t('page.title')}
-      description={t('page.description')}
-      helpPath="firewall"
-      actions={actions}
-      tabs={tabs}
       width="wide"
+      banner={
+        <PageBanner
+          icon={<ShieldCheckIcon />}
+          titleKey="firewall:page.title"
+          descriptionKey="firewall:page.description"
+          action={
+            <>
+              <HelpLink path="firewall" label={t('page.help')} />
+              {actions}
+            </>
+          }
+          illustration={<LazyFirewallDiagram size="compact" />}
+          size="compact"
+        />
+      }
     >
+      {tabs}
       {children}
     </PageTemplate>
   )

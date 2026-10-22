@@ -2,7 +2,9 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { LightningIcon } from '@phosphor-icons/react/dist/ssr'
+import { PageBanner } from '../PageBanner'
+import { LazyCdnDiagram } from '../banners/LazyPass3Diagrams'
 import type { CdnWindow } from '../../queries/cdnCache'
 
 const WINDOWS: CdnWindow[] = ['5m', '1h', '24h']
@@ -64,8 +66,17 @@ export function CdnFrame({
 }>) {
   const { t } = useTranslation('cdn')
   return (
-    <div className="space-y-4">
-      <PageHeader title={title} description={description} actions={actions} />
+    <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
+      <PageBanner
+        icon={<LightningIcon />}
+        titleKey="cdn:nav.label"
+        titleText={title}
+        descriptionKey="cdn:nav.label"
+        descriptionText={description}
+        action={actions}
+        illustration={<LazyCdnDiagram size="compact" />}
+        size="compact"
+      />
       <nav
         aria-label={t('nav.label')}
         className="flex flex-wrap gap-1 border-b border-border pb-2"

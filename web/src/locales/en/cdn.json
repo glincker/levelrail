@@ -180,5 +180,11 @@
     "clientIp": "Add the CDN's address ranges to the trusted proxies setting so visitor IPs, rate limits and country rules use the real client address.",
     "plugins": "First party integrations for CDN purge and traffic steering are planned through the plugin system. Nothing is connected today.",
     "docs": "Read the guide"
+  },
+  "banner": {
+    "diagram": {
+      "origin": "Origin",
+      "edge": "Edge"
+    }
   }
 }

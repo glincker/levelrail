@@ -158,5 +158,17 @@
     "by": "by {{who}}",
     "unsilence": "Unsilence",
     "unsilenced": "Showing {{title}} again."
+  },
+  "statusPage": {
+    "title": "Status",
+    "description": "Everything that needs attention right now. Refreshes every 30 seconds.",
+    "healthyDescription": "All systems healthy. No failing apps or deploys, offline nodes, low disk, or expiring certificates.",
+    "loading": "Loading status",
+    "banner": {
+      "diagram": {
+        "heartbeat": "Heartbeat",
+        "checks": "Checks"
+      }
+    }
   }
 }

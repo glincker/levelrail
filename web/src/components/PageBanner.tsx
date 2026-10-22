@@ -15,6 +15,7 @@ const GLOW =
 export function PageBanner({
   icon,
   titleKey,
+  titleText,
   descriptionKey,
   descriptionText,
   action,
@@ -24,6 +25,7 @@ export function PageBanner({
 }: {
   icon?: ReactNode
   titleKey: string
+  titleText?: string
   descriptionKey: string
   descriptionText?: string
   action?: ReactNode
@@ -32,7 +34,7 @@ export function PageBanner({
   className?: string
 }) {
   const { t } = useTranslation()
-  const title = t(titleKey, { defaultValue: titleKey })
+  const title = titleText ?? t(titleKey, { defaultValue: titleKey })
   const description =
     descriptionText ?? t(descriptionKey, { defaultValue: descriptionKey })
   useRegisterPageTitle(title)

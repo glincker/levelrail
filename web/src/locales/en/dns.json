@@ -332,5 +332,12 @@
     "colTtl": "TTL",
     "colStatus": "Status",
     "addRecord": "Add a record"
+  },
+  "banner": {
+    "description": "Connect a DNS provider to manage zones and records here, and see when name server changes have propagated.",
+    "diagram": {
+      "records": "Records",
+      "server": "Server"
+    }
   }
 }

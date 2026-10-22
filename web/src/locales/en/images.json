@@ -148,5 +148,12 @@
     "title": "Could not load images",
     "retry": "Check again",
     "unsupported": "This node does not report its images yet."
+  },
+  "banner": {
+    "description": "Images show up here after the first deploy or build, with their size, the apps that use them and whether they are safe to remove.",
+    "diagram": {
+      "layers": "Layers",
+      "node": "Node"
+    }
   }
 }

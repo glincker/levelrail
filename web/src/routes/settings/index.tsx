@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
+import { GearIcon, MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   filterSettingsNav,
   mergeSettingsHits,
@@ -11,7 +11,7 @@ import {
 import { useSearch } from '../../queries/search'
 import { Badge } from '@/components/ui/badge'
 import { BETA_FEATURES_PATH, lockedSearch } from '../../lib/experimental'
-import { PageHeader } from '../../components/shell/PageHeader'
+import { PageBanner } from '../../components/PageBanner'
 import { EmptyState } from '../../components/ui/empty-state'
 import { Input } from '../../components/ui/input'
 import {
@@ -80,11 +80,13 @@ function SettingsHubPage() {
   }, [sections, query, q, settingHits.data])
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t('nav.title')}
-        description={t('nav.description')}
-        actions={
+    <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
+      <PageBanner
+        icon={<GearIcon />}
+        titleKey="settings:nav.title"
+        descriptionKey="settings:nav.description"
+        size="compact"
+        action={
           <div className="relative w-full sm:w-64">
             <MagnifyingGlassIcon
               className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
