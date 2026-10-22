@@ -29,7 +29,9 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | --- | --- | --- |
 | Deploy approvals | stable | Live e2e proves a second user's approval is the only thing that cuts over (`test/e2e/protected_environment_test.go`). |
 | Upgrade restore points and post-upgrade verification | beta | Unit tests only (`internal/selfupgrade/restorepoint_test.go`): automatic restore of binary and database on failed verification, retention, manual restore. No live run on a real host yet. See [Upgrade safely](/upgrade-safely). |
-| PITR and database backups | stable | Live e2e restores before a marker row through the real API with MinIO (`test/e2e/pitr_test.go`), plus live Docker dump and restore tests. |
+| PITR and database backups (Postgres) | stable | Live e2e restores before a marker row through the real API with an S3 compatible bucket (`test/e2e/pitr_test.go`), plus live Docker dump and restore tests. |
+| MySQL and MariaDB PITR, TLS on new databases | beta | Live e2e through the real API, reconciler and bucket: binlog replay into a new database keeps a row written after the base backup and drops one written after the target (`test/e2e/pitr_mysql_test.go`), and new instances serve the platform certificate while older ones are untouched. One local Docker run, not yet in the nightly lane; DDL inside the replay window is untested. |
+| MongoDB backup, verify, restore and TLS on new databases | beta | Live e2e: dump, verify and restore-as-new through the API (`test/e2e/engine_parity_test.go`), and a new instance accepts TLS while an older one does not. No point-in-time restore: standalone mongod has no oplog. |
 | Encrypted database dumps | beta | Per-target age sealing of dumps with transparent restore, drill and verify decryption; unit round trip only (`internal/backup/encrypted_dump_test.go`), no live Docker run. |
 | Previews | stable (GitHub), beta (GitLab, Bitbucket) | Lifecycle e2e exists for all three (`test/e2e/preview_environments_*_test.go`), but they replay synthetic webhooks, not a real forge. Kept beta for the two forges with less usage. |
 | IAM | stable | Broadest unit coverage in the repo, plus live e2e where a deny policy blocks a real action and a token allow policy scopes one (`test/e2e/iam_policy_enforcement_test.go`). |
@@ -159,10 +161,10 @@ Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic,
 
 - Unit: `internal/backup/` (34 files, including `pitr_runner_test.go`, `pitr_restore_test.go`, `verify_runner_test.go`, `scheduler_test.go`); `internal/cpbackup/` (9 files) for control-plane backups; CLI `backups_*_test.go`, `control_plane_backups_test.go`, `app_volume_backups_*_test.go`.
 - Live Docker: `pitr_live_test.go`, `dump_live_test.go`, `restore_live_test.go`, `clone_restore_live_test.go`, `volume_live_test.go`, `volume_clone_restore_live_test.go`.
-- E2E: `test/e2e/pitr_test.go` (real API, real reconciler, MinIO bucket, marker-row restore), `test/e2e/reconcile/database_test.go` (Redis reconcile only, `TestDatabase_Live_RedisReconcile`).
+- E2E: `test/e2e/pitr_test.go` (real API, real reconciler, S3 compatible bucket, marker-row restore), `test/e2e/pitr_mysql_test.go` (MySQL and MariaDB PITR and TLS), `test/e2e/engine_parity_test.go` (MySQL, MariaDB and MongoDB backup, verify, restore-as-new, MongoDB TLS), `test/e2e/reconcile/database_test.go` (Redis reconcile only, `TestDatabase_Live_RedisReconcile`). The e2e bucket is SeaweedFS because MinIO's free images were retired.
 - Docs: `docs/backups-and-storage.md`, `docs/managing-databases.md`, `docs/control-plane-backup.md`, `docs/disaster-recovery.md`. `docs/roadmap.md` notes PITR is "Live-Docker-verified end to end".
 - Real infra: none found. The real S3 and R2 test is skipped in CI (see [log archive](/log-archive)).
-- Label: stable for PITR and dump/restore/verify on Postgres. Other engines (13 are defined as constants in `internal/store/database.go`) only have the Redis e2e, so treat them as beta until each has a live restore run.
+- Label: stable for PITR and dump/restore/verify on Postgres. MySQL, MariaDB and MongoDB are beta: each now has a live API e2e for dump, verify and restore, and MySQL and MariaDB for PITR, but only from a local run. The remaining engines (13 are defined as constants in `internal/store/database.go`) only have the Redis reconcile e2e, so treat them as beta until each has a live restore run.
 
 ### Cloudflare tunnel
 

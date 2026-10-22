@@ -121,7 +121,9 @@ These tune the scheduled off-box copy of the control plane's own state and its r
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_PITR_WAL_SEGMENT_BYTES` | `16777216` (16 MiB) | WAL segment size, in bytes, that the restore path assumes when it maps a base backup's start position to a segment. Set it only if the Postgres server was initialized with a non-default WAL segment size. Positive integer. Control plane. See [Managing databases](/managing-databases#point-in-time-restore-postgres-only). |
+| `APP_PITR_WAL_SEGMENT_BYTES` | `16777216` (16 MiB) | WAL segment size, in bytes, that the restore path assumes when it maps a base backup's start position to a segment. Set it only if the Postgres server was initialized with a non-default WAL segment size. Positive integer. Control plane. See [Managing databases](/managing-databases#point-in-time-restore). |
+| `APP_PITR_BINLOG_EXPIRE_SECONDS` | `604800` (7 days) | How long a MySQL or MariaDB database keeps closed binary log files on its own host. Shipped copies in the backup target are pruned by base backup retention instead. Positive integer. Control plane. |
+| `APP_PITR_MYSQL_TOOLS_IMAGE` | `percona/percona-server:8.4` | Image a MySQL point-in-time restore starts briefly to run `mysqlbinlog`, which the official MySQL image does not ship. MariaDB restores do not use it. Control plane. |
 
 ## Log archive
 
