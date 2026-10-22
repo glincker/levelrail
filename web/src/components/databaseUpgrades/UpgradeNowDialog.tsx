@@ -15,15 +15,19 @@ import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 import { useUpgradeNow } from '../../queries/databaseUpgrades'
+import type { UpgradeKind } from '../../types/databaseUpgrades'
+import { UpgradeStepList } from './UpgradeStepList'
 
 /** UpgradeNowDialog starts a manual upgrade once the operator types the database name. */
 export function UpgradeNowDialog({
   databaseName,
   version,
+  kind,
   disabled,
 }: {
   databaseName: string
   version: string
+  kind?: UpgradeKind
   disabled?: boolean
 }) {
   const { t } = useTranslation('databaseUpgrades')
@@ -47,13 +51,14 @@ export function UpgradeNowDialog({
         <ArrowCircleUpIcon className="size-3.5" aria-hidden="true" />
         {t('targets.upgradeNow')}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
             {t('dialog.title', { name: databaseName, version })}
           </DialogTitle>
           <DialogDescription>{t('dialog.description')}</DialogDescription>
         </DialogHeader>
+        <UpgradeStepList databaseName={databaseName} kind={kind} />
         <Field>
           <FieldLabel htmlFor={`upgrade-confirm-${version}`}>
             {t('dialog.confirmLabel', { name: databaseName })}
