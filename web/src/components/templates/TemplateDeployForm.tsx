@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { DraftBanner } from '../DraftBanner'
+import { useDraft } from '../../hooks/useDraft'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -83,12 +85,13 @@ export function TemplateDeployForm({
   const install = useInstallTemplate(manifest.id)
   const prompts = manifest.env ?? []
   const groups = groupEnvPrompts(prompts)
-  const [values, setValues] = useState<FormValues>({
-    name: '',
-    env: {},
-    customDomain: false,
-    domains: {},
-  })
+  const draft = useDraft<FormValues>(
+    `template-deploy:${manifest.id}`,
+    { name: '', env: {}, customDomain: false, domains: {} },
+    { omit: prompts.filter((p) => p.secret).map((p) => p.key) },
+  )
+  const values = draft.value
+  const setValues = draft.setValue
   const [errors, setErrors] = useState<FormErrors>({})
   const [optionalOpen, setOptionalOpen] = useState(false)
   const [attempted, setAttempted] = useState(false)
@@ -111,6 +114,7 @@ export function TemplateDeployForm({
     }
     install.mutate(buildInstallPayload(values), {
       onSuccess: (res) => {
+        draft.clearOnSuccess()
         toast.add({
           title: t('form.success', { app: res.app_id }),
           type: 'success',
@@ -149,6 +153,7 @@ export function TemplateDeployForm({
         submit()
       }}
     >
+      <DraftBanner draft={draft} />
       <div className="space-y-1">
         <h2 className="text-base font-semibold text-foreground">
           {t('form.title')}

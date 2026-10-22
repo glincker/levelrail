@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
+import { useDraft } from '../../hooks/useDraft'
 import { BrandContext } from '../../lib/brandContext'
 import {
   TOKEN_GUIDES,
@@ -30,7 +31,14 @@ import {
   useCreateGitConnection,
   useTestGitConnection,
 } from '../../queries/gitConnections'
+import { DraftBanner } from '../DraftBanner'
 import { GitTokenGuide } from './GitTokenGuide'
+
+interface TokenDraft {
+  picked: TokenHost
+  urls: Partial<Record<TokenHost, string>>
+  label: string
+}
 
 // Connects GitLab, Bitbucket Cloud, Gitea or Forgejo with a pasted token: no OAuth
 // application, no public domain. The token is checked before it is saved.
@@ -47,20 +55,21 @@ export default function ConnectWithTokenDialog({
   const brand = useContext(BrandContext)
   const create = useCreateGitConnection()
   const probe = useTestGitConnection()
-  const [picked, setPicked] = useState<TokenHost>(provider ?? 'gitlab')
+  const draft = useDraft<TokenDraft>('git-token-connect', {
+    picked: provider ?? 'gitlab',
+    urls: {},
+    label: '',
+  })
+  const { picked, urls, label } = draft.value
   const host = provider ?? picked
   const guide = TOKEN_GUIDES[host]
-  const [urls, setUrls] = useState<Partial<Record<TokenHost, string>>>({})
   const [token, setToken] = useState('')
-  const [label, setLabel] = useState('')
   const serverUrl = urls[host] ?? guide.defaultUrl
   const canSubmit =
     token.trim() !== '' && (!guide.selfHosted || serverUrl.trim() !== '')
 
   function reset() {
-    setUrls({})
     setToken('')
-    setLabel('')
     create.reset()
     probe.reset()
   }
@@ -81,6 +90,8 @@ export default function ConnectWithTokenDialog({
             description: t('gitConnections.token.connectedBody'),
             type: 'success',
           })
+          draft.clearOnSuccess()
+          draft.discard()
           reset()
           onOpenChange(false)
         },
@@ -112,6 +123,7 @@ export default function ConnectWithTokenDialog({
             if (canSubmit) submit()
           }}
         >
+          <DraftBanner draft={draft} />
           {provider ? null : (
             <Field>
               <FieldLabel htmlFor="token-host">
@@ -120,7 +132,7 @@ export default function ConnectWithTokenDialog({
               <Select
                 value={host}
                 onValueChange={(v) => {
-                  setPicked(v ?? 'gitlab')
+                  draft.update({ picked: v ?? 'gitlab' })
                   probe.reset()
                 }}
               >
@@ -149,7 +161,7 @@ export default function ConnectWithTokenDialog({
                 spellCheck={false}
                 value={serverUrl}
                 onChange={(e) =>
-                  setUrls((prev) => ({ ...prev, [host]: e.target.value }))
+                  draft.update({ urls: { ...urls, [host]: e.target.value } })
                 }
               />
               <FieldDescription>
@@ -187,7 +199,7 @@ export default function ConnectWithTokenDialog({
               id="token-label"
               maxLength={80}
               value={label}
-              onChange={(e) => setLabel(e.target.value)}
+              onChange={(e) => draft.update({ label: e.target.value })}
             />
           </Field>
           <div className="space-y-2">

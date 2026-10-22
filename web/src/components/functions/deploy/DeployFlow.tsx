@@ -9,6 +9,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
+import { DraftBanner } from '../../DraftBanner'
+import { useDraft } from '../../../hooks/useDraft'
 import { domainsQueryOptions } from '../../../queries/domains'
 import {
   useDeployFunction,
@@ -65,7 +67,9 @@ export function DeployFlow({ onClose }: Readonly<{ onClose: () => void }>) {
   const { t } = useTranslation('functions')
   const [step, setStep] = useState<Step>('template')
   const [presetId, setPresetId] = useState(PRESETS[0]?.id ?? 'go')
-  const [values, setValues] = useState<FlowValues>(initialValues)
+  const draft = useDraft('function-deploy', initialValues())
+  const values = draft.value
+  const setValues = draft.setValue
   const [nameTouched, setNameTouched] = useState(false)
   const [portTouched, setPortTouched] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
@@ -162,6 +166,7 @@ export function DeployFlow({ onClose }: Readonly<{ onClose: () => void }>) {
       },
       {
         onSuccess: () => {
+          draft.clearOnSuccess()
           setDeployedName(name)
           setStep('result')
         },
@@ -216,6 +221,13 @@ export function DeployFlow({ onClose }: Readonly<{ onClose: () => void }>) {
         })}
       </p>
       <div className="min-h-0 min-w-0 -mx-1 flex-1 space-y-4 overflow-y-auto px-1">
+        <DraftBanner
+          draft={draft}
+          onRestore={() => {
+            setNameTouched(true)
+            setStep('source')
+          }}
+        />
         {step === 'template' ? (
           <StepTemplate selectedId={presetId} onSelect={choosePreset} />
         ) : null}
