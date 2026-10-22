@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types/image"
 	dockerclient "github.com/docker/docker/client"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/deploywatch"
@@ -159,7 +160,7 @@ func startSafetyStack(ctx context.Context, t *testing.T) *safetyStack {
 	}
 	t.Cleanup(func() { _ = rt.Close() })
 
-	for _, v := range []string{"v1", "v2", "v3", "v4"} {
+	for _, v := range []string{"v1", "v2", "v3", "v4", "v5"} {
 		if err := cli.ImageTag(ctx, safetyBase, safetyRepo+":"+v); err != nil {
 			t.Fatalf("tag %s: %v", v, err)
 		}
@@ -184,7 +185,7 @@ func startSafetyStack(ctx context.Context, t *testing.T) *safetyStack {
 	cfg := deploysafety.Effective{
 		SuccessThreshold: 3, StableWindow: 3 * time.Second, DrainTimeout: 3 * time.Second,
 		WatchWindow: 60 * time.Second, WatchMaxRestarts: 2, WatchErrorRate: 0.2, WatchMinRequests: 20,
-		AutoRollback: true, RollbackPins: 3, WatchInterval: time.Second,
+		WatchMode: deploysafety.WatchModeAuto, WatchSoftTicks: 3, RollbackPins: 3, WatchInterval: time.Second,
 	}
 	pinner := &deploywatch.Pinner{Store: db, Images: rt, Keep: cfg.RollbackPins, Namespace: "lrtest", Logger: logger}
 	app := application.New(safetyService, db, rt,
@@ -207,9 +208,12 @@ func startSafetyStack(ctx context.Context, t *testing.T) *safetyStack {
 	t.Cleanup(func() { _ = tdb.Close() })
 	go telemetry.NewRequestSampler(ingress.DefaultRequestStats(), tdb, time.Second, logger).Run(ctx)
 
+	tracker := alerting.NewRestartTracker()
+	go func() { _ = tracker.Run(ctx, rt, db, time.Second, logger) }()
+
 	var mu sync.Mutex
 	watcher := &deploywatch.Watcher{
-		Store: db, Defaults: cfg, Metrics: telemetry.NewLocalFederator(tdb), Nudger: s.engine, Logger: logger,
+		Store: db, Audit: db, Restarts: tracker, Defaults: cfg, Metrics: telemetry.NewLocalFederator(tdb), Nudger: s.engine, Logger: logger,
 		SampleInterval: time.Second,
 		Inspectors:     func(string) (docker.ExitStateInspector, error) { return rt, nil },
 		Notify: func(_ context.Context, _, _, message string) {
