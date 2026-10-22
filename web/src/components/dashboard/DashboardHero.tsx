@@ -1,12 +1,10 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
-import { Button } from '@/components/ui/button'
 import { dayPeriod } from '../../lib/dashboardHome'
 import { useAuthUsername } from '../../hooks/useAuthUsername'
 import { useBrand } from '../../hooks/useBrand'
 import { useMinuteNow } from '../../hooks/useMinuteNow'
-import { CreateResourceWizard } from '../CreateResourceWizard'
+import { NewAppMenu } from '../NewAppMenu'
 import { PageTemplate } from '../shell/PageTemplate'
 
 export function DashboardHero({
@@ -16,7 +14,6 @@ export function DashboardHero({
   banners?: ReactNode
   children: ReactNode
 }) {
-  const { t } = useTranslation()
   const { t: td } = useTranslation('dashboard')
   const brand = useBrand()
   const username = useAuthUsername()
@@ -32,16 +29,7 @@ export function DashboardHero({
       titleSize="greeting"
       eyebrow={brand.Name}
       title={greeting}
-      actions={
-        <CreateResourceWizard
-          trigger={
-            <Button size="sm">
-              <PlusIcon />
-              {t('shell.newApp')}
-            </Button>
-          }
-        />
-      }
+      actions={<NewAppMenu />}
       banners={banners}
     >
       {children}

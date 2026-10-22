@@ -36,6 +36,7 @@ import { SAMPLE_APP_CAP } from './FleetTiles'
 import { useSuggestionRunner } from './useSuggestionRunner'
 
 const MAX_SHOWN = 4
+const MAX_LABEL = 24
 
 type SingleStep = Exclude<NextStep, StepGroup>
 
@@ -62,8 +63,13 @@ function StepRow({
   const detail = attention
     ? step.detail
     : t(`getStarted:steps.${step.stepId}.what`)
+  // A server next-step sentence is guidance, not a button label.
+  const sentence =
+    attention && step.actionLabel.length > MAX_LABEL ? step.actionLabel : ''
   const label = attention
-    ? step.actionLabel
+    ? sentence
+      ? t('dashboard:nextSteps.review')
+      : step.actionLabel
     : step.inProgress
       ? t('dashboard:nextSteps.continue')
       : t(`getStarted:steps.${step.stepId}.cta`)
@@ -90,12 +96,17 @@ function StepRow({
               {detail}
             </span>
           ) : null}
+          {sentence ? (
+            <span className="mt-0.5 line-clamp-2 block text-xs text-foreground/80">
+              {sentence}
+            </span>
+          ) : null}
         </span>
       </div>
       <Button
         size="sm"
         variant={attention ? 'default' : 'outline'}
-        className="self-start @md:self-auto"
+        className="shrink-0 self-start whitespace-nowrap @md:self-auto"
         onClick={onRun}
       >
         {label}

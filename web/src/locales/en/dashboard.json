@@ -209,7 +209,8 @@
       "show_one": "Show {{count}}",
       "show_other": "Show all {{count}}",
       "hide": "Hide"
-    }
+    },
+    "review": "Review"
   },
   "deploys": {
     "title": "Recent deploys",
@@ -281,5 +282,31 @@
     "moveUp": "Move {{name}} up",
     "moveDown": "Move {{name}} down",
     "hide": "Hide {{name}}"
+  },
+  "newApp": {
+    "label": "New app",
+    "more": "More ways to deploy",
+    "items": {
+      "git": {
+        "title": "From a Git repo",
+        "hint": "Build and deploy on every push"
+      },
+      "image": {
+        "title": "From a Docker image",
+        "hint": "Pull a prebuilt image"
+      },
+      "template": {
+        "title": "From a template",
+        "hint": "n8n, Uptime Kuma, MinIO and more"
+      },
+      "compose": {
+        "title": "From Docker Compose",
+        "hint": "Deploy every service in a file"
+      },
+      "database": {
+        "title": "A database",
+        "hint": "Postgres, MySQL, Redis and more"
+      }
+    }
   }
 }
