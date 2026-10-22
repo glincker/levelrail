@@ -26,6 +26,11 @@ import {
 } from '../../../lib/repoImport'
 import type { NewAppEdits } from '../../../lib/newApp'
 import type { ImportAnalysis } from '../../../queries/importAnalyze'
+import { DeployOptions } from './DeployOptions'
+import {
+  DEFAULT_DEPLOY_OPTIONS,
+  type DeployOptionsValue,
+} from '../../../lib/deployOptions'
 
 const SECRET_KEY = /secret|token|password|passwd|key|credential/i
 const BUILD_TYPES = ['railpack', 'dockerfile', 'static'] as const
@@ -67,6 +72,9 @@ export function RepoSimpleForm({
   const [customDomain, setCustomDomain] = useState('')
   const [advanced, setAdvanced] = useState<SimpleFormValues['advanced']>({})
   const [submitted, setSubmitted] = useState(false)
+  const [options, setOptions] = useState<DeployOptionsValue>(
+    DEFAULT_DEPLOY_OPTIONS,
+  )
 
   const nameError = validateAppName(name, takenNames)
   const domainError =
@@ -91,14 +99,17 @@ export function RepoSimpleForm({
     const allEnv = { ...env }
     for (const v of extra)
       if (v.key.trim() !== '') allEnv[v.key.trim()] = v.value
-    onSubmit(
-      editsFromForm(analysis, {
-        name,
-        env: allEnv,
-        customDomain: customOpen ? customDomain : '',
-        advanced,
-      }),
-    )
+    const edits = editsFromForm(analysis, {
+      name,
+      env: allEnv,
+      customDomain: customOpen ? customDomain : '',
+      advanced,
+    })
+    onSubmit({
+      ...edits,
+      healthPath: options.healthPath.trim() || edits.healthPath,
+      deployOptions: options,
+    })
   }
 
   const num = (v: string) => {
@@ -248,6 +259,13 @@ export function RepoSimpleForm({
           </div>
         )}
       </Field>
+
+      <DeployOptions
+        analysis={analysis}
+        branch={branch}
+        value={options}
+        onChange={setOptions}
+      />
 
       <Collapsible open={advancedOpen} onOpenChange={onAdvancedOpen}>
         <CollapsibleTrigger className="text-sm text-muted-foreground underline underline-offset-2">

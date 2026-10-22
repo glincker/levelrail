@@ -1,4 +1,9 @@
 import { ApiError } from './apiError'
+import {
+  applyDeployOptions,
+  type DeployOptionsValue,
+  type OptionOutcome,
+} from './deployOptions'
 import { createApp } from '../queries/apps'
 import { createAppConnection } from '../queries/appConnections'
 import { createDatabase, fetchDatabase } from '../queries/databases'
@@ -48,6 +53,8 @@ export interface NewAppEdits {
   /** Operator-typed env values; the repository's own values are never read. */
   env: Record<string, string>
   databases: DatabaseEdit[]
+  /** Applied after the app exists, see applyDeployOptions. */
+  deployOptions?: DeployOptionsValue
 }
 
 export type ChangeKind = 'app' | 'source' | 'database' | 'domain' | 'env'
@@ -238,6 +245,8 @@ async function ensureDatabase(d: DatabaseEdit): Promise<void> {
 export interface ApplyResult {
   appName: string
   deployId: string
+  /** Outcome of each chosen deploy option; empty when none were chosen. */
+  options: OptionOutcome[]
 }
 
 /**
@@ -304,7 +313,10 @@ export async function applyNewApp(
     })
     if (!built.id)
       throw new Error('the build did not return a deploy attempt id')
-    return { appName: e.name, deployId: built.id }
+    const options = e.deployOptions
+      ? await applyDeployOptions(e.name, e.deployOptions)
+      : []
+    return { appName: e.name, deployId: built.id, options }
   } catch (err) {
     throw new ApplyStepError(step, err, appCreated)
   }

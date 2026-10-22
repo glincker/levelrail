@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -24,12 +25,27 @@ import {
   saveImportDraft,
 } from '../../lib/importDraft'
 import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
+import { failedOutcomes, type OptionOutcome } from '../../lib/deployOptions'
 import { SourceStep } from './SourceStep'
 import { FindingsStep } from './FindingsStep'
 import { ReviewStep } from './ReviewStep'
 
 type StepId = 'source' | 'findings' | 'review'
 const STEPS: StepId[] = ['source', 'findings', 'review']
+
+function failureText(t: TFunction<'newApp'>, o: OptionOutcome): string {
+  const reason =
+    o.reason === 'path'
+      ? t('deployOptions.jobs.pathError')
+      : o.reason === 'cron'
+        ? t('deployOptions.jobs.cronError')
+        : o.reason
+  if (o.key === 'previews')
+    return t('deployOptions.failed.previews', { reason })
+  if (o.key === 'job')
+    return t('deployOptions.failed.job', { reason, path: o.subject })
+  return t('deployOptions.failed.deployOnPush', { reason })
+}
 
 interface Failure {
   step: ApplyStep
@@ -66,10 +82,14 @@ export function NewAppWizard() {
     onSuccess: (result) => {
       clearImportDraft()
       void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+      const failed = failedOutcomes(result.options)
       toast.add({
         title: t('toast.created', { name: result.appName }),
-        description: t('toast.watching'),
-        type: 'success',
+        description:
+          failed.length > 0
+            ? failed.map((o) => failureText(t, o)).join(' ')
+            : t('toast.watching'),
+        type: failed.length > 0 ? 'warning' : 'success',
       })
       void navigate({
         to: '/apps/$name/deploys/$deployId/logs',
