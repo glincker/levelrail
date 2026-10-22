@@ -106,6 +106,8 @@ To disconnect GitHub, call `DELETE /api/v1/github-app`. To disconnect one GitLab
 
 ## Connecting more than one account
 
+The quickest way to see and manage every account is the **Git connections** page (**Settings, Git connections**, `/settings/git-connections`). It lists each GitHub, GitLab, Bitbucket, Bitbucket Server, Gitea and Forgejo (including Codeberg) account in one place with its health, repository count and the apps using it. Its **Add account** menu starts the connect flow for any host and, where the host needs one, asks for a primary domain first. In the repository picker, when more than one account is connected, account chips filter the list and the last choice is remembered per user.
+
 GitHub supports many installations. GitLab, Bitbucket and Gitea support many accounts too: a personal and a work Bitbucket workspace, several GitLab groups or accounts, gitlab.com next to a self-managed GitLab, or two Gitea servers. Each one is a **connection** with its own label, host, signed-in account, scopes and health.
 
 To add another account:

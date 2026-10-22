@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowsClockwiseIcon,
   MagnifyingGlassIcon,
@@ -24,6 +24,13 @@ import { GitRepoCard } from './GitRepoCard'
 import { GitRepoListStatus } from './GitRepoListStatus'
 import { clock } from '../lib/clockTime'
 import { gitProviderKeys } from '../queries/gitProviders'
+import { sessionQueryOptions } from '../queries/security'
+import {
+  readAccountFilter,
+  resolveAccountFilter,
+  writeAccountFilter,
+} from '../lib/gitAccounts'
+import { BrandIcon } from './BrandIcon'
 
 const SEARCH_DEBOUNCE_MS = 250
 const MAX_OWNER_CHIPS = 8
@@ -32,19 +39,26 @@ function FilterChip({
   label,
   active,
   onClick,
-}: Readonly<{ label: string; active: boolean; onClick: () => void }>) {
+  icon,
+}: Readonly<{
+  label: string
+  active: boolean
+  onClick: () => void
+  icon?: React.ReactNode
+}>) {
   return (
     <button
       type="button"
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        'rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
         active
           ? 'border-primary/50 bg-primary/10 text-primary'
           : 'border-border text-muted-foreground hover:bg-muted',
       )}
     >
+      {icon}
       {label}
     </button>
   )
@@ -75,7 +89,10 @@ export function GitRepoListPicker({
   const [search, setSearch] = useState('')
   const [debounced, setDebounced] = useState('')
   const [owner, setOwner] = useState('')
-  const [connection, setConnection] = useState('')
+  const session = useQuery(sessionQueryOptions())
+  const user = session.data?.username ?? ''
+  const [chosen, setChosen] = useState<string | null>(null)
+  const connection = chosen ?? readAccountFilter(user, provider)
   const [hideArchived, setHideArchived] = useState(false)
   const [hideForks, setHideForks] = useState(false)
 
@@ -175,6 +192,20 @@ export function GitRepoListPicker({
 
   const owners = first?.owners ?? []
   const accounts = first?.connections ?? []
+  const staleChoice =
+    first !== undefined &&
+    connection !== '' &&
+    accounts.length > 0 &&
+    resolveAccountFilter(connection, accounts) === ''
+  if (staleChoice) setChosen('')
+  useEffect(() => {
+    if (chosen === '') writeAccountFilter(user, provider, '')
+  }, [chosen, user, provider])
+
+  function chooseAccount(id: string) {
+    setChosen(id)
+    writeAccountFilter(user, provider, id)
+  }
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
@@ -218,14 +249,15 @@ export function GitRepoListPicker({
             <FilterChip
               label={t('picker.filters.allAccounts')}
               active={connection === ''}
-              onClick={() => setConnection('')}
+              onClick={() => chooseAccount('')}
             />
             {accounts.map((a) => (
               <FilterChip
                 key={a.connection_id}
                 label={`${a.account || a.label} (${a.loaded})`}
                 active={connection === a.connection_id}
-                onClick={() => setConnection(a.connection_id)}
+                icon={<BrandIcon name={a.provider} className="size-3.5" />}
+                onClick={() => chooseAccount(a.connection_id)}
               />
             ))}
           </>

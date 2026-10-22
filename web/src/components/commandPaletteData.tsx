@@ -1,6 +1,7 @@
 import * as React from 'react'
 import {
   GaugeIcon,
+  GitBranchIcon,
   LockKeyIcon,
   StackIcon,
   DatabaseIcon,
@@ -260,6 +261,13 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'Storage destinations',
     <CloudArrowUpIcon />,
     '/settings/storage',
+    'Settings',
+  ),
+  nav(
+    'settings-git-connections',
+    'Git connections',
+    <GitBranchIcon />,
+    '/settings/git-connections',
     'Settings',
   ),
   nav(

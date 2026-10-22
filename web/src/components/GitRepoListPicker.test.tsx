@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
@@ -99,6 +105,7 @@ function renderPicker(onSelect = vi.fn()): void {
 }
 
 afterEach(() => {
+  window.localStorage.clear()
   vi.unstubAllGlobals()
 })
 
@@ -204,7 +211,8 @@ describe('GitRepoListPicker', () => {
 
   it('shows the next check time when rate limited with nothing saved, and retries on demand', async () => {
     let calls = 0
-    mockFetch(() => {
+    mockFetch((url) => {
+      if (!url.includes('/git/repos')) return json({})
       calls += 1
       return calls === 1
         ? json(
@@ -336,5 +344,48 @@ describe('GitRepoListPicker', () => {
         urlOf(input).includes('connection=gc_b'),
       ),
     ).toBe(true)
+  })
+
+  it('remembers the chosen account and drops it when that account is gone', async () => {
+    window.localStorage.clear()
+    const facet = (id: string, account: string) => ({
+      connection_id: id,
+      provider: 'gitlab',
+      label: account,
+      account,
+      loaded: 1,
+      failed: false,
+    })
+    const both = [facet('gc_a', 'ann'), facet('gc_b', 'bob')]
+    mockFetch(() =>
+      json(
+        page([item('corp', 'web', { connection_id: 'gc_b', account: 'bob' })], {
+          connections: both,
+        }),
+      ),
+    )
+    renderPicker()
+    fireEvent.click(await screen.findByRole('button', { name: 'bob (1)' }))
+    expect(window.localStorage.getItem('gitAccountFilter.v1:anon:github')).toBe(
+      'gc_b',
+    )
+
+    cleanup()
+    const fetchMock = mockFetch(() =>
+      json(page([item('ann', 'web')], { connections: [facet('gc_a', 'ann')] })),
+    )
+    renderPicker()
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(([input]) =>
+          urlOf(input).includes('connection=gc_b'),
+        ),
+      ).toBe(true)
+    })
+    await waitFor(() => {
+      expect(
+        window.localStorage.getItem('gitAccountFilter.v1:anon:github'),
+      ).toBeNull()
+    })
   })
 })
