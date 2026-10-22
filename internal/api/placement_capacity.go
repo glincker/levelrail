@@ -29,6 +29,7 @@ func (rt *Router) loadPlacementInventory(ctx context.Context) (placementInventor
 	if err != nil {
 		return placementInventory{}, err
 	}
+	databases = rt.withoutPendingDatabases(ctx, databases)
 	inv := placementInventory{nodes: nodes, counts: make(map[string]int, len(nodes)), requested: make(map[string]placement.Resources, len(nodes))}
 	for _, s := range services {
 		inv.counts[s.NodeID]++
