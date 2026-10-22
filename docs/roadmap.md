@@ -88,7 +88,7 @@ These exist and are tested, but are gated or carry a beta label. See [feature st
 
 - Real public ACME: one live run against Let's Encrypt on a public VPS is recorded in the [runbook](/acme-verification-runbook). Renewal close to expiry, DNS-01 wildcards and a deliberate failure against the production CA are not yet exercised live.
 - Multi-node on real hosts: the WireGuard mesh and cross-host remote transport are unverified outside fakes and local Docker daemons.
-- Idle footprint on Linux: measured only on an Apple M4 Max dev build so far. See [performance](/performance).
+- Idle footprint on Linux: measured in a Docker Desktop container (not bare metal) with a harness and opt-in regression guard. A bare metal or VPS number is still open. See [performance](/performance).
 - Load and failover numbers: the harness exists (`levelrail-cli bench run`), no published results yet. See [benchmarks](/benchmarks).
 - Template coverage: a sample of the roughly 360 templates is deployed by e2e tests, not the whole catalog.
 - Other database engines: PITR is Postgres only, and TLS by default is Postgres and Redis only.
