@@ -15,13 +15,13 @@ type listDeploymentsInput struct {
 	Branch      string `json:"branch,omitempty" jsonschema:"only this branch"`
 	Trigger     string `json:"trigger,omitempty" jsonschema:"comma-separated: git push, manual, rollback, api, preview"`
 	Environment string `json:"environment,omitempty" jsonschema:"environment name or id"`
-	Since       string `json:"since,omitempty" jsonschema:"RFC3339 time or a duration ago such as 24h or 7d"`
-	Until       string `json:"until,omitempty" jsonschema:"RFC3339 time or a duration ago"`
-	Query       string `json:"q,omitempty" jsonschema:"search commit message, commit sha prefix and app name"`
-	Live        bool   `json:"live,omitempty" jsonschema:"only the release currently serving each app"`
-	PR          int    `json:"pr,omitempty" jsonschema:"only previews of this pull request number"`
+	Since       string `json:"since,omitempty" jsonschema:"RFC3339 or duration ago (24h, 7d)"`
+	Until       string `json:"until,omitempty" jsonschema:"RFC3339 or duration ago"`
+	Query       string `json:"q,omitempty" jsonschema:"commit message, sha prefix or app name"`
+	Live        bool   `json:"live,omitempty" jsonschema:"only releases now serving"`
+	PR          int    `json:"pr,omitempty" jsonschema:"only this PR's previews"`
 	Limit       int    `json:"limit,omitempty" jsonschema:"page size, default 50, max 200"`
-	Cursor      string `json:"cursor,omitempty" jsonschema:"next_cursor from a previous page"`
+	Cursor      string `json:"cursor,omitempty" jsonschema:"next_cursor of the prior page"`
 	Fields      string `json:"fields,omitempty" jsonschema:"comma-separated keys to keep per item"`
 }
 
@@ -42,7 +42,7 @@ func splitList(s string) []string {
 func registerDeploymentTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_deployments",
-		Description: "List deployments across all readable apps, newest first: status, trigger, commit, branch, digest, duration, rollback links. Filter by status, app, branch, trigger, environment, time, text, live or PR; page with cursor.",
+		Description: "List deployments across readable apps, newest first. Filter by status, app, branch, trigger, environment, time, text, live or PR; page with cursor.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listDeploymentsInput) (*mcp.CallToolResult, apiclient.DeploymentList, error) {
 		opts := apiclient.DeploymentListOptions{
 			Statuses: splitList(in.Status), Triggers: splitList(in.Trigger), App: in.App, Branch: in.Branch,

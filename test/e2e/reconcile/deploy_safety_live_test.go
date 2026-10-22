@@ -141,6 +141,14 @@ func TestDeploySafety_Live_ZeroFailedRequests(t *testing.T) {
 	t.Logf("requests %d, ok by version %v, app 5xx %d, failed %d", load.total.Load(), ok, appErrors, len(failures))
 }
 
+func safetyConfig() deploysafety.Effective {
+	return deploysafety.Effective{
+		SuccessThreshold: 3, StableWindow: 3 * time.Second, DrainTimeout: 3 * time.Second,
+		WatchWindow: 60 * time.Second, WatchMaxRestarts: 2, WatchErrorRate: 0.2, WatchMinRequests: 20,
+		WatchMode: deploysafety.WatchModeAuto, WatchSoftTicks: 3, RollbackPins: 3, WatchInterval: time.Second,
+	}
+}
+
 func startSafetyStack(ctx context.Context, t *testing.T) *safetyStack {
 	t.Helper()
 	cli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
@@ -182,11 +190,7 @@ func startSafetyStack(ctx context.Context, t *testing.T) *safetyStack {
 
 	db := openLiveStore(t)
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
-	cfg := deploysafety.Effective{
-		SuccessThreshold: 3, StableWindow: 3 * time.Second, DrainTimeout: 3 * time.Second,
-		WatchWindow: 60 * time.Second, WatchMaxRestarts: 2, WatchErrorRate: 0.2, WatchMinRequests: 20,
-		WatchMode: deploysafety.WatchModeAuto, WatchSoftTicks: 3, RollbackPins: 3, WatchInterval: time.Second,
-	}
+	cfg := safetyConfig()
 	pinner := &deploywatch.Pinner{Store: db, Images: rt, Keep: cfg.RollbackPins, Namespace: "lrtest", Logger: logger}
 	app := application.New(safetyService, db, rt,
 		application.WithStabilityGate(cfg, db), application.WithGateRecorder(db),

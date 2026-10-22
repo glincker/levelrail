@@ -142,6 +142,7 @@ var toolTable = map[string]Meta{
 	"bulk_apps":                             {clsM, "apps", 0},
 	"bulk_delete_apps":                      {clsD, "apps", 0},
 	"compare_deploys":                       {clsR, "deploys", unt},
+	"get_deploy_timeline":                   {clsR, "deploys", unt},
 	"promote_app":                           {clsM, "deploys", 0},
 	"preview_promote_app":                   {clsR, "deploys", 0},
 	"list_deploy_approvals":                 {clsR, "deploys", unt},

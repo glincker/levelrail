@@ -163,6 +163,7 @@
   "host_port",
   "image",
   "image_digest",
+  "memory_from_template",
   "name",
   "node_id",
   "pending_image",
@@ -177,6 +178,7 @@
   "secrets",
   "storage_target_id",
   "strategy",
+  "strategy_reason",
   "tags",
   "vault_env",
   "volumes"
@@ -249,6 +251,7 @@
   "host_port",
   "image",
   "image_digest",
+  "memory_from_template",
   "name",
   "node_id",
   "pending_approval",
@@ -264,6 +267,7 @@
   "secrets",
   "storage_target_id",
   "strategy",
+  "strategy_reason",
   "tags",
   "vault_env",
   "volumes"
@@ -281,6 +285,7 @@
   "effective_idle_ttl_seconds",
   "endpoint_url",
   "engine",
+  "external",
   "gpu_count",
   "gpu_device_ids",
   "hf_token_set",
@@ -325,6 +330,8 @@
   "domain",
   "probe_note",
   "probed",
+  "propagation",
+  "records",
   "status"
  ],
  "expire_alert_silence": [
@@ -401,6 +408,7 @@
   "host_port",
   "image",
   "image_digest",
+  "memory_from_template",
   "name",
   "node_id",
   "pending_image",
@@ -415,6 +423,7 @@
   "secrets",
   "storage_target_id",
   "strategy",
+  "strategy_reason",
   "tags",
   "vault_env",
   "volumes"
@@ -428,22 +437,27 @@
  "get_app_git_source": [
   "base_directory",
   "branch",
+  "build_command",
   "build_path",
   "build_type",
   "created_at",
   "deploy_paths",
   "deploy_paths_ignore",
   "has_token",
+  "poll",
   "post_pr_comments",
   "preview_enabled",
+  "publish_dir",
   "repo_url",
   "report_status",
   "resolved_build",
   "service_name",
   "trigger_mode",
   "updated_at",
+  "webhook_registration",
   "webhook_secret",
-  "webhook_url"
+  "webhook_url",
+  "webhook_url_warning"
  ],
  "get_app_hook_runs": [
   "post_deploy",
@@ -616,12 +630,16 @@
   "weight"
  ],
  "get_cdn_overview": [
+  "bytes_out",
   "cache",
   "error_rate_5xx",
+  "from",
   "has_traffic",
   "nodes",
   "rate_per_sec",
+  "regions_labeled",
   "requests",
+  "to",
   "window"
  ],
  "get_cloudflare_tunnel_status": [
@@ -685,6 +703,8 @@
   "name",
   "node_id",
   "project_id",
+  "provision_reason",
+  "provision_state",
   "public_port",
   "publicly_accessible",
   "resources",
@@ -807,6 +827,10 @@
   "types",
   "unlicensed"
  ],
+ "get_deploy_timeline": [
+  "events",
+  "verdict"
+ ],
  "get_deploy_vulnerabilities": [
   "deployment_id",
   "gate",
@@ -846,17 +870,41 @@
  ],
  "get_email_settings": [
   "backend",
+  "envelope_from",
+  "from_address",
+  "from_name",
+  "mailgun_api_key",
+  "mailgun_api_key_set",
+  "mailgun_domain",
+  "mailgun_region",
+  "postmark_server_token",
+  "postmark_server_token_set",
+  "reply_to",
+  "resend_api_key",
+  "resend_api_key_set",
+  "resend_from",
+  "sendgrid_api_key",
+  "sendgrid_api_key_set",
+  "sends_per_day",
+  "sends_per_minute",
   "ses_access_key_id",
   "ses_from",
   "ses_region",
+  "ses_regions",
   "ses_secret_access_key",
   "ses_secret_access_key_set",
+  "ses_smtp_password",
+  "ses_smtp_password_set",
+  "ses_smtp_port",
+  "ses_smtp_username",
   "smtp_from",
   "smtp_host",
   "smtp_password",
   "smtp_password_set",
   "smtp_port",
-  "smtp_username"
+  "smtp_username",
+  "tls_mode",
+  "tls_skip_verify"
  ],
  "get_encryption_key_status": [
   "apps",
@@ -941,6 +989,7 @@
   "effective_idle_ttl_seconds",
   "endpoint_url",
   "engine",
+  "external",
   "gpu_count",
   "gpu_device_ids",
   "hf_token_set",
@@ -1012,15 +1061,19 @@
   "cert",
   "cert_fingerprint",
   "created_at",
+  "failure",
   "gpu",
   "id",
   "is_local",
   "joined_at",
   "last_seen_at",
   "name",
+  "provider",
+  "region",
   "schedulable",
   "status",
-  "status_reason"
+  "status_reason",
+  "zone"
  ],
  "get_node_health": [
   "LastTransitionTime",
@@ -1097,6 +1150,7 @@
   "cpu_limit_millis",
   "created_at",
   "enabled",
+  "http",
   "id",
   "last_run_at",
   "last_run_output",
@@ -1136,6 +1190,7 @@
   "id",
   "name",
   "recommended_memory_bytes",
+  "requirements",
   "requires_configuration",
   "requires_gpu",
   "slogan"
@@ -1157,7 +1212,8 @@
  ],
  "get_system_doctor": [
   "checks",
-  "ok"
+  "ok",
+  "silenced"
  ],
  "get_system_status": [
   "alerts_configured",
@@ -1207,6 +1263,7 @@
  "list_alert_history": [
   "app",
   "at",
+  "cert",
   "changes",
   "changes_omitted",
   "channel_id",
@@ -1343,6 +1400,7 @@
  "list_backup_targets": [
   "bucket",
   "created_at",
+  "encrypt_dumps",
   "endpoint",
   "id",
   "name",
@@ -1369,9 +1427,13 @@
  "list_certificates": [
   "acme_failure",
   "apps",
+  "days_left",
   "domain",
   "expiry_class",
   "issuer",
+  "kind",
+  "last_renewal",
+  "next_retry_at",
   "not_after",
   "not_before",
   "renewal",
@@ -1416,6 +1478,8 @@
   "name",
   "node_id",
   "project_id",
+  "provision_reason",
+  "provision_state",
   "public_port",
   "publicly_accessible",
   "resources",
@@ -1701,6 +1765,7 @@
   "effective_idle_ttl_seconds",
   "endpoint_url",
   "engine",
+  "external",
   "gpu_count",
   "gpu_device_ids",
   "hf_token_set",
@@ -1754,15 +1819,19 @@
   "cert",
   "cert_fingerprint",
   "created_at",
+  "failure",
   "gpu",
   "id",
   "is_local",
   "joined_at",
   "last_seen_at",
   "name",
+  "provider",
+  "region",
   "schedulable",
   "status",
-  "status_reason"
+  "status_reason",
+  "zone"
  ],
  "list_notification_channels": [
   "created_at",
@@ -1859,7 +1928,12 @@
   "expires_at",
   "expiry_status",
   "id",
+  "last_refresh_error",
+  "last_refreshed_at",
   "name",
+  "next_refresh_at",
+  "preset",
+  "region",
   "registry_host",
   "username"
  ],
@@ -1882,6 +1956,7 @@
   "cpu_limit_millis",
   "created_at",
   "enabled",
+  "http",
   "id",
   "last_run_at",
   "last_run_output",
@@ -2140,6 +2215,7 @@
   "host_port",
   "image",
   "image_digest",
+  "memory_from_template",
   "name",
   "node_id",
   "pending_approval",
@@ -2155,6 +2231,7 @@
   "secrets",
   "storage_target_id",
   "strategy",
+  "strategy_reason",
   "tags",
   "vault_env",
   "volumes"
@@ -2231,6 +2308,7 @@
   "host_port",
   "image",
   "image_digest",
+  "memory_from_template",
   "name",
   "node_id",
   "pending_image",
@@ -2245,6 +2323,7 @@
   "secrets",
   "storage_target_id",
   "strategy",
+  "strategy_reason",
   "tags",
   "vault_env",
   "volumes"
@@ -2270,6 +2349,7 @@
   "host_port",
   "image",
   "image_digest",
+  "memory_from_template",
   "name",
   "node_id",
   "pending_approval",
@@ -2285,6 +2365,7 @@
   "secrets",
   "storage_target_id",
   "strategy",
+  "strategy_reason",
   "tags",
   "vault_env",
   "volumes"
@@ -2304,6 +2385,7 @@
   "host_port",
   "image",
   "image_digest",
+  "memory_from_template",
   "name",
   "node_id",
   "pending_approval",
@@ -2319,6 +2401,7 @@
   "secrets",
   "storage_target_id",
   "strategy",
+  "strategy_reason",
   "tags",
   "vault_env",
   "volumes"
@@ -2502,8 +2585,12 @@
  ],
  "verify_audit_log": [
   "checked",
+  "checkpoints",
+  "head",
   "ok",
-  "problems"
+  "problems",
+  "unchained",
+  "unverified"
  ],
  "verify_control_plane_backup": [
   "checks",

@@ -15,13 +15,13 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | account | 5 | 351 |
 | alerts | 10 | 1130 |
 | apps | 16 | 1979 |
-| audit | 2 | 320 |
+| audit | 2 | 271 |
 | backups | 13 | 1062 |
 | builds | 5 | 477 |
 | canary | 4 | 504 |
 | dashboards | 2 | 133 |
 | databases | 11 | 797 |
-| deploys | 22 | 2961 |
+| deploys | 23 | 2984 |
 | diagnostics | 5 | 496 |
 | domains | 12 | 987 |
 | environments | 3 | 417 |
@@ -55,7 +55,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 145 |
-| **total** | **245** | **24719** |
+| **total** | **246** | **24693** |
 
 ## Default session (progressive disclosure)
 

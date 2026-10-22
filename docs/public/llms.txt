@@ -66,6 +66,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Scheduled deploys](https://docs.levelrail.com/scheduled-deploys): redeploy the latest commit on a branch on a recurring cron schedule.
 - [Deployments page](https://docs.levelrail.com/deployments-page): the cross-app live deploy list, with filters, a details drawer, and redeploy/rollback actions.
 - [Deploy timeline](https://docs.levelrail.com/deploy-timeline): every deploy across apps on one live time axis, with zoom, filters and a CLI view.
+- [Deploy event timeline](https://docs.levelrail.com/deploy-event-timeline): one deploy as an ordered story from trigger to cutover, watch signals and traffic impact, live, replayable and comparable.
 - [Deploy previews](https://docs.levelrail.com/deploy-previews): thumbnail generation for each deploy, from free page metadata to a real browser screenshot.
 - [Screenshots](https://docs.levelrail.com/screenshots): a visual tour of the dashboard.
 - [Docker](https://docs.levelrail.com/docker): how Levelrail talks to the Docker Engine API directly.
