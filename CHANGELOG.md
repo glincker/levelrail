@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.8.0](https://github.com/glincker/levelrail/compare/v0.8.0...v0.8.0) (2026-10-22)
+## [0.8.1](https://github.com/glincker/levelrail/compare/v0.8.0...v0.8.1) (2026-10-22)
 
 
 ### Features
