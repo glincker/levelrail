@@ -18,6 +18,7 @@ import { AppImportImages } from './AppImportImages'
 import { AppImportInventory } from './AppImportInventory'
 import { AppImportPreflight } from './AppImportPreflight'
 import { AppImportRun } from './AppImportRun'
+import { CoolifyExitReportPanel } from './CoolifyExitReport'
 import { AppImportVolumes } from './AppImportVolumes'
 import { PortTakeoverPanel } from './PortTakeoverPanel'
 import {
@@ -109,6 +110,9 @@ function Session({
         </Button>
       </div>
       <Stepper current={current} reached={reached} onGo={setView} />
+      {session.platform === 'coolify' ? (
+        <CoolifyExitReportPanel sessionId={session.id} />
+      ) : null}
       {current === 'connect' ? (
         <AppImportConnect
           reconnect={{

@@ -1,0 +1,5 @@
+[
+  {"name": "hetzner-1", "ip": "203.0.113.10", "is_reachable": true, "proxy": {"type": "TRAEFIK"}, "settings": {"is_build_server": false}},
+  {"name": "hetzner-2", "ip": "203.0.113.11", "is_reachable": true, "proxy": {"type": "TRAEFIK"}, "settings": {"is_build_server": false}},
+  {"name": "builder", "ip": "203.0.113.12", "is_reachable": true, "proxy": {"type": "NONE"}, "settings": {"is_build_server": true}}
+]

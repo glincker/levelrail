@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/coolifyexit"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -30,6 +31,29 @@ func TestGetAppImportPlanIsReadOnlyGet(t *testing.T) {
 		t.Errorf("request = %s %s", method, path)
 	}
 	if len(out.Items) != 1 || out.Items[0].Remaining[0] != "copy volume data" {
+		t.Errorf("out = %+v", out)
+	}
+}
+
+func TestGetAppImportExitReportIsReadOnlyGet(t *testing.T) {
+	var method, path string
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		method, path = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(coolifyexit.Report{Mode: coolifyexit.ModeDryRun, Counts: map[coolifyexit.Outcome]int{coolifyexit.Manual: 1},
+			Rows:      []coolifyexit.Row{{Kind: "volume", Name: "web/uploads", Outcome: coolifyexit.Manual, Next: []string{"copy"}}},
+			Checklist: []coolifyexit.Step{{ID: "stage", Title: "Stage everything"}}})
+	})
+	res, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "get_app_import_exit_report", Arguments: map[string]any{"id": "appimp-1"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out appImportExitOutput
+	decodeStructured(t, res, &out)
+	if method != http.MethodGet || path != "/api/v1/migration/apps/sessions/appimp-1/exit-report" {
+		t.Errorf("request = %s %s", method, path)
+	}
+	if out.Counts["manual"] != 1 || len(out.Open) != 1 || out.Open[0] != "manual volume web/uploads" {
 		t.Errorf("out = %+v", out)
 	}
 }

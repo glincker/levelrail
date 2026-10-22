@@ -361,6 +361,7 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 	if _, err := rt.ensureAppLinked(ctx, p.Name, p.Name); err != nil {
 		return warnings, fmt.Errorf("link app: %w", err)
 	}
+	warnings = append(warnings, a.createImportedJobs(ctx, p.Name, p.Crons)...)
 	if a.sessionID != "" {
 		staged, err := a.finishStaging(ctx, p)
 		warnings = append(warnings, staged...)
