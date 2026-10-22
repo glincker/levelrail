@@ -1,8 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   ROW_LINK_OVERLAY,
   ResponsiveTable,
@@ -13,12 +13,33 @@ import { StatusLabel } from './AppRow'
 import { BrandTile } from './BrandLogoBadge'
 import { PlacementLabel } from './PlacementLabel'
 
+const MIB = 1024 * 1024
+const GIB = 1024 * MIB
+const DEFAULT_PAGE_SIZE = 50
+
+function pageSize(): number {
+  const raw = Number(
+    import.meta.env.VITE_DATABASES_PAGE_SIZE ?? DEFAULT_PAGE_SIZE,
+  )
+  return Number.isInteger(raw) && raw > 0 ? raw : DEFAULT_PAGE_SIZE
+}
+
+function Dot({ on }: { on: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`size-2 shrink-0 rounded-full ${on ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`}
+    />
+  )
+}
+
 export function DatabasesTable({
   databases,
 }: {
   databases: readonly DatabaseListEntry[]
 }) {
   const { t } = useTranslation('databases')
+  const [shown, setShown] = useState(pageSize)
   const columns = useMemo<ResponsiveColumn<DatabaseListEntry>[]>(
     () => [
       {
@@ -68,20 +89,38 @@ export function DatabasesTable({
         ),
       },
       {
+        id: 'size',
+        header: t('list.colSize'),
+        priority: 3,
+        width: 'w-28',
+        cell: (db) => {
+          const bytes = db.resources?.memory_bytes ?? 0
+          if (bytes <= 0) {
+            return (
+              <span className="text-xs text-muted-foreground">
+                {t('list.sizeShared')}
+              </span>
+            )
+          }
+          const label =
+            bytes >= GIB
+              ? t('list.sizeGb', { value: Number((bytes / GIB).toFixed(1)) })
+              : t('list.sizeMb', { value: Math.round(bytes / MIB) })
+          return <span className="font-mono text-xs">{label}</span>
+        },
+      },
+      {
         id: 'backups',
         header: t('list.colBackups'),
         priority: 3,
-        width: 'w-36',
+        width: 'w-40',
         cell: (db) => {
           const on = Boolean(db.backup_schedule)
           return (
-            <span className="flex items-center gap-1.5 text-xs">
-              <CloudArrowUpIcon
-                className="size-3.5 shrink-0 text-muted-foreground"
-                aria-hidden="true"
-              />
+            <span className="flex items-center gap-2 text-xs">
+              <Dot on={on} />
               <span
-                className={on ? 'text-foreground' : 'text-muted-foreground/70'}
+                className={on ? 'text-foreground' : 'text-muted-foreground'}
                 title={db.backup_schedule}
               >
                 {on ? t('list.backupsOn') : t('list.backupsOff')}
@@ -111,18 +150,40 @@ export function DatabasesTable({
     ],
     [t],
   )
+  const visible = databases.slice(0, shown)
   return (
-    <ResponsiveTable
-      rows={databases}
-      columns={columns}
-      getRowId={(db) => db.name}
-      ariaLabel={t('list.tableLabel')}
-      leading={{
-        header: <span className="sr-only">{t('list.colEngine')}</span>,
-        cell: (db) => (
-          <BrandTile name={db.engine} label={db.engine} size="sm" />
-        ),
-      }}
-    />
+    <div className="space-y-3">
+      <ResponsiveTable
+        rows={visible}
+        columns={columns}
+        getRowId={(db) => db.name}
+        ariaLabel={t('list.tableLabel')}
+        leading={{
+          header: <span className="sr-only">{t('list.colEngine')}</span>,
+          cell: (db) => (
+            <BrandTile name={db.engine} label={db.engine} size="sm" />
+          ),
+        }}
+      />
+      {visible.length < databases.length ? (
+        <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+          <span>
+            {t('list.showing', {
+              shown: visible.length,
+              total: databases.length,
+            })}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setShown((n) => n + pageSize())
+            }}
+          >
+            {t('list.showMore')}
+          </Button>
+        </div>
+      ) : null}
+    </div>
   )
 }
