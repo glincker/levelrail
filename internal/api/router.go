@@ -602,6 +602,7 @@ type Router struct {
 	advisor                      *advisorCache                                         // resource advisor findings, cached for a short TTL
 	externalDatabases            ExternalDatabaseStore                                 // always set, databases connected but not run
 	dnsResolver                  datamigrate.Resolver                                  // nil means the real resolver
+	migrationProber              *datamigrate.Prober                                   // nil means the real network, set in tests
 	sleepPortWake                appsleep.PortWaker                                    // nil disables port wake in the sleep routes
 	sleepActivity                SleepActivity                                         // nil falls back to the stored idle baseline
 	wakeToken                    string                                                // empty disables the wake hook

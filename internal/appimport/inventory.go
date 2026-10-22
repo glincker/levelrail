@@ -164,7 +164,7 @@ func judgeApp(a platformimport.App, dbHosts []string, byHost map[string]DBRef) E
 	e := Entry{
 		SourceID: a.SourceID, Name: a.Name, Kind: KindApp, Project: a.Project, Environment: a.Environment, Server: a.Server,
 		Source: sourceKind(a), Repo: a.GitURL, Branch: a.GitBranch, Image: a.Image, ImageID: a.ImageID, HostBuilt: a.HostBuilt, BuildPack: a.BuildPack, MapsTo: mapsTo(a),
-		Port: a.Port, Domains: a.Domains, Env: envSummary(a.Env), Volumes: volumeEntries(a.Volumes),
+		Port: a.Port, Domains: a.Domains, Env: envSummary(a.Env), Volumes: volumeEntries(a.Volumes), Crons: len(a.Crons),
 		MemoryBytes: a.MemoryBytes, NanoCPUs: a.NanoCPUs,
 	}
 	if a.Health != nil && a.Health.Path != "" {

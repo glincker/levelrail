@@ -348,6 +348,7 @@
             "group": "Migrate",
             "pages": [
               "migrate-to-levelrail",
+              "migration-wizard",
               "migrate-from-coolify",
               "coolify-exit-gap-report",
               "migrate-from-dokploy",

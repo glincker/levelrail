@@ -98,3 +98,47 @@ func exitReportOutput(id string, rep coolifyexit.Report) appImportExitOutput {
 	}
 	return out
 }
+
+type migrationJobOutput struct {
+	Phase        string   `json:"phase"`
+	Done         int      `json:"done"`
+	Total        int      `json:"total"`
+	Failed       []string `json:"failed"`
+	Next         []string `json:"next"`
+	SafeToDelete bool     `json:"safe_to_delete"`
+	OpenGates    []string `json:"open_gates"`
+}
+
+// registerMigrationJobTool reports where a migration job stands from recorded state only, so the
+// live DNS and response checks stay behind the CLI and the dashboard.
+func registerMigrationJobTool(server *mcp.Server, client *apiclient.Client) {
+	addTool(server, &mcp.Tool{
+		Name:        "get_migration_job_status",
+		Description: "Migration job progress, failed items, next steps and whether the old instance is safe to delete. Read only.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appImportPlanInput) (*mcp.CallToolResult, migrationJobOutput, error) {
+		job, err := client.MigrationJob(ctx, in.ID)
+		if err != nil {
+			return nil, migrationJobOutput{}, fmt.Errorf("get migration job %q: %w", in.ID, err)
+		}
+		out := migrationJobOutput{Phase: job.Phase, Done: job.Done, Total: job.Total, Failed: []string{}, Next: job.Next, OpenGates: []string{}}
+		if out.Next == nil {
+			out.Next = []string{}
+		}
+		for _, it := range job.Items {
+			if it.Retryable {
+				out.Failed = append(out.Failed, it.Name+" ("+it.State+"): "+it.Reason)
+			}
+		}
+		rep, err := client.MigrationRetire(ctx, in.ID, false, nil)
+		if err != nil {
+			return nil, migrationJobOutput{}, fmt.Errorf("get safe-to-delete state for %q: %w", in.ID, err)
+		}
+		out.SafeToDelete = rep.Safe
+		for _, g := range rep.Gates {
+			if g.Status != "pass" {
+				out.OpenGates = append(out.OpenGates, g.ID+": "+g.Detail)
+			}
+		}
+		return nil, out, nil
+	})
+}

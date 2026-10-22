@@ -68,7 +68,7 @@ func TestCoolifyExitReportAndCronImport(t *testing.T) {
 		t.Fatalf("source was written to: %v", v)
 	}
 
-	if rec = post("/api/v1/migration/coolify/exit-report", importBody(src.URL)); rec.Code != http.StatusBadRequest {
-		t.Errorf("non-coolify platform status %d", rec.Code)
+	if rec = post("/api/v1/migration/coolify/exit-report", `{"platform":"docker","snapshot":"[]"}`); rec.Code != http.StatusBadRequest {
+		t.Errorf("a pasted-file platform status %d", rec.Code)
 	}
 }
