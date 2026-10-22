@@ -285,6 +285,10 @@ Endpoints for:
 | GET | /api/v1/settings/dns-provider | AbilityRead | handleGetDNSProvider |
 | PUT | /api/v1/settings/dns-provider | AbilityRoot | handleSetDNSProvider |
 | POST | /api/v1/settings/dns-provider/test | AbilityRoot | handleTestDNSProvider |
+| GET | /api/v1/settings/google-cloud-dns | AbilityRead | handleGetGoogleCloudDNSSettings |
+| PUT | /api/v1/settings/google-cloud-dns | AbilityRoot | handleUpdateGoogleCloudDNSSettings |
+| DELETE | /api/v1/settings/google-cloud-dns | AbilityRoot | handleDisconnectGoogleCloudDNS |
+| POST | /api/v1/settings/google-cloud-dns/test | AbilityRoot | handleTestGoogleCloudDNS |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |

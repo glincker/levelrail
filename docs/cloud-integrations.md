@@ -13,7 +13,7 @@ This page lists, per cloud, what Levelrail does today and what is only planned. 
 | Cloud | Nodes | DNS and certificates | Backups and storage | Registry |
 | --- | --- | --- | --- | --- |
 | AWS | EC2 | Route53 | S3 | ECR, refreshed automatically |
-| Google Cloud | Compute Engine | Cloud DNS provider code only, not connectable yet (see below) | GCS through S3 interoperability (HMAC keys) | Artifact Registry, refreshed automatically |
+| Google Cloud | Compute Engine | Cloud DNS (records, automatic records, DNS-01), tested against a fake only | GCS through S3 interoperability (HMAC keys) | Artifact Registry, refreshed automatically |
 | Azure | VM provisioner in code, not verified | Planned (Azure DNS) | Planned (Blob Storage) | ACR, refreshed automatically |
 | Cloudflare | Not applicable | DNS zones, records and DNS-01 | R2 | Not applicable |
 | DigitalOcean | Droplets | Not supported | Not verified (Spaces) | Not applicable |
@@ -44,13 +44,10 @@ Works today:
 - **GCS storage destinations.** The Google Cloud Storage preset on the S3-compatible destination form uses `storage.googleapis.com`, path-style addressing and region `auto`. Create an HMAC key under Cloud Storage, Settings, Interoperability, for a service account that can write to the bucket. Service account JSON keys do not work here. Backup targets already had a GCS preset with the same endpoint. The Test button runs the same probe as every other destination. Status: tested against a local fake S3 server only, never against a real bucket.
 - **Artifact Registry.** The preset turns the Compute Engine service account JSON into a short-lived access token (username `oauth2accesstoken`) and renews it. Status: exercised against test doubles only, not yet against a real project.
 
-In the codebase, not yet usable:
-
-- **Cloud DNS provider code.** Zones, A, AAAA, CNAME and TXT records, and the record operations DNS-01 needs, written against the Cloud DNS REST API using the same service account JSON as Compute Engine. Tested against a local fake of the API only, never against a real project. It is not connected to anything yet: there is no settings page, CLI command or API route to enable it, and ingress does not use it for wildcard certificates, so you cannot use Cloud DNS from the product today.
+- **Cloud DNS.** Under Domains, Platform settings, Google Cloud DNS (or `levelrail-cli domains google-cloud-dns`), paste a service account JSON key with the DNS Administrator role and press Test to list the project's managed zones. Once enabled it manages zones and A, AAAA, CNAME and TXT records, creates records automatically when you add a domain, and issues wildcard certificates through DNS-01 using an in-repo ingress module (no extra dependency). The key is envelope encrypted and never returned; only the project id and service account email are shown. Cloudflare and Route53 take precedence when several providers are enabled. No routing policies, health checks, proxying or apex CNAME. Status: tested against a local fake of the Cloud DNS API only, never against a real project or a real certificate order.
 
 Planned:
 
-- Connecting Cloud DNS: settings, UI, CLI, automatic records on domain add, and a DNS-01 module for ingress.
 - Terraform modules.
 
 A GCE startup script for installing the control plane is on [Install on a cloud VM](/install-on-cloud) (documentation only).
@@ -136,7 +133,6 @@ Not verified:
 
 None of these exist yet.
 
-- Connecting the Cloud DNS provider (settings, UI, CLI, DNS-01)
 - Azure DNS provider
 - Azure Blob Storage backups
 - Terraform modules

@@ -1,6 +1,6 @@
 // Wire shapes for /api/v1/dns (internal/api/dns_zones*.go, internal/dnszones).
 
-export type DnsProviderName = 'cloudflare' | 'route53'
+export type DnsProviderName = 'cloudflare' | 'route53' | 'googleclouddns'
 
 export type DnsRecordType =
   'A' | 'AAAA' | 'CNAME' | 'TXT' | 'MX' | 'CAA' | 'SRV' | 'NS'

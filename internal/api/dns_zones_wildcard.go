@@ -43,7 +43,7 @@ func (rt *Router) requireWildcardDNS01(w http.ResponseWriter, r *http.Request, d
 		return true
 	}
 	writeJSON(w, http.StatusBadRequest, wildcardRejection{
-		Error:  fmt.Sprintf("%s needs a DNS-01 provider for its certificate (HTTP-01 cannot issue wildcards): connect Cloudflare or Route53 first", strings.Join(wild, ", ")),
+		Error:  fmt.Sprintf("%s needs a DNS-01 provider for its certificate (HTTP-01 cannot issue wildcards): connect Cloudflare, Route53 or Google Cloud DNS first", strings.Join(wild, ", ")),
 		Code:   wildcardNeedsDNS01,
 		FixURL: "/domains#dns-provider",
 		FixCLI: "domains cloudflare-dns set --cf-api-token <token>",

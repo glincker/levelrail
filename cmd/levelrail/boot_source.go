@@ -150,6 +150,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithCloudflareDNSTokens(deps.secretsManager))
 			// Prefers Cloudflare if both DNS-01 providers are enabled.
 			ingressOpts = append(ingressOpts, ingressreconcile.WithRoute53DNSCredentials(deps.secretsManager))
+			ingressOpts = append(ingressOpts, ingressreconcile.WithGoogleCloudDNSKey(deps.secretsManager))
 			// Per-domain HTTP Basic Auth passwords: same nil-secretsManager
 			// hazard as Cloudflare DNS-01 above, same "no domain gets a
 			// basic_auth handler" fallback when absent.

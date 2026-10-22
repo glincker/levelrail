@@ -257,6 +257,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		// through secretsManager.
 		opts = append(opts, api.WithCloudflareDNSTokenResolver(secretsManager))
 		opts = append(opts, api.WithRoute53DNSCredentialResolver(secretsManager))
+		opts = append(opts, api.WithGoogleCloudDNSSecrets(secretsManager))
 		// A cloud node provider's API token (Hetzner, DigitalOcean) goes
 		// through the same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithNodeProviderSecrets(secretsManager))

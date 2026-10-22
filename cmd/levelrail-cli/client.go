@@ -43,6 +43,9 @@ type (
 	updateCloudflareDNSRequest       = apiclient.UpdateCloudflareDNSRequest
 	route53DNSResource               = apiclient.Route53DNSResource
 	updateRoute53DNSRequest          = apiclient.UpdateRoute53DNSRequest
+	googleCloudDNSResource           = apiclient.GoogleCloudDNSResource
+	updateGoogleCloudDNSRequest      = apiclient.UpdateGoogleCloudDNSRequest
+	googleCloudDNSTestResult         = apiclient.GoogleCloudDNSTestResult
 	cloudflareTunnelResource         = apiclient.CloudflareTunnelResource
 	updateCloudflareTunnelRequest    = apiclient.UpdateCloudflareTunnelRequest
 	vaultSettingsResource            = apiclient.VaultSettingsResource

@@ -70,3 +70,10 @@ type VaultSettingsStore interface {
 type RegistryAuthTester interface {
 	TestRegistryAuth(ctx context.Context, host, username, password string) error
 }
+
+// GoogleCloudDNSStore is the store surface GET/PUT/DELETE
+// /api/v1/settings/google-cloud-dns need.
+type GoogleCloudDNSStore interface {
+	GetGoogleCloudDNSSettings(ctx context.Context) (store.GoogleCloudDNSSettings, error)
+	UpdateGoogleCloudDNSSettings(ctx context.Context, s store.GoogleCloudDNSSettings) error
+}
