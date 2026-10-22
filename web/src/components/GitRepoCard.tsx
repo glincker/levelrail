@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { NormalizedRepoOption } from '../lib/gitRepoOptions'
+import { BrandIcon, isBrandIconName } from './BrandIcon'
 
 // The owner is its own dimmed prefix so two repos with one name under
 // different owners are told apart at a glance.
@@ -57,7 +58,14 @@ export function GitRepoCard({
       </span>
       {option.account || option.connectionLabel ? (
         <span className="flex w-full items-center gap-1 text-xs text-muted-foreground">
-          <UserCircleIcon className="size-3 shrink-0" aria-hidden="true" />
+          {isBrandIconName(option.providerRef.kind) ? (
+            <BrandIcon
+              name={option.providerRef.kind}
+              className="size-3 shrink-0"
+            />
+          ) : (
+            <UserCircleIcon className="size-3 shrink-0" aria-hidden="true" />
+          )}
           <span className="truncate">
             {t('picker.account', {
               name: option.account || option.connectionLabel,

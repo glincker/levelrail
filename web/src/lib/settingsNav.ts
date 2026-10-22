@@ -325,6 +325,11 @@ export const settingsNavSections: SettingsNavSection[] = [
     id: 'integrations',
     items: [
       {
+        id: 'git-connections',
+        to: '/settings/git-connections',
+        icon: GitBranchIcon,
+      },
+      {
         id: 'github-app',
         to: '/settings/github-app',
         icon: GithubLogoIcon,

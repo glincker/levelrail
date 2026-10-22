@@ -653,6 +653,10 @@
       "audit-log": {
         "title": "Audit log",
         "description": "Who changed what, across every session and API token."
+      },
+      "git-connections": {
+        "title": "Git connections",
+        "description": "Every GitHub, GitLab, Bitbucket, Gitea and Forgejo account in one place."
       }
     },
     "search": "Search settings",
@@ -2836,6 +2840,76 @@
       "renameFailed": "Could not rename the account",
       "authorized": "Account authorized",
       "authorizedBody": "Its repositories are now available to pick from."
+    }
+  },
+  "gitConnectionsHub": {
+    "title": "Git connections",
+    "description": "Every Git account connected to this server, across all hosts.",
+    "loadFailed": "Could not load your Git accounts. Try again in a moment.",
+    "attention_one": "{{count}} account needs attention. Reconnect it so its apps keep deploying.",
+    "attention_other": "{{count}} accounts need attention. Reconnect them so their apps keep deploying.",
+    "openSettings": "Provider settings",
+    "scopes": "Scopes: {{scopes}}",
+    "banner": {
+      "description": "Connect GitHub, GitLab, Bitbucket, Gitea or Forgejo accounts, as many as you need, and pick repositories from any of them.",
+      "whatFor": "Connect one account per person, team or organization. Apps stay tied to the account they were created from, so you can add or remove accounts without touching your apps.",
+      "diagram": {
+        "repos": "Repos",
+        "server": "Server",
+        "branches": "Branches"
+      }
+    },
+    "add": {
+      "action": "Add account",
+      "domainTitle": "Set a primary domain first",
+      "domainBody": "This host sends you back to your server after you sign in, so the server needs a public domain.",
+      "continue": "Continue"
+    },
+    "stats": {
+      "repos": "Repos",
+      "apps": "Apps"
+    },
+    "health": {
+      "connected": "Connected",
+      "needsReconnect": "Needs reconnect",
+      "notAuthorized": "Not authorized",
+      "rateLimited": "Rate limited"
+    },
+    "disconnect": {
+      "description": "Apps are never deleted. Any app that used this account keeps running and needs another account connected before its next deploy.",
+      "affected": "These apps need another account: {{apps}}"
+    },
+    "hosts": {
+      "github": {
+        "name": "GitHub",
+        "asks": "You will create or pick a GitHub App and install it on an account or organization.",
+        "access": "Access follows the repositories the App is installed on."
+      },
+      "gitlab": {
+        "name": "GitLab",
+        "asks": "You will paste an OAuth application ID and secret, then sign in.",
+        "access": "Access follows the OAuth scopes you granted."
+      },
+      "bitbucket": {
+        "name": "Bitbucket",
+        "asks": "You will paste an OAuth consumer key and secret, then sign in.",
+        "access": "Access follows the OAuth permissions you granted."
+      },
+      "bitbucket_server": {
+        "name": "Bitbucket Server",
+        "asks": "You will paste your server URL and a personal access token.",
+        "access": "Access follows the token's permissions."
+      },
+      "gitea": {
+        "name": "Gitea",
+        "asks": "You will enter your Gitea URL and an OAuth application ID and secret, then sign in.",
+        "access": "Access follows the OAuth scopes you granted."
+      },
+      "forgejo": {
+        "name": "Forgejo and Codeberg",
+        "asks": "You will enter the server URL (codeberg.org works) and an OAuth application ID and secret, then sign in.",
+        "access": "Access follows the OAuth scopes you granted."
+      }
     }
   }
 }

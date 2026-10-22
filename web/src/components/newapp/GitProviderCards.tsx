@@ -45,6 +45,12 @@ export function GitProviderCards() {
           </li>
         ))}
       </ul>
+      <Link
+        to="/settings/git-connections"
+        className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
+      >
+        {t('source.git.manageAll')}
+      </Link>
     </div>
   )
 }

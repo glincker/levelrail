@@ -41,6 +41,7 @@
       "connectTitle": "Connect a git provider",
       "connectBody": "Connect an account to choose from your repositories, or paste a repository URL below.",
       "connect": "Connect",
+      "manageAll": "Manage all Git connections",
       "connectLabel": "Connect {{provider}}",
       "connected": "Connected",
       "pickTitle": "Your repositories",
