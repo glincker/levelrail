@@ -83,6 +83,7 @@ Three more on-demand toolsets, all read only. None is in the default session, an
 | `migrate` | `list_app_import_sessions` | read | App import sessions with step and per-state counts. |
 | `migrate` | `get_app_import_plan` | read | One session's per-app verdict, state, reasons and manual leftovers. |
 | `migrate` | `get_app_import_exit_report` | read | Coolify exit report of a connected session: outcome counts and each skipped or manual item. |
+| `migrate` | `get_migration_job_status` | read | Migration job progress, failed items, next steps and whether the old instance is safe to delete. |
 | `migrate` | `get_app_import_cutover_plan` | read | Cutover readiness of one staged app: verdict, checks, DNS method per domain. |
 | `migrate` | `list_app_import_cutover_runs` | read | Cutover dry runs and switches of one app with their state. |
 | `migrate` | `list_database_data_copies` | read | Status of each database data copy, with mismatches. |

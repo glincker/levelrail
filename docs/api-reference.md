@@ -939,6 +939,8 @@ Endpoints for:
 | PUT | /api/v1/nodes/{id}/failure-policy | AbilityRoot | handleSetNodeFailurePolicy |
 | POST | /api/v1/nodes/{id}/failure/lost | AbilityRoot | handleMarkNodeLost |
 | POST | /api/v1/nodes/{id}/failure/resolve | AbilityRoot | handleResolveNodeFailure |
+| GET | /api/v1/nodes/domains | AbilityRoot | handleNodeDomains |
+| GET | /api/v1/nodes/{id}/onboarding | AbilityRoot | handleGetNodeOnboarding |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -1890,6 +1892,13 @@ Routes that do not fit an existing group.
 | GET | /api/v1/function-kv/keys | Public | handleFunctionKVKeys |
 | POST | /api/v1/migration/coolify/exit-report | AbilityWriteSensitive | handleCoolifyExitReport |
 | GET | /api/v1/migration/apps/sessions/{id}/exit-report | AbilityRead | handleAppImportExitReport |
+| POST | /api/v1/migration/apps/test | AbilityWriteSensitive | handleAppImportTest |
+| GET | /api/v1/migration/apps/sessions/{id}/progress | AbilityRead | handleAppImportProgress |
+| GET | /api/v1/migration/apps/sessions/{id}/events | AbilityRead | handleAppImportEvents |
+| POST | /api/v1/migration/apps/sessions/{id}/probe | AbilityWriteSensitive | handleAppImportProbe |
+| GET | /api/v1/migration/apps/sessions/{id}/retire | AbilityRead | handleAppImportRetire |
+| POST | /api/v1/migration/apps/sessions/{id}/retire | AbilityWriteSensitive | handleAppImportRetire |
+| POST | /api/v1/migration/exit-report | AbilityWriteSensitive | handleCoolifyExitReport |
 | GET | /api/v1/deployments/{id}/timeline | AbilityRead | handleGetDeployTimeline |
 | GET | /api/v1/deployments/{id}/timeline/stream | AbilityRead | handleDeployTimelineStream |
 | GET | /api/v1/deployments/{id}/timeline/compare | AbilityRead | handleCompareDeployTimelines |

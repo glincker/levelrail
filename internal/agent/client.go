@@ -270,6 +270,16 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 		go cfg.renewer.Run(renewCtx, client)
 		go reportRenewals(renewCtx, cfg.renewer, func(m *agentpb.AgentMessage) error { return rs.Send(m) })
 	}
+	if cfg.onboardingProbe != nil {
+		send := sessionStream.Send
+		if cfg.renewer == nil {
+			ls := &lockedStream{inner: stream}
+			sessionStream, send = ls, ls.Send
+		}
+		obCtx, stopOnboarding := context.WithCancel(ctx)
+		defer stopOnboarding()
+		go onboardingLoop(obCtx, cfg.onboardingProbe, cfg.onboardingEvery, send)
+	}
 
 	heartbeatInterval := defaultHeartbeatInterval
 	if cfg.heartbeatInterval > 0 {
@@ -289,6 +299,8 @@ type sessionConfig struct {
 	keepaliveTimeout  time.Duration
 	gpuProbe          GPUProbe
 	hostProbe         HostProbe
+	onboardingProbe   OnboardingProbe
+	onboardingEvery   time.Duration
 	renewer           *Renewer
 	fileRoot          string
 }

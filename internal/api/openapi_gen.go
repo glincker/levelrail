@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1668 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1677 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -817,6 +817,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/settings/vault/rotate-credential", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleRotateVaultCredential", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodes", Description: "Nodes: fleet-level infrastructure, not scoped to any one app, so every route here requires AbilityRoot specifically rather than AbilityRead/AbilityWrite: minting a join token or removing a node is a materially more sensitive operation than editing one app's config, the same reasoning secrets.go's AbilityWriteSensitive already applies one level down at the per-app layer."},
 	{Method: "GET", Path: "/api/v1/nodes/allocations", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeAllocations", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/domains", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeDomains", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/failure-simulation", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleFailureSimulation", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/nodes/join-tokens", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRevokeNodeJoinTokens", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/join-tokens", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListPendingNodeJoinTokens", Description: ""},
@@ -851,6 +852,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/nodes/{id}/mesh/rejoin", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRejoinNodeMesh", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/mesh/rotate-key", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRotateNodeMeshKey", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/metrics", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleQueryNodeMetrics", Description: "Node-level metrics (sum of per-container samples for everything placed on this node, see handleQueryNodeMetrics's own doc comment for exactly what that does and doesn't mean): same AbilityRoot boundary and nil-telemetry 501 shape as every route above, and the same query-param contract as GET /apps/{name}/metrics above it."},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/onboarding", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeOnboarding", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/patch-status", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodePatchStatus", Description: "Latest OS-patch reading (internal/telemetry/hostpatch.go's HostPatchCollector), a single current fact rather than a time series, same AbilityRoot boundary as every other node route."},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/reenroll-token", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCreateNodeReenrollToken", Description: "Agent certificate lifecycle (node_cert.go, ADR 021)."},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/region", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeRegion", Description: ""},
@@ -1182,6 +1184,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/connect", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleConnectAppImportSession", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/cutover", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportCutover", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/cutover/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleAppImportCutoverVerify", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/events", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportEvents", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/exit-report", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportExitReport", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/images", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportImages", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/images/cancel", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCancelAppImportImages", Description: ""},
@@ -1196,7 +1199,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/items/{item}/route", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRouteAppImport", Description: ""},
 	{Method: "PUT", Path: "/api/v1/migration/apps/sessions/{id}/items/{item}/volumes/{vol}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleSetAppImportVolume", Description: ""},
 	{Method: "PUT", Path: "/api/v1/migration/apps/sessions/{id}/plan", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handlePutAppImportPlan", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/probe", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleAppImportProbe", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/progress", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportProgress", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/receipt", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportReceipt", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/retire", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportRetire", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/retire", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleAppImportRetire", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/rollback", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRollbackAppImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/stage", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleStageAppImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleVerifyAppImport", Description: ""},
@@ -1205,12 +1212,14 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/volumes/copy", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleAppImportVolumeCopy", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/ssh/host-keys", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleSSHHostKeys", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/ssh/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleSSHTest", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleAppImportTest", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/checklists", Ability: "AbilityRead", Group: "Other", Handler: "handleListMigrationChecklists", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/checklists/{app}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMigrationChecklist", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/checklists/{app}/steps/{step}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMigrationChecklistStep", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/coolify/exit-report", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCoolifyExitReport", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/cutover", Ability: "AbilityRead", Group: "Other", Handler: "handleCutoverReport", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/cutover/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCutoverVerify", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/exit-report", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCoolifyExitReport", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/hub/local-sources", Ability: "AbilityRead", Group: "Other", Handler: "handleHubLocalSources", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/hub/sessions", Ability: "AbilityRead", Group: "Other", Handler: "handleListHubSessions", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/hub/sessions", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateHubSession", Description: ""},

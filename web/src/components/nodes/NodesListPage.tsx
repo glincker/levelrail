@@ -11,6 +11,7 @@ import { AddNodeWizard } from '../../components/AddNodeWizard'
 import { BuildStrainSuggestion } from '../../components/BuildStrainSuggestion'
 import { ZoneSpreadCard } from '../../components/nodes/ZoneSpreadCard'
 import { ResilienceCard } from '../../components/nodes/ResilienceCard'
+import { LazyNodeDomainsCard } from '../../components/nodes/LazyNodeOnboarding'
 import { PageBanner } from '../PageBanner'
 import { HelpLink } from '../HelpLink'
 import { LazyNodesDiagram } from '../banners/LazyInfraDiagrams'
@@ -87,6 +88,7 @@ export function NodeListView({
       <PendingJoinTokensCard />
       <BuildStrainSuggestion nodes={nodes} />
       <ZoneSpreadCard />
+      <LazyNodeDomainsCard />
       <ResilienceCard />
       {nodes.length > 0 ? (
         <div className="min-w-0 overflow-x-auto rounded-lg">

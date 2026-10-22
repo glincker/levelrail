@@ -130,7 +130,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_app_images",
-		Description: "List every locally-present image tag under an app's current image's repo, newest first. Useful for finding an exact tag to pass to deploy_app or rollback_app. Read-only; an empty list means nothing to suggest, not an error.",
+		Description: "List locally-present image tags under an app's current image repo, newest first, for deploy_app or rollback_app. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.ImageResource, error) {
 		images, err := client.ListAppImages(ctx, in.Name)
 		if err != nil {

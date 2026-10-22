@@ -79,6 +79,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Load balancing](https://docs.levelrail.com/load-balancing): balance traffic across an app's replicas with health checks, retries, and sticky sessions.
 - [ACME verification runbook](https://docs.levelrail.com/acme-verification-runbook): diagnose and fix failed TLS certificate issuance.
 - [Multi-node](https://docs.levelrail.com/multi-node): add servers, the WireGuard mesh, and node placement.
+- [Add a node anywhere](https://docs.levelrail.com/add-node-anywhere): one guided flow to add an EC2, Google Cloud, VPS or home server node, with provider, region and zone auto-detect, preflight checks with fixes and failure-domain aware placement (beta).
 - [Multi-node quickstart](https://docs.levelrail.com/multi-node-quickstart): the short path to a second server and today's known multi-node gaps.
 - [Node provisioning](https://docs.levelrail.com/node-provisioning): automate creating a server at a cloud provider and enrolling it as a node.
 - [Multi-cloud provisioning quickstart](https://docs.levelrail.com/multi-cloud-provisioning): pick a cloud provider and add a provisioned node in a few commands.
@@ -118,6 +119,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Integrations](https://docs.levelrail.com/integrations): attach curated third-party tools like PostHog, Sentry, and Datadog to an app.
 - [Templates and registry](https://docs.levelrail.com/templates-and-registry): the curated one-click service catalog, searchable by name or category.
 - [Starter kit templates](https://docs.levelrail.com/templates): curated starter-kit templates for real multi-service Compose patterns.
+- [Migration wizard](https://docs.levelrail.com/migration-wizard): the guided, resumable job for moving off Coolify, Dokploy, CapRover or an old server, with a safe-to-delete gate.
 - [Coolify exit gap report](https://docs.levelrail.com/coolify-exit-gap-report): what the Coolify importer moves, reports or cannot see, and what is not proven.
 - [Migrating from Coolify, Dokploy, or CapRover](https://docs.levelrail.com/migrating-from-coolify-dokploy-and-caprover): move an existing deployment to Levelrail.
 - [Migrating from Vercel](https://docs.levelrail.com/migrating-from-vercel): a runbook for moving a Vercel-hosted Next.js app to Levelrail.

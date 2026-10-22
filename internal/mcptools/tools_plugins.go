@@ -39,7 +39,7 @@ func registerPluginTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_plugin",
-		Description: "Get one installed plugin: its signed manifest, abilities requested and approved, outbound hosts, health, verification status, last error and contributed panels. Read only.",
+		Description: "Get one installed plugin: its manifest, abilities requested and approved, outbound hosts, health, verification, last error and panels. Read only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in pluginNameInput) (*mcp.CallToolResult, apiclient.Plugin, error) {
 		p, err := client.GetPlugin(ctx, in.Name)
 		if err != nil {
