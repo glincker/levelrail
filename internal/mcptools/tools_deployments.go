@@ -22,7 +22,7 @@ type listDeploymentsInput struct {
 	PR          int    `json:"pr,omitempty" jsonschema:"only this PR's previews"`
 	Limit       int    `json:"limit,omitempty" jsonschema:"page size, default 50, max 200"`
 	Cursor      string `json:"cursor,omitempty" jsonschema:"next_cursor of the prior page"`
-	Fields      string `json:"fields,omitempty" jsonschema:"comma-separated keys to keep per item"`
+	Fields      string `json:"fields,omitempty" jsonschema:"keys to keep per item"`
 }
 
 type deploymentsSummaryInput struct {

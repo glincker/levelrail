@@ -49,7 +49,7 @@ func trafficSummary(im *apiclient.DeployEventImpact) string {
 func registerDeployTimelineTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_deploy_timeline",
-		Description: "Ordered events of one deploy: trigger, build, cutover, watch signals, rollback, traffic impact.",
+		Description: "Ordered events of one deploy: trigger to cutover, watch signals, rollback, traffic impact.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployTimelineInput) (*mcp.CallToolResult, deployTimelineOutput, error) {
 		tl, err := client.DeployEventTimeline(ctx, in.DeployID)
 		if err != nil {
