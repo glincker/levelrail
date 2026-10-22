@@ -24,8 +24,16 @@ export interface TrafficReplica extends TrafficLatency {
   upstream_errors: number
 }
 
+export type RouteKind = 'page' | 'api' | 'asset'
+
+export interface TrafficKindTotal {
+  requests: number
+  error_rate_5xx: number
+}
+
 export interface TrafficRoute {
   route: string
+  kind?: RouteKind
   requests: number
   error_rate_4xx: number
   error_rate_5xx: number
@@ -76,6 +84,7 @@ export interface TrafficDetail {
   replicas: TrafficReplica[]
   slow_routes: TrafficRoute[]
   top_routes: TrafficRoute[]
+  kind_totals?: Partial<Record<RouteKind, TrafficKindTotal>>
   samples: TrafficSample[]
   referrers: TrafficLabel[]
   countries: TrafficLabel[]
