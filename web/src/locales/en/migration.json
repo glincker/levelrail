@@ -586,6 +586,25 @@
           "skipped": "Use the command"
         }
       }
+    },
+    "exit": {
+      "title": "Exit report",
+      "help": "What each Coolify resource becomes, what still needs you, the DNS switch order and the cutover checklist. Read only.",
+      "show": "Show exit report",
+      "recheck": "Re-check",
+      "next": "Next:",
+      "ready": "Every resource is imported and none needs action. Coolify can be retired after the last checklist step.",
+      "wavesTitle": "DNS switch order",
+      "checklistTitle": "Cutover checklist",
+      "outcome": {
+        "imported": "Imported",
+        "manual": "Needs manual action",
+        "skipped": "Skipped"
+      },
+      "mode": {
+        "dry-run": "Plan",
+        "verify": "Verification"
+      }
     }
   },
   "platformImport": {

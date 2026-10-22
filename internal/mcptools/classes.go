@@ -263,6 +263,7 @@ var toolTable = map[string]Meta{
 	"plan_import":                           {clsR, "imports", outb | unt},
 	"get_migration_plan":                    {clsR, "databases", 0},
 	"get_app_import_plan":                   {clsR, "migrate", unt},
+	"get_app_import_exit_report":            {clsR, "migrate", unt},
 	"list_app_import_sessions":              {clsR, "migrate", 0},
 	"get_app_import_cutover_plan":           {clsR, "migrate", unt},
 	"list_app_import_cutover_runs":          {clsR, "migrate", unt},

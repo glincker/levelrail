@@ -1,0 +1,6 @@
+[
+  {"uuid": "db-pg", "is_public": true, "public_port": 54320, "postgres_user": "app", "postgres_db": "shop"},
+  {"uuid": "db-redis", "is_public": false},
+  {"uuid": "db-mysql", "is_public": false, "mysql_user": "legacy", "mysql_database": "legacy"},
+  {"uuid": "db-mongo", "is_public": false, "mongo_initdb_root_username": "root", "mongo_initdb_database": "events"}
+]

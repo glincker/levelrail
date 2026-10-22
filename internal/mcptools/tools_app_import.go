@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/coolifyexit"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -61,4 +62,39 @@ func registerAppImportTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		return nil, out, nil
 	})
+}
+
+type appImportExitOutput struct {
+	ID            string         `json:"id"`
+	Mode          string         `json:"mode"`
+	Counts        map[string]int `json:"counts"`
+	ReadyToRetire bool           `json:"ready_to_retire"`
+	Open          []string       `json:"open"`
+}
+
+// registerAppImportExitTool adds the read-only exit report of a connected Coolify session.
+func registerAppImportExitTool(server *mcp.Server, client *apiclient.Client) {
+	addTool(server, &mcp.Tool{
+		Name:        "get_app_import_exit_report",
+		Description: "Coolify exit report of a connected import session: outcome counts and each skipped or manual item. Read only.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appImportPlanInput) (*mcp.CallToolResult, appImportExitOutput, error) {
+		rep, err := client.AppImportExitReport(ctx, in.ID)
+		if err != nil {
+			return nil, appImportExitOutput{}, fmt.Errorf("get app import exit report %q: %w", in.ID, err)
+		}
+		return nil, exitReportOutput(in.ID, rep), nil
+	})
+}
+
+func exitReportOutput(id string, rep coolifyexit.Report) appImportExitOutput {
+	out := appImportExitOutput{ID: id, Mode: rep.Mode, Counts: map[string]int{}, ReadyToRetire: rep.ReadyToRetire, Open: []string{}}
+	for k, v := range rep.Counts {
+		out.Counts[string(k)] = v
+	}
+	for _, r := range rep.Rows {
+		if r.Outcome != coolifyexit.Imported {
+			out.Open = append(out.Open, string(r.Outcome)+" "+r.Kind+" "+r.Name)
+		}
+	}
+	return out
 }

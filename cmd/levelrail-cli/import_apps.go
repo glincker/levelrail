@@ -22,7 +22,7 @@ const (
 
 type importAppsFlags struct {
 	from, url, token, only, collision, apiURL, profile, session, snapshot, appName string
-	tokenStdin, plan, apply, verify, receipt, rollback                             bool
+	tokenStdin, plan, apply, verify, receipt, rollback, exitReport                 bool
 	acceptSuggested, insecure, allowPrivate, allowLoopback                         bool
 	jsonOut                                                                        bool
 	images                                                                         imageMoveFlags
@@ -71,6 +71,7 @@ func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr i
 	fs.BoolVar(&f.apply, "apply", false, "stage the selected apps (stopped, unrouted) in a new session")
 	fs.StringVar(&f.session, "session", "", "an existing import session id (for --verify, --rollback, --receipt)")
 	fs.BoolVar(&f.verify, "verify", false, "build or pull the staged apps and wait for readiness (needs --session)")
+	fs.BoolVar(&f.exitReport, "exit-report", false, "print a Coolify session's exit report: outcomes per resource and the cutover checklist (needs --session)")
 	fs.BoolVar(&f.rollback, "rollback", false, "remove the apps this session staged (needs --session)")
 	fs.BoolVar(&f.receipt, "receipt", false, "print the session receipt as JSON (needs --session)")
 	fs.StringVar(&f.only, "only", "", "comma-separated app names or source ids")
@@ -110,6 +111,12 @@ func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr i
 		return runImportAppsCopyVolumes(ctx, prog, client, f, stdout, stderr)
 	case f.images.any():
 		return runImportAppsImages(ctx, prog, client, f, stdin, stdout, stderr, lookupEnv)
+	case f.session != "" && f.exitReport:
+		rep, err := client.AppImportExitReport(ctx, f.session)
+		if err != nil {
+			return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("exit report: %w", err))
+		}
+		return printCoolifyExit(stdout, stderr, prog, f.jsonOut, rep)
 	case f.session != "" && (f.verify || f.rollback || f.receipt):
 		return runImportAppsSession(ctx, client, f, stdout, stderr)
 	case f.from == platformDockerSSH && f.ssh.testOnly:
@@ -332,6 +339,7 @@ func importAppsUsage(prog string) string {
   %[1]s import apps --session ID --transfer-images --ssh user@host[:port] --ssh-key FILE|--ssh-agent [--only NAME]
   %[1]s import apps --session ID --images|--cancel-images
   %[1]s import apps --session ID --verify|--rollback|--receipt [--only NAME]
+  %[1]s import apps --session ID --exit-report
 
 Plans and stages the applications of another platform. The source is only
 ever read (GET requests). --apply creates the apps stopped and not routed,

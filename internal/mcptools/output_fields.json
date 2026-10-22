@@ -455,6 +455,13 @@
   "domains",
   "verdict"
  ],
+ "get_app_import_exit_report": [
+  "counts",
+  "id",
+  "mode",
+  "open",
+  "ready_to_retire"
+ ],
  "get_app_import_plan": [
   "blocking",
   "id",

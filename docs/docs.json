@@ -349,6 +349,7 @@
             "pages": [
               "migrate-to-levelrail",
               "migrate-from-coolify",
+              "coolify-exit-gap-report",
               "migrate-from-dokploy",
               "migrate-from-caprover",
               "migrate-from-dokku",
