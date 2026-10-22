@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/kit/ids"
@@ -82,6 +83,60 @@ type AccessLog struct {
 	cap       int
 	retention time.Duration
 	rings     map[string]*accessRing
+
+	subs    atomic.Pointer[[]accessSub]
+	subMu   sync.Mutex
+	nextSub uint64
+}
+
+type accessSub struct {
+	id uint64
+	fn func(key string, rec AccessRecord)
+}
+
+// Subscribe registers fn to see every recorded request and returns a func
+// that removes it. fn runs on the request path, so it must never block.
+func (l *AccessLog) Subscribe(fn func(key string, rec AccessRecord)) (unsubscribe func()) {
+	if l == nil || fn == nil {
+		return func() {}
+	}
+	l.subMu.Lock()
+	defer l.subMu.Unlock()
+	l.nextSub++
+	id := l.nextSub
+	var next []accessSub
+	if p := l.subs.Load(); p != nil {
+		next = append(next, *p...)
+	}
+	next = append(next, accessSub{id: id, fn: fn})
+	l.subs.Store(&next)
+	return func() {
+		l.subMu.Lock()
+		defer l.subMu.Unlock()
+		var kept []accessSub
+		if p := l.subs.Load(); p != nil {
+			for _, s := range *p {
+				if s.id != id {
+					kept = append(kept, s)
+				}
+			}
+		}
+		if len(kept) == 0 {
+			l.subs.Store(nil)
+			return
+		}
+		l.subs.Store(&kept)
+	}
+}
+
+func (l *AccessLog) notify(key string, rec AccessRecord) {
+	p := l.subs.Load()
+	if p == nil {
+		return
+	}
+	for _, s := range *p {
+		s.fn(key, rec)
+	}
 }
 
 var defaultAccessLog = newAccessLogWithRetention(accessCapacityFromEnv(), accessRetentionFromEnv())
@@ -124,7 +179,11 @@ func accessCapacityFromEnv() int {
 
 // Record stores one request under key.
 func (l *AccessLog) Record(key string, rec AccessRecord) {
-	if l == nil || l.cap <= 0 {
+	if l == nil {
+		return
+	}
+	if l.cap <= 0 {
+		l.notify(key, rec)
 		return
 	}
 	l.mu.RLock()
@@ -139,6 +198,7 @@ func (l *AccessLog) Record(key string, rec AccessRecord) {
 		l.mu.Unlock()
 	}
 	r.add(rec)
+	l.notify(key, rec)
 }
 
 // Query returns matching records for the given keys, newest first.
