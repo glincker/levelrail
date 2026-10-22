@@ -107,7 +107,7 @@ export function AppSidebar() {
                 </span>
                 <span className="truncate text-[11px] text-sidebar-foreground/60">
                   {version
-                    ? `${t('shell.account.controlPlane')} v${version.replace(/^v/, '')}`
+                    ? `${t('shell.account.controlPlane')} v${version.replace(/^v/, '').split(/[-+]/)[0]}`
                     : t('shell.account.controlPlane')}
                 </span>
               </span>
