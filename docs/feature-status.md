@@ -28,7 +28,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Area | Label | One-line justification |
 | --- | --- | --- |
 | Deploy approvals | stable | Live e2e proves a second user's approval is the only thing that cuts over (`test/e2e/protected_environment_test.go`). |
-| Upgrade restore points and post-upgrade verification | beta | Unit tests only (`internal/selfupgrade/restorepoint_test.go`): automatic restore of binary and database on failed verification, retention, manual restore. No live run on a real host yet. See [Upgrade safely](/upgrade-safely). |
+| Upgrade restore points and post-upgrade verification | beta | Unit tests (`internal/selfupgrade/restorepoint_test.go`) plus a harness that upgrades the real v0.8.1 and v0.8.2 binaries with seeded data, then checks the restore point, an automatic restore after a failed verification and a refused downgrade (`scripts/upgrade-harness.sh`, `TestReleaseUpgradeHarness`). Not yet proven: a migration that changes the schema across releases, systemd and agent reconnection, or a live host. See [Upgrade safely](/upgrade-safely). |
 | PITR and database backups | stable | Live e2e restores before a marker row through the real API with MinIO (`test/e2e/pitr_test.go`), plus live Docker dump and restore tests. |
 | Encrypted database dumps | beta | Per-target age sealing of dumps with transparent restore, drill and verify decryption; unit round trip only (`internal/backup/encrypted_dump_test.go`), no live Docker run. |
 | Previews | stable (GitHub), beta (GitLab, Bitbucket) | Lifecycle e2e exists for all three (`test/e2e/preview_environments_*_test.go`), but they replay synthetic webhooks, not a real forge. Kept beta for the two forges with less usage. |
