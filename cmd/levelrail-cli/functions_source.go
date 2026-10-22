@@ -87,6 +87,9 @@ func runFunctionsInit(prog string, args []string, stdout, stderr io.Writer) int 
 		return exitUsage
 	}
 	rtm, ok := functions.Lookup(args[0])
+	if starter, isStarter := functions.LookupStarter(args[0]); !ok && isStarter {
+		rtm, ok = functions.Runtime{ID: starter.ID, Name: starter.Name, Files: starter.Files}, true
+	}
 	if !ok {
 		_, _ = fmt.Fprintf(stderr, "%s: unknown runtime %q, choose one of: %s\n", prog, args[0], strings.Join(runtimeIDs(), ", "))
 		return exitUsage

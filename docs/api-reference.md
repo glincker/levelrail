@@ -1868,6 +1868,16 @@ Routes that do not fit an existing group.
 | POST | /api/v1/inbox/delete | AbilityWrite | handleInboxDelete |
 | POST | /api/v1/inbox/clear | AbilityWrite | handleInboxClear |
 | POST | /api/v1/git-sources/preview | AbilityWrite | handlePreviewRepo |
+| GET | /api/v1/functions/starters | AbilityRead | handleFunctionStarters |
+| GET | /api/v1/functions/{name}/kv | AbilityRead | handleListFunctionKV |
+| GET | /api/v1/functions/{name}/kv/value | AbilityRead | handleGetFunctionKVValue |
+| PUT | /api/v1/functions/{name}/kv/value | AbilityDeploy | handlePutFunctionKVValue |
+| DELETE | /api/v1/functions/{name}/kv/value | AbilityDeploy | handleDeleteFunctionKVValue |
+| POST | /api/v1/functions/{name}/kv/token | AbilityWriteSensitive | handleRotateFunctionKVToken |
+| GET | /api/v1/function-kv/entry | Public | handleFunctionKVEntry |
+| PUT | /api/v1/function-kv/entry | Public | handleFunctionKVEntry |
+| DELETE | /api/v1/function-kv/entry | Public | handleFunctionKVEntry |
+| GET | /api/v1/function-kv/keys | Public | handleFunctionKVKeys |
 
 ## See also
 

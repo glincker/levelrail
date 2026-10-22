@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1643 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1653 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1036,14 +1036,24 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/function-invocations", Ability: "AbilityRead", Group: "Other", Handler: "handleListQueuedFunctionCalls", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/function-invocations/{id}", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDeleteFunctionInvocation", Description: ""},
 	{Method: "POST", Path: "/api/v1/function-invocations/{id}/retry", Ability: "AbilityDeploy", Group: "Other", Handler: "handleRetryFunctionInvocation", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/function-kv/entry", Ability: "Public", Group: "Other", Handler: "handleFunctionKVEntry", Description: ""},
+	{Method: "GET", Path: "/api/v1/function-kv/entry", Ability: "Public", Group: "Other", Handler: "handleFunctionKVEntry", Description: ""},
+	{Method: "PUT", Path: "/api/v1/function-kv/entry", Ability: "Public", Group: "Other", Handler: "handleFunctionKVEntry", Description: ""},
+	{Method: "GET", Path: "/api/v1/function-kv/keys", Ability: "Public", Group: "Other", Handler: "handleFunctionKVKeys", Description: ""},
 	{Method: "GET", Path: "/api/v1/functions", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctions", Description: "Functions: apps that sleep to zero and hold the waking request, with call count and p95 duration, plus starter handlers per runtime."},
 	{Method: "GET", Path: "/api/v1/functions/runtimes", Ability: "AbilityRead", Group: "Other", Handler: "handleFunctionRuntimes", Description: ""},
+	{Method: "GET", Path: "/api/v1/functions/starters", Ability: "AbilityRead", Group: "Other", Handler: "handleFunctionStarters", Description: ""},
 	{Method: "POST", Path: "/api/v1/functions/{name}/async", Ability: "AbilityDeploy", Group: "Other", Handler: "handleEnqueueFunctionInvocation", Description: ""},
 	{Method: "GET", Path: "/api/v1/functions/{name}/capture", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFunctionCapture", Description: ""},
 	{Method: "PUT", Path: "/api/v1/functions/{name}/capture", Ability: "AbilityDeploy", Group: "Other", Handler: "handleSetFunctionCapture", Description: ""},
 	{Method: "GET", Path: "/api/v1/functions/{name}/invocations", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctionInvocations", Description: "Function observe and try: recent edge calls, a test call through the real route, replay of stored input, and the per-function capture opt-in."},
 	{Method: "POST", Path: "/api/v1/functions/{name}/invocations/{id}/replay", Ability: "AbilityDeploy", Group: "Other", Handler: "handleReplayFunctionInvocation", Description: ""},
 	{Method: "POST", Path: "/api/v1/functions/{name}/invoke", Ability: "AbilityDeploy", Group: "Other", Handler: "handleInvokeFunction", Description: ""},
+	{Method: "GET", Path: "/api/v1/functions/{name}/kv", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctionKV", Description: "Function key-value store: browse and edit from the dashboard and CLI, and the bearer-token entry points a function itself calls."},
+	{Method: "POST", Path: "/api/v1/functions/{name}/kv/token", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRotateFunctionKVToken", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/functions/{name}/kv/value", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDeleteFunctionKVValue", Description: ""},
+	{Method: "GET", Path: "/api/v1/functions/{name}/kv/value", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFunctionKVValue", Description: ""},
+	{Method: "PUT", Path: "/api/v1/functions/{name}/kv/value", Ability: "AbilityDeploy", Group: "Other", Handler: "handlePutFunctionKVValue", Description: ""},
 	{Method: "POST", Path: "/api/v1/functions/{name}/rollback", Ability: "AbilityDeploy", Group: "Other", Handler: "handleFunctionRollback", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/functions/{name}/route", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDeleteFunctionRoute", Description: ""},
 	{Method: "GET", Path: "/api/v1/functions/{name}/route", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctionRoutes", Description: "Function paths: serve a function at <domain>/<path> through a forwarder rule on the domain."},

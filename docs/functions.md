@@ -234,6 +234,87 @@ levelrail-cli functions dev ./hello --port 8080 --env-file .env.local
 
 Runs the handler in a throwaway container for its runtime (picked from `package.json`, `requirements.txt` or `main.py`, or `go.mod`) with the directory mounted, `PORT` set and the env file passed in. Docker must be installed. `--image` overrides the image. Stop it with Ctrl-C.
 
+## Key-value store
+
+A function can keep small pieces of state in a store the control plane holds for
+it. Each function has its own namespace; nothing else can read it.
+
+```
+levelrail-cli functions kv enable hello          # issue the token, restart with KV_URL and KV_TOKEN
+levelrail-cli functions kv put hello greeting "hi" --ttl 1h
+levelrail-cli functions kv get hello greeting
+levelrail-cli functions kv list hello --prefix gre
+levelrail-cli functions kv delete hello greeting
+```
+
+The dashboard has the same under the function's Key-value store tab: browse,
+edit, delete and rotate the token. Values are shown truncated in the list and
+are never written to logs.
+
+Enabling the store injects two variables into the function: `KV_URL` and
+`KV_TOKEN`. The token is stored encrypted with the function's other secrets
+(it needs the control plane master key), works for that function's namespace
+only, and changes when you rotate it (`kv enable` again, or Rotate token). The
+function restarts to pick up a new token, and the old one stops working at once.
+
+From the handler, send the token as a bearer header:
+
+| Call | Meaning |
+| --- | --- |
+| `GET $KV_URL/entry?key=k` | The value as the response body, `404` if missing or expired. |
+| `PUT $KV_URL/entry?key=k&ttl=60` | The request body becomes the value. `ttl` is seconds, optional. |
+| `DELETE $KV_URL/entry?key=k` | Remove the key. |
+| `GET $KV_URL/keys?prefix=p&limit=100` | `{"keys":[{"key","size","expires_at","updated_at"}]}`. |
+
+Over a limit the store answers `413` (value too large), `507` (key count or total
+bytes reached) or `400` (bad key). Expired keys disappear and free their space.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_FUNCTION_KV_MAX_KEY_BYTES` | 512 | Longest key. |
+| `APP_FUNCTION_KV_MAX_VALUE_BYTES` | 262144 | Largest value. |
+| `APP_FUNCTION_KV_MAX_KEYS` | 10000 | Keys per function. |
+| `APP_FUNCTION_KV_MAX_TOTAL_BYTES` | 67108864 | Keys plus values per function. |
+| `APP_FUNCTION_KV_MAX_TTL_SECONDS` | 31536000 | Longest expiry; longer ones are shortened. |
+| `APP_FUNCTION_KV_URL` | request host | Address of the control plane as the function's container sees it, for example `http://10.0.0.1:8080`. When unset, the host of the request that enabled the store is used, which may not be reachable from a container. |
+
+The store has no compare-and-set. Two writers racing on one key both succeed and
+the later write wins.
+
+## Utility starters
+
+Five ready handlers back the ideas in the deploy flow. Each is a complete Node
+handler with a README, the exact environment variables it needs and a unit test
+file you run with `node --test` (Node 18 or newer, no install step).
+
+| Starter | What it does | Uses the store |
+| --- | --- | --- |
+| `webhook-receiver` | Verifies an HMAC signature, appends each event, `GET /events` reads them back. | Events. |
+| `scheduled-job-runner` | Named jobs called by an http cron job, run history and an overlap lock. | Runs and locks. |
+| `form-to-email` | Accepts a contact form, can ping a notify webhook. | Submissions. |
+| `url-shortener` | `POST /api/links` creates, `GET /<slug>` redirects. | Slugs. |
+| `chat-bot` | Relays a webhook to Slack, Discord or Telegram. | Delivery dedupe. |
+
+```
+levelrail-cli functions init url-shortener ./links
+cd links && node --test && git init && git add . && git commit -m "url shortener"
+# push to a repository, then:
+levelrail-cli functions deploy links --repo <git url> \
+  --env ADMIN_TOKEN=change-me
+levelrail-cli functions kv enable links
+```
+
+Set secrets such as `ADMIN_TOKEN` or `WEBHOOK_SECRET` in the function's
+Environment and secrets tab rather than `--env`, which stores them as plain
+values. The deploy flow shows the same files, the variables each one reads and
+the commands to copy.
+
+Two limits to know. The platform has no email send API for functions, so
+`form-to-email` stores submissions and can notify a webhook; add an SMTP library
+if you want mail. And there is no way yet to deploy a starter without a git
+repository: the deploy flow gives you the files to push rather than a one-click
+deploy.
+
 ## Limits
 
 - Functions are routed by host, one URL per function. Path prefixes on a shared

@@ -125,6 +125,11 @@
       "headingImage": "Which container image?",
       "starterTitle": "Starter code to begin with",
       "starterBody": "Copy these files into a new repository and push it. Then pick that repository below.",
+      "utilityBody": "A complete, tested handler. Copy the files into a new repository and push it, then pick that repository below.",
+      "utilityEnv": "Environment variables it reads",
+      "utilityRequired": "required",
+      "utilityKv": "Uses the key-value store: after deploying, open the function's Key-value store tab and enable it.",
+      "utilityCli": "Or from a terminal",
       "search": "Search your repositories",
       "loading": "Loading repositories",
       "recent": "Most recently updated first",
@@ -227,6 +232,40 @@
     "cliLabel": "Or from the terminal",
     "error": "Starter handlers could not be loaded: {{message}}"
   },
+  "kv": {
+    "loading": "Loading keys",
+    "error": "Could not load the key-value store: {{message}}",
+    "usage": "{{keys}} of {{maxKeys}} keys, {{bytes}} of {{maxBytes}} bytes used",
+    "disabled": "The store is off for this function. Enable it to give the function KV_URL and KV_TOKEN; it restarts with them.",
+    "enable": "Enable store",
+    "rotate": "Rotate token",
+    "tokenIssued": "Token issued. The function restarts with the new KV_TOKEN.",
+    "add": "Add key",
+    "empty": "No keys yet.",
+    "prefixLabel": "Filter by prefix",
+    "keyLabel": "Key",
+    "valueLabel": "Value",
+    "ttlLabel": "Expires after (seconds)",
+    "ttlPlaceholder": "Never",
+    "save": "Save key",
+    "saved": "Key saved",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteTitle": "Delete {{key}}?",
+    "deleteBody": "The function loses this value immediately.",
+    "loadFailed": "Could not load the value",
+    "binary": "(binary)",
+    "never": "Never",
+    "bytes": "{{count}} B",
+    "columns": {
+      "key": "Key",
+      "value": "Value",
+      "size": "Size",
+      "expires": "Expires",
+      "actions": "Actions"
+    }
+  },
   "detail": {
     "back": "All functions",
     "notFound": "This function was not found. It may have been deleted or stopped sleeping.",
@@ -235,7 +274,8 @@
       "overview": "Overview",
       "settings": "Settings",
       "environment": "Environment and secrets",
-      "versions": "Versions"
+      "versions": "Versions",
+      "kv": "Key-value store"
     },
     "overview": {
       "title": "Status",

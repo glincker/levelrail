@@ -15,6 +15,8 @@ import (
 
 const functionsUsage = `Usage:
   %[1]s functions init <node|python|go> [dir]     write a starter handler
+  %[1]s functions init <starter> [dir]            write a tested utility: url-shortener, webhook-receiver, form-to-email, scheduled-job-runner, chat-bot
+  %[1]s functions kv enable|list|get|put|delete <name> ...   the function's key-value store
   %[1]s functions deploy <name> --repo <repo URL> [--ref main] [--dir sub/dir] [--port 8080] [--idle 10m] [--env KEY=VALUE ...]
   %[1]s functions deploy <name> --image <ref> [--port 8080] [--idle 10m] [--env KEY=VALUE ...]
   %[1]s functions deploy <name> ... --domain example.com --path /hello   also serve it at example.com/hello
@@ -58,6 +60,8 @@ func runFunctions(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runFunctionsControls(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	case "dev":
 		return runFunctionsDev(prog, args[1:], stdout, stderr)
+	case "kv":
+		return runFunctionsKV(prog, args[1:], stdout, stderr, lookupEnv)
 	case "triggers":
 		return runFunctionsTriggers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy", "list", "invoke", "delete", "invocations":

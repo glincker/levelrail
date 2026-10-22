@@ -12,7 +12,9 @@ import {
 import { useDebouncedValue } from '../../../hooks/useDebouncedValue'
 import { useDetectFramework } from '../../../queries/buildDetect'
 import { useGitBranches } from '../../../queries/gitBranches'
+import { useBrand } from '@/hooks/useBrand'
 import { useFunctionRuntimes } from '../../../queries/functions'
+import { useFunctionStarters } from '../../../queries/functionKv'
 import type { GitRepoItem } from '../../../types/gitRepos'
 import { CopyButton } from '../FunctionTemplates'
 import { FieldError, FieldHelp } from './FieldMessage'
@@ -23,17 +25,57 @@ import { RepoPicker } from './RepoPicker'
 const URL_DEBOUNCE_MS = 500
 const FALLBACK_BRANCH = 'main'
 
-function StarterCode({ runtime }: Readonly<{ runtime: string }>) {
+function UtilityCli({ id }: Readonly<{ id: string }>) {
+  const { t } = useTranslation('functions')
+  const brand = useBrand()
+  return (
+    <p>
+      {t('deploy.source.utilityCli')}:{' '}
+      <code>
+        {brand.BinaryName}-cli functions init {id}
+      </code>
+    </p>
+  )
+}
+
+function StarterCode({ preset }: Readonly<{ preset: Preset }>) {
   const { t } = useTranslation('functions')
   const { data } = useFunctionRuntimes()
-  const files = data?.runtimes.find((r) => r.id === runtime)?.files ?? []
+  const starters = useFunctionStarters()
+  const utility =
+    preset.kind === 'idea'
+      ? starters.data?.find((s) => s.preset === preset.id)
+      : undefined
+  const files =
+    utility?.files ??
+    data?.runtimes.find((r) => r.id === preset.runtime)?.files ??
+    []
   if (files.length === 0) return null
   return (
     <div className="min-w-0 space-y-2 rounded-lg border border-input bg-muted/40 p-3">
       <p className="text-sm font-medium">{t('deploy.source.starterTitle')}</p>
       <p className="text-xs text-muted-foreground">
-        {t('deploy.source.starterBody')}
+        {utility
+          ? t('deploy.source.utilityBody')
+          : t('deploy.source.starterBody')}
       </p>
+      {utility ? (
+        <div className="space-y-1 text-xs">
+          <p className="font-medium">{t('deploy.source.utilityEnv')}</p>
+          <ul className="space-y-0.5 text-muted-foreground">
+            {utility.env.map((e) => (
+              <li key={e.name}>
+                <code>{e.name}</code>
+                {e.required
+                  ? ` (${t('deploy.source.utilityRequired')})`
+                  : ''}: {e.description}
+              </li>
+            ))}
+          </ul>
+          {utility.uses_kv ? <p>{t('deploy.source.utilityKv')}</p> : null}
+          <UtilityCli id={utility.id} />
+        </div>
+      ) : null}
       {files.map((f) => (
         <div
           key={f.path}
@@ -180,7 +222,7 @@ export function StepSource({
       <h3 className="text-base font-semibold">
         {t('deploy.source.headingRepo')}
       </h3>
-      {preset.runtime ? <StarterCode runtime={preset.runtime} /> : null}
+      {preset.runtime ? <StarterCode preset={preset} /> : null}
       {paste ? (
         <div className="space-y-1.5">
           <Label htmlFor="fn-repo">{t('deploy.source.repoUrl')}</Label>

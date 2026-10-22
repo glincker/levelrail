@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FunctionEnvironmentTab } from './FunctionEnvironmentTab'
+import { FunctionKVTab } from './FunctionKVTab'
 import { FunctionOverviewTab } from './FunctionOverviewTab'
 import { FunctionSettingsTab } from './FunctionSettingsTab'
 import { FunctionVersionsTab } from './FunctionVersionsTab'
@@ -42,6 +43,11 @@ export function FunctionDetail({ name, extraTabs = [] }: FunctionDetailProps) {
       id: 'versions',
       label: t('detail.tabs.versions'),
       render: (n) => <FunctionVersionsTab name={n} />,
+    },
+    {
+      id: 'kv',
+      label: t('detail.tabs.kv'),
+      render: (n) => <FunctionKVTab name={n} />,
     },
   ]
   const tabs = [...builtIn, ...extraTabs]
