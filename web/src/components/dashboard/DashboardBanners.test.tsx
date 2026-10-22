@@ -4,7 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
-import { DashboardBanners } from './DashboardBanners'
+import { NoticeRows } from './DashboardBanners'
+import { useDashboardNotices } from '../../hooks/useDashboardNotices'
 import type { DoctorCheck } from '../../queries/systemDoctor'
 import commonEn from '../../locales/en/common.json'
 import dashboardEn from '../../locales/en/dashboard.json'
@@ -39,12 +40,6 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   }
 })
 vi.mock('../../hooks/useIsRoot', () => ({ useIsRoot: () => true }))
-vi.mock('../../components/shell/usePlatformIssues', () => ({
-  usePlatformIssues: () => [],
-}))
-vi.mock('../CleanUpDockerDialog', () => ({
-  CleanUpDockerDialog: () => null,
-}))
 
 const HTTPS_TITLE = 'This dashboard is on plain HTTP'
 const DOCTOR_TITLE_ONE = 'Doctor found 1 problem'
@@ -91,12 +86,16 @@ function routeBody(url: string, doctorChecks: DoctorCheck[]): unknown {
   return undefined
 }
 
+function Notices() {
+  return <NoticeRows notices={useDashboardNotices()} />
+}
+
 function renderBanners() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={qc}>
-        <DashboardBanners />
+        <Notices />
       </QueryClientProvider>
     </I18nextProvider>,
   )
@@ -106,7 +105,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('DashboardBanners', () => {
+describe('dashboard notices', () => {
   it('shows only the HTTPS banner when the doctor failure is the dashboard URL check', async () => {
     stubApi([failingCheck('dashboard_url_https', 'Dashboard URL uses HTTPS')])
     renderBanners()

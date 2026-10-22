@@ -84,5 +84,12 @@
     "pending": "Move of \"{{name}}\" is waiting for approval.",
     "failed": "Could not move \"{{name}}\".",
     "frozen": "A deploy freeze is active. Try again when it ends."
+  },
+  "picker": {
+    "aria": "Choose project and environment",
+    "allProjects": "All projects",
+    "projects": "Projects",
+    "environments": "Environments",
+    "allEnvironments": "All environments"
   }
 }

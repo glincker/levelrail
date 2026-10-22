@@ -13,6 +13,7 @@ export type ActionSpec =
   | { kind: 'domains' }
   | { kind: 'route'; to: '/settings/cli-access' | '/approvals' }
   | { kind: 'path'; to: string }
+  | { kind: 'copy-retry'; database: string }
   | { kind: 'system' }
   | { kind: 'cleanup' }
   | { kind: 'ask-ai'; message: string }
@@ -28,6 +29,8 @@ export interface SuggestionSpec {
   tone: Tone
   title: string
   detail: string
+  // Items sharing a key are one root cause and render as one grouped row.
+  groupKey?: string
   actions: SuggestionActionSpec[]
 }
 
@@ -102,6 +105,19 @@ function actionsFor(
           ),
         ]
       case 'path':
+        if (item.copy?.database) {
+          return [
+            act(
+              t('needsAttention.retryCopy'),
+              { kind: 'copy-retry', database: item.copy.database },
+              true,
+            ),
+            act(t('needsAttention.openDatabase'), {
+              kind: 'path',
+              to: target.to,
+            }),
+          ]
+        }
         return [
           act(
             item.action ?? t('needsAttention.review'),
@@ -138,6 +154,7 @@ export function attentionToSuggestions(
     tone: item.severity === 'critical' ? 'danger' : 'warning',
     title: titleFor(item),
     detail: item.detail,
+    groupKey: item.copy?.code ? `copy:${item.copy.code}` : undefined,
     actions: actionsFor(item, t),
   }))
 }

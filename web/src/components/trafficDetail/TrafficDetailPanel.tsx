@@ -25,6 +25,7 @@ import {
   ReplicaTable,
   SampleList,
   SlowRouteTable,
+  TopRoutesCard,
 } from './TrafficTables'
 
 const WINDOWS: TrafficWindow[] = ['5m', '1h', '24h', '7d']
@@ -252,7 +253,10 @@ export function TrafficDetailPanel({ app }: Readonly<{ app: string }>) {
             </>
           ) : null}
           <ReplicaTable rows={data.replicas} />
-          <SlowRouteTable rows={data.top_routes ?? []} top />
+          <TopRoutesCard
+            rows={data.top_routes ?? []}
+            totals={data.kind_totals}
+          />
           <SlowRouteTable rows={data.slow_routes} />
           <div className="grid gap-4 lg:grid-cols-2">
             <AudienceTable kind="referrers" rows={data.referrers} />
