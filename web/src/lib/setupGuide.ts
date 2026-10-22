@@ -84,15 +84,17 @@ export function stepGroups(guide: SetupGuide): {
   return { next, todo, settled }
 }
 
-/** ESSENTIAL_STEPS are the four steps that matter before a first deploy, in the order to do them. */
-export const ESSENTIAL_STEPS: readonly SetupGuideStepId[] = [
+/** ESSENTIAL_STEPS is the "Ship your first app" group: the deploy comes before any server hardening. */
+export const ESSENTIAL_STEPS: readonly SetupGuideStepId[] = ['first_app']
+
+/** PRODUCTION_FIRST orders the "Make it production ready" group; unlisted steps keep the server order after these. */
+const PRODUCTION_FIRST: readonly SetupGuideStepId[] = [
   'public_address',
   'secure_admin',
   'git_provider',
-  'first_app',
 ]
 
-/** essentialSplit separates the essential steps from the rest; every step lands in exactly one list. */
+/** essentialSplit separates the ship-your-first-app steps from the production-ready ones; every step lands in exactly one list. */
 export function essentialSplit(guide: SetupGuide): {
   essential: SetupGuideStep[]
   more: SetupGuideStep[]
@@ -101,6 +103,12 @@ export function essentialSplit(guide: SetupGuide): {
     const step = guideStep(guide, id)
     return step ? [step] : []
   })
-  const more = guide.steps.filter((s) => !ESSENTIAL_STEPS.includes(s.id))
+  const rank = (s: SetupGuideStep) => {
+    const at = PRODUCTION_FIRST.indexOf(s.id)
+    return at === -1 ? PRODUCTION_FIRST.length : at
+  }
+  const more = guide.steps
+    .filter((s) => !ESSENTIAL_STEPS.includes(s.id))
+    .sort((a, b) => rank(a) - rank(b))
   return { essential, more }
 }

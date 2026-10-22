@@ -132,7 +132,11 @@ export function SourceStep({
             <p className="text-sm font-medium text-foreground">
               {t('source.git.urlTitle')}
             </p>
-            <GitUrlForm busy={busy} onSource={onSource} />
+            <GitUrlForm
+              busy={busy}
+              hasProvider={hasProvider}
+              onSource={onSource}
+            />
           </div>
         ) : null}
       </section>

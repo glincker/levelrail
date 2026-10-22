@@ -3,7 +3,11 @@ import type { ErrorComponentProps } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  GlobeIcon,
+  PlusIcon,
+  WarningCircleIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { routeErrorMessage } from '@/lib/apiError'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -27,6 +31,8 @@ import { serverAddressQueryOptions } from '../../queries/serverAddress'
 import { useProxyIntegration } from '../../queries/proxyIntegration'
 import { proxyCertStatus } from '../../lib/certStatus'
 import { PlatformSettingsSection } from '../../components/PlatformSettingsSection'
+import { PageBanner } from '../../components/PageBanner'
+import { LazyDomainsDiagram } from '../../components/banners/LazyDiagrams'
 import { PageTemplate } from '../../components/shell/PageTemplate'
 import { SetupStepHint } from '../../components/getStarted/SetupStepHint'
 
@@ -89,37 +95,57 @@ function DomainsPage() {
     [apps],
   )
 
+  const noDomains = domains.length === 0
+  const bannerSize = noDomains ? 'hero' : 'compact'
+  const addButton = (
+    <Button
+      size="sm"
+      onClick={() => {
+        setAddOpen(true)
+      }}
+    >
+      <PlusIcon />
+      {t('page.add')}
+    </Button>
+  )
+
   return (
     <PageTemplate
       title={t('page.title')}
       description={t('page.description')}
+      banner={
+        <PageBanner
+          icon={<GlobeIcon />}
+          titleKey="domains:page.title"
+          descriptionKey={
+            noDomains
+              ? 'domains:banner.description'
+              : 'domains:page.description'
+          }
+          action={addButton}
+          illustration={<LazyDomainsDiagram size={bannerSize} />}
+          size={bannerSize}
+        />
+      }
       helpPath="/domains-and-ingress"
       helpLabel="Domains and ingress guide"
       banners={<SetupStepHint step="app_domain" />}
-      actions={
-        <Button
-          size="sm"
-          onClick={() => {
-            setAddOpen(true)
-          }}
-        >
-          <PlusIcon />
-          {t('page.add')}
-        </Button>
-      }
+      actions={addButton}
     >
       <ProxySetupCard />
 
       <ServerAddressCard />
 
-      <DomainsTable
-        domains={domains}
-        certByDomain={certByDomain}
-        appCount={apps.length}
-        onAdd={() => {
-          setAddOpen(true)
-        }}
-      />
+      {noDomains ? null : (
+        <DomainsTable
+          domains={domains}
+          certByDomain={certByDomain}
+          appCount={apps.length}
+          onAdd={() => {
+            setAddOpen(true)
+          }}
+        />
+      )}
 
       <PlatformSettingsSection
         settings={settings}

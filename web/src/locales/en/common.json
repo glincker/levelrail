@@ -112,7 +112,16 @@
     "noMatchBody": "No app fits the current status and search. Clear the filters to see all {{total}}.",
     "clearFilters": "Clear filters",
     "errorBody": "The app list could not be loaded. {{message}}",
-    "retry": "Retry"
+    "retry": "Retry",
+    "banner": {
+      "description": "Deploy from a git link, a container image or a template, then open it in your browser.",
+      "compactDescription": "Everything running on this server.",
+      "diagram": {
+        "git": "git branch",
+        "app": "app",
+        "browser": "browser"
+      }
+    }
   },
   "appSectionHelp": "Read the guide for this page",
   "appActions": {

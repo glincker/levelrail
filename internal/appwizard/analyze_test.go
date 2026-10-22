@@ -2,6 +2,7 @@ package appwizard
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"sort"
 	"strings"
@@ -262,5 +263,22 @@ func TestSlugAndRepoName(t *testing.T) {
 	}
 	if got := repoName("https://github.com/acme/thing.git"); got != "thing" {
 		t.Errorf("repoName = %q", got)
+	}
+}
+
+func TestAnalyzeEmitsNoNullSlices(t *testing.T) {
+	src := &fakeSource{files: map[string]string{"README.md": "hello"}}
+	a, err := Analyze(context.Background(), src, testOpts("bare"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, field := range []string{"env", "databases", "warnings", "packages", "alternatives", "env_vars", "reasons"} {
+		if strings.Contains(string(raw), `"`+field+`":null`) {
+			t.Errorf("field %q marshalled as null: %s", field, raw)
+		}
 	}
 }

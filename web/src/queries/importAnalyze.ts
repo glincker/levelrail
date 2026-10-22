@@ -106,6 +106,32 @@ export interface ImportAnalysis {
   tree_truncated: boolean
 }
 
+type NullableList<T> = T[] | null | undefined
+
+export type RawImportAnalysis = Omit<
+  ImportAnalysis,
+  'env' | 'databases' | 'warnings' | 'build'
+> & {
+  env: NullableList<AnalyzeEnvKey>
+  databases: NullableList<AnalyzeDatabase>
+  warnings: NullableList<AnalyzeWarning>
+  build: Omit<AnalyzeBuild, 'alternatives'> & {
+    alternatives: NullableList<AnalyzeBuildSuggestion>
+  }
+}
+
+/** Older servers send null for empty lists; the UI iterates them directly. */
+export function normalizeAnalysis(raw: RawImportAnalysis): ImportAnalysis {
+  return {
+    ...raw,
+    env: raw.env ?? [],
+    databases: raw.databases ?? [],
+    warnings: raw.warnings ?? [],
+    packages: raw.packages ?? [],
+    build: { ...raw.build, alternatives: raw.build.alternatives ?? [] },
+  }
+}
+
 export interface ImportAnalyzeRequest {
   repo_url: string
   ref?: string
@@ -131,5 +157,5 @@ export async function analyzeImport(
       await readErrorMessage(res, `analyze repository failed: ${res.status}`),
     )
   }
-  return (await res.json()) as ImportAnalysis
+  return normalizeAnalysis((await res.json()) as RawImportAnalysis)
 }

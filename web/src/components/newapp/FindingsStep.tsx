@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -16,7 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { ImportAnalysis } from '../../queries/importAnalyze'
+import {
+  normalizeAnalysis,
+  type RawImportAnalysis,
+} from '../../queries/importAnalyze'
 import {
   APP_NAME_PATTERN,
   validateEdits,
@@ -35,7 +39,7 @@ const BUILD_TYPES: GitSourceBuildType[] = ['railpack', 'dockerfile', 'static']
  * with the evidence that produced it.
  */
 export function FindingsStep({
-  analysis,
+  analysis: rawAnalysis,
   source,
   edits,
   onEdits,
@@ -43,7 +47,7 @@ export function FindingsStep({
   onBack,
   onNext,
 }: {
-  analysis: ImportAnalysis
+  analysis: RawImportAnalysis
   source: GitRepoSourceValue
   edits: NewAppEdits
   onEdits: (next: NewAppEdits) => void
@@ -56,6 +60,7 @@ export function FindingsStep({
   onNext: () => void
 }) {
   const { t } = useTranslation('newApp')
+  const analysis = useMemo(() => normalizeAnalysis(rawAnalysis), [rawAnalysis])
   const set = <K extends keyof NewAppEdits>(key: K, value: NewAppEdits[K]) => {
     onEdits({ ...edits, [key]: value })
   }

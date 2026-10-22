@@ -45,7 +45,9 @@
       "connectLabel": "Connect {{provider}}",
       "connected": "Connected",
       "pickTitle": "Your repositories",
-      "urlTitle": "Paste a repository URL"
+      "urlTitle": "Paste a repository URL",
+      "needsAddress": "GitHub sign-in needs a public address for this server.",
+      "useUrlInstead": "Continue with a repository URL instead"
     },
     "templates": {
       "title": "Start from a template",

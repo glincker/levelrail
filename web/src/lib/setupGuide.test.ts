@@ -54,7 +54,7 @@ describe('stepGroups', () => {
 })
 
 describe('essentialSplit', () => {
-  it('puts the four essential steps first in order and the rest under more', () => {
+  it('puts the first app first and orders the production steps after it', () => {
     const g = essentialSplit({
       ...base,
       steps: [
@@ -66,13 +66,14 @@ describe('essentialSplit', () => {
         step('teammate', 'todo'),
       ],
     })
-    expect(g.essential.map((s) => s.id)).toEqual([
+    expect(g.essential.map((s) => s.id)).toEqual(['first_app'])
+    expect(g.more.map((s) => s.id)).toEqual([
       'public_address',
       'secure_admin',
       'git_provider',
-      'first_app',
+      'tls',
+      'teammate',
     ])
-    expect(g.more.map((s) => s.id)).toEqual(['tls', 'teammate'])
   })
 })
 
