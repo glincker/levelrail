@@ -24,7 +24,8 @@ import {
   validateAppName,
   type SimpleFormValues,
 } from '../../../lib/repoImport'
-import type { NewAppEdits } from '../../../lib/newApp'
+import type { DatabaseEdit, NewAppEdits } from '../../../lib/newApp'
+import { DatabaseSection } from './DatabaseSection'
 import type { ImportAnalysis } from '../../../queries/importAnalyze'
 
 const SECRET_KEY = /secret|token|password|passwd|key|credential/i
@@ -67,6 +68,7 @@ export function RepoSimpleForm({
   const [customDomain, setCustomDomain] = useState('')
   const [advanced, setAdvanced] = useState<SimpleFormValues['advanced']>({})
   const [submitted, setSubmitted] = useState(false)
+  const [databases, setDatabases] = useState<DatabaseEdit[] | null>(null)
 
   const nameError = validateAppName(name, takenNames)
   const domainError =
@@ -91,14 +93,13 @@ export function RepoSimpleForm({
     const allEnv = { ...env }
     for (const v of extra)
       if (v.key.trim() !== '') allEnv[v.key.trim()] = v.value
-    onSubmit(
-      editsFromForm(analysis, {
-        name,
-        env: allEnv,
-        customDomain: customOpen ? customDomain : '',
-        advanced,
-      }),
-    )
+    const edits = editsFromForm(analysis, {
+      name,
+      env: allEnv,
+      customDomain: customOpen ? customDomain : '',
+      advanced,
+    })
+    onSubmit(databases ? { ...edits, databases } : edits)
   }
 
   const num = (v: string) => {
@@ -209,6 +210,12 @@ export function RepoSimpleForm({
         <PlusIcon aria-hidden="true" className="size-4" />
         {t('import.form.addVar')}
       </Button>
+
+      <DatabaseSection
+        analysis={analysis}
+        appName={name}
+        onChange={setDatabases}
+      />
 
       <Field>
         <FieldLabel>{t('import.form.domain')}</FieldLabel>

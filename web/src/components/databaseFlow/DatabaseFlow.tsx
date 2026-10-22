@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { CheckCircleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -22,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
-import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { useDatabaseNameFree } from '../../hooks/useDatabaseNameFree'
 import { ExistingVolumeError } from '../../lib/apiError'
 import { useBackupTargetsOptional } from '../../queries/backupTargets'
 import { useDatabaseEnginesOptional } from '../../queries/databaseEngines'
@@ -57,26 +56,6 @@ import {
   type DbValues,
   type ScheduleId,
 } from './logic'
-
-const NAME_CHECK_DEBOUNCE_MS = 400
-
-function useNameFree(name: string, enabled: boolean) {
-  const debounced = useDebouncedValue(name.trim(), NAME_CHECK_DEBOUNCE_MS)
-  const active = enabled && debounced !== '' && debounced === name.trim()
-  const query = useQuery({
-    queryKey: ['databases', 'name-check', debounced],
-    queryFn: async () => {
-      const res = await fetch(
-        `/api/v1/databases/${encodeURIComponent(debounced)}`,
-      )
-      return !res.ok
-    },
-    enabled: active,
-    retry: false,
-    staleTime: 0,
-  })
-  return active && query.isSuccess ? query.data : undefined
-}
 
 function Hint({ children }: Readonly<{ children: React.ReactNode }>) {
   return <p className="text-xs text-muted-foreground">{children}</p>
@@ -123,7 +102,7 @@ export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
   const backupsAvailable = target !== undefined
 
   const errors = validate(values, taken)
-  const nameFree = useNameFree(values.name, !errors.name)
+  const nameFree = useDatabaseNameFree(values.name, !errors.name)
   const serverTaken = nameFree === false
   const nameError = errors.name ?? (serverTaken ? 'taken' : undefined)
   const showName = attempted || nameBlurred

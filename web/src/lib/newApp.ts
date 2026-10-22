@@ -1,7 +1,11 @@
 import { ApiError } from './apiError'
 import { createApp } from '../queries/apps'
 import { createAppConnection } from '../queries/appConnections'
-import { createDatabase, fetchDatabase } from '../queries/databases'
+import {
+  createDatabase,
+  fetchDatabase,
+  setDatabaseBackupSchedule,
+} from '../queries/databases'
 import { triggerBuild } from '../queries/builds'
 import { setGitSource } from '../queries/gitSources'
 import { setGitBuild } from '../queries/gitBuildSettings'
@@ -34,6 +38,8 @@ export interface DatabaseEdit {
   name: string
   envVar: string
   field: string
+  /** Set when a backup destination exists: daily dump is scheduled after create. */
+  backup?: { targetId: string; schedule: string; retain: number }
 }
 
 export interface NewAppEdits {
@@ -233,6 +239,16 @@ async function ensureDatabase(d: DatabaseEdit): Promise<void> {
     if (!(err instanceof ApiError) || err.status !== 404) throw err
   }
   await createDatabase({ name: d.name, engine: d.engine, version: d.version })
+  if (d.backup) {
+    // Best effort: a missing schedule must not block the deploy.
+    await setDatabaseBackupSchedule({
+      name: d.name,
+      targetId: d.backup.targetId,
+      schedule: d.backup.schedule,
+      retain: d.backup.retain,
+      retainDays: 0,
+    }).catch(() => undefined)
+  }
 }
 
 export interface ApplyResult {
