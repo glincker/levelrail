@@ -320,10 +320,7 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 			priority = 3
 		}
 		payload := ntfyPayload{Title: ev.AppName, Message: summaryDeployText(ev), Priority: priority}
-		if token == "" {
-			return postJSON(ctx, client, cleanURL, payload)
-		}
-		return postJSONWithAuth(ctx, client, cleanURL, payload, bearerPrefix+token)
+		return postNtfy(ctx, client, cleanURL, token, payload)
 	case NotifyResend:
 		key, to, from, err := parseResendCreds(t.NotifyURL)
 		if err != nil {

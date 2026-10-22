@@ -29,7 +29,13 @@ const verdictVariant: Record<
   done: 'success',
 }
 
-export function PortTakeoverPanel({ onBack }: { onBack?: () => void }) {
+export function PortTakeoverPanel({
+  onBack,
+  onNext,
+}: {
+  onBack?: () => void
+  onNext?: () => void
+}) {
   const { t } = useTranslation('migration')
   const isRoot = useIsRoot()
   const [accept, setAccept] = useState(false)
@@ -131,6 +137,11 @@ export function PortTakeoverPanel({ onBack }: { onBack?: () => void }) {
         <span className="text-xs text-muted-foreground">
           {t('takeover.run.note', { seconds: plan?.window_seconds ?? 300 })}
         </span>
+        {onNext ? (
+          <Button variant="outline" className="ml-auto" onClick={onNext}>
+            {t('appImport.retire.open')}
+          </Button>
+        ) : null}
       </div>
       <ConfirmDialog
         open={asking}

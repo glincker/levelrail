@@ -39,7 +39,7 @@ type EnvChangeResult struct {
 func registerEnvTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "set_app_env",
-		Description: "Set or change one environment variable on an app. With secret true the value is stored encrypted and is write-only: no tool ever returns it. Saved to desired state only; the running container keeps its old environment until deploy_app or restart_app. Returns the key and whether a redeploy is needed.",
+		Description: "Set or change one environment variable on an app. With secret true the value is stored encrypted and is write-only: no tool ever returns it. Saved to desired state only: the container keeps its old environment until deploy_app or restart_app.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in setAppEnvInput) (*mcp.CallToolResult, EnvChangeResult, error) {
 		res, err := setAppEnv(ctx, client, in)
 		if err != nil {
@@ -50,7 +50,7 @@ func registerEnvTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "unset_app_env",
-		Description: "Remove one environment variable from an app, plain or secret. The change is saved to desired state only; the running container keeps its old environment until the app is redeployed or restarted (deploy_app, restart_app). Returns the key and whether a redeploy is needed.",
+		Description: "Remove one environment variable from an app, plain or secret. Saved to desired state only: the container keeps its old environment until deploy_app or restart_app.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in unsetAppEnvInput) (*mcp.CallToolResult, EnvChangeResult, error) {
 		res, err := unsetAppEnv(ctx, client, in)
 		if err != nil {

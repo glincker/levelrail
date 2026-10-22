@@ -31,8 +31,10 @@ type WALShipStore interface {
 // target of its newest base backup on a fixed interval, bounding the data lost
 // if the database host's disk dies to one interval of WAL.
 type WALShipScheduler struct {
-	Store         WALShipStore
-	Shipper       WALShipping
+	Store   WALShipStore
+	Shipper WALShipping
+	// BinlogShipper handles MySQL and MariaDB databases.
+	BinlogShipper WALShipping
 	Resolve       func(ctx context.Context, targetID string) (Destination, error)
 	ContainerName func(databaseName string) string
 	// IsLocal reports whether a database's node is the one this control plane's
@@ -95,14 +97,21 @@ func (s *WALShipScheduler) Tick(ctx context.Context) {
 		if ctx.Err() != nil {
 			return
 		}
-		if !d.PITREnabled || d.Engine != store.EnginePostgres || (s.IsLocal != nil && !s.IsLocal(d.NodeID)) {
+		if !d.PITREnabled || (s.IsLocal != nil && !s.IsLocal(d.NodeID)) {
 			continue
 		}
-		s.shipOne(ctx, d.Name)
+		switch d.Engine {
+		case store.EnginePostgres:
+			s.shipOne(ctx, d.Name, s.Shipper)
+		case store.EngineMySQL, store.EngineMariaDB:
+			if s.BinlogShipper != nil {
+				s.shipOne(ctx, d.Name, s.BinlogShipper)
+			}
+		}
 	}
 }
 
-func (s *WALShipScheduler) shipOne(ctx context.Context, name string) {
+func (s *WALShipScheduler) shipOne(ctx context.Context, name string, shipper WALShipping) {
 	history, err := s.Store.ListBaseBackupHistory(ctx, name)
 	if err != nil {
 		s.log().Error("backup: wal ship: list base backups failed", slog.String("database", name), slog.String("error", err.Error()))
@@ -123,7 +132,7 @@ func (s *WALShipScheduler) shipOne(ctx context.Context, name string) {
 	dest, err := s.Resolve(ctx, targetID)
 	var n int
 	if err == nil {
-		n, err = s.Shipper.Ship(ctx, dest, name, s.ContainerName(name))
+		n, err = shipper.Ship(ctx, dest, name, s.ContainerName(name))
 	}
 	s.record(name, func(st *WALShipStatus) {
 		st.LastAttemptAt = now

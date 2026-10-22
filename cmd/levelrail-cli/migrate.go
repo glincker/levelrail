@@ -14,6 +14,9 @@ func runMigrate(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return exitUsage
 	}
 
+	if hasResumeFlag(args) {
+		return runMigrateResume(prog, args, os.Stdin, stdout, stderr, lookupEnv)
+	}
 	switch args[0] {
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, migrateUsage(prog))
@@ -54,6 +57,9 @@ func migrateUsage(prog string) string {
   %[1]s migrate coolify --url URL --token TOKEN [flags]    migrate apps from a Coolify instance
   %[1]s migrate dokploy --url URL --token TOKEN [flags]    migrate apps from a Dokploy instance
   %[1]s migrate caprover --url URL --token TOKEN [flags]   migrate apps from a CapRover instance
+
+  %[1]s migrate [coolify|dokploy|caprover|server] --resume JOB [--retry] [--follow] [--retire [--probe] [--ack STEP]]
+                                                           resume a migration job: status, retry failures, safe-to-delete check
 
 Data and cutover steps, after "import platform":
 `+migrateDataUsage(prog)+`

@@ -1,0 +1,3 @@
+[
+  {"frequency": "0 2 * * *", "enabled": true, "save_s3": true}
+]

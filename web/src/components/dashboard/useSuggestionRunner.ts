@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 import { usePaletteAppActions } from '../../hooks/usePaletteAppActions'
 import { setAiChatSeed } from '../../lib/aiChatSeed'
+import { openCopyRetry } from '../../lib/copyRetry'
 import type { ActionSpec } from '../../lib/fleetSuggestions'
 
 export function useSuggestionRunner(): (spec: ActionSpec) => void {
@@ -31,6 +32,9 @@ export function useSuggestionRunner(): (spec: ActionSpec) => void {
         return
       case 'path':
         void navigate({ to: spec.to })
+        return
+      case 'copy-retry':
+        openCopyRetry(spec.database)
         return
       case 'cleanup':
         void navigate({ to: '/settings/general' })

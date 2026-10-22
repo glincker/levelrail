@@ -27,6 +27,7 @@ export type AppImportStep =
   | 'volumes'
   | 'cutover'
   | 'takeover'
+  | 'retire'
 
 export interface AppImportFinding {
   reason: string
@@ -68,6 +69,7 @@ export interface AppImportEntry {
   domains?: string[]
   env: { plain: number; secret: number; empty: number }
   volumes?: AppImportVolumeEntry[]
+  crons?: number
   health?: { path: string; interval_seconds?: number }
   memory_bytes?: number
   nano_cpus?: number
@@ -272,10 +274,7 @@ export function useAppImportSession(id: string | null) {
     queryKey: appImportKeys.one(id ?? ''),
     enabled: id !== null,
     queryFn: () => send<AppImportSession>(`${base}/${enc(id ?? '')}`),
-    refetchInterval: (q) =>
-      q.state.data?.running || (q.state.data?.states.building ?? 0) > 0
-        ? 2000
-        : false,
+    refetchInterval: (q) => (q.state.data?.running ? 2000 : false),
   })
 }
 
@@ -333,9 +332,12 @@ export function usePutAppImportPlan() {
 }
 
 export function useStageAppImport() {
-  return useSessionMutation<{ id: string }>(
-    ({ id }) =>
-      send<AppImportSession>(`${base}/${enc(id)}/stage`, json('POST', {})),
+  return useSessionMutation<{ id: string; items?: string[] }>(
+    ({ id, items }) =>
+      send<AppImportSession>(
+        `${base}/${enc(id)}/stage`,
+        json('POST', { items }),
+      ),
     (v) => v.id,
   )
 }

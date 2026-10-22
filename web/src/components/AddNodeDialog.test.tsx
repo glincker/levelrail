@@ -44,6 +44,23 @@ function mockTokenResponse(body: unknown) {
   return fetchMock
 }
 
+// base-ui's Select.Item only commits a click as a selection after a
+// pointerdown on the same item, and the popup opens asynchronously.
+async function pickProvider(label: string) {
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    fireEvent.click(document.body.querySelector('#node-join-provider')!)
+    try {
+      const option = screen.getByText(label)
+      fireEvent.pointerDown(option, { pointerType: 'mouse' })
+      fireEvent.click(option)
+      return
+    } catch (err) {
+      if (attempt === 5) throw err
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    }
+  }
+}
+
 function renderFields() {
   const queryClient = new QueryClient()
   render(
@@ -97,6 +114,63 @@ describe('ManualEnrollFields', () => {
     renderFields()
     fireEvent.click(screen.getByRole('button', { name: 'Generate join token' }))
     expect(await screen.findByText(/APP_JOIN_TOKEN=tok_abc/)).toBeVisible()
+  })
+
+  it('sends a manual provider, region and zone and starts live progress for a named node', async () => {
+    const fetchMock = mockTokenResponse({
+      token: 'tok_abc',
+      expires_at: '2026-10-10T12:00:00Z',
+      join_commands: { docker: 'docker run agent', binary: './agent' },
+    })
+    renderFields()
+    fireEvent.change(screen.getByLabelText('Node name (optional)'), {
+      target: { value: 'edge-1' },
+    })
+    await pickProvider('Hetzner')
+    fireEvent.change(screen.getByLabelText('Region (optional)'), {
+      target: { value: 'eu-central' },
+    })
+    fireEvent.change(screen.getByLabelText('Zone (optional)'), {
+      target: { value: 'fsn1-dc14' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Generate join token' }))
+
+    expect(await screen.findByText('docker run agent')).toBeVisible()
+    const init = fetchMock.mock.calls[0]?.[1]
+    expect(JSON.parse(init?.body as string)).toMatchObject({
+      node_name: 'edge-1',
+      provider: 'hetzner',
+      region: 'eu-central',
+      zone: 'fsn1-dc14',
+    })
+    expect(await screen.findByText('Joining edge-1')).toBeVisible()
+  })
+
+  it('leaves provider, region and zone out when auto-detect is chosen', async () => {
+    const fetchMock = mockTokenResponse({
+      token: 'tok_abc',
+      expires_at: '2026-10-10T12:00:00Z',
+    })
+    renderFields()
+    expect(screen.queryByLabelText('Region (optional)')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Generate join token' }))
+    await screen.findByText(/APP_JOIN_TOKEN=tok_abc/)
+    const body = JSON.parse(
+      fetchMock.mock.calls[0]?.[1]?.body as string,
+    ) as Record<string, unknown>
+    expect(body).not.toHaveProperty('provider')
+    expect(body).not.toHaveProperty('zone')
+  })
+
+  it('blocks an invalid zone before sending', async () => {
+    renderFields()
+    await pickProvider('Other VPS')
+    fireEvent.change(screen.getByLabelText('Zone (optional)'), {
+      target: { value: 'a; rm -rf /' },
+    })
+    expect(
+      screen.getByRole('button', { name: 'Generate join token' }),
+    ).toBeDisabled()
   })
 
   it('blocks an invalid node name before sending', () => {

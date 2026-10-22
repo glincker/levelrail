@@ -21,7 +21,7 @@ flowchart LR
   P4 --> P5["Phase 5: Hardening<br/>Open"]
 ```
 
-Phase 5 (chaos testing, upgrade and downgrade testing across versions, security review, a published idle-footprint number, a shadow-running period) is the open work. Some of it has started: control-plane death survival, break-glass agent reconnect and a first live ACME run are covered, see [resilience](/resilience) and the [ACME runbook](/acme-verification-runbook).
+Phase 5 (chaos testing, upgrade and downgrade testing across versions, security review, a published idle-footprint number, a shadow-running period) is the open work. Some of it has started: control-plane death survival, break-glass agent reconnect and a first live ACME run are covered, see [resilience](/resilience) and the [ACME runbook](/acme-verification-runbook). Upgrade testing has started too: a harness upgrades the real v0.8.1 and v0.8.2 binaries with seeded data and checks restore points, automatic restore and the downgrade refusal (see [Upgrade safely](/upgrade-safely#upgrading-real-releases-with-real-data)); a cross-release schema migration is still untested there.
 
 ## Shipped
 
@@ -44,8 +44,8 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 ### Data
 
 - Nine managed database engines: Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Valkey, Dragonfly and ClickHouse, with scheduled backups, restore, verification, metrics and log search. Meilisearch, Qdrant, Typesense and Memcached are built but not yet verified on a live Docker daemon. See [managing databases](/managing-databases).
-- Point-in-time restore for Postgres (opt-in WAL archiving, restore to a timestamp inside the recoverable window), restore into a new resource, and app volume backups to S3-compatible targets. See [backups and storage](/backups-and-storage).
-- TLS on newly created Postgres and Redis databases. Databases created before this feature are not switched.
+- Point-in-time restore for Postgres (opt-in WAL archiving, restore to a timestamp inside the recoverable window) and for MySQL and MariaDB (opt-in binary log archiving, restore into a new database), restore into a new resource, and app volume backups to S3-compatible targets. See [backups and storage](/backups-and-storage).
+- TLS on newly created Postgres, Redis, MySQL, MariaDB and MongoDB databases. Databases created before this feature are not switched.
 - Control-plane backups. See [control-plane backup](/control-plane-backup).
 
 ### Observability
@@ -59,6 +59,7 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 
 - Agent transport: in-process for a single node, gRPC with mTLS for remote nodes, with reconnection and version negotiation.
 - Node registry, join tokens, cordon, drain, heartbeats and connection history.
+- Guided add-node flow with provider, region and zone auto-detect from cloud metadata, preflight checks with fixes, and provider-aware spread (beta, see [add a node anywhere](/add-node-anywhere)).
 - Manual placement, moving an app with its volumes, WireGuard mesh with cross-node service DNS, and distributed certificate storage.
 
 The join flow is verified across two real Docker daemons, but not across a real WAN. The mesh itself is not verified on real hosts. See [multi-node](/multi-node).
@@ -88,10 +89,10 @@ These exist and are tested, but are gated or carry a beta label. See [feature st
 
 - Real public ACME: one live run against Let's Encrypt on a public VPS is recorded in the [runbook](/acme-verification-runbook). Renewal close to expiry, DNS-01 wildcards and a deliberate failure against the production CA are not yet exercised live.
 - Multi-node on real hosts: the WireGuard mesh and cross-host remote transport are unverified outside fakes and local Docker daemons.
-- Idle footprint on Linux: measured only on an Apple M4 Max dev build so far. See [performance](/performance).
+- Idle footprint on Linux: measured in a Docker Desktop container (not bare metal) with a harness and opt-in regression guard. A bare metal or VPS number is still open. See [performance](/performance).
 - Load and failover numbers: the harness exists (`levelrail-cli bench run`), no published results yet. See [benchmarks](/benchmarks).
 - Template coverage: a sample of the roughly 360 templates is deployed by e2e tests, not the whole catalog.
-- Other database engines: PITR is Postgres only, and TLS by default is Postgres and Redis only.
+- Other database engines: PITR covers Postgres, MySQL and MariaDB only (MongoDB has no oplog here), and the remaining engines have no TLS by default.
 - Stable release: none yet. Upgrade and downgrade testing across versions with real data is part of Phase 5.
 
 ## Out of scope

@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MetricChartCard } from '@/components/MetricChartCard'
-import { isDashboardMetric } from '@/lib/dashboardGrid'
+import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { isDashboardMetric, isHttpUrl } from '@/lib/dashboardGrid'
 import { chartPalette } from '@/lib/chartPalette'
 import { formatMoney } from '@/lib/usageFormat'
 import { mergeMetricSeries, type ChartUnit } from '@/lib/metricChart'
@@ -259,6 +260,29 @@ function CapacityWidget({ node }: { node: string }) {
   )
 }
 
+function LinkWidget({ w }: { w: DashboardWidget }) {
+  const url = w.url ?? ''
+  if (!isHttpUrl(url)) return null
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm transition-colors hover:bg-muted/50"
+    >
+      <span className="min-w-0">
+        <span className="block truncate font-medium text-foreground">
+          {w.title}
+        </span>
+        <span className="block truncate text-xs text-muted-foreground">
+          {new URL(url).host}
+        </span>
+      </span>
+      <ArrowSquareOutIcon aria-hidden="true" className="size-4 shrink-0" />
+    </a>
+  )
+}
+
 /** Renders the live body of one dashboard widget from the existing telemetry and resource endpoints. */
 export function WidgetBody({
   w,
@@ -287,5 +311,7 @@ export function WidgetBody({
       return <AlertWidget app={target} />
     case 'node_capacity':
       return <CapacityWidget node={target} />
+    case 'link':
+      return <LinkWidget w={w} />
   }
 }

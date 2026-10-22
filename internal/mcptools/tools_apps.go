@@ -32,7 +32,7 @@ type listAppsInput struct {
 	Limit       int    `json:"limit,omitempty" jsonschema:"page size, default 50, max 200"`
 	Offset      int    `json:"offset,omitempty"`
 	Environment string `json:"environment,omitempty" jsonschema:"only apps in this environment"`
-	Fields      string `json:"fields,omitempty" jsonschema:"comma-separated keys to keep per item"`
+	Fields      string `json:"fields,omitempty" jsonschema:"keys to keep per item"`
 }
 
 type listAppsOutput struct {
@@ -130,7 +130,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_app_images",
-		Description: "List every locally-present image tag under an app's current image's repo, newest first. Useful for finding an exact tag to pass to deploy_app or rollback_app. Read-only; an empty list means nothing to suggest, not an error.",
+		Description: "List locally-present image tags under an app's current image repo, newest first, for deploy_app or rollback_app. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.ImageResource, error) {
 		images, err := client.ListAppImages(ctx, in.Name)
 		if err != nil {
@@ -297,7 +297,7 @@ type listDeployAttemptsInput struct {
 	Status string `json:"status,omitempty" jsonschema:"attempt status, e.g. succeeded or failed"`
 	Query  string `json:"query,omitempty" jsonschema:"free text match"`
 	Limit  int    `json:"limit,omitempty"`
-	Fields string `json:"fields,omitempty" jsonschema:"comma-separated keys to keep per item"`
+	Fields string `json:"fields,omitempty" jsonschema:"keys to keep per item"`
 }
 
 type appNameInput struct {

@@ -81,6 +81,19 @@ type unbindResult struct {
 
 type noInput struct{}
 
+type listZonesInput struct {
+	NodeID   string `json:"node_id,omitempty"`
+	Capacity bool   `json:"capacity,omitempty"`
+}
+
+type listZonesOutput struct {
+	Zones      []apiclient.ZoneSummary   `json:"zones"`
+	Nodes      []apiclient.ZoneNode      `json:"nodes"`
+	Labeled    bool                      `json:"labeled"`
+	Domains    *apiclient.NodeDomains    `json:"domains,omitempty"`
+	Onboarding *apiclient.NodeOnboarding `json:"onboarding,omitempty"`
+}
+
 func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_image_inventory",
@@ -146,13 +159,28 @@ func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_zones",
-		Description: "List failure domains (zone, region, provider) with their nodes, online count and workloads. Needs a root token, like the REST API.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ noInput) (*mcp.CallToolResult, apiclient.Zones, error) {
+		Description: "List failure domains with nodes and workloads. capacity adds totals per provider, region, zone and single-zone warnings; node_id gives preflight checks and fixes. Root token.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listZonesInput) (*mcp.CallToolResult, listZonesOutput, error) {
+		if in.NodeID != "" {
+			ob, err := client.GetNodeOnboarding(ctx, in.NodeID)
+			if err != nil {
+				return nil, listZonesOutput{}, fmt.Errorf("get node onboarding: %w", err)
+			}
+			return nil, listZonesOutput{Onboarding: &ob}, nil
+		}
 		z, err := client.GetZones(ctx)
 		if err != nil {
-			return nil, apiclient.Zones{}, fmt.Errorf("list zones: %w", err)
+			return nil, listZonesOutput{}, fmt.Errorf("list zones: %w", err)
 		}
-		return nil, z, nil
+		out := listZonesOutput{Zones: z.Zones, Nodes: z.Nodes, Labeled: z.Labeled}
+		if in.Capacity {
+			d, err := client.GetNodeDomains(ctx)
+			if err != nil {
+				return nil, listZonesOutput{}, fmt.Errorf("get node domains: %w", err)
+			}
+			out.Domains = &d
+		}
+		return nil, out, nil
 	})
 
 	addTool(server, &mcp.Tool{

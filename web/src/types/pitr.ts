@@ -10,6 +10,9 @@
 import type { BackupStatus } from './backupHistory'
 
 export interface PITRStatus {
+  engine?: string
+  // in_place (Postgres) or new_database (MySQL, MariaDB).
+  restore_mode?: 'in_place' | 'new_database'
   enabled: boolean
   enabled_at?: string
   has_base_backup: boolean
@@ -60,4 +63,6 @@ export interface PITRRestoreHistoryRecord {
 export interface TriggerPITRRestoreRequest {
   base_backup_id: string
   target_time: string
+  // Required for MySQL and MariaDB, whose restore creates this new database.
+  restore_as?: string
 }

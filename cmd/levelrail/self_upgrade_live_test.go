@@ -64,7 +64,17 @@ const versionPkg = "github.com/GLINCKER/levelrail/internal/version.Version"
 
 const installedVersion = "v0.4.0"
 
+type liveUpgradeOpts struct {
+	install  func(t *testing.T, bin string)
+	extraEnv string
+}
+
 func newLiveUpgradeEnv(t *testing.T) *liveUpgradeEnv {
+	t.Helper()
+	return newLiveUpgradeEnvWith(t, liveUpgradeOpts{})
+}
+
+func newLiveUpgradeEnvWith(t *testing.T, opts liveUpgradeOpts) *liveUpgradeEnv {
 	t.Helper()
 	dir, err := os.MkdirTemp("/tmp", "lrup")
 	if err != nil {
@@ -83,17 +93,21 @@ func newLiveUpgradeEnv(t *testing.T) *liveUpgradeEnv {
 			t.Fatal(err)
 		}
 	}
-	buildGo(t, "./cmd/levelrail", e.bin, "-X "+versionPkg+"="+installedVersion)
+	if opts.install != nil {
+		opts.install(t, e.bin)
+	} else {
+		buildGo(t, "./cmd/levelrail", e.bin, "-X "+versionPkg+"="+installedVersion)
+	}
 
 	pidFile := filepath.Join(dir, "pid")
 	e.startSh = filepath.Join(dir, "start.sh")
 	e.stopSh = filepath.Join(dir, "stop.sh")
 	start := fmt.Sprintf(`#!/bin/sh
-APP_BRAND_FILE=%[6]s APP_DEV_MODE=1 APP_DATA_DIR=%[1]s APP_HTTP_ADDR=127.0.0.1:%[2]d APP_AGENT_ADDR=127.0.0.1:0 \
+%[7]s APP_BRAND_FILE=%[6]s APP_DEV_MODE=1 APP_DATA_DIR=%[1]s APP_HTTP_ADDR=127.0.0.1:%[2]d APP_AGENT_ADDR=127.0.0.1:0 \
 APP_INGRESS_HTTP_ADDR=127.0.0.1:0 APP_INGRESS_HTTPS_ADDR=127.0.0.1:0 \
 nohup %[3]s >>%[4]s/server.log 2>&1 &
 echo $! > %[5]s
-`, e.dataDir, e.port, e.bin, dir, pidFile, brandFile)
+`, e.dataDir, e.port, e.bin, dir, pidFile, brandFile, opts.extraEnv)
 	stop := fmt.Sprintf(`#!/bin/sh
 [ -f %[1]s ] || exit 0
 pid=$(cat %[1]s)

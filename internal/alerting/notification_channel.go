@@ -243,10 +243,7 @@ func sendTextNotification(ctx context.Context, client *http.Client, sender email
 			return fmt.Errorf("alerting: test notification: %w", err)
 		}
 		payload := ntfyPayload{Title: "Levelrail", Message: testText, Priority: 4}
-		if token == "" {
-			return postJSON(ctx, client, cleanURL, payload)
-		}
-		return postJSONWithAuth(ctx, client, cleanURL, payload, bearerPrefix+token)
+		return postNtfy(ctx, client, cleanURL, token, payload)
 	case NotifyResend:
 		key, to, from, err := parseResendCreds(notifyURL)
 		if err != nil {

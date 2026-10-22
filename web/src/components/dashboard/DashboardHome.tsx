@@ -1,19 +1,33 @@
-import { Suspense, lazy, useState } from 'react'
+import { Suspense, lazy, useState, type ReactNode } from 'react'
 import { SignInHomeCards } from '../signin/SignInHomeCards'
-import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  CaretDownIcon,
+  SlidersHorizontalIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import type { AppListEntry } from '../../types/appDetail'
 import type { AppsSummary } from '../../queries/appPages'
 import { appListQueryOptions } from '../../queries/apps'
 import { useIsRoot } from '../../hooks/useIsRoot'
+import { useDashboardLayout } from '../../hooks/useDashboardLayout'
+import {
+  HALF_WIDTH,
+  visibleOrder,
+  type WidgetId,
+} from '../../lib/dashboardLayout'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { FleetUtilizationSummary } from '../FleetUtilizationSummary'
 import { TopResourceConsumers } from '../TopResourceConsumers'
 import { DashboardHero } from './DashboardHero'
-import { DashboardBanners } from './DashboardBanners'
 import { FleetTiles } from './FleetTiles'
 import { NextSteps } from './NextSteps'
 import { RecentActivity } from './RecentActivity'
+import { AppsPanel } from './AppsPanel'
+import { CopyRetryDialog } from './CopyRetryDialog'
+import { StatusStrip } from './StatusStrip'
+import { WidgetFrame } from './WidgetFrame'
 import { QuickStart } from './QuickStart'
 import { ResourcesSection } from './ResourcesSection'
 import { RecommendationsLine } from './RecommendationsLine'
@@ -90,7 +104,10 @@ export function DashboardHome({
   summary: AppsSummary
   sample: AppListEntry[]
 }) {
+  const { t } = useTranslation('dashboard')
   const isRoot = useIsRoot()
+  const { layout, move, toggle, reset } = useDashboardLayout()
+  const [editing, setEditing] = useState(false)
   const [deployStarted, setDeployStarted] = useState(false)
   const [firstRunDone, setFirstRunDone] = useState(false)
   const hasApps = summary.total > 0
@@ -120,23 +137,88 @@ export function DashboardHome({
     )
   }
 
-  return (
-    <DashboardHero summary={summary} banners={<DashboardBanners />}>
-      <SignInHomeCards />
-      <FleetTiles summary={summary} sample={sample} />
-      <div className="@container">
-        <div className="grid gap-4 @4xl:grid-cols-2">
-          <NextSteps summary={summary} sample={sample} />
-          <RecentActivity sample={sample} />
-        </div>
-      </div>
-      <ResourcesSection />
-      <ResourceAdvisorTile />
+  const widgets: Record<WidgetId, ReactNode> = {
+    attention: <NextSteps summary={summary} sample={sample} />,
+    apps: <AppsPanel />,
+    activity: <RecentActivity sample={sample} />,
+    fleet: <FleetTiles summary={summary} sample={sample} />,
+    resources: <ResourcesSection />,
+    advisor: <ResourceAdvisorTile />,
+    alerts: (
       <Suspense fallback={null}>
         <RecentAlertsCard />
       </Suspense>
+    ),
+    usage: <UsageDetails />,
+  }
+  const shown = editing ? layout.order : visibleOrder(layout)
+
+  return (
+    <DashboardHero>
+      <StatusStrip
+        apps={summary.total}
+        trailing={
+          <span className="flex items-center gap-1">
+            {editing ? (
+              <Button size="sm" variant="ghost" onClick={reset}>
+                {t('customize.reset')}
+              </Button>
+            ) : null}
+            <Button
+              size="sm"
+              variant={editing ? 'default' : 'ghost'}
+              aria-pressed={editing}
+              aria-label={editing ? t('customize.done') : t('customize.edit')}
+              onClick={() => {
+                setEditing((v) => !v)
+              }}
+            >
+              <SlidersHorizontalIcon />
+              {editing ? t('customize.done') : null}
+            </Button>
+          </span>
+        }
+      />
+      <SignInHomeCards />
+      <div className="@container">
+        <div className="grid gap-4 @4xl:grid-cols-2">
+          {shown.map((id, index) => (
+            <div
+              key={id}
+              className={cn(
+                'min-w-0 space-y-2',
+                !HALF_WIDTH.includes(id) && '@4xl:col-span-2',
+                layout.hidden.includes(id) && 'opacity-40',
+              )}
+            >
+              <WidgetFrame
+                id={id}
+                index={index}
+                total={shown.length}
+                editing={editing}
+                onMove={move}
+                onHide={toggle}
+              >
+                {widgets[id]}
+              </WidgetFrame>
+              {editing && layout.hidden.includes(id) ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() => {
+                    toggle(id)
+                  }}
+                >
+                  {t('customize.show', { name: t(`widgets.${id}`) })}
+                </Button>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      </div>
       <RecommendationsLine showSetup={false} />
-      <UsageDetails />
+      <CopyRetryDialog />
     </DashboardHero>
   )
 }

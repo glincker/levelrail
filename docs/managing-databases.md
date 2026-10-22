@@ -15,7 +15,7 @@ Create a Postgres, Redis, Valkey, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, Cli
 | Create a database | [Create a database](#create-a-database) |
 | Connect an app to it | [Attach a database to an app](#attach-a-database-to-an-app) |
 | Back it up or restore it | [Backups](#backups) |
-| Recover to an exact second | [Point-in-time restore](#point-in-time-restore-postgres-only) |
+| Recover to an exact second | [Point-in-time restore](#point-in-time-restore) |
 | Reach it from my laptop | [Public access](#public-access) |
 | Upgrade the version | [Change the version](#change-the-version) |
 
@@ -76,9 +76,9 @@ Omit `node_id` at creation to let the control plane pick a node, or pass it to c
 | --- | --- | --- | --- |
 | Postgres | `postgres` | `16` | on by default |
 | Redis | `redis` | `7` | on by default |
-| MySQL | `mysql` | `8` | no |
-| MongoDB | `mongodb` | `7` | no |
-| MariaDB | `mariadb` | `11` | no |
+| MySQL | `mysql` | `8` | on for databases created after TLS support landed |
+| MongoDB | `mongodb` | `7` | on for databases created after TLS support landed |
+| MariaDB | `mariadb` | `11` | on for databases created after TLS support landed |
 | KeyDB | `keydb` | `latest` | no |
 | Valkey | `valkey` | `8` | no |
 | Dragonfly | `dragonfly` | `v1.27.1` | no |
@@ -372,9 +372,9 @@ levelrail-cli backups delete <database> <backup-id>
 
 Deleting removes the stored object and its history row and does not touch the schedule. See [Delete one backup on demand](/backups-and-storage#delete-one-backup-on-demand).
 
-## Point-in-time restore (Postgres only)
+## Point-in-time restore
 
-Every restore above is snapshot-based: it returns the database to the moment a specific backup (a logical dump) was taken. Point-in-time restore can put a Postgres database back to any exact timestamp, down to the second.
+Every restore above is snapshot-based: it returns the database to the moment a specific backup (a logical dump) was taken. Point-in-time restore can put a Postgres, MySQL or MariaDB database back to any exact timestamp inside its recoverable window. Postgres replays its write-ahead log and restores in place. MySQL and MariaDB replay their binary log and restore into a new database, see [MySQL and MariaDB](#mysql-and-mariadb). MongoDB has no point-in-time restore: it is not a replica set here, so there is no oplog to replay. Use [backups](#backups) and restore into a new database.
 
 <Warning>
 **Recoverable only from when you enable it, forward**
@@ -385,7 +385,7 @@ Point-in-time restore is never retroactive. The moment you run `pitr enable`, Po
 <Steps>
 <Step title="Enable continuous WAL archiving">
 
-`pitr enable <database>` turns on `wal_level=replica` and `archive_mode=on` going forward. Postgres only.
+`pitr enable <database>` turns on `wal_level=replica` and `archive_mode=on` going forward. For MySQL and MariaDB it turns on the binary log instead.
 
 </Step>
 <Step title="Take a physical base backup">
@@ -428,9 +428,27 @@ point-in-time restore "pitr_k2n8fq31z" of database "main" to "2026-09-21T09:00:0
 
 On the dashboard, the Overview page has a **Point-in-time restore** card, separate from the Backups card: an Enable/Disable toggle, the current recoverable window, base backup history with a manual trigger, and a **Restore to timestamp** dialog whose datetime picker is bounded to the recoverable window.
 
+### MySQL and MariaDB
+
+The steps and commands are the same as for Postgres, with three differences.
+
+- **Restore creates a new database.** `pitr restore <database> --base-backup ID --target-time RFC3339 --restore-as NEW_NAME` creates `NEW_NAME` with the same engine and version, loads the base backup into it, and replays the archived binary log up to the target. The source database is never written to, so there is no confirmation prompt and no downtime. A restore without `--restore-as` is rejected with a `400`. There is no in-place restore for these engines.
+- **A base backup is a consistent dump, not a physical copy.** `pitr base-backups trigger` runs `mysqldump` (`mariadb-dump` on MariaDB) with `--single-transaction` and records the binary log file and position the dump is consistent with. A restore loads the dump, then replays the log from that position.
+- **The window starts when the oldest base backup finished and ends at the last binary log rotation.** `pitr status` reads the server clock and rotates the log in one step, so every event stamped up to the end of the window sits in a closed file. Targets have second resolution, and a restore stops before the first event stamped at or after the target second.
+
+The binary log lives in a `binlog` Docker volume on the same host, mounted at `/var/lib/mysql-binlog`, written in `ROW` format. Closed files are shipped to the backup target under `<database>/binlog/` on the same schedule as Postgres WAL (`APP_PITR_WAL_SHIP_INTERVAL`) and right after every base backup, rotating the active file first. A restore ships the source's closed files before it reads them, so it works from the bucket alone. Local files expire after `APP_PITR_BINLOG_EXPIRE_SECONDS` (default 604800, seven days); base backup retention (`APP_PITR_BASE_BACKUP_KEEP`) prunes the shipped copies the same way it prunes WAL.
+
+Limits:
+
+- The base backup and the replay cover the managed schema, the one named after the database. Other schemas you create by hand, and the `mysql` system schema, are not in a point-in-time restore. Use a regular backup for those.
+- The restore renames the schema from the source's name to the new database's name while replaying. Row changes are covered by the live test; schema changes (DDL) inside the replay window have not been tested.
+- The official MySQL image ships no `mysqlbinlog`. A MySQL restore starts a short-lived tools container from `APP_PITR_MYSQL_TOOLS_IMAGE` (default `percona/percona-server:8.4`), copies the binary log into it, and streams the converted SQL into the new database. The image must be pullable from the Docker host. MariaDB uses the reader in its own image.
+- Shipping covers databases on the control plane's own node only, and enabling needs an S3 compatible backup target, the same as Postgres.
+- Turning the binary log on recreates the database container once, over the same data.
+
 ### Why the database goes offline during a restore
 
-A point-in-time restore replaces Postgres's own data directory, which cannot happen while the server is running against it. The control plane stops the container, wipes and repopulates its data volume from the base backup, and lets the reconciler bring it back once recovery is configured. A restore therefore takes longer than an in-place logical restore, in proportion to how much WAL there is to replay, not to the database's size.
+A Postgres point-in-time restore replaces the server's own data directory, which cannot happen while the server is running against it. The control plane stops the container, wipes and repopulates its data volume from the base backup, and lets the reconciler bring it back once recovery is configured. A restore therefore takes longer than an in-place logical restore, in proportion to how much WAL there is to replay, not to the database's size.
 
 ### WAL retention and disk use
 
@@ -509,7 +527,9 @@ When the database has a running container, new limits apply live. If the contain
 
 ## TLS
 
-Postgres and Redis get TLS enabled automatically at creation, with a self-signed certificate generated once and persisted through the secrets mechanism. There is no operator toggle: TLS shows as on once a certificate exists for the database. The other engines connect in plaintext inside the Docker network.
+Postgres and Redis get TLS enabled automatically at creation, with a self-signed certificate generated once and persisted through the secrets mechanism. TLS shows as on once a certificate exists for the database.
+
+MySQL, MariaDB and MongoDB databases created from this release on get the same certificate and the server offers TLS (MongoDB with `preferTLS`), but plaintext connections are still accepted, so existing clients keep working and a client opts in with its own TLS setting. Databases created before this release are not switched: they have no stored TLS mode and keep running as they were. `PUT /api/v1/databases/{name}/tls` turns it on or off for MySQL, MariaDB, MongoDB and Redis.
 
 Both engines have an "encrypt without verifying" mode in their standard connection URI (Postgres `sslmode=require`, Redis `rediss://`), which mainstream client libraries honor with no app-side change. When an app attaches to a TLS-enabled database, it automatically gets the TLS form of the connection string: `?sslmode=require` appended for Postgres, or `rediss://` on the TLS-only port for Redis. Nothing in `app.yaml` opts into this.
 
@@ -804,7 +824,8 @@ The backup schedule has no `databases` subcommand: use `backups schedule set`, o
 - Deleting a backup target leaves its stored credentials in the secrets store, unreferenced but not erased at rest.
 - A scheduled backup missed while the control plane is down is not replayed on restart.
 - Physical base backups for point-in-time restore are manual unless the database has a backup schedule, which triggers one after each scheduled backup.
-- TLS is Postgres and Redis only, with no operator toggle.
+- Connection strings only switch to the TLS form for Postgres and Redis. MySQL, MariaDB and MongoDB serve TLS next to plaintext and leave the client to ask for it.
+- MongoDB has no point-in-time restore.
 
 ## Next steps
 

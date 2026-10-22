@@ -31,16 +31,30 @@ export function heroSentence(input: {
   return { key: 'allHealthy', count: input.apps }
 }
 
+export interface AttentionStep {
+  id: string
+  source: 'attention'
+  tone: Tone
+  title: string
+  detail: string
+  groupKey?: string
+  actionLabel: string
+  spec: ActionSpec
+}
+
+// Several attention steps with one root cause, shown as one row.
+export interface StepGroup {
+  id: string
+  source: 'group'
+  groupKey: string
+  tone: Tone
+  detail: string
+  items: AttentionStep[]
+}
+
 export type NextStep =
-  | {
-      id: string
-      source: 'attention'
-      tone: Tone
-      title: string
-      detail: string
-      actionLabel: string
-      spec: ActionSpec
-    }
+  | AttentionStep
+  | StepGroup
   | {
       id: string
       source: 'setup'
@@ -49,26 +63,70 @@ export type NextStep =
       href: string
     }
 
+const TONE_RANK: Record<Tone, number> = {
+  danger: 0,
+  warning: 1,
+  info: 2,
+  success: 3,
+  accent: 4,
+  neutral: 5,
+}
+
+/** groupAttention folds steps that share a groupKey into one group, keeping first-seen order. */
+export function groupAttention(steps: AttentionStep[]): NextStep[] {
+  const byKey = new Map<string, AttentionStep[]>()
+  for (const s of steps) {
+    if (!s.groupKey) continue
+    byKey.set(s.groupKey, [...(byKey.get(s.groupKey) ?? []), s])
+  }
+  const out: NextStep[] = []
+  const emitted = new Set<string>()
+  for (const s of steps) {
+    const members = s.groupKey ? byKey.get(s.groupKey) : undefined
+    if (!s.groupKey || !members || members.length < 2) {
+      out.push(s)
+      continue
+    }
+    if (emitted.has(s.groupKey)) continue
+    emitted.add(s.groupKey)
+    const tone = members.reduce<Tone>(
+      (worst, m) => (TONE_RANK[m.tone] < TONE_RANK[worst] ? m.tone : worst),
+      s.tone,
+    )
+    out.push({
+      id: `group:${s.groupKey}`,
+      source: 'group',
+      groupKey: s.groupKey,
+      tone,
+      detail: s.detail,
+      items: members,
+    })
+  }
+  return out
+}
+
 /** buildNextSteps lists incidents first (one action each), then open setup steps, capped at limit. */
 export function buildNextSteps(input: {
   specs: SuggestionSpec[]
   guide: SetupGuide | undefined
   limit: number
 }): NextStep[] {
-  const out: NextStep[] = []
+  const attention: AttentionStep[] = []
   for (const s of input.specs) {
     const action = s.actions.find((a) => a.primary) ?? s.actions[0]
     if (!action) continue
-    out.push({
+    attention.push({
       id: s.id,
       source: 'attention',
       tone: s.tone,
       title: s.title,
       detail: s.detail,
+      groupKey: s.groupKey,
       actionLabel: action.label,
       spec: action.spec,
     })
   }
+  const out: NextStep[] = groupAttention(attention)
   const guide = input.guide
   if (guide && !guide.hidden && !guide.complete) {
     const open = guide.steps.filter(isOpen)
@@ -142,4 +200,13 @@ export function deployRows(
     }
   }
   return rows.sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit)
+}
+
+/** causeCount counts distinct root causes: items sharing a failure class are one cause. */
+export function causeCount(
+  items: { id: string; copy?: { code?: string } }[],
+): number {
+  return new Set(
+    items.map((i) => (i.copy?.code ? `copy:${i.copy.code}` : i.id)),
+  ).size
 }
