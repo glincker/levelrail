@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlugsConnectedIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  CheckIcon,
+  CopyIcon,
+  PlugsConnectedIcon,
+  PlusIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import { BrandTile } from '../BrandLogoBadge'
 import {
@@ -71,6 +76,7 @@ export function AddGitConnectionDialog({
   const [clientSecret, setClientSecret] = useState('')
   const [token, setToken] = useState('')
   const [label, setLabel] = useState('')
+  const [copied, setCopied] = useState(false)
 
   const tokenAuth = provider === 'bitbucket_server'
   const reusing = !tokenAuth && source !== NEW_APP
@@ -152,6 +158,35 @@ export function AddGitConnectionDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          {tokenAuth ? null : (
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 p-2">
+              <span className="text-xs text-muted-foreground">
+                {t('gitConnections.add.callbackLabel')}
+              </span>
+              <code className="min-w-0 flex-1 break-all text-xs">
+                {callback}
+              </code>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  void navigator.clipboard.writeText(callback).then(() => {
+                    setCopied(true)
+                  })
+                }}
+              >
+                {copied ? (
+                  <CheckIcon className="size-4" aria-hidden="true" />
+                ) : (
+                  <CopyIcon className="size-4" aria-hidden="true" />
+                )}
+                {copied
+                  ? t('gitConnections.add.callbackCopied')
+                  : t('gitConnections.add.callbackCopy')}
+              </Button>
+            </div>
+          )}
           {existing.length > 0 && !tokenAuth ? (
             <Field>
               <FieldLabel htmlFor="git-conn-source">

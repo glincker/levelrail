@@ -45,17 +45,24 @@ type gitConnectionResource struct {
 	Connection  gitConnResource `json:"connection"`
 	// AuthorizePath is the browser navigation that authorizes or reauthorizes this connection.
 	AuthorizePath string `json:"authorize_path"`
+	// AuthMethod is "token" for a pasted access token and "oauth" for an OAuth application.
+	AuthMethod string `json:"auth_method"`
 }
+
+const (
+	gitAuthToken = "token"
+	gitAuthOAuth = "oauth"
+)
 
 func (rt *Router) gitConnectionResourceFor(ctx context.Context, c store.GitConnection) gitConnectionResource {
 	res := gitConnectionResource{
 		ID: c.ID, Provider: c.Provider, Label: c.Label, Host: c.Host, InstanceURL: c.InstanceURL, ClientID: c.ClientID,
 		AccountID: c.AccountID, AccountName: c.AccountName, Scopes: c.Scopes, IsDefault: c.IsDefault,
 		CreatedBy: c.CreatedBy, CreatedAt: c.CreatedAt, Connection: rt.gitConnHealth(ctx, c.ID),
-		AuthorizePath: "/api/v1/" + c.Provider + "-app/connect?connection_id=" + url.QueryEscape(c.ID),
+		AuthorizePath: "/api/v1/" + c.Provider + "-app/connect?connection_id=" + url.QueryEscape(c.ID), AuthMethod: gitAuthOAuth,
 	}
-	if c.Provider == gitProviderBitbucketServer {
-		res.AuthorizePath = ""
+	if c.ClientID == "" {
+		res.AuthorizePath, res.AuthMethod = "", gitAuthToken
 	}
 	if rt.gitConnSecrets != nil {
 		ok, err := rt.gitConnSecrets.Exists(ctx, c.SecretsKey, gitConnAccessTokenKey)
@@ -147,7 +154,7 @@ func (rt *Router) handleCreateGitConnection(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, errGitProviderOneOf)
 		return
 	}
-	if adapter.patAuth {
+	if adapter.patAuth || strings.TrimSpace(req.Token) != "" {
 		rt.createPATGitConnection(w, r, adapter, req)
 		return
 	}
@@ -318,6 +325,9 @@ func (rt *Router) revokeGitConnGrant(ctx context.Context, c store.GitConnection)
 	adapter, ok := rt.gitAdapter(c.Provider)
 	if !ok || rt.gitConnSecrets == nil {
 		return false, ""
+	}
+	if c.ClientID == "" && adapter.revoke != nil {
+		return false, gitTokenRevokeNote
 	}
 	if adapter.revoke == nil {
 		return false, adapter.revokeNote

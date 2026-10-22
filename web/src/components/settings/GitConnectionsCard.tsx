@@ -1,6 +1,11 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusIcon, UsersThreeIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  KeyIcon,
+  PlusIcon,
+  UsersThreeIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import { isTokenHost } from '../../lib/gitTokenGuides'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -8,6 +13,10 @@ import { useGitConnections } from '../../queries/gitConnections'
 import type { GitConnectionProvider } from '../../types/gitConnections'
 import { AddGitConnectionDialog } from './AddGitConnectionDialog'
 import { GitConnectionRow } from './GitConnectionRow'
+
+const ConnectWithTokenDialog = lazy(
+  () => import('../gitConnections/ConnectWithTokenDialog'),
+)
 
 // Every account connected for one provider, with Add another account.
 // Several GitLab groups, a personal and a work Bitbucket workspace, or two
@@ -18,6 +27,8 @@ export function GitConnectionsCard({
   const { t } = useTranslation('settings')
   const { data: connections } = useGitConnections(provider)
   const [adding, setAdding] = useState(false)
+  const [tokenOpen, setTokenOpen] = useState(false)
+  const tokenHost = isTokenHost(provider) ? provider : undefined
   const authorizedCount = connections.filter((c) => c.authorized).length
 
   return (
@@ -59,6 +70,28 @@ export function GitConnectionsCard({
           </>
         )}
       </CardContent>
+      {tokenHost ? (
+        <div className="border-t border-border px-4 py-3">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setTokenOpen(true)}
+          >
+            <KeyIcon className="size-4" aria-hidden="true" />
+            {t('gitConnectionsHub.add.withToken')}
+          </Button>
+        </div>
+      ) : null}
+      {tokenHost && tokenOpen ? (
+        <Suspense fallback={null}>
+          <ConnectWithTokenDialog
+            provider={tokenHost}
+            open
+            onOpenChange={setTokenOpen}
+          />
+        </Suspense>
+      ) : null}
       <AddGitConnectionDialog
         provider={provider}
         existing={connections}

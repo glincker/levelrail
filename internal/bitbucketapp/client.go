@@ -234,6 +234,16 @@ const (
 	repositoriesAPI = "/repositories/"
 )
 
+// authValue builds the Authorization header for a stored credential. An
+// "email:token" pair is a Bitbucket API token (Basic); anything else is an
+// OAuth or access token (Bearer).
+func authValue(credential string) string {
+	if strings.Contains(credential, ":") {
+		return "Basic " + base64.StdEncoding.EncodeToString([]byte(credential))
+	}
+	return bearerPrefix + credential
+}
+
 type pagedRepoResponse struct {
 	Values []repoResponse `json:"values"`
 	Next   string         `json:"next"`
@@ -252,7 +262,7 @@ func (c *Client) ListRepos(ctx context.Context, accessToken string, opts gitprov
 		var resp pagedRepoResponse
 		err := gitprovider.WithRetry(ctx, opts.Retry, "bitbucket", func() error {
 			resp = pagedRepoResponse{}
-			return c.do(ctx, http.MethodGet, next, bearerPrefix+accessToken, nil, &resp)
+			return c.do(ctx, http.MethodGet, next, authValue(accessToken), nil, &resp)
 		})
 		if err != nil {
 			return nil, gitprovider.ListResult{}, err
@@ -274,7 +284,7 @@ func (c *Client) ListRepos(ctx context.Context, accessToken string, opts gitprov
 func (c *Client) GetRepo(ctx context.Context, accessToken, fullName string) (Repo, error) {
 	var resp repoResponse
 	u := c.apiBaseURL() + repositoriesAPI + fullName
-	if err := c.do(ctx, http.MethodGet, u, bearerPrefix+accessToken, nil, &resp); err != nil {
+	if err := c.do(ctx, http.MethodGet, u, authValue(accessToken), nil, &resp); err != nil {
 		return Repo{}, err
 	}
 	return toRepo(resp), nil
@@ -305,7 +315,7 @@ func (c *Client) ListBranches(ctx context.Context, accessToken, fullName string)
 	next := c.apiBaseURL() + repositoriesAPI + fullName + "/refs/branches?pagelen=100"
 	for page := 0; page < listPageCap && next != ""; page++ {
 		var resp pagedBranchResponse
-		if err := c.do(ctx, http.MethodGet, next, bearerPrefix+accessToken, nil, &resp); err != nil {
+		if err := c.do(ctx, http.MethodGet, next, authValue(accessToken), nil, &resp); err != nil {
 			return nil, err
 		}
 		for _, b := range resp.Values {
@@ -346,7 +356,7 @@ func (c *Client) CreateRepoWebhook(ctx context.Context, accessToken, fullName, h
 		return fmt.Errorf("bitbucketapp: marshal webhook request: %w", err)
 	}
 	u := c.apiBaseURL() + repositoriesAPI + fullName + "/hooks"
-	return c.do(ctx, http.MethodPost, u, bearerPrefix+accessToken, bytes.NewReader(body), nil)
+	return c.do(ctx, http.MethodPost, u, authValue(accessToken), bytes.NewReader(body), nil)
 }
 
 type createPRCommentContent struct {
@@ -393,7 +403,7 @@ func (c *Client) CreateCommitBuildStatus(ctx context.Context, accessToken, fullN
 		return fmt.Errorf("bitbucketapp: marshal build status request: %w", err)
 	}
 	u := c.apiBaseURL() + repositoriesAPI + fullName + "/commit/" + url.PathEscape(commit) + "/statuses/build"
-	return c.do(ctx, http.MethodPost, u, bearerPrefix+accessToken, bytes.NewReader(payload), nil)
+	return c.do(ctx, http.MethodPost, u, authValue(accessToken), bytes.NewReader(payload), nil)
 }
 
 // Account is the authenticated user behind an access token.
@@ -411,7 +421,7 @@ func (c *Client) CurrentUser(ctx context.Context, accessToken string) (Account, 
 		Nickname    string `json:"nickname"`
 		DisplayName string `json:"display_name"`
 	}
-	if err := c.do(ctx, http.MethodGet, c.apiBaseURL()+"/user", bearerPrefix+accessToken, nil, &resp); err != nil {
+	if err := c.do(ctx, http.MethodGet, c.apiBaseURL()+"/user", authValue(accessToken), nil, &resp); err != nil {
 		return Account{}, err
 	}
 	id := resp.AccountID

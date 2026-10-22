@@ -24,6 +24,8 @@ export interface GitProviderConnection {
   connection: GitConnectionStatus
   /** Browser navigation that authorizes or reauthorizes this connection. */
   authorize_path: string
+  /** "token" for a pasted access token, "oauth" for an OAuth application. */
+  auth_method?: 'token' | 'oauth'
 }
 
 export interface CreateGitConnectionRequest {
@@ -34,7 +36,7 @@ export interface CreateGitConnectionRequest {
   label?: string
   /** Copies the OAuth application of this connection, so another account needs no second app. */
   reuse_connection_id?: string
-  /** Personal access token, for token-authenticated providers (Bitbucket Server). */
+  /** Access token used instead of an OAuth application, on any host. */
   token?: string
 }
 

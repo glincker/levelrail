@@ -19,6 +19,7 @@ const (
 	probeOK          = "ok"
 	probeBadURL      = "bad_url"
 	probeBadToken    = "bad_token"
+	probeBadScope    = "bad_scope"
 	probeTLS         = "tls"
 	probeUnreachable = "unreachable"
 
@@ -38,6 +39,8 @@ type gitProbeResult struct {
 	Message string `json:"message"`
 	Fix     string `json:"fix,omitempty"`
 	Account string `json:"account,omitempty"`
+	// Token reports the scopes and repository access of a pasted token.
+	Token *gitTokenDetails `json:"token,omitempty"`
 }
 
 // gitProbeVersionPath is the unauthenticated endpoint that proves the URL is the right kind of server.
@@ -85,7 +88,20 @@ func (rt *Router) probeGitInstance(ctx context.Context, adapter gitProviderAdapt
 	if err != nil {
 		return classifyGitProbeError(adapter.label, err)
 	}
-	return gitProbeResult{OK: true, Kind: probeOK, Message: "Connected to " + adapter.label + ".", Account: acct.Login}
+	res := gitProbeResult{OK: true, Kind: probeOK, Message: "Connected to " + adapter.label + ".", Account: acct.Login}
+	if adapter.patAuth {
+		return res
+	}
+	details, derr := rt.inspectGitToken(ctx, adapter.provider, conn, token)
+	if derr != nil {
+		return gitProbeResult{Kind: probeBadToken, Message: adapter.label + " accepted the token but would not list repositories.", Fix: fixRetryAccess, Account: acct.Login}
+	}
+	res.Token = &details
+	if len(details.Missing) > 0 {
+		res.OK, res.Kind = false, probeBadScope
+		res.Message, res.Fix = "The token is missing scopes: "+strings.Join(details.Missing, ", ")+".", fixRetryAccess
+	}
+	return res
 }
 
 func probeReachable(ctx context.Context, adapter gitProviderAdapter, base string) gitProbeResult {

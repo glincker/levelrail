@@ -24,12 +24,33 @@ func gitConnectionsUsage(prog string) string {
 
 Flags for add: --instance-url URL (all but Bitbucket Cloud), --client-id ID, --client-secret SECRET,
 --label LABEL, --reuse ID (copy the OAuth application of another connection).
-Bitbucket Server uses a personal access token instead: --instance-url URL --pat TOKEN.
+Every host can use a token instead of an OAuth app: --instance-url URL --pat TOKEN (needs no public domain).
+Check one first with git-providers test. Bitbucket Cloud takes an API token as email:token.
 
 Authorizing a registered account is a browser redirect: open the printed
 authorize path on your control plane, or press Authorize in the dashboard.
 REPO is a project id for GitLab, PROJECT/slug for Bitbucket Server, owner/name otherwise.
 `, prog)
+}
+
+func printGitTokenDetails(out io.Writer, res apiclient.TestGitConnectionResult) {
+	if res.Account != "" {
+		_, _ = fmt.Fprintf(out, "account: %s\n", res.Account)
+	}
+	d := res.Token
+	if d == nil {
+		return
+	}
+	if d.ScopesKnown {
+		_, _ = fmt.Fprintf(out, "scopes: %s\n", strings.Join(d.Scopes, " "))
+	} else {
+		_, _ = fmt.Fprintln(out, "scopes: this host does not report them")
+	}
+	count := fmt.Sprintf("%d", d.RepoCount)
+	if d.RepoCountCap {
+		count += "+"
+	}
+	_, _ = fmt.Fprintf(out, "repositories reachable: %s\n", count)
 }
 
 type gitConnArgs struct {
@@ -56,7 +77,7 @@ func runGitConnectionsCmd(prog, sub string, args []string, stdout, stderr io.Wri
 	clientID := fs.String("client-id", "", "OAuth application client id (Bitbucket: the consumer key)")
 	clientSecret := fs.String("client-secret", "", "OAuth application client secret")
 	name := fs.String("label", "", "display label")
-	pat := fs.String("pat", "", "personal access token (Bitbucket Server; optional for test)")
+	pat := fs.String("pat", "", "personal access token (add: connect with a token; test: also checks scopes and repository access)")
 	provType := fs.String("type", "", "provider: gitlab, bitbucket, bitbucket_server, gitea or forgejo (add, test)")
 	reuse := fs.String("reuse", "", "reuse the OAuth application of this connection id")
 	req := bindUseAsSourceFlags(fs)
@@ -106,6 +127,7 @@ func runGitConnectionsCmd(prog, sub string, args []string, stdout, stderr io.Wri
 			if res.Fix != "" {
 				_, _ = fmt.Fprintf(stdout, "fix: %s\n", res.Fix)
 			}
+			printGitTokenDetails(stdout, res)
 		})
 		if code == exitOK && !res.OK {
 			return exitCheckFailed
