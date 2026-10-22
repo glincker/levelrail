@@ -1890,6 +1890,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/function-kv/keys | Public | handleFunctionKVKeys |
 | POST | /api/v1/migration/coolify/exit-report | AbilityWriteSensitive | handleCoolifyExitReport |
 | GET | /api/v1/migration/apps/sessions/{id}/exit-report | AbilityRead | handleAppImportExitReport |
+| GET | /api/v1/deployments/{id}/timeline | AbilityRead | handleGetDeployTimeline |
+| GET | /api/v1/deployments/{id}/timeline/stream | AbilityRead | handleDeployTimelineStream |
+| GET | /api/v1/deployments/{id}/timeline/compare | AbilityRead | handleCompareDeployTimelines |
 
 ## See also
 

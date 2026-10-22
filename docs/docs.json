@@ -173,6 +173,7 @@
               "deploy-failures",
               "git-host-outages",
               "deploy-trace",
+              "deploy-event-timeline",
               "build-performance",
               "build-center",
               "scheduled-deploys",

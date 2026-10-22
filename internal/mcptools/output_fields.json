@@ -834,6 +834,10 @@
   "types",
   "unlicensed"
  ],
+ "get_deploy_timeline": [
+  "events",
+  "verdict"
+ ],
  "get_deploy_vulnerabilities": [
   "deployment_id",
   "gate",
