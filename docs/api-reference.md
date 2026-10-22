@@ -818,6 +818,11 @@ Endpoints for:
 | PUT | /api/v1/databases/{name}/password-rotation/policy | AbilityRoot | handleSetDatabasePasswordPolicy |
 | PUT | /api/v1/databases/{name}/tls | AbilityRoot | handleSetDatabaseTLSEnabled |
 | GET | /api/v1/databases/{name}/tunnel | AbilityRoot | handleDatabaseTunnel |
+| GET | /api/v1/databases/{name}/provision | AbilityRead | handleGetDatabaseProvision |
+| GET | /api/v1/databases/{name}/provision/stream | AbilityRead | handleDatabaseProvisionStream |
+| POST | /api/v1/databases/{name}/provision/retry | AbilityWrite | handleRetryDatabaseProvision |
+| POST | /api/v1/databases/{name}/provision/discard | AbilityWrite | handleDiscardPendingDatabase |
+| PUT | /api/v1/databases/{name}/pending-settings | AbilityWrite | handleUpdatePendingDatabase |
 
 ## Projects / Organizations / Environments
 

@@ -91,6 +91,7 @@ func (rt *Router) handleUsageSummary(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: usage summary: list databases", err)
 		return
 	}
+	dbs = rt.withoutPendingDatabases(ctx, dbs)
 
 	cores := rt.doctorNumCPU
 	if cores == nil {

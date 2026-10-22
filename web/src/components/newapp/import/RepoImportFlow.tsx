@@ -238,7 +238,6 @@ export function RepoImportFlow({
           advancedOpen={advancedOpen}
           onAdvancedOpen={setAdvancedOpen}
           onSubmit={(edits) => {
-            draft.clearOnSuccess()
             onDeploy(source, analysis, edits)
           }}
         />
