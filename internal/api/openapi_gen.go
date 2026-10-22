@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1643 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1647 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -560,6 +560,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/settings/dns-provider/test", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleTestDNSProvider", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/domain-automation", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetDomainAutomation", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/domain-automation", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateDomainAutomation", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/settings/google-cloud-dns", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDisconnectGoogleCloudDNS", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/google-cloud-dns", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetGoogleCloudDNSSettings", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/google-cloud-dns", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateGoogleCloudDNSSettings", Description: ""},
+	{Method: "POST", Path: "/api/v1/settings/google-cloud-dns/test", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleTestGoogleCloudDNS", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/oauth", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListOAuthSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/oauth/{provider}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateOAuthProviderSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/observability", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetObservabilitySettings", Description: "Observability settings: the external Grafana/dashboard link, same precedent as email settings just above. GET is AbilityRead; PUT is AbilityRoot, matching every other instance-level config row."},

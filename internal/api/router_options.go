@@ -128,6 +128,12 @@ func WithRoute53DNSSecrets(s Route53DNSSecrets) Option {
 	return func(rt *Router) { rt.route53DNSSecrets = s }
 }
 
+// WithGoogleCloudDNSSecrets enables PUT/DELETE /api/v1/settings/google-cloud-dns
+// and lets the records, zones and domain automation paths read the key back.
+func WithGoogleCloudDNSSecrets(s GoogleCloudDNSSecrets) Option {
+	return func(rt *Router) { rt.googleCloudDNSSecrets = s }
+}
+
 // WithCloudflareDNSTokenResolver enables
 // GET/POST/PUT/DELETE .../dns-records whenever Cloudflare DNS is the
 // configured provider: without one set (the default), those routes

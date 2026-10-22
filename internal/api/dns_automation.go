@@ -124,6 +124,11 @@ func (rt *Router) resolveDNSTarget(ctx context.Context, domain string) (*dnsTarg
 		return &dnsTarget{Manager: dnsrecords.NewCloudflareManager(token), Provider: dnsProviderCloudflare, Zone: zone, Proxy: api}, nil
 	}
 	mgr, err := rt.resolveRoute53RecordManager(ctx)
+	provider := dnsProviderRoute53
+	if err == nil && mgr == nil {
+		mgr, err = rt.resolveGoogleCloudRecordManager(ctx)
+		provider = dnsProviderGoogleCloud
+	}
 	if err != nil || mgr == nil {
 		return nil, err
 	}
@@ -131,7 +136,7 @@ func (rt *Router) resolveDNSTarget(ctx context.Context, domain string) (*dnsTarg
 	if err != nil {
 		return nil, err
 	}
-	return &dnsTarget{Manager: mgr, Provider: dnsProviderRoute53, Zone: zone}, nil
+	return &dnsTarget{Manager: mgr, Provider: provider, Zone: zone}, nil
 }
 
 // desiredDNSRecord decides the record that points domain at this server.

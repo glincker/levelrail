@@ -21,6 +21,7 @@ import { IngressConnectivityCard } from './IngressConnectivityCard'
 import { IngressEdgeCard } from './IngressEdgeCard'
 import { IngressSettingsCard } from './IngressSettingsCard'
 import { ReverseProxyGuideCard } from './ReverseProxyGuideCard'
+import { GoogleCloudDnsCard } from './GoogleCloudDnsCard'
 import { Route53DnsCard } from './Route53DnsCard'
 
 // Closed by default: these are set once per platform, not per domain.
@@ -85,6 +86,7 @@ export function PlatformSettingsSection({
           <ReverseProxyGuideCard />
           <CloudflareDnsCard settings={cloudflareDns} />
           <Route53DnsCard settings={route53Dns} />
+          <GoogleCloudDnsCard />
         </div>
       </CollapsiblePanel>
     </Collapsible>

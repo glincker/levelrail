@@ -74,7 +74,7 @@ export interface GoLiveResult {
 }
 
 export interface DomainAutomation extends GoLivePolicy {
-  dns_provider: 'cloudflare' | 'route53' | 'none'
+  dns_provider: 'cloudflare' | 'route53' | 'googleclouddns' | 'none'
   dns_provider_plugin: string
   proxy_integration_enabled: boolean
   wildcard_dns?: DomainDnsResult

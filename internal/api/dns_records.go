@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dnsrecords"
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/libdns/libdns"
 )
@@ -142,10 +143,18 @@ func (rt *Router) resolveDNSRecordManager(ctx context.Context, domain string) (d
 	}
 
 	mgr, err = rt.resolveRoute53RecordManager(ctx)
+	if err != nil {
+		return nil, "", "", err
+	}
+	if mgr != nil {
+		return mgr, "route53", zone, nil
+	}
+
+	mgr, err = rt.resolveGoogleCloudRecordManager(ctx)
 	if err != nil || mgr == nil {
 		return nil, "", "", err
 	}
-	return mgr, "route53", zone, nil
+	return mgr, dnszones.ProviderGoogleCloud, zone, nil
 }
 
 func (rt *Router) resolveCloudflareRecordManager(ctx context.Context) (dnsrecords.Manager, error) {
@@ -296,7 +305,7 @@ func (rt *Router) requireDNSRecordManager(w http.ResponseWriter, r *http.Request
 		return "", nil, "", "", false
 	}
 	if mgr == nil {
-		writeError(w, http.StatusNotImplemented, "no DNS provider is configured for records management (enable Cloudflare DNS or Route53 DNS under Domains)")
+		writeError(w, http.StatusNotImplemented, "no DNS provider is configured for records management (enable Cloudflare DNS, Route53 DNS or Google Cloud DNS under Domains)")
 		return "", nil, "", "", false
 	}
 	return domain, mgr, provider, zone, true

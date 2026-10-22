@@ -10,15 +10,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // DNS-01 provider names reported to the dashboard and CLI.
 const (
-	dnsProviderCloudflare = "cloudflare"
-	dnsProviderRoute53    = "route53"
-	dnsProviderNone       = "none"
+	dnsProviderCloudflare  = "cloudflare"
+	dnsProviderRoute53     = "route53"
+	dnsProviderGoogleCloud = dnszones.ProviderGoogleCloud
+	dnsProviderNone        = "none"
 )
 
 // Certificate challenge verdicts for a domain.
@@ -101,6 +103,9 @@ func (rt *Router) activeDNSProvider(ctx context.Context) string {
 				return dnsProviderRoute53
 			}
 		}
+	}
+	if key, err := rt.googleCloudDNSKey(ctx); err == nil && key != "" {
+		return dnsProviderGoogleCloud
 	}
 	return dnsProviderNone
 }

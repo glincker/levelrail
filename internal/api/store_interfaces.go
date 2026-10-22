@@ -255,6 +255,7 @@ type Store interface {
 	RegistryStore
 	CloudflareDNSStore
 	Route53DNSStore
+	GoogleCloudDNSStore
 	NodeProvisionStore
 	NodeProviderConnectionStore
 	PackageRegistryStore

@@ -1,10 +1,10 @@
 ---
 title: "DNS zones and records"
-description: Manage DNS zones and records at Cloudflare or Route53, move a domain's name servers, verify delegation and propagation, and serve wildcard subdomains.
+description: Manage DNS zones and records at Cloudflare, Route53 or Google Cloud DNS, move a domain's name servers, verify delegation and propagation, and serve wildcard subdomains.
 "og:url": "https://docs.levelrail.com/dns"
 ---
 
-The **DNS** page (Infrastructure, DNS) manages whole zones (a zone is all the DNS records for one domain) at the DNS provider you already connected for certificates: Cloudflare or Amazon Route53. From here you can create a zone, move a domain's name servers to it, import what the domain serves today, edit records, and check that the world sees your changes. The CLI has the same surface under `levelrail-cli dns`, and the API lives under `/api/v1/dns`.
+The **DNS** page (Infrastructure, DNS) manages whole zones (a zone is all the DNS records for one domain) at the DNS provider you already connected for certificates: Cloudflare, Amazon Route53 or Google Cloud DNS. From here you can create a zone, move a domain's name servers to it, import what the domain serves today, edit records, and check that the world sees your changes. The CLI has the same surface under `levelrail-cli dns`, and the API lives under `/api/v1/dns`.
 
 Nothing here is a DNS server of its own. Zones and records live at the provider; the control plane calls its API with the credentials stored under Domains, DNS provider.
 ## Connect a provider
@@ -62,9 +62,21 @@ levelrail-cli domains route53-dns set --aws-access-key-id <id> --aws-secret-acce
 ```
 
 </Tab>
+<Tab title="Google Cloud DNS">
+
+Create a service account with the **DNS Administrator** role on the project and download its JSON key. Under Domains, Platform settings, **Google Cloud DNS**, paste the key and enable it, then press **Test** to list the project's managed zones. The project is read from the key. Only the project id and the service account email are ever shown again.
+
+```bash
+levelrail-cli domains google-cloud-dns set --key-file ./key.json
+levelrail-cli domains google-cloud-dns test
+```
+
+What works today: zones, A, AAAA, CNAME and TXT records, automatic records when you add a domain, and DNS-01 for wildcard certificates. Routing policies, health checks, proxying and a CNAME at the apex are not available. This was only tested against a local fake of the Cloud DNS API, never against a real Google Cloud project.
+
+</Tab>
 </Tabs>
 
-When both providers are connected, Cloudflare is the default and `--provider route53` (or `?provider=route53`) picks the other one. Tokens are envelope encrypted at rest, never returned by any API, and never written to logs or audit rows.
+When several providers are connected, Cloudflare is the default, then Route53, then Google Cloud DNS. `--provider route53` or `--provider googleclouddns` (or `?provider=`) picks another one. Tokens are envelope encrypted at rest, never returned by any API, and never written to logs or audit rows.
 
 ## Bring a domain onto a zone
 
@@ -191,7 +203,7 @@ An app can serve every name under a domain: add `*.example.com` (or `*.apps.exam
 
 - Only a single leading `*.` label is allowed. `*.com`, `*.*.example.com` and `a.*.example.com` are refused.
 - An exact domain always wins: if another app owns `api.example.com`, requests for it go to that app, and every other name under `*.example.com` goes to the wildcard app. A wildcard matches exactly one label, so `*.example.com` does not match `a.b.example.com`.
-- The certificate must come from DNS-01, because HTTP-01 cannot issue wildcard certificates. Adding a wildcard domain is refused until Cloudflare or Route53 is connected; the error links to the Domains page and names the CLI command.
+- The certificate must come from DNS-01, because HTTP-01 cannot issue wildcard certificates. Adding a wildcard domain is refused until Cloudflare, Route53 or Google Cloud DNS is connected; the error links to the Domains page and names the CLI command.
 - When the provider manages the domain's zone, a `*` A record pointing at this server is created for you. An existing `*` record is never overwritten.
 - The domain check resolves a random name under the wildcard, so it tests the wildcard record rather than a cached exact name. The Domains table marks these domains **Wildcard**.
 

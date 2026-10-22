@@ -617,89 +617,92 @@ type Router struct {
 	gitSourceFetch               gitSourceFetchFunc                                    // git-source fetcher for handleGitPushWebhook; always non-nil, defaulted to gitCheckoutWithToken in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches above already use
 	githubAppPublicProbe         func(ctx context.Context, apiBase, slug string) *bool // nil: real GitHub probe; tests inject
 	appVisibility                appVisibilityCache
-	githubApp                    GitHubAppStore               // always set, same "core Store interface" shape as backupTargets/certs above: the connection row/its absence is always queryable, no secrets configuration needed just to read status
-	security                     SecurityStore                // always set, security center policy, alerts and token hygiene
-	sec                          *securityState               // always set
-	repoLayoutSource             repoLayoutSourceFunc         // nil uses defaultRepoLayoutSource; tests serve a fake tree
-	repoPreview                  repoPreviewState             // lazily built repository preview builder
-	gitCommits                   *gitCommitsCache             // brief provider-side cache for the deploy sheet's commits list
-	gitConn                      gitConnectionStore           // nil is valid: provider connection health is then not recorded
-	gitRel                       gitReliabilityStore          // nil is valid: webhook registration and poll bookkeeping are then not recorded
-	gitEnqueueMu                 sync.Mutex                   // serializes the dedupe check and enqueue of a git head, so a webhook and the poller never both queue one commit
-	gitOAuthLocks                gitOAuthLocks                // per-provider mutexes serializing OAuth token refresh
-	repoCache                    *repolist.Cache              // always set: per-connection repository list cache behind every git repo picker
-	backupProtection             BackupProtection             // nil is valid: backup health, drill, policy and restore-to routes return 501
-	backupProtectionStore        BackupProtectionStore        // nil is valid, same as backupProtection above
-	cutover                      cutoverService               // in-memory cutover workers, zero value is ready
-	takeover                     takeoverService              // port takeover test seams, zero value is ready
-	githubAppSecrets             GitHubAppSecrets             // nil is valid: every github-app route that needs it (register/start, callback, installed, repos, branches) returns 501, same shape as backupSecrets above
-	githubAppClient              GitHubAppClient              // always set (NewRouter defaults it to a real *githubapp.Client, which needs no configuration to construct), overridable in this package's own tests the same way fetch is
-	githubAppState               *pendingState                // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see pendingState's own doc comment
-	githubAppManifestConfig      githubapp.ManifestConfig     // always set, defaulted to githubapp.DefaultManifestConfig() in NewRouter, overridable via WithGitHubAppManifestConfig: the permissions/events a fresh App registration requests
-	gitConns                     GitConnectionsStore          // always set: GitLab, Bitbucket and Gitea connections, many per provider
-	gitConnSecrets               GitConnSecrets               // nil is valid: every git connection route that needs it returns 501
-	gitConnState                 *pendingState                // always set; in-memory OAuth CSRF state carrying the connection id of each attempt
-	gitAccountTried              sync.Map                     // connection ids whose account lookup was already attempted this process
-	gitlabAppClient              GitLabAppClient              // always set (NewRouter defaults it to a real *gitlabapp.Client), overridable in this package's own tests
-	oauthSettings                OAuthSettingsStore           // always set, same "core Store interface" shape as ingressSettings above: both provider rows always exist (migrations/0035's own seeded rows)
-	oauthIdentities              OAuthIdentityStore           // always set, same shape as oauthSettings above
-	oauthSecrets                 OAuthSecrets                 // nil is valid: every /auth/oauth/... sign-in route and PUT /settings/oauth/{provider} return 501/501, same "not configured" shape as gitSourceSecrets above
-	oauthState                   *oauthStateStore             // built in NewRouter unconditionally, the same "always present, not an Option" shape sessions itself has
-	oauthClientFactory           oauthClientFactory           // defaulted to defaultOAuthClientFactory in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches/gitSourceFetch above already use
-	emailSettings                EmailSettingsStore           // always set, same shape as ingressSettings above
-	emailSecrets                 EmailSecretsStore            // nil is valid: PUT /api/v1/settings/email returns 501
-	emailDeliveries              EmailDeliveryStore           // nil is valid: the delivery log endpoints return empty results
-	emailDNS                     email.DNSLookup              // nil means the system resolver; overridable in tests
-	observability                ObservabilityStore           // always set, same shape as emailSettings above
-	cloudflareTunnel             CloudflareTunnelStore        // always set, same shape as emailSettings above
-	cloudflareTunnelSecrets      CloudflareTunnelSecrets      // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-tunnel return 501, same shape as emailSecrets above
-	cloudflareDNS                CloudflareDNSStore           // always set, same shape as cloudflareTunnel above
-	cloudflareDNSSecrets         CloudflareDNSSecrets         // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-dns return 501, same shape as cloudflareTunnelSecrets above
-	route53DNS                   Route53DNSStore              // always set, same shape as cloudflareDNS above: a second, independent ACME DNS-01 provider, not a replacement
-	route53DNSSecrets            Route53DNSSecrets            // nil is valid: PUT/DELETE /api/v1/settings/route53-dns return 501, same shape as cloudflareDNSSecrets above
-	cloudflareDNSTokenResolver   CloudflareDNSTokenResolver   // nil is valid: dns-records routes return 501, same shape as cloudflareDNSSecrets above but resolves the plaintext token instead of just checking presence
-	route53DNSCredentialResolver Route53DNSCredentialResolver // nil is valid: dns-records routes return 501, same shape as cloudflareDNSTokenResolver above
-	dnsRecordManager             dnsRecordManagerFunc         // always set, defaulted to rt.resolveDNSRecordManager below, overridable in this package's own tests, the same "seam, not an interface" shape lookupHost already uses
-	dnsRecordStatus              dnsRecordStatusFunc          // always set, defaulted to defaultDNSRecordStatus below, overridable in this package's own tests so none of them perform a real DNS query
-	domainAuto                   domainAutoSeams              // zero value uses the real DNS provider, TLS and HTTP probes; tests replace single funcs
-	dnsZoneProviders             dnsZoneProvidersFunc         // nil uses rt.resolveDNSZoneProviders (dns_zones.go); tests swap in fakes
-	dnsQuerier                   dnszones.Querier             // nil uses a real miekg/dns querier; tests swap in a fake
-	registry                     RegistryStore                // always set, same shape as cloudflareTunnel above
-	registrySecrets              RegistrySecrets              // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
-	vault                        VaultSettingsStore           // always set, same shape as cloudflareTunnel above
-	vaultSecrets                 VaultSecrets                 // nil is valid: PUT/DELETE /api/v1/settings/vault return 501, same shape as cloudflareTunnelSecrets above
-	registryCatalog              RegistryCatalogClient        // always set (NewRouter defaults it to a real *registrycatalog.Client, which needs no configuration to construct), overridable in this package's own tests the same way githubAppClient is
-	registryCatalogSecrets       RegistryCatalogSecrets       // nil is valid: GET /api/v1/registry/repositories and /api/v1/registry/tags return 501, same shape as registrySecrets above
-	dockerHubClient              DockerHubClient              // always set (NewRouter defaults it to a real *dockerhub.Client, unauthenticated so no secrets wiring needed), overridable in this package's own tests the same way registryCatalog is
-	emailSender                  email.Sender                 // nil is valid: forgot-password still returns its generic success response
-	mail                         mailState                    // zero is valid: the /api/v1/mail routes return 501 and system mail uses built-in templates
-	sessionLinkTokens            SessionLinkTokenStore        // always set, same shape as passwordResetTokens above
-	forgotPasswordByIP           *loginLimiter                // per-IP forgot-password budget, distinct from logins above
-	forgotPasswordByEmail        *loginLimiter                // per-(IP,email) forgot-password budget; both this and forgotPasswordByIP must allow a request
-	auditLog                     AuditStore                   // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
-	scheduledTasks               ScheduledTaskStore           // always set, same "core Store interface" shape as backupTargets above: CRUD on a scheduled task needs no runner configuration, only actually running one does
-	idempotency                  IdempotencyStore             // nil when the store lacks it: Idempotency-Key is then ignored
-	jobsMaxPerApp                int                          // 0 means defaultJobsMaxPerApp
-	scheduledTaskRunner          ScheduledTaskRunner          // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
-	preview                      PreviewService               // nil is valid: preview routes return 501 (SetPreview)
-	supplyChain                  SupplyChainService           // nil is valid: supply chain routes return 501 (SetSupplyChain)
-	secretScan                   SecretScanService            // nil is valid: secret scan routes return 501 (SetSecretScan)
-	pipelineStore                PipelineStore                // nil is valid: pipeline routes return 501 (WithPipelines)
-	pipelineRunner               PipelineRunner               // nil is valid: run/cancel/rerun return 501
-	pipelineExtras               PipelineExtraStore           // nil is valid: artifact and webhook trigger routes return 501
-	pipelineArtifactFiles        PipelineArtifactFiles        // nil is valid: artifact downloads return 501
-	pipelineWebhookMaxBody       int64                        // inbound pipeline webhook body cap in bytes, 0 means the default
-	pipelineWebhookKeep          int                          // deliveries kept per pipeline, 0 means the default
-	pipelineEvents               PipelineEvents               // nil is valid: git events start no pipelines
-	forgeDeployments             ForgeDeploymentStore         // nil is valid: app deploys are not reported to git forges
-	pipelineSync                 *pipelineSyncWiring          // nil is valid: pushes do not sync pipeline files and the sync routes return 501
-	oidcJWKS                     OIDCJWKSProvider             // nil is valid: GET /.well-known/jwks.json returns 404, no pipeline job can mint an oidc token either (internal/pipeline.Config.OIDCIssuer is left unset by cmd wiring in that case)
-	oidcJWKSLimiter              *apiRateLimiter              // per-IP budget for the unauthenticated JWKS endpoint, set alongside oidcJWKS
-	oidcIssuerURL                string                       // "" means not configured, set alongside oidcJWKS via SetOIDCManager
-	oidcRotator                  OIDCKeyRotator               // nil is valid: POST /pipelines/oidc/rotate-key returns 501
-	featureFlags                 FeatureFlagStore             // always set, same "core Store interface" shape as scheduledTasks above
-	dashboards                   DashboardStore               // nil when the backing store lacks custom dashboards
-	chaosResults                 ChaosStore                   // nil when the backing store lacks chaos results
+	githubApp                    GitHubAppStore                                             // always set, same "core Store interface" shape as backupTargets/certs above: the connection row/its absence is always queryable, no secrets configuration needed just to read status
+	security                     SecurityStore                                              // always set, security center policy, alerts and token hygiene
+	sec                          *securityState                                             // always set
+	repoLayoutSource             repoLayoutSourceFunc                                       // nil uses defaultRepoLayoutSource; tests serve a fake tree
+	repoPreview                  repoPreviewState                                           // lazily built repository preview builder
+	gitCommits                   *gitCommitsCache                                           // brief provider-side cache for the deploy sheet's commits list
+	gitConn                      gitConnectionStore                                         // nil is valid: provider connection health is then not recorded
+	gitRel                       gitReliabilityStore                                        // nil is valid: webhook registration and poll bookkeeping are then not recorded
+	gitEnqueueMu                 sync.Mutex                                                 // serializes the dedupe check and enqueue of a git head, so a webhook and the poller never both queue one commit
+	gitOAuthLocks                gitOAuthLocks                                              // per-provider mutexes serializing OAuth token refresh
+	repoCache                    *repolist.Cache                                            // always set: per-connection repository list cache behind every git repo picker
+	backupProtection             BackupProtection                                           // nil is valid: backup health, drill, policy and restore-to routes return 501
+	backupProtectionStore        BackupProtectionStore                                      // nil is valid, same as backupProtection above
+	cutover                      cutoverService                                             // in-memory cutover workers, zero value is ready
+	takeover                     takeoverService                                            // port takeover test seams, zero value is ready
+	githubAppSecrets             GitHubAppSecrets                                           // nil is valid: every github-app route that needs it (register/start, callback, installed, repos, branches) returns 501, same shape as backupSecrets above
+	githubAppClient              GitHubAppClient                                            // always set (NewRouter defaults it to a real *githubapp.Client, which needs no configuration to construct), overridable in this package's own tests the same way fetch is
+	githubAppState               *pendingState                                              // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see pendingState's own doc comment
+	githubAppManifestConfig      githubapp.ManifestConfig                                   // always set, defaulted to githubapp.DefaultManifestConfig() in NewRouter, overridable via WithGitHubAppManifestConfig: the permissions/events a fresh App registration requests
+	gitConns                     GitConnectionsStore                                        // always set: GitLab, Bitbucket and Gitea connections, many per provider
+	gitConnSecrets               GitConnSecrets                                             // nil is valid: every git connection route that needs it returns 501
+	gitConnState                 *pendingState                                              // always set; in-memory OAuth CSRF state carrying the connection id of each attempt
+	gitAccountTried              sync.Map                                                   // connection ids whose account lookup was already attempted this process
+	gitlabAppClient              GitLabAppClient                                            // always set (NewRouter defaults it to a real *gitlabapp.Client), overridable in this package's own tests
+	oauthSettings                OAuthSettingsStore                                         // always set, same "core Store interface" shape as ingressSettings above: both provider rows always exist (migrations/0035's own seeded rows)
+	oauthIdentities              OAuthIdentityStore                                         // always set, same shape as oauthSettings above
+	oauthSecrets                 OAuthSecrets                                               // nil is valid: every /auth/oauth/... sign-in route and PUT /settings/oauth/{provider} return 501/501, same "not configured" shape as gitSourceSecrets above
+	oauthState                   *oauthStateStore                                           // built in NewRouter unconditionally, the same "always present, not an Option" shape sessions itself has
+	oauthClientFactory           oauthClientFactory                                         // defaulted to defaultOAuthClientFactory in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches/gitSourceFetch above already use
+	emailSettings                EmailSettingsStore                                         // always set, same shape as ingressSettings above
+	emailSecrets                 EmailSecretsStore                                          // nil is valid: PUT /api/v1/settings/email returns 501
+	emailDeliveries              EmailDeliveryStore                                         // nil is valid: the delivery log endpoints return empty results
+	emailDNS                     email.DNSLookup                                            // nil means the system resolver; overridable in tests
+	observability                ObservabilityStore                                         // always set, same shape as emailSettings above
+	cloudflareTunnel             CloudflareTunnelStore                                      // always set, same shape as emailSettings above
+	cloudflareTunnelSecrets      CloudflareTunnelSecrets                                    // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-tunnel return 501, same shape as emailSecrets above
+	cloudflareDNS                CloudflareDNSStore                                         // always set, same shape as cloudflareTunnel above
+	cloudflareDNSSecrets         CloudflareDNSSecrets                                       // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-dns return 501, same shape as cloudflareTunnelSecrets above
+	route53DNS                   Route53DNSStore                                            // always set, same shape as cloudflareDNS above: a second, independent ACME DNS-01 provider, not a replacement
+	route53DNSSecrets            Route53DNSSecrets                                          // nil is valid: PUT/DELETE /api/v1/settings/route53-dns return 501, same shape as cloudflareDNSSecrets above
+	cloudflareDNSTokenResolver   CloudflareDNSTokenResolver                                 // nil is valid: dns-records routes return 501, same shape as cloudflareDNSSecrets above but resolves the plaintext token instead of just checking presence
+	route53DNSCredentialResolver Route53DNSCredentialResolver                               // nil is valid: dns-records routes return 501, same shape as cloudflareDNSTokenResolver above
+	googleCloudDNS               GoogleCloudDNSStore                                        // always set, same shape as route53DNS
+	googleCloudDNSSecrets        GoogleCloudDNSSecrets                                      // nil is valid: PUT/DELETE /api/v1/settings/google-cloud-dns return 501 and records stay unavailable
+	googleCloudDNSProvider       func(serviceAccountJSON string) (dnszones.Provider, error) // test seam, defaults to dnszones.NewGoogleCloud
+	dnsRecordManager             dnsRecordManagerFunc                                       // always set, defaulted to rt.resolveDNSRecordManager below, overridable in this package's own tests, the same "seam, not an interface" shape lookupHost already uses
+	dnsRecordStatus              dnsRecordStatusFunc                                        // always set, defaulted to defaultDNSRecordStatus below, overridable in this package's own tests so none of them perform a real DNS query
+	domainAuto                   domainAutoSeams                                            // zero value uses the real DNS provider, TLS and HTTP probes; tests replace single funcs
+	dnsZoneProviders             dnsZoneProvidersFunc                                       // nil uses rt.resolveDNSZoneProviders (dns_zones.go); tests swap in fakes
+	dnsQuerier                   dnszones.Querier                                           // nil uses a real miekg/dns querier; tests swap in a fake
+	registry                     RegistryStore                                              // always set, same shape as cloudflareTunnel above
+	registrySecrets              RegistrySecrets                                            // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
+	vault                        VaultSettingsStore                                         // always set, same shape as cloudflareTunnel above
+	vaultSecrets                 VaultSecrets                                               // nil is valid: PUT/DELETE /api/v1/settings/vault return 501, same shape as cloudflareTunnelSecrets above
+	registryCatalog              RegistryCatalogClient                                      // always set (NewRouter defaults it to a real *registrycatalog.Client, which needs no configuration to construct), overridable in this package's own tests the same way githubAppClient is
+	registryCatalogSecrets       RegistryCatalogSecrets                                     // nil is valid: GET /api/v1/registry/repositories and /api/v1/registry/tags return 501, same shape as registrySecrets above
+	dockerHubClient              DockerHubClient                                            // always set (NewRouter defaults it to a real *dockerhub.Client, unauthenticated so no secrets wiring needed), overridable in this package's own tests the same way registryCatalog is
+	emailSender                  email.Sender                                               // nil is valid: forgot-password still returns its generic success response
+	mail                         mailState                                                  // zero is valid: the /api/v1/mail routes return 501 and system mail uses built-in templates
+	sessionLinkTokens            SessionLinkTokenStore                                      // always set, same shape as passwordResetTokens above
+	forgotPasswordByIP           *loginLimiter                                              // per-IP forgot-password budget, distinct from logins above
+	forgotPasswordByEmail        *loginLimiter                                              // per-(IP,email) forgot-password budget; both this and forgotPasswordByIP must allow a request
+	auditLog                     AuditStore                                                 // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
+	scheduledTasks               ScheduledTaskStore                                         // always set, same "core Store interface" shape as backupTargets above: CRUD on a scheduled task needs no runner configuration, only actually running one does
+	idempotency                  IdempotencyStore                                           // nil when the store lacks it: Idempotency-Key is then ignored
+	jobsMaxPerApp                int                                                        // 0 means defaultJobsMaxPerApp
+	scheduledTaskRunner          ScheduledTaskRunner                                        // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
+	preview                      PreviewService                                             // nil is valid: preview routes return 501 (SetPreview)
+	supplyChain                  SupplyChainService                                         // nil is valid: supply chain routes return 501 (SetSupplyChain)
+	secretScan                   SecretScanService                                          // nil is valid: secret scan routes return 501 (SetSecretScan)
+	pipelineStore                PipelineStore                                              // nil is valid: pipeline routes return 501 (WithPipelines)
+	pipelineRunner               PipelineRunner                                             // nil is valid: run/cancel/rerun return 501
+	pipelineExtras               PipelineExtraStore                                         // nil is valid: artifact and webhook trigger routes return 501
+	pipelineArtifactFiles        PipelineArtifactFiles                                      // nil is valid: artifact downloads return 501
+	pipelineWebhookMaxBody       int64                                                      // inbound pipeline webhook body cap in bytes, 0 means the default
+	pipelineWebhookKeep          int                                                        // deliveries kept per pipeline, 0 means the default
+	pipelineEvents               PipelineEvents                                             // nil is valid: git events start no pipelines
+	forgeDeployments             ForgeDeploymentStore                                       // nil is valid: app deploys are not reported to git forges
+	pipelineSync                 *pipelineSyncWiring                                        // nil is valid: pushes do not sync pipeline files and the sync routes return 501
+	oidcJWKS                     OIDCJWKSProvider                                           // nil is valid: GET /.well-known/jwks.json returns 404, no pipeline job can mint an oidc token either (internal/pipeline.Config.OIDCIssuer is left unset by cmd wiring in that case)
+	oidcJWKSLimiter              *apiRateLimiter                                            // per-IP budget for the unauthenticated JWKS endpoint, set alongside oidcJWKS
+	oidcIssuerURL                string                                                     // "" means not configured, set alongside oidcJWKS via SetOIDCManager
+	oidcRotator                  OIDCKeyRotator                                             // nil is valid: POST /pipelines/oidc/rotate-key returns 501
+	featureFlags                 FeatureFlagStore                                           // always set, same "core Store interface" shape as scheduledTasks above
+	dashboards                   DashboardStore                                             // nil when the backing store lacks custom dashboards
+	chaosResults                 ChaosStore                                                 // nil when the backing store lacks chaos results
 	searchOnce                   sync.Once
 	searchSvc                    *search.Service       // built lazily by searchService, see search.go
 	tags                         TagStore              // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
@@ -958,6 +961,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		cloudflareTunnel:            s,
 		cloudflareDNS:               s,
 		route53DNS:                  s,
+		googleCloudDNS:              s,
 		nodeProvisions:              s,
 		nodeProviderConns:           s,
 		packageRegistries:           s,

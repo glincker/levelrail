@@ -115,6 +115,7 @@ type ServiceStore interface {
 	// DNS-01 provider an operator can enable through PUT
 	// /api/v1/settings/route53-dns (internal/api).
 	GetRoute53DNSSettings(ctx context.Context) (store.Route53DNSSettings, error)
+	GetGoogleCloudDNSSettings(ctx context.Context) (store.GoogleCloudDNSSettings, error)
 	// ListDomainBasicAuth returns every domain currently protected by
 	// HTTP Basic Auth (store.DomainBasicAuth, migrations/0052), read
 	// fresh every Reconcile like everything else on this interface: an
@@ -205,6 +206,12 @@ type CloudflareDNSTokenResolver interface {
 // under different serviceName namespaces. *secrets.Manager satisfies
 // this structurally.
 type Route53DNSCredentialResolver interface {
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+}
+
+// GoogleCloudDNSKeyResolver resolves the Cloud DNS service account JSON.
+// *secrets.Manager satisfies it structurally.
+type GoogleCloudDNSKeyResolver interface {
 	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
 }
 
@@ -352,6 +359,10 @@ type Controller struct {
 	// provider is active per reconcile pass, there is no per-domain
 	// provider selection yet.
 	route53Creds Route53DNSCredentialResolver
+
+	// gcdKeys, if set via WithGoogleCloudDNSKey, enables Cloud DNS DNS-01.
+	// It ranks after Cloudflare and Route53 in resolveDNSProvider.
+	gcdKeys GoogleCloudDNSKeyResolver
 
 	// basicAuthSecrets, if set via WithDomainBasicAuthSecrets, is
 	// resolved fresh every Reconcile pass for every domain returned by
@@ -588,6 +599,12 @@ func WithCloudflareDNSTokens(resolver CloudflareDNSTokenResolver) Option {
 // precedence rule when both providers are enabled at once.
 func WithRoute53DNSCredentials(resolver Route53DNSCredentialResolver) Option {
 	return func(c *Controller) { c.route53Creds = resolver }
+}
+
+// WithGoogleCloudDNSKey enables Google Cloud DNS DNS-01 for wildcard
+// domains whenever store.GoogleCloudDNSSettings.Enabled is true.
+func WithGoogleCloudDNSKey(resolver GoogleCloudDNSKeyResolver) Option {
+	return func(c *Controller) { c.gcdKeys = resolver }
 }
 
 // WithDomainBasicAuthSecrets enables HTTP Basic Auth on any domain
@@ -1208,7 +1225,35 @@ func (c *Controller) resolveDNSProvider(ctx context.Context) ingress.DNS01Provid
 	if p := c.resolveCloudflareDNSProvider(ctx); p != nil {
 		return p
 	}
-	return c.resolveRoute53DNSProvider(ctx)
+	if p := c.resolveRoute53DNSProvider(ctx); p != nil {
+		return p
+	}
+	return c.resolveGoogleCloudDNSProvider(ctx)
+}
+
+// resolveGoogleCloudDNSProvider follows the same fail-to-nil rule as the
+// other providers: a bad key must not block the whole reconcile.
+func (c *Controller) resolveGoogleCloudDNSProvider(ctx context.Context) ingress.DNS01Provider {
+	if c.gcdKeys == nil {
+		return nil
+	}
+	settings, err := c.store.GetGoogleCloudDNSSettings(ctx)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: get google cloud dns settings failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
+		return nil
+	}
+	if !settings.Enabled {
+		return nil
+	}
+	key, err := c.gcdKeys.Resolve(ctx, store.GoogleCloudDNSSecretsKey(), store.GoogleCloudDNSKeyEnvKey)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: resolve google cloud dns key failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
+		return nil
+	}
+	if key == "" {
+		return nil
+	}
+	return ingress.GoogleCloudDNSProvider{Name: "googleclouddns", ServiceAccountJSON: key}
 }
 
 // resolveCloudflareDNSProvider returns the Cloudflare DNS-01 provider for
