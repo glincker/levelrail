@@ -348,7 +348,7 @@ type DatabaseTLSToggle struct {
 	Enabled  bool   `json:"enabled"`
 }
 
-// SetDatabaseTLSEnabled calls PUT /api/v1/databases/{name}/tls: server TLS for MySQL, MariaDB and Redis.
+// SetDatabaseTLSEnabled calls PUT /api/v1/databases/{name}/tls: server TLS for MySQL, MariaDB, MongoDB and Redis.
 func (c *Client) SetDatabaseTLSEnabled(ctx context.Context, name string, enabled bool) (DatabaseTLSToggle, error) {
 	var out DatabaseTLSToggle
 	err := c.do(ctx, http.MethodPut, dbPath(name, "/tls"), map[string]bool{"enabled": enabled}, &out)

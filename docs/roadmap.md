@@ -44,8 +44,8 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 ### Data
 
 - Nine managed database engines: Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Valkey, Dragonfly and ClickHouse, with scheduled backups, restore, verification, metrics and log search. Meilisearch, Qdrant, Typesense and Memcached are built but not yet verified on a live Docker daemon. See [managing databases](/managing-databases).
-- Point-in-time restore for Postgres (opt-in WAL archiving, restore to a timestamp inside the recoverable window), restore into a new resource, and app volume backups to S3-compatible targets. See [backups and storage](/backups-and-storage).
-- TLS on newly created Postgres and Redis databases. Databases created before this feature are not switched.
+- Point-in-time restore for Postgres (opt-in WAL archiving, restore to a timestamp inside the recoverable window) and for MySQL and MariaDB (opt-in binary log archiving, restore into a new database), restore into a new resource, and app volume backups to S3-compatible targets. See [backups and storage](/backups-and-storage).
+- TLS on newly created Postgres, Redis, MySQL, MariaDB and MongoDB databases. Databases created before this feature are not switched.
 - Control-plane backups. See [control-plane backup](/control-plane-backup).
 
 ### Observability
@@ -91,7 +91,7 @@ These exist and are tested, but are gated or carry a beta label. See [feature st
 - Idle footprint on Linux: measured in a Docker Desktop container (not bare metal) with a harness and opt-in regression guard. A bare metal or VPS number is still open. See [performance](/performance).
 - Load and failover numbers: the harness exists (`levelrail-cli bench run`), no published results yet. See [benchmarks](/benchmarks).
 - Template coverage: a sample of the roughly 360 templates is deployed by e2e tests, not the whole catalog.
-- Other database engines: PITR is Postgres only, and TLS by default is Postgres and Redis only.
+- Other database engines: PITR covers Postgres, MySQL and MariaDB only (MongoDB has no oplog here), and the remaining engines have no TLS by default.
 - Stable release: none yet. Upgrade and downgrade testing across versions with real data is part of Phase 5.
 
 ## Out of scope

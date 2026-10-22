@@ -1694,9 +1694,9 @@ func (c *Client) ListBaseBackups(ctx context.Context, name string) ([]BaseBackup
 // TriggerPITRRestore calls POST /api/v1/databases/{name}/pitr-restore:
 // starts a real point-in-time restore to targetTime, replaying archived
 // WAL forward from baseBackupID.
-func (c *Client) TriggerPITRRestore(ctx context.Context, name, baseBackupID, targetTime string) (PITRRestoreHistoryResource, error) {
+func (c *Client) TriggerPITRRestore(ctx context.Context, name, baseBackupID, targetTime, restoreAs string) (PITRRestoreHistoryResource, error) {
 	var out PITRRestoreHistoryResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/pitr-restore", TriggerPITRRestoreRequest{BaseBackupID: baseBackupID, TargetTime: targetTime}, &out)
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/pitr-restore", TriggerPITRRestoreRequest{BaseBackupID: baseBackupID, TargetTime: targetTime, RestoreAs: restoreAs}, &out)
 	return out, err
 }
 

@@ -214,6 +214,7 @@ var toolTable = map[string]Meta{
 	"list_webhook_deliveries":               {clsR, "webhooks", unt},
 	"list_backup_verifications":             {clsR, "backups", 0},
 	"get_latest_backup_verification":        {clsR, "backups", 0},
+	"get_database_pitr_status":              {clsR, "backups", 0},
 	"list_backup_targets":                   {clsR, "backups", sens},
 	"test_backup_target_connection":         {clsM, "backups", sens | outb},
 	"list_control_plane_backups":            {clsR, "backups", 0},

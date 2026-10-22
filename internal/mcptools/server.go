@@ -60,6 +60,7 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerReleaseTools(server, client)
 	registerWebhookTools(server, client)
 	registerBackupVerificationTools(server, client)
+	registerDatabasePITRTools(server, client)
 	registerDeployCompareTools(server, client)
 	registerPromoteTools(server, client)
 	registerNotificationTools(server, client)

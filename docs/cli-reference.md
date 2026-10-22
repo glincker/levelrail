@@ -871,7 +871,7 @@ The same verbs as `backups`, for a named volume declared in the app's app.yaml (
 
 ## Point-in-time restore {#pitr-restores}
 
-Postgres only. Recovery covers the time range from when `pitr enable` was called, forward; use `backups restore` for anything older.
+Postgres, MySQL and MariaDB. Recovery covers the time range from when `pitr enable` was called, forward; use `backups restore` for anything older.
 
 ```
 levelrail-cli pitr enable <database> [flags]
@@ -880,10 +880,10 @@ levelrail-cli pitr status <database> [flags]
 levelrail-cli pitr base-backups list <database> [flags]
 levelrail-cli pitr base-backups trigger <database> --target ID [flags]
 levelrail-cli pitr restores <database> [flags]
-levelrail-cli pitr restore <database> --base-backup ID --target-time RFC3339 [--confirm NAME] [flags]
+levelrail-cli pitr restore <database> --base-backup ID --target-time RFC3339 [--confirm NAME | --restore-as NEW] [flags]
 ```
 
-`enable` turns on continuous WAL archiving going forward; `status` shows whether PITR is enabled and the current recoverable window; `restores` lists point in time restore attempts (base backup, target time, status, error). `restore` is destructive.
+`enable` turns on continuous WAL (Postgres) or binary log (MySQL, MariaDB) archiving going forward; `status` shows whether PITR is enabled and the current recoverable window; `restores` lists point in time restore attempts (base backup, target time, status, error). `restore` overwrites a Postgres database in place and is destructive. For MySQL and MariaDB it needs `--restore-as NEW`, creates that new database and leaves the source untouched.
 
 ## Build
 
