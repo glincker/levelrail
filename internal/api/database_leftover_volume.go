@@ -9,9 +9,8 @@ const (
 
 // databaseVolumeNames mirrors internal/reconcile/database's volume naming,
 // the same duplication desiredVolumeNames documents.
-func databaseVolumeNames(dbName string) (data string, all []string) {
-	data = "db-" + dbName + "-data"
-	return data, []string{data, "db-" + dbName + "-certs", "db-" + dbName + "-wal-archive"}
+func databaseVolumeNames(dbName string) []string {
+	return []string{"db-" + dbName + "-data", "db-" + dbName + "-certs", "db-" + dbName + "-wal-archive"}
 }
 
 // validExistingVolume accepts the stored leftover-volume choice. The volume

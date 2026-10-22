@@ -50,7 +50,7 @@ describe('DatabaseRow', () => {
     renderRow(makeDb())
     expect(screen.getByRole('link', { name: 'orders-db' })).toBeInTheDocument()
     expect(screen.getByText('Healthy')).toBeInTheDocument()
-    expect(screen.getByText('Scheduled')).toBeInTheDocument()
+    expect(screen.getByText('Backups on')).toBeInTheDocument()
     expect(screen.getByText('node-a')).toBeInTheDocument()
   })
 
@@ -76,7 +76,7 @@ describe('DatabaseRow', () => {
         node_name: undefined,
       }),
     )
-    expect(screen.getByText('No schedule')).toBeInTheDocument()
+    expect(screen.getByText('No backups')).toBeInTheDocument()
     expect(screen.getByText('Unassigned')).toBeInTheDocument()
   })
 

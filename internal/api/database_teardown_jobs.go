@@ -85,7 +85,7 @@ func (rt *Router) teardownOnce(ctx context.Context, name, nodeID string, purge b
 		return err
 	}
 	if purge {
-		_, names := databaseVolumeNames(name)
+		names := databaseVolumeNames(name)
 		rt.purgeVolumes(ctx, "database/"+name, names)
 	}
 	return nil

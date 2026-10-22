@@ -3,6 +3,7 @@ package demo
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -99,6 +100,8 @@ func SeedAlerting(ctx context.Context, adb *alerting.DB, opts Options) error {
 	for _, s := range specs {
 		names[s.id] = alerting.Rule{ID: s.id, Name: s.name, Kind: s.rule.Kind, ResourceID: s.resource, Severity: s.severity, ChannelID: s.channel}
 	}
+	// History dedupe reads the last row by time, so seed in time order.
+	sort.SliceStable(events, func(i, j int) bool { return events[i].at.Before(events[j].at) })
 	for i, e := range events {
 		rule := names[e.rule]
 		base := alerting.HistoryEntry{

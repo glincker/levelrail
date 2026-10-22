@@ -52,6 +52,7 @@ func envInt(key string, def int) int {
 	return def
 }
 
+// ConfigFromEnv reads the agent settings from APP_* environment variables.
 func ConfigFromEnv() Config {
 	dir := os.Getenv("APP_DOCKER_VOLUMES_DIR")
 	if dir == "" {
