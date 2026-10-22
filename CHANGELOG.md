@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/glincker/levelrail/compare/v0.8.1...v0.8.2) (2026-10-22)
+
+
+### Bug Fixes
+
+* the release image build copies install-cli.ps1 so the web stage builds ([#1346](https://github.com/glincker/levelrail/issues/1346)) ([dc8d0f4](https://github.com/glincker/levelrail/commit/dc8d0f429c473c6650ccc021f2a9dcf5e6554a4c))
+
 ## [0.8.1](https://github.com/glincker/levelrail/compare/v0.8.0...v0.8.1) (2026-10-22)
 
 
