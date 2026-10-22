@@ -26,6 +26,7 @@ import {
 } from '../../lib/importDraft'
 import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
 import { failedOutcomes, type OptionOutcome } from '../../lib/deployOptions'
+import { clearDraftsByPrefix } from '../../hooks/useDraft'
 import { SourceStep } from './SourceStep'
 import { FindingsStep } from './FindingsStep'
 import { ReviewStep } from './ReviewStep'
@@ -81,6 +82,7 @@ export function NewAppWizard() {
       applyNewApp(job.analysis, job.source, job.edits, job.resume),
     onSuccess: (result) => {
       clearImportDraft()
+      clearDraftsByPrefix('repo-')
       void queryClient.invalidateQueries({ queryKey: appKeys.list() })
       const failed = failedOutcomes(result.options)
       toast.add({

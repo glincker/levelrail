@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1657 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1662 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -654,6 +654,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/password-rotation", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabasePasswordRotation", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/password-rotation", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleRotateDatabasePassword", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/password-rotation/policy", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabasePasswordPolicy", Description: ""},
+	{Method: "PUT", Path: "/api/v1/databases/{name}/pending-settings", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleUpdatePendingDatabase", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/pitr", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDisablePITR", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/pitr", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetPITRStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/pitr", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleEnablePITR", Description: "Point-in-time restore (pitr.go): enabling/disabling PITR is AbilityWriteSensitive, the same tier creating a backup target or triggering an ordinary backup already uses; base backups are the physical counterpart of an ordinary backup, same tier again. Triggering an actual PITR restore is AbilityRoot, matching the ordinary restore route above for the identical reason: it overwrites a live database's actual data with no way back."},
@@ -662,6 +663,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/placement", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetPlacement", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/placement", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetPlacement", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/placement/decision", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetPlacementDecision", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/provision", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseProvision", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/provision/discard", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleDiscardPendingDatabase", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/provision/retry", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleRetryDatabaseProvision", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/provision/stream", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseProvisionStream", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/query", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseQuery", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/query-history", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleClearDatabaseQueryHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/query-history", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseQueryHistory", Description: ""},

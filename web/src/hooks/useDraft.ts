@@ -85,6 +85,18 @@ function remove(storageKey: string): void {
   }
 }
 
+/** Removes every draft whose key starts with prefix, e.g. after a deploy succeeds. */
+export function clearDraftsByPrefix(prefix: string): void {
+  try {
+    const full = draftStorageKey(prefix)
+    for (const k of Object.keys(window.localStorage)) {
+      if (k.startsWith(full)) window.localStorage.removeItem(k)
+    }
+  } catch {
+    // Storage unavailable: there is no draft to clear.
+  }
+}
+
 export function useDraft<T extends object>(
   key: string,
   initial: T,

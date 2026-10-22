@@ -13,14 +13,6 @@ import (
 
 const envProvisionStreamInterval = "APP_DB_PROVISION_STREAM_INTERVAL"
 
-func (rt *Router) registerDatabaseProvisionRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/v1/databases/{name}/provision", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetDatabaseProvision))
-	mux.HandleFunc("GET /api/v1/databases/{name}/provision/stream", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.withStreamReauth(databaseResourceFromPath, rt.handleDatabaseProvisionStream)))
-	mux.HandleFunc("POST /api/v1/databases/{name}/provision/retry", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleRetryDatabaseProvision))
-	mux.HandleFunc("POST /api/v1/databases/{name}/provision/discard", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleDiscardPendingDatabase))
-	mux.HandleFunc("PUT /api/v1/databases/{name}/pending-settings", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleUpdatePendingDatabase))
-}
-
 func (rt *Router) provisionStore() dbprovision.Store {
 	s, _ := rt.databases.(dbprovision.Store)
 	return s

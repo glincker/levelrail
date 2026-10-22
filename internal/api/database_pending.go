@@ -42,7 +42,11 @@ func (rt *Router) pendingDatabases(ctx context.Context) map[string]bool {
 // withoutPendingDatabases drops databases that have no container yet, for
 // callers that act on a running database (attach pickers, backup coverage).
 func (rt *Router) withoutPendingDatabases(ctx context.Context, dbs []store.DesiredDatabase) []store.DesiredDatabase {
-	pending := rt.pendingDatabases(ctx)
+	return dropPendingDatabases(dbs, rt.pendingDatabases(ctx))
+}
+
+// dropPendingDatabases returns dbs without the names marked pending.
+func dropPendingDatabases(dbs []store.DesiredDatabase, pending map[string]bool) []store.DesiredDatabase {
 	if len(pending) == 0 {
 		return dbs
 	}

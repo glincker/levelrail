@@ -79,7 +79,8 @@ export function RepoSimpleForm({
   })
   const { name, env, customDomain } = draft.value
   const [extra, setExtra] = useState<ExtraVar[]>([])
-  const [customOpen, setCustomOpen] = useState(false)
+  const [customClicked, setCustomClicked] = useState(false)
+  const customOpen = customClicked || customDomain.trim() !== ''
   const [advanced, setAdvanced] = useState<SimpleFormValues['advanced']>({})
   const [submitted, setSubmitted] = useState(false)
   const [databases, setDatabases] = useState<DatabaseEdit[] | null>(null)
@@ -107,7 +108,6 @@ export function RepoSimpleForm({
   function submit() {
     setSubmitted(true)
     if (!valid || deploying) return
-    draft.clearOnSuccess()
     const allEnv = { ...env }
     for (const v of extra)
       if (v.key.trim() !== '') allEnv[v.key.trim()] = v.value
@@ -271,7 +271,7 @@ export function RepoSimpleForm({
               size="sm"
               variant="ghost"
               onClick={() => {
-                setCustomOpen(true)
+                setCustomClicked(true)
               }}
             >
               {t('import.form.customDomain')}
