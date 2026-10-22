@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1641 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1642 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1065,6 +1065,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/git-connections/{id}/default", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetDefaultGitConnection", Description: ""},
 	{Method: "POST", Path: "/api/v1/git-connections/{id}/use-as-source", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleUseGitConnectionRepoAsSource", Description: ""},
 	{Method: "POST", Path: "/api/v1/git-sources/analyze", Ability: "AbilityWrite", Group: "Other", Handler: "handleAnalyzeImport", Description: ""},
+	{Method: "POST", Path: "/api/v1/git-sources/preview", Ability: "AbilityWrite", Group: "Other", Handler: "handlePreviewRepo", Description: ""},
 	{Method: "GET", Path: "/api/v1/gitea-app/callback", Ability: "AbilityRoot", Group: "Other", Handler: "handleGitConnectCallback", Description: ""},
 	{Method: "GET", Path: "/api/v1/gitea-app/connect", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartGitConnect", Description: ""},
 	{Method: "GET", Path: "/api/v1/go-live/status", Ability: "AbilityRead", Group: "Other", Handler: "handleLiveBadges", Description: ""},

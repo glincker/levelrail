@@ -9,11 +9,17 @@ Pick a repository and Levelrail reads its file tree through the provider API (it
 
 ## The flow
 
-In the dashboard, **New app** walks through three steps:
+In the dashboard, **New app** is one page with three calm steps:
 
-1. **Where is it from.** A connected provider's repository list, or a pasted URL (with a one-shot deploy token for a private repository).
-2. **What we found.** One card per detected field (framework, build type, port, start and build commands, output directory, runtime version, health path), each with a **Why** popover listing the signals behind it, and a confidence badge for the whole result. Below the cards, every value is an editable field, warnings come with a suggested fix, and the environment variables found in `.env.example`, `.env.sample`, a compose file or the README are listed. Required ones must be filled in; values are never read from the repository, and secret-looking names get a masked field.
-3. **Review and deploy.** The exact list of what will be created. One click creates the databases, the app and its connections, links the repository, and starts the first build. You land on the live deploy view with the step trace and logs.
+1. **Where is your code.** Paste a repository URL or pick one from a connected account. There is no Analyze button: the preview starts a moment after you stop typing.
+2. **Preview.** A repository card appears in place with the owner and name, visibility, description, a languages bar, the latest commit, stars, forks and license, a README excerpt (plain text, never rendered as HTML) and a branch select that defaults to the default branch. Below it, one line says what was detected (for example "Next.js, builds with Railpack, listens on 3000") with an **Edit** shortcut, and a monorepo gets an app picker. A private repository without a connected account explains that in one line and offers **Connect an account** or **Use a deploy token**. If the host is rate limited or has no preview, you can still continue.
+3. **Short form.** App name (suggested from the repository, checked against your existing apps), only the environment variables the repository needs (secret-looking names are masked, **Add variable** for more), and the address (a free address by default, or a custom domain). A summary line such as "Builds with Railpack from main and deploys to a free address" sits above the single **Deploy** button. Port, health check path, memory, directory and build type live under **Advanced**, with the detected values shown as placeholders.
+
+Deploy creates the databases, the app and its connections, links the repository and starts the first build. You land on the live deploy view with the step trace and logs. Environment variable values are never read from the repository, so detected variables start empty.
+
+### Preview endpoint
+
+`POST /api/v1/git-sources/preview` takes `repo_url`, optional `ref`, `account_id` and `token`, needs the same write ability as analyze, and returns the card data plus the analysis. `kind` is one of `public`, `private_needs_account`, `not_found`, `rate_limited`, `unsupported_host` or `invalid_url`. Only github.com, gitlab.com, bitbucket.org, codeberg.org and the hosts of your connected providers are contacted, through the same SSRF-guarded client as the rest of the git layer, so URLs such as `http://169.254.169.254` or `http://localhost` are answered `unsupported_host` without any request. Tokens are never returned or logged. Tune it with `APP_REPO_PREVIEW_TIMEOUT`, `APP_REPO_PREVIEW_CACHE_TTL`, `APP_REPO_PREVIEW_CACHE_MAX`, `APP_REPO_PREVIEW_MAX_BRANCHES` and `APP_REPO_PREVIEW_README_CHARS`. Bitbucket Cloud has no rich preview yet; it falls back to the classic analysis step.
 
 The flow survives a page reload: the repository and step are kept in `sessionStorage` (never tokens or env values), and the analysis is simply run again.
 

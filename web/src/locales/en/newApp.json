@@ -329,5 +329,70 @@
     "hash": "Archive hash",
     "files": "Files",
     "redeploy": "Deploy again from the project folder with:"
+  },
+  "import": {
+    "loading": "Reading the repository",
+    "urlInvalid": "That does not look like a repository URL yet.",
+    "summary": "Builds with {{builder}} from {{branch}} and deploys to {{target}}",
+    "builders": {
+      "railpack": "Railpack",
+      "dockerfile": "your Dockerfile",
+      "static": "static hosting",
+      "compose": "Docker Compose"
+    },
+    "card": {
+      "languages": "Languages",
+      "branch": "Branch",
+      "commitBy": "by {{author}}, {{when}}",
+      "visibility": {
+        "public": "Public",
+        "private": "Private"
+      }
+    },
+    "detected": {
+      "line": "Detected: {{stack}}, builds with {{builder}}, listens on {{port}}",
+      "edit": "Edit",
+      "monorepo": "This repository has several apps. Pick the one to deploy."
+    },
+    "notice": {
+      "private_needs_account": "This repository looks private. Connect an account that can see it, or use a deploy token.",
+      "invalid_url": "That does not look like a repository URL yet.",
+      "not_found": "We could not find that repository. Check the URL and try again.",
+      "rate_limited": "Preview unavailable right now, you can still continue.",
+      "unsupported_host": "This host has no preview. You can still continue without one.",
+      "connect": "Connect an account",
+      "useToken": "Use a deploy token",
+      "tokenLabel": "Deploy token",
+      "tokenApply": "Preview",
+      "continue": "Continue"
+    },
+    "form": {
+      "name": "App name",
+      "nameFree": "This name is available.",
+      "nameError": {
+        "required": "Give the app a name.",
+        "format": "Use lowercase letters, numbers and dashes.",
+        "taken": "An app with this name already exists."
+      },
+      "env": "Environment variables",
+      "envRequired": "This variable is needed to start the app.",
+      "addVar": "Add variable",
+      "varName": "Variable name",
+      "varValue": "Variable value",
+      "domain": "Address",
+      "freeAddress": "a free address",
+      "customDomain": "Use a custom domain",
+      "domainPlaceholder": "app.example.com",
+      "domainHint": "Point a CNAME at this server after the first deploy.",
+      "domainError": "Enter a domain like app.example.com.",
+      "advanced": "Advanced",
+      "port": "Port",
+      "health": "Health check path",
+      "memory": "Memory (MB)",
+      "directory": "Directory",
+      "buildType": "Build type",
+      "deploy": "Deploy",
+      "deploying": "Deploying..."
+    }
   }
 }

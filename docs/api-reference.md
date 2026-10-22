@@ -1866,6 +1866,7 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/alert-defaults/cert-expiry/email | AbilityWrite | handleSetCertExpiryEmail |
 | POST | /api/v1/inbox/delete | AbilityWrite | handleInboxDelete |
 | POST | /api/v1/inbox/clear | AbilityWrite | handleInboxClear |
+| POST | /api/v1/git-sources/preview | AbilityWrite | handlePreviewRepo |
 
 ## See also
 
