@@ -98,7 +98,7 @@ func (w *Watcher) observeLatency(ctx context.Context, service, attemptID string,
 // opted in with mode auto plus soft rollback.
 func (w *Watcher) softSignal(ctx context.Context, svc *store.DesiredService, attempt *store.DeployAttempt, cfg deploysafety.Effective, obs deploysafety.WatchObservation, st watchState) {
 	regressed, message := deploysafety.LatencyRegressed(obs, cfg)
-	if w.soft.bump(attempt.ID, regressed) < cfg.WatchSoftTicks {
+	if streak := w.soft.bump(attempt.ID, regressed); !regressed || streak < cfg.WatchSoftTicks {
 		return
 	}
 	if cfg.WatchMode == deploysafety.WatchModeAuto && cfg.WatchSoftRollback {

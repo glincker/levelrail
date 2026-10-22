@@ -28,17 +28,18 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Area | Label | One-line justification |
 | --- | --- | --- |
 | Deploy approvals | stable | Live e2e proves a second user's approval is the only thing that cuts over (`test/e2e/protected_environment_test.go`). |
-| Upgrade restore points and post-upgrade verification | beta | Unit tests only (`internal/selfupgrade/restorepoint_test.go`): automatic restore of binary and database on failed verification, retention, manual restore. No live run on a real host yet. See [Upgrade safely](/upgrade-safely). |
+| Upgrade restore points and post-upgrade verification | beta | Unit tests (`internal/selfupgrade/restorepoint_test.go`) plus a harness that upgrades the real v0.8.1 and v0.8.2 binaries with seeded data, then checks the restore point, an automatic restore after a failed verification and a refused downgrade (`scripts/upgrade-harness.sh`, `TestReleaseUpgradeHarness`). Not yet proven: a migration that changes the schema across releases, systemd and agent reconnection, or a live host. See [Upgrade safely](/upgrade-safely). |
 | PITR and database backups | stable | Live e2e restores before a marker row through the real API with MinIO (`test/e2e/pitr_test.go`), plus live Docker dump and restore tests. |
 | Encrypted database dumps | beta | Per-target age sealing of dumps with transparent restore, drill and verify decryption; unit round trip only (`internal/backup/encrypted_dump_test.go`), no live Docker run. |
 | Previews | stable (GitHub), beta (GitLab, Bitbucket) | Lifecycle e2e exists for all three (`test/e2e/preview_environments_*_test.go`), but they replay synthetic webhooks, not a real forge. Kept beta for the two forges with less usage. |
 | IAM | stable | Broadest unit coverage in the repo, plus live e2e where a deny policy blocks a real action and a token allow policy scopes one (`test/e2e/iam_policy_enforcement_test.go`). |
 | SAML single sign-on and SCIM provisioning | beta | Built on the sign-in library, behind the `saml-scim` feature toggle, off by default. SAML was run against Keycloak 26.0.8 and SimpleSAMLphp 1.15 and generic OIDC against Keycloak 26.0.8 in a local lab (2026-10-20, `scripts/sso-lab.sh`). Not tested against Okta or Entra ID. See [Identity and access](#identity-and-access). |
-| Notification channels (18) | beta | All 18 kinds have unit tests against `httptest`, none against a real vendor. |
+| Notification channels: generic webhook and email over SMTP | stable | Live e2e against a local receiver and a local SMTP server: delivery, retry of a transient failure and delivery history (`test/e2e/notification_channels_test.go`). Both are open protocols with no vendor account, so a local fake exercises the real contract. |
+| Notification channels: 15 vendor kinds and browser push | beta | Slack, Discord, Telegram, Pushover, PagerDuty, Teams, Resend, ntfy, Gotify, Mattermost, Lark, Rocket.Chat, Opsgenie, Webex and Google Chat now have e2e against local fakes that check each vendor's documented payload shape and auth header. No real vendor has accepted a send, so they stay beta. Browser push is tested with a recording sender only. |
 | Pipelines | stable | Live Docker test (`internal/pipeline/live_test.go`) and a live e2e run (`test/e2e/pipeline_run_test.go`). |
 | Deploy freeze | stable | Live e2e proves a freeze blocks then allows a real deploy (`test/e2e/deploy_freeze_test.go`), documented in `docs/deploy-safety.md`. |
-| Post-deploy watch and auto rollback | beta | Hard signals (crashloop, OOM, 5xx) and the soft p95 latency signal are unit tested against a fake store and metrics (`internal/deploywatch`); not yet proven under real traffic. |
-| Feature flags | beta | Unit, API, CLI, MCP tests and a doc page, no e2e. |
+| Post-deploy watch and auto rollback | stable (hard signals), beta (latency signal) | Live e2e on a real Docker engine and real ingress: a 5xx spike and a post-cutover crashloop each roll back to the previous pinned image, recorded in deploy history, the gate timeline, the audit log and a notification, and a healthy release is left alone (`test/e2e/reconcile/deploy_safety_live_test.go`, `deploy_watch_rollback_live_test.go`). The soft p95 latency signal is unit tested only. |
+| Feature flags | stable | Live e2e drives create, evaluate with a read-only token, kill switch, rollout, per-app scoping and delete through the API, the real CLI binary and the MCP read tools (`test/e2e/feature_flags_test.go`). Per-app only: no per-environment or attribute targeting (`docs/feature-flags.md`). |
 | Templates | beta | About 360 catalog entries (generated count in the [catalog](/template-catalog)). Unit tests check shape and a floor of 180, and live e2e tests deploy samples (a 16-template fleet plus batch boot tests), not the whole catalog. |
 | Log archive | beta | Unit and e2e tests (`test/e2e/log_archive_test.go`), dedicated doc page (`docs/log-archive.md`). |
 | Automatic cleanup (janitor) | beta | Unit tests for every stage and safety rule, API test, CLI, MCP read tool, doc page (`docs/janitor.md`). No live disk-fill run yet; other nodes are not covered. |
@@ -125,10 +126,10 @@ Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic,
 
 - Unit: `internal/alerting/` (28 files). Payload tests live in `notify_test.go` (`TestNotifyTelegram_PostsChatIDAndText`, `TestNotifyResend_PostsAuthHeaderAndPayload`, `TestNotifyOpsgenie_PostsAuthHeaderAndPayload`) and `TestNewNotifier_AllValidKinds_Recognized` (`notify_test.go:1095`). That table test covers a subset of the kinds, so the rest rely on their own payload tests, and coverage is thinnest for pushover, pagerduty and teams.
 - API `notification_channels_test.go`; CLI: no dedicated channel test file found; email retry tests at `notify_test.go:569-629`.
-- E2E: none. Every test posts to an `httptest` server.
+- E2E: `test/e2e/notification_channels_test.go` with a local fake-vendor harness (`notification_harness_test.go`: httptest receivers, a host redirect for the fixed PagerDuty, Opsgenie and Resend endpoints, a minimal SMTP server). Through the real router it creates a channel, sends a test, checks the vendor payload and auth header, injects one 503 (or SMTP 421) and expects a retry, and for the generic webhook, Slack, Discord, PagerDuty and SMTP also injects a hard outage and expects exactly 3 attempts and a failed delivery row. A second test sends a failed-deploy outcome through the deploy dispatcher to Slack (with a transient 503) and PagerDuty, and checks the `deploy-failed` history rows. Not covered: the alert-rule engine path (rule fires, then notifies) is still unit-only.
 - Docs: covered in `docs/integrations.md` and `docs/observability.md`.
-- Real infra: none found. No test sends to a real Slack, PagerDuty, SMTP or other vendor.
-- Label: beta. Run a manual send test per vendor before calling any of them stable.
+- Real infra: none found. Every vendor kind was tested against a local fake, not the real vendor. A fake proves the request matches the vendor's documented contract, not that a real account accepts it (rate limits, regional endpoints such as Opsgenie EU, signing and account setup are untested). The e2e found one real mismatch: ntfy JSON was posted to the topic path, where ntfy publishes it as literal text; it now posts to the server root with the topic in the body.
+- Label: generic webhook and SMTP email stable. The 15 vendor kinds and browser push stay beta: run a manual send test per vendor before calling any of them stable.
 
 ### Multi-node and WireGuard mesh
 
@@ -183,10 +184,10 @@ Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic,
 ### Post-deploy watch and auto rollback
 
 - Unit: `internal/deploywatch/watcher_test.go`, `watcher_soft_test.go`, `internal/deploysafety/rules_test.go`; CLI `apps_deploys_gate_test.go`.
-- E2E: `test/e2e/reconcile/deploy_safety_live_test.go` covers the hard signals.
+- E2E: `test/e2e/reconcile/deploy_safety_live_test.go` (zero failed requests through a good deploy, a crash inside the stable window and a 5xx rollback) and `deploy_watch_rollback_live_test.go` (a healthy release passes its whole watch window with no rollback and no audit entry; a release that crashes after cutover trips `PostDeployCrashloop`, is rolled back to the previous image, and shows up as an `auto_rollback` deploy attempt, a rollback gate event, a `deploy.auto_rollback` audit entry and an alert). These tests had been silently running with automatic rollback off because the harness left the watch mode unset; they now set it, and they run again. The harness uses 3 second windows, not production defaults.
 - Docs: `docs/deploy-safety.md`.
-- Real infra: none found for the latency signal.
-- Label: beta.
+- Real infra: none found. The latency signal has no e2e, and nothing was observed under real production traffic.
+- Label: stable for the hard signals (crashloop, OOM, 5xx). beta for the soft latency signal.
 
 ### Deploy freeze
 
@@ -207,10 +208,10 @@ Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic,
 ### Feature flags
 
 - Unit: `internal/store/feature_flag_test.go`, `internal/api/feature_flags_test.go`, CLI `flags_test.go` and `flagutil_test.go`, MCP `tools_new_features_test.go`.
-- E2E: none. The `flag` hits in `test/e2e/metrics_test.go` and `live_api_helpers.go` are unrelated.
+- E2E: `test/e2e/feature_flags_test.go` (`TestFeatureFlags_Live_APICLIAndMCP`): a real router and store, the real `levelrail-cli flags` binary and the real MCP read tools. It checks create, evaluate with a read-only token, duplicate key across apps, kill switch, 0 and 50 percent rollout (stable per identifier), a read-only token refused on write, per-app listing, delete through the CLI and the API, and the audit log entries. MCP exposes read tools only, by design; evaluate is API only. There is no per-environment targeting in the product, so none is tested.
 - Docs: `docs/feature-flags.md`. This is an app-level runtime flag system. It is not a platform-level switch for hiding unfinished features. A platform-level hide mechanism does not exist yet.
 - Real infra: none found.
-- Label: beta.
+- Label: stable.
 
 ### Templates
 

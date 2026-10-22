@@ -46,6 +46,15 @@ func TestWriteTableReportsFailedAssertions(t *testing.T) {
 	}
 }
 
+func TestResultSetCreatesMetrics(t *testing.T) {
+	var r Result
+	r.Set("p50_ms", 1.5)
+	r.Set("p50_ms", 2.5)
+	if len(r.Metrics) != 1 || r.Metrics["p50_ms"] != 2.5 {
+		t.Fatalf("metrics = %v", r.Metrics)
+	}
+}
+
 func TestValid(t *testing.T) {
 	if !Valid(OOMDuringReadiness) || Valid("nope") {
 		t.Fatal("Valid() wrong")

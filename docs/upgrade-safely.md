@@ -218,6 +218,37 @@ Two failure cases are covered as well. A binary older than the database refuses 
 
 The two most recent starting versions run on every pull request. The full set runs in the nightly suite. Run `scripts/upgrade-fixtures/generate.sh` to write the seeded pre-upgrade databases to a folder for inspection.
 
+## Upgrading real releases with real data
+
+The matrix above upgrades synthetic databases in process. The release harness goes further: it runs the actual binary of an earlier release, so the old code writes the data and the old `self-upgrade` command performs the upgrade.
+
+```bash
+scripts/upgrade-harness.sh v0.8.2 v0.8.1
+```
+
+Each tag is built from its own source (an archive of the tag plus `go build`, in a temporary directory) or taken from `LEVELRAIL_UPGRADE_FROM_BINARY_DIR/<tag>/levelrail`. The test is `TestReleaseUpgradeHarness` in `cmd/levelrail`; it is skipped unless `LEVELRAIL_UPGRADE_FROM_TAGS` is set and under `go test -short`. `LEVELRAIL_UPGRADE_TARGET_VERSION` names the version the current build reports (default `v0.8.99`). It needs about 2 GiB of disk and several minutes per tag.
+
+For each tag the harness:
+
+1. starts the old release on an empty data directory and seeds it through its HTTP API: an app, an app secret, a database record, a second user and the audit rows those calls produce, plus a probe row written straight into the database;
+2. upgrades to the current build with `self-upgrade` and checks that the app, secret value (decrypted with the same master key), database record, user and probe row are unchanged, that no audit row was lost and that the audit chain verifies;
+3. checks the restore point: it holds the previous release's binary byte for byte and a database copy that passes `PRAGMA integrity_check` and contains the seeded app;
+4. creates a change after the upgrade, then restores the point with `levelrail restore-point` and checks the old version is running again with the seeded data intact;
+5. upgrades to a release that rewrites the database and never becomes healthy, and checks the automatic restore: the previous binary is back byte for byte, the database is the pre-upgrade one and every seeded record is intact;
+6. upgrades again, then attempts a downgrade with `self-upgrade --to <old tag>`, which is refused without touching the binary. It then marks the database as written by a newer release and starts the old binary on it: the binary must exit with status 78, leave the database file byte for byte unchanged, and the current release must start again once the marker is removed.
+
+### What this does and does not prove
+
+Proven for v0.8.1 and v0.8.2 as the starting release: data written by the old binary survives the upgrade, a failed verification puts back the old binary and database, a restore point restores a working old release, and a downgrade is refused by both the upgrade command and the old binary's start-up guard.
+
+Limits:
+
+- v0.8.1, v0.8.2 and the current tree share one schema version, so the upgrade did not run a real migration. The migration path itself is covered by the matrix above; the harness cannot show that a new migration is lossless. The newer-database state in step 6 is simulated with a marker row, not a real later release.
+- A manual restore point restore only swaps the database when the schema differs, so with equal schemas it keeps the database ("database kept") and the harness checks exactly that. The database swap on restore is proven by step 5 (automatic restore), where the failing release rewrites the database.
+- No containers run: the harness uses the control plane in dev mode without Docker, so app deploys, agent reconnection and the unit file restore (systemd) are not exercised. The agent reconnect part of the verification is skipped because no agent is enrolled.
+- The release is served from a local test server over plain HTTP with `LEVELRAIL_INSECURE_MIRROR`, so the signature check reports "no signature bundle, checksum only". Signature verification has its own tests.
+- The harness runs on demand, on a developer machine or a CI job. It is not part of the pull request lane.
+
 ## What is checked before a release is published
 
 `release.yml` runs a release gate before any binary, package or image is published. It fails the release when:

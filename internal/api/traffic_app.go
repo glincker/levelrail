@@ -119,6 +119,7 @@ type trafficResponse struct {
 	Countries      []trafficLabel              `json:"countries"`
 	SLO            *trafficSLO                 `json:"slo,omitempty"`
 	Shield         trafficShield               `json:"shield"`
+	ErrorSpikes    []telemetry.ErrorSpike      `json:"error_spikes"`
 }
 
 func trafficSlowRouteMin() float64 {
@@ -326,7 +327,7 @@ func (rt *Router) handleAppTraffic(w http.ResponseWriter, r *http.Request) {
 	resp := trafficResponse{
 		App: name, Window: label, From: from, To: to,
 		Replicas: []trafficReplica{}, SlowRoutes: []trafficRoute{}, TopRoutes: []trafficRoute{}, KindTotals: map[string]trafficKindTotal{}, Samples: []telemetry.RequestSample{},
-		Referrers: []trafficLabel{}, Countries: []trafficLabel{},
+		Referrers: []trafficLabel{}, Countries: []trafficLabel{}, ErrorSpikes: []telemetry.ErrorSpike{},
 	}
 
 	points, err := telemetry.QueryRequests(ctx, rt.telemetry, name, from, to, window+time.Second)
@@ -371,8 +372,35 @@ func (rt *Router) handleAppTraffic(w http.ResponseWriter, r *http.Request) {
 			resp.Countries = audienceLabels(rows, telemetry.AudienceCountry)
 		}
 	}
+	resp.ErrorSpikes = rt.errorSpikes(ctx, name, from, to, window)
 	resp.SLO = rt.trafficSLO(ctx, name, from, to)
 	resp.Shield = shieldCounts(ctx, rt.telemetry, name, from, to)
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// errorSpikes buckets the window, finds 5xx runs that stand out and ties each
+// to the deploy that most plausibly caused it.
+func (rt *Router) errorSpikes(ctx context.Context, app string, from, to time.Time, window time.Duration) []telemetry.ErrorSpike {
+	cfg := telemetry.SpikeConfigFromEnv()
+	step := window / time.Duration(cfg.Buckets)
+	if step < telemetry.MinRequestStep {
+		step = telemetry.MinRequestStep
+	}
+	points, err := telemetry.QueryRequests(ctx, rt.telemetry, app, from, to, step)
+	if err != nil && points == nil {
+		rt.logger.Warn("api: traffic: spike series unavailable", slog.String("error", err.Error()), slog.String("name", app))
+		return []telemetry.ErrorSpike{}
+	}
+	var markers []telemetry.DeployMarker
+	if rt.deployAttempts != nil {
+		attempts, aerr := rt.deployAttempts.ListDeployAttempts(ctx, app)
+		if aerr != nil {
+			rt.logger.Warn("api: traffic: deploy markers unavailable", slog.String("error", aerr.Error()), slog.String("name", app))
+		}
+		for _, a := range attempts {
+			markers = append(markers, telemetry.DeployMarker{ID: a.ID, At: a.StartedAt, Status: a.Status, Image: a.Image, Commit: a.CommitSHA})
+		}
+	}
+	return telemetry.DetectErrorSpikes(points, step, markers, cfg)
 }

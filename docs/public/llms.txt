@@ -74,6 +74,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Standalone domains](https://docs.levelrail.com/standalone-domains): proxy a domain to a port, address, URL, app port or container without an app, plus the server address for DNS records.
 - [DNS zones and records](https://docs.levelrail.com/dns): zones and records at Cloudflare or Route53, name server delegation, propagation checks, and wildcard subdomains.
 - [Domain traffic controls](https://docs.levelrail.com/domain-traffic-controls): per-domain header rules, path forwarders, country rules, response caching, redirects and raw ports.
+- [Traffic observability](https://docs.levelrail.com/traffic-observability): per app request rate, status classes, p50/p95/p99, top and slow routes, and 5xx spikes tied to deploys, with bounded storage.
 - [Load balancing](https://docs.levelrail.com/load-balancing): balance traffic across an app's replicas with health checks, retries, and sticky sessions.
 - [ACME verification runbook](https://docs.levelrail.com/acme-verification-runbook): diagnose and fix failed TLS certificate issuance.
 - [Multi-node](https://docs.levelrail.com/multi-node): add servers, the WireGuard mesh, and node placement.
