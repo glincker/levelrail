@@ -317,6 +317,20 @@ gh variable set AUTO_RELEASE --body true --repo glincker/levelrail
 
 With the secret, the release PR runs CI like any other PR, and the tag push starts `release.yml` by itself. With the variable as well, release-please also arms auto-merge on the PR, so a change on `main` ships as a new beta once CI passes. Every merge to `main` updates the same PR, so this releases on every merge. Leave `AUTO_RELEASE` unset to keep merging release PRs by hand, with the token still doing its job of running CI on them.
 
+### Commit and PR standard for releases
+
+`main` only receives squash merges, so the squash commit is the only thing release-please reads.
+
+- **Title**: `type(scope): user-visible outcome`, under 72 characters, one idea. The title becomes the changelog line.
+- **Types that ship**: `feat`, `fix`, `perf`, `security`, `docs` appear in the changelog. `refactor`, `test`, `ci`, `chore` are hidden and never trigger a release on their own.
+- **Version bump**: pre-1.0, `feat` and `fix` both bump the patch. A minor needs the `allow-minor-release` label on the release PR. Never write `!` or a `BREAKING CHANGE:` footer before 1.0 without an owner decision, because it proposes 1.0.0.
+- **Forcing a version**: put `Release-As: x.y.z` in the body of the squash commit, typed into the merge box. Putting it in the PR description does nothing, because the repo squashes with the commit messages, not the PR body.
+- **Body**: at most 1 to 3 short lines of why. No code, file lists or test output.
+- **One merge per release**: merge feature work to `main` with a `feat` or `fix` title, then let the release PR merge itself once `AUTO_RELEASE` is on (see above). Do not hand edit the manifest, `CHANGELOG.md` or the release PR body. A wrong version is fixed with `Release-As` on the next commit.
+- **Release lines**: a `release/*` branch goes to `main` as one squash PR. Never push to it again after it merges, because the push re-creates the deleted branch.
+- **Build before tag**: a change to a Dockerfile, `docs/`, or an install script must build the web image stage from a clean `git archive` export before it merges, because the Docker context has no symlink targets outside `web/` and `docs/`.
+- **No attribution trailers**: no `Co-Authored-By`, `Claude-Session`, or generated-by lines in commits or PR bodies. The `commit-msg` hook and the PR hygiene check both block them.
+
 ## Release gate
 
 `release.yml` has a `release-gate` job between the binary build and everything that publishes (the release assets and both container images wait on it). It runs `scripts/release-gate.sh` with the candidate `levelrail-linux-amd64`, the previous published release's binary (checksum verified against its `checksums.txt`) and the seeded databases from `scripts/upgrade-fixtures/generate.sh`. It fails the release if the schema version goes backwards, if the previous release cannot be replaced by the candidate on the same data (checked through the control plane's own `/readyz`, no Docker), or if the candidate does not refuse a newer database with exit 78. A release with no earlier release to compare against only warns. The `release` job also refuses to publish when `release-manifest.json`, the file the Updates page reads the schema from, is missing from the signed `checksums.txt`. `scripts/test-release-gate.sh` builds two binaries and checks the gate passes the good path and refuses the bad ones; it is not part of PR CI.
