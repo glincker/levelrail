@@ -621,6 +621,7 @@ type Router struct {
 	security                     SecurityStore                // always set, security center policy, alerts and token hygiene
 	sec                          *securityState               // always set
 	repoLayoutSource             repoLayoutSourceFunc         // nil uses defaultRepoLayoutSource; tests serve a fake tree
+	repoPreview                  repoPreviewState             // lazily built repository preview builder
 	gitCommits                   *gitCommitsCache             // brief provider-side cache for the deploy sheet's commits list
 	gitConn                      gitConnectionStore           // nil is valid: provider connection health is then not recorded
 	gitRel                       gitReliabilityStore          // nil is valid: webhook registration and poll bookkeeping are then not recorded

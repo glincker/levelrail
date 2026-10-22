@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Link } from '@tanstack/react-router'
 import { useConnectedRepos } from '../../hooks/useConnectedRepos'
-import { sourceFromRepo } from '../../lib/newApp'
+import { sourceFromRepo, type NewAppEdits } from '../../lib/newApp'
+import type { ImportAnalysis } from '../../queries/importAnalyze'
 import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
 import { ImportPlanPreview } from '../ImportPlanPreview'
 import type { ImportPlan, ImportPlanRequest } from '../../queries/imports'
@@ -13,9 +14,14 @@ import { NewStaticSiteDrop } from '../dropdeploy/NewStaticSiteDrop'
 import { DeployFromComputer } from './DeployFromComputer'
 import { FeaturedTemplates } from './FeaturedTemplates'
 import { GitProviderCards } from './GitProviderCards'
-import { GitUrlForm } from './GitUrlForm'
 import { OtherWays } from './OtherWays'
 import { RepoList } from './RepoList'
+
+const RepoImportFlow = lazy(() =>
+  import('./import/RepoImportFlow').then((m) => ({
+    default: m.RepoImportFlow,
+  })),
+)
 
 const PRIVATE_HINT = /not found|refused access|cannot see it|token/i
 
@@ -27,11 +33,21 @@ const PRIVATE_HINT = /not found|refused access|cannot see it|token/i
 export function SourceStep({
   busy,
   error,
+  deploying,
+  failure,
   onSource,
+  onImport,
 }: {
   busy: boolean
   error: string | null
+  deploying: boolean
+  failure: string | null
   onSource: (source: GitRepoSourceValue) => void
+  onImport: (
+    source: GitRepoSourceValue,
+    analysis: ImportAnalysis,
+    edits: NewAppEdits,
+  ) => void
 }) {
   const { t } = useTranslation('newApp')
   const { repos, connectedProviders, isLoading, hasError, providersReady } =
@@ -101,44 +117,42 @@ export function SourceStep({
             {t('source.git.description')}
           </p>
         </div>
-        {!providersReady ? (
-          <div className="space-y-2" aria-busy="true">
-            <Skeleton className="h-14 w-full" />
-            <Skeleton className="h-14 w-full" />
-          </div>
-        ) : hasProvider ? (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">
-              {t('source.git.pickTitle')}
-            </p>
-            <RepoList
-              repos={repos}
-              loading={isLoading}
-              onPick={(repo) => {
-                if (!busy) onSource(sourceFromRepo(repo))
-              }}
-            />
-            {hasError ? (
-              <p className="text-xs text-muted-foreground">
-                {t('source.repos.partial')}
-              </p>
-            ) : null}
-          </div>
-        ) : (
-          <GitProviderCards />
-        )}
-        {providersReady ? (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">
-              {t('source.git.urlTitle')}
-            </p>
-            <GitUrlForm
-              busy={busy}
-              hasProvider={hasProvider}
-              onSource={onSource}
-            />
-          </div>
-        ) : null}
+        <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+          <RepoImportFlow
+            deploying={deploying}
+            failure={failure}
+            onDeploy={onImport}
+            onFallback={onSource}
+            renderPicker={(onPick) =>
+              !providersReady ? (
+                <div className="space-y-2" aria-busy="true">
+                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-14 w-full" />
+                </div>
+              ) : hasProvider ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground">
+                    {t('source.git.pickTitle')}
+                  </p>
+                  <RepoList
+                    repos={repos}
+                    loading={isLoading}
+                    onPick={(repo) => {
+                      if (!busy) onPick(sourceFromRepo(repo))
+                    }}
+                  />
+                  {hasError ? (
+                    <p className="text-xs text-muted-foreground">
+                      {t('source.repos.partial')}
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <GitProviderCards />
+              )
+            }
+          />
+        </Suspense>
       </section>
 
       <FeaturedTemplates />

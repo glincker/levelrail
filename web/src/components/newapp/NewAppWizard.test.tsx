@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -6,6 +6,7 @@ import { NewAppWizard } from './NewAppWizard'
 import { jsonResponse, nextAnalysis } from '../../test/newAppFixtures'
 import { NewAppI18n } from '../../test/newAppI18n'
 import type { ImportAnalysis } from '../../queries/importAnalyze'
+import type { RepoPreview } from '../../queries/repoPreview'
 import type { Brand } from '../../types/brand'
 
 vi.mock('../../hooks/useBrand', () => ({
@@ -51,6 +52,7 @@ interface ApiOptions {
   providers?: unknown[]
   analysis?: ImportAnalysis
   analyzeStatus?: number
+  preview?: Partial<RepoPreview>
 }
 
 function mockApi(opts: ApiOptions = {}) {
@@ -131,6 +133,23 @@ function mockApi(opts: ApiOptions = {}) {
             ],
           }),
         )
+      case 'POST /api/v1/git-sources/preview':
+        return Promise.resolve(
+          jsonResponse({
+            kind: 'public',
+            host: 'github.com',
+            repo_url: 'https://github.com/acme/shop',
+            owner: 'acme',
+            name: 'shop',
+            default_branch: 'main',
+            branches: ['main', 'dev'],
+            visibility: 'public',
+            analysis: opts.analysis ?? nextAnalysis,
+            ...opts.preview,
+          }),
+        )
+      case 'GET /api/v1/apps':
+        return Promise.resolve(jsonResponse([]))
       case 'POST /api/v1/imports/analyze':
         return Promise.resolve(
           jsonResponse(
@@ -173,7 +192,7 @@ afterEach(() => {
 })
 
 describe('NewAppWizard', () => {
-  it('goes from a connected repo to a deployed app in three steps', async () => {
+  it('previews a picked repo, then deploys from the short form', async () => {
     const user = userEvent.setup()
     const calls = mockApi()
     renderWizard()
@@ -181,33 +200,31 @@ describe('NewAppWizard', () => {
     await user.click(await screen.findByRole('button', { name: /acme\/shop/ }))
 
     expect(await screen.findByLabelText('App name')).toHaveValue('shop')
-    expect(screen.getByLabelText('Port the app listens on')).toHaveValue('3000')
-    expect(screen.getByLabelText('Health check path')).toHaveValue('/')
-    expect(screen.getByLabelText('Domain')).toHaveValue('shop.apps.example.com')
-    expect(screen.getByText('Next.js default port')).toBeInTheDocument()
+    expect(screen.getByText(/Detected: Next.js/)).toBeInTheDocument()
+    expect(screen.getByLabelText('NEXTAUTH_SECRET')).toHaveAttribute(
+      'type',
+      'password',
+    )
     expect(
-      screen.getByText(/pg found in the dependency manifest/),
+      screen.getByText(/Builds with Railpack from main and deploys to/),
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole('switch', { name: /Create and attach postgres 16/ }),
-    ).toBeChecked()
-    expect(screen.getByLabelText('NEXTAUTH_SECRET')).toBeInTheDocument()
-    const analyze = calls.find((c) => c.key === 'POST /api/v1/imports/analyze')
-    expect(analyze?.body).toMatchObject({
+    const preview = calls.find(
+      (c) => c.key === 'POST /api/v1/git-sources/preview',
+    )
+    expect(preview?.body).toMatchObject({
       repo_url: 'https://github.com/acme/shop.git',
-      ref: 'main',
     })
+    expect(calls.some((c) => c.key === 'POST /api/v1/imports/analyze')).toBe(
+      false,
+    )
 
-    await user.click(screen.getByRole('button', { name: 'Review' }))
-    const deployButton = screen.getByRole('button', { name: 'Deploy' })
-    expect(deployButton).toBeDisabled()
-    expect(screen.getByText(/Required variables are empty/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Deploy' }))
+    expect(
+      screen.getByText('This variable is needed to start the app.'),
+    ).toBeInTheDocument()
+    expect(navigate).not.toHaveBeenCalled()
 
-    await user.click(screen.getByRole('button', { name: 'Back' }))
     await user.type(screen.getByLabelText('NEXTAUTH_SECRET'), 'topsecret')
-    await user.click(screen.getByRole('button', { name: 'Review' }))
-    const changes = screen.getByRole('list', { name: 'What will be created' })
-    expect(within(changes).getByText('shop-postgres')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Deploy' }))
 
     await waitFor(() => {
@@ -257,19 +274,23 @@ describe('NewAppWizard', () => {
     ).toBeInTheDocument()
   })
 
-  it('analyzes a pasted URL and surfaces an analysis error with a way back', async () => {
+  it('degrades to the classic analysis when the preview is unavailable', async () => {
     const user = userEvent.setup()
     mockApi({
       providers: [],
       analysis: { error: 'denied' } as never,
       analyzeStatus: 422,
+      preview: { kind: 'rate_limited', analysis: undefined },
     })
     renderWizard()
     await user.type(
       await screen.findByLabelText('Repository URL'),
       'https://github.com/acme/private',
     )
-    await user.click(screen.getByRole('button', { name: 'Analyze repository' }))
+    expect(
+      await screen.findByText(/Preview unavailable right now/),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
     expect(await screen.findByText('denied')).toBeInTheDocument()
     expect(screen.getByLabelText('Repository URL')).toHaveValue(
       'https://github.com/acme/private',
@@ -303,9 +324,16 @@ describe('NewAppWizard', () => {
         ],
       },
     }
-    const calls = mockApi({ analysis: mono })
+    const calls = mockApi({
+      analysis: mono,
+      preview: { kind: 'unsupported_host', analysis: undefined },
+    })
     renderWizard()
-    await user.click(await screen.findByRole('button', { name: /acme\/shop/ }))
+    await user.type(
+      await screen.findByLabelText('Repository URL'),
+      'https://github.com/acme/shop',
+    )
+    await user.click(await screen.findByRole('button', { name: 'Continue' }))
     expect(
       await screen.findByText(/found Dockerfile at apps\/web\/Dockerfile/),
     ).toBeInTheDocument()

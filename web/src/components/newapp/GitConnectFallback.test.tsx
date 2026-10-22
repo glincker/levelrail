@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GitProviderCards } from './GitProviderCards'
-import { GitUrlForm } from './GitUrlForm'
 import { NewAppI18n } from '../../test/newAppI18n'
 import { jsonResponse } from '../../test/newAppFixtures'
 
@@ -52,40 +51,5 @@ describe('GitProviderCards without a primary domain', () => {
     await screen.findByText('Connect a git provider')
     await new Promise((r) => setTimeout(r, 20))
     expect(screen.queryByText(/needs a public address/)).toBeNull()
-  })
-})
-
-describe('GitUrlForm private options', () => {
-  function renderForm(hasProvider = false) {
-    render(
-      <NewAppI18n>
-        <GitUrlForm busy={false} hasProvider={hasProvider} onSource={vi.fn()} />
-      </NewAppI18n>,
-    )
-    return userEvent.setup()
-  }
-  const token = () => screen.queryByLabelText(/token/i)
-
-  it('stays collapsed for a public github url', async () => {
-    const user = renderForm()
-    await user.type(
-      screen.getByLabelText('Repository URL'),
-      'https://github.com/vercel/next-learn',
-    )
-    expect(token()).toBeNull()
-  })
-
-  it('opens for a self-hosted url', async () => {
-    const user = renderForm()
-    await user.type(
-      screen.getByLabelText('Repository URL'),
-      'https://git.acme.dev/team/app',
-    )
-    expect(await screen.findByLabelText(/token/i)).toBeInTheDocument()
-  })
-
-  it('opens when a provider is already connected', async () => {
-    renderForm(true)
-    expect(await screen.findByLabelText(/token/i)).toBeInTheDocument()
   })
 })
