@@ -974,6 +974,15 @@
  "get_load_balancer_history": [
   "upstreams"
  ],
+ "get_migration_job_status": [
+  "done",
+  "failed",
+  "next",
+  "open_gates",
+  "phase",
+  "safe_to_delete",
+  "total"
+ ],
  "get_migration_plan": [
   "cutover",
   "host",

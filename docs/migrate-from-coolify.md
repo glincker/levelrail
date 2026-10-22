@@ -5,7 +5,7 @@ description: Move Coolify apps, databases, env vars and domains to Levelrail wit
 "og:url": "https://docs.levelrail.com/migrate-from-coolify"
 ---
 
-Coolify has the most complete path. You can stage apps, move images that were built on the Coolify host, copy databases with row count checks, and switch each domain with a rollback. Read the [migration overview](/migrate-to-levelrail) first for the flow and the downtime table.
+Coolify has the most complete path. You can stage apps, move images that were built on the Coolify host, copy databases with row count checks, and switch each domain with a rollback. Read the [migration overview](/migrate-to-levelrail) first for the flow and the downtime table. The [migration wizard](/migration-wizard) drives the whole flow from the dashboard.
 
 ## Prerequisites
 
