@@ -28,6 +28,13 @@ export interface ProvisionFix {
   confirm?: boolean
 }
 
+export interface ProvisionCause {
+  kind:
+    'permission' | 'out_of_memory' | 'port_in_use' | 'bad_volume' | 'bad_config'
+  hint: string
+  fix?: { id: string; label: string; confirm?: boolean }
+}
+
 export interface ProvisionAttempt {
   attempt_id: string
   status: 'in_progress' | 'failed' | 'ready'
@@ -47,6 +54,8 @@ export interface ProvisionAttempt {
     fix?: ProvisionFix
     fixes?: ProvisionFix[]
     volume?: { name: string; size_bytes?: number }
+    log_tail?: string
+    cause?: ProvisionCause
   }
 }
 

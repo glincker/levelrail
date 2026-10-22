@@ -104,6 +104,7 @@ export function TargetsCard({
                 <UpgradeNowDialog
                   databaseName={databaseName}
                   version={target.version}
+                  kind={target.kind}
                   disabled={busy}
                 />
               )

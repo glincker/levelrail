@@ -128,6 +128,7 @@ describe('DatabaseResourceLimitsEditor', () => {
     await user.click(
       screen.getByRole('button', { name: /save resource limits/i }),
     )
+    await user.click(await screen.findByRole('button', { name: /apply/i }))
 
     await waitFor(() => {
       expect(
@@ -160,6 +161,7 @@ describe('DatabaseResourceLimitsEditor', () => {
     await user.click(
       screen.getByRole('button', { name: /save resource limits/i }),
     )
+    await user.click(await screen.findByRole('button', { name: /apply/i }))
 
     await waitFor(() => {
       expect(
