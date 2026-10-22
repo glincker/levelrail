@@ -14,14 +14,14 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | --- | ---: | ---: |
 | account | 5 | 351 |
 | alerts | 10 | 1130 |
-| apps | 16 | 1979 |
-| audit | 2 | 271 |
+| apps | 16 | 1975 |
+| audit | 2 | 256 |
 | backups | 13 | 1062 |
 | builds | 5 | 477 |
 | canary | 4 | 504 |
 | dashboards | 2 | 133 |
 | databases | 11 | 797 |
-| deploys | 23 | 2984 |
+| deploys | 23 | 2972 |
 | diagnostics | 5 | 496 |
 | domains | 12 | 987 |
 | environments | 3 | 417 |
@@ -55,13 +55,13 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 145 |
-| **total** | **246** | **24693** |
+| **total** | **246** | **24662** |
 
 ## Default session (progressive disclosure)
 
 `levelrail-mcp` lists only a small core plus `list_toolsets`, `enable_toolset` and `disable_toolset`. Enabling a toolset adds its tools for the rest of the session and sends `tools/list_changed`; the table above is what each toolset costs. `--all` (or `APP_MCP_ALL=1`), `--toolsets` and `--tool-profile` keep the static listing for clients without `list_changed` support. The mode and the token's abilities bound every call either way.
 
-21 tools, 2268 estimated tokens (ratchet 3150, ceiling per toolset 4000).
+21 tools, 2264 estimated tokens (ratchet 3150, ceiling per toolset 4000).
 
 - `cancel_deploy`
 - `deploy_app`
@@ -89,7 +89,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 
 Select with `--tool-profile agent-core` or `APP_MCP_TOOL_PROFILE=agent-core`. It is an allowlist independent of the read-only, standard and full modes; the API token's abilities still apply.
 
-15 tools, 1868 estimated tokens (cap 4000).
+15 tools, 1864 estimated tokens (cap 4000).
 
 - `cancel_deploy`
 - `deploy_app`
