@@ -80,3 +80,31 @@ func TestNoToolCanApplyAnAppImport(t *testing.T) {
 		t.Fatal("get_app_import_plan is not classified")
 	}
 }
+
+func TestGetMigrationJobStatusOnlyReads(t *testing.T) {
+	var calls []string
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		calls = append(calls, r.Method+" "+r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasSuffix(r.URL.Path, "/retire") {
+			_, _ = w.Write([]byte(`{"safe_to_delete":false,"gates":[{"id":"volumes","status":"fail","detail":"1 of 1 volume(s) are not copied"},{"id":"staged","status":"pass","detail":"ok"}],"fallback":[]}`))
+			return
+		}
+		_ = json.NewEncoder(w).Encode(apiclient.MigrationJob{ID: "appimp-1", Platform: "dokploy", Phase: "attention", Total: 2, Done: 1, Failed: 1,
+			Next: []string{"retry"}, Items: []apiclient.MigrationJobItem{{Name: "api", State: "stage-failed", Reason: "pull denied", Retryable: true}, {Name: "web", State: "verified"}}})
+	})
+	res, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "get_migration_job_status", Arguments: map[string]any{"id": "appimp-1"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out migrationJobOutput
+	decodeStructured(t, res, &out)
+	for _, c := range calls {
+		if !strings.HasPrefix(c, "GET ") {
+			t.Errorf("a read tool made a %s", c)
+		}
+	}
+	if out.SafeToDelete || len(out.Failed) != 1 || !strings.HasPrefix(out.Failed[0], "api (stage-failed)") || len(out.OpenGates) != 1 || !strings.HasPrefix(out.OpenGates[0], "volumes") {
+		t.Errorf("out = %+v", out)
+	}
+}

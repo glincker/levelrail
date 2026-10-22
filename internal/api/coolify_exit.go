@@ -7,6 +7,14 @@ import (
 	"github.com/GLINCKER/levelrail/internal/platformimport"
 )
 
+func exitReportPlatform(p platformimport.Platform) bool {
+	switch p {
+	case platformimport.Coolify, platformimport.Dokploy, platformimport.CapRover, platformimport.DockerSSH:
+		return true
+	}
+	return false
+}
+
 func (rt *Router) writeCoolifyExitReport(w http.ResponseWriter, r *http.Request, req platformImportRequest, disc *platformimport.Discovery) {
 	opts, _, err := rt.importPlanOptions(r.Context(), req)
 	if err != nil {
@@ -25,8 +33,8 @@ func (rt *Router) handleCoolifyExitReport(w http.ResponseWriter, r *http.Request
 		return
 	}
 	defer req.wipeSecrets()
-	if req.Platform != string(platformimport.Coolify) {
-		writeError(w, http.StatusBadRequest, "the exit report reads a Coolify source: set platform to coolify")
+	if !exitReportPlatform(platformimport.Platform(req.Platform)) {
+		writeError(w, http.StatusBadRequest, "the exit report reads coolify, dokploy, caprover or docker-ssh")
 		return
 	}
 	disc, err := src.Discover(r.Context())
@@ -49,8 +57,8 @@ func (rt *Router) handleAppImportExitReport(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusConflict, "the session is not connected to its source: reconnect it first")
 		return
 	}
-	if live.disc.Platform != platformimport.Coolify {
-		writeError(w, http.StatusBadRequest, "the exit report reads a Coolify source")
+	if !exitReportPlatform(live.disc.Platform) {
+		writeError(w, http.StatusBadRequest, "the exit report reads coolify, dokploy, caprover or docker-ssh")
 		return
 	}
 	rt.writeCoolifyExitReport(w, r, live.req, live.disc)

@@ -99,6 +99,10 @@ func (rt *Router) handleStageAppImport(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnprocessableEntity, rt.appImportView(r.Context(), sess, items, calc))
 		return
 	}
+	req, ok := decodeItemsRequest(w, r)
+	if !ok {
+		return
+	}
 	stripBindMounts(rt, r, calc.plan)
 	var connectDBs []string
 	for _, dbs := range calc.connect {
@@ -123,7 +127,7 @@ func (rt *Router) handleStageAppImport(w http.ResponseWriter, r *http.Request) {
 	applier := &importApplier{rt: rt, sessionID: sess.ID, connect: calc.connect}
 	for _, planned := range calc.plan.Apps {
 		i := itemByPlan(items, planned.SourceID)
-		if i < 0 || !items[i].Selected || !stageable(items[i].State) {
+		if i < 0 || !items[i].Selected || !stageable(items[i].State) || !wantedItem(req.Items, items[i]) {
 			continue
 		}
 		warnings, err := applier.CreateApp(ctx, planned)
@@ -144,7 +148,7 @@ func (rt *Router) handleStageAppImport(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, rep := range calc.plan.Report.Items {
 		i := itemByPlan(items, rep.SourceID)
-		if i < 0 || rep.Kind != "app" || !items[i].Selected {
+		if i < 0 || rep.Kind != "app" || !items[i].Selected || !wantedItem(req.Items, items[i]) {
 			continue
 		}
 		switch rep.Status {
@@ -240,7 +244,7 @@ func (rt *Router) handleVerifyAppImport(w http.ResponseWriter, r *http.Request) 
 
 func verifiable(state string) bool {
 	switch state {
-	case store.AppImportStaged, store.AppImportVerifyFailed, store.AppImportVerified:
+	case store.AppImportStaged, store.AppImportVerifyFailed, store.AppImportVerified, store.AppImportBuilding:
 		return true
 	}
 	return false

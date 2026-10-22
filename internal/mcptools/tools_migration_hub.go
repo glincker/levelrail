@@ -40,7 +40,7 @@ type migrationPlanOutput struct {
 func registerMigrationHubTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_migration_plan",
-		Description: "Read-only: a server migration's plan and progress per source database (preflight problems, copy status, verification counts). No id lists session ids; app returns that app's cutover checklist. Cannot start a copy.",
+		Description: "Read-only: a server migration's plan and progress per source database (preflight problems, copy status, verification counts). No id lists session ids; app returns its cutover checklist.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in migrationPlanInput) (*mcp.CallToolResult, migrationPlanOutput, error) {
 		if in.App != "" {
 			c, err := client.GetMigrationChecklist(ctx, in.App)

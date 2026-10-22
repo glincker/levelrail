@@ -29,9 +29,10 @@ const (
 	appImportStepVolumes   = "volumes"
 	appImportStepCutover   = "cutover"
 	appImportStepTakeover  = "takeover"
+	appImportStepRetire    = "retire"
 )
 
-var appImportSteps = []string{appImportStepInventory, appImportStepPreflight, appImportStepStage, appImportStepImages, appImportStepVerify, appImportStepVolumes, appImportStepCutover, appImportStepTakeover}
+var appImportSteps = []string{appImportStepInventory, appImportStepPreflight, appImportStepStage, appImportStepImages, appImportStepVerify, appImportStepVolumes, appImportStepCutover, appImportStepTakeover, appImportStepRetire}
 
 const (
 	envAppImportReadyTimeout = "APP_MIGRATE_APP_READY_TIMEOUT"

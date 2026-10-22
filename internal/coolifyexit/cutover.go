@@ -75,19 +75,44 @@ func referencesDatabase(a platformimport.App, dbs []platformimport.Database) boo
 	return false
 }
 
+// SourceName is how the report calls the platform being left.
+func SourceName(p platformimport.Platform) string {
+	switch p {
+	case platformimport.Coolify:
+		return "Coolify"
+	case platformimport.Dokploy:
+		return "Dokploy"
+	case platformimport.CapRover:
+		return "CapRover"
+	case platformimport.DockerSSH, platformimport.Docker:
+		return "the old server"
+	}
+	return "the old instance"
+}
+
+func backupDetail(p platformimport.Platform, name string) string {
+	if p == platformimport.Coolify {
+		return "Copy the source .env (it holds the APP_KEY that decrypts everything) and take a database dump of Coolify's own Postgres. Keep both until the last step. Nothing here changes the source."
+	}
+	return "Back up " + name + "'s own configuration and the database it keeps its state in, and keep both until the last step. Nothing here changes the source."
+}
+
 func buildChecklist(r Report, d *platformimport.Discovery) []Step {
 	manual := r.Counts[Manual] + r.Counts[Skipped]
+	name, slug := SourceName(d.Platform), string(d.Platform)
+	dryRun := "import apps --from " + slug + " --url URL --plan"
+	if d.Platform == platformimport.Coolify {
+		dryRun = "migrate coolify --url URL --token TOKEN --dry-run"
+	}
 	steps := []Step{
-		{ID: "backup-source", Title: "Back up Coolify itself",
-			Detail: "Copy the source .env (it holds the APP_KEY that decrypts everything) and take a database dump of Coolify's own Postgres. Keep both until the last step. Nothing here changes the source.",
-		},
+		{ID: "backup-source", Title: "Back up " + name + " itself", Detail: backupDetail(d.Platform, name)},
 		{ID: "resolve-manual", Title: "Clear the manual items",
 			Detail:   fmt.Sprintf("%d resource(s) are skipped or need a person. Work through the rows marked manual or skipped before staging; skipped resources never move on their own.", manual),
-			Commands: []string{"migrate coolify --url URL --token TOKEN --dry-run"},
+			Commands: []string{dryRun},
 		},
 		{ID: "stage", Title: "Stage everything stopped and unrouted",
-			Detail:   "Apps and databases are created here with no domains attached. Coolify keeps serving. Re-running skips what exists.",
-			Commands: []string{"import apps --from coolify --url URL --apply"},
+			Detail:   "Apps and databases are created here with no domains attached. " + name + " keeps serving. Re-running skips what exists.",
+			Commands: []string{"import apps --from " + slug + " --url URL --apply"},
 		},
 		{ID: "copy-data", Title: "Copy database and volume data",
 			Detail:   "Copy while the old apps still run. Dumps only read the source. Repeat the copy right before each switch to shrink the final window.",
@@ -95,7 +120,7 @@ func buildChecklist(r Report, d *platformimport.Discovery) []Step {
 		},
 		{ID: "verify-staged", Title: "Verify before any DNS change",
 			Detail:   "Build or pull each staged app, wait for its health check, then test through the real name without touching DNS: curl --resolve app.example.com:443:NEW_IP https://app.example.com/healthz. Re-run this report: resources that exist here show as imported.",
-			Commands: []string{"import apps --session ID --verify", "migrate coolify --url URL --token TOKEN --dry-run"},
+			Commands: []string{"import apps --session ID --verify", dryRun},
 		},
 		{ID: "lower-ttl", Title: "Lower DNS TTL ahead of time",
 			Detail: "Set the TTL on every record you will switch to its lowest value at least one old TTL before the first switch, so a rollback takes effect quickly.",
@@ -115,12 +140,12 @@ func buildChecklist(r Report, d *platformimport.Discovery) []Step {
 		})
 	}
 	steps = append(steps,
-		Step{ID: "keep-fallback", Title: "Keep Coolify as the fallback until verified",
+		Step{ID: "keep-fallback", Title: "Keep " + name + " as the fallback until verified",
 			Detail:   "Do not stop or delete anything on the source. A rollback restores the previous DNS value and the old app answers again. For an app with a database, the fallback is only valid until the first write lands here: after that, copy the data back before rolling back.",
 			Commands: []string{"import cutover rollback --session ID --app NAME"},
 		},
-		Step{ID: "retire", Title: "Retire Coolify",
-			Detail:   "After a full traffic cycle with backups and jobs run at least once here, restore one backup as a test, download the receipt, then stop Coolify. Keep its backup files and the saved .env.",
+		Step{ID: "retire", Title: "Retire " + name,
+			Detail:   "After a full traffic cycle with backups and jobs run at least once here, restore one backup as a test, download the receipt, then stop " + name + ". Keep its backup files.",
 			Commands: []string{"import apps --session ID --receipt"},
 		},
 	)
