@@ -190,6 +190,7 @@ Flags:
                                     least-loaded registered node (or the local node if only one exists)
   --existing-volume string  reuse or discard the data volume a deleted database of this name
                                     left behind (create is refused until you choose, when one exists)
+  --wait                   after creating, print each provisioning step until the database is ready or fails
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
