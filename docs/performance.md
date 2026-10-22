@@ -118,6 +118,12 @@ IDLE_FOOTPRINT_CHECK=1 IDLE_TOL_RSS_PCT=20 IDLE_TOL_GOROUTINES=15 \
 
 `IDLE_TOL_RSS_PCT` is a percentage over baseline peak RSS, `IDLE_TOL_GOROUTINES` and `IDLE_TOL_FDS` are absolute counts, and `IDLE_TOL_CPU_POINTS` is absolute percentage points. Run `IDLE_FOOTPRINT_RECORD=1 scripts/idle-footprint.sh` to merge a run into the baseline, on the same kind of host the check will run on. A baseline recorded on Docker Desktop will not fit a bare metal CI runner, so record one there before enabling the check in CI. The comparison logic has unit tests in `scripts/idle-footprint`.
 
+### Live footprint
+
+The same baseline is compiled into the control plane, so a running instance can judge itself. Settings, Control plane health shows a Footprint card with resident memory, CPU averaged over the last `APP_FOOTPRINT_CPU_WINDOW_SECONDS` (default 60), goroutines and open file descriptors, each next to the baseline row for this OS and architecture with the nearest app count and the limit the `IDLE_TOL_*` variables allow. Memory is compared with the baseline peak. `GET /api/v1/system/footprint` returns the same assessment, `system health` prints it, and the `idle_footprint` doctor check (also served by the MCP tool `get_system_doctor`) warns when a metric is over its limit.
+
+The status is `tolerance_unset` until all four `IDLE_TOL_*` variables are set on the control plane, and `no_baseline` on a platform with no committed row (for example macOS). The node agent's footprint is not measured by this card.
+
 ## Caveats
 
 - One machine, one run per configuration. Expect run-to-run variance of roughly 10 to 15% on RSS and CPU.

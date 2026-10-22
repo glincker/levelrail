@@ -48,6 +48,7 @@ type ControlPlaneProbe struct {
 	MemoryLimit    footprint.MemoryLimit
 	Integrity      IntegrityProbe
 	Guard          GuardProbe
+	AppCount       func(ctx context.Context) int
 }
 
 // GuardProbe is the reconcile storm protection the health page reads and resets.
@@ -97,15 +98,16 @@ func (rt *Router) startLiveSSE(w http.ResponseWriter, r *http.Request) (http.Flu
 }
 
 type cpHealthResource struct {
-	CheckedAt  time.Time           `json:"checked_at"`
-	Runtime    cpRuntime           `json:"runtime"`
-	DB         store.DBMetrics     `json:"db"`
-	Reconcile  cpReconcile         `json:"reconcile"`
-	Streams    cpStreams           `json:"streams"`
-	Footprint  cpFootprint         `json:"footprint"`
-	Thresholds cphealth.Thresholds `json:"thresholds"`
-	Findings   []cphealth.Finding  `json:"findings"`
-	Status     string              `json:"status"`
+	CheckedAt  time.Time            `json:"checked_at"`
+	Runtime    cpRuntime            `json:"runtime"`
+	DB         store.DBMetrics      `json:"db"`
+	Reconcile  cpReconcile          `json:"reconcile"`
+	Streams    cpStreams            `json:"streams"`
+	Footprint  cpFootprint          `json:"footprint"`
+	Idle       footprint.Assessment `json:"idle_footprint"`
+	Thresholds cphealth.Thresholds  `json:"thresholds"`
+	Findings   []cphealth.Finding   `json:"findings"`
+	Status     string               `json:"status"`
 }
 
 type cpRuntime struct {
@@ -172,6 +174,7 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 			res.Footprint.TelemetryBytes = n
 		}
 	}
+	res.Idle = rt.idleAssessment(p)
 	var rs reconcile.Stats
 	if p.Reconcile != nil {
 		rs = p.Reconcile()
@@ -295,4 +298,23 @@ func (rt *Router) handleCPHealthFix(w http.ResponseWriter, r *http.Request) {
 		res.Findings = []cphealth.Finding{}
 	}
 	writeJSON(w, http.StatusOK, res)
+}
+
+func (rt *Router) idleAssessment(p *ControlPlaneProbe) footprint.Assessment {
+	apps := 0
+	if p.AppCount != nil {
+		apps = p.AppCount(context.Background())
+	}
+	cur := footprint.Snapshot(footprint.CPUWindowFromEnv(os.Getenv), apps)
+	tol, err := footprint.ToleranceFromEnv(os.Getenv)
+	return footprint.Assess(cur, footprint.Baseline(), runtime.GOOS, runtime.GOARCH, tol, err)
+}
+
+func (rt *Router) handleGetIdleFootprint(w http.ResponseWriter, _ *http.Request) {
+	p := rt.cpHealth.probe.Load()
+	if p == nil {
+		writeError(w, http.StatusNotImplemented, "control plane health is not available")
+		return
+	}
+	writeJSON(w, http.StatusOK, rt.idleAssessment(p))
 }

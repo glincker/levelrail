@@ -30,6 +30,7 @@ func runBenchChaos(prog string, args []string, stdout, stderr io.Writer, lookupE
 	hardware := fs.String("hardware", "", "run: free-form hardware note kept in each result")
 	outJSON := fs.String("out", "", "run: write the structured results file (JSON with host, build and method) to this path")
 	outMD := fs.String("md-out", "", "run: write the rendered Markdown report (host, caveats, limits table) to this path")
+	upload := fs.Bool("upload", false, "run: upload the structured results file to the control plane so the dashboard can show and compare it")
 	repeat := fs.Int("repeat", 1, "run: run each scenario this many times and keep every run")
 	markdown := fs.Bool("markdown", false, "run: print a Markdown table of the results instead of the plain table")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, benchChaosUsage(prog)) }
@@ -104,7 +105,7 @@ func runBenchChaos(prog string, args []string, stdout, stderr io.Writer, lookupE
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
-	plan := &benchReportPlan{jsonPath: *outJSON, mdPath: *outMD, repeat: *repeat, note: *hardware, probe: benchreport.DefaultProbe(), docker: liveDockerProbe()}
+	plan := &benchReportPlan{jsonPath: *outJSON, mdPath: *outMD, repeat: *repeat, upload: *upload, note: *hardware, probe: benchreport.DefaultProbe(), docker: liveDockerProbe()}
 	plan.begin(ctx)
 	var results []chaos.Result
 runs:
@@ -118,8 +119,14 @@ runs:
 		}
 	}
 	if plan.wanted() {
-		if _, err := plan.finish(ctx, results, lookupEnv, stderr); err != nil {
+		rep, err := plan.finish(ctx, results, lookupEnv, stderr)
+		if err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
+		}
+		if plan.upload {
+			if err := uploadBenchReport(context.Background(), apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), rep, stderr); err != nil {
+				return reportError(stdout, stderr, jsonOut, err)
+			}
 		}
 	}
 	hw := ""
@@ -184,6 +191,7 @@ deploy-latency, rollout-under-traffic, ingress-concurrency and replica-failover.
   --markdown           run: print the results as a Markdown table
   --out FILE           run: write the structured results file (JSON) with host, build, method and limits
   --md-out FILE        run: write the rendered Markdown report
+  --upload             run: upload the structured results to the control plane (dashboard, bench results compare)
   --repeat N           run: run each scenario N times and keep every run (default 1)
   --json               print machine-readable output only
 

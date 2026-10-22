@@ -26,6 +26,7 @@ func (rt *Router) registerDockerGuardRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/system/cli-console/commands", rt.requireAbility(AbilityRoot, rt.handleCLIConsoleCommands))
 	mux.HandleFunc("GET /api/v1/system/cli-console/session", rt.requireAbility(AbilityRoot, rt.handleCLIConsoleSession))
 	mux.HandleFunc("GET /api/v1/system/control-plane-health", rt.requireAbility(AbilityRead, rt.handleGetCPHealth))
+	mux.HandleFunc("GET /api/v1/system/footprint", rt.requireAbility(AbilityRead, rt.handleGetIdleFootprint))
 	// Checkpointing and ANALYZE briefly hold the single database connection, so AbilityRoot.
 	mux.HandleFunc("POST /api/v1/system/control-plane-health/fix", rt.requireAbility(AbilityRoot, rt.handleCPHealthFix))
 	mux.HandleFunc("GET /api/v1/system/integrity", rt.requireAbility(AbilityRead, rt.handleGetIntegrity))

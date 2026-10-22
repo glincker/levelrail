@@ -23,6 +23,7 @@ type dockerProbeFunc func(ctx context.Context) benchreport.Docker
 type benchReportPlan struct {
 	jsonPath string
 	mdPath   string
+	upload   bool
 	repeat   int
 	note     string
 	probe    benchreport.Probe
@@ -30,7 +31,7 @@ type benchReportPlan struct {
 	host     benchreport.Host
 }
 
-func (p *benchReportPlan) wanted() bool { return p.jsonPath != "" || p.mdPath != "" }
+func (p *benchReportPlan) wanted() bool { return p.jsonPath != "" || p.mdPath != "" || p.upload }
 
 // begin records the host and its load before the scenarios start.
 func (p *benchReportPlan) begin(ctx context.Context) {

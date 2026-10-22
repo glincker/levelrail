@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1665 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1671 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -898,6 +898,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/archives/{id}/verify", Ability: "AbilityRoot", Group: "Other", Handler: "handleVerifyArchive", Description: ""},
 	{Method: "POST", Path: "/api/v1/attention/dismiss", Ability: "Session", Group: "Other", Handler: "handleAttentionDismiss", Description: ""},
 	{Method: "GET", Path: "/api/v1/attention/feed", Ability: "AbilityRead", Group: "Other", Handler: "handleAttentionFeed", Description: ""},
+	{Method: "GET", Path: "/api/v1/benchmarks", Ability: "AbilityRead", Group: "Other", Handler: "handleListBenchmarks", Description: ""},
+	{Method: "POST", Path: "/api/v1/benchmarks", Ability: "AbilityWrite", Group: "Other", Handler: "handleUploadBenchmark", Description: ""},
+	{Method: "GET", Path: "/api/v1/benchmarks/compare", Ability: "AbilityRead", Group: "Other", Handler: "handleCompareBenchmarks", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/benchmarks/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteBenchmark", Description: ""},
+	{Method: "GET", Path: "/api/v1/benchmarks/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetBenchmark", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/build-cache", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteBuildCache", Description: ""},
 	{Method: "GET", Path: "/api/v1/build-cache", Ability: "AbilityRead", Group: "Other", Handler: "handleListBuildCache", Description: ""},
 	{Method: "PUT", Path: "/api/v1/build-cache", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetBuildCache", Description: ""},
@@ -1616,6 +1621,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/system/encryption-keys", Ability: "AbilityRead", Group: "System", Handler: "handleGetEncryptionKeys", Description: ""},
 	{Method: "PUT", Path: "/api/v1/system/encryption-keys/policy", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateKeyPolicy", Description: "Rotation rewrites every secret of an app, and the policy drives alerts: both AbilityRoot, rotation also needs step-up."},
 	{Method: "POST", Path: "/api/v1/system/encryption-keys/rotate", Ability: "AbilityRoot", Group: "System", Handler: "handleRotateDEK", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/footprint", Ability: "AbilityRead", Group: "System", Handler: "handleGetIdleFootprint", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/geoip", Ability: "AbilityRead", Group: "System", Handler: "handleGeoIPLookup", Description: "Active country sources and a test lookup for one address."},
 	{Method: "GET", Path: "/api/v1/system/integrity", Ability: "AbilityRead", Group: "System", Handler: "handleGetIntegrity", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/integrity/check", Ability: "AbilityRoot", Group: "System", Handler: "handleIntegrityCheck", Description: ""},
