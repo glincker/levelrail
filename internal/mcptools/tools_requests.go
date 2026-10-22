@@ -42,7 +42,7 @@ func registerAppRequestsTool(server *mcp.Server, client *apiclient.Client) {
 func registerAppTrafficTool(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_traffic",
-		Description: "App ingress traffic for a window: rates, p50/p95/p99, per replica latency, slow routes, referrers, countries, slow samples, SLO burn.",
+		Description: "App ingress traffic: rates, p50/p95/p99, replicas, routes, 5xx spikes by deploy, referrers, countries, samples, SLO burn.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appTrafficInput) (*mcp.CallToolResult, apiclient.AppTrafficResource, error) {
 		window := in.Window
 		if window == "" {

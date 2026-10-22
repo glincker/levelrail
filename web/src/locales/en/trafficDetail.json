@@ -117,5 +117,14 @@
       "bad_bot": "Bad bot",
       "body_too_large": "Body too large"
     }
+  },
+  "spikes": {
+    "title": "Error spikes",
+    "hint": "Stretches where the server error share stood out from the rest of the window, matched to the deploy that started shortly before.",
+    "none": "No error spikes in this window.",
+    "peak": "{{rate}} server errors at peak",
+    "detail": "{{errors}} of {{requests}} requests failed. Typical for this window: {{baseline}}.",
+    "afterDeploy": "After deploy {{image}} ({{time}})",
+    "noDeploy": "No recent deploy"
   }
 }
