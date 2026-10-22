@@ -1,0 +1,138 @@
+{
+  "title": "Deploy timeline",
+  "subtitle": "Everything that happened in one deploy, in order.",
+  "pageTitle": "Deploy {{id}}",
+  "app": "App",
+  "back": "All deployments",
+  "open": "Timeline",
+  "verdict": {
+    "running": "In progress",
+    "watching": "Watching",
+    "succeeded": "Succeeded",
+    "failed": "Failed",
+    "rolled_back": "Rolled back",
+    "canceled": "Canceled",
+    "queued": "Queued"
+  },
+  "connection": {
+    "connecting": "Connecting",
+    "live": "Live",
+    "ended": "Replay",
+    "error": "Reconnecting"
+  },
+  "frozenNote": "Saved replay from when this deploy settled.",
+  "list": {
+    "label": "Deploy events, oldest first",
+    "loading": "Loading the deploy timeline",
+    "emptyTitle": "No events yet",
+    "emptyBody": "Events appear here as the deploy progresses."
+  },
+  "announce": "{{title}}: {{status}}",
+  "status": {
+    "running": "Running",
+    "ok": "Done",
+    "failed": "Failed",
+    "warning": "Warning",
+    "info": "Info"
+  },
+  "kind": {
+    "trigger": "Trigger",
+    "build": "Build",
+    "log": "Build output",
+    "image_push": "Image push",
+    "hook": "Hook",
+    "step": "Step",
+    "readiness": "Readiness",
+    "cutover": "Cutover",
+    "watch": "Post-deploy watch",
+    "rollback": "Rollback",
+    "outcome": "Outcome",
+    "traffic_impact": "Traffic impact"
+  },
+  "codes": {
+    "trigger_git_push": "Git push received",
+    "trigger_webhook": "Webhook received",
+    "trigger_manual": "Deploy started manually",
+    "trigger_image": "Image deploy requested",
+    "trigger_compose": "Compose deploy requested",
+    "trigger_promote": "Promotion requested",
+    "trigger_auto_rollback": "Automatic rollback started",
+    "trigger_queued": "Queued behind another deploy",
+    "build_detecting": "Detecting how to build",
+    "build_building": "Build",
+    "build_failed": "Build failed",
+    "push": "Image push",
+    "readiness_probe": "Readiness probe",
+    "watch_crashloop": "Crashloop after deploy",
+    "watch_oom": "Container killed for memory after deploy",
+    "watch_exited": "Container exited after deploy",
+    "watch_error_rate": "5xx rate rose after deploy",
+    "watch_latency": "Latency regressed after deploy",
+    "watch_stopped": "Watch stopped by an operator",
+    "watch_cleared": "Post-deploy watch cleared",
+    "rollback_auto": "Automatic rollback",
+    "rollback_no_target": "No rollback target available",
+    "outcome_succeeded": "Deploy finished",
+    "outcome_failed": "Deploy failed",
+    "outcome_rolled_back": "Deploy rolled back",
+    "outcome_canceled": "Deploy canceled",
+    "traffic_impact": "Traffic impact around cutover"
+  },
+  "trigger": {
+    "rerun": "Rerun of {{id}}"
+  },
+  "logs": {
+    "summary_one": "Build output, {{count}} line",
+    "summary_other": "Build output, {{count}} lines",
+    "region": "Build output lines",
+    "dropped": "{{count}} earlier lines were left out to keep the replay small."
+  },
+  "impact": {
+    "title": "Traffic around cutover",
+    "before": "Before",
+    "after": "After",
+    "rate": "Requests per second",
+    "errors": "5xx rate",
+    "p95": "p95 latency",
+    "noTraffic": "No traffic in this window",
+    "open": "The window after cutover is still open, so these numbers can change.",
+    "window": "Windows are {{window}} on each side of cutover."
+  },
+  "phases": {
+    "title": "Time per phase",
+    "label": "Duration of each phase",
+    "trigger": "Trigger",
+    "build": "Build",
+    "push": "Push",
+    "hooks": "Hooks",
+    "deploy": "Deploy",
+    "readiness": "Readiness",
+    "cutover": "Cutover",
+    "watch": "Watch",
+    "outcome": "Outcome"
+  },
+  "compare": {
+    "label": "Compare with",
+    "none": "No comparison",
+    "hint": "Pick another deploy of this app to see both timelines side by side.",
+    "loading": "Loading the comparison",
+    "errorTitle": "Could not load the comparison",
+    "title": "Side by side",
+    "deployA": "This deploy",
+    "deployB": "Compared deploy",
+    "phase": "Phase",
+    "delta": "Difference",
+    "faster": "{{value}} faster",
+    "slower": "{{value}} slower",
+    "same": "Same",
+    "missing": "Not reached",
+    "onlyHere": "Only in this deploy",
+    "onlyThere": "Only in the compared deploy",
+    "noDifferences": "Both deploys produced the same signals.",
+    "columnLabel": "Events of deploy {{id}}"
+  },
+  "error": {
+    "title": "Could not load this deploy",
+    "notFound": "This deploy does not exist or you cannot read its app."
+  }
+}

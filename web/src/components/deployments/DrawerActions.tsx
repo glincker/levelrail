@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowUUpLeftIcon,
   ArrowsClockwiseIcon,
+  ClockCounterClockwiseIcon,
   GitDiffIcon,
   RocketLaunchIcon,
   StopCircleIcon,
@@ -65,6 +67,7 @@ export function DrawerActions({
   onAction,
   onPromote,
 }: DrawerActionsProps) {
+  const { t } = useTranslation('deployEvents')
   const rows: { label: string; reason: string }[] = [
     { label: 'Roll back to this', reason: rollbackReason(d) },
     { label: 'Cancel', reason: cancelReason(d) },
@@ -105,6 +108,15 @@ export function DrawerActions({
         >
           <GitDiffIcon aria-hidden="true" />
           Compare
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          nativeButton={false}
+          render={<Link to="/deploy-events/$id" params={{ id: d.id }} />}
+        >
+          <ClockCounterClockwiseIcon aria-hidden="true" />
+          {t('open')}
         </Button>
         <ActionButton
           label="Promote"
