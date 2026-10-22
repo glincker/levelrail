@@ -143,9 +143,77 @@ Not yet measured: anything through the ingress, with Docker, across nodes or acr
 | Steady state through the ingress, p50 / p95 / p99 latency | not set | 0.66 / 1.82 / 9.51 ms at 12800 req/s (same run) | measured, single run |
 | Ingress overhead, p50 / p95 / p99 | not set | not yet measured | not yet measured |
 | Zone loss: dropped requests, error window, recovery | not set | not yet measured | not yet measured |
-| Replica stop: dropped requests, error window, recovery | not set | not yet measured | not yet measured |
+| Replica stop: dropped requests, error window, recovery | not set | see the 2026-10-22 run: 0 of 3000 failed, second replica back in 426 to 769 ms | measured, 3 runs, laptop |
 | Node drain: dropped requests, error window, recovery | not set | not yet measured | not yet measured |
 | Control plane restart: ingress kept serving, outage length | not set | not yet measured | not yet measured |
+
+## Published run, 2026-10-22 (macOS laptop, not Linux production)
+
+These are the first numbers produced with the results file, so each run carries its host, build and method. **They are not Linux production numbers.** Host: Apple M4 Max, 14 CPUs, 36 GiB RAM, macOS 27.2, Docker Desktop 28.3.0 with 7 GiB visible to Docker, so containers ran in a virtual machine. The load generator, the ingress and the fixture container (`node:22-alpine`, trivial response) shared the machine, over loopback with TLS. The host was busy with other work the whole time: 1 minute load average 13 to 30 on 14 CPUs at the start and end of the runs. Read every latency as a noisy upper bound and every throughput as a floor.
+
+The raw files are in `docs/benchmark-results/`: `2026-10-22-all-scenarios.json` (every scenario, 2 runs each), `2026-10-22-deploy-rollout-concurrency.json` (the four scenarios that the first file skipped, 2 runs each) and `2026-10-22-replica-failover-rerun.json` (3 runs after the harness fix below). Each file records the commit of the harness that produced it. The `version` field in the first two files is a pseudo-version that Go stamped from a different checkout (the build was made inside a git worktree), so trust the `commit` field, which was set explicitly with `BENCH_COMMIT`.
+
+What happened during the runs, because it changes how to read the rest:
+
+- Docker Desktop stopped answering during or just after the second `ingress-steady` run, so the second round of `deploy-latency`, `rollout-under-traffic`, `ingress-concurrency` and `replica-failover` was skipped and re-run later from a restarted Docker Desktop. The first `ingress-steady` run ended with a 6400 req/s step that failed 34486 of 64000 requests. Whether the overload caused the Docker stop was not investigated.
+- The first replica failover run set exposed a harness bug: when the container was replaced faster than the 200 ms poll, the restore time came out as a failure. The poll is now 50 ms, the dip is tracked explicitly, and a restore that was too fast to observe is reported as unresolved instead of failed. The three runs below are after that fix.
+
+### Failover and recovery
+
+Load is open loop at 40 req/s (single container) or 100 req/s (two replicas). Two runs per scenario unless stated.
+
+| Event | Failed requests | Recovery or restore | Notes |
+| --- | --- | --- | --- |
+| `SIGKILL` of the only container | 142 of 1200, 147 of 1200 | healthy again after 3550 ms and 3675 ms (error windows 3525 and 3650 ms) | restarted in place by the reconciler; p95 about 2 s because requests queue during the outage |
+| `SIGKILL` of 1 of 2 replicas | 0 of 3000 in all 3 runs | second replica running again after 426, 769 and 515 ms | request p99 10.6, 21.5 and 8.4 ms; restore time polled at 50 ms |
+| Control plane restart (in process) | 8 of 1200, 3 of 1200 | ingress outage 200 ms and 75 ms | the app container was not touched; this is an in-process engine and ingress restart, not systemd |
+| Docker API unreachable for 6 s during a deploy | 0 of 1200 in both runs | deploy resumed and succeeded | old container kept serving |
+| OOM kill during the readiness wait | 0 of 1200 in both runs | deploy failed as `OOMKilledDuringReadiness` | version 1 kept serving |
+
+### Deploy and rollout
+
+| Measure | Result |
+| --- | --- |
+| Deploy latency, image to first answer from the new version | cold 4678, 3653 and 3442 ms over 3 runs; warm p50 3879, 4372 and 3578 ms and warm p95 4446, 4501 and 3922 ms (5 redeploys per run, so p95 is the maximum). All include the 3 s stability window the deploy gate waits for. |
+| Rolling deploy of 2 replicas at 100 req/s, 40 s | 0 of 4000 failed in all 3 runs; p50 2.00, 2.56, 1.82 ms; p99 19.6, 25.4, 20.8 ms; max 46.7, 57.6, 319.5 ms |
+
+### Request throughput through the ingress
+
+Closed loop, one replica, 8 s per step, three runs (A, B, C). Requests per second, then p99 in ms.
+
+| Concurrency | req/s A, B, C | p99 ms A, B, C | Errors A, B, C |
+| --- | --- | --- | --- |
+| 1 | 2007, 1393, 2220 | 3.1, 7.2, 1.7 | 0, 0, 0 |
+| 8 | 6233, 8424, 9264 | 7.2, 5.1, 2.3 | 0, 0, 0 |
+| 32 | 13911, 17236, 18538 | 9.2, 8.6, 4.9 | 0, 0, 0 |
+| 128 | 10640, 6185, 6080 | 59.8, 174.5, 241.5 | 15, 58, 0 |
+
+Open-loop ladder (`ingress-steady`, 10 s per step, stops at the first step over 1 percent errors or with client saturation): the highest clean step was 3200 req/s in the first run and 800 req/s in the second. In the second run the 400 and 800 steps already showed 13 and 11 errors and p95 over 800 ms, which is the busy host and a degrading Docker Desktop, not a property of the ingress. The 2026-10-19 run below reached 12800 req/s clean on a quieter moment; this run did not reproduce it. Treat the ceiling as unestablished and as strongly dependent on the host.
+
+### Limits table for this run
+
+| Question | Status |
+| --- | --- |
+| Deploy latency, rollout under traffic, replica kill, single container kill, control plane restart in process | measured, 2 to 3 runs, one noisy laptop, trivial fixture |
+| Ingress throughput | measured at four concurrencies; the ceiling is not established (client and server share the machine) |
+| Anything on a Linux server, a real network or a real application | not measured |
+| Node agent link loss, node drain, zone loss | not measured: needs a second node |
+| Control plane restart under systemd socket activation, or a real control plane crash | not measured: the restart is in process |
+| Docker daemon restart | not measured: the API is cut with a proxy, the daemon keeps running |
+| Statistical confidence | not measured: 2 to 3 runs per scenario, no confidence interval |
+| Percentiles per app and replica in production | not measured here |
+
+### Reproduce a published run
+
+Build with `-tags chaoslive`, run on a machine with a local Docker daemon, and write the files:
+
+```bash
+go build -tags chaoslive -o levelrail-cli ./cmd/levelrail-cli
+BENCH_NOISY_LOAD_RATIO=1 ./levelrail-cli bench chaos run all --repeat 3 \
+  --out results.json --md-out results.md --hardware "short note on the machine"
+```
+
+`--out` writes the structured file (host CPU, memory, OS, kernel, Docker version and engine, load average at start and end, build version and commit, methodology, caveats, every run and its named metrics, and a limits table derived from what actually ran). `--md-out` renders the same data as Markdown. You can name several scenarios instead of `all`. `BENCH_NOISY_LOAD_RATIO` is the load per CPU above which the report adds a "host was busy" caveat; unset, the load is still recorded but never flagged. `BENCH_COMMIT` overrides the commit when a build from a git worktree is stamped with another checkout's commit. Skipped scenarios are kept in the file as skipped, never dropped. The named metrics are in the results file only, not in the control plane `--record` store.
 
 ## Chaos results
 
