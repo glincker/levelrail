@@ -18,6 +18,9 @@ type CreateNodeJoinTokenRequest struct {
 	ControlPlaneAddr string `json:"control_plane_addr,omitempty"`
 	NodeName         string `json:"node_name,omitempty"`
 	Mesh             bool   `json:"mesh,omitempty"`
+	Provider         string `json:"provider,omitempty"`
+	Region           string `json:"region,omitempty"`
+	Zone             string `json:"zone,omitempty"`
 }
 
 // CreateNodeJoinTokenFor calls POST /api/v1/nodes/join-tokens with req.

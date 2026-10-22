@@ -1991,8 +1991,10 @@
   "status_code"
  ],
  "list_zones": [
+  "domains",
   "labeled",
   "nodes",
+  "onboarding",
   "zones"
  ],
  "log_signatures": [

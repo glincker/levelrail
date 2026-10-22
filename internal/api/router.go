@@ -235,6 +235,7 @@ type Router struct {
 	restart                restartState                                                  // see system_restart.go
 	cpHealth               cpHealthState                                                 // see system_cp_health.go
 	memAttribution         memoryAttributionCache                                        // see node_memory_attribution.go
+	nodeOnb                *nodeOnboardingState                                          // nil is valid: onboarding routes report that no agent has sent facts
 	nodeHostReports        NodeHostReports                                               // nil is valid: remote rows keep the placed-services-only shape
 	dockerGuard            DockerGuardController                                         // nil is valid: the docker guard routes report it as not configured
 	dockerPinger           DockerPinger                                                  // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above

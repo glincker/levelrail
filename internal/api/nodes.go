@@ -706,6 +706,11 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, "node_name must be lowercase letters, digits and dashes, starting with a letter")
 		return
 	}
+	domain, err := validJoinDomain(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	rec, err := rt.mintNodeJoinToken(r.Context(), rt.effectiveJoinTokenTTL())
 	if err != nil {
 		rt.internalError(w, "api: create node join token failed", err)
@@ -713,7 +718,7 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 	}
 	resp := createNodeJoinTokenResponse{Token: rec.plaintext, ExpiresAt: rec.expiresAt, CAFingerprint: rt.agentCAFingerprint, ControlPlaneAddr: addr}
 	if addr != "" {
-		cmds := rt.buildJoinCommands(addr, rec.plaintext, rt.agentCAFingerprint, req.NodeName, req.Mesh)
+		cmds := rt.buildJoinCommands(addr, rec.plaintext, rt.agentCAFingerprint, req.NodeName, req.Mesh, domain)
 		resp.JoinCommands = &cmds
 	}
 	writeJSON(w, http.StatusCreated, resp)
