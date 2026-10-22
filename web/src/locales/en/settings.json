@@ -1070,7 +1070,24 @@
         "title": "Live streams near the cap",
         "hint": "New log and event streams are refused at the cap. Raise APP_MAX_LIVE_STREAMS if the host has headroom."
       }
-    }
+    },
+    "banner": {
+      "description": "Live saturation of this instance, with a one-click fix for each finding.",
+      "diagram": {
+        "database": "database",
+        "disk": "disk",
+        "certificates": "certificates"
+      }
+    },
+    "recheck": "Re-check now",
+    "rechecking": "Checking",
+    "errorTitle": "Could not read control plane health",
+    "retry": "Try again",
+    "findingsTitle": "Needs attention",
+    "findingsCount_one": "{{count}} finding",
+    "findingsCount_other": "{{count}} findings",
+    "metricsTitle": "Runtime and database",
+    "readingChip": "Now {{value}} / limit {{limit}}"
   },
   "generalPage": {
     "rail": {
@@ -2651,7 +2668,23 @@
     "cancel": "Cancel",
     "planTitle": "Plan",
     "resultTitle": "Result",
-    "resultCounts": "{{applied}} applied, {{failed}} failed, {{skipped}} skipped"
+    "resultCounts": "{{applied}} applied, {{failed}} failed, {{skipped}} skipped",
+    "banner": {
+      "description": "Describe projects, apps, domains and databases as YAML, review the plan, then apply.",
+      "diagram": {
+        "host": "host",
+        "docker": "Docker",
+        "ingress": "ingress"
+      }
+    },
+    "optionsTitle": "Options",
+    "optionsDescription": "Control how the apply treats apps it already knows about.",
+    "filesChosen_one": "{{count}} file ready",
+    "filesChosen_other": "{{count}} files ready",
+    "noFiles": "Paste YAML below or upload files to plan.",
+    "planAgain": "Plan again",
+    "planFailed": "The plan could not be built. Fix the files and plan again.",
+    "applyFailed": "The apply did not finish. Plan again to review the current state."
   },
   "githubManualDialog": {
     "title": "Connect a GitHub App manually",
