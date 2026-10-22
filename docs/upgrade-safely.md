@@ -47,6 +47,18 @@ sudo levelrail self-upgrade --to vX.Y.Z --dry-run     # plan and breaking change
 
 If the control plane does not run as root or systemd is not the init system, the dashboard and CLI show the exact host command instead of running it.
 
+### One upgrade at a time
+
+The server decides whether an upgrade is running, so a reload, another tab or the CLI all see the same answer. While one runs, every page shows a slim bar ("Upgrading to vX.Y.Z, step 3 of 6"), and the Updates page shows the live stages instead of the Upgrade button. If the control plane restarts mid-upgrade the bar says it is reconnecting and carries on once the new release answers. Starting a second upgrade is refused with `409` and the running attempt id.
+
+When the attempt finishes, the Updates page keeps a compact result card: "Upgraded from vA to vB at TIME, verification passed" with a link to the release notes and **View attempt details** for the stage timeline. A failed attempt shows the reason with the Fix, Retry and Roll back actions. Dismissing the card is remembered in this browser. A one-time notification appears on the next page load, and the Inbox gets an "Upgrade to vB succeeded" item that you can archive like other resolved items. No email is sent for this.
+
+```bash
+levelrail-cli upgrade status    # prints the running attempt and the last finished one
+```
+
+The same data is at `GET /api/v1/updates/self-upgrade/status`.
+
 ## Schedule an upgrade
 
 Pick a time when nobody is deploying. Settings > Updates > **Schedule upgrade**, or:

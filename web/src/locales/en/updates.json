@@ -608,5 +608,19 @@
   },
   "cli": {
     "summary": "Fix via CLI"
+  },
+  "result": {
+    "succeeded": "Upgraded from {{from}} to {{to}} at {{time}}, verification passed",
+    "succeededUnverified": "Upgraded from {{from}} to {{to}} at {{time}}, verification did not complete",
+    "failed": "Upgrade to {{to}} did not complete: {{reason}}",
+    "rolledBack": "Upgrade to {{to}} was rolled back to {{from}}, your data is intact",
+    "details": "View attempt details",
+    "hideDetails": "Hide attempt details",
+    "notes": "Release notes",
+    "dismiss": "Dismiss",
+    "running": "An upgrade to {{to}} is already running (attempt {{id}}).",
+    "runningLink": "View the running attempt",
+    "disabledRunning": "Upgrading to {{to}}, step {{n}} of {{total}}",
+    "toast": "Upgrade to {{to}} succeeded"
   }
 }

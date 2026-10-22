@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1641 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1642 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1649,6 +1649,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/updates/self-upgrade/attempts/{id}/retry", Ability: "AbilityWrite", Group: "System", Handler: "handleSelfUpgradeAttemptRetry", Description: ""},
 	{Method: "POST", Path: "/api/v1/updates/self-upgrade/attempts/{id}/rollback", Ability: "AbilityWrite", Group: "System", Handler: "handleSelfUpgradeAttemptRollback", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/self-upgrade/plan", Ability: "AbilityRead", Group: "System", Handler: "handleSelfUpgradePlan", Description: ""},
+	{Method: "GET", Path: "/api/v1/updates/self-upgrade/status", Ability: "AbilityRead", Group: "System", Handler: "handleSelfUpgradeStatus", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/settings", Ability: "AbilityRoot", Group: "System", Handler: "handleGetUpdateSettings", Description: "Channel/auto-update settings are AbilityRoot on both verbs: see handleGetUpdateSettings' own doc comment (updates_settings.go)."},
 	{Method: "PUT", Path: "/api/v1/updates/settings", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateSettings", Description: ""},
 	{Method: "GET", Path: "/healthz", Ability: "Public", Group: "System", Handler: "handleHealthz", Description: ""},

@@ -169,3 +169,18 @@ func (c *Client) ListSelfUpgradeAttempts(ctx context.Context) (SelfUpgradeAttemp
 	err := c.do(ctx, http.MethodGet, "/api/v1/updates/self-upgrade/attempts", nil, &out)
 	return out, err
 }
+
+// SelfUpgradeStatus is GET /api/v1/updates/self-upgrade/status' response.
+type SelfUpgradeStatus struct {
+	CurrentVersion string              `json:"current_version"`
+	Running        *SelfUpgradeAttempt `json:"running"`
+	LastFinished   *SelfUpgradeAttempt `json:"last_finished"`
+	Verified       bool                `json:"verified"`
+}
+
+// GetSelfUpgradeStatus calls GET /api/v1/updates/self-upgrade/status.
+func (c *Client) GetSelfUpgradeStatus(ctx context.Context) (SelfUpgradeStatus, error) {
+	var out SelfUpgradeStatus
+	err := c.do(ctx, http.MethodGet, "/api/v1/updates/self-upgrade/status", nil, &out)
+	return out, err
+}

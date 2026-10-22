@@ -5,6 +5,7 @@ import { pollUnlessMissing } from '../lib/pollUnlessMissing'
 import { attentionFeedQueryOptions } from './attentionFeed'
 import { deployApprovalListQueryOptions } from './deployApprovals'
 import { failedDeploysQueryOptions } from './failedDeploys'
+import { selfUpgradeAttemptsQueryOptions } from './selfUpgrade'
 import { signInRequestsQueryOptions } from './signIn'
 import { useInbox, useInboxState } from './inbox'
 
@@ -26,12 +27,17 @@ export function useInboxEntries(archived = false): {
   })
   const signIns = useQuery({ ...signInRequestsQueryOptions(), ...opts })
   const feed = useQuery({ ...attentionFeedQueryOptions(), ...opts })
+  const upgrades = useQuery({
+    ...selfUpgradeAttemptsQueryOptions(false),
+    ...opts,
+  })
   const entries = buildInboxEntries({
     alerts: alerts.data?.pages.flat(),
     failedDeploys: failed.data,
     approvals: approvals.data,
     signIns: signIns.data?.approvals,
     feed: feed.data,
+    upgrades: upgrades.data,
     state: state.data,
     t: (key, o) => t(key, { ...o, defaultValue: key }),
   })

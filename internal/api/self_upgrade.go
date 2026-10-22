@@ -318,8 +318,8 @@ func (rt *Router) handleSelfUpgradeStart(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, http.StatusConflict, map[string]any{"error": "breaking changes need acknowledgement", "missing_ack": ids})
 		return
 	}
-	if running, _ := selfupgrade.NewJournal(rt.dataDir).Running(); len(running) > 0 {
-		writeError(w, http.StatusConflict, "an earlier upgrade did not finish; run self-upgrade --recover on the host")
+	if id := rt.runningSelfUpgradeID(); id != "" {
+		writeJSON(w, http.StatusConflict, map[string]any{"error": "an upgrade is already running", "running_attempt_id": id})
 		return
 	}
 	_, actorID, actorName, ok := rt.currentActor(r)

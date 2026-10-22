@@ -103,7 +103,9 @@
       "signInTitle": "New browser sign-in from {{ip}}",
       "approvalTitle": "{{app}} awaits approval",
       "approvalDetail": "{{action}} {{image}}, requested by {{who}}",
-      "deployTitle": "Deploy of {{app}} failed"
+      "deployTitle": "Deploy of {{app}} failed",
+      "upgradeSucceeded": "Upgrade to {{version}} succeeded",
+      "upgradeDetail": "Upgraded from {{from}} to {{to}}"
     },
     "count_one": "{{count}} item, {{unread}} unread",
     "count_other": "{{count}} items, {{unread}} unread",

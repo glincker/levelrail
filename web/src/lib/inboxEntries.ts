@@ -1,6 +1,7 @@
 import type { FailedDeploy } from '../queries/failedDeploys'
 import type { AttentionFeedItem } from '../queries/attentionFeed'
 import type { InboxItem, InboxState } from '../queries/inbox'
+import type { SelfUpgradeAttempt } from '../queries/selfUpgrade'
 import type { SignInApprovalRequest } from '../queries/signIn'
 import type { DeployApprovalResource } from '../types/deployApproval'
 
@@ -41,6 +42,7 @@ export interface InboxSources {
   approvals?: DeployApprovalResource[]
   signIns?: SignInApprovalRequest[]
   feed?: AttentionFeedItem[]
+  upgrades?: SelfUpgradeAttempt[]
   state?: InboxState
   t: (key: string, opts?: Record<string, string>) => string
 }
@@ -130,6 +132,23 @@ export function buildInboxEntries(src: InboxSources): InboxEntry[] {
       action: d.image
         ? { type: 'retryDeploy', app: d.service_name, image: d.image }
         : { type: 'link', to: `/apps/${d.service_name}/deploys` },
+    })
+  }
+  for (const u of src.upgrades ?? []) {
+    if (u.outcome !== 'succeeded') continue
+    mark({
+      id: `upgrade:${u.id}`,
+      kind: 'upgrade',
+      severity: 'info',
+      title: src.t('page.entry.upgradeSucceeded', { version: u.to_version }),
+      detail: src.t('page.entry.upgradeDetail', {
+        from: u.from_version,
+        to: u.to_version,
+      }),
+      at: u.finished_at || u.started_at,
+      href: '/settings/updates',
+      resolved: true,
+      action: { type: 'link', to: '/settings/updates' },
     })
   }
   for (const f of src.feed ?? []) {
