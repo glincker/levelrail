@@ -216,6 +216,7 @@ type Router struct {
 	wakeTokenGuess         *loginLimiter     // failed wake-token guesses per client IP
 	functionLimiter        functions.Limiter // requests held per function while it wakes
 	devicePollLimit        *apiRateLimiter
+	dbRevealLimit          *apiRateLimiter
 	mfaVerify              *loginLimiter // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
 	sessionTTL             time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL
 	trustRoot              TrustRootProbe
@@ -950,6 +951,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		setupTokenGuess:             newLoginLimiter(),
 		wakeTokenGuess:              newLoginLimiter(),
 		devicePollLimit:             newAPIRateLimiter(devicePollPerMinute),
+		dbRevealLimit:               newDBRevealLimiter(),
 		mfaVerify:                   newLoginLimiter(),
 		pushSubscriptions:           s,
 		oauthSettings:               s,

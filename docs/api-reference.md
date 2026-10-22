@@ -823,6 +823,7 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/provision/retry | AbilityWrite | handleRetryDatabaseProvision |
 | POST | /api/v1/databases/{name}/provision/discard | AbilityWrite | handleDiscardPendingDatabase |
 | PUT | /api/v1/databases/{name}/pending-settings | AbilityWrite | handleUpdatePendingDatabase |
+| POST | /api/v1/databases/{name}/credentials/reveal | AbilityRoot | handleRevealDatabaseCredentials |
 
 ## Projects / Organizations / Environments
 
