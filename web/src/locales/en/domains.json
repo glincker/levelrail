@@ -987,5 +987,14 @@
     "save": "Save cap",
     "reset": "Use server value",
     "saved": "Request size cap saved."
+  },
+  "banner": {
+    "description": "Point your own web address at an app. HTTPS certificates are set up for you.",
+    "diagram": {
+      "domain": "app.example.com",
+      "certificate": "certificate",
+      "server": "server",
+      "browser": "browser"
+    }
   }
 }

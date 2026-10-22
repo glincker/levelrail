@@ -13,18 +13,36 @@ import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
 const URL_PATTERN =
   /^(?:(?:https?|ssh|git):\/\/[^\s/]+\/\S+|[\w.-]+@[\w.-]+:\S+)$/i
 
+const PUBLIC_HOSTS = ['github.com', 'gitlab.com', 'bitbucket.org']
+
+/** True when the pasted URL points somewhere other than a public hosted provider. */
+function needsPrivateOptions(raw: string): boolean {
+  const value = raw.trim()
+  if (value === '') return false
+  const host = /^(?:[a-z]+:\/\/)?(?:[^@/\s]+@)?([^/:\s]+)/i
+    .exec(value)?.[1]
+    ?.toLowerCase()
+  if (!host) return false
+  if (/^(?:ssh|git):\/\//i.test(value) || /^[\w.-]+@/.test(value)) return true
+  return !PUBLIC_HOSTS.includes(host.replace(/^www\./, ''))
+}
+
 /** Paste-a-URL path: any https git URL, with optional branch and access token. */
 export function GitUrlForm({
   busy,
+  hasProvider = false,
   onSource,
 }: {
   busy: boolean
+  hasProvider?: boolean
   onSource: (source: GitRepoSourceValue) => void
 }) {
   const { t } = useTranslation('newApp')
   const [url, setUrl] = useState('')
   const [branch, setBranch] = useState('')
   const [token, setToken] = useState('')
+  const [advancedOpen, setAdvancedOpen] = useState<boolean | null>(null)
+  const showAdvanced = advancedOpen ?? (hasProvider || needsPrivateOptions(url))
   const urlValid = URL_PATTERN.test(url.trim())
 
   function submit() {
@@ -57,7 +75,12 @@ export function GitUrlForm({
         />
         <FieldDescription>{t('source.url.hint')}</FieldDescription>
       </Field>
-      <Collapsible>
+      <Collapsible
+        open={showAdvanced}
+        onOpenChange={(next) => {
+          setAdvancedOpen(next)
+        }}
+      >
         <CollapsibleTrigger className="text-xs text-muted-foreground underline underline-offset-2">
           {t('source.url.advanced')}
         </CollapsibleTrigger>

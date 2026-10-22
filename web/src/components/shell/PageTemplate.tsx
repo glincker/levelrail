@@ -41,6 +41,8 @@ export interface PageTemplateProps {
   asideLabel?: string
   /** `page` (20px) by default; `greeting` (28px) is for the dashboard greeting only. */
   titleSize?: 'page' | 'greeting'
+  /** A PageBanner that replaces the plain header, e.g. an empty list. */
+  banner?: ReactNode
   className?: string
   children?: ReactNode
 }
@@ -63,6 +65,7 @@ export function PageTemplate({
   aside,
   asideLabel,
   titleSize = 'page',
+  banner,
   className,
   children,
 }: PageTemplateProps) {
@@ -100,56 +103,62 @@ export function PageTemplate({
         className,
       )}
     >
-      <header className="space-y-3">
-        {breadcrumb ? <div>{breadcrumb}</div> : null}
-        <div
-          data-slot="page-hero"
-          data-wrapped={wrapped}
-          className={cn(
-            'flex flex-wrap gap-3',
-            wrapped ? 'items-start' : 'items-center',
-          )}
-        >
-          {tile ? (
-            <div
-              data-slot="page-hero-tile"
-              className={cn('shrink-0', wrapped && eyebrow && 'mt-5')}
-            >
-              {tile}
-            </div>
-          ) : null}
-          <div className="min-w-0 flex-1 basis-64 space-y-1">
-            {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <Display as="h1" size={titleSize} className="min-w-0 break-words">
-                {title}
-              </Display>
-              {status}
-              {helpPath && helpLabel ? (
-                <HelpLink path={helpPath} label={helpLabel} />
+      {banner ?? (
+        <header className="space-y-3">
+          {breadcrumb ? <div>{breadcrumb}</div> : null}
+          <div
+            data-slot="page-hero"
+            data-wrapped={wrapped}
+            className={cn(
+              'flex flex-wrap gap-3',
+              wrapped ? 'items-start' : 'items-center',
+            )}
+          >
+            {tile ? (
+              <div
+                data-slot="page-hero-tile"
+                className={cn('shrink-0', wrapped && eyebrow && 'mt-5')}
+              >
+                {tile}
+              </div>
+            ) : null}
+            <div className="min-w-0 flex-1 basis-64 space-y-1">
+              {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <Display
+                  as="h1"
+                  size={titleSize}
+                  className="min-w-0 break-words"
+                >
+                  {title}
+                </Display>
+                {status}
+                {helpPath && helpLabel ? (
+                  <HelpLink path={helpPath} label={helpLabel} />
+                ) : null}
+              </div>
+              {description ? (
+                <div ref={descRef}>
+                  <Lede>{description}</Lede>
+                </div>
               ) : null}
             </div>
-            {description ? (
-              <div ref={descRef}>
-                <Lede>{description}</Lede>
+            {actions ? (
+              <div
+                data-slot="page-hero-actions"
+                className={cn(
+                  'flex min-w-0 basis-full flex-wrap items-center gap-2 lg:ml-auto lg:basis-auto lg:justify-end',
+                  wrapped && 'lg:self-start',
+                  wrapped && eyebrow && 'mt-5',
+                )}
+              >
+                {actions}
               </div>
             ) : null}
           </div>
-          {actions ? (
-            <div
-              data-slot="page-hero-actions"
-              className={cn(
-                'flex min-w-0 basis-full flex-wrap items-center gap-2 lg:ml-auto lg:basis-auto lg:justify-end',
-                wrapped && 'lg:self-start',
-                wrapped && eyebrow && 'mt-5',
-              )}
-            >
-              {actions}
-            </div>
-          ) : null}
-        </div>
-        {tabs ? <div className="border-b border-border">{tabs}</div> : null}
-      </header>
+          {tabs ? <div className="border-b border-border">{tabs}</div> : null}
+        </header>
+      )}
       {banners ? <div className="space-y-2 empty:hidden">{banners}</div> : null}
       {aside ? (
         <div

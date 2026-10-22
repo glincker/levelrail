@@ -1,7 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { BrandTile } from '../BrandLogoBadge'
+import { ingressSettingsQueryOptions } from '../../queries/domains'
 
 const PROVIDERS = [
   { id: 'github', label: 'GitHub', to: '/settings/github-app' },
@@ -13,6 +15,8 @@ const PROVIDERS = [
 /** One card per supported git provider, each linking to its existing connect flow. */
 export function GitProviderCards() {
   const { t } = useTranslation('newApp')
+  const { data: ingress } = useQuery(ingressSettingsQueryOptions())
+  const noPublicAddress = ingress !== undefined && !ingress.primary_domain
   return (
     <div className="space-y-2">
       <div>
@@ -45,6 +49,22 @@ export function GitProviderCards() {
           </li>
         ))}
       </ul>
+      {noPublicAddress ? (
+        <p className="text-sm text-muted-foreground">
+          {t('source.git.needsAddress')}{' '}
+          <button
+            type="button"
+            className="font-medium text-foreground underline underline-offset-2"
+            onClick={() => {
+              const input = document.getElementById('new-app-url')
+              input?.scrollIntoView({ block: 'center' })
+              input?.focus()
+            }}
+          >
+            {t('source.git.useUrlInstead')}
+          </button>
+        </p>
+      ) : null}
     </div>
   )
 }

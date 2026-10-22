@@ -13,8 +13,8 @@
     "allDoneTitle": "Everything is set up",
     "allDoneBody": "Every step is done or skipped. Reset the guide any time to review your choices.",
     "serverAddress": "This server's address: {{address}}",
-    "essentialTitle": "Start here",
-    "essentialHelp": "Four steps get you from a fresh install to an app running over HTTPS."
+    "essentialTitle": "Ship your first app",
+    "essentialHelp": "Create an app from a git link or a template, then open it in your browser."
   },
   "actions": {
     "skip": "Skip",
@@ -198,7 +198,7 @@
     }
   },
   "more": {
-    "title": "More recommended steps",
-    "help": "These make the server safer to run in production. None of them blocks your first deploy."
+    "title": "Make it production ready",
+    "help": "These make the server safer to run for real users. None of them blocks your first deploy."
   }
 }
