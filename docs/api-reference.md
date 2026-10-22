@@ -939,6 +939,8 @@ Endpoints for:
 | PUT | /api/v1/nodes/{id}/failure-policy | AbilityRoot | handleSetNodeFailurePolicy |
 | POST | /api/v1/nodes/{id}/failure/lost | AbilityRoot | handleMarkNodeLost |
 | POST | /api/v1/nodes/{id}/failure/resolve | AbilityRoot | handleResolveNodeFailure |
+| GET | /api/v1/nodes/domains | AbilityRoot | handleNodeDomains |
+| GET | /api/v1/nodes/{id}/onboarding | AbilityRoot | handleGetNodeOnboarding |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 

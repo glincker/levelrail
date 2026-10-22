@@ -1,6 +1,8 @@
 package api
 
 import (
+	"github.com/GLINCKER/levelrail/internal/cloudmeta"
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"net"
 	"strconv"
 	"strings"
@@ -44,6 +46,37 @@ type createNodeJoinTokenRequest struct {
 	ControlPlaneAddr string `json:"control_plane_addr"`
 	NodeName         string `json:"node_name"`
 	Mesh             bool   `json:"mesh"`
+	// Provider, Region and Zone are optional manual failure-domain labels the
+	// agent reports on first contact. Left empty, the agent auto-detects them.
+	Provider string `json:"provider,omitempty"`
+	Region   string `json:"region,omitempty"`
+	Zone     string `json:"zone,omitempty"`
+}
+
+// joinDomain is the validated manual failure-domain labels for a join command.
+type joinDomain struct{ Provider, Region, Zone string }
+
+func (d joinDomain) env() []string {
+	var out []string
+	for _, kv := range [][2]string{{cloudmeta.EnvProvider, d.Provider}, {cloudmeta.EnvRegion, d.Region}, {cloudmeta.EnvZone, d.Zone}} {
+		if kv[1] != "" {
+			out = append(out, kv[0]+"="+kv[1])
+		}
+	}
+	return out
+}
+
+// validJoinDomain accepts only values that are already valid node labels, so
+// nothing interpolated into the shell command can carry shell syntax.
+func validJoinDomain(req createNodeJoinTokenRequest) (joinDomain, error) {
+	d := joinDomain{Provider: req.Provider, Region: req.Region, Zone: req.Zone}
+	labels := map[string]string{}
+	for k, v := range map[string]string{"provider": d.Provider, "region": d.Region, "zone": d.Zone} {
+		if v != "" {
+			labels[k] = v
+		}
+	}
+	return d, placement.ValidateLabels(labels)
 }
 
 // joinCommands are ready-to-paste commands that enroll a server with one token.
@@ -64,7 +97,7 @@ func (rt *Router) defaultControlPlaneAddr() string {
 // buildJoinCommands renders the docker and binary join commands. Every
 // interpolated value is validated by the caller or generated server side,
 // so nothing here can inject shell syntax.
-func (rt *Router) buildJoinCommands(addr, token, caFingerprint, nodeName string, mesh bool) joinCommands {
+func (rt *Router) buildJoinCommands(addr, token, caFingerprint, nodeName string, mesh bool, domain joinDomain) joinCommands {
 	env := []string{"APP_CONTROL_PLANE_ADDR=" + addr, "APP_JOIN_TOKEN=" + token}
 	if caFingerprint != "" {
 		env = append(env, "APP_CA_FINGERPRINT="+caFingerprint)
@@ -78,6 +111,7 @@ func (rt *Router) buildJoinCommands(addr, token, caFingerprint, nodeName string,
 	if mesh {
 		env = append(env, "APP_MESH_ENABLED=1")
 	}
+	env = append(env, domain.env()...)
 
 	docker := []string{"docker run -d --restart unless-stopped --name " + agent, "--user 0:0 --network host",
 		"-v /var/run/docker.sock:/var/run/docker.sock", "-v " + dataDir + ":" + dataDir}

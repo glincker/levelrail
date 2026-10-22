@@ -218,6 +218,7 @@
               "acme-verification-runbook",
               "multi-node",
               "multi-node-quickstart",
+              "add-node-anywhere",
               "resource-aware-placement",
               "autoscaling",
               "node-provisioning",

@@ -12,6 +12,7 @@ type Evaluation struct {
 	Name       string      `json:"name"`
 	Zone       string      `json:"zone,omitempty"`
 	Region     string      `json:"region,omitempty"`
+	Provider   string      `json:"provider,omitempty"`
 	Eligible   bool        `json:"eligible"`
 	Reason     string      `json:"reason,omitempty"`
 	Capacity   bool        `json:"capacity_blocked,omitempty"`
