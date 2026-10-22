@@ -3,7 +3,9 @@
     "title": "Needs attention",
     "seeAll": "See all {{count}}",
     "askAi": "Ask AI",
-    "review": "Review"
+    "review": "Review",
+    "retryCopy": "Retry the copy",
+    "openDatabase": "Open database"
   },
   "fleet": {
     "databases": {
@@ -308,5 +310,11 @@
         "hint": "Postgres, MySQL, Redis and more"
       }
     }
+  },
+  "copyRetry": {
+    "title": "Retry the copy into {{name}}",
+    "description": "The previous source is filled in. Enter the password again, it is never stored. If the source requires encryption the copy retries with TLS on its own.",
+    "loading": "Loading the previous attempt...",
+    "missing": "This database has no copy to retry."
   }
 }
