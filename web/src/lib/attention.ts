@@ -56,6 +56,8 @@ export interface AttentionCopyMeta {
   state: 'failed' | 'stalled'
   hint?: string
   technical?: string
+  // Server failure class (ssl, auth, dns...), the root cause a group shares.
+  code?: string
   dismissKey: string
 }
 

@@ -226,6 +226,7 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
             state: p.state === 'failed' ? 'failed' : 'stalled',
             hint: p.hint,
             technical: p.technical,
+            code: p.code,
             dismissKey: f.id,
           },
         }

@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
+  CaretDownIcon,
   CheckCircleIcon,
   CircleDashedIcon,
   WarningCircleIcon,
@@ -14,7 +15,12 @@ import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 import type { AppListEntry } from '../../types/appDetail'
 import type { AppsSummary } from '../../queries/appPages'
-import { buildNextSteps, type NextStep } from '../../lib/dashboardHome'
+import {
+  buildNextSteps,
+  type AttentionStep,
+  type NextStep,
+  type StepGroup,
+} from '../../lib/dashboardHome'
 import { attentionToSuggestions } from '../../lib/fleetSuggestions'
 import {
   deploysPerHour,
@@ -31,7 +37,17 @@ import { useSuggestionRunner } from './useSuggestionRunner'
 
 const MAX_SHOWN = 4
 
-function StepRow({ step, onRun }: { step: NextStep; onRun: () => void }) {
+type SingleStep = Exclude<NextStep, StepGroup>
+
+function StepRow({
+  step,
+  onRun,
+  nested = false,
+}: {
+  step: SingleStep
+  onRun: () => void
+  nested?: boolean
+}) {
   const { t } = useTranslation(['dashboard', 'getStarted'])
   const attention = step.source === 'attention'
   const tone = attention ? step.tone : 'neutral'
@@ -52,7 +68,12 @@ function StepRow({ step, onRun }: { step: NextStep; onRun: () => void }) {
       ? t('dashboard:nextSteps.continue')
       : t(`getStarted:steps.${step.stepId}.cta`)
   return (
-    <li className="@container flex flex-col gap-3 py-3 first:pt-0 last:pb-0 @md:flex-row @md:items-center">
+    <li
+      className={cn(
+        '@container flex flex-col gap-3 py-3 @md:flex-row @md:items-center',
+        nested ? 'pl-8' : 'first:pt-0 last:pb-0',
+      )}
+    >
       <div className="flex min-w-0 flex-1 items-start gap-3">
         <span
           aria-hidden="true"
@@ -83,6 +104,74 @@ function StepRow({ step, onRun }: { step: NextStep; onRun: () => void }) {
   )
 }
 
+function GroupRow({
+  group,
+  onRun,
+}: {
+  group: StepGroup
+  onRun: (step: AttentionStep) => void
+}) {
+  const { t } = useTranslation('dashboard')
+  const [open, setOpen] = useState(false)
+  const count = group.items.length
+  return (
+    <li className="py-3 first:pt-0 last:pb-0">
+      <div className="@container flex flex-col gap-3 @md:flex-row @md:items-center">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <span
+            aria-hidden="true"
+            className={cn(
+              'mt-0.5 shrink-0 [&_svg]:size-5',
+              TONE[group.tone].text,
+            )}
+          >
+            <WarningIcon weight="fill" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-medium text-foreground">
+              {t('nextSteps.group.copy', { count })}
+            </span>
+            <span className="mt-0.5 line-clamp-2 block text-sm text-muted-foreground">
+              {group.detail}
+            </span>
+          </span>
+        </div>
+        <Button
+          size="sm"
+          variant="default"
+          aria-expanded={open}
+          className="self-start @md:self-auto"
+          onClick={() => {
+            setOpen((v) => !v)
+          }}
+        >
+          {open
+            ? t('nextSteps.group.hide')
+            : t('nextSteps.group.show', { count })}
+          <CaretDownIcon
+            aria-hidden="true"
+            className={cn('transition-transform', open && 'rotate-180')}
+          />
+        </Button>
+      </div>
+      {open ? (
+        <ul className="mt-2 divide-y divide-border border-l border-border">
+          {group.items.map((item) => (
+            <StepRow
+              key={item.id}
+              step={item}
+              nested
+              onRun={() => {
+                onRun(item)
+              }}
+            />
+          ))}
+        </ul>
+      ) : null}
+    </li>
+  )
+}
+
 export function NextStepsView({
   steps,
   loading,
@@ -94,7 +183,7 @@ export function NextStepsView({
   loading: boolean
   percent: number | undefined
   quiet: { running: number; total: number; deploys: number }
-  onRun: (step: NextStep) => void
+  onRun: (step: SingleStep) => void
 }) {
   const { t } = useTranslation('dashboard')
   return (
@@ -137,15 +226,19 @@ export function NextStepsView({
         </p>
       ) : (
         <ul className="divide-y divide-border">
-          {steps.map((s) => (
-            <StepRow
-              key={s.id}
-              step={s}
-              onRun={() => {
-                onRun(s)
-              }}
-            />
-          ))}
+          {steps.map((s) =>
+            s.source === 'group' ? (
+              <GroupRow key={s.id} group={s} onRun={onRun} />
+            ) : (
+              <StepRow
+                key={s.id}
+                step={s}
+                onRun={() => {
+                  onRun(s)
+                }}
+              />
+            ),
+          )}
         </ul>
       )}
     </section>

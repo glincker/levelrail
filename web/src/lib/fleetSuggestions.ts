@@ -28,6 +28,8 @@ export interface SuggestionSpec {
   tone: Tone
   title: string
   detail: string
+  // Items sharing a key are one root cause and render as one grouped row.
+  groupKey?: string
   actions: SuggestionActionSpec[]
 }
 
@@ -138,6 +140,7 @@ export function attentionToSuggestions(
     tone: item.severity === 'critical' ? 'danger' : 'warning',
     title: titleFor(item),
     detail: item.detail,
+    groupKey: item.copy?.code ? `copy:${item.copy.code}` : undefined,
     actions: actionsFor(item, t),
   }))
 }
