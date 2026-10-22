@@ -227,6 +227,7 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
             hint: p.hint,
             technical: p.technical,
             code: p.code,
+            database: name,
             dismissKey: f.id,
           },
         }

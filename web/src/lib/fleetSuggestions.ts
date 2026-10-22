@@ -13,6 +13,7 @@ export type ActionSpec =
   | { kind: 'domains' }
   | { kind: 'route'; to: '/settings/cli-access' | '/approvals' }
   | { kind: 'path'; to: string }
+  | { kind: 'copy-retry'; database: string }
   | { kind: 'system' }
   | { kind: 'cleanup' }
   | { kind: 'ask-ai'; message: string }
@@ -104,6 +105,19 @@ function actionsFor(
           ),
         ]
       case 'path':
+        if (item.copy?.database) {
+          return [
+            act(
+              t('needsAttention.retryCopy'),
+              { kind: 'copy-retry', database: item.copy.database },
+              true,
+            ),
+            act(t('needsAttention.openDatabase'), {
+              kind: 'path',
+              to: target.to,
+            }),
+          ]
+        }
         return [
           act(
             item.action ?? t('needsAttention.review'),

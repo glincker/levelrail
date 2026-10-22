@@ -58,6 +58,8 @@ export interface AttentionCopyMeta {
   technical?: string
   // Server failure class (ssl, auth, dns...), the root cause a group shares.
   code?: string
+  // The managed database the copy targets, for an in-place retry.
+  database?: string
   dismissKey: string
 }
 

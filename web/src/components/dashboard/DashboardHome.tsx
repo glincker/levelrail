@@ -25,6 +25,7 @@ import { FleetTiles } from './FleetTiles'
 import { NextSteps } from './NextSteps'
 import { RecentActivity } from './RecentActivity'
 import { AppsPanel } from './AppsPanel'
+import { CopyRetryDialog } from './CopyRetryDialog'
 import { StatusStrip } from './StatusStrip'
 import { WidgetFrame } from './WidgetFrame'
 import { QuickStart } from './QuickStart'
@@ -217,6 +218,7 @@ export function DashboardHome({
         </div>
       </div>
       <RecommendationsLine showSetup={false} />
+      <CopyRetryDialog />
     </DashboardHero>
   )
 }
