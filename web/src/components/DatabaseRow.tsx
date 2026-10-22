@@ -56,7 +56,23 @@ export function DatabaseRow({ database }: { database: DatabaseListEntry }) {
           {database.name}
         </Link>
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <StatusLabel status={database.status} />
+          {database.provision_state ? (
+            <span
+              className={
+                database.provision_state === 'failed'
+                  ? 'text-xs text-destructive'
+                  : 'text-xs text-muted-foreground'
+              }
+              title={database.provision_reason}
+              data-testid="provision-state"
+            >
+              {database.provision_state === 'failed'
+                ? t('list.failedToCreate')
+                : t('list.notCreated')}
+            </span>
+          ) : (
+            <StatusLabel status={database.status} />
+          )}
           {database.external ? (
             <Badge
               variant="outline"

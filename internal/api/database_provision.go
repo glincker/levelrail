@@ -17,6 +17,8 @@ func (rt *Router) registerDatabaseProvisionRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/databases/{name}/provision", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetDatabaseProvision))
 	mux.HandleFunc("GET /api/v1/databases/{name}/provision/stream", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.withStreamReauth(databaseResourceFromPath, rt.handleDatabaseProvisionStream)))
 	mux.HandleFunc("POST /api/v1/databases/{name}/provision/retry", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleRetryDatabaseProvision))
+	mux.HandleFunc("POST /api/v1/databases/{name}/provision/discard", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleDiscardPendingDatabase))
+	mux.HandleFunc("PUT /api/v1/databases/{name}/pending-settings", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleUpdatePendingDatabase))
 }
 
 func (rt *Router) provisionStore() dbprovision.Store {
@@ -111,12 +113,28 @@ func (rt *Router) handleRetryDatabaseProvision(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusNotImplemented, "provisioning progress is not available")
 		return
 	}
-	if req.Fix == dbprovision.FixRemoveVolume {
+	if _, ok := rt.pendingDatabaseOrWrite(w, r, name); !ok {
+		return
+	}
+	choice := ""
+	switch req.Fix {
+	case dbprovision.FixRemoveVolume:
 		if !req.Confirm {
 			writeError(w, http.StatusBadRequest, "removing the leftover volume deletes its data: send confirm true to proceed")
 			return
 		}
-		if !rt.removeLeftoverVolumes(w, r, name) {
+		choice = existingVolumeDiscard
+	case dbprovision.FixReuseVolume:
+		choice = existingVolumeReuse
+	}
+	if choice != "" {
+		s, ok := rt.databases.(existingVolumeSetter)
+		if !ok {
+			writeError(w, http.StatusNotImplemented, "storing the volume choice is not available")
+			return
+		}
+		if err := s.SetDatabaseExistingVolume(r.Context(), name, choice); err != nil {
+			rt.internalError(w, "api: retry provisioning: store volume choice failed", err, slog.String("name", name))
 			return
 		}
 	}
@@ -128,30 +146,4 @@ func (rt *Router) handleRetryDatabaseProvision(w http.ResponseWriter, r *http.Re
 		return
 	}
 	writeJSON(w, http.StatusAccepted, a)
-}
-
-func (rt *Router) removeLeftoverVolumes(w http.ResponseWriter, r *http.Request, name string) bool {
-	d, err := rt.databases.GetDesiredDatabase(r.Context(), name)
-	if err != nil {
-		rt.internalError(w, "api: retry provisioning: load database failed", err, slog.String("name", name))
-		return false
-	}
-	found, err := rt.leftoverDatabaseVolumes(r.Context(), name, d.NodeID)
-	if err != nil {
-		rt.internalError(w, "api: retry provisioning: list volumes failed", err, slog.String("name", name))
-		return false
-	}
-	for _, v := range found {
-		if v.Mounted {
-			writeError(w, http.StatusConflict, "volume "+v.Name+" is still attached to a container")
-			return false
-		}
-	}
-	for _, v := range found {
-		if err := rt.orphanedVolumes.RemoveVolume(r.Context(), v.Name); err != nil {
-			rt.internalError(w, "api: retry provisioning: remove volume failed", err, slog.String("name", name))
-			return false
-		}
-	}
-	return true
 }

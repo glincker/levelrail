@@ -268,6 +268,7 @@ type Controller struct {
 	slowQueryThresholdMs int
 	provRec              *dbprovision.Recorder
 	prov                 *dbprovision.Tracker
+	probe                func(ctx context.Context, addr string) error
 }
 
 // Option configures optional Controller behavior.
@@ -626,27 +627,34 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	pitrActive := desired.Engine == store.EnginePostgres && desired.PITREnabled
 
 	c.prov.Start(dbprovision.StepDockerCheck, "checking Docker")
+	state, err := c.runtime.InspectByName(ctx, target)
+	if err != nil {
+		if c.prov != nil {
+			return c.waitForDocker(err), nil
+		}
+		return notReady("InspectFailed", err), fmt.Errorf("database/%s: inspect %q: %w", c.dbName, target, err)
+	}
+	c.prov.Done(dbprovision.StepDockerCheck, "Docker answered")
+
 	if dataPath != "" {
 		c.prov.Start(dbprovision.StepCreateVolume, volName)
-		if err := c.runtime.EnsureVolume(ctx, volName); err != nil {
-			return notReady("VolumeFailed", err), fmt.Errorf("database/%s: ensure volume %q: %w", c.dbName, volName, err)
+		fresh := state == nil
+		if res, stop := c.settleVolume(ctx, desired, volName, fresh); stop {
+			return res, nil
 		}
-		c.prov.Done(dbprovision.StepDockerCheck, "Docker answered")
+		if err := c.runtime.EnsureVolume(ctx, volName); err != nil {
+			return notReady(reasonVolumeFailed, err), fmt.Errorf("database/%s: ensure volume %q: %w", c.dbName, volName, err)
+		}
+		c.markVolumeResolved(ctx, desired, fresh)
 		c.prov.Done(dbprovision.StepCreateVolume, volName)
 	} else {
 		c.prov.Skip(dbprovision.StepCreateVolume, "no persistent storage for this engine")
 	}
 	if pitrActive {
 		if err := c.runtime.EnsureVolume(ctx, walArchiveVolumeName(c.dbName)); err != nil {
-			return notReady("VolumeFailed", err), fmt.Errorf("database/%s: ensure wal archive volume: %w", c.dbName, err)
+			return notReady(reasonVolumeFailed, err), fmt.Errorf("database/%s: ensure wal archive volume: %w", c.dbName, err)
 		}
 	}
-
-	state, err := c.runtime.InspectByName(ctx, target)
-	if err != nil {
-		return notReady("InspectFailed", err), fmt.Errorf("database/%s: inspect %q: %w", c.dbName, target, err)
-	}
-	c.prov.Done(dbprovision.StepDockerCheck, "Docker answered")
 
 	spec := docker.ContainerSpec{
 		Name:    target,
@@ -822,8 +830,12 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		if state == nil || !state.Running {
 			return notReady("VanishedAfterStart", nil), fmt.Errorf("database/%s: %q not running immediately after starting it", c.dbName, target)
 		}
-		c.prov.Done(dbprovision.StepWaitReady, "container is running")
 	}
+	if res, ok := c.probeReady(ctx, state, meshPort); !ok {
+		return res, nil
+	}
+	c.prov.Start(dbprovision.StepApplySettings, settingsSummary(desired))
+	c.prov.Done(dbprovision.StepApplySettings, settingsSummary(desired))
 
 	if pitrActive {
 		if err := c.ensureWALArchiveWritable(ctx, target); err != nil {

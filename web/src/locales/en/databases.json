@@ -520,7 +520,10 @@
     "sizeMb": "{{value}} MB",
     "showing": "Showing {{shown}} of {{total}}",
     "showMore": "Show more",
-    "loading": "Loading databases"
+    "loading": "Loading databases",
+    "notCreated": "Not created yet",
+    "failedToCreate": "Failed to create",
+    "pendingActionHint": "Available once the database is created"
   },
   "detail": {
     "backupNow": "Back up now",
@@ -720,6 +723,19 @@
       "wait_ready": "Wait for connections",
       "apply_settings": "Apply size and backups",
       "ready": "Ready"
-    }
+    },
+    "host": "Host",
+    "port": "Port",
+    "url": "Connection string",
+    "passwordNote": "The password is never shown here. Open the database access page to manage credentials.",
+    "editVersion": "Version",
+    "editMemory": "Memory (MiB)",
+    "editSchedule": "Backup schedule (cron)",
+    "saveAndRetry": "Save and retry",
+    "leftoverVolume": "A deleted database of this name left the volume {{name}} ({{size}}) behind.",
+    "editSettings": "Edit settings",
+    "discard": "Discard",
+    "confirmDiscard": "This deletes the saved settings of this database. Nothing was created. Continue?",
+    "discardYes": "Discard database"
   }
 }

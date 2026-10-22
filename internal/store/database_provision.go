@@ -99,3 +99,50 @@ func (db *DB) LatestDatabaseProvisionAttempt(ctx context.Context, name string) (
 	}
 	return id, out, nil
 }
+
+// pendingDatabaseNamesSQL selects databases whose newest provisioning attempt
+// has not reached ready. Databases with no attempt (created before
+// provisioning steps existed) are not pending.
+const pendingDatabaseNamesSQL = `
+	SELECT e.database_name FROM database_provision_events e
+	WHERE e.id = (SELECT MAX(x.id) FROM database_provision_events x WHERE x.database_name = e.database_name)
+	AND NOT EXISTS (SELECT 1 FROM database_provision_events r WHERE r.attempt_id = e.attempt_id AND r.step = 'ready' AND r.status = 'done')`
+
+// PendingDatabaseNames returns the databases that have no running container
+// yet because creation is still in progress or failed.
+func (db *DB) PendingDatabaseNames(ctx context.Context) (map[string]bool, error) {
+	rows, err := db.QueryContext(ctx, pendingDatabaseNamesSQL)
+	if err != nil {
+		return nil, fmt.Errorf("store: list pending databases: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	out := map[string]bool{}
+	for rows.Next() {
+		var n string
+		if err := rows.Scan(&n); err != nil {
+			return nil, fmt.Errorf("store: scan pending database: %w", err)
+		}
+		out[n] = true
+	}
+	return out, rows.Err()
+}
+
+// SetDatabaseExistingVolume stores the owner's choice about a leftover volume.
+func (db *DB) SetDatabaseExistingVolume(ctx context.Context, name, choice string) error {
+	res, err := db.ExecContext(ctx, `UPDATE desired_databases SET existing_volume = ?, volume_resolved = 0 WHERE name = ?`, choice, name)
+	if err != nil {
+		return fmt.Errorf("store: set existing volume choice for database %q: %w", name, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrDatabaseNotFound
+	}
+	return nil
+}
+
+// SetDatabaseVolumeResolved latches that the leftover-volume question is settled.
+func (db *DB) SetDatabaseVolumeResolved(ctx context.Context, name string) error {
+	if _, err := db.ExecContext(ctx, `UPDATE desired_databases SET volume_resolved = 1 WHERE name = ?`, name); err != nil {
+		return fmt.Errorf("store: mark volume resolved for database %q: %w", name, err)
+	}
+	return nil
+}

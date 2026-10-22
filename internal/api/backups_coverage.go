@@ -155,6 +155,7 @@ func (rt *Router) coverageResources(ctx context.Context, health []backup.Resourc
 	if err != nil {
 		return nil, fmt.Errorf("list databases: %w", err)
 	}
+	dbs = rt.withoutPendingDatabases(ctx, dbs)
 	services, err := rt.apps.ListDesiredServices(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list apps: %w", err)

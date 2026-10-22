@@ -112,6 +112,7 @@ func (rt *Router) databaseAttentionItems(r *http.Request, abilities []string, no
 		rt.logger.Warn("api: attention feed: list databases failed", slog.String("error", err.Error()))
 		return nil
 	}
+	dbs = rt.withoutPendingDatabases(ctx, dbs)
 	canSee, err := rt.databaseVisibilityFilter(r)
 	if err != nil {
 		rt.logger.Warn("api: attention feed: database visibility failed", slog.String("error", err.Error()))

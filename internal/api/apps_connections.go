@@ -203,6 +203,9 @@ func (rt *Router) handleListConnectableDatabases(w http.ResponseWriter, r *http.
 		databases, err = rt.databases.ListDesiredDatabasesByProject(r.Context(), svc.ProjectID)
 	} else {
 		databases, err = rt.databases.ListDesiredDatabases(r.Context())
+		if err == nil {
+			databases = rt.withoutPendingDatabases(r.Context(), databases)
+		}
 	}
 	if err != nil {
 		rt.internalError(w, "api: list connectable databases: list databases failed", err, slog.String("name", name))

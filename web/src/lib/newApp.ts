@@ -6,11 +6,7 @@ import {
 } from './deployOptions'
 import { createApp } from '../queries/apps'
 import { createAppConnection } from '../queries/appConnections'
-import {
-  createDatabase,
-  fetchDatabase,
-  setDatabaseBackupSchedule,
-} from '../queries/databases'
+import { createDatabase, fetchDatabase } from '../queries/databases'
 import { triggerBuild } from '../queries/builds'
 import { setGitSource } from '../queries/gitSources'
 import { setGitBuild } from '../queries/gitBuildSettings'
@@ -245,17 +241,18 @@ async function ensureDatabase(d: DatabaseEdit): Promise<void> {
   } catch (err) {
     if (!(err instanceof ApiError) || err.status !== 404) throw err
   }
-  await createDatabase({ name: d.name, engine: d.engine, version: d.version })
-  if (d.backup) {
-    // Best effort: a missing schedule must not block the deploy.
-    await setDatabaseBackupSchedule({
-      name: d.name,
-      targetId: d.backup.targetId,
-      schedule: d.backup.schedule,
-      retain: d.backup.retain,
-      retainDays: 0,
-    }).catch(() => undefined)
-  }
+  await createDatabase({
+    name: d.name,
+    engine: d.engine,
+    version: d.version,
+    ...(d.backup
+      ? {
+          backup_target_id: d.backup.targetId,
+          backup_schedule: d.backup.schedule,
+          backup_retain: d.backup.retain,
+        }
+      : {}),
+  })
 }
 
 export interface ApplyResult {

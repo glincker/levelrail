@@ -86,6 +86,25 @@ export function DatabaseActionBar({
     }
   }
 
+  if (database.provision_state) {
+    return (
+      <>
+        <Button
+          size="sm"
+          disabled
+          title={t('list.pendingActionHint')}
+          data-testid="pending-actions-disabled"
+        >
+          <CloudArrowUpIcon aria-hidden="true" />
+          {t('detail.backupNow')}
+        </Button>
+        <p className="text-xs text-muted-foreground">
+          {t('list.pendingActionHint')}
+        </p>
+      </>
+    )
+  }
+
   return (
     <>
       <ConnectDrawer database={database} />

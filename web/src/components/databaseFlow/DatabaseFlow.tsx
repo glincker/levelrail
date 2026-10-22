@@ -27,12 +27,7 @@ import { ApiErrorAlert } from '../ApiErrorAlert'
 import { useDockerDegradedPoll } from '../../queries/dockerIntegration'
 import { useBackupTargetsOptional } from '../../queries/backupTargets'
 import { useDatabaseEnginesOptional } from '../../queries/databaseEngines'
-import {
-  useCreateDatabase,
-  useDatabases,
-  useSetDatabaseBackupSchedule,
-  useSetDatabaseResources,
-} from '../../queries/databases'
+import { useCreateDatabase, useDatabases } from '../../queries/databases'
 import { useDatabaseVersions } from '../../queries/databaseVersions'
 import { useSystemStatusOptional } from '../../queries/systemStatus'
 import { ExistingVolumePrompt } from '../ExistingVolumePrompt'
@@ -73,8 +68,6 @@ export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
   const targets = useBackupTargetsOptional().data ?? []
   const systemStatus = useSystemStatusOptional()
   const create = useCreateDatabase()
-  const setResources = useSetDatabaseResources()
-  const setSchedule = useSetDatabaseBackupSchedule()
 
   const initialEngine = engines[0]?.id ?? DEFAULT_ENGINE.id
   const [base, setValues] = useState<DbValues>({
@@ -131,33 +124,19 @@ export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
           values.projectId === NO_PROJECT ? undefined : values.projectId,
         node_id: values.nodeId === LOCAL_NODE ? undefined : values.nodeId,
         existing_volume: volume,
+        resources: presetResources(values.preset),
+        ...(target && values.backups && supportsBackups(values.engine)
+          ? {
+              backup_target_id: target.id,
+              backup_schedule: scheduleCron(values.schedule),
+              backup_retain: backupRetain(),
+            }
+          : {}),
       })
     } catch {
       return
     }
-    const followUps: Promise<unknown>[] = [
-      setResources.mutateAsync({
-        name,
-        resources: presetResources(values.preset),
-      }),
-    ]
-    if (target && values.backups && supportsBackups(values.engine)) {
-      followUps.push(
-        setSchedule.mutateAsync({
-          name,
-          targetId: target.id,
-          schedule: scheduleCron(values.schedule),
-          retain: backupRetain(),
-          retainDays: 0,
-        }),
-      )
-    }
-    const results = await Promise.allSettled(followUps)
-    const partial = results.some((r) => r.status === 'rejected')
-    toast.add({
-      title: t(partial ? 'flow.createdPartial' : 'flow.created', { name }),
-      type: partial ? 'warning' : 'success',
-    })
+    toast.add({ title: t('flow.created', { name }), type: 'success' })
     onClose()
     void navigate({ to: '/databases/$name', params: { name } })
   }
@@ -175,8 +154,7 @@ export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
   const dockerDownError = new ApiError(503, t('flow.dockerDown'), {
     code: 'docker_unavailable',
   })
-  const pending =
-    create.isPending || setResources.isPending || setSchedule.isPending
+  const pending = create.isPending
   const volumeError =
     create.error instanceof ExistingVolumeError ? create.error : null
   const ready = values.name.trim() !== '' && values.version.trim() !== ''
@@ -380,11 +358,7 @@ export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
         <Button type="button" variant="outline" onClick={onClose}>
           {t('flow.cancel')}
         </Button>
-        <Button
-          type="submit"
-          disabled={pending || dockerDown}
-          title={dockerDown ? t('flow.dockerDown') : undefined}
-        >
+        <Button type="submit" disabled={pending}>
           {pending ? t('flow.submitting') : t('flow.submit')}
         </Button>
       </DialogFooter>

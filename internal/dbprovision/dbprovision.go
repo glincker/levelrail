@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -57,7 +58,41 @@ const (
 	FixRetry         = "retry"
 	FixRemoveVolume  = "remove_leftover_volume"
 	FixFreeDisk      = "free_disk"
+	FixReuseVolume   = "reuse_existing_volume"
+	FixChooseName    = "choose_another_name"
 )
+
+// ReasonLeftoverVolume is the Ready-condition reason of the create_volume stop.
+const ReasonLeftoverVolume = "LeftoverVolume"
+
+// LeftoverVolumeError is the create_volume stop for a data volume a deleted
+// database of the same name left behind.
+type LeftoverVolumeError struct {
+	Name      string
+	SizeBytes int64
+}
+
+func (e *LeftoverVolumeError) Error() string {
+	return fmt.Sprintf("leftover volume %s (%d bytes) from a deleted database of the same name", e.Name, e.SizeBytes)
+}
+
+var leftoverRe = regexp.MustCompile(`leftover volume (\S+) \((-?\d+) bytes\)`)
+
+// ParseLeftover extracts the volume name and size from a LeftoverVolumeError text.
+func ParseLeftover(text string) (VolumeInfo, bool) {
+	m := leftoverRe.FindStringSubmatch(text)
+	if m == nil {
+		return VolumeInfo{}, false
+	}
+	size, _ := strconv.ParseInt(m[2], 10, 64)
+	return VolumeInfo{Name: m[1], SizeBytes: size}, true
+}
+
+// VolumeInfo names the leftover volume a failure is about.
+type VolumeInfo struct {
+	Name      string `json:"name"`
+	SizeBytes int64  `json:"size_bytes,omitempty"`
+}
 
 // Environment variables.
 const (
@@ -254,6 +289,10 @@ func FailStepForReason(reason string, pullFinished bool, errText string) string 
 		return StepCreateVolume
 	case "InspectFailed":
 		return StepDockerCheck
+	case ReasonLeftoverVolume:
+		return StepCreateVolume
+	case "NotAcceptingConnections":
+		return StepWaitReady
 	case "CreateFailed", "ReplaceFailed":
 		if !pullFinished || strings.Contains(errText, "pull image") {
 			return StepPullImage
@@ -280,6 +319,8 @@ type Fix struct {
 func ClassifyFix(step, errText string) *Fix {
 	e := strings.ToLower(errText)
 	switch {
+	case strings.Contains(e, "leftover volume") && strings.Contains(e, "bytes)"):
+		return &Fix{ID: FixRemoveVolume, Label: "Remove leftover volume and retry", Confirm: true}
 	case strings.Contains(e, "docker-guard.sock") || strings.Contains(e, "not responding") ||
 		strings.Contains(e, "cannot connect to the docker daemon"):
 		return &Fix{ID: FixRecheckDocker, Label: "Re-check Docker"}
@@ -319,6 +360,9 @@ type Failure struct {
 	Step   string `json:"step"`
 	Reason string `json:"reason"`
 	Fix    *Fix   `json:"fix,omitempty"`
+	// Fixes lists every choice when the stop needs the owner to decide.
+	Fixes  []Fix       `json:"fixes,omitempty"`
+	Volume *VolumeInfo `json:"volume,omitempty"`
 }
 
 // Attempt is the latest provisioning attempt of a database.
@@ -359,6 +403,14 @@ func View(id string, events []store.DatabaseProvisionEvent) Attempt {
 	for _, sv := range a.Steps {
 		if sv.Status == StatusFailed {
 			a.Failure = &Failure{Step: sv.Step, Reason: sv.Detail, Fix: ClassifyFix(sv.Step, sv.Detail)}
+			if v, ok := ParseLeftover(sv.Detail); ok {
+				a.Failure.Volume = &v
+				a.Failure.Fixes = []Fix{
+					{ID: FixReuseVolume, Label: "Reuse the existing volume"},
+					{ID: FixRemoveVolume, Label: "Remove leftover volume and retry", Confirm: true},
+					{ID: FixChooseName, Label: "Choose another name"},
+				}
+			}
 			break
 		}
 	}

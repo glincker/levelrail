@@ -1571,11 +1571,12 @@ type DatabaseResource struct {
 	// ExistingVolume is request-only: "reuse" or "discard" the data volume a
 	// deleted database of the same name left behind.
 	ExistingVolume string `json:"existing_volume,omitempty"`
-	// Resources, PubliclyAccessible, PublicPort, and the Backup* fields
-	// are set through their own dedicated routes (SetDatabaseResources,
-	// SetDatabasePublicAccess, SetBackupSchedule), never through this
-	// resource's own create/update body; see internal/api's
-	// databaseResource for the identical boundary server-side.
+	// Resources and the Backup* fields may be sent at create time and are
+	// stored with the record; the dedicated PUT routes still work for a
+	// database that exists. ProvisionState is "pending" or "failed" while no
+	// container exists yet.
+	ProvisionState     string            `json:"provision_state,omitempty"`
+	ProvisionReason    string            `json:"provision_reason,omitempty"`
 	Resources          *ServiceResources `json:"resources,omitempty"`
 	PubliclyAccessible bool              `json:"publicly_accessible,omitempty"`
 	PublicPort         int               `json:"public_port,omitempty"`

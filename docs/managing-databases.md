@@ -34,7 +34,17 @@ levelrail-cli databases create --interactive
 </Tab>
 <Tab title="API">
 
-`POST /api/v1/databases` writes the desired state (name, engine, version) and returns immediately. The reconciler starts the container on its next pass. If credentials are needed but do not exist yet, the reconciler refuses to start and reports that as a status condition. Check `GET /api/v1/databases/{name}/status`.
+`POST /api/v1/databases` validates the request, stores the record with all of its settings (size preset in `resources`, backup schedule fields, node, project, `existing_volume`) and returns `201` right away, even when Docker is down. The record shows `provision_state: "pending"` until the reconciler has a running container that accepts connections; the reconciler does every Docker step. Follow it with `GET /api/v1/databases/{name}/provision` (or the `.../provision/stream` SSE feed). Check `GET /api/v1/databases/{name}/status` for conditions.
+
+### Your settings are never lost
+
+A database that has no container yet shows as "Not created yet" (pending) or "Failed to create" (with the reason). Backup, restore, connect and attach actions stay disabled for it, and the backup scheduler skips it. If Docker is not reachable, the Check Docker step reads "Waiting for Docker" and retries on its own (`APP_DB_DOCKER_WAIT_INTERVAL`, doubling up to `APP_RECONCILE_REQUEUE_MAX`); "Re-check Docker" retries immediately. A step that stays failed offers:
+
+- Retry: `POST /api/v1/databases/{name}/provision/retry`.
+- Edit settings: `PUT /api/v1/databases/{name}/pending-settings` (version, size, backup schedule), then Retry. Only allowed while no container exists.
+- Discard: `POST /api/v1/databases/{name}/provision/discard` with `{"confirm": true}` deletes the saved record. Data volumes are untouched.
+
+"Ready" means the engine port accepts a TCP connection on the container address (`APP_DB_READY_PROBE_INTERVAL`, `APP_DB_READY_TIMEOUT`). The API never returns the database password, so the ready panel shows host, port and a masked connection string.
 
 </Tab>
 <Tab title="Dashboard">
@@ -198,7 +208,7 @@ If apps still connect to the database, delete is refused with a `409` naming the
 
 ### Reusing a name after a delete
 
-Because the data volume survives, a new database with the same name would find the old data. The create is refused with a `409` (`code: "existing_volume"`, listing the volumes and their sizes) until you choose what to do with it:
+Because the data volume survives, a new database with the same name would find the old data. The create is still accepted (`201`), but the reconciler's Create storage step stops and asks you to choose, showing the volume name and size: "Reuse the existing volume", "Remove leftover volume and retry" (needs an explicit confirm) or "Choose another name". Sending `existing_volume` in the create request stores the choice up front:
 
 | Choice | API field | CLI | Dashboard | Effect |
 | --- | --- | --- | --- | --- |

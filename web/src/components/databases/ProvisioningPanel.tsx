@@ -15,10 +15,19 @@ import { Progress } from '@/components/ui/progress'
 import { dockerIntegrationKeys } from '../../queries/dockerIntegration'
 import {
   useDatabaseProvision,
+  useDiscardPending,
   useRetryProvision,
+  useUpdatePendingSettings,
+  type PendingSettings,
   type ProvisionAttempt,
+  type ProvisionFix,
   type ProvisionStep,
 } from '../../queries/databaseProvision'
+import { PendingSettingsForm, ReadyConnection } from './ProvisioningExtras'
+import {
+  connectionFor,
+  type ProvisionConnection,
+} from '../../lib/provisionConnection'
 
 function elapsed(
   from: string | undefined,
@@ -75,15 +84,25 @@ export function ProvisioningView({
   attempt,
   onFix,
   fixPending,
+  onSaveSettings,
+  onDiscard,
+  connection,
+  initialVersion,
 }: {
   name: string
   attempt: ProvisionAttempt
   onFix: (fix: string, confirm: boolean) => void
   fixPending?: boolean
+  onSaveSettings?: (s: PendingSettings) => void
+  onDiscard?: () => void
+  connection?: ProvisionConnection
+  initialVersion?: string
 }) {
   const { t } = useTranslation('databases')
   const [now, setNow] = useState(() => Date.now())
-  const [confirming, setConfirming] = useState(false)
+  const [confirming, setConfirming] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [discarding, setDiscarding] = useState(false)
   const [showLog, setShowLog] = useState(false)
   const active = attempt.status === 'in_progress'
   useEffect(() => {
@@ -97,7 +116,18 @@ export function ProvisioningView({
   }, [active])
 
   const current = attempt.steps.find((s) => s.status === 'started')
-  const fix = attempt.failure?.fix
+  const fixes = attempt.failure?.fixes?.length
+    ? attempt.failure.fixes
+    : attempt.failure?.fix
+      ? [attempt.failure.fix]
+      : []
+  const volume = attempt.failure?.volume
+
+  function runFix(f: ProvisionFix) {
+    if (f.id === 'choose_another_name') setDiscarding(true)
+    else if (f.confirm) setConfirming(f.id)
+    else onFix(f.id, false)
+  }
 
   return (
     <Card data-testid="provisioning-panel">
@@ -167,49 +197,60 @@ export function ProvisioningView({
               })}{' '}
               {attempt.failure.reason}
             </p>
+            {volume ? (
+              <p className="text-xs text-muted-foreground">
+                {t('provision.leftoverVolume', {
+                  name: volume.name,
+                  size: volume.size_bytes
+                    ? `${Math.max(1, Math.round(volume.size_bytes / 1048576))} MiB`
+                    : '?',
+                })}
+              </p>
+            ) : null}
             <div className="flex flex-wrap gap-2">
-              {fix ? (
-                confirming ? (
-                  <>
-                    <p className="w-full text-xs text-muted-foreground">
-                      {t('provision.confirmRemoveVolume')}
-                    </p>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="destructive"
-                      disabled={fixPending}
-                      onClick={() => {
-                        onFix(fix.id, true)
-                        setConfirming(false)
-                      }}
-                    >
-                      {t('provision.confirmYes')}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setConfirming(false)
-                      }}
-                    >
-                      {t('provision.cancel')}
-                    </Button>
-                  </>
-                ) : (
+              {confirming ? (
+                <>
+                  <p className="w-full text-xs text-muted-foreground">
+                    {t('provision.confirmRemoveVolume')}
+                  </p>
                   <Button
                     type="button"
                     size="sm"
+                    variant="destructive"
                     disabled={fixPending}
                     onClick={() => {
-                      if (fix.confirm) setConfirming(true)
-                      else onFix(fix.id, false)
+                      onFix(confirming, true)
+                      setConfirming(null)
                     }}
                   >
-                    {fix.label}
+                    {t('provision.confirmYes')}
                   </Button>
-                )
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setConfirming(null)
+                    }}
+                  >
+                    {t('provision.cancel')}
+                  </Button>
+                </>
+              ) : fixes.length > 0 ? (
+                fixes.map((f) => (
+                  <Button
+                    key={f.id}
+                    type="button"
+                    size="sm"
+                    variant={f.id === fixes[0]?.id ? 'default' : 'outline'}
+                    disabled={fixPending}
+                    onClick={() => {
+                      runFix(f)
+                    }}
+                  >
+                    {f.label}
+                  </Button>
+                ))
               ) : (
                 <Button
                   type="button"
@@ -224,6 +265,79 @@ export function ProvisioningView({
               )}
             </div>
           </div>
+        ) : null}
+
+        {attempt.status !== 'ready' && (onSaveSettings || onDiscard) ? (
+          <div className="space-y-2">
+            {editing && onSaveSettings ? (
+              <PendingSettingsForm
+                initial={{ version: initialVersion }}
+                busy={fixPending}
+                onSave={(s) => {
+                  onSaveSettings(s)
+                  setEditing(false)
+                }}
+                onCancel={() => {
+                  setEditing(false)
+                }}
+              />
+            ) : discarding && onDiscard ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="w-full text-xs text-muted-foreground">
+                  {t('provision.confirmDiscard')}
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  onClick={onDiscard}
+                >
+                  {t('provision.discardYes')}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setDiscarding(false)
+                  }}
+                >
+                  {t('provision.cancel')}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {onSaveSettings ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setEditing(true)
+                    }}
+                  >
+                    {t('provision.editSettings')}
+                  </Button>
+                ) : null}
+                {onDiscard ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setDiscarding(true)
+                    }}
+                  >
+                    {t('provision.discard')}
+                  </Button>
+                ) : null}
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        {attempt.status === 'ready' && connection ? (
+          <ReadyConnection c={connection} />
         ) : null}
 
         {attempt.status === 'ready' ? (
@@ -277,12 +391,20 @@ export function ProvisioningView({
 export function ProvisioningPanel({
   name,
   hideWhenReady,
+  engine,
+  version,
+  onDiscarded,
 }: {
   name: string
   hideWhenReady?: boolean
+  engine?: string
+  version?: string
+  onDiscarded?: () => void
 }) {
   const q = useDatabaseProvision(name)
   const retry = useRetryProvision(name)
+  const update = useUpdatePendingSettings(name)
+  const discard = useDiscardPending(name)
   const qc = useQueryClient()
   const attempt = q.data
   if (!attempt || (hideWhenReady && attempt.status === 'ready')) return null
@@ -290,7 +412,19 @@ export function ProvisioningPanel({
     <ProvisioningView
       name={name}
       attempt={attempt}
-      fixPending={retry.isPending}
+      fixPending={retry.isPending || update.isPending}
+      connection={connectionFor(name, engine)}
+      initialVersion={version}
+      onSaveSettings={(s) => {
+        update.mutate(s, {
+          onSuccess: () => {
+            retry.mutate({})
+          },
+        })
+      }}
+      onDiscard={() => {
+        discard.mutate(undefined, { onSuccess: onDiscarded })
+      }}
       onFix={(fix, confirm) => {
         if (fix === 'recheck_docker') {
           void qc.invalidateQueries({ queryKey: dockerIntegrationKeys.health })

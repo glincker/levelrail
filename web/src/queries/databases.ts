@@ -164,6 +164,12 @@ export interface CreateDatabaseRequest {
   project_id?: string
   node_id?: string
   existing_volume?: 'reuse' | 'discard'
+  // Stored with the record and applied by the reconciler after the container runs.
+  resources?: { memory_bytes?: number; nano_cpus?: number }
+  backup_target_id?: string
+  backup_schedule?: string
+  backup_retain?: number
+  backup_retain_days?: number
 }
 
 // POST /api/v1/databases. Rejects a name that already exists with a 409
