@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -133,7 +134,9 @@ func (c *Controller) probeReady(ctx context.Context, state *docker.ContainerStat
 			break
 		}
 	}
-	if ip == "" {
+	// Docker Desktop does not route container IPs to the host, so a host-side
+	// dial can never succeed there.
+	if ip == "" || (c.probe == nil && runtime.GOOS != "linux") {
 		c.prov.Done(dbprovision.StepWaitReady, "container is running")
 		return reconcile.Result{}, true
 	}
