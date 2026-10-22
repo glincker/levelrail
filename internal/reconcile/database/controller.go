@@ -668,6 +668,9 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		// No persistence (Memcached): no data volume to create or mount.
 		spec.Volumes = nil
 	}
+	// Newer official images drop privileges with setpriv, which needs SETPCAP
+	// to shrink the bounding set; the minimal cap list leaves it out.
+	spec.CapAdd = append(spec.CapAdd, "SETPCAP")
 	for _, fn := range customize {
 		fn(&spec)
 	}
