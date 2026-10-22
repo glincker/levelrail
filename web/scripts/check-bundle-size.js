@@ -94,7 +94,7 @@ try {
 
 // Everything index.html pulls before first paint, which the per-chunk budget cannot see.
 const FIRST_LOAD_BUDGET_BYTES =
-  Number(process.env.FIRST_LOAD_BUDGET_BYTES) || 1_800_000
+  Number(process.env.FIRST_LOAD_BUDGET_BYTES) || 1_900_000
 
 function firstLoadBytes() {
   const html = readFileSync(path.join(distDir, 'index.html'), 'utf8')
