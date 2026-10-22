@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,7 +10,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 import type {
+  RouteKind,
+  TrafficKindTotal,
   TrafficLabel,
   TrafficReplica,
   TrafficRoute,
@@ -84,6 +87,34 @@ export function ReplicaTable({ rows }: Readonly<{ rows: TrafficReplica[] }>) {
   )
 }
 
+function RouteRows({ rows }: Readonly<{ rows: TrafficRoute[] }>) {
+  const { t } = useTranslation('trafficDetail')
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>{t('routes.route')}</TableHead>
+          <TableHead className="text-right">{t('routes.requests')}</TableHead>
+          <TableHead className="text-right">{t('routes.avg')}</TableHead>
+          <TableHead className="text-right">{t('routes.error5xx')}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((r) => (
+          <TableRow key={r.route}>
+            <TableCell className="font-mono text-xs">{r.route}</TableCell>
+            <TableCell className={NUM}>{r.requests}</TableCell>
+            <TableCell className={NUM}>{formatMs(r.avg_ms)}</TableCell>
+            <TableCell className={NUM}>
+              {formatPercent(r.error_rate_5xx)}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+}
+
 export function SlowRouteTable({
   rows,
   top = false,
@@ -99,32 +130,60 @@ export function SlowRouteTable({
           {t(top ? 'routes.topEmpty' : 'routes.empty')}
         </p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('routes.route')}</TableHead>
-              <TableHead className="text-right">
-                {t('routes.requests')}
-              </TableHead>
-              <TableHead className="text-right">{t('routes.avg')}</TableHead>
-              <TableHead className="text-right">
-                {t('routes.error5xx')}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((r) => (
-              <TableRow key={r.route}>
-                <TableCell className="font-mono text-xs">{r.route}</TableCell>
-                <TableCell className={NUM}>{r.requests}</TableCell>
-                <TableCell className={NUM}>{formatMs(r.avg_ms)}</TableCell>
-                <TableCell className={NUM}>
-                  {formatPercent(r.error_rate_5xx)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <RouteRows rows={rows} />
+      )}
+    </Section>
+  )
+}
+
+const KINDS: RouteKind[] = ['page', 'api', 'asset']
+
+/** TopRoutesCard lists the busiest routes per kind, pages first, so static files never bury the pages. */
+export function TopRoutesCard({
+  rows,
+  totals,
+}: Readonly<{
+  rows: TrafficRoute[]
+  totals?: Partial<Record<RouteKind, TrafficKindTotal>>
+}>) {
+  const { t } = useTranslation('trafficDetail')
+  const [kind, setKind] = useState<RouteKind>('page')
+  const shown = rows.filter((r) => (r.kind ?? 'page') === kind)
+  return (
+    <Section
+      title={t(`routes.topTitleByKind.${kind}`)}
+      hint={t(`routes.kindHint.${kind}`)}
+    >
+      <div
+        role="tablist"
+        aria-label={t('routes.kindTabs')}
+        className="mb-3 flex flex-wrap gap-2"
+      >
+        {KINDS.map((k) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={kind === k}
+            onClick={() => {
+              setKind(k)
+            }}
+            className={cn(
+              'rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground',
+              kind === k && 'bg-muted text-foreground',
+            )}
+          >
+            {t(`routes.kind.${k}`)}
+            <span className="ml-1.5 tabular-nums">
+              {totals?.[k]?.requests ?? 0}
+            </span>
+          </button>
+        ))}
+      </div>
+      {shown.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t('routes.topEmpty')}</p>
+      ) : (
+        <RouteRows rows={shown} />
       )}
     </Section>
   )
