@@ -17,6 +17,7 @@ interface Props {
   attempt: SelfUpgradeAttempt | undefined
   startedAt: number | null
   reconnecting: boolean
+  showReload?: boolean
 }
 
 function connectorClass(
@@ -39,6 +40,7 @@ export function UpgradePipeline({
   attempt,
   startedAt,
   reconnecting,
+  showReload = true,
 }: Props) {
   const { t } = useTranslation('updates')
   const motion = !usePrefersReducedMotion()
@@ -148,13 +150,15 @@ export function UpgradePipeline({
               {t('pipeline.backupAt', { name: attempt.backup_name })}
             </span>
           ) : null}
-          <button
-            type="button"
-            className="ml-auto rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
-            onClick={() => window.location.reload()}
-          >
-            {t('pipeline.reload')}
-          </button>
+          {showReload ? (
+            <button
+              type="button"
+              className="ml-auto rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+              onClick={() => window.location.reload()}
+            >
+              {t('pipeline.reload')}
+            </button>
+          ) : null}
         </div>
       ) : null}
       {outcome !== 'running' && outcome !== 'succeeded' && attempt ? (

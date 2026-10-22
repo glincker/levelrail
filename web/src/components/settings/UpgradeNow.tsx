@@ -11,9 +11,12 @@ import {
   selfUpgradeAttemptsQueryOptions,
   UPGRADE_POLL_MS,
   selfUpgradePlanQueryOptions,
+  selfUpgradeStatusQueryOptions,
   type SelfUpgradeAttempt,
+  UpgradeRunningError,
   useStartSelfUpgrade,
 } from '../../queries/selfUpgrade'
+import { isSeen, markSeen } from '../../lib/upgradeSeen'
 import { scheduleQueryOptions } from '../../queries/upgradeSchedule'
 import { ShieldCheck } from '@phosphor-icons/react/dist/ssr'
 import { CliFallback } from './CliFallback'
@@ -82,8 +85,11 @@ export function UpgradeNow() {
     startedAt === null
       ? undefined
       : findFinished(attempts.data ?? [], target, startedAt)
+  const serverStatus = useQuery(selfUpgradeStatusQueryOptions())
   const active =
-    running !== undefined || (startedAt !== null && !finishedAttempt)
+    running !== undefined ||
+    Boolean(serverStatus.data?.running) ||
+    (startedAt !== null && !finishedAttempt)
   const status = useQuery({
     ...updatesQueryOptions(),
     refetchInterval: active ? POLL_MS : false,
@@ -103,9 +109,26 @@ export function UpgradeNow() {
     )
     return () => window.clearTimeout(id)
   }, [finishedVersion, target, t])
-  const recent = (attempts.data ?? []).find(
-    (a) => a.id !== dismissed && isRecentFinished(a),
+  const unseenFinished =
+    finishedAttempt && !isSeen('panel', finishedAttempt.id)
+      ? finishedAttempt
+      : undefined
+  const sessionSucceededId =
+    unseenFinished?.outcome === 'succeeded' ? unseenFinished.id : ''
+  useEffect(() => {
+    if (!sessionSucceededId) return
+    const onHide = () => markSeen('panel', sessionSucceededId)
+    window.addEventListener('pagehide', onHide)
+    return () => window.removeEventListener('pagehide', onHide)
+  }, [sessionSucceededId])
+  const olderFailure = (attempts.data ?? []).find(
+    (a) =>
+      a.id !== dismissed &&
+      a.outcome !== 'succeeded' &&
+      !isSeen('panel', a.id) &&
+      isRecentFinished(a),
   )
+  const recent = unseenFinished ?? olderFailure
   const planSteps = plan.data?.steps ?? []
   const reconnecting = attempts.isError || status.isError
 
@@ -147,7 +170,10 @@ export function UpgradeNow() {
         startedAt={null}
         reconnecting={false}
         releaseUrl={pre?.release_url}
-        onDismiss={() => setDismissed(recent.id)}
+        onDismiss={() => {
+          markSeen('panel', recent.id)
+          setDismissed(recent.id)
+        }}
       />
     )
   }
@@ -192,22 +218,22 @@ export function UpgradeNow() {
 
   return (
     <div className="space-y-4">
-      {(finishedAttempt ?? recent) ? (
+      {recent ? (
         <UpgradeProgress
-          target={(finishedAttempt ?? recent)?.to_version ?? target}
+          target={recent.to_version}
           plannedSteps={planSteps}
-          attempt={finishedAttempt ?? recent}
+          attempt={recent}
           startedAt={null}
           reconnecting={false}
           releaseUrl={pre.release_url}
           onDismiss={() => {
-            const a = finishedAttempt ?? recent
-            if (a) setDismissed(a.id)
+            markSeen('panel', recent.id)
+            setDismissed(recent.id)
             setStartedAt(null)
           }}
           onRetry={() => {
-            const a = finishedAttempt ?? recent
-            if (a) setDismissed(a.id)
+            markSeen('panel', recent.id)
+            setDismissed(recent.id)
             setStartedAt(null)
             setConfirmOpen(true)
           }}
@@ -307,6 +333,17 @@ export function UpgradeNow() {
                   onSuccess: () => {
                     setConfirmOpen(false)
                     setStartedAt(Date.now())
+                  },
+                  onError: (err) => {
+                    if (!(err instanceof UpgradeRunningError)) return
+                    setConfirmOpen(false)
+                    toast.add({
+                      title: t('result.running', {
+                        to: target,
+                        id: err.attemptId,
+                      }),
+                      type: 'info',
+                    })
                   },
                 },
               )

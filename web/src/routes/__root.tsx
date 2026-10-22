@@ -24,6 +24,7 @@ import { MAIN_CONTENT_ID, SkipLink } from '../components/shell/SkipLink'
 import { DeviceLoginBanner } from '../components/attention/DeviceLoginBanner'
 import { SignInRequestsBanner } from '../components/attention/SignInRequestsBanner'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
+import { UpgradeOutcomeToast } from '../components/settings/updates/UpgradeOutcomeToast'
 import { UpgradeGlobalBar } from '../components/settings/updates/UpgradeGlobalBar'
 import { LocalModeBanner } from '../components/LocalModeBanner'
 import { RestartBanner } from '../components/RestartBanner'
@@ -144,6 +145,7 @@ function AppShell() {
         <RestartBanner />
         <LocalModeBanner />
         <UpgradeGlobalBar />
+        <UpgradeOutcomeToast />
         <MaintenanceBanner />
         <DomainMaintenanceBanner />
         <DeviceLoginBanner />

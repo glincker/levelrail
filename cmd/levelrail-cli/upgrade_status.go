@@ -4,7 +4,25 @@ import (
 	"context"
 	"fmt"
 	"io"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
+
+func printAttemptStatus(out io.Writer, s apiclient.SelfUpgradeStatus) {
+	if r := s.Running; r != nil {
+		_, _ = fmt.Fprintf(out, "upgrade running: %s to %s (attempt %s, step %s, started %s)\n", r.FromVersion, r.ToVersion, r.ID, r.CurrentStep, r.StartedAt)
+	}
+	if l := s.LastFinished; l != nil {
+		verified := ""
+		if l.Outcome == "succeeded" {
+			verified = ", verification failed"
+			if s.Verified {
+				verified = ", verification passed"
+			}
+		}
+		_, _ = fmt.Fprintf(out, "last upgrade:    %s, %s to %s, finished %s (attempt %s%s)\n", l.Outcome, l.FromVersion, l.ToVersion, l.FinishedAt, l.ID, verified)
+	}
+}
 
 // runUpgradeStatus implements "upgrade status": the install's upgrade state
 // and the reason, read-only (no backup is taken).
@@ -19,7 +37,13 @@ func runUpgradeStatus(prog string, args []string, stdout, stderr io.Writer, look
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("upgrade status: %w", err))
 	}
-	if err := renderResult(stdout, of.Format, of.Query, pre, func() { printUpgradeStatus(stdout, pre) }); err != nil {
+	attempts, attemptsErr := client.GetSelfUpgradeStatus(context.Background())
+	if err := renderResult(stdout, of.Format, of.Query, pre, func() {
+		printUpgradeStatus(stdout, pre)
+		if attemptsErr == nil {
+			printAttemptStatus(stdout, attempts)
+		}
+	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}

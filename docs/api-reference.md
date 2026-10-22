@@ -116,6 +116,7 @@ System endpoints for:
 | POST | /api/v1/updates/self-upgrade/attempts/{id}/retry | AbilityWrite | handleSelfUpgradeAttemptRetry |
 | POST | /api/v1/updates/self-upgrade/attempts/{id}/rollback | AbilityWrite | handleSelfUpgradeAttemptRollback |
 | POST | /api/v1/system/proxy-integration/install | AbilityRoot | handleInstallProxy |
+| GET | /api/v1/updates/self-upgrade/status | AbilityRead | handleSelfUpgradeStatus |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
