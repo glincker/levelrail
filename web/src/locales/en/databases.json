@@ -558,7 +558,42 @@
     "credentials": "Credentials",
     "credentialsHint": "Passwords are never shown here. Create a login or a temporary credential on the Access tab.",
     "openAccess": "Manage access",
-    "copyAddress": "Address"
+    "copyAddress": "Address",
+    "passwordNever": "Passwords are never shown here. Use the placeholder and create a login on the Access tab.",
+    "maskPassword": "Mask password",
+    "showPlaceholder": "Show placeholder",
+    "unavailable": "Connection details could not be loaded.",
+    "retry": "Try again",
+    "tab": {
+      "uri": "Connection string",
+      "env": "Env vars",
+      "node": "Node",
+      "python": "Python",
+      "go": "Go",
+      "cli": "{{engine}} CLI"
+    }
+  },
+  "status": {
+    "healthy": "Healthy",
+    "healthyHint": "Running and passing every health check.",
+    "settingUp": "Setting up",
+    "settingUpHint": "Getting ready. This page updates on its own.",
+    "stopped": "Stopped",
+    "stoppedHint": "Not running. Start it to accept connections.",
+    "attention": "Needs attention",
+    "attentionHint": "Something failed. The logs show why.",
+    "viewLogs": "View logs",
+    "lastBackup": "Last backup",
+    "noBackupYet": "No backup yet",
+    "backupSize": "Backup size",
+    "none": "None",
+    "schedule": "Backup schedule",
+    "notScheduled": "Not scheduled",
+    "details": "Details"
+  },
+  "quickActions": {
+    "label": "Quick actions",
+    "metrics": "Open metrics"
   },
   "conditions": {
     "title": "Health checks",
