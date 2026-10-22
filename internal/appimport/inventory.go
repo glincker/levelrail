@@ -225,7 +225,7 @@ func judgeApp(a platformimport.App, dbHosts []string, byHost map[string]DBRef) E
 		notes = append(notes, f)
 	}
 	for _, c := range a.Crons {
-		notes = append(notes, Finding{Reason: "scheduled task " + c.Name + " (" + c.Schedule + ") is not imported", Next: "create it as a scheduled task running: " + c.Command})
+		notes = append(notes, Finding{Reason: "scheduled task " + c.Name + " (" + c.Schedule + ") is created as a scheduled job, disabled until cutover", Next: "enable the job after traffic is switched so it does not run on both hosts"})
 	}
 	e.Findings = append(attention, notes...)
 	e.Verdict = VerdictReady

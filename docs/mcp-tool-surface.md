@@ -1,6 +1,5 @@
 ---
 description: "Estimated model context cost of the MCP tool list, by toolset."
-"og:url": "https://docs.levelrail.com/mcp-tool-surface"
 ---
 
 # MCP tool surface
@@ -38,7 +37,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | loadbalancer | 9 | 1234 |
 | logs | 13 | 1671 |
 | metrics | 10 | 912 |
-| migrate | 5 | 322 |
+| migrate | 6 | 399 |
 | models | 16 | 2013 |
 | nodes | 7 | 566 |
 | notifications | 3 | 225 |
@@ -56,7 +55,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 145 |
-| **total** | **244** | **24645** |
+| **total** | **245** | **24722** |
 
 ## Default session (progressive disclosure)
 

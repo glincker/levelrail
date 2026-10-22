@@ -1,0 +1,7 @@
+[
+  {"uuid": "e1", "key": "NODE_ENV", "value": "production", "real_value": "production", "is_preview": false, "is_shown_once": false},
+  {"uuid": "e2", "key": "NEXT_PUBLIC_URL", "value": "https://shop.example.com", "real_value": "https://shop.example.com", "is_preview": false, "is_build_time": true},
+  {"uuid": "e3", "key": "DATABASE_URL", "value": "postgres://app:fake-db-password@db-pg:5432/shop", "real_value": "postgres://app:fake-db-password@db-pg:5432/shop", "is_preview": false},
+  {"uuid": "e4", "key": "SESSION_SECRET", "value": "fake-session-secret", "real_value": "fake-session-secret", "is_preview": false, "is_shown_once": true},
+  {"uuid": "e5", "key": "NODE_ENV", "value": "preview", "real_value": "preview", "is_preview": true}
+]

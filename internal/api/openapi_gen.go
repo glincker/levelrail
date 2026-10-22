@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1663 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1665 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1179,6 +1179,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/connect", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleConnectAppImportSession", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/cutover", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportCutover", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/cutover/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleAppImportCutoverVerify", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/exit-report", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportExitReport", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/images", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportImages", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/images/cancel", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCancelAppImportImages", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/images/status", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportImagesStatus", Description: ""},
@@ -1204,6 +1205,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/migration/checklists", Ability: "AbilityRead", Group: "Other", Handler: "handleListMigrationChecklists", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/checklists/{app}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMigrationChecklist", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/checklists/{app}/steps/{step}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMigrationChecklistStep", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/coolify/exit-report", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCoolifyExitReport", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/cutover", Ability: "AbilityRead", Group: "Other", Handler: "handleCutoverReport", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/cutover/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCutoverVerify", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/hub/local-sources", Ability: "AbilityRead", Group: "Other", Handler: "handleHubLocalSources", Description: ""},

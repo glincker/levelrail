@@ -1888,6 +1888,8 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/function-kv/entry | Public | handleFunctionKVEntry |
 | DELETE | /api/v1/function-kv/entry | Public | handleFunctionKVEntry |
 | GET | /api/v1/function-kv/keys | Public | handleFunctionKVKeys |
+| POST | /api/v1/migration/coolify/exit-report | AbilityWriteSensitive | handleCoolifyExitReport |
+| GET | /api/v1/migration/apps/sessions/{id}/exit-report | AbilityRead | handleAppImportExitReport |
 
 ## See also
 
