@@ -344,7 +344,9 @@ export function ResponsiveTable<T>(props: ResponsiveTableProps<T>) {
                 {...activation(row)}
               >
                 {leading ? (
-                  <TableCell className="pl-4">{leading.cell(row)}</TableCell>
+                  <TableCell className={cn('pl-4 pr-2', leading.width)}>
+                    {leading.cell(row)}
+                  </TableCell>
                 ) : null}
                 {columns.map((c) => (
                   <TableCell

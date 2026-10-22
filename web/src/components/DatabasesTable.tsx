@@ -159,6 +159,7 @@ export function DatabasesTable({
         getRowId={(db) => db.name}
         ariaLabel={t('list.tableLabel')}
         leading={{
+          width: 'w-16 min-w-16',
           header: <span className="sr-only">{t('list.colEngine')}</span>,
           cell: (db) => (
             <BrandTile name={db.engine} label={db.engine} size="sm" />
