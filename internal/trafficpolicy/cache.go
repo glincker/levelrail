@@ -3,6 +3,7 @@ package trafficpolicy
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 )
 
@@ -135,4 +136,57 @@ func StaticAssetsPreset() []CacheRule {
 		StaleWhileRevalidateSeconds: 60,
 		StaleIfErrorSeconds:         86400,
 	}}
+}
+
+// Preset names accepted by Presets.
+const (
+	PresetStaticAssets = "static"
+	PresetNextJS       = "nextjs"
+)
+
+// nextJSVary are the request headers Next.js varies its responses on.
+var nextJSVary = []string{"rsc", "next-router-state-tree", "next-router-prefetch", "next-router-segment-prefetch"}
+
+// NextJSVary returns the request headers a Next.js app varies on.
+func NextJSVary() []string { return slices.Clone(nextJSVary) }
+
+// MatchesNextJSVary reports whether names include the Next.js router
+// headers, which is how a Next.js upstream shows up in a Vary header.
+func MatchesNextJSVary(names []string) bool {
+	for _, n := range names {
+		if strings.EqualFold(n, "rsc") || strings.EqualFold(n, "next-router-state-tree") {
+			return true
+		}
+	}
+	return false
+}
+
+// NextJSPreset keys cached pages by the router headers so HTML and RSC
+// payloads never mix, and keeps fingerprinted build files for a day. The
+// app's own Cache-Control still wins, so dynamic pages stay uncached.
+func NextJSPreset() []CacheRule {
+	get := []string{http.MethodGet, http.MethodHead}
+	return []CacheRule{
+		{
+			Match:                       Match{Kind: MatchPrefix, Path: "/_next/static", Methods: get},
+			TTLSeconds:                  86400,
+			StaleWhileRevalidateSeconds: 60,
+			StaleIfErrorSeconds:         86400,
+		},
+		{
+			Match:                       Match{Kind: MatchPrefix, Path: "/", Methods: get},
+			TTLSeconds:                  60,
+			StaleWhileRevalidateSeconds: 30,
+			StaleIfErrorSeconds:         600,
+			Vary:                        NextJSVary(),
+		},
+	}
+}
+
+// Presets lists the named rule sets the API and CLI offer.
+func Presets() map[string][]CacheRule {
+	return map[string][]CacheRule{
+		PresetStaticAssets: StaticAssetsPreset(),
+		PresetNextJS:       NextJSPreset(),
+	}
 }

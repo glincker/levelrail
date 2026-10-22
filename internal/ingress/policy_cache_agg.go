@@ -4,7 +4,9 @@ package ingress
 // by minute because every domain reports the same trailing window.
 func MergeCacheStats(list ...CacheStats) CacheStats {
 	var out CacheStats
+	reasons := make([][]CacheReason, 0, len(list))
 	for _, s := range list {
+		reasons = append(reasons, s.Reasons)
 		out.Hits += s.Hits
 		out.Misses += s.Misses
 		out.Bypasses += s.Bypasses
@@ -29,6 +31,7 @@ func MergeCacheStats(list ...CacheStats) CacheStats {
 			out.Series[i].MissBytes += b.MissBytes
 		}
 	}
+	out.Reasons = mergeReasons(reasons...)
 	return out
 }
 
