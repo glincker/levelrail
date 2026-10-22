@@ -3,7 +3,9 @@
     "title": "Needs attention",
     "seeAll": "See all {{count}}",
     "askAi": "Ask AI",
-    "review": "Review"
+    "review": "Review",
+    "retryCopy": "Retry the copy",
+    "openDatabase": "Open database"
   },
   "fleet": {
     "databases": {
@@ -114,7 +116,10 @@
     "noTraffic": "No traffic",
     "deploys24h": "Deploys 24h",
     "nodesOnline": "Nodes online",
-    "lastHour": "Last hour, all apps."
+    "lastHour": "Last hour, all apps.",
+    "addDomain": "Add a domain",
+    "deployApp": "Deploy an app",
+    "idle": "Idle"
   },
   "resources": {
     "title": "Resources",
@@ -186,10 +191,6 @@
     }
   },
   "banners": {
-    "diskDetail": "{{detail}} on the data volume. Builds and deploys may fail if it runs out.",
-    "updateTitle": "Version {{version}} is available",
-    "updateDetail": "This server runs {{current}}.",
-    "updateAction": "View update",
     "httpsTitle": "This dashboard is on plain HTTP",
     "httpsDetail": "Passwords and sessions travel unencrypted. Turn on HTTPS with one click, no DNS needed.",
     "httpsAction": "Enable HTTPS",
@@ -203,7 +204,15 @@
     "seeAll": "Status page",
     "continue": "Continue",
     "setupProgress": "Setup {{percent}}% ready",
-    "quiet": "Nothing needs you. {{running}} of {{total}} apps running, {{deploys}} deploys in the last 24 hours."
+    "quiet": "Nothing needs you. {{running}} of {{total}} apps running, {{deploys}} deploys in the last 24 hours.",
+    "group": {
+      "copy_one": "Data copy failed on {{count}} database",
+      "copy_other": "Data copy failed on {{count}} databases",
+      "show_one": "Show {{count}}",
+      "show_other": "Show all {{count}}",
+      "hide": "Hide"
+    },
+    "review": "Review"
   },
   "deploys": {
     "title": "Recent deploys",
@@ -232,5 +241,88 @@
       "title": "Connect Git",
       "hint": "Deploy on every push"
     }
+  },
+  "strip": {
+    "ok_one": "All {{count}} app healthy",
+    "ok_other": "All {{count}} apps healthy",
+    "issues_one": "{{count}} thing needs attention",
+    "issues_other": "{{count}} things need attention",
+    "causes_one": "{{count}} issue from {{causes}} cause",
+    "causes_other": "{{count}} issues from {{causes}} root causes",
+    "details": "Details",
+    "update": "{{version}} available",
+    "notices_one": "{{count}} notice",
+    "notices_other": "{{count}} notices",
+    "hideNotices": "Hide notices",
+    "showSnoozed_one": "Show {{count}} snoozed",
+    "showSnoozed_other": "Show {{count}} snoozed"
+  },
+  "apps": {
+    "title": "Apps",
+    "search": "Search apps",
+    "none": "No apps match.",
+    "viewAll": "View all {{count}}",
+    "view": {
+      "grid": "Grid view",
+      "list": "List view"
+    }
+  },
+  "widgets": {
+    "attention": "Needs you",
+    "apps": "Apps",
+    "activity": "Recent deploys",
+    "fleet": "Fleet",
+    "resources": "Resources",
+    "advisor": "Resource advisor",
+    "alerts": "Recent alerts",
+    "usage": "Usage details"
+  },
+  "customize": {
+    "edit": "Customize",
+    "done": "Done",
+    "reset": "Reset layout",
+    "hidden": "Hidden",
+    "show": "Show {{name}}",
+    "moveUp": "Move {{name}} up",
+    "moveDown": "Move {{name}} down",
+    "hide": "Hide {{name}}"
+  },
+  "newApp": {
+    "label": "New app",
+    "more": "More ways to deploy",
+    "items": {
+      "git": {
+        "title": "From a Git repo",
+        "hint": "Build and deploy on every push"
+      },
+      "image": {
+        "title": "From a Docker image",
+        "hint": "Pull a prebuilt image"
+      },
+      "template": {
+        "title": "From a template",
+        "hint": "n8n, Uptime Kuma, MinIO and more"
+      },
+      "compose": {
+        "title": "From Docker Compose",
+        "hint": "Deploy every service in a file"
+      },
+      "database": {
+        "title": "A database",
+        "hint": "Postgres, MySQL, Redis and more"
+      }
+    }
+  },
+  "copyRetry": {
+    "title": "Retry the copy into {{name}}",
+    "description": "The previous source is filled in. Enter the password again, it is never stored. If the source requires encryption the copy retries with TLS on its own.",
+    "loading": "Loading the previous attempt...",
+    "missing": "This database has no copy to retry."
+  },
+  "snooze": {
+    "label": "Snooze for a day",
+    "done_one": "Snoozed for a day.",
+    "done_other": "Snoozed {{count}} items for a day.",
+    "undo": "Undo"
   }
 }

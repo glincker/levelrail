@@ -63,12 +63,28 @@
     "title": "Slowest routes",
     "topTitle": "Top paths",
     "topEmpty": "No requests in this window.",
-    "hint": "Route templates only. Ids and query strings are never stored.",
+    "hint": "Slowest pages and API routes. Static files are left out.",
     "route": "Route",
     "requests": "Requests",
     "avg": "Avg duration",
     "error5xx": "5xx",
-    "empty": "No route has enough traffic in this window to rank."
+    "empty": "No route has enough traffic in this window to rank.",
+    "kindTabs": "Route kind",
+    "kind": {
+      "page": "Pages",
+      "api": "API",
+      "asset": "Assets"
+    },
+    "topTitleByKind": {
+      "page": "Top pages",
+      "api": "Top API routes",
+      "asset": "Top assets"
+    },
+    "kindHint": {
+      "page": "Pages people visit. Ids and query strings are never stored.",
+      "api": "API calls, grouped by route. Ids and query strings are never stored.",
+      "asset": "Static files such as scripts, styles and images. Counted separately so they do not bury your pages."
+    }
   },
   "samples": {
     "title": "Slow and failed requests",
@@ -101,5 +117,14 @@
       "bad_bot": "Bad bot",
       "body_too_large": "Body too large"
     }
+  },
+  "spikes": {
+    "title": "Error spikes",
+    "hint": "Stretches where the server error share stood out from the rest of the window, matched to the deploy that started shortly before.",
+    "none": "No error spikes in this window.",
+    "peak": "{{rate}} server errors at peak",
+    "detail": "{{errors}} of {{requests}} requests failed. Typical for this window: {{baseline}}.",
+    "afterDeploy": "After deploy {{image}} ({{time}})",
+    "noDeploy": "No recent deploy"
   }
 }

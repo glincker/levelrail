@@ -124,6 +124,7 @@ func printTrafficHuman(out io.Writer, r apiclient.AppTrafficResource) {
 		}
 		_ = tw.Flush()
 	}
+	printTrafficSpikes(out, tw, r.ErrorSpikes)
 	printTrafficLabels(out, tw, "top referrers:", "REFERRER", r.Referrers)
 	printTrafficLabels(out, tw, "top countries:", "COUNTRY", r.Countries)
 	if len(r.Samples) > 0 {
@@ -134,6 +135,22 @@ func printTrafficHuman(out io.Writer, r apiclient.AppTrafficResource) {
 		}
 		_ = tw.Flush()
 	}
+}
+
+func printTrafficSpikes(out io.Writer, tw *tabwriter.Writer, spikes []apiclient.TrafficErrorSpike) {
+	if len(spikes) == 0 {
+		return
+	}
+	_, _ = fmt.Fprintln(out, "\n5xx spikes (newest first):")
+	_, _ = fmt.Fprintln(tw, "START\tEND\tPEAK 5XX%\tBASELINE%\t5XX\tDEPLOY")
+	for _, s := range spikes {
+		deploy := "-"
+		if s.DeployID != "" {
+			deploy = fmt.Sprintf("%s %s", s.DeployID, s.DeployImage)
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%.1f\t%.1f\t%.0f\t%s\n", s.Start.Format(time.RFC3339), s.End.Format(time.RFC3339), s.PeakRate5xx*100, s.BaselineRate*100, s.Errors5xx, deploy)
+	}
+	_ = tw.Flush()
 }
 
 func printTrafficLabels(out io.Writer, tw *tabwriter.Writer, title, header string, rows []apiclient.TrafficLabel) {
@@ -154,7 +171,7 @@ func trafficUsage(prog string) string {
 
 Shows an app's request rate, errors and latency percentiles (p50, p95, p99)
 as measured at the ingress, with a per replica breakdown, the slowest route
-templates, top referrer hosts and countries (countries need a geo source),
+templates, 5xx spikes tied to the deploy that preceded them, top referrer hosts and countries (countries need a geo source),
 sampled slow or failed requests and the SLO error-budget burn.
 
 Flags:

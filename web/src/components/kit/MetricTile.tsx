@@ -21,6 +21,8 @@ export interface MetricTileProps {
   info?: ReactNode
   loading?: boolean
   onClick?: () => void
+  // Shown when the tile has nothing to measure yet; ignored with onClick.
+  cta?: { label: string; onAction: () => void }
 }
 
 function DeltaChip({ delta }: { delta: MetricDelta }) {
@@ -58,6 +60,7 @@ export function MetricTile({
   info,
   loading,
   onClick,
+  cta,
 }: MetricTileProps) {
   if (loading) return <SkeletonTile />
 
@@ -109,7 +112,18 @@ export function MetricTile({
           {body}
         </button>
       ) : (
-        <div className={card}>{body}</div>
+        <div className={card}>
+          {body}
+          {cta ? (
+            <button
+              type="button"
+              onClick={cta.onAction}
+              className="mt-auto self-start text-xs font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none"
+            >
+              {cta.label}
+            </button>
+          ) : null}
+        </div>
       )}
       {info && (
         <span className="absolute top-3 right-3">

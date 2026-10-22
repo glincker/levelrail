@@ -16,7 +16,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | alerts | 10 | 1130 |
 | apps | 16 | 1979 |
 | audit | 2 | 320 |
-| backups | 14 | 1157 |
+| backups | 14 | 1134 |
 | builds | 5 | 477 |
 | canary | 4 | 504 |
 | dashboards | 2 | 133 |
@@ -36,7 +36,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | inbox | 1 | 50 |
 | loadbalancer | 9 | 1234 |
 | logs | 13 | 1671 |
-| metrics | 10 | 912 |
+| metrics | 10 | 909 |
 | migrate | 5 | 322 |
 | models | 16 | 2013 |
 | nodes | 7 | 566 |
@@ -55,7 +55,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 145 |
-| **total** | **245** | **24740** |
+| **total** | **245** | **24714** |
 
 ## Default session (progressive disclosure)
 

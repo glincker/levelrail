@@ -564,6 +564,7 @@
   "countries",
   "error_rate_4xx",
   "error_rate_5xx",
+  "error_spikes",
   "from",
   "has_traffic",
   "latency",
