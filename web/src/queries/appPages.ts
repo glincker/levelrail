@@ -6,6 +6,7 @@ import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
 import type { AppListEntry } from '../types/appDetail'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { getEnvironmentScope } from '../lib/environmentScope'
+import { getProjectScope } from '../lib/projectScope'
 import { DEDUPE_STALE_MS } from '../lib/queryStale'
 import type { StatusBucket } from '../lib/appsListView'
 import { appKeys } from './apps'
@@ -45,6 +46,8 @@ function pageQuery(params: AppPageParams, offset: number): string {
     ? params.environments
     : [getEnvironmentScope()].filter((e) => e !== '')
   for (const env of envs) qs.append('environment', env)
+  const project = getProjectScope()
+  if (project) qs.set('project', project)
   if (params.tags?.length) {
     qs.set('tag', params.tags.join(','))
     qs.set('tag_match', 'any')
@@ -76,7 +79,13 @@ export async function fetchAppPage(
 
 export function appPagesQueryOptions(params: AppPageParams) {
   return infiniteQueryOptions({
-    queryKey: [...appKeys.all, 'pages', params, getEnvironmentScope()] as const,
+    queryKey: [
+      ...appKeys.all,
+      'pages',
+      params,
+      getEnvironmentScope(),
+      getProjectScope(),
+    ] as const,
     queryFn: ({ pageParam, signal }) => fetchAppPage(params, pageParam, signal),
     initialPageParam: 0,
     getNextPageParam: (last) => {
@@ -89,12 +98,14 @@ export function appPagesQueryOptions(params: AppPageParams) {
 
 export function appsSummaryQueryOptions() {
   const environment = getEnvironmentScope()
+  const project = getProjectScope()
   return queryOptions({
-    queryKey: [...appKeys.all, 'summary', environment] as const,
+    queryKey: [...appKeys.all, 'summary', environment, project] as const,
     queryFn: async ({ signal }): Promise<AppsSummary> => {
-      const qs = environment
-        ? `?environment=${encodeURIComponent(environment)}`
-        : ''
+      const params = new URLSearchParams()
+      if (environment) params.set('environment', environment)
+      if (project) params.set('project', project)
+      const qs = params.size ? `?${params.toString()}` : ''
       const res = await fetch(`/api/v1/apps-summary${qs}`, { signal })
       if (!res.ok) {
         throw new ApiError(
@@ -115,7 +126,12 @@ export function appsSummaryQueryOptions() {
 // to sample deploys and traffic without the whole list.
 export function appSampleQueryOptions() {
   return queryOptions({
-    queryKey: [...appKeys.all, 'sample', getEnvironmentScope()] as const,
+    queryKey: [
+      ...appKeys.all,
+      'sample',
+      getEnvironmentScope(),
+      getProjectScope(),
+    ] as const,
     queryFn: async (): Promise<AppListEntry[]> => {
       const limit = APP_SAMPLE_SIZE
       const [failing, first] = await Promise.all([
@@ -136,7 +152,12 @@ export function appSampleQueryOptions() {
 // Every failing app, for the attention feed. Bounded by the page cap.
 export function failingAppsQueryOptions() {
   return queryOptions({
-    queryKey: [...appKeys.all, 'failing', getEnvironmentScope()] as const,
+    queryKey: [
+      ...appKeys.all,
+      'failing',
+      getEnvironmentScope(),
+      getProjectScope(),
+    ] as const,
     queryFn: async () =>
       (await fetchAppPage({ status: 'failing', limit: APP_PAGE_SIZE })).items,
     staleTime: DEDUPE_STALE_MS,

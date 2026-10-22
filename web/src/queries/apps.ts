@@ -19,14 +19,15 @@ import type {
 } from '../types/appDetail'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { getEnvironmentScope } from '../lib/environmentScope'
+import { getProjectScope } from '../lib/projectScope'
 import { DEDUPE_STALE_MS } from '../lib/queryStale'
 
 export const appKeys = {
   all: ['apps'] as const,
-  list: (environment = '') =>
-    environment === ''
+  list: (environment = '', project = '') =>
+    environment === '' && project === ''
       ? ([...appKeys.all, 'list'] as const)
-      : ([...appKeys.all, 'list', { environment }] as const),
+      : ([...appKeys.all, 'list', { environment, project }] as const),
   detail: (appId: string) => [...appKeys.all, 'detail', appId] as const,
 }
 
@@ -36,11 +37,15 @@ export const appKeys = {
 // AppListEntry's own doc comment), no cursor, so this is the one list
 // fetcher, not a page-at-a-time one: there's nothing server-side yet to
 // paginate against.
-export async function fetchApps(environment = ''): Promise<AppListEntry[]> {
+export async function fetchApps(
+  environment = '',
+  project = '',
+): Promise<AppListEntry[]> {
+  const qs = new URLSearchParams()
+  if (environment) qs.set('environment', environment)
+  if (project) qs.set('project', project)
   const res = await fetch(
-    environment === ''
-      ? '/api/v1/apps'
-      : `/api/v1/apps?environment=${encodeURIComponent(environment)}`,
+    qs.size ? `/api/v1/apps?${qs.toString()}` : '/api/v1/apps',
   )
   if (!res.ok) {
     throw new ApiError(
@@ -56,9 +61,10 @@ export async function fetchApps(environment = ''): Promise<AppListEntry[]> {
 // call, the same pattern appDetailQueryOptions below uses.
 export function appListQueryOptions() {
   const environment = getEnvironmentScope()
+  const project = getProjectScope()
   return queryOptions({
-    queryKey: appKeys.list(environment),
-    queryFn: () => fetchApps(environment),
+    queryKey: appKeys.list(environment, project),
+    queryFn: () => fetchApps(environment, project),
     staleTime: DEDUPE_STALE_MS,
   })
 }
