@@ -1,3 +1,5 @@
+import { DraftBanner } from '../../DraftBanner'
+import { useDraft } from '../../../hooks/useDraft'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
@@ -67,7 +69,9 @@ export function RepoImportFlow({
   onFallback: (source: GitRepoSourceValue) => void
 }) {
   const { t } = useTranslation('newApp')
-  const [input, setInput] = useState('')
+  const draft = useDraft('repo-import-url', { input: '' })
+  const input = draft.value.input
+  const setInput = (v: string) => draft.update({ input: v })
   const [picked, setPicked] = useState<GitRepoSourceValue | null>(null)
   const [token, setToken] = useState('')
   const [branch, setBranch] = useState('')
@@ -144,6 +148,7 @@ export function RepoImportFlow({
 
   return (
     <div className="min-w-0 space-y-5">
+      <DraftBanner draft={draft} />
       <Field>
         <FieldLabel htmlFor="new-app-url">{t('source.url.label')}</FieldLabel>
         <Input
@@ -233,6 +238,7 @@ export function RepoImportFlow({
           advancedOpen={advancedOpen}
           onAdvancedOpen={setAdvancedOpen}
           onSubmit={(edits) => {
+            draft.clearOnSuccess()
             onDeploy(source, analysis, edits)
           }}
         />

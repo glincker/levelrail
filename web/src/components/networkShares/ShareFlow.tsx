@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/toast'
+import { DraftBanner } from '../DraftBanner'
+import { useDraft } from '../../hooks/useDraft'
 import {
   useCreateNetworkShare,
   useNetworkSharesOptional,
@@ -46,7 +48,9 @@ const INITIAL: ShareValues = {
 
 export function ShareFlow({ onClose }: Readonly<{ onClose: () => void }>) {
   const { t } = useTranslation('settings')
-  const [values, setValues] = useState<ShareValues>(INITIAL)
+  const draft = useDraft('network-share', INITIAL)
+  const values = draft.value
+  const setValues = draft.setValue
   const [nameTouched, setNameTouched] = useState(false)
   const [touched, setTouched] = useState<Set<keyof ShareValues>>(new Set())
   const [attempted, setAttempted] = useState(false)
@@ -112,6 +116,7 @@ export function ShareFlow({ onClose }: Readonly<{ onClose: () => void }>) {
       },
       {
         onSuccess: () => {
+          draft.clearOnSuccess()
           onClose()
           toast.add({
             title: t('networkSharesPage.dialog.added', { name }),
@@ -143,6 +148,7 @@ export function ShareFlow({ onClose }: Readonly<{ onClose: () => void }>) {
         </DialogDescription>
       </DialogHeader>
       <div className="-mx-1 min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto px-1">
+        <DraftBanner draft={draft} onRestore={() => setNameTouched(true)} />
         <ProtocolCards value={values.protocol} onChange={chooseProtocol} />
 
         <div className="grid min-w-0 gap-4 sm:grid-cols-2">

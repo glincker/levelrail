@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { DraftBanner } from '../../DraftBanner'
+import { useDraft } from '../../../hooks/useDraft'
 import { useTranslation } from 'react-i18next'
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -66,11 +68,18 @@ export function RepoSimpleForm({
 }) {
   const { t } = useTranslation('newApp')
   const needed = neededEnvKeys(analysis)
-  const [name, setName] = useState(initialName)
-  const [env, setEnv] = useState<Record<string, string>>({})
+  const draft = useDraft<{
+    name: string
+    env: Record<string, string>
+    customDomain: string
+  }>(`repo-simple:${initialName}`, {
+    name: initialName,
+    env: {},
+    customDomain: '',
+  })
+  const { name, env, customDomain } = draft.value
   const [extra, setExtra] = useState<ExtraVar[]>([])
   const [customOpen, setCustomOpen] = useState(false)
-  const [customDomain, setCustomDomain] = useState('')
   const [advanced, setAdvanced] = useState<SimpleFormValues['advanced']>({})
   const [submitted, setSubmitted] = useState(false)
   const [databases, setDatabases] = useState<DatabaseEdit[] | null>(null)
@@ -98,6 +107,7 @@ export function RepoSimpleForm({
   function submit() {
     setSubmitted(true)
     if (!valid || deploying) return
+    draft.clearOnSuccess()
     const allEnv = { ...env }
     for (const v of extra)
       if (v.key.trim() !== '') allEnv[v.key.trim()] = v.value
@@ -129,6 +139,7 @@ export function RepoSimpleForm({
         submit()
       }}
     >
+      <DraftBanner draft={draft} />
       <Field>
         <FieldLabel htmlFor="repo-app-name">{t('import.form.name')}</FieldLabel>
         <Input
@@ -139,7 +150,7 @@ export function RepoSimpleForm({
           aria-invalid={submitted && nameError !== null}
           aria-describedby="repo-app-name-msg"
           onChange={(e) => {
-            setName(e.target.value.toLowerCase())
+            draft.update({ name: e.target.value.toLowerCase() })
           }}
         />
         <FieldDescription id="repo-app-name-msg">
@@ -166,7 +177,7 @@ export function RepoSimpleForm({
                 value={env[k.key] ?? ''}
                 aria-invalid={submitted && (env[k.key] ?? '').trim() === ''}
                 onChange={(e) => {
-                  setEnv({ ...env, [k.key]: e.target.value })
+                  draft.update({ env: { ...env, [k.key]: e.target.value } })
                 }}
               />
               {submitted && (env[k.key] ?? '').trim() === '' ? (
@@ -241,7 +252,7 @@ export function RepoSimpleForm({
               aria-invalid={domainError}
               autoComplete="off"
               onChange={(e) => {
-                setCustomDomain(e.target.value)
+                draft.update({ customDomain: e.target.value })
               }}
             />
             <FieldDescription>

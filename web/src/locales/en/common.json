@@ -1,4 +1,10 @@
 {
+  "draft": {
+    "message": "You have an unsaved draft from {{time}}.",
+    "continue": "Continue where you left off",
+    "startOver": "Start over",
+    "dismiss": "Dismiss"
+  },
   "deployHistory": {
     "filters": {
       "search": "Search message, commit, author",
