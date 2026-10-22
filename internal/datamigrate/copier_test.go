@@ -19,6 +19,7 @@ type fakeRuntime struct {
 	created    []docker.ContainerSpec
 	removed    []string
 	dumpErr    error
+	dumpOnce   bool
 	dumpOutput string
 	srcCounts  string
 	tgtCounts  string
@@ -70,7 +71,11 @@ func (f *fakeRuntime) Exec(_ context.Context, _ string, cmd []string) (io.ReadCl
 	switch script {
 	case dump[2]:
 		if f.dumpErr != nil {
-			return &failingReader{data: f.dumpOutput, err: f.dumpErr}, nil
+			err := f.dumpErr
+			if f.dumpOnce {
+				f.dumpErr = nil
+			}
+			return &failingReader{data: f.dumpOutput, err: err}, nil
 		}
 		return io.NopCloser(strings.NewReader(f.dumpOutput)), nil
 	case srcCount[2]:
@@ -185,5 +190,27 @@ func TestCopyUnsupportedEngine(t *testing.T) {
 	_, err := newCopier(&fakeRuntime{running: true}, &fakeRestorer{}).Copy(t.Context(), Target{Name: "c", Engine: "clickhouse"}, Source{Host: "h"})
 	if err == nil || !strings.Contains(err.Error(), "not supported") {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestCopyRetriesWithTLSWhenSourceRequiresIt(t *testing.T) {
+	rt := &fakeRuntime{running: true, dumpErr: errors.New("FATAL: no encryption"), dumpOnce: true, dumpOutput: "x", srcCounts: "public.users|5\n", tgtCounts: "public.users|5\n"}
+	src := Source{Host: "h", Port: 5432, User: "u", Password: "pw", Database: "d"}
+	if _, err := newCopier(rt, &fakeRestorer{}).Copy(t.Context(), pgTarget, src); err != nil {
+		t.Fatal(err)
+	}
+	if len(rt.created) != 2 || rt.created[0].Env["SRC_TLS"] != "" || rt.created[1].Env["SRC_TLS"] == "" {
+		t.Errorf("want a plain attempt then a TLS attempt, got %+v", rt.created)
+	}
+}
+
+func TestCopyNeverDowngradesTLS(t *testing.T) {
+	rt := &fakeRuntime{running: true, dumpErr: errors.New("server does not support SSL"), dumpOutput: "x"}
+	src := Source{Host: "h", Port: 5432, User: "u", Password: "pw", Database: "d", TLS: true}
+	if _, err := newCopier(rt, &fakeRestorer{}).Copy(t.Context(), pgTarget, src); err == nil {
+		t.Fatal("want failure")
+	}
+	if len(rt.created) != 1 {
+		t.Errorf("TLS source must not be retried, got %d attempts", len(rt.created))
 	}
 }

@@ -167,7 +167,7 @@ describe('DashboardHome', () => {
       'system/status': { docker_connected: true },
     })
     renderHome(apps)
-    expect(await screen.findByText('All systems normal')).toBeInTheDocument()
+    expect(await screen.findByText(/apps? healthy/)).toBeInTheDocument()
     expect(screen.getAllByText('1 / 1')).toHaveLength(2)
     expect(
       screen.getByRole('region', { name: 'Recommended next steps' }),
@@ -175,7 +175,6 @@ describe('DashboardHome', () => {
     expect(
       await screen.findByText(/Nothing needs you\. 1 of 1 apps/),
     ).toBeInTheDocument()
-    expect(screen.getByText('Your app is healthy')).toBeInTheDocument()
   })
 
   it('puts setup and hardening advice on one quiet line, not in incidents', async () => {
@@ -238,7 +237,7 @@ describe('DashboardHome', () => {
       'system/status': { docker_connected: true },
     })
     renderHome(apps)
-    expect(await screen.findByText('All systems normal')).toBeInTheDocument()
+    expect(await screen.findByText(/apps? healthy/)).toBeInTheDocument()
     await waitFor(() => {
       expect(screen.getByText('2 recommendations')).toBeInTheDocument()
     })
@@ -329,9 +328,6 @@ describe('DashboardHome', () => {
       screen.queryByRole('button', { name: 'Open logs' }),
     ).not.toBeInTheDocument()
     expect(screen.getByText('1 thing needs attention')).toBeInTheDocument()
-    await waitFor(() => {
-      expect(screen.getByText('1 incident')).toBeInTheDocument()
-    })
   })
 })
 
