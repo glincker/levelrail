@@ -676,5 +676,55 @@
     "description": "Filled in automatically for nodes created from a cloud provider. Clear a field to remove that label.",
     "save": "Save",
     "saved": "Failure domain updated."
+  },
+  "banner": {
+    "description": "Add servers to spread apps and databases across machines. A WireGuard mesh links every node back to this control plane.",
+    "diagram": {
+      "controlPlane": "control plane",
+      "nodes": "nodes",
+      "mesh": "WireGuard mesh"
+    }
+  },
+  "detail": {
+    "back": "Back to nodes",
+    "retry": "Try again",
+    "banner": {
+      "pending": "This node is enrolled and waiting for its agent to connect.",
+      "online": "Agent connected. Cordon or drain this node before maintenance.",
+      "offline": "The agent is not reachable, so nothing new is placed here.",
+      "cordoned": "New placements are paused. Running workloads are untouched."
+    },
+    "statusCard": {
+      "title": "Status",
+      "lastSeen": "Last seen {{when}}",
+      "online": "Agent connected and healthy",
+      "offline": "Agent not reachable",
+      "pending": "Waiting for the agent to connect",
+      "cordoned": "Cordoned, not taking new work",
+      "reenroll": "Re-enroll agent",
+      "recheck": "Re-check",
+      "uncordonHint": "Use Uncordon in the header to resume placements."
+    },
+    "overview": {
+      "title": "Overview",
+      "address": "Address",
+      "joined": "Joined",
+      "lastSeen": "Last seen",
+      "never": "Never",
+      "notSet": "Not set"
+    },
+    "workloads": {
+      "title": "Workload capabilities",
+      "apps": "Accepts app workloads",
+      "appsHint": "Whether this node is eligible for new application placements.",
+      "appsOn": "App workloads enabled.",
+      "appsOff": "App workloads disabled.",
+      "builds": "Accepts build workloads",
+      "buildsHint": "A routing preference for where new builds run, not a hard placement rule.",
+      "buildsOn": "Build workloads enabled.",
+      "buildsOff": "Build workloads disabled.",
+      "buildsTipLabel": "What accepts build workloads does",
+      "buildsTip": "Sets whether new builds prefer this node. It does not move apps or databases already running here, and it does not guarantee builds never run here: if no node that accepts builds is currently healthy, a build still runs on the primary node rather than failing."
+    }
   }
 }
