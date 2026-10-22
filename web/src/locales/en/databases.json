@@ -692,6 +692,34 @@
     "submit": "Create database",
     "submitting": "Creating...",
     "created": "Database \"{{name}}\" is being created.",
-    "createdPartial": "Database \"{{name}}\" created, but size or backups could not be applied. Check its settings."
+    "createdPartial": "Database \"{{name}}\" created, but size or backups could not be applied. Check its settings.",
+    "dockerDown": "Docker is not responding on this server. Databases cannot be created until it is back."
+  },
+  "provision": {
+    "title": "Setting up your database",
+    "readyTitle": "Your database is ready",
+    "failedTitle": "Setup stopped",
+    "elapsed": "Elapsed {{time}}",
+    "pullProgress": "Image download progress",
+    "failedAt": "Stopped at {{step}}:",
+    "retry": "Retry",
+    "confirmRemoveVolume": "This deletes the old data volume for good. Continue?",
+    "confirmYes": "Delete volume and retry",
+    "cancel": "Cancel",
+    "open": "Open database",
+    "connectApp": "Connect an app",
+    "details": "Details",
+    "steps": {
+      "accepted": "Request accepted",
+      "docker_check": "Check Docker",
+      "pull_image": "Download the image",
+      "create_volume": "Create storage",
+      "credentials_and_tls": "Credentials and TLS",
+      "create_container": "Create the container",
+      "start": "Start the database",
+      "wait_ready": "Wait for connections",
+      "apply_settings": "Apply size and backups",
+      "ready": "Ready"
+    }
   }
 }

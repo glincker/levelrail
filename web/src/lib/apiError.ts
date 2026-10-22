@@ -6,13 +6,38 @@
 // to it uniformly: redirect to /login, distinct from how a 404/500 still
 // renders in each route's own error boundary.
 
+export interface ApiErrorFix {
+  id: string
+  label: string
+}
+
+interface TypedDetails {
+  code: string
+  fix?: ApiErrorFix
+  requestId?: string
+}
+
+// readErrorMessage records typed bodies here, keyed by their message, so the
+// ApiError every fetcher builds from that message carries code, fix and request id.
+const typedDetails = new Map<string, TypedDetails>()
+const MAX_TYPED_DETAILS = 50
+
 export class ApiError extends Error {
   readonly status: number
+  readonly code?: string
+  readonly fix?: ApiErrorFix
+  readonly requestId?: string
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, details?: TypedDetails) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    const d = details ?? typedDetails.get(message)
+    if (d) {
+      this.code = d.code
+      this.fix = d.fix
+      this.requestId = d.requestId
+    }
   }
 }
 
@@ -37,7 +62,19 @@ export async function readErrorMessage(
   const body = (await res.json().catch(() => null)) as {
     error?: string
     message?: string
+    code?: string
+    fix?: ApiErrorFix
+    request_id?: string
   } | null
+  if (body?.code && body.message) {
+    if (typedDetails.size >= MAX_TYPED_DETAILS) typedDetails.clear()
+    typedDetails.set(body.message, {
+      code: body.code,
+      fix: body.fix,
+      requestId: body.request_id,
+    })
+    return body.message
+  }
   // Demo gate bodies carry a machine code in `error` and the human text in `message`.
   if (body?.error?.startsWith('demo_') && body.message) {
     return body.message

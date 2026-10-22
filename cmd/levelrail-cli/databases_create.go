@@ -97,7 +97,7 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 	fs := flag.NewFlagSet(prog+" databases create", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	var tokenFlag, apiURLFlag, profileFlag, name, engine, version, nodeID, existingVolume string
-	var jsonOut, interactive bool
+	var jsonOut, interactive, wait bool
 	fs.StringVar(&name, "name", "", "database name (required)")
 	fs.StringVar(&engine, "engine", "", "database engine: "+strings.Join(supportedEngineParams, ", ")+" (required)")
 	fs.StringVar(&version, "version", "", "engine version, e.g. \"16\"; postgres also takes \"<major>-pgvector\", \"<major>-timescaledb\" or \"<major>-postgis\", e.g. \"17-timescaledb\" (required)")
@@ -109,6 +109,7 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 	fs.BoolVar(&jsonOut, "json", false, "print the created database as JSON to stdout and nothing else")
 	outputFlagP, queryFlagP := bindOutputQueryFlags(fs)
 	fs.BoolVar(&interactive, "interactive", false, "run a step-by-step wizard instead of specifying flags: prompts for name, engine, version, resource limits, public access, and a backup schedule, then creates the database via the API")
+	fs.BoolVar(&wait, "wait", false, "after creating, print each provisioning step until the database is ready or fails")
 	fs.BoolVar(&interactive, "i", false, "shorthand for --interactive")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesCreateUsage(prog)) }
 
@@ -161,6 +162,9 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
+	}
+	if wait && !jsonOut {
+		return waitProvision(context.Background(), client, created.Name, stderr, lookupEnv)
 	}
 	return exitOK
 }

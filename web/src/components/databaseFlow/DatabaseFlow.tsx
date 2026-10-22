@@ -22,7 +22,9 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
 import { useDatabaseNameFree } from '../../hooks/useDatabaseNameFree'
-import { ExistingVolumeError } from '../../lib/apiError'
+import { ApiError, ExistingVolumeError } from '../../lib/apiError'
+import { ApiErrorAlert } from '../ApiErrorAlert'
+import { useDockerDegradedPoll } from '../../queries/dockerIntegration'
 import { useBackupTargetsOptional } from '../../queries/backupTargets'
 import { useDatabaseEnginesOptional } from '../../queries/databaseEngines'
 import {
@@ -169,6 +171,10 @@ export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
     void submit()
   }
 
+  const dockerDown = useDockerDegradedPoll().data?.unresponsive === true
+  const dockerDownError = new ApiError(503, t('flow.dockerDown'), {
+    code: 'docker_unavailable',
+  })
   const pending =
     create.isPending || setResources.isPending || setSchedule.isPending
   const volumeError =
@@ -360,11 +366,9 @@ export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
             }}
           />
         ) : create.isError ? (
-          <Alert variant="destructive">
-            <WarningIcon aria-hidden="true" />
-            <AlertDescription>{create.error.message}</AlertDescription>
-          </Alert>
+          <ApiErrorAlert error={create.error} />
         ) : null}
+        {dockerDown ? <ApiErrorAlert error={dockerDownError} /> : null}
       </div>
       <p
         data-testid="database-summary"
@@ -376,7 +380,11 @@ export function DatabaseFlow({ onClose }: Readonly<{ onClose: () => void }>) {
         <Button type="button" variant="outline" onClick={onClose}>
           {t('flow.cancel')}
         </Button>
-        <Button type="submit" disabled={pending}>
+        <Button
+          type="submit"
+          disabled={pending || dockerDown}
+          title={dockerDown ? t('flow.dockerDown') : undefined}
+        >
           {pending ? t('flow.submitting') : t('flow.submit')}
         </Button>
       </DialogFooter>

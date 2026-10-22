@@ -24,5 +24,11 @@ func runDatabasesStatus(prog string, args []string, stdout, stderr io.Writer, lo
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get status for database %q: %w", name, err))
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, conditions, func() { printConditionsHuman(stdout, conditions) })
+	return writeScheduledTaskResult(stdout, stderr, of, conditions, func() {
+		printConditionsHuman(stdout, conditions)
+		if a, perr := client.GetDatabaseProvision(context.Background(), name); perr == nil && a.Status != "ready" {
+			_, _ = fmt.Fprintln(stdout)
+			printProvisionAttempt(stdout, a)
+		}
+	})
 }

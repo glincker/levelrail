@@ -873,3 +873,18 @@ Fix: If the volume exists but is unmounted, try restarting the database: `levelr
 
 Still stuck: See [Backup recovery](/backups-and-storage) for full recovery procedures.
 
+
+## What happens when you create a database
+
+The dashboard (and `levelrail-cli databases create --wait`) shows each step. `levelrail-cli databases status <name>` prints the latest attempt, and the API serves it at `GET /api/v1/databases/{name}/provision` (live stream at `.../provision/stream`).
+
+1. Request accepted: the database is saved and queued.
+2. Check Docker: the node must answer. If it does not, the step fails with a Re-check Docker action.
+3. Download the image: shown with a percentage and layer count. Failures here usually mean the registry is unreachable or the image tag does not exist; use Retry.
+4. Create storage: the data volume. A leftover volume from a deleted database of the same name offers "Remove leftover volume and retry", which asks for explicit confirmation because it deletes that data.
+5. Credentials and TLS: generated credentials and certificates. A failure means no secrets master key is configured.
+6. Create the container and 7. Start the database: port or name conflicts fail here; Retry re-runs reconciliation.
+8. Wait for connections: the container must stay running after start.
+9. Apply size and backups, then 10. Ready.
+
+A failed step marks every later step as skipped. Retry starts a new attempt; the last few attempts are kept (`APP_DB_PROVISION_KEEP_ATTEMPTS`, default 5), and progress events are throttled by `APP_DB_PROVISION_EVENT_INTERVAL` (default 500ms).

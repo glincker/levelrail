@@ -44,6 +44,8 @@ func (rt *Router) leftoverDatabaseVolumes(ctx context.Context, dbName, nodeID st
 	if rt.orphanedVolumes == nil || (nodeID != "" && nodeID != rt.localNodeID) {
 		return nil, nil
 	}
+	ctx, cancel := context.WithTimeout(ctx, leftoverVolumeTimeout())
+	defer cancel()
 	all, err := rt.orphanedVolumes.ListNamedVolumes(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list volumes: %w", err)
@@ -63,6 +65,9 @@ func (rt *Router) leftoverDatabaseVolumes(ctx context.Context, dbName, nodeID st
 // resolveExistingVolume applies the caller's explicit choice about leftover
 // volumes, writing the response and returning false when creation must stop.
 func (rt *Router) resolveExistingVolume(w http.ResponseWriter, r *http.Request, req databaseResource) bool {
+	if rt.rejectIfDockerDegraded(w) {
+		return false
+	}
 	found, err := rt.leftoverDatabaseVolumes(r.Context(), req.Name, req.NodeID)
 	if err != nil {
 		rt.internalError(w, "api: create database: check leftover volumes failed", err)

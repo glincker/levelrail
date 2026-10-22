@@ -181,7 +181,10 @@ export async function createDatabase(
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as {
       error?: string
+      message?: string
       code?: string
+      fix?: { id: string; label: string }
+      request_id?: string
       volumes?: ExistingVolumeInfo[]
     } | null
     if (res.status === 409 && body?.code === 'existing_volume') {
@@ -189,7 +192,10 @@ export async function createDatabase(
     }
     throw new ApiError(
       res.status,
-      body?.error ?? `create database failed: ${res.status}`,
+      body?.message ?? body?.error ?? `create database failed: ${res.status}`,
+      body?.code
+        ? { code: body.code, fix: body.fix, requestId: body.request_id }
+        : undefined,
     )
   }
   return (await res.json()) as DatabaseResource

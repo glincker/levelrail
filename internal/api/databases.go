@@ -270,6 +270,7 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 			return false
 		}
 	}
+	rt.beginProvision(r.Context(), req.Name)
 	return true
 }
 

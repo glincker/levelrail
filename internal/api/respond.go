@@ -32,6 +32,11 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 }
 
 func writeError(w http.ResponseWriter, status int, msg string) {
+	if status == http.StatusInternalServerError && msg == "internal error" {
+		m := "Something went wrong on the server."
+		writeJSON(w, status, typedError{Error: m, Code: errCodeInternal, Message: m, RequestID: w.Header().Get(requestIDHeader)})
+		return
+	}
 	writeJSON(w, status, apiError{Error: msg})
 }
 
@@ -45,6 +50,15 @@ func (rt *Router) internalError(w http.ResponseWriter, context string, err error
 	for _, a := range extra {
 		attrs = append(attrs, a)
 	}
+	reqID := w.Header().Get(requestIDHeader)
+	attrs = append(attrs, slog.String("request_id", reqID))
+	if t := classifyError(err); t != nil {
+		rt.logger.Warn(context, append(attrs, slog.String("code", t.Code))...)
+		t.RequestID = reqID
+		writeJSON(w, t.status, t)
+		return
+	}
 	rt.logger.Error(context, attrs...)
-	writeError(w, http.StatusInternalServerError, "internal error")
+	msg := "Something went wrong on the server."
+	writeJSON(w, http.StatusInternalServerError, typedError{Error: msg, Code: errCodeInternal, Message: msg, RequestID: reqID})
 }

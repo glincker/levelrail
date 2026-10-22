@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/appsleep"
 	"github.com/GLINCKER/levelrail/internal/canary"
+	"github.com/GLINCKER/levelrail/internal/dbprovision"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
@@ -323,9 +325,21 @@ func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databas
 		if deps.meshCfg != nil {
 			dbOpts = append(dbOpts, database.WithMeshEndpoint(newMeshPathResolver(deps.meshCfg, deps.db), deps.db))
 		}
+		dbOpts = append(dbOpts, database.WithProvisionRecorder(provisionRecorder(deps.db)))
 		controllers = append(controllers, database.New(desired.Name, deps.db, dbRuntime, dbOpts...))
 	}
 	return controllers
+}
+
+var (
+	provisionRecorderOnce sync.Once
+	provisionRecorderInst *dbprovision.Recorder
+)
+
+// provisionRecorder is shared so its duplicate-event suppression survives reconcile passes.
+func provisionRecorder(s dbprovision.Store) *dbprovision.Recorder {
+	provisionRecorderOnce.Do(func() { provisionRecorderInst = dbprovision.NewRecorder(s) })
+	return provisionRecorderInst
 }
 
 // databaseCredentialOpts resolves desired's engine-specific credential

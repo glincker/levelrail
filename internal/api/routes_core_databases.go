@@ -13,6 +13,7 @@ func (rt *Router) registerDatabaseRoutes(mux *http.ServeMux) {
 	// Resource-scoped, same reasoning as the apps routes above.
 	mux.HandleFunc("GET /api/v1/databases/{name}", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetDatabase))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleDeleteDatabase))
+	rt.registerDatabaseProvisionRoutes(mux)
 	mux.HandleFunc("GET /api/v1/databases/{name}/status", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleDatabaseStatus))
 
 	// Telemetry query, the database counterpart to

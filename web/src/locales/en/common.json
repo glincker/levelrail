@@ -813,5 +813,15 @@
         "members": "apps and databases"
       }
     }
+  },
+  "apiError": {
+    "recheckDocker": "Re-check Docker",
+    "rechecking": "Checking...",
+    "fixing": "Fixing...",
+    "fixFailed": "The fix did not work.",
+    "requestId": "Request ID: {{id}}",
+    "copyRequestId": "Copy request ID",
+    "copied": "Copied",
+    "generic": "Something went wrong on the server."
   }
 }
