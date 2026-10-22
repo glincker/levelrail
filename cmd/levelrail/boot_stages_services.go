@@ -374,6 +374,7 @@ func (s *bootState) startReconciler() {
 		firewallRulePrefix:           b.RuleCommentPrefix(),
 		instanceID:                   instanceID,
 		livenessTracker:              application.NewLivenessTracker(),
+		imageIDs:                     application.NewImageIDCache(reconcile.FullResyncFromEnv(os.Getenv)),
 		restartBackoff:               newRestartBackoff(logger),
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),

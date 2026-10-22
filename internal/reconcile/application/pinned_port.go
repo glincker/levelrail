@@ -68,7 +68,7 @@ func (c *Controller) releasePinnedPort(ctx context.Context, target string, desir
 	if until, ok := c.handoffFailed[target]; ok && time.Now().Before(until) {
 		return nil, &pinnedPortBackoffError{port: *desired.HostPort, until: until}
 	}
-	all, err := c.runtime.ListByPrefix(ctx, c.serviceName+"-")
+	all, err := c.listPrefix(ctx, c.serviceName+"-")
 	if err != nil {
 		return nil, fmt.Errorf("list containers holding pinned host port %d: %w", *desired.HostPort, err)
 	}
@@ -77,7 +77,7 @@ func (c *Controller) releasePinnedPort(ctx context.Context, target string, desir
 		if cs.Name == target || !cs.Running || !ownsContainer(c.serviceName, cs.Name) || !c.ownsInstance(cs) || !holdsHostPort(cs, *desired.HostPort) {
 			continue
 		}
-		if err := c.runtime.Stop(ctx, cs.ID, 10*time.Second); err != nil {
+		if err := c.stopContainer(ctx, cs.ID); err != nil {
 			_ = c.restoreReleased(ctx, released)
 			return nil, fmt.Errorf("stop %q to free pinned host port %d: %w", cs.Name, *desired.HostPort, err)
 		}
@@ -100,7 +100,7 @@ func holdsHostPort(cs docker.ContainerState, port int) bool {
 func (c *Controller) restoreReleased(ctx context.Context, released []docker.ContainerState) error {
 	var first error
 	for _, cs := range released {
-		if err := c.runtime.Start(ctx, cs.ID); err != nil && first == nil {
+		if err := c.startContainer(ctx, cs.ID); err != nil && first == nil {
 			first = fmt.Errorf("restart previous release %q: %w", cs.Name, err)
 		}
 	}
@@ -116,13 +116,13 @@ func (c *Controller) abortHandoff(ctx context.Context, target string, released [
 		// Stopped, not removed: a failed candidate must not stay Up, and the
 		// exited container keeps its output for the log collector.
 		if state, err := c.runtime.InspectByName(ctx, target); err == nil && state != nil && state.Running {
-			_ = c.runtime.Stop(ctx, state.ID, 10*time.Second)
+			_ = c.stopContainer(ctx, state.ID)
 		}
 		return cause
 	}
 	if state, err := c.runtime.InspectByName(ctx, target); err == nil && state != nil {
-		_ = c.runtime.Stop(ctx, state.ID, 10*time.Second)
-		_ = c.runtime.Remove(ctx, state.ID, true)
+		_ = c.stopContainer(ctx, state.ID)
+		_ = c.removeContainer(ctx, state.ID)
 	}
 	if c.handoffFailed == nil {
 		c.handoffFailed = map[string]time.Time{}
