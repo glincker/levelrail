@@ -28,7 +28,8 @@
               "resource_counts",
               "cost",
               "alert_status",
-              "node_capacity"
+              "node_capacity",
+              "link"
             ]
           },
           "title": { "type": "string", "maxLength": 80 },
@@ -43,7 +44,8 @@
             }
           },
           "metric": { "type": "string", "maxLength": 64 },
-          "query": { "type": "string", "maxLength": 256 }
+          "query": { "type": "string", "maxLength": 256 },
+          "url": { "type": "string", "maxLength": 2048, "pattern": "^https?://" }
         }
       }
     }
