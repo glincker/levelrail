@@ -324,5 +324,21 @@
     "done_one": "Snoozed for a day.",
     "done_other": "Snoozed {{count}} items for a day.",
     "undo": "Undo"
+  },
+  "tabs": {
+    "label": "Dashboard views",
+    "start": "Start",
+    "metrics": "Metrics",
+    "add": "New dashboard",
+    "more": "More views",
+    "hiddenSuffix": "{{name}} (hidden)",
+    "addTitle": "New dashboard",
+    "addDescription": "Start from a ready made dashboard, or begin with an empty one.",
+    "empty": "Empty dashboard",
+    "metricsNote": "Fleet-wide totals. Customize it to make your own copy.",
+    "customize": "Customize",
+    "copyFailed": "Could not copy the Metrics view",
+    "emptyName": "Untitled dashboard",
+    "createFailed": "Could not create the dashboard"
   }
 }

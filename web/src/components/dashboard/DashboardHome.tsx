@@ -36,6 +36,7 @@ import { ResourceAdvisorTile } from '../resourceAdvisor/ResourceAdvisorTile'
 import { StorageUsageCard } from './StorageUsageCard'
 import { SleepFleetCard } from './SleepFleetCard'
 import { PlatformCapabilities } from './PlatformCapabilities'
+import { DashboardViews } from './DashboardViews'
 
 const FirstDeploy = lazy(() =>
   import('../getStarted/FirstDeploy').then((m) => ({
@@ -97,7 +98,7 @@ function UsageDetails() {
   )
 }
 
-export function DashboardHome({
+function StartView({
   summary,
   sample,
 }: {
@@ -105,37 +106,8 @@ export function DashboardHome({
   sample: AppListEntry[]
 }) {
   const { t } = useTranslation('dashboard')
-  const isRoot = useIsRoot()
   const { layout, move, toggle, reset } = useDashboardLayout()
   const [editing, setEditing] = useState(false)
-  const [deployStarted, setDeployStarted] = useState(false)
-  const [firstRunDone, setFirstRunDone] = useState(false)
-  const hasApps = summary.total > 0
-
-  if (!hasApps || (deployStarted && !firstRunDone)) {
-    return (
-      <div className="space-y-8">
-        <SignInHomeCards />
-        <Suspense fallback={null}>
-          <FirstDeploy
-            onStarted={() => {
-              setDeployStarted(true)
-            }}
-            onDone={() => {
-              setFirstRunDone(true)
-            }}
-          />
-        </Suspense>
-        {hasApps ? null : (
-          <>
-            <RecommendationsLine showSetup={isRoot} />
-            <QuickStart />
-            <PlatformCapabilities />
-          </>
-        )}
-      </div>
-    )
-  }
 
   const widgets: Record<WidgetId, ReactNode> = {
     attention: <NextSteps summary={summary} sample={sample} />,
@@ -154,7 +126,7 @@ export function DashboardHome({
   const shown = editing ? layout.order : visibleOrder(layout)
 
   return (
-    <DashboardHero>
+    <div className="flex flex-col gap-(--glinr-page-gap)">
       <StatusStrip
         apps={summary.total}
         trailing={
@@ -219,6 +191,50 @@ export function DashboardHome({
       </div>
       <RecommendationsLine showSetup={false} />
       <CopyRetryDialog />
+    </div>
+  )
+}
+
+export function DashboardHome({
+  summary,
+  sample,
+}: {
+  summary: AppsSummary
+  sample: AppListEntry[]
+}) {
+  const isRoot = useIsRoot()
+  const [deployStarted, setDeployStarted] = useState(false)
+  const [firstRunDone, setFirstRunDone] = useState(false)
+  const hasApps = summary.total > 0
+
+  if (!hasApps || (deployStarted && !firstRunDone)) {
+    return (
+      <div className="space-y-8">
+        <SignInHomeCards />
+        <Suspense fallback={null}>
+          <FirstDeploy
+            onStarted={() => {
+              setDeployStarted(true)
+            }}
+            onDone={() => {
+              setFirstRunDone(true)
+            }}
+          />
+        </Suspense>
+        {hasApps ? null : (
+          <>
+            <RecommendationsLine showSetup={isRoot} />
+            <QuickStart />
+            <PlatformCapabilities />
+          </>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <DashboardHero>
+      <DashboardViews start={<StartView summary={summary} sample={sample} />} />
     </DashboardHero>
   )
 }

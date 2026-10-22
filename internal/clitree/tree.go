@@ -17,7 +17,7 @@ var Tree = map[string]*Node{
 	"backup":   nil,
 	"restore":  nil,
 	"git":      {Subs: map[string]*Node{"remote": {Subs: map[string]*Node{"add": nil, "show": nil, "rotate": nil, "branch": nil, "revoke": nil}}}},
-	"bench":    {Subs: map[string]*Node{"run": nil, "soak": nil, "chaos": {Subs: map[string]*Node{"list": nil, "run": nil, "report": nil, "disk": nil, "free-space": nil}}}},
+	"bench":    {Subs: map[string]*Node{"run": nil, "soak": nil, "results": {Subs: map[string]*Node{"list": nil, "show": nil, "compare": nil, "upload": nil, "delete": nil}}, "chaos": {Subs: map[string]*Node{"list": nil, "run": nil, "report": nil, "disk": nil, "free-space": nil}}}},
 	"rollback": nil,
 	"previews": {Subs: map[string]*Node{
 		"list": nil, "delete": nil, "teardown": nil, "extend": nil, "settings": nil, "enable": nil, "disable": nil, "sweep": nil, "limits": nil, "approve": nil,

@@ -706,6 +706,7 @@ type Router struct {
 	oidcRotator                  OIDCKeyRotator                                             // nil is valid: POST /pipelines/oidc/rotate-key returns 501
 	featureFlags                 FeatureFlagStore                                           // always set, same "core Store interface" shape as scheduledTasks above
 	dashboards                   DashboardStore                                             // nil when the backing store lacks custom dashboards
+	benchmarks                   BenchmarkStore                                             // nil when the backing store lacks benchmark runs
 	chaosResults                 ChaosStore                                                 // nil when the backing store lacks chaos results
 	searchOnce                   sync.Once
 	searchSvc                    *search.Service       // built lazily by searchService, see search.go
@@ -1039,6 +1040,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.dash = newDashboardCache(0, 0)
 	rt.dashboards, _ = s.(DashboardStore)
 	rt.chaosResults, _ = s.(ChaosStore)
+	rt.benchmarks, _ = s.(BenchmarkStore)
 	rt.emailDeliveries, _ = s.(EmailDeliveryStore)
 	rt.splitStore, _ = s.(SplitTestStore)
 	for _, opt := range opts {

@@ -215,6 +215,22 @@ BENCH_NOISY_LOAD_RATIO=1 ./levelrail-cli bench chaos run all --repeat 3 \
 
 `--out` writes the structured file (host CPU, memory, OS, kernel, Docker version and engine, load average at start and end, build version and commit, methodology, caveats, every run and its named metrics, and a limits table derived from what actually ran). `--md-out` renders the same data as Markdown. You can name several scenarios instead of `all`. `BENCH_NOISY_LOAD_RATIO` is the load per CPU above which the report adds a "host was busy" caveat; unset, the load is still recorded but never flagged. `BENCH_COMMIT` overrides the commit when a build from a git worktree is stamped with another checkout's commit. Skipped scenarios are kept in the file as skipped, never dropped. The named metrics are in the results file only, not in the control plane `--record` store.
 
+### Store, show and compare runs
+
+Add `--upload` to `bench chaos run` (with a signed-in CLI or `APP_API_TOKEN`) and the results file is stored on the control plane. Settings, Benchmarks lists the runs with host, commit and outcome, opens one with its caveats, per-scenario tables, throughput chart and limits table, and compares any two runs with a delta per metric.
+
+```bash
+levelrail-cli bench chaos run all --repeat 3 --out results.json --upload
+levelrail-cli bench results list
+levelrail-cli bench results show bench_1a2b3c4d5e6f
+levelrail-cli bench results compare BASE_ID HEAD_ID
+levelrail-cli bench results upload results.json
+```
+
+Each side of a comparison is the median over that side's runs. A change smaller than `APP_BENCHMARK_COMPARE_NOISE_PCT` percent (default 5) reads as the same, and the view warns when the two runs came from different platforms or hosts, a dirty tree or a single run. Uploading the same file twice stores it once. `APP_BENCHMARK_RUNS_KEEP` (default 50) bounds how many runs are kept, oldest first. The API is `GET/POST /api/v1/benchmarks`, `GET /api/v1/benchmarks/{id}`, `GET /api/v1/benchmarks/compare?base=&head=` and `DELETE /api/v1/benchmarks/{id}` (root). The MCP tool `get_resilience_report` lists the stored runs, and takes `run_id` and `compare_to`.
+
+The dashboard cannot start a scenario. The scenarios build their own throwaway stack on a local Docker daemon and need a CLI built with `-tags chaoslive`, so running them inside the control plane would put test load and container churn next to production apps.
+
 ## Chaos results
 
 Measured by `levelrail-cli bench chaos run all` (build with `-tags chaoslive`) on 2026-10-18. Hardware: Apple M4 Max, 14 cores, 36 GB RAM, macOS 27.2, Docker Desktop engine 28.3.0 with 7 GiB visible to Docker, node:22-alpine fixture, one replica, 40 req/s open-loop for 30 s through the embedded ingress on loopback, one run per scenario. Single runs on a laptop: treat them as a first measurement, not a distribution.
