@@ -211,3 +211,49 @@ func TestDockerFakes(t *testing.T) {
 		t.Errorf("DiskUsage() error = %v", err)
 	}
 }
+
+func TestSeedReadiness(t *testing.T) {
+	ctx := context.Background()
+	db := seeded(t, 1)
+	names := make([]string, len(appSpecs))
+	for i, a := range appSpecs {
+		names[i] = "application/" + a.name
+	}
+	conds, err := db.GetConditionsForControllers(ctx, names)
+	if err != nil {
+		t.Fatalf("GetConditionsForControllers() error = %v", err)
+	}
+	ready := 0
+	for _, a := range appSpecs {
+		cs := conds["application/"+a.name]
+		if len(cs) != 1 || cs[0].Type != "Ready" {
+			t.Fatalf("%s conditions = %+v, want one Ready", a.name, cs)
+		}
+		if cs[0].Status == "True" {
+			ready++
+			if !cs[0].LastTransitionTime.Before(testAnchor) {
+				t.Errorf("%s ready since %v, want before anchor", a.name, cs[0].LastTransitionTime)
+			}
+			attempts, err := db.ListDeployAttempts(ctx, a.name)
+			if err != nil || len(attempts) == 0 {
+				t.Fatalf("attempts for %s: %d, %v", a.name, len(attempts), err)
+			}
+			serving := false
+			for _, at := range attempts {
+				serving = serving || at.RolloutState == store.RolloutStateServing
+			}
+			if !serving {
+				t.Errorf("%s has no serving attempt", a.name)
+			}
+		}
+	}
+	if want := len(appSpecs) - 2; ready != want {
+		t.Errorf("ready apps = %d, want %d", ready, want)
+	}
+	if c := conds["application/"+crashloopApp][0]; c.Status != "False" || c.Reason != "CrashLoopBackOff" {
+		t.Errorf("%s condition = %+v, want failing", crashloopApp, c)
+	}
+	if c := conds["application/legacy-cms"][0]; c.Reason != "Suspended" {
+		t.Errorf("legacy-cms condition = %+v, want Suspended", c)
+	}
+}

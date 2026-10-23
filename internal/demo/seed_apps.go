@@ -159,6 +159,9 @@ func (s *seeder) deploys() error {
 }
 
 func (s *seeder) saveAttempts(a appSpec, list []attempt) error {
+	if s.lastOK == nil {
+		s.lastOK = map[string]okAttempt{}
+	}
 	for i, t := range list {
 		id := fmt.Sprintf("dep_%s_%03d", a.name, i+1)
 		da := store.DeployAttempt{
@@ -172,6 +175,9 @@ func (s *seeder) saveAttempts(a appSpec, list []attempt) error {
 		}
 		if err := s.db.FinishDeployAttempt(s.ctx, id, t.status, t.at.Add(t.dur), t.failure); err != nil {
 			return fmt.Errorf("demo: finish deploy attempt %q: %w", id, err)
+		}
+		if t.status == store.DeployAttemptStatusSucceeded {
+			s.lastOK[a.name] = okAttempt{id: id, at: t.at.Add(t.dur)}
 		}
 	}
 	if len(list) > 1 {
