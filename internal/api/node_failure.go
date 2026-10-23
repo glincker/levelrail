@@ -13,8 +13,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-const placementTriggerNodeFailure = "node_failure"
-
 // WithNodeFailure enables the node failure policy controller and its routes.
 func WithNodeFailure(s nodefailure.Store, cfg nodefailure.Config) Option {
 	return func(rt *Router) {

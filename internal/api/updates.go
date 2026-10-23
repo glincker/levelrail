@@ -18,8 +18,6 @@ const githubRepo = "glincker/levelrail"
 // so a busy Settings > Updates page can't risk rate limiting.
 const updatesCacheTTL = time.Hour
 
-var updatesHTTPClient = &http.Client{Timeout: 8 * time.Second}
-
 // githubRelease is the subset of GitHub's release object this handler
 // needs.
 type githubRelease struct {
