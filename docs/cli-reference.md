@@ -33,6 +33,27 @@ Each command resolves its target in this order, and an explicit flag always wins
 Login pins the server. `auth login` prints the server's name and fingerprint (compare it with the one on the approval page) and saves its identity in the profile. Every later request first checks that the URL still answers as that server and refuses to send the token otherwise, naming the fix: `auth login --reauth` to log in to the new server, or `auth trust-server` to pin the one now answering. A profile saved before pinning existed asks once to confirm the fingerprint (`--yes` or `APP_TRUST_SERVER=yes` for scripts). `APP_API_TOKEN` keeps working and only prints a warning when the profile pins a different server. `auth status` and `auth whoami` show the pinned server.
 
 Manage more than one control plane with named profiles: `levelrail-cli auth login --profile staging`, then `--profile staging` on any command. `levelrail-cli profile list` shows them.
+
+## Updating the CLI {#updating}
+
+```bash
+levelrail-cli update --check          # current version, latest release, update available or not
+levelrail-cli update --dry-run        # show what would change, download nothing
+levelrail-cli update --yes            # replace this binary with the latest release
+levelrail-cli update --version v0.8.2 --yes   # pin a tag, also works as a downgrade
+```
+
+`update --check` always exits 0 when the check itself worked, even when you are out of date, and honors `--json` and `--output`. `update` downloads the asset for your OS and architecture, verifies its checksum and the release's Sigstore signature, runs the new binary once to confirm its version, then atomically replaces the running file. If the signature or checksum cannot be verified, or the directory is not writable (a package manager path, or a root-owned `/usr/local/bin`: update it that way or re-run with `sudo`), nothing is changed. In CI mode or without a terminal it needs `--yes`. Windows is not supported in place: re-run `install-cli.ps1`.
+
+Interactive runs print one line to stderr when a newer release exists, at most once per interval. It never runs in CI mode, with `--json` output, or for `help`, `version` and `update`, and it is cut off after a short wait so it cannot slow a command.
+
+| Environment variable | Meaning | Default |
+| --- | --- | --- |
+| `LEVELRAIL_NO_UPDATE_CHECK` | `1` turns the hint off | unset |
+| `LEVELRAIL_UPDATE_CHECK_DAYS` | days between hints, `0` disables | `7` |
+| `LEVELRAIL_UPDATE_HINT_WAIT_MS` | longest the hint may wait after a command ends | `750` |
+| `LEVELRAIL_RELEASE_API_URL` | releases API base | `https://api.github.com` |
+| `LEVELRAIL_RELEASE_BASE_URL` | asset download base, https only | the release repo's GitHub releases |
 ## Scripting: `--json` and exit codes
 
 Every command that returns data or a result supports `--json` (shorthand for `--output json`), and `--query` takes a JMESPath expression. With `--json`, stdout carries only the JSON result. The exceptions are `completion bash|zsh|fish` (a shell script) and `control-plane-backups help-dr` (a static runbook). A test walks the command tree and fails when a new command has no `--json` and is not on that exempt list.

@@ -16,7 +16,10 @@ func main() {
 	prog := filepath.Base(os.Args[0])
 	// Piped stdin or stdout implies CI mode; run() only sees env so tests stay deterministic.
 	forceCI = !isTerminal(os.Stdin) || !isTerminal(os.Stdout)
-	os.Exit(run(prog, os.Args[1:], os.Stdout, os.Stderr, os.LookupEnv))
+	finishHint := startUpdateHint(prog, os.Args[1:], os.Stderr, os.LookupEnv)
+	code := run(prog, os.Args[1:], os.Stdout, os.Stderr, os.LookupEnv)
+	finishHint()
+	os.Exit(code)
 }
 
 // run returns an int exit code instead of calling os.Exit, so tests can drive dispatch directly.
@@ -205,6 +208,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runReadiness(prog, args[1:], stdout, stderr, lookupEnv)
 	case "version":
 		return runVersion(prog, args[1:], stdout, stderr, lookupEnv)
+	case "update":
+		return runUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "changelog":
 		return runChangelog(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ai-control":
@@ -426,6 +431,7 @@ Usage:
   %[1]s upgrade --history [--json] | --ack <id>                recorded upgrades, rollbacks and installs, and acknowledging one
   %[1]s updates restore-points list|restore <id> [--yes]       pre-upgrade restore points and putting one back
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
+  %[1]s update [--check] [--version TAG] [--dry-run] [--yes]  check for a newer CLI release, or replace this binary with a verified one
   %[1]s changelog [--limit N] [flags]                         recent release notes from the control plane's own CHANGELOG.md
   %[1]s ai-control status|set|revoke-agents [flags]           what agents and AI may do: off, observe, operate, admin
   %[1]s network mesh status|enable|disable [flags]            the WireGuard mesh between nodes
