@@ -45,6 +45,8 @@ To run other CLI commands in a job, install the CLI on its own with the `setup-c
     APP_API_TOKEN: ${{ secrets.LEVELRAIL_API_TOKEN }}
 ```
 
+`LEVELRAIL_TOKEN`, `LEVELRAIL_API_URL` and `LEVELRAIL_PROFILE` work too and win over the `APP_*` names; Actions sets `CI=true`, so the CLI never prompts (see CI mode in the CLI reference).
+
 ## Reporting back to the pull request
 
 `integrations/github-action` is the same deploy-and-wait flow plus a report back to GitHub: a deployment status on the commit (the Deployments panel on the PR) and a check run named after the environment. Use it instead of `.github/actions/deploy` when you want the result visible on the PR.

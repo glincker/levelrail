@@ -61,5 +61,5 @@ func offerFirstRunLogin(prog, profile, apiURL string, lookupEnv func(string) (st
 
 // firstRunInteractive is true only with a real terminal on stdin and stderr, so scripts never prompt.
 var firstRunInteractive = func() bool {
-	return isTerminal(os.Stdin) && isTerminal(os.Stderr)
+	return !ciMode && isTerminal(os.Stdin) && isTerminal(os.Stderr)
 }
