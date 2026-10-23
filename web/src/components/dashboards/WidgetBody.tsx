@@ -149,7 +149,10 @@ function LogWidget({
   const lines = q.data?.entries ?? []
   if (lines.length === 0) return <Muted>{t('widget.noLogs')}</Muted>
   return (
-    <ol className="max-h-64 overflow-auto font-mono text-xs" tabIndex={0}>
+    <ol
+      className="max-h-64 overflow-auto rounded-sm font-mono text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+      tabIndex={0}
+    >
       {lines.map((l, i) => (
         <li
           key={`${l.timestamp}-${i}`}
