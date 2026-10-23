@@ -401,7 +401,7 @@ Checked by `(*Spec).Validate` in `internal/spec/validate.go` for anything the sc
 - `build.image` is required when `build.type` is `image` and rejected for any other type. `build.path` and `build.baseDirectory` are rejected for `image`, and `build.baseDirectory` is rejected for `compose`.
 - `build.baseDirectory` must be relative and must not escape the repository root.
 - `routes`, `headers` and `static` are only meaningful when `build.type` is `static`; see [Static site routing rules](/static-routing).
-- `build.args` is only meaningful when `build.type` is `dockerfile`. Set with any other build type, it is rejected rather than silently ignored. `build.secrets` follows the same rule.
+- `build.args` is only meaningful when `build.type` is `dockerfile`. Set with any other build type, it is rejected rather than silently ignored. `build.secrets` follows the same rule. A secret is only usable from `build.secrets` after it is enabled for builds, which is off by default: use the Build switch on the secret's row on the app Environment page (it asks for confirmation when turned on), or `apps secrets build-time`.
 
 Example of a build secret:
 
