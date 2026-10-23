@@ -7,7 +7,8 @@ import (
 )
 
 // Event is the vendor-neutral record of one finished edge request. It never
-// carries a client address or query string.
+// carries a query string, cookie, auth header or body. ClientIP, UserAgent and
+// VisitorID are set only for sinks that opt in (see Policy).
 type Event struct {
 	Time          time.Time `json:"time"`
 	App           string    `json:"app"`
@@ -25,6 +26,8 @@ type Event struct {
 	VisitorID     string    `json:"visitor_id,omitempty"`
 	ReferrerHost  string    `json:"referrer_host,omitempty"`
 	UAFamily      string    `json:"ua_family,omitempty"`
+	ClientIP      string    `json:"client_ip,omitempty"`
+	UserAgent     string    `json:"user_agent,omitempty"`
 }
 
 // NewEvent builds an Event from an access record and the app name the caller

@@ -35,6 +35,7 @@ type SinkStats struct {
 	SampledOut  uint64    `json:"sampled_out"`
 	Queued      int       `json:"queued"`
 	LastError   string    `json:"last_error,omitempty"`
+	LastKind    string    `json:"last_error_kind,omitempty"`
 	LastSuccess time.Time `json:"last_success"`
 }
 
@@ -125,6 +126,7 @@ type worker struct {
 
 	mu          sync.Mutex
 	lastError   string
+	lastKind    string
 	lastSuccess time.Time
 
 	wait   func(ctx context.Context, d time.Duration) bool
@@ -185,11 +187,11 @@ func (w *worker) offer(e Event) {
 
 func (w *worker) stats() SinkStats {
 	w.mu.Lock()
-	le, ls := w.lastError, w.lastSuccess
+	le, lk, ls := w.lastError, w.lastKind, w.lastSuccess
 	w.mu.Unlock()
 	return SinkStats{
 		Name: w.sink.Name(), Sent: w.sent.Load(), Dropped: w.dropped.Load(), Failed: w.failed.Load(),
-		SampledOut: w.sampledOut.Load(), Queued: len(w.queue), LastError: le, LastSuccess: ls,
+		SampledOut: w.sampledOut.Load(), Queued: len(w.queue), LastError: le, LastKind: lk, LastSuccess: ls,
 	}
 }
 
@@ -257,6 +259,7 @@ func (w *worker) deliver(ctx context.Context, batch []Event) {
 	w.failed.Add(uint64(len(batch)))
 	w.mu.Lock()
 	w.lastError = w.redact(err.Error())
+	w.lastKind = ErrorKind(err)
 	w.mu.Unlock()
 }
 

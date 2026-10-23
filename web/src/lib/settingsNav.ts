@@ -31,6 +31,7 @@ import {
   LockKeyIcon,
   PlugsConnectedIcon,
   RobotIcon,
+  ShareNetworkIcon,
   ShieldCheckIcon,
   ShieldIcon,
   StackIcon,
@@ -279,6 +280,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'event-webhooks',
         to: '/settings/event-webhooks',
         icon: WebhooksLogoIcon,
+      },
+      {
+        id: 'traffic-export',
+        to: '/settings/traffic-export',
+        icon: ShareNetworkIcon,
       },
       {
         id: 'email',

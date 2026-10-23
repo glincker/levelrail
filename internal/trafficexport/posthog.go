@@ -29,6 +29,7 @@ type PostHogSink struct {
 	url     string
 	token   string
 	maxBody int
+	ns      string
 	client  *http.Client
 }
 
@@ -45,7 +46,7 @@ func NewPostHogSink(cfg PostHogConfig) (*PostHogSink, error) {
 	if err := checkTarget(host, o); err != nil {
 		return nil, fmt.Errorf("posthog sink: %w", err)
 	}
-	return &PostHogSink{url: host + "/batch", token: cfg.Token, maxBody: o.MaxBodyBytes, client: newClient(o)}, nil
+	return &PostHogSink{url: host + "/batch", token: cfg.Token, maxBody: o.MaxBodyBytes, ns: o.Namespace, client: newClient(o)}, nil
 }
 
 // Name identifies the sink in stats and logs.
@@ -58,7 +59,7 @@ type posthogEvent struct {
 	Properties map[string]any `json:"properties"`
 }
 
-func toPostHog(e Event) posthogEvent {
+func toPostHog(ns string, e Event) posthogEvent {
 	id := e.VisitorID
 	if id == "" {
 		id = e.RequestID
@@ -71,10 +72,11 @@ func toPostHog(e Event) posthogEvent {
 		"duration_ms": e.DurationMS, "bytes_in": e.BytesIn, "bytes_out": e.BytesOut,
 		"request_id": e.RequestID, "upstream_error": e.UpstreamError, "cold_start": e.ColdStart,
 		"$current_url": "https://" + e.Host + e.Path, "$process_person_profile": false,
-		"$lib": "levelrail",
+		"$lib": ns,
 	}
 	for k, v := range map[string]string{
 		"trace_id": e.TraceID, "visitor_id": e.VisitorID, "referrer_host": e.ReferrerHost, "ua_family": e.UAFamily,
+		"client_ip": e.ClientIP, "user_agent": e.UserAgent,
 	} {
 		if v != "" {
 			p[k] = v
@@ -110,7 +112,7 @@ func (s *PostHogSink) Send(ctx context.Context, events []Event) error {
 		return postBody(ctx, s.client, s.Name(), s.url, "application/json", nil, out)
 	}
 	for _, e := range events {
-		item, err := json.Marshal(toPostHog(e))
+		item, err := json.Marshal(toPostHog(s.ns, e))
 		if err != nil {
 			return fmt.Errorf("posthog sink: encode event: %w", err)
 		}

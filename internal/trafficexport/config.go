@@ -38,6 +38,9 @@ type HTTPOptions struct {
 	Timeout      time.Duration
 	AllowPrivate bool
 	MaxBodyBytes int
+	// Namespace prefixes vendor attribute names and the service name; the
+	// caller passes the brand short name. Empty means "edge".
+	Namespace string
 }
 
 // HTTPOptionsFromEnv reads the sink transport policy from the environment.
@@ -55,6 +58,10 @@ func (o HTTPOptions) withDefaults() HTTPOptions {
 	}
 	if o.MaxBodyBytes <= 0 {
 		o.MaxBodyBytes = defaultMaxBodyBytes
+	}
+	o.Namespace = strings.ToLower(strings.TrimSpace(o.Namespace))
+	if o.Namespace == "" {
+		o.Namespace = "edge"
 	}
 	return o
 }

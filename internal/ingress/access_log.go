@@ -21,8 +21,16 @@ const (
 	defaultAccessCapacity = 1000
 )
 
+// RequestIdentity is client detail handed to subscribers only, and only while
+// capture is switched on. The ring never stores it and it is never serialized.
+type RequestIdentity struct {
+	ClientIP     string
+	UserAgent    string
+	ReferrerHost string
+}
+
 // AccessRecord is one finished edge request. The query string and client
-// address are never captured.
+// address are never stored or served; Identity reaches subscribers only.
 type AccessRecord struct {
 	Time      time.Time `json:"time"`
 	Host      string    `json:"host"`
@@ -36,6 +44,8 @@ type AccessRecord struct {
 	TraceID   string    `json:"trace_id,omitempty"`
 	Upstream  bool      `json:"upstream_error,omitempty"`
 	Cold      bool      `json:"cold_start,omitempty"`
+
+	Identity *RequestIdentity `json:"-"`
 }
 
 // AccessFilter narrows a ring read.
@@ -85,6 +95,7 @@ type AccessLog struct {
 	rings     map[string]*accessRing
 
 	subs    atomic.Pointer[[]accessSub]
+	capture atomic.Bool
 	subMu   sync.Mutex
 	nextSub uint64
 }
@@ -128,6 +139,17 @@ func (l *AccessLog) Subscribe(fn func(key string, rec AccessRecord)) (unsubscrib
 		l.subs.Store(&kept)
 	}
 }
+
+// CaptureIdentity turns on filling AccessRecord.Identity for subscribers. It
+// is off by default so no client detail is read unless a sink opted in.
+func (l *AccessLog) CaptureIdentity(on bool) {
+	if l != nil {
+		l.capture.Store(on)
+	}
+}
+
+// IdentityWanted reports whether callers should fill AccessRecord.Identity.
+func (l *AccessLog) IdentityWanted() bool { return l != nil && l.capture.Load() }
 
 func (l *AccessLog) notify(key string, rec AccessRecord) {
 	p := l.subs.Load()
@@ -197,7 +219,9 @@ func (l *AccessLog) Record(key string, rec AccessRecord) {
 		}
 		l.mu.Unlock()
 	}
-	r.add(rec)
+	stored := rec
+	stored.Identity = nil
+	r.add(stored)
 	l.notify(key, rec)
 }
 

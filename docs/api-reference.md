@@ -303,6 +303,13 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
+| GET | /api/v1/settings/traffic-export/sinks | AbilityRead | handleListTrafficExportSinks |
+| POST | /api/v1/settings/traffic-export/sinks | AbilityRoot | handleCreateTrafficExportSink |
+| GET | /api/v1/settings/traffic-export/sinks/{id} | AbilityRead | handleGetTrafficExportSink |
+| PUT | /api/v1/settings/traffic-export/sinks/{id} | AbilityRoot | handleUpdateTrafficExportSink |
+| DELETE | /api/v1/settings/traffic-export/sinks/{id} | AbilityRoot | handleDeleteTrafficExportSink |
+| POST | /api/v1/settings/traffic-export/sinks/{id}/test | AbilityRoot | handleTestTrafficExportSink |
+| GET | /api/v1/settings/traffic-export/status | AbilityRead | handleTrafficExportStatus |
 
 </Accordion>
 

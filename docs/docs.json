@@ -251,6 +251,7 @@
               "log-pipelines",
               "log-budgets",
               "data-export",
+              "traffic-export",
               "audit-event-schema",
               "control-plane-backup",
               "archives",

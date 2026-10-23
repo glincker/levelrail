@@ -15,9 +15,8 @@ import (
 )
 
 const (
-	otlpLogsPath    = "/v1/logs"
-	otlpServiceName = "levelrail-edge"
-	otlpScopeName   = "levelrail.trafficexport"
+	otlpLogsPath  = "/v1/logs"
+	otlpScopeName = "trafficexport"
 )
 
 // OTLPConfig configures the OTLP/HTTP logs sink. Endpoint is a base URL that
@@ -34,6 +33,7 @@ type OTLPConfig struct {
 type OTLPSink struct {
 	url     string
 	headers map[string]string
+	ns      string
 	client  *http.Client
 }
 
@@ -47,7 +47,7 @@ func NewOTLPSink(cfg OTLPConfig) (*OTLPSink, error) {
 	if err := checkTarget(target, o); err != nil {
 		return nil, fmt.Errorf("otlp sink: %w", err)
 	}
-	return &OTLPSink{url: target, headers: cfg.Headers, client: newClient(o)}, nil
+	return &OTLPSink{url: target, headers: cfg.Headers, ns: o.Namespace, client: newClient(o)}, nil
 }
 
 // Name identifies the sink in stats and logs.
@@ -69,7 +69,7 @@ func boolAttr(k string, v bool) *commonpb.KeyValue {
 	return &commonpb.KeyValue{Key: k, Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_BoolValue{BoolValue: v}}}
 }
 
-func toLogRecord(e Event) *logspb.LogRecord {
+func toLogRecord(ns string, e Event) *logspb.LogRecord {
 	ts := uint64(e.Time.UnixNano()) //nolint:gosec // event times are after 1970
 	sev, sevText := logspb.SeverityNumber_SEVERITY_NUMBER_INFO, "INFO"
 	if e.Status >= 500 {
@@ -83,13 +83,14 @@ func toLogRecord(e Event) *logspb.LogRecord {
 		floatAttr("http.server.request.duration", e.DurationMS/1000),
 		intAttr("http.request.body.size", e.BytesIn),
 		intAttr("http.response.body.size", e.BytesOut),
-		strAttr("levelrail.app", e.App),
-		strAttr("levelrail.request_id", e.RequestID),
-		boolAttr("levelrail.upstream_error", e.UpstreamError),
-		boolAttr("levelrail.cold_start", e.ColdStart),
+		strAttr(ns+".app", e.App),
+		strAttr(ns+".request_id", e.RequestID),
+		boolAttr(ns+".upstream_error", e.UpstreamError),
+		boolAttr(ns+".cold_start", e.ColdStart),
 	}
 	for k, v := range map[string]string{
-		"levelrail.visitor_id": e.VisitorID, "http.request.referrer_host": e.ReferrerHost, "user_agent.family": e.UAFamily,
+		ns + ".visitor_id": e.VisitorID, "http.request.referrer_host": e.ReferrerHost, "user_agent.family": e.UAFamily,
+		"client.address": e.ClientIP, "user_agent.original": e.UserAgent,
 	} {
 		if v != "" {
 			attrs = append(attrs, strAttr(k, v))
@@ -115,10 +116,10 @@ func (s *OTLPSink) Send(ctx context.Context, events []Event) error {
 	}
 	recs := make([]*logspb.LogRecord, 0, len(events))
 	for _, e := range events {
-		recs = append(recs, toLogRecord(e))
+		recs = append(recs, toLogRecord(s.ns, e))
 	}
 	req := &collogs.ExportLogsServiceRequest{ResourceLogs: []*logspb.ResourceLogs{{
-		Resource: &resourcepb.Resource{Attributes: []*commonpb.KeyValue{strAttr("service.name", otlpServiceName)}},
+		Resource: &resourcepb.Resource{Attributes: []*commonpb.KeyValue{strAttr("service.name", s.ns+"-edge")}},
 		ScopeLogs: []*logspb.ScopeLogs{{
 			Scope:      &commonpb.InstrumentationScope{Name: otlpScopeName},
 			LogRecords: recs,
