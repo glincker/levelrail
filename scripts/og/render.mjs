@@ -4,11 +4,13 @@
 // Social images are JPEG (small, accepted everywhere); og-home and og-docs stay PNG so cached URLs keep working.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+// OUT_DIR redirects every output (same relative paths) so test renders never touch tracked files.
+const outRoot = process.env.OUT_DIR ? resolve(process.env.OUT_DIR) : root;
 const CHROME = process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const SCALE = Number(process.env.SCALE || 2);
 const scaleOf = (v) => v.scale ?? SCALE;
@@ -52,6 +54,9 @@ const VARIANTS = {
   "og-sleep": og("sleep", "docs/assets/og/sleep.jpg", "dashboard-sleeping-apps"),
   "og-mcp": og("mcp", "docs/assets/og/mcp.jpg", "plugins"),
   "og-push": og("push", "docs/assets/brand/social/headline-push-1200x630.jpg", "deploy-live-log"),
+  // Conversion card: isometric scene plus the install command. Dark for social, light twin for README <picture>.
+  "og-home-iso": { w: 1200, h: 630, scale: 1, iso: "dark", out: "docs/assets/og/og-home-iso.png" },
+  "og-home-iso-light": { w: 1200, h: 630, scale: 1, iso: "light", out: "docs/assets/og/og-home-iso-light.png" },
   github: wide(1280, 640, "docs/assets/brand/social/github-social-1280x640.jpg", { h1: 66, tTop: 150, tW: 560, fx: 640, fy: 96, fw: 900, pills: true }),
   twitter: wide(1200, 675, "docs/assets/brand/social/twitter-card-1200x675.jpg", { pad: 64, h1: 62, tTop: 165, tW: 540, fx: 620, fy: 112, fw: 860, pills: true }),
   producthunt: wide(1270, 760, "docs/assets/brand/social/producthunt-gallery-1270x760.jpg", { copy: "push", shot: "deploy-live-log", pad: 72, h1: 62, sub: 24, tTop: 200, tW: 600, fx: 690, fy: 130, fw: 960, pills: true }),
@@ -128,6 +133,55 @@ h1 em{font-style:normal;color:${C.accent}}
 <div class="url">${domain}</div><div class="grain"></div></div></body></html>`;
 }
 
+const ISO_SVG = readFileSync(join(root, "scripts", "og", "assets", "iso-hero.svg"), "utf8");
+const LIVE = "#eef35f";
+const SITE = domain.replace(/^docs\./, "");
+
+// Glows are masked by the grain tile (its alpha is the noise), so they dissolve into speckle instead of banding.
+function isoPage(v) {
+  const dark = v.iso === "dark";
+  const T = dark
+    ? { bg: "#050709", ink: "#f4f6f8", sub: "#9aa6ae", pillBg: "#090c0f", pillLine: "#2a323a", pillInk: "#cfd6dc", url: "#5cc4e8", tag: "#7d8a93", grad: `linear-gradient(90deg,#5cc4e8 0%,#9fe0c8 45%,${LIVE} 100%)`,
+        glows: ["radial-gradient(ellipse 52% 80% at 100% 0%,rgba(47,179,220,.95),transparent 70%)", "radial-gradient(ellipse 40% 70% at 62% 0%,rgba(70,100,235,.85),transparent 70%)", `radial-gradient(ellipse 34% 60% at 0% 0%,rgba(20,170,150,.8),transparent 72%)`, `radial-gradient(ellipse 30% 55% at 84% 2%,rgba(238,243,95,.95),transparent 72%)`],
+        soft: "radial-gradient(ellipse 60% 70% at 85% 0%,rgba(47,179,220,.16),transparent 70%)",
+        floor: "linear-gradient(to top,rgba(30,60,70,.30),transparent 38%)", blend: "screen", scene: "", logoDark: true }
+    : { bg: "#f7f8fb", ink: "#0e1013", sub: "#4a525a", pillBg: "#0b0e11", pillLine: "#2a323a", pillInk: "#e3e8ec", url: "#0d6a86", tag: "#5a646c", grad: "linear-gradient(90deg,#0d6a86 0%,#3f7d6a 55%,#8a8f00 100%)",
+        glows: ["radial-gradient(ellipse 52% 80% at 100% 0%,rgba(47,179,220,.9),transparent 70%)", "radial-gradient(ellipse 40% 70% at 62% 0%,rgba(150,130,255,.75),transparent 70%)", "radial-gradient(ellipse 34% 60% at 0% 0%,rgba(90,210,180,.8),transparent 72%)", `radial-gradient(ellipse 30% 55% at 100% 70%,rgba(238,243,95,.85),transparent 72%)`],
+        soft: "radial-gradient(ellipse 60% 70% at 85% 0%,rgba(47,179,220,.10),transparent 70%)",
+        floor: "linear-gradient(to top,rgba(200,215,225,.45),transparent 30%)", blend: "multiply", logoDark: false };
+  const svgVars = dark ? "" : "--ink:#3a4650;--lk:#5b49d6;--teal:#007a68;--live:#e9ef4a";
+  const mask = `-webkit-mask-image:${GRAIN};mask-image:${GRAIN};-webkit-mask-size:300px 300px;mask-size:300px 300px`;
+  return `<!doctype html><html><head><meta charset="utf-8"><style>${FONTFACE}
+html,body{margin:0;width:${v.w}px;height:${v.h}px;overflow:hidden;background:${T.bg};font-family:${FONT};-webkit-font-smoothing:antialiased;color:${T.ink}}
+.stage{position:relative;width:${v.w}px;height:${v.h}px;overflow:hidden;isolation:isolate;background:${T.bg}}
+.soft{position:absolute;inset:0;background:${T.soft}}
+.glow{position:absolute;inset:0;background:${T.glows.join(",")};${mask}}
+.floor{position:absolute;inset:0;background:${T.floor}}
+.scene{position:absolute;left:540px;top:58px;width:660px;z-index:2}
+.scene svg{display:block;width:100%;height:auto;overflow:visible;${svgVars}}
+.brand{position:absolute;left:64px;top:46px;display:flex;align-items:center;gap:12px;font-size:20px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:${T.ink};z-index:10}
+.copy{position:absolute;left:64px;top:128px;width:520px;z-index:10}
+h1{margin:0;font-weight:300;font-size:64px;line-height:1.06;letter-spacing:-.034em;color:${T.ink}}
+h1 em{font-style:normal;background:${T.grad};-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.04em}
+.sub{margin:22px 0 0;font-size:22px;line-height:1.4;color:${T.sub};font-weight:400;width:470px}
+.cta{display:flex;align-items:center;gap:10px;margin-top:30px}
+.cmd{display:inline-flex;align-items:center;gap:10px;padding:13px 20px;border-radius:12px;background:${T.pillBg};box-shadow:inset 0 0 0 1px ${T.pillLine},0 12px 30px rgba(0,0,0,${dark ? ".5" : ".18"});font-family:${MONO};font-size:17px;color:${T.pillInk};white-space:nowrap}
+.cmd b{color:${LIVE};font-weight:700}
+.chips{display:flex;gap:10px;margin:22px 0 0;padding:0;list-style:none}
+.chips li{padding:6px 13px;border-radius:50px;background:${dark ? "#090c0f" : "rgba(255,255,255,.7)"};box-shadow:inset 0 0 0 1px ${dark ? "#2a323a" : "#c9d2d9"};font-family:${MONO};font-size:14px;color:${dark ? "#cfd6dc" : "#2c353c"}}
+.url{position:absolute;left:64px;bottom:34px;font-family:${MONO};font-size:20px;color:${T.url};z-index:10}
+.tag{position:absolute;right:64px;bottom:36px;font-family:${MONO};font-size:16px;letter-spacing:.16em;text-transform:uppercase;color:${T.tag};z-index:10}
+.grain{position:absolute;inset:0;z-index:20;pointer-events:none;background-image:${GRAIN};background-size:300px 300px;opacity:${dark ? 0.05 : 0.07};mix-blend-mode:${T.blend}}
+</style></head><body><div class="stage"><div class="soft"></div><div class="glow"></div><div class="floor"></div>
+<div class="brand">${logo(34, T.logoDark)}<span>${name}</span></div>
+<div class="copy"><h1>Your own cloud.<br><em>No Kubernetes.</em></h1>
+<p class="sub">Deploy from a git push. One Go binary, agents that dial out, no SSH.</p>
+<div class="cta"><span class="cmd"><b>$</b>curl -fsSL ${SITE}/install.sh | sh</span></div>
+<ul class="chips"><li>Apache 2.0</li><li>300+ templates</li></ul></div>
+<div class="scene">${ISO_SVG}</div>
+<div class="url">${SITE}</div><div class="tag">Go / Docker / Caddy</div><div class="grain"></div></div></body></html>`;
+}
+
 // Tab icon: a dark plate with a brighter ramp so the three rails read at 16px.
 // The tab icon is the transparent mark, identical to the control plane's favicon.
 export const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><title>${name}</title><rect x="10" y="174" width="236" height="68" rx="22" fill="#06232C"/><rect x="10" y="162" width="236" height="68" rx="22" fill="#084F67"/><rect x="42" y="103" width="172" height="68" rx="22" fill="#06232C"/><rect x="42" y="91" width="172" height="68" rx="22" fill="#107292"/><rect x="75" y="32" width="106" height="68" rx="22" fill="#06232C"/><rect x="75" y="20" width="106" height="68" rx="22" fill="#58B1CE"/></svg>`;
@@ -154,9 +208,9 @@ for (const n of names) {
   const v = all[n];
   if (!v) throw new Error(`unknown name ${n}; known: ${Object.keys(all).join(", ")}`);
   const html = join(tmp, `${n}.html`);
-  const out = join(root, v.out);
+  const out = join(outRoot, v.out);
   mkdirSync(dirname(out), { recursive: true });
-  writeFileSync(html, v.kind ? logoPage(v) : page(v));
+  writeFileSync(html, v.kind ? logoPage(v) : v.iso ? isoPage(v) : page(v));
   const jpg = out.endsWith(".jpg");
   const shot = jpg ? join(tmp, `${n}.png`) : out;
   const args = ["--headless=new", "--disable-gpu", "--hide-scrollbars", `--force-device-scale-factor=${scaleOf(v)}`,
