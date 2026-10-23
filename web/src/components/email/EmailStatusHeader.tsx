@@ -43,6 +43,7 @@ export function EmailStatusHeader() {
     .sort()
     .at(-1)
   const errorKind = primary?.last_error_kind || backup?.last_error_kind
+  if (!primary && !backup) return null
 
   return (
     <Card size="sm" className={CARD_FLOAT}>

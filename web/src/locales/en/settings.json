@@ -1160,30 +1160,12 @@
     }
   },
   "emailPage": {
-    "rail": {
-      "label": "Email summary",
-      "delivery": "Delivery",
-      "backend": "Backend",
-      "from": "Sender address",
-      "usedFor": "Used for",
-      "usedForBody": "Alert notifications and password-reset links.",
-      "docs": "Docs",
-      "backends": {
-        "smtp": "SMTP",
-        "ses": "Amazon SES",
-        "resend": "Resend"
-      }
-    },
     "eyebrow": "Notifications",
     "title": "Email",
     "description": "The providers that send alert notifications, invites and password-reset links.",
     "help": "Email notifications guide",
     "status": {
       "none": "Not configured"
-    },
-    "banner": {
-      "title": "No email backend is configured",
-      "body": "Alert emails and password-reset links will not be sent until you add a provider below."
     }
   },
   "emailDelivery": {
@@ -1195,7 +1177,8 @@
       "regionRequired": "Pick an AWS region",
       "accessKeyRequired": "Access key ID is required",
       "smtpUsernameRequired": "SMTP username is required",
-      "domainRequired": "Sending domain is required"
+      "domainRequired": "Sending domain is required",
+      "emailInvalid": "Enter a valid email address"
     },
     "secretSet": "Already configured. Leave blank to keep it.",
     "secretUnset": "Not set yet.",
@@ -3067,7 +3050,26 @@
     "saving": "Saving...",
     "saved": "Email branding saved.",
     "preview": "Preview",
-    "previewTitle": "Email branding preview"
+    "previewTitle": "Email branding preview",
+    "invalidHttps": "Use a full https:// address. Plain http and other schemes are refused.",
+    "invalidColor": "Use a six digit hex color such as #107292.",
+    "templates": {
+      "label": "Start from a template",
+      "dashboardLink": "Open the dashboard",
+      "minimal": {
+        "name": "Minimal",
+        "text": "Sent by {{brand_name}}."
+      },
+      "standard": {
+        "name": "Standard",
+        "text": "Sent by {{brand_name}} from {{instance_name}}. Questions? Write to {{support_email}}. {{year}}"
+      },
+      "compliance": {
+        "name": "Compliance",
+        "text": "You get this message because of activity on {{instance_name}}. Questions? Write to {{support_email}}. {{year}} {{brand_name}}",
+        "address": "{{brand_name}}, replace this line with your postal address"
+      }
+    }
   },
   "emailProviders": {
     "title": "Providers",
@@ -3118,7 +3120,6 @@
       "addTitle": "Add the {{role}} provider",
       "backend": "Provider",
       "name": "Label",
-      "nameHelp": "Optional. Shown in this list.",
       "fromOverride": "From address for this provider",
       "fromOverrideHelp": "Optional. Blank sends as {{from}}.",
       "fromOverrideNoShared": "Needed unless you set a sender address below.",
@@ -3155,7 +3156,15 @@
   },
   "emailSender": {
     "title": "Sender identity and limits",
-    "description": "Who mail comes from and how fast it may go out. Every provider uses these."
+    "optional": "Optional",
+    "fromPlaceholder": "noreply@your-domain.com",
+    "envelopePlaceholder": "Optional, defaults to the from address",
+    "capsHelp": "Send caps: 0 uses the server default, which is unlimited unless set.",
+    "useSuggestion": "Suggested: {{value}}",
+    "useSuggestionLabel": "Use the suggested value {{value}}",
+    "domainHint": "Make sure {{domain}} is verified with your provider.",
+    "mailgunMismatch": "{{domain}} is not under your Mailgun domain {{mailgun}}, so Mailgun will likely refuse it.",
+    "domainHintLink": "Check SPF, DKIM and DMARC"
   },
   "emailTest": {
     "title": "Delivery check",
@@ -3164,5 +3173,61 @@
     "provider": "Send through",
     "to": "Send to",
     "domainFor": "Domain for {{name}}"
+  },
+  "emailPresets": {
+    "intro": "Pick your provider. Its connection details are filled in, you only add the credential and sender.",
+    "docs": "Provider docs",
+    "items": {
+      "resend": {
+        "name": "Resend",
+        "bestFor": "Simple API sending with a verified domain.",
+        "credentialHint": "Create an API key under API Keys in the Resend dashboard."
+      },
+      "ses": {
+        "name": "Amazon SES (API)",
+        "bestFor": "AWS accounts that want the SES API with an IAM key.",
+        "credentialHint": "Use the secret of an IAM access key allowed to send with SES."
+      },
+      "ses_smtp": {
+        "name": "Amazon SES (SMTP)",
+        "bestFor": "AWS accounts that prefer SMTP credentials.",
+        "credentialHint": "Create SMTP credentials in the SES console under SMTP settings. They are not your IAM keys."
+      },
+      "postmark": {
+        "name": "Postmark",
+        "bestFor": "Transactional mail with a verified sender signature.",
+        "credentialHint": "Copy the Server API token from your Postmark server."
+      },
+      "sendgrid": {
+        "name": "SendGrid",
+        "bestFor": "Existing SendGrid accounts with domain authentication.",
+        "credentialHint": "Create an API key with Mail Send access under Settings, API Keys."
+      },
+      "mailgun": {
+        "name": "Mailgun",
+        "bestFor": "Sending from a domain you verified with Mailgun.",
+        "credentialHint": "Copy a sending API key from the Mailgun dashboard, then enter your sending domain."
+      },
+      "gmail": {
+        "name": "Google Workspace or Gmail",
+        "bestFor": "Low volume mail from a Google account.",
+        "credentialHint": "Use an app password for the account. Set the username to the full account address."
+      },
+      "microsoft365": {
+        "name": "Microsoft 365",
+        "bestFor": "Low volume mail from a Microsoft 365 mailbox.",
+        "credentialHint": "Use the mailbox password or app password. Set the username to the full mailbox address."
+      },
+      "brevo": {
+        "name": "Brevo",
+        "bestFor": "Brevo accounts that send through the SMTP relay.",
+        "credentialHint": "Create an SMTP key in your Brevo account. The username is your Brevo login."
+      },
+      "smtp": {
+        "name": "Other SMTP server",
+        "bestFor": "Any mail server or relay that speaks SMTP.",
+        "credentialHint": "Use the password your mail server gives you."
+      }
+    }
   }
 }

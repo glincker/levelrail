@@ -28,6 +28,8 @@ interface Props {
   /** The stored provider this credential belongs to; undefined while adding. */
   providerId?: string
   isSet?: boolean
+  /** Where to find this credential, shown while it is not stored yet. */
+  hint?: string
   className?: string
 }
 
@@ -40,6 +42,7 @@ export function EmailSecretField({
   label,
   providerId,
   isSet,
+  hint,
   className,
 }: Readonly<Props>) {
   const { t } = useTranslation('settings')
@@ -86,7 +89,7 @@ export function EmailSecretField({
       description={
         stored
           ? t('emailProviders.secret.replaceHint')
-          : t('emailDelivery.secretUnset')
+          : (hint ?? t('emailDelivery.secretUnset'))
       }
       trailing={
         stored ? (

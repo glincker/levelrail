@@ -10,13 +10,19 @@ Credentials are stored with the control plane's envelope encryption, so a master
 
 The page is a set of compact cards:
 
-- **Status bar.** The state of the primary and the backup, a **Running on backup** badge while the backup is carrying mail, the last successful send, the last error and the 24 hour counts.
-- **Providers.** One row each for the primary and the backup, with the provider, its from address, an enabled switch, the last successful send, a status chip and the actions **Edit**, **Test**, **Make primary** (backup only) and **Remove**. With no backup the row reads **Add a backup provider**. **Edit** opens a panel that shows only the fields of that provider's backend, including its TLS settings for SMTP.
+- **Status bar.** Appears once a provider exists. It shows the state of the primary and the backup, a **Running on backup** badge while the backup is carrying mail, the last successful send, the last error and the 24 hour counts.
+- **Providers.** One row each for the primary and the backup, with the provider, its from address, an enabled switch, the last successful send, a status chip and the actions **Edit**, **Test**, **Make primary** (backup only) and **Remove**. With no provider the card shows the templates directly. With no backup the row reads **Add a backup provider**. **Edit** opens a panel that shows only the fields of that provider's backend, including its TLS settings for SMTP.
 - **Sender identity and limits.** From name, from address, reply-to, the envelope sender (SMTP providers) and the sends per minute and per day caps. Every provider uses these.
-- **Delivery check.** A test send through the provider you pick, and a sender domain check for each provider.
+- **Delivery check.** Appears once a provider exists. A test send through the provider you pick, and a sender domain check for each provider.
 - **Branding.** See below.
 
 A credential that is already stored shows a **Set** chip instead of its value, with **Replace** to type a new one and **Reveal** to read it back (see below). The same controls work on the backup.
+
+## Add a provider
+
+**Add a provider** (or **Add a backup provider**) opens a list of templates: Resend, Amazon SES (API and SMTP), Postmark, SendGrid, Mailgun, Google Workspace or Gmail, Microsoft 365, Brevo and a generic SMTP server. Each one shows what it is best for. Choosing a template opens the edit panel already filled in: the SMTP host, port and TLS mode for relays, plus a hint for where to find the credential and a link to the provider's docs. You only add the credential and, if this provider should send as a different address, its own from address. Nothing is saved until you choose **Add provider**.
+
+The **Sender identity** card suggests values you can use with one click, marked **Suggested**: the from name from your instance name, a `noreply@` address on your instance's public domain (when one is configured), the signed-in owner's address as reply-to, and the from address as the envelope sender. A suggestion only fills the field; it is saved when you save the card. Addresses are checked as you type, and once a from address is set the card links to the **Delivery check** for SPF, DKIM and DMARC.
 
 ## Primary and backup
 
@@ -100,7 +106,7 @@ levelrail-cli email check-domain
 
 ## Branding
 
-The **Branding** card on **Settings > Email** sets the logo, accent color and footer every rich message shares (password resets, invites, alerts, announcements). A live preview renders in a sandboxed frame before you save.
+The **Branding** card on **Settings > Email** sets the logo, accent color and footer every rich message shares (password resets, invites, alerts, announcements). A live preview renders in a sandboxed frame before you save. The **Minimal**, **Standard** and **Compliance** templates fill the footer text (and, for Compliance, an address line to replace with your postal address), add a dashboard link when your instance has an https address, and fill the accent color from your brand color when it is empty. They only use the variables listed below, and nothing is saved until you choose **Save**. Logo and link addresses are checked for `https` as you type.
 
 - **Logo** is an `https` URL. The control plane never fetches it; it is embedded as an image, so a remote logo tells its host when a message is opened. Host it somewhere you control.
 - **Accent color** is a six digit hex value. Empty uses the brand default.
