@@ -97,7 +97,7 @@ type listZonesOutput struct {
 func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_image_inventory",
-		Description: "List images on a node with owners, size and retention protection, or with layers_of the layer breakdown of one image. Read only.",
+		Description: "List images on a node with owners, size and retention protection, or with layers_of the layer breakdown of one image.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in imageInventoryInput) (*mcp.CallToolResult, imageInventoryOutput, error) {
 		if in.LayersOf != "" {
 			l, err := client.GetImageLayers(ctx, in.Node, in.LayersOf)
@@ -141,7 +141,7 @@ func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_functions",
-		Description: "List scale-to-zero functions with sleeping state, invocations, 5xx rate and p95 over a window, or with runtimes the starter runtimes. Read only.",
+		Description: "List scale-to-zero functions with sleeping state, invocations, 5xx rate and p95 over a window, or with runtimes the starter runtimes.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listFunctionsInput) (*mcp.CallToolResult, listFunctionsOutput, error) {
 		if in.Runtimes {
 			rt, err := client.ListFunctionRuntimes(ctx)
@@ -251,7 +251,7 @@ func registerNewSurfaceTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_database_links",
-		Description: "List the apps a database injects a connection env var into, with the env var and field. Read only.",
+		Description: "List the apps a database injects a connection env var into, with the env var and field.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in databaseNameInput) (*mcp.CallToolResult, []apiclient.DatabaseLink, error) {
 		links, err := client.ListDatabaseLinks(ctx, in.Name)
 		if err != nil {

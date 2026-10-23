@@ -11,7 +11,7 @@ import (
 func registerCertificateTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_certificates",
-		Description: "List every TLS certificate the control plane holds: domain, SANs, issuer, validity window and status (healthy, expiring_soon, expired). Read only.",
+		Description: "List every TLS certificate the control plane holds: domain, SANs, issuer, validity window and status (healthy, expiring_soon, expired).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.CertificateResource, error) {
 		certs, err := client.ListCertificates(ctx)
 		if err != nil {

@@ -27,6 +27,8 @@ func runMigrate(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runMigrateDokploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "caprover":
 		return runMigrateCaprover(prog, args[1:], stdout, stderr, lookupEnv)
+	case "verify":
+		return runMigrateVerify(prog, args[1:], stdout, stderr, lookupEnv)
 	case "server":
 		return runMigrateServer(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
 	case "db-copy":
@@ -57,6 +59,8 @@ func migrateUsage(prog string) string {
   %[1]s migrate coolify --url URL --token TOKEN [flags]    migrate apps from a Coolify instance
   %[1]s migrate dokploy --url URL --token TOKEN [flags]    migrate apps from a Dokploy instance
   %[1]s migrate caprover --url URL --token TOKEN [flags]   migrate apps from a CapRover instance
+  %[1]s migrate verify <coolify|dokploy|caprover> --url URL --token TOKEN
+                                                           parity report against the source before cutover (exit 1 on a blocking difference)
 
   %[1]s migrate [coolify|dokploy|caprover|server] --resume JOB [--retry] [--follow] [--retire [--probe] [--ack STEP]]
                                                            resume a migration job: status, retry failures, safe-to-delete check

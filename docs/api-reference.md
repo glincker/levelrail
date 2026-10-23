@@ -1919,6 +1919,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/benchmarks/compare | AbilityRead | handleCompareBenchmarks |
 | GET | /api/v1/benchmarks/{id} | AbilityRead | handleGetBenchmark |
 | DELETE | /api/v1/benchmarks/{id} | AbilityRoot | handleDeleteBenchmark |
+| POST | /api/v1/migrations/verify | AbilityRoot | handleMigrationVerify |
+| GET | /api/v1/migrations/verify/latest | AbilityRead | handleLatestMigrationVerify |
 
 ## See also
 

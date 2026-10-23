@@ -191,5 +191,54 @@
     "notAdvanced": "Data step not completed",
     "databasesManual": "Databases are still manual",
     "databasesManualHint": "{{count}} database(s) on the old server are not checked by the agent. Copy and verify them before you cut over."
+  },
+  "parity": {
+    "title": "Parity check",
+    "description": "Compares apps, domains, env var names, databases, volumes, jobs and live responses with the source before you switch DNS. Values are never read.",
+    "never": "No check run yet",
+    "ranAt": "Checked {{when}}",
+    "run": "Check parity",
+    "running": "Checking",
+    "recheck": "Re-check",
+    "loadError": "Could not load the parity report.",
+    "runError": "The parity check failed",
+    "expired": "The source token expired. Enter it again to re-check.",
+    "platform": "Platform",
+    "url": "Source URL",
+    "token": "API token",
+    "targetIp": "Ingress IP of this server (optional)",
+    "targetIpHint": "Probe this server directly while DNS still points at the source.",
+    "skipProbes": "Skip live probes",
+    "verdict": {
+      "pass": "Matches",
+      "warn": "Matches with warnings",
+      "fail": "Blocking differences"
+    },
+    "severity": {
+      "blocking": "Blocking",
+      "warning": "Warning",
+      "info": "Info"
+    },
+    "count": "{{count}} {{label}}",
+    "area": {
+      "apps": "Apps",
+      "domains": "Domains",
+      "env": "Env names",
+      "databases": "Databases",
+      "volumes": "Volumes",
+      "jobs": "Jobs",
+      "probes": "Live probes"
+    },
+    "matched": "{{matched}} of {{source}} match",
+    "differences": "Differences",
+    "noDifferences": "Nothing differs.",
+    "fix": "Fix",
+    "showMore": "Show more",
+    "probes": "Live probes",
+    "probeSource": "Source",
+    "probeHere": "Here",
+    "probeTls": "TLS {{days}} days",
+    "probeTlsBad": "TLS invalid",
+    "probeError": "No answer: {{error}}"
   }
 }

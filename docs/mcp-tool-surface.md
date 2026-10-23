@@ -13,39 +13,39 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | Toolset | Tools | Est. tokens |
 | --- | ---: | ---: |
 | account | 5 | 351 |
-| alerts | 10 | 1130 |
+| alerts | 10 | 1125 |
 | apps | 16 | 1901 |
 | audit | 2 | 256 |
 | backups | 14 | 1134 |
-| builds | 5 | 477 |
-| canary | 4 | 504 |
+| builds | 5 | 469 |
+| canary | 4 | 501 |
 | dashboards | 2 | 133 |
-| databases | 11 | 790 |
+| databases | 11 | 768 |
 | deploys | 23 | 2972 |
 | diagnostics | 5 | 496 |
-| domains | 12 | 955 |
+| domains | 12 | 952 |
 | environments | 3 | 417 |
 | flags | 2 | 139 |
-| functions | 1 | 99 |
+| functions | 1 | 97 |
 | global-environments | 2 | 203 |
 | iac | 2 | 739 |
-| iam | 8 | 564 |
+| iam | 8 | 561 |
 | identity | 3 | 104 |
-| images | 3 | 368 |
+| images | 3 | 365 |
 | imports | 1 | 186 |
 | inbox | 1 | 50 |
 | loadbalancer | 9 | 1234 |
 | logs | 13 | 1659 |
 | metrics | 10 | 876 |
-| migrate | 7 | 468 |
+| migrate | 8 | 489 |
 | models | 16 | 2013 |
 | nodes | 7 | 595 |
 | notifications | 3 | 225 |
 | orgs | 2 | 106 |
 | pipelines | 3 | 401 |
-| plugins | 3 | 178 |
+| plugins | 3 | 171 |
 | previews | 2 | 163 |
-| registry | 3 | 246 |
+| registry | 3 | 243 |
 | scheduled | 4 | 331 |
 | search | 2 | 237 |
 | security | 3 | 142 |
@@ -55,7 +55,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 145 |
-| **total** | **248** | **24682** |
+| **total** | **249** | **24644** |
 
 ## Default session (progressive disclosure)
 
