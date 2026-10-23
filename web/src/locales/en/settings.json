@@ -1176,14 +1176,14 @@
     },
     "eyebrow": "Notifications",
     "title": "Email",
-    "description": "The backend that sends alert notifications and password-reset links.",
+    "description": "The providers that send alert notifications, invites and password-reset links.",
     "help": "Email notifications guide",
     "status": {
       "none": "Not configured"
     },
     "banner": {
       "title": "No email backend is configured",
-      "body": "Alert emails and password-reset links will not be sent until you pick SMTP, Amazon SES, or Resend below."
+      "body": "Alert emails and password-reset links will not be sent until you add a provider below."
     }
   },
   "emailDelivery": {
@@ -3068,5 +3068,101 @@
     "saved": "Email branding saved.",
     "preview": "Preview",
     "previewTitle": "Email branding preview"
+  },
+  "emailProviders": {
+    "title": "Providers",
+    "description": "The primary sends all mail. If it fails, a backup takes over until the primary recovers.",
+    "loadError": "Could not load the providers: {{message}}",
+    "retry": "Try again",
+    "roles": {
+      "primary": "Primary",
+      "backup": "Backup"
+    },
+    "health": {
+      "healthy": "Healthy",
+      "failing": "Failing",
+      "paused": "Paused",
+      "untested": "Not tested yet",
+      "none": "Not set up"
+    },
+    "runningOnBackup": "Running on backup",
+    "status": {
+      "lastError": "Last error",
+      "noError": "None"
+    },
+    "row": {
+      "noFrom": "No sender address yet",
+      "lastOk": "Sent {{when}}",
+      "neverOk": "No send yet",
+      "enabledLabel": "Enable {{name}}",
+      "edit": "Edit",
+      "editLabel": "Edit {{name}}",
+      "test": "Test",
+      "testLabel": "Send a test through {{name}}",
+      "promote": "Make primary",
+      "promoteLabel": "Make {{name}} the primary",
+      "promoted": "{{name}} is now the primary",
+      "remove": "Remove",
+      "removeLabel": "Remove {{name}}",
+      "lastError": "Last error: {{kind}}. Run Test to see the fix."
+    },
+    "secret": {
+      "set": "Set",
+      "replace": "Replace",
+      "replaceLabel": "Replace {{label}}",
+      "replaceHint": "Type the new value. The stored one is overwritten on save.",
+      "keep": "Keep the stored value"
+    },
+    "panel": {
+      "editTitle": "Edit the {{role}} provider",
+      "addTitle": "Add the {{role}} provider",
+      "backend": "Provider",
+      "name": "Label",
+      "nameHelp": "Optional. Shown in this list.",
+      "fromOverride": "From address for this provider",
+      "fromOverrideHelp": "Optional. Blank sends as {{from}}.",
+      "fromOverrideNoShared": "Needed unless you set a sender address below.",
+      "sesSmtpNote": "SES SMTP credentials come from the SES console (SMTP settings). They are not your IAM keys.",
+      "needsSender": "This provider has no sender address yet. Set one before saving.",
+      "needsSenderLink": "Go to Sender identity",
+      "save": "Save provider",
+      "add": "Add provider",
+      "cancel": "Cancel"
+    },
+    "remove": {
+      "title": "Remove {{name}}?",
+      "description": "The provider and its stored credentials are deleted.",
+      "primaryWithBackup": "The primary cannot be removed while a backup exists. Make the backup primary first, or remove the backup.",
+      "consequenceCredentials": "Its credentials are deleted and cannot be recovered.",
+      "consequenceNoFailover": "Mail no longer has a fallback if the primary fails.",
+      "consequenceNoMail": "Alerts, invites and password resets stop sending until you add a provider.",
+      "confirm": "Remove provider",
+      "removing": "Removing...",
+      "done": "{{name}} removed"
+    },
+    "add": {
+      "primary": {
+        "title": "Add a provider",
+        "body": "Pick where alerts, invites and password resets are sent from.",
+        "action": "Add provider"
+      },
+      "backup": {
+        "title": "Add a backup provider",
+        "body": "Mail switches to it automatically if the primary starts failing.",
+        "action": "Add backup"
+      }
+    }
+  },
+  "emailSender": {
+    "title": "Sender identity and limits",
+    "description": "Who mail comes from and how fast it may go out. Every provider uses these."
+  },
+  "emailTest": {
+    "title": "Delivery check",
+    "description": "Send a real message through one provider alone (no failover), then confirm its sender domain publishes SPF, DKIM and DMARC.",
+    "noProviders": "Add a provider above to send a test and check its domain.",
+    "provider": "Send through",
+    "to": "Send to",
+    "domainFor": "Domain for {{name}}"
   }
 }

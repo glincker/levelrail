@@ -161,6 +161,15 @@ func (rt *Router) handleEmailDomainCheck(w http.ResponseWriter, r *http.Request)
 		rt.internalError(w, "api: email domain check: get settings failed", err)
 		return
 	}
+	// ?provider=<id> checks that provider's backend and sender instead of the primary's.
+	if id := r.URL.Query().Get("provider"); id != "" {
+		p, err := rt.emailProviders.GetEmailProvider(r.Context(), id)
+		if err != nil {
+			rt.writeProviderError(w, "api: email domain check: get provider failed", err)
+			return
+		}
+		settings.Backend, settings.SMTPFrom, settings.SESFrom, settings.ResendFrom = p.Backend, p.SMTPFrom, p.SESFrom, p.ResendFrom
+	}
 	domain := email.DomainOf(settings.EffectiveFrom())
 	if d := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("domain"))); d != "" {
 		domain = d

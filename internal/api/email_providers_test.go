@@ -389,3 +389,27 @@ func TestEmailProviders_NoMasterKey(t *testing.T) {
 		t.Errorf("list without a secrets store = %d, want 200", rec.Code)
 	}
 }
+
+type emptyDNS struct{}
+
+func (emptyDNS) LookupTXT(context.Context, string) ([]string, error) { return nil, nil }
+func (emptyDNS) LookupCNAME(context.Context, string) (string, error) { return "", nil }
+
+func TestEmailProviders_DomainCheckCanTargetOneProvider(t *testing.T) {
+	h := newProviderHarness(t)
+	h.rt.emailDNS = emptyDNS{}
+	h.create(resendBody)
+	backup := h.create(smtpBody)
+
+	var out struct {
+		Domain   string `json:"domain"`
+		Provider string `json:"provider"`
+	}
+	h.decode(h.do(http.MethodGet, "/api/v1/settings/email/domain-check?provider="+backup.ID, ""), http.StatusOK, &out)
+	if out.Domain != "example.com" || out.Provider != "smtp" {
+		t.Errorf("domain check = %+v, want example.com for smtp", out)
+	}
+	if rec := h.do(http.MethodGet, "/api/v1/settings/email/domain-check?provider=nope", ""); rec.Code != http.StatusNotFound {
+		t.Errorf("unknown provider status = %d, want 404", rec.Code)
+	}
+}

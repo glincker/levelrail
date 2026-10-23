@@ -137,15 +137,3 @@ export function RevealEmailSecret({ providerId, field }: Readonly<Props>) {
     </div>
   )
 }
-
-/** EmailSecretRevealSlot renders the reveal control once the primary provider row exists. */
-export function EmailSecretRevealSlot({
-  field,
-  providerId,
-}: Readonly<{
-  field: EmailSecretField
-  providerId: string | null | undefined
-}>) {
-  if (!providerId) return null
-  return <RevealEmailSecret providerId={providerId} field={field} />
-}

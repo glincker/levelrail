@@ -4,11 +4,29 @@ description: Choose an email provider for alert emails, password resets and invi
 "og:url": "https://docs.levelrail.com/email-notifications"
 ---
 
-Levelrail sends email for alert notifications (when an alert rule with an email channel fires), password-reset links and team invites. All of them go through one provider, configured once at **Settings > Email**.
+Levelrail sends email for alert notifications (when an alert rule with an email channel fires), password-reset links and team invites. All of them go through the providers configured once at **Settings > Email**: a primary and, optionally, a backup.
 
 Credentials are stored with the control plane's envelope encryption, so a master key must be configured. They are never shown back after saving: a saved field reads "already configured, leave blank to keep it".
 
-The page has four groups: **Sender** (from name, from address, reply-to, optional envelope sender), **Provider**, **Delivery limits** (sends per minute and per day) and **Security** (TLS mode and certificate verification). A status header at the top shows whether sending is configured, the last successful send and the last failure.
+The page is a set of compact cards:
+
+- **Status bar.** The state of the primary and the backup, a **Running on backup** badge while the backup is carrying mail, the last successful send, the last error and the 24 hour counts.
+- **Providers.** One row each for the primary and the backup, with the provider, its from address, an enabled switch, the last successful send, a status chip and the actions **Edit**, **Test**, **Make primary** (backup only) and **Remove**. With no backup the row reads **Add a backup provider**. **Edit** opens a panel that shows only the fields of that provider's backend, including its TLS settings for SMTP.
+- **Sender identity and limits.** From name, from address, reply-to, the envelope sender (SMTP providers) and the sends per minute and per day caps. Every provider uses these.
+- **Delivery check.** A test send through the provider you pick, and a sender domain check for each provider.
+- **Branding.** See below.
+
+A credential that is already stored shows a **Set** chip instead of its value, with **Replace** to type a new one and **Reveal** to read it back (see below). The same controls work on the backup.
+
+## Primary and backup
+
+The primary sends everything. When it keeps failing, mail switches to the backup automatically and returns to the primary once it recovers. Add the backup from the **Providers** card, test each one on its own, and use **Make primary** to swap them. The primary cannot be removed while a backup exists. The failover threshold and cooldown come from `APP_EMAIL_FAILOVER_THRESHOLD` and `APP_EMAIL_FAILOVER_COOLDOWN_SECONDS`.
+
+```bash
+levelrail-cli settings email providers list
+levelrail-cli settings email providers add --backend smtp --smtp-host smtp.example.com --smtp-port 587
+levelrail-cli settings email providers promote <id>
+```
 
 ## Choose a provider
 
@@ -66,7 +84,7 @@ levelrail-cli email settings set --backend mailgun \
 
 ## Test it
 
-After saving, use **Send test email** in **Settings > Email**. Leave the address blank to send to yourself. It sends one real message through the same code path alerts, resets and invites use, and shows the provider response. A failure comes back as a typed reason with a fix: authentication failed, sender not verified, region mismatch, port blocked, TLS error or rate limited.
+After saving, use **Test** on a provider row, or pick a provider in **Delivery check** and choose **Send test email**. Leave the address blank to send to yourself. It sends one real message through that provider alone, with no failover, and shows the provider response; the result is announced to screen readers. A failure comes back as a typed reason with a fix: authentication failed, sender not verified, region mismatch, port blocked, TLS error or rate limited.
 
 ```bash
 levelrail-cli email test --to you@example.com
@@ -74,7 +92,7 @@ levelrail-cli email test --to you@example.com
 
 ## Check your sender domain
 
-The **Sender domain check** card looks up SPF, DKIM and DMARC for the from address domain, resolved by the control plane itself, and marks each record pass or needs attention with the next step and a hint for your provider.
+**Delivery check** has a domain check for each provider. It looks up SPF, DKIM and DMARC for that provider's from address domain, resolved by the control plane itself, and marks each record pass or needs attention with the next step and a hint for that provider. The API takes `?provider=<id>` on `GET /api/v1/settings/email/domain-check`.
 
 ```bash
 levelrail-cli email check-domain
