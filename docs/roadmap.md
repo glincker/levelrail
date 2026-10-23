@@ -21,7 +21,7 @@ flowchart LR
   P4 --> P5["Phase 5: Hardening<br/>Open"]
 ```
 
-Phase 5 (chaos testing, upgrade and downgrade testing across versions, security review, a published idle-footprint number, a shadow-running period) is the open work. Some of it has started: control-plane death survival, break-glass agent reconnect and a first live ACME run are covered, see [resilience](/resilience) and the [ACME runbook](/acme-verification-runbook). Upgrade testing has started too: a harness upgrades the real v0.8.1 and v0.8.2 binaries with seeded data and checks restore points, automatic restore and the downgrade refusal (see [Upgrade safely](/upgrade-safely#upgrading-real-releases-with-real-data)); a cross-release schema migration is still untested there.
+Phase 5 (chaos testing, upgrade and downgrade testing across versions, security review, a published idle-footprint number, a shadow-running period) is the open work. Some of it has started: control-plane death survival, break-glass agent reconnect and a first live ACME run are covered, see [resilience](/resilience) and the [ACME runbook](/acme-verification-runbook). Upgrade testing has started too: a harness upgrades the real v0.8.1 and v0.8.2 binaries with seeded data and checks restore points, automatic restore and the downgrade refusal (see [Upgrade safely](/upgrade-safely#upgrading-real-releases-with-real-data)); a second test upgrades v0.8.2 data across real migrations (email providers backfill, spend cap guard mode, the migration list, the downgrade refusal and restores), see [Cross-release schema migration](/upgrade-safely#cross-release-schema-migration).
 
 ## Shipped
 

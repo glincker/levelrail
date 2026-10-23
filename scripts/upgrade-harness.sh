@@ -28,4 +28,4 @@ if [ -z "$tags" ]; then
 fi
 
 echo "upgrade-harness: upgrading from $tags"
-LEVELRAIL_UPGRADE_FROM_TAGS="$tags" go test ./cmd/levelrail -run 'TestReleaseUpgradeHarness' -count=1 -v -timeout 45m
+LEVELRAIL_UPGRADE_FROM_TAGS="$tags" go test ./cmd/levelrail -run 'TestReleaseUpgrade(Harness|SchemaMigration)' -count=1 -v -timeout 45m
