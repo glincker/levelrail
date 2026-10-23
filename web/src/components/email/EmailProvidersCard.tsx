@@ -32,6 +32,8 @@ import {
 } from '../../queries/emailProviders'
 import { useSendTestEmail } from '../../queries/emailSettings'
 import { EmailProviderPanel } from './EmailProviderPanel'
+import { EmailProviderPicker } from './EmailProviderPicker'
+import type { EmailProviderPreset } from './emailProviderPresets'
 import { EmailTestOutcome } from './EmailTestOutcome'
 import { ProviderMark } from './ProviderMark'
 import { providerFromAddress, toUnchangedPayload } from './emailProviderForm'
@@ -312,6 +314,11 @@ function AddSlot({
   )
 }
 
+type Flow =
+  | { kind: 'edit'; id: string }
+  | { kind: 'pick'; role: EmailProviderRole }
+  | { kind: 'add'; role: EmailProviderRole; preset: EmailProviderPreset }
+
 /** EmailProvidersCard lists the primary and backup senders with their health and per-row actions. */
 export function EmailProvidersCard({
   sharedFrom,
@@ -319,12 +326,53 @@ export function EmailProvidersCard({
 }: Readonly<{ sharedFrom: string; sesRegions: string[] }>) {
   const { t } = useTranslation('settings')
   const { data, isPending, isError, error, refetch } = useEmailProviders()
-  const [editing, setEditing] = useState<string | null>(null)
+  const [flow, setFlow] = useState<Flow | null>(null)
   const close = () => {
-    setEditing(null)
+    setFlow(null)
   }
   const primary = providerByRole(data, 'primary')
   const backup = providerByRole(data, 'backup')
+  const editingId = flow?.kind === 'edit' ? flow.id : null
+
+  const slot = (role: EmailProviderRole) => {
+    if (flow?.kind === 'add' && flow.role === role) {
+      return (
+        <li>
+          <EmailProviderPanel
+            role={role}
+            preset={flow.preset}
+            sharedFrom={sharedFrom}
+            sesRegions={sesRegions}
+            onClose={close}
+          />
+        </li>
+      )
+    }
+    // With no provider at all the templates are the empty state, so they show without a click.
+    if (
+      (flow?.kind === 'pick' && flow.role === role) ||
+      (role === 'primary' && !primary)
+    ) {
+      return (
+        <li>
+          <EmailProviderPicker
+            onPick={(preset) => {
+              setFlow({ kind: 'add', role, preset })
+            }}
+            onCancel={role === 'backup' ? close : undefined}
+          />
+        </li>
+      )
+    }
+    return (
+      <AddSlot
+        role={role}
+        onAdd={() => {
+          setFlow({ kind: 'pick', role })
+        }}
+      />
+    )
+  }
 
   return (
     <Card size="sm" className={CARD_FLOAT}>
@@ -367,32 +415,15 @@ export function EmailProvidersCard({
                 role="primary"
                 sharedFrom={sharedFrom}
                 hasBackup={Boolean(backup)}
-                editing={editing === primary.id}
+                editing={editingId === primary.id}
                 sesRegions={sesRegions}
                 onEdit={() => {
-                  setEditing(primary.id ?? null)
+                  setFlow({ kind: 'edit', id: primary.id ?? '' })
                 }}
                 onClose={close}
               />
             ) : (
-              <>
-                <AddSlot
-                  role="primary"
-                  onAdd={() => {
-                    setEditing('new-primary')
-                  }}
-                />
-                {editing === 'new-primary' ? (
-                  <li>
-                    <EmailProviderPanel
-                      role="primary"
-                      sharedFrom={sharedFrom}
-                      sesRegions={sesRegions}
-                      onClose={close}
-                    />
-                  </li>
-                ) : null}
-              </>
+              slot('primary')
             )}
             {backup ? (
               <ProviderRow
@@ -400,32 +431,15 @@ export function EmailProvidersCard({
                 role="backup"
                 sharedFrom={sharedFrom}
                 hasBackup
-                editing={editing === backup.id}
+                editing={editingId === backup.id}
                 sesRegions={sesRegions}
                 onEdit={() => {
-                  setEditing(backup.id ?? null)
+                  setFlow({ kind: 'edit', id: backup.id ?? '' })
                 }}
                 onClose={close}
               />
             ) : primary ? (
-              <>
-                <AddSlot
-                  role="backup"
-                  onAdd={() => {
-                    setEditing('new-backup')
-                  }}
-                />
-                {editing === 'new-backup' ? (
-                  <li>
-                    <EmailProviderPanel
-                      role="backup"
-                      sharedFrom={sharedFrom}
-                      sesRegions={sesRegions}
-                      onClose={close}
-                    />
-                  </li>
-                ) : null}
-              </>
+              slot('backup')
             ) : null}
           </ul>
         )}

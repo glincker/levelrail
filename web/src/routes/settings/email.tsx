@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { WebhooksLogoIcon } from '@phosphor-icons/react/dist/ssr'
 import { Banner } from '@/components/ui/banner'
 import { buttonVariants } from '@/components/ui/button'
-import { emailProvidersQueryOptions } from '../../queries/emailProviders'
+import {
+  emailProvidersQueryOptions,
+  useEmailProviders,
+} from '../../queries/emailProviders'
 import {
   emailSettingsQueryOptions,
   useEmailSettings,
@@ -41,6 +44,8 @@ function EmailSettingsSkeleton() {
 function EmailSettingsPage() {
   const { t } = useTranslation('settings')
   const { data: settings } = useEmailSettings()
+  const { data: providers } = useEmailProviders()
+  const hasProviders = (providers ?? []).length > 0
 
   return (
     <EmailPageShell settings={settings}>
@@ -50,7 +55,9 @@ function EmailSettingsPage() {
           sharedFrom={settings.from_address ?? ''}
           sesRegions={settings.ses_regions ?? []}
         />
-        <div className="grid items-start gap-4 xl:grid-cols-2">
+        <div
+          className={`grid items-start gap-4 ${hasProviders ? 'xl:grid-cols-2' : ''}`}
+        >
           <EmailSenderCard settings={settings} />
           <EmailDeliveryCard />
         </div>

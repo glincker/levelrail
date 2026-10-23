@@ -116,6 +116,9 @@ describe('EmailProvidersCard', () => {
   it('offers an empty backup slot and adds a backup showing only that backend', async () => {
     const { calls, user } = setup([primary])
     await user.click(await screen.findByRole('button', { name: 'Add backup' }))
+    await user.click(
+      await screen.findByRole('button', { name: /Other SMTP server/ }),
+    )
 
     expect(screen.getByLabelText('Host')).toBeTruthy()
     expect(screen.queryByLabelText('Region')).toBeNull()
@@ -135,6 +138,27 @@ describe('EmailProvidersCard', () => {
       smtp_host: 'smtp.backup.test',
     })
     expect(post?.body).not.toHaveProperty('resend_api_key')
+  })
+
+  it('starts a provider from a template with its connection details filled', async () => {
+    const { user } = setup([primary])
+    await user.click(await screen.findByRole('button', { name: 'Add backup' }))
+    await user.click(
+      await screen.findByRole('button', { name: /Google Workspace or Gmail/ }),
+    )
+    expect(screen.getByLabelText<HTMLInputElement>('Host').value).toBe(
+      'smtp.gmail.com',
+    )
+    expect(screen.getByLabelText<HTMLInputElement>('Port').value).toBe('587')
+    expect(screen.getByText(/Use an app password/)).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Provider docs/ })).toBeTruthy()
+    expect(screen.queryByLabelText('Provider')).toBeNull()
+  })
+
+  it('shows the template picker as the empty state when no provider exists', async () => {
+    setup([])
+    expect(await screen.findByRole('button', { name: /Resend/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Microsoft 365/ })).toBeTruthy()
   })
 
   it('makes the backup the primary', async () => {

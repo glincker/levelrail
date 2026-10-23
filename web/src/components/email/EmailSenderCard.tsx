@@ -15,12 +15,19 @@ import {
 import { EmailField } from './EmailField'
 import { SMTP_BACKENDS } from './emailProviderForm'
 import { CARD_FLOAT, INPUT_RECESSED, PRESS } from './emailStyles'
+import { SuggestionChip } from './SuggestionChip'
+import { EMAIL_RE, useEmailSuggestions } from './useEmailSuggestions'
+
+const optionalEmail = z
+  .string()
+  .trim()
+  .refine((v) => v === '' || EMAIL_RE.test(v), 'validation.emailInvalid')
 
 const schema = z.object({
   fromName: z.string().trim(),
-  fromAddress: z.string().trim(),
-  replyTo: z.string().trim(),
-  envelopeFrom: z.string().trim(),
+  fromAddress: optionalEmail,
+  replyTo: optionalEmail,
+  envelopeFrom: optionalEmail,
   sendsPerMinute: z.coerce.number().int().min(0),
   sendsPerDay: z.coerce.number().int().min(0),
 })
@@ -45,14 +52,37 @@ export function EmailSenderCard({
   const { t } = useTranslation('settings')
   const save = useUpdateEmailSettings()
   const { data: providers } = useEmailProviders()
+  const suggestions = useEmailSuggestions()
   const smtpBased = (providers ?? []).some((p) => SMTP_BACKENDS.has(p.backend))
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(schema),
+    mode: 'onChange',
     values: toValues(settings),
     resetOptions: { keepDirtyValues: true },
   })
-  const { register, formState, setError } = form
+  const { register, formState, setError, setValue, watch } = form
   const fromRequired = settings.backend !== ''
+  const fromName = watch('fromName') ?? ''
+  const fromAddress = watch('fromAddress') ?? ''
+  const replyTo = watch('replyTo') ?? ''
+  const envelopeFrom = watch('envelopeFrom') ?? ''
+  const fill = (name: keyof FormInput, value: string) => {
+    setValue(name, value, { shouldDirty: true, shouldValidate: true })
+  }
+
+  const domain = EMAIL_RE.test(fromAddress.trim())
+    ? (fromAddress.trim().split('@')[1]?.toLowerCase() ?? null)
+    : null
+  const mailgun = (providers ?? []).find(
+    (p) => p.backend === 'mailgun' && p.mailgun_domain,
+  )
+  const mailgunMismatch =
+    domain && mailgun?.mailgun_domain
+      ? !(
+          domain === mailgun.mailgun_domain.toLowerCase() ||
+          domain.endsWith(`.${mailgun.mailgun_domain.toLowerCase()}`)
+        )
+      : false
 
   const onSubmit = form.handleSubmit((v) => {
     if (fromRequired && !v.fromAddress) {
@@ -85,18 +115,22 @@ export function EmailSenderCard({
             void onSubmit(e)
           }}
           aria-label={t('emailSender.title')}
-          className="space-y-3"
+          className="space-y-2"
         >
-          <div>
-            <h2 className="text-sm font-semibold">{t('emailSender.title')}</h2>
-            <p className="text-xs text-muted-foreground">
-              {t('emailSender.description')}
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <h2 className="text-sm font-semibold">{t('emailSender.title')}</h2>
+          <div className="grid gap-x-3 gap-y-2 sm:grid-cols-2 xl:grid-cols-3">
             <EmailField
               id="from-name"
               label={t('emailDelivery.sender.fromName')}
+              trailing={
+                <SuggestionChip
+                  value={suggestions.fromName}
+                  current={fromName}
+                  onUse={(v) => {
+                    fill('fromName', v)
+                  }}
+                />
+              }
             >
               <Input
                 id="from-name"
@@ -108,23 +142,43 @@ export function EmailSenderCard({
               id="email-from-address"
               label={t('emailDelivery.sender.fromAddress')}
               error={formState.errors.fromAddress}
+              trailing={
+                <SuggestionChip
+                  value={suggestions.fromAddress}
+                  current={fromAddress}
+                  onUse={(v) => {
+                    fill('fromAddress', v)
+                  }}
+                />
+              }
             >
               <Input
                 id="email-from-address"
                 type="email"
                 className={INPUT_RECESSED}
+                placeholder={t('emailSender.fromPlaceholder')}
                 {...register('fromAddress')}
               />
             </EmailField>
             <EmailField
               id="reply-to"
               label={t('emailDelivery.sender.replyTo')}
-              description={t('emailDelivery.sender.optional')}
+              error={formState.errors.replyTo}
+              trailing={
+                <SuggestionChip
+                  value={suggestions.replyTo}
+                  current={replyTo}
+                  onUse={(v) => {
+                    fill('replyTo', v)
+                  }}
+                />
+              }
             >
               <Input
                 id="reply-to"
                 type="email"
                 className={INPUT_RECESSED}
+                placeholder={t('emailSender.optional')}
                 {...register('replyTo')}
               />
             </EmailField>
@@ -132,12 +186,26 @@ export function EmailSenderCard({
               <EmailField
                 id="envelope-from"
                 label={t('emailDelivery.sender.envelopeFrom')}
-                description={t('emailDelivery.sender.envelopeHelp')}
+                error={formState.errors.envelopeFrom}
+                trailing={
+                  <SuggestionChip
+                    value={
+                      EMAIL_RE.test(fromAddress.trim())
+                        ? fromAddress.trim()
+                        : null
+                    }
+                    current={envelopeFrom}
+                    onUse={(v) => {
+                      fill('envelopeFrom', v)
+                    }}
+                  />
+                }
               >
                 <Input
                   id="envelope-from"
                   type="email"
                   className={INPUT_RECESSED}
+                  placeholder={t('emailSender.envelopePlaceholder')}
                   {...register('envelopeFrom')}
                 />
               </EmailField>
@@ -145,7 +213,6 @@ export function EmailSenderCard({
             <EmailField
               id="sends-per-minute"
               label={t('emailDelivery.limits.perMinute')}
-              description={t('emailDelivery.limits.zeroHelp')}
             >
               <Input
                 id="sends-per-minute"
@@ -158,7 +225,6 @@ export function EmailSenderCard({
             <EmailField
               id="sends-per-day"
               label={t('emailDelivery.limits.perDay')}
-              description={t('emailDelivery.limits.zeroHelp')}
             >
               <Input
                 id="sends-per-day"
@@ -168,22 +234,44 @@ export function EmailSenderCard({
                 {...register('sendsPerDay')}
               />
             </EmailField>
+            <div className="flex items-end">
+              <Button
+                type="submit"
+                size="sm"
+                className={PRESS}
+                disabled={save.isPending}
+              >
+                {save.isPending ? t('email.saving') : t('email.save')}
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="submit"
-              size="sm"
-              className={PRESS}
-              disabled={save.isPending}
+          <p className="text-xs text-muted-foreground">
+            {t('emailSender.capsHelp')}
+          </p>
+          {domain && (providers ?? []).length > 0 ? (
+            <p
+              className={
+                mailgunMismatch
+                  ? 'text-xs text-tone-warning'
+                  : 'text-xs text-muted-foreground'
+              }
             >
-              {save.isPending ? t('email.saving') : t('email.save')}
-            </Button>
-            {save.isError ? (
-              <Alert variant="destructive" className="min-w-0 flex-1">
-                <AlertDescription>{save.error.message}</AlertDescription>
-              </Alert>
-            ) : null}
-          </div>
+              {mailgunMismatch
+                ? t('emailSender.mailgunMismatch', {
+                    domain,
+                    mailgun: mailgun?.mailgun_domain,
+                  })
+                : t('emailSender.domainHint', { domain })}{' '}
+              <a href="#email-delivery-check" className="underline">
+                {t('emailSender.domainHintLink')}
+              </a>
+            </p>
+          ) : null}
+          {save.isError ? (
+            <Alert variant="destructive">
+              <AlertDescription>{save.error.message}</AlertDescription>
+            </Alert>
+          ) : null}
         </form>
       </CardContent>
     </Card>

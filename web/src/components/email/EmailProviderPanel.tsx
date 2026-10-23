@@ -2,6 +2,7 @@ import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
+import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,12 +32,15 @@ import {
   type EmailProviderFormInput,
   type EmailProviderFormOutput,
 } from './emailProviderForm'
+import type { EmailProviderPreset } from './emailProviderPresets'
 import { EMAIL_PROVIDERS, SES_SMTP_PORTS, SMTP_PRESETS } from './emailProviders'
 import { INPUT_RECESSED, PRESS } from './emailStyles'
 
 interface Props {
   /** The stored provider being edited; undefined while adding. */
   provider?: EmailProvider
+  /** The template an added provider starts from. */
+  preset?: EmailProviderPreset
   /** Which slot an added provider will take, for the heading. */
   role: 'primary' | 'backup'
   sharedFrom: string
@@ -81,6 +85,7 @@ function RegionSelect({
 /** EmailProviderPanel edits one provider and shows only the fields its backend uses. */
 export function EmailProviderPanel({
   provider,
+  preset,
   role,
   sharedFrom,
   sesRegions,
@@ -99,7 +104,12 @@ export function EmailProviderPanel({
     EmailProviderFormOutput
   >({
     resolver: zodResolver(emailProviderSchema),
-    defaultValues: defaultProviderValues(provider?.backend, provider),
+    defaultValues: preset
+      ? {
+          ...defaultProviderValues(preset.backend),
+          ...preset.defaults,
+        }
+      : defaultProviderValues(provider?.backend, provider),
   })
   const { register, control, formState, watch, setValue } = form
   const err = formState.errors
@@ -110,6 +120,10 @@ export function EmailProviderPanel({
   const stored = sameBackend ? provider : undefined
   const providerId = sameBackend ? provider?.id : undefined
   const fid = (name: string) => `${uid}-${name}`
+  const hint = preset
+    ? t(`emailPresets.items.${preset.id}.credentialHint`)
+    : undefined
+  const hideBackend = Boolean(preset && preset.id !== 'smtp')
   const needsSharedFrom =
     !sharedFrom &&
     (!FROM_OVERRIDE_BACKENDS.has(backend) || !watch('fromOverride'))
@@ -139,50 +153,71 @@ export function EmailProviderPanel({
       aria-label={heading}
       className="space-y-3 rounded-lg border border-border bg-background/60 p-3 shadow-inner"
     >
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <EmailField
-          id={fid('backend')}
-          label={t('emailProviders.panel.backend')}
-        >
-          <Controller
-            control={control}
-            name="backend"
-            render={({ field }) => (
-              <Select
-                value={field.value}
-                onValueChange={(v) => {
-                  field.onChange(v)
-                }}
-              >
-                <SelectTrigger
-                  id={fid('backend')}
-                  className={`w-full ${INPUT_RECESSED}`}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {EMAIL_PROVIDERS.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      <span className="flex items-center gap-2">
-                        <ProviderMark
-                          logoId={p.logoId}
-                          label={t(`emailDelivery.providers.${p.labelKey}`)}
-                          generic={p.id === 'smtp'}
-                        />
-                        {t(`emailDelivery.providers.${p.labelKey}`)}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+      {preset ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <ProviderMark
+            logoId={preset.logoId}
+            label={t(`emailPresets.items.${preset.id}.name`)}
+            generic={preset.id === 'smtp'}
           />
-        </EmailField>
-        <EmailField
-          id={fid('name')}
-          label={t('emailProviders.panel.name')}
-          description={t('emailProviders.panel.nameHelp')}
-        >
+          <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+            {t(`emailPresets.items.${preset.id}.bestFor`)}
+          </p>
+          {preset.docsUrl ? (
+            <a
+              href={preset.docsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-xs underline"
+            >
+              {t('emailPresets.docs')}
+              <ArrowSquareOutIcon className="size-3" aria-hidden="true" />
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {hideBackend ? null : (
+          <EmailField
+            id={fid('backend')}
+            label={t('emailProviders.panel.backend')}
+          >
+            <Controller
+              control={control}
+              name="backend"
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => {
+                    field.onChange(v)
+                  }}
+                >
+                  <SelectTrigger
+                    id={fid('backend')}
+                    className={`w-full ${INPUT_RECESSED}`}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EMAIL_PROVIDERS.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <span className="flex items-center gap-2">
+                          <ProviderMark
+                            logoId={p.logoId}
+                            label={t(`emailDelivery.providers.${p.labelKey}`)}
+                            generic={p.id === 'smtp'}
+                          />
+                          {t(`emailDelivery.providers.${p.labelKey}`)}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </EmailField>
+        )}
+        <EmailField id={fid('name')} label={t('emailProviders.panel.name')}>
           <Input
             id={fid('name')}
             className={INPUT_RECESSED}
@@ -274,6 +309,7 @@ export function EmailProviderPanel({
               kind="smtp_password"
               label={t('emailDelivery.password')}
               providerId={providerId}
+              hint={hint}
               isSet={stored?.smtp_password_set}
             />
           </div>
@@ -312,6 +348,7 @@ export function EmailProviderPanel({
             kind="ses_secret_access_key"
             label={t('emailDelivery.ses.secretAccessKey')}
             providerId={providerId}
+            hint={hint}
             isSet={stored?.ses_secret_access_key_set}
           />
         </div>
@@ -390,6 +427,7 @@ export function EmailProviderPanel({
               kind="ses_smtp_password"
               label={t('emailDelivery.password')}
               providerId={providerId}
+              hint={hint}
               isSet={stored?.ses_smtp_password_set}
             />
           </div>
@@ -405,6 +443,7 @@ export function EmailProviderPanel({
             kind="resend_api_key"
             label={t('emailDelivery.apiKey')}
             providerId={providerId}
+            hint={hint}
             isSet={stored?.resend_api_key_set}
           />
         </div>
@@ -419,6 +458,7 @@ export function EmailProviderPanel({
             kind="postmark_server_token"
             label={t('emailDelivery.postmark.token')}
             providerId={providerId}
+            hint={hint}
             isSet={stored?.postmark_server_token_set}
           />
         </div>
@@ -433,6 +473,7 @@ export function EmailProviderPanel({
             kind="sendgrid_api_key"
             label={t('emailDelivery.apiKey')}
             providerId={providerId}
+            hint={hint}
             isSet={stored?.sendgrid_api_key_set}
           />
         </div>
@@ -486,6 +527,7 @@ export function EmailProviderPanel({
             kind="mailgun_api_key"
             label={t('emailDelivery.apiKey')}
             providerId={providerId}
+            hint={hint}
             isSet={stored?.mailgun_api_key_set}
           />
         </div>

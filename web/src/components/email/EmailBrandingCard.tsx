@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   FloppyDiskIcon,
@@ -12,6 +13,7 @@ import { CARD_FLOAT } from './emailStyles'
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldLabel,
   FieldTitle,
 } from '@/components/ui/field'
@@ -25,6 +27,15 @@ import {
   useUpdateEmailBranding,
   type EmailBranding,
 } from '../../queries/emailBranding'
+import { BrandContext } from '../../lib/brandContext'
+import { httpsStatusQueryOptions } from '../../queries/httpsStatus'
+import {
+  BRANDING_TEMPLATE_IDS,
+  buildBrandingTemplate,
+  HEX_COLOR_RE,
+  type BrandingTemplateId,
+} from './emailBrandingTemplates'
+import { publicDomainOf } from './useEmailSuggestions'
 
 const PREVIEW_DELAY_MS = 400
 
@@ -58,8 +69,39 @@ export function EmailBrandingCard() {
   }, [draft, loaded, preview])
 
   const maxLinks = saved?.max_footer_links ?? 5
+  const brand = useContext(BrandContext)
+  const https = useQuery(httpsStatusQueryOptions())
+  const domain = publicDomainOf(https.data?.public_host)
+  const dashboardUrl =
+    domain && https.data?.state === 'issued' ? `https://${domain}` : undefined
+  const isHttps = (v: string) => /^https:\/\/\S+$/i.test(v.trim())
+  const logoInvalid = draft.logo_url.trim() !== '' && !isHttps(draft.logo_url)
+  const colorInvalid =
+    draft.brand_color.trim() !== '' && !HEX_COLOR_RE.test(draft.brand_color)
+  const linkInvalid = draft.footer_links.some(
+    (l) => l.url.trim() !== '' && !isHttps(l.url),
+  )
+  const invalid = logoInvalid || colorInvalid || linkInvalid
   const update = (patch: Partial<EmailBranding>) =>
     setEdits({ ...draft, ...patch })
+  const applyTemplate = (id: BrandingTemplateId) => {
+    update(
+      buildBrandingTemplate(id, {
+        copy: {
+          text: t(`emailBranding.templates.${id}.text`),
+          address:
+            id === 'compliance'
+              ? t('emailBranding.templates.compliance.address')
+              : undefined,
+          dashboardLink: t('emailBranding.templates.dashboardLink'),
+        },
+        variables: saved?.variables,
+        currentColor: draft.brand_color,
+        brandColor: brand?.PrimaryColor,
+        dashboardUrl,
+      }),
+    )
+  }
 
   return (
     <Card size="sm" className={CARD_FLOAT}>
@@ -82,7 +124,13 @@ export function EmailBrandingCard() {
                 onChange={(e) => update({ logo_url: e.target.value })}
                 placeholder="https://"
               />
-              <FieldDescription>{t('emailBranding.logoHint')}</FieldDescription>
+              {logoInvalid ? (
+                <FieldError>{t('emailBranding.invalidHttps')}</FieldError>
+              ) : (
+                <FieldDescription>
+                  {t('emailBranding.logoHint')}
+                </FieldDescription>
+              )}
             </Field>
             <Field>
               <FieldLabel htmlFor="branding-color">
@@ -95,10 +143,37 @@ export function EmailBrandingCard() {
                 placeholder={saved?.default_brand_color ?? '#107292'}
                 className="sm:max-w-40"
               />
-              <FieldDescription>
-                {t('emailBranding.colorHint')}
-              </FieldDescription>
+              {colorInvalid ? (
+                <FieldError>{t('emailBranding.invalidColor')}</FieldError>
+              ) : (
+                <FieldDescription>
+                  {t('emailBranding.colorHint')}
+                </FieldDescription>
+              )}
             </Field>
+            <div
+              role="group"
+              aria-label={t('emailBranding.templates.label')}
+              className="flex flex-wrap items-center gap-1.5"
+            >
+              <span className="text-xs text-muted-foreground">
+                {t('emailBranding.templates.label')}
+              </span>
+              {BRANDING_TEMPLATE_IDS.map((id) => (
+                <Button
+                  key={id}
+                  type="button"
+                  size="xs"
+                  variant="outline"
+                  className="rounded-full active:translate-y-px motion-reduce:active:translate-y-0"
+                  onClick={() => {
+                    applyTemplate(id)
+                  }}
+                >
+                  {t(`emailBranding.templates.${id}.name`)}
+                </Button>
+              ))}
+            </div>
             <Field>
               <FieldLabel htmlFor="branding-footer">
                 {t('emailBranding.footerText')}
@@ -148,6 +223,11 @@ export function EmailBrandingCard() {
                     />
                     <Input
                       aria-label={t('emailBranding.linkUrl')}
+                      aria-invalid={
+                        link.url.trim() !== '' && !isHttps(link.url)
+                          ? true
+                          : undefined
+                      }
                       placeholder="https://"
                       value={link.url}
                       onChange={(e) =>
@@ -175,6 +255,9 @@ export function EmailBrandingCard() {
                     </Button>
                   </div>
                 ))}
+                {linkInvalid ? (
+                  <FieldError>{t('emailBranding.invalidHttps')}</FieldError>
+                ) : null}
                 <Button
                   type="button"
                   size="sm"
@@ -212,7 +295,7 @@ export function EmailBrandingCard() {
             <Button
               type="button"
               size="sm"
-              disabled={save.isPending}
+              disabled={save.isPending || invalid}
               onClick={() =>
                 save.mutate(draft, {
                   onSuccess: () =>
