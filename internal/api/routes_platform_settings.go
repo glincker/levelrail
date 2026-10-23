@@ -22,6 +22,9 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	// Swaps the primary and backup roles atomically, moving credentials with them.
 	mux.HandleFunc("POST /api/v1/settings/email/providers/{id}/promote", rt.requireAbility(AbilityRoot, rt.handlePromoteEmailProvider))
 	// Root: a test send goes to any address, so it is not open to ordinary write tokens.
+	mux.HandleFunc("GET /api/v1/settings/email/branding", rt.requireAbility(AbilityRead, rt.handleGetEmailBranding))
+	mux.HandleFunc("PUT /api/v1/settings/email/branding", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailBranding))
+	mux.HandleFunc("POST /api/v1/settings/email/branding/preview", rt.requireAbility(AbilityRoot, rt.handlePreviewEmailBranding))
 	mux.HandleFunc("POST /api/v1/settings/email/test", rt.requireAbility(AbilityRoot, rt.handleTestEmail))
 	mux.HandleFunc("GET /api/v1/settings/email/status", rt.requireAbility(AbilityRead, rt.handleEmailStatus))
 	mux.HandleFunc("GET /api/v1/settings/email/domain-check", rt.requireAbility(AbilityRoot, rt.handleEmailDomainCheck))
