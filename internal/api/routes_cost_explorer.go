@@ -10,6 +10,7 @@ func init() {
 
 func (rt *Router) registerCostExplorerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/costs/explore", rt.requireAbility(AbilityRead, rt.handleCostExplore))
+	mux.HandleFunc("GET /api/v1/costs/app-caps", rt.requireAbility(AbilityRead, rt.handleListSpendCaps))
 	mux.HandleFunc("GET /api/v1/costs/budgets", rt.requireAbility(AbilityRead, rt.handleListCostBudgets))
 	mux.HandleFunc("POST /api/v1/costs/budgets", rt.requireAbility(AbilityRoot, rt.handleCreateCostBudget))
 	mux.HandleFunc("PUT /api/v1/costs/budgets/{id}", rt.requireAbility(AbilityRoot, rt.handleUpdateCostBudget))

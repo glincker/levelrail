@@ -1,26 +1,31 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ChartLineUpIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ChartLineUpIcon,
+  LockKeyIcon,
+  PauseCircleIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfirmAction } from '@/components/ui/confirm-action'
 import { EmptyState } from '@/components/ui/empty-state'
-import {
-  Progress,
-  ProgressLabel,
-  ProgressValue,
-} from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
 import { formatBytes } from '../lib/format'
 import {
+  appPauseUrl,
   spendCapQueryOptions,
+  usePausePreview,
   useSpendCapActions,
   type SpendCap,
 } from '../queries/spendCap'
+import { AlertRuleButton } from './spend/AlertRuleButton'
+import { OverrideDeploysDialog } from './spend/OverrideDeploysDialog'
+import { PausePreviewDialog } from './spend/PausePreviewDialog'
+import { SpendMeter } from './spend/SpendMeter'
 import { BudgetForm } from './budget/BudgetForm'
 import { BudgetHistory } from './budget/BudgetHistory'
 
@@ -30,6 +35,7 @@ const REASONS = [
   'LimitReachedAlertOnly',
   'Throttled',
   'Paused',
+  'DeploysBlocked',
   'EnforcementPending',
 ] as const
 type Reason = (typeof REASONS)[number]
@@ -38,49 +44,45 @@ function isReason(r: string): r is Reason {
   return (REASONS as readonly string[]).includes(r)
 }
 
-function UsageBar({
-  label,
-  detail,
-  pct,
-}: {
-  label: string
-  detail: string
-  pct: number
-}) {
-  return (
-    <div className="space-y-1">
-      <p className="text-xs text-muted-foreground">{detail}</p>
-      <Progress value={Math.min(Math.max(pct, 0), 100)}>
-        <ProgressLabel>{label}</ProgressLabel>
-        <ProgressValue>{() => `${Math.round(pct)}%`}</ProgressValue>
-      </Progress>
-    </div>
-  )
-}
-
 function Usage({ cap }: { cap: SpendCap }) {
   const { t } = useTranslation('budget')
   return (
     <div className="space-y-3">
       {cap.monthly_egress_bytes > 0 ? (
-        <UsageBar
+        <SpendMeter
           label={t('usage.egress')}
           detail={t('usage.ofLimit', {
             used: formatBytes(cap.egress_bytes) || '0 B',
             limit: formatBytes(cap.monthly_egress_bytes),
           })}
           pct={cap.egress_pct}
+          projectedPct={
+            cap.forecast
+              ? (cap.forecast.egress_bytes / cap.monthly_egress_bytes) * 100
+              : undefined
+          }
+          projected={
+            cap.forecast ? formatBytes(cap.forecast.egress_bytes) : undefined
+          }
         />
       ) : null}
       {cap.monthly_cost_ceiling > 0 ? (
         <>
-          <UsageBar
+          <SpendMeter
             label={t('usage.cost')}
             detail={t('usage.costOfLimit', {
               used: cap.cost.toFixed(2),
               limit: cap.monthly_cost_ceiling.toFixed(2),
             })}
             pct={cap.cost_pct}
+            projectedPct={
+              cap.forecast
+                ? (cap.forecast.cost.mid / cap.monthly_cost_ceiling) * 100
+                : undefined
+            }
+            projected={
+              cap.forecast ? cap.forecast.cost.mid.toFixed(2) : undefined
+            }
           />
           {cap.cost_priced ? null : (
             <p className="text-xs text-muted-foreground">
@@ -103,6 +105,7 @@ function Summary({ cap }: { cap: SpendCap }) {
         })}
       </li>
       <li>{t(`summary.action.${cap.action}`, { rps: cap.throttle_rps })}</li>
+      <li>{t(`summary.guard.${cap.guard_mode ?? 'alert'}`)}</li>
     </ul>
   )
 }
@@ -113,6 +116,9 @@ export function AppBudgetCard({ appName }: { appName: string }) {
   const query = useQuery(spendCapQueryOptions(appName))
   const { save, clear } = useSpendCapActions(appName)
   const [editing, setEditing] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [overrideOpen, setOverrideOpen] = useState(false)
+  const preview = usePausePreview(appPauseUrl(appName))
   const cap = query.data ?? null
 
   let body
@@ -183,7 +189,20 @@ export function AppBudgetCard({ appName }: { appName: string }) {
               })}
             </span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <AlertRuleButton appName={appName} />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setPreviewOpen(true)
+                preview.mutate()
+              }}
+            >
+              <PauseCircleIcon aria-hidden="true" />
+              {t('actions.preview')}
+            </Button>
             <Button
               type="button"
               size="sm"
@@ -221,6 +240,33 @@ export function AppBudgetCard({ appName }: { appName: string }) {
           </div>
         </div>
         <p className="text-sm text-muted-foreground">{cap.condition.message}</p>
+        {cap.guard?.blocked ? (
+          <Alert variant={cap.guard.allowed ? 'default' : 'destructive'}>
+            <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <LockKeyIcon aria-hidden="true" />
+                {cap.guard.override
+                  ? t('guard.overridden', {
+                      time: new Date(
+                        cap.guard.override.expires_at,
+                      ).toLocaleTimeString(),
+                      reason: cap.guard.override.reason,
+                    })
+                  : t('guard.blocked')}
+              </span>
+              {cap.guard.allowed ? null : (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setOverrideOpen(true)}
+                >
+                  {t('guard.override')}
+                </Button>
+              )}
+            </AlertDescription>
+          </Alert>
+        ) : null}
         <Usage cap={cap} />
         <Summary cap={cap} />
         <BudgetHistory appName={appName} />
@@ -229,12 +275,24 @@ export function AppBudgetCard({ appName }: { appName: string }) {
   }
 
   return (
-    <Card>
+    <Card className="bg-linear-to-b from-card to-muted/50">
       <CardHeader>
         <CardTitle>{t('title')}</CardTitle>
         <p className="text-sm text-muted-foreground">{t('description')}</p>
       </CardHeader>
       <CardContent>{body}</CardContent>
+      <PausePreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        preview={preview.data}
+        pending={preview.isPending}
+        error={preview.error?.message ?? null}
+      />
+      <OverrideDeploysDialog
+        appName={appName}
+        open={overrideOpen}
+        onOpenChange={setOverrideOpen}
+      />
     </Card>
   )
 }

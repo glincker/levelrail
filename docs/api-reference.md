@@ -632,6 +632,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/forms/{form}/fields | AbilityRead | handleGetFormFields |
 | PUT | /api/v1/apps/{name}/forms/{form}/fields | AbilityDeploy | handleSetFormFields |
 | POST | /api/v1/apps/{name}/forms/{form}/test | AbilityDeploy | handleSendFormTest |
+| POST | /api/v1/apps/{name}/budget/dry-run | AbilityRead | handleAppSpendDryRun |
+| POST | /api/v1/apps/{name}/budget/override | AbilityRoot | handleSpendOverride |
 
 </Accordion>
 
@@ -1919,6 +1921,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/benchmarks/compare | AbilityRead | handleCompareBenchmarks |
 | GET | /api/v1/benchmarks/{id} | AbilityRead | handleGetBenchmark |
 | DELETE | /api/v1/benchmarks/{id} | AbilityRoot | handleDeleteBenchmark |
+| GET | /api/v1/costs/app-caps | AbilityRead | handleListSpendCaps |
+| POST | /api/v1/costs/budgets/{id}/dry-run | AbilityRead | handleCostBudgetDryRun |
 
 ## See also
 

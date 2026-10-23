@@ -223,6 +223,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	deployOpts = append(deployOpts, digestResolverOptions(logger, db, secretsManager, guard)...)
 	deployOpts = append(deployOpts, supplyChainDeployOptions(supplyChain)...)
 	deployOpts = append(deployOpts, secretScanDeployOptions(db, logger)...)
+	deployOpts = append(deployOpts, spendGuardDeployOptions(db, logger)...)
 	if secretsManager != nil {
 		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager), deploy.WithBuildCache(newBuildCache(logger, db, secretsManager)),
 			deploy.WithBuildSecretSource(&pkgregistry.Resolver{Store: db, Secrets: secretsManager}))

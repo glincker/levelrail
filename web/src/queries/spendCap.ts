@@ -9,7 +9,10 @@ import {
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
+import type { SpendGuardMode } from '../types/costExplorer'
+
 export type SpendCapAction = 'none' | 'throttle' | 'pause'
+export type { SpendGuardMode }
 
 export interface SpendCapCondition {
   healthy: boolean
@@ -17,8 +20,31 @@ export interface SpendCapCondition {
   message: string
 }
 
+export interface SpendForecast {
+  cost: { mid: number; confidence: string }
+  egress_bytes: number
+  pct: number
+  will_exceed: boolean
+}
+
+export interface SpendGuardOverride {
+  reason: string
+  actor: string
+  expires_at: string
+}
+
+export interface SpendGuard {
+  blocked: boolean
+  allowed: boolean
+  reasons: { source: string; pct: number }[]
+  override?: SpendGuardOverride
+}
+
 export interface SpendCap {
   app: string
+  guard_mode: SpendGuardMode
+  forecast?: SpendForecast
+  guard?: SpendGuard
   monthly_egress_bytes: number
   monthly_cost_ceiling: number
   thresholds: number[]
@@ -42,6 +68,21 @@ export interface SpendCapUpdate {
   thresholds: number[]
   action: SpendCapAction
   throttle_rps: number
+  guard_mode?: SpendGuardMode
+}
+
+export interface PausePreview {
+  apps: {
+    name: string
+    replicas: number
+    daily_run_rate: number
+    estimated_saving: number
+  }[]
+  total_replicas: number
+  remaining_days: number
+  estimated_saving: number
+  currency: string
+  note: string
 }
 
 export interface SpendCapEvent {
@@ -139,4 +180,45 @@ export function useSpendCapActions(appName: string) {
     },
   })
   return { save, clear }
+}
+
+export function usePausePreview(url: string) {
+  return useMutation<PausePreview, ApiError, void>({
+    mutationFn: async () => {
+      const res = await fetch(url, { method: 'POST' })
+      if (!res.ok) return fail(res, 'pause preview')
+      return (await res.json()) as PausePreview
+    },
+  })
+}
+
+export function useOverrideSpendGuard(appName: string) {
+  const queryClient = useQueryClient()
+  return useMutation<SpendGuard, ApiError, string>({
+    mutationFn: async (reason) => {
+      const res = await fetch(path(appName, '/override'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      })
+      if (!res.ok) return fail(res, 'deploy override')
+      return (await res.json()) as SpendGuard
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: spendCapKeys.detail(appName),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: spendCapKeys.history(appName),
+      })
+    },
+  })
+}
+
+export function appPauseUrl(appName: string): string {
+  return path(appName, '/dry-run')
+}
+
+export function budgetPauseUrl(budgetId: string): string {
+  return `/api/v1/costs/budgets/${encodeURIComponent(budgetId)}/dry-run`
 }
