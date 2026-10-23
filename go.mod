@@ -34,7 +34,7 @@ require (
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.8.2
 	github.com/gliderlabs/ssh v0.3.8
-	github.com/glincker/theauth-go/storage/sqlite v0.3.0
+	github.com/glincker/theauth-go/storage/sqlite v0.2.0
 	github.com/glincker/theauth-go/v2 v2.12.0
 	github.com/go-git/go-git/v5 v5.19.3
 	github.com/go-jose/go-jose/v4 v4.1.6
@@ -56,7 +56,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.2
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/oschwald/maxminddb-golang/v2 v2.8.0
-	github.com/railwayapp/railpack v0.43.0
+	github.com/railwayapp/railpack v0.40.1
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/sigstore/sigstore-go v1.3.0
 	github.com/smallstep/certificates v0.30.2
