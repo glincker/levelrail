@@ -90,10 +90,6 @@ func (rt *Router) dnsStore(w http.ResponseWriter) (dnsProviderStore, bool) {
 	return s, true
 }
 
-func choiceOf(c store.DNSProviderChoice) ingress.ProviderChoice {
-	return ingress.ProviderChoice{Provider: c.Provider, CustomBase: c.CustomBaseDomain}
-}
-
 func (rt *Router) dnsState(ctx context.Context, app string) dnsProviderState {
 	res := rt.fallbackResolver(ctx)
 	def := res.Default()

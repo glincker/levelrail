@@ -33,6 +33,7 @@ function Facts({ item }: { item: AppImportItem }) {
       t('appImport.inventory.memory', { size: formatMemory(e.memory_bytes) }),
     )
   if (e.server) facts.push(t('appImport.inventory.server', { name: e.server }))
+  if (e.crons) facts.push(t('appImport.inventory.crons', { count: e.crons }))
   if (e.verdict !== 'unsupported') {
     facts.push(
       t('appImport.inventory.env', {

@@ -24,6 +24,7 @@ type ScheduleStore interface {
 	ListEnabledAppSchedules(ctx context.Context) ([]store.AppSchedule, error)
 	ArmAppScheduleNextRun(ctx context.Context, serviceName string, next time.Time) error
 	RecordAppScheduleHistory(ctx context.Context, e store.AppScheduleHistoryEntry) error
+	CompleteAppSchedule(ctx context.Context, serviceName string, at time.Time) error
 }
 
 // Trigger fires a scheduled redeploy of serviceName's latest commit on
@@ -75,6 +76,10 @@ type Scheduler struct {
 	// testable-clock convention every other scheduler in this codebase
 	// establishes.
 	Now func() time.Time
+	// OneShotCatchUp bounds how late a one-time schedule may still fire
+	// after its run_at (for example after downtime); later than that it is
+	// recorded as skipped. Zero or negative means no bound.
+	OneShotCatchUp time.Duration
 
 	mu sync.Mutex
 }
@@ -127,6 +132,9 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 }
 
 func (s *Scheduler) tickOne(ctx context.Context, sch store.AppSchedule, now time.Time) error {
+	if sch.RunAt != nil {
+		return s.tickOneShot(ctx, sch, now)
+	}
 	sched, perr := cronexpr.Parse(sch.Cron)
 	if perr != nil {
 		s.log().Warn("scheduledeploy: scheduler: invalid schedule, skipping",
@@ -157,6 +165,34 @@ func (s *Scheduler) tickOne(ctx context.Context, sch store.AppSchedule, now time
 		return fmt.Errorf("re-arm next run: %w", err)
 	}
 
+	return s.fire(ctx, sch, due, now)
+}
+
+// tickOneShot fires a one-time schedule at the first tick at or after its
+// run_at. It is completed (and disabled) before the trigger, mirroring the
+// cron path's arm-before-trigger rule: a crash never fires it twice.
+func (s *Scheduler) tickOneShot(ctx context.Context, sch store.AppSchedule, now time.Time) error {
+	runAt := *sch.RunAt
+	if now.Before(runAt) {
+		if sch.NextFireAt == nil || !sch.NextFireAt.Equal(runAt) {
+			if err := s.Store.ArmAppScheduleNextRun(ctx, sch.ServiceName, runAt); err != nil {
+				return fmt.Errorf("arm one-time run: %w", err)
+			}
+		}
+		return nil
+	}
+	if err := s.Store.CompleteAppSchedule(ctx, sch.ServiceName, now); err != nil {
+		return fmt.Errorf("complete one-time schedule: %w", err)
+	}
+	if s.OneShotCatchUp > 0 && now.Sub(runAt) > s.OneShotCatchUp {
+		reason := fmt.Sprintf("skipped: run_at passed %s ago, beyond the %s catch-up window", now.Sub(runAt).Round(time.Second), s.OneShotCatchUp)
+		return s.recordHistory(ctx, sch.ServiceName, runAt, now, store.AppScheduleHistorySkippedMissed, reason)
+	}
+	return s.fire(ctx, sch, runAt, now)
+}
+
+// fire applies the freeze check, triggers the deploy and records history.
+func (s *Scheduler) fire(ctx context.Context, sch store.AppSchedule, due, now time.Time) error {
 	if s.Freeze != nil {
 		status, ferr := deploy.CheckFreeze(ctx, s.Freeze, sch.ServiceName, now)
 		if ferr != nil {

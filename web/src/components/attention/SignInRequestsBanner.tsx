@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
@@ -12,22 +13,26 @@ import {
   type SignInCodeRequest,
 } from '../../queries/signIn'
 
-// Shown on every page while someone is signing in to this account with a
+// Pages whose content already is the sign-in card, so the banner would repeat it.
+const OWN_CARD_PATHS = new Set(['/approve-sign-in', '/security'])
+
+// Shown on every other page while someone is signing in to this account with a
 // code or from a new browser. It never fetches a code until asked.
 export function SignInRequestsBanner() {
   const { data } = useQuery(signInRequestsQueryOptions())
   const { t } = useTranslation('signIn', { useSuspense: false })
+  const path = useRouterState({ select: (s) => s.location.pathname })
   const codes = data?.codes ?? []
   const approvals = data?.approvals ?? []
-  if (codes.length === 0 && approvals.length === 0) {
+  if (
+    (codes.length === 0 && approvals.length === 0) ||
+    OWN_CARD_PATHS.has(path)
+  ) {
     return null
   }
   return (
-    <div
-      role="alert"
-      className="shrink-0 space-y-2 border-b border-primary/30 bg-primary/10 px-4 py-2 text-sm"
-    >
-      <p className="font-medium">{t('requests.bannerTitle')}</p>
+    <div role="alert" className="shrink-0 px-4 pt-3 text-sm">
+      <p className="sr-only">{t('requests.bannerTitle')}</p>
       <SignInRequestsList codes={codes} approvals={approvals} compact />
     </div>
   )

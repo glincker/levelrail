@@ -357,17 +357,19 @@ These ran end to end against a real S3-compatible endpoint (SeaweedFS) and real 
 | Restore from that corrupted object | Refused before the database is touched |
 | Postgres restore of a dump with a failing statement | Fails and leaves the existing data untouched |
 | Postgres point-in-time restore, including after deleting both the data volume and the WAL archive volume | Returns exactly the data from before the target time, from the copy shipped to the bucket |
+| MySQL and MariaDB point-in-time restore into a new database, with a row written after the base backup and another after the target time | The new database has the base backup rows and the row before the target, not the later one; the source is unchanged |
+| Backup, verify and restore-as-new for MySQL, MariaDB and MongoDB through the API | Seeded rows match in the new database |
 | App volume backup and restore-as-new with a directory owned by uid 1234:5678 (mode 750), a 640 file with an old mtime, and a symlink | Owners, modes, mtimes, and the symlink are identical |
 | Create a database with the name of a deleted one | Refused until you choose to reuse or discard the old data |
 | Free-space floor set absurdly high | Manual triggers return `507`; a major upgrade fails in its first phase and the database is never stopped |
 
 Limits to know about:
 
-- A backup is a logical dump (`pg_dump`, `mysqldump`, `mongodump`, an RDB snapshot). It is consistent per database but not a physical copy. For Postgres, use point-in-time restore when you need to recover to an exact second.
+- A backup is a logical dump (`pg_dump`, `mysqldump`, `mongodump`, an RDB snapshot). It is consistent per database but not a physical copy. For Postgres, MySQL and MariaDB, use point-in-time restore when you need to recover to an exact second.
 - Verification catches a damaged or truncated object. It does not prove the dump restores cleanly. Restore drills do: they restore into a scratch resource, validate it and destroy it, automatically once a week by default. See [Prove your backups work](/prove-your-backups-work).
 - Deleting a database keeps its data volume and your backups. See [Managing databases](/managing-databases#stop-start-and-delete).
 - The free-space floor protects the control plane's data directory. Nothing watches the Docker host's own disk for a major upgrade's snapshot copy: a copy that runs out of space fails the upgrade before it changes anything.
-- WAL for point-in-time restore is shipped to the backup target only for databases on the control plane's own node.
+- WAL and binary logs for point-in-time restore are shipped to the backup target only for databases on the control plane's own node.
 - A storage endpoint must resolve to a public address unless `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` is set, which a MinIO on the same private network needs.
 - Deleting a backup target leaves its stored access key and secret in the secrets store, unreferenced and unreachable through the API but not erased at rest. Registry credentials behave the same way.
 

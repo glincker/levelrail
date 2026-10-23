@@ -85,7 +85,7 @@ func (s *seeder) statusIncidents() error {
 		updates           []upd
 	}{
 		{
-			"si_demo_slow_api", "Elevated API latency", statuspage.ImpactMinor, []string{"sc_demo_api"}, storyFor(s.opts.Anchor).slowDeploy,
+			"si_demo_slow_api", "Elevated API latency", statuspage.ImpactMinor, []string{"sc_demo_api"}, storyFor(s.opts.Anchor, s.opts.calm()).slowDeploy,
 			[]upd{
 				{statuspage.StatusInvestigating, 0, "We are seeing slower responses from the public API."},
 				{statuspage.StatusIdentified, 18 * time.Minute, "A recent release increased p95 latency. Rolling back."},
@@ -175,6 +175,9 @@ func (s *seeder) approvals() error {
 		{"storefront-web", "proj_storefront", "user_demo_lena", "Lena Fischer", "c07e51d", 35},
 		{incidentApp, "proj_storefront", "user_demo_lena", "Lena Fischer", "9d2b7a4", 190},
 		{"admin-panel", "proj_internal_tools", "user_demo_ravi", "Ravi Menon", "5be8f10", 520},
+	}
+	if s.opts.calm() {
+		reqs = reqs[:1]
 	}
 	for i, r := range reqs {
 		created := s.opts.Anchor.Add(-time.Duration(r.minsAgo) * time.Minute)

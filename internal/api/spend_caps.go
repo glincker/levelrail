@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/spendcap"
+	"github.com/GLINCKER/levelrail/internal/spendguard"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/usagecost"
 )
@@ -25,6 +26,10 @@ type spendCapResource struct {
 	// CostPriced is false while no prices are configured, so a cost ceiling
 	// would measure zero.
 	CostPriced bool `json:"cost_priced"`
+	// Forecast is nil while usage tracking is unavailable.
+	Forecast *spendForecast `json:"forecast,omitempty"`
+	// Guard says whether new deploys are refused right now.
+	Guard *spendguard.Status `json:"guard,omitempty"`
 }
 
 type spendCapRequest struct {
@@ -33,6 +38,9 @@ type spendCapRequest struct {
 	Thresholds         []int   `json:"thresholds"`
 	Action             string  `json:"action"`
 	ThrottleRPS        int     `json:"throttle_rps"`
+	// GuardMode left empty keeps the cap's current mode, so older clients
+	// cannot lift a deploy guard by omission.
+	GuardMode string `json:"guard_mode"`
 }
 
 type spendCapHistoryResource struct {
@@ -106,6 +114,12 @@ func (rt *Router) spendCapResource(ctx context.Context, c *spendcap.Controller, 
 		if p, err := st.GetUsageCostSettings(ctx); err == nil {
 			res.CostPriced = p.CPUCoreHour > 0 || p.MemGiBHour > 0 || p.StorageGiBMonth > 0 || p.EgressGiB > 0 || p.Mode == usagecost.ModeNode
 		}
+		res.Forecast = rt.appForecast(ctx, s.Cap, spendcap.Usage{EgressBytes: s.EgressBytes, Cost: s.Cost}, time.Now())
+	}
+	if g := rt.spendGuard(); g != nil {
+		if gs, err := g.Check(ctx, app); err == nil {
+			res.Guard = &gs
+		}
 	}
 	return res, nil
 }
@@ -141,12 +155,28 @@ func (rt *Router) handlePutSpendCap(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	current, curErr := c.Store.GetSpendCap(r.Context(), name)
+	if curErr != nil && !errors.Is(curErr, spendcap.ErrNotFound) {
+		rt.internalError(w, "api: set spend cap: load current", curErr, slog.String("name", name))
+		return
+	}
+	prevMode := current.GuardMode
+	if prevMode == "" {
+		prevMode = spendcap.GuardAlert
+	}
+	if req.GuardMode == "" {
+		req.GuardMode = prevMode
+	}
 	cp := spendcap.Cap{
 		App: name, MonthlyEgressBytes: req.MonthlyEgressBytes, MonthlyCostCeiling: req.MonthlyCostCeiling,
-		Thresholds: req.Thresholds, Action: req.Action, ThrottleRPS: req.ThrottleRPS,
+		Thresholds: req.Thresholds, Action: req.Action, ThrottleRPS: req.ThrottleRPS, GuardMode: req.GuardMode,
 	}.Normalize()
 	if err := cp.Validate(); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if cp.GuardMode != prevMode && (cp.GuardMode == spendcap.GuardBlockDeploys || prevMode == spendcap.GuardBlockDeploys) && !rt.callerHasAbility(r, AbilityRoot) {
+		writeError(w, http.StatusForbidden, "changing the deploy guard needs a root token")
 		return
 	}
 	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
@@ -159,7 +189,7 @@ func (rt *Router) handlePutSpendCap(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	ev := spendcap.Event{
 		App: name, Period: spendcap.Period(now), Kind: spendcap.EventConfigured, At: now,
-		Detail: fmt.Sprintf("%s set action %s, egress %d bytes, cost ceiling %g", rt.eventActor(r), cp.Action, cp.MonthlyEgressBytes, cp.MonthlyCostCeiling),
+		Detail: fmt.Sprintf("%s set action %s, guard %s, egress %d bytes, cost ceiling %g", rt.eventActor(r), cp.Action, cp.GuardMode, cp.MonthlyEgressBytes, cp.MonthlyCostCeiling),
 	}
 	if err := c.Store.SaveSpendCap(r.Context(), cp, ev, now); err != nil {
 		rt.internalError(w, "api: set spend cap", err, slog.String("name", name))
@@ -223,4 +253,32 @@ func (rt *Router) handleSpendCapHistory(w http.ResponseWriter, r *http.Request) 
 		events = []spendcap.Event{}
 	}
 	writeJSON(w, http.StatusOK, spendCapHistoryResource{Events: events})
+}
+
+type spendCapListResource struct {
+	Caps []spendCapResource `json:"caps"`
+}
+
+// handleListSpendCaps handles GET /api/v1/costs/app-caps.
+func (rt *Router) handleListSpendCaps(w http.ResponseWriter, r *http.Request) {
+	c := rt.spendCaps()
+	if c == nil {
+		writeError(w, http.StatusNotImplemented, "spend caps are not available")
+		return
+	}
+	caps, err := c.Store.ListSpendCaps(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: list spend caps", err)
+		return
+	}
+	out := make([]spendCapResource, 0, len(caps))
+	for _, cp := range caps {
+		res, err := rt.spendCapResource(r.Context(), c, cp.App)
+		if err != nil {
+			rt.internalError(w, "api: list spend caps: status", err, slog.String("name", cp.App))
+			return
+		}
+		out = append(out, res)
+	}
+	writeJSON(w, http.StatusOK, spendCapListResource{Caps: out})
 }

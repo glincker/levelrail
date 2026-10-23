@@ -56,9 +56,11 @@ type DeploymentFilter struct {
 	Branch      string
 	Triggers    []string
 	Environment string
-	Since       time.Time
-	Until       time.Time
-	Query       string
+	// Project keeps only deployments of apps in this project id.
+	Project string
+	Since   time.Time
+	Until   time.Time
+	Query   string
 	// Live keeps only the release currently serving its app.
 	Live bool
 	// PR keeps only previews of this pull request number.
@@ -260,6 +262,10 @@ func deploymentWhere(f DeploymentFilter, withCursor bool) (string, []any, error)
 	if f.Environment != "" {
 		conds = append(conds, "(env.name = ? OR env.id = ?)")
 		args = append(args, f.Environment, f.Environment)
+	}
+	if f.Project != "" {
+		conds = append(conds, "s.project_id = ?")
+		args = append(args, f.Project)
 	}
 	if len(f.Triggers) > 0 {
 		conds = append(conds, deploymentTriggerSQL(f.Triggers))

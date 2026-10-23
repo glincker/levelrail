@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 )
 
 // runSettingsEmail dispatches "settings email <verb> [flags]" to one of
@@ -23,6 +24,10 @@ func runSettingsEmail(prog string, args []string, stdout, stderr io.Writer, look
 		return runSettingsEmailGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "set":
 		return runSettingsEmailSet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "providers":
+		return runSettingsEmailProviders(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
+	case "branding":
+		return runSettingsEmailBranding(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown settings email subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, settingsEmailUsage(prog))
@@ -34,6 +39,11 @@ func settingsEmailUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s settings email get [flags]
   %[1]s settings email set --backend smtp|ses|ses_smtp|resend|postmark|sendgrid|mailgun [flags]
+  %[1]s settings email providers list|add|set|rm|test|promote [flags]   primary plus backup providers
+  %[1]s settings email branding get|set|preview [flags]   logo, accent color and footer for every rich email
+
+"settings email get" and "settings email set" read and write the primary
+provider and the sender identity; use "providers" to manage a backup.
 
 Configures outbound email, used for invite/notification delivery. Backend
 is one of the providers above, or "" (unconfigured). Every provider needs

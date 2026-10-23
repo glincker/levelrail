@@ -48,6 +48,12 @@ func ingressSteady(ctx context.Context, res *chaos.Result) error {
 		}
 		res.Requests += st.Sent
 		res.RequestErrors += st.Failed
+		key := fmt.Sprintf("step%.0f_", rate)
+		res.Set(key+"rps", st.AchievedRPS)
+		res.Set(key+"p50_ms", st.P50MS)
+		res.Set(key+"p95_ms", st.P95MS)
+		res.Set(key+"p99_ms", st.P99MS)
+		res.Set(key+"errors", float64(st.Failed))
 		res.Assert(fmt.Sprintf("step %.0f req/s", rate), true, fmt.Sprintf(
 			"achieved %.0f req/s, errors %d of %d, p50 %.2f ms, p95 %.2f ms, p99 %.2f ms, max %.1f ms, client saturated %d, clean %t",
 			st.AchievedRPS, st.Failed, st.Sent, st.P50MS, st.P95MS, st.P99MS, st.MaxMS, st.Saturated, clean))
@@ -55,6 +61,7 @@ func ingressSteady(ctx context.Context, res *chaos.Result) error {
 			break
 		}
 	}
+	res.Set("highest_clean_rps", ceiling)
 	res.Assert("the lowest step ran clean", firstClean, "")
 	res.Summary = fmt.Sprintf("highest clean step %.0f req/s through the embedded ingress, one replica, %s per step", ceiling, steadyStepDuration)
 	return nil

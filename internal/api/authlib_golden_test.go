@@ -164,6 +164,10 @@ func maskInstanceID(body any) {
 		if _, ok := v["instance_id"]; ok {
 			v["instance_id"] = "<instance>"
 		}
+		// Random per request; only its presence is part of the contract.
+		if _, ok := v["request_id"]; ok {
+			v["request_id"] = "<request_id>"
+		}
 	case []any:
 		for _, item := range v {
 			maskInstanceID(item)
@@ -216,7 +220,7 @@ func TestAuthEngineRedeemedDeviceCodeIsExpiredWithinInterval(t *testing.T) {
 		rec := httptest.NewRecorder()
 		rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/device/token", strings.NewReader(`{"device_code":"`+code+`"}`)))
 		statuses = append(statuses, rec.Code)
-		bodies = append(bodies, rec.Body.String())
+		bodies = append(bodies, withoutRequestID(rec.Body.String()))
 	}
 	if statuses[0] != http.StatusOK || statuses[1] != http.StatusBadRequest || !strings.Contains(bodies[1], "expired_token") || bodies[2] != bodies[1] {
 		t.Errorf("redeem sequence = %v %q, want 200 then expired_token twice", statuses, bodies)

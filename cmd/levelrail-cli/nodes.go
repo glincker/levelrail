@@ -95,6 +95,10 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesLabels(prog, rest, stdout, stderr, lookupEnv)
 	case "zones":
 		return runNodesZones(prog, rest, stdout, stderr, lookupEnv)
+	case "domains":
+		return runNodesDomains(prog, rest, stdout, stderr, lookupEnv)
+	case "preflight":
+		return runNodesPreflight(prog, rest, stdout, stderr, lookupEnv)
 	case "simulate":
 		return runNodesSimulate(prog, rest, stdout, stderr, lookupEnv)
 	case "failure":
@@ -121,7 +125,9 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 func nodesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s nodes list [flags]                                          list every node
-  %[1]s nodes add [--name N] [--mesh] [flags]                        print a one-command join for a new server (single-use token)
+  %[1]s nodes add [--name N] [--provider P --region R --zone Z] [--mesh] [--preflight]   print a one-command join for a new server (single-use token)
+  %[1]s nodes preflight <id-or-name> [--wait]                       show a node's detected labels and preflight checks with fixes
+  %[1]s nodes domains                                               capacity per provider, region and zone, and single-domain warnings
   %[1]s nodes get <id> [flags]                                      show one node
   %[1]s nodes delete <id> [flags]                                    delete a node (fails if it still has placements, drain first)
   %[1]s nodes join-token [flags]                                     mint a one-time enrollment token, shown once

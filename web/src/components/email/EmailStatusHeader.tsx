@@ -1,15 +1,18 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
+  ArrowsLeftRightIcon,
   ListMagnifyingGlassIcon,
-  WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatAbsoluteTime, formatRelativeTime } from '@/lib/relativeTime'
+import { providerByRole, useEmailProviders } from '../../queries/emailProviders'
 import { useEmailStatus } from '../../queries/emailSettings'
+import { ProviderStatusChip } from './EmailProvidersCard'
+import { CARD_FLOAT, PRESS } from './emailStyles'
+import { isRunningOnBackup } from './providerHealth'
 
 function Stat({
   label,
@@ -19,86 +22,93 @@ function Stat({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-w-0 space-y-0.5">
+    <div className="min-w-0">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="text-sm font-medium break-words">{children}</div>
     </div>
   )
 }
 
-/** EmailStatusHeader says whether sending works: configured, last success, last failure. */
+/** EmailStatusHeader is one compact bar: primary and backup state, running-on-backup, last send and last error. */
 export function EmailStatusHeader() {
   const { t } = useTranslation('settings')
+  const { data: providers } = useEmailProviders()
   const { data: status } = useEmailStatus()
-  if (!status) return null
-
+  const primary = providerByRole(providers, 'primary')
+  const backup = providerByRole(providers, 'backup')
+  const onBackup = isRunningOnBackup(primary, backup)
   const never = t('emailDelivery.status.never')
+  const lastOk = [primary?.last_ok_at, backup?.last_ok_at]
+    .filter((v): v is string => Boolean(v))
+    .sort()
+    .at(-1)
+  const errorKind = primary?.last_error_kind || backup?.last_error_kind
+  if (!primary && !backup) return null
+
   return (
-    <Card>
-      <CardContent className="space-y-4">
+    <Card size="sm" className={CARD_FLOAT}>
+      <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          {status.configured ? (
-            <Badge variant="success">
-              <CheckCircleIcon className="size-3" aria-hidden="true" />
-              {t('emailDelivery.status.configured')}
+          <Stat label={t('emailProviders.roles.primary')}>
+            {primary ? (
+              <ProviderStatusChip provider={primary} />
+            ) : (
+              <Badge variant="muted">{t('emailProviders.health.none')}</Badge>
+            )}
+          </Stat>
+          <Stat label={t('emailProviders.roles.backup')}>
+            {backup ? (
+              <ProviderStatusChip provider={backup} />
+            ) : (
+              <Badge variant="muted">{t('emailProviders.health.none')}</Badge>
+            )}
+          </Stat>
+          {onBackup ? (
+            <Badge variant="warning" role="status">
+              <ArrowsLeftRightIcon className="size-3" aria-hidden="true" />
+              {t('emailProviders.runningOnBackup')}
             </Badge>
-          ) : (
-            <Badge variant="muted">{t('emailPage.status.none')}</Badge>
-          )}
-          {status.provider ? (
-            <span className="text-sm text-muted-foreground">
-              {status.provider === 'env'
-                ? t('emailDelivery.status.fromEnv')
-                : t(
-                    `emailDelivery.providers.${status.provider}` as 'emailDelivery.providers.smtp',
-                  )}
-            </span>
           ) : null}
-          <Link
-            to="/settings/email-log"
-            className={buttonVariants({
-              variant: 'outline',
-              size: 'sm',
-              className: 'ml-auto',
-            })}
-          >
-            <ListMagnifyingGlassIcon className="size-3.5" aria-hidden="true" />
-            {t('emailDelivery.status.openLog')}
-          </Link>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label={t('emailDelivery.status.lastSuccess')}>
-            {status.last_success_at ? (
-              <span title={formatAbsoluteTime(status.last_success_at)}>
-                {formatRelativeTime(status.last_success_at)}
-              </span>
-            ) : (
-              never
-            )}
-          </Stat>
-          <Stat label={t('emailDelivery.status.lastFailure')}>
-            {status.last_failure_at ? (
-              <span
-                className="inline-flex items-center gap-1 text-tone-danger"
-                title={formatAbsoluteTime(status.last_failure_at)}
-              >
-                <WarningCircleIcon className="size-3.5" aria-hidden="true" />
-                {formatRelativeTime(status.last_failure_at)}
-                {status.last_error_kind
-                  ? `: ${t(`emailDelivery.failure.${status.last_error_kind as 'other'}.title`)}`
-                  : ''}
-              </span>
-            ) : (
-              never
-            )}
-          </Stat>
-          <Stat label={t('emailDelivery.status.sent24h')}>
-            {status.sent_24h}
-          </Stat>
-          <Stat label={t('emailDelivery.status.failed24h')}>
-            {status.failed_24h}
-          </Stat>
-        </div>
+        <Stat label={t('emailDelivery.status.lastSuccess')}>
+          {lastOk ? (
+            <span title={formatAbsoluteTime(lastOk)}>
+              {formatRelativeTime(lastOk)}
+            </span>
+          ) : (
+            never
+          )}
+        </Stat>
+        <Stat label={t('emailProviders.status.lastError')}>
+          {errorKind ? (
+            <span className="text-tone-danger">
+              {t(`emailDelivery.failure.${errorKind as 'other'}.title`)}
+            </span>
+          ) : (
+            t('emailProviders.status.noError')
+          )}
+        </Stat>
+        {status ? (
+          <>
+            <Stat label={t('emailDelivery.status.sent24h')}>
+              {status.sent_24h}
+            </Stat>
+            <Stat label={t('emailDelivery.status.failed24h')}>
+              {status.failed_24h}
+            </Stat>
+          </>
+        ) : null}
+        <Link
+          to="/settings/email-log"
+          className={buttonVariants({
+            variant: 'outline',
+            size: 'sm',
+            className: `ml-auto ${PRESS}`,
+          })}
+        >
+          <ListMagnifyingGlassIcon className="size-3.5" aria-hidden="true" />
+          {t('emailDelivery.status.openLog')}
+        </Link>
       </CardContent>
     </Card>
   )

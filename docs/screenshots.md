@@ -73,6 +73,18 @@ Instead, the script:
 All credentials are freshly created for each run and never leave the scratch data directory.
 </Accordion>
 
+## Demo mode captures
+
+`capture.sh` deploys two real apps minutes before shooting, so charts are thin and the dashboard is sparse. For populated hero pages (dashboard home, apps list, metrics, deploy history, deployments, nodes, alerts, inbox) use `scripts/screenshots/capture-demo.sh` instead. It seeds 14 days of fictional history with `levelrail demo seed`, serves it with `levelrail demo serve` on a free loopback port from 8095 up, and logs in as the read-only demo account (`demo` / `demo-readonly`). No Docker is needed.
+
+```
+scripts/screenshots/capture-demo.sh
+```
+
+Prerequisites are Go, Node/npm, Python 3 with Playwright, and shot-scraper. Set `OUT_DIR` to write somewhere other than `docs/assets/screenshots`. It writes the same file names as `capture.sh` (dark, plus `-light`), so it refreshes those images in place. The demo banner, guided tour, blocked-write toast and floating help bubble are hidden per shot, with the tour marked done in the saved browser state.
+
+Use `capture.sh` for settings, setup and anything that needs real containers (logs, load balancer, database detail). The page list for the demo run lives in `scripts/screenshots/shots-demo.yml`.
+
 ## Files
 
 - `scripts/screenshots/shots.yml`: the `shot-scraper multi` config, one entry per PNG.
@@ -95,3 +107,4 @@ If you lose access to the admin account on a cluster you own, `sudo APP_DATA_DIR
 - [Getting started](/getting-started) for building and running the control plane locally
 - [Identity and access](/identity-and-access) for device login flow details
 - [Feature catalog](/feature-catalog) to understand which dashboard pages are captured
+- `scripts/screenshots/capture-demo.sh` and `shots-demo.yml`: the Docker-free demo-mode variant.

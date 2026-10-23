@@ -99,7 +99,7 @@ type exchange struct {
 	Retry   bool
 }
 
-var volatileKeys = map[string]bool{"expires_at": true, "token": true, "url": true, "id": true}
+var volatileKeys = map[string]bool{"expires_at": true, "token": true, "url": true, "id": true, "request_id": true}
 
 func normalizeSessionBody(raw string) string {
 	raw = strings.TrimSpace(raw)

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
@@ -14,10 +15,17 @@ import (
 type fakeNodeTransport struct {
 	fakeInspectRuntime
 	statsCalls []string
+	names      []string
 }
 
 func (f *fakeNodeTransport) ListByPrefix(_ context.Context, prefix string) ([]docker.ContainerState, error) {
-	return []docker.ContainerState{{ID: "remote-container", Name: prefix + "abc123", Running: true}}, nil
+	var out []docker.ContainerState
+	for _, n := range f.names {
+		if strings.HasPrefix(n, prefix) {
+			out = append(out, docker.ContainerState{ID: "remote-container", Name: n, Running: true})
+		}
+	}
+	return out, nil
 }
 
 func (f *fakeNodeTransport) Stats(_ context.Context, containerID string) (docker.ContainerStats, error) { //nolint:unparam // docker.StatsInspector's signature, not this fake's choice
@@ -37,7 +45,7 @@ func TestTelemetryTargets_RemoteService_RoutesThroughRegisteredAgent(t *testing.
 		t.Fatalf("place web on node-2: %v", err)
 	}
 
-	remote := &fakeNodeTransport{}
+	remote := &fakeNodeTransport{names: []string{"web-abc123"}}
 	registry := agent.NewRegistry()
 	registry.Register("node-2", remote)
 
@@ -84,7 +92,7 @@ func TestTelemetryTargets_DisconnectedRemoteNode_SkipsServiceNotWholeTick(t *tes
 		t.Fatalf("seed service local: %v", err)
 	}
 
-	local := &fakeNodeTransport{}
+	local := &fakeNodeTransport{names: []string{"local-abc123"}}
 	registry := agent.NewRegistry() // node-unreachable deliberately never registered
 
 	targetsFunc := telemetryTargets(db, local, registry, nil, slog.Default())

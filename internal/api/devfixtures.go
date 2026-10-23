@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
+	"sync"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -66,6 +68,39 @@ func ParseDevFixtures(data []byte) (*DevFixtures, error) {
 	return &f, nil
 }
 
+const (
+	devFixtureIDPrefix   = "devfixture-"
+	devFixtureNamePrefix = "[dev fixture] "
+)
+
+// seededDevFixtures holds the fixtures this process seeded or found already
+// seeded, keyed by token id. It stays empty outside dev mode, so no token is
+// ever flagged in a release build.
+var seededDevFixtures = struct {
+	sync.RWMutex
+	byID map[string]DevFixtureToken
+}{byID: map[string]DevFixtureToken{}}
+
+func recordDevFixture(tok DevFixtureToken) {
+	seededDevFixtures.Lock()
+	defer seededDevFixtures.Unlock()
+	seededDevFixtures.byID[devFixtureIDPrefix+tok.Name] = tok
+}
+
+// isDevFixtureToken matches id, name and abilities together, so a real token
+// that only shares a name is never labeled a fixture.
+func isDevFixtureToken(t store.APIToken) bool {
+	if !devModeEnabled() {
+		return false
+	}
+	seededDevFixtures.RLock()
+	fx, ok := seededDevFixtures.byID[t.ID]
+	seededDevFixtures.RUnlock()
+	return ok &&
+		t.Name == devFixtureNamePrefix+fx.Name &&
+		slices.Equal(slices.Sorted(slices.Values(t.Abilities)), slices.Sorted(slices.Values(fx.Abilities)))
+}
+
 // seedDevFixtures is MaybeSeedDevFixturesFromFile's testable core: a
 // pure no-op when enabled is false or fixtures is nil, matching
 // maybeBootstrapDevAdmin's shape in devmode.go. Idempotent by design,
@@ -79,6 +114,7 @@ func seedDevFixtures(ctx context.Context, s TokenStore, logger *slog.Logger, fix
 	}
 	for _, tok := range fixtures.Tokens {
 		hash := hashToken(tok.Plaintext)
+		recordDevFixture(tok)
 		if _, err := s.GetAPITokenByHash(ctx, hash); err == nil {
 			continue // already seeded by a previous startup
 		} else if !errors.Is(err, store.ErrAPITokenNotFound) {
@@ -86,8 +122,8 @@ func seedDevFixtures(ctx context.Context, s TokenStore, logger *slog.Logger, fix
 		}
 
 		if err := s.SaveAPIToken(ctx, store.APIToken{
-			ID:        "devfixture-" + tok.Name,
-			Name:      "[dev fixture] " + tok.Name,
+			ID:        devFixtureIDPrefix + tok.Name,
+			Name:      devFixtureNamePrefix + tok.Name,
 			TokenHash: hash,
 			Abilities: tok.Abilities,
 			CreatedAt: time.Now(),

@@ -13,6 +13,7 @@ export function EmailField({
   label,
   error,
   description,
+  trailing,
   className,
   children,
 }: {
@@ -20,6 +21,7 @@ export function EmailField({
   label: ReactNode
   error?: { message?: string }
   description?: ReactNode
+  trailing?: ReactNode
   className?: string
   children: ReactNode
 }) {
@@ -29,6 +31,7 @@ export function EmailField({
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       {children}
       {description ? <FieldDescription>{description}</FieldDescription> : null}
+      {trailing}
       {error?.message ? (
         <FieldError>
           {t(`emailDelivery.${error.message}` as 'emailDelivery.title')}

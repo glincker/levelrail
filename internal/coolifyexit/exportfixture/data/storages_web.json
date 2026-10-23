@@ -1,0 +1,4 @@
+{
+  "persistent_storages": [{"name": "app-web-uploads", "mount_path": "/app/uploads", "host_path": null, "size_bytes": 2147483648}],
+  "file_storages": []
+}

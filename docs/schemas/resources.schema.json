@@ -217,6 +217,14 @@
           "minLength": 1,
           "type": "string"
         },
+        "secrets": {
+          "items": {
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
         "type": {
           "enum": [
             "dockerfile",

@@ -34,6 +34,7 @@ import type domains from '../locales/en/domains.json'
 import type attention from '../locales/en/attention.json'
 import type updates from '../locales/en/updates.json'
 import type infraCanvas from '../locales/en/infraCanvas.json'
+import type canvas from '../locales/en/canvas.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
 import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
 import type databaseVersions from '../locales/en/databaseVersions.json'
@@ -52,6 +53,7 @@ import type backups from '../locales/en/backups.json'
 import type sleepHistory from '../locales/en/sleepHistory.json'
 import type forms from '../locales/en/forms.json'
 import type splitTesting from '../locales/en/splitTesting.json'
+import type scheduledDeploy from '../locales/en/scheduledDeploy.json'
 import type gitBuild from '../locales/en/gitBuild.json'
 import type frameworks from '../locales/en/frameworks.json'
 import type teams from '../locales/en/teams.json'
@@ -59,6 +61,7 @@ import type compose from '../locales/en/compose.json'
 import type smartDeploy from '../locales/en/smartDeploy.json'
 import type dataExport from '../locales/en/dataExport.json'
 import type eventWebhooks from '../locales/en/eventWebhooks.json'
+import type trafficExport from '../locales/en/trafficExport.json'
 import type maintenance from '../locales/en/maintenance.json'
 import type buildPerformance from '../locales/en/buildPerformance.json'
 import type janitor from '../locales/en/janitor.json'
@@ -91,6 +94,7 @@ import type resources from '../locales/en/resources.json'
 import type deployDetail from '../locales/en/deployDetail.json'
 import type staticRoutes from '../locales/en/staticRoutes.json'
 import type deployTimeline from '../locales/en/deployTimeline.json'
+import type deployEvents from '../locales/en/deployEvents.json'
 import type images from '../locales/en/images.json'
 import type buildCenter from '../locales/en/buildCenter.json'
 import type functions from '../locales/en/functions.json'
@@ -138,6 +142,7 @@ declare module 'i18next' {
       attention: typeof attention
       updates: typeof updates
       infraCanvas: typeof infraCanvas
+      canvas: typeof canvas
       databaseAccess: typeof databaseAccess
       databaseUpgrades: typeof databaseUpgrades
       databaseVersions: typeof databaseVersions
@@ -155,6 +160,7 @@ declare module 'i18next' {
       sleepHistory: typeof sleepHistory
       forms: typeof forms
       splitTesting: typeof splitTesting
+      scheduledDeploy: typeof scheduledDeploy
       gitBuild: typeof gitBuild
       frameworks: typeof frameworks
       teams: typeof teams
@@ -162,6 +168,7 @@ declare module 'i18next' {
       smartDeploy: typeof smartDeploy
       dataExport: typeof dataExport
       eventWebhooks: typeof eventWebhooks
+      trafficExport: typeof trafficExport
       compliance: typeof compliance
       deploySafety: typeof deploySafety
       resilience: typeof resilience
@@ -188,6 +195,7 @@ declare module 'i18next' {
       costs: typeof costs
       resources: typeof resources
       deployTimeline: typeof deployTimeline
+      deployEvents: typeof deployEvents
       images: typeof images
       buildCenter: typeof buildCenter
       functions: typeof functions

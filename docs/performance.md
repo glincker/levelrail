@@ -75,6 +75,95 @@ Wakeups per minute were not measured beyond `top` showing 0 idle wakeups over th
 
 Repeat it: build `./cmd/levelrail`, run it with `APP_PPROF_ADDR=127.0.0.1:<port>` (loopback only, off by default) plus the usual dev env and a private `APP_DATA_DIR`, wait two minutes, then read `/debug/pprof/heap?gc=1` and `/debug/pprof/allocs` with `go tool pprof -sample_index=alloc_space -top -cum`, and `footprint -p <pid>`.
 
+## Idle cost as apps grow
+
+Idle CPU used to grow roughly linearly with the number of managed apps, because every reconcile pass paid several Docker round trips per app. This section is the attribution and the fix. It is a separate measurement from the suspended-app table above: half of the apps run a container.
+
+Method: Apple M4 Max, macOS 27.2, Docker Desktop 28.3.0 (Linux VM), the control plane running natively in dev mode, a private data directory and a private network prefix. Each run creates N apps (`redis:7`), stops every second one, waits until all containers run, waits 60 more seconds, then samples one 150 second window (5 reconcile passes). Docker's event stream was held open but silent, so unrelated containers on the shared host cannot trigger passes; only the 30 second resync does. A counting proxy on the Docker socket tallied API calls per window and `ps` gave process CPU. One run per row, interleaved before and after.
+
+CPU, % of one core (each value is one run):
+
+| Apps | Before | After |
+| --- | --- | --- |
+| 0 | 0.18 | 0.31 |
+| 20 | 0.57, 0.87 | 0.61, 0.66 |
+| 50 | 1.03, 1.11, 1.55 | 0.62, 0.71 |
+
+Docker API calls per 150 second window:
+
+| Apps | Before | After |
+| --- | --- | --- |
+| 0 | 28 | 28 |
+| 20 | 938, 1011 | 309, 310 |
+| 50 | 2071, 2180, 2312 | 535, 556 |
+
+Container list calls at 50 apps went from 1414 to 1516 down to 43 to 45 per window. The last reconcile pass at 50 apps took 4222 ms before and 480 ms after (one sample each). The 0 app row is the noise floor: the same code path read 0.18 to 0.31 across builds, so differences under about 0.15 points are not meaningful. Read the CPU rows as "about 1.2% falling to about 0.7% at 50 apps", not as exact figures; the call counts are the deterministic part.
+
+Where the cost was, in order:
+
+- Every app listed containers by its own name prefix two to five times per pass (stale cleanup, egress sidecars, previous release lookups), and the ingress controller, the metrics collector and the log collector each did one lookup per app on their own timers. Now one container listing per node is shared inside a pass (`APP_RECONCILE_SNAPSHOT_MAX_AGE`, default 10s, bounds how old it may get, and any container change drops it), the collectors take one listing per tick, and the first container lookup of each app is answered from one batched read.
+- The network cleanup controller inspected every platform network on every pass to count attached containers. It now inspects only orphaned networks of this instance, the only ones where the count matters.
+- A digest-pinned image was inspected once per running app per pass to learn an ID that cannot change. It is cached per node for `APP_RECONCILE_FULL_RESYNC`.
+- Every controller rewrote its status row on every pass. An unchanged status is now written once and then again only when `APP_RECONCILE_FULL_RESYNC` (default 5m) elapses or the status changes. The row's `updated_at` therefore means "last changed or last full resync".
+
+What stays level-triggered: nothing is trusted across passes except these bounded caches. A drifted or crashed container is still found and corrected on the next pass, a stopped app still has its containers removed, and the resync tick still repairs drift that no event announced.
+
+Not fixed and not proven:
+
+- Per running app work stays linear: one Docker stats call per container per metrics tick, the readiness and liveness probes, and one lookup per app (a batch only covers the apps on the local node; remote agents still answer per call). The inspects left in the table above come from the post-deploy watch window of apps created minutes earlier and fade after it.
+- The load balancer and remote dial paths in the ingress controller still list per service.
+- The diskguard loop does two `statfs` calls a minute regardless of app count, so it was not changed. The growth attributed to it earlier was not reproduced here.
+- Not measured: a Linux host, 100 or more apps, apps with domains and TLS, multiple nodes, or Docker events arriving during the window.
+
+## Linux container idle footprint
+
+`scripts/idle-footprint.sh` cross-builds the control plane for the Docker server's architecture, starts it in a clean `debian:bookworm-slim` container, creates N apps through the API, waits for the settle period, then samples the process from `/proc` over the window. Per app count it boots a fresh process and data directory. It prints JSON with RSS (end and peak), CPU percent over the window, goroutines, open file descriptors, threads and background loop count.
+
+**These are container-on-Docker-Desktop numbers, not bare metal.** The container runs in the Docker Desktop Linux VM on macOS (Docker 28.3.0, 14 CPUs, 8 GiB RAM, linux/arm64 on an Apple M4 Max). Memory and CPU accounting inside that VM differ from a native Linux host, so treat them as a Linux data point and not as a VPS figure. A bare metal or cloud VM run is still open.
+
+One run per row, 60 second window after a 20 second settle, dev mode build (the dev token fixtures are how the script authenticates), apps created and then stopped so no app containers exist, and the Docker socket is not mounted, so the control plane runs with no reachable Docker daemon.
+
+| Apps | RSS at end (MB) | Peak RSS (MB) | CPU (%) | Goroutines | Open fds |
+| --- | --- | --- | --- | --- | --- |
+| 0 | 212.0 | 212.0 | 0.38 | 129 | 27 |
+| 5 | 216.1 | 216.1 | 0.60 | 124 | 27 |
+| 20 | 148.0 | 233.2 | 0.83 | 127 | 29 |
+
+Read this honestly:
+
+- The 20 app row dropped from a 233 MB peak to 148 MB at the end because the memory trim loop returned boot garbage to the OS mid-window. The guard compares peak RSS for that reason.
+- Idle CPU rose from 0.38% to 0.83% between 0 and 20 stopped apps in these runs. That is more than the sub-1% target implies for 20 trivial apps and it is one run per row, so the trend is real enough to chase but the slope is not precise. Per loop accounting (`IDLE_LOOPS_DUMP=1`) over a separate 60 second run showed the `reconcile pass` loop going from 110 ms to 184 ms of busy time for two passes at 0 versus 20 apps (about 3.7 ms of work per app per pass) and `diskguard` from 36 ms to 123 ms for one run. The remaining rise is not attributed, because most background tickers are not registered with the loop tracker.
+- Goroutines and file descriptors did not grow with stopped apps.
+- With running apps (`IDLE_APP_MODE=running`, which mounts the host Docker socket and starts real `traefik/whoami` containers) only a 15 second, 2 app smoke run completed (224 MB, 182 goroutines, 0.40% CPU). That is too short to publish as a figure. The full 0, 5 and 20 running app run did not finish because the Docker daemon on the test host stopped responding, so there is no committed running app baseline.
+- The separate node agent was not measured: the control plane serves the local node in process, which is what this harness runs.
+
+Reproduce it:
+
+```bash
+scripts/idle-footprint.sh                        # 0, 5 and 20 stopped apps, JSON on stdout
+IDLE_COUNTS=0,50 IDLE_WINDOW_SECONDS=120 scripts/idle-footprint.sh
+IDLE_APP_MODE=running scripts/idle-footprint.sh  # real containers via the host Docker socket
+```
+
+Knobs: `IDLE_COUNTS`, `IDLE_WINDOW_SECONDS`, `IDLE_SETTLE_SECONDS`, `IDLE_APP_MODE` (`stopped` or `running`), `IDLE_APP_IMAGE`, `IDLE_IMAGE`, `IDLE_ARCH` and `IDLE_LOOPS_DUMP=1`.
+
+### Regression guard
+
+The committed baseline is `scripts/idle-footprint-baseline.json`, keyed by OS, architecture, app count and app mode. The guard is off unless you ask for it, and it has no built in tolerances: every limit comes from the environment, and a missing one is an error.
+
+```bash
+IDLE_FOOTPRINT_CHECK=1 IDLE_TOL_RSS_PCT=20 IDLE_TOL_GOROUTINES=15 \
+  IDLE_TOL_FDS=10 IDLE_TOL_CPU_POINTS=0.5 scripts/idle-footprint.sh
+```
+
+`IDLE_TOL_RSS_PCT` is a percentage over baseline peak RSS, `IDLE_TOL_GOROUTINES` and `IDLE_TOL_FDS` are absolute counts, and `IDLE_TOL_CPU_POINTS` is absolute percentage points. Run `IDLE_FOOTPRINT_RECORD=1 scripts/idle-footprint.sh` to merge a run into the baseline, on the same kind of host the check will run on. A baseline recorded on Docker Desktop will not fit a bare metal CI runner, so record one there before enabling the check in CI. The comparison logic has unit tests in `scripts/idle-footprint`.
+
+### Live footprint
+
+The same baseline is compiled into the control plane, so a running instance can judge itself. Settings, Control plane health shows a Footprint card with resident memory, CPU averaged over the last `APP_FOOTPRINT_CPU_WINDOW_SECONDS` (default 60), goroutines and open file descriptors, each next to the baseline row for this OS and architecture with the nearest app count and the limit the `IDLE_TOL_*` variables allow. Memory is compared with the baseline peak. `GET /api/v1/system/footprint` returns the same assessment, `system health` prints it, and the `idle_footprint` doctor check (also served by the MCP tool `get_system_doctor`) warns when a metric is over its limit.
+
+The status is `tolerance_unset` until all four `IDLE_TOL_*` variables are set on the control plane, and `no_baseline` on a platform with no committed row (for example macOS). The node agent's footprint is not measured by this card.
+
 ## Caveats
 
 - One machine, one run per configuration. Expect run-to-run variance of roughly 10 to 15% on RSS and CPU.

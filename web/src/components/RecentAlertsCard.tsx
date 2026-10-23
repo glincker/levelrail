@@ -84,7 +84,11 @@ function AlertRow({ entry }: { entry: AlertHistoryEntry }) {
 // alerting is unavailable or nothing has fired: an empty panel on every
 // dashboard load is noise.
 export function RecentAlertsCard() {
-  const { data, isError } = useAlertHistory({ event: 'fired', limit: ROW_CAP })
+  const { data, isError } = useAlertHistory({
+    event: 'fired',
+    limit: ROW_CAP,
+    scoped: true,
+  })
   if (isError || !data || data.length === 0) {
     return null
   }

@@ -1,0 +1,940 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-22T18:30:56.735234Z",
+  "build": {
+    "version": "v0.8.3-0.20261022162604-a9342ea38480",
+    "commit": "58233c72355897b6e33a13a0cd7f27e6d0a40049",
+    "dirty": false
+  },
+  "host": {
+    "os": "darwin",
+    "arch": "arm64",
+    "os_version": "27.2",
+    "kernel": "27.2.0",
+    "cpu_model": "Apple M4 Max",
+    "cpus": 14,
+    "mem_bytes": 38654705664,
+    "docker": {
+      "version": "28.3.0",
+      "os": "Docker Desktop",
+      "mem_bytes": 8217473024
+    },
+    "load1_start": 29.83,
+    "load1_end": 26.58,
+    "note": "dev laptop, shared with other work"
+  },
+  "repeat": 2,
+  "methodology": [
+    "Each scenario builds its own control plane slice (store, reconcile engine, embedded ingress) in the benchmark process and deploys a trivial fixture container on the local Docker engine.",
+    "The load generator runs on the same machine as the system under test, over loopback with TLS through the embedded ingress.",
+    "Request load is open loop: request i is scheduled at i / rate and latency is measured from that intended send time, so a stall is not hidden (coordinated omission). Ingress concurrency steps are closed loop and say so.",
+    "Percentiles are nearest rank over every request, failures included. A run with client_saturated above zero fails its own check.",
+    "Recovery time is the event to the last failed request. Replica restore time is polled from the container list at 200 ms resolution.",
+    "Deploy latency is Deploy to the first answer from the new version through the ingress, and includes the stability window the deploy gate waits for.",
+    "With repeat above 1 every run is kept and listed; nothing is averaged or dropped."
+  ],
+  "caveats": [
+    "NOT Linux production numbers: the host is darwin and Docker runs inside a virtual machine, so container, network and disk paths differ from a Linux server.",
+    "Docker Desktop engine: the container runtime is a shared virtual machine, not a native Linux Docker.",
+    "Load generator and system under test share one machine, so they compete for CPU and the figures are a floor for throughput and a ceiling for latency.",
+    "The control plane is an in-process slice, not the shipped binary under systemd, and there is one node: nothing here covers multi-node, zones or a real network.",
+    "Host load average (1 minute) was 29.83 at start and 26.58 at end on 14 CPUs. The host was busy, so treat every latency as a noisy upper bound."
+  ],
+  "results": [
+    {
+      "scenario": "kill-container",
+      "status": "passed",
+      "summary": "healthy again 3550 ms after the kill (restarted in place), 142 of 1200 requests failed",
+      "recovery_ms": 3550,
+      "error_window_ms": 3525,
+      "requests": 1200,
+      "request_errors": 142,
+      "assertions": [
+        {
+          "name": "load generator was not the bottleneck",
+          "passed": true,
+          "detail": "0 requests shed by the client in-flight cap"
+        },
+        {
+          "name": "kill was delivered",
+          "passed": true
+        },
+        {
+          "name": "the kill was visible to clients",
+          "passed": true,
+          "detail": "a single replica cannot hide a kill"
+        },
+        {
+          "name": "requests recovered before the run ended",
+          "passed": true
+        },
+        {
+          "name": "a container is running and routed again",
+          "passed": true,
+          "detail": "1 running"
+        }
+      ],
+      "metrics": {
+        "achieved_rps": 35.266666666666666,
+        "client_saturated": 0,
+        "max_ms": 2123.098209,
+        "p50_ms": 2.582959,
+        "p95_ms": 2004.296459,
+        "p99_ms": 2013.944375
+      },
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:16:27.64064Z",
+      "duration_ms": 35632.233833
+    },
+    {
+      "scenario": "daemon-unreachable",
+      "status": "passed",
+      "summary": "Docker API unreachable 6 s: deploy resumed and succeeded, 0 requests failed in the window",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 1200,
+      "request_errors": 0,
+      "assertions": [
+        {
+          "name": "load generator was not the bottleneck",
+          "passed": true,
+          "detail": "0 requests shed by the client in-flight cap"
+        },
+        {
+          "name": "deploy was submitted and the outage injected",
+          "passed": true
+        },
+        {
+          "name": "deploy reached a terminal state",
+          "passed": true,
+          "detail": "status succeeded"
+        },
+        {
+          "name": "the ingress serves the version the deploy outcome implies",
+          "passed": true,
+          "detail": "serving v2, want v2"
+        },
+        {
+          "name": "no request failed while the Docker API was unreachable",
+          "passed": true,
+          "detail": "0 failed"
+        }
+      ],
+      "metrics": {
+        "achieved_rps": 40,
+        "client_saturated": 0,
+        "max_ms": 76.048292,
+        "p50_ms": 2.475167,
+        "p95_ms": 10.427042,
+        "p99_ms": 25.011084
+      },
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:17:03.293049Z",
+      "duration_ms": 36128.580958
+    },
+    {
+      "scenario": "control-plane-restart",
+      "status": "passed",
+      "summary": "in-process restart: ingress outage 200 ms, container untouched, 0 direct probes failed (socket activation not exercised)",
+      "recovery_ms": 200,
+      "error_window_ms": 175,
+      "requests": 1200,
+      "request_errors": 8,
+      "assertions": [
+        {
+          "name": "load generator was not the bottleneck",
+          "passed": true,
+          "detail": "0 requests shed by the client in-flight cap"
+        },
+        {
+          "name": "restart completed",
+          "passed": true
+        },
+        {
+          "name": "direct probe of the container worked before the restart",
+          "passed": true,
+          "detail": "http://127.0.0.1:63763/"
+        },
+        {
+          "name": "the app container was not recreated",
+          "passed": true
+        },
+        {
+          "name": "the container kept answering on its own port during the restart",
+          "passed": true,
+          "detail": "0 direct probes failed"
+        },
+        {
+          "name": "the ingress came back on its own",
+          "passed": true
+        }
+      ],
+      "metrics": {
+        "achieved_rps": 39.733333333333334,
+        "client_saturated": 0,
+        "max_ms": 68.034125,
+        "p50_ms": 2.303375,
+        "p95_ms": 5.039375,
+        "p99_ms": 18.710917
+      },
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:17:39.457812Z",
+      "duration_ms": 36719.805708
+    },
+    {
+      "scenario": "disk-pressure",
+      "status": "passed",
+      "summary": "10 MiB tmpfs scratch volume filled to 100%, node disk rule fired: true (measured usage fed to the real evaluator, not the host disk)",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": [
+        {
+          "name": "an idle scratch volume does not raise the disk alert",
+          "passed": true,
+          "detail": "0.0% used"
+        },
+        {
+          "name": "a filled scratch volume raises the disk alert",
+          "passed": true,
+          "detail": "100.0% used"
+        }
+      ],
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:18:16.23355Z",
+      "duration_ms": 1340.578916
+    },
+    {
+      "scenario": "oom-during-readiness",
+      "status": "passed",
+      "summary": "deploy failed (OOMKilledDuringReadiness), v1 kept serving, 0 of 1200 requests failed",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 1200,
+      "request_errors": 0,
+      "assertions": [
+        {
+          "name": "load generator was not the bottleneck",
+          "passed": true,
+          "detail": "0 requests shed by the client in-flight cap"
+        },
+        {
+          "name": "the OOM release was submitted",
+          "passed": true
+        },
+        {
+          "name": "the deploy failed with OOMKilledDuringReadiness",
+          "passed": true,
+          "detail": "status failed reason OOMKilledDuringReadiness"
+        },
+        {
+          "name": "the old version kept serving",
+          "passed": true,
+          "detail": "serving v1"
+        },
+        {
+          "name": "no request failed during the failed deploy",
+          "passed": true,
+          "detail": "0 failed"
+        }
+      ],
+      "metrics": {
+        "achieved_rps": 40,
+        "client_saturated": 0,
+        "max_ms": 82.177208,
+        "p50_ms": 2.632125,
+        "p95_ms": 11.674083,
+        "p99_ms": 25.260875
+      },
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:18:17.592736Z",
+      "duration_ms": 38110.125084
+    },
+    {
+      "scenario": "ingress-steady",
+      "status": "passed",
+      "summary": "highest clean step 3200 req/s through the embedded ingress, one replica, 10s per step",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 125000,
+      "request_errors": 34486,
+      "assertions": [
+        {
+          "name": "step 100 req/s",
+          "passed": true,
+          "detail": "achieved 100 req/s, errors 0 of 1000, p50 2.24 ms, p95 5.74 ms, p99 13.22 ms, max 30.1 ms, client saturated 0, clean true"
+        },
+        {
+          "name": "step 400 req/s",
+          "passed": true,
+          "detail": "achieved 400 req/s, errors 0 of 4000, p50 1.11 ms, p95 7.68 ms, p99 24.11 ms, max 104.7 ms, client saturated 0, clean true"
+        },
+        {
+          "name": "step 800 req/s",
+          "passed": true,
+          "detail": "achieved 800 req/s, errors 0 of 8000, p50 0.71 ms, p95 2.25 ms, p99 8.49 ms, max 57.2 ms, client saturated 0, clean true"
+        },
+        {
+          "name": "step 1600 req/s",
+          "passed": true,
+          "detail": "achieved 1600 req/s, errors 0 of 16000, p50 0.49 ms, p95 1.73 ms, p99 4.52 ms, max 16.5 ms, client saturated 0, clean true"
+        },
+        {
+          "name": "step 3200 req/s",
+          "passed": true,
+          "detail": "achieved 3199 req/s, errors 0 of 32000, p50 0.71 ms, p95 10.44 ms, p99 67.51 ms, max 167.8 ms, client saturated 0, clean true"
+        },
+        {
+          "name": "step 6400 req/s",
+          "passed": true,
+          "detail": "achieved 1670 req/s, errors 34486 of 64000, p50 143.15 ms, p95 9096.31 ms, p99 10218.60 ms, max 12002.3 ms, client saturated 4586, clean false"
+        },
+        {
+          "name": "the lowest step ran clean",
+          "passed": true
+        }
+      ],
+      "metrics": {
+        "highest_clean_rps": 3200,
+        "step100_errors": 0,
+        "step100_p50_ms": 2.240667,
+        "step100_p95_ms": 5.743625,
+        "step100_p99_ms": 13.220167,
+        "step100_rps": 100,
+        "step1600_errors": 0,
+        "step1600_p50_ms": 0.494458,
+        "step1600_p95_ms": 1.733041,
+        "step1600_p99_ms": 4.524458,
+        "step1600_rps": 1599.954361301844,
+        "step3200_errors": 0,
+        "step3200_p50_ms": 0.707667,
+        "step3200_p95_ms": 10.441709,
+        "step3200_p99_ms": 67.512417,
+        "step3200_rps": 3199.481950440875,
+        "step400_errors": 0,
+        "step400_p50_ms": 1.105875,
+        "step400_p95_ms": 7.678416,
+        "step400_p99_ms": 24.108083,
+        "step400_rps": 400,
+        "step6400_errors": 34486,
+        "step6400_p50_ms": 143.154292,
+        "step6400_p95_ms": 9096.3115,
+        "step6400_p99_ms": 10218.597125,
+        "step6400_rps": 1669.576255716868,
+        "step800_errors": 0,
+        "step800_p50_ms": 0.706125,
+        "step800_p95_ms": 2.247625,
+        "step800_p99_ms": 8.486375,
+        "step800_rps": 800
+      },
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:18:55.74396Z",
+      "duration_ms": 103343.57525
+    },
+    {
+      "scenario": "deploy-latency",
+      "status": "passed",
+      "summary": "image to serving: cold 4678 ms, warm p50 3879 ms, p95 4446 ms over 5 redeploys (includes the 3 s stability gate)",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": [
+        {
+          "name": "run 1 (r1)",
+          "passed": true,
+          "detail": "first answer from new version 4.678s, attempt succeeded after 4.678s"
+        },
+        {
+          "name": "run 2 (r2)",
+          "passed": true,
+          "detail": "first answer from new version 4.446s, attempt succeeded after 4.446s"
+        },
+        {
+          "name": "run 3 (r3)",
+          "passed": true,
+          "detail": "first answer from new version 3.444s, attempt succeeded after 3.445s"
+        },
+        {
+          "name": "run 4 (r4)",
+          "passed": true,
+          "detail": "first answer from new version 3.669s, attempt succeeded after 3.669s"
+        },
+        {
+          "name": "run 5 (r5)",
+          "passed": true,
+          "detail": "first answer from new version 4.084s, attempt succeeded after 4.084s"
+        },
+        {
+          "name": "run 6 (r6)",
+          "passed": true,
+          "detail": "first answer from new version 3.879s, attempt succeeded after 3.88s"
+        },
+        {
+          "name": "every deploy reached serving",
+          "passed": true,
+          "detail": "6 of 6"
+        },
+        {
+          "name": "cold deploy",
+          "passed": true,
+          "detail": "4.678s"
+        },
+        {
+          "name": "warm deploys",
+          "passed": true,
+          "detail": "n=5 p50 3.879s p95 4.446s min 3.444s max 4.446s"
+        }
+      ],
+      "metrics": {
+        "deploy_cold_ms": 4678.146,
+        "deploy_warm_max_ms": 4445.797375,
+        "deploy_warm_min_ms": 3444.421625,
+        "deploy_warm_p50_ms": 3879.470958,
+        "deploy_warm_p95_ms": 4445.797375,
+        "deploy_warm_runs": 5
+      },
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:20:39.121186Z",
+      "duration_ms": 28786.116458
+    },
+    {
+      "scenario": "rollout-under-traffic",
+      "status": "passed",
+      "summary": "0 of 4000 requests failed at 100 req/s across a two replica rollout, p50 2.00 ms, p95 8.52 ms, p99 19.64 ms",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 4000,
+      "request_errors": 0,
+      "assertions": [
+        {
+          "name": "load generator was not the bottleneck",
+          "passed": true,
+          "detail": "0 requests shed by the client in-flight cap"
+        },
+        {
+          "name": "both versions answered during the run, so traffic overlapped the swap",
+          "passed": true,
+          "detail": "probe answers: v1 524, v2 1250"
+        },
+        {
+          "name": "deploy was submitted",
+          "passed": true
+        },
+        {
+          "name": "the rollout succeeded",
+          "passed": true,
+          "detail": "status succeeded"
+        },
+        {
+          "name": "the ingress serves v2 after the rollout",
+          "passed": true,
+          "detail": "serving v2"
+        },
+        {
+          "name": "zero failed requests during the rollout",
+          "passed": true,
+          "detail": "0 of 4000 failed, p99 19.6 ms, max 46.7 ms"
+        }
+      ],
+      "metrics": {
+        "achieved_rps": 100,
+        "client_saturated": 0,
+        "max_ms": 46.651541,
+        "p50_ms": 1.998,
+        "p95_ms": 8.524416,
+        "p99_ms": 19.644458
+      },
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:21:08.025024Z",
+      "duration_ms": 51638.434
+    },
+    {
+      "scenario": "ingress-concurrency",
+      "status": "passed",
+      "summary": "closed loop, one replica, 8s per step: c1 2007 req/s, c8 6233 req/s, c32 13911 req/s, c128 10640 req/s",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 264467,
+      "request_errors": 15,
+      "assertions": [
+        {
+          "name": "concurrency 1",
+          "passed": true,
+          "detail": "2007 req/s, errors 0 of 16057, p50 0.34 ms, p95 1.17 ms, p99 3.13 ms, max 28.6 ms"
+        },
+        {
+          "name": "concurrency 8",
+          "passed": true,
+          "detail": "6233 req/s, errors 0 of 49870, p50 0.93 ms, p95 3.11 ms, p99 7.23 ms, max 24.7 ms"
+        },
+        {
+          "name": "concurrency 32",
+          "passed": true,
+          "detail": "13911 req/s, errors 0 of 111352, p50 1.84 ms, p95 4.88 ms, p99 9.21 ms, max 46.6 ms"
+        },
+        {
+          "name": "concurrency 128",
+          "passed": true,
+          "detail": "10640 req/s, errors 15 of 87188, p50 4.89 ms, p95 21.00 ms, p99 59.75 ms, max 2508.7 ms"
+        }
+      ],
+      "metrics": {
+        "c128_errors": 15,
+        "c128_p50_ms": 4.889584,
+        "c128_p95_ms": 21.000084,
+        "c128_p99_ms": 59.745833,
+        "c128_rps": 10640.42279318205,
+        "c1_errors": 0,
+        "c1_p50_ms": 0.336625,
+        "c1_p95_ms": 1.172583,
+        "c1_p99_ms": 3.12875,
+        "c1_rps": 2007.0929281603276,
+        "c32_errors": 0,
+        "c32_p50_ms": 1.844709,
+        "c32_p95_ms": 4.882792,
+        "c32_p99_ms": 9.205667,
+        "c32_rps": 13911.480192855128,
+        "c8_errors": 0,
+        "c8_p50_ms": 0.928958,
+        "c8_p95_ms": 3.109833,
+        "c8_p99_ms": 7.233958,
+        "c8_rps": 6232.636987372988
+      },
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:21:59.772296Z",
+      "duration_ms": 39311.633459
+    },
+    {
+      "scenario": "replica-failover",
+      "status": "passed",
+      "summary": "0 of 3000 requests failed at 100 req/s, error window 0 ms, second replica back 1150 ms after the kill (container list poll, 200 ms resolution)",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 3000,
+      "request_errors": 0,
+      "assertions": [
+        {
+          "name": "load generator was not the bottleneck",
+          "passed": true,
+          "detail": "0 requests shed by the client in-flight cap"
+        },
+        {
+          "name": "kill was delivered",
+          "passed": true
+        },
+        {
+          "name": "requests recovered before the run ended",
+          "passed": true
+        },
+        {
+          "name": "two containers running again after the kill",
+          "passed": true,
+          "detail": "replacement visible 1150 ms after the kill"
+        }
+      ],
+      "metrics": {
+        "achieved_rps": 99.90055413324883,
+        "client_saturated": 0,
+        "max_ms": 1080.784416,
+        "p50_ms": 2.126416,
+        "p95_ms": 8.0975,
+        "p99_ms": 265.146833,
+        "replica_restored_ms": 1150.210209
+      },
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:22:39.114246Z",
+      "duration_ms": 39904.450917
+    },
+    {
+      "scenario": "kill-container",
+      "status": "passed",
+      "summary": "healthy again 3675 ms after the kill (restarted in place), 147 of 1200 requests failed",
+      "recovery_ms": 3675,
+      "error_window_ms": 3650,
+      "requests": 1200,
+      "request_errors": 147,
+      "assertions": [
+        {
+          "name": "load generator was not the bottleneck",
+          "passed": true,
+          "detail": "0 requests shed by the client in-flight cap"
+        },
+        {
+          "name": "kill was delivered",
+          "passed": true
+        },
+        {
+          "name": "the kill was visible to clients",
+          "passed": true,
+          "detail": "a single replica cannot hide a kill"
+        },
+        {
+          "name": "requests recovered before the run ended",
+          "passed": true
+        },
+        {
+          "name": "a container is running and routed again",
+          "passed": true,
+          "detail": "1 running"
+        }
+      ],
+      "metrics": {
+        "achieved_rps": 35.1,
+        "client_saturated": 0,
+        "max_ms": 2102.415375,
+        "p50_ms": 2.686917,
+        "p95_ms": 2008.4395,
+        "p99_ms": 2029.630042
+      },
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:23:19.034164Z",
+      "duration_ms": 44621.172417
+    },
+    {
+      "scenario": "daemon-unreachable",
+      "status": "passed",
+      "summary": "Docker API unreachable 6 s: deploy resumed and succeeded, 0 requests failed in the window",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 1200,
+      "request_errors": 0,
+      "assertions": [
+        {
+          "name": "load generator was not the bottleneck",
+          "passed": true,
+          "detail": "0 requests shed by the client in-flight cap"
+        },
+        {
+          "name": "deploy was submitted and the outage injected",
+          "passed": true
+        },
+        {
+          "name": "deploy reached a terminal state",
+          "passed": true,
+          "detail": "status succeeded"
+        },
+        {
+          "name": "the ingress serves the version the deploy outcome implies",
+          "passed": true,
+          "detail": "serving v2, want v2"
+        },
+        {
+          "name": "no request failed while the Docker API was unreachable",
+          "passed": true,
+          "detail": "0 failed"
+        }
+      ],
+      "metrics": {
+        "achieved_rps": 40,
+        "client_saturated": 0,
+        "max_ms": 63.463292,
+        "p50_ms": 2.57225,
+        "p95_ms": 7.967542,
+        "p99_ms": 15.700625
+      },
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:24:03.685348Z",
+      "duration_ms": 37514.92075
+    },
+    {
+      "scenario": "control-plane-restart",
+      "status": "passed",
+      "summary": "in-process restart: ingress outage 75 ms, container untouched, 0 direct probes failed (socket activation not exercised)",
+      "recovery_ms": 75,
+      "error_window_ms": 50,
+      "requests": 1200,
+      "request_errors": 3,
+      "assertions": [
+        {
+          "name": "load generator was not the bottleneck",
+          "passed": true,
+          "detail": "0 requests shed by the client in-flight cap"
+        },
+        {
+          "name": "restart completed",
+          "passed": true
+        },
+        {
+          "name": "direct probe of the container worked before the restart",
+          "passed": true,
+          "detail": "http://127.0.0.1:54679/"
+        },
+        {
+          "name": "the app container was not recreated",
+          "passed": true
+        },
+        {
+          "name": "the container kept answering on its own port during the restart",
+          "passed": true,
+          "detail": "0 direct probes failed"
+        },
+        {
+          "name": "the ingress came back on its own",
+          "passed": true
+        }
+      ],
+      "metrics": {
+        "achieved_rps": 39.9,
+        "client_saturated": 0,
+        "max_ms": 13.172625,
+        "p50_ms": 2.301666,
+        "p95_ms": 3.63925,
+        "p99_ms": 6.099375
+      },
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:24:41.379598Z",
+      "duration_ms": 37766.768
+    },
+    {
+      "scenario": "disk-pressure",
+      "status": "passed",
+      "summary": "10 MiB tmpfs scratch volume filled to 100%, node disk rule fired: true (measured usage fed to the real evaluator, not the host disk)",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": [
+        {
+          "name": "an idle scratch volume does not raise the disk alert",
+          "passed": true,
+          "detail": "0.0% used"
+        },
+        {
+          "name": "a filled scratch volume raises the disk alert",
+          "passed": true,
+          "detail": "100.0% used"
+        }
+      ],
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:25:19.2127Z",
+      "duration_ms": 1182.92325
+    },
+    {
+      "scenario": "oom-during-readiness",
+      "status": "passed",
+      "summary": "deploy failed (OOMKilledDuringReadiness), v1 kept serving, 0 of 1200 requests failed",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 1200,
+      "request_errors": 0,
+      "assertions": [
+        {
+          "name": "load generator was not the bottleneck",
+          "passed": true,
+          "detail": "0 requests shed by the client in-flight cap"
+        },
+        {
+          "name": "the OOM release was submitted",
+          "passed": true
+        },
+        {
+          "name": "the deploy failed with OOMKilledDuringReadiness",
+          "passed": true,
+          "detail": "status failed reason OOMKilledDuringReadiness"
+        },
+        {
+          "name": "the old version kept serving",
+          "passed": true,
+          "detail": "serving v1"
+        },
+        {
+          "name": "no request failed during the failed deploy",
+          "passed": true,
+          "detail": "0 failed"
+        }
+      ],
+      "metrics": {
+        "achieved_rps": 40,
+        "client_saturated": 0,
+        "max_ms": 152.32775,
+        "p50_ms": 2.986083,
+        "p95_ms": 12.751125,
+        "p99_ms": 40.0295
+      },
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:25:20.425146Z",
+      "duration_ms": 40051.852708
+    },
+    {
+      "scenario": "ingress-steady",
+      "status": "passed",
+      "summary": "highest clean step 800 req/s through the embedded ingress, one replica, 10s per step",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 29000,
+      "request_errors": 313,
+      "assertions": [
+        {
+          "name": "step 100 req/s",
+          "passed": true,
+          "detail": "achieved 98 req/s, errors 0 of 1000, p50 10.39 ms, p95 362.24 ms, p99 537.57 ms, max 637.3 ms, client saturated 0, clean true"
+        },
+        {
+          "name": "step 400 req/s",
+          "passed": true,
+          "detail": "achieved 399 req/s, errors 13 of 4000, p50 9.99 ms, p95 1203.33 ms, p99 1641.15 ms, max 1850.5 ms, client saturated 0, clean true"
+        },
+        {
+          "name": "step 800 req/s",
+          "passed": true,
+          "detail": "achieved 794 req/s, errors 11 of 8000, p50 15.73 ms, p95 839.58 ms, p99 1171.63 ms, max 1308.3 ms, client saturated 0, clean true"
+        },
+        {
+          "name": "step 1600 req/s",
+          "passed": true,
+          "detail": "achieved 1571 req/s, errors 289 of 16000, p50 8.16 ms, p95 259.76 ms, p99 320.68 ms, max 386.0 ms, client saturated 0, clean false"
+        },
+        {
+          "name": "the lowest step ran clean",
+          "passed": true
+        }
+      ],
+      "metrics": {
+        "highest_clean_rps": 800,
+        "step100_errors": 0,
+        "step100_p50_ms": 10.385666,
+        "step100_p95_ms": 362.236166,
+        "step100_p99_ms": 537.568958,
+        "step100_rps": 97.78680549825296,
+        "step1600_errors": 289,
+        "step1600_p50_ms": 8.155166,
+        "step1600_p95_ms": 259.759458,
+        "step1600_p99_ms": 320.680375,
+        "step1600_rps": 1571.0329890017838,
+        "step400_errors": 13,
+        "step400_p50_ms": 9.98775,
+        "step400_p95_ms": 1203.326416,
+        "step400_p99_ms": 1641.153125,
+        "step400_rps": 398.58781084408025,
+        "step800_errors": 11,
+        "step800_p50_ms": 15.731708,
+        "step800_p95_ms": 839.583041,
+        "step800_p99_ms": 1171.635,
+        "step800_rps": 793.6146652122528
+      },
+      "hardware": "darwin/arm64, 14 CPUs, Docker 28.3.0, 7 GiB RAM visible to Docker, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:26:00.497738Z",
+      "duration_ms": 107489.604959
+    },
+    {
+      "scenario": "deploy-latency",
+      "status": "skipped",
+      "summary": "docker daemon not reachable: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "hardware": "darwin/arm64, 14 CPUs, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:27:48.059805Z",
+      "duration_ms": 4.518125
+    },
+    {
+      "scenario": "rollout-under-traffic",
+      "status": "skipped",
+      "summary": "docker daemon not reachable: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "hardware": "darwin/arm64, 14 CPUs, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:30:56.706351Z",
+      "duration_ms": 0.044333
+    },
+    {
+      "scenario": "ingress-concurrency",
+      "status": "skipped",
+      "summary": "docker daemon not reachable: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "hardware": "darwin/arm64, 14 CPUs, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:30:56.706771Z",
+      "duration_ms": 0.03175
+    },
+    {
+      "scenario": "replica-failover",
+      "status": "skipped",
+      "summary": "docker daemon not reachable: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "hardware": "darwin/arm64, 14 CPUs, dev laptop, shared with other work",
+      "ran_at": "2026-10-22T18:30:56.707043Z",
+      "duration_ms": 0.026667
+    }
+  ],
+  "limits": [
+    {
+      "question": "Kill the serving container under traffic",
+      "status": "measured on this host, 2 run(s), all checks passed"
+    },
+    {
+      "question": "Docker API unreachable during a deploy",
+      "status": "measured on this host, 2 run(s), all checks passed"
+    },
+    {
+      "question": "Control plane restart under traffic",
+      "status": "measured on this host, 2 run(s), all checks passed"
+    },
+    {
+      "question": "Scratch volume filled",
+      "status": "measured on this host, 2 run(s), all checks passed"
+    },
+    {
+      "question": "OOM kill during the readiness wait",
+      "status": "measured on this host, 2 run(s), all checks passed"
+    },
+    {
+      "question": "Rising steady load through the ingress",
+      "status": "measured on this host, 2 run(s), all checks passed"
+    },
+    {
+      "question": "Deploy latency from image to serving",
+      "status": "measured on this host, 1 run(s), all checks passed"
+    },
+    {
+      "question": "Rolling deploy of two replicas under traffic",
+      "status": "measured on this host, 1 run(s), all checks passed"
+    },
+    {
+      "question": "Ingress throughput at fixed concurrency",
+      "status": "measured on this host, 1 run(s), all checks passed"
+    },
+    {
+      "question": "Kill one of two replicas under traffic",
+      "status": "measured on this host, 1 run(s), all checks passed"
+    },
+    {
+      "question": "Anything on a Linux server, a real network or a real application",
+      "status": "not measured"
+    },
+    {
+      "question": "Node agent link loss, node drain, zone loss",
+      "status": "not measured: needs a second node"
+    },
+    {
+      "question": "Control plane restart under systemd socket activation",
+      "status": "not measured: the restart scenario is in process"
+    },
+    {
+      "question": "Docker daemon restart (engine stopped)",
+      "status": "not measured: the API is cut with a proxy, the daemon keeps running"
+    },
+    {
+      "question": "Ingress throughput ceiling",
+      "status": "not established: the ladder stops at its top step, so the ceiling is at least the highest clean step"
+    },
+    {
+      "question": "Statistical confidence",
+      "status": "not measured: 2 run(s) per scenario"
+    }
+  ]
+}

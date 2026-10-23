@@ -8,14 +8,18 @@
     "Step": "register begin without a session",
     "Status": 401,
     "Body": {
-      "error": "authentication required"
+      "code": "unauthorized",
+      "error": "authentication required",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
     "Step": "register finish without session_id",
     "Status": 400,
     "Body": {
-      "error": "session_id is required"
+      "code": "validation_failed",
+      "error": "session_id is required",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
@@ -56,7 +60,9 @@
     "Step": "delete an unknown passkey",
     "Status": 404,
     "Body": {
-      "error": "passkey not found"
+      "code": "not_found",
+      "error": "passkey not found",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
@@ -73,28 +79,36 @@
     "Step": "login begin for an unknown user",
     "Status": 401,
     "Body": {
-      "error": "no passkey available for this account"
+      "code": "unauthorized",
+      "error": "no passkey available for this account",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
     "Step": "login begin with no passkey registered",
     "Status": 401,
     "Body": {
-      "error": "no passkey available for this account"
+      "code": "unauthorized",
+      "error": "no passkey available for this account",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
     "Step": "login begin with no username",
     "Status": 400,
     "Body": {
-      "error": "username is required"
+      "code": "validation_failed",
+      "error": "username is required",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
     "Step": "login finish without session_id",
     "Status": 400,
     "Body": {
-      "error": "session_id is required"
+      "code": "validation_failed",
+      "error": "session_id is required",
+      "request_id": "\u003credacted\u003e"
     }
   }
 ]

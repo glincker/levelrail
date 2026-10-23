@@ -21,7 +21,7 @@ type canaryStartInput struct {
 func registerCanaryTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_canary",
-		Description: "An app's canary: image, traffic share, stages, live error rate and p95 against stable, and how the last one ended. Read only.",
+		Description: "An app's canary: image, traffic share, stages, live error rate and p95 against stable, and how the last one ended.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.CanaryResource, error) {
 		out, err := client.GetCanary(ctx, in.Name)
 		if err != nil {

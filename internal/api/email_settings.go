@@ -18,6 +18,10 @@ import (
 type EmailSecretsStore interface {
 	SetValue(ctx context.Context, serviceName, envKey, plaintext string) error
 	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
+	// Resolve, DeleteValue and DeleteAll serve provider promote and delete; Resolve's result never reaches a response.
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+	DeleteValue(ctx context.Context, serviceName, envKey string) error
+	DeleteAll(ctx context.Context, serviceName string) error
 }
 
 // emailSettingsResource is the wire shape for GET and PUT
@@ -263,7 +267,15 @@ func (rt *Router) handleUpdateEmailSettings(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if req.Backend == "" {
+		if err := rt.ensureNoBackupProvider(r.Context()); err != nil {
+			rt.writeProviderError(w, "api: update email settings: provider check failed", err)
+			return
+		}
+	}
+
 	key := store.EmailSettingsSecretsKey()
+	var changed []string
 	for _, f := range emailSecretFields {
 		v := f.value(&req)
 		if v == "" {
@@ -273,7 +285,9 @@ func (rt *Router) handleUpdateEmailSettings(w http.ResponseWriter, r *http.Reque
 			rt.internalError(w, "api: update email settings: set secret failed", err, slog.String("key", f.envKey))
 			return
 		}
+		changed = append(changed, f.envKey)
 	}
+	rt.auditEmailSecretChange(r, "", changed)
 
 	mailgunRegion := req.MailgunRegion
 	if mailgunRegion == "" {
@@ -305,6 +319,10 @@ func (rt *Router) handleUpdateEmailSettings(w http.ResponseWriter, r *http.Reque
 		SESSMTPUsername: req.SESSMTPUsername,
 		MailgunDomain:   req.MailgunDomain,
 		MailgunRegion:   mailgunRegion,
+	}
+	if err := rt.syncPrimaryProvider(r.Context(), settings); err != nil {
+		rt.writeProviderError(w, "api: update email settings: sync primary provider failed", err)
+		return
 	}
 	if err := rt.emailSettings.UpdateEmailSettings(r.Context(), settings); err != nil {
 		rt.internalError(w, "api: update email settings failed", err)

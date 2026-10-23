@@ -38,7 +38,8 @@ func (m *extMemSecrets) SetValueGuarded(_ context.Context, s, e, v string, _ boo
 func (m *extMemSecrets) ListKeys(context.Context, string) ([]store.SecretKeyInfo, error) {
 	return nil, nil
 }
-func (m *extMemSecrets) SetLocked(context.Context, string, string, bool) error { return nil }
+func (m *extMemSecrets) SetBuildEnabled(context.Context, string, string, bool) error { return nil }
+func (m *extMemSecrets) SetLocked(context.Context, string, string, bool) error       { return nil }
 func (m *extMemSecrets) Exists(_ context.Context, s, e string) (bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

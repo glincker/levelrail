@@ -59,7 +59,7 @@ export function MatchDigits({
           aria-invalid={invalid ? true : undefined}
           aria-describedby={describedBy}
           className={cn(
-            'size-14 rounded-lg border bg-background text-center font-mono text-2xl font-semibold transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring',
+            'size-10 rounded-lg border bg-background text-center font-mono text-xl font-semibold shadow-inner transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring',
             invalid ? 'border-destructive' : 'border-input',
           )}
           onChange={(e) => setAt(i, sanitizeDigits(e.target.value).slice(-1))}

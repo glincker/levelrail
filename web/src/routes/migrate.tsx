@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MigrateChecklistCard } from '../components/migrate/MigrateChecklistCard'
 import { MigratePlan } from '../components/migrate/MigratePlan'
+import { MigrateVerifyCard } from '../components/migrate/MigrateVerifyCard'
 import { PortTakeoverPanel } from '../components/PortTakeoverPanel'
 import { useMigrateChecklists } from '../queries/migrateWizard'
 
@@ -71,7 +72,10 @@ function MigratePage() {
           <MigratePlan onOpenCutover={() => setTab('cutover')} />
         </TabsContent>
         <TabsContent value="cutover">
-          <CutoverTab />
+          <div className="space-y-4">
+            <MigrateVerifyCard />
+            <CutoverTab />
+          </div>
         </TabsContent>
         <TabsContent value="agent">
           <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg" />}>

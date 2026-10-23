@@ -26,6 +26,8 @@ type Store interface {
 	ListSecretKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
 	GetSecretKeyLocked(ctx context.Context, serviceName, envKey string) (exists, locked bool, err error)
 	SetSecretLocked(ctx context.Context, serviceName, envKey string, locked bool) error
+	GetSecretBuildTime(ctx context.Context, serviceName, envKey string) (exists, buildTime bool, err error)
+	SetSecretBuildTime(ctx context.Context, serviceName, envKey string, buildTime bool) error
 	// RotateServiceDEKs rewraps every stored DEK in one transaction; any
 	// rewrap error rolls the whole rotation back.
 	RotateServiceDEKs(ctx context.Context, rewrap func(serviceName string, wrapped []byte) ([]byte, error)) error
@@ -305,4 +307,23 @@ func (m *Manager) GetMasterKeyRotatedAt(ctx context.Context) (time.Time, bool, e
 		return time.Time{}, false, fmt.Errorf("secrets: get master key rotated at: %w", err)
 	}
 	return rotatedAt, ok, nil
+}
+
+// BuildEnabled reports whether the secret may be mounted by build.secrets.
+// A missing secret is not enabled; any lookup error is returned so callers
+// fail closed.
+func (m *Manager) BuildEnabled(ctx context.Context, serviceName, envKey string) (bool, error) {
+	exists, enabled, err := m.store.GetSecretBuildTime(ctx, serviceName, envKey)
+	if err != nil {
+		return false, fmt.Errorf("secrets: check build_time for %q/%q: %w", serviceName, envKey, err)
+	}
+	return exists && enabled, nil
+}
+
+// SetBuildEnabled flips the build_time flag of an existing secret.
+func (m *Manager) SetBuildEnabled(ctx context.Context, serviceName, envKey string, enabled bool) error {
+	if err := m.store.SetSecretBuildTime(ctx, serviceName, envKey, enabled); err != nil {
+		return fmt.Errorf("secrets: set build_time for %q/%q: %w", serviceName, envKey, err)
+	}
+	return nil
 }

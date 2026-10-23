@@ -109,7 +109,7 @@ func (c *Controller) retireStale(ctx context.Context, targets []string, desired 
 		}
 		due = stale
 	} else {
-		all, err := c.runtime.ListByPrefix(ctx, c.serviceName+"-")
+		all, err := c.listPrefix(ctx, c.serviceName+"-")
 		if err != nil {
 			return fmt.Errorf("list containers for %s: %w", c.serviceName, err)
 		}

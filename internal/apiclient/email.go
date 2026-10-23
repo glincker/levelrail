@@ -10,10 +10,11 @@ import (
 
 // EmailTestResult mirrors POST /api/v1/settings/email/test.
 type EmailTestResult struct {
-	To        string `json:"to"`
-	Provider  string `json:"provider"`
-	MessageID string `json:"message_id,omitempty"`
-	Attempts  int    `json:"attempts"`
+	To         string `json:"to"`
+	Provider   string `json:"provider"`
+	ProviderID string `json:"provider_id,omitempty"`
+	MessageID  string `json:"message_id,omitempty"`
+	Attempts   int    `json:"attempts"`
 }
 
 // EmailStatus mirrors GET /api/v1/settings/email/status.

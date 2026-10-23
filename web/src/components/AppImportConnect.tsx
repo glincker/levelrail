@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { AppImportSSHConnect } from './AppImportSSHConnect'
+import { MigrationSourceTest } from './MigrationSourceTest'
 import {
   useConnectAppImportSession,
   useCreateAppImportSession,
@@ -14,6 +15,12 @@ import {
 } from '../queries/appImport'
 
 type Mode = 'api' | 'docker' | 'compose' | 'dokku' | 'ssh'
+const API_PLATFORMS = ['coolify', 'dokploy', 'caprover'] as const
+type ApiPlatform = (typeof API_PLATFORMS)[number]
+
+function isApiPlatform(p: string | undefined): p is ApiPlatform {
+  return API_PLATFORMS.some((x) => x === p)
+}
 type FileMode = Exclude<Mode, 'api' | 'ssh'>
 
 const FILE_MODES: readonly string[] = ['docker', 'compose', 'dokku']
@@ -41,6 +48,9 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
         ? reconnect.platform
         : 'api',
   )
+  const [platform, setPlatform] = useState<ApiPlatform>(
+    isApiPlatform(reconnect?.platform) ? reconnect.platform : 'coolify',
+  )
   const [appName, setAppName] = useState('')
   const [snapshot, setSnapshot] = useState('')
   const [loopback, setLoopback] = useState(false)
@@ -49,12 +59,10 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
   const pending = create.isPending || connect.isPending
   const error = create.error ?? connect.error
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault()
-    if (mode === 'ssh') return
+  function buildSource(): AppImportSource {
     const fileMode = isFileMode(mode) ? mode : null
-    const source: AppImportSource = {
-      platform: fileMode ?? reconnect?.platform ?? 'coolify',
+    return {
+      platform: fileMode ?? platform,
       url: fileMode ? `file://${fileMode}` : url.trim(),
       token: fileMode ? '' : token,
       snapshot: fileMode ? snapshot : undefined,
@@ -63,6 +71,12 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
       allow_private: priv || undefined,
       insecure_tls: insecure || undefined,
     }
+  }
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (mode === 'ssh') return
+    const source = buildSource()
     const done = (id: string) => {
       setToken('')
       setSnapshot('')
@@ -84,7 +98,9 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
         <h3 className="text-base font-semibold">
           {reconnect
             ? t('appImport.connect.reconnectTitle')
-            : t('appImport.connect.title')}
+            : t('appImport.connect.title', {
+                name: t(`appImport.connect.platformName.${platform}`),
+              })}
         </h3>
         <p className="text-sm text-muted-foreground">
           {t('appImport.connect.description')}
@@ -155,34 +171,60 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
           </p>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="appimport-url">{t('appImport.connect.url')}</Label>
-            <Input
-              id="appimport-url"
-              required
-              type="url"
-              readOnly={!!reconnect}
-              placeholder="https://coolify.example.com"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="appimport-token">
-              {t('appImport.connect.token')}
-            </Label>
-            <Input
-              id="appimport-token"
-              required
-              type="password"
-              autoComplete="off"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              {t('appImport.connect.tokenHelp')}
-            </p>
+        <div className="space-y-3">
+          {reconnect ? null : (
+            <div
+              className="flex flex-wrap gap-2"
+              role="group"
+              aria-label={t('appImport.connect.platform')}
+            >
+              {API_PLATFORMS.map((p) => (
+                <Button
+                  key={p}
+                  type="button"
+                  size="sm"
+                  variant={platform === p ? 'default' : 'outline'}
+                  aria-pressed={platform === p}
+                  onClick={() => setPlatform(p)}
+                >
+                  {t(`appImport.connect.platformName.${p}`)}
+                </Button>
+              ))}
+            </div>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="appimport-url">
+                {t('appImport.connect.url', {
+                  name: t(`appImport.connect.platformName.${platform}`),
+                })}
+              </Label>
+              <Input
+                id="appimport-url"
+                required
+                type="url"
+                readOnly={!!reconnect}
+                placeholder={`https://${platform}.example.com`}
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="appimport-token">
+                {t(`appImport.connect.tokenFor.${platform}`)}
+              </Label>
+              <Input
+                id="appimport-token"
+                required
+                type="password"
+                autoComplete="off"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('appImport.connect.tokenHelp')}
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -236,11 +278,20 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
         </Alert>
       ) : null}
       {mode === 'ssh' ? null : (
-        <Button type="submit" disabled={pending}>
-          {pending
-            ? t('appImport.connect.submitting')
-            : t('appImport.connect.submit')}
-        </Button>
+        <div className="space-y-3">
+          {mode === 'api' ? (
+            <MigrationSourceTest
+              name={t(`appImport.connect.platformName.${platform}`)}
+              build={buildSource}
+              disabled={pending || url.trim() === '' || token === ''}
+            />
+          ) : null}
+          <Button type="submit" disabled={pending}>
+            {pending
+              ? t('appImport.connect.submitting')
+              : t('appImport.connect.submit')}
+          </Button>
+        </div>
       )}
     </form>
   )

@@ -105,8 +105,9 @@
   height: 800
   wait: 2000
 
+# The Start tab: the default Metrics tab is sparse and makes a poor hero image.
 - output: docs/assets/screenshots/dashboard-home.png
-  url: __BASE_URL__/
+  url: __BASE_URL__/?board=start
   width: 1280
   height: 900
   wait: 3000
