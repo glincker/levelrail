@@ -38,6 +38,7 @@
       "domain": "Domains"
     },
     "noCost": "No cost data yet. Set prices in Usage and cost to see spend by tag.",
+    "scopedCost": "Spend this month in the selected scope",
     "untagged": "Untagged",
     "rulesEnabled": "alert rules enabled",
     "noRules": "This app has no alert rules yet.",

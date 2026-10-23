@@ -9,10 +9,14 @@ import { chartPalette } from '@/lib/chartPalette'
 import { formatMoney } from '@/lib/usageFormat'
 import { mergeMetricSeries, type ChartUnit } from '@/lib/metricChart'
 import type { ResolvedTimeRange } from '@/lib/timeRange'
+import { getProjectScope } from '@/lib/projectScope'
+import { useEnvironmentScope } from '@/lib/environmentScope'
 import { useAlertRules } from '@/queries/alerts'
+import { appsSummaryQueryOptions } from '@/queries/appPages'
 import { fetchTimeline } from '@/queries/appTimeline'
 import { useAppTraffic } from '@/queries/appTraffic'
 import { useDatabaseMetricSeries } from '@/queries/databaseMetrics'
+import { useDatabases } from '@/queries/databases'
 import { useLogSearch } from '@/queries/logs'
 import { useMetricSeries } from '@/queries/metrics'
 import { useNodeMetricSeries } from '@/queries/nodeMetrics'
@@ -177,9 +181,21 @@ function DeployWidget({ app }: { app: string }) {
 
 function CountsWidget() {
   const { t } = useTranslation('dashboards')
+  const environment = useEnvironmentScope()
+  const project = getProjectScope()
+  const scoped = environment !== '' || project !== ''
   const q = useResourceList({ ...NO_FILTER, tags: [] })
-  if (q.isLoading) return <Skeleton className="h-12 w-full" />
-  const counts = q.data?.counts ?? {}
+  // Apps and databases honour the picker through the same filters their lists use; nodes and domains are instance-wide.
+  const apps = useQuery({ ...appsSummaryQueryOptions(), enabled: scoped })
+  const dbs = useDatabases(scoped)
+  if (q.isLoading || (scoped && (apps.isLoading || dbs.isLoading))) {
+    return <Skeleton className="h-12 w-full" />
+  }
+  const counts = { ...(q.data?.counts ?? {}) }
+  if (scoped) {
+    counts.app = apps.data?.total ?? 0
+    counts.database = dbs.data?.length ?? 0
+  }
   return (
     <div className="flex flex-wrap gap-6">
       {(['app', 'database', 'node', 'domain'] as const).map((k) => (
@@ -195,9 +211,21 @@ function CountsWidget() {
 
 function CostWidget() {
   const { t } = useTranslation('dashboards')
+  const environment = useEnvironmentScope()
+  const project = getProjectScope()
   const q = useUsageReport('mtd')
   if (q.isLoading) return <Skeleton className="h-24 w-full" />
   if (!q.data) return <Muted>{t('widget.noCost')}</Muted>
+  if (environment !== '' || project !== '') {
+    const groups = environment ? q.data.environments : q.data.projects
+    const group = groups.find((g) => g.key === (environment || project))
+    return (
+      <Stat
+        value={formatMoney(group?.total ?? 0, q.data.currency)}
+        label={t('widget.scopedCost')}
+      />
+    )
+  }
   const rows = (q.data.tags ?? []).slice(0, COST_ROWS)
   if (rows.length === 0) return <Muted>{t('widget.noCost')}</Muted>
   return (

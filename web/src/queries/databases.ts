@@ -77,8 +77,8 @@ export function databaseListQueryOptions() {
 // that hook, retry isn't disabled: GET /api/v1/databases needs no
 // optional server config the way backup targets' 501 case does, so an
 // ordinary transient failure is worth TanStack Query's default retry.
-export function useDatabases() {
-  return useQuery(databaseListQueryOptions())
+export function useDatabases(enabled = true) {
+  return useQuery({ ...databaseListQueryOptions(), enabled })
 }
 
 // Fetches a single database resource for the detail route, GET
