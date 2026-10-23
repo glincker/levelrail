@@ -33,6 +33,27 @@ Each command resolves its target in this order, and an explicit flag always wins
 Login pins the server. `auth login` prints the server's name and fingerprint (compare it with the one on the approval page) and saves its identity in the profile. Every later request first checks that the URL still answers as that server and refuses to send the token otherwise, naming the fix: `auth login --reauth` to log in to the new server, or `auth trust-server` to pin the one now answering. A profile saved before pinning existed asks once to confirm the fingerprint (`--yes` or `APP_TRUST_SERVER=yes` for scripts). `APP_API_TOKEN` keeps working and only prints a warning when the profile pins a different server. `auth status` and `auth whoami` show the pinned server.
 
 Manage more than one control plane with named profiles: `levelrail-cli auth login --profile staging`, then `--profile staging` on any command. `levelrail-cli profile list` shows them.
+
+## Updating the CLI {#updating}
+
+```bash
+levelrail-cli update --check          # current version, latest release, update available or not
+levelrail-cli update --dry-run        # show what would change, download nothing
+levelrail-cli update --yes            # replace this binary with the latest release
+levelrail-cli update --version v0.8.2 --yes   # pin a tag, also works as a downgrade
+```
+
+`update --check` always exits 0 when the check itself worked, even when you are out of date, and honors `--json` and `--output`. `update` downloads the asset for your OS and architecture, verifies its checksum and the release's Sigstore signature, runs the new binary once to confirm its version, then atomically replaces the running file. If the signature or checksum cannot be verified, or the directory is not writable (a package manager path, or a root-owned `/usr/local/bin`: update it that way or re-run with `sudo`), nothing is changed. In CI mode or without a terminal it needs `--yes`. Windows is not supported in place: re-run `install-cli.ps1`.
+
+Interactive runs print one line to stderr when a newer release exists, at most once per interval. It never runs in CI mode, with `--json` output, or for `help`, `version` and `update`, and it is cut off after a short wait so it cannot slow a command.
+
+| Environment variable | Meaning | Default |
+| --- | --- | --- |
+| `LEVELRAIL_NO_UPDATE_CHECK` | `1` turns the hint off | unset |
+| `LEVELRAIL_UPDATE_CHECK_DAYS` | days between hints, `0` disables | `7` |
+| `LEVELRAIL_UPDATE_HINT_WAIT_MS` | longest the hint may wait after a command ends | `750` |
+| `LEVELRAIL_RELEASE_API_URL` | releases API base | `https://api.github.com` |
+| `LEVELRAIL_RELEASE_BASE_URL` | asset download base, https only | the release repo's GitHub releases |
 ## Scripting: `--json` and exit codes
 
 Every command that returns data or a result supports `--json` (shorthand for `--output json`), and `--query` takes a JMESPath expression. With `--json`, stdout carries only the JSON result. The exceptions are `completion bash|zsh|fish` (a shell script) and `control-plane-backups help-dr` (a static runbook). A test walks the command tree and fails when a new command has no `--json` and is not on that exempt list.
@@ -59,6 +80,12 @@ Exit codes are stable and shared by every command:
 | 7 | `apps deploys wait` ended on a deploy that failed, was canceled, superseded or blocked |
 
 Codes 3 and 4 are broad on purpose so existing scripts keep working; the JSON error object carries the finer distinction.
+
+## CI mode
+
+The CLI reads `LEVELRAIL_TOKEN`, `LEVELRAIL_API_URL` and `LEVELRAIL_PROFILE` as env-only auth. Precedence: flag, then these, then `APP_API_TOKEN` / `APP_API_URL` / `APP_PROFILE`, then the saved profile.
+
+With `CI=true`, `LEVELRAIL_CI=1`, or stdin or stdout not a terminal, the CLI never prompts (a command that needs input exits non-zero and names the flag or env var to set), prints no color and shows no animation. `NO_COLOR` is honored everywhere. `auth whoami` prints a `source:` line (flag, env name or profile), never the token.
 
 ## Scripting: `--debug`
 
@@ -232,11 +259,13 @@ levelrail-cli apps freeze show <app-name> [flags]
 levelrail-cli apps freeze set <app-name> --cron EXPR --duration D [--timezone TZ] [--reason TEXT] [flags]
 levelrail-cli apps freeze clear <app-name> [flags]
 levelrail-cli apps schedule set <app> --cron EXPR --branch NAME [flags]
+levelrail-cli apps schedule set <app> --run-at 2h --branch NAME [flags]
 levelrail-cli apps schedule get <app> [flags]
 levelrail-cli apps schedule history <app> [flags]
 levelrail-cli apps cancel-superseded enable|disable|status <app-name> [flags]
 levelrail-cli apps auto-rollback enable|disable|status <app-name> [flags]
 levelrail-cli apps autoscale show|set|clear|history <app-name> [flags]
+levelrail-cli apps abuse get|set|dry-run <app-name> [flags]
 levelrail-cli functions init|deploy|list|runtimes|invoke|delete [flags]
 levelrail-cli jobs list|get|create|update|run|history|logs|enable|disable|delete <app> [<job>] [flags]
 levelrail-cli apps sleep enable|disable|status|wake|now|history <app-name> [flags]
@@ -871,7 +900,7 @@ The same verbs as `backups`, for a named volume declared in the app's app.yaml (
 
 ## Point-in-time restore {#pitr-restores}
 
-Postgres only. Recovery covers the time range from when `pitr enable` was called, forward; use `backups restore` for anything older.
+Postgres, MySQL and MariaDB. Recovery covers the time range from when `pitr enable` was called, forward; use `backups restore` for anything older.
 
 ```
 levelrail-cli pitr enable <database> [flags]
@@ -880,10 +909,10 @@ levelrail-cli pitr status <database> [flags]
 levelrail-cli pitr base-backups list <database> [flags]
 levelrail-cli pitr base-backups trigger <database> --target ID [flags]
 levelrail-cli pitr restores <database> [flags]
-levelrail-cli pitr restore <database> --base-backup ID --target-time RFC3339 [--confirm NAME] [flags]
+levelrail-cli pitr restore <database> --base-backup ID --target-time RFC3339 [--confirm NAME | --restore-as NEW] [flags]
 ```
 
-`enable` turns on continuous WAL archiving going forward; `status` shows whether PITR is enabled and the current recoverable window; `restores` lists point in time restore attempts (base backup, target time, status, error). `restore` is destructive.
+`enable` turns on continuous WAL (Postgres) or binary log (MySQL, MariaDB) archiving going forward; `status` shows whether PITR is enabled and the current recoverable window; `restores` lists point in time restore attempts (base backup, target time, status, error). `restore` overwrites a Postgres database in place and is destructive. For MySQL and MariaDB it needs `--restore-as NEW`, creates that new database and leaves the source untouched.
 
 ## Build
 
@@ -1755,6 +1784,14 @@ levelrail-cli settings oauth list [flags]
 levelrail-cli settings oauth set <provider> [flags]
 levelrail-cli settings email get [flags]
 levelrail-cli settings email set [flags]
+levelrail-cli settings email providers list [flags]
+levelrail-cli settings email providers add --backend NAME [--name N] [--from ADDR] [--secret-stdin] [flags]
+levelrail-cli settings email providers set <id> [flags]
+levelrail-cli settings email providers rm <id> [flags]
+levelrail-cli settings email providers test <id> [--to ADDR] [flags]
+levelrail-cli settings email providers promote <id> [flags]
+levelrail-cli settings email providers reveal <id> <field> --yes-print [flags]
+levelrail-cli settings email branding get|set|preview [flags]
 levelrail-cli settings ingress get [flags]
 levelrail-cli settings ingress set [--primary-domain D] [--acme-enabled] [--public-https-port N] [--tls-terminated-upstream] [--apps-base-domain HOST] [--dns-cname-target HOST] [--dns-ttl SECONDS] [--dns-proxied] [flags]
 levelrail-cli settings ingress https status [flags]
@@ -1774,6 +1811,7 @@ levelrail-cli settings ai-assistant get|set|clear [flags]
 ```
 
 - `oauth set <provider>` enables, configures or disables one sign in provider; `<provider>` is `google`, `github` or `oidc`.
+- `email get|set` reads and writes the primary provider plus the sender identity and is kept for scripts that predate providers. `email providers` manages one primary and at most one backup: the first provider added is the primary, the second the backup, and sending falls over to the backup when the primary fails before a message is accepted. The credential is read from stdin (`--secret-stdin`) or a hidden prompt, never from arguments; `set` keeps the stored one unless you supply another. `test <id>` sends through that provider alone, `promote <id>` swaps the roles, and `rm` on the primary is refused while a backup exists.
 - `ingress get` shows the primary domain, ACME settings, the automatic hostname toggle and the detected public address. `ingress set` changes them (`--primary-domain`, `--acme-enabled`, `--acme-email`, `--acme-directory-url`, `--fallback-domains=false`, `--hsts-enabled`, `--apps-base-domain`, `--dns-cname-target`, `--dns-ttl`, `--dns-proxied`); flags you leave out keep their current value.
 - `ingress https status` shows whether the dashboard's free sslip.io HTTPS is off, pending, issued or failed. `ingress https enable` points the dashboard at `<dashed-ip>.sslip.io` and issues a real Let's Encrypt certificate for it, with no DNS setup. `--email` defaults to your admin account email. Plain HTTP sign-in stops once the https dashboard URL is saved.
 - `edge get|set|fix` shows and changes request limits and the trusted proxy list; `fix` detects the proxy in front of this server and trusts it. `levelrail-cli ingress-limits show|set|clear APP` is the per-app request body cap. See [Domains and ingress](/domains-and-ingress#edge-limits-client-ips-and-failover).

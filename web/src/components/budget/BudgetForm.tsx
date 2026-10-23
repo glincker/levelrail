@@ -8,7 +8,9 @@ import type {
   SpendCap,
   SpendCapAction,
   SpendCapUpdate,
+  SpendGuardMode,
 } from '../../queries/spendCap'
+import { GuardModeField } from '../spend/GuardModeField'
 
 const GIB = 1024 ** 3
 const DEFAULT_THRESHOLDS = '50, 80, 100'
@@ -21,6 +23,7 @@ interface Draft {
   thresholds: string
   action: SpendCapAction
   rps: string
+  guard: SpendGuardMode
 }
 
 function toDraft(cap: SpendCap | null): Draft {
@@ -32,6 +35,7 @@ function toDraft(cap: SpendCap | null): Draft {
     thresholds: cap?.thresholds.join(', ') ?? DEFAULT_THRESHOLDS,
     action: cap?.action ?? 'none',
     rps: String(cap?.throttle_rps || DEFAULT_RPS),
+    guard: cap?.guard_mode ?? 'alert',
   }
 }
 
@@ -71,6 +75,7 @@ function build(draft: Draft, t: (key: string) => string): Build {
       thresholds,
       action: draft.action,
       throttle_rps: draft.action === 'throttle' ? rps : 0,
+      guard_mode: draft.guard,
     },
   }
 }
@@ -185,6 +190,11 @@ export function BudgetForm({
           ))}
         </div>
       </fieldset>
+      <GuardModeField
+        name="budget-guard"
+        value={draft.guard}
+        onChange={(guard) => set({ guard })}
+      />
       {draft.action === 'throttle' ? (
         <div className="max-w-xs space-y-1.5">
           <Label htmlFor="budget-rps">{t('form.rps')}</Label>

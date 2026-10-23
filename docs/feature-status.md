@@ -28,17 +28,20 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Area | Label | One-line justification |
 | --- | --- | --- |
 | Deploy approvals | stable | Live e2e proves a second user's approval is the only thing that cuts over (`test/e2e/protected_environment_test.go`). |
-| Upgrade restore points and post-upgrade verification | beta | Unit tests only (`internal/selfupgrade/restorepoint_test.go`): automatic restore of binary and database on failed verification, retention, manual restore. No live run on a real host yet. See [Upgrade safely](/upgrade-safely). |
-| PITR and database backups | stable | Live e2e restores before a marker row through the real API with MinIO (`test/e2e/pitr_test.go`), plus live Docker dump and restore tests. |
+| Upgrade restore points and post-upgrade verification | beta | Unit tests (`internal/selfupgrade/restorepoint_test.go`) plus a harness that upgrades the real v0.8.1 and v0.8.2 binaries with seeded data, then checks the restore point, an automatic restore after a failed verification and a refused downgrade (`scripts/upgrade-harness.sh`, `TestReleaseUpgradeHarness`). A second test upgrades v0.8.2 data across real migrations (email providers backfill, spend cap guard mode, migration list, downgrade refusal, automatic restores; `TestReleaseUpgradeSchemaMigration`). A manual `restore-point` across a schema change used to re-migrate the database; that is fixed (commit `a4dc676bb`) with a regression test in `cmd/levelrail/restore_schema_guard_test.go`. Not yet proven: systemd and agent reconnection, or a live host. See [Upgrade safely](/upgrade-safely). |
+| PITR and database backups (Postgres) | stable | Live e2e restores before a marker row through the real API with an S3 compatible bucket (`test/e2e/pitr_test.go`), plus live Docker dump and restore tests. |
+| MySQL and MariaDB PITR, TLS on new databases | beta | Live e2e through the real API, reconciler and bucket: binlog replay into a new database keeps a row written after the base backup and drops one written after the target (`test/e2e/pitr_mysql_test.go`), and new instances serve the platform certificate while older ones are untouched. One local Docker run, not yet in the nightly lane; DDL inside the replay window is untested. |
+| MongoDB backup, verify, restore and TLS on new databases | beta | Live e2e: dump, verify and restore-as-new through the API (`test/e2e/engine_parity_test.go`), and a new instance accepts TLS while an older one does not. No point-in-time restore: standalone mongod has no oplog. |
 | Encrypted database dumps | beta | Per-target age sealing of dumps with transparent restore, drill and verify decryption; unit round trip only (`internal/backup/encrypted_dump_test.go`), no live Docker run. |
 | Previews | stable (GitHub), beta (GitLab, Bitbucket) | Lifecycle e2e exists for all three (`test/e2e/preview_environments_*_test.go`), but they replay synthetic webhooks, not a real forge. Kept beta for the two forges with less usage. |
 | IAM | stable | Broadest unit coverage in the repo, plus live e2e where a deny policy blocks a real action and a token allow policy scopes one (`test/e2e/iam_policy_enforcement_test.go`). |
 | SAML single sign-on and SCIM provisioning | beta | Built on the sign-in library, behind the `saml-scim` feature toggle, off by default. SAML was run against Keycloak 26.0.8 and SimpleSAMLphp 1.15 and generic OIDC against Keycloak 26.0.8 in a local lab (2026-10-20, `scripts/sso-lab.sh`). Not tested against Okta or Entra ID. See [Identity and access](#identity-and-access). |
-| Notification channels (18) | beta | All 18 kinds have unit tests against `httptest`, none against a real vendor. |
+| Notification channels: generic webhook and email over SMTP | stable | Live e2e against a local receiver and a local SMTP server: delivery, retry of a transient failure and delivery history (`test/e2e/notification_channels_test.go`). Both are open protocols with no vendor account, so a local fake exercises the real contract. |
+| Notification channels: 15 vendor kinds and browser push | beta | Slack, Discord, Telegram, Pushover, PagerDuty, Teams, Resend, ntfy, Gotify, Mattermost, Lark, Rocket.Chat, Opsgenie, Webex and Google Chat now have e2e against local fakes that check each vendor's documented payload shape and auth header. No real vendor has accepted a send, so they stay beta. Browser push is tested with a recording sender only. |
 | Pipelines | stable | Live Docker test (`internal/pipeline/live_test.go`) and a live e2e run (`test/e2e/pipeline_run_test.go`). |
 | Deploy freeze | stable | Live e2e proves a freeze blocks then allows a real deploy (`test/e2e/deploy_freeze_test.go`), documented in `docs/deploy-safety.md`. |
-| Post-deploy watch and auto rollback | beta | Hard signals (crashloop, OOM, 5xx) and the soft p95 latency signal are unit tested against a fake store and metrics (`internal/deploywatch`); not yet proven under real traffic. |
-| Feature flags | beta | Unit, API, CLI, MCP tests and a doc page, no e2e. |
+| Post-deploy watch and auto rollback | stable (hard signals), beta (latency signal) | Live e2e on a real Docker engine and real ingress: a 5xx spike and a post-cutover crashloop each roll back to the previous pinned image, recorded in deploy history, the gate timeline, the audit log and a notification, and a healthy release is left alone (`test/e2e/reconcile/deploy_safety_live_test.go`, `deploy_watch_rollback_live_test.go`). The soft p95 latency signal is unit tested only. |
+| Feature flags | stable | Live e2e drives create, evaluate with a read-only token, kill switch, rollout, per-app scoping and delete through the API, the real CLI binary and the MCP read tools (`test/e2e/feature_flags_test.go`). Per-app only: no per-environment or attribute targeting (`docs/feature-flags.md`). |
 | Templates | beta | About 360 catalog entries (generated count in the [catalog](/template-catalog)). Unit tests check shape and a floor of 180, and live e2e tests deploy samples (a 16-template fleet plus batch boot tests), not the whole catalog. |
 | Log archive | beta | Unit and e2e tests (`test/e2e/log_archive_test.go`), dedicated doc page (`docs/log-archive.md`). |
 | Automatic cleanup (janitor) | beta | Unit tests for every stage and safety rule, API test, CLI, MCP read tool, doc page (`docs/janitor.md`). No live disk-fill run yet; other nodes are not covered. |
@@ -47,13 +50,21 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Supply chain | stable | Live e2e proves the gate blocks and an override works through the real API (`test/e2e/supply_chain_test.go`). SBOM and scan stay off by default (`docs/supply-chain.md`). |
 | Sleep when idle | stable | Unit tests across scheduler, API, CLI and web, and a documented live run against a real Docker daemon and the real ingress (`scripts/verify-sleep-live.sh`, 10 checks: idle stop, wake on request, hold mode, manual wake, fleet counts). Per app and off by default (`docs/sleep-when-idle.md`). |
 | Status page | stable | Live e2e enables, authors and serves it publicly (`test/e2e/status_page_test.go`). Off until enabled. |
+| Multi-cloud node onboarding | beta | Unit tests for metadata parsing (fake servers per provider), preflight judging, provider and zone spread, API, CLI, MCP read tool and dashboard; the two-Docker-daemon join test also checks preflight facts and label hand-off. No real cloud metadata endpoint and no real WAN mesh have been exercised. See [add a node anywhere](/add-node-anywhere). |
 | Multi-node and WireGuard | beta | Opt-in node failure policy (fakes only, no real hosts). Join flow verified locally across two real Docker daemons (enrollment, cordon, drain with real container relocation); the WireGuard mesh itself and cross-host remote transport are still unverified. |
 | AI assistant (MCP server) | beta | over 240 tools in toolsets an agent enables on demand (exact, generated numbers on the [MCP tool surface](/mcp-tool-surface) page), 31 test files in `internal/mcptools`, no e2e. |
 | AI assistant (in-app chat) | hide-behind-flag | Tested against fake Anthropic responses only (unit, plus a real-HTTP e2e session lifecycle test with a fake provider); `docs/ai-assistant-chat.md` now documents it. |
 | AI models (GPU) | hide-behind-flag | Needs NVIDIA hardware, every test uses fakes, docs state v1 scope is NVIDIA on Linux only. |
 | Load balancer | hide-behind-flag | Live e2e with real traffic and drain (`test/e2e/loadbalancer_test.go`), but gated behind `load-balancer` and not exercised across real hosts. |
 | Platform as code (iac) | hide-behind-flag | Live e2e covers export, plan and apply (`test/e2e/iac_apply_test.go`), but the apply path changes many resources in one run and stays gated behind `iac`. |
+| Canvas | beta | Visual project editor behind the `canvas` toggle, off by default. Unit and component tests only (`web/src/lib/canvasDraft.test.ts`, `web/src/components/canvas/canvas.test.tsx`); it reuses the platform-as-code plan and apply, so it also needs `iac` on. No e2e, not yet run against a real instance. [Canvas](/canvas) |
 | Cloudflare tunnel | hide-behind-flag | Reconciler unit tests only, needs a real Cloudflare account, no dedicated doc page. |
+| Email providers: primary and backup failover, branding, credential reveal | beta | Unit tests for the provider registry, retry and failover matrix (`internal/email/failover_test.go`). No email provider test in `test/e2e`, and no live provider account has been exercised. See [email notifications](/email-notifications). |
+| Spend caps | beta | Arithmetic on measured egress and cost. Unit tests in `internal/spendcap` (controller, guard mode, override) and `internal/spendguard`. No e2e test and no run against real traffic or a real bill. `pause` serves a maintenance response and does not stop containers. See [spend caps](/spend-caps). |
+| Traffic export | beta | Unit tests in `internal/trafficexport` (pipeline, sinks, visitor identity). No e2e test, and no live PostHog, OpenTelemetry or webhook destination is recorded. See [traffic export](/traffic-export). |
+| Migration verify parity report | beta | Unit tests in `internal/migrateverify` (comparison and probes). No e2e test, and no run against a live Coolify, Dokploy or CapRover source is recorded. See [migration reference](/migration-reference). |
+| Ingress abuse defense | beta | Unit tests in `internal/abuse` (rate limit, deny lists, modes, replay, fail open). No e2e test and not benchmarked on real traffic. See [ingress abuse defense](/abuse-defense). |
+| Chaos test matrix | beta | Fast tests on fake Docker and agent clients (`test/chaos`, `internal/reconcile`) plus live tests against one local Docker daemon (`test/e2e/reconcile/chaos_live_test.go`). Faults are injected at the runtime boundary: dockerd is not stopped and no real disk is filled. Not run on a real host. See [chaos test coverage](/chaos-coverage). |
 
 ## Identity and access
 
@@ -114,7 +125,7 @@ Test counts are `*_test.go` files in the named directory. "CLI" and "web" list t
 
 Seven providers behind one registry (`internal/email`): SMTP, AWS SES over the API, AWS SES over SMTP, Resend, Postmark, SendGrid and Mailgun. Settings page groups Sender, Provider, Delivery limits and Security, with a status header, a typed-failure test send, a SPF/DKIM/DMARC sender-domain check, and a searchable delivery log (`/settings/email-log`, retention `APP_EMAIL_LOG_RETENTION_DAYS`). Transient failures retry with backoff. Alert kind `email_delivery_failing` is registered with no default rule.
 
-- Unit: `internal/email/regions_test.go` (region list, SES SMTP host, provider registry, failure classification, retry, caps), `internal/store/email_deliveries_test.go` (retention, recipient privacy), `cmd/levelrail/boot_email_provider_test.go`; web `EmailSettingsSchema.test.ts`.
+- Unit: `internal/email/failover_test.go` (primary and backup matrix), `internal/email/regions_test.go` (region list, SES SMTP host, provider registry, failure classification, retry, caps), `internal/store/email_deliveries_test.go` (retention, recipient privacy), `cmd/levelrail/boot_email_provider_test.go`; web `EmailSettingsSchema.test.ts`.
 - CLI: `email settings get|set`, `email test`, `email check-domain`, `email log`. Docs: `docs/email-notifications.md`.
 - Real infra: none. Provider calls are not exercised against live accounts.
 - Label: beta.
@@ -125,10 +136,10 @@ Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic,
 
 - Unit: `internal/alerting/` (28 files). Payload tests live in `notify_test.go` (`TestNotifyTelegram_PostsChatIDAndText`, `TestNotifyResend_PostsAuthHeaderAndPayload`, `TestNotifyOpsgenie_PostsAuthHeaderAndPayload`) and `TestNewNotifier_AllValidKinds_Recognized` (`notify_test.go:1095`). That table test covers a subset of the kinds, so the rest rely on their own payload tests, and coverage is thinnest for pushover, pagerduty and teams.
 - API `notification_channels_test.go`; CLI: no dedicated channel test file found; email retry tests at `notify_test.go:569-629`.
-- E2E: none. Every test posts to an `httptest` server.
+- E2E: `test/e2e/notification_channels_test.go` with a local fake-vendor harness (`notification_harness_test.go`: httptest receivers, a host redirect for the fixed PagerDuty, Opsgenie and Resend endpoints, a minimal SMTP server). Through the real router it creates a channel, sends a test, checks the vendor payload and auth header, injects one 503 (or SMTP 421) and expects a retry, and for the generic webhook, Slack, Discord, PagerDuty and SMTP also injects a hard outage and expects exactly 3 attempts and a failed delivery row. A second test sends a failed-deploy outcome through the deploy dispatcher to Slack (with a transient 503) and PagerDuty, and checks the `deploy-failed` history rows. Not covered: the alert-rule engine path (rule fires, then notifies) is still unit-only.
 - Docs: covered in `docs/integrations.md` and `docs/observability.md`.
-- Real infra: none found. No test sends to a real Slack, PagerDuty, SMTP or other vendor.
-- Label: beta. Run a manual send test per vendor before calling any of them stable.
+- Real infra: none found. Every vendor kind was tested against a local fake, not the real vendor. A fake proves the request matches the vendor's documented contract, not that a real account accepts it (rate limits, regional endpoints such as Opsgenie EU, signing and account setup are untested). The e2e found one real mismatch: ntfy JSON was posted to the topic path, where ntfy publishes it as literal text; it now posts to the server root with the topic in the body.
+- Label: generic webhook and SMTP email stable. The 15 vendor kinds and browser push stay beta: run a manual send test per vendor before calling any of them stable.
 
 ### Multi-node and WireGuard mesh
 
@@ -159,10 +170,10 @@ Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic,
 
 - Unit: `internal/backup/` (34 files, including `pitr_runner_test.go`, `pitr_restore_test.go`, `verify_runner_test.go`, `scheduler_test.go`); `internal/cpbackup/` (9 files) for control-plane backups; CLI `backups_*_test.go`, `control_plane_backups_test.go`, `app_volume_backups_*_test.go`.
 - Live Docker: `pitr_live_test.go`, `dump_live_test.go`, `restore_live_test.go`, `clone_restore_live_test.go`, `volume_live_test.go`, `volume_clone_restore_live_test.go`.
-- E2E: `test/e2e/pitr_test.go` (real API, real reconciler, MinIO bucket, marker-row restore), `test/e2e/reconcile/database_test.go` (Redis reconcile only, `TestDatabase_Live_RedisReconcile`).
+- E2E: `test/e2e/pitr_test.go` (real API, real reconciler, S3 compatible bucket, marker-row restore), `test/e2e/pitr_mysql_test.go` (MySQL and MariaDB PITR and TLS), `test/e2e/engine_parity_test.go` (MySQL, MariaDB and MongoDB backup, verify, restore-as-new, MongoDB TLS), `test/e2e/reconcile/database_test.go` (Redis reconcile only, `TestDatabase_Live_RedisReconcile`). The e2e bucket is SeaweedFS because MinIO's free images were retired.
 - Docs: `docs/backups-and-storage.md`, `docs/managing-databases.md`, `docs/control-plane-backup.md`, `docs/disaster-recovery.md`. `docs/roadmap.md` notes PITR is "Live-Docker-verified end to end".
 - Real infra: none found. The real S3 and R2 test is skipped in CI (see [log archive](/log-archive)).
-- Label: stable for PITR and dump/restore/verify on Postgres. Other engines (13 are defined as constants in `internal/store/database.go`) only have the Redis e2e, so treat them as beta until each has a live restore run.
+- Label: stable for PITR and dump/restore/verify on Postgres. MySQL, MariaDB and MongoDB are beta: each now has a live API e2e for dump, verify and restore, and MySQL and MariaDB for PITR, but only from a local run. The remaining engines (13 are defined as constants in `internal/store/database.go`) only have the Redis reconcile e2e, so treat them as beta until each has a live restore run.
 
 ### Cloudflare tunnel
 
@@ -183,10 +194,10 @@ Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic,
 ### Post-deploy watch and auto rollback
 
 - Unit: `internal/deploywatch/watcher_test.go`, `watcher_soft_test.go`, `internal/deploysafety/rules_test.go`; CLI `apps_deploys_gate_test.go`.
-- E2E: `test/e2e/reconcile/deploy_safety_live_test.go` covers the hard signals.
+- E2E: `test/e2e/reconcile/deploy_safety_live_test.go` (zero failed requests through a good deploy, a crash inside the stable window and a 5xx rollback) and `deploy_watch_rollback_live_test.go` (a healthy release passes its whole watch window with no rollback and no audit entry; a release that crashes after cutover trips `PostDeployCrashloop`, is rolled back to the previous image, and shows up as an `auto_rollback` deploy attempt, a rollback gate event, a `deploy.auto_rollback` audit entry and an alert). These tests had been silently running with automatic rollback off because the harness left the watch mode unset; they now set it, and they run again. The harness uses 3 second windows, not production defaults.
 - Docs: `docs/deploy-safety.md`.
-- Real infra: none found for the latency signal.
-- Label: beta.
+- Real infra: none found. The latency signal has no e2e, and nothing was observed under real production traffic.
+- Label: stable for the hard signals (crashloop, OOM, 5xx). beta for the soft latency signal.
 
 ### Deploy freeze
 
@@ -207,10 +218,10 @@ Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic,
 ### Feature flags
 
 - Unit: `internal/store/feature_flag_test.go`, `internal/api/feature_flags_test.go`, CLI `flags_test.go` and `flagutil_test.go`, MCP `tools_new_features_test.go`.
-- E2E: none. The `flag` hits in `test/e2e/metrics_test.go` and `live_api_helpers.go` are unrelated.
+- E2E: `test/e2e/feature_flags_test.go` (`TestFeatureFlags_Live_APICLIAndMCP`): a real router and store, the real `levelrail-cli flags` binary and the real MCP read tools. It checks create, evaluate with a read-only token, duplicate key across apps, kill switch, 0 and 50 percent rollout (stable per identifier), a read-only token refused on write, per-app listing, delete through the CLI and the API, and the audit log entries. MCP exposes read tools only, by design; evaluate is API only. There is no per-environment targeting in the product, so none is tested.
 - Docs: `docs/feature-flags.md`. This is an app-level runtime flag system. It is not a platform-level switch for hiding unfinished features. A platform-level hide mechanism does not exist yet.
 - Real infra: none found.
-- Label: beta.
+- Label: stable.
 
 ### Templates
 

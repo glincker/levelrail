@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/footprint"
 )
 
 // CPHealthFinding is one saturated measurement on the control plane.
@@ -67,7 +69,8 @@ type CPHealth struct {
 		} `json:"memory_limit"`
 		Loops []CPHealthLoop `json:"loops"`
 	} `json:"footprint"`
-	Findings []CPHealthFinding `json:"findings"`
+	Idle     footprint.Assessment `json:"idle_footprint"`
+	Findings []CPHealthFinding    `json:"findings"`
 }
 
 // CPHealthBreaker is one controller's circuit breaker.
@@ -114,5 +117,12 @@ func (c *Client) GetCPHealth(ctx context.Context) (CPHealth, error) {
 func (c *Client) FixCPHealth(ctx context.Context, fix string) (CPHealth, error) {
 	var out CPHealth
 	err := c.do(ctx, http.MethodPost, "/api/v1/system/control-plane-health/fix", map[string]string{"fix": fix}, &out)
+	return out, err
+}
+
+// GetIdleFootprint calls GET /api/v1/system/footprint.
+func (c *Client) GetIdleFootprint(ctx context.Context) (footprint.Assessment, error) {
+	var out footprint.Assessment
+	err := c.do(ctx, http.MethodGet, "/api/v1/system/footprint", nil, &out)
 	return out, err
 }

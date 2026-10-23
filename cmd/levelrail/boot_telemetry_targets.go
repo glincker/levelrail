@@ -24,6 +24,7 @@ func telemetryTargets(db *store.DB, local docker.Runtime, registry *agent.Regist
 		}
 
 		var targets []telemetry.Target
+		listings := map[string]*tickListing{}
 		for _, svc := range services {
 			nodeID := runtimeNodeID(deps, svc.NodeID)
 			nodeRuntime, err := resolveNodeTransport(local, registry, nodeID)
@@ -33,7 +34,12 @@ func telemetryTargets(db *store.DB, local docker.Runtime, registry *agent.Regist
 					slog.String("service", svc.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
 				continue
 			}
-			containers, err := nodeRuntime.ListByPrefix(ctx, svc.Name+"-")
+			listing := listings[nodeID]
+			if listing == nil {
+				listing = &tickListing{rt: nodeRuntime}
+				listings[nodeID] = listing
+			}
+			containers, err := listing.withPrefix(ctx, svc.Name+"-")
 			if err != nil {
 				logger.Warn("telemetry: list containers failed, skipping this tick",
 					slog.String("service", svc.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
@@ -122,8 +128,9 @@ func logTargets(db *store.DB, runtime docker.Runtime) func(context.Context) ([]t
 		}
 
 		var targets []telemetry.LogTarget
+		listing := &tickListing{rt: runtime}
 		for _, svc := range services {
-			containers, err := runtime.ListByPrefix(ctx, svc.Name+"-")
+			containers, err := listing.withPrefix(ctx, svc.Name+"-")
 			if err != nil {
 				return nil, fmt.Errorf("list containers for %s: %w", svc.Name, err)
 			}

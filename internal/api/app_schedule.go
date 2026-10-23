@@ -16,6 +16,12 @@ import (
 )
 
 const (
+	envAppScheduleRunAtMinLead    = "APP_SCHEDULE_RUN_AT_MIN_LEAD"
+	envAppScheduleRunAtMaxHorizon = "APP_SCHEDULE_RUN_AT_MAX_HORIZON"
+
+	defaultAppScheduleRunAtMinLead    = time.Minute
+	defaultAppScheduleRunAtMaxHorizon = 365 * 24 * time.Hour
+
 	defaultAppScheduleHistoryLimit = 20
 	maxAppScheduleHistoryLimit     = 100
 )
@@ -26,6 +32,7 @@ const (
 type AppScheduleStore interface {
 	GetAppSchedule(ctx context.Context, serviceName string) (*store.AppSchedule, error)
 	SetAppSchedule(ctx context.Context, serviceName, cron, branch, timezone string, enabled bool) error
+	SetAppScheduleRunAt(ctx context.Context, serviceName, branch, timezone string, runAt time.Time, enabled bool) error
 	ArmAppScheduleNextRun(ctx context.Context, serviceName string, next time.Time) error
 	ListAppScheduleHistory(ctx context.Context, serviceName string, limit int) ([]store.AppScheduleHistoryEntry, error)
 }
@@ -38,12 +45,16 @@ type appScheduleResource struct {
 	Timezone    string     `json:"timezone"`
 	Enabled     bool       `json:"enabled"`
 	NextRunAt   *time.Time `json:"next_run_at,omitempty"`
+	// RunAt is set for a one-time deploy (Cron is then empty); CompletedAt
+	// is set once that one-time deploy has fired or been skipped.
+	RunAt       *time.Time `json:"run_at,omitempty"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
 }
 
 func toAppScheduleResource(s store.AppSchedule) appScheduleResource {
 	return appScheduleResource{
 		ServiceName: s.ServiceName, Cron: s.Cron, Branch: s.Branch, Timezone: s.Timezone,
-		Enabled: s.Enabled, NextRunAt: s.NextFireAt,
+		Enabled: s.Enabled, NextRunAt: s.NextFireAt, RunAt: s.RunAt, CompletedAt: s.CompletedAt,
 	}
 }
 
@@ -65,12 +76,13 @@ func (rt *Router) handleGetAppSchedule(w http.ResponseWriter, r *http.Request) {
 
 type setAppScheduleRequest struct {
 	Cron     string `json:"cron"`
+	RunAt    string `json:"run_at"`
 	Branch   string `json:"branch"`
 	Timezone string `json:"timezone"`
 	Enabled  *bool  `json:"enabled"`
 }
 
-// handleSetAppSchedule sets or replaces the app's recurring redeploy schedule.
+// handleSetAppSchedule sets or replaces the app's redeploy schedule: recurring (cron) or one-time (run_at).
 // Requires a connected git source; cron and source are validated before any state is written.
 func (rt *Router) handleSetAppSchedule(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
@@ -100,14 +112,27 @@ func (rt *Router) handleSetAppSchedule(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "branch is required")
 		return
 	}
-	if req.Cron == "" {
-		writeError(w, http.StatusBadRequest, "cron is required")
+	var sched *cronexpr.Schedule
+	var runAt time.Time
+	switch {
+	case req.Cron != "" && req.RunAt != "":
+		writeError(w, http.StatusBadRequest, "set exactly one of cron or run_at, not both")
 		return
-	}
-	sched, err := cronexpr.Parse(req.Cron)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid cron expression: %s", err.Error()))
+	case req.Cron == "" && req.RunAt == "":
+		writeError(w, http.StatusBadRequest, "one of cron or run_at is required")
 		return
+	case req.Cron != "":
+		var err error
+		if sched, err = cronexpr.Parse(req.Cron); err != nil {
+			writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid cron expression: %s", err.Error()))
+			return
+		}
+	default:
+		var err error
+		if runAt, err = parseAppScheduleRunAt(req.RunAt, time.Now()); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 	}
 	timezone := req.Timezone
 	if timezone == "" {
@@ -121,6 +146,17 @@ func (rt *Router) handleSetAppSchedule(w http.ResponseWriter, r *http.Request) {
 	enabled := true
 	if req.Enabled != nil {
 		enabled = *req.Enabled
+	}
+
+	if req.RunAt != "" {
+		if err := rt.appSchedules.SetAppScheduleRunAt(r.Context(), name, req.Branch, timezone, runAt, enabled); err != nil {
+			rt.internalError(w, "api: set one-time app schedule failed", err, slog.String("name", name))
+			return
+		}
+		resource := appScheduleResource{ServiceName: name, Branch: req.Branch, Timezone: timezone, Enabled: enabled, RunAt: &runAt}
+		resource.NextRunAt = &runAt
+		writeJSON(w, http.StatusOK, resource)
+		return
 	}
 
 	if err := rt.appSchedules.SetAppSchedule(r.Context(), name, req.Cron, req.Branch, timezone, enabled); err != nil {
@@ -140,6 +176,24 @@ func (rt *Router) handleSetAppSchedule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, resource)
+}
+
+// parseAppScheduleRunAt parses an RFC 3339 run_at and checks it lies between
+// the configured minimum lead and maximum horizon from now.
+func parseAppScheduleRunAt(raw string, now time.Time) (time.Time, error) {
+	at, err := time.Parse(time.RFC3339, strings.TrimSpace(raw))
+	if err != nil {
+		return time.Time{}, errors.New("invalid run_at: must be an RFC 3339 timestamp such as 2026-12-01T03:00:00Z")
+	}
+	minLead := envDuration(envAppScheduleRunAtMinLead, defaultAppScheduleRunAtMinLead)
+	maxHorizon := envDuration(envAppScheduleRunAtMaxHorizon, defaultAppScheduleRunAtMaxHorizon)
+	if at.Before(now.Add(minLead)) {
+		return time.Time{}, fmt.Errorf("run_at must be at least %s in the future", minLead)
+	}
+	if at.After(now.Add(maxHorizon)) {
+		return time.Time{}, fmt.Errorf("run_at must be within %s from now", maxHorizon)
+	}
+	return at.UTC(), nil
 }
 
 type appScheduleHistoryResource struct {

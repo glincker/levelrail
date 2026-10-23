@@ -109,6 +109,19 @@ export function PlacementCard({
             placement={placement.data}
           />
         )}
+        {placement.data?.domain_warnings?.length ? (
+          <Alert>
+            <WarningIcon />
+            <AlertDescription className="space-y-1">
+              <p className="font-medium">{t('placement.domainWarnings')}</p>
+              <ul className="list-disc space-y-0.5 pl-4">
+                {placement.data.domain_warnings.map((w) => (
+                  <li key={w.kind}>{w.message}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        ) : null}
         <PlacementDecisionPanel kind={kind} name={name} />
       </CardContent>
     </Card>

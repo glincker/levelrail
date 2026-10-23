@@ -16,6 +16,7 @@ const (
 	EventRollover   = "rollover"
 	EventConfigured = "configured"
 	EventCleared    = "cleared"
+	EventOverride   = "override"
 )
 
 // State is what the controller last decided for an app in a period.
@@ -246,6 +247,8 @@ func (c *Controller) Breaches(ctx context.Context) ([]Breach, error) {
 			text += "; it is paused until next month or until the limit is raised"
 		case st.Enforced == ActionThrottle:
 			text += fmt.Sprintf("; each client is limited to %d requests per second", cp.ThrottleRPS)
+		case st.Highest >= 100 && cp.GuardMode == GuardBlockDeploys:
+			text += "; new deploys are blocked until next month or until the limit is raised"
 		case st.Highest >= 100:
 			text += "; the action is alert only, so it keeps serving"
 		}

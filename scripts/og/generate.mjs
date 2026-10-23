@@ -9,7 +9,8 @@ import { tmpdir } from 'node:os'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const docs = join(root, 'docs')
-const outDir = join(docs, 'public', 'og')
+// OUT_DIR redirects output so test renders never touch tracked files.
+const outDir = process.env.OUT_DIR ? join(process.env.OUT_DIR, 'docs', 'public', 'og') : join(docs, 'public', 'og')
 const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 
 const brandYaml = readFileSync(join(root, 'brand.yaml'), 'utf8')
@@ -48,28 +49,33 @@ const read = (slug) => {
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
 const fontDir = join(root, 'scripts', 'og', 'fonts')
 const GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><filter id="n" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncR type="linear" slope="3" intercept="-1.15"/><feFuncG type="linear" slope="3" intercept="-1.15"/><feFuncB type="linear" slope="3" intercept="-1.15"/></feComponentTransfer></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>')}")`
+// Last word gets the gradient accent.
+const accent = (t) => { const i = t.lastIndexOf(' '); return i < 0 ? `<em>${esc(t)}</em>` : `${esc(t.slice(0, i + 1))}<em>${esc(t.slice(i + 1))}</em>` }
 const html = ({ label, title, desc }) => `<!doctype html><meta charset="utf-8"><style>
 @font-face{font-family:Inter;src:url(file://${fontDir}/inter-var.woff2);font-weight:100 900}
 @font-face{font-family:JB;src:url(file://${fontDir}/jetbrains-mono-var.woff2);font-weight:100 800}
 *{margin:0;box-sizing:border-box}
 body{width:1200px;height:630px;overflow:hidden;background:#050709;color:#fff;font-family:Inter,-apple-system,"Helvetica Neue",Arial,sans-serif;position:relative}
-.wash{position:absolute;inset:0;background:radial-gradient(70% 100% at 100% 0%,rgba(47,179,220,.62),rgba(20,150,170,.28) 45%,transparent 75%),radial-gradient(45% 70% at 0% 0%,rgba(20,170,150,.2),transparent 70%),radial-gradient(50% 50% at 100% 100%,rgba(30,70,160,.25),transparent 70%)}
-.frame{position:absolute;left:790px;top:150px;width:620px;height:440px;transform-origin:0 0;transform:perspective(1240px) rotateY(-22deg) rotateX(9deg) rotateZ(-1.5deg);border-radius:16px;overflow:hidden;background:#0a0d10;box-shadow:0 0 0 1.5px rgba(92,196,232,.75),0 0 40px rgba(47,179,220,.35),-24px 40px 70px rgba(0,0,0,.8)}
+.wash{position:absolute;inset:0;background:radial-gradient(ellipse 60% 70% at 85% 0%,rgba(47,179,220,.16),transparent 70%)}
+.glow{position:absolute;inset:0;background:radial-gradient(ellipse 52% 80% at 100% 0%,rgba(47,179,220,.95),transparent 70%),radial-gradient(ellipse 40% 70% at 62% 0%,rgba(70,100,235,.85),transparent 70%),radial-gradient(ellipse 34% 60% at 0% 0%,rgba(20,170,150,.8),transparent 72%),radial-gradient(ellipse 30% 55% at 84% 2%,rgba(238,243,95,.95),transparent 72%);-webkit-mask-image:${GRAIN};mask-image:${GRAIN};-webkit-mask-size:300px 300px;mask-size:300px 300px}
+.floor{position:absolute;inset:0;background:linear-gradient(to top,rgba(30,60,70,.30),transparent 38%)}
+.frame{position:absolute;left:790px;top:150px;width:620px;height:440px;transform-origin:0 0;transform:perspective(1240px) rotateY(-22deg) rotateX(9deg) rotateZ(-1.5deg);border-radius:16px;overflow:hidden;background:#0a0d10;box-shadow:0 0 0 1px rgba(92,196,232,.55),0 0 54px rgba(47,179,220,.30),-24px 40px 70px rgba(0,0,0,.75)}
 .frame img{width:620px;display:block;opacity:.96}
-.grain{position:absolute;inset:0;z-index:5;pointer-events:none;background-image:${GRAIN};background-size:300px 300px;opacity:.085;mix-blend-mode:screen}
+.grain{position:absolute;inset:0;z-index:5;pointer-events:none;background-image:${GRAIN};background-size:300px 300px;opacity:.05;mix-blend-mode:screen}
 .c{position:absolute;inset:0;padding:64px 72px;display:flex;flex-direction:column}
 .top{display:flex;align-items:center;gap:16px}
 .top svg{width:52px;height:52px}
 .mono{font-family:JB,"JetBrains Mono",Menlo,monospace}
 .label{font-size:22px;letter-spacing:.1em;text-transform:uppercase;color:#cfd6dc}
 .main{margin-top:auto;margin-bottom:34px;position:relative;z-index:10}
-h1{font-weight:700;font-size:${title.length > 30 ? 52 : 66}px;line-height:1.06;letter-spacing:-.035em;max-width:640px}
+h1{font-weight:300;font-size:${title.length > 30 ? 52 : 66}px;line-height:1.06;letter-spacing:-.034em;max-width:640px}
+h1 em{font-style:normal;background:linear-gradient(90deg,#5cc4e8,#9fe0c8 45%,#eef35f);-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.04em}
 p{margin-top:22px;font-size:24px;line-height:1.4;color:#98a3ab;max-width:600px}
 .foot{display:flex;gap:28px;width:640px;border-top:1px solid #232a30;padding-top:20px;font-size:22px;color:#6b757c}
 .foot b{color:#5cc4e8;font-weight:400}
-</style><div class="wash"></div><div class="frame"><img src="file://${join(root, 'docs/assets/screenshots/dashboard-home.png')}"></div><div class="c">
+</style><div class="wash"></div><div class="glow"></div><div class="floor"></div><div class="frame"><img src="file://${join(root, 'docs/assets/screenshots/dashboard-home.png')}"></div><div class="c">
 <div class="top">${BRAND.logo}<span class="label mono">${esc(label)}</span></div>
-<div class="main"><h1>${esc(title)}</h1>${desc ? `<p>${esc(desc)}</p>` : ''}</div>
+<div class="main"><h1>${accent(title)}</h1>${desc ? `<p>${esc(desc)}</p>` : ''}</div>
 <div class="foot mono"><span>${esc(host)}</span><b>${esc(BRAND.name)}</b></div></div><div class="grain"></div>`
 
 const clip = (s, n) => (s.length <= n ? s : s.slice(0, s.lastIndexOf(' ', n - 1)).replace(/[,.;:]$/, '') + '...')

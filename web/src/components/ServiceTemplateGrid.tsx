@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   AppWindowIcon,
   ChartBarIcon,
@@ -87,15 +88,22 @@ function TemplateCard({
   onDeployNow: (template: ServiceTemplateListItem) => void
   deploying: boolean
 }) {
+  const { t } = useTranslation('templates')
+  const ram = template.recommended_memory_bytes
+    ? t('card.ramRecommended', {
+        size: formatBytes(template.recommended_memory_bytes),
+      })
+    : ''
   return (
-    <div className="flex flex-col items-start gap-2 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted">
+    <div className="flex h-full min-w-0 flex-col items-start gap-2 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted">
       <Link
         to="/templates/$id"
         params={{ id: template.id }}
-        className="flex w-full items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        title={template.name}
+        className="flex w-full min-w-0 items-start gap-2 rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <TemplateLogoTile id={template.id} name={template.name} />
-        <span className="truncate text-sm font-medium text-foreground hover:underline">
+        <span className="line-clamp-2 min-w-0 text-sm font-medium break-words text-foreground hover:underline">
           {template.name}
         </span>
       </Link>
@@ -104,18 +112,27 @@ function TemplateCard({
         onClick={() => {
           onSelect(template.id)
         }}
-        className="flex w-full flex-col items-start gap-2 rounded-md text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="flex min-w-0 w-full flex-1 flex-col items-start gap-2 rounded-md text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <Badge variant="outline">{template.category}</Badge>
-        <span className="text-xs text-muted-foreground">{template.slogan}</span>
-        {!!template.recommended_memory_bytes && (
-          <Badge variant="muted" className="text-xs">
-            ~{formatBytes(template.recommended_memory_bytes)} RAM recommended
+        <span className="text-xs break-words text-muted-foreground">
+          {template.slogan}
+        </span>
+        {ram ? (
+          <Badge
+            variant="muted"
+            title={ram}
+            className="h-auto max-w-full text-xs whitespace-normal"
+          >
+            {ram}
           </Badge>
-        )}
+        ) : null}
         {template.requires_gpu && (
-          <Badge variant="muted" className="text-xs">
-            Needs NVIDIA GPU
+          <Badge
+            variant="muted"
+            className="h-auto max-w-full text-xs whitespace-normal"
+          >
+            {t('card.needsGpu')}
           </Badge>
         )}
       </button>
@@ -123,7 +140,7 @@ function TemplateCard({
         type="button"
         size="sm"
         variant="outline"
-        className="w-full"
+        className="h-auto min-h-7 w-full shrink-0 py-1 text-center whitespace-normal"
         disabled={deploying}
         onClick={() => {
           onDeployNow(template)
@@ -131,10 +148,10 @@ function TemplateCard({
       >
         <RocketLaunchIcon />
         {deploying
-          ? 'Deploying...'
+          ? t('card.deploying')
           : template.requires_configuration
-            ? 'Deploy now (needs setup)'
-            : 'Deploy now'}
+            ? t('card.deployNowSetup')
+            : t('card.deployNow')}
       </Button>
     </div>
   )
@@ -155,6 +172,7 @@ export function ServiceTemplateGrid({
   onDeployNow: (template: ServiceTemplateListItem) => void
   deployingId?: string
 }) {
+  const { t } = useTranslation('templates')
   const [search, setSearch] = useState('')
   const templatesQuery = useServiceTemplates()
 
@@ -182,8 +200,8 @@ export function ServiceTemplateGrid({
           onChange={(e) => {
             setSearch(e.target.value)
           }}
-          placeholder="Search templates..."
-          aria-label="Search templates"
+          placeholder={t('card.searchPlaceholder')}
+          aria-label={t('card.searchLabel')}
           className="pl-8"
         />
       </div>
@@ -222,7 +240,7 @@ export function ServiceTemplateGrid({
           ))}
           {filtered.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
-              No templates match &ldquo;{search}&rdquo;.
+              {t('card.noMatch', { search })}
             </p>
           ) : null}
         </div>

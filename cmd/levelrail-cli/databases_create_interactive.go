@@ -191,6 +191,9 @@ func runInteractiveDatabaseWizard(p *wizardPrompter, engines []databaseEngineRes
 // Always API-only: app.yaml's databases block has no consumer and cannot represent resources or public access.
 func runDatabasesCreateWizard(stdin io.Reader, stdout, stderr io.Writer, cf credentialFlags, of outputFlags, lookupEnv func(string) (string, bool), prog string) int {
 	jsonOut := of.Format == outputJSON
+	if err := requireInput("databases create --interactive", "pass --name, --engine and --version"); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
 	client := apiClientFromCredentialFlags(prog, cf, lookupEnv)
 	ctx := context.Background()
 

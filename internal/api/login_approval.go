@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/netip"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -38,6 +40,8 @@ type loginApprovalPollResponse struct {
 
 type loginApprovalDecision struct {
 	Match int `json:"match"`
+	// StepUp approves with the account password instead of the number, only for sign-ins from this computer.
+	StepUp *stepUpProof `json:"step_up,omitempty"`
 }
 
 // approvalSessions is the slice of the session engine the pause needs; a
@@ -249,7 +253,9 @@ func (rt *Router) decideLoginApproval(w http.ResponseWriter, r *http.Request, ap
 	mismatch := false
 	if approve {
 		var body loginApprovalDecision
-		if err := decodeJSONBody(r, &body); err != nil || body.Match < 10 || body.Match > 99 {
+		err := decodeJSONBody(r, &body)
+		byPassword := err == nil && body.Match == 0 && body.StepUp != nil && body.StepUp.Password != ""
+		if err != nil || (!byPassword && (body.Match < 10 || body.Match > 99)) {
 			writeError(w, http.StatusBadRequest, "match is required: type the two digit number shown in the waiting browser")
 			return
 		}
@@ -262,7 +268,19 @@ func (rt *Router) decideLoginApproval(w http.ResponseWriter, r *http.Request, ap
 			rt.internalError(w, "api: decide login approval: load failed", err)
 			return
 		}
-		if body.Match != approvalMatch(a.BrowserHash) {
+		switch {
+		case byPassword:
+			if !isLoopbackSignIn(a.RequesterIP) {
+				writeError(w, http.StatusForbidden, "approving with a password is only allowed for sign-ins from this computer: type the number shown on the waiting device")
+				return
+			}
+			// A wrong password is refused without denying, so a typo cannot cancel a real sign-in.
+			if err := rt.verifyPasswordProof(r, owner, *body.StepUp); err != nil {
+				writeStepUpError(w, err)
+				return
+			}
+			auditPath += "#password"
+		case body.Match != approvalMatch(a.BrowserHash):
 			approve, mismatch = false, true
 			auditPath += "#mismatch"
 		}
@@ -286,4 +304,11 @@ func (rt *Router) decideLoginApproval(w http.ResponseWriter, r *http.Request, ap
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// isLoopbackSignIn reports whether the sign-in came from this machine, the only source
+// where a password may stand in for the number on the waiting device.
+func isLoopbackSignIn(ip string) bool {
+	addr, err := netip.ParseAddr(strings.TrimSpace(ip))
+	return err == nil && addr.Unmap().IsLoopback()
 }

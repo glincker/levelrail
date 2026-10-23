@@ -11,7 +11,38 @@ import (
 // layer is expected to parse these responses programmatically, not just
 // a human reading them in a browser.
 type apiError struct {
-	Error string `json:"error"`
+	Error     string `json:"error"`
+	Code      string `json:"code"`
+	RequestID string `json:"request_id,omitempty"`
+}
+
+// errorCodeForStatus gives every plain writeError a stable machine code
+// derived from the HTTP status, so clients can branch without parsing text.
+func errorCodeForStatus(status int) string {
+	switch status {
+	case http.StatusBadRequest, http.StatusUnprocessableEntity:
+		return "validation_failed"
+	case http.StatusUnauthorized:
+		return "unauthorized"
+	case http.StatusForbidden:
+		return "forbidden"
+	case http.StatusNotFound:
+		return "not_found"
+	case http.StatusMethodNotAllowed:
+		return "method_not_allowed"
+	case http.StatusConflict, http.StatusPreconditionFailed, http.StatusPreconditionRequired:
+		return "conflict"
+	case http.StatusRequestEntityTooLarge:
+		return "payload_too_large"
+	case http.StatusTooManyRequests:
+		return "rate_limited"
+	case http.StatusServiceUnavailable:
+		return "unavailable"
+	}
+	if status >= 500 {
+		return errCodeInternal
+	}
+	return "request_failed"
 }
 
 // writeJSON encodes v as the response body with the given status. A nil
@@ -37,7 +68,7 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 		writeJSON(w, status, typedError{Error: m, Code: errCodeInternal, Message: m, RequestID: w.Header().Get(requestIDHeader)})
 		return
 	}
-	writeJSON(w, status, apiError{Error: msg})
+	writeJSON(w, status, apiError{Error: msg, Code: errorCodeForStatus(status), RequestID: w.Header().Get(requestIDHeader)})
 }
 
 // internalError logs err against context plus any extra fields, then

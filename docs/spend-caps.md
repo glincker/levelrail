@@ -34,6 +34,26 @@ Throttling limits request rate per client. It slows heavy callers but is not a b
 
 If a domain already has a stricter rate limit, throttle never loosens it. If a domain is already in maintenance mode, your own page is kept.
 
+## Block new deploys
+
+Set the guard mode to `block_deploys` and a capped app refuses **new** deploys once it reaches 100 percent. The release that is running keeps serving and rollbacks are not blocked. The refusal names the cap and the percentage, and the deploy fails before anything is built.
+
+The guard works on its own or together with `throttle` or `pause`. It also works for a project cap (see below), where it covers every app in the project.
+
+A root user can override the guard for a short window: the Spend card shows an **Allow deploys** button, or use `spend caps override app NAME --reason TEXT`. A reason is required, the override expires on its own (one hour by default), and it is recorded in the app's history with the user's name. Only a root token can turn `block_deploys` on or off.
+
+## Forecast
+
+Each cap shows a projected month end position next to the usage bar. Cost is projected from the recent daily rate with a range, egress from the month to date rate. A red projection means the cap will be reached before the month ends at the current pace.
+
+## Project caps
+
+A project can carry one monthly cost cap that covers every app in it, with the same alert levels, action and deploy guard. Open the project page and use the **Spend** card, or `levelrail-cli spend caps set project NAME --cost 200`. Project caps are named budgets under the hood, so they also appear under `costs budgets` and on the Costs page.
+
+## Preview a pause
+
+**Preview a pause** (or `spend caps dry-run app|project NAME`) lists the apps in scope, their replica counts and the estimated saving until month end. The saving is the recent compute and egress run rate times the days left. Storage and idle node cost are not counted because stopping an app does not remove them. The preview changes nothing: no app is stopped, scaled or paused.
+
 ## How it is enforced
 
 A controller re-evaluates every capped app every two minutes and records a condition with a reason:
@@ -77,15 +97,35 @@ services:
       thresholds: [50, 80, 100]
 ```
 
+Spend caps are also under their own command, which covers both scopes:
+
+```bash
+levelrail-cli spend caps list
+levelrail-cli spend caps set app web --cost 40 --warn 80,100 --mode block_deploys
+levelrail-cli spend caps set project acme --cost 200 --mode block_deploys
+levelrail-cli spend caps status app web
+levelrail-cli spend caps dry-run project acme
+levelrail-cli spend caps override app web --reason "checkout hotfix"
+levelrail-cli spend caps rm project acme
+```
+
 A deploy that carries a `budget:` block saves it. A deploy without the block leaves a dashboard or CLI configured cap alone.
 
 ## API
 
-`GET`, `PUT` and `DELETE /api/v1/apps/{name}/budget`, and `GET /api/v1/apps/{name}/budget/history`. Reading needs the read ability; changing or clearing a cap needs the deploy ability, because a cap can pause an app. See the [API reference](/api-reference).
+`GET`, `PUT` and `DELETE /api/v1/apps/{name}/budget`, and `GET /api/v1/apps/{name}/budget/history`. `GET` returns the status, the month end `forecast` and the deploy `guard` state. `POST /api/v1/apps/{name}/budget/dry-run` previews a pause, and `POST /api/v1/costs/budgets/{id}/dry-run` does the same for a project budget. `POST /api/v1/apps/{name}/budget/override` takes a `reason` and needs a root token. `GET /api/v1/costs/app-caps` lists every app cap. Reading needs the read ability; changing or clearing a cap needs the deploy ability, because a cap can pause an app, and changing the guard mode needs root. See the [API reference](/api-reference).
+
+## Settings
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_SPEND_WARN_PERCENTS` | `50,80,100` | Alert levels used when a cap does not set its own, for example `80,100`. |
+| `APP_SPEND_OVERRIDE_TTL` | `1h` | How long a root override lets deploys through, up to seven days. |
 
 ## Limits
 
-- Caps are per app. Project and team budgets remain alert-only.
+- A project cap alerts and can block deploys, throttle or pause its apps. Team budgets remain alert-only.
+- There is no automatic stop or scale to zero. The pause preview shows what that would do; a real pause needs its own design review.
 - Egress is the HTTP response bytes ingress served for the app. Traffic that does not pass through ingress (database ports, direct TCP) is not counted.
 - Usage is checked every two minutes from cached telemetry, so a sharp spike can pass the limit before enforcement lands.
 - Static sites and databases have no cap.

@@ -21,9 +21,10 @@ export function ProjectEnvEditor({ projectId }: { projectId: string }) {
       values={env}
       isPending={setEnv.isPending}
       errorMessage={setEnv.isError ? setEnv.error.message : undefined}
-      onSave={(vars) => {
+      onSave={(vars, onSaved) => {
         setEnv.mutate(vars, {
           onSuccess: () => {
+            onSaved()
             toast.add({ title: 'Variables saved.', type: 'success' })
           },
         })

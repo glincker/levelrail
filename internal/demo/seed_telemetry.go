@@ -29,7 +29,7 @@ const (
 // "now". The relational store must already be seeded.
 func SeedTelemetry(ctx context.Context, db *store.DB, tdb *telemetry.DB, opts Options) error {
 	opts.Anchor = opts.Anchor.UTC()
-	t := &telemetrySeeder{ctx: ctx, db: db, tdb: tdb, anchor: opts.Anchor, story: storyFor(opts.Anchor), rng: newRNG(opts.Seed ^ 0x7e1e)}
+	t := &telemetrySeeder{ctx: ctx, db: db, tdb: tdb, anchor: opts.Anchor, story: storyFor(opts.Anchor, opts.calm()), rng: newRNG(opts.Seed ^ 0x7e1e)}
 	for _, step := range []func() error{t.metrics, t.nodeMetrics, t.markers, t.logs, t.deployLogs} {
 		if err := step(); err != nil {
 			return err
@@ -226,7 +226,7 @@ func (t *telemetrySeeder) markers() error {
 			}
 		}
 	}
-	for k := 0; k < 4; k++ {
+	for k := 0; k < 4 && !t.story.calm; k++ {
 		at := t.story.crashStart.Add(time.Duration(k) * 3 * time.Minute)
 		if err := t.tdb.RecordContainerRestart(t.ctx, crashloopApp, at); err != nil {
 			return err
@@ -260,7 +260,7 @@ func (t *telemetrySeeder) logs() error {
 		for n := 0; n < logLinesPerApp; n++ {
 			at := t.anchor.Add(-time.Duration(t.rng.intn(int(logHistory/time.Second))) * time.Second)
 			line := t.normalLine(a.name, cid, at)
-			if a.name == crashloopApp && !at.Before(t.story.crashStart) {
+			if a.name == crashloopApp && !t.story.calm && !at.Before(t.story.crashStart) {
 				continue
 			}
 			batch = append(batch, line)
@@ -268,7 +268,7 @@ func (t *telemetrySeeder) logs() error {
 		if a.name == incidentApp {
 			batch = append(batch, t.slowLines(cid)...)
 		}
-		if a.name == crashloopApp {
+		if a.name == crashloopApp && !t.story.calm {
 			batch = append(batch, t.crashLines()...)
 		}
 	}

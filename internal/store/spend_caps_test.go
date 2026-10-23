@@ -62,3 +62,37 @@ func TestSpendCapRoundTrip(t *testing.T) {
 		t.Errorf("second delete = %v", err)
 	}
 }
+
+func TestSpendCapGuardModeAndOverride(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	now := time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "nginx:1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	cp := spendcap.Cap{App: "web", MonthlyCostCeiling: 10, GuardMode: spendcap.GuardBlockDeploys}.Normalize()
+	if err := db.SaveSpendCap(ctx, cp, spendcap.Event{App: "web", Period: "2026-10", Kind: spendcap.EventConfigured, At: now}, now); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := db.GetSpendCap(ctx, "web"); err != nil || got.GuardMode != spendcap.GuardBlockDeploys {
+		t.Fatalf("guard mode = %+v err=%v", got, err)
+	}
+
+	if _, ok, err := db.ActiveSpendOverride(ctx, "web", now); err != nil || ok {
+		t.Fatalf("no override yet: ok=%v err=%v", ok, err)
+	}
+	o, err := spendcap.NewOverride("web", "hotfix for checkout", "root", now, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ev := spendcap.Event{App: "web", Period: "2026-10", Kind: spendcap.EventOverride, Detail: o.Reason, At: now}
+	if _, err := db.SaveSpendOverride(ctx, o, ev); err != nil {
+		t.Fatal(err)
+	}
+	if got, ok, err := db.ActiveSpendOverride(ctx, "web", now.Add(30*time.Minute)); err != nil || !ok || got.Reason != "hotfix for checkout" {
+		t.Fatalf("active override = %+v ok=%v err=%v", got, ok, err)
+	}
+	if _, ok, _ := db.ActiveSpendOverride(ctx, "web", now.Add(2*time.Hour)); ok {
+		t.Error("an expired override must not apply")
+	}
+}

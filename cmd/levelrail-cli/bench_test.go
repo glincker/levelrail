@@ -2,12 +2,69 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/benchreport"
+	"github.com/GLINCKER/levelrail/internal/chaos"
 )
+
+func TestBenchReportPlanWritesFiles(t *testing.T) {
+	dir := t.TempDir()
+	plan := &benchReportPlan{jsonPath: dir + "/r.json", mdPath: dir + "/r.md", repeat: 1, note: "unit test host", probe: benchreport.Probe{GOOS: "linux", GOARCH: "amd64", NumCPU: 4}}
+	if !plan.wanted() {
+		t.Fatal("plan with paths should be wanted")
+	}
+	plan.begin(context.Background())
+	res := chaos.Result{Scenario: chaos.KillContainer, Status: chaos.StatusPassed, Summary: "ok"}
+	var stderr bytes.Buffer
+	rep, err := plan.finish(context.Background(), []chaos.Result{res}, envMap(), &stderr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rep.Host.Note != "unit test host" || rep.Build.Version == "" || rep.Build.Commit == "" {
+		t.Errorf("report = %+v", rep)
+	}
+	for _, f := range []string{"r.json", "r.md"} {
+		if b, err := os.ReadFile(dir + "/" + f); err != nil || len(b) == 0 { //nolint:gosec // path is under t.TempDir()
+			t.Errorf("%s not written: %v", f, err)
+		}
+	}
+	if _, err := (&benchReportPlan{probe: benchreport.Probe{GOOS: "linux", NumCPU: 1}}).finish(context.Background(), nil, envMap(), &stderr); err == nil {
+		t.Error("a report with no results must be rejected")
+	}
+}
+
+func TestBuildIdentityCommitOverride(t *testing.T) {
+	b := buildIdentity(func(k string) (string, bool) { return "deadbeef", k == envBenchCommit })
+	if b.Commit != "deadbeef" || b.Dirty {
+		t.Errorf("build = %+v", b)
+	}
+	if b := buildIdentity(envMap()); b.Version == "" || b.Commit == "" {
+		t.Errorf("build without override = %+v", b)
+	}
+}
+
+func TestBenchChaosRunScenarioNames(t *testing.T) {
+	for _, args := range [][]string{{"chaos", "run"}, {"chaos", "run", "kill-container", "nope"}} {
+		var stdout, stderr bytes.Buffer
+		if got := runBench("levelrail-cli", args, &stdout, &stderr, envMap()); got != exitValidation {
+			t.Errorf("%v: exit = %d, want %d", args, got, exitValidation)
+		}
+	}
+}
+
+func TestBenchChaosRunRepeatValidation(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if got := runBench("levelrail-cli", []string{"chaos", "run", "--repeat", "0", "kill-container"}, &stdout, &stderr, envMap()); got == exitOK {
+		t.Errorf("repeat 0 must not succeed, stderr=%q", stderr.String())
+	}
+}
 
 func TestRunBench_Validation(t *testing.T) {
 	tests := []struct {

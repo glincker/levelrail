@@ -184,16 +184,16 @@ func (c *NetworkCleanupController) ownNetworks(observed []docker.NetworkInfo) []
 // reconcileWithAdmin is the grace-period, never-force GC used when the
 // runtime can report attached containers (a local Docker client).
 func (c *NetworkCleanupController) reconcileWithAdmin(ctx context.Context, admin docker.NetworkAdmin, prefix string) (reconcile.Result, error) {
-	details, err := admin.DescribeNetworks(ctx, prefix+"-app-")
+	apps, err := c.apps.ListApps(ctx)
+	if err != nil {
+		return notReady("ListAppsFailed", err), fmt.Errorf("application/network-cleanup: list apps: %w", err)
+	}
+	details, err := c.describeNetworks(ctx, admin, prefix, apps)
 	if err != nil {
 		return notReady("ListNetworksFailed", err), fmt.Errorf("application/network-cleanup: list networks: %w", err)
 	}
 	if len(details) == 0 {
 		return ready("NothingToClean"), nil
-	}
-	apps, err := c.apps.ListApps(ctx)
-	if err != nil {
-		return notReady("ListAppsFailed", err), fmt.Errorf("application/network-cleanup: list apps: %w", err)
 	}
 	var firstErr error
 	removed := 0
@@ -222,4 +222,24 @@ func (c *NetworkCleanupController) reconcileWithAdmin(ctx context.Context, admin
 		return ready("OrphanedNetworksRemoved"), nil
 	}
 	return ready("Converged"), nil
+}
+
+// describeNetworks inspects only orphans of this instance: ClassifyNetworks reads
+// the attached count solely to decide whether such a network is safe to remove.
+func (c *NetworkCleanupController) describeNetworks(ctx context.Context, admin docker.NetworkAdmin, prefix string, apps []store.App) ([]docker.NetworkDetail, error) {
+	sel, ok := admin.(docker.SelectiveNetworkDescriber)
+	if !ok {
+		return admin.DescribeNetworks(ctx, prefix+"-app-")
+	}
+	wanted := make(map[string]bool, len(apps))
+	for _, a := range apps {
+		wanted[NetworkName(prefix, a.ID)] = true
+	}
+	return sel.DescribeNetworksSelective(ctx, prefix+"-app-", func(name string, labels map[string]string) bool {
+		if wanted[name] {
+			return false
+		}
+		owner, labeled := labels[appspec.InstanceLabelKey]
+		return c.instanceID == "" || !labeled || owner == c.instanceID
+	})
 }

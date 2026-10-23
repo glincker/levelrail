@@ -24,6 +24,9 @@ func promptUsername(stdin io.Reader, stderr io.Writer) (string, error) {
 func resolveLoginCredentials(usernameFlag, passwordFlag string, stdin io.Reader, stderr io.Writer, readPassword func() (string, error)) (username, password string, err error) {
 	username = usernameFlag
 	if username == "" {
+		if err := requireInput("login", "pass --username and --password, or set "+envLevelrailToken+" and skip login"); err != nil {
+			return "", "", err
+		}
 		username, err = promptUsername(stdin, stderr)
 		if err != nil {
 			return "", "", err
@@ -35,6 +38,9 @@ func resolveLoginCredentials(usernameFlag, passwordFlag string, stdin io.Reader,
 
 	password = passwordFlag
 	if password == "" {
+		if err := requireInput("login", "pass --password"); err != nil {
+			return "", "", err
+		}
 		_, _ = fmt.Fprint(stderr, "Password: ")
 		password, err = readPassword()
 		_, _ = fmt.Fprintln(stderr)

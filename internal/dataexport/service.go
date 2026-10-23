@@ -162,10 +162,6 @@ func isMetricsKind(k store.ExportKind) bool {
 	return k == store.ExportKindMetricsOTLP || k == store.ExportKindMetricsRemoteWrite
 }
 
-func isAuditKind(k store.ExportKind) bool {
-	return k == store.ExportKindAuditWebhook || k == store.ExportKindAuditS3 || isAuditStreamKind(k)
-}
-
 func isAuditStreamKind(k store.ExportKind) bool {
 	return k == store.ExportKindAuditSplunk || k == store.ExportKindAuditSyslog || k == store.ExportKindAuditOTLP
 }

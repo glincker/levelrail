@@ -48,6 +48,12 @@ type Target struct {
 // source password. The helper container is always removed.
 func (c *Copier) Copy(ctx context.Context, t Target, src Source) (Verification, error) {
 	v, err := c.copy(ctx, t, src)
+	if err != nil && !src.TLS && Humanize(err.Error(), src.Host, src.Port).Code == FailureSSL {
+		// Upgrading to TLS is always safe; downgrading to plaintext never happens implicitly.
+		c.logger().Info("datamigrate: source requires encryption, retrying with TLS", slog.String("database", t.Name))
+		src.TLS = true
+		v, err = c.copy(ctx, t, src)
+	}
 	if err != nil {
 		return v, errors.New(src.Scrub(err.Error()))
 	}

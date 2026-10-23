@@ -82,9 +82,21 @@ type Result struct {
 	Requests      int         `json:"requests"`
 	RequestErrors int         `json:"request_errors"`
 	Assertions    []Assertion `json:"assertions"`
+	Metrics       Metrics     `json:"metrics,omitempty"`
 	Hardware      string      `json:"hardware,omitempty"`
 	RanAt         time.Time   `json:"ran_at"`
 	DurationMS    float64     `json:"duration_ms"`
+}
+
+// Metrics holds named numeric measurements, kept in result files but not in the control plane store.
+type Metrics map[string]float64
+
+// Set records one measurement on r.
+func (r *Result) Set(name string, v float64) {
+	if r.Metrics == nil {
+		r.Metrics = Metrics{}
+	}
+	r.Metrics[name] = v
 }
 
 // Assert records one expectation on r and downgrades the status when it fails.

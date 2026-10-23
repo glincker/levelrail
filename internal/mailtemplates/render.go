@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"html"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -28,8 +27,11 @@ type Branding struct {
 
 // Layout is the operator-editable frame around every event template.
 type Layout struct {
-	HeaderImageURL string `json:"header_image_url"`
-	FooterText     string `json:"footer_text"`
+	HeaderImageURL string       `json:"header_image_url"`
+	FooterText     string       `json:"footer_text"`
+	FooterAddress  string       `json:"footer_address,omitempty"`
+	FooterLinks    []FooterLink `json:"footer_links,omitempty"`
+	ShowPoweredBy  bool         `json:"show_powered_by,omitempty"`
 }
 
 // Options carries per-message values the layout needs.
@@ -48,19 +50,19 @@ type Rendered struct {
 
 var colorRe = regexp.MustCompile(`^#[0-9a-fA-F]{3,8}$`)
 
+func footerHTML(s string, vals map[string]string) string {
+	s = strings.ReplaceAll(strings.ReplaceAll(s, "\r\n", "\n"), "\r", "\n")
+	return strings.ReplaceAll(strings.TrimSpace(substitute(html.EscapeString(s), vals, true)), "\n", "<br>")
+}
+
 // ValidateLayout checks the header image is an https URL and the footer
 // only uses global tokens.
 func ValidateLayout(l Layout) error {
-	if l.HeaderImageURL != "" {
-		u, err := url.Parse(l.HeaderImageURL)
-		if err != nil || u.Scheme != "https" || u.Host == "" || len(l.HeaderImageURL) > 500 {
-			return errors.New("header image must be an https URL")
-		}
+	lim := LimitsFromEnv()
+	if err := ValidateHTTPSURL(l.HeaderImageURL, lim.MaxLogoURL); err != nil {
+		return fmt.Errorf("header image: %w", err)
 	}
-	if len(l.FooterText) > 1000 {
-		return errors.New("footer text is too long")
-	}
-	return ValidateTokens(l.FooterText, tokensByScope(ScopeGlobal))
+	return validateFooter(l.FooterText, l.FooterAddress, l.FooterLinks, lim)
 }
 
 // GlobalValues returns the global-scope token values for b.
@@ -141,8 +143,20 @@ func Render(b Branding, l Layout, t Template, values map[string]string, o Option
 		}
 	}
 
-	footer := strings.ReplaceAll(strings.TrimSpace(substitute(html.EscapeString(l.FooterText), vals, true)), "\n", "<br>")
+	footer := footerHTML(l.FooterText, vals)
 	footerText := strings.TrimSpace(SubstituteText(l.FooterText, vals))
+	if extra := footerExtrasHTML(l, b, vals); extra != "" {
+		if footer != "" {
+			footer += "<br>"
+		}
+		footer += extra
+	}
+	if extra := footerExtrasText(l, b, vals); extra != "" {
+		if footerText != "" {
+			footerText += "\n"
+		}
+		footerText += extra
+	}
 	unsub, unsubText := "", ""
 	if o.UnsubscribeURL != "" {
 		target := html.EscapeString(safeURL(o.UnsubscribeURL))

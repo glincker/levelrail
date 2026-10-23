@@ -29,6 +29,8 @@ import {
 } from '../../queries/secretRotation'
 import { formatDate } from '../../lib/format'
 import { useRestartApp } from '../../queries/apps'
+import { useCanWriteSensitive } from '../../hooks/useCanWriteSensitive'
+import { SecretBuildTimeToggle } from './SecretBuildTimeToggle'
 import { RotateValueDialog } from './RotateValueDialog'
 import { RotationPolicyDialog } from './RotationPolicyDialog'
 
@@ -71,14 +73,18 @@ export function SecretRotationSection({ appName }: { appName: string }) {
   const [needsRedeploy, setNeedsRedeploy] = useState<string | null>(null)
   const replace = useRotateSecretValue(appName)
   const redeploy = useRestartApp()
+  const canEditBuild = useCanWriteSensitive()
 
   const byKey = useMemo(
     () => new Map((policies.data ?? []).map((p) => [p.key, p])),
     [policies.data],
   )
-  const secretKeys = (keys.data ?? [])
-    .map((k) => k.key)
-    .filter((k) => !k.endsWith(PREVIOUS_SUFFIX))
+  const visible = (keys.data ?? []).filter(
+    (k) => !k.key.endsWith(PREVIOUS_SUFFIX),
+  )
+  const secretKeys = visible.map((k) => k.key)
+  const buildEnabled = new Map(visible.map((k) => [k.key, k.buildTime]))
+  const anyBuildEnabled = visible.some((k) => k.buildTime)
 
   const rotateMessage = (key: string) =>
     toast.add({
@@ -91,6 +97,11 @@ export function SecretRotationSection({ appName }: { appName: string }) {
       <CardHeader>
         <CardTitle>{t('title')}</CardTitle>
         <CardDescription>{t('description')}</CardDescription>
+        {anyBuildEnabled ? (
+          <p className="text-xs text-muted-foreground">
+            {t('buildTime.listHint')}
+          </p>
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-3">
         {needsRedeploy ? (
@@ -193,6 +204,12 @@ export function SecretRotationSection({ appName }: { appName: string }) {
                     ) : null}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
+                    <SecretBuildTimeToggle
+                      appName={appName}
+                      secretKey={key}
+                      enabled={buildEnabled.get(key) === true}
+                      canEdit={canEditBuild}
+                    />
                     {policy ? <RotationStatusBadge policy={policy} /> : null}
                     <Button
                       type="button"

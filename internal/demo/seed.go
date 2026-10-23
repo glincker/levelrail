@@ -39,7 +39,29 @@ type Options struct {
 	Anchor time.Time
 	// DomainSuffix is appended to every seeded hostname; defaults to a reserved example domain.
 	DomainSuffix string
+	// Scenario picks the storyline: ScenarioIncident (default) or ScenarioCalm.
+	Scenario string
 }
+
+const (
+	// ScenarioIncident is the public demo storyline.
+	ScenarioIncident = "incident"
+	// ScenarioCalm is a healthy fleet for screenshots.
+	ScenarioCalm = "calm"
+)
+
+// ParseScenario validates a scenario name; empty means incident.
+func ParseScenario(name string) (string, error) {
+	switch name {
+	case "", ScenarioIncident:
+		return ScenarioIncident, nil
+	case ScenarioCalm:
+		return ScenarioCalm, nil
+	}
+	return "", fmt.Errorf("demo: unknown scenario %q (want %s or %s)", name, ScenarioIncident, ScenarioCalm)
+}
+
+func (o Options) calm() bool { return o.Scenario == ScenarioCalm }
 
 // Manifest names what a seed produced, for the generator and fakes.
 type Manifest struct {
@@ -56,6 +78,11 @@ func Seed(ctx context.Context, db *store.DB, opts Options) (Manifest, error) {
 		return Manifest{}, errors.New("demo: seed anchor is required")
 	}
 	opts.Anchor = opts.Anchor.UTC()
+	scenario, err := ParseScenario(opts.Scenario)
+	if err != nil {
+		return Manifest{}, err
+	}
+	opts.Scenario = scenario
 	if opts.DomainSuffix == "" {
 		opts.DomainSuffix = "demo.example.com"
 	}
@@ -81,7 +108,7 @@ func Seed(ctx context.Context, db *store.DB, opts Options) (Manifest, error) {
 	}
 
 	s := &seeder{ctx: ctx, db: db, opts: opts, rng: newRNG(opts.Seed)}
-	steps := []func() error{s.users, s.organization, s.nodes, s.services, s.deploys, s.databases, s.audit, s.statusPage, s.teams, s.approvals, s.usage}
+	steps := []func() error{s.users, s.organization, s.nodes, s.services, s.deploys, s.readiness, s.databases, s.audit, s.statusPage, s.teams, s.approvals, s.usage}
 	for _, step := range steps {
 		if err := step(); err != nil {
 			return Manifest{}, err
@@ -112,6 +139,8 @@ type seeder struct {
 	db   *store.DB
 	opts Options
 	rng  *rng
+	// lastOK maps an app to its newest succeeded attempt, set by deploys.
+	lastOK map[string]okAttempt
 }
 
 func (s *seeder) at(daysAgo int, extra time.Duration) time.Time {

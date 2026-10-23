@@ -9,14 +9,14 @@
   {
     "Step": "bad token",
     "Status": 403,
-    "Body": "{\"error\":\"a valid setup token is required; print it on the server with the setup-token subcommand\"}",
+    "Body": "{\"code\":\"forbidden\",\"error\":\"a valid setup token is required; print it on the server with the setup-token subcommand\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": false
   },
   {
     "Step": "short password",
     "Status": 400,
-    "Body": "{\"error\":\"password must be at least 8 characters\"}",
+    "Body": "{\"code\":\"validation_failed\",\"error\":\"password must be at least 8 characters\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": false
   },
@@ -39,7 +39,7 @@
   {
     "Step": "second register",
     "Status": 409,
-    "Body": "{\"error\":\"an account already exists; sign in instead\"}",
+    "Body": "{\"code\":\"conflict\",\"error\":\"an account already exists; sign in instead\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": false
   },

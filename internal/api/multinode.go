@@ -204,6 +204,8 @@ type placementResource struct {
 	NodeSelector map[string]string     `json:"node_selector"`
 	Eligible     []string              `json:"eligible_node_ids"`
 	Rejected     []placement.Rejection `json:"rejected"`
+	// DomainWarnings lists failure domains that hold every replica of the app.
+	DomainWarnings []placement.DomainRisk `json:"domain_warnings"`
 }
 
 type placementBody struct {
@@ -238,7 +240,7 @@ func (rt *Router) placementView(ctx context.Context, kind, name string) (placeme
 	if err != nil {
 		return placementResource{}, err
 	}
-	out := placementResource{Kind: kind, Name: name, NodeID: nodeID, NodeSelector: sel, Eligible: []string{}, Rejected: []placement.Rejection{}}
+	out := placementResource{Kind: kind, Name: name, NodeID: nodeID, NodeSelector: sel, Eligible: []string{}, Rejected: []placement.Rejection{}, DomainWarnings: []placement.DomainRisk{}}
 	if out.NodeSelector == nil {
 		out.NodeSelector = map[string]string{}
 	}
@@ -252,6 +254,13 @@ func (rt *Router) placementView(ctx context.Context, kind, name string) (placeme
 		} else {
 			out.Eligible = append(out.Eligible, c.ID)
 		}
+	}
+	if kind == store.NodeMoveKindApp {
+		risks, err := rt.appDomainRisks(ctx, name, cands)
+		if err != nil {
+			return placementResource{}, err
+		}
+		out.DomainWarnings = append(out.DomainWarnings, risks...)
 	}
 	return out, nil
 }

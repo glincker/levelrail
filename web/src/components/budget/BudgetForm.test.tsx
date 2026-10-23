@@ -61,6 +61,20 @@ describe('BudgetForm', () => {
       thresholds: [50, 80, 100],
       action: 'throttle',
       throttle_rps: 5,
+      guard_mode: 'alert',
     })
+  })
+
+  it('sends the deploy guard mode when chosen', async () => {
+    const { onSave, user } = setup()
+    await user.type(screen.getByLabelText('Monthly cost ceiling'), '40')
+    await user.click(screen.getByRole('radio', { name: /Block new deploys/ }))
+    await user.click(screen.getByRole('button', { name: 'Save budget' }))
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        monthly_cost_ceiling: 40,
+        guard_mode: 'block_deploys',
+      }),
+    )
   })
 })

@@ -1317,6 +1317,9 @@ type TriggerRestoreRequest struct {
 // PITRStatusResource mirrors internal/api's pitrStatusResource
 // (internal/api/pitr.go): GET /api/v1/databases/{name}/pitr.
 type PITRStatusResource struct {
+	Engine string `json:"engine,omitempty"`
+	// RestoreMode is "in_place" (Postgres) or "new_database" (MySQL, MariaDB).
+	RestoreMode   string `json:"restore_mode,omitempty"`
 	Enabled       bool   `json:"enabled"`
 	EnabledAt     string `json:"enabled_at,omitempty"`
 	HasBaseBackup bool   `json:"has_base_backup"`
@@ -1375,6 +1378,7 @@ type PITRRestoreHistoryResource struct {
 type TriggerPITRRestoreRequest struct {
 	BaseBackupID string `json:"base_backup_id"`
 	TargetTime   string `json:"target_time"`
+	RestoreAs    string `json:"restore_as,omitempty"`
 }
 
 // VolumeBackupScheduleResource mirrors internal/api's
@@ -1728,6 +1732,7 @@ type CustomTemplateDetail struct {
 type SetSecretRequest struct {
 	Value           string `json:"value"`
 	OverwriteLocked bool   `json:"overwrite_locked"`
+	BuildTime       *bool  `json:"build_time,omitempty"`
 }
 
 // SecretKeyResource mirrors internal/api's secretKeyResource
@@ -1737,8 +1742,14 @@ type SetSecretRequest struct {
 type SecretKeyResource struct {
 	Key       string `json:"key"`
 	Locked    bool   `json:"locked"`
+	BuildTime bool   `json:"build_time"`
 	UpdatedAt string `json:"updated_at"`
 	Stale     bool   `json:"stale"`
+}
+
+// SetSecretBuildTimeRequest mirrors internal/api's setSecretBuildTimeRequest.
+type SetSecretBuildTimeRequest struct {
+	BuildTime bool `json:"build_time"`
 }
 
 // SetSecretLockRequest mirrors internal/api's setSecretLockRequest
@@ -1967,12 +1978,15 @@ type AppScheduleResource struct {
 	Timezone    string     `json:"timezone"`
 	Enabled     bool       `json:"enabled"`
 	NextRunAt   *time.Time `json:"next_run_at,omitempty"`
+	RunAt       *time.Time `json:"run_at,omitempty"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
 }
 
 // SetAppScheduleRequest mirrors internal/api's setAppScheduleRequest.
 // Enabled defaults to true server-side when nil.
 type SetAppScheduleRequest struct {
-	Cron     string `json:"cron"`
+	Cron     string `json:"cron,omitempty"`
+	RunAt    string `json:"run_at,omitempty"`
 	Branch   string `json:"branch"`
 	Timezone string `json:"timezone,omitempty"`
 	Enabled  *bool  `json:"enabled,omitempty"`
@@ -4391,8 +4405,25 @@ type StaticSiteResource struct {
 // apiErrorBody is the JSON shape every non-2xx response from the
 // control plane returns (internal/api/respond.go's own apiError).
 type apiErrorBody struct {
-	Error string `json:"error"`
-	Code  string `json:"code,omitempty"`
+	Error     string          `json:"error"`
+	Code      string          `json:"code,omitempty"`
+	RequestID string          `json:"request_id,omitempty"`
+	Fix       json.RawMessage `json:"fix,omitempty"`
+}
+
+// fixText flattens the fix field, a plain string or an object with a label.
+func (b apiErrorBody) fixText() string {
+	var s string
+	if json.Unmarshal(b.Fix, &s) == nil {
+		return s
+	}
+	var o struct {
+		Label string `json:"label"`
+	}
+	if json.Unmarshal(b.Fix, &o) == nil {
+		return o.Label
+	}
+	return ""
 }
 
 // APIError is returned by Client methods for a non-2xx HTTP response: a
@@ -4415,6 +4446,9 @@ type APIError struct {
 	// Code is the machine-readable reason some refusals carry, such as
 	// step_up_required or step_up_code_required.
 	Code string
+	// RequestID and Fix are the server's correlation id and suggested remedy, when sent.
+	RequestID string
+	Fix       string
 }
 
 // Error renders the server message, appending a retry hint when RetryAfter is set.

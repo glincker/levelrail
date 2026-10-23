@@ -411,3 +411,48 @@ func TestRun_AppsSecrets_Help(t *testing.T) {
 		t.Errorf("stdout = %q, want usage text", stdout)
 	}
 }
+
+func TestRun_AppsSecretsSet_BuildTime(t *testing.T) {
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if servePendingChanges(w, r, false) {
+			return
+		}
+		gotBody = nil
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{"apps", "secrets", "set", "web", "NPM_TOKEN", "v", "--api-url", srv.URL})
+	if _, present := gotBody["build_time"]; present {
+		t.Errorf("build_time sent without --build-time: %v", gotBody)
+	}
+	runCLIExpectOK(t, []string{"apps", "secrets", "set", "web", "NPM_TOKEN", "v", "--build-time", "--api-url", srv.URL})
+	if gotBody["build_time"] != true {
+		t.Errorf("build_time = %v, want true with --build-time", gotBody["build_time"])
+	}
+}
+
+func TestRun_AppsSecretsBuildTime(t *testing.T) {
+	var gotPath, gotMethod string
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotMethod = r.URL.Path, r.Method
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "secrets", "build-time", "web", "NPM_TOKEN", "--api-url", srv.URL})
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/apps/web/secrets/NPM_TOKEN/build-time" || gotBody["build_time"] != true {
+		t.Errorf("request = %s %s %v", gotMethod, gotPath, gotBody)
+	}
+	if !strings.Contains(stdout, "enabled for build use") {
+		t.Errorf("stdout = %q", stdout)
+	}
+	runCLIExpectOK(t, []string{"apps", "secrets", "build-time", "web", "NPM_TOKEN", "--enabled=false", "--api-url", srv.URL})
+	if gotBody["build_time"] != false {
+		t.Errorf("build_time = %v, want false", gotBody["build_time"])
+	}
+}

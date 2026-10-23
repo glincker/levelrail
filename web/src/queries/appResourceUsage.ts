@@ -10,13 +10,22 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { AppResourceUsage } from '../types/appResourceUsage'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { DEDUPE_STALE_MS } from '../lib/queryStale'
+import { useEnvironmentScope } from '../lib/environmentScope'
+import {
+  currentScope,
+  scopeKey,
+  scopeUrl,
+  type ScopeParams,
+} from '../lib/scopeQuery'
 
 export const appResourceUsageKeys = {
   all: ['apps', 'resource-usage'] as const,
 }
 
-export async function fetchAppResourceUsage(): Promise<AppResourceUsage[]> {
-  const res = await fetch('/api/v1/apps/resource-usage')
+export async function fetchAppResourceUsage(
+  scope: ScopeParams = currentScope(),
+): Promise<AppResourceUsage[]> {
+  const res = await fetch(scopeUrl('/api/v1/apps/resource-usage', scope))
   if (res.status === 501) {
     throw new ApiError(501, 'telemetry is not configured on this control plane')
   }
@@ -33,9 +42,10 @@ export async function fetchAppResourceUsage(): Promise<AppResourceUsage[]> {
 }
 
 export function appResourceUsageQueryOptions() {
+  const scope = currentScope()
   return queryOptions({
-    queryKey: appResourceUsageKeys.all,
-    queryFn: fetchAppResourceUsage,
+    queryKey: [...appResourceUsageKeys.all, ...scopeKey(scope)] as const,
+    queryFn: () => fetchAppResourceUsage(scope),
     staleTime: DEDUPE_STALE_MS,
   })
 }
@@ -44,5 +54,6 @@ export function appResourceUsageQueryOptions() {
 // not-configured 501 will never succeed on retry, so retrying just
 // delays the panel quietly not rendering.
 export function useAppResourceUsage() {
+  useEnvironmentScope()
   return useQuery({ ...appResourceUsageQueryOptions(), retry: false })
 }

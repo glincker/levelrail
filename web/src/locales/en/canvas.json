@@ -1,0 +1,121 @@
+{
+  "title": "{{name}}: Canvas",
+  "description": "Add apps and databases and wire them together. Every change is a draft you review as a plan before anything is saved.",
+  "beta": "Beta",
+  "link": "Canvas",
+  "loadError": "Could not load this project for the canvas. Check your connection and reload.",
+  "asideLabel": "Draft changes",
+  "iacOff": {
+    "title": "Platform as code is switched off",
+    "description": "Canvas turns your draft into a plan with the platform-as-code API, so that feature has to be on before you can review or apply.",
+    "action": "Open Beta features"
+  },
+  "empty": {
+    "title": "Nothing in this project yet",
+    "description": "Add an app or a database from the draft panel to start building. Nothing is created until you apply."
+  },
+  "draft": {
+    "title": "Draft",
+    "none": "No changes yet. Add an app or a database, or connect two things that are already here.",
+    "count_one": "{{count}} pending change",
+    "count_other": "{{count}} pending changes",
+    "remove": "Remove from draft: {{label}}",
+    "review": "Review changes",
+    "discard": "Discard draft"
+  },
+  "add": {
+    "app": "Add app",
+    "database": "Add database"
+  },
+  "appForm": {
+    "title": "Add an app",
+    "description": "A new app that runs a prebuilt image. It joins this project when you apply.",
+    "name": "Name",
+    "image": "Image",
+    "imageHint": "For example ghcr.io/acme/web:1.2.3",
+    "port": "Port",
+    "submit": "Add to draft"
+  },
+  "databaseForm": {
+    "title": "Add a database",
+    "description": "A managed database in this project. It is created when you apply.",
+    "name": "Name",
+    "engine": "Engine",
+    "version": "Version (optional)",
+    "versionHint": "Leave blank to use the engine default.",
+    "submit": "Add to draft"
+  },
+  "connect": {
+    "title": "Connect an app to a database",
+    "app": "App",
+    "database": "Database",
+    "envVar": "Environment variable (optional)",
+    "envVarHint": "Leave blank and the server picks one.",
+    "submit": "Add connection",
+    "choose": "Choose",
+    "needBoth": "You need at least one app and one database on the canvas to connect them."
+  },
+  "connections": {
+    "title": "Connections",
+    "none": "No app is connected to a database yet.",
+    "remove": "Remove connection from {{app}} to {{database}}",
+    "more": "Showing {{shown}} of {{total}} connections."
+  },
+  "limits": {
+    "title": "Not editable here yet",
+    "body": "Volumes, domains, load balancers and dependencies. Change those from the app itself."
+  },
+  "errors": {
+    "required": "This field is required.",
+    "format": "Use lowercase letters, numbers and hyphens, starting and ending with a letter or number.",
+    "taken": "Something with this name already exists on the canvas.",
+    "port": "Enter a port between 1 and 65535.",
+    "envVar": "Use letters, numbers and underscores, not starting with a number."
+  },
+  "ops": {
+    "addApp": "Add app {{name}} ({{image}})",
+    "addDatabase": "Add {{engine}} database {{name}}",
+    "connect": "Connect {{app}} to {{database}}",
+    "disconnect": "Disconnect {{app}} from {{database}}"
+  },
+  "review": {
+    "title": "Review changes",
+    "description": "This is what applying would do. Nothing has been changed yet.",
+    "planning": "Building the plan...",
+    "planError": {
+      "title": "The plan could not be built",
+      "retry": "Try again",
+      "issuesNext": "Go back, fix or remove the item named above, then review again.",
+      "generic": "Check that the server is reachable and that you can write to this project, then try again."
+    },
+    "serverChanges": "Plan from the server",
+    "steps": {
+      "title": "Connection changes",
+      "note": "These run after the plan above is applied, in this order. The server does not preview them.",
+      "connect": "Connect {{app}} to {{database}} as {{envVar}}",
+      "connectAuto": "Connect {{app}} to {{database}}",
+      "disconnect": "Disconnect {{app}} from {{database}} ({{envVar}})",
+      "unsupported": "{{app}} reaches {{database}} through its app.yaml, not a connection, so Canvas cannot remove it. Edit app.yaml instead.",
+      "loading": "Looking up current connections..."
+    },
+    "nothing": "Nothing to apply.",
+    "apply": "Apply",
+    "applying": "Applying...",
+    "back": "Back to editing",
+    "applied": {
+      "title": "Applied",
+      "failed": "Some changes did not apply",
+      "failedNext": "Nothing after the failed step ran. Fix the cause named below, then review the remaining changes again.",
+      "done": "Done"
+    },
+    "stepStatus": {
+      "applied": "Applied",
+      "failed": "Failed: {{error}}",
+      "skipped": "Skipped"
+    }
+  },
+  "toast": {
+    "applied": "Canvas changes applied.",
+    "failed": "Some Canvas changes did not apply."
+  }
+}

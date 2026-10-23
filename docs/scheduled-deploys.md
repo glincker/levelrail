@@ -88,12 +88,43 @@ and the redeploy call returning, that one occurrence is not retried on
 the next tick, and it is never fired twice either: never doubling a
 deploy takes priority over never missing one.
 
+## One-time deploy
+
+Instead of `cron`, a schedule can carry `run_at`: an RFC 3339 timestamp at
+which the deploy fires once. Set exactly one of `cron` or `run_at`; both or
+neither is rejected. `run_at` must be at least
+`APP_SCHEDULE_RUN_AT_MIN_LEAD` (default `1m`) and at most
+`APP_SCHEDULE_RUN_AT_MAX_HORIZON` (default `8760h`, one year) from now.
+
+```bash
+levelrail-cli apps schedule set web --run-at 2026-12-01T03:00:00Z --branch main
+levelrail-cli apps schedule set web --run-at 2h --branch main   # converted to an absolute time and printed back
+curl -X PUT -H "Authorization: Bearer $TOKEN" -d '{"run_at":"2026-12-01T03:00:00Z","branch":"main"}' \
+  https://levelrail.example.com/api/v1/apps/web/schedule
+```
+
+The scheduler fires it at the first tick at or after `run_at`, through the
+same deploy path as a recurring schedule, then marks it completed and
+disabled so it never fires again. `GET .../schedule` shows `run_at`,
+`next_run_at` (equal to `run_at` while pending) and `completed_at` once done;
+history records the run like any other.
+
+- **Freeze windows:** a one-time deploy due during a freeze is recorded as
+  `skipped_freeze` and completed. It is not queued until the freeze lifts.
+- **Catch-up:** if the control plane was down at `run_at`, the deploy fires
+  once on restart when it is within `APP_SCHEDULE_ONESHOT_CATCHUP` of
+  `run_at` (default `24h`, `0` for no limit). Later than that it is recorded
+  as `skipped_missed` and completed.
+- **Re-arm:** a `PUT` with a new `run_at` on a completed schedule re-arms it.
+- **Cancel:** disable it with `apps schedule set ... --disable` (or
+  `"enabled": false`) before it fires. There is no separate delete command.
+
 ## API
 
 | Method | Path | Notes |
 | --- | --- | --- |
 | `GET` | `/api/v1/apps/{name}/schedule` | 404 when no schedule is configured. |
-| `PUT` | `/api/v1/apps/{name}/schedule` | `{cron, branch, timezone?, enabled?}`. Requires a connected git source. |
+| `PUT` | `/api/v1/apps/{name}/schedule` | `{cron or run_at, branch, timezone?, enabled?}`. Requires a connected git source. |
 | `GET` | `/api/v1/apps/{name}/schedule/history` | Newest first; `?limit=` (default 20, max 100). |
 
 ## MCP

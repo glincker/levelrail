@@ -65,6 +65,12 @@ func deployLatency(ctx context.Context, res *chaos.Result) error {
 	sort.Slice(warm, func(i, j int) bool { return warm[i] < warm[j] })
 	p50, p95 := bench.Percentile(warm, 50), bench.Percentile(warm, 95)
 	res.Assert("every deploy reached serving", len(warm) == deployRuns-1, fmt.Sprintf("%d of %d", len(warm)+1, deployRuns))
+	res.Set("deploy_cold_ms", ms(cold))
+	res.Set("deploy_warm_p50_ms", ms(p50))
+	res.Set("deploy_warm_p95_ms", ms(p95))
+	res.Set("deploy_warm_min_ms", ms(warm[0]))
+	res.Set("deploy_warm_max_ms", ms(warm[len(warm)-1]))
+	res.Set("deploy_warm_runs", float64(len(warm)))
 	res.Assert("cold deploy", true, cold.Round(time.Millisecond).String())
 	res.Assert("warm deploys", true, fmt.Sprintf("n=%d p50 %s p95 %s min %s max %s", len(warm),
 		p50.Round(time.Millisecond), p95.Round(time.Millisecond), warm[0].Round(time.Millisecond), warm[len(warm)-1].Round(time.Millisecond)))
@@ -158,6 +164,12 @@ func ingressConcurrency(ctx context.Context, res *chaos.Result) error {
 		res.Assert(fmt.Sprintf("concurrency %d", n), n > concurrencies[0] || st.Failed == 0, fmt.Sprintf(
 			"%.0f req/s, errors %d of %d, p50 %.2f ms, p95 %.2f ms, p99 %.2f ms, max %.1f ms",
 			st.AchievedRPS, st.Failed, st.Sent, st.P50MS, st.P95MS, st.P99MS, st.MaxMS))
+		key := fmt.Sprintf("c%d_", n)
+		res.Set(key+"rps", st.AchievedRPS)
+		res.Set(key+"p50_ms", st.P50MS)
+		res.Set(key+"p95_ms", st.P95MS)
+		res.Set(key+"p99_ms", st.P99MS)
+		res.Set(key+"errors", float64(st.Failed))
 		parts = append(parts, fmt.Sprintf("c%d %.0f req/s", n, st.AchievedRPS))
 	}
 	res.Summary = "closed loop, one replica, " + concurrencyStep.String() + " per step: " + strings.Join(parts, ", ")
@@ -184,23 +196,13 @@ func replicaFailover(ctx context.Context, res *chaos.Result) error {
 	victim := s.Running(ctx)[0].ID
 
 	var killedAt time.Time
-	restored := make(chan time.Duration, 1)
+	restored := make(chan restoreOutcome, 1)
 	ev := &bench.Event{Name: "kill-replica", At: 5 * time.Second, Fire: func(c context.Context) error {
 		killedAt = time.Now()
 		if err := s.cli.ContainerKill(c, victim, "KILL"); err != nil {
 			return err
 		}
-		go func() {
-			if poll(ctx, 5*time.Second, func() bool { return len(s.Running(ctx)) < 2 }) != nil {
-				restored <- -1
-				return
-			}
-			if poll(ctx, 20*time.Second, func() bool { return len(s.Running(ctx)) == 2 }) != nil {
-				restored <- -1
-				return
-			}
-			restored <- time.Since(killedAt)
-		}()
+		go func() { restored <- watchRestore(ctx, func() int { return len(s.Running(ctx)) }, 2, killedAt) }()
 		return nil
 	}}
 	r, err := bench.Run(ctx, s.Client(), bench.Config{URL: s.URL(), Rate: failoverRate, Duration: failoverDuration, Timeout: 3 * time.Second}, ev)
@@ -211,16 +213,83 @@ func replicaFailover(ctx context.Context, res *chaos.Result) error {
 	if r.Event != nil {
 		res.RecoveryMS = r.Event.RecoveryMS
 	}
-	var back time.Duration
+	var out restoreOutcome
 	select {
-	case back = <-restored:
-	case <-time.After(25 * time.Second):
-		back = -1
+	case out = <-restored:
+	case <-time.After(restoreWatchBudget + 5*time.Second):
 	}
+	if out.DropSeen {
+		res.Set("replica_restored_ms", ms(out.Elapsed))
+	}
+	res.Set("replica_drop_observed", boolMetric(out.DropSeen))
 	res.Assert("kill was delivered", r.Event != nil && r.Event.FireError == "", fireErr(r))
 	res.Assert("requests recovered before the run ended", r.Event != nil && r.Event.Recovered, "")
-	res.Assert("two containers running again after the kill", back > 0, fmt.Sprintf("replacement visible %.0f ms after the kill", ms(back)))
-	res.Summary = fmt.Sprintf("%d of %d requests failed at %d req/s, error window %.0f ms, second replica back %.0f ms after the kill (container list poll, 200 ms resolution)",
-		res.RequestErrors, res.Requests, failoverRate, res.ErrorWindowMS, ms(back))
+	res.Assert("two containers running again after the kill", out.Restored, out.describe())
+	res.Summary = fmt.Sprintf("%d of %d requests failed at %d req/s, error window %.0f ms, %s",
+		res.RequestErrors, res.Requests, failoverRate, res.ErrorWindowMS, out.describe())
 	return nil
+}
+
+const (
+	restoreTick        = 50 * time.Millisecond
+	restoreDropGrace   = 2 * time.Second
+	restoreWatchBudget = 25 * time.Second
+)
+
+// restoreOutcome says whether the replica count came back and whether the dip was seen by the poll.
+type restoreOutcome struct {
+	Restored bool
+	DropSeen bool
+	Elapsed  time.Duration
+}
+
+func (o restoreOutcome) describe() string {
+	switch {
+	case o.Restored && o.DropSeen:
+		return fmt.Sprintf("second replica back %.0f ms after the kill (container list poll, %s resolution)", ms(o.Elapsed), restoreTick)
+	case o.Restored:
+		return fmt.Sprintf("second replica was replaced faster than the %s poll, restore time not resolved", restoreTick)
+	}
+	return "replica count never returned to the target"
+}
+
+// restoreTracker decides when a replica dip and recovery has been observed.
+type restoreTracker struct {
+	want    int
+	sawDrop bool
+}
+
+// observe feeds one container count taken elapsed after the kill; it reports whether the watch is over and how.
+func (t *restoreTracker) observe(count int, elapsed time.Duration) (done bool, out restoreOutcome) {
+	switch {
+	case count < t.want:
+		t.sawDrop = true
+	case t.sawDrop:
+		return true, restoreOutcome{Restored: true, DropSeen: true, Elapsed: elapsed}
+	case elapsed >= restoreDropGrace:
+		return true, restoreOutcome{Restored: true}
+	}
+	return false, restoreOutcome{}
+}
+
+func watchRestore(ctx context.Context, count func() int, want int, killedAt time.Time) restoreOutcome {
+	t := restoreTracker{want: want}
+	for time.Since(killedAt) < restoreWatchBudget {
+		if done, out := t.observe(count(), time.Since(killedAt)); done {
+			return out
+		}
+		select {
+		case <-ctx.Done():
+			return restoreOutcome{}
+		case <-time.After(restoreTick):
+		}
+	}
+	return restoreOutcome{}
+}
+
+func boolMetric(b bool) float64 {
+	if b {
+		return 1
+	}
+	return 0
 }
