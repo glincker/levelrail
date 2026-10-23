@@ -103,9 +103,14 @@ func (r *emailDeliveryRecorder) RecordDelivery(ctx context.Context, d email.Deli
 		errText = errText[:1000]
 	}
 	return r.db.InsertEmailDelivery(ctx, store.EmailDelivery{
-		CreatedAt: d.At, Provider: d.Provider, Kind: d.Kind, Status: d.Status, MessageID: d.MessageID,
+		CreatedAt: d.At, Provider: d.Provider, ProviderID: d.ProviderID, FailoverFrom: d.FailoverFrom, Kind: d.Kind, Status: d.Status, MessageID: d.MessageID,
 		Error: errText, ErrorKind: string(d.ErrorKind), Attempts: d.Attempts,
 	}, d.To, r.fullAddress)
+}
+
+// RecordProviderResult stamps last_ok_at / last_error_kind on the provider row.
+func (r *emailDeliveryRecorder) RecordProviderResult(ctx context.Context, providerID string, ok bool, kind email.FailureKind, at time.Time) error {
+	return r.db.RecordEmailProviderResult(ctx, providerID, ok, string(kind), at)
 }
 
 func (r *emailDeliveryRecorder) CountSent(ctx context.Context, since time.Time) (int, error) {
