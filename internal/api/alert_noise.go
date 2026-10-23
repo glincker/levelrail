@@ -445,11 +445,12 @@ func (rt *Router) writeAlertHistory(w http.ResponseWriter, r *http.Request, app 
 		}
 		f.Before = &t
 	}
-	canSee, err := rt.appVisibilityFilter(r)
+	canSee, err := rt.scopedAppVisibility(r)
 	if err != nil {
 		rt.internalError(w, "api: list alert history: visibility", err)
 		return
 	}
+	scoped := requestScoped(r)
 	limit := f.Limit
 	if limit <= 0 || limit > alertHistoryMaxLimit {
 		limit = alertHistoryDefaultLimit
@@ -462,7 +463,7 @@ func (rt *Router) writeAlertHistory(w http.ResponseWriter, r *http.Request, app 
 			return
 		}
 		for _, e := range rows {
-			if len(list) < limit && (e.App == "" || canSee(e.App)) {
+			if len(list) < limit && ((e.App == "" && !scoped) || (e.App != "" && canSee(e.App))) {
 				list = append(list, e)
 			}
 		}

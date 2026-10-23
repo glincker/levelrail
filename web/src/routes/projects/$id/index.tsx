@@ -28,12 +28,13 @@ import { DeleteProjectDialog } from '../../../components/DeleteProjectDialog'
 import { PauseResumeProjectButton } from '../../../components/PauseResumeProjectButton'
 import { MoveToOrganizationDialog } from '../../../components/MoveToOrganizationDialog'
 import { RestartProjectButton } from '../../../components/RestartProjectButton'
-import { routeErrorMessage } from '../../../lib/apiError'
+import { CanvasLink } from '../../../components/canvas/CanvasLink'
 import { QuotaCard } from '../../../components/teams/QuotaCard'
+import { ProjectSpendCard } from '../../../components/spend/ProjectSpendCard'
 import { ProjectEnvironmentsPanel } from '../../../components/ProjectEnvironmentsPanel'
 import { ProjectEnvEditor } from '../../../components/ProjectEnvEditor'
 import { SharedEnvSecretsCard } from '../../../components/SharedEnvSecretsCard'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { resourceErrorComponent } from '@/components/resourceErrorComponent'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '../../../components/ui/empty-state'
@@ -68,7 +69,7 @@ export const Route = createFileRoute('/projects/$id/')({
     ]),
   component: ProjectDetailPage,
   pendingComponent: ProjectDetailPending,
-  errorComponent: ProjectDetailError,
+  errorComponent: resourceErrorComponent('project'),
 })
 
 function ProjectDetailPage() {
@@ -108,6 +109,7 @@ function ProjectDetailPage() {
                 Topology
               </Link>
             )}
+            <CanvasLink projectId={project.id} />
             {isEmpty ? null : (
               <PauseResumeProjectButton id={project.id} name={project.name} />
             )}
@@ -148,6 +150,7 @@ function ProjectDetailPage() {
 
       <ProjectEnvironmentsPanel projectId={project.id} />
       <QuotaCard scope="project" scopeId={project.id} />
+      <ProjectSpendCard projectId={project.id} projectName={project.name} />
       <ProjectEnvEditor projectId={project.id} />
       <SharedEnvSecretsCard scope="project" id={project.id} />
 
@@ -241,18 +244,5 @@ function ProjectDetailPending() {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
-function ProjectDetailError({ error }: { error: unknown }) {
-  return (
-    <Alert variant="destructive">
-      <AlertDescription>
-        <p>{routeErrorMessage(error)}</p>
-        <Link to="/projects" className="mt-2 inline-block underline">
-          Back to projects
-        </Link>
-      </AlertDescription>
-    </Alert>
   )
 }

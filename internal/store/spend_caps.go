@@ -14,7 +14,7 @@ import (
 func scanSpendCap(sc interface{ Scan(...any) error }) (spendcap.Cap, error) {
 	var c spendcap.Cap
 	var thresholds string
-	if err := sc.Scan(&c.App, &c.MonthlyEgressBytes, &c.MonthlyCostCeiling, &thresholds, &c.Action, &c.ThrottleRPS); err != nil {
+	if err := sc.Scan(&c.App, &c.MonthlyEgressBytes, &c.MonthlyCostCeiling, &thresholds, &c.Action, &c.ThrottleRPS, &c.GuardMode); err != nil {
 		return c, err
 	}
 	if err := json.Unmarshal([]byte(thresholds), &c.Thresholds); err != nil {
@@ -23,7 +23,7 @@ func scanSpendCap(sc interface{ Scan(...any) error }) (spendcap.Cap, error) {
 	return c, nil
 }
 
-const spendCapColumns = `app_name, monthly_egress_bytes, monthly_cost_ceiling, thresholds, action, throttle_rps`
+const spendCapColumns = `app_name, monthly_egress_bytes, monthly_cost_ceiling, thresholds, action, throttle_rps, guard_mode`
 
 // ListSpendCaps returns every app spend cap.
 func (db *DB) ListSpendCaps(ctx context.Context) ([]spendcap.Cap, error) {
@@ -73,12 +73,12 @@ func (db *DB) SaveSpendCap(ctx context.Context, c spendcap.Cap, ev spendcap.Even
 	}
 	defer func() { _ = tx.Rollback() }()
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO app_spend_caps (app_name, monthly_egress_bytes, monthly_cost_ceiling, thresholds, action, throttle_rps, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO app_spend_caps (app_name, monthly_egress_bytes, monthly_cost_ceiling, thresholds, action, throttle_rps, guard_mode, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(app_name) DO UPDATE SET monthly_egress_bytes = excluded.monthly_egress_bytes,
 			monthly_cost_ceiling = excluded.monthly_cost_ceiling, thresholds = excluded.thresholds,
-			action = excluded.action, throttle_rps = excluded.throttle_rps, updated_at = excluded.updated_at`,
-		c.App, c.MonthlyEgressBytes, c.MonthlyCostCeiling, string(thresholds), c.Action, c.ThrottleRPS, now.UTC().Format(time.RFC3339))
+			action = excluded.action, throttle_rps = excluded.throttle_rps, guard_mode = excluded.guard_mode, updated_at = excluded.updated_at`,
+		c.App, c.MonthlyEgressBytes, c.MonthlyCostCeiling, string(thresholds), c.Action, c.ThrottleRPS, c.GuardMode, now.UTC().Format(time.RFC3339))
 	if err != nil {
 		return fmt.Errorf("store: save spend cap %q: %w", c.App, err)
 	}
@@ -207,4 +207,41 @@ func (db *DB) listAppCapEnforcements(ctx context.Context, period string) ([]spen
 		out = append(out, e)
 	}
 	return out, rows.Err()
+}
+
+// SaveSpendOverride records a root override and its history event together.
+func (db *DB) SaveSpendOverride(ctx context.Context, o spendcap.Override, ev spendcap.Event) (spendcap.Override, error) {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return o, fmt.Errorf("store: save spend override: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	res, err := tx.ExecContext(ctx, `INSERT INTO spend_guard_overrides (app_name, period, reason, actor, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)`,
+		o.App, o.Period, o.Reason, o.Actor, o.CreatedAt.UTC().Format(time.RFC3339), o.ExpiresAt.UTC().Format(time.RFC3339))
+	if err != nil {
+		return o, fmt.Errorf("store: save spend override %q: %w", o.App, err)
+	}
+	o.ID, _ = res.LastInsertId()
+	if err := insertSpendCapEvent(ctx, tx, ev); err != nil {
+		return o, fmt.Errorf("store: record spend override event %q: %w", o.App, err)
+	}
+	return o, tx.Commit()
+}
+
+// ActiveSpendOverride returns the latest unexpired override for an app.
+func (db *DB) ActiveSpendOverride(ctx context.Context, app string, now time.Time) (spendcap.Override, bool, error) {
+	var o spendcap.Override
+	var created, expires string
+	err := db.QueryRowContext(ctx, `SELECT id, app_name, period, reason, actor, created_at, expires_at FROM spend_guard_overrides
+		WHERE app_name = ? AND expires_at > ? ORDER BY expires_at DESC LIMIT 1`, app, now.UTC().Format(time.RFC3339)).
+		Scan(&o.ID, &o.App, &o.Period, &o.Reason, &o.Actor, &created, &expires)
+	if errors.Is(err, sql.ErrNoRows) {
+		return o, false, nil
+	}
+	if err != nil {
+		return o, false, fmt.Errorf("store: active spend override %q: %w", app, err)
+	}
+	o.CreatedAt, _ = time.Parse(time.RFC3339, created)
+	o.ExpiresAt, _ = time.Parse(time.RFC3339, expires)
+	return o, true, nil
 }

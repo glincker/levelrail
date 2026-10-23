@@ -10,6 +10,7 @@ export type WidgetType =
   | 'cost'
   | 'alert_status'
   | 'node_capacity'
+  | 'link'
 
 export type WidgetSize = 'S' | 'M' | 'L'
 export type TargetKind = 'app' | 'database' | 'node'
@@ -28,6 +29,7 @@ export interface DashboardWidget {
   target?: WidgetTarget
   metric?: string
   query?: string
+  url?: string
 }
 
 // Matches internal/dashboards.Doc, the exportable body of a dashboard.

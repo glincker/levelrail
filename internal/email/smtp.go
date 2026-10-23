@@ -64,7 +64,7 @@ func (s smtpSender) deliver(ctx context.Context, envelopeFrom, rcpt string, msg 
 		conn, err = dialer.DialContext(ctx, "tcp", s.cfg.Addr)
 	}
 	if err != nil {
-		return err
+		return preSend(err)
 	}
 	deadline := time.Now().Add(60 * time.Second)
 	if d, ok := ctx.Deadline(); ok && d.Before(deadline) {
@@ -75,7 +75,7 @@ func (s smtpSender) deliver(ctx context.Context, envelopeFrom, rcpt string, msg 
 	c, err := smtp.NewClient(conn, host)
 	if err != nil {
 		_ = conn.Close()
-		return err
+		return preSend(err)
 	}
 	defer func() { _ = c.Close() }()
 
@@ -84,10 +84,10 @@ func (s smtpSender) deliver(ctx context.Context, envelopeFrom, rcpt string, msg 
 		switch {
 		case offered:
 			if err := c.StartTLS(tlsCfg); err != nil {
-				return fmt.Errorf("starttls: %w", err)
+				return preSend(fmt.Errorf("starttls: %w", err))
 			}
 		case mode == TLSStartTLS:
-			return errors.New("server does not offer STARTTLS")
+			return preSend(errors.New("server does not offer STARTTLS"))
 		}
 	}
 	if s.cfg.Username != "" {
@@ -96,18 +96,18 @@ func (s smtpSender) deliver(ctx context.Context, envelopeFrom, rcpt string, msg 
 			auth = plainAuthAnyTransport{user: s.cfg.Username, pass: s.cfg.Password}
 		}
 		if err := c.Auth(auth); err != nil {
-			return err
+			return preSend(err)
 		}
 	}
 	if err := c.Mail(envelopeFrom); err != nil {
-		return err
+		return preSend(err)
 	}
 	if err := c.Rcpt(rcpt); err != nil {
-		return err
+		return preSend(err)
 	}
 	w, err := c.Data()
 	if err != nil {
-		return err
+		return preSend(err)
 	}
 	if _, err := w.Write(msg); err != nil {
 		return err

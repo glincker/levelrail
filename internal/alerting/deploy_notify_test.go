@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/GLINCKER/levelrail/internal/email"
 )
@@ -653,4 +654,57 @@ func TestDeployDispatcher_Dispatch_TargetSendFailure_DoesNotPanic(t *testing.T) 
 	// "no notify_url configured" check): Dispatch must log and continue,
 	// not panic or propagate, matching its own doc comment.
 	dispatcher.Dispatch(ctx, "service:web", DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+}
+
+func TestClampReleaseNotes(t *testing.T) {
+	long := strings.Repeat("é", 100)
+	got := ClampReleaseNotes(long, 50)
+	if len(got) > 50 || !strings.HasSuffix(got, "(truncated)") || !utf8.ValidString(got) {
+		t.Fatalf("clamp = %q (%d bytes)", got, len(got))
+	}
+	if ClampReleaseNotes("short", 50) != "short" {
+		t.Fatal("short notes must pass through")
+	}
+}
+
+func TestDeployText_ReleaseNotesByChannel(t *testing.T) {
+	ev := DeployOutcome{AppName: "web", Image: "x:1", Succeeded: true, ReleaseNotes: "l1\nl2\nl3\nl4\nl5"}
+	if got := deployText(NotifySlack, ev); !strings.Contains(got, "l5") {
+		t.Errorf("slack should carry full notes: %q", got)
+	}
+	if got := deployText(NotifyDiscord, ev); !strings.Contains(got, "l3") || strings.Contains(got, "l4") {
+		t.Errorf("discord should carry first lines only: %q", got)
+	}
+	if got := deployText(NotifyPagerDuty, ev); strings.Contains(got, "l1") {
+		t.Errorf("pagerduty must stay short: %q", got)
+	}
+	ev.Succeeded = false
+	if got := deployText(NotifySlack, ev); strings.Contains(got, "l1") {
+		t.Errorf("failed deploys carry no notes: %q", got)
+	}
+}
+
+func TestDispatch_GenericPayloadReleaseNotes(t *testing.T) {
+	t.Setenv(EnvReleaseNotesMaxBytes, "40")
+	var body map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&body)
+	}))
+	defer srv.Close()
+	db := newTestDeployNotifyDB(t)
+	ctx := context.Background()
+	if err := db.SaveDeployTarget(ctx, DeployTarget{ID: "dnt_1", ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyGeneric, Enabled: true}); err != nil {
+		t.Fatal(err)
+	}
+	d := NewDeployDispatcher(db, srv.Client(), nil, nil, nil)
+	d.Dispatch(ctx, "service:web", DeployOutcome{AppName: "web", Image: "x", Succeeded: true, ReleaseNotes: strings.Repeat("a", 200)})
+	notes, _ := body["release_notes"].(string)
+	if notes == "" || len(notes) > 40 || !strings.HasSuffix(notes, "(truncated)") {
+		t.Fatalf("release_notes = %q", notes)
+	}
+	body = nil
+	d.Dispatch(ctx, "service:web", DeployOutcome{AppName: "web", Image: "x", Succeeded: true})
+	if _, ok := body["release_notes"]; ok {
+		t.Fatal("release_notes must be omitted when empty")
+	}
 }

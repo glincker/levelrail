@@ -219,6 +219,7 @@ func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.Des
 	if rt.deployNotifier != nil {
 		rt.deployNotifier.Dispatch(ctx, resourceIDForApp(existing.Name), alerting.DeployOutcome{
 			AppName: existing.Name, Image: updated.Image, Succeeded: true,
+			ReleaseNotes: rt.releaseNotesForDeploy(ctx, existing.Name, ""),
 		})
 	}
 	return updated, nil
@@ -456,6 +457,7 @@ func (rt *Router) recordResolvedDeployAttempt(ctx context.Context, svc store.Des
 	if rt.deployNotifier != nil {
 		rt.deployNotifier.Dispatch(ctx, resourceIDForApp(serviceName), alerting.DeployOutcome{
 			AppName: serviceName, Image: image, Succeeded: true,
+			ReleaseNotes: rt.releaseNotesForDeploy(ctx, serviceName, source),
 		})
 	}
 }

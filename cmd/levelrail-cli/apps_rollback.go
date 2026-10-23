@@ -124,6 +124,7 @@ Flags:
   --image string          older, already-built image reference to roll back to (default: the previous successful deploy)
   --confirm                  confirm rolling back into a protected environment, skipping the interactive prompt
   --diff                     show what this rollback would change against the last successful deploy, then exit without rolling back
+  --idempotency-key string   override the derived Idempotency-Key (default: from app, image and CI run id)
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

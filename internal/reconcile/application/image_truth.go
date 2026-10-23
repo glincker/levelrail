@@ -71,6 +71,9 @@ func (c *Controller) expectedImageID(ctx context.Context, desired *store.Desired
 	if docker.ImageDigestOf(desired.Image) == "" {
 		return "", nil
 	}
+	if id, ok := c.imageIDs.get(c.imageNode, desired.Image); ok {
+		return id, nil
+	}
 	inspector, ok := c.runtime.(docker.ImageInspector)
 	if !ok {
 		return "", nil
@@ -79,6 +82,7 @@ func (c *Controller) expectedImageID(ctx context.Context, desired *store.Desired
 	if err != nil {
 		return "", fmt.Errorf("inspect desired image: %w", err)
 	}
+	c.imageIDs.put(c.imageNode, desired.Image, id)
 	return id, nil
 }
 

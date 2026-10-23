@@ -1,14 +1,11 @@
 package models
 
 import (
-	"errors"
 	"io"
 	"net"
 	"net/http"
 	"time"
 )
-
-var errStreamIdle = errors.New("engine stream idle")
 
 func newGatewayTransport(l GatewayLimits) *http.Transport {
 	return &http.Transport{

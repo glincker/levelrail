@@ -199,6 +199,9 @@ func (svc *Service) validateBuild(name string) error {
 	if len(svc.Build.Args) > 0 && svc.Build.Type != BuildDockerfile && !svc.Build.RunsStaticBuild() {
 		return fmt.Errorf("spec: service %q: build.args is not meaningful for build.type %q", name, svc.Build.Type)
 	}
+	if err := svc.Build.validateBuildSecrets(name); err != nil {
+		return err
+	}
 	if svc.Build.BaseDirectory == "" {
 		return nil
 	}

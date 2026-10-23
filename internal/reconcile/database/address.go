@@ -124,7 +124,7 @@ func SupportsTLS(engine string) bool {
 
 // ServerTLSEngine reports whether the server side of engine can terminate TLS here. Unlike SupportsTLS, MySQL and MariaDB clients opt in themselves, so no URL changes.
 func ServerTLSEngine(engine string) bool {
-	return SupportsTLS(engine) || engine == store.EngineMySQL || engine == store.EngineMariaDB
+	return SupportsTLS(engine) || engine == store.EngineMySQL || engine == store.EngineMariaDB || engine == store.EngineMongoDB
 }
 
 // TLSContainerPort returns the port engine's image listens on once TLS

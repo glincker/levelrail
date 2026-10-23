@@ -12,18 +12,23 @@ import {
   type AppImportItem,
   type AppImportSession,
 } from '../queries/appImport'
+import { MigrationLiveProgress } from './MigrationLiveProgress'
 import { isStaged, stateVariant } from './appImportFormat'
 
 function ItemRow({
   item,
   canVerify,
   busy,
+  interrupted,
   onVerify,
+  onRetryStage,
 }: {
   item: AppImportItem
   canVerify: boolean
   busy: boolean
+  interrupted: boolean
   onVerify: () => void
+  onRetryStage: () => void
 }) {
   const { t } = useTranslation('migration')
   return (
@@ -57,6 +62,16 @@ function ItemRow({
               </Link>
             </>
           ) : null}
+          {!canVerify && item.state === 'stage-failed' ? (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={onRetryStage}
+            >
+              {t('appImport.run.retry')}
+            </Button>
+          ) : null}
           {canVerify && isStaged(item.state) && item.state !== 'routed' ? (
             <Button
               size="sm"
@@ -64,13 +79,18 @@ function ItemRow({
               disabled={busy}
               onClick={onVerify}
             >
-              {item.state === 'verify-failed'
+              {item.state === 'verify-failed' || interrupted
                 ? t('appImport.run.verifyAgain')
                 : t('appImport.run.verifyOne')}
             </Button>
           ) : null}
         </div>
       </div>
+      {interrupted ? (
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t('appImport.run.interrupted')}
+        </p>
+      ) : null}
       {item.reason ? (
         <p className="mt-1 break-words text-xs text-muted-foreground">
           {item.reason}
@@ -102,11 +122,7 @@ export function AppImportRun({
     (i) => i.state === 'verified' || i.state === 'routed',
   ).length
   const busy =
-    session.running ||
-    stage.isPending ||
-    verify.isPending ||
-    rollback.isPending ||
-    (session.states.building ?? 0) > 0
+    session.running || stage.isPending || verify.isPending || rollback.isPending
   const error = stage.error ?? verify.error ?? rollback.error
 
   return (
@@ -193,6 +209,11 @@ export function AppImportRun({
           )
         ) : null}
       </div>
+      <MigrationLiveProgress
+        session={session}
+        verifyView={verifyView}
+        active={busy}
+      />
       <p className="text-xs text-muted-foreground">
         {verifyView
           ? t('appImport.run.verifyNote')
@@ -212,8 +233,18 @@ export function AppImportRun({
             item={it}
             canVerify={verifyView}
             busy={busy}
+            interrupted={it.state === 'building' && !session.running}
             onVerify={() =>
               verify.mutate({ id: session.id, items: [it.source_id] })
+            }
+            onRetryStage={() =>
+              stage.mutate(
+                { id: session.id, items: [it.source_id] },
+                {
+                  onError: (e) =>
+                    toast.add({ title: e.message, type: 'error' }),
+                },
+              )
             }
           />
         ))}

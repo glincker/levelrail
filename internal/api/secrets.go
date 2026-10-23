@@ -16,6 +16,9 @@ import (
 type setSecretRequest struct {
 	Value           string `json:"value"`
 	OverwriteLocked bool   `json:"overwrite_locked"`
+	// BuildTime, when set, enables or disables the secret for build.secrets
+	// after the value is saved. Nil leaves the stored flag unchanged.
+	BuildTime *bool `json:"build_time,omitempty"`
 }
 
 // handleSetSecret handles PUT /api/v1/apps/{name}/secrets/{key}. It sets
@@ -77,6 +80,11 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.BuildTime != nil {
+		if !rt.applySecretBuildTime(w, r, name, key, *req.BuildTime) {
+			return
+		}
+	}
 	if _, err := rt.declareSecretEnv(r.Context(), name, key, true); err != nil {
 		rt.logger.Error("api: set secret: declare failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("key", key))
 		writeError(w, http.StatusInternalServerError, "the secret value was saved but declaring the key failed, retry the request")
@@ -170,6 +178,8 @@ func (rt *Router) handleDeleteSecret(w http.ResponseWriter, r *http.Request) {
 type secretKeyResource struct {
 	Key    string `json:"key"`
 	Locked bool   `json:"locked"`
+	// BuildTime reports whether build.secrets may mount this secret.
+	BuildTime bool `json:"build_time"`
 	// UpdatedAt is when this key's value was last set or rotated
 	// (RFC3339), and Stale reports whether that's older than the
 	// effective secret rotation warning threshold
@@ -214,6 +224,7 @@ func (rt *Router) handleListSecrets(w http.ResponseWriter, r *http.Request) {
 		out[i] = secretKeyResource{
 			Key:       k.Key,
 			Locked:    k.Locked,
+			BuildTime: k.BuildTime,
 			UpdatedAt: k.UpdatedAt.UTC().Format(time.RFC3339),
 			Stale:     rt.secretIsStale(k.UpdatedAt),
 		}
@@ -263,4 +274,58 @@ func (rt *Router) handleSetSecretLock(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type setSecretBuildTimeRequest struct {
+	BuildTime bool `json:"build_time"`
+}
+
+// handleSetSecretBuildTime handles POST /api/v1/apps/{name}/secrets/{key}/build-time.
+// It opts one secret in or out of build.secrets; the default is out.
+func (rt *Router) handleSetSecretBuildTime(w http.ResponseWriter, r *http.Request) {
+	if rt.secrets == nil {
+		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
+		return
+	}
+	name := r.PathValue("name")
+	key := r.PathValue("key")
+
+	_, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	}
+	if err != nil {
+		rt.internalError(w, "api: set secret build_time: load app failed", err, slog.String("name", name))
+		return
+	}
+	var req setSecretBuildTimeRequest
+	if !decodeReq(w, r, &req) {
+		return
+	}
+	if !rt.applySecretBuildTime(w, r, name, key, req.BuildTime) {
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// applySecretBuildTime stores the flag and records an app event, so the
+// change shows beside the request's audit_log row. It writes the error
+// response and returns false on failure.
+func (rt *Router) applySecretBuildTime(w http.ResponseWriter, r *http.Request, name, key string, enabled bool) bool {
+	err := rt.secrets.SetBuildEnabled(r.Context(), name, key, enabled)
+	if errors.Is(err, store.ErrSecretValueNotFound) {
+		writeError(w, http.StatusNotFound, "no secret value set for this key yet")
+		return false
+	}
+	if err != nil {
+		rt.internalError(w, "api: set secret build_time failed", err, slog.String("name", name), slog.String("key", key))
+		return false
+	}
+	title := "Secret disabled for build use: " + key
+	if enabled {
+		title = "Secret enabled for build use: " + key
+	}
+	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventSecretChange, Keys: []string{key}, Title: title})
+	return true
 }

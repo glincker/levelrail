@@ -3,6 +3,7 @@ import { PageBanner } from '../PageBanner'
 import { LazyDeploymentsDiagram } from '../banners/LazyDiagrams'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useEnvironmentScope } from '../../lib/environmentScope'
+import { getProjectScope } from '../../lib/projectScope'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
   ArrowUpIcon,
@@ -116,7 +117,7 @@ export function DeploymentsPage({
   }
   const stream = useDeploymentsStream(
     filters,
-    deploymentKeys.list(filters),
+    deploymentKeys.list(filters, getProjectScope()),
     isAtTop,
   )
 

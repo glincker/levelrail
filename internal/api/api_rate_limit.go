@@ -3,6 +3,7 @@ package api
 import (
 	"cmp"
 	"fmt"
+	"math"
 	"net/http"
 	"slices"
 	"strconv"
@@ -193,6 +194,38 @@ func (l *apiRateLimit) allow(ability, key string) (ok bool, retryAfter time.Dura
 		return l.reads.allow(key)
 	}
 	return l.writes.allow(key)
+}
+
+// admit is allow plus X-RateLimit-* headers on success, read from the same bucket so they never disagree with enforcement.
+func (l *apiRateLimit) admit(w http.ResponseWriter, ability, key string) (ok bool, retryAfter time.Duration) {
+	lim := l.writes
+	if apiRateLimitTier(ability) == "read" {
+		lim = l.reads
+	}
+	ok, retryAfter = lim.allow(key)
+	if ok {
+		lim.setRateLimitHeaders(w, key)
+	}
+	return ok, retryAfter
+}
+
+// setRateLimitHeaders reports the budget, tokens left and seconds until the bucket is full again (Reset is a delta, not an epoch).
+func (l *apiRateLimiter) setRateLimitHeaders(w http.ResponseWriter, key string) {
+	if l.ratePerMinute <= 0 {
+		return
+	}
+	l.mu.Lock()
+	tokens := l.ratePerMinute
+	if b := l.refilled(key, l.now()); b != nil {
+		tokens = b.tokens
+	}
+	l.mu.Unlock()
+	remaining := max(int(tokens), 0)
+	reset := int(math.Ceil((l.ratePerMinute - tokens) / l.ratePerMinute * l.window.Seconds()))
+	h := w.Header()
+	h.Set("X-RateLimit-Limit", strconv.Itoa(int(l.ratePerMinute)))
+	h.Set("X-RateLimit-Remaining", strconv.Itoa(remaining))
+	h.Set("X-RateLimit-Reset", strconv.Itoa(max(reset, 0)))
 }
 
 // writeRateLimited writes a 429 with a Retry-After header and the standard JSON error body.

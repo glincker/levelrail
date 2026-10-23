@@ -90,3 +90,15 @@ func TestWatcher_LatencyRegressionIsSoft(t *testing.T) {
 		})
 	}
 }
+
+func TestWatcher_HealthyLatencyNeverNoticedWithoutSoftTicks(t *testing.T) {
+	f := newWatchFixture(t, true)
+	f.watcher.Defaults.WatchSoftTicks = 0
+	m := latencyMetrics(f.now.Add(-time.Minute), 100)
+	m.after = m.before
+	f.watcher.Metrics = m
+	f.watcher.Tick(context.Background())
+	if hasEvent(f.events(t), deploysafety.PhaseWatch, deploysafety.StatusInfo, deploysafety.ReasonWatchLatency) {
+		t.Errorf("events = %+v, want no latency notice without a regression", f.events(t))
+	}
+}

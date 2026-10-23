@@ -22,6 +22,7 @@ apps_deploy.go runAppsDeployOrRollback --commit
 apps_deploy.go runAppsDeployOrRollback --confirm
 apps_deploy.go runAppsDeployOrRollback --diff
 apps_deploy.go runAppsDeployOrRollback --from-cache
+apps_deploy.go runAppsDeployOrRollback --idempotency-key
 apps_deploy.go runAppsDeployOrRollback --image
 apps_deploy.go runAppsDeployOrRollback --latest
 apps_deploy_source.go runAppsGitSourceCommits --branch

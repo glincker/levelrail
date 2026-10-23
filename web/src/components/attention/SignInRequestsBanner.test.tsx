@@ -6,10 +6,17 @@ import { I18nextProvider, initReactI18next } from 'react-i18next'
 import signInEn from '../../locales/en/signIn.json'
 import { SignInRequestsBanner } from './SignInRequestsBanner'
 
+let mockPath = '/'
+
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => (
     <a href="/security">{children}</a>
   ),
+  useRouterState: ({
+    select,
+  }: {
+    select: (s: { location: { pathname: string } }) => string
+  }) => select({ location: { pathname: mockPath } }),
 }))
 
 const testI18n = i18next.createInstance()
@@ -87,6 +94,7 @@ const waiting = {
 }
 
 afterEach(() => {
+  mockPath = '/'
   vi.unstubAllGlobals()
 })
 
@@ -94,6 +102,16 @@ describe('SignInRequestsBanner', () => {
   it('renders nothing when no sign-in is waiting', async () => {
     const calls = stubFetch({
       'GET /api/v1/auth/sign-in-requests': { codes: [], approvals: [] },
+    })
+    const { container } = renderBanner()
+    await waitFor(() => expect(calls.length).toBeGreaterThan(0))
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('hides on pages that already show the sign-in card', async () => {
+    mockPath = '/approve-sign-in'
+    const calls = stubFetch({
+      'GET /api/v1/auth/sign-in-requests': waiting,
     })
     const { container } = renderBanner()
     await waitFor(() => expect(calls.length).toBeGreaterThan(0))
@@ -140,6 +158,40 @@ describe('SignInRequestsBanner', () => {
     const key = 'POST /api/v1/auth/login-approvals/la_1/approve'
     await waitFor(() => expect(calls).toContain(key))
     expect(JSON.parse(bodies[key] ?? '{}')).toEqual({ match: 42 })
+  })
+
+  it('offers the password only for a sign-in from this computer', async () => {
+    stubFetch({ 'GET /api/v1/auth/sign-in-requests': waiting })
+    renderBanner()
+    fireEvent.click(await screen.findByRole('button', { name: 'Approve' }))
+    expect(screen.queryByText('No code? Approve with your password')).toBeNull()
+  })
+
+  it('approves with the password and shows the code recommendation', async () => {
+    const local = {
+      codes: [],
+      approvals: [{ ...waiting.approvals[0], requester_ip: '127.0.0.1' }],
+    }
+    const bodies: Record<string, string> = {}
+    const calls = stubFetch(
+      { 'GET /api/v1/auth/sign-in-requests': local },
+      bodies,
+    )
+    renderBanner()
+    fireEvent.click(await screen.findByRole('button', { name: 'Approve' }))
+    fireEvent.click(screen.getByText('No code? Approve with your password'))
+    expect(screen.getByText(/A code is recommended/)).toBeInTheDocument()
+    const approve = screen.getByRole('button', { name: 'Approve' })
+    expect(approve).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Your account password'), {
+      target: { value: 'hunter2-long-enough' },
+    })
+    fireEvent.click(approve)
+    const key = 'POST /api/v1/auth/login-approvals/la_1/approve'
+    await waitFor(() => expect(calls).toContain(key))
+    expect(JSON.parse(bodies[key] ?? '{}')).toEqual({
+      step_up: { method: 'password', password: 'hunter2-long-enough' },
+    })
   })
 })
 

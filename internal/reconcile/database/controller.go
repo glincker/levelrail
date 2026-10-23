@@ -496,7 +496,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 			"MYSQL_USER":          c.mysqlCreds.Username,
 			"MYSQL_PASSWORD":      c.mysqlCreds.Password,
 		}
-		command := mysqlCommand(c.effectiveSlowQueryThresholdMs(), c.tls)
+		command := mysqlCommand(c.effectiveSlowQueryThresholdMs(), c.tls, desired.PITREnabled)
 		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, c.tls)
 
 	case store.EngineMongoDB:
@@ -509,7 +509,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 			"MONGO_INITDB_ROOT_USERNAME": c.mongoCreds.Username,
 			"MONGO_INITDB_ROOT_PASSWORD": c.mongoCreds.Password,
 		}
-		return c.reconcileEngine(ctx, desired, env, nil, mongoDataPath, mongoContainerPort, nil)
+		return c.reconcileEngine(ctx, desired, env, mongoCommand(c.tls), mongoDataPath, mongoContainerPort, c.tls)
 
 	case store.EngineMariaDB:
 		if c.mariadbCreds == nil {
@@ -528,7 +528,7 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 			"MARIADB_PASSWORD":      c.mariadbCreds.Password,
 		}
 		// Same data path/port/slow-query flags as mysql, MariaDB is a compatible fork.
-		command := mysqlCommand(c.effectiveSlowQueryThresholdMs(), c.tls)
+		command := mysqlCommand(c.effectiveSlowQueryThresholdMs(), c.tls, desired.PITREnabled)
 		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, c.tls)
 
 	case store.EngineKeyDB:
@@ -622,12 +622,11 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	image := ImageRef(desired.Engine, desired.Version)
 	target := containerName(c.dbName)
 	volName := dataVolumeName(c.dbName)
-	// pitrActive gates every PITR-specific step below: only Postgres
-	// implements it (postgresCommand/postgresWALArchivePath), so a
-	// non-Postgres database with PITREnabled somehow set (never possible
-	// through internal/api's own enable handler, which refuses any other
-	// engine) still reconciles exactly as it always has.
-	pitrActive := desired.Engine == store.EnginePostgres && desired.PITREnabled
+	// pitrActive gates every PITR-specific step below. Only Postgres (WAL) and
+	// MySQL or MariaDB (binlog) implement it; any other engine with the flag
+	// set still reconciles as it always has.
+	pitrActive := SupportsPITR(desired.Engine) && desired.PITREnabled
+	binlogActive := pitrActive && isMySQLFamily(desired.Engine)
 
 	c.prov.Start(dbprovision.StepDockerCheck, "checking Docker")
 	state, err := c.runtime.InspectByName(ctx, target)
@@ -656,6 +655,13 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	if pitrActive {
 		if err := c.runtime.EnsureVolume(ctx, walArchiveVolumeName(c.dbName)); err != nil {
 			return notReady(reasonVolumeFailed, err), fmt.Errorf("database/%s: ensure wal archive volume: %w", c.dbName, err)
+		}
+	}
+	// mysqld aborts at startup if it cannot open its binlog, so the volume must be
+	// owned by the server user before the container first mounts it.
+	if binlogActive && (state == nil || !pitrEnabledFromLabel(state.Labels)) {
+		if err := c.provisionBinlogVolume(ctx, walArchiveVolumeName(c.dbName)); err != nil {
+			return notReady(reasonVolumeFailed, err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
 	}
 
@@ -687,8 +693,12 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		})
 	}
 	if pitrActive {
+		archivePath := postgresWALArchivePath
+		if binlogActive {
+			archivePath = MySQLBinlogPath
+		}
 		spec.Volumes = append(spec.Volumes, docker.VolumeMount{
-			Name: walArchiveVolumeName(c.dbName), ContainerPath: postgresWALArchivePath,
+			Name: walArchiveVolumeName(c.dbName), ContainerPath: archivePath,
 		})
 	}
 	if c.meshDNSAddr != "" {
@@ -843,7 +853,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	c.prov.Start(dbprovision.StepApplySettings, settingsSummary(desired))
 	c.prov.Done(dbprovision.StepApplySettings, settingsSummary(desired))
 
-	if pitrActive {
+	if pitrActive && !binlogActive {
 		if err := c.ensureWALArchiveWritable(ctx, target); err != nil {
 			return notReady("PITRVolumePermissionsFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
@@ -1028,7 +1038,7 @@ const MySQLSlowQueryLogPath = "/var/lib/mysql/slow-query.log"
 // slow query log at MySQLSlowQueryLogPath; internal/slowquery's
 // ParseMySQL reads it back out. long-query-time is MySQL's own flag
 // name and takes seconds as a float, so thresholdMs is converted here.
-func mysqlCommand(thresholdMs int, tls *TLSMaterial) []string {
+func mysqlCommand(thresholdMs int, tls *TLSMaterial, pitrEnabled bool) []string {
 	longQueryTimeSec := strconv.FormatFloat(float64(thresholdMs)/1000, 'f', -1, 64)
 	command := []string{
 		"--slow-query-log=1",
@@ -1039,7 +1049,25 @@ func mysqlCommand(thresholdMs int, tls *TLSMaterial) []string {
 	if tls != nil {
 		command = append(command, "--ssl-cert="+certsMountPath+"/"+tlsCertFile, "--ssl-key="+certsMountPath+"/"+tlsKeyFile)
 	}
+	if pitrEnabled {
+		command = append(command, mysqlBinlogFlags()...)
+	}
 	return command
+}
+
+// mongoCommand serves TLS next to plaintext (preferTLS) so tools that connect
+// without it, including the backup commands, keep working.
+func mongoCommand(tls *TLSMaterial) []string {
+	if tls == nil {
+		return nil
+	}
+	// mongod refuses TLS without a chain of trust; the self-signed certificate is its own CA.
+	return []string{
+		"--tlsMode", "preferTLS",
+		"--tlsCertificateKeyFile", certsMountPath + "/" + tlsPEMFile,
+		"--tlsCAFile", certsMountPath + "/" + tlsCertFile,
+		"--tlsAllowConnectionsWithoutCertificates",
+	}
 }
 
 // redisCommandAndPort returns Redis's own container command and the port

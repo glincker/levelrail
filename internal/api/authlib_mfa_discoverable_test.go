@@ -86,8 +86,8 @@ func TestDiscoverablePasskeyLogin(t *testing.T) {
 				return
 			}
 			if failureBody == "" {
-				failureBody = rec.Body.String()
-			} else if rec.Body.String() != failureBody {
+				failureBody = withoutRequestID(rec.Body.String())
+			} else if withoutRequestID(rec.Body.String()) != failureBody {
 				t.Fatalf("failure body %q differs from %q, which leaks the reason", rec.Body.String(), failureBody)
 			}
 		})

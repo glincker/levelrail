@@ -1,8 +1,7 @@
 import { cn } from '@/lib/utils'
 import { TONE } from '@/components/kit/tone'
 import { useEffect, useState } from 'react'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
@@ -33,12 +32,14 @@ import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
 import { useSystemStatusOptional } from '../queries/systemStatus'
 import { useFormDraft } from '../hooks/useFormDraft'
+import { useAppForm } from '../hooks/useAppForm'
 import {
   buildCreateResourceSuccessHandler,
   resolveSubmittedNodeId,
   resolveSubmittedProjectId,
 } from '../lib/createResourcePlacement'
 import { CreateFormShell } from './CreateFormShell'
+import { getProjectScope } from '../lib/projectScope'
 import { PostgresFlavorField } from './PostgresFlavorField'
 import { withFlavor, type PostgresFlavor } from '@/lib/databaseCatalog'
 import {
@@ -191,7 +192,7 @@ export function CreateDatabaseFields({
     engine: engine ?? engines[0]?.id ?? '',
     version: '',
     node: LOCAL_NODE_VALUE,
-    project: NO_PROJECT_VALUE,
+    project: getProjectScope() || NO_PROJECT_VALUE,
   }
   const {
     control,
@@ -202,10 +203,10 @@ export function CreateDatabaseFields({
     watch,
     setValue,
     getValues,
-  } = useForm<CreateDatabaseFormInput, unknown, CreateDatabaseFormOutput>({
-    resolver: zodResolver(createDatabaseSchema),
-    defaultValues,
-  })
+  } = useAppForm<CreateDatabaseFormInput, CreateDatabaseFormOutput>(
+    createDatabaseSchema,
+    { defaultValues },
+  )
   const watchedEngine = watch('engine')
   const watchedVersion = watch('version')
 

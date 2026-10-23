@@ -9,6 +9,7 @@ import {
   TerminalWindowIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 import { formatAbsoluteTime, formatRelativeTime } from '../../lib/relativeTime'
 import {
   formatCountdown,
@@ -30,10 +31,12 @@ const DEVICE_ICONS = {
 function Fact({
   icon,
   label,
+  inline,
   children,
 }: {
   icon: ReactNode
   label: string
+  inline: boolean
   children: ReactNode
 }) {
   return (
@@ -42,8 +45,15 @@ function Fact({
         {icon}
       </span>
       <div className="min-w-0">
-        <dt className="text-xs text-muted-foreground">{label}</dt>
-        <dd className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium wrap-anywhere">
+        <dt className={inline ? 'sr-only' : 'text-xs text-muted-foreground'}>
+          {label}
+        </dt>
+        <dd
+          className={cn(
+            'flex flex-wrap items-center gap-x-2 gap-y-1 font-medium wrap-anywhere',
+            inline ? 'text-xs' : 'text-sm',
+          )}
+        >
           {children}
         </dd>
       </div>
@@ -69,17 +79,19 @@ export function SignInRequestFacts({
     <dl
       className={
         compact
-          ? 'grid grid-cols-1 gap-2'
-          : 'grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2'
+          ? 'flex flex-wrap items-center gap-x-4 gap-y-1'
+          : 'grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg bg-muted/60 px-3 py-2 shadow-inner ring-1 ring-inset ring-foreground/5 sm:grid-cols-4'
       }
     >
       <Fact
+        inline={compact}
         icon={<DeviceIcon className="size-4" />}
         label={t('request.factDevice')}
       >
         {deviceTitle(request.user_agent, t)}
       </Fact>
       <Fact
+        inline={compact}
         icon={<MapPinIcon className="size-4" />}
         label={t('request.factWhere')}
       >
@@ -89,6 +101,7 @@ export function SignInRequestFacts({
         )}
       </Fact>
       <Fact
+        inline={compact}
         icon={<ClockCountdownIcon className="size-4" />}
         label={t('request.factWhen')}
       >
@@ -101,6 +114,7 @@ export function SignInRequestFacts({
       </Fact>
       {compact ? null : (
         <Fact
+          inline={compact}
           icon={<ClockCountdownIcon className="size-4" />}
           label={t('request.factExpires')}
         >

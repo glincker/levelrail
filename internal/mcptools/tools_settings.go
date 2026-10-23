@@ -2,7 +2,10 @@ package mcptools
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -26,12 +29,46 @@ func registerSettingsTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_email_settings",
-		Description: "Outbound email settings: backend and non-secret fields. Secrets return only as *_set booleans.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.EmailSettingsResource, error) {
+		Description: "Outbound email settings: backend and non-secret fields, plus the configured providers (one primary, at most one backup) with role, enabled, last_ok_at and credential_set. Secrets return only as *_set booleans.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, emailSettingsWithProviders, error) {
 		settings, err := client.GetEmailSettings(ctx)
 		if err != nil {
-			return nil, apiclient.EmailSettingsResource{}, fmt.Errorf("get email settings: %w", err)
+			return nil, emailSettingsWithProviders{}, fmt.Errorf("get email settings: %w", err)
 		}
-		return nil, settings, nil
+		out := emailSettingsWithProviders{EmailSettingsResource: settings, Providers: []emailProviderSummary{}}
+		list, err := client.ListEmailProviders(ctx)
+		var apiErr *apiclient.APIError
+		switch {
+		case errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound:
+			// A control plane older than email providers has no list endpoint; the settings alone are the answer.
+		case err != nil:
+			return nil, emailSettingsWithProviders{}, fmt.Errorf("list email providers: %w", err)
+		}
+		for _, p := range list.Providers {
+			out.Providers = append(out.Providers, emailProviderSummary{
+				ID: p.ID, Role: p.Role, Name: p.Name, Backend: p.Backend,
+				Enabled: p.Enabled == nil || *p.Enabled, CredentialSet: p.SecretSet(),
+				LastOKAt: p.LastOKAt, LastErrorKind: p.LastErrorKind,
+			})
+		}
+		return nil, out, nil
 	})
+}
+
+// emailSettingsWithProviders is get_email_settings' result: the legacy settings shape plus the provider list.
+type emailSettingsWithProviders struct {
+	apiclient.EmailSettingsResource
+	Providers []emailProviderSummary `json:"providers"`
+}
+
+// emailProviderSummary carries no credential field at all, only whether one is stored.
+type emailProviderSummary struct {
+	ID            string     `json:"id"`
+	Role          string     `json:"role"`
+	Name          string     `json:"name,omitempty"`
+	Backend       string     `json:"backend"`
+	Enabled       bool       `json:"enabled"`
+	CredentialSet bool       `json:"credential_set"`
+	LastOKAt      *time.Time `json:"last_ok_at,omitempty"`
+	LastErrorKind string     `json:"last_error_kind,omitempty"`
 }

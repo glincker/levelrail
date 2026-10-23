@@ -281,6 +281,9 @@ type Build struct {
 	// --build-arg equivalents to BuildKit. Only meaningful for
 	// build.type: dockerfile.
 	Args map[string]string `yaml:"args,omitempty"`
+	// Secrets names app secrets mounted as BuildKit secrets (id = name)
+	// for RUN --mount=type=secret. Only meaningful for dockerfile.
+	Secrets []string `yaml:"secrets,omitempty"`
 }
 
 // Health holds a service's readiness and liveness probe configuration.

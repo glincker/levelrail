@@ -16,6 +16,7 @@ export type ExperimentalFeature =
   | 'saml-scim'
   | 'plugins'
   | 'git-push'
+  | 'canvas'
 
 export const BETA_FEATURES_PATH = '/settings/beta-features'
 

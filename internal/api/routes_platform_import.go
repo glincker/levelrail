@@ -11,6 +11,8 @@ func (rt *Router) registerPlatformImportRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/imports/platform/databases", rt.requireAbility(AbilityRead, rt.handleListDatabaseDataCopies))
 	mux.HandleFunc("GET /api/v1/imports/platform/databases/{name}", rt.requireAbility(AbilityRead, rt.handleGetDatabaseDataCopy))
 	mux.HandleFunc("POST /api/v1/imports/platform/databases/{name}/copy", rt.requireAbility(AbilityWriteSensitive, rt.handleCopyDatabaseData))
+	mux.HandleFunc("POST /api/v1/migrations/verify", rt.requireAbility(AbilityRoot, rt.handleMigrationVerify))
+	mux.HandleFunc("GET /api/v1/migrations/verify/latest", rt.requireAbility(AbilityRead, rt.handleLatestMigrationVerify))
 	mux.HandleFunc("POST /api/v1/migration/plan", rt.requireAbility(AbilityWriteSensitive, rt.handleMigrationPlan))
 	mux.HandleFunc("POST /api/v1/migration/import", rt.requireAbility(AbilityWriteSensitive, rt.handleMigrationImport))
 	mux.HandleFunc("GET /api/v1/migration/checklists", rt.requireAbility(AbilityRead, rt.handleListMigrationChecklists))

@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select'
 import {
   isDashboardMetric,
+  isHttpUrl,
   metricsFor,
   newWidgetId,
   WIDGET_TARGETS,
@@ -68,15 +69,24 @@ export function AddWidgetDialog({
   const [name, setName] = useState('')
   const [metric, setMetric] = useState('cpu_percent')
   const [query, setQuery] = useState('')
+  const [linkTitle, setLinkTitle] = useState('')
+  const [linkUrl, setLinkUrl] = useState('')
   const names = useTargetNames(kind)
   const needsTarget = kind !== undefined
-  const canAdd = !needsTarget || name !== ''
+  const isLink = type === 'link'
+  const canAdd = isLink
+    ? linkTitle.trim() !== '' && isHttpUrl(linkUrl.trim())
+    : !needsTarget || name !== ''
 
   function submit() {
     const w: DashboardWidget = {
       id: newWidgetId(existing, type),
       type,
-      size: type === 'log_tail' ? 'L' : 'M',
+      size: type === 'log_tail' ? 'L' : isLink ? 'S' : 'M',
+    }
+    if (isLink) {
+      w.title = linkTitle.trim()
+      w.url = linkUrl.trim()
     }
     if (kind) w.target = { kind, name }
     if (type === 'metric_chart') {
@@ -88,6 +98,8 @@ export function AddWidgetDialog({
     onOpenChange(false)
     setName('')
     setQuery('')
+    setLinkTitle('')
+    setLinkUrl('')
   }
 
   return (
@@ -189,6 +201,31 @@ export function AddWidgetDialog({
                 </SelectContent>
               </Select>
             </div>
+          ) : null}
+          {isLink ? (
+            <>
+              <div className="space-y-1.5">
+                <Label htmlFor="widget-link-title">{t('add.linkTitle')}</Label>
+                <Input
+                  id="widget-link-title"
+                  value={linkTitle}
+                  maxLength={80}
+                  onChange={(e) => setLinkTitle(e.target.value)}
+                  placeholder={t('add.linkTitlePlaceholder')}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="widget-link-url">{t('add.linkUrl')}</Label>
+                <Input
+                  id="widget-link-url"
+                  type="url"
+                  value={linkUrl}
+                  maxLength={2048}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  placeholder="https://"
+                />
+              </div>
+            </>
           ) : null}
           {type === 'log_tail' ? (
             <div className="space-y-1.5">

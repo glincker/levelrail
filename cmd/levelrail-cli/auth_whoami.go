@@ -35,6 +35,7 @@ func runAuthWhoami(prog string, args []string, stdout, stderr io.Writer, lookupE
 	if err := renderResult(stdout, of.Format, of.Query, info, func() {
 		_, _ = fmt.Fprintf(stdout, "kind:        %s\n", info.Kind)
 		_, _ = fmt.Fprintf(stdout, "name:        %s\n", info.Name)
+		_, _ = fmt.Fprintf(stdout, "source:      %s\n", credentialSource(tokenFlag, prog, resolveProfile(profileFlag, lookupEnv)))
 		_, _ = fmt.Fprintf(stdout, "abilities:   %s\n", strings.Join(info.Abilities, ", "))
 		_, _ = fmt.Fprintf(stdout, "expires_at:  %s\n", info.ExpiresAt)
 		if c, cerr := readCredentialsFile(prog, resolveProfile(profileFlag, lookupEnv)); cerr == nil && c.InstanceID != "" {

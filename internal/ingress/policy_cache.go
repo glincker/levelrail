@@ -93,15 +93,15 @@ func (m *cacheModule) rule(r *http.Request) (trafficpolicy.CacheRule, bool) {
 func bypassReason(r *http.Request, rule trafficpolicy.CacheRule) string {
 	switch {
 	case r.Header.Get("Authorization") != "":
-		return "authorization"
+		return ReasonAuthorization
 	case r.Header.Get("Cookie") != "" && !rule.CacheWithCookies:
-		return "cookie"
+		return ReasonCookieRequest
 	case r.Header.Get("Range") != "":
-		return "range"
+		return ReasonRange
 	case r.Header.Get("Upgrade") != "":
-		return "upgrade"
+		return ReasonUpgrade
 	case hasDirective(r.Header.Values("Cache-Control"), "no-store"):
-		return "no-store"
+		return ReasonNoStore
 	}
 	return ""
 }
@@ -191,6 +191,7 @@ func (m *cacheModule) ServeHTTP(w http.ResponseWriter, r *http.Request, next cad
 	host := requestHost(r)
 	if reason := bypassReason(r, rule); reason != "" {
 		m.store.record(host, cacheBypass)
+		m.store.recordReasons(host, reason)
 		w.Header().Set(CacheStatusHeader, cacheBypass)
 		return next.ServeHTTP(w, r)
 	}
@@ -260,10 +261,16 @@ func (m *cacheModule) ServeHTTP(w http.ResponseWriter, r *http.Request, next cad
 		rec.status = http.StatusOK
 	}
 	m.store.recordBytes(host, false, rec.total)
+	if rec.tooLarge {
+		m.store.recordReasons(host, ReasonTooLarge)
+	}
 	if err != nil || r.Method != http.MethodGet || rec.skip {
 		return err
 	}
-	ttl, stale, storable := m.freshness(rule, rec.status, rec.Header())
+	ttl, stale, storable, why := m.freshness(rule, rec.status, rec.Header())
+	if !storable {
+		m.store.recordReasons(host, why...)
+	}
 	if storable {
 		stored := m.store.now()
 		m.store.put(&cacheEntry{
@@ -297,7 +304,7 @@ func (m *cacheModule) refreshFromNotModified(rule trafficpolicy.CacheRule, old *
 			h[k] = slices.Clone(v)
 		}
 	}
-	ttl, stale, ok := m.freshness(rule, old.status, h)
+	ttl, stale, ok, _ := m.freshness(rule, old.status, h)
 	if !ok {
 		return
 	}
@@ -308,24 +315,39 @@ func (m *cacheModule) refreshFromNotModified(rule trafficpolicy.CacheRule, old *
 }
 
 // freshness decides whether a response may be stored and for how long.
-// Set-Cookie, private, no-store, no-cache and Vary: * are never stored.
-func (m *cacheModule) freshness(rule trafficpolicy.CacheRule, status int, h http.Header) (time.Duration, time.Duration, bool) {
-	if !slices.Contains(rule.EffectiveStatusCodes(), status) || h.Get("Set-Cookie") != "" || h.Get("Content-Range") != "" {
-		return 0, 0, false
+// Set-Cookie, private, no-store, no-cache and Vary: * are never stored;
+// reasons names why (see Reason*), one per offending Vary header.
+func (m *cacheModule) freshness(rule trafficpolicy.CacheRule, status int, h http.Header) (ttl, stale time.Duration, storable bool, reasons []string) {
+	if !slices.Contains(rule.EffectiveStatusCodes(), status) {
+		return 0, 0, false, []string{ReasonStatusNotCached}
+	}
+	if h.Get("Set-Cookie") != "" {
+		return 0, 0, false, []string{ReasonSetCookie}
+	}
+	if h.Get("Content-Range") != "" {
+		return 0, 0, false, []string{ReasonRange}
 	}
 	cc := h.Values("Cache-Control")
-	if hasDirective(cc, "no-store") || hasDirective(cc, "private") || hasDirective(cc, "no-cache") {
-		return 0, 0, false
+	switch {
+	case hasDirective(cc, "no-store"):
+		return 0, 0, false, []string{ReasonNoStore}
+	case hasDirective(cc, "private"):
+		return 0, 0, false, []string{ReasonPrivate}
+	case hasDirective(cc, "no-cache"):
+		return 0, 0, false, []string{ReasonNoCache}
 	}
 	for _, v := range h.Values("Vary") {
 		for _, name := range strings.Split(v, ",") {
 			name = http.CanonicalHeaderKey(strings.TrimSpace(name))
 			if name == "*" || (name != "" && name != "Accept-Encoding" && !slices.ContainsFunc(rule.Vary, func(s string) bool { return http.CanonicalHeaderKey(s) == name })) {
-				return 0, 0, false
+				reasons = append(reasons, ReasonVaryHeader+reasonSep+name)
 			}
 		}
 	}
-	ttl := time.Duration(rule.TTLSeconds) * time.Second
+	if len(reasons) > 0 {
+		return 0, 0, false, reasons
+	}
+	ttl = time.Duration(rule.TTLSeconds) * time.Second
 	if !rule.OverrideUpstream {
 		if s, ok := directiveSeconds(cc, "s-maxage"); ok {
 			ttl = s
@@ -336,8 +358,8 @@ func (m *cacheModule) freshness(rule trafficpolicy.CacheRule, status int, h http
 	if maxTTL := time.Duration(m.MaxTTLSeconds) * time.Second; maxTTL > 0 && ttl > maxTTL {
 		ttl = maxTTL
 	}
-	stale := time.Duration(rule.StaleWhileRevalidateSeconds) * time.Second
-	return ttl, stale, ttl > 0
+	stale = time.Duration(rule.StaleWhileRevalidateSeconds) * time.Second
+	return ttl, stale, ttl > 0, nil
 }
 
 func hasDirective(values []string, directive string) bool {
@@ -419,7 +441,9 @@ type cacheRecorder struct {
 	status int
 	buf    bytes.Buffer
 	skip   bool
-	total  int64
+	// tooLarge is set when the body exceeded max, as opposed to other skips.
+	tooLarge bool
+	total    int64
 	// hold5xx and hold304 swallow that response so the handler can answer
 	// from a stored copy instead; held records that it happened.
 	hold5xx, hold304 bool
@@ -438,7 +462,7 @@ func (c *cacheRecorder) WriteHeader(code int) {
 			c.skip = true
 		}
 		if n, err := strconv.ParseInt(c.Header().Get("Content-Length"), 10, 64); err == nil && n > c.max {
-			c.skip = true
+			c.skip, c.tooLarge = true, true
 		}
 	}
 	c.ResponseWriterWrapper.WriteHeader(code)
@@ -454,7 +478,7 @@ func (c *cacheRecorder) Write(p []byte) (int, error) {
 	c.total += int64(len(p))
 	if !c.skip {
 		if int64(c.buf.Len()+len(p)) > c.max {
-			c.skip = true
+			c.skip, c.tooLarge = true, true
 			c.buf = bytes.Buffer{}
 		} else {
 			c.buf.Write(p)
