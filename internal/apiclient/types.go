@@ -4395,8 +4395,25 @@ type StaticSiteResource struct {
 // apiErrorBody is the JSON shape every non-2xx response from the
 // control plane returns (internal/api/respond.go's own apiError).
 type apiErrorBody struct {
-	Error string `json:"error"`
-	Code  string `json:"code,omitempty"`
+	Error     string          `json:"error"`
+	Code      string          `json:"code,omitempty"`
+	RequestID string          `json:"request_id,omitempty"`
+	Fix       json.RawMessage `json:"fix,omitempty"`
+}
+
+// fixText flattens the fix field, a plain string or an object with a label.
+func (b apiErrorBody) fixText() string {
+	var s string
+	if json.Unmarshal(b.Fix, &s) == nil {
+		return s
+	}
+	var o struct {
+		Label string `json:"label"`
+	}
+	if json.Unmarshal(b.Fix, &o) == nil {
+		return o.Label
+	}
+	return ""
 }
 
 // APIError is returned by Client methods for a non-2xx HTTP response: a
@@ -4419,6 +4436,9 @@ type APIError struct {
 	// Code is the machine-readable reason some refusals carry, such as
 	// step_up_required or step_up_code_required.
 	Code string
+	// RequestID and Fix are the server's correlation id and suggested remedy, when sent.
+	RequestID string
+	Fix       string
 }
 
 // Error renders the server message, appending a retry hint when RetryAfter is set.

@@ -217,7 +217,7 @@ func redact(v any) any {
 	case map[string]any:
 		for k, val := range x {
 			switch k {
-			case "id", "secret", "provisioning_uri", "session_id", "options", "created_at", "last_used_at":
+			case "id", "secret", "provisioning_uri", "session_id", "options", "created_at", "last_used_at", "request_id":
 				x[k] = "<redacted>"
 			case "recovery_codes":
 				if codes, ok := val.([]any); ok {

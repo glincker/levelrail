@@ -258,9 +258,14 @@ func genOpenAPI31(routes []route, groups map[string]string, brand brandInfo) ([]
 			},
 			"schemas": map[string]any{
 				"ErrorResponse": map[string]any{
-					"type":       "object",
-					"required":   []string{"error"},
-					"properties": map[string]any{"error": map[string]any{"type": "string"}},
+					"type":     "object",
+					"required": []string{"error"},
+					"properties": map[string]any{
+						"error":      map[string]any{"type": "string", "description": "Human readable message."},
+						"code":       map[string]any{"type": "string", "description": "Stable machine readable code, for example not_found, validation_failed, unauthorized, forbidden, conflict, rate_limited or internal_error."},
+						"request_id": map[string]any{"type": "string", "description": "Correlation id, equal to the X-Request-Id response header."},
+						"fix":        map[string]any{"description": "Optional suggested remedy, a string or an object with id and label."},
+					},
 				},
 			},
 		},
