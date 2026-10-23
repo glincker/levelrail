@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { CheckCircleIcon, KeyIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { SecretInput } from '@/components/ui/secret-input'
 import type { EmailSecretField as SecretKind } from '../../queries/emailSecretReveal'
 import { EmailField } from './EmailField'
 import { RevealEmailSecret } from './RevealEmailSecret'
@@ -108,9 +108,8 @@ export function EmailSecretField({
         ) : null
       }
     >
-      <Input
+      <SecretInput
         id={id}
-        type="password"
         autoComplete="new-password"
         className={INPUT_RECESSED}
         {...form.register(name)}

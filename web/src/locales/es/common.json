@@ -555,5 +555,10 @@
     "report": "Reportar un problema",
     "requestId": "ID de solicitud: {{id}}",
     "detailsHeader": "Informe de error"
+  },
+  "secretInput": {
+    "show": "Mostrar valor",
+    "hide": "Ocultar valor",
+    "existing": "Definido. Déjalo en blanco para conservar el valor actual."
   }
 }

@@ -898,5 +898,10 @@
     "report": "Report an issue",
     "requestId": "Request ID: {{id}}",
     "detailsHeader": "Error report"
+  },
+  "secretInput": {
+    "show": "Show value",
+    "hide": "Hide value",
+    "existing": "Set. Leave blank to keep the current value."
   }
 }
