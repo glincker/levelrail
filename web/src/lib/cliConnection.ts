@@ -5,6 +5,7 @@ export interface CliTokenLike {
   name: string
   expires_at?: string | null
   revoked_at?: string | null
+  dev_fixture?: boolean
 }
 
 const EXPIRING_DAYS = Number(import.meta.env.VITE_CLI_EXPIRING_DAYS ?? 7)
@@ -44,7 +45,10 @@ export function cliTokenStatus(tok: CliTokenLike, now: number): CliStatus {
 export function listCliTokens<T extends CliTokenLike>(
   tokens: readonly T[],
 ): T[] {
-  return tokens.filter((tok) => cliOrigin(tok.name) !== null && !tok.revoked_at)
+  return tokens.filter(
+    (tok) =>
+      !tok.dev_fixture && cliOrigin(tok.name) !== null && !tok.revoked_at,
+  )
 }
 
 export function activeCliTokens<T extends CliTokenLike>(

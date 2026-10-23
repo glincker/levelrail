@@ -237,7 +237,15 @@
       "secretsReveal": "Reveal secret values",
       "secretsRevealHint": "Lets this token read a secret value, but only when the server allows token reveal (APP_SECRET_REVEAL_TOKENS=on) and the request carries your password. Every reveal is audited. Root does not include it.",
       "secretsRevealNeedsSensitive": "Revealing secrets also needs read:sensitive"
-    }
+    },
+    "devFixtureBadge": "Dev fixture, local only",
+    "devFixtureRootWarning": "Full access with a publicly known secret. Never expose this server to a network.",
+    "devFixtureGroup": "Dev fixture tokens",
+    "devFixtureGroupCount_one": "{{count}} token",
+    "devFixtureGroupCount_other": "{{count}} tokens",
+    "devFixtureGroupBody": "Seeded for local testing, with public secrets. Never created in release builds. Safe to ignore.",
+    "rotate": "Rotate",
+    "rotateLabel": "Rotate {{name}}"
   },
   "hostFirewall": {
     "title": "Host firewall",

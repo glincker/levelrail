@@ -177,7 +177,21 @@
         "expired": "Expired"
       },
       "expired": "Expired {{when}}",
-      "loadFailed": "Could not load connected CLIs"
+      "loadFailed": "Could not load connected CLIs",
+      "rotate": "Rotate",
+      "rotateLabel": "Rotate {{name}}",
+      "rotateTitle": "Rotate this CLI token?",
+      "rotateBody": "{{name}} stops working as soon as you continue, and that CLI has to sign in again. You get a new one-time command to run on it.",
+      "rotateConfirm": "Revoke and get new command",
+      "rotating": "Revoking...",
+      "rotateFailed": "Could not revoke this token, so nothing changed.",
+      "rotateDoneTitle": "Token revoked",
+      "rotateDoneBody": "Run this command on the CLI to sign it in again.",
+      "rotatePairing": "Creating a new command...",
+      "rotatePairFailed": "The old token is revoked, but a new command could not be created. Select Try again, or use Show my command in the CLI panel.",
+      "rotateRetry": "Try again",
+      "rotateClose": "Done",
+      "rotateCancel": "Cancel"
     },
     "subtitle": "Deploy, tail logs and manage apps from your terminal.",
     "status": {

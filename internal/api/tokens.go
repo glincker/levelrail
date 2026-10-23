@@ -37,6 +37,9 @@ type tokenResource struct {
 	// InstanceID is the server the token is bound to; LastIP is where it was last seen.
 	InstanceID string `json:"instance_id,omitempty"`
 	LastIP     string `json:"last_ip,omitempty"`
+	// DevFixture is true for a token seeded from the dev fixtures file in
+	// this dev-mode process. It is never set (omitted) in a release build.
+	DevFixture bool `json:"dev_fixture,omitempty"`
 }
 
 func toTokenResource(t store.APIToken) tokenResource {
@@ -53,6 +56,7 @@ func toTokenResource(t store.APIToken) tokenResource {
 		LastUsedAt: t.LastUsedAt,
 		ExpiresAt:  t.ExpiresAt,
 		RevokedAt:  t.RevokedAt,
+		DevFixture: isDevFixtureToken(t),
 	}
 }
 

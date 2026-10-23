@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { tokenListQueryOptions } from '../../queries/tokens'
+import { useCliTokenRows } from '../../queries/myCredentials'
 import { TokenTable } from '../../components/TokenTable'
 import { CliServerCard } from '../../components/settings/CliServerCard'
 import { useTranslation } from 'react-i18next'
@@ -62,6 +64,13 @@ function CliAccessPage() {
   const { data: requests } = useDeviceAuthRequests()
   const { data: tokens } = useQuery(tokenListQueryOptions())
   const { user_code: highlightUserCode } = Route.useSearch()
+  // Only the caller's own CLI tokens can be rotated: the new pairing
+  // command signs in the caller, so it cannot replace someone else's.
+  const { data: ownCliRows } = useCliTokenRows(true)
+  const rotatableIds = useMemo(
+    () => new Set((ownCliRows ?? []).map((r) => r.token.id)),
+    [ownCliRows],
+  )
   // Same origin the dashboard itself is served from: in production the
   // API and web UI are one embedded binary, so this is the address the CLI needs.
   const apiUrl = window.location.origin
@@ -145,7 +154,10 @@ function CliAccessPage() {
         <p className="text-sm text-muted-foreground">
           {t('cliAccessPage.tokens.body')}
         </p>
-        <TokenTable tokens={(tokens ?? []).filter((tok) => !tok.agent)} />
+        <TokenTable
+          tokens={(tokens ?? []).filter((tok) => !tok.agent)}
+          rotatableIds={rotatableIds}
+        />
       </section>
     </PageTemplate>
   )

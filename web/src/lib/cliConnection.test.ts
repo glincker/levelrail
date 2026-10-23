@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { activeCliTokens, cliTokenStatus } from './cliConnection'
+import { activeCliTokens, cliTokenStatus, listCliTokens } from './cliConnection'
 
 const now = Date.parse('2026-06-01T12:00:00Z')
 const future = '2026-07-01T00:00:00Z'
@@ -55,5 +55,13 @@ describe('cli origins and status', () => {
       'active',
     )
     expect(cliTokenStatus({ name: 'a', expires_at: past }, now)).toBe('expired')
+  })
+})
+
+describe('dev fixture tokens', () => {
+  it('never count as CLI sign-ins even if the name matches', () => {
+    const tokens = [{ name: 'cli-pairing x', dev_fixture: true }]
+    expect(listCliTokens(tokens)).toEqual([])
+    expect(activeCliTokens(tokens, Date.now())).toEqual([])
   })
 })
