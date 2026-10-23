@@ -94,8 +94,7 @@ func validateCreateFirewallRuleRequest(req createFirewallRuleRequest) (store.Fir
 func (rt *Router) handleListFirewallRules(w http.ResponseWriter, r *http.Request) {
 	rules, err := rt.firewallRules.ListFirewallRules(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list firewall rules failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list firewall rules failed", err)
 		return
 	}
 	out := make([]firewallRuleResource, 0, len(rules))
@@ -126,16 +125,14 @@ func (rt *Router) handleCreateFirewallRule(w http.ResponseWriter, r *http.Reques
 
 	id, err := randomFirewallRuleID()
 	if err != nil {
-		rt.logger.Error("api: create firewall rule: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create firewall rule: generate id failed", err)
 		return
 	}
 	rule.ID = id
 	rule.CreatedAt = time.Now().UTC().Format(time.RFC3339)
 
 	if err := rt.firewallRules.SaveFirewallRule(r.Context(), rule); err != nil {
-		rt.logger.Error("api: create firewall rule: save failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create firewall rule: save failed", err, slog.String("id", id))
 		return
 	}
 
@@ -153,8 +150,7 @@ func (rt *Router) handleDeleteFirewallRule(w http.ResponseWriter, r *http.Reques
 			writeError(w, http.StatusNotFound, "firewall rule not found")
 			return
 		}
-		rt.logger.Error("api: delete firewall rule failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete firewall rule failed", err, slog.String("id", id))
 		return
 	}
 

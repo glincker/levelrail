@@ -14,11 +14,22 @@ import (
 
 func main() {
 	prog := filepath.Base(os.Args[0])
-	os.Exit(run(prog, os.Args[1:], os.Stdout, os.Stderr, os.LookupEnv))
+	// Piped stdin or stdout implies CI mode; run() only sees env so tests stay deterministic.
+	forceCI = !isTerminal(os.Stdin) || !isTerminal(os.Stdout)
+	finishHint := startUpdateHint(prog, os.Args[1:], os.Stderr, os.LookupEnv)
+	code := run(prog, os.Args[1:], os.Stdout, os.Stderr, os.LookupEnv)
+	finishHint()
+	os.Exit(code)
 }
 
 // run returns an int exit code instead of calling os.Exit, so tests can drive dispatch directly.
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	rawLookupEnv = lookupEnv
+	lookupEnv = envAliasLookup(lookupEnv)
+	ciMode = forceCI || ciEnv(rawLookupEnv)
+	if colorDisabled(rawLookupEnv, ciMode) {
+		_ = os.Setenv(envNoColor, "1")
+	}
 	args, debug := extractDebugFlag(args)
 	args, scopeFlags = extractScopeFlags(args)
 	installServerTrust(prog, args, stderr, lookupEnv)
@@ -55,6 +66,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return exitOK
 	case "up":
 		return runUp(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
+	case "dev":
+		return runDev(prog, args[1:], stdout, stderr, lookupEnv)
 	case "open":
 		return runOpen(prog, args[1:], stdout, stderr, lookupEnv)
 	case "login":
@@ -159,6 +172,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runBuilds(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cache":
 		return runCache(prog, args[1:], stdout, stderr, lookupEnv)
+	case "forms":
+		return runForms(prog, args[1:], stdout, stderr, lookupEnv)
 	case "lb":
 		return runLB(prog, args[1:], stdout, stderr, lookupEnv)
 	case "preview":
@@ -187,10 +202,14 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "upgrade":
 		return runUpgrade(prog, args[1:], stdout, stderr, lookupEnv)
+	case "updates":
+		return runUpdates(prog, args[1:], stdout, stderr, lookupEnv)
 	case "readiness":
 		return runReadiness(prog, args[1:], stdout, stderr, lookupEnv)
 	case "version":
 		return runVersion(prog, args[1:], stdout, stderr, lookupEnv)
+	case "update":
+		return runUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "changelog":
 		return runChangelog(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ai-control":
@@ -201,6 +220,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAuditVerify(prog, args[1:], stdout, stderr, lookupEnv)
 	case "audit-purge":
 		return runAuditPurge(prog, args[1:], stdout, stderr, lookupEnv)
+	case "diagnose":
+		return runDiagnose(prog, args[1:], stdout, stderr, lookupEnv)
+	case "inbox":
+		return runInbox(prog, args[1:], stdout, stderr, lookupEnv)
 	case "attention":
 		return runAttention(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tui":
@@ -211,6 +234,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runFixes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "bench":
 		return runBench(prog, args[1:], stdout, stderr, lookupEnv)
+	case "resilience":
+		return runResilience(prog, args[1:], stdout, stderr, lookupEnv)
+	case "go-live":
+		return runGoLiveChecklist(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "setup":
@@ -243,6 +270,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runResources(prog, args[1:], stdout, stderr, lookupEnv)
 	case "costs":
 		return runCosts(prog, args[1:], stdout, stderr, lookupEnv)
+	case "spend":
+		return runSpend(prog, args[1:], stdout, stderr, lookupEnv)
 	case "usage":
 		return runUsage(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ingress-limits":
@@ -269,6 +298,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runUsers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "invites":
 		return runInvites(prog, args[1:], stdout, stderr, lookupEnv)
+	case "email":
+		return runEmail(prog, args[1:], stdout, stderr, lookupEnv)
 	case "iam":
 		return runIAM(prog, args[1:], stdout, stderr, lookupEnv)
 	case "secrets":
@@ -285,12 +316,6 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runGitProviders(prog, args[1:], stdout, stderr, lookupEnv)
 	case "github-app":
 		return runGitHubApp(prog, args[1:], stdout, stderr, lookupEnv)
-	case "gitlab-app":
-		return runGitLabApp(prog, args[1:], stdout, stderr, lookupEnv)
-	case "bitbucket-app":
-		return runBitbucketApp(prog, args[1:], stdout, stderr, lookupEnv)
-	case "gitea-app":
-		return runGiteaApp(prog, args[1:], stdout, stderr, lookupEnv)
 	case "compose":
 		return runCompose(prog, args[1:], stdout, stderr, lookupEnv)
 	case "templates":
@@ -319,6 +344,7 @@ Usage:
   %[1]s up [dir] [--with postgres,redis] [--domain D] [flags]   deploy a directory with one command: infer, create or update, databases, build, domain
   %[1]s login [--device] [flags]     sign in and save a token, same as auth login
   %[1]s open <app> [flags]           print an app's public URLs
+  %[1]s dev [status|stop] [flags]    run a private instance on this machine, apps at <app>.localhost
   %[1]s backup <database> [--target ID] [flags]   back a database up now, same as backups trigger
   %[1]s restore <database> --latest --confirm NAME [flags]   restore a database, same as backups restore
   %[1]s apps create [flags]         create an app
@@ -339,7 +365,7 @@ Usage:
   %[1]s databases create [flags]     create a managed database
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
-  %[1]s functions deploy|list|invoke|delete [flags]   image apps that sleep when idle and wake on the first request
+  %[1]s functions deploy|list|invoke|delete|settings|versions|rollback [flags]   image apps that sleep when idle and wake on the first request
   %[1]s models list|get|deploy|logs|delete|restart|rotate-key|gpus [flags]   AI models on GPU nodes
   %[1]s domains list [flags]           list every app's domains in one call
   %[1]s dns zones|records|check|health-checks ...   DNS zones, records, delegation and propagation at Cloudflare or Route53
@@ -365,8 +391,10 @@ Usage:
   %[1]s logs archive set|status|remove, logs dump|ls|fetch [flags]   archive node-local logs to a storage destination
   %[1]s logs search|failure <app> [flags]   search stored logs by text, level, container and JSON fields; show the failing container's last lines
   %[1]s metrics query|top|investigate [flags]   downsampled series with period comparison, top apps, and the spike investigation view
-  %[1]s traffic <app> [--window 5m|1h|24h] [--watch] [flags]   request rate, errors and p50/p95/p99 latency per app and replica, slow routes, SLO burn
+  %[1]s traffic export sinks list|add|set|rm|test|status [flags]   export edge requests to an analytics vendor (PostHog, OTLP, webhook), no visitor identity by default
+  %[1]s traffic <app> [--since 5m|1h|24h|7d] [--watch] [flags]   request rate, errors and p50/p95/p99 latency per app and replica, slow routes, SLO burn
   %[1]s cache status|rules|purge|history <app> [flags]   response cache at the ingress: hit rate, rules, purge by URL, prefix, tag or all
+  %[1]s forms list|create|update|snippet|fields|test|delete|submissions|spam|unspam|remove|export <app> [flags]   form capture endpoints for static sites with spam trap, inbox and CSV export
   %[1]s builds list|show|cancel|retry|cache|prune [flags]   build queue and history, cancel and retry, BuildKit cache inventory and prune preview
   %[1]s images list|layers|gc|verify [flags] image inventory per node with size and owners, layer breakdown, retention GC that keeps rollback targets, signature check
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
@@ -399,8 +427,11 @@ Usage:
   %[1]s upgrade [--no-backup] [flags]                          preflight checks, backup, and the command that upgrades (never upgrades itself)
   %[1]s upgrade --list [--channel stable|beta|all]             last 5 releases with a database schema compatibility verdict
   %[1]s upgrade --rollback-plan <version>                      read-only rollback preview, applied on the host
+  %[1]s upgrade retry|rollback <attempt>                       re-run a failed upgrade attempt, or restore its pre-upgrade restore point
   %[1]s upgrade --history [--json] | --ack <id>                recorded upgrades, rollbacks and installs, and acknowledging one
+  %[1]s updates restore-points list|restore <id> [--yes]       pre-upgrade restore points and putting one back
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
+  %[1]s update [--check] [--version TAG] [--dry-run] [--yes]  check for a newer CLI release, or replace this binary with a verified one
   %[1]s changelog [--limit N] [flags]                         recent release notes from the control plane's own CHANGELOG.md
   %[1]s ai-control status|set|revoke-agents [flags]           what agents and AI may do: off, observe, operate, admin
   %[1]s network mesh status|enable|disable [flags]            the WireGuard mesh between nodes
@@ -408,11 +439,13 @@ Usage:
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
   %[1]s audit-verify [flags]                                  check the audit log for edited, removed or cut-off entries
   %[1]s audit-purge [flags]                                 delete audit log entries past the retention window now
+  %[1]s diagnose <app|database|domain|node> <name> [flags]    why isn't this running: ranked causes, evidence and next actions
   %[1]s attention [flags]                                     everything failing right now: apps, nodes, certificates, doctor checks
   %[1]s tui [--read-only] [flags]                             interactive terminal UI: apps, databases, deploys, logs, restart
   %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning
   %[1]s resources list|tag|untag|views [flags]                 every app, database, node, domain, bucket and network in one list, tags, bulk tag with --dry-run, saved views
   %[1]s usage report|settings|budgets [flags]                  cost showback per app, project and team
+  %[1]s spend caps list|status|set|rm|dry-run|override        per app and project spend caps with a deploy guard and a pause preview
   %[1]s costs explore|budgets [flags]                         cost explorer with forecast and movers, named budgets with alerts and a 100%% action
   %[1]s ingress-limits show|set|clear APP [flags]             per-app request body cap
   %[1]s budget show|set|clear APP [flags]                      per-app monthly egress and cost cap with throttle or pause
@@ -421,10 +454,12 @@ Usage:
   %[1]s bench run --url URL [flags]                           load and failover benchmark: open-loop rate, latency percentiles, ingress overhead
   %[1]s bench soak [flags]                                    churn a control plane and fail on RSS, goroutine, FD or WAL growth
   %[1]s bench chaos <list|run|report|disk|free-space> [flags]              failure scenarios measured on local containers, recorded for the resilience report
-  %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
+  %[1]s resilience check [--simulate] [--fix] [flags]         will apps keep serving if the control plane is down (dry run)
+  %[1]s doctor [flags]                                        health checks (same as the dashboard Doctor page), --fix applies safe fixes
+  %[1]s go-live <app> [domain] [--wait] [--timeout 5m] [flags]  the guided checklist from deploy to https, exits non-zero until live with --wait
   %[1]s setup status|next|skip|undo|reset [flags]             the Get started checklist: what is left before production
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
-  %[1]s proxy setup|status|apply|verify|disable [flags]       let this server manage its routes in that proxy (Traefik)
+  %[1]s proxy setup|install|status|apply|verify|disable [flags] let this server manage its routes in that proxy (Traefik)
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
   %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README Markdown for an image
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
@@ -464,12 +499,9 @@ Usage:
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant
   %[1]s git-providers [flags]                             connection status and capabilities for every git provider in one call
   %[1]s github-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a GitHub App connection, browse and use its repos
-  %[1]s gitlab-app status|disconnect|projects|branches|use-as-source [flags]   check/forget a GitLab App connection, browse and use its projects
-  %[1]s bitbucket-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a Bitbucket App connection, browse and use its repos
-  %[1]s gitea-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a Gitea App connection, browse and use its repos
   %[1]s templates list|get|deploy|install [flags]         browse, deploy and install from the curated service catalog
   %[1]s compose deploy|status|logs|redeploy|rollback|down  run a Docker Compose file as one stack
-  %[1]s static-sites list|delete [flags]                   list build.type: static apps, remove an orphaned site
+  %[1]s static-sites list|delete|routes [flags]            list build.type: static apps, remove an orphaned site, show and test routing rules
   %[1]s deploy-approvals list|get|approve|reject [flags]   two-person approval gate on a deploy/promote into a protected environment
   %[1]s build detect|branches --repo-url URL [flags]       check what framework a public repo would build as, or list its branches
   %[1]s backups restores <database> [flags]                database restore attempt history

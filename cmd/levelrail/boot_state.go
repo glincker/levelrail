@@ -18,10 +18,12 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/functions"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/integrity"
 	"github.com/GLINCKER/levelrail/internal/janitor"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/GLINCKER/levelrail/internal/migrateagent"
 	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/plugin"
 	"github.com/GLINCKER/levelrail/internal/preview"
@@ -59,7 +61,9 @@ type bootState struct {
 	agentRegistry       *agent.Registry
 	meshEndpoints       *meshEndpointBook
 	hostReports         *agent.HostReportStore
+	onboardingReports   *agent.OnboardingStore
 	agentServer         *agent.Server
+	migrationAgent      *migrateagent.Service
 	secretsManager      *secrets.Manager
 	masterKeyFilePath   string
 	emailSender         *email.DynamicSender
@@ -70,6 +74,7 @@ type bootState struct {
 	backupRunner        *backup.Runner
 	backupVerifyRunner  *backup.VerifyRunner
 	scheduledTaskRunner *scheduledtask.Runner
+	functionQueue       *functions.Queue
 	supplyChainSvc      *supplychain.Service
 	builder             *deploy.Pipeline
 	buildLimiter        *build.Limiter

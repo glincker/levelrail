@@ -49,6 +49,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
+	"github.com/GLINCKER/levelrail/internal/dbprovision"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -257,6 +258,7 @@ type Controller struct {
 	clickhouseCreds *ClickHouseCredentials
 	apiKeyCreds     *APIKeyCredentials
 	tls             *TLSMaterial
+	tlsDisabled     bool
 	meshDNSAddr     string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 	meshEndpoints   meshEndpointResolver
 	meshPorts       MeshPortLookup
@@ -264,6 +266,9 @@ type Controller struct {
 	// isn't set, meaning "use defaultSlowQueryThresholdMs"; see
 	// effectiveSlowQueryThresholdMs.
 	slowQueryThresholdMs int
+	provRec              *dbprovision.Recorder
+	prov                 *dbprovision.Tracker
+	probe                func(ctx context.Context, addr string) error
 }
 
 // Option configures optional Controller behavior.
@@ -319,6 +324,11 @@ func WithClickHouseCredentials(creds *ClickHouseCredentials) Option {
 // feature.
 func WithTLS(material *TLSMaterial) Option {
 	return func(c *Controller) { c.tls = material }
+}
+
+// WithTLSDisabled marks TLS as deliberately off so a container still serving TLS is replaced; a nil WithTLS alone never downgrades.
+func WithTLSDisabled() Option {
+	return func(c *Controller) { c.tlsDisabled = true }
 }
 
 // WithMeshDNSAddr points every container this controller creates at addr,
@@ -379,8 +389,49 @@ func New(dbName string, dbStore Store, runtime docker.Runtime, opts ...Option) *
 // Name implements reconcile.Controller.
 func (c *Controller) Name() string { return "database/" + c.dbName }
 
+// WithProvisionRecorder makes the controller report each creation step to rec.
+func WithProvisionRecorder(rec *dbprovision.Recorder) Option {
+	return func(c *Controller) { c.provRec = rec }
+}
+
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
+	if c.provRec == nil {
+		return c.reconcileOnce(ctx)
+	}
+	c.prov = c.provRec.Open(ctx, c.dbName)
+	defer func() { c.prov = nil }()
+	res, err := c.reconcileOnce(ctx)
+	c.finishProvision(ctx, res, err)
+	return res, err
+}
+
+func (c *Controller) finishProvision(ctx context.Context, res reconcile.Result, err error) {
+	if c.prov == nil || len(res.Conditions) == 0 {
+		return
+	}
+	cond := res.Conditions[0]
+	switch cond.Status {
+	case reconcile.ConditionTrue:
+		c.prov.Finish()
+	case reconcile.ConditionFalse:
+		msg := cond.Message
+		if msg == "" && err != nil {
+			msg = err.Error()
+		}
+		if msg == "" {
+			msg = cond.Reason
+		}
+		if step := dbprovision.FailStepForReason(cond.Reason, c.prov.PullFinished(), msg); step != "" {
+			if crashLoopReasons(cond.Reason) {
+				c.captureCrash(ctx)
+			}
+			c.prov.Fail(step, errors.New(msg))
+		}
+	}
+}
+
+func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error) {
 	desired, err := c.store.GetDesiredDatabase(ctx, c.dbName)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		// Not a failure: a controller can be registered for a database
@@ -445,8 +496,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"MYSQL_USER":          c.mysqlCreds.Username,
 			"MYSQL_PASSWORD":      c.mysqlCreds.Password,
 		}
-		command := mysqlCommand(c.effectiveSlowQueryThresholdMs())
-		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, nil)
+		command := mysqlCommand(c.effectiveSlowQueryThresholdMs(), c.tls, desired.PITREnabled)
+		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, c.tls)
 
 	case store.EngineMongoDB:
 		if c.mongoCreds == nil {
@@ -458,7 +509,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"MONGO_INITDB_ROOT_USERNAME": c.mongoCreds.Username,
 			"MONGO_INITDB_ROOT_PASSWORD": c.mongoCreds.Password,
 		}
-		return c.reconcileEngine(ctx, desired, env, nil, mongoDataPath, mongoContainerPort, nil)
+		return c.reconcileEngine(ctx, desired, env, mongoCommand(c.tls), mongoDataPath, mongoContainerPort, c.tls)
 
 	case store.EngineMariaDB:
 		if c.mariadbCreds == nil {
@@ -477,8 +528,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"MARIADB_PASSWORD":      c.mariadbCreds.Password,
 		}
 		// Same data path/port/slow-query flags as mysql, MariaDB is a compatible fork.
-		command := mysqlCommand(c.effectiveSlowQueryThresholdMs())
-		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, nil)
+		command := mysqlCommand(c.effectiveSlowQueryThresholdMs(), c.tls, desired.PITREnabled)
+		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, c.tls)
 
 	case store.EngineKeyDB:
 		// KeyDB is a Redis-protocol-compatible drop-in fork: same
@@ -571,27 +622,47 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	image := ImageRef(desired.Engine, desired.Version)
 	target := containerName(c.dbName)
 	volName := dataVolumeName(c.dbName)
-	// pitrActive gates every PITR-specific step below: only Postgres
-	// implements it (postgresCommand/postgresWALArchivePath), so a
-	// non-Postgres database with PITREnabled somehow set (never possible
-	// through internal/api's own enable handler, which refuses any other
-	// engine) still reconciles exactly as it always has.
-	pitrActive := desired.Engine == store.EnginePostgres && desired.PITREnabled
+	// pitrActive gates every PITR-specific step below. Only Postgres (WAL) and
+	// MySQL or MariaDB (binlog) implement it; any other engine with the flag
+	// set still reconciles as it always has.
+	pitrActive := SupportsPITR(desired.Engine) && desired.PITREnabled
+	binlogActive := pitrActive && isMySQLFamily(desired.Engine)
+
+	c.prov.Start(dbprovision.StepDockerCheck, "checking Docker")
+	state, err := c.runtime.InspectByName(ctx, target)
+	if err != nil {
+		if c.prov != nil {
+			return c.waitForDocker(err), nil
+		}
+		return notReady("InspectFailed", err), fmt.Errorf("database/%s: inspect %q: %w", c.dbName, target, err)
+	}
+	c.prov.Done(dbprovision.StepDockerCheck, "Docker answered")
 
 	if dataPath != "" {
-		if err := c.runtime.EnsureVolume(ctx, volName); err != nil {
-			return notReady("VolumeFailed", err), fmt.Errorf("database/%s: ensure volume %q: %w", c.dbName, volName, err)
+		c.prov.Start(dbprovision.StepCreateVolume, volName)
+		fresh := state == nil
+		if res, stop := c.settleVolume(ctx, desired, volName, fresh); stop {
+			return res, nil
 		}
+		if err := c.runtime.EnsureVolume(ctx, volName); err != nil {
+			return notReady(reasonVolumeFailed, err), fmt.Errorf("database/%s: ensure volume %q: %w", c.dbName, volName, err)
+		}
+		c.markVolumeResolved(ctx, desired, fresh)
+		c.prov.Done(dbprovision.StepCreateVolume, volName)
+	} else {
+		c.prov.Skip(dbprovision.StepCreateVolume, "no persistent storage for this engine")
 	}
 	if pitrActive {
 		if err := c.runtime.EnsureVolume(ctx, walArchiveVolumeName(c.dbName)); err != nil {
-			return notReady("VolumeFailed", err), fmt.Errorf("database/%s: ensure wal archive volume: %w", c.dbName, err)
+			return notReady(reasonVolumeFailed, err), fmt.Errorf("database/%s: ensure wal archive volume: %w", c.dbName, err)
 		}
 	}
-
-	state, err := c.runtime.InspectByName(ctx, target)
-	if err != nil {
-		return notReady("InspectFailed", err), fmt.Errorf("database/%s: inspect %q: %w", c.dbName, target, err)
+	// mysqld aborts at startup if it cannot open its binlog, so the volume must be
+	// owned by the server user before the container first mounts it.
+	if binlogActive && (state == nil || !pitrEnabledFromLabel(state.Labels)) {
+		if err := c.provisionBinlogVolume(ctx, walArchiveVolumeName(c.dbName)); err != nil {
+			return notReady(reasonVolumeFailed, err), fmt.Errorf("database/%s: %w", c.dbName, err)
+		}
 	}
 
 	spec := docker.ContainerSpec{
@@ -606,8 +677,14 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		// No persistence (Memcached): no data volume to create or mount.
 		spec.Volumes = nil
 	}
+	// Newer official images drop privileges with setpriv, which needs SETPCAP
+	// to shrink the bounding set; the minimal cap list leaves it out.
+	spec.CapAdd = append(spec.CapAdd, "SETPCAP")
 	for _, fn := range customize {
 		fn(&spec)
+	}
+	if c.prov != nil {
+		spec.OnPull = c.prov.Pull
 	}
 	if tlsMaterial != nil {
 		spec.Labels[tlsCertLabelKey] = tlsCertLabelValue
@@ -616,8 +693,12 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		})
 	}
 	if pitrActive {
+		archivePath := postgresWALArchivePath
+		if binlogActive {
+			archivePath = MySQLBinlogPath
+		}
 		spec.Volumes = append(spec.Volumes, docker.VolumeMount{
-			Name: walArchiveVolumeName(c.dbName), ContainerPath: postgresWALArchivePath,
+			Name: walArchiveVolumeName(c.dbName), ContainerPath: archivePath,
 		})
 	}
 	if c.meshDNSAddr != "" {
@@ -661,6 +742,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	justDeployed := false
 	switch {
 	case state == nil:
+		c.prov.Start(dbprovision.StepCredentials, "")
 		if tlsMaterial != nil {
 			// Only on a brand new container: the certs volume is stable
 			// across replacements (see containerName's own doc comment on
@@ -676,6 +758,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 				return notReady("TLSProvisionFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
 			}
 		}
+		c.prov.Done(dbprovision.StepCredentials, "credentials ready")
 		if err := c.createAndStart(ctx, spec); err != nil {
 			reason := "CreateFailed"
 			var startErr *startAfterCreateError
@@ -700,6 +783,12 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		if err := c.provisionCerts(ctx, c.dbName, tlsMaterial); err != nil {
 			return notReady("TLSProvisionFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
+		if err := c.replaceContainer(ctx, state, spec); err != nil {
+			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+		}
+		justDeployed = true
+
+	case tlsMaterial == nil && c.tlsDisabled && state.Labels[tlsCertLabelKey] == tlsCertLabelValue:
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
 			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
@@ -758,8 +847,13 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 			return notReady("VanishedAfterStart", nil), fmt.Errorf("database/%s: %q not running immediately after starting it", c.dbName, target)
 		}
 	}
+	if res, ok := c.probeReady(ctx, state, meshPort); !ok {
+		return res, nil
+	}
+	c.prov.Start(dbprovision.StepApplySettings, settingsSummary(desired))
+	c.prov.Done(dbprovision.StepApplySettings, settingsSummary(desired))
 
-	if pitrActive {
+	if pitrActive && !binlogActive {
 		if err := c.ensureWALArchiveWritable(ctx, target); err != nil {
 			return notReady("PITRVolumePermissionsFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
@@ -813,13 +907,17 @@ func (e *startAfterCreateError) Error() string { return e.err.Error() }
 func (e *startAfterCreateError) Unwrap() error { return e.err }
 
 func (c *Controller) createAndStart(ctx context.Context, spec docker.ContainerSpec) error {
+	c.prov.Start(dbprovision.StepCreateContainer, spec.Name)
 	id, err := c.runtime.Create(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("create %q: %w", spec.Name, err)
 	}
+	c.prov.Done(dbprovision.StepCreateContainer, spec.Name)
+	c.prov.Start(dbprovision.StepStart, spec.Name)
 	if err := c.runtime.Start(ctx, id); err != nil {
 		return &startAfterCreateError{fmt.Errorf("start %q after create: %w", spec.Name, err)}
 	}
+	c.prov.Done(dbprovision.StepStart, spec.Name)
 	return nil
 }
 
@@ -940,13 +1038,35 @@ const MySQLSlowQueryLogPath = "/var/lib/mysql/slow-query.log"
 // slow query log at MySQLSlowQueryLogPath; internal/slowquery's
 // ParseMySQL reads it back out. long-query-time is MySQL's own flag
 // name and takes seconds as a float, so thresholdMs is converted here.
-func mysqlCommand(thresholdMs int) []string {
+func mysqlCommand(thresholdMs int, tls *TLSMaterial, pitrEnabled bool) []string {
 	longQueryTimeSec := strconv.FormatFloat(float64(thresholdMs)/1000, 'f', -1, 64)
-	return []string{
+	command := []string{
 		"--slow-query-log=1",
 		"--long-query-time=" + longQueryTimeSec,
 		"--slow-query-log-file=" + MySQLSlowQueryLogPath,
 		"--log-output=FILE",
+	}
+	if tls != nil {
+		command = append(command, "--ssl-cert="+certsMountPath+"/"+tlsCertFile, "--ssl-key="+certsMountPath+"/"+tlsKeyFile)
+	}
+	if pitrEnabled {
+		command = append(command, mysqlBinlogFlags()...)
+	}
+	return command
+}
+
+// mongoCommand serves TLS next to plaintext (preferTLS) so tools that connect
+// without it, including the backup commands, keep working.
+func mongoCommand(tls *TLSMaterial) []string {
+	if tls == nil {
+		return nil
+	}
+	// mongod refuses TLS without a chain of trust; the self-signed certificate is its own CA.
+	return []string{
+		"--tlsMode", "preferTLS",
+		"--tlsCertificateKeyFile", certsMountPath + "/" + tlsPEMFile,
+		"--tlsCAFile", certsMountPath + "/" + tlsCertFile,
+		"--tlsAllowConnectionsWithoutCertificates",
 	}
 }
 

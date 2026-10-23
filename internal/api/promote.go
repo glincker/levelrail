@@ -174,8 +174,7 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 	image := promoteImageRef(res.source)
 	updated, err := rt.setDesiredImage(r.Context(), target, image)
 	if err != nil {
-		rt.logger.Error("api: promote app failed", slog.String("error", err.Error()), slog.String("source", name), slog.String("target", res.target.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: promote app failed", err, slog.String("source", name), slog.String("target", res.target.Name))
 		return
 	}
 
@@ -213,8 +212,7 @@ func (rt *Router) resolvePromotion(w http.ResponseWriter, r *http.Request, sourc
 		return promoteResolution{}, false
 	}
 	if err != nil {
-		rt.logger.Error("api: resolve promotion: load source failed", slog.String("error", err.Error()), slog.String("name", sourceName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: resolve promotion: load source failed", err, slog.String("name", sourceName))
 		return promoteResolution{}, false
 	}
 
@@ -231,8 +229,7 @@ func (rt *Router) resolvePromotion(w http.ResponseWriter, r *http.Request, sourc
 		return promoteResolution{}, false
 	}
 	if err != nil {
-		rt.logger.Error("api: resolve promotion: load environment failed", slog.String("error", err.Error()), slog.String("environment_id", envID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: resolve promotion: load environment failed", err, slog.String("environment_id", envID))
 		return promoteResolution{}, false
 	}
 
@@ -255,8 +252,7 @@ func (rt *Router) resolvePromotion(w http.ResponseWriter, r *http.Request, sourc
 			return promoteResolution{}, false
 		}
 		if err != nil {
-			rt.logger.Error("api: resolve promotion: load target failed", slog.String("error", err.Error()), slog.String("name", targetName))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: resolve promotion: load target failed", err, slog.String("name", targetName))
 			return promoteResolution{}, false
 		}
 		if target.ProjectID != env.ProjectID {
@@ -271,8 +267,7 @@ func (rt *Router) resolvePromotion(w http.ResponseWriter, r *http.Request, sourc
 		candidates, err = rt.authorizeReadableServices(r, candidates)
 	}
 	if err != nil {
-		rt.logger.Error("api: resolve promotion: list candidates failed", slog.String("error", err.Error()), slog.String("environment_id", envID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: resolve promotion: list candidates failed", err, slog.String("environment_id", envID))
 		return promoteResolution{}, false
 	}
 	switch len(candidates) {

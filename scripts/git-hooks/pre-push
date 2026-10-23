@@ -20,6 +20,20 @@ set -uo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
+# Opt-in: detach the checks and return at once, but never for pushes to main or master.
+if [ "${LEVELRAIL_PUSH_BACKGROUND:-off}" = on ] && [ -z "${LEVELRAIL_PUSH_DETACHED:-}" ]; then
+	to_main=0
+	while read -r _ _ remote_ref _; do
+		case "$remote_ref" in refs/heads/main | refs/heads/master) to_main=1 ;; esac
+	done
+	if [ "$to_main" -eq 0 ]; then
+		bg_log="$(git rev-parse --git-dir)/pre-push-last.log"
+		LEVELRAIL_PUSH_DETACHED=1 nohup "$0" "$@" </dev/null >"$bg_log" 2>&1 &
+		echo "pre-push: checks running in background, log: $bg_log"
+		exit 0
+	fi
+fi
+
 fail=0
 coverage_out="$(mktemp -t levelrail-coverage.XXXXXX)"
 push_log="$(mktemp -t levelrail-push-log.XXXXXX)"
@@ -79,6 +93,16 @@ if [ "$fail" -eq 0 ] && [ "$scope" != "NONE" ]; then
 	fi
 fi
 
+# internal/api shard count for the fast and affected lanes: min(4, cores) unless
+# LEVELRAIL_PREPUSH_API_SHARDS says otherwise. 1 keeps a single process.
+api_pkg="github.com/GLINCKER/levelrail/internal/api"
+api_shards="${LEVELRAIL_PREPUSH_API_SHARDS:-}"
+if ! [ "$api_shards" -ge 1 ] 2>/dev/null; then
+	ncpu="$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)"
+	api_shards=4
+	[ "$ncpu" -lt "$api_shards" ] && api_shards="$ncpu"
+fi
+
 # Bounds the internal/api run and the whole-tree run: go test's default is 10m,
 # which internal/api exceeds when run whole.
 go_test_timeout="${LEVELRAIL_PUSH_TEST_TIMEOUT:-30m}"
@@ -131,7 +155,7 @@ elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 	fi
 	if [ "$fail" -eq 0 ] && [ -n "$api_tests" ]; then
 		echo "pre-push: go test -short ./internal/api, only tests from changed test files"
-		if ! go test ./internal/api -short -timeout "$go_test_timeout" -run "^($api_tests)\$" 2>&1; then
+		if ! TEST_FAST_TIMEOUT="$go_test_timeout" scripts/test-fast.sh -n "$api_shards" -r "^($api_tests)\$" 2>&1; then
 			fail=1
 		fi
 	fi
@@ -147,12 +171,30 @@ elif [ "$fail" -eq 0 ]; then
 		echo "pre-push: go test -short (with coverage), scoped to $pkg_count affected package(s)"
 		test_targets="$scope"
 	fi
+	# internal/api is sharded through scripts/test-fast.sh (CI's split) unless
+	# coverage is on or shards is 1; both need one go test process.
+	shard_api=0
+	if [ "$api_shards" -gt 1 ] && [ "$cov_on" != on ]; then
+		if [ "$scope" = "ALL" ]; then
+			shard_api=1
+			test_targets="$(go list ./... | grep -vxF "$api_pkg")"
+		elif printf '%s\n' "$scope" | grep -qxF "$api_pkg"; then
+			shard_api=1
+			test_targets="$(printf '%s\n' "$scope" | grep -vxF "$api_pkg" || true)"
+		fi
+	fi
 	# shellcheck disable=SC2086 # test_targets is intentionally word-split: either "./..." or a newline-joined package list
 	cov_args=""
 	[ "$cov_on" = on ] && cov_args="-coverprofile=$coverage_out"
 	# shellcheck disable=SC2086 # cov_args is empty or one flag
-	if ! go test $test_targets -short -timeout "$go_test_timeout" $cov_args 2>&1; then
+	if [ -n "$test_targets" ] && ! go test $test_targets -short -timeout "$go_test_timeout" $cov_args 2>&1; then
 		fail=1
+	fi
+	if [ "$shard_api" -eq 1 ]; then
+		echo "pre-push: go test -short ./internal/api in $api_shards shards"
+		if ! TEST_FAST_TIMEOUT="$go_test_timeout" scripts/test-fast.sh -n "$api_shards" 2>&1; then
+			fail=1
+		fi
 	fi
 fi
 

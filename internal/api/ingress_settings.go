@@ -142,8 +142,7 @@ type ingressSettingsUpdate struct {
 func (rt *Router) handleGetIngressSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.ingressSettings.GetIngressSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get ingress settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get ingress settings failed", err)
 		return
 	}
 	res := rt.toIngressSettingsResource(settings)
@@ -321,8 +320,7 @@ func (rt *Router) handleUpdateIngressSettings(w http.ResponseWriter, r *http.Req
 		rt.purgeOnIssuerChange(r.Context(), prev, settings)
 	}
 	if err := rt.ingressSettings.UpdateIngressSettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: update ingress settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update ingress settings failed", err)
 		return
 	}
 	rt.hstsDBEnabled.Store(settings.HSTSEnabled)
@@ -392,8 +390,7 @@ type ingressDomainCheckResponse struct {
 func (rt *Router) handleCheckIngressDomain(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.ingressSettings.GetIngressSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: check ingress domain: get settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: check ingress domain: get settings failed", err)
 		return
 	}
 
@@ -470,8 +467,7 @@ type domainResource struct {
 func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 	domains, err := rt.domains.ListServiceDomains(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list domains failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list domains failed", err)
 		return
 	}
 
@@ -542,7 +538,8 @@ func (rt *Router) automaticDomains(r *http.Request, canSee func(string) bool) []
 	if err != nil || settings.FallbackDomainsDisabled {
 		return nil
 	}
-	if _, ok := ingress.SSLIPHost(rt.publicHost); !ok {
+	res := rt.fallbackResolver(r.Context())
+	if _, ok := ingress.SSLIPHost(rt.publicHost); !ok && res.Default().Provider != ingress.ProviderCustom {
 		return nil
 	}
 	svcs, err := rt.apps.ListDesiredServices(r.Context())
@@ -555,7 +552,7 @@ func (rt *Router) automaticDomains(r *http.Request, canSee func(string) bool) []
 		if len(svc.Domains) > 0 || !canSee(svc.Name) {
 			continue
 		}
-		if d, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
+		if d, ok := res.Domain(svc.Name); ok {
 			out = append(out, domainResource{Domain: d, ServiceName: svc.Name, Automatic: true, Kind: domainKindApp})
 		}
 	}

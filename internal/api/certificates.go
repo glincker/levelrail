@@ -10,6 +10,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/attention"
+	"github.com/GLINCKER/levelrail/internal/certflow"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -80,6 +81,14 @@ type certificateStatus struct {
 	// an operator (attention.CertExpiryClass): never for internal-CA,
 	// proxy-owned or unrouted certificates.
 	ExpiryClass string `json:"expiry_class,omitempty"`
+	// Kind is who signed the certificate (internal, staging, letsencrypt,
+	// custom, proxy, other), DaysLeft the whole days to expiry, LastRenewal
+	// the last issue or renewal attempt and NextRetryAt when the watchdog
+	// tries a stuck renewal again.
+	Kind        certflow.Kind     `json:"kind"`
+	DaysLeft    int               `json:"days_left"`
+	LastRenewal *certflow.Renewal `json:"last_renewal,omitempty"`
+	NextRetryAt *time.Time        `json:"next_retry_at,omitempty"`
 }
 
 // CertObservationSource lists the expiry observations kind=cert_expiry
@@ -104,8 +113,7 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 
 	infos, err := alerting.ListCertificates(r.Context(), rt.certs, warningWindow, time.Now(), rt.logger)
 	if err != nil {
-		rt.logger.Error("api: list certificates failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list certificates failed", err)
 		return
 	}
 
@@ -148,6 +156,13 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 		}
 		apps := owners[strings.ToLower(info.Domain)]
 		tlsOwner := string(snap.Owner(info.Domain))
+		failure := acmeFailureIn(snap, info.Domain)
+		truth := certTruthRow{
+			Info: info, Kind: certflow.Classify(info.Issuer, source, tlsOwner), Source: source, Owner: tlsOwner,
+			Renewal: renewal[info.Domain], Failure: failure, DaysLeft: certflow.DaysLeft(info.NotAfter, time.Now()),
+			Routed: len(apps) > 0 || strings.EqualFold(info.Domain, rt.publicHost),
+		}
+		badge := rt.certBadgeFor(truth)
 		out = append(out, certificateStatus{
 			Domain:    info.Domain,
 			SANs:      info.SANs,
@@ -159,14 +174,10 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 			Apps:      apps,
 			Source:    source,
 
-			ACMEFailure: acmeFailureIn(snap, info.Domain),
+			ACMEFailure: failure,
 			TLSOwner:    tlsOwner,
-			ExpiryClass: attention.CertExpiryClass(attention.CertFacts{
-				Issuer: info.Issuer, Source: source, TLSOwner: tlsOwner,
-				Status: info.Status, Renewal: renewal[info.Domain],
-				NotBefore: info.NotBefore, NotAfter: info.NotAfter,
-				Routed: len(apps) > 0 || strings.EqualFold(info.Domain, rt.publicHost),
-			}, shortLived),
+			ExpiryClass: attention.CertExpiryClass(certDoctorFacts(truth), shortLived),
+			Kind:        badge.Kind, DaysLeft: badge.DaysLeft, LastRenewal: badge.LastRenewal, NextRetryAt: badge.NextRetryAt,
 		})
 	}
 	out = append(out, rt.proxyCertificateRows(snap, owners, canSee, time.Now())...)

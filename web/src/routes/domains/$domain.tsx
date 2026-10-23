@@ -1,19 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { StuckPanel } from '../../components/StuckPanel'
 import { DomainPolicyPage } from '../../components/domain/DomainPolicyPage'
-import { DOMAIN_TABS, type DomainTab } from '../../components/domain/domainTabs'
+import { validateDomainSearch } from '../../components/domain/domainSearch'
 import { domainPoliciesQueryOptions } from '../../queries/domainPolicies'
-
-interface DomainSearch {
-  app: string
-  tab?: DomainTab
-}
-
-// Plain function rather than zod so validateSearch stays out of the eagerly loaded bundle.
-function validateDomainSearch(search: Record<string, unknown>): DomainSearch {
-  const app = typeof search.app === 'string' ? search.app : ''
-  const tab = DOMAIN_TABS.find((t) => t === search.tab)
-  return tab ? { app, tab } : { app }
-}
 
 export const Route = createFileRoute('/domains/$domain')({
   validateSearch: validateDomainSearch,
@@ -29,16 +18,20 @@ export const Route = createFileRoute('/domains/$domain')({
 
 function DomainRoute() {
   const { domain } = Route.useParams()
-  const { app, tab } = Route.useSearch()
+  const { app, tab, fix } = Route.useSearch()
   const navigate = Route.useNavigate()
   return (
-    <DomainPolicyPage
-      app={app}
-      domain={domain}
-      tab={tab ?? 'overview'}
-      onTab={(next) => {
-        void navigate({ search: { app, tab: next }, replace: true })
-      }}
-    />
+    <div className="space-y-4">
+      {app ? <StuckPanel kind="domain" name={domain} appName={app} /> : null}
+      <DomainPolicyPage
+        app={app}
+        domain={domain}
+        tab={tab ?? 'overview'}
+        fix={fix}
+        onTab={(next) => {
+          void navigate({ search: { app, tab: next }, replace: true })
+        }}
+      />
+    </div>
   )
 }

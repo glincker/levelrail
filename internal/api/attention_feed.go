@@ -59,7 +59,8 @@ func (rt *Router) attentionFeedItems(r *http.Request, abilities []string, now ti
 	items = append(items, rt.maintenanceAttentionItems(r, abilities, now)...)
 	items = append(items, rt.gitHostAttentionItems(abilities)...)
 	items = append(items, rt.firewallAttentionItems(abilities)...)
-	return items
+	items = append(items, rt.nodeCapacityAttentionItems(r, abilities)...)
+	return withoutSilenced(items, rt.activeSilences(r.Context(), now), now)
 }
 
 func feedItem(severity, kind, subject, detail string, params map[string]string) attention.Item {
@@ -111,6 +112,7 @@ func (rt *Router) databaseAttentionItems(r *http.Request, abilities []string, no
 		rt.logger.Warn("api: attention feed: list databases failed", slog.String("error", err.Error()))
 		return nil
 	}
+	dbs = rt.withoutPendingDatabases(ctx, dbs)
 	canSee, err := rt.databaseVisibilityFilter(r)
 	if err != nil {
 		rt.logger.Warn("api: attention feed: database visibility failed", slog.String("error", err.Error()))

@@ -50,6 +50,7 @@ export function LogTerminal({
   emptyStateMessage = LOG_EMPTY_MESSAGE,
   emptyStatePulse = true,
   isFinished = false,
+  scrollTarget = null,
 }: {
   lines: LogLine[]
   isPaused: boolean
@@ -68,6 +69,9 @@ export function LogTerminal({
   // already done. Live app/database log streams never finish, so callers
   // for those simply omit this.
   isFinished?: boolean
+  // Ask the terminal to scroll a line (by LogLine id) to the top. A new
+  // object per request, so asking for the same line twice still scrolls.
+  scrollTarget?: { id: number } | null
 }) {
   const { t } = useTranslation('observability')
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -158,6 +162,24 @@ export function LogTerminal({
       pauseTracked()
     }
   }, [isPaused, pauseTracked, resume])
+
+  // Jump requests pause follow mode first so the next live line does not
+  // pull the view back to the bottom.
+  const handledScrollRef = useRef<{ id: number } | null>(null)
+  useEffect(() => {
+    if (!scrollTarget || handledScrollRef.current === scrollTarget) {
+      return
+    }
+    const idx = lines.findIndex((l) => l.id === scrollTarget.id)
+    if (idx < 0) {
+      return
+    }
+    handledScrollRef.current = scrollTarget
+    if (!isPaused && !isFinished) {
+      pauseTracked()
+    }
+    virtualizer.scrollToIndex(idx, { align: 'start' })
+  }, [scrollTarget, lines, isPaused, isFinished, pauseTracked, virtualizer])
 
   const handleResumeClick = useCallback(() => {
     resume()
@@ -250,6 +272,7 @@ export function LogTerminal({
                     )
                   }}
                   measure={virtualizer.measureElement}
+                  highlight={filter.text}
                 />
               )
             })}

@@ -75,7 +75,7 @@ func runRestoreAlias(prog string, args []string, stdout, stderr io.Writer, looku
 // simpleVerbHelp is the one-line summary shown for each short-help verb.
 var simpleVerbHelp = map[string]string{
 	"up":       "up [dir] [--with postgres,redis] [--domain D]   deploy this directory: create or update the app, databases, build, domain",
-	"deploy":   "deploy <app> --image IMAGE | --latest   deploy an image or the newest commit",
+	"deploy":   "deploy [dir] | <app> --image IMAGE | --latest   upload this directory and build it, or deploy an image or the newest commit",
 	"rollback": "rollback <app> [--image IMAGE]   go back to the previous successful deploy",
 	"logs":     "logs <app> [flags]   an app's recent logs (admin forms: logs archive|dump|ls|fetch|search)",
 	"env":      "env set|pull|push <app> ...   change or sync an app's environment variables",

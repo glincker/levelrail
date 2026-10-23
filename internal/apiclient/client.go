@@ -14,6 +14,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,6 +44,9 @@ type Client struct {
 	token     string
 	hc        *http.Client
 	userAgent string
+	noAuthFix string
+	retry     RetryPolicy
+	sleep     func(context.Context, time.Duration) error
 }
 
 // Option configures a Client at construction time. See WithUserAgent.
@@ -57,6 +61,12 @@ type Option func(*Client)
 // "levelrail-mcp/<version>".
 func WithUserAgent(userAgent string) Option {
 	return func(c *Client) { c.userAgent = userAgent }
+}
+
+// WithNoCredentialsFix replaces the message of a 401 answered to a request
+// that carried no token, so the caller can name the exact command that fixes it.
+func WithNoCredentialsFix(msg string) Option {
+	return func(c *Client) { c.noAuthFix = msg }
 }
 
 // NewClient builds a Client. baseURL should not have a trailing slash
@@ -85,21 +95,53 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 // (ListNodesFiltered) that needs a response header such as
 // X-Total-Count alongside the decoded body.
 func (c *Client) doHeaders(ctx context.Context, method, path string, body, out any) (http.Header, error) {
-	var reqBody io.Reader
+	var payload []byte
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
 			return nil, fmt.Errorf("encode request body: %w", err)
 		}
-		reqBody = bytes.NewReader(b)
+		payload = b
+	}
+	sleep := c.sleep
+	if sleep == nil {
+		sleep = sleepCtx
+	}
+	var waited time.Duration
+	for attempt := 0; ; attempt++ {
+		h, err := c.doOnce(ctx, method, path, payload, out)
+		var apiErr *APIError
+		if err == nil || !errors.As(err, &apiErr) || attempt >= c.retry.MaxRetries ||
+			(apiErr.StatusCode != http.StatusTooManyRequests && apiErr.StatusCode != http.StatusServiceUnavailable) ||
+			!retrySafe(method, idempotencyKeyFrom(ctx)) {
+			return h, err
+		}
+		delay := c.retry.retryDelay(apiErr.RetryAfter, attempt)
+		if waited+delay > c.retry.MaxWait {
+			return h, err
+		}
+		if serr := sleep(ctx, delay); serr != nil {
+			return h, err
+		}
+		waited += delay
+	}
+}
+
+func (c *Client) doOnce(ctx context.Context, method, path string, payload []byte, out any) (http.Header, error) {
+	var reqBody io.Reader
+	if payload != nil {
+		reqBody = bytes.NewReader(payload)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reqBody) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
 	if err != nil {
 		return nil, fmt.Errorf("build request: %w", err)
 	}
-	if body != nil {
+	if payload != nil {
 		req.Header.Set(headerContentType, contentTypeJSON)
+	}
+	if key := idempotencyKeyFrom(ctx); key != "" {
+		req.Header.Set(headerIdempotencyKey, key)
 	}
 	if c.token != "" {
 		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
@@ -125,7 +167,12 @@ func (c *Client) doHeaders(ctx context.Context, method, path string, body, out a
 	defer func() { _ = resp.Body.Close() }()
 	TraceRequest(method, c.baseURL+path, resp.Status, time.Since(start), nil)
 
-	return resp.Header, decodeResponse(resp, out)
+	err = decodeResponse(resp, out)
+	var apiErr *APIError
+	if c.token == "" && c.noAuthFix != "" && errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusUnauthorized {
+		apiErr.Message = c.noAuthFix
+	}
+	return resp.Header, err
 }
 
 // decodeResponse reads resp's body, mapping a non-2xx status to
@@ -140,7 +187,7 @@ func decodeResponse(resp *http.Response, out any) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var coded apiErrorBody
 		_ = json.Unmarshal(data, &coded)
-		return &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header), Code: coded.Code}
+		return &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header), Code: coded.Code, RequestID: coded.RequestID, Fix: coded.fixText()}
 	}
 	if out != nil && len(data) > 0 {
 		if err := json.Unmarshal(data, out); err != nil {
@@ -169,21 +216,20 @@ func ExtractErrorMessage(data []byte) string {
 	return trimmed
 }
 
-// retryAfterHeader parses a Retry-After response header as a delay,
-// seconds form only (the only form this control plane ever sends,
-// internal/api/api_rate_limit.go's own writeRateLimited): 0 if absent or
-// not a plain non-negative integer, so a caller checking APIError.RetryAfter
-// only sees a real value when the server actually sent one it can trust.
+// retryAfterHeader parses Retry-After as a delay, in seconds or HTTP-date form:
+// 0 if absent, malformed or already past, so a caller only sees a value it can trust.
 func retryAfterHeader(h http.Header) time.Duration {
-	raw := h.Get("Retry-After")
+	raw := strings.TrimSpace(h.Get("Retry-After"))
 	if raw == "" {
 		return 0
 	}
-	seconds, err := strconv.Atoi(raw)
-	if err != nil || seconds < 0 {
-		return 0
+	if seconds, err := strconv.Atoi(raw); err == nil {
+		return time.Duration(max(seconds, 0)) * time.Second
 	}
-	return time.Duration(seconds) * time.Second
+	if t, err := http.ParseTime(raw); err == nil {
+		return max(time.Until(t), 0)
+	}
+	return 0
 }
 
 // CreateApp calls POST /api/v1/apps.
@@ -760,6 +806,52 @@ func (c *Client) DiagnoseApp(ctx context.Context, name, deployID string) (Diagno
 	}
 	var out DiagnosisResource
 	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// StuckAction is one typed next step in a StuckReport cause.
+type StuckAction struct {
+	Type  string `json:"type"`
+	Label string `json:"label"`
+	FixID string `json:"fix_id,omitempty"`
+	Href  string `json:"href,omitempty"`
+}
+
+// StuckCause is one ranked likely reason a resource is not ready.
+type StuckCause struct {
+	Code        string        `json:"code"`
+	Title       string        `json:"title"`
+	Explanation string        `json:"explanation"`
+	Confidence  string        `json:"confidence"`
+	Evidence    []string      `json:"evidence"`
+	Actions     []StuckAction `json:"actions"`
+}
+
+// StuckCondition is one entry of the condition timeline.
+type StuckCondition struct {
+	Type    string    `json:"type"`
+	Status  string    `json:"status"`
+	Reason  string    `json:"reason"`
+	Message string    `json:"message,omitempty"`
+	Since   time.Time `json:"since"`
+}
+
+// StuckReport is GET /api/v1/diagnose/{kind}/{name}.
+type StuckReport struct {
+	Kind            string           `json:"kind"`
+	Name            string           `json:"name"`
+	Ready           bool             `json:"ready"`
+	Stuck           bool             `json:"stuck"`
+	NotReadySeconds int64            `json:"not_ready_seconds"`
+	ThresholdSecs   int64            `json:"threshold_seconds"`
+	Timeline        []StuckCondition `json:"timeline"`
+	Causes          []StuckCause     `json:"causes"`
+}
+
+// DiagnoseStuck calls GET /api/v1/diagnose/{kind}/{name}.
+func (c *Client) DiagnoseStuck(ctx context.Context, kind, name string) (StuckReport, error) {
+	var out StuckReport
+	err := c.do(ctx, http.MethodGet, "/api/v1/diagnose/"+PathEscape(kind)+"/"+PathEscape(name), nil, &out)
 	return out, err
 }
 
@@ -1635,9 +1727,9 @@ func (c *Client) ListBaseBackups(ctx context.Context, name string) ([]BaseBackup
 // TriggerPITRRestore calls POST /api/v1/databases/{name}/pitr-restore:
 // starts a real point-in-time restore to targetTime, replaying archived
 // WAL forward from baseBackupID.
-func (c *Client) TriggerPITRRestore(ctx context.Context, name, baseBackupID, targetTime string) (PITRRestoreHistoryResource, error) {
+func (c *Client) TriggerPITRRestore(ctx context.Context, name, baseBackupID, targetTime, restoreAs string) (PITRRestoreHistoryResource, error) {
 	var out PITRRestoreHistoryResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/pitr-restore", TriggerPITRRestoreRequest{BaseBackupID: baseBackupID, TargetTime: targetTime}, &out)
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/pitr-restore", TriggerPITRRestoreRequest{BaseBackupID: baseBackupID, TargetTime: targetTime, RestoreAs: restoreAs}, &out)
 	return out, err
 }
 
@@ -1819,6 +1911,18 @@ func (c *Client) MintSessionLink(ctx context.Context) (SessionLinkResource, erro
 // SecretsEditor exposes.
 func (c *Client) SetSecret(ctx context.Context, name, key, value string, overwriteLocked bool) error {
 	return c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key), SetSecretRequest{Value: value, OverwriteLocked: overwriteLocked}, nil)
+}
+
+// SetSecretWithBuildTime is SetSecret plus an explicit build_time flag
+// (whether build.secrets may mount the secret).
+func (c *Client) SetSecretWithBuildTime(ctx context.Context, name, key, value string, overwriteLocked, buildTime bool) error {
+	return c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key), SetSecretRequest{Value: value, OverwriteLocked: overwriteLocked, BuildTime: &buildTime}, nil)
+}
+
+// SetSecretBuildTime calls POST /api/v1/apps/{name}/secrets/{key}/build-time:
+// opts an existing secret in or out of build.secrets.
+func (c *Client) SetSecretBuildTime(ctx context.Context, name, key string, buildTime bool) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key)+"/build-time", SetSecretBuildTimeRequest{BuildTime: buildTime}, nil)
 }
 
 // ListSecrets calls GET /api/v1/apps/{name}/secrets: every known secret
@@ -2214,6 +2318,20 @@ func (c *Client) DeleteBackupTarget(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, backupTargetPath(id), nil, nil)
 }
 
+// GetBackupTargetEncryption calls GET /api/v1/backup-targets/{id}/encryption.
+func (c *Client) GetBackupTargetEncryption(ctx context.Context, id string) (BackupTargetEncryptionResource, error) {
+	var out BackupTargetEncryptionResource
+	err := c.do(ctx, http.MethodGet, backupTargetPath(id)+"/encryption", nil, &out)
+	return out, err
+}
+
+// SetBackupTargetEncryption calls PUT /api/v1/backup-targets/{id}/encryption (root only).
+func (c *Client) SetBackupTargetEncryption(ctx context.Context, id string, enabled bool) (BackupTargetEncryptionResource, error) {
+	var out BackupTargetEncryptionResource
+	err := c.do(ctx, http.MethodPut, backupTargetPath(id)+"/encryption", map[string]bool{"enabled": enabled}, &out)
+	return out, err
+}
+
 // TestBackupTarget calls POST /api/v1/backup-targets/{id}/test: probes
 // the target's stored credentials against its configured bucket, without
 // uploading or deleting anything.
@@ -2349,6 +2467,13 @@ func (c *Client) DeleteRegistryCredential(ctx context.Context, id string) error 
 // anything.
 func (c *Client) TestRegistryCredential(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodPost, registryCredentialPath(id)+"/test", nil, nil)
+}
+
+// RefreshRegistryCredential calls POST /api/v1/registry-credentials/{id}/refresh.
+func (c *Client) RefreshRegistryCredential(ctx context.Context, id string) (RegistryCredentialResource, error) {
+	var out RegistryCredentialResource
+	err := c.do(ctx, http.MethodPost, registryCredentialPath(id)+"/refresh", nil, &out)
+	return out, err
 }
 
 // ListRegistryCredentialRepositories calls GET
@@ -3241,6 +3366,14 @@ func (c *Client) DeleteNode(ctx context.Context, id string) error {
 func (c *Client) SetNodeWorkloads(ctx context.Context, id string, req SetNodeWorkloadsRequest) (NodeResource, error) {
 	var out NodeResource
 	err := c.do(ctx, http.MethodPut, nodePath(id)+"/workloads", req, &out)
+	return out, err
+}
+
+// SetNodeFailureDomain calls PUT /api/v1/nodes/{id}/region: updates the node's
+// region, provider and zone labels, leaving nil fields unchanged.
+func (c *Client) SetNodeFailureDomain(ctx context.Context, id string, req SetNodeFailureDomainRequest) (NodeResource, error) {
+	var out NodeResource
+	err := c.do(ctx, http.MethodPut, nodePath(id)+"/region", req, &out)
 	return out, err
 }
 
@@ -4288,126 +4421,6 @@ func (c *Client) ListGitHubAppBranches(ctx context.Context, owner, repo string) 
 func (c *Client) UseGitHubRepoAsSource(ctx context.Context, owner, repo string, req UseRepoAsSourceRequest) (UseGitHubRepoAsSourceResponse, error) {
 	var out UseGitHubRepoAsSourceResponse
 	err := c.do(ctx, http.MethodPost, "/api/v1/github-app/repos/"+PathEscape(owner)+"/"+PathEscape(repo)+"/use-as-source", req, &out)
-	return out, err
-}
-
-// GetGitLabAppStatus calls GET /api/v1/gitlab-app: the connection
-// status (configured, and whether the OAuth authorization-code flow has
-// completed).
-func (c *Client) GetGitLabAppStatus(ctx context.Context) (GitLabAppStatusResource, error) {
-	var out GitLabAppStatusResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/gitlab-app", nil, &out)
-	return out, err
-}
-
-// DisconnectGitLabApp calls DELETE /api/v1/gitlab-app: forgets the
-// stored connection locally. Does not revoke the token or delete the
-// Application on GitLab's own side.
-func (c *Client) DisconnectGitLabApp(ctx context.Context) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/gitlab-app", nil, nil)
-}
-
-// ListGitLabAppProjects calls GET /api/v1/gitlab-app/projects: every
-// project the connected GitLab account can access.
-func (c *Client) ListGitLabAppProjects(ctx context.Context) ([]GitLabAppProjectResource, error) {
-	var out []GitLabAppProjectResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/gitlab-app/projects", nil, &out)
-	return out, err
-}
-
-// ListGitLabAppBranches calls GET
-// /api/v1/gitlab-app/projects/{id}/branches.
-func (c *Client) ListGitLabAppBranches(ctx context.Context, projectID int64) ([]GitAppBranchResource, error) {
-	var out []GitAppBranchResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/gitlab-app/projects/"+strconv.FormatInt(projectID, 10)+"/branches", nil, &out)
-	return out, err
-}
-
-// UseGitLabProjectAsSource calls POST
-// /api/v1/gitlab-app/projects/{id}/use-as-source.
-func (c *Client) UseGitLabProjectAsSource(ctx context.Context, projectID int64, req UseRepoAsSourceRequest) (GitSourceResource, error) {
-	var out GitSourceResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/gitlab-app/projects/"+strconv.FormatInt(projectID, 10)+"/use-as-source", req, &out)
-	return out, err
-}
-
-// GetBitbucketAppStatus calls GET /api/v1/bitbucket-app: the connection
-// status (configured, and whether the OAuth consumer has been
-// authorized).
-func (c *Client) GetBitbucketAppStatus(ctx context.Context) (BitbucketAppStatusResource, error) {
-	var out BitbucketAppStatusResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/bitbucket-app", nil, &out)
-	return out, err
-}
-
-// DisconnectBitbucketApp calls DELETE /api/v1/bitbucket-app: forgets
-// the stored connection locally. Does not revoke the token or delete
-// the consumer on Bitbucket's own side.
-func (c *Client) DisconnectBitbucketApp(ctx context.Context) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/bitbucket-app", nil, nil)
-}
-
-// ListBitbucketAppRepos calls GET /api/v1/bitbucket-app/repos: every
-// repository the connected Bitbucket account can access.
-func (c *Client) ListBitbucketAppRepos(ctx context.Context) ([]BitbucketAppRepoResource, error) {
-	var out []BitbucketAppRepoResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/bitbucket-app/repos", nil, &out)
-	return out, err
-}
-
-// ListBitbucketAppBranches calls GET
-// /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/branches.
-func (c *Client) ListBitbucketAppBranches(ctx context.Context, workspace, repoSlug string) ([]GitAppBranchResource, error) {
-	var out []GitAppBranchResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/bitbucket-app/repos/"+PathEscape(workspace)+"/"+PathEscape(repoSlug)+"/branches", nil, &out)
-	return out, err
-}
-
-// UseBitbucketRepoAsSource calls POST
-// /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source.
-func (c *Client) UseBitbucketRepoAsSource(ctx context.Context, workspace, repoSlug string, req UseRepoAsSourceRequest) (GitSourceResource, error) {
-	var out GitSourceResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/bitbucket-app/repos/"+PathEscape(workspace)+"/"+PathEscape(repoSlug)+"/use-as-source", req, &out)
-	return out, err
-}
-
-// GetGiteaAppStatus calls GET /api/v1/gitea-app: the connection status
-// (configured, and whether the OAuth authorization-code flow has
-// completed).
-func (c *Client) GetGiteaAppStatus(ctx context.Context) (GiteaAppStatusResource, error) {
-	var out GiteaAppStatusResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/gitea-app", nil, &out)
-	return out, err
-}
-
-// DisconnectGiteaApp calls DELETE /api/v1/gitea-app: forgets the stored
-// connection locally. Does not revoke the token or delete the
-// Application on Gitea's own side.
-func (c *Client) DisconnectGiteaApp(ctx context.Context) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/gitea-app", nil, nil)
-}
-
-// ListGiteaAppRepos calls GET /api/v1/gitea-app/repos: every repository
-// the connected Gitea account can access.
-func (c *Client) ListGiteaAppRepos(ctx context.Context) ([]GiteaAppRepoResource, error) {
-	var out []GiteaAppRepoResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/gitea-app/repos", nil, &out)
-	return out, err
-}
-
-// ListGiteaAppBranches calls GET
-// /api/v1/gitea-app/repos/{owner}/{repo}/branches.
-func (c *Client) ListGiteaAppBranches(ctx context.Context, owner, repo string) ([]GitAppBranchResource, error) {
-	var out []GitAppBranchResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/gitea-app/repos/"+PathEscape(owner)+"/"+PathEscape(repo)+"/branches", nil, &out)
-	return out, err
-}
-
-// UseGiteaRepoAsSource calls POST
-// /api/v1/gitea-app/repos/{owner}/{repo}/use-as-source.
-func (c *Client) UseGiteaRepoAsSource(ctx context.Context, owner, repo string, req UseRepoAsSourceRequest) (GitSourceResource, error) {
-	var out GitSourceResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/gitea-app/repos/"+PathEscape(owner)+"/"+PathEscape(repo)+"/use-as-source", req, &out)
 	return out, err
 }
 

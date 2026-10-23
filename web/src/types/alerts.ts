@@ -42,11 +42,17 @@ export type AlertRuleKind =
   | 'node_offline'
   | 'node_cert_expiring'
   | 'log_archive_stale'
+  | 'registry_refresh_failing'
   | 'slo_burn'
   | 'version_skew'
   | 'log_pattern'
   | 'log_level_rate'
   | 'budget_threshold'
+  | 'email_delivery_failing'
+  | 'database_disk_high'
+  | 'database_connections_high'
+  | 'database_down'
+  | 'database_backup_stale'
 
 // log_pattern and log_level_rate only (internal/alerting.LogRuleConfig).
 export interface LogRuleConfig {

@@ -14,7 +14,6 @@ import { useSession } from '../../queries/security'
 import { useTwoFactorStatus } from '../../queries/twoFactor'
 import { useSystemStatus } from '../../queries/systemStatus'
 import { updatesQueryOptions } from '../../queries/updates'
-import type { EmailSettings } from '../../queries/emailSettings'
 import type { BackupTarget } from '../../types/backupTarget'
 
 const linkClass =
@@ -115,50 +114,6 @@ export function GeneralRail() {
         <HelpLink
           path="/troubleshooting"
           label={t('generalPage.help')}
-          variant="inline"
-        />
-      </PageRailSection>
-    </PageRail>
-  )
-}
-
-/** EmailRail shows the active backend and sender address. */
-export function EmailRail({ settings }: { settings: EmailSettings }) {
-  const { t } = useTranslation('settings')
-  const from =
-    settings.backend === 'smtp'
-      ? settings.smtp_from
-      : settings.backend === 'ses'
-        ? settings.ses_from
-        : settings.backend === 'resend'
-          ? settings.resend_from
-          : undefined
-
-  return (
-    <PageRail>
-      <PageRailSection title={t('emailPage.rail.delivery')}>
-        <PageRailRow label={t('emailPage.rail.backend')}>
-          {settings.backend === '' ? (
-            <Badge variant="muted">{t('emailPage.status.none')}</Badge>
-          ) : (
-            <Badge variant="success">
-              {t(`emailPage.rail.backends.${settings.backend}`)}
-            </Badge>
-          )}
-        </PageRailRow>
-        {from ? (
-          <PageRailRow label={t('emailPage.rail.from')}>
-            <span className="font-mono text-xs break-all">{from}</span>
-          </PageRailRow>
-        ) : null}
-        <PageRailRow label={t('emailPage.rail.usedFor')}>
-          {t('emailPage.rail.usedForBody')}
-        </PageRailRow>
-      </PageRailSection>
-      <PageRailSection title={t('emailPage.rail.docs')}>
-        <HelpLink
-          path="/email-notifications"
-          label={t('emailPage.help')}
           variant="inline"
         />
       </PageRailSection>

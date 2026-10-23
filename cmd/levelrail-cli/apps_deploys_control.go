@@ -64,6 +64,8 @@ func runAppsDeploysRollbackTo(prog string, args []string, stdout, stderr io.Writ
 	fs.BoolVar(&confirm, "confirm", false, "confirm deploying into a protected environment; omit to be prompted interactively if needed")
 	fs.BoolVar(&extra.overrideFreeze, "override-freeze", false, "roll back even though a deploy freeze window is active (requires --override-reason)")
 	fs.StringVar(&extra.overrideReason, "override-reason", "", "why this rollback overrides the freeze, recorded on the deploy")
+	var lock bool
+	fs.BoolVar(&lock, "lock", false, "also lock publishing so later builds are held until you publish them")
 	var watch bool
 	fs.BoolVar(&watch, "watch", false, "follow the rollback through the readiness gate until it takes traffic or fails")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeploysRollbackToUsage(prog)) }
@@ -80,9 +82,11 @@ func runAppsDeploysRollbackTo(prog string, args []string, stdout, stderr io.Writ
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	result, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (deployTriggerResult, error) {
-		return client.RollbackToDeploy(context.Background(), name, deployID, apiclient.RollbackToRequest{
-			Confirm: confirm, OverrideFreeze: extra.overrideFreeze, OverrideReason: extra.overrideReason,
-		})
+		req := apiclient.RollbackToRequest{Confirm: confirm, OverrideFreeze: extra.overrideFreeze, OverrideReason: extra.overrideReason}
+		if lock {
+			return client.RollbackAndLockDeploy(context.Background(), name, deployID, req)
+		}
+		return client.RollbackToDeploy(context.Background(), name, deployID, req)
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("roll back app %q to deploy %q: %w", name, deployID, err))
@@ -128,6 +132,7 @@ Flags:
   --confirm                  confirm deploying into a protected environment, skipping the interactive prompt
   --override-freeze          roll back even though a deploy freeze window is active (requires --override-reason)
   --override-reason string   why this rollback overrides the freeze, recorded on the deploy
+  --lock                     also lock publishing so later builds are held until you publish them
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

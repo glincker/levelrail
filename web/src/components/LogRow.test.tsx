@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
@@ -48,7 +48,9 @@ describe('LogRow', () => {
   it('shows a level tag and toggles on click', async () => {
     const { onToggle } = renderRow('WARN disk low', false)
     expect(screen.getByText('WRN')).toBeInTheDocument()
-    await userEvent.setup().click(screen.getByRole('button'))
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { expanded: false }))
     expect(onToggle).toHaveBeenCalledOnce()
   })
 
@@ -74,5 +76,33 @@ describe('LogRow', () => {
       screen.queryByText('previous container instance ended'),
     ).not.toBeInTheDocument()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('announces a copy only on the copied row and clears its timer on unmount', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    })
+    const { unmount } = render(
+      <I18nextProvider i18n={testI18n}>
+        <LogRow
+          logLine={{ id: 1, line: 'hello', stream: 'stdout' }}
+          index={0}
+          start={0}
+          expanded={false}
+          onToggle={() => undefined}
+          measure={() => undefined}
+        />
+      </I18nextProvider>,
+    )
+    expect(screen.queryByRole('status')).toBeNull()
+    await act(async () => {
+      screen.getByRole('button', { name: 'Copy this log line' }).click()
+      await Promise.resolve()
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('Line copied')
+    const clear = vi.spyOn(window, 'clearTimeout')
+    unmount()
+    expect(clear).toHaveBeenCalled()
   })
 })

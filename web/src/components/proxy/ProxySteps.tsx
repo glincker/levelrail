@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import {
   CheckCircleIcon,
   CircleIcon,
+  ClockIcon,
   ProhibitIcon,
   XCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -13,14 +14,32 @@ const ICONS = {
   todo: { Icon: CircleIcon, tone: 'text-muted-foreground' },
   blocked: { Icon: ProhibitIcon, tone: 'text-amber-600 dark:text-amber-400' },
   error: { Icon: XCircleIcon, tone: 'text-destructive' },
-} as const satisfies Record<ProxyStepState, { Icon: unknown; tone: string }>
+  waiting: { Icon: ClockIcon, tone: 'text-muted-foreground' },
+} as const satisfies Record<
+  ProxyStepState | 'waiting',
+  { Icon: unknown; tone: string }
+>
+
+// Steps after an unfinished "detect" cannot start yet, so they wait instead
+// of looking like a dead, undone to-do.
+function displayState(
+  steps: ProxyStep[],
+  step: ProxyStep,
+): ProxyStepState | 'waiting' {
+  const detect = steps.find((s) => s.id === 'detect')
+  const stuck = detect?.state === 'blocked' || detect?.state === 'error'
+  return stuck && step.id !== 'detect' && step.state === 'todo'
+    ? 'waiting'
+    : step.state
+}
 
 export function ProxySteps({ steps }: { steps: ProxyStep[] }) {
   const { t } = useTranslation('domains')
   return (
-    <ol className="space-y-0" aria-label={t('proxySetup.title')}>
+    <ol className="min-w-0 space-y-0" aria-label={t('proxySetup.title')}>
       {steps.map((step, i) => {
-        const { Icon, tone } = ICONS[step.state]
+        const state = displayState(steps, step)
+        const { Icon, tone } = ICONS[state]
         const last = i === steps.length - 1
         return (
           <li key={step.id} className="relative flex gap-3 pb-4 last:pb-0">
@@ -40,11 +59,17 @@ export function ProxySteps({ steps }: { steps: ProxyStep[] }) {
                 {t(`proxySetup.steps.${step.id}`)}
                 <span className="sr-only">
                   {' '}
-                  ({t(`proxySetup.stepState.${step.state}`)})
+                  ({t(`proxySetup.stepState.${state}`)})
                 </span>
               </p>
-              {step.detail ? (
-                <p className="text-xs text-muted-foreground">{step.detail}</p>
+              {state === 'waiting' ? (
+                <p className="text-xs text-muted-foreground">
+                  {t('proxySetup.waitingDetail')}
+                </p>
+              ) : step.detail ? (
+                <p className="text-xs break-words text-muted-foreground">
+                  {step.detail}
+                </p>
               ) : null}
             </div>
           </li>

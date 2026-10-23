@@ -1,8 +1,7 @@
-import { useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckCircleIcon,
+  HeartbeatIcon,
   InfoIcon,
   WarningCircleIcon,
   WarningIcon,
@@ -10,7 +9,8 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PageTemplate } from '../components/shell/PageTemplate'
-import { EmptyState } from '@/components/ui/empty-state'
+import { PageBanner } from '../components/PageBanner'
+import { LazyStatusDiagram } from '../components/banners/LazyPass3Diagrams'
 import { toast } from '@/components/ui/toast'
 import { useAttentionItems } from '../queries/attention'
 import { useRestartApp } from '../queries/apps'
@@ -20,6 +20,8 @@ import { ResolvedLoginControls } from '../components/attention/ResolvedLoginCont
 import { CopyFailureDetail } from '../components/attention/CopyFailureDetail'
 import { CopyItemControls } from '../components/attention/CopyItemControls'
 import { useSnoozed } from '../components/shell/snoozeStore'
+import { SilenceMenu } from '../components/attention/SilenceMenu'
+import { SilencedSection } from '../components/attention/SilencedSection'
 
 export const Route = createFileRoute('/status')({
   component: StatusPage,
@@ -216,44 +218,38 @@ function severityIcon(severity: AttentionItem['severity']) {
 export function StatusPage() {
   const { items: all, isLoading } = useAttentionItems()
   const { t } = useTranslation('attention')
-  const { isSnoozed } = useSnoozed()
-  const [showSnoozed, setShowSnoozed] = useState(false)
-  const snoozed = all.filter((i) => i.copy && isSnoozed(i.id))
-  const items = showSnoozed ? all : all.filter((i) => !snoozed.includes(i))
+  const { isSnoozed, silences, now } = useSnoozed()
+  const items = all.filter((i) => !isSnoozed(i.id))
+
+  const healthy = !isLoading && items.length === 0
+  const size = healthy ? 'hero' : 'compact'
 
   return (
     <PageTemplate
-      title="Status"
-      description="Everything that needs attention right now. Refreshes every 30 seconds."
+      title={t('statusPage.title')}
+      banner={
+        <PageBanner
+          icon={<HeartbeatIcon />}
+          titleKey="attention:statusPage.title"
+          descriptionKey={
+            healthy
+              ? 'attention:statusPage.healthyDescription'
+              : 'attention:statusPage.description'
+          }
+          illustration={<LazyStatusDiagram size={size} />}
+          size={size}
+        />
+      }
     >
-      {snoozed.length > 0 && !showSnoozed ? (
-        <p className="text-xs text-muted-foreground">
-          {t('copyFailure.snoozedCount', { count: snoozed.length })}{' '}
-          <button
-            type="button"
-            className="text-primary hover:underline"
-            onClick={() => {
-              setShowSnoozed(true)
-            }}
-          >
-            {t('copyFailure.showSnoozed')}
-          </button>
-        </p>
-      ) : null}
-
       {isLoading ? (
         <div
           role="status"
-          aria-label="Loading status"
+          aria-label={t('statusPage.loading', {
+            defaultValue: 'Loading status',
+          })}
           className="h-24 animate-pulse rounded-lg bg-muted motion-reduce:animate-none"
         />
-      ) : items.length === 0 ? (
-        <EmptyState
-          icon={<CheckCircleIcon className="size-5" />}
-          title="All systems healthy"
-          description="No failing apps or deploys, offline nodes, low disk, or expiring certificates."
-        />
-      ) : (
+      ) : items.length === 0 ? null : (
         <ul className="space-y-2">
           {items.map((item) => {
             const Icon = severityIcon(item.severity)
@@ -298,12 +294,27 @@ export function StatusPage() {
                     ) : null}
                   </div>
                 </div>
-                <ItemActions item={item} />
+                <div className="flex flex-wrap items-center gap-2">
+                  <ItemActions item={item} />
+                  {item.severity === 'info' ? null : (
+                    <SilenceMenu
+                      issueKey={item.id}
+                      severity={item.severity}
+                      title={item.title}
+                    />
+                  )}
+                </div>
               </li>
             )
           })}
         </ul>
       )}
+      <SilencedSection
+        items={all}
+        silences={silences}
+        now={now}
+        isSnoozed={isSnoozed}
+      />
     </PageTemplate>
   )
 }

@@ -65,6 +65,30 @@ type dockerHealthResource struct {
 	CheckedAt     time.Time           `json:"checked_at"`
 	Checks        []dockerHealthCheck `json:"checks"`
 	ProbeDuration int64               `json:"probe_ms"`
+	// Unresponsive is true when the daemon accepted no call within the guard timeout.
+	Unresponsive      bool       `json:"unresponsive"`
+	UnresponsiveSince *time.Time `json:"unresponsive_since,omitempty"`
+}
+
+type unresponsiveReporter interface {
+	UnresponsiveSince() time.Time
+}
+
+const dockerNotRespondingMessage = "Docker is not responding. Deploys and containers are paused."
+
+func (rt *Router) markDockerUnresponsive(res *dockerHealthResource, err error) {
+	var since time.Time
+	if rep, ok := rt.dockerPinger.(unresponsiveReporter); ok {
+		since = rep.UnresponsiveSince()
+	}
+	if since.IsZero() && !errors.Is(err, docker.ErrDaemonUnresponsive) {
+		return
+	}
+	res.Unresponsive = true
+	if !since.IsZero() {
+		u := since.UTC()
+		res.UnresponsiveSince = &u
+	}
 }
 
 func (rt *Router) handleDockerHealth(w http.ResponseWriter, r *http.Request) {
@@ -80,7 +104,12 @@ func (rt *Router) handleDockerHealth(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := rt.dockerPinger.Ping(ctx); err != nil {
 		rt.logger.Warn("api: docker health ping failed", slog.String("error", err.Error()))
-		res.Checks = append(res.Checks, dockerHealthCheck{Code: "api", Status: doctorStatusFail, Message: "The Docker Engine API did not answer. Check that the daemon is running, then re-check.", FixAction: "recheck"})
+		msg := "The Docker Engine API did not answer. Check that the daemon is running, then re-check."
+		rt.markDockerUnresponsive(&res, err)
+		if res.Unresponsive {
+			msg = dockerNotRespondingMessage
+		}
+		res.Checks = append(res.Checks, dockerHealthCheck{Code: "api", Status: doctorStatusFail, Message: msg, FixAction: "recheck"})
 		writeJSON(w, http.StatusOK, res)
 		return
 	}

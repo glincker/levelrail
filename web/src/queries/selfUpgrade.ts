@@ -64,6 +64,41 @@ export interface SelfUpgradeAttempt {
   log: SelfUpgradeLogLine[]
   started_at: string
   finished_at: string
+  database_restored?: boolean
+  rolled_back_minutes?: number
+  failure?: SelfUpgradeFailure
+}
+
+export interface SelfUpgradeFailure {
+  cause: string
+  primary: 'cleanup' | 'retry' | 'rollback' | 'none'
+  fix_id?: string
+  retryable: boolean
+  rollbackable: boolean
+  cli?: string
+}
+
+export type AttemptAction = 'fix' | 'retry' | 'rollback'
+
+export function useAttemptAction() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      id: string
+      action: AttemptAction
+    }): Promise<{ outcome?: string; detail?: string }> => {
+      const res = await fetch(
+        `/api/v1/updates/self-upgrade/attempts/${encodeURIComponent(input.id)}/${input.action}`,
+        { method: 'POST' },
+      )
+      if (!res.ok) throw await failure(res, `${input.action} upgrade attempt`)
+      return (await res.json()) as { outcome?: string; detail?: string }
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: selfUpgradeKeys.all }),
+    onError: () =>
+      queryClient.invalidateQueries({ queryKey: selfUpgradeKeys.all }),
+  })
 }
 
 export interface ReadinessCheck {
@@ -86,11 +121,28 @@ export interface ServerReadiness {
 
 export const UPGRADE_POLL_MS = 3_000
 
+export interface SelfUpgradeStatus {
+  current_version: string
+  running: SelfUpgradeAttempt | null
+  last_finished: SelfUpgradeAttempt | null
+  verified: boolean
+}
+
+export class UpgradeRunningError extends ApiError {
+  readonly attemptId: string
+
+  constructor(message: string, attemptId: string) {
+    super(409, message)
+    this.attemptId = attemptId
+  }
+}
+
 export const selfUpgradeKeys = {
   all: [...updatesKeys.all, 'self-upgrade'] as const,
   plan: (target: string) =>
     [...updatesKeys.all, 'self-upgrade', 'plan', target] as const,
   attempts: () => [...updatesKeys.all, 'self-upgrade', 'attempts'] as const,
+  status: () => [...updatesKeys.all, 'self-upgrade', 'status'] as const,
   readiness: (domain: string) => ['system', 'readiness', domain] as const,
 }
 
@@ -130,6 +182,21 @@ export function selfUpgradeAttemptsQueryOptions(refetchMs: number | false) {
   })
 }
 
+export function selfUpgradeStatusQueryOptions(enabledPoll = true) {
+  return queryOptions({
+    queryKey: selfUpgradeKeys.status(),
+    queryFn: async (): Promise<SelfUpgradeStatus> => {
+      const res = await fetch('/api/v1/updates/self-upgrade/status')
+      if (!res.ok) throw await failure(res, 'fetch upgrade status')
+      return (await res.json()) as SelfUpgradeStatus
+    },
+    staleTime: 5_000,
+    refetchInterval: (q) =>
+      enabledPoll && q.state.data?.running ? UPGRADE_POLL_MS : false,
+    retry: true,
+  })
+}
+
 export function serverReadinessQueryOptions(domain: string) {
   return queryOptions({
     queryKey: selfUpgradeKeys.readiness(domain),
@@ -156,10 +223,24 @@ export function useStartSelfUpgrade() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
       })
+      if (res.status === 409) {
+        const body = (await res
+          .clone()
+          .json()
+          .catch(() => ({}))) as { running_attempt_id?: string }
+        if (body.running_attempt_id) {
+          throw new UpgradeRunningError(
+            'an upgrade is already running',
+            body.running_attempt_id,
+          )
+        }
+      }
       if (!res.ok) throw await failure(res, 'start upgrade')
       return (await res.json()) as { status: string; target_version: string }
     },
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: selfUpgradeKeys.attempts() }),
+      queryClient.invalidateQueries({ queryKey: selfUpgradeKeys.all }),
+    onError: () =>
+      queryClient.invalidateQueries({ queryKey: selfUpgradeKeys.all }),
   })
 }

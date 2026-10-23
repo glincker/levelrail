@@ -9,6 +9,8 @@ import (
 	"io"
 	"time"
 
+	"filippo.io/age"
+
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -37,6 +39,8 @@ type VerifyRunner struct {
 	Store      VerificationHistoryStore
 	Secrets    SecretsResolver
 	Downloader Downloader
+	// Identities decrypt sealed dumps before the format check; empty is valid for raw ones.
+	Identities []age.Identity
 	// Now returns the current time, matching Runner.Now and
 	// RestoreRunner.Now's own "field, not time.Now called directly"
 	// reasoning for deterministic tests.
@@ -174,13 +178,13 @@ func (r *VerifyRunner) runVerify(ctx context.Context, backupHistoryID, engine st
 	hasher := sha256.New()
 	header := newHeaderCapture(headerCaptureBytes)
 	tail := &tailCapture{maxBytes: tailCaptureBytes}
-	n, err := io.Copy(io.MultiWriter(hasher, header, tail), stream)
+	n, plainN, err := r.readObject(stream, h, hasher, header, tail)
 	if err != nil {
 		return verifyResult{}, fmt.Errorf("read backup %q object %q: %w", backupHistoryID, h.ObjectKey, err)
 	}
 
 	checksum := hex.EncodeToString(hasher.Sum(nil))
-	formatValid, formatError := validateFormat(engine, header.bytes, tail.bytes(), n)
+	formatValid, formatError := validateFormat(engine, header.bytes, tail.bytes(), plainN)
 
 	return verifyResult{
 		// h.ChecksumSHA256 is empty for a backup taken before
@@ -286,3 +290,37 @@ func (c *tailCapture) Write(p []byte) (int, error) {
 }
 
 func (c *tailCapture) bytes() []byte { return c.buf }
+
+// readObject hashes the stored bytes and feeds the plaintext (decrypted for a
+// sealed dump) to the format capture, returning stored and plaintext sizes.
+func (r *VerifyRunner) readObject(stream io.Reader, h store.BackupHistory, hasher io.Writer, header, tail io.Writer) (stored, plain int64, err error) {
+	if h.Codec == "" {
+		n, err := io.Copy(io.MultiWriter(hasher, header, tail), stream)
+		return n, n, err
+	}
+	cr := &sizeReader{r: io.TeeReader(stream, hasher)}
+	pr, err := OpenSealed(cr, h.Codec, r.Identities)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer func() { _ = pr.Close() }()
+	plain, err = io.Copy(io.MultiWriter(header, tail), pr)
+	if err != nil {
+		return cr.n, plain, err
+	}
+	if _, err := io.Copy(io.Discard, cr); err != nil {
+		return cr.n, plain, err
+	}
+	return cr.n, plain, nil
+}
+
+type sizeReader struct {
+	r io.Reader
+	n int64
+}
+
+func (s *sizeReader) Read(p []byte) (int, error) {
+	n, err := s.r.Read(p)
+	s.n += int64(n)
+	return n, err
+}

@@ -1,0 +1,58 @@
+{
+  "title": "Deploy contexts",
+  "description": "Set env vars and static build settings per kind of deploy. Anything you leave empty inherits the app default.",
+  "editor": {
+    "context": "Context",
+    "branchPattern": "Branch pattern",
+    "branchPatternHint": "Exact name or a glob such as release/*.",
+    "env": "Env vars",
+    "envHint": "One KEY=VALUE per line. Use branch env overrides for secrets.",
+    "buildCommand": "Build command",
+    "publishDir": "Publish directory",
+    "buildArgs": "Build args",
+    "buildArgsHint": "One KEY=VALUE per line.",
+    "save": "Save context",
+    "saving": "Saving",
+    "saved": "Context saved.",
+    "saveError": "Could not save the context.",
+    "clear": "Clear",
+    "cleared": "Context cleared.",
+    "clearError": "Could not clear the context.",
+    "invalidLine": "Line \"{{line}}\" must be KEY=VALUE.",
+    "loadError": "Could not load the saved contexts."
+  },
+  "contexts": {
+    "deploy-preview": "Deploy preview (pull requests)",
+    "branch-deploy": "Branch deploy",
+    "branch": "A specific branch"
+  },
+  "saved": {
+    "title": "Saved contexts",
+    "empty": "No context overrides yet. Every deploy uses the app defaults.",
+    "summary": "{{env}} env vars, {{args}} build args",
+    "edit": "Edit"
+  },
+  "effective": {
+    "title": "Effective config for this deploy",
+    "description": "Which value wins and where it came from. Secrets stay masked.",
+    "context": "Deploy as",
+    "production": "Production",
+    "branch": "Branch",
+    "branchPlaceholder": "release/1.2",
+    "env": "Env vars",
+    "buildCommand": "Build command",
+    "publishDir": "Publish directory",
+    "buildArg": "Build arg {{name}}",
+    "none": "none",
+    "empty": "No env vars are set for this deploy.",
+    "loadError": "Could not load the effective config.",
+    "secret": "secret",
+    "source": {
+      "app": "App default",
+      "preview-env": "Preview env",
+      "context": "Context",
+      "branch-context": "Branch context",
+      "branch-env": "Branch override"
+    }
+  }
+}

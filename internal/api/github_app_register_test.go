@@ -267,9 +267,9 @@ func TestHandleGetGitHubAppManifestPreview_Success(t *testing.T) {
 	}
 
 	rt.githubAppState.mu.Lock()
-	pending := rt.githubAppState.state
+	pending := len(rt.githubAppState.entries)
 	rt.githubAppState.mu.Unlock()
-	if pending != "" {
+	if pending != 0 {
 		t.Error("preview must not have minted a pending registration state")
 	}
 }

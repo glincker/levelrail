@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -20,6 +21,8 @@ type VaultSecrets interface {
 	SetValue(ctx context.Context, serviceName, envKey, plaintext string) error
 	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
 	DeleteAll(ctx context.Context, serviceName string) error
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+	DeleteValue(ctx context.Context, serviceName, envKey string) error
 }
 
 // vaultSettingsResource is the wire shape for GET, PUT, and DELETE
@@ -36,6 +39,9 @@ type vaultSettingsResource struct {
 	RoleID        string `json:"role_id,omitempty"`
 	MountPath     string `json:"mount_path"`
 	HasCredential bool   `json:"has_credential"`
+
+	CredentialRotatedAt string `json:"credential_rotated_at,omitempty"`
+	PreviousExpiresAt   string `json:"previous_expires_at,omitempty"`
 }
 
 func (rt *Router) toVaultSettingsResource(ctx context.Context, s store.VaultSettings) vaultSettingsResource {
@@ -46,6 +52,9 @@ func (rt *Router) toVaultSettingsResource(ctx context.Context, s store.VaultSett
 		Namespace:  s.Namespace,
 		RoleID:     s.RoleID,
 		MountPath:  s.MountPath,
+
+		CredentialRotatedAt: rfc3339OrEmpty(s.CredentialRotatedAt),
+		PreviousExpiresAt:   rfc3339OrEmpty(s.PreviousExpiresAt),
 	}
 
 	if rt.vaultSecrets != nil {
@@ -63,10 +72,10 @@ func (rt *Router) toVaultSettingsResource(ctx context.Context, s store.VaultSett
 func (rt *Router) handleGetVaultSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.vault.GetVaultSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get vault settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get vault settings failed", err)
 		return
 	}
+	settings = rt.expireVaultPrevious(r.Context(), settings)
 	writeJSON(w, http.StatusOK, rt.toVaultSettingsResource(r.Context(), settings))
 }
 
@@ -120,8 +129,7 @@ func (rt *Router) handleUpdateVaultSettings(w http.ResponseWriter, r *http.Reque
 	if !hasCredential {
 		exists, err := rt.vaultSecrets.Exists(r.Context(), key, store.VaultCredentialEnvKey)
 		if err != nil {
-			rt.logger.Error("api: check vault credential failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: check vault credential failed", err)
 			return
 		}
 		hasCredential = exists
@@ -133,8 +141,7 @@ func (rt *Router) handleUpdateVaultSettings(w http.ResponseWriter, r *http.Reque
 
 	if req.Credential != "" {
 		if err := rt.vaultSecrets.SetValue(r.Context(), key, store.VaultCredentialEnvKey, req.Credential); err != nil {
-			rt.logger.Error("api: save vault credential failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: save vault credential failed", err)
 			return
 		}
 	}
@@ -148,8 +155,7 @@ func (rt *Router) handleUpdateVaultSettings(w http.ResponseWriter, r *http.Reque
 		MountPath:  req.MountPath,
 	}
 	if err := rt.vault.UpdateVaultSettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: update vault settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update vault settings failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toVaultSettingsResource(r.Context(), settings))
@@ -167,21 +173,22 @@ func (rt *Router) handleDisconnectVault(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := rt.vaultSecrets.DeleteAll(r.Context(), store.VaultSecretsKey()); err != nil {
-		rt.logger.Error("api: clear vault credential failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear vault credential failed", err)
 		return
 	}
 	settings, err := rt.vault.GetVaultSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get vault settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get vault settings failed", err)
 		return
 	}
 	settings.Enabled = false
 	if err := rt.vault.UpdateVaultSettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: disconnect vault failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: disconnect vault failed", err)
 		return
 	}
+	if err := rt.vault.SetVaultCredentialRotation(r.Context(), time.Time{}, time.Time{}); err != nil {
+		rt.logger.Warn("api: clear vault rotation state failed", slog.String("error", err.Error()))
+	}
+	settings.CredentialRotatedAt, settings.PreviousExpiresAt = time.Time{}, time.Time{}
 	writeJSON(w, http.StatusOK, rt.toVaultSettingsResource(r.Context(), settings))
 }

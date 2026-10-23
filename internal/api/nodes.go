@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -34,6 +35,8 @@ type NodeStore interface {
 	// UpdateNodeRegion sets a node's optional location label, backing
 	// PUT /api/v1/nodes/{id}/region.
 	UpdateNodeRegion(ctx context.Context, id, region string) error
+	// UpdateNodeFailureDomain replaces provider, region and zone together.
+	UpdateNodeFailureDomain(ctx context.Context, id, provider, region, zone string) error
 	// SetNodeSchedulable is the cordon/uncordon mutation.
 	SetNodeSchedulable(ctx context.Context, id string, schedulable bool) error
 	RevokeNodeCert(ctx context.Context, id string, now time.Time) error
@@ -60,6 +63,8 @@ type nodeResource struct {
 	// 0252), display/grouping metadata only. "" (omitted on the wire)
 	// means unset.
 	Region    string    `json:"region,omitempty"`
+	Provider  string    `json:"provider,omitempty"`
+	Zone      string    `json:"zone,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	// AlertStatus is only populated by handleGetNode (a single-node
 	// fetch), never handleListNodes: it costs a handful of live metrics
@@ -84,6 +89,8 @@ type nodeResource struct {
 	// self-reported build (node_cert.go, ADR 021).
 	Cert  *nodeCertResource  `json:"cert,omitempty"`
 	Agent *nodeAgentResource `json:"agent,omitempty"`
+	// Failure is set while the node has a live failure state (node_failure.go).
+	Failure *nodeFailureSummary `json:"failure,omitempty"`
 }
 
 // nodeAlertStatusResource is alerting.NodeAlertStatus's wire shape: each
@@ -139,6 +146,8 @@ func toNodeResource(n store.Node) nodeResource {
 		AcceptsAppWorkloads:   n.AcceptsAppWorkloads,
 		AcceptsBuildWorkloads: n.AcceptsBuildWorkloads,
 		Region:                n.Region,
+		Provider:              n.Provider,
+		Zone:                  n.Zone,
 		CreatedAt:             n.CreatedAt,
 	}
 }
@@ -191,8 +200,7 @@ func (rt *Router) respondPlacementValidationError(w http.ResponseWriter, err err
 	case errors.Is(err, errNodeCordoned):
 		writeError(w, http.StatusBadRequest, "node is cordoned and not accepting new placements")
 	default:
-		rt.logger.Error(logMessage, slog.String("error", err.Error()), slog.String("node_id", nodeID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, logMessage, err, slog.String("node_id", nodeID))
 	}
 }
 
@@ -209,15 +217,13 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 		var err error
 		nodes, total, err = fs.ListNodesFiltered(r.Context(), parseNodeListFilter(r))
 		if err != nil {
-			rt.logger.Error("api: list nodes failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: list nodes failed", err)
 			return
 		}
 	} else {
 		all, err := rt.nodes.ListNodes(r.Context())
 		if err != nil {
-			rt.logger.Error("api: list nodes failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: list nodes failed", err)
 			return
 		}
 		nodes, total = all, len(all)
@@ -229,9 +235,11 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 	if cs, ok := rt.nodes.(nodeResourceCountStore); ok {
 		counts, _ = cs.NodeResourceCounts(r.Context())
 	}
+	failures := rt.failureSummaries(r.Context())
 	out := make([]nodeResource, 0, len(nodes))
 	for _, n := range nodes {
 		res := toNodeResource(n)
+		res.Failure = failures[n.ID]
 		res.IsLocal = n.ID == rt.localNodeID
 		res.ResourceCount = counts[n.ID]
 		if res.IsLocal {
@@ -260,8 +268,7 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get node failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get node failed", err, slog.String("node_id", id))
 		return
 	}
 
@@ -269,6 +276,7 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 	res.IsLocal = n.ID == rt.localNodeID
 	res.StatusReason = nodeStatusReason(*n, time.Now(), nodePendingStaleAfter())
 	res.GPU = rt.nodeGPUResources(r.Context())[n.ID]
+	res.Failure = rt.failureSummaries(r.Context())[n.ID]
 	res.Cert, res.Agent = rt.nodeCertAndAgent(*n, time.Now(), rt.renewalStates(r.Context()))
 	if rt.telemetry != nil {
 		th := rt.nodeAlertThresholds
@@ -298,14 +306,12 @@ func (rt *Router) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 
 	services, err := rt.apps.ListDesiredServicesByNode(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: delete node: list placed services failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete node: list placed services failed", err, slog.String("node_id", id))
 		return
 	}
 	databases, err := rt.databases.ListDesiredDatabasesByNode(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: delete node: list placed databases failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete node: list placed databases failed", err, slog.String("node_id", id))
 		return
 	}
 	if len(services) > 0 || len(databases) > 0 {
@@ -317,8 +323,7 @@ func (rt *Router) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rt.nodes.DeleteNode(r.Context(), id); err != nil {
-		rt.logger.Error("api: delete node failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete node failed", err, slog.String("node_id", id))
 		return
 	}
 	if rt.nodeCerts.sessions != nil {
@@ -357,29 +362,34 @@ func (rt *Router) handleSetNodeWorkloads(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set node workloads failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set node workloads failed", err, slog.String("node_id", id))
 		return
 	}
 
 	n, err := rt.nodes.GetNode(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: set node workloads: reload after update failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set node workloads: reload after update failed", err, slog.String("node_id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, toNodeResource(*n))
 }
 
 // setNodeRegionRequest is the body PUT /api/v1/nodes/{id}/region expects.
+// Every field is optional: an omitted field keeps its stored value.
 type setNodeRegionRequest struct {
-	Region string `json:"region"`
+	Region   *string `json:"region,omitempty"`
+	Provider *string `json:"provider,omitempty"`
+	Zone     *string `json:"zone,omitempty"`
 }
 
+// maxNodeLabelLen bounds a failure-domain label so a node row stays small.
+const maxNodeLabelLen = 64
+
+func validNodeLabel(v string) bool { return len(v) <= maxNodeLabelLen }
+
 // handleSetNodeRegion handles PUT /api/v1/nodes/{id}/region: the only way
-// a node's operator-facing location label changes. Free text, no fixed
-// provider/region list validated against, per store.Node.Region's own doc
-// comment.
+// a node's failure-domain labels (region, provider, zone) change. Free text,
+// no fixed list validated against.
 func (rt *Router) handleSetNodeRegion(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
@@ -387,20 +397,41 @@ func (rt *Router) handleSetNodeRegion(w http.ResponseWriter, r *http.Request) {
 	if !decodeReq(w, r, &req) {
 		return
 	}
+	if (req.Region != nil && !validNodeLabel(*req.Region)) || (req.Provider != nil && !validNodeLabel(*req.Provider)) || (req.Zone != nil && !validNodeLabel(*req.Zone)) {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("labels must be at most %d characters", maxNodeLabelLen))
+		return
+	}
 
-	if err := rt.nodes.UpdateNodeRegion(r.Context(), id, req.Region); errors.Is(err, store.ErrNodeNotFound) {
+	cur, err := rt.nodes.GetNode(r.Context(), id)
+	if errors.Is(err, store.ErrNodeNotFound) {
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set node region failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set node region: load failed", err, slog.String("node_id", id))
+		return
+	}
+	provider, region, zone := cur.Provider, cur.Region, cur.Zone
+	if req.Region != nil {
+		region = strings.TrimSpace(*req.Region)
+	}
+	if req.Provider != nil {
+		provider = strings.TrimSpace(*req.Provider)
+	}
+	if req.Zone != nil {
+		zone = strings.TrimSpace(*req.Zone)
+	}
+
+	if err := rt.nodes.UpdateNodeFailureDomain(r.Context(), id, provider, region, zone); errors.Is(err, store.ErrNodeNotFound) {
+		writeError(w, http.StatusNotFound, "node not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: set node region failed", err, slog.String("node_id", id))
 		return
 	}
 
 	n, err := rt.nodes.GetNode(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: set node region: reload after update failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set node region: reload after update failed", err, slog.String("node_id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, toNodeResource(*n))
@@ -428,15 +459,13 @@ func (rt *Router) setNodeSchedulable(w http.ResponseWriter, r *http.Request, sch
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set node schedulable failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.Bool("schedulable", schedulable))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set node schedulable failed", err, slog.String("node_id", id), slog.Bool("schedulable", schedulable))
 		return
 	}
 
 	n, err := rt.nodes.GetNode(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: set node schedulable: reload after update failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set node schedulable: reload after update failed", err, slog.String("node_id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, toNodeResource(*n))
@@ -511,8 +540,7 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: drain node: look up node failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: drain node: look up node failed", err, slog.String("node_id", id))
 		return
 	}
 
@@ -524,8 +552,7 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 			case errors.Is(err, errNodeCordoned):
 				writeError(w, http.StatusBadRequest, "target node is cordoned and not accepting new placements")
 			default:
-				rt.logger.Error("api: drain node: validate target failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("target_node_id", targetNodeID))
-				writeError(w, http.StatusInternalServerError, "internal error")
+				rt.internalError(w, "api: drain node: validate target failed", err, slog.String("node_id", id), slog.String("target_node_id", targetNodeID))
 			}
 			return
 		}
@@ -533,14 +560,12 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 
 	services, err := rt.apps.ListDesiredServicesByNode(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: drain node: list services failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: drain node: list services failed", err, slog.String("node_id", id))
 		return
 	}
 	databases, err := rt.databases.ListDesiredDatabasesByNode(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: drain node: list databases failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: drain node: list databases failed", err, slog.String("node_id", id))
 		return
 	}
 
@@ -635,15 +660,13 @@ func (rt *Router) handleGetNodeHealth(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: get node health: look up node failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get node health: look up node failed", err, slog.String("node_id", id))
 		return
 	}
 
 	conditions, err := rt.deploys.GetConditions(r.Context(), nodeHealthControllerName(id))
 	if err != nil {
-		rt.logger.Error("api: get node health failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get node health failed", err, slog.String("node_id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, conditions)
@@ -683,15 +706,19 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, "node_name must be lowercase letters, digits and dashes, starting with a letter")
 		return
 	}
+	domain, err := validJoinDomain(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	rec, err := rt.mintNodeJoinToken(r.Context(), rt.effectiveJoinTokenTTL())
 	if err != nil {
-		rt.logger.Error("api: create node join token failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create node join token failed", err)
 		return
 	}
 	resp := createNodeJoinTokenResponse{Token: rec.plaintext, ExpiresAt: rec.expiresAt, CAFingerprint: rt.agentCAFingerprint, ControlPlaneAddr: addr}
 	if addr != "" {
-		cmds := rt.buildJoinCommands(addr, rec.plaintext, rt.agentCAFingerprint, req.NodeName, req.Mesh)
+		cmds := rt.buildJoinCommands(addr, rec.plaintext, rt.agentCAFingerprint, req.NodeName, req.Mesh, domain)
 		resp.JoinCommands = &cmds
 	}
 	writeJSON(w, http.StatusCreated, resp)

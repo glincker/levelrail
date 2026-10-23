@@ -6,6 +6,7 @@ import {
   useVaultSettings,
 } from '../../queries/vault'
 import { VaultSettingsCard } from '../../components/VaultSettingsCard'
+import { VaultRotateCredentialCard } from '../../components/VaultRotateCredentialCard'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import {
   SettingsCardSkeleton,
@@ -46,7 +47,10 @@ function VaultSettingsPage() {
       title={t('vaultPage.title')}
       description={t('vaultPage.description')}
     >
-      <VaultSettingsCard settings={settings} />
+      <div className="space-y-6">
+        <VaultSettingsCard settings={settings} />
+        <VaultRotateCredentialCard settings={settings} />
+      </div>
     </PageTemplate>
   )
 }

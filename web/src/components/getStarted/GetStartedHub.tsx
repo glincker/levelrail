@@ -67,7 +67,6 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
   const [confirmReset, setConfirmReset] = useState(false)
   const busy = setStep.isPending || setHidden.isPending || reset.isPending
   const { essential, more } = essentialSplit(guide)
-  const essentialsOpen = essential.some(isOpen)
   const moreOrdered = [
     ...more.filter(isOpen),
     ...more.filter((s) => !isOpen(s)),
@@ -94,7 +93,10 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
           <>
             <CreateResourceWizard
               trigger={
-                <Button size="sm" variant={highlighted ? 'default' : 'outline'}>
+                <Button
+                  size="sm"
+                  variant={highlighted || isOpen(step) ? 'default' : 'outline'}
+                >
                   {t('steps.first_app.cta')}
                 </Button>
               }
@@ -191,15 +193,15 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
       </section>
 
       {moreOrdered.length > 0 ? (
-        <details open={!essentialsOpen} className="space-y-2">
-          <summary className="cursor-pointer text-sm font-medium text-foreground">
+        <section className="space-y-2">
+          <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             {t('more.title')}
-          </summary>
-          <p className="mt-2 text-sm text-muted-foreground">{t('more.help')}</p>
-          <ul className="mt-2 space-y-2">
+          </h2>
+          <p className="text-sm text-muted-foreground">{t('more.help')}</p>
+          <ul className="space-y-2">
             {moreOrdered.map((s) => card(s, s.id === guide.next_step))}
           </ul>
-        </details>
+        </section>
       ) : null}
 
       <ConfirmDialog

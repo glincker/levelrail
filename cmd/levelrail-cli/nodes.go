@@ -31,6 +31,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesRevokeJoinToken(prog, rest, stdout, stderr, lookupEnv)
 	case "cordon":
 		return runNodesCordon(prog, rest, stdout, stderr, lookupEnv)
+	case "set-labels":
+		return runNodesSetLabels(prog, rest, stdout, stderr, lookupEnv)
 	case "uncordon":
 		return runNodesUncordon(prog, rest, stdout, stderr, lookupEnv)
 	case "drain":
@@ -49,6 +51,10 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesResourceUsage(prog, rest, stdout, stderr, lookupEnv)
 	case "capacity-forecast":
 		return runNodesCapacityForecast(prog, rest, stdout, stderr, lookupEnv)
+	case "capacity":
+		return runNodesCapacity(prog, rest, stdout, stderr, lookupEnv)
+	case "cleanup":
+		return runNodesCleanup(prog, rest, stdout, stderr, lookupEnv)
 	case "mesh":
 		return runNodesMesh(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-key":
@@ -89,10 +95,20 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesLabels(prog, rest, stdout, stderr, lookupEnv)
 	case "zones":
 		return runNodesZones(prog, rest, stdout, stderr, lookupEnv)
+	case "domains":
+		return runNodesDomains(prog, rest, stdout, stderr, lookupEnv)
+	case "preflight":
+		return runNodesPreflight(prog, rest, stdout, stderr, lookupEnv)
 	case "simulate":
 		return runNodesSimulate(prog, rest, stdout, stderr, lookupEnv)
 	case "failure":
 		return runNodesFailure(prog, rest, stdout, stderr, lookupEnv)
+	case "failure-policy":
+		return runNodesFailurePolicy(prog, rest, stdout, stderr, lookupEnv)
+	case "lost":
+		return runNodesLost(prog, rest, stdout, stderr, lookupEnv)
+	case "failure-resolve":
+		return runNodesFailureResolve(prog, rest, stdout, stderr, lookupEnv)
 	case "allocations":
 		return runNodesAllocations(prog, rest, stdout, stderr, lookupEnv)
 	case "placement":
@@ -109,13 +125,16 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 func nodesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s nodes list [flags]                                          list every node
-  %[1]s nodes add [--name N] [--mesh] [flags]                        print a one-command join for a new server (single-use token)
+  %[1]s nodes add [--name N] [--provider P --region R --zone Z] [--mesh] [--preflight]   print a one-command join for a new server (single-use token)
+  %[1]s nodes preflight <id-or-name> [--wait]                       show a node's detected labels and preflight checks with fixes
+  %[1]s nodes domains                                               capacity per provider, region and zone, and single-domain warnings
   %[1]s nodes get <id> [flags]                                      show one node
   %[1]s nodes delete <id> [flags]                                    delete a node (fails if it still has placements, drain first)
   %[1]s nodes join-token [flags]                                     mint a one-time enrollment token, shown once
   %[1]s nodes join-tokens [flags]                                    list pending (unused, unexpired) join tokens
   %[1]s nodes revoke-join-token <id>|--all [flags]                   revoke pending join tokens at once
   %[1]s nodes cordon <id> [flags]                                    mark a node unschedulable, without evacuating it
+  %[1]s nodes set-labels <id> [--region R] [--provider P] [--zone Z]  set a node's failure-domain labels
   %[1]s nodes uncordon <id> [flags]                                  mark a node schedulable again
   %[1]s nodes drain <id> [--target ID] [--wait] [flags]              cordon, then move every database and app off a node
   %[1]s nodes drains <id> [flags]                                    show a node's drains and their moves
@@ -126,6 +145,9 @@ func nodesUsage(prog string) string {
   %[1]s nodes zones [flags]                                          failure domains with their nodes and workloads
   %[1]s nodes simulate [--cpu M] [--memory MiB] [--count N]          dry run: where new apps would land and why
   %[1]s nodes failure --zone Z | --node ID                           dry run: where workloads go if a zone or node dies
+  %[1]s nodes failure-policy get|set <id> [--mode M] [--grace S]    what happens when a node stays unreachable
+  %[1]s nodes lost <id> [--dry-run] [--yes]                          declare a node lost, showing the plan first
+  %[1]s nodes failure-resolve <id> <kind> <name> --wait|--restore    decide for an app or database with node-local data
   %[1]s nodes allocations [flags]                                requested versus allocatable CPU, memory and disk per node
   %[1]s nodes connectivity [flags]                                   WireGuard health of every node pair
   %[1]s nodes workloads <id> --accepts-app --accepts-build [flags]   set a node's accepted workload kinds
@@ -135,6 +157,8 @@ func nodesUsage(prog string) string {
   %[1]s nodes metrics <id> --metric NAME [flags]                     query a node's metric time series
   %[1]s nodes resource-usage [flags]                                 show every node's latest CPU/memory/disk usage, plus a fleet rollup
   %[1]s nodes capacity-forecast <id> [flags]                        project disk/memory usage forward, roughly how many days until full
+  %[1]s nodes capacity <node> [flags]                               show disk, inode, memory and swap headroom against thresholds
+  %[1]s nodes cleanup <node> --dry-run|--yes [flags]                preview or run the safe cleanup on the control plane node
   %[1]s nodes mesh [flags]                                           show this control plane's live WireGuard mesh state and peers
   %[1]s nodes rotate-key <id> [flags]                                rotate a node's WireGuard key (local or remote)
   %[1]s nodes rejoin-mesh <id> [flags]                               force an immediate mesh resync for a peer that looks stuck

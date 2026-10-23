@@ -12,6 +12,23 @@ func TestFallbackDomain_PublicIPv4(t *testing.T) {
 	}
 }
 
+func TestFallbackDomain_Localhost(t *testing.T) {
+	tests := []struct {
+		host, svc, want string
+		ok              bool
+	}{
+		{"localhost", "My_App", "my-app.localhost", true},
+		{" LocalHost ", "web", "web.localhost", true},
+		{"localhost", "!!!", "", false},
+	}
+	for _, tc := range tests {
+		got, ok := FallbackDomain(tc.host, tc.svc)
+		if got != tc.want || ok != tc.ok {
+			t.Errorf("FallbackDomain(%q, %q) = %q, %v; want %q, %v", tc.host, tc.svc, got, ok, tc.want, tc.ok)
+		}
+	}
+}
+
 func TestFallbackDomain_PublicIPv6(t *testing.T) {
 	got, ok := FallbackDomain("2001:db8::1", "my-app")
 	if !ok {

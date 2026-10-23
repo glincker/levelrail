@@ -22,6 +22,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsCloudflareDNS(prog, args[1:], stdout, stderr, lookupEnv)
 	case "route53-dns":
 		return runDomainsRoute53DNS(prog, args[1:], stdout, stderr, lookupEnv)
+	case "google-cloud-dns":
+		return runDomainsGoogleCloudDNS(prog, args[1:], stdout, stderr, lookupEnv)
 	case "basic-auth":
 		return runDomainsBasicAuth(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auth-gate":
@@ -36,12 +38,18 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsCheck(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDomainsDoctor(prog, args[1:], stdout, stderr, lookupEnv)
+	case "diagnose":
+		return runDomainsDiagnose(prog, args[1:], stdout, stderr, lookupEnv)
+	case "add":
+		return runDomainsAdd(prog, args[1:], stdout, stderr, lookupEnv)
 	case "summary":
 		return runDomainsSummary(prog, args[1:], stdout, stderr, lookupEnv)
 	case "activity":
 		return runDomainsActivity(prog, args[1:], stdout, stderr, lookupEnv)
 	case "connectivity":
 		return runDomainsConnectivity(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cert":
+		return runDomainsCert(prog, args[1:], stdout, stderr, lookupEnv)
 	case "certificates":
 		return runDomainsCertificates(prog, args[1:], stdout, stderr, lookupEnv)
 	case "waf":
@@ -72,6 +80,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsStandalone(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ports":
 		return runDomainsPorts(prog, args[1:], stdout, stderr, lookupEnv)
+	case "provider":
+		return runDomainsProvider(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown domains subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, domainsUsage(prog))
@@ -84,6 +94,7 @@ func domainsUsage(prog string) string {
   %[1]s domains list [flags]                    list every app's domains in one call
   %[1]s domains cloudflare-dns <verb> [flags]   configure wildcard-domain ACME DNS-01 via Cloudflare
   %[1]s domains route53-dns <verb> [flags]      configure wildcard-domain ACME DNS-01 via Route53
+  %[1]s domains google-cloud-dns <verb> [flags] connect Google Cloud DNS for records and wildcard certificates
   %[1]s domains basic-auth <verb> [flags]       protect an app's domain with HTTP Basic Auth
   %[1]s domains auth-gate <verb> [flags]        check every request with your auth service or built-in sign-in
   %[1]s domains maintenance <verb> [flags]      take one of an app's domains in or out of maintenance mode
@@ -91,9 +102,12 @@ func domainsUsage(prog string) string {
   %[1]s domains tls-cert <verb> [flags]         upload or clear a domain's own (BYO) TLS certificate
   %[1]s domains check <app> <domain> [flags]    run a real DNS lookup and report whether the domain reaches this control plane
   %[1]s domains doctor <app> <domain> [flags]   run every domain check and print a prioritised fix list
-  %[1]s domains summary [flags]                 count domains by status and certificates needing attention
+  %[1]s domains diagnose <domain> [flags]       why isn't my domain working: every check with the exact fix, optionally applied with --fix
+  %[1]s domains add <app> <domain>... [flags]   add domains and print the exact DNS records to create
+  %[1]s domains summary [flags]                count domains by status and certificates needing attention
   %[1]s domains activity <domain> [flags]       list a domain's recent changes and certificate events
   %[1]s domains connectivity [flags]            check whether ports 80/443 reach this node and whether HTTP-01 can work
+  %[1]s domains cert <domain> [--staging] [--wait]  get a real Let's Encrypt certificate for a domain, with a preflight
   %[1]s domains certificates [flags]            list every certificate in certmagic storage, healthy or not
   %[1]s domains waf <verb> [flags]              configure a domain's opt-in WAF and rate limiting
   %[1]s domains error-pages <verb> [flags]      configure a domain's custom error pages (404, 500, 502, 503)
@@ -103,6 +117,7 @@ func domainsUsage(prog string) string {
   %[1]s domains go-live runs|undo [flags]       automation history and one-step undo
   %[1]s domains backfill-base-domain [flags]    give existing apps without a domain <app>.<base domain>
   %[1]s domains standalone <verb> [flags]       proxy a domain to a port, address or URL without an app
+  %[1]s domains provider <verb> [flags]       choose the free wildcard-DNS provider for automatic hostnames
 %[2]s
 Run "%[1]s domains <subcommand> -h" for a subcommand's own flags.
 `, prog, domainsPoliciesUsageLines(prog))

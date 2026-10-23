@@ -1,0 +1,139 @@
+// Wire contract for the read-only migration agent. It is a separate service
+// and a separate Go package from AgentService on purpose: a migration source
+// can never be sent a deploy, exec or build request because those messages
+// do not exist in this file. The control message set below is the complete
+// list of things a source host will ever be asked to do.
+syntax = "proto3";
+
+package levelrail.migration.v1;
+
+option go_package = "github.com/GLINCKER/levelrail/internal/agent/migrationpb;migrationpb";
+
+import "google/protobuf/timestamp.proto";
+
+service MigrationService {
+  // Enroll exchanges a single-use migration token for a short-lived client
+  // certificate. The private key never leaves the source host.
+  rpc Enroll(EnrollRequest) returns (EnrollResponse);
+  // Session is the long-lived mTLS stream the source dials out on.
+  rpc Session(stream AgentMessage) returns (stream ControlMessage);
+}
+
+message EnrollRequest {
+  string join_token = 1;
+  bytes csr_der = 2;
+  string version = 3;
+  string os = 4;
+  string arch = 5;
+  // ca_pin_state is "pinned" when the agent verified the control plane CA
+  // against the fingerprint in the install command.
+  string ca_pin_state = 6;
+}
+
+message EnrollResponse {
+  string session_id = 1;
+  bytes client_cert_pem = 2;
+  bytes ca_cert_pem = 3;
+  google.protobuf.Timestamp not_after = 4;
+  google.protobuf.Timestamp session_expires_at = 5;
+}
+
+message AgentMessage {
+  oneof payload {
+    Hello hello = 1;
+    Heartbeat heartbeat = 2;
+    Inventory inventory = 3;
+    ScanResult scan_result = 4;
+    Denied denied = 5;
+  }
+}
+
+// ControlMessage is the whole migration request set. Anything else the
+// agent receives is a protocol violation and ends the session.
+message ControlMessage {
+  oneof payload {
+    DiscoverRequest discover = 1;
+    ScanRequest scan = 2;
+    GoAway go_away = 3;
+  }
+}
+
+message Hello {
+  string version = 1;
+  string os = 2;
+  string arch = 3;
+}
+
+message Heartbeat {}
+
+message GoAway {
+  string reason = 1;
+}
+
+message DiscoverRequest {
+  string request_id = 1;
+}
+
+// ScanRequest names volumes or bind mount paths that the latest inventory
+// listed. The agent refuses any target it did not itself report.
+message ScanRequest {
+  string request_id = 1;
+  repeated string targets = 2;
+}
+
+message Inventory {
+  string request_id = 1;
+  string docker_version = 2;
+  repeated Container containers = 3;
+  repeated Volume volumes = 4;
+  int32 network_count = 5;
+  google.protobuf.Timestamp collected_at = 6;
+}
+
+message Container {
+  string id = 1;
+  string name = 2;
+  string image = 3;
+  string state = 4;
+  string status = 5;
+  // env_keys are variable names only. Values never leave the host.
+  repeated string env_keys = 6;
+  repeated Mount mounts = 7;
+  repeated string ports = 8;
+  // database_engine is set when the image looks like a database server.
+  string database_engine = 9;
+  string database_version = 10;
+}
+
+message Mount {
+  string type = 1;
+  string name = 2;
+  string source = 3;
+  string destination = 4;
+  bool read_only = 5;
+}
+
+message Volume {
+  string name = 1;
+  string driver = 2;
+  string mountpoint = 3;
+}
+
+message ScanResult {
+  string request_id = 1;
+  repeated VolumeStat stats = 2;
+}
+
+message VolumeStat {
+  string target = 1;
+  int64 files = 2;
+  int64 bytes = 3;
+  // changed_during_scan is true when a second pass saw different totals.
+  bool changed_during_scan = 4;
+  string error = 5;
+}
+
+message Denied {
+  string request_id = 1;
+  string reason = 2;
+}

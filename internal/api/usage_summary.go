@@ -76,7 +76,7 @@ type usageSummaryResponse struct {
 // stored backup bytes per resource.
 func (rt *Router) handleUsageSummary(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	canSeeApp, err := rt.appVisibilityFilter(r)
+	canSeeApp, err := rt.scopedAppVisibility(r)
 	if err != nil {
 		rt.internalError(w, "api: usage summary: app visibility", err)
 		return
@@ -90,6 +90,19 @@ func (rt *Router) handleUsageSummary(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rt.internalError(w, "api: usage summary: list databases", err)
 		return
+	}
+	dbs = rt.withoutPendingDatabases(ctx, dbs)
+	if requestScoped(r) {
+		if dbs, err = rt.scopedDatabases(r, dbs); err != nil {
+			rt.internalError(w, "api: usage summary: database scope", err)
+			return
+		}
+		inScope := make(map[string]bool, len(dbs))
+		for _, d := range dbs {
+			inScope[d.Name] = true
+		}
+		visible := canSeeDB
+		canSeeDB = func(name string) bool { return inScope[name] && visible(name) }
 	}
 
 	cores := rt.doctorNumCPU

@@ -133,6 +133,23 @@ func (e *Engine) rotateLocked(ctx context.Context, p store.SecretRotationPolicy,
 	if p.State == store.SecretRotationRestartFailed || p.State == store.SecretRotationPending {
 		return e.retryRestart(ctx, p, actor)
 	}
+	return e.apply(ctx, p, actor, "", true)
+}
+
+// RotateValue writes a new value for a secret (value, or a generated one
+// when empty) without restarting the app, so the caller can offer a redeploy.
+// The policy must already exist; it carries the grace window and progress.
+func (e *Engine) RotateValue(ctx context.Context, app, key, value, actor string) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	p, err := e.Store.GetSecretRotationPolicy(ctx, app, key)
+	if err != nil {
+		return fmt.Errorf("secretrotation: load policy: %w", err)
+	}
+	return e.apply(ctx, p, actor, value, false)
+}
+
+func (e *Engine) apply(ctx context.Context, p store.SecretRotationPolicy, actor, value string, restart bool) error {
 	exists, locked, _, err := e.Backend.KeyState(ctx, p.ServiceName, p.EnvKey)
 	if err != nil {
 		return fmt.Errorf("secretrotation: read key state: %w", err)
@@ -158,9 +175,11 @@ func (e *Engine) rotateLocked(ctx context.Context, p store.SecretRotationPolicy,
 	if err != nil {
 		return e.fail(ctx, p, ReasonMissing, actor)
 	}
-	next, err := generateValue()
-	if err != nil {
-		return err
+	next := value
+	if next == "" {
+		if next, err = generateValue(); err != nil {
+			return err
+		}
 	}
 	if keepPrevious {
 		if err := e.Backend.SetValue(ctx, p.ServiceName, prevKey, old); err != nil {
@@ -188,7 +207,14 @@ func (e *Engine) rotateLocked(ctx context.Context, p store.SecretRotationPolicy,
 		return e.fail(ctx, p, ReasonWriteFailed, actor)
 	}
 	e.audit(ctx, ActionRotate, p.ServiceName, p.EnvKey, actor)
-	return e.retryRestart(ctx, pending, actor)
+	if restart {
+		return e.retryRestart(ctx, pending, actor)
+	}
+	pending.State = store.SecretRotationIdle
+	if err := e.Store.SaveSecretRotationProgress(ctx, pending, e.now()); err != nil {
+		return fmt.Errorf("secretrotation: save progress: %w", err)
+	}
+	return nil
 }
 
 func (e *Engine) cleanupPrevious(ctx context.Context, p store.SecretRotationPolicy, kept bool) {

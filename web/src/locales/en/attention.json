@@ -133,5 +133,42 @@
     "snoozedCount_one": "{{count}} snoozed item hidden",
     "snoozedCount_other": "{{count}} snoozed items hidden",
     "showSnoozed": "Show"
+  },
+  "silence": {
+    "button": "Silence",
+    "menuLabel": "Silence {{title}}",
+    "reason": "Reason for silencing",
+    "reasonPlaceholder": "Why? (optional)",
+    "for": {
+      "1h": "For 1 hour",
+      "1d": "For 1 day",
+      "1w": "For 1 week",
+      "30d": "For 30 days",
+      "forever": "Forever"
+    },
+    "done": "Silenced {{title}}.",
+    "undo": "Undo",
+    "confirmTitle": "Silence {{title}}?",
+    "confirmForever": "This issue will stay hidden until you unsilence it, even if it gets worse. It stays listed under Silenced.",
+    "confirmCritical": "This is a critical or security-related issue. Silencing it hides it from the issue count. It stays listed under Silenced.",
+    "confirm": "Silence",
+    "sectionTitle": "Silenced ({{count}})",
+    "until": "until {{when}}",
+    "forever": "forever",
+    "by": "by {{who}}",
+    "unsilence": "Unsilence",
+    "unsilenced": "Showing {{title}} again."
+  },
+  "statusPage": {
+    "title": "Status",
+    "description": "Everything that needs attention right now. Refreshes every 30 seconds.",
+    "healthyDescription": "All systems healthy. No failing apps or deploys, offline nodes, low disk, or expiring certificates.",
+    "loading": "Loading status",
+    "banner": {
+      "diagram": {
+        "heartbeat": "Heartbeat",
+        "checks": "Checks"
+      }
+    }
   }
 }

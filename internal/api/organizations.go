@@ -32,8 +32,7 @@ type createOrganizationRequest struct {
 func (rt *Router) handleListOrganizations(w http.ResponseWriter, r *http.Request) {
 	orgs, err := rt.organizations.ListOrganizations(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list organizations failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list organizations failed", err)
 		return
 	}
 	out := make([]organizationResource, 0, len(orgs))
@@ -55,8 +54,7 @@ func (rt *Router) handleGetOrganization(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get organization failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get organization failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, toOrganizationResource(o))
@@ -75,15 +73,13 @@ func (rt *Router) handleCreateOrganization(w http.ResponseWriter, r *http.Reques
 
 	id, err := randomOrganizationID()
 	if err != nil {
-		rt.logger.Error("api: create organization: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create organization: generate id failed", err)
 		return
 	}
 
 	o := store.Organization{ID: id, Name: req.Name, CreatedAt: time.Now().UTC().Format(time.RFC3339)}
 	if err := rt.organizations.SaveOrganization(r.Context(), o); err != nil {
-		rt.logger.Error("api: create organization failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create organization failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusCreated, toOrganizationResource(o))
@@ -143,15 +139,13 @@ func (rt *Router) handleSetProjectOrganization(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: set project organization failed", slog.String("error", err.Error()), slog.String("project_id", projectID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set project organization failed", err, slog.String("project_id", projectID))
 		return
 	}
 
 	p, err := rt.projects.GetProject(r.Context(), projectID)
 	if err != nil {
-		rt.logger.Error("api: reload project after org assignment failed", slog.String("error", err.Error()), slog.String("project_id", projectID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: reload project after org assignment failed", err, slog.String("project_id", projectID))
 		return
 	}
 	writeJSON(w, http.StatusOK, toProjectResource(p))

@@ -105,24 +105,21 @@ func (rt *Router) handleMoveAppWithVolumes(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: move app with volumes: load existing failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: move app with volumes: load existing failed", err, slog.String("name", name))
 		return
 	}
 
 	fromNodeID := existing.NodeID
 	moveID, err := randomAppVolumeMoveID()
 	if err != nil {
-		rt.logger.Error("api: move app with volumes: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: move app with volumes: generate id failed", err)
 		return
 	}
 	startedAt := time.Now().UTC().Format(time.RFC3339)
 	if err := rt.appVolumeMoves.StartAppVolumeMove(r.Context(), store.AppVolumeMove{
 		ID: moveID, ServiceName: name, FromNodeID: fromNodeID, ToNodeID: req.NodeID, StartedAt: startedAt,
 	}); err != nil {
-		rt.logger.Error("api: move app with volumes: start history failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: move app with volumes: start history failed", err, slog.String("name", name))
 		return
 	}
 
@@ -132,8 +129,7 @@ func (rt *Router) handleMoveAppWithVolumes(w http.ResponseWriter, r *http.Reques
 		if err := rt.applyPlainNodeMove(r.Context(), name, fromNodeID, req.NodeID); err != nil {
 			finish(err)
 			rt.finishAppVolumeMove(r.Context(), moveID, err)
-			rt.logger.Error("api: move app with volumes: plain move failed", slog.String("error", err.Error()), slog.String("name", name))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: move app with volumes: plain move failed", err, slog.String("name", name))
 			return
 		}
 		finish(nil)
@@ -142,8 +138,7 @@ func (rt *Router) handleMoveAppWithVolumes(w http.ResponseWriter, r *http.Reques
 
 		final, err := rt.appVolumeMoves.GetAppVolumeMove(r.Context(), moveID)
 		if err != nil {
-			rt.logger.Error("api: move app with volumes: reload after move failed", slog.String("error", err.Error()), slog.String("move_id", moveID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: move app with volumes: reload after move failed", err, slog.String("move_id", moveID))
 			return
 		}
 		writeJSON(w, http.StatusOK, toAppVolumeMoveResource(final))
@@ -302,15 +297,13 @@ func (rt *Router) handleListAppVolumeMoves(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list app volume moves: load service failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list app volume moves: load service failed", err, slog.String("name", name))
 		return
 	}
 
 	moves, err := rt.appVolumeMoves.ListAppVolumeMoves(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: list app volume moves failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list app volume moves failed", err, slog.String("name", name))
 		return
 	}
 	out := make([]appVolumeMoveResource, 0, len(moves))
@@ -332,8 +325,7 @@ func (rt *Router) handleGetAppVolumeMove(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, "move not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: get app volume move failed", slog.String("error", err.Error()), slog.String("move_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get app volume move failed", err, slog.String("move_id", id))
 		return
 	}
 	if m.ServiceName != name {

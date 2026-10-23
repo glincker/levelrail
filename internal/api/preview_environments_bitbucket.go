@@ -16,10 +16,10 @@ import (
 // Bitbucket OAuth consumer is authorized, or gs.RepoURL isn't hosted on
 // bitbucket.org (Cloud only, mirrors previewGitHubTarget).
 func (rt *Router) previewBitbucketTarget(ctx context.Context, appName string, gs store.GitSource) (accessToken, fullName string, ok bool) {
-	if !gs.PostPRComments || rt.bitbucketAppSecrets == nil {
+	if !gs.PostPRComments || rt.gitConnSecrets == nil {
 		return "", "", false
 	}
-	accessToken, err := rt.bitbucketAccessToken(ctx)
+	_, accessToken, err := rt.gitTokenForRepo(ctx, gitProviderBitbucket, gs.RepoURL, gs.ConnectionID)
 	if err != nil {
 		rt.logger.Info("api: preview bitbucket notification skipped: no usable bitbucket connection",
 			slog.String("app_name", appName), slog.String("error", err.Error()))

@@ -11,7 +11,11 @@ package ingress
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/staticroutes"
 )
 
 // FileServerHandler is Caddy's "file_server" handler
@@ -80,6 +84,9 @@ type ProxyRoute struct {
 	LB *LBRoute
 	// Policy, if non-nil, adds the domain's traffic controls (policy_*.go).
 	Policy *RoutePolicy
+	// Abuse, if non-nil and active, puts the owning app's abuse defense in
+	// front of every other control on the route.
+	Abuse *AbusePolicy
 	// Upstream, if non-nil, shapes a standalone domain's single backend.
 	// Ignored when LB is set.
 	Upstream *UpstreamOptions
@@ -254,6 +261,9 @@ type StaticRoute struct {
 	Hosts []string
 	// RootDir is the local filesystem directory to serve.
 	RootDir string
+	// Rules, when set, serves the tree through the routing rules compiled
+	// at deploy time instead of the plain file server.
+	Rules *staticroutes.Ruleset
 }
 
 // MaintenanceRoute is one domain currently in maintenance mode: every
@@ -349,6 +359,8 @@ type RoutesOptions struct {
 	// PlainHTTP serves the same routes over unencrypted HTTP on HTTPPort,
 	// for a proxy in front that terminates TLS and dials this port.
 	PlainHTTP bool
+	// HTTPBindHost is the interface the PlainHTTP listener binds; empty means every interface.
+	HTTPBindHost string
 	// Routes is every reverse-proxy backend to route on this listener.
 	// Empty is valid: it produces a listener with no routes and no TLS
 	// automation policy, the normal shape for a reconcile pass over zero
@@ -613,6 +625,10 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		}
 		// Traffic controls, front side: redirects, geo and headers run first.
 		handle = r.Policy.wrapFront(r.Hosts[0], handle)
+		handle = r.Abuse.wrap(handle)
+		if DefaultSplits().Active(r.Hosts) {
+			handle = append([]any{NewSplitTestingHandler()}, handle...)
+		}
 		if r.Maintenance != nil {
 			handle = r.Maintenance.wrap(handle)
 		}
@@ -633,6 +649,12 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			return nil, fmt.Errorf("ingress: build routes config: static route %d has no root directory", i)
 		}
 		staticHandle := []any{NewFileServerHandler(r.RootDir)}
+		if r.Rules != nil {
+			staticHandle = []any{NewStaticSiteHandler(r.RootDir, r.Rules)}
+		}
+		if DefaultSplits().Active(r.Hosts) {
+			staticHandle = append([]any{NewSplitTestingHandler()}, staticHandle...)
+		}
 		if opts.RequestStats {
 			staticHandle = append([]any{NewRequestStatsHandler(r.Hosts[0])}, staticHandle...)
 		}
@@ -688,6 +710,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 	routes = exactHostsFirst(routes)
 	if opts.Firewall {
 		routes = append([]Route{{Handle: []any{NewFirewallHandler()}}}, routes...)
+	}
+	if opts.Hardening != nil {
+		routes = append(routes, diagnosticCatchAll(opts.Hardening))
 	}
 	server := &Server{
 		Listen: []string{opts.ListenAddr},
@@ -784,7 +809,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 
 	if opts.PlainHTTP && opts.HTTPPort != 0 && !opts.Inherited.Active() {
 		plain := *server
-		plain.Listen = []string{fmt.Sprintf(":%d", opts.HTTPPort)}
+		plain.Listen = []string{net.JoinHostPort(opts.HTTPBindHost, strconv.Itoa(opts.HTTPPort))}
 		plain.AutomaticHTTPS = &AutoHTTPSConfig{Disabled: true}
 		cfg.Apps.HTTP.Servers[opts.ServerName+"-plain"] = &plain
 	}

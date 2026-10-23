@@ -41,12 +41,30 @@ const (
 	// in-flight miss before going to the app itself.
 	EnvCacheCoalesceWait = "APP_INGRESS_CACHE_COALESCE_WAIT"
 
+	// EnvCacheReasonKeys caps the distinct "why not cached" keys kept per
+	// domain; further keys are counted under ReasonOther.
+	EnvCacheReasonKeys = "APP_INGRESS_CACHE_REASON_KEYS"
+	// EnvCacheTopReasons is how many reasons the API lists per app.
+	EnvCacheTopReasons = "APP_INGRESS_CACHE_TOP_REASONS"
+
+	defaultCacheReasonKeys       = 32
+	defaultCacheTopReasons       = 5
 	defaultCacheTagHeader        = "Cache-Tag"
 	defaultCacheRevalidateWindow = time.Hour
 	defaultCacheCoalesceWait     = 10 * time.Second
 	maxCacheTags                 = 32
 	maxCacheTagLen               = 128
 )
+
+func envInt(key string, def int) int {
+	if n, err := strconv.Atoi(strings.TrimSpace(os.Getenv(key))); err == nil && n > 0 {
+		return n
+	}
+	return def
+}
+
+// TopReasonCount is how many reasons the API lists per app.
+func TopReasonCount() int { return envInt(EnvCacheTopReasons, defaultCacheTopReasons) }
 
 func envDuration(key string, def time.Duration) time.Duration {
 	if d, err := time.ParseDuration(os.Getenv(key)); err == nil && d > 0 {
@@ -127,6 +145,9 @@ type CacheStats struct {
 	Entries     int           `json:"entries"`
 	Bytes       int64         `json:"bytes"`
 	Series      []CacheBucket `json:"series"`
+	// Reasons counts responses and requests left out of the cache, most
+	// common first.
+	Reasons []CacheReason `json:"reasons"`
 }
 
 type domainCacheStats struct {
@@ -134,6 +155,7 @@ type domainCacheStats struct {
 	hitBytes, originBytes         uint64
 	entries                       int
 	bytes                         int64
+	reasons                       map[string]uint64
 	series                        [cacheSeriesBuckets]CacheBucket
 }
 
@@ -330,6 +352,27 @@ func (c *ResponseCache) record(host string, outcome string) {
 	}
 }
 
+// recordReasons counts each key (a Reason* code, or code and detail joined
+// by reasonSep) once, folding keys past the cap into ReasonOther.
+func (c *ResponseCache) recordReasons(host string, keys ...string) {
+	if len(keys) == 0 {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	d := c.domain(host)
+	if d.reasons == nil {
+		d.reasons = map[string]uint64{}
+	}
+	limit := envInt(EnvCacheReasonKeys, defaultCacheReasonKeys)
+	for _, k := range keys {
+		if _, seen := d.reasons[k]; !seen && len(d.reasons) >= limit {
+			k = ReasonOther
+		}
+		d.reasons[k]++
+	}
+}
+
 // recordBytes counts body bytes served from the cache (fromCache) or
 // fetched from the app on a cacheable path.
 func (c *ResponseCache) recordBytes(host string, fromCache bool, n int64) {
@@ -402,6 +445,7 @@ func (c *ResponseCache) Stats(host string) CacheStats {
 	}
 	out := CacheStats{Hits: d.hits, Misses: d.misses, Bypasses: d.bypasses, Stale: d.stale, HitBytes: d.hitBytes, OriginBytes: d.originBytes, Entries: d.entries, Bytes: d.bytes}
 	out.Series = c.seriesLocked(d)
+	out.Reasons = sortedReasons(d.reasons)
 	return out
 }
 

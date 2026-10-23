@@ -24,8 +24,31 @@ import { useCreateNodeJoinToken } from '../queries/nodes'
 import { useBrand } from '../hooks/useBrand'
 import type { NodeJoinTokenResponse } from '../types/nodeDetail'
 import { CommandBlock } from './nodes/CommandBlock'
+import { LazyNodeOnboardingPanel } from './nodes/LazyNodeOnboarding'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 const NODE_NAME_PATTERN = /^[a-z][a-z0-9-]*$/
+const LABEL_PATTERN = /^[A-Za-z0-9]([A-Za-z0-9._-]{0,61}[A-Za-z0-9])?$/
+const AUTO_PROVIDER = 'auto'
+const PROVIDERS = [
+  'aws',
+  'gcp',
+  'azure',
+  'hetzner',
+  'digitalocean',
+  'home',
+  'other',
+] as const
+
+function labelInvalid(v: string): boolean {
+  return v !== '' && !LABEL_PATTERN.test(v)
+}
 
 // Add-node dialog for the "I already have a server" path. The cloud
 // wizard (AddNodeWizard.tsx) reuses ManualEnrollFields as its own step.
@@ -62,6 +85,9 @@ export function ManualEnrollFields({
   const [created, setCreated] = useState<NodeJoinTokenResponse | null>(null)
   const [nodeName, setNodeName] = useState('')
   const [mesh, setMesh] = useState(false)
+  const [provider, setProvider] = useState<string>(AUTO_PROVIDER)
+  const [region, setRegion] = useState('')
+  const [zone, setZone] = useState('')
   // The dashboard's own hostname is usually reachable from the new node;
   // 9443 is the control plane's fixed agent gRPC port.
   const [controlPlaneAddr, setControlPlaneAddr] = useState(
@@ -71,6 +97,8 @@ export function ManualEnrollFields({
 
   const trimmedName = nodeName.trim()
   const nameInvalid = trimmedName !== '' && !NODE_NAME_PATTERN.test(trimmedName)
+  const regionInvalid = labelInvalid(region.trim())
+  const zoneInvalid = labelInvalid(zone.trim())
 
   function generate() {
     const addr = controlPlaneAddr.trim()
@@ -79,6 +107,9 @@ export function ManualEnrollFields({
         control_plane_addr: addr || undefined,
         node_name: trimmedName || undefined,
         mesh: mesh || undefined,
+        provider: provider === AUTO_PROVIDER ? undefined : provider,
+        region: region.trim() || undefined,
+        zone: zone.trim() || undefined,
       },
       { onSuccess: setCreated },
     )
@@ -141,8 +172,12 @@ export function ManualEnrollFields({
           id="node-join-token"
           label={t('join.tokenLabel')}
           value={created.token}
-          hint={t('join.afterRun')}
+          hint={trimmedName ? t('join.afterRunLive') : t('join.afterRun')}
         />
+
+        {trimmedName ? (
+          <LazyNodeOnboardingPanel nodeName={trimmedName} />
+        ) : null}
 
         <DialogFooter>
           <Button type="button" onClick={onDone}>
@@ -202,6 +237,66 @@ export function ManualEnrollFields({
         </FieldDescription>
       </Field>
 
+      <Field>
+        <FieldLabel htmlFor="node-join-provider">
+          {t('join.providerLabel')}
+        </FieldLabel>
+        <Select
+          value={provider}
+          onValueChange={(v) => setProvider(v ?? AUTO_PROVIDER)}
+        >
+          <SelectTrigger id="node-join-provider" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={AUTO_PROVIDER}>
+              {t('join.providerAuto')}
+            </SelectItem>
+            {PROVIDERS.map((p) => (
+              <SelectItem key={p} value={p}>
+                {t(`join.providers.${p}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <FieldDescription>{t('join.providerHint')}</FieldDescription>
+      </Field>
+
+      {provider !== AUTO_PROVIDER ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field>
+            <FieldLabel htmlFor="node-join-region">
+              {t('join.regionLabel')}
+            </FieldLabel>
+            <Input
+              id="node-join-region"
+              value={region}
+              aria-invalid={regionInvalid}
+              onChange={(e) => setRegion(e.target.value)}
+              className="font-mono text-xs"
+            />
+            {regionInvalid ? (
+              <FieldDescription>{t('join.domainInvalid')}</FieldDescription>
+            ) : null}
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="node-join-zone">
+              {t('join.zoneLabel')}
+            </FieldLabel>
+            <Input
+              id="node-join-zone"
+              value={zone}
+              aria-invalid={zoneInvalid}
+              onChange={(e) => setZone(e.target.value)}
+              className="font-mono text-xs"
+            />
+            {zoneInvalid ? (
+              <FieldDescription>{t('join.domainInvalid')}</FieldDescription>
+            ) : null}
+          </Field>
+        </div>
+      ) : null}
+
       <div className="space-y-1">
         <label className="flex items-center gap-2 text-sm">
           <Checkbox
@@ -223,7 +318,12 @@ export function ManualEnrollFields({
       <DialogFooter>
         <Button
           type="button"
-          disabled={createJoinToken.isPending || nameInvalid}
+          disabled={
+            createJoinToken.isPending ||
+            nameInvalid ||
+            regionInvalid ||
+            zoneInvalid
+          }
           onClick={generate}
         >
           {createJoinToken.isPending

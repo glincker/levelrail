@@ -6,6 +6,7 @@ import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 import {
   useSaveStatusPageSettings,
   useStatusPageSettings,
@@ -153,7 +154,7 @@ function PreviewCard() {
 export function StatusPageSettingsPanel() {
   const { data, isLoading, error } = useStatusPageSettings()
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading...</p>
+    return <ListSkeleton rows={3} />
   }
   if (error || !data) {
     return <p className="text-sm text-destructive">{error?.message}</p>

@@ -281,7 +281,23 @@
     "drift": "The server does not match the saved setting. Toggle it again to realign.",
     "warning": "Clients configured with sslmode=disable will be refused.",
     "updatedToast": "TLS requirement updated",
-    "failedToast": "Could not change the TLS requirement"
+    "failedToast": "Could not change the TLS requirement",
+    "serverTitle": "Encrypted connections",
+    "serverHint": "Turns TLS on or off on the database server. Turning it off removes the certificate, and the database restarts to apply the change.",
+    "switchedToast": "TLS setting saved, the database will restart",
+    "switchFailedToast": "Could not change TLS",
+    "status": "Server TLS: {{state}}",
+    "on": "on",
+    "off": "off",
+    "recheck": "Re-check"
+  },
+  "reveal": {
+    "title": "Reveal password",
+    "description": "Shows the generated owner password once on request. It is audited and hides itself after 30 seconds.",
+    "show": "Reveal",
+    "hide": "Hide",
+    "autoHide": "Hides automatically after 30 seconds.",
+    "failed": "Could not reveal the password"
   },
   "rotation": {
     "title": "Owner password",

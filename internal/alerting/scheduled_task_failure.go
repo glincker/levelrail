@@ -48,5 +48,9 @@ func EvaluateScheduledTaskFailure(ctx context.Context, tasks ScheduledTaskSource
 }
 
 func scheduledTaskFailureNotice(task store.ScheduledTask) string {
-	return fmt.Sprintf("%q failed %d runs in a row, last status %q", strings.Join(task.Command, " "), task.ConsecutiveFailures, task.LastRunStatus)
+	what := strings.Join(task.Command, " ")
+	if task.Mode == store.ScheduledTaskModeHTTP {
+		what = jobLabel(task) + " (HTTP call)"
+	}
+	return fmt.Sprintf("%q failed %d runs in a row, last status %q", what, task.ConsecutiveFailures, task.LastRunStatus)
 }

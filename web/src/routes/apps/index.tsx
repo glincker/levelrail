@@ -10,14 +10,14 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   DatabaseIcon,
-  DownloadSimpleIcon,
-  GitBranchIcon,
   FunnelIcon,
   PackageIcon,
   PlusIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageTemplate } from '@/components/shell/PageTemplate'
+import { PageBanner } from '../../components/PageBanner'
+import { LazyAppsDiagram } from '../../components/banners/LazyDiagrams'
 import {
   appPagesQueryOptions,
   appsSummaryQueryOptions,
@@ -33,6 +33,7 @@ import {
   AppsStatusChips,
   ViewToggle,
 } from '../../components/apps/AppsStatusChips'
+import { AppsEmptyActions } from '../../components/apps/AppsEmptyActions'
 import { AppsListBody, ListHeader } from '../../components/apps/AppsListBody'
 import {
   EMPTY_FILTERS,
@@ -152,53 +153,69 @@ function AppListPage() {
           context: narrowed ? 'filtered' : undefined,
         })
 
+  const noApps = totalApps === 0 && staticSites.length === 0
+  const bannerSize = noApps ? 'hero' : 'compact'
+  const headerActions = (
+    <>
+      {selected.length > 0 ? (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setSelected(
+              allVisibleSelected ? [] : filteredApps.map((a) => a.name),
+            )
+          }}
+        >
+          {allVisibleSelected
+            ? t('appsList.deselectAll', {
+                defaultValue: 'Deselect all',
+              })
+            : t('appsList.selectAll', { defaultValue: 'Select all' })}
+        </Button>
+      ) : null}
+      {totalApps > 0 ? (
+        <span className="hidden sm:block">
+          <ViewToggle mode={mode} onChange={changeMode} />
+        </span>
+      ) : null}
+      {noApps ? <AppsEmptyActions /> : null}
+      <Button
+        size="sm"
+        variant="outline"
+        className="max-sm:hidden"
+        render={<Link to="/databases" />}
+        nativeButton={false}
+      >
+        <DatabaseIcon />
+        {t('appsList.newDatabase', { defaultValue: 'New database' })}
+      </Button>
+      <Button size="sm" render={<Link to="/apps/new" />} nativeButton={false}>
+        <PlusIcon />
+        {t('appsList.newApp', { defaultValue: 'New app' })}
+      </Button>
+    </>
+  )
+
   return (
     <PageTemplate
       title={t('appsList.title', { defaultValue: 'Apps' })}
       description={countLabel}
-      actions={
-        <>
-          {selected.length > 0 ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setSelected(
-                  allVisibleSelected ? [] : filteredApps.map((a) => a.name),
-                )
-              }}
-            >
-              {allVisibleSelected
-                ? t('appsList.deselectAll', {
-                    defaultValue: 'Deselect all',
-                  })
-                : t('appsList.selectAll', { defaultValue: 'Select all' })}
-            </Button>
-          ) : null}
-          {totalApps > 0 ? (
-            <span className="hidden sm:block">
-              <ViewToggle mode={mode} onChange={changeMode} />
-            </span>
-          ) : null}
-          <Button
-            size="sm"
-            variant="outline"
-            className="max-sm:hidden"
-            render={<Link to="/databases" />}
-            nativeButton={false}
-          >
-            <DatabaseIcon />
-            {t('appsList.newDatabase', { defaultValue: 'New database' })}
-          </Button>
-          <Button
-            size="sm"
-            render={<Link to="/apps/new" />}
-            nativeButton={false}
-          >
-            <PlusIcon />
-            {t('appsList.newApp', { defaultValue: 'New app' })}
-          </Button>
-        </>
+      actions={headerActions}
+      banner={
+        <PageBanner
+          icon={<PackageIcon />}
+          titleKey="common:appsList.title"
+          descriptionKey={
+            noApps
+              ? 'common:appsList.banner.description'
+              : 'common:appsList.banner.compactDescription'
+          }
+          descriptionText={noApps ? undefined : countLabel}
+          action={headerActions}
+          illustration={<LazyAppsDiagram size={bannerSize} />}
+          size={bannerSize}
+        />
       }
     >
       {totalApps > 0 ? (
@@ -215,41 +232,7 @@ function AppListPage() {
           />
         </div>
       ) : null}
-      {totalApps === 0 && staticSites.length === 0 ? (
-        <EmptyState
-          illustration="rocket"
-          icon={<PackageIcon className="size-6" />}
-          title={t('appsList.emptyTitle', { defaultValue: 'No apps yet' })}
-          description={t('appsList.emptyBody', {
-            defaultValue:
-              'Deploy from a git repository or a container image, or import apps from another platform.',
-          })}
-          action={
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <Button render={<Link to="/apps/new" />} nativeButton={false}>
-                <PlusIcon />
-                {t('appsList.newApp', { defaultValue: 'New app' })}
-              </Button>
-              <Button
-                variant="outline"
-                render={<Link to="/settings/import-platform" />}
-                nativeButton={false}
-              >
-                <DownloadSimpleIcon />
-                {t('appsList.import', { defaultValue: 'Import' })}
-              </Button>
-              <Button
-                variant="outline"
-                render={<Link to="/settings/github-app" />}
-                nativeButton={false}
-              >
-                <GitBranchIcon />
-                {t('appsList.connectGit', { defaultValue: 'Connect Git' })}
-              </Button>
-            </div>
-          }
-        />
-      ) : pages.isPending ? (
+      {noApps ? null : pages.isPending ? (
         <AppListRowsPending />
       ) : filteredApps.length === 0 ? (
         <EmptyState

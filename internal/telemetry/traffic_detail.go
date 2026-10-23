@@ -92,6 +92,18 @@ func UpstreamMaxFromEnv() int {
 	return defaultUpstreamMax
 }
 
+// EnvTrafficRetention overrides how long per-app traffic aggregates are kept
+// (Go duration); unset means the minute tier retention.
+const EnvTrafficRetention = "APP_TRAFFIC_RETENTION"
+
+// TrafficRetentionFromEnv returns the traffic aggregate retention, or def.
+func TrafficRetentionFromEnv(def time.Duration) time.Duration {
+	if d, err := time.ParseDuration(os.Getenv(EnvTrafficRetention)); err == nil && d > 0 {
+		return d
+	}
+	return def
+}
+
 // SampleRetentionFromEnv returns how long request samples are kept.
 func SampleRetentionFromEnv() time.Duration {
 	if d, err := time.ParseDuration(os.Getenv(EnvRequestSampleRetention)); err == nil && d > 0 {

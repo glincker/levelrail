@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -43,8 +42,7 @@ func (rt *Router) handleWhoami(w http.ResponseWriter, r *http.Request) {
 	if userID, ok := rt.currentSessionUserID(r); ok {
 		user, err := rt.auth.GetUserByID(r.Context(), userID)
 		if err != nil {
-			rt.logger.Error("api: whoami: load user failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: whoami: load user failed", err)
 			return
 		}
 		expires := ""

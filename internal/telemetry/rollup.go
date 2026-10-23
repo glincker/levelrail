@@ -151,13 +151,13 @@ func (db *DB) Prune(ctx context.Context, now time.Time) (PruneResult, error) {
 	if res.Hour, err = db.deleteBefore(ctx, `DELETE FROM metric_rollups WHERE tier = 3600 AND ts < ?`, now.Add(-cfg.HourRetention).Unix()); err != nil {
 		return res, err
 	}
-	if _, err = db.deleteBefore(ctx, `DELETE FROM request_breakdown WHERE ts < ?`, now.Add(-cfg.MinuteRetention).Unix()); err != nil {
+	if _, err = db.deleteBefore(ctx, `DELETE FROM request_breakdown WHERE ts < ?`, now.Add(-TrafficRetentionFromEnv(cfg.MinuteRetention)).Unix()); err != nil {
 		return res, err
 	}
-	if _, err = db.deleteBefore(ctx, `DELETE FROM request_upstreams WHERE ts < ?`, now.Add(-cfg.MinuteRetention).Unix()); err != nil {
+	if _, err = db.deleteBefore(ctx, `DELETE FROM request_upstreams WHERE ts < ?`, now.Add(-TrafficRetentionFromEnv(cfg.MinuteRetention)).Unix()); err != nil {
 		return res, err
 	}
-	if _, err = db.deleteBefore(ctx, `DELETE FROM request_audience WHERE ts < ?`, now.Add(-cfg.MinuteRetention).Unix()); err != nil {
+	if _, err = db.deleteBefore(ctx, `DELETE FROM request_audience WHERE ts < ?`, now.Add(-TrafficRetentionFromEnv(cfg.MinuteRetention)).Unix()); err != nil {
 		return res, err
 	}
 	if _, err = db.deleteBefore(ctx, `DELETE FROM request_samples WHERE ts < ?`, now.Add(-SampleRetentionFromEnv()).Unix()); err != nil {

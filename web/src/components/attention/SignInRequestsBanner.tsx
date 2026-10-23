@@ -1,35 +1,39 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { KeyIcon, ShieldWarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
+import { SignInRequestCard } from '../signin/SignInRequestCard'
 import {
   revealLoginCode,
   signInRequestsQueryOptions,
-  useDecideApproval,
   type SignInApprovalRequest,
   type SignInCodeRequest,
 } from '../../queries/signIn'
 
-// Shown on every page while someone is signing in to this account with a
+// Pages whose content already is the sign-in card, so the banner would repeat it.
+const OWN_CARD_PATHS = new Set(['/approve-sign-in', '/security'])
+
+// Shown on every other page while someone is signing in to this account with a
 // code or from a new browser. It never fetches a code until asked.
 export function SignInRequestsBanner() {
   const { data } = useQuery(signInRequestsQueryOptions())
   const { t } = useTranslation('signIn', { useSuspense: false })
+  const path = useRouterState({ select: (s) => s.location.pathname })
   const codes = data?.codes ?? []
   const approvals = data?.approvals ?? []
-  if (codes.length === 0 && approvals.length === 0) {
+  if (
+    (codes.length === 0 && approvals.length === 0) ||
+    OWN_CARD_PATHS.has(path)
+  ) {
     return null
   }
   return (
-    <div
-      role="alert"
-      className="shrink-0 space-y-2 border-b border-primary/30 bg-primary/10 px-4 py-2 text-sm"
-    >
-      <p className="font-medium">{t('requests.bannerTitle')}</p>
-      <SignInRequestsList codes={codes} approvals={approvals} />
+    <div role="alert" className="shrink-0 px-4 pt-3 text-sm">
+      <p className="sr-only">{t('requests.bannerTitle')}</p>
+      <SignInRequestsList codes={codes} approvals={approvals} compact />
     </div>
   )
 }
@@ -37,23 +41,44 @@ export function SignInRequestsBanner() {
 export function SignInRequestsList({
   codes,
   approvals,
+  compact = false,
 }: {
   codes: SignInCodeRequest[]
   approvals: SignInApprovalRequest[]
+  compact?: boolean
 }) {
   const { t } = useTranslation('signIn', { useSuspense: false })
-  if (codes.length === 0 && approvals.length === 0) {
+  // Decided requests leave the server list; keep them so the result stays visible.
+  const [seen, setSeen] = useState<Record<string, SignInApprovalRequest>>({})
+  if (approvals.some((a) => seen[a.id] === undefined)) {
+    setSeen((s) => ({
+      ...s,
+      ...Object.fromEntries(approvals.map((a) => [a.id, a])),
+    }))
+  }
+  const live = new Set(approvals.map((a) => a.id))
+  const shown = [
+    ...approvals,
+    ...Object.values(seen).filter((a) => !live.has(a.id)),
+  ]
+  if (codes.length === 0 && shown.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">{t('requests.empty')}</p>
     )
   }
   return (
-    <ul className="space-y-2">
+    <ul className="space-y-3">
       {codes.map((c) => (
         <CodeRow key={c.id} request={c} />
       ))}
-      {approvals.map((a) => (
-        <ApprovalRow key={a.id} request={a} />
+      {shown.map((a) => (
+        <li key={a.id}>
+          <SignInRequestCard
+            request={a}
+            compact={compact}
+            gone={!live.has(a.id)}
+          />
+        </li>
       ))}
     </ul>
   )
@@ -134,120 +159,6 @@ function CodeRow({ request }: { request: SignInCodeRequest }) {
         <p className="text-xs text-muted-foreground">
           {t('requests.notRevealable')}
         </p>
-      )}
-    </li>
-  )
-}
-
-// The approver types the number rather than picking from choices, so a
-// prompt-fatigued click can never land on the right one by chance.
-function MatchForm({
-  pending,
-  onSubmit,
-  onCancel,
-}: {
-  pending: boolean
-  onSubmit: (match: number) => void
-  onCancel: () => void
-}) {
-  const { t } = useTranslation('signIn', { useSuspense: false })
-  const [value, setValue] = useState('')
-  const valid = /^[1-9]\d$/.test(value)
-  return (
-    <form
-      className="flex flex-wrap items-center gap-2"
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (valid) {
-          onSubmit(Number(value))
-        }
-      }}
-    >
-      <p className="w-full text-xs text-muted-foreground">
-        {t('requests.matchPrompt')}
-      </p>
-      <Input
-        autoFocus
-        inputMode="numeric"
-        autoComplete="off"
-        maxLength={2}
-        aria-label={t('requests.matchInput')}
-        className="w-16 font-mono text-base"
-        value={value}
-        onChange={(e) => setValue(e.target.value.replace(/\D/g, ''))}
-      />
-      <Button type="submit" size="sm" disabled={!valid || pending}>
-        {t('requests.confirmApprove')}
-      </Button>
-      <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
-        {t('requests.cancel')}
-      </Button>
-    </form>
-  )
-}
-
-function ApprovalRow({ request }: { request: SignInApprovalRequest }) {
-  const { t } = useTranslation('signIn', { useSuspense: false })
-  const decide = useDecideApproval()
-  const [choosing, setChoosing] = useState(false)
-  const act = (approve: boolean, match?: number) => {
-    setChoosing(false)
-    decide.mutate(
-      { id: request.id, approve, match },
-      {
-        onSuccess: () => {
-          toast.add({
-            title: approve ? t('requests.approved') : t('requests.denied'),
-            type: 'success',
-          })
-        },
-        onError: (error) => {
-          toast.add({
-            title: error.message || t('requests.actionFailed'),
-            type: 'error',
-          })
-        },
-      },
-    )
-  }
-  return (
-    <li className="flex flex-wrap items-center gap-x-4 gap-y-2">
-      <ShieldWarningIcon aria-hidden="true" className="size-5 shrink-0" />
-      <div className="min-w-0 flex-1">
-        <p className="font-medium">{t('requests.approvalTitle')}</p>
-        <RequestContext
-          ip={request.requester_ip}
-          agent={request.user_agent}
-          at={request.created_at}
-        />
-        <p className="font-mono text-xs text-muted-foreground">{request.id}</p>
-      </div>
-      {choosing ? (
-        <MatchForm
-          pending={decide.isPending}
-          onSubmit={(n) => act(true, n)}
-          onCancel={() => setChoosing(false)}
-        />
-      ) : (
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={decide.isPending}
-            onClick={() => act(false)}
-          >
-            {t('requests.deny')}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            disabled={decide.isPending}
-            onClick={() => setChoosing(true)}
-          >
-            {t('requests.approve')}
-          </Button>
-        </div>
       )}
     </li>
   )

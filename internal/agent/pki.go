@@ -6,15 +6,15 @@ package agent
 import (
 	"crypto/ed25519"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/hex"
 	"encoding/pem"
 	"fmt"
 	"math/big"
 	"net"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/agent/pinned"
 )
 
 // CA is the control plane's self-signed root, signing its server cert and every agent's client cert.
@@ -166,8 +166,7 @@ func (ca *CA) issueServerLeaf(hosts []string, validFor time.Duration) (certPEM, 
 // CertFingerprint returns the hex SHA-256 of a DER-encoded certificate.
 // Sessions compare against this rather than trusting CommonName, which another certificate could also claim.
 func CertFingerprint(der []byte) string {
-	sum := sha256.Sum256(der)
-	return hex.EncodeToString(sum[:])
+	return pinned.Fingerprint(der)
 }
 
 func randomSerial() (*big.Int, error) {

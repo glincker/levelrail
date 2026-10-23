@@ -20,6 +20,7 @@ type DeployGateStore interface {
 	SaveDeploySafetySettings(ctx context.Context, s store.DeploySafetySettings) error
 	ListRollbackPins(ctx context.Context, serviceName string) ([]store.RollbackPin, error)
 	GetRollbackPin(ctx context.Context, serviceName, attemptID string) (*store.RollbackPin, error)
+	RecordGateEvent(ctx context.Context, e store.DeployGateEvent) error
 }
 
 // WithDeployGate enables the gate timeline, deploy safety settings and
@@ -50,6 +51,12 @@ type deploySafetySettingsResource struct {
 	WatchMinRequests int     `json:"watch_min_requests"`
 	AutoRollback     bool    `json:"auto_rollback"`
 	RollbackPins     int     `json:"rollback_pins"`
+
+	WatchMode            string  `json:"watch_mode"`
+	WatchLatencyRatio    float64 `json:"watch_latency_ratio"`
+	WatchLatencyMinDelta string  `json:"watch_latency_min_delta"`
+	WatchSoftTicks       int     `json:"watch_soft_ticks"`
+	WatchSoftRollback    bool    `json:"watch_soft_rollback"`
 }
 
 func toSafetySettingsResource(e deploysafety.Effective) deploySafetySettingsResource {
@@ -57,6 +64,8 @@ func toSafetySettingsResource(e deploysafety.Effective) deploySafetySettingsReso
 		SuccessThreshold: e.SuccessThreshold, StableWindow: e.StableWindow.String(), DrainTimeout: e.DrainTimeout.String(),
 		WatchWindow: e.WatchWindow.String(), WatchMaxRestarts: e.WatchMaxRestarts, WatchErrorRate: e.WatchErrorRate,
 		WatchMinRequests: e.WatchMinRequests, AutoRollback: e.AutoRollback, RollbackPins: e.RollbackPins,
+		WatchMode: e.WatchMode, WatchLatencyRatio: e.WatchLatencyRatio, WatchLatencyMinDelta: e.WatchLatencyMinDelta.String(),
+		WatchSoftTicks: e.WatchSoftTicks, WatchSoftRollback: e.WatchSoftRollback,
 	}
 }
 
@@ -70,6 +79,10 @@ type deploySafetyOverrides struct {
 	WatchErrorRate   *float64 `json:"watch_error_rate"`
 	WatchMinRequests *int     `json:"watch_min_requests"`
 	AutoRollback     *bool    `json:"auto_rollback"`
+
+	WatchMode         *string  `json:"watch_mode"`
+	WatchLatencyRatio *float64 `json:"watch_latency_ratio"`
+	WatchSoftRollback *bool    `json:"watch_soft_rollback"`
 }
 
 func durationString(d *time.Duration) *string {
@@ -85,6 +98,7 @@ func toOverrides(s store.DeploySafetySettings) deploySafetyOverrides {
 		SuccessThreshold: s.SuccessThreshold, StableWindow: durationString(s.StableWindow), DrainTimeout: durationString(s.DrainTimeout),
 		WatchWindow: durationString(s.WatchWindow), WatchMaxRestarts: s.WatchMaxRestarts, WatchErrorRate: s.WatchErrorRate,
 		WatchMinRequests: s.WatchMinRequests, AutoRollback: s.AutoRollback,
+		WatchMode: s.WatchMode, WatchLatencyRatio: s.WatchLatencyRatio, WatchSoftRollback: s.WatchSoftRollback,
 	}
 }
 
@@ -103,6 +117,7 @@ func (o deploySafetyOverrides) toStore(name string) (store.DeploySafetySettings,
 	s := store.DeploySafetySettings{
 		ServiceName: name, SuccessThreshold: o.SuccessThreshold, WatchMaxRestarts: o.WatchMaxRestarts,
 		WatchErrorRate: o.WatchErrorRate, WatchMinRequests: o.WatchMinRequests, AutoRollback: o.AutoRollback,
+		WatchMode: o.WatchMode, WatchLatencyRatio: o.WatchLatencyRatio, WatchSoftRollback: o.WatchSoftRollback,
 	}
 	var err error
 	if s.StableWindow, err = parseGateDuration("stable_window", o.StableWindow); err != nil {
@@ -145,6 +160,7 @@ type deployGateResource struct {
 	Events      []gateEventResource          `json:"events"`
 	Settings    deploySafetySettingsResource `json:"settings"`
 	RollbackPin *rollbackTargetResource      `json:"rollback_pin"`
+	Watch       watchStatusResource          `json:"watch"`
 }
 
 // gateReady writes 501 when the gate store is not wired; ok false means a
@@ -183,20 +199,17 @@ func (rt *Router) handleGetDeployGate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	events, err := rt.deployGate.ListGateEvents(ctx, attempt.ID)
 	if err != nil {
-		rt.logger.Error("api: deploy gate: list events failed", slog.String("error", err.Error()), slog.String("deploy_id", attempt.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy gate: list events failed", err, slog.String("deploy_id", attempt.ID))
 		return
 	}
 	_, effective, err := rt.effectiveSafety(ctx, attempt.ServiceName)
 	if err != nil {
-		rt.logger.Error("api: deploy gate: load settings failed", slog.String("error", err.Error()), slog.String("name", attempt.ServiceName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy gate: load settings failed", err, slog.String("name", attempt.ServiceName))
 		return
 	}
 	pin, err := rt.deployGate.GetRollbackPin(ctx, attempt.ServiceName, attempt.ID)
 	if err != nil {
-		rt.logger.Error("api: deploy gate: load pin failed", slog.String("error", err.Error()), slog.String("deploy_id", attempt.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy gate: load pin failed", err, slog.String("deploy_id", attempt.ID))
 		return
 	}
 	stage := deploysafety.Stage(events)
@@ -210,6 +223,7 @@ func (rt *Router) handleGetDeployGate(w http.ResponseWriter, r *http.Request) {
 	for _, e := range events {
 		out.Events = append(out.Events, gateEventResource{Phase: e.Phase, Status: e.Status, Reason: e.Reason, Message: e.Message, Container: e.Container, At: e.At})
 	}
+	out.Watch = toWatchStatusResource(deploysafety.WatchStatusOf(events, effective, time.Now()))
 	if pin != nil {
 		out.RollbackPin = &rollbackTargetResource{DeployID: pin.DeployAttemptID, Image: pin.Image, ImageID: pin.ImageID, PinRef: pin.PinRef, PinnedAt: pin.CreatedAt}
 	}
@@ -247,8 +261,7 @@ func (rt *Router) loadAppForGate(w http.ResponseWriter, r *http.Request) (*store
 		return nil, false
 	}
 	if err != nil {
-		rt.logger.Error("api: deploy safety: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy safety: load app failed", err, slog.String("name", name))
 		return nil, false
 	}
 	return svc, true
@@ -257,8 +270,7 @@ func (rt *Router) loadAppForGate(w http.ResponseWriter, r *http.Request) (*store
 func (rt *Router) writeDeploySafety(w http.ResponseWriter, r *http.Request, name string) {
 	overrides, effective, err := rt.effectiveSafety(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: deploy safety: load settings failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy safety: load settings failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, deploySafetyResource{
@@ -299,8 +311,7 @@ func (rt *Router) handlePutDeploySafety(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err := rt.deployGate.SaveDeploySafetySettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: deploy safety: save failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy safety: save failed", err, slog.String("name", svc.Name))
 		return
 	}
 	rt.writeDeploySafety(w, r, svc.Name)
@@ -318,8 +329,7 @@ func (rt *Router) handleListRollbackTargets(w http.ResponseWriter, r *http.Reque
 	}
 	pins, err := rt.deployGate.ListRollbackPins(r.Context(), svc.Name)
 	if err != nil {
-		rt.logger.Error("api: rollback targets: list failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: rollback targets: list failed", err, slog.String("name", svc.Name))
 		return
 	}
 	out := make([]rollbackTargetResource, 0, len(pins))

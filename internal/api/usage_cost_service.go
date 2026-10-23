@@ -77,6 +77,7 @@ func (rt *Router) usageInventory(ctx context.Context) ([]usagecost.DailyUsage, e
 	if err != nil {
 		return nil, fmt.Errorf("usage cost: list databases: %w", err)
 	}
+	dbs = rt.withoutPendingDatabases(ctx, dbs)
 	var appOwners, dbOwners map[string]*store.ResourceOwner
 	if tdb := rt.teamDB(); tdb != nil {
 		if appOwners, err = tdb.OwnersOfApps(ctx); err != nil {

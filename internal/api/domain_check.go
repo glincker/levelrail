@@ -325,8 +325,7 @@ func (rt *Router) handleCheckDomain(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "app not found")
 			return
 		}
-		rt.logger.Error("api: check domain: get app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: check domain: get app failed", err, slog.String("name", name))
 		return
 	}
 	if domain == "" {

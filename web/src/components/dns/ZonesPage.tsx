@@ -2,14 +2,10 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import {
-  GlobeHemisphereWestIcon,
-  PlusIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
-import { PageHeader } from '../shell/PageHeader'
+import { ZonesBanner } from './ZonesBanner'
 import { dnsZonesQueryOptions } from '../../queries/dns'
 import type { DnsZone } from '../../types/dns'
 import { DelegationWizard } from './DelegationWizard'
@@ -56,35 +52,28 @@ export function ZonesPage() {
   const [wizard, setWizard] = useState(false)
   const connected = data.provider !== 'none'
 
+  const empty = !connected || data.zones.length === 0
+  const addZone = (
+    <Button size="sm" onClick={() => setWizard(true)}>
+      <PlusIcon />
+      {t('page.addZone')}
+    </Button>
+  )
+
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t('page.title')}
-        description={t('page.description')}
-        helpPath="/dns"
+    <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
+      <ZonesBanner
+        empty={empty}
         helpLabel={t('page.help')}
-        status={
+        action={
           connected ? (
-            <Badge variant="outline">
-              {t('page.provider', { provider: data.provider })}
-            </Badge>
-          ) : null
-        }
-        actions={
-          connected ? (
-            <Button size="sm" onClick={() => setWizard(true)}>
-              <PlusIcon />
-              {t('page.addZone')}
-            </Button>
-          ) : null
-        }
-      />
-      {!connected ? (
-        <EmptyState
-          icon={<GlobeHemisphereWestIcon className="size-5" />}
-          title={t('empty.title')}
-          description={t('empty.body')}
-          action={
+            <>
+              <Badge variant="outline">
+                {t('page.provider', { provider: data.provider })}
+              </Badge>
+              {addZone}
+            </>
+          ) : (
             <Button
               size="sm"
               render={<Link to="/domains" />}
@@ -92,23 +81,10 @@ export function ZonesPage() {
             >
               {t('empty.action')}
             </Button>
-          }
-          helpPath="/dns"
-          helpLabel={t('page.help')}
-        />
-      ) : data.zones.length === 0 ? (
-        <EmptyState
-          icon={<GlobeHemisphereWestIcon className="size-5" />}
-          title={t('empty.noZonesTitle')}
-          description={t('empty.noZonesBody')}
-          action={
-            <Button size="sm" onClick={() => setWizard(true)}>
-              <PlusIcon />
-              {t('page.addZone')}
-            </Button>
-          }
-        />
-      ) : (
+          )
+        }
+      />
+      {empty ? null : (
         <VirtualRows
           items={data.zones}
           rowHeight={48}

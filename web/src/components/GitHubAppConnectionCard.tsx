@@ -22,6 +22,7 @@ import {
   useGitHubAppInstallations,
   useGitHubAppStatus,
 } from '../queries/githubApp'
+import { GitConnectionHealth } from './GitConnectionHealth'
 import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
 import { GitHubAppManifestDialog } from './GitHubAppManifestDialog'
 import { ManualConnectDialog } from './GitHubAppManualConnectDialog'
@@ -113,6 +114,7 @@ export function GitHubAppConnectionCard() {
           </Banner>
         ) : null}
         {status.connected ? <GitHubAppInstallationsSection /> : null}
+        {status.connected ? <GitConnectionHealth provider="github" /> : null}
         <ConnectionActions>
           {status.connected ? (
             <DisconnectConnectionDialog

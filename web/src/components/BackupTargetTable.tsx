@@ -16,6 +16,10 @@ import { DeleteBackupTargetDialog } from './DeleteBackupTargetDialog'
 import { PROVIDER_LABEL } from './backupTargetProvider'
 import { BrandTile } from './BrandLogoBadge'
 import { backupTargetBrand } from '../lib/providerBrands'
+import {
+  DumpEncryptionBadge,
+  EnableDumpEncryptionButton,
+} from './BackupTargetEncryption'
 import { useTestBackupTarget } from '../queries/backupTargets'
 import type { BackupTarget } from '../types/backupTarget'
 
@@ -123,6 +127,12 @@ export function BackupTargetTable({
       ),
     },
     {
+      id: 'encryption',
+      header: t('backupTargetsPage.table.encryption'),
+      priority: 2,
+      cell: (target) => <DumpEncryptionBadge target={target} />,
+    },
+    {
       id: 'location',
       header: t('backupTargetsPage.table.region'),
       priority: 3,
@@ -158,6 +168,7 @@ export function BackupTargetTable({
       ariaLabel={t('backupTargetsPage.table.label')}
       renderActions={(target) => (
         <div className="flex flex-wrap items-center justify-end gap-2">
+          <EnableDumpEncryptionButton target={target} />
           <TestButton target={target} />
           <DeleteBackupTargetDialog target={target} />
         </div>

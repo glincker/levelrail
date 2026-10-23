@@ -79,7 +79,7 @@ CapRover is a long-standing project with a large install base and a one-click ap
     Use levelrail-cli import platform caprover with your CapRover URL. It is read-only against the source and supports --dry-run and --only. Read [Migrate from CapRover](/migrate-from-caprover) for what maps and the downtime window.
   </Accordion>
   <Accordion title="Does it have a one-click app store?">
-    Levelrail ships a catalog of 300+ one-click templates, each a Compose file the platform deploys. CapRover has its own one-click app store with a different set of apps. Check that the services you need are covered in either catalog.
+    Levelrail ships a catalog of about 360 one-click templates, each a Compose file the platform deploys. CapRover has its own one-click app store with a different set of apps. Check that the services you need are covered in either catalog.
   </Accordion>
   <Accordion title="Is it free?">
     Yes. Apache 2.0, one edition, nothing behind a paywall.

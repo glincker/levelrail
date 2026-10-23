@@ -113,25 +113,29 @@ type rotationAuditor struct{ rt *Router }
 
 // Record writes one audit row for a rotation step. It never receives a value.
 func (a rotationAuditor) Record(ctx context.Context, action, app, key, actor string) {
-	if a.rt.auditLog == nil {
+	a.rt.saveRotationAudit(ctx, action, "/api/v1/apps/"+app+"/secrets/"+key, actor)
+}
+
+func (rt *Router) saveRotationAudit(ctx context.Context, action, path, actor string) {
+	if rt.auditLog == nil {
 		return
 	}
 	id, err := store.NewAuditEntryID()
 	if err != nil {
-		a.rt.logger.Warn("api: secret rotation audit id failed", slog.String("error", err.Error()))
+		rt.logger.Warn("api: secret rotation audit id failed", slog.String("error", err.Error()))
 		return
 	}
 	entry := store.AuditEntry{
 		ID: id, ActorType: "system", ActorName: actor, Ability: AbilityWriteSensitive,
-		Method: action, Action: action, Path: "/api/v1/apps/" + app + "/secrets/" + key,
+		Method: action, Action: action, Path: path,
 		StatusCode: http.StatusOK, CreatedAt: store.FormatAuditTime(time.Now()), ClientKind: "system",
 	}
 	if actor != "system" {
 		entry.ActorType = "session"
 		entry.ClientKind = "api"
 	}
-	if err := a.rt.auditLog.SaveAuditEntry(ctx, entry); err != nil {
-		a.rt.logger.Warn("api: secret rotation audit save failed", slog.String("error", err.Error()), slog.String("app", app))
+	if err := rt.auditLog.SaveAuditEntry(ctx, entry); err != nil {
+		rt.logger.Warn("api: secret rotation audit save failed", slog.String("error", err.Error()), slog.String("path", path))
 	}
 }
 

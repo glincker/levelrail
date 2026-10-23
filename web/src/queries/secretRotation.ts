@@ -116,6 +116,24 @@ export function useDeleteRotationPolicy(app: string) {
   })
 }
 
+export function useRotateSecretValue(app: string) {
+  const invalidate = useInvalidate(app)
+  return useMutation({
+    mutationFn: async (input: { key: string; value: string }) => {
+      const res = await fetch(
+        `${appBase(app)}/secrets/${encodeURIComponent(input.key)}/rotate`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(input.value ? { value: input.value } : {}),
+        },
+      )
+      await ensureOk(res, `rotate secret failed: ${String(res.status)}`)
+    },
+    onSettled: invalidate,
+  })
+}
+
 export function useRotateNow(app: string) {
   const invalidate = useInvalidate(app)
   return useMutation({

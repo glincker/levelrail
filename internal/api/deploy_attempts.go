@@ -91,6 +91,7 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 			Branch:            commitMetaFrom(ctx).Branch,
 			CommitMessage:     commitMetaFrom(ctx).Message,
 			Author:            commitMetaFrom(ctx).Author,
+			RerunOf:           rerunOfFrom(ctx),
 		}); err != nil {
 			rt.logger.Error("api: trigger build: save deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
 			rt.cancels.Release(id)
@@ -135,9 +136,13 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		}
 		// Fires only after FinishDeployAttempt persists the terminal status.
 		if rt.deployNotifier != nil {
-			rt.deployNotifier.Dispatch(finishCtx, resourceIDForApp(req.ServiceName), alerting.DeployOutcome{
+			outcome := alerting.DeployOutcome{
 				AppName: req.ServiceName, Image: image, Succeeded: deployErr == nil, Error: errMsg, AttemptID: id,
-			})
+			}
+			if deployErr == nil {
+				outcome.ReleaseNotes = rt.releaseNotesForDeploy(finishCtx, req.ServiceName, "")
+			}
+			rt.deployNotifier.Dispatch(finishCtx, resourceIDForApp(req.ServiceName), outcome)
 		}
 	}
 
@@ -220,12 +225,18 @@ type deployAttemptResource struct {
 	SupersededBy string `json:"superseded_by,omitempty"`
 	// CanceledBy is who canceled the deploy.
 	CanceledBy string `json:"canceled_by,omitempty"`
+	// RerunOf is the attempt this one retried or rebuilt; ChainPosition is
+	// its 1-based place in that chain, set by the list and single endpoints.
+	RerunOf       string `json:"rerun_of,omitempty"`
+	ChainPosition int    `json:"chain_position,omitempty"`
 	// PreviewImageURL is set when a deploy preview thumbnail exists.
 	PreviewImageURL string `json:"preview_image_url,omitempty"`
 	// DeployURL is this deploy's own immutable address while a retained copy exists.
 	DeployURL string `json:"deploy_url,omitempty"`
 	// Live is true for the deploy the app runs right now, served at the app's own URL.
 	Live bool `json:"live,omitempty"`
+	// PublishState is "held" for a finished build the app's publish lock kept off the live site.
+	PublishState string `json:"publish_state,omitempty"`
 	// SBOMPackages and VulnCounts are set when the build produced an SBOM and it was scanned.
 	SBOMPackages *int                `json:"sbom_packages,omitempty"`
 	VulnCounts   *supplychain.Counts `json:"vuln_counts,omitempty"`
@@ -281,6 +292,7 @@ func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
 		QueuedAt:          a.QueuedAt,
 		SupersededBy:      a.SupersededBy,
 		CanceledBy:        a.CanceledBy,
+		RerunOf:           a.RerunOf,
 	}
 }
 
@@ -299,15 +311,13 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: list deploy attempts: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list deploy attempts: load app failed", err, slog.String("name", name))
 		return
 	}
 
 	attempts, err := rt.deployAttempts.ListDeployAttempts(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: list deploy attempts failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list deploy attempts failed", err, slog.String("name", name))
 		return
 	}
 
@@ -324,11 +334,18 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 	}
 	supply := rt.supplyChainRecords(r.Context(), ids)
 	deployURLs := rt.deployURLsByAttempt(r.Context(), name)
+	held := rt.heldBuildIDs(r.Context(), name)
 	out := make([]deployAttemptResource, 0, len(attempts))
+	chainPos := rerunChainPositions(attempts)
 	for _, a := range attempts {
 		res := toDeployAttemptResource(a)
+		res.ChainPosition = chainPos(a.ID)
 		res.DeployURL = deployURLs[a.ID]
 		res.Live = a.Status == store.DeployAttemptStatusSucceeded && a.Image == svc.Image
+		if held[a.ID] && (!res.Live || isStaticAttempt(a)) {
+			res.Live = false
+			res.PublishState = publishStateHeld
+		}
 		res.CacheWarning = warnings[a.ID]
 		rt.attachFailure(&res, a)
 		rt.applyWait(r.Context(), &res, a, attempts)
@@ -380,8 +397,7 @@ func (rt *Router) handleDeployLogStream(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: deploy log stream: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy log stream: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -391,8 +407,7 @@ func (rt *Router) handleDeployLogStream(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: deploy log stream: load attempt failed", slog.String("error", err.Error()), slog.String("deploy_id", deployID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy log stream: load attempt failed", err, slog.String("deploy_id", deployID))
 		return
 	}
 	// Attempt IDs are globally unique but the route is app-scoped: a
@@ -422,8 +437,7 @@ func (rt *Router) serveFinishedDeployLog(ctx context.Context, w http.ResponseWri
 	}
 	entries, err := rt.deployLogStore.QueryDeployLog(ctx, deployID)
 	if err != nil {
-		rt.logger.Error("api: deploy log stream: query persisted log failed", slog.String("error", err.Error()), slog.String("deploy_id", deployID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy log stream: query persisted log failed", err, slog.String("deploy_id", deployID))
 		return
 	}
 

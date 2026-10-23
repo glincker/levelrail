@@ -54,6 +54,11 @@ func ValidateDomain(domain string) (string, error) {
 // FileName is the file domain's route lives in. domain must already be
 // validated; anything that would sanitise to a different name is refused.
 func (n Namespace) FileName(domain string) (string, error) {
+	return n.FileNameExt(domain, DefaultFileExt)
+}
+
+// FileNameExt is FileName with the provider's file extension.
+func (n Namespace) FileNameExt(domain, ext string) (string, error) {
 	d, err := ValidateDomain(domain)
 	if err != nil {
 		return "", err
@@ -61,7 +66,7 @@ func (n Namespace) FileName(domain string) (string, error) {
 	if d != domain {
 		return "", fmt.Errorf("domain %q must be lowercase", domain)
 	}
-	return n.FilePrefix() + d + ".yaml", nil
+	return n.FilePrefix() + d + ext, nil
 }
 
 // objectName is the Traefik router, service and middleware stem. Dots become
@@ -95,6 +100,10 @@ type Route struct {
 	Upstream string
 	// Priority 0 means DefaultRouterPriority.
 	Priority int
+	// CertDir is the in-container directory holding <domain>/fullchain.pem
+	// and privkey.pem (nginx). Webroot, when set, serves ACME challenges.
+	CertDir string
+	Webroot string
 }
 
 // ValidateName checks an entrypoint or resolver name before it is written

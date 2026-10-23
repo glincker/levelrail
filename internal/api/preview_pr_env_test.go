@@ -203,7 +203,7 @@ func TestPreviewCleanup_Idempotent(t *testing.T) {
 			t.Fatalf("tracked db: %v", err)
 		}
 		runtime.seed(database.ContainerName(tracked.DatabaseName), true)
-		_, allVols := databaseVolumeNames(tracked.DatabaseName)
+		allVols := databaseVolumeNames(tracked.DatabaseName)
 		vols := newFakeVolumeManager(append(allVols, "web-pr-42-data", "shared-data")...)
 		rt.orphanedVolumes = vols
 		// The preview mounts its own volume plus one a production service also mounts.

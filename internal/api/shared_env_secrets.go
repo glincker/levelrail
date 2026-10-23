@@ -65,8 +65,7 @@ func (rt *Router) loadSharedEnvScope(w http.ResponseWriter, r *http.Request, sco
 		return false
 	}
 	if err != nil {
-		rt.logger.Error("api: "+verb+" "+scope.label+" env: load "+scope.label+" failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: "+verb+" "+scope.label+" env: load "+scope.label+" failed", err, slog.String("id", id))
 		return false
 	}
 	return true
@@ -84,8 +83,7 @@ func (rt *Router) handleListSharedEnvAll(w http.ResponseWriter, r *http.Request,
 
 	vars, err := scope.listAll(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: list "+scope.label+" env failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list "+scope.label+" env failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.sharedEnvVarResources(vars))
@@ -103,8 +101,7 @@ func (rt *Router) handleListSharedEnvSecretKeys(w http.ResponseWriter, r *http.R
 
 	keys, err := scope.listKeys(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: list "+scope.label+" secret env keys failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list "+scope.label+" secret env keys failed", err, slog.String("id", id))
 		return
 	}
 	if keys == nil {
@@ -149,13 +146,11 @@ func (rt *Router) handleSetSharedEnvSecret(w http.ResponseWriter, r *http.Reques
 	// per-key lock concept (unlike per-app secrets' SetSecretLock), so
 	// there is never a guard here to bypass.
 	if err := rt.secrets.SetValueGuarded(r.Context(), scope.namespace(id), key, req.Value, true); err != nil {
-		rt.logger.Error("api: set "+scope.label+" secret env var failed", slog.String("error", err.Error()), slog.String("id", id), slog.String("key", key))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set "+scope.label+" secret env var failed", err, slog.String("id", id), slog.String("key", key))
 		return
 	}
 	if err := scope.markSecret(r.Context(), id, key); err != nil {
-		rt.logger.Error("api: mark "+scope.label+" secret env var failed", slog.String("error", err.Error()), slog.String("id", id), slog.String("key", key))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: mark "+scope.label+" secret env var failed", err, slog.String("id", id), slog.String("key", key))
 		return
 	}
 
@@ -177,8 +172,7 @@ func (rt *Router) handleDeleteSharedEnvSecret(w http.ResponseWriter, r *http.Req
 	}
 
 	if err := scope.unmark(r.Context(), id, key); err != nil {
-		rt.logger.Error("api: delete "+scope.label+" secret env var failed", slog.String("error", err.Error()), slog.String("id", id), slog.String("key", key))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete "+scope.label+" secret env var failed", err, slog.String("id", id), slog.String("key", key))
 		return
 	}
 

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ScrollIcon,
+  ArrowsClockwiseIcon,
   ArrowCounterClockwiseIcon,
   DotsThreeIcon,
   ProhibitIcon,
@@ -10,6 +11,7 @@ import {
   GitCommitIcon,
   GitDiffIcon,
   ArrowSquareOutIcon,
+  LockSimpleIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { DeployAttempt } from '../types/deployAttempt'
@@ -17,6 +19,7 @@ import type { ReconcileCondition } from '../types/deploy'
 import type { EnvironmentResource } from '../types/environment'
 import { isPendingApproval, useTriggerDeploy } from '../queries/deploys'
 import { useRollbackToDeploy } from '../queries/deployControl'
+import { usePublishLockActions } from '../queries/publishLock'
 import { formatDeployDuration } from '../lib/deployDuration'
 import { computeDeployStages } from '../lib/deployStages'
 import {
@@ -30,6 +33,7 @@ import { DeployFailureActions } from './DeployFailureActions'
 import { DeployFromCacheButton } from './DeployFromCacheButton'
 import { InfoTip, ActionMenu, RelativeTime } from './kit'
 import { RolloutChip } from './DeployDigestChips'
+import { DeployPinnedStatus } from './DeployPinnedStatus'
 import { cn } from '@/lib/utils'
 import { commitSubject } from '../lib/deploymentPresentation'
 import { unpinnedImage } from '../lib/imageDigest'
@@ -37,6 +41,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast, toastAction } from '@/components/ui/toast'
+
+// The reason code a poll-started deploy carries; its label already says why.
+const POLLED_REASON = 'DetectedByPoll'
 
 const TONE_TEXT: Record<string, string> = {
   success: 'text-tone-success',
@@ -71,9 +78,11 @@ export function DeployAttemptRow({
   protectedEnv,
   ackProtected,
   visitUrl,
+  pinned = false,
 }: {
   appName: string
   visitUrl?: string
+  pinned?: boolean
   attempt: DeployAttempt
   isLatestAttempt: boolean
   conditions: ReconcileCondition[]
@@ -86,6 +95,7 @@ export function DeployAttemptRow({
   const navigate = useNavigate()
   const triggerDeploy = useTriggerDeploy(appName)
   const rollbackTo = useRollbackToDeploy(appName)
+  const { publish, rollbackAndLock } = usePublishLockActions(appName)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const isCancelable =
     attempt.status === 'queued' ||
@@ -151,6 +161,22 @@ export function DeployAttemptRow({
   }
 
   const live = attempt.rollout_state === 'serving'
+  const held = attempt.publish_state === 'held'
+  const lockToastError = (error: Error) =>
+    toast.add({
+      title: t('publishLock.error', { ns: 'deploySafety' }),
+      description: error.message,
+      type: 'error',
+    })
+  const handlePublish = () =>
+    publish.mutate(attempt.id, {
+      onSuccess: () =>
+        toast.add({
+          title: t('publishLock.publishedToast', { ns: 'deploySafety' }),
+          type: 'success',
+        }),
+      onError: lockToastError,
+    })
   const menuItems = [
     {
       id: 'compare',
@@ -165,7 +191,7 @@ export function DeployAttemptRow({
         })
       },
     },
-    ...(attempt.status === 'succeeded' && !live
+    ...(attempt.status === 'succeeded' && !live && !held
       ? [
           {
             id: 'rollback',
@@ -176,6 +202,21 @@ export function DeployAttemptRow({
             icon: <ArrowCounterClockwiseIcon className="size-4" />,
             disabled: rollbackBlocked,
             onSelect: handleRollback,
+          },
+        ]
+      : []),
+    ...(attempt.status === 'succeeded' && !live && !held
+      ? [
+          {
+            id: 'rollback-lock',
+            label: t('publishLock.rollbackLock', { ns: 'deploySafety' }),
+            description: t('publishLock.rollbackLockHint', {
+              ns: 'deploySafety',
+            }),
+            icon: <LockSimpleIcon className="size-4" />,
+            disabled: rollbackBlocked || rollbackAndLock.isPending,
+            onSelect: () =>
+              rollbackAndLock.mutate(attempt.id, { onError: lockToastError }),
           },
         ]
       : []),
@@ -216,7 +257,9 @@ export function DeployAttemptRow({
           ? `Superseded by ${attempt.superseded_by}`
           : attempt.status === 'canceled'
             ? `Canceled${attempt.canceled_by ? ` by ${attempt.canceled_by}` : ''}`
-            : attempt.reason
+            : attempt.reason === POLLED_REASON
+              ? undefined
+              : attempt.reason
 
   return (
     <li
@@ -273,7 +316,30 @@ export function DeployAttemptRow({
               {stageLabel}
             </Badge>
           ) : null}
+          {attempt.rerun_of ? (
+            <Link
+              to="/apps/$name/deploys/$deployId/logs"
+              params={{ name: appName, deployId: attempt.rerun_of }}
+              className="relative z-10 inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+              aria-label={t('deployHistory.rerunOfLabel', {
+                id: attempt.rerun_of,
+              })}
+            >
+              <ArrowsClockwiseIcon className="size-3" aria-hidden="true" />
+              {t('deployHistory.rerunOf', {
+                id: attempt.rerun_of.slice(0, 12),
+              })}
+            </Link>
+          ) : null}
         </div>
+
+        {pinned ? (
+          <DeployPinnedStatus
+            appName={appName}
+            attempt={attempt}
+            stageLabel={stageLabel}
+          />
+        ) : null}
 
         <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           {attempt.branch ? (
@@ -383,7 +449,16 @@ export function DeployAttemptRow({
             {t('deployHistory.visit')}
           </Button>
         ) : null}
-        {attempt.status === 'succeeded' && !live ? (
+        {held ? (
+          <Button
+            size="sm"
+            disabled={publish.isPending}
+            onClick={handlePublish}
+          >
+            {t('publishLock.publish', { ns: 'deploySafety' })}
+          </Button>
+        ) : null}
+        {attempt.status === 'succeeded' && !live && !held ? (
           <Button
             variant="outline"
             size="sm"
@@ -406,7 +481,11 @@ export function DeployAttemptRow({
           render={<Link {...detail} />}
         >
           <ScrollIcon className="size-3.5" data-icon="inline-start" />
-          {attempt.status === 'running' ? 'Watch' : 'Logs'}
+          {attempt.status === 'running'
+            ? t('deployHistory.watchLog')
+            : attempt.status === 'failed'
+              ? t('deployHistory.failedLog')
+              : t('deployHistory.viewLogs')}
         </Button>
         <ActionMenu
           trigger={

@@ -94,6 +94,10 @@ func printUpgradeHuman(out io.Writer, p updatePreflight, backupNote string) {
 	} else {
 		_, _ = fmt.Fprintf(out, "latest release:   %s\n", *p.LatestVersion)
 	}
+	if p.State != "" {
+		_, _ = fmt.Fprintf(out, "state:           %s\n", p.State)
+		_, _ = fmt.Fprintf(out, "reason:          %s\n", p.StateReason)
+	}
 	for _, c := range p.Checks {
 		_, _ = fmt.Fprintf(out, "[%s] %s: %s\n", c.Status, c.Name, c.Message)
 		if c.Status == "ok" || c.Status == "unknown" {
@@ -111,6 +115,8 @@ func printUpgradeHuman(out io.Writer, p updatePreflight, backupNote string) {
 	}
 	_, _ = fmt.Fprintf(out, "control plane backup: %s\n", backupNote)
 	switch {
+	case p.State == "ahead_of_releases":
+		_, _ = fmt.Fprintln(out, "\nNothing to upgrade to: your data is newer than the latest release. The next release that includes your data format is offered automatically.")
 	case p.Waiting:
 		_, _ = fmt.Fprintln(out, "\nNot ready yet: the release is still being published. Re-check in a few minutes.")
 	case p.Blocked:

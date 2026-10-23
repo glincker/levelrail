@@ -28,11 +28,20 @@ type Dir struct {
 	ns   Namespace
 	path string
 	real string
+	ext  string
 }
+
+// DefaultFileExt is the extension of Traefik route files.
+const DefaultFileExt = ".yaml"
 
 // OpenDir resolves path. It must be absolute and an existing directory. If
 // the last component is a symlink it must resolve inside the same parent.
 func OpenDir(ns Namespace, path string) (*Dir, error) {
+	return OpenDirExt(ns, path, DefaultFileExt)
+}
+
+// OpenDirExt is OpenDir for a provider whose files use another extension.
+func OpenDirExt(ns Namespace, path, ext string) (*Dir, error) {
 	if ns == "" {
 		return nil, errors.New("proxyroutes: empty namespace")
 	}
@@ -43,7 +52,7 @@ func OpenDir(ns Namespace, path string) (*Dir, error) {
 	if clean == string(filepath.Separator) {
 		return nil, errors.New("refusing to manage files in the root directory")
 	}
-	d := &Dir{ns: ns, path: clean}
+	d := &Dir{ns: ns, path: clean, ext: ext}
 	resolved, err := d.resolve()
 	if err != nil {
 		return nil, err
@@ -112,12 +121,12 @@ func (d *Dir) target(name string) (string, error) {
 }
 
 func (d *Dir) isManagedName(name string) bool {
-	return strings.HasPrefix(name, d.ns.FilePrefix()) && strings.HasSuffix(name, ".yaml") && len(name) > len(d.ns.FilePrefix())+len(".yaml")
+	return strings.HasPrefix(name, d.ns.FilePrefix()) && strings.HasSuffix(name, d.ext) && len(name) > len(d.ns.FilePrefix())+len(d.ext)
 }
 
 // DomainOf is the domain a managed file name belongs to.
 func (d *Dir) DomainOf(name string) string {
-	return strings.TrimSuffix(strings.TrimPrefix(name, d.ns.FilePrefix()), ".yaml")
+	return strings.TrimSuffix(strings.TrimPrefix(name, d.ns.FilePrefix()), d.ext)
 }
 
 // read returns the content of a managed file, or ErrForeignFile when it is

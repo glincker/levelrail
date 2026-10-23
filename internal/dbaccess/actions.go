@@ -21,6 +21,7 @@ const (
 	ActionMakePrivate = "database.network.make_private"
 	ActionScopeSet    = "database.network.scope.set"
 	ActionTLSSet      = "database.network.tls.set"
+	ActionTLSToggle   = "database.tls.toggle"
 )
 
 // SystemActor names the sweeper in audit rows.

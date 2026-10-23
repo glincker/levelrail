@@ -427,18 +427,20 @@ export function useSetNodeWorkloads() {
 
 // PUT /api/v1/nodes/{id}/region (internal/api/nodes.go's
 // handleSetNodeRegion): a free-text location label, no fixed provider/
-// region list validated against.
+// region list validated against. Omitted fields keep their stored value.
 export async function setNodeRegion({
   id,
-  region,
+  ...labels
 }: {
   id: string
-  region: string
+  region?: string
+  provider?: string
+  zone?: string
 }): Promise<NodeResource> {
   const res = await fetch(`/api/v1/nodes/${encodeURIComponent(id)}/region`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ region }),
+    body: JSON.stringify(labels),
   })
   if (!res.ok) {
     throw new ApiError(

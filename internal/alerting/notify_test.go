@@ -785,8 +785,11 @@ func TestNotifyNtfy_AuthTokenMovedToHeaderAndStrippedFromURL(t *testing.T) {
 	if gotAuth != "Bearer tk_secret" {
 		t.Errorf("Authorization header = %q, want Bearer tk_secret", gotAuth)
 	}
-	if gotPath != "/my-topic" {
-		t.Errorf("request URI = %q, want the auth query parameter stripped", gotPath)
+	if gotPath != "/" {
+		t.Errorf("request URI = %q, want the server root with the auth query parameter stripped", gotPath)
+	}
+	if got.Topic != "my-topic" {
+		t.Errorf("payload.Topic = %q, want the topic from the notify_url path", got.Topic)
 	}
 	if got.Priority != 3 {
 		t.Errorf("payload.Priority = %d, want 3 for a resolved event", got.Priority)

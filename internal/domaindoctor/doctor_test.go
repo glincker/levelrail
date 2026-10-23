@@ -5,10 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
 )
+
+var fakeMu sync.Mutex
 
 var testNow = time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
 
@@ -32,6 +35,8 @@ type fakeTLS struct {
 }
 
 func (f fakeTLS) Handshake(_ context.Context, addr, _ string) (PeerCert, error) {
+	fakeMu.Lock()
+	defer fakeMu.Unlock()
 	*f.calls++
 	if !strings.HasPrefix(addr, serverIP) {
 		return PeerCert{}, fmt.Errorf("dialed %s, not this server", addr)
@@ -48,6 +53,8 @@ type fakeHTTP struct {
 }
 
 func (f fakeHTTP) Get(_ context.Context, addr, scheme, host, path string) (HTTPResult, error) {
+	fakeMu.Lock()
+	defer fakeMu.Unlock()
 	*f.calls++
 	*f.dialed = append(*f.dialed, addr)
 	if f.err != nil {

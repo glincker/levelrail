@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.8.2](https://github.com/glincker/levelrail/compare/v0.8.1...v0.8.2) (2026-10-22)
+
+
+### Bug Fixes
+
+* the release image build copies install-cli.ps1 so the web stage builds ([#1346](https://github.com/glincker/levelrail/issues/1346)) ([dc8d0f4](https://github.com/glincker/levelrail/commit/dc8d0f429c473c6650ccc021f2a9dcf5e6554a4c))
+
+## [0.8.1](https://github.com/glincker/levelrail/compare/v0.8.0...v0.8.1) (2026-10-22)
+
+
+### Features
+
+* Functions, migration agent, cloud readiness and a safer database flow ([#1327](https://github.com/glincker/levelrail/issues/1327)) ([1ae9020](https://github.com/glincker/levelrail/commit/1ae9020f889c3a831c310e166c7b3daca65b72ff))
+* group deploy timeline, builds and cost explorer under tabbed sidebar entries ([1ae9020](https://github.com/glincker/levelrail/commit/1ae9020f889c3a831c310e166c7b3daca65b72ff))
+
+
+### Documentation
+
+* note what the 0.8 release line adds on the roadmap ([#1340](https://github.com/glincker/levelrail/issues/1340)) ([864bd5f](https://github.com/glincker/levelrail/commit/864bd5f0df0969eb879e2fbc7202282f19f325cd))
+
+## [0.8.0](https://github.com/glincker/levelrail/compare/v0.7.0...v0.8.0) (2026-10-21)
+
+
+### Features
+
+* 0.8 with inbox, upgrade recovery, secret rotation and zone spread ([#1316](https://github.com/glincker/levelrail/issues/1316)) ([fec2538](https://github.com/glincker/levelrail/commit/fec2538615e5bdcb25169ccf852afb6a03140d64))
+
+
+### Bug Fixes
+
+* build the CLI for Windows again by splitting the unix-only inode call ([#1325](https://github.com/glincker/levelrail/issues/1325)) ([92c1bae](https://github.com/glincker/levelrail/commit/92c1baeb1b84a9bd7c39bfafc7753b699c83d6fb))
+
 ## [0.7.0](https://github.com/glincker/levelrail/compare/v0.6.0...v0.7.0) (2026-10-20)
 
 

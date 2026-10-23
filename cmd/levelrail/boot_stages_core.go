@@ -14,6 +14,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/GLINCKER/levelrail/internal/agent/migrationpb"
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
@@ -22,6 +23,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/integrity"
+	"github.com/GLINCKER/levelrail/internal/migrateagent"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -127,6 +129,10 @@ func (s *bootState) bootIdentity() error {
 		logger.Warn("dev admin account not bootstrapped", slog.String("error", err.Error()))
 	}
 
+	if err := applyLocalMode(ctx, logger, db); err != nil {
+		return err
+	}
+
 	ensureSetupToken(ctx, logger, db)
 
 	// A missing dev-fixtures file is fine: it is an opt-in layer on dev mode.
@@ -170,6 +176,7 @@ func (s *bootState) openTelemetryStores() error {
 	s.deployRecorder = deployRecorder
 	s.logBroadcaster = logBroadcaster
 	s.alertingDB = alertingDB
+	seedDefaultAlerts(ctx, logger, alertingDB)
 	return nil
 }
 
@@ -219,9 +226,12 @@ func (s *bootState) startAgentServer() error {
 	)
 	meshEndpoints := newMeshEndpointBook(logger)
 	hostReports := agent.NewHostReportStore()
-	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(db), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithSessionObserver(meshEndpoints.Observe))...)
+	onboardingReports := agent.NewOnboardingStore()
+	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(db), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithOnboardingSink(onboardingReports), agent.WithSessionObserver(meshEndpoints.Observe))...)
 	agentServerRef.Store(agentServer)
 	agentpb.RegisterAgentServiceServer(agentGRPCServer, agentServer)
+	migrationAgent := migrateagent.NewService(db, agentCA, migrateagent.ConfigFromEnv(), logger, nil)
+	migrationpb.RegisterMigrationServiceServer(agentGRPCServer, migrationAgent)
 	go func() {
 		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
 		if err := agentGRPCServer.Serve(agentListener); err != nil {
@@ -239,7 +249,9 @@ func (s *bootState) startAgentServer() error {
 	s.agentRegistry = agentRegistry
 	s.meshEndpoints = meshEndpoints
 	s.hostReports = hostReports
+	s.onboardingReports = onboardingReports
 	s.agentServer = agentServer
+	s.migrationAgent = migrationAgent
 	return nil
 }
 
@@ -260,7 +272,15 @@ func (s *bootState) loadSecretsAndNotifiers() {
 	setupNotificationChannelSecrets(ctx, logger, alertingDB, secretsManager)
 
 	// Always non-nil: email settings resolve on every send, so 'not configured' surfaces at send time.
-	emailSender := email.NewDynamicSender(emailConfigLoader(db, secretsManager, smtpConfigFromEnv()))
+	failoverThreshold, failoverCooldown := emailFailoverFromEnv()
+	emailRecorder := newEmailDeliveryRecorder(db)
+	emailSender := email.NewDynamicSender(emailConfigLoader(db, secretsManager, smtpConfigFromEnv())).
+		WithProviders(emailProvidersLoader(db, secretsManager, smtpConfigFromEnv())).
+		WithFailover(failoverThreshold, failoverCooldown).
+		WithProviderHealth(emailRecorder).
+		WithLogger(logger).
+		WithRecorder(emailRecorder).
+		WithRetry(emailEnvInt("APP_EMAIL_RETRY_ATTEMPTS"), time.Duration(emailEnvInt("APP_EMAIL_RETRY_BASE_MS"))*time.Millisecond)
 	installGitNetguard()
 	notifyClient := netguard.NewClient()
 
@@ -281,7 +301,7 @@ func (s *bootState) loadSecretsAndNotifiers() {
 		}
 	}
 
-	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, emailSender, pushSender, logger).WithLogSources(telemetryDB, telemetryDB)
+	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, alerting.TemplatedSender{Sender: emailSender, Render: alertMailRenderer(db, *b)}, pushSender, logger).WithLogSources(telemetryDB, telemetryDB).WithOutcomeTracker(alerting.NewDeployOutcomeTracker())
 	s.secretsManager = secretsManager
 	s.masterKeyFilePath = masterKeyFilePath
 	s.emailSender = emailSender

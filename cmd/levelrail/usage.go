@@ -12,7 +12,7 @@ import (
 // start the server; anything else must never fall through to run().
 var serverSubcommands = map[string]bool{
 	"version": true, "retain": true, "upgrade-note": true, "rollback": true,
-	"self-upgrade": true, "migrate-check": true, "recover-admin": true,
+	"self-upgrade": true, "restore-point": true, "migrate-check": true, "recover-admin": true,
 	"emergency-token": true, "approve-signin": true, "restore-db": true, "restore-snapshot": true,
 	"restore": true, "setup-token": true, "healthcheck": true, "demo": true, "access-policy-reset": true,
 }
@@ -35,6 +35,7 @@ Commands:
   restore            restore from a backup target
   rollback           roll the binary back to the previous release
   self-upgrade       upgrade this binary in place
+  restore-point      restore a pre-upgrade restore point (binary, unit file, database if needed)
   upgrade-note       show release notes for the pending upgrade
   retain             manage retained releases
   migrate-check      check pending schema migrations

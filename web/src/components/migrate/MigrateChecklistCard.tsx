@@ -267,7 +267,9 @@ function StepRow({
             disabled={mutation.isPending}
             onClick={() => send('reset')}
           >
-            {t('cutover.reset')}
+            {step.actor === 'migration-agent'
+              ? t('cutover.undoAgent')
+              : t('cutover.reset')}
           </Button>
         ) : current ? (
           <Button size="sm" disabled={mutation.isPending} onClick={complete}>

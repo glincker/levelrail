@@ -17,6 +17,8 @@ func (rt *Router) registerSSORoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/sso/saml/connections/{id}", rt.requireAbility(AbilityRoot, rt.handleUpdateSAMLConnection))
 	mux.HandleFunc("DELETE /api/v1/sso/saml/connections/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteSAMLConnection))
 	mux.HandleFunc("POST /api/v1/sso/saml/connections/{id}/metadata", rt.requireAbility(AbilityRoot, rt.handleImportSAMLMetadata))
+	mux.HandleFunc("GET /api/v1/sso/saml/connections/{id}/test/start", rt.requireAbility(AbilityRoot, rt.handleStartSAMLTest))
+	mux.HandleFunc("GET /api/v1/sso/saml/connections/{id}/test/result", rt.requireAbility(AbilityRoot, rt.handleSAMLTestResult))
 	mux.HandleFunc("GET /api/v1/sso/oidc", rt.requireAbility(AbilityRoot, rt.handleListOAuthSSOPolicies))
 	mux.HandleFunc("GET /api/v1/sso/oidc/{provider}", rt.requireAbility(AbilityRoot, rt.handleGetOAuthSSOPolicy))
 	mux.HandleFunc("PUT /api/v1/sso/oidc/{provider}", rt.requireAbility(AbilityRoot, rt.handlePutOAuthSSOPolicy))

@@ -89,5 +89,8 @@
     "loading": "Loading",
     "failed": "Could not load more deploys. Try again."
   },
-  "count": "{{deploys}} deploys across {{apps}} apps"
+  "count": "{{deploys}} deploys across {{apps}} apps",
+  "banner": {
+    "description": "A timeline of every deploy per app, with failures and rollbacks marked. Deploy an app and its lane appears here."
+  }
 }

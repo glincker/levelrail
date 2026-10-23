@@ -1,31 +1,31 @@
 import { describe, expect, it } from 'vitest'
 import {
   APP_NAV_SECTIONS,
+  visibleAppSections,
   visibleGlobalGroups,
   GLOBAL_NAV_GROUPS,
   activeAppSection,
   allGlobalItems,
   defaultGroupOpen,
   isGlobalItemActive,
+  pinnedGlobalItems,
   resolveOpen,
 } from './navModel'
+import { ROUTE_ENTRIES } from '../commandPaletteData'
 import { isBoolRecord, readJson, writeJson } from './persist'
 
 const EXPECTED_GLOBAL = [
   '/',
   '/status',
-  '/dashboards',
   '/apps',
   '/deployments',
   '/functions',
-  '/deploy-timeline',
   '/projects',
   '/databases',
   '/backups',
   '/nodes',
   '/resource-advisor',
   '/usage',
-  '/costs',
   '/resources',
   '/network',
   '/network/proxy',
@@ -36,7 +36,7 @@ const EXPECTED_GLOBAL = [
   '/firewall',
   '/loadbalancers',
   '/images',
-  '/builds',
+  '/inbox',
   '/settings/registry',
   '/settings/registry-credentials',
   '/settings/network-shares',
@@ -61,10 +61,13 @@ const EXPECTED_APP = [
   'deploy-settings',
   'pipelines',
   'domains',
+  'go-live',
   'loadbalancer',
   'streams',
   'network',
   'cache',
+  'static-routes',
+  'forms',
   'environment',
   'services',
   'resources',
@@ -72,6 +75,7 @@ const EXPECTED_APP = [
   'health',
   'scheduled-tasks',
   'feature-flags',
+  'split-testing',
   'integrations',
   'metrics',
   'logs',
@@ -90,6 +94,15 @@ describe('global nav model', () => {
       .map((i) => i.to)
       .sort()
     expect(tos).toEqual([...EXPECTED_GLOBAL].sort())
+  })
+
+  it('has one Dashboard entry and no separate Dashboards page', () => {
+    const labels = allGlobalItems().map((i) => i.label)
+    expect(labels).toContain('Dashboard')
+    expect(labels).not.toContain('Dashboards')
+    expect(
+      allGlobalItems().some((i) => i.to === ('/dashboards' as string)),
+    ).toBe(false)
   })
 
   it('keeps groups short', () => {
@@ -135,9 +148,51 @@ describe('global nav model', () => {
     ['/apps/web/logs', '/apps', true],
     ['/appsettings', '/apps', false],
     ['/status', '/', false],
+    ['/network', '/network', true],
+    ['/network/proxy', '/network', false],
+    ['/network/private', '/network', false],
+    ['/network/proxy', '/network/proxy', true],
   ])('active match %s vs %s', (path, to, want) => {
     const item = allGlobalItems().find((i) => i.to === to)
     expect(item && isGlobalItemActive(path, item)).toBe(want)
+  })
+})
+
+describe('grouped nav entries', () => {
+  const REMOVED = ['/deploy-timeline', '/builds', '/costs']
+  const item = (to: string) => allGlobalItems().find((i) => i.to === to)
+
+  it.each([
+    ['/deployments', '/deployments', true],
+    ['/deploy-timeline', '/deployments', true],
+    ['/deploy-timeline?x', '/deployments', true],
+    ['/builds', '/deployments', true],
+    ['/builds/something', '/deployments', true],
+    ['/buildsx', '/deployments', false],
+    ['/usage', '/usage', true],
+    ['/costs', '/usage', true],
+    ['/costs/x', '/usage', true],
+    ['/costsx', '/usage', false],
+    ['/images', '/deployments', false],
+  ])('active match %s vs %s', (path, to, want) => {
+    const it2 = item(to)
+    expect(it2 && isGlobalItemActive(path, it2)).toBe(want)
+  })
+
+  it('keeps every removed destination reachable by alsoActive and the palette', () => {
+    const also = allGlobalItems().flatMap((i) => i.alsoActive ?? [])
+    const palette = ROUTE_ENTRIES.map((e) => e.to)
+    for (const to of REMOVED) {
+      expect(item(to), to).toBeUndefined()
+      expect(also, to).toContain(to)
+      expect(palette, to).toContain(to)
+    }
+  })
+
+  it('ignores stale pins for removed entries', () => {
+    const groups = GLOBAL_NAV_GROUPS
+    const pinned = pinnedGlobalItems(groups, ['builds', 'costs', 'deployments'])
+    expect(pinned.map((i) => i.id)).toEqual(['deployments'])
   })
 })
 
@@ -177,5 +232,15 @@ describe('collapsed state persistence', () => {
     expect(readJson('k', {}, isBoolRecord)).toEqual({})
     window.localStorage.setItem('k', 'not json')
     expect(readJson('k', { z: true }, isBoolRecord)).toEqual({ z: true })
+  })
+})
+
+describe('static routing rules nav item', () => {
+  const slugs = (isStatic: boolean) =>
+    visibleAppSections(isStatic).flatMap((s) => s.items.map((i) => i.slug))
+
+  it('appears only for static sites', () => {
+    expect(slugs(true)).toContain('static-routes')
+    expect(slugs(false)).not.toContain('static-routes')
   })
 })

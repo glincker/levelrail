@@ -80,7 +80,8 @@
     "aria": "Cache hit rate by app, busiest first",
     "emptyTitle": "No apps yet",
     "emptyBody": "Deploy an app and give it a domain, then turn caching on.",
-    "emptyAction": "Open apps"
+    "emptyAction": "Open apps",
+    "why": "Why not cached"
   },
   "picker": {
     "label": "App"
@@ -180,5 +181,46 @@
     "clientIp": "Add the CDN's address ranges to the trusted proxies setting so visitor IPs, rate limits and country rules use the real client address.",
     "plugins": "First party integrations for CDN purge and traffic steering are planned through the plugin system. Nothing is connected today.",
     "docs": "Read the guide"
+  },
+  "banner": {
+    "diagram": {
+      "origin": "Origin",
+      "edge": "Edge"
+    }
+  },
+  "reasons": {
+    "column": "Why not cached",
+    "none": "Nothing is blocking the cache",
+    "fixVary": "Add {{header}} to Vary",
+    "nextjsHelp": "This looks like a Next.js app. The Next.js preset keys cached pages by its router headers.",
+    "nextjsFix": "Apply Next.js preset",
+    "short": {
+      "vary_header": "The app varies on {{header}}",
+      "set_cookie": "Responses set a cookie",
+      "private": "Responses are marked private",
+      "no_store": "Responses forbid storing (no-store)",
+      "no_cache": "Responses require revalidation (no-cache)",
+      "status_not_cached": "Response status is not cached",
+      "too_large": "Responses are too large",
+      "range": "Range requests skip the cache",
+      "authorization": "Requests carry credentials",
+      "cookie_request": "Requests carry cookies",
+      "upgrade": "Upgrade requests skip the cache",
+      "other": "Other reasons"
+    },
+    "long": {
+      "vary_header": "responses vary on the {{header}} header, which no cache rule lists, so they cannot be stored safely.",
+      "set_cookie": "responses set a cookie, so they are personal and are not stored.",
+      "private": "responses are marked private by the app.",
+      "no_store": "requests or responses say no-store.",
+      "no_cache": "responses say no-cache, so they must be checked with the app every time.",
+      "status_not_cached": "responses had a status the rule does not cache. Add the status to the rule to cache it.",
+      "too_large": "responses were larger than the per object cache limit.",
+      "range": "requests asked for part of a file (Range), which is never cached.",
+      "authorization": "requests carried an Authorization header, so they are never cached.",
+      "cookie_request": "requests carried a cookie. Turn on caching with cookies in the rule if the page is the same for everyone.",
+      "upgrade": "requests asked to switch protocol (WebSocket), which is never cached.",
+      "other": "requests were left out of the cache for less common reasons."
+    }
   }
 }

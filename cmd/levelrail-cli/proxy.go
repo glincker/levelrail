@@ -11,6 +11,8 @@ import (
 func runProxy(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) > 0 {
 		switch args[0] {
+		case "install":
+			return runProxyInstall(prog, args[1:], stdout, stderr, lookupEnv)
 		case "setup", "status", "apply", "verify", "disable":
 			return runProxyIntegration(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 		}
@@ -63,7 +65,8 @@ func runProxy(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 func proxyUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s proxy [--domain D | --app NAME] [--proxy traefik|nginx|caddy] [--verify]
-  %[1]s proxy setup [--confirm] [--dynamic-dir DIR]
+  %[1]s proxy setup [--confirm] [--provider traefik|nginx|caddy|haproxy|auto] [--dynamic-dir DIR] [--cert-dir DIR]
+  %[1]s proxy install [--provider traefik] [--confirm]
   %[1]s proxy status
   %[1]s proxy apply
   %[1]s proxy verify [--domain D]
@@ -72,9 +75,16 @@ func proxyUsage(prog string) string {
 Without a subcommand: shows what holds ports 80 and 443 and the configuration to paste
 into that proxy, for the dashboard (--domain) or an app's domain (--app).
 
-setup detects a Traefik that owns ports 80 and 443 and, with --confirm, lets this server
-write one route file per domain into Traefik's watched directory. Without --confirm it
-only prints what would change.
+setup detects the proxy that owns ports 80 and 443. For Traefik and nginx, --confirm lets
+this server write one route file per domain into the proxy's directory (nginx is checked
+with nginx -t and reloaded, and rolled back if it refuses). For caddy and haproxy it only
+prints the configuration to add by hand. Without --confirm it only prints what would change.
+--provider picks the proxy; auto (the default) uses the one detected.
+
+install starts a pinned Traefik container for you when none runs on this server, through the
+Docker API: it publishes ports 80 and 443, writes a minimal static configuration and a route
+directory under the data directory, and refuses if either port is already in use. Without
+--confirm it only prints the plan.
 
 Flags:
 `, prog)

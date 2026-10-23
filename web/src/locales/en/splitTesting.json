@@ -1,0 +1,90 @@
+{
+  "title": "Split testing",
+  "description": "Send a share of this app's visitors to a branch deploy or a retained release. Each visitor keeps the same variant through a cookie, which is only set while a test runs.",
+  "nav": "Split testing",
+  "loading": "Loading split test",
+  "loadError": "Could not load the split test: {{message}}",
+  "unsupportedTitle": "Split testing is not available for this app",
+  "unsupportedHelp": "It works for container apps with a domain. Static sites are not supported yet.",
+  "empty": {
+    "title": "No split test is running",
+    "body": "Pick a branch deploy or a retained release, give it a share of visitors, and compare request counts before promoting the winner."
+  },
+  "start": {
+    "title": "Start a split test",
+    "kind": "Variant source",
+    "kindBranch": "Branch deploy",
+    "kindRelease": "Retained release",
+    "branch": "Branch deploy",
+    "branchPlaceholder": "Choose a branch deploy",
+    "noBranches": "No ready branch deploys. Enable branch deploys and push a branch first.",
+    "release": "Release deploy name",
+    "releasePlaceholder": "web-3f2a9c",
+    "label": "Variant label",
+    "weight": "Share of visitors (%)",
+    "cookieName": "Cookie name",
+    "cookieTtl": "Cookie lifetime",
+    "cookieTtlHelp": "Such as 720h. Leave empty to use the server default.",
+    "submit": "Start test",
+    "success": "Split test started",
+    "errorTitle": "Could not start the split test"
+  },
+  "status": {
+    "running": "Running",
+    "stopped": "Stopped",
+    "live": "Live",
+    "ready": "Ready",
+    "unavailable": "Unavailable"
+  },
+  "kind": {
+    "production": "Production",
+    "branch": "Branch deploy",
+    "release": "Release"
+  },
+  "table": {
+    "caption": "Variants of the running split test",
+    "variant": "Variant",
+    "status": "Status",
+    "weight": "Weight",
+    "requests": "Requests",
+    "actions": "Actions",
+    "weightFor": "Share of visitors for {{label}}",
+    "productionKeeps": "Production keeps {{percent}}%",
+    "overshoot": "The variants take more than 100%, lower a weight.",
+    "saveWeights": "Save weights",
+    "weightsSaved": "Weights saved",
+    "copyQa": "Copy QA link",
+    "qaCopied": "QA link copied",
+    "qaHelp": "Opening the QA link forces that variant for your browser and keeps it.",
+    "promote": "Promote",
+    "unavailableHelp": "This variant is not reachable, so its visitors are served production."
+  },
+  "stats": {
+    "title": "Requests per hour",
+    "hour": "Hour",
+    "total": "{{count}} requests since the test started",
+    "none": "No requests counted yet."
+  },
+  "cookie": {
+    "summary": "Cookie {{name}}, lasts {{hours}} hours. Add ?{{param}}=<variant> to a URL to force a variant."
+  },
+  "stop": {
+    "button": "Stop test",
+    "title": "Stop the split test?",
+    "body": "Every visitor is served production again. Request counts are kept.",
+    "confirm": "Stop test",
+    "success": "Split test stopped"
+  },
+  "promote": {
+    "title": "Promote {{label}}?",
+    "body": "{{label}} becomes the production deploy through the normal deploy path, then the test ends.",
+    "locked": "This is refused while publishing is locked for the app.",
+    "confirm": "Promote winner",
+    "success": "Winner promoted"
+  },
+  "ended": {
+    "title": "Last test",
+    "reason": "Ended: {{reason}}"
+  },
+  "error": "Split test action failed"
+}

@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { CommandBlock } from '@/components/ui/code-block'
 import { toast } from '@/components/ui/toast'
 import {
   ProjectTemplateValidationError,
@@ -212,9 +213,7 @@ export function StarterTemplatesDialog() {
                 {t('starter.viaCli')}
               </CollapsibleTrigger>
               <CollapsiblePanel>
-                <pre className="mt-2 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs text-foreground">
-                  {initCommand}
-                </pre>
+                <CommandBlock className="mt-2" code={initCommand} />
               </CollapsiblePanel>
             </Collapsible>
           </div>

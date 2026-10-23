@@ -82,8 +82,7 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 		TriggerMode: triggerMode,
 	})
 	if err != nil {
-		rt.logger.Error("api: use github repo as source: connect git source failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: use github repo as source: connect git source failed", err, slog.String("app_name", req.AppName))
 		return
 	}
 	status := http.StatusOK
@@ -95,20 +94,19 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 	_, err = rt.controlPlaneBaseURL(ctx)
 	if err != nil {
 		if !errors.Is(err, errNoPrimaryDomain) {
-			rt.logger.Error("api: get base url for github webhook registration failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: get base url for github webhook registration failed", err)
 			return
 		}
 		rt.logger.Warn("api: github repo connected as git source, but no primary domain is configured to register a webhook", slog.String("app_name", req.AppName))
 		resp.WebhookError = "set a primary domain in ingress settings, then register this webhook manually: no reachable url exists yet"
+		rt.recordWebhookRegistration(ctx, req.AppName, errWebhookNoPublicURL)
 		writeJSON(w, status, resp)
 		return
 	}
 
 	webhookSecret, err := rt.gitSourceSecrets.Resolve(ctx, store.GitSourceSecretsKey(req.AppName), gitSourceSecretKey)
 	if err != nil {
-		rt.logger.Error("api: resolve git source webhook secret for github hook registration failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: resolve git source webhook secret for github hook registration failed", err, slog.String("app_name", req.AppName))
 		return
 	}
 
@@ -116,15 +114,18 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 		if errors.Is(err, githubapp.ErrPermissionDenied) {
 			rt.logger.Warn("api: github repo connected as git source, but webhook registration was denied by the installation's permissions", slog.String("owner", owner), slog.String("repo", repo), slog.String("app_name", req.AppName))
 			resp.WebhookError = "this github app installation doesn't have permission to register webhooks yet (it predates that permission being requested); add the webhook below manually, or reinstall the app to grant it and reconnect"
+			rt.recordWebhookRegistration(ctx, req.AppName, err)
 			writeJSON(w, status, resp)
 			return
 		}
+		rt.recordWebhookRegistration(ctx, req.AppName, err)
 		rt.logger.Error("api: register github repo webhook failed", slog.String("error", err.Error()), slog.String("owner", owner), slog.String("repo", repo), slog.String("app_name", req.AppName))
 		writeError(w, http.StatusBadGateway, "git source connected, but registering the webhook on github failed; add it manually")
 		return
 	}
 
 	resp.WebhookRegistered = true
+	rt.recordWebhookRegistration(ctx, req.AppName, nil)
 	rt.logger.Info("api: github repo connected as git source", slog.String("app_name", req.AppName), slog.String("owner", owner), slog.String("repo", repo), slog.Bool("creating", result.Creating))
 	writeJSON(w, status, resp)
 }

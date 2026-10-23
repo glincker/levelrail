@@ -49,6 +49,11 @@ type ImageTrigger struct {
 	Auth *docker.RegistryAuth
 	// Reason is recorded on the attempt, e.g. a freeze override.
 	Reason string
+	// RerunOf links the recorded attempt to the one it retries.
+	RerunOf string
+	// Locks, when set, holds the deploy instead of making it live while the
+	// app's publish lock is on. Set it on automatic triggers only.
+	Locks PublishLocks
 }
 
 // Deploy resolves image, writes it as existing's desired image, records a
@@ -68,14 +73,22 @@ func (t ImageTrigger) Deploy(ctx context.Context, existing store.DesiredService,
 	resolution.apply(&updated)
 	updated.EnvDirty = false
 
+	heldID, err := t.holdIfLocked(ctx, updated)
+	if err != nil {
+		return store.DesiredService{}, fmt.Errorf("deploy: trigger image deploy for %q: %w", existing.Name, err)
+	}
+
 	var seq int64
 	if t.Sequencer != nil && t.Ordered != nil {
 		if seq, err = t.Sequencer.NextDeploySequence(ctx, existing.Name); err != nil {
 			return store.DesiredService{}, fmt.Errorf("deploy: trigger image deploy for %q: %w", existing.Name, err)
 		}
-		order := store.DeployOrder{Sequence: seq, Automatic: t.Automatic}
-		err = t.Ordered.SaveDesiredServiceOrdered(ctx, updated, order, CheckOrder)
-	} else {
+	}
+	switch {
+	case heldID != "":
+	case t.Sequencer != nil && t.Ordered != nil:
+		err = t.Ordered.SaveDesiredServiceOrdered(ctx, updated, store.DeployOrder{Sequence: seq, Automatic: t.Automatic}, CheckOrder)
+	default:
 		err = t.Store.SaveDesiredService(ctx, updated)
 	}
 	if err != nil {
@@ -87,13 +100,13 @@ func (t ImageTrigger) Deploy(ctx context.Context, existing store.DesiredService,
 		source = store.DeployAttemptSourceImage
 	}
 	deploytrace.ConfigStep(ctx, tr, updated)
-	if id := recordImageDeployAttempt(ctx, t.Store, updated, resolution, seq, source, t.Reason, logger); id != "" {
+	if id := recordImageDeployAttempt(ctx, t.Store, updated, resolution, seq, source, t.Reason, heldID, t.RerunOf, logger); id != "" {
 		if sink, ok := t.Store.(deploytrace.Sink); ok {
 			tr.Flush(ctx, sink, id, existing.Name)
 		}
 	}
 
-	if t.Nudger != nil {
+	if t.Nudger != nil && heldID == "" {
 		t.Nudger.Nudge()
 	}
 	return updated, nil
@@ -107,11 +120,13 @@ func TriggerImageDeploy(ctx context.Context, st ImageDeployStore, nudger Reconci
 
 // recordImageDeployAttempt saves and immediately finishes an attempt for a
 // trigger with no build. Failures are logged: desired state already landed.
-func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc store.DesiredService, res ImageResolution, seq int64, source, reason string, logger *slog.Logger) string {
-	id, err := store.NewDeployAttemptID()
-	if err != nil {
-		logger.Error("deploy: record deploy attempt: mint id failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
-		return ""
+func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc store.DesiredService, res ImageResolution, seq int64, source, reason, id, rerunOf string, logger *slog.Logger) string {
+	if id == "" {
+		var err error
+		if id, err = store.NewDeployAttemptID(); err != nil {
+			logger.Error("deploy: record deploy attempt: mint id failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
+			return ""
+		}
 	}
 	now := time.Now()
 	if err := st.SaveDeployAttempt(ctx, store.DeployAttempt{
@@ -119,7 +134,7 @@ func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc stor
 		Source: source,
 		Status: store.DeployAttemptStatusRunning, StartedAt: now,
 		Snapshot:    store.NewDeployAttemptSnapshot(svc),
-		ImageDigest: res.Digest, DigestReason: res.Reason, Sequence: seq, Reason: reason,
+		ImageDigest: res.Digest, DigestReason: res.Reason, Sequence: seq, Reason: reason, RerunOf: rerunOf,
 	}); err != nil {
 		logger.Error("deploy: record deploy attempt: save failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 		return ""
@@ -147,4 +162,27 @@ func PreviousKnownGoodImage(attempts []store.DeployAttempt, currentImage string)
 		return a.Image, true
 	}
 	return "", false
+}
+
+// holdIfLocked saves updated as a held build and returns its id when the
+// app is locked. A lock lookup failure fails closed.
+func (t ImageTrigger) holdIfLocked(ctx context.Context, updated store.DesiredService) (string, error) {
+	if t.Locks == nil {
+		return "", nil
+	}
+	lock, err := t.Locks.GetPublishLock(ctx, updated.Name)
+	if err != nil {
+		return "", fmt.Errorf("check publish lock: %w", err)
+	}
+	if lock == nil {
+		return "", nil
+	}
+	id, err := store.NewDeployAttemptID()
+	if err != nil {
+		return "", fmt.Errorf("mint held build id: %w", err)
+	}
+	if err := t.Locks.SaveHeldBuild(ctx, id, updated, time.Now()); err != nil {
+		return "", fmt.Errorf("save held build: %w", err)
+	}
+	return id, nil
 }

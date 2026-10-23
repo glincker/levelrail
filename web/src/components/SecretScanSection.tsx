@@ -1,3 +1,4 @@
+import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
@@ -144,9 +145,7 @@ export function SecretScanSection({
   const scan = useDeploymentSecretScan(appName, deploymentId)
   let body: ReactNode
   if (scan.isPending) {
-    body = (
-      <p className="text-sm text-muted-foreground">{t('section.loading')}</p>
-    )
+    body = <CardSkeleton titleWidth="w-40" rows={2} />
   } else if (scan.isError) {
     body = <p className="text-sm text-muted-foreground">{t('section.empty')}</p>
   } else {

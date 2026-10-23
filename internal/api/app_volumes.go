@@ -57,8 +57,7 @@ func (rt *Router) loadServiceVolume(w http.ResponseWriter, r *http.Request, serv
 		return "", false
 	}
 	if err != nil {
-		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("name", serviceName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, logContext, err, slog.String("name", serviceName))
 		return "", false
 	}
 

@@ -30,15 +30,13 @@ func (rt *Router) handleGetSharedEnv(w http.ResponseWriter, r *http.Request, sco
 		writeError(w, http.StatusNotFound, scope.notFoundMsg)
 		return
 	} else if err != nil {
-		rt.logger.Error("api: get "+scope.label+" env: load "+scope.label+" failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get "+scope.label+" env: load "+scope.label+" failed", err, slog.String("id", id))
 		return
 	}
 
 	vars, err := scope.list(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: get "+scope.label+" env failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get "+scope.label+" env failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, redactedEnvMap(vars))
@@ -51,8 +49,7 @@ func (rt *Router) handleSetSharedEnv(w http.ResponseWriter, r *http.Request, sco
 		writeError(w, http.StatusNotFound, scope.notFoundMsg)
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set "+scope.label+" env: load "+scope.label+" failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set "+scope.label+" env: load "+scope.label+" failed", err, slog.String("id", id))
 		return
 	}
 
@@ -72,8 +69,7 @@ func (rt *Router) handleSetSharedEnv(w http.ResponseWriter, r *http.Request, sco
 	}
 
 	if err := scope.set(r.Context(), id, vars); err != nil {
-		rt.logger.Error("api: set "+scope.label+" env failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set "+scope.label+" env failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, redactedEnvMap(vars))

@@ -50,6 +50,17 @@ type Result struct {
 	Suggestions       []Suggestion `json:"suggestions"`
 	Truncated         bool         `json:"truncated"`
 	Packages          []Package    `json:"packages"`
+	// StaticBuild is set when the repository root is a static-site
+	// framework, to prefill the build command and publish directory.
+	StaticBuild *StaticBuildSuggestion `json:"static_build,omitempty"`
+}
+
+// StaticBuildSuggestion is a framework preset's build command and output directory.
+type StaticBuildSuggestion struct {
+	PresetID   string `json:"preset_id"`
+	PresetName string `json:"preset_name"`
+	Command    string `json:"command"`
+	PublishDir string `json:"publish_dir"`
 }
 
 // Reader returns the first max bytes of a file, or an error when it cannot be

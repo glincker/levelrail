@@ -149,15 +149,13 @@ func (rt *Router) handleGetMeshStatus(w http.ResponseWriter, r *http.Request) {
 
 	st, err := rt.mesh.Status(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get mesh status failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get mesh status failed", err)
 		return
 	}
 
 	nodes, err := rt.nodes.ListNodes(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get mesh status: list nodes failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get mesh status: list nodes failed", err)
 		return
 	}
 
@@ -275,8 +273,7 @@ func (rt *Router) handleRotateNodeMeshKey(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: rotate node mesh key: look up node failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: rotate node mesh key: look up node failed", err, slog.String("node_id", id))
 		return
 	}
 
@@ -299,8 +296,7 @@ func (rt *Router) handleRotateNodeMeshKey(w http.ResponseWriter, r *http.Request
 		// as a plain 500 with the real reason logged server-side, the
 		// same generic-to-the-client shape every other unexpected store
 		// or transport failure in this package already gets.
-		rt.logger.Error("api: rotate node mesh key failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: rotate node mesh key failed", err, slog.String("node_id", id))
 		return
 	}
 
@@ -347,8 +343,7 @@ func (rt *Router) handleRejoinNodeMesh(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: rejoin node mesh: look up node failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: rejoin node mesh: look up node failed", err, slog.String("node_id", id))
 		return
 	}
 

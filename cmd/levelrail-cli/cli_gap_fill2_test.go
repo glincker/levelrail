@@ -11,7 +11,9 @@ import (
 func TestRun_GapFill2(t *testing.T) {
 	var gotMethod, gotURI string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotMethod, gotURI = r.Method, r.URL.RequestURI()
+		if !strings.HasSuffix(r.URL.Path, "/provision") {
+			gotMethod, gotURI = r.Method, r.URL.RequestURI()
+		}
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
 		case "/api/v1/databases/main/clone-restores":

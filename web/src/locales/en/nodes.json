@@ -32,10 +32,26 @@
     "tokenLabel": "Join token",
     "fallbackLabel": "Enrollment command",
     "fallbackHint": "This control plane did not return ready-made commands, so this one is built from the address above.",
-    "afterRun": "There is no live status check here. Once the agent connects, the node appears in the node list.",
+    "afterRun": "There is no live status check here. Once the agent connects, the node appears in the node list. Give the node a name to follow it live.",
     "copy": "Copy",
     "copied": "Copied",
-    "done": "Done"
+    "done": "Done",
+    "providerLabel": "Where does it run?",
+    "providerAuto": "Auto-detect (recommended)",
+    "providerHint": "Auto-detect reads the cloud's metadata service on the node. For a home server or a provider without one, pick it here and type the region and zone.",
+    "regionLabel": "Region (optional)",
+    "zoneLabel": "Zone (optional)",
+    "domainInvalid": "Use letters, digits, dots, dashes and underscores, up to 63 characters.",
+    "providers": {
+      "aws": "Amazon EC2",
+      "gcp": "Google Cloud",
+      "azure": "Microsoft Azure",
+      "hetzner": "Hetzner",
+      "digitalocean": "DigitalOcean",
+      "home": "Home server",
+      "other": "Other VPS"
+    },
+    "afterRunLive": "Run the command on the new machine. Progress appears below as soon as the agent contacts this control plane."
   },
   "move": {
     "trigger": "Move",
@@ -202,7 +218,8 @@
     "unknownHint": "This placement points at node {{id}}, which no longer exists.",
     "moveHere": "Move to this server",
     "movedHere": "Now placed on this server.",
-    "moveFailed": "Could not move it to this server."
+    "moveFailed": "Could not move it to this server.",
+    "domainWarnings": "Failure domain warnings"
   },
   "allocation": {
     "title": "Capacity",
@@ -509,5 +526,284 @@
     "revokeAll": "Revoke all",
     "revoked_one": "Revoked {{count}} join token",
     "revoked_other": "Revoked {{count}} join tokens"
+  },
+  "capacity": {
+    "title": "Capacity",
+    "freeSpace": "Free space",
+    "waiting": "Waiting for the first host reading from this node.",
+    "noReading": "No reading",
+    "freePct": "{{pct}}% free",
+    "usedPct": "{{pct}}% used",
+    "metrics": {
+      "disk": "Disk",
+      "inodes": "Inodes",
+      "memory": "Memory",
+      "swap": "Swap"
+    },
+    "levels": {
+      "warn": "Low",
+      "critical": "Critical"
+    },
+    "blocked": "New builds and deploys on this node are blocked: {{reason}}. The running version keeps serving. Free space to unblock.",
+    "cleanupUnsupported": "Cleanup runs on the control plane node only for now. Free space on this node directly.",
+    "dialogTitle": "Free space",
+    "dialogBody": "Review what would be removed. Rollback images and volumes are never deleted.",
+    "scanning": "Scanning the node...",
+    "neverRemoved": "Never removed",
+    "more": "and {{count}} more",
+    "cancel": "Cancel",
+    "confirm": "Free {{size}}",
+    "freeing": "Freeing...",
+    "freed": "Freed {{size}}",
+    "classes": {
+      "dangling_images": {
+        "title": "Dangling images",
+        "hint": "Untagged image layers no container uses."
+      },
+      "build_cache": {
+        "title": "Build cache",
+        "hint": "Idle build cache past its age limit or over budget."
+      },
+      "stopped_containers": {
+        "title": "Stopped containers",
+        "hint": "Exited containers no app still wants."
+      },
+      "rollback_images": {
+        "title": "Images kept for rollback",
+        "hint": "Tagged images that a rollback may need."
+      },
+      "orphaned_volumes": {
+        "title": "Orphaned volumes",
+        "hint": "Shown for review only. Volumes are never deleted from here."
+      }
+    },
+    "settings": "Thresholds and auto-clean",
+    "settingsHint": "Leave a field empty to use the control plane default. Disk, inode and memory values are percent free, swap is percent used.",
+    "useDefault": "Default",
+    "fields": {
+      "diskWarn": "Disk warn (free %)",
+      "diskCrit": "Disk critical (free %)",
+      "inodeWarn": "Inodes warn (free %)",
+      "inodeCrit": "Inodes critical (free %)",
+      "memWarn": "Memory warn (available %)",
+      "memCrit": "Memory critical (available %)",
+      "swapWarn": "Swap warn (used %)",
+      "swapCrit": "Swap critical (used %)"
+    },
+    "autoClean": "Auto-clean",
+    "autoCleanHint": "When this node is low, remove dangling images, idle build cache and stopped containers on its own. Off by default.",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Capacity settings saved",
+    "history": "Cleanup history",
+    "noRuns": "No cleanups yet.",
+    "triggers": {
+      "manual": "manual",
+      "auto": "auto"
+    }
+  },
+  "failure": {
+    "title": "Failure handling",
+    "description": "What happens when this node stays unreachable. Stateless apps can move to healthy nodes. Apps and databases with node-local data never move on their own.",
+    "loadFailed": "Could not load failure state.",
+    "retry": "Retry",
+    "healthy": "This node is reachable. Nothing to do.",
+    "phase": {
+      "healthy": "Healthy",
+      "grace": "Silent, in grace period",
+      "unreachable": "Unreachable",
+      "recovering": "Recovering",
+      "lost": "Marked lost"
+    },
+    "graceTimer": "Silent for {{silent}}s, {{left}}s of grace left",
+    "kind": {
+      "app": "app",
+      "database": "database"
+    },
+    "class": {
+      "reschedule": "Stateless: can start on a healthy node",
+      "needs_decision": "Has node-local data: needs your decision"
+    },
+    "status": {
+      "pending": "Pending",
+      "moving": "Moving",
+      "moved": "Moved",
+      "fenced": "Moved, old copy stopped",
+      "waiting": "Waiting",
+      "failed": "Could not move"
+    },
+    "target": "on {{node}}",
+    "wait": "Wait",
+    "restore": "Restore on another node",
+    "restoreHint": "The resource is placed on a healthy node. Restore its data from a backup there.",
+    "resolved": {
+      "wait": "Waiting for the node to return",
+      "restore": "Placed on another node. Restore its data from a backup there."
+    },
+    "markLost": "Mark node lost",
+    "lostTitle": "Mark this node lost?",
+    "lostDescription": "Stateless apps move to healthy nodes now. Anything with node-local data stays put until you decide. If the node returns, stale copies are stopped.",
+    "planMove": "{{name}} moves to {{node}}",
+    "planDecide": "{{name}} waits for your decision",
+    "lostDone": "Node marked lost",
+    "saving": "Saving",
+    "mode": "When the node is unreachable",
+    "modeDefault": "Control plane default ({{mode}})",
+    "modes": {
+      "off": "Do nothing",
+      "notify": "Only tell me",
+      "auto": "Move stateless apps automatically"
+    },
+    "grace": "Grace period (seconds)",
+    "graceHint": "0 uses the default. Otherwise at least 30.",
+    "save": "Save",
+    "saved": "Failure policy saved"
+  },
+  "resilience": {
+    "title": "Resilience check",
+    "description": "Will your apps keep serving if the control plane goes down? This checks the saved state a restart would rely on.",
+    "recheck": "Re-check",
+    "simulate": "Simulate control plane outage",
+    "simulatedNote": "Dry run: nothing was stopped. The saved state was opened the way a restart would open it.",
+    "fix": "Fix",
+    "status": {
+      "pass": "Pass",
+      "fail": "Fail",
+      "warn": "Warning",
+      "unknown": "Unknown"
+    },
+    "checks": {
+      "route_snapshot": "Route snapshot",
+      "cert_cache": "Certificate cache",
+      "agent_link": "Agent link",
+      "container_restart": "Containers after host reboot",
+      "telemetry_buffer": "Metrics and logs while disconnected"
+    }
+  },
+  "region": {
+    "title": "Failure domain",
+    "region": "Region",
+    "regionHint": "A label such as eu-central or home-lab. New replicas prefer a region that holds fewer of the app's other replicas.",
+    "regionPlaceholder": "e.g. eu-central",
+    "provider": "Provider",
+    "providerPlaceholder": "e.g. hetzner",
+    "zone": "Zone",
+    "zoneHint": "The smallest failure domain, such as a datacenter or availability zone. Replicas spread across zones first.",
+    "zonePlaceholder": "e.g. fsn1",
+    "description": "Filled in automatically for nodes created from a cloud provider. Clear a field to remove that label.",
+    "save": "Save",
+    "saved": "Failure domain updated."
+  },
+  "banner": {
+    "description": "Add servers to spread apps and databases across machines. A WireGuard mesh links every node back to this control plane.",
+    "diagram": {
+      "controlPlane": "control plane",
+      "nodes": "nodes",
+      "mesh": "WireGuard mesh"
+    }
+  },
+  "detail": {
+    "back": "Back to nodes",
+    "retry": "Try again",
+    "banner": {
+      "pending": "This node is enrolled and waiting for its agent to connect.",
+      "online": "Agent connected. Cordon or drain this node before maintenance.",
+      "offline": "The agent is not reachable, so nothing new is placed here.",
+      "cordoned": "New placements are paused. Running workloads are untouched."
+    },
+    "statusCard": {
+      "title": "Status",
+      "lastSeen": "Last seen {{when}}",
+      "online": "Agent connected and healthy",
+      "offline": "Agent not reachable",
+      "pending": "Waiting for the agent to connect",
+      "cordoned": "Cordoned, not taking new work",
+      "reenroll": "Re-enroll agent",
+      "recheck": "Re-check",
+      "uncordonHint": "Use Uncordon in the header to resume placements."
+    },
+    "overview": {
+      "title": "Overview",
+      "address": "Address",
+      "joined": "Joined",
+      "lastSeen": "Last seen",
+      "never": "Never",
+      "notSet": "Not set"
+    },
+    "workloads": {
+      "title": "Workload capabilities",
+      "apps": "Accepts app workloads",
+      "appsHint": "Whether this node is eligible for new application placements.",
+      "appsOn": "App workloads enabled.",
+      "appsOff": "App workloads disabled.",
+      "builds": "Accepts build workloads",
+      "buildsHint": "A routing preference for where new builds run, not a hard placement rule.",
+      "buildsOn": "Build workloads enabled.",
+      "buildsOff": "Build workloads disabled.",
+      "buildsTipLabel": "What accepts build workloads does",
+      "buildsTip": "Sets whether new builds prefer this node. It does not move apps or databases already running here, and it does not guarantee builds never run here: if no node that accepts builds is currently healthy, a build still runs on the primary node rather than failing."
+    }
+  },
+  "onboarding": {
+    "title": "Joining {{name}}",
+    "steps": {
+      "token": "Join token created",
+      "contacted": "Agent contacted the control plane",
+      "connected": "Connected over mTLS",
+      "preflight": "Preflight checks"
+    },
+    "waiting": "Waiting for the agent to contact the control plane. This page updates by itself.",
+    "waitingFacts": "The agent is connected and is collecting its preflight facts.",
+    "detected": "Detected from {{source}}: provider {{provider}}, region {{region}}, zone {{zone}}.",
+    "notDetected": "No provider, region or zone was detected. Set them on the node page, or rerun the agent with the labels from the join form.",
+    "applied": "Labels on this node: provider {{provider}}, region {{region}}, zone {{zone}}.",
+    "source": {
+      "metadata": "cloud metadata",
+      "env": "the join command"
+    },
+    "none": "none",
+    "stale": "The agent stopped reporting, so these results may be out of date.",
+    "recheck": "Re-check",
+    "summary": "{{pass}} passed, {{warn}} warnings, {{fail}} failed, {{unknown}} unverified",
+    "fix": "Fix",
+    "fixViaCli": "Fix via CLI",
+    "runOnNode": "Run on the node",
+    "status": {
+      "pass": "Passed",
+      "warn": "Warning",
+      "fail": "Failed",
+      "unknown": "Unverified"
+    },
+    "checks": {
+      "control_plane": "Control plane reachable",
+      "docker": "Docker",
+      "architecture": "Architecture",
+      "disk": "Disk space",
+      "clock": "Clock skew",
+      "wireguard": "Kernel WireGuard",
+      "mesh_port": "Mesh port",
+      "firewall": "Firewall and security group"
+    }
+  },
+  "domains": {
+    "title": "Capacity by failure domain",
+    "description": "Reported CPU, memory and free disk per provider, region and zone. Beta: capacity comes from what each node reports.",
+    "tabs": {
+      "providers": "Providers",
+      "regions": "Regions",
+      "zones": "Zones"
+    },
+    "nodes": "{{online}} of {{total}} nodes online",
+    "workloads_one": "{{count}} workload",
+    "workloads_other": "{{count}} workloads",
+    "capacity": "{{cores}} cores, {{memory}} GiB memory, {{disk}} GiB free disk",
+    "unverified_one": "({{count}} node has not reported its capacity)",
+    "unverified_other": "({{count}} nodes have not reported their capacity)",
+    "unlabeled_one": "{{count}} of {{total}} nodes has no provider, region or zone label.",
+    "unlabeled_other": "{{count}} of {{total}} nodes have no provider, region or zone label.",
+    "noLabels": "No node has a provider, region or zone label yet. Add a node with auto-detect, or label an existing one on its page.",
+    "risksTitle": "Replicas in one failure domain",
+    "loadFailed": "Could not load the domain overview.",
+    "retry": "Try again"
   }
 }

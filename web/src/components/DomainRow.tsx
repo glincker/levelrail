@@ -12,6 +12,7 @@ import {
   LockKeyIcon,
   ShieldCheckIcon,
   SignpostIcon,
+  StethoscopeIcon,
   WarningCircleIcon,
   WrenchIcon,
   ArrowsClockwiseIcon,
@@ -33,12 +34,15 @@ import {
   certExpiryDate,
   certExpiryLabel,
   certRenewalBadge,
-  certStatusMeta,
   effectiveDomainCert,
   isInternalCert,
   isProxyManagedCert,
 } from '../lib/certStatus'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
+import { certTruth } from '../lib/certTruth'
+import { CertTruthBadge } from './CertTruthBadge'
+import { GoLiveBadge } from './golive/GoLiveBadge'
+import { GetCertificateButton } from './GetCertificateButton'
 import type { CertificateStatus } from '../queries/certificates'
 import { domainCheckQueryOptions } from '../queries/domainCheck'
 import type { DomainCheckResult } from '../queries/domainCheck'
@@ -53,6 +57,7 @@ import type { TrafficControl } from '../lib/domainEnforcement'
 import { DomainDnsRecordDialog } from './DomainDnsRecordDialog'
 import { DomainIssueFix } from './DomainIssueFix'
 import { DomainDnsStatusBadge } from './DomainDnsStatusBadge'
+import { DomainDiagnoseDialog } from './domains/DomainDiagnoseDialog'
 import {
   StandaloneRowActions,
   StandaloneTargetCell,
@@ -179,26 +184,32 @@ function CertCell({
   if (!cert && domain.tls_owner === 'proxy') {
     return <Badge variant="info">{t('proxyManaged.badge')}</Badge>
   }
-  if (!cert) {
-    return domain.acme_failure ? (
-      <Badge variant="destructive">{t('page.cert.failed')}</Badge>
-    ) : (
-      <span className="text-xs text-muted-foreground/70">
-        {t('page.cert.none')}
-      </span>
-    )
-  }
-  const renewal = certRenewalBadge(cert)
+  const truth = certTruth(cert)
+  const renewal = cert ? certRenewalBadge(cert) : null
   return (
-    <span className="flex min-w-0 flex-col items-start gap-0.5">
-      <Badge variant={certStatusMeta[cert.status].variant}>
-        {certStatusMeta[cert.status].label}
-      </Badge>
+    <span className="flex min-w-0 flex-col items-start gap-1">
+      {!cert ? (
+        domain.acme_failure ? (
+          <Badge variant="destructive">{t('page.cert.failed')}</Badge>
+        ) : (
+          <span className="text-xs text-muted-foreground/70">
+            {t('page.cert.none')}
+          </span>
+        )
+      ) : (
+        <CertTruthBadge cert={cert} />
+      )}
       {renewal ? (
         <Badge variant="destructive" title={renewal.hint}>
           {renewal.label}
         </Badge>
       ) : null}
+      {truth.wantsRealCert && domain.tls_owner !== 'proxy' ? (
+        <GetCertificateButton domain={domain.domain} />
+      ) : null}
+      {isStandaloneDomain(domain) ? null : (
+        <GoLiveBadge app={domain.service_name} domain={domain.domain} />
+      )}
     </span>
   )
 }
@@ -237,10 +248,12 @@ function RowActions({
   domain,
   onShowRecord,
   onRecheck,
+  onDiagnose,
 }: {
   domain: Domain
   onShowRecord: () => void
   onRecheck: () => void
+  onDiagnose: () => void
 }) {
   const { t } = useTranslation('domains')
   const { copied, copy } = useCopyToClipboard()
@@ -263,6 +276,10 @@ function RowActions({
         <DropdownMenuItem onClick={onShowRecord}>
           <ListMagnifyingGlassIcon />
           {t('page.row.dnsRecord')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onDiagnose}>
+          <StethoscopeIcon />
+          {t('page.row.diagnose')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onRecheck}>
           <ArrowsClockwiseIcon />
@@ -424,9 +441,13 @@ export { SearchVisibilityCell as DomainVisibilityCell }
 
 export function DomainRowActions({ domain }: { domain: Domain }) {
   const [recordOpen, setRecordOpen] = useState(false)
+  const [diagnoseOpen, setDiagnoseOpen] = useState(false)
   const dns = useDomainDns(domain)
   const onShowRecord = () => {
     setRecordOpen(true)
+  }
+  const onDiagnose = () => {
+    setDiagnoseOpen(true)
   }
   const onRecheck = () => {
     void dns.refetch()
@@ -439,14 +460,24 @@ export function DomainRowActions({ domain }: { domain: Domain }) {
           domain={domain}
           onShowRecord={onShowRecord}
           onRecheck={onRecheck}
+          onDiagnose={onDiagnose}
         />
       ) : (
         <RowActions
           domain={domain}
           onShowRecord={onShowRecord}
           onRecheck={onRecheck}
+          onDiagnose={onDiagnose}
         />
       )}
+      {diagnoseOpen ? (
+        <DomainDiagnoseDialog
+          domain={domain.domain}
+          onClose={() => {
+            setDiagnoseOpen(false)
+          }}
+        />
+      ) : null}
       {recordOpen ? (
         <DomainDnsRecordDialog
           appName={domainScope(domain)}

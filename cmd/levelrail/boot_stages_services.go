@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/nodepreflight"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/GLINCKER/levelrail/internal/functions"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/models"
@@ -58,6 +60,7 @@ func (s *bootState) buildRunners() error {
 			return err
 		}
 		backupRunner.Volume = volumeBackupOpts
+		backupVerifyRunner.Identities = backupIdentities(backupRunner)
 	}
 
 	// Shared by the manual trigger and the cron loop; needs no master key since exec'd commands carry no credential.
@@ -76,6 +79,7 @@ func (s *bootState) buildRunners() error {
 	s.backupRunner = backupRunner
 	s.backupVerifyRunner = backupVerifyRunner
 	s.scheduledTaskRunner = scheduledTaskRunner
+	s.functionQueue = &functions.Queue{Store: db, Apps: db, Config: functions.TriggerConfigFromEnv(os.LookupEnv), Logger: logger}
 	return nil
 }
 
@@ -173,7 +177,7 @@ func (s *bootState) wireRouter() {
 		client: client, builder: builder, deployRecorder: deployRecorder, logBroadcaster: logBroadcaster,
 		deployDispatcher: deployDispatcher, backupRunner: backupRunner, backupVerifyRunner: backupVerifyRunner,
 		agentRegistry: agentRegistry, agentCAFingerprint: agentCA.Fingerprint(), emailSender: emailSender,
-		scheduledTaskRunner: scheduledTaskRunner, engine: engine, ingressDriver: ingressDriver,
+		scheduledTaskRunner: scheduledTaskRunner, functionQueue: s.functionQueue, engine: engine, ingressDriver: ingressDriver,
 		pushVAPIDPublicKey: pushVAPIDPublicKey,
 	})
 	apiRouter.WarmTrustRoot()
@@ -191,11 +195,13 @@ func (s *bootState) wireRouter() {
 		Supervised: restartSupervised(os.LookupEnv, fileExists),
 		Trigger:    func() { s.restartRequested.Store(true); stop() },
 	})
-	apiRouter.SetControlPlaneProbe(api.ControlPlaneProbe{DB: db, Reconcile: engine.Stats, ResyncInterval: resyncInterval, Telemetry: telemetryDB, MemoryLimit: footprint.CurrentMemoryLimit(), Integrity: s.integrity, Guard: engine.Guard()})
+	apiRouter.SetControlPlaneProbe(api.ControlPlaneProbe{DB: db, Reconcile: engine.Stats, ResyncInterval: resyncInterval, Telemetry: telemetryDB, MemoryLimit: footprint.CurrentMemoryLimit(), Integrity: s.integrity, Guard: engine.Guard(), AppCount: db.CountApps})
 	go db.RunWALMaintenance(ctx)
 	configureNodeCerts(apiRouter, agentServer, agentServer)
+	apiRouter.SetMigrationAgent(s.migrationAgent)
 	setupEdgeFirewall(ctx, logger, b, apiRouter, secretsManager)
 	apiRouter.SetNodeHostReports(hostReports)
+	apiRouter.SetNodeOnboarding(s.onboardingReports, nodepreflight.ConfigFromEnv(os.LookupEnv))
 	gateSecret := setupBuiltinGate(ctx, logger, apiRouter)
 	apiRouter.SetDockerGuard(guard.Controller)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
@@ -203,10 +209,11 @@ func (s *bootState) wireRouter() {
 	setupEventWebhooks(ctx, logger, b, db, secretsManager, apiRouter)
 	startScheduledMaintenance(ctx, logger, db, alertingDB, deployDispatcher, apiRouter)
 	startKeyLifecycle(ctx, logger, db, secretsManager, alertingDB, deployDispatcher, apiRouter)
-	startDiskGuard(ctx, logger, agentDataDir, alertingDB, deployDispatcher, apiRouter)
+	startDiskGuard(ctx, logger, agentDataDir, alertingDB, deployDispatcher, apiRouter, db)
 	setupCompliance(ctx, logger, db, secretsManager, agentDataDir, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
 	startCanaryReconciler(ctx, logger, db, apiRouter)
+	apiRouter.StartSplitTesting(ctx)
 	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
 	startExternalDatabaseMonitor(ctx, logger, db, secretsManager, client, agentRegistry)
@@ -267,6 +274,8 @@ func (s *bootState) startMesh() error {
 	apiRouter.SetMeshPaths(newMeshPathResolver(meshCfg, db))
 	apiRouter.SetMeshPeerStatus(agent.NewGRPCSink(agentRegistry))
 	go apiRouter.RunNodeMoves(ctx)
+	go apiRouter.RunNodeOnboarding(ctx)
+	go apiRouter.RunNodeFailure(ctx)
 	// Resolved once: the bridge gateway IP does not change while the process runs.
 	meshDNSAddr := containerDNSAddr(ctx, client, meshCfg, logger)
 	if meshDNSAddr != "" && meshCfg != nil && meshCfg.resolver != nil {
@@ -286,14 +295,23 @@ func (s *bootState) startMesh() error {
 	apiRouter.SetOrphanReaper(orphanReaper)
 	janitorEngine := apiRouter.NewJanitor(db, client)
 
-	edge, err := loadIngressEdge(logger)
+	edge, err := loadIngressEdge(logger, b)
 	if err != nil {
 		return fmt.Errorf("ingress edge settings: %w", err)
 	}
 	edgeInfo := edge.doctorInfo()
 	edgeInfo.Snapshot = setupIngressSnapshot(ctx, logger, ingressDriver, db, secretsManager, edge)
 	apiRouter.SetDoctorIngressEdge(edgeInfo)
-	proxySyncer := newProxySyncer(b, db, logger)
+	apiRouter.SetIngressResilience(api.IngressResilience{
+		Status:  ingressDriver.SnapshotStatus,
+		Verify:  ingressDriver.VerifySnapshot,
+		SaveNow: ingressDriver.SaveSnapshotNow,
+		CertKeys: func(ctx context.Context) (int, error) {
+			keys, err := db.ListCertStorageKeys(ctx, "certificates", true)
+			return len(keys), err
+		},
+	})
+	proxySyncer := newProxySyncer(b, db, logger, proxyContainerExec{rt: client})
 	apiRouter.SetProxyIntegration(proxySyncer, db, proxyVerifyTimeout(logger))
 	routeCheck := newRouteCheck(logger)
 	apiRouter.SetProxyRouteCheck(routeCheck)
@@ -359,6 +377,7 @@ func (s *bootState) startReconciler() {
 		firewallRulePrefix:           b.RuleCommentPrefix(),
 		instanceID:                   instanceID,
 		livenessTracker:              application.NewLivenessTracker(),
+		imageIDs:                     application.NewImageIDCache(reconcile.FullResyncFromEnv(os.Getenv)),
 		restartBackoff:               newRestartBackoff(logger),
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),

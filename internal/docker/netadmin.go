@@ -93,9 +93,22 @@ func poolFromEnv(lookup func(string) (string, bool)) *NetworkPool {
 	return &p
 }
 
+// SelectiveNetworkDescriber is DescribeNetworks for a caller that needs the
+// attached-container count only for some networks. The list endpoint carries
+// everything else, so the rest cost no extra round trip.
+type SelectiveNetworkDescriber interface {
+	DescribeNetworksSelective(ctx context.Context, prefix string, needAttached func(name string, labels map[string]string) bool) ([]NetworkDetail, error)
+}
+
 // DescribeNetworks implements NetworkAdmin. It inspects each match because
 // the list endpoint does not reliably report attached containers.
 func (c *Client) DescribeNetworks(ctx context.Context, prefix string) ([]NetworkDetail, error) {
+	return c.DescribeNetworksSelective(ctx, prefix, func(string, map[string]string) bool { return true })
+}
+
+// DescribeNetworksSelective implements SelectiveNetworkDescriber. A network
+// needAttached declines is reported with Attached zero, taken from the list.
+func (c *Client) DescribeNetworksSelective(ctx context.Context, prefix string, needAttached func(name string, labels map[string]string) bool) ([]NetworkDetail, error) {
 	f := filters.NewArgs()
 	f.Add("name", prefix)
 	list, err := c.cli.NetworkList(ctx, dockernetwork.ListOptions{Filters: f})
@@ -107,12 +120,15 @@ func (c *Client) DescribeNetworks(ctx context.Context, prefix string) ([]Network
 		if !strings.HasPrefix(n.Name, prefix) {
 			continue
 		}
-		insp, err := c.cli.NetworkInspect(ctx, n.ID, dockernetwork.InspectOptions{})
-		if err != nil {
-			if cerrdefs.IsNotFound(err) {
-				continue
+		insp := n
+		if needAttached(n.Name, n.Labels) {
+			insp, err = c.cli.NetworkInspect(ctx, n.ID, dockernetwork.InspectOptions{})
+			if err != nil {
+				if cerrdefs.IsNotFound(err) {
+					continue
+				}
+				return nil, fmt.Errorf("docker: inspect network %q: %w", n.Name, err)
 			}
-			return nil, fmt.Errorf("docker: inspect network %q: %w", n.Name, err)
 		}
 		d := NetworkDetail{ID: insp.ID, Name: insp.Name, Labels: insp.Labels, Created: insp.Created, Attached: len(insp.Containers)}
 		for _, s := range networkSubnets(insp) {

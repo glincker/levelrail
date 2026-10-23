@@ -12,6 +12,7 @@ import (
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 
+	"github.com/GLINCKER/levelrail/internal/abuse"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
 )
@@ -78,21 +79,42 @@ func (m requestStatsModule) ServeHTTP(w http.ResponseWriter, r *http.Request, ne
 		UpstreamErr: upstreamErr, Upstream: upstreamHostport(r), RequestID: requestID, At: start,
 		Referrer: requestReferrerHost(r), Country: requestCountry(r),
 	})
-	DefaultAccessLog().Record(m.Key, AccessRecord{
+	ar := AccessRecord{
 		Time: start, Host: r.Host, Method: r.Method, Path: r.URL.Path, Status: status,
 		Millis: float64(elapsed) / float64(time.Millisecond), BytesIn: in, BytesOut: rec.bytes,
-		RequestID: requestID, TraceID: traceID, Upstream: upstreamErr,
-	})
+		RequestID: requestID, TraceID: traceID, Upstream: upstreamErr, Cold: rec.cold,
+		Client: requestClientAddr(r), UserAgent: truncate(r.UserAgent(), maxRecordedAgent),
+	}
+	if DefaultAccessLog().IdentityWanted() {
+		ip := ""
+		if a := requestClientAddr(r); a.IsValid() {
+			ip = a.String()
+		}
+		ar.Identity = &RequestIdentity{ClientIP: ip, UserAgent: r.UserAgent(), ReferrerHost: requestReferrerHost(r)}
+	}
+	DefaultAccessLog().Record(m.Key, ar)
 	return err
+}
+
+func truncate(s string, n int) string {
+	if len(s) > n {
+		return s[:n]
+	}
+	return s
 }
 
 type statusRecorder struct {
 	*caddyhttp.ResponseWriterWrapper
 	status int
 	bytes  int64
+	cold   bool
 }
 
 func (s *statusRecorder) WriteHeader(code int) {
+	if h := s.Header(); h.Get(WakeHeldHeader) != "" {
+		s.cold = true
+		h.Del(WakeHeldHeader)
+	}
 	if s.status == 0 && (code >= 200 || code == http.StatusSwitchingProtocols) {
 		s.status = code
 	}
@@ -132,9 +154,12 @@ type RequestStats struct {
 
 	totalsMu sync.Mutex
 	totals   telemetry.RequestWindow
+
+	// abuse, when set, is drained into each app's window alongside the hosts.
+	abuse *abuse.Registry
 }
 
-var defaultRequestStats = &RequestStats{hosts: make(map[string]*hostCounters)}
+var defaultRequestStats = &RequestStats{hosts: make(map[string]*hostCounters), abuse: abuse.DefaultRegistry()}
 
 // DefaultRequestStats is the process-wide aggregator the request_stats
 // handler feeds; Caddy modules are constructed from JSON and cannot receive
@@ -254,6 +279,14 @@ func (s *RequestStats) ObserveRequest(key string, o RequestObservation) {
 	}
 }
 
+// OwnerOf returns the app that owns route key, or "" when none does.
+func (s *RequestStats) OwnerOf(key string) string {
+	if p := s.owners.Load(); p != nil {
+		return (*p)[key]
+	}
+	return ""
+}
+
 // UpstreamTotals returns a copy of the cumulative per-replica counters since
 // process start. Unlike DrainByApp it never resets, so a caller can diff two
 // snapshots to judge one time window (the canary reconciler does).
@@ -327,6 +360,13 @@ func (s *RequestStats) DrainByApp() map[string]telemetry.RequestWindow {
 	s.mu.Unlock()
 
 	out := make(map[string]telemetry.RequestWindow)
+	if s.abuse != nil {
+		for app, snap := range s.abuse.DrainAll() {
+			w := out[app]
+			w.Abuse = abuseWindow(snap)
+			out[app] = w
+		}
+	}
 	ownersPtr := s.owners.Load()
 	if ownersPtr == nil {
 		return out

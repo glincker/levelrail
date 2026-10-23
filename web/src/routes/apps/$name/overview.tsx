@@ -5,6 +5,7 @@ import { useDeployProgress } from '../../../hooks/useDeployProgress'
 import { FailureContextCard } from '../../../components/FailureContextCard'
 import { SleepHistoryCard } from '../../../components/SleepHistoryCard'
 import { OverviewPage } from '../../../components/overview/OverviewPage'
+import { RecommendedNextCard } from '../../../components/overview/RecommendedNextCard'
 import { PanelHost } from '../../../components/plugins/PanelHost'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -24,6 +25,7 @@ function OverviewSection() {
   return (
     <div className="space-y-6">
       <FailureContextCard appName={name} />
+      <RecommendedNextCard app={app} latest={attempts[0]} />
       <OverviewPage app={app} conditions={conditions} attempts={attempts} />
       <SleepHistoryCard appName={name} hideWhenOff />
       <PanelHost slot="app-detail" appId={name} />

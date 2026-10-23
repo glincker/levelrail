@@ -46,6 +46,9 @@ The control plane builds images with BuildKit. By default each build starts from
 | `APP_BUILD_CACHE_REGISTRY_INSECURE` | unset (off) | Set to exactly `true` to allow a plain-HTTP or self-signed cache registry. Only applies when `APP_BUILD_CACHE_REGISTRY` is set. Control plane. |
 | `APP_BUILD_TIMEOUT` | `30m` | How long one build may run before it is stopped and marked timed out. A Go duration such as `45m`; `0` means no limit. A value saved in the dashboard or with `apps build-limits set` wins. Control plane. |
 | `APP_BUILD_MAX_CONCURRENT` | `2` | Builds allowed to run at once; the rest wait in a queue. `0` means no limit. A saved override wins. Control plane. |
+| `APP_BUILD_MEMORY_MB` | `0` | Memory one build may use, in MB. `0` means no limit. A saved global or per-app override wins. Control plane, Linux cgroup v2. |
+| `APP_BUILD_CPU_MILLIS` | `0` | CPU one build may use, in thousandths of a core (`1500` is 1.5 cores). `0` means no limit. A saved override wins. Control plane, Linux cgroup v2. |
+| `APP_BUILD_CGROUP_ROOT` | `/sys/fs/cgroup` | Where the control plane creates the per-build cgroups that enforce the memory and CPU limits. |
 
 ## Source cache and git fetches
 
@@ -118,7 +121,10 @@ These tune the scheduled off-box copy of the control plane's own state and its r
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_PITR_WAL_SEGMENT_BYTES` | `16777216` (16 MiB) | WAL segment size, in bytes, that the restore path assumes when it maps a base backup's start position to a segment. Set it only if the Postgres server was initialized with a non-default WAL segment size. Positive integer. Control plane. See [Managing databases](/managing-databases#point-in-time-restore-postgres-only). |
+| `APP_PITR_WAL_SEGMENT_BYTES` | `16777216` (16 MiB) | WAL segment size, in bytes, that the restore path assumes when it maps a base backup's start position to a segment. Set it only if the Postgres server was initialized with a non-default WAL segment size. Positive integer. Control plane. See [Managing databases](/managing-databases#point-in-time-restore). |
+| `APP_PITR_BINLOG_EXPIRE_SECONDS` | `604800` (7 days) | How long a MySQL or MariaDB database keeps closed binary log files on its own host. Shipped copies in the backup target are pruned by base backup retention instead. Positive integer. Control plane. |
+| `APP_PITR_MYSQL_TOOLS_IMAGE` | `percona/percona-server:8.4` | Image a MySQL point-in-time restore starts briefly to run `mysqlbinlog`, which the official MySQL image does not ship. MariaDB restores do not use it. Control plane. |
+| `APP_PREVIEW_BUILD_SECRETS` | unset (off) | Set to a true value to let preview (pull request) builds use `build.secrets`. Off by default because a pull request can change the Dockerfile and read the secret. Read on every build. Control plane. |
 
 ## Log archive
 
@@ -167,6 +173,11 @@ The edge hardening limits are in [Domains and ingress](/domains-and-ingress#edge
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_CERT_EXPIRY_WARNING_WINDOW` | `336h` (14 days) | How close to expiry a certificate must be before it counts as expiring, for both the certificate expiry alert rules and the API. Control plane. |
+| `APP_CERT_FAIL_DAYS` | `14` | Days left below which an auto-renewed certificate makes the doctor's certificate check fail (and raises an attention item). Control plane. |
+| `APP_CERT_WATCHDOG_INTERVAL` | `10m` | How often the renewal watchdog looks for stuck or failing renewals. Control plane. |
+| `APP_CERT_WATCHDOG_BACKOFF` | `30m` | First retry delay of the renewal watchdog; it doubles per attempt up to 12 hours. Control plane. |
+| `APP_ACME_FAILED_PER_HOUR` | `5` | Failed validations per hostname per hour the certificate preflight treats as the Let's Encrypt limit. Control plane. |
+| `APP_ACME_DUPLICATE_PER_WEEK` | `5` | Certificates per exact name per week the preflight treats as the Let's Encrypt duplicate limit. Control plane. |
 | `APP_SLOW_REQUEST_THRESHOLD` | `500ms` | API requests slower than this are logged at Warn level, with a `breakdown` field naming the slowest phases (for example `telemetry_latest=1.2s`). Control plane. |
 | `APP_CRITICAL_REQUEST_THRESHOLD` | `2s` | API requests slower than this are logged at Error level. Control plane. |
 | `APP_DASHBOARD_CACHE_TTL` | `5s` | How long the dashboard's aggregate reads (app and node resource usage, apps metrics, system status, doctor) are reused between requests. `0` disables the cache. Control plane. |
@@ -224,6 +235,8 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_SECRET_ROTATION_INTERVAL_SECONDS` | `3600` | How often the rotation sweep runs, in seconds. Positive integer. Control plane. See [Secret rotation policies](secret-rotation.md). |
 | `APP_SECRET_ROTATION_DUE_SOON_DAYS` | `7` | A policy shows as due soon this many days before its due date. Positive integer. Control plane. |
 | `APP_SECRET_ROTATION_MAX_PER_PASS` | `10` | Most scheduled rotations one sweep starts, so restarts spread out. Positive integer. Control plane. |
+| `APP_SECRET_ROTATION_GRACE_HOURS` | `24` | How long a manually rotated app secret or Vault credential keeps its previous value. Positive integer of hours. Control plane. |
+| `APP_SECRET_ROTATION_DEFAULT_INTERVAL_DAYS` | `90` | Rotation interval given to a secret that is rotated by hand before it has a policy. Positive integer. Control plane. |
 
 ## Behavior to know about
 

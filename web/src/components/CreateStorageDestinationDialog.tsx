@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -13,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { SecretInput } from '@/components/ui/secret-input'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { ApiError } from '../lib/apiError'
@@ -61,6 +63,7 @@ const REGION_HINT: Partial<Record<StoragePreset, string>> = {
 }
 
 export function CreateStorageDestinationDialog() {
+  const { t } = useTranslation('settings')
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY)
   const { data: providers } = useStorageProviders()
@@ -239,14 +242,18 @@ export function CreateStorageDestinationDialog() {
                 set('accessKeyId', e.target.value)
               }}
             />
+            {form.preset === 'gcs' ? (
+              <FieldDescription>
+                {t('storagePage.gcsHmacHint')}
+              </FieldDescription>
+            ) : null}
           </Field>
           <Field>
             <FieldLabel htmlFor="storage-secret-key">
               Secret access key
             </FieldLabel>
-            <Input
+            <SecretInput
               id="storage-secret-key"
-              type="password"
               className="font-mono"
               autoComplete="new-password"
               value={form.secretAccessKey}

@@ -17,6 +17,7 @@ func (rt *Router) registerDatabaseAccessRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/password-rotation", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleRotateDatabasePassword))
 	mux.HandleFunc("PUT /api/v1/databases/{name}/password-rotation/policy", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleSetDatabasePasswordPolicy))
 
+	mux.HandleFunc("POST /api/v1/databases/{name}/credentials/reveal", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleRevealDatabaseCredentials))
 	mux.HandleFunc("GET /api/v1/databases/{name}/access/temp", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleListDatabaseTempCredentials))
 	mux.HandleFunc("POST /api/v1/databases/{name}/access/temp", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleIssueDatabaseTempCredential))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/access/temp/{id}", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleRevokeDatabaseTempCredential))
@@ -32,4 +33,6 @@ func (rt *Router) registerDatabaseAccessRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/network/make-private", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleMakeDatabasePrivate))
 	mux.HandleFunc("PUT /api/v1/databases/{name}/network/scope", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleSetDatabaseScope))
 	mux.HandleFunc("PUT /api/v1/databases/{name}/network/tls", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleSetDatabaseTLS))
+	mux.HandleFunc("PUT /api/v1/databases/{name}/tls", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleSetDatabaseTLSEnabled))
+	mux.HandleFunc("GET /api/v1/databases/{name}/tunnel", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleDatabaseTunnel))
 }

@@ -64,8 +64,7 @@ func (rt *Router) handleDownloadBackup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: download backup: load database failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: download backup: load database failed", err, slog.String("name", name))
 		return
 	}
 
@@ -75,8 +74,7 @@ func (rt *Router) handleDownloadBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: download backup: load backup history failed", slog.String("error", err.Error()), slog.String("backup_id", historyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: download backup: load backup history failed", err, slog.String("backup_id", historyID))
 		return
 	}
 	if h.DatabaseName != name {
@@ -90,8 +88,7 @@ func (rt *Router) handleDownloadBackup(w http.ResponseWriter, r *http.Request) {
 
 	stream, err := rt.backupDownloader.Download(r.Context(), historyID)
 	if err != nil {
-		rt.logger.Error("api: download backup failed", slog.String("error", err.Error()), slog.String("backup_id", historyID), slog.String("database", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: download backup failed", err, slog.String("backup_id", historyID), slog.String("database", name))
 		return
 	}
 	defer func() {

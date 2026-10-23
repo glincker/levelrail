@@ -59,7 +59,12 @@ func runDemoSeed(ctx context.Context, logger *slog.Logger, args []string, stdout
 	fs := flag.NewFlagSet("demo seed", flag.ContinueOnError)
 	seed := fs.Int64("seed", 1, "deterministic seed")
 	anchorRaw := fs.String("anchor", "now", "RFC 3339 anchor time, or now")
+	scenarioRaw := fs.String("scenario", demo.ScenarioIncident, "storyline: incident or calm")
 	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	scenario, err := demo.ParseScenario(*scenarioRaw)
+	if err != nil {
 		return err
 	}
 	anchor := time.Now().UTC().Truncate(time.Minute)
@@ -94,7 +99,7 @@ func runDemoSeed(ctx context.Context, logger *slog.Logger, args []string, stdout
 	}
 	defer func() { _ = alertingDB.Close() }()
 	m, err := demo.SeedAll(ctx, demo.Stores{DB: db, Telemetry: telemetryDB, Alerting: alertingDB},
-		demo.Options{Seed: *seed, Anchor: anchor, DomainSuffix: demoDomainSuffix(b)})
+		demo.Options{Seed: *seed, Anchor: anchor, DomainSuffix: demoDomainSuffix(b), Scenario: scenario})
 	if err != nil {
 		return err
 	}

@@ -48,6 +48,7 @@ type Preset struct {
 	Port         int          `json:"port"`
 	HealthPath   string       `json:"health_path"`
 	BuildCommand string       `json:"build_command,omitempty"`
+	PublishDir   string       `json:"publish_dir,omitempty"`
 	StartCommand string       `json:"start_command,omitempty"`
 	ReadyTimeout string       `json:"ready_timeout,omitempty"`
 	Dockerfile   bool         `json:"dockerfile_template"`
@@ -69,18 +70,22 @@ var presets = []Preset{
 	},
 	{
 		ID: "nextjs-static", Name: "Next.js (static export)", Runtime: "node", Icon: "nextjs", BuildType: BuildStatic, OutputMode: OutputStatic,
-		HealthPath: "/", BuildCommand: "next build", DocsAnchor: "nextjs-static-export",
+		HealthPath: "/", BuildCommand: "next build", PublishDir: "out", DocsAnchor: "nextjs-static-export",
 		EnvHints: []EnvHint{{Key: "NEXT_PUBLIC_API_URL", Description: "Public values are inlined at build time."}},
 	},
 	{
 		ID: "vite", Name: "React / Vite", Runtime: "node", Icon: "vite", BuildType: BuildStatic, OutputMode: OutputStatic,
-		HealthPath: "/", BuildCommand: "vite build", DocsAnchor: "react-vite",
+		HealthPath: "/", BuildCommand: "vite build", PublishDir: "dist", DocsAnchor: "react-vite",
 		EnvHints: []EnvHint{{Key: "VITE_API_URL", Description: "Variables prefixed VITE_ are inlined at build time."}},
 	},
 	{
 		ID: "astro", Name: "Astro", Runtime: "node", Icon: "astro", BuildType: BuildStatic, OutputMode: OutputStatic,
-		HealthPath: "/", BuildCommand: "astro build", DocsAnchor: "astro",
+		HealthPath: "/", BuildCommand: "astro build", PublishDir: "dist", DocsAnchor: "astro",
 		EnvHints: []EnvHint{{Key: "PUBLIC_SITE_URL", Description: "Variables prefixed PUBLIC_ are inlined at build time."}},
+	},
+	{
+		ID: "docusaurus", Name: "Docusaurus", Runtime: "node", Icon: "docusaurus", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "docusaurus build", PublishDir: "build", DocsAnchor: "docusaurus",
 	},
 	{
 		ID: "nuxt", Name: "Nuxt", Runtime: "node", Icon: "nuxt", BuildType: BuildRailpack, OutputMode: OutputServer,
@@ -88,6 +93,14 @@ var presets = []Preset{
 		EnvHints: []EnvHint{
 			{Key: "NITRO_HOST", Description: "Bind address for the Nitro server.", Default: "0.0.0.0"},
 			{Key: "NUXT_PUBLIC_API_BASE", Description: "Runtime public config override."},
+		},
+	},
+	{
+		ID: "remix", Name: "Remix", Runtime: "node", Icon: "remix", BuildType: BuildRailpack, OutputMode: OutputServer,
+		Port: 3000, HealthPath: "/", BuildCommand: "remix vite:build", StartCommand: "remix-serve ./build/server/index.js", DocsAnchor: "remix",
+		EnvHints: []EnvHint{
+			{Key: "PORT", Description: "remix-serve listens on this port; keep it equal to the app port.", Default: "3000"},
+			{Key: "SESSION_SECRET", Description: "Signs session cookies; generate a long random value.", Required: true},
 		},
 	},
 	{
@@ -176,4 +189,18 @@ func Get(id string) (Preset, bool) {
 		}
 	}
 	return Preset{}, false
+}
+
+// DefaultStaticBuildCommand runs the project's own build script, which every
+// static preset ships, so the package manager and any wrapper stay the author's.
+const DefaultStaticBuildCommand = "npm run build"
+
+// StaticBuild returns the build command and publish directory that prefill a
+// static build for a preset, or false when the preset is not a static site
+// with a known output directory.
+func (p Preset) StaticBuild() (command, publish string, ok bool) {
+	if p.BuildType != BuildStatic || p.PublishDir == "" {
+		return "", "", false
+	}
+	return DefaultStaticBuildCommand, p.PublishDir, true
 }

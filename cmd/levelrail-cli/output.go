@@ -24,6 +24,7 @@ const (
 	exitAPIError      = 4 // the API was reached and returned a non-2xx response
 	exitDeployFailed  = 5 // "apps wait": every API call succeeded, but the deploy itself converged as a failure
 	exitDeployTimeout = 6 // "apps wait": gave up before the deploy converged either way
+	exitNotLive       = 7 // "go-live --wait": every call worked, but the domain is not live yet
 )
 
 // errors.As unwraps wrapped errors, so classification survives any added context.
@@ -711,6 +712,9 @@ func printSystemDoctorHuman(out io.Writer, d systemDoctorResource) {
 
 	printSystemDoctorFixes(out, d.Checks)
 
+	if d.Silenced > 0 {
+		_, _ = fmt.Fprintf(out, "\nSilenced: %d (see status silences)\n", d.Silenced)
+	}
 	if d.OK {
 		_, _ = fmt.Fprintln(out, "\nAll checks passed.")
 	} else {
@@ -722,14 +726,23 @@ func printSystemDoctorHuman(out io.Writer, d systemDoctorResource) {
 func printSystemDoctorFixes(out io.Writer, checks []doctorCheckResource) {
 	var printedHeader bool
 	for _, c := range checks {
-		if c.Fix == "" {
+		if c.Fix == "" && c.FixKind != "auto" {
 			continue
 		}
 		if !printedHeader {
 			_, _ = fmt.Fprintln(out, "\nFixes:")
 			printedHeader = true
 		}
-		_, _ = fmt.Fprintf(out, "  %s:\n    %s\n", c.Name, c.Fix)
+		_, _ = fmt.Fprintf(out, "  %s:\n", c.Name)
+		if c.Evidence != "" {
+			_, _ = fmt.Fprintf(out, "    evidence: %s\n", c.Evidence)
+		}
+		if c.FixKind == "auto" {
+			_, _ = fmt.Fprintf(out, "    automatic fix available (%s), apply with: doctor --fix\n", c.FixID)
+		}
+		if c.Fix != "" {
+			_, _ = fmt.Fprintf(out, "    %s\n", c.Fix)
+		}
 	}
 }
 

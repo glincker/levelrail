@@ -20,6 +20,11 @@
 #                            same meaning as install.sh: auto, require, or off
 #   LEVELRAIL_RELEASE_BASE_URL  download release assets from this https mirror
 #                            instead of GitHub
+#   LEVELRAIL_MODIFY_PATH=1  when the install dir is not on PATH, append the
+#                            export line to your shell profile (default: only
+#                            print it, never edit files)
+#
+# Windows: use install-cli.ps1 (irm https://levelrail.com/install-cli.ps1 | iex)
 
 set -eu
 
@@ -68,7 +73,8 @@ detect_platform() {
 	case "$os" in
 	Linux) GOOS="linux" ;;
 	Darwin) GOOS="darwin" ;;
-	*) fatal "unsupported OS: ${os}. Windows isn't published yet, run this from WSL." ;;
+	MINGW* | MSYS* | CYGWIN*) fatal "this script is for Linux and macOS. On Windows run in PowerShell: irm https://levelrail.com/install-cli.ps1 | iex (or run this script from WSL)." ;;
+	*) fatal "unsupported OS: ${os}" ;;
 	esac
 	arch="$(uname -m)"
 	case "$arch" in
@@ -227,6 +233,49 @@ fetch_binary() {
 	fi
 }
 
+# Picks the profile file and the exact line for the user's login shell.
+# Prints by default; only writes when LEVELRAIL_MODIFY_PATH=1.
+suggest_path() {
+	shell_name="$(basename "${SHELL:-sh}")"
+	case "$shell_name" in
+	zsh)
+		profile="${ZDOTDIR:-$HOME}/.zshrc"
+		line="export PATH=\"${INSTALL_DIR}:\$PATH\""
+		;;
+	bash)
+		# macOS terminals start login shells, which read .bash_profile and not .bashrc.
+		if [ "${GOOS:-}" = "darwin" ]; then
+			profile="${HOME}/.bash_profile"
+		else
+			profile="${HOME}/.bashrc"
+		fi
+		line="export PATH=\"${INSTALL_DIR}:\$PATH\""
+		;;
+	fish)
+		profile="${HOME}/.config/fish/config.fish"
+		line="fish_add_path \"${INSTALL_DIR}\""
+		;;
+	*)
+		profile="${HOME}/.profile"
+		line="export PATH=\"${INSTALL_DIR}:\$PATH\""
+		;;
+	esac
+
+	if [ "${LEVELRAIL_MODIFY_PATH:-}" = "1" ]; then
+		if [ -f "$profile" ] && grep -qF -- "$line" "$profile"; then
+			log "${profile} already puts ${INSTALL_DIR} on PATH. Open a new terminal."
+			return
+		fi
+		mkdir -p "$(dirname "$profile")"
+		printf '\n# Added by the levelrail-cli installer\n%s\n' "$line" >>"$profile"
+		log "Added ${INSTALL_DIR} to PATH in ${profile}. Open a new terminal or run: ${line}"
+		return
+	fi
+	warn "${INSTALL_DIR} is not on your PATH. Add this line to ${profile}:"
+	log "  ${line}"
+	log "Or re-run with LEVELRAIL_MODIFY_PATH=1 to have the installer add it."
+}
+
 main() {
 	detect_platform
 	tmp_dir="$(mktemp -d)"
@@ -246,10 +295,7 @@ main() {
 
 	case ":$PATH:" in
 	*":${INSTALL_DIR}:"*) ;;
-	*)
-		warn "${INSTALL_DIR} is not on your PATH. Add this to your shell profile:"
-		log "  export PATH=\"${INSTALL_DIR}:\$PATH\""
-		;;
+	*) suggest_path ;;
 	esac
 
 	log ""

@@ -98,6 +98,7 @@ func runSelfUpgrade(ctx context.Context, args []string, dataDir string, stdin io
 		healthBase = "http://" + dashboardDialAddr(serviceHTTPAddr(ctx, name))
 	}
 	deps := selfUpgradeDeps(f, exe, name, dataDir, live, healthBase, journal, logger)
+	wireSafetyNet(&deps, name, dataDir, live, healthBase, logger)
 
 	if f.recoverRun {
 		return recoverSelfUpgrade(ctx, deps, journal, f, stdout)
@@ -291,7 +292,7 @@ func parseSelfUpgradeFlags(args []string, stdout io.Writer) (selfUpgradeFlags, e
 	fs.StringVar(&f.stopCmd, "stop-cmd", "", "")
 	fs.StringVar(&f.startCmd, "start-cmd", "", "")
 	fs.StringVar(&f.healthURL, "health-url", "", "")
-	fs.DurationVar(&f.timeout, "timeout", selfupgrade.DefaultHealthTimeout, "")
+	fs.DurationVar(&f.timeout, "timeout", verifyWindow(), "")
 	if err := fs.Parse(args); err != nil || (!f.recoverRun && !f.unpin && f.to == "" && !f.latest) {
 		_, _ = fmt.Fprint(stdout, selfUpgradeUsage)
 		return f, errors.New("invalid flags")
@@ -408,6 +409,7 @@ func retainNew(exe, name, target string, schema int, logger *slog.Logger) {
 // importSelfUpgradeJournal records attempts a host command journaled while
 // the database was being swapped or the service was down.
 func importSelfUpgradeJournal(ctx context.Context, db *store.DB, logger *slog.Logger) {
+	syncRestorePoints(ctx, dataDirFromEnv(), db, logger)
 	n, err := selfupgrade.ImportJournal(ctx, selfupgrade.NewJournal(dataDirFromEnv()), db)
 	if err != nil {
 		logger.Warn("self-upgrade history import failed", slog.String("error", err.Error()))
@@ -437,6 +439,11 @@ func recordEarlyFailure(ctx context.Context, journal *selfupgrade.Journal, live 
 }
 
 func recordAttempt(ctx context.Context, live string, journal *selfupgrade.Journal, logger *slog.Logger) {
+	if have, want, behind := schemaBehindBinary(ctx, live); behind {
+		logger.Warn("self-upgrade history deferred to next boot: the database is on an older schema than this binary",
+			slog.Int("database_schema", have), slog.Int("binary_schema", want))
+		return
+	}
 	db, err := store.Open(ctx, live)
 	if err != nil {
 		logger.Warn("self-upgrade history deferred to next boot", slog.String("error", err.Error()))
@@ -445,6 +452,13 @@ func recordAttempt(ctx context.Context, live string, journal *selfupgrade.Journa
 	defer func() { _ = db.Close() }()
 	if _, err := selfupgrade.ImportJournal(ctx, journal, db); err != nil {
 		logger.Warn("self-upgrade history not stored", slog.String("error", err.Error()))
+	}
+	syncRestorePoints(ctx, filepath.Dir(journal.Dir), db, logger)
+}
+
+func syncRestorePoints(ctx context.Context, dataDir string, db *store.DB, logger *slog.Logger) {
+	if err := selfupgrade.SyncRestorePoints(ctx, selfupgrade.NewRestorePoints(dataDir), db); err != nil {
+		logger.Warn("restore points not synced", slog.String("error", err.Error()))
 	}
 }
 
@@ -648,4 +662,18 @@ func installerPrefix() string {
 		slug = b.RepoSlug()
 	}
 	return "curl -fsSL https://raw.githubusercontent.com/" + slug + "/main/install.sh | sudo"
+}
+
+// schemaBehindBinary reports whether the live database is on an older schema than this binary
+// migrates to. store.Open would migrate it forward, which undoes a restore to an older release.
+func schemaBehindBinary(ctx context.Context, live string) (have, want int, behind bool) {
+	have, err := rollback.DBSchemaVersion(ctx, live)
+	if err != nil {
+		return 0, 0, false
+	}
+	want, err = store.MaxSchemaVersion()
+	if err != nil {
+		return have, 0, false
+	}
+	return have, want, have < want
 }

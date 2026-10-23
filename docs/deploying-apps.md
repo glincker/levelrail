@@ -99,7 +99,7 @@ Over the API this is `POST /api/v1/apps` with a `:pending` placeholder image, th
 
 #### Railpack and framework detection
 
-When `build.type` is `railpack` (no Dockerfile), Railpack detects the framework from the repository. Levelrail builds only providers it has verified end to end:
+When `build.type` is `railpack` (no Dockerfile), Railpack detects the framework from the repository. These providers are verified with a live build:
 
 | Provider | Name shown |
 | --- | --- |
@@ -108,7 +108,9 @@ When `build.type` is `railpack` (no Dockerfile), Railpack detects the framework 
 | Java (Maven or Gradle, Spring Boot) | `Java (Spring Boot)` |
 | Python (Django) | `Python (Django)` |
 
-Anything else Railpack can detect (Ruby, PHP, Rust, Deno, .NET, and so on) is rejected with a clear error rather than attempted. A Django app needs nothing beyond what `django-admin startproject` generates plus a `requirements.txt` that lists Django and a production server such as gunicorn. Railpack runs `python manage.py migrate` on start and serves with gunicorn bound to `$PORT`, never the Django dev server.
+Ruby and PHP are also accepted, but only plan generation has been verified. They have not had a live build. Other providers Railpack detects (Rust, Deno, Elixir, static files, and so on) are rejected with an error instead of being attempted.
+
+A Django app needs what `django-admin startproject` generates, plus a `requirements.txt` that lists Django and a production server such as gunicorn. Check the start command in the build log on the first deploy.
 
 <Accordion title="How framework detection works without building">
 
@@ -162,6 +164,8 @@ levelrail-cli apps deploy-spec NAME --file app.yaml --repo-url URL --ref REF
 Every field of the spec is in the [app.yaml reference](/app-spec-reference).
 
 ## Deploy and watch a rollout
+
+To deploy a local directory with no git remote, see [Deploy from your computer](/deploy-from-cli).
 
 <Tabs>
 <Tab title="CLI">
@@ -338,6 +342,16 @@ levelrail-cli apps env import NAME --file local.env --dry-run   # preview only
 levelrail-cli apps env import NAME --file local.env
 levelrail-cli apps env export NAME --out backup.env             # stdout without --out
 levelrail-cli apps env diff staging production                  # keys only in one app, and changed values
+```
+
+A dry run prints one line per key. Nothing is saved:
+
+```text
++ DATABASE_URL (new)
+~ LOG_LEVEL (changed)
+= PORT (unchanged)
+! API_KEY (skipped, key is a secret)
+dry run: nothing saved for app "web"
 ```
 
 - The parser handles comments, an `export ` prefix, single and double quotes, multiline quoted values, inline ` # comments` on unquoted values, `=` inside values, empty values, and Windows line endings. When a key appears twice, the last one wins.
@@ -518,9 +532,9 @@ The environment exists. Check `levelrail-cli apps list`, finish the rest by hand
 
 </Accordion>
 
-<Accordion title="A domain assignment fails with &quot;domain already taken&quot;">
+<Accordion title="A domain assignment fails with &quot;is already in use by service&quot;">
 
-Another app owns it. Pick a different domain or remove it from the other app first.
+The error names the app that owns the domain (`domain "shop.example.com" is already in use by service "shop"`). Pick a different domain, or remove it from that app first.
 
 </Accordion>
 
@@ -703,7 +717,8 @@ levelrail-cli apps create | list | get | delete | validate
 levelrail-cli apps scale NAME --replicas N [--strategy rolling|recreate|blue-green]
 levelrail-cli apps deploy | rollback | wait | promote | restart | stop | start | apply
 levelrail-cli apps deploy-compose | deploy-spec | builds trigger
-levelrail-cli apps deploys list | compare          levelrail-cli deployments list | summary | watch
+levelrail-cli apps deploys list | compare
+levelrail-cli deployments list | summary | watch
 levelrail-cli apps timeline | status | diagnose | resource-recommendation
 levelrail-cli apps health | egress | secrets | env | vault-env
 levelrail-cli apps exec | scheduled-tasks | auto-rollback | freeze
@@ -721,27 +736,40 @@ levelrail-cli deploy-approvals list | get | approve | reject
 
 ## Troubleshooting
 
+### If this fails
+
+| Error or reason | Where you see it | Fix |
+| --- | --- | --- |
+| `a deploy for this app is already running` (409) | `POST .../builds` or `POST .../deploys` | Wait with `levelrail-cli apps wait NAME`, or cancel the running build with `POST /api/v1/apps/{name}/builds/{id}/cancel`. |
+| `insufficient disk space at "...": N bytes free, need at least M bytes` | Build fails before BuildKit starts | Free disk space, or lower the floor with `APP_MIN_BUILD_DISK_MB`. See the disk preflight note under [From a git repository](#from-a-git-repository). |
+| `ReadinessFailed` | Deploy reason in `apps deploys list` | The new container never passed its readiness probe. The old container kept serving. Check `apps status NAME`, then the probe path and port. |
+| `OOMKilledDuringReadiness` | Deploy reason | The container was killed for memory before it became ready. Raise `resources.memory_bytes`. |
+| `ExitedDuringReadiness` | Deploy reason | The container exited before it became ready. Read `levelrail-cli apps logs NAME --tail 50`. |
+| `image_pull_failed` (`manifest unknown`, `unauthorized`, `toomanyrequests`) | `apps deploys show NAME` | Fix the image name or tag, add a registry credential, or wait out the rate limit. |
+| `apps wait` exits 5 | CI step | The deploy finished as a failure. Run `apps deploys show NAME` for the reason. |
+| `apps wait` exits 6 | CI step | The wait timed out before the deploy finished. Raise `--timeout` or check the attempt's status. |
+
 ### Deploy is stuck waiting for readiness
 
 **Likely cause:** The readiness probe is failing, the app is not binding to the configured port, or the container crashed during startup.
 
-**How to confirm:** In the dashboard, open the app and go to Deploys. Click the active deployment and view the Timeline tab to see probe attempts and container status. Alternatively, run `levelrail-cli apps timeline <name>`.
+**How to confirm:** Run `levelrail-cli apps deploys show <name>` for the failed or blocked attempt and its reason. Run `levelrail-cli apps timeline <name>` to see what changed around the deploy.
 
-**Fix:** Check the app's logs with `levelrail-cli apps logs <name> -f`. If the port is wrong, update it in the app settings and redeploy. If the readiness path is wrong, update the app spec. If the container is crashing, check logs for errors and fix the code before redeploying.
+**Fix:** Check the app's logs with `levelrail-cli apps logs <name> --follow`. If the port is wrong, update it in the app settings and redeploy. If the readiness path is wrong, update the app spec. If the container is crashing, check logs for errors and fix the code before redeploying.
 
 ### Build fails with insufficient disk space
 
-**Likely cause:** The build node has less than `APP_MIN_BUILD_DISK_MB` (default 1000 MB) free space.
+**Likely cause:** The build node has less free space than `APP_MIN_BUILD_DISK_MB` (default 1024 MB, which is 1 GiB).
 
-**How to confirm:** Run `levelrail-cli apps deploys show <name>`. The failure code will be `disk_full` with bytes required and available.
+**How to confirm:** Run `levelrail-cli apps deploys show <name>`. The failure code is `disk_full`.
 
-**Fix:** On the control plane, run `docker image prune -a --force` and `docker builder prune`. If more space is needed, either increase available disk or lower `APP_MIN_BUILD_DISK_MB` on the control plane restart.
+**Fix:** On the control plane, run `docker image prune -a --force` and `docker builder prune`. If more space is needed, add disk. To change the floor, set `APP_MIN_BUILD_DISK_MB` on the control plane and restart it.
 
 ### Image pull fails
 
 **Likely cause:** Image name or tag is incorrect, registry requires authentication, or registry is unreachable.
 
-**How to confirm:** Run `levelrail-cli apps deploys show <name>`. Failure code will be `image_pull_failed` with the reason in the excerpt.
+**How to confirm:** Run `levelrail-cli apps deploys show <name>`. The failure code is `image_pull_failed`, with the reason in the excerpt.
 
 **Fix:** Verify the image name and tag. If authentication is needed, add the credential in Settings > Registries. If the registry is private, ensure it is reachable from the control plane.
 
@@ -749,13 +777,13 @@ levelrail-cli deploy-approvals list | get | approve | reject
 
 **Likely cause:** Application is binding to a different port, or the process fails to start.
 
-**How to confirm:** Check `levelrail-cli apps logs <name> -f` for bind errors or startup failures. Verify the port in the app settings matches what the application is listening on.
+**How to confirm:** Check `levelrail-cli apps logs <name> --follow` for bind errors or startup failures. Verify the port in the app settings matches what the application is listening on.
 
 **Fix:** Update the port in the app settings if the app is listening on a different port. If the app is not starting, fix the code or configuration and redeploy.
 
 ### Still stuck
 
-For a structured list of all failure codes, visit [Deploy failures](deploy-failures.md). Run `levelrail-cli apps diagnose <name>` to gather system information and include it in a support request.
+For every failure code, see [Deploy failures](/deploy-failures). Run `levelrail-cli apps diagnose <name>` to explain a failed deploy or crash loop, and attach its output to a support request.
 
 ## See also
 

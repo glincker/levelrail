@@ -56,9 +56,11 @@ type DeploymentFilter struct {
 	Branch      string
 	Triggers    []string
 	Environment string
-	Since       time.Time
-	Until       time.Time
-	Query       string
+	// Project keeps only deployments of apps in this project id.
+	Project string
+	Since   time.Time
+	Until   time.Time
+	Query   string
 	// Live keeps only the release currently serving its app.
 	Live bool
 	// PR keeps only previews of this pull request number.
@@ -190,7 +192,7 @@ func deploymentTriggerSQL(triggers []string) string {
 		case DeploymentTriggerPreview:
 			ors = append(ors, "pv.pr_number IS NOT NULL")
 		case DeploymentTriggerGitPush:
-			ors = append(ors, "(d.source = 'webhook' AND pv.pr_number IS NULL)")
+			ors = append(ors, "(d.source IN ('webhook','poll') AND pv.pr_number IS NULL)")
 		case DeploymentTriggerRollback:
 			ors = append(ors, rollbackAttemptForD)
 		case DeploymentTriggerManual:
@@ -261,6 +263,10 @@ func deploymentWhere(f DeploymentFilter, withCursor bool) (string, []any, error)
 		conds = append(conds, "(env.name = ? OR env.id = ?)")
 		args = append(args, f.Environment, f.Environment)
 	}
+	if f.Project != "" {
+		conds = append(conds, "s.project_id = ?")
+		args = append(args, f.Project)
+	}
 	if len(f.Triggers) > 0 {
 		conds = append(conds, deploymentTriggerSQL(f.Triggers))
 	}
@@ -298,7 +304,7 @@ func DeploymentTrigger(source string, hasRollbackTarget bool, prNumber int) stri
 		return DeploymentTriggerPreview
 	}
 	switch source {
-	case DeployAttemptSourceWebhook, DeployAttemptSourceGitPush:
+	case DeployAttemptSourceWebhook, DeployAttemptSourceGitPush, DeployAttemptSourcePoll:
 		return DeploymentTriggerGitPush
 	case DeployAttemptSourceAutoRollback:
 		return DeploymentTriggerRollback

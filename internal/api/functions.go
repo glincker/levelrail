@@ -82,6 +82,11 @@ func (rt *Router) handleListFunctions(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
+// handleFunctionStarters handles GET /api/v1/functions/starters: the tested utility starters behind the idea presets.
+func (rt *Router) handleFunctionStarters(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"starters": functions.Starters(), "port": functions.DefaultPort})
+}
+
 // handleFunctionRuntimes handles GET /api/v1/functions/runtimes: the starter handler for each language.
 func (rt *Router) handleFunctionRuntimes(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"runtimes": functions.Runtimes(), "port": functions.DefaultPort})

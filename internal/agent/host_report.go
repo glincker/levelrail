@@ -39,6 +39,10 @@ type HostReport struct {
 	CPUCores                   uint32
 	DiskTotalBytes             uint64
 	DiskFreeBytes              uint64
+	DiskInodesTotal            uint64
+	DiskInodesFree             uint64
+	SwapTotalBytes             uint64
+	SwapFreeBytes              uint64
 }
 
 // HostProbe reads the node's current host report.
@@ -59,6 +63,12 @@ func NewHostProbe(rt docker.Runtime, diskPath string) HostProbe {
 		if total, used, err := telemetry.HostDiskBytes(diskPath); err == nil && total > 0 {
 			out.DiskTotalBytes = uint64(total)
 			out.DiskFreeBytes = uint64(max(total-used, 0))
+		}
+		if total, free, err := telemetry.HostInodes(diskPath); err == nil {
+			out.DiskInodesTotal, out.DiskInodesFree = total, free
+		}
+		if total, free, err := telemetry.HostSwapBytes(); err == nil && total > 0 {
+			out.SwapTotalBytes, out.SwapFreeBytes = uint64(total), uint64(max(free, 0))
 		}
 		if total, avail, err := telemetry.HostMemoryBytes(); err == nil && total > 0 {
 			out.MemoryTotalBytes = uint64(total)
@@ -129,6 +139,10 @@ func hostReportToPB(r HostReport) *agentpb.HostReport {
 		CpuCores:                   r.CPUCores,
 		DiskTotalBytes:             r.DiskTotalBytes,
 		DiskFreeBytes:              r.DiskFreeBytes,
+		DiskInodesTotal:            r.DiskInodesTotal,
+		DiskInodesFree:             r.DiskInodesFree,
+		SwapTotalBytes:             r.SwapTotalBytes,
+		SwapFreeBytes:              r.SwapFreeBytes,
 	}
 	for _, c := range r.OtherContainers {
 		out.OtherContainers = append(out.OtherContainers, &agentpb.UnmanagedContainer{Name: c.Name, MemoryBytes: c.MemoryBytes})
@@ -145,6 +159,10 @@ func hostReportFromPB(r *agentpb.HostReport) HostReport {
 		CPUCores:                   r.GetCpuCores(),
 		DiskTotalBytes:             r.GetDiskTotalBytes(),
 		DiskFreeBytes:              r.GetDiskFreeBytes(),
+		DiskInodesTotal:            r.GetDiskInodesTotal(),
+		DiskInodesFree:             r.GetDiskInodesFree(),
+		SwapTotalBytes:             r.GetSwapTotalBytes(),
+		SwapFreeBytes:              r.GetSwapFreeBytes(),
 	}
 	for _, c := range r.GetOtherContainers() {
 		out.OtherContainers = append(out.OtherContainers, UnmanagedContainer{Name: c.GetName(), MemoryBytes: c.GetMemoryBytes()})

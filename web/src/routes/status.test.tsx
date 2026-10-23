@@ -29,6 +29,13 @@ vi.mock('../queries/attention', () => ({
   useAttentionItems: () => useAttentionItems() as unknown,
 }))
 
+vi.mock('../queries/silences', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../queries/silences')>()),
+  useSilences: () => ({ data: [] }),
+  useCreateSilence: () => ({ mutate: vi.fn(), isPending: false }),
+  useDeleteSilence: () => ({ mutate: vi.fn(), isPending: false }),
+}))
+
 const mutate = vi.fn()
 vi.mock('../queries/apps', () => ({
   useRestartApp: () => ({ mutate, isPending: false }),
@@ -69,7 +76,9 @@ describe('StatusPage', () => {
   it('shows the healthy empty state', () => {
     useAttentionItems.mockReturnValue({ items: [], isLoading: false })
     render(<StatusPage />)
-    expect(screen.getByText('All systems healthy')).toBeVisible()
+    expect(
+      screen.getByText('attention:statusPage.healthyDescription'),
+    ).toBeVisible()
   })
 
   it('renders items with severity and uniquely named actions', async () => {

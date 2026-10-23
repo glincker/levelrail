@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // userResource is the wire shape for a user in list/create responses:
@@ -64,8 +63,7 @@ func (rt *Router) handleListUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	users, err := rt.auth.ListUsers(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list users failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list users failed", err)
 		return
 	}
 	if !hasAbility(abilities, AbilityRoot) {
@@ -170,15 +168,13 @@ func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "a user with this email already exists")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: create user: save failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create user: save failed", err)
 		return
 	}
 
 	if role != nil {
 		if err := rt.roles.SetUserRole(r.Context(), user.ID, role.ID); err != nil {
-			rt.logger.Error("api: create user: assign role failed", slog.String("user_id", user.ID), slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: create user: assign role failed", err, slog.String("user_id", user.ID))
 			return
 		}
 	}
@@ -191,8 +187,7 @@ func (rt *Router) writeResolveError(w http.ResponseWriter, op string, err error)
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	rt.logger.Error("api: "+op+": resolve role failed", slog.String("error", err.Error()))
-	writeError(w, http.StatusInternalServerError, "internal error")
+	rt.internalError(w, "api: "+op+": resolve role failed", err)
 }
 
 // createLocalUser inserts a new local-password user: hash the password,
@@ -208,7 +203,7 @@ func (rt *Router) createLocalUser(ctx context.Context, email, displayName, passw
 // createLocalUserInTeam is createLocalUser for a user joining teamID as role
 // instead of the default team.
 func (rt *Router) createLocalUserInTeam(ctx context.Context, email, displayName, password string, abilities []string, teamID, role string) (store.User, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hash, err := hashPassword(password)
 	if err != nil {
 		return store.User{}, fmt.Errorf("hash password: %w", err)
 	}
@@ -271,15 +266,13 @@ func (rt *Router) handleUpdateUserAbilities(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotFound, "user not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: update user abilities failed", slog.String("user_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update user abilities failed", err, slog.String("user_id", id))
 		return
 	}
 
 	user, err := rt.auth.GetUserByID(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: update user abilities: reload failed", slog.String("user_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update user abilities: reload failed", err, slog.String("user_id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, toUserResource(*user, nil))
@@ -298,8 +291,7 @@ func (rt *Router) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	n, err := rt.auth.CountUsers(r.Context())
 	if err != nil {
-		rt.logger.Error("api: delete user: count users failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete user: count users failed", err)
 		return
 	}
 	if n <= 1 {
@@ -309,8 +301,7 @@ func (rt *Router) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	if target, err := rt.auth.GetUserByID(r.Context(), id); err == nil && slices.Contains(target.Abilities, AbilityRoot) {
 		others, err := rt.roles.CountRootUsersExcept(r.Context(), id)
 		if err != nil {
-			rt.logger.Error("api: delete user: count root users failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: delete user: count root users failed", err)
 			return
 		}
 		if others == 0 {
@@ -323,8 +314,7 @@ func (rt *Router) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "user not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: delete user failed", slog.String("user_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete user failed", err, slog.String("user_id", id))
 		return
 	}
 

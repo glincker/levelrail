@@ -122,6 +122,11 @@ func SupportsTLS(engine string) bool {
 	return engine == store.EnginePostgres || engine == store.EngineRedis
 }
 
+// ServerTLSEngine reports whether the server side of engine can terminate TLS here. Unlike SupportsTLS, MySQL and MariaDB clients opt in themselves, so no URL changes.
+func ServerTLSEngine(engine string) bool {
+	return SupportsTLS(engine) || engine == store.EngineMySQL || engine == store.EngineMariaDB || engine == store.EngineMongoDB
+}
+
 // TLSContainerPort returns the port engine's image listens on once TLS
 // is enabled, which for Redis differs from ContainerPort's plaintext
 // port (controller.go's own redisTLSContainerPort doc comment: --port 0

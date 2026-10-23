@@ -7,7 +7,7 @@ description: Deploy static HTML sites directly from git with no container, serve
 
 ## What this covers
 
-A static page is an HTML site deployed directly from a git repository with no container involved. Levelrail Pages fetches your code, publishes the built files to a local directory, and routes traffic to them through the embedded Caddy ingress. No build packs or Dockerfiles needed. This page covers deployment, domains, rollback, and deletion.
+A static page is a site deployed directly from a git repository with no running container. Levelrail Pages fetches your code, optionally builds it in a sandboxed build container, publishes the output to a local directory, and routes traffic to it through the embedded Caddy ingress. This page covers the build step, deployment, domains, rollback, and deletion.
 
 ## Deploy a static site from git
 
@@ -36,13 +36,47 @@ levelrail-cli apps create --name my-site --file app.yaml --service web \
 
 From the dashboard, use the **New** wizard and pick the **Git repository** card. If you push an `app.yaml` with a static service, the deploy trigger will pick it up automatically.
 
+## Build a static site
+
+Set `build.command` and `build.publish` to build the site on the control plane instead of committing the output:
+
+```yaml
+version: 1
+services:
+  web:
+    build:
+      type: static
+      baseDirectory: apps/web      # optional; the project root inside the repo
+      command: npm run build
+      publish: dist                # relative to baseDirectory
+      args:                        # optional build-time variables, e.g. VITE_*
+        VITE_API_URL: https://api.example.com
+    domains:
+      - example.com
+```
+
+- `command` and `publish` go together, and `publish` replaces `build.path` (use one or the other).
+- The build runs in a throwaway container from the toolchain image (`node:22-bookworm-slim` by default, override with `APP_STATIC_BUILD_IMAGE`). Dependencies are installed first with the package manager that matches your lockfile (`npm ci`, `pnpm install --frozen-lockfile`, `yarn install --frozen-lockfile`, or `npm install`). Per-build CPU, memory and time limits apply, the same as for container builds.
+- `args` become build-time environment variables. Do not put secrets there, the output is public.
+- The output is capped at `APP_STATIC_BUILD_MAX_MB` (default 2048).
+
+Framework presets prefill the pair: Vite and Astro use `npm run build` with `dist`, a Next.js static export uses `out`, and Docusaurus uses `build`. In the dashboard, open the app's **Source** tab, choose **Static site**, and use the detected preset or type your own. From the CLI:
+
+```bash
+levelrail-cli apps git-source set my-site --build-type static --infer-build
+levelrail-cli apps git-source set my-site --build-type static --build-command "pnpm build" --publish-dir build
+```
+
+`--infer-build` detects the framework and fills whichever of the command and publish directory you leave out.
+
 ## How static pages are built and deployed
 
-Unlike container-based apps, there is no container build step. The deploy process is:
+Without `build.command`, there is no build step and your committed files are served as they are. With it, the build runs first. The deploy process is:
 
 1. **Fetch**: Clone or pull the repository at the commit you push.
-2. **Publish**: Copy the specified `build.path` directory to a local directory on the control plane. The files are stored in a content-addressed path under the control plane's data directory (`<data dir>/static/SERVICE/COMMIT`, with the data directory defaulting to `/var/lib/levelrail-data`).
-3. **Route**: The ingress controller points the configured domains at this directory. Traffic routes immediately once the files are published.
+2. **Build** (only with `build.command`): Run the command in a build container and collect `build.publish` into a staging directory. A failed build or an empty output stops the deploy before anything changes.
+3. **Publish**: Copy the specified `build.path` directory (or move the built output) to a local directory on the control plane, in one step. The files are stored in a content-addressed path under the control plane's data directory (`<data dir>/static/SERVICE/COMMIT`, with the data directory defaulting to `/var/lib/levelrail-data`).
+4. **Route**: The ingress controller points the configured domains at this directory. Traffic routes immediately once the files are published.
 
 If the deploy fails (e.g., the path does not exist in the repository), the previous version stays live until you fix and push again.
 
@@ -101,10 +135,14 @@ curl -H "Authorization: Bearer TOKEN" https://levelrail.example.com/api/v1/stati
 
 This shows every site currently served through the embedded ingress, with no build or runtime information: just the site name and its domains. For the full view including recent deployments and settings, use the **Apps** list in the dashboard.
 
+## Previews and branch deploys
+
+A static site you deploy with `--ref` is one deploy of one ref. To get a stable URL per branch with automatic rebuilds on each push, connect the repository as a source-connected app and turn on [branch deploys](/preview-environments#branch-deploys). Pull request previews are separate and need a pull request.
+
 ## Limitations
 
-- **Build languages**: Levelrail Pages does not run a build step. Your repository must contain the finished HTML in the path you specify. If you use a static site generator (Hugo, Jekyll, Next.js static export and so on), build in CI and push the output to a branch, then deploy that branch with `--ref`.
-- **Redirects and rewrites**: The embedded Caddy serves files as-is. URL rewrites and sophisticated routing are not configured. If you need them, run a small container service for the site instead.
+- **Build toolchain**: the build container is Node based. For other generators (Hugo, Jekyll), set `APP_STATIC_BUILD_IMAGE` to an image that has the tool and a shell, or build in CI and serve the committed output with `build.path`.
+- **Routing**: redirects, rewrites, headers, single page app fallback, a custom 404 page and clean URLs come from `_redirects`, `_headers` and `app.yaml` and are published with each deploy. See [Static site routing rules](/static-routing). Proxying a path to another origin and edge conditions (country, language) are not supported; use a path forwarder on the domain for proxying.
 - **Large file limits**: There are no hard limits, but very large directories (> 1GB) may see slower deploy and rollback times. Monitor the data directory disk usage with `df -h /var/lib/levelrail-data`.
 
 ## For contributors
@@ -113,6 +151,7 @@ This shows every site currently served through the embedded ingress, with no bui
 - Deploy logic: `internal/deploy/static.go`
 - Storage: `internal/store/static_site.go`, migrations `0015_static_sites.sql`
 - Ingress routing: `internal/reconcile/ingress/controller_static_test.go` (controller tests; no separate impl file)
-- API: `internal/api/static_sites.go`
+- Routing rules: `internal/staticroutes` (parsers and resolver), `internal/deploy/static_routes.go` (compile at deploy time), `internal/ingress/static_site.go` (serving)
+- API: `internal/api/static_sites.go`, `internal/api/static_routes.go`
 - CLI: `cmd/levelrail-cli/static_sites.go`
 </Accordion>

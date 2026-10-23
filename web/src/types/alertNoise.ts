@@ -65,6 +65,16 @@ export type AlertOutcome =
 
 export type AlertEventName = 'fired' | 'resolved' | 'flapping' | 'flap_ended'
 
+export type CertFailureKind = 'renewal_failing' | 'dns' | 'other'
+
+export interface CertExpiryPayload {
+  domain: string
+  issuer?: string
+  not_after: string
+  days_left: number
+  failure_kind: CertFailureKind
+}
+
 export interface AlertHistoryEntry {
   id: string
   at: string
@@ -81,6 +91,7 @@ export interface AlertHistoryEntry {
   silence_id?: string
   channel_id?: string
   error?: string
+  cert?: CertExpiryPayload
 }
 
 export interface AlertHistoryFilter {
@@ -88,6 +99,10 @@ export interface AlertHistoryFilter {
   outcome?: AlertOutcome | ''
   event?: AlertEventName | ''
   limit?: number
+  /** Follow the project and environment picker (dashboard panels). */
+  scoped?: boolean
+  /** Set by useAlertHistory: the scope part of the cache key. */
+  scope?: { environment: string; project: string }
 }
 
 // Quick silence durations offered from an alert row and the dashboard.

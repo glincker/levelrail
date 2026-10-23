@@ -61,12 +61,30 @@
   },
   "routes": {
     "title": "Slowest routes",
-    "hint": "Route templates only. Ids and query strings are never stored.",
+    "topTitle": "Top paths",
+    "topEmpty": "No requests in this window.",
+    "hint": "Slowest pages and API routes. Static files are left out.",
     "route": "Route",
     "requests": "Requests",
     "avg": "Avg duration",
     "error5xx": "5xx",
-    "empty": "No route has enough traffic in this window to rank."
+    "empty": "No route has enough traffic in this window to rank.",
+    "kindTabs": "Route kind",
+    "kind": {
+      "page": "Pages",
+      "api": "API",
+      "asset": "Assets"
+    },
+    "topTitleByKind": {
+      "page": "Top pages",
+      "api": "Top API routes",
+      "asset": "Top assets"
+    },
+    "kindHint": {
+      "page": "Pages people visit. Ids and query strings are never stored.",
+      "api": "API calls, grouped by route. Ids and query strings are never stored.",
+      "asset": "Static files such as scripts, styles and images. Counted separately so they do not bury your pages."
+    }
   },
   "samples": {
     "title": "Slow and failed requests",
@@ -99,5 +117,74 @@
       "bad_bot": "Bad bot",
       "body_too_large": "Body too large"
     }
+  },
+  "spikes": {
+    "title": "Error spikes",
+    "hint": "Stretches where the server error share stood out from the rest of the window, matched to the deploy that started shortly before.",
+    "none": "No error spikes in this window.",
+    "peak": "{{rate}} server errors at peak",
+    "detail": "{{errors}} of {{requests}} requests failed. Typical for this window: {{baseline}}.",
+    "afterDeploy": "After deploy {{image}} ({{time}})",
+    "noDeploy": "No recent deploy"
+  },
+  "abuse": {
+    "title": "Abuse defense",
+    "subtitle": "Limit how fast one client can hit this app and turn away known bad addresses and agents. Start in log only to see what would be blocked.",
+    "loadError": "Could not load the abuse defense: {{message}}",
+    "modeLabel": "Mode",
+    "modes": {
+      "off": "Off",
+      "log_only": "Log only",
+      "enforce": "Enforce"
+    },
+    "modeHints": {
+      "off": "Nothing is checked.",
+      "log_only": "Counts what would be blocked and blocks nothing.",
+      "enforce": "Turns matching requests away. Rate limits answer 429 with Retry-After."
+    },
+    "rateLabel": "Requests per client",
+    "rps": "Per second",
+    "burst": "Burst",
+    "suggestionFromPeak": "Suggested from your peak of {{peak}} requests per second: {{rps}} per client, burst {{burst}}.",
+    "suggestionDefault": "No recent traffic to size from. Suggested start: {{rps}} per client, burst {{burst}}.",
+    "useSuggestion": "Use suggestion",
+    "denyCidrs": "Block addresses",
+    "denyCidrsPlaceholder": "203.0.113.0/24",
+    "denyAgents": "Block user agents",
+    "denyAgentsPlaceholder": "python-requests",
+    "requireUa": "Turn away requests with no User-Agent",
+    "invalidNumber": "Rate and burst must be numbers.",
+    "previewNeedsRule": "Add a rate or a block list to preview its effect.",
+    "previewEmpty": "No recent requests are held to replay yet, so there is nothing to preview.",
+    "previewResult": "Would have blocked {{blocked}} of {{total}} recent requests ({{percent}}%)",
+    "previewWindow": "over the last {{minutes}} min",
+    "topClients": "Most affected clients: {{clients}}",
+    "enforceNeedsPreview": "Enforcing unlocks once the preview above has loaded.",
+    "reasons": {
+      "rate_limit": "Rate limited",
+      "deny_cidr": "Blocked address",
+      "deny_user_agent": "Blocked user agent",
+      "missing_user_agent": "No User-Agent"
+    },
+    "counters": "Allowed {{allowed}}, would block {{wouldBlock}}, blocked {{blocked}} in this window.",
+    "failOpen_one": "{{count}} request was served unchecked because the defense failed.",
+    "failOpen_other": "{{count}} requests were served unchecked because the defense failed.",
+    "status": {
+      "Off": "Off",
+      "LogOnly": "Counting only",
+      "Enforcing": "Enforcing",
+      "Pending": "Applying",
+      "NoRoutes": "Nothing to protect",
+      "ClientIPHidden": "Client addresses hidden",
+      "InvalidPolicy": "Policy invalid"
+    },
+    "statusHint": {
+      "NoRoutes": "The app has no proxied route right now (stopped, asleep or a static site), so the policy has nothing to apply to.",
+      "ClientIPHidden": "A proxy in front hides visitor addresses, so every visitor would share one limit. Set the trusted proxies in the ingress settings."
+    },
+    "save": "Save",
+    "saveLogOnly": "Start in log only",
+    "startEnforcing": "Start enforcing",
+    "saved": "Abuse defense saved ({{mode}})."
   }
 }

@@ -19,7 +19,7 @@ func databasesNetworkUsage(prog string) string {
   %[1]s databases network deny <database> --source CIDR [flags]          remove an allowed source
   %[1]s databases network make-private <database> --confirm [flags]      stop publishing the port and drop its rules
   %[1]s databases network scope <database> --scope S [flags]             platform, project or environment (--dry-run first)
-  %[1]s databases network tls <database> --require|--optional [flags]    require TLS for connections
+  %[1]s databases network tls <database> --require|--optional|--enable|--disable [flags]  require TLS, or switch it for MySQL, MariaDB, Redis
 
 Run "%[1]s databases network <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -230,13 +230,25 @@ func runDatabasesNetworkScope(prog string, args []string, stdout, stderr io.Writ
 }
 
 func runDatabasesNetworkTLS(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	var require, optional bool
-	c, code, ok := parseDBAccess(prog, "databases network tls", "databases network tls <database> --require|--optional [flags]", args, 1, "a database name", stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
+	var require, optional, enable, disable bool
+	c, code, ok := parseDBAccess(prog, "databases network tls", "databases network tls <database> --require|--optional|--enable|--disable [flags]", args, 1, "a database name", stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		fs.BoolVar(&require, "require", false, "refuse connections that do not use TLS")
 		fs.BoolVar(&optional, "optional", false, "accept connections with or without TLS")
+		fs.BoolVar(&enable, "enable", false, "turn server TLS on (MySQL, MariaDB, Redis)")
+		fs.BoolVar(&disable, "disable", false, "turn server TLS off (MySQL, MariaDB, Redis)")
 	})
 	if !ok {
 		return code
+	}
+	if enable != disable {
+		if require || optional {
+			return c.fail(errors.New("--enable and --disable cannot be combined with --require or --optional"))
+		}
+		out, err := c.client.SetDatabaseTLSEnabled(context.Background(), c.rest[0], enable)
+		if err != nil {
+			return c.fail(fmt.Errorf("switch tls of database %q: %w", c.rest[0], err))
+		}
+		return c.result(out, func() { _, _ = fmt.Fprintf(stdout, "tls enabled: %v\n", out.Enabled) })
 	}
 	if require == optional {
 		return c.fail(errors.New("pass exactly one of --require or --optional"))

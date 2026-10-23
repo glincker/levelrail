@@ -99,14 +99,12 @@ func (rt *Router) handleCreateAIChatSession(w http.ResponseWriter, r *http.Reque
 	}
 	id, err := store.NewAIChatSessionID()
 	if err != nil {
-		rt.logger.Error("api: create ai chat session: mint id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create ai chat session: mint id failed", err)
 		return
 	}
 	session, err := rt.aiChat.CreateAIChatSession(r.Context(), id, owner, time.Now().UTC())
 	if err != nil {
-		rt.logger.Error("api: create ai chat session failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create ai chat session failed", err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, aiChatSessionCreatedResource{ID: session.ID})
@@ -123,8 +121,7 @@ func (rt *Router) handleGetAIChatSession(w http.ResponseWriter, r *http.Request)
 
 	rows, err := rt.aiChat.ListAIChatMessages(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: list ai chat messages failed", slog.String("error", err.Error()), slog.String("session_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list ai chat messages failed", err, slog.String("session_id", id))
 		return
 	}
 
@@ -145,8 +142,7 @@ func (rt *Router) handleListAIChatSessions(w http.ResponseWriter, r *http.Reques
 	}
 	sessions, err := rt.aiChat.ListAIChatSessions(r.Context(), owner)
 	if err != nil {
-		rt.logger.Error("api: list ai chat sessions failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list ai chat sessions failed", err)
 		return
 	}
 	out := make([]aiChatSessionSummaryResource, 0, len(sessions))
@@ -171,8 +167,7 @@ func (rt *Router) handleDeleteAIChatSession(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: delete ai chat session failed", slog.String("error", err.Error()), slog.String("session_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete ai chat session failed", err, slog.String("session_id", id))
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -205,8 +200,7 @@ func (rt *Router) handleCreateAIChatMessage(w http.ResponseWriter, r *http.Reque
 
 	configured, err := rt.aiEngine.IsConfigured(r.Context())
 	if err != nil {
-		rt.logger.Error("api: create ai chat message: check configured failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create ai chat message: check configured failed", err)
 		return
 	}
 	if !configured {
@@ -251,8 +245,7 @@ func (rt *Router) handleResolveAIChatConfirmation(w http.ResponseWriter, r *http
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: resolve ai chat confirmation: load confirmation failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: resolve ai chat confirmation: load confirmation failed", err)
 		return
 	}
 	// A confirmation owned by another session reports not-found, not forbidden, to avoid leaking IDs.

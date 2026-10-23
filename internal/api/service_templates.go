@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/catalog"
 	"github.com/GLINCKER/levelrail/internal/compose"
@@ -33,6 +35,16 @@ type serviceTemplateListItem struct {
 	Icon                  string `json:"icon,omitempty"`
 	// Installable marks a manifest template: POST .../install takes its env prompts and domains.
 	Installable bool `json:"installable,omitempty"`
+	// NeedsDatabase and HasVolume are card hints read from the Compose body.
+	NeedsDatabase bool `json:"needs_database,omitempty"`
+	HasVolume     bool `json:"has_volume,omitempty"`
+}
+
+var templateDatabaseImage = regexp.MustCompile(`(?m)^\s*image:\s*["']?(?:[\w.\-]+/)*(postgres|postgis|mysql|mariadb|mongo|redis|valkey|clickhouse|timescaledb)\b`)
+
+// templateResourceHints reports whether a Compose body bundles a database image and declares volumes.
+func templateResourceHints(compose string) (needsDatabase, hasVolume bool) {
+	return templateDatabaseImage.MatchString(compose), strings.Contains(compose, "volumes:")
 }
 
 // serviceTemplateDetail is GET /api/v1/service-templates/{id}'s response
@@ -59,6 +71,7 @@ type serviceTemplateDetail struct {
 func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Request) {
 	out := make([]serviceTemplateListItem, 0, len(catalog.Templates))
 	for _, tpl := range catalog.Templates {
+		needsDB, hasVol := templateResourceHints(tpl.Compose)
 		out = append(out, serviceTemplateListItem{
 			ID:                     tpl.ID,
 			Name:                   tpl.Name,
@@ -67,9 +80,11 @@ func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Requ
 			DocumentationURL:       tpl.DocumentationURL,
 			RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
 			RequiresGPU:            tpl.RequiresGPU,
-			RequiresConfiguration:  rt.templateRequiresConfig[tpl.ID],
+			RequiresConfiguration:  rt.templateNeedsConfig(tpl.ID),
 			Icon:                   manifestIcon(tpl.Manifest),
 			Installable:            tpl.Manifest != nil,
+			NeedsDatabase:          needsDB,
+			HasVolume:              hasVol,
 		})
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -134,7 +149,7 @@ func (rt *Router) resolveTemplate(ctx context.Context, id string) (templateView,
 			Compose:                tpl.Compose,
 			RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
 			RequiresGPU:            tpl.RequiresGPU,
-			RequiresConfiguration:  rt.templateRequiresConfig[tpl.ID],
+			RequiresConfiguration:  rt.templateNeedsConfig(tpl.ID),
 			Manifest:               tpl.Manifest,
 			Requirements:           catalog.ComputeRequirements(tpl.Compose),
 		}, true, nil
@@ -246,6 +261,11 @@ func (rt *Router) generateOneClickAppName(ctx context.Context, templateID string
 // calling this once is instance state, not a package-level cache) with
 // a detection-only generate/persist pair that never touches real secret
 // storage.
+func (rt *Router) templateNeedsConfig(id string) bool {
+	rt.templateConfigOnce.Do(func() { rt.templateRequiresConfig = computeTemplateRequiresConfig() })
+	return rt.templateRequiresConfig[id]
+}
+
 func computeTemplateRequiresConfig() map[string]bool {
 	out := make(map[string]bool, len(catalog.Templates))
 	for _, tpl := range catalog.Templates {

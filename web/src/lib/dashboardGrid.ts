@@ -15,6 +15,7 @@ export const WIDGET_TYPES: WidgetType[] = [
   'cost',
   'alert_status',
   'node_capacity',
+  'link',
 ]
 
 export const WIDGET_SIZES: WidgetSize[] = ['S', 'M', 'L']
@@ -140,4 +141,14 @@ export const REFRESH_CHOICES = [0, 15, 30, 60, 300] as const
 export function widgetTitle(w: DashboardWidget, typeLabel: string): string {
   if (w.title) return w.title
   return w.target?.name ? `${typeLabel}: ${w.target.name}` : typeLabel
+}
+
+/** isHttpUrl accepts only http and https addresses, so a link widget can never carry a script or data URL. */
+export function isHttpUrl(value: string): boolean {
+  try {
+    const u = new URL(value)
+    return (u.protocol === 'http:' || u.protocol === 'https:') && u.host !== ''
+  } catch {
+    return false
+  }
 }

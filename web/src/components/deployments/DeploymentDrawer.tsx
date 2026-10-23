@@ -37,6 +37,7 @@ import { DrawerActions } from './DrawerActions'
 import { DeploymentNote } from './DeploymentNote'
 import { EnvPill, StatusCell } from './DeploymentRow'
 import { ImageRefChip } from './ImageRefChip'
+import { CodeBlock } from '@/components/ui/code-block'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -74,12 +75,11 @@ function FailureCard({ d }: { d: Deployment }) {
           {d.error_summary ?? t('drawer.noErrorRecorded')}
         </p>
         {tail.data && tail.data.length > 0 && (
-          <pre
-            aria-label={t('drawer.lastLogLines')}
-            className="max-h-48 overflow-auto rounded-md bg-background p-2 font-mono text-xs leading-relaxed"
-          >
-            {tail.data.join('\n')}
-          </pre>
+          <CodeBlock
+            code={tail.data.join('\n')}
+            label={t('drawer.lastLogLines')}
+            maxHeight="sm"
+          />
         )}
         {tail.isError && (
           <p className="text-xs text-muted-foreground">

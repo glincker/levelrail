@@ -15,7 +15,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/tokenhash"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // sessionCookieName is deliberately generic, not a brand-derived string:
@@ -322,7 +321,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 				return
 			}
 			if rt.apiRateLimit != nil {
-				if allowed, retryAfter := rt.apiRateLimit.allow(required, "session:"+pinned.userID); !allowed {
+				if allowed, retryAfter := rt.apiRateLimit.admit(w, required, "session:"+pinned.userID); !allowed {
 					writeRateLimited(w, retryAfter)
 					return
 				}
@@ -333,8 +332,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 				}
 				allowed, err := decide(r.Context(), store.PrincipalTypeToken, pinned.userID, pinned.pinnedAbilities)
 				if err != nil {
-					rt.logger.Error("api: pinned session ability decision failed", slog.String("error", err.Error()))
-					writeError(w, http.StatusInternalServerError, "internal error")
+					rt.internalError(w, "api: pinned session ability decision failed", err)
 					return
 				}
 				if !allowed {
@@ -354,7 +352,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 
 		if userID, ok := rt.currentSessionUserID(r); ok {
 			if rt.apiRateLimit != nil {
-				if allowed, retryAfter := rt.apiRateLimit.allow(required, "session:"+userID); !allowed {
+				if allowed, retryAfter := rt.apiRateLimit.admit(w, required, "session:"+userID); !allowed {
 					writeRateLimited(w, retryAfter)
 					return
 				}
@@ -366,14 +364,12 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 					return
 				}
 				if err != nil {
-					rt.logger.Error("api: session ability lookup failed", slog.String("error", err.Error()))
-					writeError(w, http.StatusInternalServerError, "internal error")
+					rt.internalError(w, "api: session ability lookup failed", err)
 					return
 				}
 				allowed, err := decide(r.Context(), store.PrincipalTypeUser, userID, user.Abilities)
 				if err != nil {
-					rt.logger.Error("api: session ability decision failed", slog.String("error", err.Error()))
-					writeError(w, http.StatusInternalServerError, "internal error")
+					rt.internalError(w, "api: session ability decision failed", err)
 					return
 				}
 				if !allowed {
@@ -389,7 +385,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		token, ok := bearerToken(r)
 		if !ok {
 			if rt.apiRateLimit != nil {
-				if allowed, retryAfter := rt.apiRateLimit.allow(required, "ip:"+clientIP(r)); !allowed {
+				if allowed, retryAfter := rt.apiRateLimit.admit(w, required, "ip:"+clientIP(r)); !allowed {
 					writeRateLimited(w, retryAfter)
 					return
 				}
@@ -402,7 +398,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		// before the lookup below, so a leaked token gets throttled even
 		// while repeatedly hitting an already-revoked or expired record.
 		if rt.apiRateLimit != nil {
-			if allowed, retryAfter := rt.apiRateLimit.allow(required, "token:"+hashToken(token)); !allowed {
+			if allowed, retryAfter := rt.apiRateLimit.admit(w, required, "token:"+hashToken(token)); !allowed {
 				writeRateLimited(w, retryAfter)
 				return
 			}
@@ -414,8 +410,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 			return
 		}
 		if err != nil {
-			rt.logger.Error("api: token lookup failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: token lookup failed", err)
 			return
 		}
 		if rec.RevokedAt != nil {
@@ -427,8 +422,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 			return
 		}
 		if gone, oerr := rt.tokenOwnerGone(r.Context(), rec); oerr != nil {
-			rt.logger.Error("api: token owner lookup failed", slog.String("error", oerr.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: token owner lookup failed", oerr)
 			return
 		} else if gone {
 			writeError(w, http.StatusUnauthorized, "invalid token")
@@ -443,8 +437,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		}
 		allowed, err := decide(r.Context(), store.PrincipalTypeToken, rec.ID, rec.Abilities)
 		if err != nil {
-			rt.logger.Error("api: token ability decision failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: token ability decision failed", err)
 			return
 		}
 		if !allowed {
@@ -738,7 +731,7 @@ func BootstrapAdmin(ctx context.Context, s AuthStore, username, password string)
 		return fmt.Errorf("api: bootstrap admin: no user account exists and no username/password were provided")
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hash, err := hashPassword(password)
 	if err != nil {
 		return fmt.Errorf("api: bootstrap admin: hash password: %w", err)
 	}

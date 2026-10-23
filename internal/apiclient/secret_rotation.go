@@ -56,6 +56,27 @@ func (c *Client) DeleteSecretRotation(ctx context.Context, name, key string) err
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key)+"/rotation", nil, nil)
 }
 
+// RotateSecretValue calls POST /api/v1/apps/{name}/secrets/{key}/rotate. An
+// empty value asks the control plane to generate one. The app is not restarted.
+func (c *Client) RotateSecretValue(ctx context.Context, name, key, value string) (SecretRotationPolicyResource, error) {
+	var out SecretRotationPolicyResource
+	body := struct {
+		Value string `json:"value,omitempty"`
+	}{Value: value}
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key)+"/rotate", body, &out)
+	return out, err
+}
+
+// RotateVaultCredential calls POST /api/v1/settings/vault/rotate-credential.
+func (c *Client) RotateVaultCredential(ctx context.Context, credential string) (VaultSettingsResource, error) {
+	var out VaultSettingsResource
+	body := struct {
+		Credential string `json:"credential"`
+	}{Credential: credential}
+	err := c.do(ctx, http.MethodPost, "/api/v1/settings/vault/rotate-credential", body, &out)
+	return out, err
+}
+
 // RotateSecretNow calls POST .../secrets/{key}/rotation/rotate.
 func (c *Client) RotateSecretNow(ctx context.Context, name, key string) (SecretRotationPolicyResource, error) {
 	var out SecretRotationPolicyResource

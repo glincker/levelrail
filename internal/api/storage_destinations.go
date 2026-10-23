@@ -156,14 +156,12 @@ func (rt *Router) handleListStorageDestinations(w http.ResponseWriter, r *http.R
 	}
 	targets, err := rt.backupTargets.ListBackupTargets(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list storage destinations failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list storage destinations failed", err)
 		return
 	}
 	opts, err := d.Options.ListStorageOptions(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list storage options failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list storage options failed", err)
 		return
 	}
 	dec := rt.storageDecorations(r.Context())
@@ -189,8 +187,7 @@ func (rt *Router) handleGetStorageDestination(w http.ResponseWriter, r *http.Req
 	}
 	o, has, err := d.Options.GetStorageOptions(r.Context(), t.ID)
 	if err != nil {
-		rt.logger.Error("api: get storage options failed", slog.String("error", err.Error()), slog.String("id", t.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get storage options failed", err, slog.String("id", t.ID))
 		return
 	}
 	res := rt.toStorageResource(r.Context(), d, t, o, has)
@@ -205,8 +202,7 @@ func (rt *Router) loadStorageTarget(w http.ResponseWriter, r *http.Request, id s
 		return store.BackupTarget{}, false
 	}
 	if err != nil {
-		rt.logger.Error("api: load storage destination failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: load storage destination failed", err, slog.String("id", id))
 		return store.BackupTarget{}, false
 	}
 	return t, true
@@ -289,28 +285,24 @@ func (rt *Router) handleCreateStorageDestination(w http.ResponseWriter, r *http.
 	preset, _ := objectstore.PresetByID(req.Preset)
 	id, err := randomBackupTargetID()
 	if err != nil {
-		rt.logger.Error("api: create storage destination: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create storage destination: generate id failed", err)
 		return
 	}
 	key := store.BackupTargetSecretsKey(id)
 	for envKey, val := range map[string]string{"access_key_id": req.AccessKeyID, "secret_access_key": req.SecretAccessKey} {
 		if err := rt.backupSecrets.SetValue(r.Context(), key, envKey, val); err != nil {
-			rt.logger.Error("api: create storage destination: store credential failed", slog.String("error", err.Error()), slog.String("id", id), slog.String("key", envKey))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: create storage destination: store credential failed", err, slog.String("id", id), slog.String("key", envKey))
 			return
 		}
 	}
 	target := store.BackupTarget{ID: id, Name: req.Name, Provider: preset.Provider, Endpoint: res.Endpoint, Region: res.Region, Bucket: req.Bucket, CreatedAt: time.Now().UTC().Format(time.RFC3339)}
 	if err := rt.backupTargets.SaveBackupTarget(r.Context(), target); err != nil {
-		rt.logger.Error("api: create storage destination: save failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create storage destination: save failed", err, slog.String("id", id))
 		return
 	}
 	opts := store.StorageOptions{TargetID: id, Preset: req.Preset, PathStyle: pathStyle, AccountID: strings.TrimSpace(req.AccountID), QuotaBytes: quotaOrZero(req.QuotaBytes)}
 	if err := d.Options.SaveStorageOptions(r.Context(), opts); err != nil {
-		rt.logger.Error("api: create storage destination: save options failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create storage destination: save options failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusCreated, rt.toStorageResource(r.Context(), d, target, opts, true))
@@ -335,8 +327,7 @@ func (rt *Router) handleUpdateStorageDestination(w http.ResponseWriter, r *http.
 	}
 	prev, _, err := d.Options.GetStorageOptions(r.Context(), existing.ID)
 	if err != nil {
-		rt.logger.Error("api: update storage destination: load options failed", slog.String("error", err.Error()), slog.String("id", existing.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update storage destination: load options failed", err, slog.String("id", existing.ID))
 		return
 	}
 	if strings.HasPrefix(existing.Endpoint, store.AgentEndpointScheme) {
@@ -362,16 +353,14 @@ func (rt *Router) handleUpdateStorageDestination(w http.ResponseWriter, r *http.
 		key := store.BackupTargetSecretsKey(existing.ID)
 		for envKey, val := range map[string]string{"access_key_id": req.AccessKeyID, "secret_access_key": req.SecretAccessKey} {
 			if err := rt.backupSecrets.SetValue(r.Context(), key, envKey, val); err != nil {
-				rt.logger.Error("api: update storage destination: store credential failed", slog.String("error", err.Error()), slog.String("id", existing.ID), slog.String("key", envKey))
-				writeError(w, http.StatusInternalServerError, "internal error")
+				rt.internalError(w, "api: update storage destination: store credential failed", err, slog.String("id", existing.ID), slog.String("key", envKey))
 				return
 			}
 		}
 	}
 	preset, _ := objectstore.PresetByID(req.Preset)
 	if err := rt.backupTargets.UpdateBackupTarget(r.Context(), existing.ID, req.Name, preset.Provider, res.Endpoint, res.Region, req.Bucket); err != nil {
-		rt.logger.Error("api: update storage destination failed", slog.String("error", err.Error()), slog.String("id", existing.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update storage destination failed", err, slog.String("id", existing.ID))
 		return
 	}
 	opts := store.StorageOptions{TargetID: existing.ID, Preset: req.Preset, PathStyle: pathStyle, AccountID: strings.TrimSpace(req.AccountID), QuotaBytes: prev.QuotaBytes}
@@ -379,8 +368,7 @@ func (rt *Router) handleUpdateStorageDestination(w http.ResponseWriter, r *http.
 		opts.QuotaBytes = *req.QuotaBytes
 	}
 	if err := d.Options.SaveStorageOptions(r.Context(), opts); err != nil {
-		rt.logger.Error("api: update storage destination: save options failed", slog.String("error", err.Error()), slog.String("id", existing.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update storage destination: save options failed", err, slog.String("id", existing.ID))
 		return
 	}
 	updated, ok := rt.loadStorageTarget(w, r, existing.ID)

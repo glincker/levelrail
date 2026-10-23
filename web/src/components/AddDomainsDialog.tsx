@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Suspense, lazy, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -7,6 +7,7 @@ import {
   CaretDownIcon,
   CaretRightIcon,
   CheckCircleIcon,
+  SpinnerGapIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -19,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Field, FieldHint, FieldLabel } from '@/components/ui/field'
+import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -28,22 +29,31 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { addDomainsIndependently, type BulkAddOutcome } from '../lib/domainBulk'
 import {
-  addDomainsIndependently,
-  parseDomainInput,
-  type BulkAddOutcome,
-} from '../lib/domainBulk'
+  analyzeDomainList,
+  createDomainListSchema,
+  type DomainIssue,
+} from '../lib/domainListSchema'
+import { useAppForm } from '../hooks/useAppForm'
 import { useEditAppDomains } from '../queries/appEnvironmentDomains'
 import {
   domainCheckKeys,
   domainCheckQueryOptions,
 } from '../queries/domainCheck'
+import { GetCertificateButton } from './GetCertificateButton'
 import type { EditDomainsResult } from '../queries/appEnvironmentDomains'
 import { DomainCheckPanel } from './DomainDnsCheck'
 import { DomainDnsStatusBadge } from './DomainDnsStatusBadge'
 import { GoLivePanel } from './GoLivePanel'
 import { ServerAddressLine } from './domains/ServerAddressCard'
 import { StandaloneAddBody } from './domains/StandaloneAddBody'
+
+const DomainDiagnosePanel = lazy(() =>
+  import('./domains/DomainDiagnosePanel').then((m) => ({
+    default: m.DomainDiagnosePanel,
+  })),
+)
 
 export interface AddDomainsApp {
   name: string
@@ -52,12 +62,15 @@ export interface AddDomainsApp {
 function ResultRow({
   appName,
   outcome,
+  diagnoseByDefault,
 }: {
   appName: string
   outcome: BulkAddOutcome<EditDomainsResult>
+  diagnoseByDefault: boolean
 }) {
   const { t } = useTranslation('domains')
   const [open, setOpen] = useState(false)
+  const [diagnoseOpen, setDiagnoseOpen] = useState(diagnoseByDefault)
   const check = useQuery({
     ...domainCheckQueryOptions(appName, outcome.domain),
     enabled: outcome.ok,
@@ -71,7 +84,7 @@ function ResultRow({
         />
         <div className="min-w-0">
           <p className="truncate font-mono">{outcome.domain}</p>
-          <p className="text-xs text-destructive">{outcome.error}</p>
+          <FieldError className="text-xs">{outcome.error}</FieldError>
         </div>
       </li>
     )
@@ -101,6 +114,18 @@ function ResultRow({
             ? t('page.addDialog.hideRecord')
             : t('page.addDialog.showRecord')}
         </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          aria-expanded={diagnoseOpen}
+          onClick={() => {
+            setDiagnoseOpen((v) => !v)
+          }}
+        >
+          {t('page.row.diagnose')}
+        </Button>
+        <GetCertificateButton domain={outcome.domain} variant="ghost" />
       </div>
       <div className="mt-2 pl-6">
         <GoLivePanel
@@ -110,6 +135,13 @@ function ResultRow({
           dns={outcome.result.dns_results?.[0]}
         />
       </div>
+      {diagnoseOpen ? (
+        <div className="mt-2 pl-6">
+          <Suspense fallback={null}>
+            <DomainDiagnosePanel domain={outcome.domain} />
+          </Suspense>
+        </div>
+      ) : null}
       {open ? (
         <div className="mt-2">
           <DomainCheckPanel
@@ -139,39 +171,56 @@ function AddDomainsBody({
 }) {
   const { t } = useTranslation('domains')
   const queryClient = useQueryClient()
-  const [appName, setAppName] = useState(
-    initialApp ?? (apps.length === 1 ? (apps[0]?.name ?? '') : ''),
-  )
-  const [text, setText] = useState('')
   const [outcomes, setOutcomes] = useState<
     BulkAddOutcome<EditDomainsResult>[] | null
   >(null)
-  const [busy, setBusy] = useState(false)
+  const [retrying, setRetrying] = useState(false)
   const [verifying, setVerifying] = useState(false)
+  const schema = useMemo(() => createDomainListSchema(claimedBy), [claimedBy])
+  const form = useAppForm(schema, {
+    defaultValues: {
+      app: initialApp ?? (apps.length === 1 ? (apps[0]?.name ?? '') : ''),
+      domains: '',
+    },
+  })
+  const {
+    register,
+    handleSubmit,
+    setFocus,
+    watch,
+    setValue,
+    formState: { errors, touchedFields, isSubmitted, isSubmitting },
+  } = form
+  const appName = watch('app')
+  const text = watch('domains')
   const edit = useEditAppDomains(appName)
-  const parsed = useMemo(
-    () => parseDomainInput(text, claimedBy),
+  const analysis = useMemo(
+    () => analyzeDomainList(text, claimedBy),
     [text, claimedBy],
   )
 
   async function run(domains: string[]) {
-    setBusy(true)
-    const results = await addDomainsIndependently<EditDomainsResult>(
-      domains,
-      (domain) => edit.mutateAsync({ add: [domain] }),
+    return addDomainsIndependently<EditDomainsResult>(domains, (domain) =>
+      edit.mutateAsync({ add: [domain] }),
     )
-    setBusy(false)
-    return results
   }
 
-  async function submit() {
-    setOutcomes(await run(parsed.add))
-  }
+  const submit = handleSubmit(
+    async (values) => {
+      const { domains } = analyzeDomainList(values.domains, claimedBy)
+      setOutcomes(await run(domains))
+    },
+    (invalid) => {
+      setFocus(invalid.app ? 'app' : 'domains')
+    },
+  )
 
   async function retryFailed() {
     const previous = outcomes ?? []
     const failed = previous.filter((o) => !o.ok).map((o) => o.domain)
+    setRetrying(true)
     const retried = await run(failed)
+    setRetrying(false)
     setOutcomes([...previous.filter((o) => o.ok), ...retried])
   }
 
@@ -221,7 +270,12 @@ function AddDomainsBody({
         </p>
         <ul className="max-h-96 divide-y divide-border overflow-auto">
           {outcomes.map((o) => (
-            <ResultRow key={o.domain} appName={appName} outcome={o} />
+            <ResultRow
+              key={o.domain}
+              appName={appName}
+              outcome={o}
+              diagnoseByDefault={outcomes.length === 1}
+            />
           ))}
         </ul>
         <DialogFooter>
@@ -229,12 +283,14 @@ function AddDomainsBody({
             <Button
               type="button"
               variant="outline"
-              disabled={busy}
+              disabled={retrying}
               onClick={() => {
                 void retryFailed()
               }}
             >
-              {t('page.addDialog.retryFailed')}
+              {retrying
+                ? t('page.addDialog.submitting')
+                : t('page.addDialog.retryFailed')}
             </Button>
           ) : null}
           {okCount > 0 ? (
@@ -262,25 +318,50 @@ function AddDomainsBody({
     )
   }
 
-  const canSubmit = appName !== '' && parsed.add.length > 0 && !busy
+  const showLineErrors = Boolean(touchedFields.domains) || isSubmitted
+  const lineIssues = showLineErrors ? analysis.issues : []
+  const domainsError = errors.domains?.message
+  const emptyError = showLineErrors && domainsError === 'empty'
+  const invalid = lineIssues.length > 0 || emptyError
+  const canSubmit = appName !== '' && !isSubmitting
+
+  function reasonText(issue: DomainIssue): string {
+    if (issue.reason === 'claimed') {
+      return issue.owner === appName
+        ? t('page.addDialog.errors.claimedHere')
+        : t('page.addDialog.errors.claimedOther', { app: issue.owner })
+    }
+    return t(`page.addDialog.errors.${issue.reason}`)
+  }
+
   return (
-    <>
+    <form
+      className="space-y-4"
+      noValidate
+      onSubmit={(e) => {
+        void submit(e)
+      }}
+    >
       <DialogHeader>
         <DialogTitle>{t('page.addDialog.title')}</DialogTitle>
         <DialogDescription>{t('page.addDialog.description')}</DialogDescription>
       </DialogHeader>
 
-      <Field>
+      <Field data-invalid={Boolean(errors.app)}>
         <FieldLabel htmlFor="add-domains-app">
           {t('page.addDialog.app')}
         </FieldLabel>
         <Select
           value={appName || null}
           onValueChange={(value) => {
-            setAppName(value ?? '')
+            setValue('app', value ?? '', { shouldValidate: isSubmitted })
           }}
         >
-          <SelectTrigger id="add-domains-app" className="w-full">
+          <SelectTrigger
+            id="add-domains-app"
+            className="w-full"
+            aria-invalid={Boolean(errors.app)}
+          >
             <SelectValue placeholder={t('page.addDialog.appPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
@@ -291,48 +372,51 @@ function AddDomainsBody({
             ))}
           </SelectContent>
         </Select>
+        {errors.app ? (
+          <FieldError>{t('page.addDialog.errors.appRequired')}</FieldError>
+        ) : null}
       </Field>
 
-      <Field>
+      <Field data-invalid={invalid}>
         <FieldLabel htmlFor="add-domains-list">
           {t('page.addDialog.domains')}
         </FieldLabel>
         <Textarea
           id="add-domains-list"
           className="min-h-28 font-mono"
-          value={text}
           placeholder={t('page.addDialog.domainsPlaceholder')}
-          onChange={(e) => {
-            setText(e.target.value)
-          }}
+          aria-invalid={invalid}
+          aria-describedby={
+            invalid ? 'add-domains-errors add-domains-hint' : 'add-domains-hint'
+          }
+          {...register('domains')}
         />
-        <FieldHint>{t('page.addDialog.domainsHint')}</FieldHint>
+        <FieldHint id="add-domains-hint">
+          {t('page.addDialog.domainsHint')}
+        </FieldHint>
+        <div id="add-domains-errors" aria-live="polite">
+          {emptyError ? (
+            <FieldError>{t('page.addDialog.errors.empty')}</FieldError>
+          ) : null}
+          {lineIssues.length > 0 ? (
+            <FieldError>
+              <ul className="space-y-0.5">
+                {lineIssues.map((issue, i) => (
+                  <li key={`${issue.value}-${i}`}>
+                    <span className="font-mono">{issue.value}</span>
+                    <span className="sr-only">{': '}</span>
+                    <span className="ml-2">{reasonText(issue)}</span>
+                  </li>
+                ))}
+              </ul>
+            </FieldError>
+          ) : null}
+        </div>
       </Field>
 
-      <div className="space-y-1 text-xs" aria-live="polite">
-        {parsed.add.length > 0 ? (
-          <p className="text-muted-foreground">
-            {t('page.addDialog.ready', { count: parsed.add.length })}
-          </p>
-        ) : null}
-        {parsed.invalid.length > 0 ? (
-          <p className="text-destructive">
-            {t('page.addDialog.invalid', { list: parsed.invalid.join(', ') })}
-          </p>
-        ) : null}
-        {parsed.duplicates.length > 0 ? (
-          <p className="text-muted-foreground">
-            {t('page.addDialog.duplicates', {
-              list: parsed.duplicates.join(', '),
-            })}
-          </p>
-        ) : null}
-        {parsed.claimed.map((c) => (
-          <p key={c.domain} className="text-amber-700 dark:text-amber-400">
-            {t('page.addDialog.claimed', { domain: c.domain, app: c.app })}
-          </p>
-        ))}
-      </div>
+      <p className="text-xs text-muted-foreground" aria-live="polite">
+        {t('page.addDialog.ready', { count: analysis.domains.length })}
+      </p>
 
       {edit.isError ? (
         <Alert variant="destructive">
@@ -341,17 +425,16 @@ function AddDomainsBody({
       ) : null}
 
       <DialogFooter>
-        <Button
-          type="button"
-          disabled={!canSubmit}
-          onClick={() => void submit()}
-        >
-          {busy
+        <Button type="submit" disabled={!canSubmit}>
+          {isSubmitting ? (
+            <SpinnerGapIcon className="animate-spin" aria-hidden="true" />
+          ) : null}
+          {isSubmitting
             ? t('page.addDialog.submitting')
-            : t('page.addDialog.submit', { count: parsed.add.length })}
+            : t('page.addDialog.submit', { count: analysis.domains.length })}
         </Button>
       </DialogFooter>
-    </>
+    </form>
   )
 }
 

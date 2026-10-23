@@ -51,7 +51,7 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsDeploysGate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cancel":
 		return runAppsDeploysCancel(prog, args[1:], stdout, stderr, lookupEnv)
-	case "rollback-to", "promote":
+	case "rollback-to", "rollback", "promote":
 		return runAppsDeploysRollbackTo(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps deploys subcommand %q\n\n", prog, args[0])
@@ -77,6 +77,7 @@ func appsDeploysUsage(prog string) string {
   %[1]s apps deploys cancel <name> <deploy-id> [flags]            cancel a queued or in-progress deploy before it cuts traffic
   %[1]s apps deploys rollback-to <name> <deploy-id> [flags]       redeploy a past succeeded deploy's exact image, pinned by digest
   %[1]s apps deploys promote <name> <deploy-id> [flags]           alias of rollback-to: make any past succeeded deploy the live one
+  %[1]s apps deploys rollback <name> <deploy-id> [flags]          alias of rollback-to
 
 Run "%[1]s apps deploys <subcommand> -h" for a subcommand's own flags.
 `, prog)

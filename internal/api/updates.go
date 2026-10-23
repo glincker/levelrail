@@ -18,8 +18,6 @@ const githubRepo = "glincker/levelrail"
 // so a busy Settings > Updates page can't risk rate limiting.
 const updatesCacheTTL = time.Hour
 
-var updatesHTTPClient = &http.Client{Timeout: 8 * time.Second}
-
 // githubRelease is the subset of GitHub's release object this handler
 // needs.
 type githubRelease struct {
@@ -98,6 +96,16 @@ func (c *updatesCache) expire() {
 	c.mu.Unlock()
 }
 
+func (c *updatesCache) checkedAt() *string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if !c.fetched {
+		return nil
+	}
+	at := c.fetchedAt.UTC().Format(time.RFC3339)
+	return &at
+}
+
 func (c *updatesCache) set(release *githubRelease) {
 	c.mu.Lock()
 	c.release = release
@@ -122,6 +130,8 @@ type updateStatusResource struct {
 	Channel     string `json:"channel"`
 	// Image is the container image reference an edge build is pulled from.
 	Image *string `json:"image,omitempty"`
+	// CheckedAt is when the release lookup last succeeded (stable channel).
+	CheckedAt *string `json:"checked_at,omitempty"`
 }
 
 // handleGetUpdates handles GET /api/v1/updates: the running version
@@ -161,6 +171,7 @@ func (rt *Router) handleGetUpdates(w http.ResponseWriter, r *http.Request) {
 				resp.UpdateAvailable = false
 			}
 			rt.warmTrustRoot(resp.UpdateAvailable)
+			resp.CheckedAt = rt.updatesCache.checkedAt()
 		}
 		writeJSON(w, http.StatusOK, resp)
 		return

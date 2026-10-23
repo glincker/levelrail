@@ -42,6 +42,20 @@
         "replicas": { "type": "integer", "minimum": 1 },
         "strategy": { "enum": ["rolling", "recreate", "blue-green", "canary"] },
         "canary": { "$ref": "#/$defs/canary" },
+        "contexts": {
+          "type": "object",
+          "propertyNames": { "pattern": "^(deploy-preview|branch-deploy|branch:.+)$" },
+          "additionalProperties": { "$ref": "#/$defs/contextConfig" }
+        },
+        "routes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/route" }
+        },
+        "headers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/headerRule" }
+        },
+        "static": { "$ref": "#/$defs/staticOptions" },
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
@@ -69,6 +83,66 @@
           "items": { "type": "string", "minLength": 1 },
           "minItems": 1
         }
+      }
+    },
+    "contextConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "build": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "command": { "type": "string" },
+            "publish": { "type": "string" },
+            "args": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "route": {
+      "type": "object",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "from": { "type": "string", "pattern": "^/" },
+        "to": { "type": "string", "minLength": 1 },
+        "status": { "enum": [200, 301, 302, 303, 307, 308, 404, 410, 451] },
+        "force": { "type": "boolean" },
+        "query": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "headerRule": {
+      "type": "object",
+      "required": ["path"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "pattern": "^/" },
+        "values": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "remove": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "staticOptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "spa": { "type": "boolean" },
+        "cleanUrls": { "type": "boolean" },
+        "trailingSlash": { "enum": ["off", "add", "remove"] },
+        "notFound": { "type": "string", "minLength": 1 }
       }
     },
     "canary": {
@@ -256,11 +330,18 @@
         "type": { "enum": ["dockerfile", "compose", "railpack", "static", "image"] },
         "path": { "type": "string", "minLength": 1 },
         "baseDirectory": { "type": "string", "minLength": 1 },
+        "command": { "type": "string", "minLength": 1 },
+        "publish": { "type": "string", "minLength": 1 },
         "image": { "type": "string", "minLength": 1 },
         "registryCredential": { "type": "string", "minLength": 1 },
         "args": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "secrets": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
         }
       }
     },

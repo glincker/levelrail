@@ -127,7 +127,7 @@ describe('LoadBalancerOverview', () => {
     stubFetch([], [{ name: 'api' }, { name: 'web' }])
     renderPage()
 
-    expect(await screen.findByText('No load balancers yet')).toBeTruthy()
+    expect(await screen.findByTestId('page-banner-full')).toBeTruthy()
     await userEvent.click(
       screen.getByRole('button', { name: 'Configure a load balancer' }),
     )

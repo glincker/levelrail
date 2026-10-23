@@ -1,4 +1,9 @@
 import { ApiError } from './apiError'
+import {
+  applyDeployOptions,
+  type DeployOptionsValue,
+  type OptionOutcome,
+} from './deployOptions'
 import { createApp } from '../queries/apps'
 import { createAppConnection } from '../queries/appConnections'
 import { createDatabase, fetchDatabase } from '../queries/databases'
@@ -6,9 +11,7 @@ import { triggerBuild } from '../queries/builds'
 import { setGitSource } from '../queries/gitSources'
 import { setGitBuild } from '../queries/gitBuildSettings'
 import { connectGitHubRepoAsSource } from '../queries/githubApp'
-import { connectGitLabProjectAsSource } from '../queries/gitlabApp'
-import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
-import { connectGiteaRepoAsSource } from '../queries/giteaApp'
+import { connectRepoAsSource } from '../queries/gitConnections'
 import type { ImportAnalysis } from '../queries/importAnalyze'
 import type { NormalizedRepoOption } from './gitRepoOptions'
 import type { GitSourceBuildType } from '../types/gitSource'
@@ -36,6 +39,8 @@ export interface DatabaseEdit {
   name: string
   envVar: string
   field: string
+  /** Set when a backup destination exists: daily dump is scheduled after create. */
+  backup?: { targetId: string; schedule: string; retain: number }
 }
 
 export interface NewAppEdits {
@@ -50,6 +55,8 @@ export interface NewAppEdits {
   /** Operator-typed env values; the repository's own values are never read. */
   env: Record<string, string>
   databases: DatabaseEdit[]
+  /** Applied after the app exists, see applyDeployOptions. */
+  deployOptions?: DeployOptionsValue
 }
 
 export type ChangeKind = 'app' | 'source' | 'database' | 'domain' | 'env'
@@ -203,13 +210,9 @@ async function connectSource(
       await connectGitHubRepoAsSource(ref.owner, ref.repo, base)
       break
     case 'gitlab':
-      await connectGitLabProjectAsSource(ref.projectId, base)
-      break
     case 'bitbucket':
-      await connectBitbucketRepoAsSource(ref.workspace, ref.repoSlug, base)
-      break
     case 'gitea':
-      await connectGiteaRepoAsSource(ref.owner, ref.repo, base)
+      await connectRepoAsSource(ref.connectionId, { ...base, repo: ref.repo })
       break
     default:
       await setGitSource(appName, {
@@ -238,12 +241,25 @@ async function ensureDatabase(d: DatabaseEdit): Promise<void> {
   } catch (err) {
     if (!(err instanceof ApiError) || err.status !== 404) throw err
   }
-  await createDatabase({ name: d.name, engine: d.engine, version: d.version })
+  await createDatabase({
+    name: d.name,
+    engine: d.engine,
+    version: d.version,
+    ...(d.backup
+      ? {
+          backup_target_id: d.backup.targetId,
+          backup_schedule: d.backup.schedule,
+          backup_retain: d.backup.retain,
+        }
+      : {}),
+  })
 }
 
 export interface ApplyResult {
   appName: string
   deployId: string
+  /** Outcome of each chosen deploy option; empty when none were chosen. */
+  options: OptionOutcome[]
 }
 
 /**
@@ -310,7 +326,10 @@ export async function applyNewApp(
     })
     if (!built.id)
       throw new Error('the build did not return a deploy attempt id')
-    return { appName: e.name, deployId: built.id }
+    const options = e.deployOptions
+      ? await applyDeployOptions(e.name, e.deployOptions)
+      : []
+    return { appName: e.name, deployId: built.id, options }
   } catch (err) {
     throw new ApplyStepError(step, err, appCreated)
   }

@@ -13,6 +13,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/components/ui/toast'
 import { GitBuildSuggestions } from './GitBuildSuggestions'
 import { GitWorkspacePackages } from './GitWorkspacePackages'
+import { StaticBuildFields } from './StaticBuildFields'
+import { staticBuildMismatch, type StaticBuildValue } from '../lib/staticBuild'
 import { useSetGitDeploySettings } from '../queries/gitDeploySettings'
 import {
   useGitBuildDetection,
@@ -60,6 +62,10 @@ export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
   const [baseDirectory, setBaseDirectory] = useState(
     source.base_directory ?? '',
   )
+  const [staticBuild, setStaticBuild] = useState<StaticBuildValue>({
+    command: source.build_command ?? '',
+    publish: source.publish_dir ?? '',
+  })
   const [serverError, setServerError] = useState<string | null>(null)
 
   const watchRoot =
@@ -83,6 +89,10 @@ export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
     setBuildType(source.build_type)
     setDockerfile(source.build_path ?? '')
     setBaseDirectory(source.base_directory ?? '')
+    setStaticBuild({
+      command: source.build_command ?? '',
+      publish: source.publish_dir ?? '',
+    })
     setServerError(null)
     setEditing(true)
   }
@@ -91,6 +101,8 @@ export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
     build_type: GitSourceBuildType
     build_path: string
     base_directory: string
+    build_command?: string
+    publish_dir?: string
   }) {
     setServerError(null)
     save.mutate(req, {
@@ -224,7 +236,18 @@ export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
       <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-sm">
         <dt className="text-muted-foreground">{t('summary.buildPack')}</dt>
         <dd>{t(`packs.${source.build_type}`)}</dd>
-        {source.build_type === 'static' ? (
+        {source.build_type === 'static' && source.build_command ? (
+          <>
+            <dt className="text-muted-foreground">
+              {t('summary.buildCommand')}
+            </dt>
+            <dd className="font-mono">{source.build_command}</dd>
+            <dt className="text-muted-foreground">
+              {t('summary.publishDirectory')}
+            </dt>
+            <dd className="font-mono">{source.publish_dir}</dd>
+          </>
+        ) : source.build_type === 'static' ? (
           <>
             <dt className="text-muted-foreground">
               {t('summary.outputDirectory')}
@@ -262,7 +285,21 @@ export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
             <Tabs
               value={buildType}
               onValueChange={(v: unknown) => {
-                if (isBuildType(v)) setBuildType(v)
+                if (!isBuildType(v)) return
+                setBuildType(v)
+                const inferred = detection.data?.static_build
+                if (
+                  v === 'static' &&
+                  inferred &&
+                  !staticBuild.command &&
+                  !staticBuild.publish &&
+                  !dockerfile
+                ) {
+                  setStaticBuild({
+                    command: inferred.command,
+                    publish: inferred.publish_dir,
+                  })
+                }
               }}
             >
               <TabsList id="git-build-type" className="grid w-full grid-cols-3">
@@ -279,7 +316,17 @@ export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
             </Tabs>
           </Field>
 
-          {buildType !== 'railpack' ? (
+          {buildType === 'static' ? (
+            <StaticBuildFields
+              value={staticBuild}
+              suggestion={detection.data?.static_build}
+              disabled={save.isPending}
+              onChange={setStaticBuild}
+            />
+          ) : null}
+
+          {buildType === 'dockerfile' ||
+          (buildType === 'static' && !staticBuild.command.trim()) ? (
             <Field>
               <FieldLabel htmlFor="git-build-dockerfile">
                 {buildType === 'static'
@@ -369,12 +416,21 @@ export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
             <Button
               type="button"
               size="sm"
-              disabled={save.isPending || problem !== null}
+              disabled={
+                save.isPending ||
+                problem !== null ||
+                (buildType === 'static' && staticBuildMismatch(staticBuild))
+              }
               onClick={() => {
+                const built =
+                  buildType === 'static' && staticBuild.command.trim() !== ''
                 persist({
                   build_type: buildType,
-                  build_path: buildType === 'railpack' ? '' : dockerfile.trim(),
+                  build_path:
+                    buildType === 'railpack' || built ? '' : dockerfile.trim(),
                   base_directory: baseDirectory.trim(),
+                  build_command: built ? staticBuild.command.trim() : '',
+                  publish_dir: built ? staticBuild.publish.trim() : '',
                 })
               }}
             >

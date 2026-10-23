@@ -143,6 +143,8 @@ export interface TokenResource {
   // Server the token is bound to and the address it was last seen from.
   instance_id?: string
   last_ip?: string
+  // Seeded from the dev fixtures file by a dev-mode server; never set in release builds.
+  dev_fixture?: boolean
 }
 
 export interface CreateTokenRequest {

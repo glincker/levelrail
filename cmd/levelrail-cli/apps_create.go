@@ -37,7 +37,6 @@ type createFlags struct {
 	imageRepo  string
 	file       string
 	service    string
-	yes        bool
 	jsonOut    bool
 	outputFlag string
 	queryFlag  string
@@ -858,8 +857,6 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.Var(stringMapFlag(f.secrets), "secret", "secret env var value as KEY=VALUE, repeatable; stored via envelope-encrypted secret storage as part of this same create call (any path above), same value-on-the-command-line convention \"apps secrets set\" already uses")
 	f.vaultSecrets = make(map[string]appVaultEnvRef)
 	fs.Var(vaultEnvFlag(f.vaultSecrets), "vault-secret", "env var resolved live from an external Vault instance as KEY=path#field, repeatable; requires \"levelrail-cli vault set\" to have configured vault on this control plane, mutually exclusive per key with --secret")
-	fs.BoolVar(&f.yes, "yes", false, "accept defaults without prompting (reserved: no-op outside --interactive, accepted for forward compatibility and script portability)")
-	fs.BoolVar(&f.yes, "y", false, "shorthand for --yes")
 	fs.BoolVar(&f.interactive, "interactive", false, "run a step-by-step wizard instead of specifying flags: prompts for name, source, port, domain, health check, resource limits, and optionally more services, then writes app.yaml or calls the API")
 	fs.BoolVar(&f.interactive, "i", false, "shorthand for --interactive")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the created app as JSON to stdout and nothing else")
@@ -883,6 +880,15 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 // reportError writes err to stderr, and to stdout as a JSON error object when jsonOut is set. Writers are passed in so it is testable.
 func reportError(stdout, stderr io.Writer, jsonOut bool, err error) int {
 	_, _ = fmt.Fprintln(stderr, err)
+	var apiErr *apiError
+	if errors.As(err, &apiErr) {
+		if apiErr.Fix != "" {
+			_, _ = fmt.Fprintf(stderr, "fix: %s\n", apiErr.Fix)
+		}
+		if apiErr.RequestID != "" {
+			_, _ = fmt.Fprintf(stderr, "request id: %s\n", apiErr.RequestID)
+		}
+	}
 	if jsonOut {
 		if jerr := writeJSONError(stdout, err); jerr != nil {
 			_, _ = fmt.Fprintln(stderr, jerr)
@@ -900,7 +906,7 @@ func appsCreateUsage(prog string) string {
 
 Creates an app, either by registering an existing image, or by
 triggering a real build from a git repository. Flags present skip any
-corresponding prompt; flags absent (outside --json/--yes/--interactive)
+corresponding prompt; flags absent (outside --json/--interactive)
 fail with a clear error rather than prompting, so this command behaves
 the same whether a human or a script is driving it, unless --interactive
 is given.
@@ -981,7 +987,6 @@ Common flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the result as JSON to stdout, nothing else
-  --yes, -y                accept defaults without prompting (reserved, currently a no-op)
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help

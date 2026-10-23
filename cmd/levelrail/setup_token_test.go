@@ -39,7 +39,7 @@ func TestRunSetupToken(t *testing.T) {
 	if err != nil || token == "" {
 		t.Fatalf("ReadSetupToken() = %q, %v", token, err)
 	}
-	want := "http://203.0.113.7:9090/login?setup=" + token
+	want := "http://203.0.113.7:9090/login#setup=" + token
 	if !strings.Contains(first.String(), token) || !strings.Contains(first.String(), want) {
 		t.Errorf("output = %q, want token and %s", first.String(), want)
 	}

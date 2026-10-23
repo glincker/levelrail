@@ -69,6 +69,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -80,6 +81,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/staticroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -114,6 +116,7 @@ type ServiceStore interface {
 	// DNS-01 provider an operator can enable through PUT
 	// /api/v1/settings/route53-dns (internal/api).
 	GetRoute53DNSSettings(ctx context.Context) (store.Route53DNSSettings, error)
+	GetGoogleCloudDNSSettings(ctx context.Context) (store.GoogleCloudDNSSettings, error)
 	// ListDomainBasicAuth returns every domain currently protected by
 	// HTTP Basic Auth (store.DomainBasicAuth, migrations/0052), read
 	// fresh every Reconcile like everything else on this interface: an
@@ -207,6 +210,12 @@ type Route53DNSCredentialResolver interface {
 	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
 }
 
+// GoogleCloudDNSKeyResolver resolves the Cloud DNS service account JSON.
+// *secrets.Manager satisfies it structurally.
+type GoogleCloudDNSKeyResolver interface {
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+}
+
 // DomainBasicAuthPasswordResolver is the narrow surface this controller
 // needs from internal/secrets.Manager to resolve a domain's basic-auth
 // password, structurally identical to CloudflareDNSTokenResolver but
@@ -278,6 +287,11 @@ type Controller struct {
 	// lastDial keeps each service's last resolved backend so a Docker API outage keeps routes instead of dropping them.
 	lastDial sync.Map
 
+	// listing shares one local container listing across a single Reconcile.
+	listing atomic.Pointer[containerListing]
+	// inspected holds the local service containers read in one call at the start of a Reconcile.
+	inspected atomic.Pointer[docker.InspectSet]
+
 	serverName     string
 	requestStats   bool
 	firewall       bool
@@ -289,9 +303,10 @@ type Controller struct {
 	adminListen          string
 	storageDir           string
 
-	hardening *ingress.Hardening
-	inherited *ingress.InheritedSockets
-	holds     *ingress.HoldTracker
+	hardening    *ingress.Hardening
+	abuseApplied abuseApplied
+	inherited    *ingress.InheritedSockets
+	holds        *ingress.HoldTracker
 
 	modelHosts ModelHostSource // nil is valid: no model routes, see WithModelHosts
 
@@ -351,6 +366,10 @@ type Controller struct {
 	// provider is active per reconcile pass, there is no per-domain
 	// provider selection yet.
 	route53Creds Route53DNSCredentialResolver
+
+	// gcdKeys, if set via WithGoogleCloudDNSKey, enables Cloud DNS DNS-01.
+	// It ranks after Cloudflare and Route53 in resolveDNSProvider.
+	gcdKeys GoogleCloudDNSKeyResolver
 
 	// basicAuthSecrets, if set via WithDomainBasicAuthSecrets, is
 	// resolved fresh every Reconcile pass for every domain returned by
@@ -589,6 +608,12 @@ func WithRoute53DNSCredentials(resolver Route53DNSCredentialResolver) Option {
 	return func(c *Controller) { c.route53Creds = resolver }
 }
 
+// WithGoogleCloudDNSKey enables Google Cloud DNS DNS-01 for wildcard
+// domains whenever store.GoogleCloudDNSSettings.Enabled is true.
+func WithGoogleCloudDNSKey(resolver GoogleCloudDNSKeyResolver) Option {
+	return func(c *Controller) { c.gcdKeys = resolver }
+}
+
 // WithDomainBasicAuthSecrets enables HTTP Basic Auth on any domain
 // present in store.DomainBasicAuth by resolving its password through
 // internal/secrets.Manager under store.DomainBasicAuthSecretsKey(domain).
@@ -695,10 +720,14 @@ func (c *Controller) Name() string { return "ingress" }
 // an error.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	c.issues.reset()
+	c.listing.Store(&containerListing{})
+	defer c.listing.Store(nil)
 	services, err := c.store.ListDesiredServices(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list desired services: %w", err)
 	}
+	c.inspected.Store(docker.FetchInspectSet(ctx, c.runtime, c.localTargets(services)))
+	defer c.inspected.Store(nil)
 	staticSites, err := c.store.ListStaticSites(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list static sites: %w", err)
@@ -784,7 +813,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
 	canaries := c.activeCanaries(ctx, services)
 	envDomainSets := c.environmentDomainSets(ctx)
-	maintenanceSettings, err = c.applySpendCaps(ctx, services, envDomainSets, settings.FallbackDomainsDisabled, now, maintenanceByDomain, maintenanceSettings, wafByDomain)
+	fallbackResolver := ingress.LoadFallbackResolver(ctx, c.store, c.publicHost)
+	maintenanceSettings, err = c.applySpendCaps(ctx, services, envDomainSets, settings.FallbackDomainsDisabled, fallbackResolver, now, maintenanceByDomain, maintenanceSettings, wafByDomain)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: apply spend caps: %w", err)
 	}
@@ -807,7 +837,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			if settings.FallbackDomainsDisabled {
 				continue
 			}
-			fallback, ok := ingress.FallbackDomain(c.publicHost, svc.Name)
+			fallback, ok := fallbackResolver.Domain(svc.Name)
 			if !ok {
 				continue
 			}
@@ -952,6 +982,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if routes, err = c.applyTrafficPolicies(ctx, routes, claimedHosts, settings, tlsCertOverrides, sleeping); err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain traffic policies: %w", err)
 	}
+	routes = c.applyAbusePolicies(ctx, routes, claimedHosts, settings)
 	if routes, err = c.applyAuthGates(ctx, routes); err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain auth gates: %w", err)
 	}
@@ -978,7 +1009,12 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		for _, host := range site.Domains {
 			claimedHosts[host] = site.Name
 		}
-		staticRoutes = append(staticRoutes, ingress.StaticRoute{Hosts: site.Domains, RootDir: site.RootDir})
+		rules, rulesErr := staticroutes.LoadSidecar(site.RootDir)
+		if rulesErr != nil {
+			c.logger.WarnContext(ctx, "ingress: static site routing rules unreadable, serving files without them",
+				slog.String("static_site", site.Name), slog.String("error", rulesErr.Error()))
+		}
+		staticRoutes = append(staticRoutes, ingress.StaticRoute{Hosts: site.Domains, RootDir: site.RootDir, Rules: rules})
 	}
 
 	// Platform primary domain (store.IngressSettings.PrimaryDomain): one
@@ -1077,6 +1113,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		HTTPRedirect:         c.httpRedirect && !settings.TLSTerminatedUpstream,
 		FallbackCertLifetime: fallbackLifetimeString(c.fallbackCertLifetime),
 		PlainHTTP:            settings.TLSTerminatedUpstream,
+		HTTPBindHost:         hostFromAddr(c.httpListenAddr),
 		Routes:               routes,
 		StaticRoutes:         staticRoutes,
 		MaintenanceRoutes:    maintenanceRoutes,
@@ -1146,6 +1183,15 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	return reconcile.Result{Conditions: conditions}, nil
 }
 
+// hostFromAddr is addr's host part, empty for ":80" or an unparseable addr.
+func hostFromAddr(addr string) string {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return ""
+	}
+	return host
+}
+
 // httpPortFromAddr extracts the numeric port from addr (a Caddy-style
 // network address, e.g. ":80" or "0.0.0.0:8080") for
 // ingress.RoutesOptions.HTTPPort. An unparseable addr degrades to 0
@@ -1191,7 +1237,35 @@ func (c *Controller) resolveDNSProvider(ctx context.Context) ingress.DNS01Provid
 	if p := c.resolveCloudflareDNSProvider(ctx); p != nil {
 		return p
 	}
-	return c.resolveRoute53DNSProvider(ctx)
+	if p := c.resolveRoute53DNSProvider(ctx); p != nil {
+		return p
+	}
+	return c.resolveGoogleCloudDNSProvider(ctx)
+}
+
+// resolveGoogleCloudDNSProvider follows the same fail-to-nil rule as the
+// other providers: a bad key must not block the whole reconcile.
+func (c *Controller) resolveGoogleCloudDNSProvider(ctx context.Context) ingress.DNS01Provider {
+	if c.gcdKeys == nil {
+		return nil
+	}
+	settings, err := c.store.GetGoogleCloudDNSSettings(ctx)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: get google cloud dns settings failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
+		return nil
+	}
+	if !settings.Enabled {
+		return nil
+	}
+	key, err := c.gcdKeys.Resolve(ctx, store.GoogleCloudDNSSecretsKey(), store.GoogleCloudDNSKeyEnvKey)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: resolve google cloud dns key failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
+		return nil
+	}
+	if key == "" {
+		return nil
+	}
+	return ingress.GoogleCloudDNSProvider{Name: "googleclouddns", ServiceAccountJSON: key}
 }
 
 // resolveCloudflareDNSProvider returns the Cloudflare DNS-01 provider for
@@ -1272,7 +1346,7 @@ func (c *Controller) resolveRoute53DNSProvider(ctx context.Context) ingress.DNS0
 func (c *Controller) dialForService(ctx context.Context, svc store.DesiredService, targetReady bool) (string, bool) {
 	target := application.ContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce)
 
-	state, err := c.runtime.InspectByName(ctx, target)
+	state, err := c.inspectLocal(ctx, target)
 	if err != nil {
 		c.logger.WarnContext(ctx, "ingress: inspecting service container failed, keeping the last known backend",
 			slog.String("service", svc.Name), slog.String("container", target), slog.String("error", err.Error()))
@@ -1366,7 +1440,7 @@ func dialAddr(state *docker.ContainerState) (string, bool) {
 // dialPreviousRelease finds another running, ported container for
 // serviceName besides exclude, to keep serving while exclude isn't ready.
 func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName, exclude string) (string, bool) {
-	containers, err := c.runtime.ListByPrefix(ctx, serviceName+"-")
+	containers, err := c.listLocal(ctx, serviceName+"-")
 	if err != nil {
 		c.logger.WarnContext(ctx, "ingress: list previous release containers failed",
 			slog.String("service", serviceName), slog.String("error", err.Error()))

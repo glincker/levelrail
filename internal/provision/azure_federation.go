@@ -33,6 +33,7 @@ import (
 type azureFederatedTokenSource struct {
 	tenantID, clientID, tokenFile string
 	httpClient                    *http.Client
+	scope, tokenURL               string
 }
 
 func newAzureFederatedTokenSource(cred azureCredential) oauth2.TokenSource {
@@ -41,10 +42,14 @@ func newAzureFederatedTokenSource(cred azureCredential) oauth2.TokenSource {
 		clientID:   cred.ClientID,
 		tokenFile:  cred.FederatedTokenFile,
 		httpClient: &http.Client{Timeout: requestTimeout},
+		scope:      "https://management.azure.com/.default",
 	}
 }
 
 func (s *azureFederatedTokenSource) Token() (*oauth2.Token, error) {
+	if s.tokenURL != "" {
+		return s.tokenFromEndpoint(s.tokenURL)
+	}
 	return s.tokenFromEndpoint("https://login.microsoftonline.com/" + s.tenantID + "/oauth2/v2.0/token")
 }
 
@@ -62,7 +67,7 @@ func (s *azureFederatedTokenSource) tokenFromEndpoint(tokenURL string) (*oauth2.
 		"client_id":             {s.clientID},
 		"client_assertion_type": {"urn:ietf:params:oauth:client-assertion-type:jwt-bearer"},
 		"client_assertion":      {strings.TrimSpace(string(assertion))},
-		"scope":                 {"https://management.azure.com/.default"},
+		"scope":                 {s.scope},
 	}
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, tokenURL, strings.NewReader(form.Encode()))
 	if err != nil {

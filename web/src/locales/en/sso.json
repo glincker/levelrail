@@ -245,5 +245,53 @@
       "failedBody": "The provider or the redirect failed (code {{code}}). Check the client ID, client secret and redirect URL, then try again.",
       "nothingCreated": "Nothing was created: no account, role or session."
     }
+  },
+  "saml": {
+    "test": {
+      "button": "Test sign-in",
+      "hint": "Opens the real sign-in at your identity provider and shows what it sent and what a sign-in would do. It creates no account, role or session. Save your changes first.",
+      "allowed": "This sign-in would be allowed",
+      "refused": "This sign-in would be refused",
+      "email": "Email",
+      "none": "none",
+      "fixed": "Connection updated. Run the test again.",
+      "fixManual": "Fix at the identity provider",
+      "failureCode": "Code: {{code}}",
+      "issue": {
+        "no_groups_claim": "The response carries no \"{{attribute}}\" attribute, so everyone gets the default role. Add a group attribute statement at your identity provider and set its name as the groups attribute.",
+        "domain_not_allowed": "This email domain is not claimed by the connection.",
+        "not_provisioned": "No account exists for this person and account creation is off.",
+        "role_grants_root": "The role this sign-in would get holds root, or no longer exists. A claim can never grant root.",
+        "no_email": "The response carried no email address. Check the email attribute name and the NameID format.",
+        "wrong_claim_name": "The response carries no \"{{attribute}}\" attribute. Check the groups attribute name against what the identity provider sends.",
+        "email_unverified": "The identity provider did not vouch for this email address."
+      },
+      "failure": {
+        "clock_skew": {
+          "title": "Clock skew",
+          "step": "The assertion was outside its validity window. Check that the clocks of this server and the identity provider agree within three minutes (NTP), then try again."
+        },
+        "audience_mismatch": {
+          "title": "Audience mismatch",
+          "step": "The identity provider addressed another service provider. Set its audience (entity ID) to {{entityId}} and its ACS URL to {{acs}}."
+        },
+        "signature_invalid": {
+          "title": "Signature invalid",
+          "step": "The assertion is not signed by the certificate on file. Import the identity provider metadata again, and make sure it signs the assertion, not only the response."
+        },
+        "request_mismatch": {
+          "title": "Response does not match the request",
+          "step": "The response answered another request or destination. Start the test again from this page, and check the ACS URL {{acs}} at the identity provider."
+        },
+        "response_invalid": {
+          "title": "Response refused",
+          "step": "The response could not be verified. Check the identity provider logs, then import its metadata again."
+        },
+        "saml_unavailable": {
+          "title": "Sign-in is not available",
+          "step": "SAML needs an https dashboard URL and the control plane master key. Fix both under Settings, General, then try again."
+        }
+      }
+    }
   }
 }

@@ -4,7 +4,6 @@ import { PageSpinner } from '@/components/ui/page-spinner'
 import { DocsRenderer } from '../../components/DocsRenderer'
 import { DocsPageToolbar } from '../../components/DocsPageToolbar'
 import { OfflineDocsNotice } from '../../components/OfflineDocsNotice'
-import { loadDocContent } from '../../lib/docsContent'
 import { loadDocsManifest } from '../../lib/docsManifestLoader'
 import { useBrand } from '../../hooks/useBrand'
 
@@ -17,6 +16,7 @@ export const Route = createFileRoute('/help/$')({
     const routePath = `/${params._splat ?? ''}`
     const page = manifest.pages[routePath]
     if (!page) return { routePath, manifest, page: null, content: null }
+    const { loadDocContent } = await import('../../lib/docsContent')
     const content = await loadDocContent(page.file)
     return { routePath, manifest, page, content }
   },

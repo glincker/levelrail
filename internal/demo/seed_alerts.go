@@ -3,6 +3,8 @@ package demo
 import (
 	"context"
 	"fmt"
+	"slices"
+	"sort"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -46,7 +48,7 @@ func alertRules() []ruleSpec {
 // history of fired and resolved events with one rule firing now.
 func SeedAlerting(ctx context.Context, adb *alerting.DB, opts Options) error {
 	anchor := opts.Anchor.UTC()
-	story := storyFor(anchor)
+	story := storyFor(anchor, opts.calm())
 	r := newRNG(opts.Seed ^ 0xa1e7)
 
 	channels := []alerting.NotificationChannel{
@@ -93,12 +95,18 @@ func SeedAlerting(ctx context.Context, adb *alerting.DB, opts Options) error {
 			time.Duration(8+r.intn(50)) * time.Minute,
 		})
 	}
-	events = append(events, fired{diskRule, "", "worker-sgp-1", "worker-sgp-1 disk 82 percent", story.diskFired, 0})
+	if story.calm {
+		events = slices.DeleteFunc(events, func(e fired) bool { return e.app == crashloopApp })
+	} else {
+		events = append(events, fired{diskRule, "", "worker-sgp-1", "worker-sgp-1 disk 82 percent", story.diskFired, 0})
+	}
 
 	names := map[string]alerting.Rule{}
 	for _, s := range specs {
 		names[s.id] = alerting.Rule{ID: s.id, Name: s.name, Kind: s.rule.Kind, ResourceID: s.resource, Severity: s.severity, ChannelID: s.channel}
 	}
+	// History dedupe reads the last row by time, so seed in time order.
+	sort.SliceStable(events, func(i, j int) bool { return events[i].at.Before(events[j].at) })
 	for i, e := range events {
 		rule := names[e.rule]
 		base := alerting.HistoryEntry{
@@ -121,6 +129,9 @@ func SeedAlerting(ctx context.Context, adb *alerting.DB, opts Options) error {
 		if err := adb.RecordHistory(ctx, resolve); err != nil {
 			return err
 		}
+	}
+	if story.calm {
+		return nil
 	}
 	value := 82.0
 	firingSince := story.diskFired

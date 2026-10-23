@@ -88,7 +88,11 @@ func (m *PITRMaintainer) Prune(ctx context.Context, databaseName, containerName 
 	if oldestKept.LSN == "" {
 		return nil
 	}
-	if err := PruneWALArchive(ctx, m.Runtime, containerName, oldestKept.LSN); err != nil {
+	prune := PruneWALArchive
+	if IsBinlogCoordinate(oldestKept.LSN) {
+		prune = PruneBinlogArchive
+	}
+	if err := prune(ctx, m.Runtime, containerName, oldestKept.LSN); err != nil {
 		return fmt.Errorf("prune wal archive for %q: %w", databaseName, err)
 	}
 	m.pruneRemoteWAL(ctx, databaseName, oldestKept)
@@ -106,7 +110,11 @@ func (m *PITRMaintainer) pruneRemoteWAL(ctx context.Context, databaseName string
 		m.log().Warn("backup: remote wal prune skipped", slog.String("database", databaseName), slog.String("error", err.Error()))
 		return
 	}
-	if _, err := PruneRemoteWAL(ctx, dest, m.Lister, m.Deleter, databaseName, oldestKept.LSN); err != nil {
+	pruneRemote := PruneRemoteWAL
+	if IsBinlogCoordinate(oldestKept.LSN) {
+		pruneRemote = PruneRemoteBinlogs
+	}
+	if _, err := pruneRemote(ctx, dest, m.Lister, m.Deleter, databaseName, oldestKept.LSN); err != nil {
 		m.log().Warn("backup: remote wal prune failed", slog.String("database", databaseName), slog.String("error", err.Error()))
 	}
 }

@@ -8,6 +8,16 @@ import (
 
 // Top-level because it reports the control plane's own Docker reachability, not a per-node signal.
 func runStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) > 0 {
+		switch args[0] {
+		case "silence":
+			return runStatusSilence(prog, args[1:], stdout, stderr, lookupEnv)
+		case "silences":
+			return runStatusSilences(prog, args[1:], stdout, stderr, lookupEnv)
+		case "unsilence":
+			return runStatusUnsilence(prog, args[1:], stdout, stderr, lookupEnv)
+		}
+	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "status", "print status as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, statusUsage(prog)) }
 

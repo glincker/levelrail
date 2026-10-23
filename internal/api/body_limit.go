@@ -28,7 +28,7 @@ func (rt *Router) bodyLimitMiddleware(next http.Handler) http.Handler {
 		enginePrefix = rt.authEngine.Prefix()
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if isGitPushUpload(r.URL.Path) {
+		if isGitPushUpload(r.URL.Path) || isSourceUpload(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -51,6 +51,16 @@ func isGitPushUpload(path string) bool {
 	}
 	repo, tail, ok := strings.Cut(rest, "/")
 	return ok && repo != "" && tail == gitReceivePackService
+}
+
+// isSourceUpload is the route whose archive body the handler bounds itself with APP_UPLOAD_MAX_BYTES, after auth.
+func isSourceUpload(r *http.Request) bool {
+	rest, ok := strings.CutPrefix(r.URL.Path, "/api/v1/apps/")
+	if !ok || r.Method != http.MethodPost {
+		return false
+	}
+	app, tail, ok := strings.Cut(rest, "/")
+	return ok && app != "" && tail == "uploads"
 }
 
 func isPreAuthPath(path, enginePrefix string) bool {

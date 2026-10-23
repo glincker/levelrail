@@ -24,15 +24,15 @@ var defaultCertMarkers = []struct{ marker, proxy string }{
 // hstsPreloadedTLDs are whole TLDs in the browsers' HSTS preload list.
 var hstsPreloadedTLDs = []string{"app", "bank", "boo", "dad", "day", "dev", "esq", "foo", "gle", "ing", "insurance", "meme", "mov", "new", "nexus", "page", "phd", "prof", "rsvp", "zip"}
 
-func (rn *run) decideProbe(context.Context) Check {
+func (rn *run) decideProbe() {
 	if len(rn.facts.ServerIPs) == 0 {
 		rn.report.ProbeNote = "this server's public address is unknown, so the doctor did not connect to the domain; set APP_PUBLIC_HOST"
-		return Check{}
+		return
 	}
 	here := intersect(rn.resolved, rn.facts.ServerIPs)
 	if len(here) == 0 {
 		rn.report.ProbeNote = "the domain does not resolve to this server, so the doctor only ran DNS checks; it never connects to addresses other than this server's own"
-		return Check{}
+		return
 	}
 	rn.probeIP = here[0]
 	for _, ip := range here {
@@ -42,7 +42,6 @@ func (rn *run) decideProbe(context.Context) Check {
 		}
 	}
 	rn.report.Probed = true
-	return Check{}
 }
 
 func (rn *run) notProbed(c Check) Check {

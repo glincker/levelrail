@@ -30,6 +30,10 @@ type jsonError struct {
 	HTTPStatus int    `json:"http_status,omitempty"`
 	RetryAfter string `json:"retry_after,omitempty"`
 	Hint       string `json:"hint,omitempty"`
+	// APICode is the server's own code; Code stays the CLI category scripts already use.
+	APICode   string `json:"api_code,omitempty"`
+	RequestID string `json:"request_id,omitempty"`
+	Fix       string `json:"fix,omitempty"`
 }
 
 func errorCodeFor(status int) (code, hint string) {
@@ -60,6 +64,7 @@ func newJSONError(err error) jsonError {
 	switch {
 	case errors.As(err, &apiErr):
 		out.HTTPStatus = apiErr.StatusCode
+		out.APICode, out.RequestID, out.Fix = apiErr.Code, apiErr.RequestID, apiErr.Fix
 		out.Code, out.Hint = errorCodeFor(apiErr.StatusCode)
 		if apiErr.RetryAfter > 0 {
 			out.RetryAfter = apiErr.RetryAfter.Round(time.Second).String()

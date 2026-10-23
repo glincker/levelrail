@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"time"
 
@@ -85,6 +86,12 @@ func WithEmailSecrets(s EmailSecretsStore) Option {
 	return func(rt *Router) { rt.emailSecrets = s }
 }
 
+// WithTrafficExport enables sink writes (secrets) and the status and test routes.
+// Either argument may be nil: writes then return 501, as do status and test.
+func WithTrafficExport(secrets TrafficExportSecrets, exporter TrafficExporter) Option {
+	return func(rt *Router) { rt.trafficExportSecrets, rt.trafficExporter = secrets, exporter }
+}
+
 // WithAIVault enables the routes under /api/v1/settings/ai-assistant.
 func WithAIVault(v AIVault) Option {
 	return func(rt *Router) { rt.aiVault = v }
@@ -125,6 +132,12 @@ func WithCloudflareDNSSecrets(s CloudflareDNSSecrets) Option {
 // its own, independent ACME DNS-01 provider.
 func WithRoute53DNSSecrets(s Route53DNSSecrets) Option {
 	return func(rt *Router) { rt.route53DNSSecrets = s }
+}
+
+// WithGoogleCloudDNSSecrets enables PUT/DELETE /api/v1/settings/google-cloud-dns
+// and lets the records, zones and domain automation paths read the key back.
+func WithGoogleCloudDNSSecrets(s GoogleCloudDNSSecrets) Option {
+	return func(rt *Router) { rt.googleCloudDNSSecrets = s }
 }
 
 // WithCloudflareDNSTokenResolver enables
@@ -212,28 +225,10 @@ func WithGitHubAppSecrets(s GitHubAppSecrets) Option {
 	return func(rt *Router) { rt.githubAppSecrets = s }
 }
 
-// WithGitLabAppSecrets enables the GitLab App routes that read or write
-// a credential (connect, connect-start, callback, project listing,
-// use-as-source). Without one configured, those return 501; GET/DELETE
-// /api/v1/gitlab-app work regardless.
-func WithGitLabAppSecrets(s GitLabAppSecrets) Option {
-	return func(rt *Router) { rt.gitlabAppSecrets = s }
-}
-
-// WithBitbucketAppSecrets enables the Bitbucket App routes that read or
-// write a credential (connect, connect-start, callback, repo/branch
-// listing, use-as-source). Without one configured, those return 501;
-// GET/DELETE /api/v1/bitbucket-app work regardless.
-func WithBitbucketAppSecrets(s BitbucketAppSecrets) Option {
-	return func(rt *Router) { rt.bitbucketAppSecrets = s }
-}
-
-// WithGiteaAppSecrets enables the Gitea App routes that read or write a
-// credential (connect, connect-start, callback, repo/branch listing,
-// use-as-source). Without one configured, those return 501; GET/DELETE
-// /api/v1/gitea-app work regardless.
-func WithGiteaAppSecrets(s GiteaAppSecrets) Option {
-	return func(rt *Router) { rt.giteaAppSecrets = s }
+// WithGitConnectionSecrets enables the GitLab, Bitbucket and Gitea connection
+// routes that read or write secrets. Without it they answer 501.
+func WithGitConnectionSecrets(s GitConnSecrets) Option {
+	return func(rt *Router) { rt.gitConnSecrets = s }
 }
 
 // WithGitHubAppManifestConfig overrides the permissions/events a fresh
@@ -326,6 +321,12 @@ func WithBaseBackupRunner(r BaseBackupRunner) Option {
 // same "not configured" shape WithRestoreRunner's absence produces.
 func WithPITRRestoreRunner(r PITRRestoreRunner) Option {
 	return func(rt *Router) { rt.pitrRestoreRunner = r }
+}
+
+// WithMySQLPITRRestoreRunner enables point-in-time restore for MySQL and MariaDB,
+// which restores into a new database instead of overwriting the source.
+func WithMySQLPITRRestoreRunner(r MySQLPITRRestoreRunner) Option {
+	return func(rt *Router) { rt.mysqlPITRRestoreRunner = r }
 }
 
 // WithServiceVolumeBackupRunner enables
@@ -1102,6 +1103,15 @@ func WithLogBroadcaster(b *telemetry.LogBroadcaster) Option {
 // protected even when an operator never sets either env var.
 func WithAPIRateLimit(readPerMinute, writePerMinute int) Option {
 	return func(rt *Router) { rt.apiRateLimit = newAPIRateLimit(readPerMinute, writePerMinute) }
+}
+
+// WithFunctionTriggers enables the signed webhook trigger and the async invocation queue of functions;
+// kick wakes the queue worker when a call is enqueued. Without it the trigger routes return 501.
+func WithFunctionTriggers(s FunctionTriggerStore, cfg functions.TriggerConfig, kick func()) Option {
+	return func(rt *Router) {
+		rt.functionTriggers, rt.functionCfg, rt.functionKick = s, cfg, kick
+		rt.functionWebhookLimit = newAPIRateLimiter(cfg.WebhookPerMinute)
+	}
 }
 
 // WithWebhookRateLimit enables a per-(client IP, app name) budget on

@@ -102,7 +102,9 @@
       "notCapturedBody": "The build did not record any log lines. The deploy itself completed, so the Roll out tab shows what happened next.",
       "waitingTitle": "Waiting for build output",
       "waitingBody": "Lines appear here as soon as the builder starts writing them."
-    }
+    },
+    "detected": "Detected: {{value}}",
+    "detectedBuilder": "Override it in the build settings."
   },
   "trace": {
     "step": {
@@ -222,5 +224,70 @@
     "noDomains": "No domains configured.",
     "preview": "Preview",
     "supplyChain": "Supply chain"
+  },
+  "stream": {
+    "title": "The live log stream dropped",
+    "bodyNoRetry": "Lines may be missing until it reconnects.",
+    "nextAttempt": "Next attempt {{when}}.",
+    "retryIn": "in {{seconds}}s",
+    "retryNow": "Retry now",
+    "switchToPolling": "Switch to polling",
+    "download": "Download full log"
+  },
+  "fix": {
+    "title": "Fix and redeploy",
+    "hint": "Open the setting that most likely caused this, change it, then redeploy.",
+    "link": {
+      "environment": "Edit environment variables",
+      "source": "Check build settings",
+      "deploySettings": "Check deploy settings",
+      "resources": "Adjust resources"
+    },
+    "docs": "Read the docs for this error"
+  },
+  "fixReturn": {
+    "body": "You were fixing a failed deploy ({{target}}). Redeploy to apply your changes.",
+    "redeploy": "Redeploy now",
+    "back": "Back to failed deploy",
+    "dismiss": "Dismiss",
+    "region": "Redeploy with your changes",
+    "started": "Redeploying with your changes."
+  },
+  "rebuild": {
+    "started": "Rebuild started.",
+    "startedNoCache": "Rebuild without cache started."
+  },
+  "report": {
+    "copy": "Copy as report",
+    "copied": "Report copied",
+    "failed": "Could not copy the report",
+    "stage": "Failing stage"
+  },
+  "cache": {
+    "summary": "Cache: {{cached}} of {{total}} steps reused",
+    "unknown": "Cache: unknown"
+  },
+  "rollback": {
+    "note": "Restores image {{image}}. Env vars, volumes and migrations are not reverted."
+  },
+  "phases": {
+    "label": "Build phases",
+    "all": "All",
+    "install": "Install",
+    "build": "Build",
+    "push": "Push",
+    "other": "Other",
+    "chip": "{{phase}} ({{count}})",
+    "showSteps": "Show steps",
+    "hideSteps": "Hide steps",
+    "stepsLabel": "Build steps",
+    "cached": "Cached",
+    "jump": "Jump to the first line of {{label}}",
+    "total": "{{phase}}: {{time}}",
+    "noTiming": "no timing",
+    "truncated": "Phases were detected in the first {{count}} lines only."
+  },
+  "chain": {
+    "position": "Attempt {{position}} of this chain"
   }
 }

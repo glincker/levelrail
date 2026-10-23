@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -50,8 +49,7 @@ type StaticSiteStore interface {
 func (rt *Router) handleListStaticSites(w http.ResponseWriter, r *http.Request) {
 	sites, err := rt.staticSites.ListStaticSites(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list static sites failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list static sites failed", err)
 		return
 	}
 

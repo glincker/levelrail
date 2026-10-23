@@ -110,15 +110,13 @@ func (rt *Router) handleListAppIntegrations(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list app integrations: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list app integrations: load app failed", err, slog.String("name", name))
 		return
 	}
 
 	rows, err := rt.appIntegrations.ListAppIntegrationsForService(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: list app integrations failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list app integrations failed", err, slog.String("name", name))
 		return
 	}
 
@@ -147,8 +145,7 @@ func (rt *Router) handleAttachAppIntegration(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: attach app integration: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: attach app integration: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -171,8 +168,7 @@ func (rt *Router) handleAttachAppIntegration(w http.ResponseWriter, r *http.Requ
 
 	id, err := randomAppIntegrationID()
 	if err != nil {
-		rt.logger.Error("api: attach app integration: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: attach app integration: generate id failed", err)
 		return
 	}
 
@@ -183,8 +179,7 @@ func (rt *Router) handleAttachAppIntegration(w http.ResponseWriter, r *http.Requ
 			writeError(w, http.StatusConflict, "this integration is already attached to this app")
 			return
 		}
-		rt.logger.Error("api: attach app integration failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("integration_key", def.Key))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: attach app integration failed", err, slog.String("name", name), slog.String("integration_key", def.Key))
 		return
 	}
 
@@ -202,8 +197,7 @@ func (rt *Router) handleAttachAppIntegration(w http.ResponseWriter, r *http.Requ
 			if delErr := rt.appIntegrations.DeleteAppIntegration(r.Context(), id); delErr != nil {
 				rt.logger.Error("api: attach app integration: rollback failed", slog.String("error", delErr.Error()), slog.String("id", id))
 			}
-			rt.logger.Error("api: attach app integration: store field failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("field", field.Name))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: attach app integration: store field failed", err, slog.String("name", name), slog.String("field", field.Name))
 			return
 		}
 	}
@@ -219,8 +213,7 @@ func (rt *Router) loadOwnedAppIntegration(w http.ResponseWriter, r *http.Request
 		return store.AppIntegration{}, false
 	}
 	if err != nil {
-		rt.logger.Error("api: "+op+": load app integration failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: "+op+": load app integration failed", err, slog.String("id", id))
 		return store.AppIntegration{}, false
 	}
 	if ai.ServiceName != appName {
@@ -241,8 +234,7 @@ func (rt *Router) handleDetachAppIntegration(w http.ResponseWriter, r *http.Requ
 
 	if rt.secrets != nil {
 		if err := rt.secrets.DeleteAll(r.Context(), store.AppIntegrationSecretsKey(ai.ServiceName, ai.IntegrationKey)); err != nil {
-			rt.logger.Error("api: detach app integration: clear field values failed", slog.String("error", err.Error()), slog.String("id", id))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: detach app integration: clear field values failed", err, slog.String("id", id))
 			return
 		}
 	}
@@ -252,8 +244,7 @@ func (rt *Router) handleDetachAppIntegration(w http.ResponseWriter, r *http.Requ
 			writeError(w, http.StatusNotFound, "integration attachment not found")
 			return
 		}
-		rt.logger.Error("api: detach app integration failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: detach app integration failed", err, slog.String("id", id))
 		return
 	}
 

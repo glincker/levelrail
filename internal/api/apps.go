@@ -540,8 +540,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "unknown project_id")
 			return
 		}
-		rt.logger.Error("api: create app: check project failed", slog.String("error", err.Error()), slog.String("project_id", req.ProjectID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create app: check project failed", err, slog.String("project_id", req.ProjectID))
 		return
 	}
 
@@ -570,8 +569,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !errors.Is(err, store.ErrServiceNotFound) {
-		rt.logger.Error("api: create app: check existing failed", slog.String("error", err.Error()), slog.String("name", req.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create app: check existing failed", err, slog.String("name", req.Name))
 		return
 	}
 
@@ -596,8 +594,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 				writeError(w, http.StatusConflict, fmt.Sprintf("secret %q is locked", key))
 				return
 			}
-			rt.logger.Error("api: create app: set secret failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("key", key))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: create app: set secret failed", err, slog.String("name", req.Name), slog.String("key", key))
 			return
 		}
 	}
@@ -622,15 +619,13 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusConflict, domainTaken.Error())
 			return
 		}
-		rt.logger.Error("api: create app failed", slog.String("error", err.Error()), slog.String("name", req.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create app failed", err, slog.String("name", req.Name))
 		return
 	}
 
 	if req.ProjectID != "" {
 		if err := rt.apps.UpdateServiceProject(r.Context(), req.Name, req.ProjectID); err != nil {
-			rt.logger.Error("api: create app: assign project failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("project_id", req.ProjectID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: create app: assign project failed", err, slog.String("name", req.Name), slog.String("project_id", req.ProjectID))
 			return
 		}
 	}
@@ -641,8 +636,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// already establishes for ProjectID.
 	if req.NodeID != "" {
 		if err := rt.apps.UpdateServiceNode(r.Context(), req.Name, req.NodeID); err != nil {
-			rt.logger.Error("api: create app: assign node failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("node_id", req.NodeID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: create app: assign node failed", err, slog.String("name", req.Name), slog.String("node_id", req.NodeID))
 			return
 		}
 		rt.recordCreatePlacement(r.Context(), cp, req.NodeID)
@@ -653,8 +647,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// special-cased away for the common single-service case.
 	appID, err := rt.ensureAppLinked(r.Context(), req.Name, req.Name)
 	if err != nil {
-		rt.logger.Error("api: create app: link to app row failed", slog.String("error", err.Error()), slog.String("name", req.Name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create app: link to app row failed", err, slog.String("name", req.Name))
 		return
 	}
 	req.AppID = appID
@@ -726,15 +719,13 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get app failed", err, slog.String("name", name))
 		return
 	}
 	resource := rt.appOut(r.Context(), *svc)
 	tagNames, err := rt.appTagNames(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: get app: load tags failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get app: load tags failed", err, slog.String("name", name))
 		return
 	}
 	resource.Tags = tagNames
@@ -799,7 +790,7 @@ func (rt *Router) fallbackURLFor(ctx context.Context, svc store.DesiredService) 
 	if err != nil || s.FallbackDomainsDisabled {
 		return ""
 	}
-	if d, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
+	if d, ok := rt.autoHost(ctx, svc.Name); ok {
 		return rt.ingressHTTPSURL(s, d)
 	}
 	return ""
@@ -810,6 +801,9 @@ func (rt *Router) fallbackURLFor(ctx context.Context, svc store.DesiredService) 
 // else the ingress listen port, so a link reaches this ingress and not
 // whatever owns 443 on the host.
 func (rt *Router) ingressHTTPSURL(s store.IngressSettings, host string) string {
+	if u, ok := rt.localAppURL(host); ok {
+		return u
+	}
 	port := s.PublicLinkPort()
 	if port == 0 {
 		port = rt.doctorHTTPSPort
@@ -820,11 +814,14 @@ func (rt *Router) ingressHTTPSURL(s store.IngressSettings, host string) string {
 // publicHTTPSURL is "https://host" for a hostname served by this platform,
 // carrying the explicit public port only when one is configured.
 func (rt *Router) publicHTTPSURL(ctx context.Context, host string) string {
+	if u, ok := rt.localAppURL(host); ok {
+		return u
+	}
 	s, err := rt.ingressSettings.GetIngressSettings(ctx)
 	if err != nil {
 		return httpsURL(host, 0)
 	}
-	return httpsURL(host, s.PublicLinkPort())
+	return rt.ingressHTTPSURL(s, host)
 }
 
 // previewURLFor is publicHTTPSURL for a possibly empty preview domain.
@@ -870,8 +867,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: update app: check existing failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update app: check existing failed", err, slog.String("name", name))
 		return
 	}
 
@@ -916,8 +912,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusConflict, domainTaken.Error())
 			return
 		}
-		rt.logger.Error("api: update app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update app failed", err, slog.String("name", name))
 		return
 	}
 	// An image change here is functionally the same redeploy action as
@@ -978,8 +973,7 @@ type setAppNodeRequest struct {
 func (rt *Router) reloadAndWriteApp(w http.ResponseWriter, r *http.Request, name, logContext string) {
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: "+logContext+": reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: "+logContext+": reload after update failed", err, slog.String("name", name))
 		return
 	}
 	rt.nudgeReconciler()
@@ -1007,13 +1001,11 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set app node: load existing failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app node: load existing failed", err, slog.String("name", name))
 		return
 	}
 	if msg, err := rt.gpuPlacementError(r.Context(), existing, req.NodeID); err != nil {
-		rt.logger.Error("api: set app node: gpu check failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app node: gpu check failed", err, slog.String("name", name))
 		return
 	} else if msg != "" {
 		writeError(w, http.StatusBadRequest, msg)
@@ -1023,8 +1015,7 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set app node failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app node failed", err, slog.String("name", name))
 		return
 	}
 
@@ -1075,8 +1066,7 @@ func (rt *Router) handleSetAppProject(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "unknown project_id")
 			return
 		}
-		rt.logger.Error("api: set app project: look up project failed", slog.String("error", err.Error()), slog.String("project_id", req.ProjectID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app project: look up project failed", err, slog.String("project_id", req.ProjectID))
 		return
 	}
 
@@ -1090,8 +1080,7 @@ func (rt *Router) handleSetAppProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set app project failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app project failed", err, slog.String("name", name))
 		return
 	}
 
@@ -1111,8 +1100,7 @@ func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: restart app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: restart app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -1132,8 +1120,7 @@ func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: stop app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: stop app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -1151,8 +1138,7 @@ func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: start app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: start app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -1223,6 +1209,11 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 	}
 	if err := rt.removeStaticSite(ctx, name); err != nil {
 		rt.logger.Warn("api: delete app: remove static site failed", slog.String("error", err.Error()), slog.String("name", name))
+	}
+	if ds, ok := rt.ingressSettings.(dnsProviderStore); ok {
+		if err := ds.SetAppDNSProvider(ctx, name, store.DNSProviderChoice{}); err != nil {
+			rt.logger.Warn("api: delete app: clear dns provider override failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
 	}
 	// Nudge before the slow teardown so the ingress route drops right away.
 	rt.nudgeReconciler()

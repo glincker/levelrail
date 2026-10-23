@@ -161,6 +161,10 @@ func ToStore(a Attempt) store.SelfUpgradeAttempt {
 		Initiator: a.Initiator, Outcome: a.Outcome, FailedStep: a.FailedStep, Error: a.Error, BackupName: a.BackupName,
 		AckedJSON: a.AckedJSON(), StepsJSON: a.StepsJSON(), StartedAt: a.StartedAt.UTC().Format("2006-01-02T15:04:05.000Z"),
 	}
+	row.RolledBackMinutes, row.DatabaseRestored = -1, a.DatabaseRestored
+	if a.DatabaseRestored {
+		row.RolledBackMinutes = a.RolledBackMinutes
+	}
 	if !a.FinishedAt.IsZero() {
 		row.FinishedAt = a.FinishedAt.UTC().Format("2006-01-02T15:04:05.000Z")
 	}

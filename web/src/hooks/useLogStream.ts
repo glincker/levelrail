@@ -84,6 +84,8 @@ export interface UseLogStreamResult {
   retryAt: number | null
   /** Reconnect now (or leave the polling fallback and try SSE again). */
   retry: () => void
+  /** Stop retrying SSE and refresh through the plain-text endpoint. */
+  switchToPolling: () => void
 }
 
 export type LogStreamTransport = 'sse' | 'polling' | 'closed'
@@ -351,6 +353,11 @@ export function useLogStream(
     setRetryNonce((n) => n + 1)
   }, [])
 
+  const switchToPolling = useCallback(() => {
+    setRetryAt(null)
+    setPolling(true)
+  }, [])
+
   const transport: LogStreamTransport = closed
     ? 'closed'
     : polling
@@ -368,5 +375,6 @@ export function useLogStream(
     lastEventAt,
     retryAt,
     retry,
+    switchToPolling,
   }
 }

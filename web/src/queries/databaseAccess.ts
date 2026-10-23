@@ -273,3 +273,12 @@ export function useSetRequireTls(name: string) {
     onSuccess: invalidate,
   })
 }
+
+export function useSetTlsEnabled(name: string) {
+  const invalidate = useInvalidateAccess(name)
+  return useMutation<void, ApiError, boolean>({
+    mutationFn: (enabled) =>
+      request(`${base(name)}/tls`, json('PUT', { enabled }), 'switch tls'),
+    onSuccess: invalidate,
+  })
+}

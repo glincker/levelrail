@@ -31,6 +31,7 @@ type fakeStore struct {
 	dnsSettingsErr     error
 	route53Settings    store.Route53DNSSettings
 	route53SettingsErr error
+	gcdSettings        store.GoogleCloudDNSSettings
 	basicAuth          []store.DomainBasicAuth
 	basicAuthErr       error
 	maintenance        []string
@@ -115,6 +116,10 @@ func (f *fakeStore) GetCloudflareDNSSettings(_ context.Context) (store.Cloudflar
 		return store.CloudflareDNSSettings{}, f.dnsSettingsErr
 	}
 	return f.dnsSettings, nil
+}
+
+func (f *fakeStore) GetGoogleCloudDNSSettings(_ context.Context) (store.GoogleCloudDNSSettings, error) {
+	return f.gcdSettings, nil
 }
 
 // GetRoute53DNSSettings mirrors GetCloudflareDNSSettings' own "zero

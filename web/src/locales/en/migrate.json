@@ -4,7 +4,8 @@
   "tabs": {
     "plan": "Plan",
     "cutover": "Cutover",
-    "takeover": "Take over ports"
+    "takeover": "Take over ports",
+    "agent": "Source agent"
   },
   "connect": {
     "title": "Read the source",
@@ -99,7 +100,8 @@
     "checkingDns": "Checking",
     "dnsResult": "DNS check: {{verdict}}",
     "confirm": "Confirm anyway",
-    "stepNote": "Note (optional)"
+    "stepNote": "Note (optional)",
+    "undoAgent": "Undo agent verification"
   },
   "steps": {
     "imported": "Imported",
@@ -125,5 +127,118 @@
     "sourceResult": "Source files and bytes",
     "targetResult": "Target files and bytes",
     "resultPlaceholder": "12 34567"
+  },
+  "agent": {
+    "safetyTitle": "Read only, but it sees everything Docker sees",
+    "safety": "The agent only lists what runs on the old server and counts files and bytes in volumes. It cannot start, stop, change or run anything there, and it does not move data in this release. Docker access is root on that host, so install it only on a server you are leaving, and remove it when you are done.",
+    "startTitle": "Connect the old server",
+    "startHint": "Creates a token that works once and expires soon. Run the command it gives you on the old server as root.",
+    "label": "Name for this server",
+    "labelPlaceholder": "old production box",
+    "create": "Create install command",
+    "creating": "Creating",
+    "installTitle": "Run this on the old server",
+    "installHint": "Shown once. The token works once, and the session ends on its own after {{hours}} hours.",
+    "noAddress": "No agent address is advertised on this control plane. Set the advertise host, then create the command again.",
+    "fingerprint": "Pinned control plane CA: {{fp}}",
+    "copy": "Copy command",
+    "copied": "Copied",
+    "empty": "No source server connected",
+    "emptyHint": "Create an install command above to inspect the old server before cutover.",
+    "loadError": "Could not load sessions.",
+    "state": {
+      "pending": "Waiting for the agent",
+      "connected": "Connected",
+      "lost": "Connection lost",
+      "revoked": "Removed",
+      "expired": "Expired"
+    },
+    "waiting": "Waiting for the agent to connect. The token is single use and expires soon after it was created.",
+    "endsBy": "ends by {{at}}",
+    "discover": "Refresh discovery",
+    "discovering": "Reading",
+    "found": "Found {{containers}} containers and {{volumes}} volumes",
+    "unlisted": "Not matched to an imported app",
+    "unlistedHint": "{{count}} container(s) match no imported app, so a platform API read would not have shown them.",
+    "database": "{{engine}} {{version}}",
+    "remove": "Remove agent",
+    "removeTitle": "Remove the migration agent?",
+    "removeConsequence1": "The session and its certificate are revoked now, even if the old server is unreachable.",
+    "removeConsequence2": "On the old server, run the remove command of the migrate binary to delete its service, identity and binary.",
+    "removeConfirm": "Remove",
+    "verifyHint": "Counts files and bytes of each volume on the old server and compares them with this server. Zero differences complete the data step for you, unless a volume is empty or you typed target numbers by hand.",
+    "ackEmpty": "Some volumes are meant to be empty: let matching empty volumes count as verified",
+    "operatorSupplied": "typed by you, not measured",
+    "detailForbidden": "Your role cannot view the discovered containers and paths for this session.",
+    "noVolumes": "No imported app has volumes to compare.",
+    "volumeCount": "{{count}} volume(s)",
+    "verify": "Verify volumes",
+    "verifying": "Verifying",
+    "verifyError": "Verification failed",
+    "compare": "source {{sf}} files {{sb}} bytes, here {{tf}} files {{tb}} bytes",
+    "status": {
+      "match": "Match",
+      "differs": "Differs",
+      "changed_during_scan": "Changed during scan",
+      "source_missing": "Not reported",
+      "target_missing": "Not measured here",
+      "scan_error": "Scan error"
+    },
+    "advanced": "Data step completed",
+    "advancedHint": "Every volume matched, so the migration agent marked the data step done. You can undo it.",
+    "undo": "Undo",
+    "undone": "Reopened",
+    "notAdvanced": "Data step not completed",
+    "databasesManual": "Databases are still manual",
+    "databasesManualHint": "{{count}} database(s) on the old server are not checked by the agent. Copy and verify them before you cut over."
+  },
+  "parity": {
+    "title": "Parity check",
+    "description": "Compares apps, domains, env var names, databases, volumes, jobs and live responses with the source before you switch DNS. Values are never read.",
+    "never": "No check run yet",
+    "ranAt": "Checked {{when}}",
+    "run": "Check parity",
+    "running": "Checking",
+    "recheck": "Re-check",
+    "loadError": "Could not load the parity report.",
+    "runError": "The parity check failed",
+    "expired": "The source token expired. Enter it again to re-check.",
+    "platform": "Platform",
+    "url": "Source URL",
+    "token": "API token",
+    "targetIp": "Ingress IP of this server (optional)",
+    "targetIpHint": "Probe this server directly while DNS still points at the source.",
+    "skipProbes": "Skip live probes",
+    "verdict": {
+      "pass": "Matches",
+      "warn": "Matches with warnings",
+      "fail": "Blocking differences"
+    },
+    "severity": {
+      "blocking": "Blocking",
+      "warning": "Warning",
+      "info": "Info"
+    },
+    "count": "{{count}} {{label}}",
+    "area": {
+      "apps": "Apps",
+      "domains": "Domains",
+      "env": "Env names",
+      "databases": "Databases",
+      "volumes": "Volumes",
+      "jobs": "Jobs",
+      "probes": "Live probes"
+    },
+    "matched": "{{matched}} of {{source}} match",
+    "differences": "Differences",
+    "noDifferences": "Nothing differs.",
+    "fix": "Fix",
+    "showMore": "Show more",
+    "probes": "Live probes",
+    "probeSource": "Source",
+    "probeHere": "Here",
+    "probeTls": "TLS {{days}} days",
+    "probeTlsBad": "TLS invalid",
+    "probeError": "No answer: {{error}}"
   }
 }

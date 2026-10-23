@@ -49,7 +49,9 @@ func TestPendingState_Expired(t *testing.T) {
 		t.Fatalf("begin() error = %v", err)
 	}
 	s.mu.Lock()
-	s.expiresAt = time.Now().Add(-time.Second)
+	e := s.entries[state]
+	e.expiresAt = time.Now().Add(-time.Second)
+	s.entries[state] = e
 	s.mu.Unlock()
 
 	if _, ok := s.consume(state); ok {
@@ -87,5 +89,17 @@ func TestPendingState_CarriesValue(t *testing.T) {
 	}
 	if value != "https://ghe.example.com" {
 		t.Errorf("consume(state) value = %q, want the value passed to begin", value)
+	}
+}
+
+func TestPendingState_ParallelStatesDoNotClobber(t *testing.T) {
+	s := newPendingState()
+	a, _ := s.begin("conn-a")
+	b, _ := s.begin("conn-b")
+	if v, ok := s.consume(a); !ok || v != "conn-a" {
+		t.Fatalf("consume(a) = %q, %v", v, ok)
+	}
+	if v, ok := s.consume(b); !ok || v != "conn-b" {
+		t.Fatalf("consume(b) = %q, %v", v, ok)
 	}
 }

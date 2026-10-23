@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { CodeBlock } from '@/components/ui/code-block'
 import { toast } from '@/components/ui/toast'
 import type { ExposureFinding, ExposurePlan } from '../../types/exposure'
 import {
@@ -123,9 +124,7 @@ export function ExposureRestrictDialog({
           {plan ? (
             <div className="space-y-2">
               <p className="font-medium">{t('dialog.previewTitle')}</p>
-              <pre className="overflow-x-auto rounded-md bg-muted p-2 font-mono text-xs">
-                {plan.commands.join('\n')}
-              </pre>
+              <CodeBlock code={plan.commands.join('\n')} />
               <Alert>
                 <AlertTitle>{t('dialog.effect')}</AlertTitle>
                 <AlertDescription>{plan.drops}</AlertDescription>

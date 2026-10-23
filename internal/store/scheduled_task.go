@@ -62,6 +62,9 @@ const (
 	ScheduledTaskConcurrencyAllow   = "allow"
 	ScheduledTaskConcurrencyForbid  = "forbid"
 	ScheduledTaskConcurrencyReplace = "replace"
+	// ScheduledTaskConcurrencyQueue waits for the in-flight run to finish
+	// and then runs, so overlapping occurrences execute one after another.
+	ScheduledTaskConcurrencyQueue = "queue"
 )
 
 const scheduledTaskColumns = `id, service_name, command, schedule, enabled, concurrency_policy, last_run_at, last_run_status, last_run_output, consecutive_failures, created_at, updated_at,

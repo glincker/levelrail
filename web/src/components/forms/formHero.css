@@ -1,0 +1,150 @@
+/* Forms hero loop: transform and opacity only. The base state is the final frame. */
+.lr-hero .lr-fill,
+.lr-hero .lr-row {
+  transform-box: fill-box;
+  transform-origin: left center;
+}
+.lr-hero .lr-btn,
+.lr-hero .lr-node,
+.lr-hero .lr-chip {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.lr-hero .lr-packet {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lr-hero[data-motion='on'] * {
+    animation-duration: 9s;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+  }
+  .lr-hero[data-motion='on'][data-paused='true'] * {
+    animation-play-state: paused;
+  }
+  .lr-hero[data-motion='on'] .lr-fill1 {
+    animation-name: lr-fill1;
+  }
+  .lr-hero[data-motion='on'] .lr-fill2 {
+    animation-name: lr-fill2;
+  }
+  .lr-hero[data-motion='on'] .lr-btn {
+    animation-name: lr-press;
+  }
+  .lr-hero[data-motion='on'] .lr-packet {
+    animation-name: lr-packet;
+  }
+  .lr-hero[data-motion='on'] .lr-node {
+    animation-name: lr-node;
+  }
+  .lr-hero[data-motion='on'] .lr-row {
+    animation-name: lr-row;
+  }
+  .lr-hero[data-motion='on'] .lr-chip {
+    animation-name: lr-chip;
+  }
+}
+@keyframes lr-fill1 {
+  0%,
+  4% {
+    transform: scaleX(0);
+  }
+  16%,
+  94% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(0);
+  }
+}
+@keyframes lr-fill2 {
+  0%,
+  16% {
+    transform: scaleX(0);
+  }
+  30%,
+  94% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(0);
+  }
+}
+@keyframes lr-press {
+  0%,
+  31%,
+  38%,
+  100% {
+    transform: scale(1);
+  }
+  34% {
+    transform: scale(0.92);
+  }
+}
+@keyframes lr-packet {
+  0%,
+  35% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  37% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  52% {
+    opacity: 1;
+    transform: translate(220px, -56px);
+  }
+  66% {
+    opacity: 1;
+    transform: translate(340px, -60px);
+  }
+  68%,
+  100% {
+    opacity: 0;
+    transform: translate(340px, -60px);
+  }
+}
+@keyframes lr-node {
+  0%,
+  49%,
+  58%,
+  100% {
+    transform: scale(1);
+  }
+  53% {
+    transform: scale(1.08);
+  }
+}
+@keyframes lr-row {
+  0%,
+  66% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  72%,
+  94% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+}
+@keyframes lr-chip {
+  0%,
+  74% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  80%,
+  94% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -14,6 +15,10 @@ import { RegistryVendorGrid } from '../../components/registry/RegistryVendorGrid
 import { BuiltInRegistryCard } from '../../components/registry/BuiltInRegistryCard'
 import { PackageRegistriesCard } from '../../components/registry/PackageRegistriesCard'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
+
+const CloudRegistryCards = lazy(
+  () => import('../../components/registry/CloudRegistryCards'),
+)
 
 // Account-level, same reasoning settings/backup-targets.tsx's own doc
 // comment gives: a registry credential isn't scoped to one app, it's
@@ -79,6 +84,9 @@ function RegistryCredentialsPage() {
     >
       <div className="space-y-8">
         <BuiltInRegistryCard />
+        <Suspense fallback={null}>
+          <CloudRegistryCards credentials={credentials} />
+        </Suspense>
         <RegistryVendorGrid />
         <RegistryCredentialTable
           credentials={credentials}

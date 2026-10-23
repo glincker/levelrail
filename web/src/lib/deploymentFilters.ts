@@ -82,8 +82,10 @@ export function toApiParams(
   filters: DeploymentFilters,
   cursor = '',
   limit = 50,
+  project = '',
 ): URLSearchParams {
   const p = new URLSearchParams()
+  if (project) p.set('project', project)
   if (filters.status.length) p.set('status', filters.status.join(','))
   if (filters.trigger.length) p.set('trigger', filters.trigger.join(','))
   if (filters.app) p.set('app', filters.app)

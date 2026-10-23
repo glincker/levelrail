@@ -2,15 +2,16 @@ package trafficpolicy
 
 import (
 	"fmt"
-	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 // Header rule sides and operations.
 const (
-	SideRequest  = "request"
-	SideResponse = "response"
+	SideRequest  = spec.HeaderSideRequest
+	SideResponse = spec.HeaderSideResponse
 
 	OpSet    = "set"
 	OpAdd    = "add"
@@ -79,16 +80,7 @@ func DefaultSecurityPreset(tlsReal bool) SecurityPreset {
 }
 
 var (
-	hopByHop = map[string]bool{
-		"Connection": true, "Keep-Alive": true, "Proxy-Connection": true, "Te": true,
-		"Trailer": true, "Transfer-Encoding": true, "Upgrade": true, "Content-Length": true,
-		"Host": true,
-	}
-	requestForbidden = map[string]bool{
-		"Forwarded": true, "X-Real-Ip": true, "Proxy-Authorization": true,
-	}
-	responseForbidden = map[string]bool{"X-Cache": true, "Cache-Status": true}
-	referrerPolicies  = map[string]bool{
+	referrerPolicies = map[string]bool{
 		"no-referrer": true, "no-referrer-when-downgrade": true, "origin": true,
 		"origin-when-cross-origin": true, "same-origin": true, "strict-origin": true,
 		"strict-origin-when-cross-origin": true, "unsafe-url": true,
@@ -99,57 +91,13 @@ var (
 )
 
 // IsToken reports whether s is an RFC 9110 token, the grammar for a header name.
-func IsToken(s string) bool {
-	if s == "" {
-		return false
-	}
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' {
-			continue
-		}
-		if !strings.ContainsRune("!#$%&'*+-.^_`|~", rune(c)) {
-			return false
-		}
-	}
-	return true
-}
+func IsToken(s string) bool { return spec.IsToken(s) }
 
-// SafeHeaderValue reports whether v can be written into a header without
-// splitting it: no CR, LF or NUL, and no other control byte except tab.
-func SafeHeaderValue(v string) bool {
-	for i := 0; i < len(v); i++ {
-		c := v[i]
-		if c == '\t' {
-			continue
-		}
-		if c < 0x20 || c == 0x7f {
-			return false
-		}
-	}
-	return true
-}
+// SafeHeaderValue reports whether v can be written into a header without splitting it.
+func SafeHeaderValue(v string) bool { return spec.SafeHeaderValue(v) }
 
 // headerNameProblem returns why name cannot be used on side, or "".
-func headerNameProblem(side, name string) string {
-	if !IsToken(name) {
-		return "must be a valid header name (letters, digits and !#$%&'*+-.^_`|~)"
-	}
-	canon := http.CanonicalHeaderKey(name)
-	if hopByHop[canon] {
-		return fmt.Sprintf("%s is managed by the ingress and cannot be changed here", canon)
-	}
-	if strings.HasPrefix(canon, "X-Forwarded-") {
-		return "X-Forwarded-* headers are set by the ingress; use forwarded_prefix for X-Forwarded-Prefix"
-	}
-	if side == SideRequest && requestForbidden[canon] {
-		return fmt.Sprintf("%s is set by the ingress and cannot be changed here", canon)
-	}
-	if side == SideResponse && responseForbidden[canon] {
-		return fmt.Sprintf("%s is reserved for the ingress cache", canon)
-	}
-	return ""
-}
+func headerNameProblem(side, name string) string { return spec.HeaderNameProblem(side, name) }
 
 // Validate checks every rule and preset.
 func (h *Headers) Validate(l Limits, c Context) error {
@@ -259,3 +207,6 @@ func ValidOrigin(o string) bool {
 	return (u.Path == "" || u.Path == "/") && u.RawQuery == "" && u.Fragment == "" && u.User == nil &&
 		!strings.ContainsAny(o, "'\"\\ {}")
 }
+
+// ResponseHeaderNameProblem returns why name cannot be set on a response, or "".
+func ResponseHeaderNameProblem(name string) string { return headerNameProblem(SideResponse, name) }

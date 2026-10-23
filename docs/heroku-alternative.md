@@ -6,7 +6,7 @@ description: "Levelrail is an open source Heroku alternative for your own Linux 
 
 **The Heroku workflow on a server you control**
 
-Push-to-deploy from your git host, managed databases, automatic HTTPS, logs and rollback, running on Linux boxes you own instead of per-dyno billing. There is no `git push heroku` style remote on the server: deploys come from a connected git provider, a repository URL or a container image.
+Push-to-deploy from your git host, managed databases, HTTPS (self-signed until you enable Let's Encrypt), logs and rollback, running on Linux boxes you own instead of per-dyno billing. There is no `git push heroku` style remote by default (a native `git push` remote exists but is beta and off, see [Git push deploy](/git-push-deploy)): deploys come from a connected git provider, a repository URL or a container image.
 
 [Get started](/getting-started) | [View on GitHub](https://github.com/glincker/levelrail)
 

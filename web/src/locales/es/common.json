@@ -16,7 +16,19 @@
     "promoteHint": "Convierte esta compilación exacta en la versión activa, fijada por digest",
     "promoted": "Promoción iniciada.",
     "promotedPending": "La promoción espera aprobación.",
-    "promoteFailed": "No se pudo promover."
+    "promoteFailed": "No se pudo promover.",
+    "deployNow": "Desplegar ahora",
+    "latest": "Último despliegue",
+    "earlier": "Despliegues anteriores",
+    "failedLog": "Ver registro de la etapa fallida",
+    "failedLogLabel": "Ver el registro de la etapa fallida de {{title}}",
+    "watchLog": "Ver en vivo",
+    "viewLogs": "Registros",
+    "settingsLink": "Ajustes de despliegue",
+    "settingsLinkHint": "Las opciones de compilación, ejecución, seguridad y automatización de esta aplicación están en un solo lugar.",
+    "settingsLinkCta": "Abrir ajustes de despliegue",
+    "rerunOf": "Reintento de {{id}}",
+    "rerunOfLabel": "Abrir los registros de {{id}}, el despliegue que este repitió"
   },
   "actions": {
     "copy": "Copiar",
@@ -57,7 +69,11 @@
     "needsAction": "Requiere acción"
   },
   "logs": {
-    "previousContainerEnded": "La instancia anterior del contenedor terminó"
+    "previousContainerEnded": "La instancia anterior del contenedor terminó",
+    "copyLineAria": "Copiar esta línea del registro",
+    "copyLine": "Copiar línea",
+    "copied": "Copiado",
+    "lineCopied": "Línea copiada"
   },
   "sessionLink": {
     "signingIn": "Iniciando tu sesión...",
@@ -132,6 +148,12 @@
     "pending": "Trabajando...",
     "alreadyStopped": "{{name}} ya está detenida."
   },
+  "unsavedGuard": {
+    "title": "¿Descartar los cambios sin guardar?",
+    "description": "Tienes ediciones sin guardar. Si sales ahora, se perderán.",
+    "keep": "Seguir editando",
+    "discard": "Descartar"
+  },
   "confirmDialog": {
     "cancel": "Cancelar",
     "typePrompt": "Escribe {{value}} para confirmar"
@@ -156,6 +178,24 @@
     "emergencyDocs": "Acceso de emergencia"
   },
   "shell": {
+    "sectionTabs": {
+      "deployments": {
+        "label": "Secciones de despliegues",
+        "deploys": "Despliegues",
+        "timeline": "Cronología",
+        "builds": "Compilaciones"
+      },
+      "cost": {
+        "label": "Secciones de uso y costes",
+        "usage": "Uso",
+        "costs": "Explorador de costes"
+      }
+    },
+    "pins": {
+      "group": "Fijados",
+      "pin": "Fijar {{label}}",
+      "limit": "Límite de fijados alcanzado ({{max}}). Quita uno primero."
+    },
     "locked": {
       "badge": "Beta",
       "description": "Esta es una función beta y está desactivada. Ábrela para ir a Funciones beta y activarla.",
@@ -374,5 +414,151 @@
       "installation": "Instalación",
       "credentials": "Credenciales de la aplicación"
     }
+  },
+  "pageLoading": {
+    "label": "Cargando página"
+  },
+  "deployRetry": {
+    "retry": "Reintentar despliegue",
+    "more": "Más formas de reintentar",
+    "rebuild": "Reconstruir desde el origen",
+    "rebuildNoCache": "Reconstruir sin caché"
+  },
+  "deploySettings": {
+    "nav": {
+      "label": "Secciones de ajustes de despliegue"
+    },
+    "flow": {
+      "title": "Cómo funciona tu despliegue",
+      "build": "Compilación",
+      "push": "Subida",
+      "rollout": "Despliegue gradual",
+      "healthCheck": "Comprobación de estado",
+      "buildHint": "Convierte tu código fuente en una imagen.",
+      "pushHint": "Guarda la imagen para que cualquier nodo pueda ejecutarla.",
+      "rolloutHint": "Inicia nuevas réplicas y redirige el tráfico hacia ellas.",
+      "healthCheckHint": "Confirma que la nueva versión está sana antes de mantenerla activa."
+    },
+    "recommended": "Los campos vacíos usan el valor predeterminado de la plataforma, que aparece en gris dentro del campo.",
+    "groups": {
+      "build": {
+        "title": "Compilación",
+        "description": "Cómo se convierte tu código fuente en una imagen: hooks, caché y qué se analiza."
+      },
+      "run": {
+        "title": "Ejecución",
+        "description": "Cómo arranca la nueva versión: puerto, estrategia de despliegue y comandos previos al despliegue."
+      },
+      "safety": {
+        "title": "Seguridad",
+        "description": "Qué protege el tráfico en producción: comprobaciones de estado, reversión, canary y congelaciones."
+      },
+      "automation": {
+        "title": "Automatización",
+        "description": "Qué se despliega por ti: programaciones, vistas previas, actualizaciones de imagen y CI."
+      }
+    },
+    "cards": {
+      "buildHooks": "Ejecuta tus propios comandos en puntos concretos de la compilación, como antes o después del paso de compilación.",
+      "buildCache": "Reutiliza las capas que no cambian entre compilaciones para que las repeticiones terminen antes.",
+      "supplyChain": "Analiza cada imagen compilada en busca de vulnerabilidades conocidas y puede bloquear versiones arriesgadas.",
+      "secretScan": "Busca credenciales filtradas en tu código fuente antes de publicarlo.",
+      "port": "Define el puerto en el que escucha tu aplicación para que el tráfico llegue al lugar correcto.",
+      "strategy": "Elige cómo una nueva versión reemplaza a la anterior y cuántas réplicas se ejecutan.",
+      "hooks": "Ejecuta un comando, como una migración de base de datos, antes de que arranque una nueva versión.",
+      "safety": "Define cuánto tiempo debe mantenerse sana una nueva versión antes de retirar la anterior.",
+      "watch": "Sigue vigilando una versión después de publicarla y revierte si empeora.",
+      "autoRollback": "Vuelve a desplegar la última imagen que funcionaba cuando se dispara una alerta de reinicios en bucle.",
+      "sloBurn": "Revierte automáticamente cuando el presupuesto de errores se consume demasiado rápido tras un despliegue.",
+      "canary": "Envía una pequeña parte del tráfico a una nueva imagen antes de que lo reciban todos.",
+      "freeze": "Bloquea los despliegues automáticos durante las ventanas que elijas, como un festivo.",
+      "scheduled": "Pone en cola un despliegue para que se ejecute más tarde, en el momento que elijas.",
+      "cancelSuperseded": "Cancela los despliegues en cola más antiguos cuando llega uno más reciente.",
+      "preview": "Crea una copia temporal de tu aplicación para cada pull request.",
+      "imageAutoUpdate": "Vuelve a desplegar automáticamente cuando se publica una imagen más reciente para tu etiqueta.",
+      "badge": "Muestra una insignia de estado de despliegue en vivo que puedes incrustar en un README.",
+      "githubActions": "Permite que un flujo de trabajo de GitHub Actions despliegue esta aplicación.",
+      "ciDeploy": "Da a tu sistema de CI un token y un comando para desplegar esta aplicación."
+    },
+    "whatItDoes": "Qué hace esto:"
+  },
+  "cardSkeleton": {
+    "loading": "Cargando"
+  },
+  "cancelSuperseded": {
+    "title": "Reemplazar despliegues en cola superados",
+    "infoLabel": "Acerca de reemplazar despliegues en cola",
+    "infoBody": "Solo se reemplazan los despliegues que todavía esperan en la cola, y solo por uno más nuevo de la misma rama. Un despliegue que ya empezó a compilarse nunca se cancela automáticamente.",
+    "enabled": "Activado",
+    "enabledHint": "Cuando llega un commit más nuevo de una rama mientras hay un despliegue en curso, los despliegues en cola más antiguos de esa rama se marcan como superados en lugar de compilarse uno tras otro.",
+    "on": "Los despliegues en cola superados se reemplazarán.",
+    "off": "Los despliegues en cola se conservan.",
+    "saveFailed": "No se pudo actualizar la configuración."
+  },
+  "codeBlock": {
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "copyFailed": "No se pudo copiar",
+    "wrap": "Ajustar",
+    "reveal": "Mostrar",
+    "hide": "Ocultar",
+    "region": "Código",
+    "commandRegion": "Comando"
+  },
+  "notFound": {
+    "requested": "Solicitado: {{name}}",
+    "causes": "Puede que se haya renombrado o eliminado, o que pertenezca a un proyecto o entorno distinto del seleccionado en el selector de la cabecera.",
+    "didYouMean": "Quisiste decir",
+    "resources": {
+      "app": {
+        "title": "App no encontrada",
+        "list": "Volver a las apps",
+        "create": "Desplegar una app nueva"
+      },
+      "database": {
+        "title": "Base de datos no encontrada",
+        "list": "Volver a las bases de datos"
+      },
+      "domain": {
+        "title": "Dominio no encontrado",
+        "list": "Volver a los dominios"
+      },
+      "template": {
+        "title": "Plantilla no encontrada",
+        "list": "Volver a las plantillas"
+      },
+      "project": {
+        "title": "Proyecto no encontrado",
+        "list": "Volver a los proyectos"
+      },
+      "generic": {
+        "title": "Página no encontrada",
+        "list": "Volver al panel"
+      }
+    }
+  },
+  "routeError": {
+    "generic": {
+      "title": "Algo salió mal",
+      "body": "Esta página tuvo un error inesperado. Reintentar suele resolverlo. Si persiste, copia los detalles y repórtalo.",
+      "retry": "Reintentar",
+      "home": "Volver al panel"
+    },
+    "unreachable": {
+      "title": "No se puede contactar con el plano de control",
+      "body": "El servidor no respondió o devolvió un error. Tus apps siguen funcionando. Comprueba que el plano de control esté activo y reintenta.",
+      "retry": "Reintentar"
+    },
+    "details": "Detalles",
+    "copy": "Copiar detalles",
+    "copied": "Copiado",
+    "report": "Reportar un problema",
+    "requestId": "ID de solicitud: {{id}}",
+    "detailsHeader": "Informe de error"
+  },
+  "secretInput": {
+    "show": "Mostrar valor",
+    "hide": "Ocultar valor",
+    "existing": "Definido. Déjalo en blanco para conservar el valor actual."
   }
 }

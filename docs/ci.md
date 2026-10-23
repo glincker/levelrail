@@ -4,7 +4,7 @@ description: How the GitHub Actions checks on a pull request are chosen, what th
 "og:url": "https://docs.levelrail.com/ci"
 ---
 
-How the GitHub Actions checks on a pull request are chosen and which ones gate a merge. This page is for contributors to Levelrail itself.
+How the GitHub Actions checks on a pull request are chosen and which ones gate a merge. This page is for contributors to Levelrail itself. To deploy your own apps from CI, see [Use any CI](/use-any-ci).
 
 ## The short version
 
@@ -66,7 +66,7 @@ Go toolchain) sorts changed files into areas:
 | `docs/*.md` (except `docs/changelog/`, which the in-app help does not bundle) | Web bundle build and the help page tests |
 | `scripts/test-ci-*.sh`, `scripts/ci-test-weights.txt`, `scripts/refresh-test-weights.sh` | The planner table tests (`Build, vet`), no Go test lane |
 | `.github/actions/setup-go-cached/` | Every Go lane (live suites in smoke mode) |
-| `install.sh`, `scripts/test-install-sh.sh`, `deploy/packaging/` | install.sh end to end on Ubuntu and Debian |
+| `install.sh`, `install-cli.sh`, `install-cli.ps1`, `scripts/test-install-*`, `deploy/packaging/` | installers end to end: Ubuntu and Debian containers, plus the CLI installer natively on macOS and Windows |
 | Other `.github/workflows/*` | actionlint on the changed files |
 | `.github/flaky-tests.txt` | The packages named in the changed lines, plus the quarantine lane |
 | Anything else (`adr/`, `LICENSE`, other `.github/` files) | Nothing beyond the always-on checks |
@@ -270,7 +270,7 @@ never reach it. It has its own lane instead:
 
 ## Required checks
 
-`CI required` is the aggregator and the one check meant to gate a merge. It always runs and needs `changes`, `plan`, `build-vet`, `lint`, `kit`, the Go test jobs, `coverage-gate`, `web-check` and `install-sh`. It fails if change detection did not succeed or any job it needs failed or was cancelled, and a job that was skipped because its area had no work counts as passing. Because branch protection can name just this one context, the job set can be split or renamed without touching the ruleset. Branch protection itself is configured in GitHub, not in this repository.
+`CI required` is the aggregator and the one check meant to gate a merge. It always runs and needs `changes`, `plan`, `build-vet`, `lint`, `kit`, the Go test jobs, `coverage-gate`, `web-check`, `install-sh` and the macOS and Windows CLI installer jobs. It fails if change detection did not succeed or any job it needs failed or was cancelled, and a job that was skipped because its area had no work counts as passing. Because branch protection can name just this one context, the job set can be split or renamed without touching the ruleset. Branch protection itself is configured in GitHub, not in this repository.
 
 Seven jobs also never skip because of an upstream failure: `Plan Go work`, `Build, vet`, `Lint`, `Test (internal/api)`, `Test (everything else)`, `Coverage gate` and `Web (tsc, eslint)`. Each runs, and fails, whenever an upstream job failed or was cancelled, and is skipped only when its area has no work for the diff. GitHub reports a job skipped by its own `if` as success for a required check, so auto-merge does not wait on it.
 
@@ -283,6 +283,10 @@ Seven jobs also never skip because of an upstream failure: `Plan Go work`, `Buil
 | `codeql.yml` | No | Not a required check. Runs on pushes to `main` that touch Go or web sources, weekly, and on manual dispatch |
 | `dependabot-auto-merge.yml` | Dependabot PRs only (listed as skipped elsewhere) | |
 | SonarCloud | Every PR | A GitHub App, not an Actions job: it runs on the vendor's infrastructure, uses no Actions minutes, and is not a merge blocker |
+
+## First-hour smoke test
+
+The install-to-rollback journey is covered by `scripts/test-first-hour.sh`. How to run it and a ready-to-use nightly job are in [First-hour smoke test](/first-hour-smoke-test).
 
 ## Scheduled, not PR-triggered
 
@@ -299,6 +303,8 @@ Seven jobs also never skip because of an upstream failure: `Plan Go work`, `Buil
 ## Versioning and releases
 
 Versions are automatic. [release-please](https://github.com/googleapis/release-please) reads the conventional commit messages on `main`, picks the next version, updates `CHANGELOG.md`, and keeps one open pull request titled `chore(main): release <version>`. Merging that PR tags the release, creates the GitHub Release, and dispatches `release.yml`, which builds every binary and publishes to Homebrew and npm.
+
+Releases are paced. While the project is pre-1.0, a `feat` bumps the patch (0.8.1, 0.8.2), not the minor, so versions go deep instead of wide; a minor jump such as 0.8.0 needs the `allow-minor-release` label on the release PR. The `Release pacing` check also fails until `RELEASE_COOLDOWN_HOURS` (repository variable, default 6) have passed since the last release, so two releases cannot land in the same hour. An hourly workflow re-runs the failed check, so an armed auto-merge goes through on its own once the wait ends. The `skip-release-cooldown` label overrides the wait for an urgent fix. `scripts/test-release-pacing.sh` is the self test.
 
 The one manual step is merging that PR. By default release-please uses the built-in `GITHUB_TOKEN`, and GitHub does not run CI on pull requests opened that way, so the required `CI required` check never reports and the PR stays blocked until someone reopens it or merges around the gate.
 
@@ -471,6 +477,19 @@ runs `vite build` once when the file is missing, about 20 s.
 pre-push bounds every `go test` it runs with `-timeout`, default `30m`,
 overridable with `LEVELRAIL_PUSH_TEST_TIMEOUT`. The default `go test`
 timeout of 10 minutes is shorter than a whole internal/api run.
+
+`scripts/test-fast.sh` runs `go test -short` for internal/api in shards
+from one binary, with CI's weights and quarantine skips (`-r REGEX`
+narrows tests). pre-push uses it for every internal/api run, in
+`min(4, cores)` shards, overridable with `LEVELRAIL_PREPUSH_API_SHARDS`
+(`1` keeps one `go test` process in the `affected` and full lanes). With
+coverage on, internal/api stays in the single `go test` run. Each shard's
+output is captured; a failure prints only the failing tests with their
+output lines, and the shard logs are kept. The run ends with per-shard
+seconds so a skewed split shows up. `scripts/test-api-shards.sh` checks that
+the shard split covers every internal/api test from `go test -list` exactly
+once. Test builds hash passwords at bcrypt's minimum cost: over 10
+minutes serial became about 3.
 
 ## Expected effect of the lane changes
 

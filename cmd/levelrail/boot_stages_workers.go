@@ -125,7 +125,7 @@ func (s *bootState) startAlerting() {
 	alertingFederator := telemetry.NewLocalFederator(telemetryDB)
 	pluginSender := pluginSenderFor(pluginMgr)
 	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier {
-		return alerting.NewNotifierWithPlugins(notifyClient, emailSender, pushSender, pluginSender, r)
+		return alerting.NewNotifierWithPlugins(notifyClient, alerting.TemplatedSender{Sender: emailSender, Render: alertMailRenderer(db, *b)}, pushSender, pluginSender, r)
 	}
 	// db and apiRouter satisfy the alerting source interfaces structurally, so no adapters are needed.
 	tlsSuppress := alerting.CertSuppressor(func(c context.Context) func(string) bool {
@@ -137,14 +137,39 @@ func (s *bootState) startAlerting() {
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetExportHealth(exportHealthSource{db: db})
+	alertingEngine.SetRegistryRefresh(registryRefreshSource{db: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
 	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))
+	certPolicy := alerting.CertPolicyFromEnv(os.Getenv)
+	certPolicy.BaseURL = dashboardBaseURL()
+	alertingEngine.SetCertExpiryPolicy(certPolicy)
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
 	alertingEngine.SetBudgets(apiRouter)
+	alertingEngine.SetEmailDelivery(db)
+	alertingEngine.SetDatabaseHealth(apiRouter)
+	if src := s.deployDispatcher.Outcomes(); src != nil {
+		alertingEngine.SetDeployFailures(src)
+	}
+	routeDefaultAlerts(ctx, logger, alertingDB, db, emailSender)
+	go func() {
+		if err := apiRouter.RunRegistryRefresher(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("registry credential refresh stopped", slog.String("error", err.Error()))
+		}
+	}()
 	go runUsageRollup(ctx, apiRouter)
+	go footprint.RunTrim(ctx, logger, os.Getenv)
 	go func() {
 		if err := footprint.Every(ctx, "database teardown retry", time.Minute, logger, apiRouter.RetryDatabaseTeardowns); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("database teardown retry stopped", slog.String("error", err.Error()))
+		}
+	}()
+	go func() {
+		prune := func(c context.Context) error {
+			_, err := pruneEmailDeliveries(c, db, emailLogRetention(), time.Now())
+			return err
+		}
+		if err := footprint.Every(ctx, "email delivery log prune", time.Hour, logger, prune); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("email delivery log prune stopped", slog.String("error", err.Error()))
 		}
 	}()
 	go runSpendCaps(ctx, apiRouter)
@@ -223,6 +248,21 @@ func (s *bootState) startSchedulers() {
 	}
 
 	// Always runs: scheduledTaskRunner needs no master key, so this loop is never gated.
+	localNodeID := ""
+	if meshCfg != nil {
+		localNodeID = meshCfg.localNodeID
+	}
+	scheduledTaskRunner.HTTPConfigs = db
+	scheduledTaskRunner.Target = jobHTTPTarget{
+		db: db, nudger: engine, local: client,
+		nodes: lbNodeUpstreams{db: db, local: client, registry: agentRegistry, localNodeID: localNodeID},
+	}
+	s.functionQueue.Target = scheduledTaskRunner.Target
+	go func() {
+		if err := s.functionQueue.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("function queue stopped", slog.String("error", err.Error()))
+		}
+	}()
 	scheduledTaskScheduler := scheduledtask.NewScheduler(db, scheduledTaskRunner, logger)
 	scheduledTaskScheduler.Lookback = scheduledTaskRunner.Limits.CatchUpLookback
 	go func() {
@@ -233,6 +273,7 @@ func (s *bootState) startSchedulers() {
 
 	// Fires through the same git-source deploy path a webhook push uses.
 	appScheduleScheduler := scheduledeploy.NewScheduler(db, db, apiRouter, logger)
+	appScheduleScheduler.OneShotCatchUp = appScheduleOneShotCatchUp(logger)
 	go func() {
 		if err := appScheduleScheduler.Run(ctx, appScheduleSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("scheduled deploy scheduler stopped", slog.String("error", err.Error()))
@@ -284,6 +325,13 @@ func (s *bootState) startSchedulers() {
 		}
 	}()
 
+	inboxTidy := &alerting.TidyRunner{DB: alertingDB, Cfg: alerting.TidyConfigFromEnv(os.Getenv), Logger: logger}
+	go func() {
+		if err := inboxTidy.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("inbox tidy stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	startSecretRotation(ctx, logger, db, apiRouter, secretsManager != nil)
 
 	startDatabaseUpgrades(ctx, logger, db, secretsManager, client, engine.Nudge, backupRunner, backupVerifyRunner, alertingDB, deployDispatcher,
@@ -301,6 +349,8 @@ func (s *bootState) startSchedulers() {
 			logger.Error("image update scheduler stopped", slog.String("error", err.Error()))
 		}
 	}()
+
+	go apiRouter.RunCertWatchdog(ctx)
 
 	// Only checks when an operator has opted into auto_update_enabled.
 	startUpgradeScheduler(ctx, logger, apiRouter)
@@ -371,12 +421,7 @@ func (s *bootState) serve() error {
 	client := s.client
 	engine := s.engine
 	httpServer := s.httpServer
-	events, errs := client.Events(ctx)
-	go func() {
-		if err, ok := <-errs; ok && err != nil {
-			logger.Error("docker event stream error", slog.String("error", err.Error()))
-		}
-	}()
+	events := resilientEvents(ctx, client.Events, logger)
 
 	serveErrs := make(chan error, 1)
 	go func() {

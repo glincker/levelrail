@@ -1,12 +1,8 @@
-import type { GitHubAppRepo } from '../types/githubApp'
-import type { GitLabAppProject } from '../types/gitlabApp'
-import type { BitbucketAppRepo } from '../types/bitbucketApp'
-import type { GiteaAppRepo } from '../types/giteaApp'
 import type { GitRepoSourceValue } from '../components/GitRepoSourcePicker'
+import type { GitRepoItem, GitRepoProvider } from '../types/gitRepos'
 
 // The one shape every provider's repo list adapts into before reaching
-// RepoPickerGrid/GitRepoCard. A new provider just needs one more
-// `fromXRepo` adapter here.
+// GitRepoCard. A new provider just needs one more case in fromGitRepoItem.
 export interface NormalizedRepoOption {
   key: string
   displayPath: string
@@ -20,120 +16,14 @@ export interface NormalizedRepoOption {
   /** GitHub only: primary language and last push time, for the new-app list. */
   language?: string
   pushedAt?: string
-}
-
-export function fromGitHubRepo(repo: GitHubAppRepo): NormalizedRepoOption {
-  return {
-    key: repo.full_name,
-    displayPath: repo.full_name,
-    private: repo.private,
-    defaultBranch: repo.default_branch,
-    cloneUrl: repo.clone_url,
-    providerRef: { kind: 'github', owner: repo.owner_login, repo: repo.name },
-    ownerLogin: repo.owner_login,
-    accountType: repo.account_type,
-    language: repo.language,
-    pushedAt: repo.pushed_at,
-  }
-}
-
-// GitHubRepoGroup is one connected account's slice of the repo picker's
-// card grid: a header (account login, "Personal" for a user account)
-// plus that account's own repos, or an error when the installation
-// failed to list instead of any repos.
-export interface GitHubRepoGroup {
-  key: string
-  label: string
-  options: NormalizedRepoOption[]
-  error?: string
-}
-
-// groupGitHubRepos preserves installation order (the backend lists
-// installations oldest-first): a login appearing in both repos and
-// errors (shouldn't happen, each installation either lists or fails)
-// keeps its repos and picks up the error too, rather than one silently
-// overwriting the other.
-export function groupGitHubRepos(
-  options: NormalizedRepoOption[],
-  errors: { account_login: string; error: string }[],
-): GitHubRepoGroup[] {
-  const groups = new Map<string, GitHubRepoGroup>()
-
-  function groupFor(
-    login: string,
-    accountType: 'user' | 'organization' | undefined,
-  ): GitHubRepoGroup {
-    const existing = groups.get(login)
-    if (existing) {
-      return existing
-    }
-    const created: GitHubRepoGroup = {
-      key: login,
-      label: githubAccountLabel(login, accountType),
-      options: [],
-    }
-    groups.set(login, created)
-    return created
-  }
-
-  for (const option of options) {
-    groupFor(option.ownerLogin ?? '', option.accountType).options.push(option)
-  }
-  for (const err of errors) {
-    groupFor(err.account_login, undefined).error = err.error
-  }
-
-  return Array.from(groups.values())
-}
-
-function githubAccountLabel(
-  login: string,
-  accountType: 'user' | 'organization' | undefined,
-): string {
-  return accountType === 'user' ? `Personal (${login})` : login
-}
-
-export function fromGitLabProject(
-  project: GitLabAppProject,
-): NormalizedRepoOption {
-  return {
-    key: String(project.id),
-    displayPath: project.path_with_namespace,
-    private: project.visibility !== 'public',
-    defaultBranch: project.default_branch,
-    cloneUrl: project.clone_url,
-    providerRef: { kind: 'gitlab', projectId: project.id },
-  }
-}
-
-export function fromBitbucketRepo(
-  repo: BitbucketAppRepo,
-): NormalizedRepoOption {
-  const [workspace, repoSlug] = repo.full_name.split('/')
-  return {
-    key: repo.full_name,
-    displayPath: repo.full_name,
-    private: repo.private,
-    defaultBranch: repo.default_branch,
-    cloneUrl: repo.clone_url,
-    providerRef: {
-      kind: 'bitbucket',
-      workspace: workspace ?? '',
-      repoSlug: repoSlug ?? '',
-    },
-  }
-}
-
-export function fromGiteaRepo(repo: GiteaAppRepo): NormalizedRepoOption {
-  const [owner, repoName] = repo.full_name.split('/')
-  return {
-    key: repo.full_name,
-    displayPath: repo.full_name,
-    private: repo.private,
-    defaultBranch: repo.default_branch,
-    cloneUrl: repo.clone_url,
-    providerRef: { kind: 'gitea', owner: owner ?? '', repo: repoName ?? '' },
-  }
+  /** Owner or organization, so same-name repos from different owners stay apart. */
+  owner?: string
+  /** The connected account (and its label) the repository was listed through. */
+  account?: string
+  connectionId?: string
+  connectionLabel?: string
+  archived?: boolean
+  fork?: boolean
 }
 
 // Makes an https and an ssh clone URL comparable for the "running as X" match.
@@ -145,4 +35,53 @@ export function normalizeRepoUrl(url: string): string {
     .replace(':', '/')
     .replace(/\.git$/, '')
     .replace(/\/$/, '')
+}
+
+// fromGitRepoItem adapts one row of the provider-neutral listing
+// (GET /api/v1/git/repos) into what the picker and the use-as-source calls need.
+export function fromGitRepoItem(
+  provider: GitRepoProvider,
+  item: GitRepoItem,
+): NormalizedRepoOption {
+  const connectionId = item.connection_id ?? ''
+  const base = {
+    // The same repository name can come from two accounts, so the key carries the connection.
+    key: connectionId ? `${connectionId}:${item.key}` : item.key,
+    displayPath: item.full_name,
+    private: item.private,
+    defaultBranch: item.default_branch,
+    cloneUrl: item.clone_url,
+    ownerLogin: provider === 'github' ? item.owner : undefined,
+    accountType: item.account_type,
+    language: item.language,
+    pushedAt: item.pushed_at,
+    owner: item.owner,
+    account: item.account,
+    connectionId: item.connection_id,
+    connectionLabel: item.connection_label,
+    archived: item.archived,
+    fork: item.fork,
+  }
+  switch (provider) {
+    case 'github':
+      return {
+        ...base,
+        providerRef: { kind: 'github', owner: item.owner, repo: item.name },
+      }
+    case 'gitlab':
+      return {
+        ...base,
+        providerRef: {
+          kind: 'gitlab',
+          connectionId,
+          repo: String(item.project_id ?? 0),
+        },
+      }
+    case 'bitbucket':
+    case 'gitea':
+      return {
+        ...base,
+        providerRef: { kind: provider, connectionId, repo: item.full_name },
+      }
+  }
 }

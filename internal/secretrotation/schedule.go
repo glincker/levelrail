@@ -24,6 +24,10 @@ const (
 	EnvDueSoonDays   = "APP_SECRET_ROTATION_DUE_SOON_DAYS"
 	EnvIntervalSecs  = "APP_SECRET_ROTATION_INTERVAL_SECONDS"
 	EnvMaxPerPass    = "APP_SECRET_ROTATION_MAX_PER_PASS" //nolint:gosec // env var name, not a credential
+	EnvGraceHours    = "APP_SECRET_ROTATION_GRACE_HOURS"
+	EnvDefaultDays   = "APP_SECRET_ROTATION_DEFAULT_INTERVAL_DAYS"
+	DefaultGraceHrs  = 24
+	DefaultDays      = 90
 	DefaultDueSoon   = 7 * 24 * time.Hour
 	DefaultInterval  = time.Hour
 	DefaultMaxPerRun = 10

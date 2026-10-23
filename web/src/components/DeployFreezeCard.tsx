@@ -6,6 +6,7 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { HelpLink } from '@/components/HelpLink'
@@ -32,6 +33,8 @@ export function DeployFreezeCard({ appName }: { appName: string }) {
   const save = useSetDeployFreeze(appName)
   const [draft, setDraft] = useState<FreezeWindow[] | null>(null)
 
+  if (freeze.isPending) return <CardSkeleton titleWidth="w-40" rows={2} />
+  // Hidden only once we know freeze is unsupported (e.g. 501).
   if (freeze.isError || !freeze.data) return null
   const windows = draft ?? freeze.data.windows
   const status = freeze.data.status

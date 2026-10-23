@@ -157,6 +157,34 @@ export async function rotateGitSourceWebhookSecret(
   return (await res.json()) as GitSourceResource
 }
 
+// POST /api/v1/apps/{name}/git-source/webhook/register: registers the push
+// webhook on the provider again and returns the source with the new outcome.
+export async function registerGitSourceWebhook(
+  name: string,
+): Promise<GitSourceResource> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(name)}/git-source/webhook/register`,
+    { method: 'POST' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `register webhook failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as GitSourceResource
+}
+
+export function useRegisterGitSourceWebhook(name: string) {
+  const queryClient = useQueryClient()
+  return useMutation<GitSourceResource, ApiError, void>({
+    mutationFn: () => registerGitSourceWebhook(name),
+    onSuccess: (resource) => {
+      queryClient.setQueryData(gitSourceKeys.detail(name), resource)
+    },
+  })
+}
+
 export function useRotateGitSourceWebhookSecret(name: string) {
   const queryClient = useQueryClient()
   return useMutation<GitSourceResource, ApiError, void>({

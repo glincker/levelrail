@@ -79,6 +79,22 @@ func Load(path string) (*Brand, error) {
 	return &b, nil
 }
 
+// LoadEmbedded is Load for the compiled-in defaults, for a run with no brand file on disk.
+func LoadEmbedded() (*Brand, error) {
+	var b Brand
+	if err := yaml.Unmarshal(defaultsYAML, &b); err != nil {
+		return nil, fmt.Errorf("brand: parse embedded defaults: %w", err)
+	}
+	b.applyEnvOverrides()
+	if b.PrimaryColorDark == "" {
+		b.PrimaryColorDark = b.PrimaryColor
+	}
+	if err := b.validate(); err != nil {
+		return nil, fmt.Errorf("brand: %w", err)
+	}
+	return &b, nil
+}
+
 // applyVisualDefaults fills an empty logo and colors from the embedded default
 // brand, only while the name is still the default one: a rebranded deployment
 // must never inherit another identity's mark.
@@ -137,6 +153,11 @@ func (b *Brand) RuleCommentPrefix() string {
 // AgentName returns the node agent's unit, container and path stem, the lowercased ShortName plus "-agent".
 func (b *Brand) AgentName() string {
 	return strings.ToLower(b.ShortName) + "-agent"
+}
+
+// MigrateName returns the read-only migration agent's binary and unit stem, the lowercased ShortName plus "-migrate".
+func (b *Brand) MigrateName() string {
+	return strings.ToLower(b.ShortName) + "-migrate"
 }
 
 // RepoSlug returns the lowercased "owner/name" parsed from RepoURL, or "" if it has no such path.

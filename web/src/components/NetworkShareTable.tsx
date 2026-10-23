@@ -1,16 +1,12 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  HardDrivesIcon,
-  PlugsConnectedIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
 } from '@/components/ui/responsive-table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
 import { DeleteNetworkShareDialog } from './DeleteNetworkShareDialog'
 import { useTestNetworkShare } from '../queries/networkShares'
@@ -62,13 +58,7 @@ function TestButton({ share }: { share: NetworkShare }) {
 // action. No column for which services mount it: GET
 // /api/v1/network-shares carries none of that, the same boundary
 // RegistryCredentialTable draws for its own resource.
-export function NetworkShareTable({
-  shares,
-  action,
-}: {
-  shares: NetworkShare[]
-  action?: ReactNode
-}) {
+export function NetworkShareTable({ shares }: { shares: NetworkShare[] }) {
   const { t } = useTranslation('common')
   const columns = useMemo<ResponsiveColumn<NetworkShare>[]>(
     () => [
@@ -112,18 +102,6 @@ export function NetworkShareTable({
     ],
     [],
   )
-
-  if (shares.length === 0) {
-    return (
-      <EmptyState
-        className="gap-2 border-0 bg-transparent py-4"
-        icon={<HardDrivesIcon className="size-5" />}
-        title="No network shares"
-        description="Add an NFS export or a CIFS/SMB share to mount as a Docker volume source, using Docker's own local-driver network passthrough."
-        action={action}
-      />
-    )
-  }
 
   return (
     <ResponsiveTable

@@ -105,6 +105,11 @@ type Node struct {
 	// UpdateNodeRegion does.
 	Region string
 
+	// Provider and Zone (migration 2470) complete the failure-domain
+	// labels. Like Region they are written only by UpdateNodeFailureDomain.
+	Provider string
+	Zone     string
+
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -306,6 +311,25 @@ func (db *DB) ListNodeStatusEvents(ctx context.Context, nodeID string, limit int
 	return events, nil
 }
 
+// UpdateNodeFailureDomain replaces a node's provider, region and zone labels
+// together. Returns ErrNodeNotFound if no such node exists.
+func (db *DB) UpdateNodeFailureDomain(ctx context.Context, id, provider, region, zone string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE nodes SET provider = ?, region = ?, zone = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
+	`, provider, region, zone, id)
+	if err != nil {
+		return fmt.Errorf("store: set failure domain for node %q: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set failure domain for node %q: rows affected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrNodeNotFound
+	}
+	return nil
+}
+
 // UpdateNodeRegion sets a node's operator-facing location label. Its own
 // narrow updater rather than a SaveNode field, matching
 // UpdateNodeWorkloads: SaveNode is insert-only and this changes on its own
@@ -448,7 +472,7 @@ const nodeSelectColumns = `
 	SELECT id, name, address, status, cert_fingerprint, joined_at, last_seen_at, schedulable, accepts_app_workloads, accepts_build_workloads, mesh_public_key, mesh_address,
 		cert_not_after, cert_serial, cert_renewed_at, cert_generation, cert_key_origin, prev_cert_fingerprint, prev_cert_valid_until, cert_revoked_at,
 		agent_version, agent_commit, agent_os, agent_arch, agent_reported_at,
-		region, created_at, updated_at`
+		region, provider, zone, created_at, updated_at`
 
 func scanNode(scan func(dest ...any) error) (*Node, error) {
 	var (
@@ -466,7 +490,7 @@ func scanNode(scan func(dest ...any) error) (*Node, error) {
 		&n.MeshPublicKey, &n.MeshAddress,
 		&certTimes[0], &n.CertSerial, &certTimes[1], &n.CertGeneration, &n.CertKeyOrigin, &n.PrevCertFingerprint, &certTimes[2], &certTimes[3],
 		&n.AgentVersion, &n.AgentCommit, &n.AgentOS, &n.AgentArch, &certTimes[4],
-		&n.Region, &createdAt, &updatedAt); err != nil {
+		&n.Region, &n.Provider, &n.Zone, &createdAt, &updatedAt); err != nil {
 		return nil, err
 	}
 	if err := parseNodeCertTimes(&n, certTimes); err != nil {

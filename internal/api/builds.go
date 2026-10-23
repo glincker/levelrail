@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/sourceupload"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -122,6 +123,12 @@ type triggerBuildRequest struct {
 	// FromCache builds from the local source cache only and never contacts
 	// the git host; it fails when the ref is not cached.
 	FromCache bool `json:"from_cache,omitempty"`
+	// UploadHash builds a directory previously sent to POST /api/v1/apps/{name}/uploads instead of a git checkout.
+	UploadHash string `json:"upload_hash,omitempty"`
+	// NoCache disables the BuildKit layer cache; only build.type "dockerfile" supports it.
+	NoCache bool `json:"no_cache,omitempty"`
+	// RerunOf is the deploy attempt of this app that this build retries or rebuilds.
+	RerunOf string `json:"rerun_of,omitempty"`
 	freezeOverride
 }
 
@@ -263,8 +270,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: trigger build: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: trigger build: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -273,8 +279,17 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if status, msg := rt.validateRerunOf(r.Context(), name, req.RerunOf); status != 0 {
+		writeError(w, status, msg)
+		return
+	}
+	r = r.WithContext(withRerunOf(r.Context(), req.RerunOf))
 	freezeNote, ok := rt.freezeGate(w, r, name, req.freezeOverride)
 	if !ok {
+		return
+	}
+
+	if rt.refuseNodeCritical(r.Context(), w, existing.NodeID) {
 		return
 	}
 
@@ -301,6 +316,16 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var upload sourceupload.Meta
+	if req.UploadHash != "" {
+		var status int
+		var msg string
+		if upload, status, msg = rt.prepareUploadBuild(name, &req, buildType); status != 0 {
+			writeError(w, status, msg)
+			return
+		}
+	}
+
 	if buildType == spec.BuildImage {
 		if req.Build.Image == "" {
 			writeError(w, http.StatusBadRequest, "build.image is required for build.type \"image\"")
@@ -314,7 +339,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "from_cache needs a git source, not build.type \"image\"")
 			return
 		}
-	} else {
+	} else if req.UploadHash == "" {
 		if req.RepoURL == "" {
 			writeError(w, http.StatusBadRequest, "repo_url is required")
 			return
@@ -327,6 +352,10 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "ref is required")
 			return
 		}
+	}
+	if req.NoCache && buildType != spec.BuildDockerfile {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("no_cache is only supported for build.type \"dockerfile\", not %q", buildType))
+		return
 	}
 	if buildType == spec.BuildRailpack && req.Build.Path != "" {
 		// See triggerBuildBuildInput.Path's own doc comment: railpack has
@@ -350,6 +379,11 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 
 	buildReq := manualBuildRequest(name, *existing, req, buildType)
 	source := store.DeployAttemptSourceManual
+	attemptCtx := r.Context()
+	if req.UploadHash != "" {
+		source = store.DeployAttemptSourceUpload
+		attemptCtx = withUploadCommitMeta(attemptCtx, upload)
+	}
 
 	rt.buildStartMu.Lock()
 	if rt.deploySafety != nil {
@@ -357,8 +391,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			resp, err := rt.enqueueManualBuild(r.Context(), *existing, req, buildReq, freezeNote, allowPrivateRepoAuth)
 			rt.buildStartMu.Unlock()
 			if err != nil {
-				rt.logger.Error("api: trigger build: queue failed", slog.String("error", err.Error()), slog.String("name", name))
-				writeError(w, http.StatusInternalServerError, "internal error")
+				rt.internalError(w, "api: trigger build: queue failed", err, slog.String("name", name))
 				return
 			}
 			writeJSON(w, http.StatusAccepted, resp)
@@ -369,7 +402,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "a deploy for this app is already running")
 		return
 	}
-	run := rt.beginManualBuild(r.Context(), *existing, buildReq, buildType, source, req.DetectedFramework, freezeNote, allowPrivateRepoAuth)
+	run := rt.beginManualBuild(attemptCtx, *existing, buildReq, buildType, source, req.DetectedFramework, freezeNote, allowPrivateRepoAuth)
 	rt.buildStartMu.Unlock()
 
 	run.repoURL, run.ref, run.fromCache = req.RepoURL, req.Ref, req.FromCache

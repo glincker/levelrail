@@ -50,7 +50,7 @@ type GitSourceStore interface {
 	// and forge status reporting.
 	SetGitSourceDeploySettings(ctx context.Context, serviceName string, paths, pathsIgnore []string, reportStatus bool) error
 	// SetGitSourceBuild backs PUT /api/v1/apps/{name}/git-source/build.
-	SetGitSourceBuild(ctx context.Context, serviceName, buildType, buildPath, baseDirectory string) error
+	SetGitSourceBuild(ctx context.Context, serviceName, buildType, buildPath, baseDirectory, buildCommand, publishDir string) error
 }
 
 // GitSourceSecrets is the surface a git source's connect flow and the
@@ -103,6 +103,8 @@ type gitSourceResource struct {
 	// empty means the root. BuildPath is always relative to the repository
 	// root too.
 	BaseDirectory      string                          `json:"base_directory,omitempty"`
+	BuildCommand       string                          `json:"build_command,omitempty"`
+	PublishDir         string                          `json:"publish_dir,omitempty"`
 	ResolvedBuild      gitSourceResolvedBuild          `json:"resolved_build"`
 	AdditionalServices map[string]store.GitSourceBuild `json:"additional_services,omitempty"`
 	// Services is an app.yaml-style services: map (store.GitSource.Services's
@@ -138,6 +140,18 @@ type gitSourceResource struct {
 	ReportStatus      bool      `json:"report_status"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
+	// WebhookURLWarning is private_address or no_public_url when WebhookURL
+	// cannot be reached by a git host; WebhookURLSource says where it came from.
+	WebhookURLWarning string `json:"webhook_url_warning,omitempty"`
+	WebhookURLSource  string `json:"webhook_url_source,omitempty"`
+	// WebhookRegistration is the outcome of registering the webhook on the provider.
+	WebhookRegistration *gitWebhookRegistrationResource `json:"webhook_registration,omitempty"`
+	// Poll is the missed-webhook poller's view of this source.
+	Poll *gitPollStatusResource `json:"poll,omitempty"`
+	// ConnectionID is the provider connection the repository was picked from; empty for a pasted URL.
+	ConnectionID string `json:"connection_id,omitempty"`
+	// Connection is that connection's state, including needs_reconnect once it was removed.
+	Connection *gitSourceConnectionResource `json:"connection,omitempty"`
 }
 
 // gitSourceWebhookPath is the relative API path GitHub's own webhook
@@ -157,15 +171,7 @@ func gitSourceWebhookPath(name string) string {
 // this is the best answer available without an operator-configured
 // origin.
 func (rt *Router) gitSourceWebhookURL(ctx context.Context, name string) string {
-	path := gitSourceWebhookPath(name)
-	base, err := rt.controlPlaneBaseURL(ctx)
-	if err != nil {
-		if origin := requestOriginFrom(ctx); origin != "" {
-			return origin + path
-		}
-		return path
-	}
-	return base + path
+	return rt.gitSourceWebhookStatus(ctx, name).URL
 }
 
 func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gitSourceResource {
@@ -176,7 +182,9 @@ func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gi
 		BuildType:          g.BuildType,
 		BuildPath:          g.BuildPath,
 		BaseDirectory:      g.BaseDirectory,
-		ResolvedBuild:      resolveGitSourceBuild(g.BuildType, g.BaseDirectory, g.BuildPath),
+		BuildCommand:       g.BuildCommand,
+		PublishDir:         g.PublishDir,
+		ResolvedBuild:      resolveGitSourceBuild(g.BuildType, g.BaseDirectory, g.BuildPath, g.BuildCommand, g.PublishDir),
 		AdditionalServices: g.AdditionalServices,
 		Services:           g.Services,
 		Databases:          g.Databases,
@@ -188,6 +196,7 @@ func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gi
 		DeployPaths:        nonNilPaths(g.DeployPaths),
 		DeployPathsIgnore:  nonNilPaths(g.DeployPathsIgnore),
 		ReportStatus:       g.ReportStatus,
+		ConnectionID:       g.ConnectionID,
 		CreatedAt:          g.CreatedAt,
 		UpdatedAt:          g.UpdatedAt,
 	}
@@ -210,6 +219,10 @@ type setGitSourceRequest struct {
 	// BaseDirectory is the build context relative to the repository root;
 	// empty keeps the repository root. BuildPath stays relative to the root.
 	BaseDirectory string `json:"base_directory,omitempty"`
+	// BuildCommand and PublishDir build a static site before serving it
+	// (build_type "static" only); see validateGitSourceStaticBuild.
+	BuildCommand string `json:"build_command,omitempty"`
+	PublishDir   string `json:"publish_dir,omitempty"`
 	// Token is an optional git hosting personal access token for a
 	// private repo, sent over HTTPS Basic auth as the password
 	// (gitCheckoutWithToken, git_webhook.go). Empty on an update means
@@ -380,7 +393,9 @@ func effectiveGitSourceTriggerMode(triggerMode string) string {
 // (owner/repo, project id, workspace/repoSlug) identify which repo,
 // never this body, so the body shape has never actually differed.
 type useRepoAsSourceRequest struct {
-	AppName   string `json:"app_name"`
+	AppName string `json:"app_name"`
+	// Repo names the repository on a git provider connection: a project id for GitLab, owner/name otherwise.
+	Repo      string `json:"repo,omitempty"`
 	Branch    string `json:"branch,omitempty"`
 	BuildType string `json:"build_type,omitempty"`
 	BuildPath string `json:"build_path,omitempty"`
@@ -431,8 +446,7 @@ func (rt *Router) decodeUseAsSourceRequest(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "app not found")
 		return req, "", "", false
 	} else if err != nil {
-		rt.logger.Error(logPrefix+": load app failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, logPrefix+": load app failed", err, slog.String("app_name", req.AppName))
 		return req, "", "", false
 	}
 
@@ -503,8 +517,7 @@ func (rt *Router) handleGetGitSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get git source failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get git source failed", err, slog.String("name", name))
 		return
 	}
 
@@ -512,13 +525,12 @@ func (rt *Router) handleGetGitSource(w http.ResponseWriter, r *http.Request) {
 	if rt.gitSourceSecrets != nil {
 		hasToken, err = rt.gitSourceSecrets.Exists(r.Context(), store.GitSourceSecretsKey(name), gitSourceTokenKey)
 		if err != nil {
-			rt.logger.Error("api: get git source: check token failed", slog.String("error", err.Error()), slog.String("name", name))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: get git source: check token failed", err, slog.String("name", name))
 			return
 		}
 	}
 
-	writeJSON(w, http.StatusOK, toGitSourceResource(*gs, hasToken, rt.gitSourceWebhookURL(withRequestOrigin(r.Context(), r), name)))
+	writeJSON(w, http.StatusOK, rt.gitSourceResourceFor(withRequestOrigin(r.Context(), r), *gs, hasToken, name))
 }
 
 // handleSetGitSource handles PUT /api/v1/apps/{name}/git-source: connect
@@ -547,8 +559,7 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set git source: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set git source: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -576,6 +587,10 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 	}
 	baseDirectory, buildPath, err := validateGitSourceBuildPaths(buildType, req.BaseDirectory, req.BuildPath)
 	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := validateGitSourceStaticBuild(name, buildType, buildPath, req.BuildCommand, req.PublishDir); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -612,13 +627,12 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := rt.connectGitSource(withRequestOrigin(r.Context(), r), name, connectGitSourceParams{
-		RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: buildPath, BaseDirectory: baseDirectory, Token: req.Token,
+		RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: buildPath, BaseDirectory: baseDirectory, BuildCommand: req.BuildCommand, PublishDir: req.PublishDir, Token: req.Token,
 		AdditionalServices: additionalServices, Services: req.Services, Databases: req.Databases,
 		TriggerMode: triggerMode,
 	})
 	if err != nil {
-		rt.logger.Error("api: set git source failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set git source failed", err, slog.String("name", name))
 		return
 	}
 
@@ -641,6 +655,8 @@ type connectGitSourceParams struct {
 	BuildPath string
 	// BaseDirectory is the already-validated build context directory.
 	BaseDirectory string
+	BuildCommand  string
+	PublishDir    string
 	// Token is optional; empty means "leave whatever is currently
 	// stored unchanged" on an update, matching setGitSourceRequest's own
 	// Token field.
@@ -701,7 +717,7 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 		triggerMode = spec.TriggerModePush
 	}
 	if err := rt.gitSources.SaveGitSource(ctx, store.GitSource{
-		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath, BaseDirectory: p.BaseDirectory,
+		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath, BaseDirectory: p.BaseDirectory, BuildCommand: p.BuildCommand, PublishDir: p.PublishDir,
 		AdditionalServices: p.AdditionalServices, Services: p.Services, Databases: p.Databases,
 		TriggerMode: triggerMode,
 	}); err != nil {
@@ -717,7 +733,7 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 		return connectGitSourceResult{}, fmt.Errorf("check deploy token: %w", err)
 	}
 
-	resource := toGitSourceResource(*saved, hasToken, rt.gitSourceWebhookURL(ctx, name))
+	resource := rt.gitSourceResourceFor(ctx, *saved, hasToken, name)
 	if creating {
 		resource.WebhookSecret = webhookSecretPlain
 	}
@@ -744,33 +760,29 @@ func (rt *Router) handleRotateGitSourceWebhookSecret(w http.ResponseWriter, r *h
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: rotate git source webhook secret: load git source failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: rotate git source webhook secret: load git source failed", err, slog.String("name", name))
 		return
 	}
 
 	newSecret, err := randomWebhookSecret()
 	if err != nil {
-		rt.logger.Error("api: rotate git source webhook secret: generate secret failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: rotate git source webhook secret: generate secret failed", err, slog.String("name", name))
 		return
 	}
 
 	key := store.GitSourceSecretsKey(name)
 	if err := rt.gitSourceSecrets.SetValue(r.Context(), key, gitSourceSecretKey, newSecret); err != nil {
-		rt.logger.Error("api: rotate git source webhook secret: save secret failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: rotate git source webhook secret: save secret failed", err, slog.String("name", name))
 		return
 	}
 
 	hasToken, err := rt.gitSourceSecrets.Exists(r.Context(), key, gitSourceTokenKey)
 	if err != nil {
-		rt.logger.Error("api: rotate git source webhook secret: check deploy token failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: rotate git source webhook secret: check deploy token failed", err, slog.String("name", name))
 		return
 	}
 
-	resource := toGitSourceResource(*gs, hasToken, rt.gitSourceWebhookURL(withRequestOrigin(r.Context(), r), name))
+	resource := rt.gitSourceResourceFor(withRequestOrigin(r.Context(), r), *gs, hasToken, name)
 	resource.WebhookSecret = newSecret
 
 	rt.logger.Info("api: git source webhook secret rotated", slog.String("name", name))
@@ -791,8 +803,7 @@ func (rt *Router) handleDeleteGitSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: delete git source failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete git source failed", err, slog.String("name", name))
 		return
 	}
 

@@ -149,6 +149,7 @@ func (rt *Router) checkImageUpdate(ctx context.Context, serviceName string) (str
 		return imageUpdateUpToDate, nil
 	}
 	trigger.Source = store.DeployAttemptSourceImage
+	trigger.Locks = rt.deployPublishLocks()
 	trigger.Ordered, trigger.Sequencer = nil, nil
 	updated, err := trigger.Deploy(ctx, *svc, tagRef)
 	if err != nil {

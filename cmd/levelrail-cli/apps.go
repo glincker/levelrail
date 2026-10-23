@@ -41,6 +41,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "freeze":
 		return runAppsFreeze(prog, args[1:], stdout, stderr, lookupEnv)
+	case "lock", "unlock", "publish":
+		return runAppsLock(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	case "github-actions":
 		return runAppsGitHubActions(prog, args[1:], stdout, stderr, lookupEnv)
 	case "schedule":
@@ -49,12 +51,16 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsAutoRollback(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "autoscale":
 		return runAppsAutoscale(prog, args[1:], stdout, stderr, lookupEnv)
+	case "build-hooks":
+		return runAppsBuildHooks(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-update":
 		return runAppsAutoUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "sleep":
 		return runAppsSleep(prog, args[1:], stdout, stderr, lookupEnv)
 	case "urls":
 		return runAppsURLs(prog, args[1:], stdout, stderr, lookupEnv)
+	case "abuse":
+		return runAppsAbuse(prog, args[1:], stdout, stderr, lookupEnv)
 	case "access":
 		return runAppsAccess(prog, args[1:], stdout, stderr, lookupEnv)
 	case "traces":
@@ -71,10 +77,14 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsErrorTracking(prog, args[1:], stdout, stderr, lookupEnv)
 	case "canary":
 		return runAppsCanary(prog, args[1:], stdout, stderr, lookupEnv)
+	case "split":
+		return runAppsSplit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-rollback-slo-burn":
 		return runAppsAutoRollbackSLOBurn(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "cancel-superseded":
 		return runAppsCancelSuperseded(prog, args[1:], stdout, stderr, lookupEnv)
+	case "watch":
+		return runAppsWatch(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-safety":
 		return runAppsDeploySafety(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploys":
@@ -215,6 +225,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsPreviewEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "branch-env":
 		return runAppsBranchEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "contexts":
+		return runAppsContexts(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "branch-deploys":
+		return runAppsBranchDeploys(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "pr-env":
 		return runAppsPREnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "tag":
@@ -253,14 +267,18 @@ func appsUsage(prog string) string {
   %[1]s apps hook-runs <name> [flags]   show the most recent outcome of name's pre/post-deploy hooks
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
   %[1]s apps freeze set|show|clear <name> [flags]   deploy freeze windows: hold automatic deploys on a cron schedule
+  %[1]s apps lock|unlock <name> [flags]             pin the live release; new builds finish but wait, held
+  %[1]s apps publish <name> <deploy-id> [flags]     make one held build live
   %[1]s apps schedule set|get|history <name> [flags]   recurring redeploy of a branch's latest commit on a cron schedule
   %[1]s apps cancel-superseded enable|disable|status <name> [flags]   let a newer queued deploy replace older queued ones of the same branch
   %[1]s apps autoscale show|set|clear|history <name> [flags]   scale replicas on CPU, memory or request load within a minimum and maximum
   %[1]s apps auto-rollback enable|disable|status <name> [flags]   opt an app into (or out of) automatic rollback when a crashloop alert fires
+  %[1]s apps watch get|set|stop <name> [flags]   post-deploy watch: mode (off, notify, auto), window, thresholds, current state
   %[1]s apps deploy-safety show|set|targets <name> [flags]   readiness gate, drain and post-deploy watch thresholds, and pinned rollback targets
   %[1]s apps sleep enable|disable|status|wake|now|history <name> [flags]   stop an idle app and wake it on the next request
   %[1]s apps sleep list [flags]       apps with sleep on, which are asleep, and the memory freed
   %[1]s apps urls <name> [flags]   where the app can be reached now: ports, local and LAN addresses, domains, internal DNS name
+  %[1]s apps abuse get|set|dry-run <name> [flags]   per app rate limit and deny lists, log_only first, with a replay of recent traffic
   %[1]s apps access <name> [--slow-ms N] [--min-status N] [flags]   recent edge requests with request and trace ids
   %[1]s apps traces list|get <name> [flags]   OTLP traces received for an app: list, or one trace as a tree
   %[1]s apps log-pipeline get|set|clear|preview <name> [flags]   redact, parse, drop or join log lines before they are stored
@@ -269,6 +287,8 @@ func appsUsage(prog string) string {
   %[1]s apps errors list|get|resolve|ignore|reopen <name> [fingerprint] [flags]   Sentry-compatible error issues grouped per app
   %[1]s apps error-tracking enable|status|disable <name> [flags]   the app's Sentry DSN to set as SENTRY_DSN
   %[1]s apps canary start|status|weight|promote|abort <name> [flags]   send a share of traffic to a new image before promoting it
+  %[1]s apps split start|status|weights|promote|stop <name> [flags]   split testing: send a share of visitors to a branch deploy or release, sticky per visitor
+  %[1]s apps build-hooks list|create|rotate|revoke <name> [flags]   secret URLs that build and deploy the app when POSTed to
   %[1]s apps auto-update enable|disable|status|check <name> [flags]   redeploy automatically when the image tag moves to a new digest
   %[1]s apps auto-rollback-slo-burn set|status <name> [mode] [flags]   how an app reacts when an SLO burn-rate alert fires: off, auto, dry_run, pause_for_human
   %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
@@ -342,6 +362,8 @@ func appsUsage(prog string) string {
   %[1]s apps vault-env <verb> [flags]   declare/remove an env var resolved live from an external Vault instance
   %[1]s apps preview-env <verb> [flags]   declare/remove a preview-specific env var override, applied only when a preview is created
   %[1]s apps branch-env <verb> [flags]    declare/remove a branch-scoped env var override, applied only when a preview's own branch matches
+  %[1]s apps contexts <verb> [flags]      set env and build overrides per deploy context, show the effective config
+  %[1]s apps branch-deploys <verb> [flags]   choose which branches get a stable per-branch deploy, list and remove them
   %[1]s apps pr-env <verb> [flags]        declare/remove an env var override for one pull request's preview
   %[1]s apps tag <name> <tag> [flags]     attach a tag (by name) to an app, creating it first if new
   %[1]s apps untag <name> <tag> [flags]   detach a tag (by name) from an app

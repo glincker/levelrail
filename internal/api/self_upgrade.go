@@ -40,6 +40,7 @@ type selfUpgradeConfig struct {
 	store     SelfUpgradeStore
 	launch    SelfUpgradeLauncher
 	rollback  SelfUpgradeLauncher
+	restore   SelfUpgradeLauncher
 	notes     func(ctx context.Context) ([]upgrade.HistoryRelease, error)
 	canLaunch func() (bool, string)
 	mu        sync.Mutex
@@ -60,8 +61,10 @@ func WithSelfUpgrade(s SelfUpgradeStore, launch SelfUpgradeLauncher) Option {
 			c.launch = systemdRunLauncher
 		}
 		c.rollback = func(ctx context.Context, args []string) error { return launchHostCommand(ctx, "rollback", args) }
+		c.restore = func(ctx context.Context, args []string) error { return launchHostCommand(ctx, "restore-point", args) }
 		if launch != nil {
 			c.rollback = launch
+			c.restore = launch
 		}
 		rt.selfUpgrade = c
 	}
@@ -84,6 +87,7 @@ func hostCanLaunch() (bool, string) {
 // find the same brand file, data directory and listen address as the service.
 var hostEnvPassthrough = []string{
 	"APP_DATA_DIR", "APP_BRAND_FILE", "APP_HTTP_ADDR", "APP_INSTALL_VERIFY",
+	"APP_UPGRADE_RESTORE_POINTS", "APP_UPGRADE_RESTORE_POINTS_MAX_MB", "APP_UPGRADE_VERIFY_WINDOW",
 	"LEVELRAIL_RELEASE_BASE_URL", "LEVELRAIL_INSECURE_MIRROR",
 }
 
@@ -314,8 +318,8 @@ func (rt *Router) handleSelfUpgradeStart(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, http.StatusConflict, map[string]any{"error": "breaking changes need acknowledgement", "missing_ack": ids})
 		return
 	}
-	if running, _ := selfupgrade.NewJournal(rt.dataDir).Running(); len(running) > 0 {
-		writeError(w, http.StatusConflict, "an earlier upgrade did not finish; run self-upgrade --recover on the host")
+	if id := rt.runningSelfUpgradeID(); id != "" {
+		writeJSON(w, http.StatusConflict, map[string]any{"error": "an upgrade is already running", "running_attempt_id": id})
 		return
 	}
 	_, actorID, actorName, ok := rt.currentActor(r)
@@ -386,6 +390,12 @@ type selfUpgradeAttemptItem struct {
 	Log         []selfUpgradeLogItem  `json:"log"`
 	StartedAt   string                `json:"started_at"`
 	FinishedAt  string                `json:"finished_at"`
+	// DatabaseRestored and RolledBackMinutes say whether a rollback put the
+	// database snapshot back and how many minutes of changes it discarded.
+	DatabaseRestored  bool `json:"database_restored"`
+	RolledBackMinutes int  `json:"rolled_back_minutes"`
+	// Failure types the failed step and names the buttons that can fix it.
+	Failure *selfupgrade.StepFailure `json:"failure,omitempty"`
 }
 
 // handleSelfUpgradeAttempts handles GET /api/v1/updates/self-upgrade/attempts.
@@ -410,8 +420,7 @@ func (rt *Router) handleSelfUpgradeAttempts(w http.ResponseWriter, r *http.Reque
 	}
 	rows, err := rt.selfUpgrade.store.ListSelfUpgradeAttempts(r.Context(), selfUpgradeListLimit)
 	if err != nil {
-		rt.logger.Error("api: list self-upgrade attempts failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list self-upgrade attempts failed", err)
 		return
 	}
 	out := make([]selfUpgradeAttemptItem, 0, len(rows))
@@ -423,6 +432,7 @@ func (rt *Router) handleSelfUpgradeAttempts(w http.ResponseWriter, r *http.Reque
 				item.Log = append(item.Log, selfUpgradeLogItem{At: l.At.UTC().Format(time.RFC3339), Step: l.Step, Line: l.Line})
 			}
 		}
+		item.Failure = rt.attemptFailure(item)
 		out = append(out, item)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"attempts": out})
@@ -433,6 +443,7 @@ func toSelfUpgradeItem(row store.SelfUpgradeAttempt) selfUpgradeAttemptItem {
 		ID: row.ID, FromVersion: row.FromVersion, ToVersion: row.ToVersion, FromSchema: row.FromSchema, ToSchema: row.ToSchema,
 		Initiator: row.Initiator, Outcome: row.Outcome, FailedStep: row.FailedStep, Error: row.Error, BackupName: row.BackupName,
 		Acked: []string{}, Steps: []selfUpgradeStepItem{}, Log: []selfUpgradeLogItem{}, StartedAt: row.StartedAt, FinishedAt: row.FinishedAt,
+		DatabaseRestored: row.DatabaseRestored, RolledBackMinutes: max(row.RolledBackMinutes, 0),
 	}
 	_ = json.Unmarshal([]byte(row.AckedJSON), &item.Acked)
 	var steps []selfupgrade.StepRecord

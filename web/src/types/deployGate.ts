@@ -4,7 +4,19 @@
 export type GatePhase =
   'readiness' | 'stability' | 'cutover' | 'drain' | 'watch' | 'rollback' | 'pin'
 
-export type GateEventStatus = 'started' | 'passed' | 'failed' | 'info'
+export type GateEventStatus =
+  'started' | 'passed' | 'failed' | 'info' | 'stopped'
+
+export type WatchMode = 'off' | 'notify' | 'auto'
+
+export type WatchState =
+  | 'off'
+  | 'waiting'
+  | 'watching'
+  | 'cleared'
+  | 'tripped'
+  | 'rolled_back'
+  | 'stopped'
 
 export type GateStage =
   | 'pending'
@@ -14,6 +26,7 @@ export type GateStage =
   | 'cleared'
   | 'watch_failed'
   | 'rolled_back'
+  | 'watch_stopped'
 
 export interface GateEvent {
   phase: GatePhase
@@ -34,6 +47,11 @@ export interface DeploySafetySettings {
   watch_min_requests: number
   auto_rollback: boolean
   rollback_pins: number
+  watch_mode: WatchMode
+  watch_latency_ratio: number
+  watch_latency_min_delta: string
+  watch_soft_ticks: number
+  watch_soft_rollback: boolean
 }
 
 export interface DeploySafetyOverrides {
@@ -45,6 +63,9 @@ export interface DeploySafetyOverrides {
   watch_error_rate: number | null
   watch_min_requests: number | null
   auto_rollback: boolean | null
+  watch_mode: WatchMode | null
+  watch_latency_ratio: number | null
+  watch_soft_rollback: boolean | null
 }
 
 export interface DeploySafety {
@@ -75,4 +96,17 @@ export interface DeployGate {
   events: GateEvent[]
   settings: DeploySafetySettings
   rollback_pin: RollbackTarget | null
+  watch: WatchStatus
+}
+
+export interface WatchStatus {
+  state: WatchState
+  mode: WatchMode
+  started_at?: string
+  ends_at?: string
+  remaining_seconds: number
+  window_seconds: number
+  reason?: string
+  message?: string
+  notice?: string
 }

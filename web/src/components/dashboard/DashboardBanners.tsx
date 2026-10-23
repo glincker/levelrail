@@ -1,76 +1,35 @@
 import { Link } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
-import { Banner } from '@/components/ui/banner'
+import { WarningCircleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { TONE } from '@/components/kit/tone'
 import { Button } from '@/components/ui/button'
-import { useIsRoot } from '../../hooks/useIsRoot'
-import { updatesQueryOptions } from '../../queries/updates'
-import { CleanUpDockerDialog } from '../CleanUpDockerDialog'
-import { snoozeNow, useSnoozed } from '../shell/snoozeStore'
-import type { PlatformIssue } from '../shell/platformIssues'
-import { usePlatformIssues } from '../shell/usePlatformIssues'
+import { cn } from '@/lib/utils'
+import type { DashboardNotice } from '../../hooks/useDashboardNotices'
 
-const DISK_ISSUE_ID = 'disk'
-const DISK_SNOOZE_ID = 'banner:disk'
-
-function pickDiskIssue(
-  issues: PlatformIssue[],
-  isSnoozed: (id: string) => boolean,
-): PlatformIssue | undefined {
-  if (isSnoozed(DISK_SNOOZE_ID)) return undefined
-  return issues.find((i) => i.id === DISK_ISSUE_ID && i.severity === 'critical')
-}
-
-/** DashboardBanners carries the notices the shell bar shows elsewhere: critical disk and a newer release. */
-export function DashboardBanners() {
-  const { t } = useTranslation('dashboard')
-  const isRoot = useIsRoot()
-  const issues = usePlatformIssues()
-  const { isSnoozed } = useSnoozed()
-  const updates = useQuery({
-    ...updatesQueryOptions(),
-    retry: false,
-    staleTime: 60 * 60_000,
-    enabled: isRoot,
-  })
-  const disk = pickDiskIssue(issues, isSnoozed)
-  const update = updates.data?.update_available ? updates.data : undefined
-  if (!disk && !update) return null
-
+export function NoticeRows({ notices }: { notices: DashboardNotice[] }) {
   return (
-    <>
-      {disk ? (
-        <Banner
-          variant="critical"
-          title={disk.title}
-          action={<CleanUpDockerDialog />}
-          onDismiss={() => {
-            snoozeNow(DISK_SNOOZE_ID, '1d')
-          }}
-        >
-          {t('banners.diskDetail', { detail: disk.detail })}
-        </Banner>
-      ) : null}
-      {update ? (
-        <Banner
-          variant="info"
-          title={t('banners.updateTitle', {
-            version: update.latest_version ?? '',
-          })}
-          dismissId={`dashboard-update:${update.latest_version ?? 'latest'}`}
-          action={
-            <Button
-              size="sm"
-              variant="outline"
-              render={<Link to="/settings/updates" />}
-            >
-              {t('banners.updateAction')}
+    <ul className="divide-y divide-border">
+      {notices.map((n) => {
+        const Icon = n.tone === 'danger' ? WarningCircleIcon : WarningIcon
+        return (
+          <li
+            key={n.id}
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 first:pt-0 last:pb-0"
+          >
+            <Icon
+              weight="fill"
+              aria-hidden="true"
+              className={cn('size-4 shrink-0', TONE[n.tone].text)}
+            />
+            <span className="min-w-0 flex-1 text-sm">
+              <span className="font-medium text-foreground">{n.title}</span>
+              <span className="ml-2 text-muted-foreground">{n.detail}</span>
+            </span>
+            <Button size="sm" variant="outline" render={<Link to={n.to} />}>
+              {n.action}
             </Button>
-          }
-        >
-          {t('banners.updateDetail', { current: update.current_version })}
-        </Banner>
-      ) : null}
-    </>
+          </li>
+        )
+      })}
+    </ul>
   )
 }

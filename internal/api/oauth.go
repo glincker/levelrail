@@ -80,8 +80,7 @@ func setOAuthBindingCookie(w http.ResponseWriter, r *http.Request, nonce string,
 func (rt *Router) handleListPublicOAuthProviders(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.oauthSettings.ListOAuthProviderSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list public oauth providers failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list public oauth providers failed", err)
 		return
 	}
 	type publicProvider struct {
@@ -134,8 +133,7 @@ func (rt *Router) beginOAuthFlow(w http.ResponseWriter, r *http.Request, purpose
 
 	settings, err := rt.oauthSettings.GetOAuthProviderSettings(r.Context(), provider)
 	if err != nil {
-		rt.logger.Error("api: oauth start: load settings failed", slog.String("provider", provider), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: oauth start: load settings failed", err, slog.String("provider", provider))
 		return
 	}
 	if !settings.Enabled {
@@ -152,22 +150,19 @@ func (rt *Router) beginOAuthFlow(w http.ResponseWriter, r *http.Request, purpose
 
 	client, err := rt.oauthClientFactory(provider, settings, clientSecret, oauthRedirectURL(r, provider))
 	if err != nil {
-		rt.logger.Error("api: oauth start: build client failed", slog.String("provider", provider), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: oauth start: build client failed", err, slog.String("provider", provider))
 		return
 	}
 
 	nonce, err := randomToken()
 	if err != nil {
-		rt.logger.Error("api: oauth start: generate nonce failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: oauth start: generate nonce failed", err)
 		return
 	}
 	verifier := oauth2.GenerateVerifier()
 	state, err := rt.oauthState.create(provider, purpose, linkUserID, nonce, verifier)
 	if err != nil {
-		rt.logger.Error("api: oauth start: generate state failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: oauth start: generate state failed", err)
 		return
 	}
 

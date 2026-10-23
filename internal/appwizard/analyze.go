@@ -177,7 +177,33 @@ func Analyze(ctx context.Context, src repolayout.Source, opts Options) (*Analysi
 	if layout.LooksLikeMonorepo && !layout.RootHasApp && opts.BaseDirectory == "" && opts.DockerfilePath == "" && len(a.Build.Alternatives) > 1 {
 		a.Warnings = append(a.Warnings, Warning{Code: WarnMonorepo, Message: "this looks like a monorepo with several apps; check the suggested app directory"})
 	}
+	a.fillEmptySlices()
 	return a, nil
+}
+
+// fillEmptySlices keeps nil slices out of the JSON so clients can iterate safely.
+func (a *Analysis) fillEmptySlices() {
+	if a.Env == nil {
+		a.Env = []EnvKey{}
+	}
+	if a.Databases == nil {
+		a.Databases = []DatabaseNeed{}
+	}
+	if a.Warnings == nil {
+		a.Warnings = []Warning{}
+	}
+	if a.Build.Alternatives == nil {
+		a.Build.Alternatives = []repolayout.Suggestion{}
+	}
+	if a.Detection.EnvVars == nil {
+		a.Detection.EnvVars = []EnvVarGuess{}
+	}
+	if a.Detection.Warnings == nil {
+		a.Detection.Warnings = []Warning{}
+	}
+	if a.Detection.Reasons == nil {
+		a.Detection.Reasons = []Reason{}
+	}
 }
 
 func chooseBuild(layout repolayout.Result, opts Options) Build {

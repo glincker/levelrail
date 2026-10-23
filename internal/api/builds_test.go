@@ -1647,3 +1647,37 @@ func TestGitSourceCloneToken_FallsBackToInstallationToken(t *testing.T) {
 		t.Error("GitSourceCloneToken() minted a token for a repo outside the app's instance, want empty")
 	}
 }
+
+func TestHandleTriggerBuild_NoCache(t *testing.T) {
+	tests := []struct {
+		name      string
+		body      string
+		wantCode  int
+		wantCache bool
+	}{
+		{"default keeps cache", `{"repo_url":"https://example.com/web.git","ref":"main"}`, http.StatusAccepted, false},
+		{"dockerfile no_cache", `{"repo_url":"https://example.com/web.git","ref":"main","no_cache":true}`, http.StatusAccepted, true},
+		{"railpack no_cache rejected", `{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"railpack"},"no_cache":true}`, http.StatusBadRequest, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			fb := newFakeBuilder("levelrail/web:abc1234", nil)
+			rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(t.TempDir(), nil))
+			cookie := loginTestSession(t, rt, db)
+			seedWebApp(t, db)
+
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds", tc.body))
+			if rec.Code != tc.wantCode {
+				t.Fatalf("status = %d, want %d; body = %s", rec.Code, tc.wantCode, rec.Body.String())
+			}
+			if tc.wantCode != http.StatusAccepted {
+				fb.assertNotCalled(t)
+				return
+			}
+			if got := fb.awaitCall(t); got.NoCache != tc.wantCache {
+				t.Errorf("NoCache = %v, want %v", got.NoCache, tc.wantCache)
+			}
+		})
+	}
+}

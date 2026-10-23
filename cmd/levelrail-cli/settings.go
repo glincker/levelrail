@@ -51,6 +51,7 @@ func settingsUsage(prog string) string {
   %[1]s settings oauth set <provider> [flags]           enable/configure/disable one OAuth sign-in provider
   %[1]s settings email get [flags]                        show the current outbound email (SMTP/SES) settings
   %[1]s settings email set [flags]                        configure outbound email
+  %[1]s settings email branding get|set|preview [flags]   logo, accent color and footer for rich email
   %[1]s settings ingress get [flags]                      show the current ingress/ACME settings
   %[1]s settings ingress set [flags]                      configure the primary domain and ACME (Let's Encrypt) settings
   %[1]s settings edge get|set|fix [flags]                 request limits and trusted proxies (fix detects the proxy in front)

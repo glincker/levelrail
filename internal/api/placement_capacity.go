@@ -29,6 +29,7 @@ func (rt *Router) loadPlacementInventory(ctx context.Context) (placementInventor
 	if err != nil {
 		return placementInventory{}, err
 	}
+	databases = rt.withoutPendingDatabases(ctx, databases)
 	inv := placementInventory{nodes: nodes, counts: make(map[string]int, len(nodes)), requested: make(map[string]placement.Resources, len(nodes))}
 	for _, s := range services {
 		inv.counts[s.NodeID]++
@@ -105,20 +106,35 @@ func (rt *Router) candidatesFrom(ctx context.Context, inv placementInventory) ([
 			load += inv.counts[""]
 			requested = requested.Add(inv.requested[""])
 		}
-		nodeLabels := labels[n.ID]
-		if _, ok := nodeLabels[placement.LabelRegion]; !ok && n.Region != "" {
-			merged := make(map[string]string, len(nodeLabels)+1)
-			for k, v := range nodeLabels {
-				merged[k] = v
-			}
-			merged[placement.LabelRegion] = n.Region
-			nodeLabels = merged
-		}
+		nodeLabels := withDomainLabels(labels[n.ID], n)
 		out = append(out, placement.Candidate{
-			ID: n.ID, Name: n.Name, Labels: nodeLabels, Schedulable: n.Schedulable,
+			ID: n.ID, Name: n.Name, Labels: nodeLabels, Schedulable: n.Schedulable && rt.nodeBlockReason(ctx, n.ID) == "",
 			Online: n.Status == store.NodeStatusOnline, Load: load,
 			Capacity: rt.nodeCapacity(n.ID), Requested: requested,
 		})
 	}
 	return out, nil
+}
+
+// withDomainLabels fills region, provider and zone from the node row unless
+// an explicit node label of the same key overrides them.
+func withDomainLabels(labels map[string]string, n store.Node) map[string]string {
+	fill := map[string]string{placement.LabelRegion: n.Region, placement.LabelProvider: n.Provider, placement.LabelZone: n.Zone}
+	var out map[string]string
+	for k, v := range fill {
+		if _, ok := labels[k]; ok || v == "" {
+			continue
+		}
+		if out == nil {
+			out = make(map[string]string, len(labels)+len(fill))
+			for lk, lv := range labels {
+				out[lk] = lv
+			}
+		}
+		out[k] = v
+	}
+	if out == nil {
+		return labels
+	}
+	return out
 }

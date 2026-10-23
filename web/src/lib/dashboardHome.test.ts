@@ -7,7 +7,6 @@ import {
   dayPeriod,
   deployBrand,
   deployRows,
-  heroSentence,
 } from './dashboardHome'
 
 describe('dayPeriod', () => {
@@ -23,29 +22,6 @@ describe('dayPeriod', () => {
     [22, 'night'],
   ] as const)('hour %i is %s', (hour, want) => {
     expect(dayPeriod(hour)).toBe(want)
-  })
-})
-
-describe('heroSentence', () => {
-  it.each([
-    [
-      { apps: 7, failing: 0, attention: 0 },
-      { key: 'allHealthy', count: 7 },
-    ],
-    [
-      { apps: 7, failing: 0, attention: 2 },
-      { key: 'needAttention', count: 2 },
-    ],
-    [
-      { apps: 7, failing: 3, attention: 0 },
-      { key: 'needAttention', count: 3 },
-    ],
-    [
-      { apps: 0, failing: 0, attention: 0 },
-      { key: 'noApps', count: 0 },
-    ],
-  ] as const)('%j', (input, want) => {
-    expect(heroSentence(input)).toEqual(want)
   })
 })
 

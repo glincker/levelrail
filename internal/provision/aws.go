@@ -110,21 +110,47 @@ func (a *AWS) buildClient(ctx context.Context, region string) (ec2API, error) {
 	if region == "" {
 		region = a.creds.region()
 	}
+	credsProvider, err := a.creds.CredentialsProvider(ctx, region)
+	if err != nil {
+		return nil, err
+	}
+	return ec2.New(ec2.Options{Region: region, Credentials: credsProvider}), nil
+}
+
+// ParseAWSCredentials decodes and validates the JSON a node-provider
+// "aws" secret holds, so other packages reuse the same identity modes.
+func ParseAWSCredentials(token string) (AWSCredentials, error) {
+	var creds AWSCredentials
+	if err := json.Unmarshal([]byte(token), &creds); err != nil {
+		return AWSCredentials{}, fmt.Errorf("provision: decode aws credentials: %w", err)
+	}
+	if err := creds.validate(); err != nil {
+		return AWSCredentials{}, err
+	}
+	return creds, nil
+}
+
+// DefaultRegion is the stored region, or the package default.
+func (c AWSCredentials) DefaultRegion() string { return c.region() }
+
+// CredentialsProvider resolves static, ambient or assumed-role credentials
+// for region, the same chain EC2 provisioning uses.
+func (c AWSCredentials) CredentialsProvider(ctx context.Context, region string) (aws.CredentialsProvider, error) {
 	var credsProvider aws.CredentialsProvider
-	if a.creds.UseAmbientCredentials {
+	if c.UseAmbientCredentials {
 		cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
 		if err != nil {
 			return nil, fmt.Errorf("load ambient aws credentials: %w", err)
 		}
 		credsProvider = cfg.Credentials
 	} else {
-		credsProvider = credentials.NewStaticCredentialsProvider(a.creds.AccessKeyID, a.creds.SecretAccessKey, a.creds.SessionToken)
+		credsProvider = credentials.NewStaticCredentialsProvider(c.AccessKeyID, c.SecretAccessKey, c.SessionToken)
 	}
-	if a.creds.RoleARN != "" {
+	if c.RoleARN != "" {
 		stsClient := sts.New(sts.Options{Region: region, Credentials: credsProvider})
-		credsProvider = aws.NewCredentialsCache(stscreds.NewAssumeRoleProvider(stsClient, a.creds.RoleARN))
+		credsProvider = aws.NewCredentialsCache(stscreds.NewAssumeRoleProvider(stsClient, c.RoleARN))
 	}
-	return ec2.New(ec2.Options{Region: region, Credentials: credsProvider}), nil
+	return credsProvider, nil
 }
 
 // ListRegions calls EC2 DescribeRegions.

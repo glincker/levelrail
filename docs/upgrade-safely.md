@@ -47,6 +47,18 @@ sudo levelrail self-upgrade --to vX.Y.Z --dry-run     # plan and breaking change
 
 If the control plane does not run as root or systemd is not the init system, the dashboard and CLI show the exact host command instead of running it.
 
+### One upgrade at a time
+
+The server decides whether an upgrade is running, so a reload, another tab or the CLI all see the same answer. While one runs, every page shows a slim bar ("Upgrading to vX.Y.Z, step 3 of 6"), and the Updates page shows the live stages instead of the Upgrade button. If the control plane restarts mid-upgrade the bar says it is reconnecting and carries on once the new release answers. Starting a second upgrade is refused with `409` and the running attempt id.
+
+When the attempt finishes, the Updates page keeps a compact result card: "Upgraded from vA to vB at TIME, verification passed" with a link to the release notes and **View attempt details** for the stage timeline. A failed attempt shows the reason with the Fix, Retry and Roll back actions. Dismissing the card is remembered in this browser. A one-time notification appears on the next page load, and the Inbox gets an "Upgrade to vB succeeded" item that you can archive like other resolved items. No email is sent for this.
+
+```bash
+levelrail-cli upgrade status    # prints the running attempt and the last finished one
+```
+
+The same data is at `GET /api/v1/updates/self-upgrade/status`.
+
 ## Schedule an upgrade
 
 Pick a time when nobody is deploying. Settings > Updates > **Schedule upgrade**, or:
@@ -105,13 +117,13 @@ Scheduling and the policy are root-only (a root session or a root-ability token)
 | backup | Snapshots the database (`VACUUM INTO`, integrity checked) and keeps a copy of the running binary | Nothing changed |
 | migration dry run | Applies the new release's migrations to a copy of the snapshot with the new binary | Nothing changed, the old version keeps running |
 | stop, swap, start | Stops the service, replaces the binary atomically, starts it | Automatic rollback |
-| health | Waits for `/healthz` and `/readyz` within the timeout | Automatic rollback |
+| health | Verifies within the window (`APP_UPGRADE_VERIFY_WINDOW`, 3 minutes by default): `/readyz` passes with the reconcile loop running, the database is at the new release's schema head, and agents that were connected before the upgrade have reconnected | Automatic rollback |
 
 Nothing on the host changes before the stop step. Everything before it is safe to interrupt.
 
 ## Automatic rollback
 
-If a step after the stop fails, or the new release is not healthy within `--timeout` (90 seconds by default):
+If a step after the stop fails, or verification does not pass within `--timeout` (the verify window, 3 minutes by default):
 
 - the previous binary is restored byte for byte and started;
 - if the new release already migrated the database, the pre-upgrade snapshot is put back and the database written by the failed run is kept beside it (`levelrail.db.before-rollback-<timestamp>`);
@@ -119,9 +131,15 @@ If a step after the stop fails, or the new release is not healthy within `--time
 
 The attempt is recorded as `rolled_back` with its step timeline, visible at Settings > Updates and with `levelrail-cli upgrade --attempts`.
 
-What is not kept: data the control plane wrote between the swap and the rollback, only when the schema changed. That window is the health timeout at most. App containers keep running throughout.
+What is not kept: data the control plane wrote since the pre-upgrade snapshot, only when the schema changed. The attempt records how many minutes of changes that was (shown on the attempt and in `upgrade --attempts`), so nothing is lost silently. App containers keep running throughout.
 
 If the rollback itself fails, the attempt is `failed` and the message names the previous binary (`<binary>.prev`) and the snapshot, so a person can finish the job by hand with `restore-snapshot`.
+
+## Restore points
+
+Before every upgrade a restore point is kept under `<data dir>/restore-points`: a consistent database copy, the running binary and the service unit file (files are mode 0600). The newest `APP_UPGRADE_RESTORE_POINTS` points (3 by default) are kept within `APP_UPGRADE_RESTORE_POINTS_MAX_MB` (2048 by default); the oldest are pruned first and the newest always stays.
+
+Settings > Updates lists them under the rollback section with a **Restore** button, and the CLI has `levelrail-cli updates restore-points list` and `levelrail-cli updates restore-points restore <id> --yes`. Restoring puts back the binary and unit file, and the database only when it was migrated past the restore point; the result says how many minutes of changes that discards. It is root only, audited, and refuses while an upgrade is running. On the host: `sudo <binary> restore-point --id <id>`.
 
 ## Breaking defaults
 
@@ -199,6 +217,51 @@ An automated matrix builds a control plane database at several older schema vers
 Two failure cases are covered as well. A binary older than the database refuses to start, exits with status 78 and leaves the database file byte for byte unchanged. A migration that fails partway keeps the steps already committed, leaves the snapshot intact, and sends the control plane into safe mode with a migration failure reason, where the snapshot can be restored.
 
 The two most recent starting versions run on every pull request. The full set runs in the nightly suite. Run `scripts/upgrade-fixtures/generate.sh` to write the seeded pre-upgrade databases to a folder for inspection.
+
+## Upgrading real releases with real data
+
+The matrix above upgrades synthetic databases in process. The release harness goes further: it runs the actual binary of an earlier release, so the old code writes the data and the old `self-upgrade` command performs the upgrade.
+
+```bash
+scripts/upgrade-harness.sh v0.8.2 v0.8.1
+```
+
+Each tag is built from its own source (an archive of the tag plus `go build`, in a temporary directory) or taken from `LEVELRAIL_UPGRADE_FROM_BINARY_DIR/<tag>/levelrail`. The test is `TestReleaseUpgradeHarness` in `cmd/levelrail`; it is skipped unless `LEVELRAIL_UPGRADE_FROM_TAGS` is set and under `go test -short`. `LEVELRAIL_UPGRADE_TARGET_VERSION` names the version the current build reports (default `v0.8.99`). It needs about 2 GiB of disk and several minutes per tag.
+
+For each tag the harness:
+
+1. starts the old release on an empty data directory and seeds it through its HTTP API: an app, an app secret, a database record, a second user and the audit rows those calls produce, plus a probe row written straight into the database;
+2. upgrades to the current build with `self-upgrade` and checks that the app, secret value (decrypted with the same master key), database record, user and probe row are unchanged, that no audit row was lost and that the audit chain verifies;
+3. checks the restore point: it holds the previous release's binary byte for byte and a database copy that passes `PRAGMA integrity_check` and contains the seeded app;
+4. creates a change after the upgrade, then restores the point with `levelrail restore-point` and checks the old version is running again with the seeded data intact;
+5. upgrades to a release that rewrites the database and never becomes healthy, and checks the automatic restore: the previous binary is back byte for byte, the database is the pre-upgrade one and every seeded record is intact;
+6. upgrades again, then attempts a downgrade with `self-upgrade --to <old tag>`, which is refused without touching the binary. It then marks the database as written by a newer release and starts the old binary on it: the binary must exit with status 78, leave the database file byte for byte unchanged, and the current release must start again once the marker is removed.
+
+### Cross-release schema migration
+
+`TestReleaseUpgradeSchemaMigration` and `TestReleaseUpgradeSchemaAutoRestore` (same switch, same `scripts/upgrade-harness.sh`) upgrade a data directory that the real v0.8.2 binary created to the current build. v0.8.2 ships migrations up to 2830 and the current tree ships more, so the upgrade runs real migrations on real data. It seeds a legacy single-row email backend (SMTP, with a stored password) and an app spend cap through the v0.8.2 API, sends a test email through a local SMTP sink to prove the credential works, and then checks:
+
+1. email: `prov_primary` exists in `email_providers` with every non-secret column equal to the old `email_settings` row, `GET /api/v1/settings/email` and `GET /api/v1/settings/email/providers` agree, the primary reports its credential as set, and a test send through the primary reaches the sink with the original password. The deprecated `PUT /api/v1/settings/email` still round-trips, keeps the credential when none is sent, and both views follow it;
+2. spend caps: the cap row and its history survive unchanged, `guard_mode` is `alert`, no budget or override is blocking, and the app's deploy guard reports allowed;
+3. migrations: `schema_migrations` holds exactly the shipped list (no gaps, no extras, names match), the migrations the old release had are not applied again, the new ones carry an `applied_at` from the upgrade, and restarting the current build against the same data directory changes nothing and takes no snapshot;
+4. downgrade: the v0.8.2 binary started on the upgraded database exits with status 78, prints the documented message, and leaves the database file (and its WAL) byte for byte unchanged. `self-upgrade --to v0.8.2` is refused too;
+5. restore: the pre-upgrade restore point holds the v0.8.2 binary and a database at the old schema with no `email_providers` table. In `TestReleaseUpgradeSchemaAutoRestore` the current build migrates for real, its health check is made to fail, and the v0.8.2 `self-upgrade` rolls back on its own: the old binary, schema, migration list, legacy email row, cap and probe row all come back, v0.8.2 sends the test email again, and a later upgrade migrates the restored data cleanly.
+
+The manual path is covered too: `levelrail restore-point` no longer opens the live database to record the attempt when that database is on an older schema than the running binary, so a restore to an older release is not migrated forward again. The attempt is recorded at the next boot. The harness runs this step by default.
+
+`TestUpgradeSchemaMigrationInProcess` is the fast version and runs under `go test -short`: it builds the schema v0.8.2 shipped from the real migration files, seeds a legacy email row and a cap, migrates to the current tree and checks the backfill, the `alert` default, the migration list and that a reopen is a no-op. It does not use a release binary.
+
+### What this does and does not prove
+
+Proven for v0.8.1 and v0.8.2 as the starting release: data written by the old binary survives the upgrade, a failed verification puts back the old binary and database, a restore point restores a working old release, and a downgrade is refused by both the upgrade command and the old binary's start-up guard.
+
+Limits:
+
+- The newer-database state in step 6 of the first test is simulated with a marker row. The schema migration tests above use the real schema difference instead.
+- A manual restore point restore only swaps the database when the schema differs, so with equal schemas it keeps the database ("database kept") and the harness checks exactly that. The database swap on restore is proven by step 5 (automatic restore), where the failing release rewrites the database.
+- No containers run: the harness uses the control plane in dev mode without Docker, so app deploys, agent reconnection and the unit file restore (systemd) are not exercised. The agent reconnect part of the verification is skipped because no agent is enrolled.
+- The release is served from a local test server over plain HTTP with `LEVELRAIL_INSECURE_MIRROR`, so the signature check reports "no signature bundle, checksum only". Signature verification has its own tests.
+- The harness runs on demand, on a developer machine or a CI job. It is not part of the pull request lane.
 
 ## What is checked before a release is published
 

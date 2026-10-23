@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -24,12 +25,28 @@ import {
   saveImportDraft,
 } from '../../lib/importDraft'
 import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
+import { failedOutcomes, type OptionOutcome } from '../../lib/deployOptions'
+import { clearDraftsByPrefix } from '../../hooks/useDraft'
 import { SourceStep } from './SourceStep'
 import { FindingsStep } from './FindingsStep'
 import { ReviewStep } from './ReviewStep'
 
 type StepId = 'source' | 'findings' | 'review'
 const STEPS: StepId[] = ['source', 'findings', 'review']
+
+function failureText(t: TFunction<'newApp'>, o: OptionOutcome): string {
+  const reason =
+    o.reason === 'path'
+      ? t('deployOptions.jobs.pathError')
+      : o.reason === 'cron'
+        ? t('deployOptions.jobs.cronError')
+        : o.reason
+  if (o.key === 'previews')
+    return t('deployOptions.failed.previews', { reason })
+  if (o.key === 'job')
+    return t('deployOptions.failed.job', { reason, path: o.subject })
+  return t('deployOptions.failed.deployOnPush', { reason })
+}
 
 interface Failure {
   step: ApplyStep
@@ -61,19 +78,20 @@ export function NewAppWizard() {
   })
 
   const deploy = useMutation({
-    mutationFn: (resume: boolean) => {
-      if (!analysis || !source || !edits) {
-        return Promise.reject(new Error('nothing to deploy'))
-      }
-      return applyNewApp(analysis, source, edits, resume)
-    },
+    mutationFn: (job: DeployJob) =>
+      applyNewApp(job.analysis, job.source, job.edits, job.resume),
     onSuccess: (result) => {
       clearImportDraft()
+      clearDraftsByPrefix('repo-')
       void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+      const failed = failedOutcomes(result.options)
       toast.add({
         title: t('toast.created', { name: result.appName }),
-        description: t('toast.watching'),
-        type: 'success',
+        description:
+          failed.length > 0
+            ? failed.map((o) => failureText(t, o)).join(' ')
+            : t('toast.watching'),
+        type: failed.length > 0 ? 'warning' : 'success',
       })
       void navigate({
         to: '/apps/$name/deploys/$deployId/logs',
@@ -159,26 +177,28 @@ export function NewAppWizard() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-5">
-      <ol
-        className="flex flex-wrap gap-2 text-sm"
-        aria-label={t('steps.label')}
-      >
-        {STEPS.map((s, i) => (
-          <li
-            key={s}
-            aria-current={i === current ? 'step' : undefined}
-            className={cn(
-              'flex items-center gap-2 rounded-md border px-2.5 py-1',
-              i === current
-                ? 'border-primary/50 bg-muted font-medium text-foreground'
-                : 'border-border text-muted-foreground',
-            )}
-          >
-            <span className="font-mono text-xs">{i + 1}</span>
-            {t(`steps.${s}`)}
-          </li>
-        ))}
-      </ol>
+      {step !== 'source' ? (
+        <ol
+          className="flex flex-wrap gap-2 text-sm"
+          aria-label={t('steps.label')}
+        >
+          {STEPS.map((s, i) => (
+            <li
+              key={s}
+              aria-current={i === current ? 'step' : undefined}
+              className={cn(
+                'flex items-center gap-2 rounded-md border px-2.5 py-1',
+                i === current
+                  ? 'border-primary/50 bg-muted font-medium text-foreground'
+                  : 'border-border text-muted-foreground',
+              )}
+            >
+              <span className="font-mono text-xs">{i + 1}</span>
+              {t(`steps.${s}`)}
+            </li>
+          ))}
+        </ol>
+      ) : null}
 
       {step === 'source' ? (
         <>
@@ -189,8 +209,22 @@ export function NewAppWizard() {
             <SourceStep
               busy={analyze.isPending}
               error={analyze.isError ? analyze.error.message : null}
+              deploying={deploy.isPending}
+              failure={failure?.message ?? null}
               onSource={(src) => {
                 run(src)
+              }}
+              onImport={(src, a, e) => {
+                setFailure(null)
+                setSource(src)
+                setAnalysis(a)
+                setEdits(e)
+                deploy.mutate({
+                  analysis: a,
+                  source: src,
+                  edits: e,
+                  resume: failure?.appCreated === true,
+                })
               }}
             />
           </div>
@@ -232,12 +266,26 @@ export function NewAppWizard() {
           }}
           onDeploy={() => {
             setFailure(null)
-            deploy.mutate(failure?.appCreated === true)
+            if (analysis && source && edits) {
+              deploy.mutate({
+                analysis,
+                source,
+                edits,
+                resume: failure?.appCreated === true,
+              })
+            }
           }}
         />
       ) : null}
     </div>
   )
+}
+
+interface DeployJob {
+  analysis: ImportAnalysis
+  source: GitRepoSourceValue
+  edits: NewAppEdits
+  resume: boolean
 }
 
 function AnalyzingSkeleton({ label }: { label: string }) {

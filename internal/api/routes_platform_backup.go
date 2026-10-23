@@ -171,6 +171,10 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/branch-env", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppBranchEnv))
 	mux.HandleFunc("POST /api/v1/apps/{name}/branch-env", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppBranchEnv))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/branch-env/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteAppBranchEnv))
+	mux.HandleFunc("GET /api/v1/apps/{name}/contexts", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppContexts))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/contexts", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppContext))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/contexts", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteAppContext))
+	mux.HandleFunc("GET /api/v1/apps/{name}/effective-config", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetEffectiveConfig))
 	// Outbound allowlist per app: AbilityWriteSensitive, it changes the exfiltration surface.
 	// GET has its own route since an unset policy is the common case.
 	mux.HandleFunc("GET /api/v1/apps/{name}/egress-policy", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppEgressPolicy))

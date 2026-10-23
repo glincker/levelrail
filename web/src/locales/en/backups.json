@@ -41,7 +41,9 @@
   "encryption": {
     "on": "New volume backups are compressed and encrypted on this server before upload. Public key: {{key}}",
     "off": "New volume backups are compressed but not encrypted. Anyone with bucket access can read them.",
-    "keyHint": "Keep a copy of the key file (APP_BACKUP_ENCRYPTION_KEY_FILE, default backup-encryption.key in the data directory) somewhere off this server, or encrypted backups cannot be restored after a disaster."
+    "keyHint": "Keep a copy of the key file (APP_BACKUP_ENCRYPTION_KEY_FILE, default backup-encryption.key in the data directory) somewhere off this server, or encrypted backups cannot be restored after a disaster.",
+    "column": "Encryption",
+    "badge": "Encrypted"
   },
   "protection": {
     "title": "Bucket protection",
@@ -399,5 +401,13 @@
     "apply": "Use the suggestion",
     "applied": "Backups scheduled",
     "failed": "Could not schedule backups"
+  },
+  "banner": {
+    "description": "Protect databases and volumes with scheduled backups to storage you control, then prove they restore.",
+    "diagram": {
+      "database": "database",
+      "storage": "storage",
+      "schedule": "schedule"
+    }
   }
 }

@@ -967,3 +967,20 @@ func TestPipeline_Deploy_Railpack_RecordsBuildDuration(t *testing.T) {
 		t.Errorf("recorded duration = %v, want 42s", recorder.lastDuration)
 	}
 }
+
+func TestPipeline_Deploy_Dockerfile_NoCache(t *testing.T) {
+	for _, noCache := range []bool{false, true} {
+		builder := &fakeBuilder{result: &build.Result{Tag: "levelrail/web:abc1234"}}
+		p := New(builder, &fakeServiceStore{})
+		_, err := p.Deploy(context.Background(), Request{
+			ServiceName: "web", Service: dockerfileService(), SourceDir: "/repo",
+			CommitSHA: "abc1234", ImageRepo: "levelrail/web", NoCache: noCache,
+		}, nil)
+		if err != nil {
+			t.Fatalf("Deploy() error = %v", err)
+		}
+		if builder.lastReq.NoCache != noCache {
+			t.Errorf("NoCache = %v, want %v", builder.lastReq.NoCache, noCache)
+		}
+	}
+}

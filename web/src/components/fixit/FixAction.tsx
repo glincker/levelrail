@@ -36,9 +36,12 @@ const RISK_VARIANT: Record<FixRisk, 'success' | 'warning' | 'destructive'> = {
 export function FixAction({
   fix,
   autoApply = false,
+  onResult,
 }: {
   fix: Fix
   autoApply?: boolean
+  /** Called after any apply or re-check, so a page can refresh the check it shows. */
+  onResult?: (r: FixResult) => void
 }) {
   const { t } = useTranslation('fixit')
   const isRoot = useIsRoot()
@@ -69,10 +72,11 @@ export function FixAction({
       {
         onSuccess: (r) => {
           setResult(r)
+          onResult?.(r)
         },
       },
     )
-  }, [canAutoApply, fix.id, fix.subject, apply])
+  }, [canAutoApply, fix.id, fix.subject, apply, onResult])
 
   function run() {
     apply.mutate(
@@ -81,6 +85,7 @@ export function FixAction({
         onSuccess: (r) => {
           setResult(r)
           setConfirm(false)
+          onResult?.(r)
         },
       },
     )

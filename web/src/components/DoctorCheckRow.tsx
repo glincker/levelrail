@@ -9,6 +9,8 @@ import type { VariantProps } from 'class-variance-authority'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import type { DoctorCheck, DoctorCheckStatus } from '../queries/systemDoctor'
 import { CheckDetail } from './CheckDetail'
+import { SilenceMenu } from './attention/SilenceMenu'
+import { useSnoozed } from './shell/snoozeStore'
 
 const STATUS_META: Record<
   DoctorCheckStatus,
@@ -25,8 +27,17 @@ const STATUS_META: Record<
 }
 
 /** DoctorCheckRow is the full-detail rendering of one check: used on the system status page, where showing everything at once is the point. */
-export function DoctorCheckRow({ check }: { check: DoctorCheck }) {
+export function DoctorCheckRow({
+  check,
+  onRecheck,
+}: {
+  check: DoctorCheck
+  onRecheck?: () => Promise<void> | void
+}) {
   const meta = STATUS_META[check.status]
+  const silenceKey = `doctor:${check.name}`
+  const { isSnoozed } = useSnoozed()
+  const silenced = isSnoozed(silenceKey)
   const StatusIcon = meta.icon
   return (
     <div className="py-2.5 text-sm">
@@ -36,13 +47,27 @@ export function DoctorCheckRow({ check }: { check: DoctorCheck }) {
           <p className="mt-0.5 text-xs text-muted-foreground">
             {check.message}
           </p>
+          {check.evidence ? (
+            <p className="mt-0.5 break-words font-mono text-xs text-muted-foreground">
+              {check.evidence}
+            </p>
+          ) : null}
         </div>
-        <Badge variant={meta.variant} className="shrink-0">
-          <StatusIcon />
-          {meta.label}
-        </Badge>
+        <div className="flex shrink-0 items-center gap-1">
+          {check.status === 'warn' || check.status === 'fail' ? (
+            <SilenceMenu
+              issueKey={silenceKey}
+              severity={check.status === 'fail' ? 'critical' : 'warning'}
+              title={check.name}
+            />
+          ) : null}
+          <Badge variant={silenced ? 'muted' : meta.variant}>
+            <StatusIcon />
+            {meta.label}
+          </Badge>
+        </div>
       </div>
-      <CheckDetail check={check} />
+      <CheckDetail check={check} onRecheck={onRecheck} />
     </div>
   )
 }

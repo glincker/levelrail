@@ -3,7 +3,10 @@ import {
   HourglassIcon,
   PackageIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { useCallback, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { buttonVariants } from '@/components/ui/button'
+import { EffectiveConfigPanel } from '../EffectiveConfigPanel'
 import { BuildLogHints } from '../BuildLogHints'
 import { DeployStepFeed } from '../DeployStepFeed'
 import { LogTerminal } from '../LogTerminal'
@@ -12,6 +15,10 @@ import type { DeployStepEvent } from '../../hooks/useDeployStepStream'
 import type { DeployAttempt } from '../../types/deployAttempt'
 import type { GitSourceResource } from '../../types/gitSource'
 import { deployLogDownloadURL } from '../../queries/deployLogs'
+import { parseBuildCacheStats } from '../../lib/buildCacheStats'
+import { analyzeBuildLog, type BuildStep } from '../../lib/buildLogPhases'
+import { BuildPhaseChips, type PhaseFilter } from './BuildPhaseChips'
+import { BuildStepList } from './BuildStepList'
 import { useDeployDetailT } from './useDeployDetailT'
 
 function heightFor(count: number): string {
@@ -59,9 +66,35 @@ export function BuildTab({
   resume: () => void
 }) {
   const { t } = useDeployDetailT()
+  const { t: tc } = useTranslation('deployContexts')
   const builder = gitSource
     ? t(`build.builderValue.${gitSource.build_type}`)
     : undefined
+  const cacheStats = useMemo(() => parseBuildCacheStats(lines), [lines])
+  const analysis = useMemo(() => analyzeBuildLog(lines), [lines])
+  const [phase, setPhase] = useState<PhaseFilter>('all')
+  const [scrollTarget, setScrollTarget] = useState<{ id: number } | null>(null)
+  const shownLines = useMemo(
+    () =>
+      phase === 'all'
+        ? lines
+        : lines.filter((_, i) => analysis.linePhases[i] === phase),
+    [lines, analysis, phase],
+  )
+  const jumpToStep = useCallback(
+    (step: BuildStep) => {
+      const target = lines[step.firstLine]
+      if (!target) return
+      if (phase !== 'all' && analysis.linePhases[step.firstLine] !== phase) {
+        setPhase('all')
+      }
+      setScrollTarget({ id: target.id })
+    },
+    [lines, analysis, phase],
+  )
+  const detected = [attempt.detected_framework, builder]
+    .filter(Boolean)
+    .join(', ')
   const hasSource =
     gitSource?.repo_url ||
     attempt.commit_sha ||
@@ -82,6 +115,16 @@ export function BuildTab({
           aria-label={t('build.source')}
           className="rounded-lg border border-border p-4"
         >
+          {detected ? (
+            <p className="mb-3 text-sm text-foreground">
+              {t('build.detected', { value: detected })}
+              {builder ? (
+                <span className="text-muted-foreground">
+                  {`. ${t('build.detectedBuilder')}`}
+                </span>
+              ) : null}
+            </p>
+          ) : null}
           <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Fact label={t('build.repo')} value={gitSource?.repo_url} />
             <Fact
@@ -120,7 +163,18 @@ export function BuildTab({
 
       {lines.length > 0 ? (
         <>
-          <div className="flex justify-end">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p
+              className="text-sm text-muted-foreground"
+              data-testid="build-cache"
+            >
+              {cacheStats
+                ? t('cache.summary', {
+                    cached: cacheStats.cached,
+                    total: cacheStats.total,
+                  })
+                : t('cache.unknown')}
+            </p>
             <a
               href={deployLogDownloadURL(appName, deployId)}
               download
@@ -131,8 +185,15 @@ export function BuildTab({
             </a>
           </div>
           <BuildLogHints lines={lines} />
+          <BuildPhaseChips
+            analysis={analysis}
+            active={phase}
+            onSelect={setPhase}
+          />
+          <BuildStepList analysis={analysis} onJump={jumpToStep} />
           <LogTerminal
-            lines={lines}
+            lines={shownLines}
+            scrollTarget={scrollTarget}
             isPaused={isPaused}
             pause={pause}
             resume={resume}
@@ -163,6 +224,14 @@ export function BuildTab({
           </div>
         </div>
       )}
+      <details className="rounded-lg border border-border p-3">
+        <summary className="cursor-pointer text-sm font-medium text-foreground">
+          {tc('effective.title')}
+        </summary>
+        <div className="pt-3">
+          <EffectiveConfigPanel appName={appName} />
+        </div>
+      </details>
     </div>
   )
 }

@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/githubapp"
@@ -77,6 +78,9 @@ func (*fakeSecretNotSetError) Error() string { return "fake: secret not set" }
 // before use, the same "no mocking framework, plain struct fields"
 // convention this package's other fakes already use.
 type fakeGitHubAppClient struct {
+	listCalls      atomic.Int32
+	gotListOpts    githubapp.ListOptions
+	listResult     githubapp.ListResult
 	reachableErr   error
 	gotInstanceURL string
 
@@ -160,9 +164,11 @@ func (f *fakeGitHubAppClient) MintInstallationToken(_ context.Context, instanceU
 	return f.mintToken, f.mintErr
 }
 
-func (f *fakeGitHubAppClient) ListInstallationRepos(_ context.Context, instanceURL, _ string) ([]githubapp.Repo, error) {
+func (f *fakeGitHubAppClient) ListInstallationRepos(_ context.Context, instanceURL, _ string, opts githubapp.ListOptions) ([]githubapp.Repo, githubapp.ListResult, error) {
 	f.gotInstanceURL = instanceURL
-	return f.repos, f.reposErr
+	f.listCalls.Add(1)
+	f.gotListOpts = opts
+	return f.repos, f.listResult, f.reposErr
 }
 
 func (f *fakeGitHubAppClient) GetRepo(_ context.Context, instanceURL, _, _, _ string) (githubapp.Repo, error) {
@@ -254,8 +260,8 @@ func TestHandleDisconnectGitHubApp(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/github-app", ""))
-	if rec.Code != http.StatusNoContent {
-		t.Fatalf("status = %d, want 204, body = %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
 	}
 
 	statusRec := httptest.NewRecorder()
@@ -291,8 +297,8 @@ func TestHandleDisconnectGitHubApp_ClearsSecrets(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/github-app", ""))
-	if rec.Code != http.StatusNoContent {
-		t.Fatalf("status = %d, want 204, body = %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
 	}
 
 	if _, err := secrets.Resolve(ctx, secretsKey, "private_key"); err == nil {

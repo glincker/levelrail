@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
+import { CodeBlock } from '@/components/ui/code-block'
 import { Input } from '@/components/ui/input'
 
 const hooksSchema = z.object({
@@ -173,9 +174,7 @@ function HookRunSummary({ label, run }: { label: string; run?: HookRun }) {
         at {new Date(run.ran_at).toLocaleString()}
       </p>
       {run.output ? (
-        <pre className="max-h-32 overflow-auto rounded-md bg-muted p-2 text-xs">
-          {run.output}
-        </pre>
+        <CodeBlock code={run.output} maxHeight="sm" wrapToggle={false} />
       ) : null}
     </div>
   )

@@ -79,6 +79,8 @@
               "index",
               "what-you-need",
               "installing",
+              "install-on-cloud",
+              "local-development",
               "getting-started",
               "quickstart-one-command",
               "tutorials/deploy-a-docker-app",
@@ -90,6 +92,7 @@
           {
             "group": "Add to your setup",
             "pages": [
+              "go-live",
               "domains-and-ingress",
               "app-exposure",
               "tutorials/index",
@@ -102,6 +105,7 @@
               "multi-node-quickstart",
               "tutorials/self-host-vaultwarden",
               "troubleshooting",
+              "doctor",
               "fix-it"
             ],
             "icon": "/assets/icons/plus-circle.svg"
@@ -146,7 +150,9 @@
             "group": "Essentials",
             "pages": [
               "troubleshooting",
+              "doctor",
               "email-notifications",
+              "email-templates",
               "alert-inbox",
               "event-webhooks",
               "attention-center"
@@ -156,22 +162,29 @@
             "group": "Deploying",
             "pages": [
               "deploying-apps",
+              "deploy-from-cli",
+              "drop-deploy",
               "compose-apps",
               "new-app-wizard",
               "importing-apps",
               "pages",
+              "static-routing",
               "deploy-safety",
               "deploy-failures",
               "git-host-outages",
               "deploy-trace",
+              "deploy-event-timeline",
               "build-performance",
               "build-center",
               "scheduled-deploys",
               "scheduled-jobs",
+              "scheduled-functions",
               "image-auto-update",
+              "build-hooks",
               "sleep-when-idle",
               "functions",
               "canary-deploys",
+              "split-testing",
               "deployments-page",
               "images",
               "deploy-previews",
@@ -187,7 +200,8 @@
               "screenshots",
               "docker",
               "zero-downtime-deploys",
-              "preview-environments"
+              "preview-environments",
+              "deploy-contexts"
             ],
             "icon": "/assets/icons/cloud-arrow-up.svg"
           },
@@ -197,18 +211,23 @@
               "domains-and-ingress",
               "standalone-domains",
               "dns",
+              "domain-diagnosis",
               "domain-traffic-controls",
+              "abuse-defense",
               "cdn-and-caching",
+              "forms",
               "firewall",
               "acme-verification-runbook",
               "multi-node",
               "multi-node-quickstart",
+              "add-node-anywhere",
               "resource-aware-placement",
               "autoscaling",
               "node-provisioning",
               "multi-cloud-provisioning",
               "network-topology",
               "service-topology-graph",
+              "canvas",
               "build-node-routing"
             ],
             "icon": "/assets/icons/globe-hemisphere-west.svg"
@@ -233,6 +252,7 @@
               "log-pipelines",
               "log-budgets",
               "data-export",
+              "traffic-export",
               "audit-event-schema",
               "control-plane-backup",
               "archives",
@@ -249,9 +269,11 @@
             "group": "CI/CD and automation",
             "pages": [
               "github-actions",
+              "use-any-ci",
               "pipelines",
               "pipelines-oidc",
               "git-integrations",
+              "git-reliability",
               "git-push-deploy",
               "import-a-repo",
               "monorepos"
@@ -300,6 +322,7 @@
               "rollback",
               "resilience",
               "resilience-summary",
+              "chaos-coverage",
               "observability",
               "traffic-observability",
               "status-page",
@@ -332,16 +355,20 @@
             "group": "Migrate",
             "pages": [
               "migrate-to-levelrail",
+              "migration-wizard",
               "migrate-from-coolify",
+              "coolify-exit-gap-report",
               "migrate-from-dokploy",
               "migrate-from-caprover",
               "migrate-from-dokku",
               "migrate-from-docker-compose",
               "migration-reference",
               "migrating-from-coolify-dokploy-and-caprover",
+              "migration-agent-threat-model",
               "migrate-same-server",
               "migrate-over-ssh",
               "migrating-from-vercel",
+              "migrating-from-netlify",
               "migrating-from-cloud-run"
             ],
             "icon": "/assets/icons/arrows-left-right.svg"
@@ -428,6 +455,7 @@
               "heroku-alternative",
               "railway-alternative",
               "vercel-alternative",
+              "netlify-alternative",
               "cloud-run-alternative",
               "self-host-nextjs"
             ]
@@ -919,6 +947,7 @@
             "group": "Engineering notes",
             "pages": [
               "ci",
+              "first-hour-smoke-test",
               "vps-smoke",
               "i18n",
               "design-tokens",

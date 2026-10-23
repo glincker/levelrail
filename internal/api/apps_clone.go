@@ -59,8 +59,7 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: clone app: load source failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clone app: load source failed", err, slog.String("name", name))
 		return
 	}
 
@@ -71,8 +70,7 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !errors.Is(err, store.ErrServiceNotFound) {
-		rt.logger.Error("api: clone app: check new name failed", slog.String("error", err.Error()), slog.String("new_name", req.NewName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clone app: check new name failed", err, slog.String("new_name", req.NewName))
 		return
 	}
 
@@ -96,16 +94,14 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusConflict, domainTaken.Error())
 			return
 		}
-		rt.logger.Error("api: clone app failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("new_name", req.NewName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clone app failed", err, slog.String("name", name), slog.String("new_name", req.NewName))
 		return
 	}
 
 	if source.ProjectID != "" {
 		if err := rt.apps.UpdateServiceProject(r.Context(), req.NewName, source.ProjectID); err != nil {
 			rt.rollbackClone(r.Context(), req.NewName)
-			rt.logger.Error("api: clone app: assign project failed", slog.String("error", err.Error()), slog.String("new_name", req.NewName), slog.String("project_id", source.ProjectID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: clone app: assign project failed", err, slog.String("new_name", req.NewName), slog.String("project_id", source.ProjectID))
 			return
 		}
 	}
@@ -123,8 +119,7 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 
 	cloned, err := rt.apps.GetDesiredService(r.Context(), req.NewName)
 	if err != nil {
-		rt.logger.Error("api: clone app: reload after clone failed", slog.String("error", err.Error()), slog.String("new_name", req.NewName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clone app: reload after clone failed", err, slog.String("new_name", req.NewName))
 		return
 	}
 	rt.copyEnvSettings(r.Context(), name, req.NewName)

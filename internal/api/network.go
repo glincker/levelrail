@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -67,8 +66,7 @@ func (rt *Router) handleGetAppNetwork(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get app network: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get app network: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -78,7 +76,7 @@ func (rt *Router) handleGetAppNetwork(w http.ResponseWriter, r *http.Request) {
 		resp.FallbackEnabled = !ing.FallbackDomainsDisabled
 	}
 	if len(svc.Domains) == 0 && resp.FallbackEnabled {
-		if fallback, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
+		if fallback, ok := rt.autoHost(r.Context(), svc.Name); ok {
 			resp.FallbackURL = rt.ingressHTTPSURL(ing, fallback)
 		}
 	}

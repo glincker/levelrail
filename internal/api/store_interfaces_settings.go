@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -12,6 +13,8 @@ import (
 type EmailSettingsStore interface {
 	GetEmailSettings(ctx context.Context) (store.EmailSettings, error)
 	UpdateEmailSettings(ctx context.Context, s store.EmailSettings) error
+	GetEmailBranding(ctx context.Context) (store.EmailBranding, error)
+	SetEmailBranding(ctx context.Context, b store.EmailBranding) error
 }
 
 // CloudflareTunnelStore is the store surface GET/PUT/DELETE
@@ -61,10 +64,18 @@ type RegistryStore interface {
 type VaultSettingsStore interface {
 	GetVaultSettings(ctx context.Context) (store.VaultSettings, error)
 	UpdateVaultSettings(ctx context.Context, s store.VaultSettings) error
+	SetVaultCredentialRotation(ctx context.Context, rotatedAt, previousExpiresAt time.Time) error
 }
 
 // RegistryAuthTester asks the local Docker daemon to authenticate against a registry without
 // pulling. Kept off docker.Runtime to avoid rippling into its fakes. *docker.Client satisfies it.
 type RegistryAuthTester interface {
 	TestRegistryAuth(ctx context.Context, host, username, password string) error
+}
+
+// GoogleCloudDNSStore is the store surface GET/PUT/DELETE
+// /api/v1/settings/google-cloud-dns need.
+type GoogleCloudDNSStore interface {
+	GetGoogleCloudDNSSettings(ctx context.Context) (store.GoogleCloudDNSSettings, error)
+	UpdateGoogleCloudDNSSettings(ctx context.Context, s store.GoogleCloudDNSSettings) error
 }

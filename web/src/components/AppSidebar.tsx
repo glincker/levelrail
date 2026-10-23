@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { Link, useRouterState } from '@tanstack/react-router'
+import { CatchBoundary, Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { SignOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { useQuery } from '@tanstack/react-query'
 import {
   Sidebar,
   SidebarContent,
@@ -12,32 +12,46 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
-import { Button } from '@/components/ui/button'
 import { useBrand } from '../hooks/useBrand'
-import { useAuthUsername } from '../hooks/useAuthUsername'
-import { useLogout } from '../queries/auth'
+import { AccountMenu } from './shell/AccountMenu'
+import { updatesQueryOptions } from '../queries/updates'
 import { appScopeName, databaseScopeName } from '../lib/sidebarScope'
 import { GlobalNav } from './shell/GlobalNav'
-import { GLOBAL_NAV_GROUPS, isGlobalItemActive } from './shell/navModel'
+import { sidebarArea } from './shell/sidebarArea'
+import { scheduleIdle } from '../i18n/prefetch'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
+import { SidebarStatusBadge } from './shell/SidebarStatusBadge'
+import { scheduleScrollActiveNavItem } from './shell/scrollActiveNavItem'
 
 // Lazy: exactly one of these three renders at a time (mutually exclusive
 // by pathname below), so a session that never visits /databases or
 // /settings should not pay for their query modules in the eagerly-loaded
 // root chunk either.
-const AppScopedSidebar = lazy(() =>
-  import('./AppScopedSidebar').then((m) => ({ default: m.AppScopedSidebar })),
-)
-const DatabaseScopedSidebar = lazy(() =>
+const loadAppScoped = () =>
+  import('./AppScopedSidebar').then((m) => ({ default: m.AppScopedSidebar }))
+const loadDatabaseScoped = () =>
   import('./DatabaseScopedSidebar').then((m) => ({
     default: m.DatabaseScopedSidebar,
-  })),
-)
-const SettingsScopedSidebar = lazy(() =>
+  }))
+const loadSettingsScoped = () =>
   import('./SettingsScopedSidebar').then((m) => ({
     default: m.SettingsScopedSidebar,
-  })),
-)
+  }))
+const AppScopedSidebar = lazy(loadAppScoped)
+const DatabaseScopedSidebar = lazy(loadDatabaseScoped)
+const SettingsScopedSidebar = lazy(loadSettingsScoped)
+
+// Fetch the scoped chunks while idle so switching areas never shows an empty sidebar.
+let scopedChunksWarmed = false
+function warmScopedSidebars() {
+  if (scopedChunksWarmed) return
+  scopedChunksWarmed = true
+  scheduleIdle(() => {
+    void loadAppScoped()
+    void loadDatabaseScoped()
+    void loadSettingsScoped()
+  })
+}
 
 // Matches /apps/<name> and any nested path under it, capturing <name>.
 // Deliberately excludes the bare /apps list route (no trailing segment)
@@ -51,13 +65,6 @@ const SettingsScopedSidebar = lazy(() =>
 // pathname can never match both, and the checks below stay a simple
 // if/else-if rather than needing extra precedence handling.
 
-// Anchors on /settings itself (no captured name, unlike the two
-// patterns above), covering both the hub (/settings) and every leaf
-// page under it (/settings/github-app, etc). Checked after the app/
-// database patterns below purely by convention, since /settings/ can
-// never overlap with /apps/ or /databases/.
-const SETTINGS_SCOPE_PATTERN = /^\/settings(\/|$)/
-
 // Renders one of four nav modes by pathname (global, app-scoped,
 // database-scoped, settings-scoped) in a single component so the brand
 // header, account footer, and outer chrome stay written once instead of
@@ -65,28 +72,15 @@ const SETTINGS_SCOPE_PATTERN = /^\/settings(\/|$)/
 export function AppSidebar() {
   const brand = useBrand()
   const { t } = useTranslation()
-  const username = useAuthUsername()
-  const logout = useLogout()
+  const version = useQuery(updatesQueryOptions()).data?.current_version
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const scopedAppName = appScopeName(pathname)
   const scopedDatabaseName = databaseScopeName(pathname)
-  // Pages the main nav lists (registry, node providers, IAM policies...) live
-  // under /settings but keep the main sidebar, so opening one never swaps it.
-  const ownedByGlobalNav = GLOBAL_NAV_GROUPS.some((g) =>
-    g.items.some((i) => isGlobalItemActive(pathname, i)),
-  )
-  const isSettingsScoped =
-    SETTINGS_SCOPE_PATTERN.test(pathname) && !ownedByGlobalNav
+  const isSettingsScoped = sidebarArea(pathname) === 'settings'
 
   // Keep the current page's entry visible in a long sidebar.
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      document
-        .querySelector('[data-slot="sidebar-content"] [aria-current="page"]')
-        ?.scrollIntoView({ block: 'nearest' })
-    })
-    return () => cancelAnimationFrame(frame)
-  }, [pathname])
+  useEffect(() => scheduleScrollActiveNavItem(), [pathname])
+  useEffect(warmScopedSidebars, [])
 
   return (
     <Sidebar collapsible="icon" variant="floating">
@@ -98,15 +92,18 @@ export function AppSidebar() {
               render={<Link to="/" />}
               className="gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/40 data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-sidebar-accent"
             >
-              <span className="flex size-8 shrink-0 items-center justify-center text-sm font-bold text-foreground">
+              <span className="relative flex size-8 shrink-0 items-center justify-center text-sm font-bold text-foreground">
                 <BrandMarkGlyph svgWrapperClassName="flex size-7 items-center justify-center [&_svg]:size-full" />
+                <SidebarStatusBadge />
               </span>
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-sm font-semibold">
                   {brand.ShortName || brand.Name}
                 </span>
                 <span className="truncate text-[11px] text-sidebar-foreground/60">
-                  {t('shell.account.controlPlane')}
+                  {version
+                    ? `${t('shell.account.controlPlane')} v${version.replace(/^v/, '').split(/[-+]/)[0]}`
+                    : t('shell.account.controlPlane')}
                 </span>
               </span>
             </SidebarMenuButton>
@@ -114,17 +111,29 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
+      {/* A missing app or database makes the scoped nav throw; without this the
+          root boundary replaced the whole shell with the error card. */}
+      <SidebarContent className="[view-transition-name:nav-panel]">
         {scopedAppName ? (
-          <Suspense fallback={null}>
-            <AppScopedSidebar name={decodeURIComponent(scopedAppName)} />
-          </Suspense>
+          <CatchBoundary
+            getResetKey={() => pathname}
+            errorComponent={GlobalNav}
+          >
+            <Suspense fallback={null}>
+              <AppScopedSidebar name={decodeURIComponent(scopedAppName)} />
+            </Suspense>
+          </CatchBoundary>
         ) : scopedDatabaseName ? (
-          <Suspense fallback={null}>
-            <DatabaseScopedSidebar
-              name={decodeURIComponent(scopedDatabaseName)}
-            />
-          </Suspense>
+          <CatchBoundary
+            getResetKey={() => pathname}
+            errorComponent={GlobalNav}
+          >
+            <Suspense fallback={null}>
+              <DatabaseScopedSidebar
+                name={decodeURIComponent(scopedDatabaseName)}
+              />
+            </Suspense>
+          </CatchBoundary>
         ) : isSettingsScoped ? (
           <Suspense fallback={null}>
             <SettingsScopedSidebar />
@@ -136,27 +145,8 @@ export function AppSidebar() {
 
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem className="flex items-center gap-2 px-1 py-1 group-data-[collapsible=icon]:flex-col">
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-foreground">
-              {(username ?? '?').charAt(0).toUpperCase()}
-            </span>
-            <span className="min-w-0 flex-1 truncate text-xs font-medium group-data-[collapsible=icon]:hidden">
-              {username}
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-6 shrink-0"
-              aria-label={t('shell.account.signOut')}
-              title={t('shell.account.signOut')}
-              disabled={logout.isPending}
-              onClick={() => {
-                logout.mutate()
-              }}
-            >
-              <SignOutIcon className="size-3.5" />
-            </Button>
+          <SidebarMenuItem>
+            <AccountMenu />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

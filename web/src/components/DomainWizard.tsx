@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -20,6 +19,8 @@ import {
 } from '../queries/domainWizard'
 import { isValidDomain, redirectPair, wwwPair } from '../lib/domainWizard'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { useDraft } from '../hooks/useDraft'
+import { DraftBanner } from './DraftBanner'
 import { DomainDnsCheck } from './DomainDnsCheck'
 import {
   CertificateStepBody,
@@ -31,9 +32,12 @@ import {
 // path. Every check runs against the typed domain before it is saved.
 export function DomainWizard({ app }: { app: AppDetail }) {
   const { t } = useTranslation('domains')
-  const [domain, setDomain] = useState('')
-  const [environment, setEnvironment] = useState('')
-  const [preset, setPreset] = useState(false)
+  const draft = useDraft(`domain-wizard:${app.name}`, {
+    domain: '',
+    environment: '',
+    preset: false,
+  })
+  const { domain, environment, preset } = draft.value
   const typed = domain.trim().toLowerCase()
   const debounced = useDebouncedValue(typed, 400)
   const valid = isValidDomain(debounced) && debounced === typed
@@ -77,8 +81,8 @@ export function DomainWizard({ app }: { app: AppDetail }) {
           if (preset && presetPair) {
             void applyRedirect(presetPair)
           }
-          setDomain('')
-          setPreset(false)
+          draft.clearOnSuccess()
+          draft.discard()
         },
       },
     )
@@ -95,6 +99,8 @@ export function DomainWizard({ app }: { app: AppDetail }) {
         </p>
       </div>
 
+      <DraftBanner draft={draft} />
+
       <WizardStep index={1} title={t('wizard.step.domain')}>
         <Field>
           <FieldLabel htmlFor="wizard-domain">
@@ -106,7 +112,7 @@ export function DomainWizard({ app }: { app: AppDetail }) {
             value={domain}
             placeholder={t('wizard.domain.placeholder')}
             onChange={(e) => {
-              setDomain(e.target.value)
+              draft.update({ domain: e.target.value })
             }}
           />
         </Field>
@@ -124,7 +130,7 @@ export function DomainWizard({ app }: { app: AppDetail }) {
               id="wizard-env"
               value={environment}
               onChange={(e) => {
-                setEnvironment(e.target.value)
+                draft.update({ environment: e.target.value })
               }}
               className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm"
             >
@@ -142,7 +148,7 @@ export function DomainWizard({ app }: { app: AppDetail }) {
             <Checkbox
               checked={preset}
               onCheckedChange={(c) => {
-                setPreset(c === true)
+                draft.update({ preset: c === true })
               }}
             />
             <span>

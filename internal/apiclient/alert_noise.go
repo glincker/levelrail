@@ -59,23 +59,33 @@ type MaintenanceWindowResource struct {
 	NextStart   *time.Time `json:"next_start,omitempty"`
 }
 
+// CertExpiryPayload mirrors internal/api's certPayloadResource.
+type CertExpiryPayload struct {
+	Domain      string    `json:"domain"`
+	Issuer      string    `json:"issuer,omitempty"`
+	NotAfter    time.Time `json:"not_after"`
+	DaysLeft    int       `json:"days_left"`
+	FailureKind string    `json:"failure_kind"`
+}
+
 // AlertHistoryEntry mirrors internal/api's alertHistoryResource.
 type AlertHistoryEntry struct {
-	ID         string    `json:"id"`
-	At         time.Time `json:"at"`
-	RuleID     string    `json:"rule_id"`
-	RuleName   string    `json:"rule_name"`
-	RuleKind   string    `json:"rule_kind"`
-	ResourceID string    `json:"resource_id,omitempty"`
-	App        string    `json:"app,omitempty"`
-	Node       string    `json:"node,omitempty"`
-	Severity   string    `json:"severity,omitempty"`
-	Event      string    `json:"event"`
-	Outcome    string    `json:"outcome"`
-	Detail     string    `json:"detail,omitempty"`
-	SilenceID  string    `json:"silence_id,omitempty"`
-	ChannelID  string    `json:"channel_id,omitempty"`
-	Error      string    `json:"error,omitempty"`
+	ID         string             `json:"id"`
+	At         time.Time          `json:"at"`
+	RuleID     string             `json:"rule_id"`
+	RuleName   string             `json:"rule_name"`
+	RuleKind   string             `json:"rule_kind"`
+	ResourceID string             `json:"resource_id,omitempty"`
+	App        string             `json:"app,omitempty"`
+	Node       string             `json:"node,omitempty"`
+	Severity   string             `json:"severity,omitempty"`
+	Event      string             `json:"event"`
+	Outcome    string             `json:"outcome"`
+	Detail     string             `json:"detail,omitempty"`
+	SilenceID  string             `json:"silence_id,omitempty"`
+	ChannelID  string             `json:"channel_id,omitempty"`
+	Error      string             `json:"error,omitempty"`
+	Cert       *CertExpiryPayload `json:"cert,omitempty"`
 
 	// Changes is set on fired entries when the query asked for it.
 	Changes        *RecentChangesResource `json:"changes,omitempty"`

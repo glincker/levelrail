@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/appsleep"
 	"github.com/GLINCKER/levelrail/internal/canary"
+	"github.com/GLINCKER/levelrail/internal/dbprovision"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
@@ -68,6 +70,7 @@ type dynamicSourceDeps struct {
 	// livenessTracker outlives the per-pass controllers below, which is
 	// the whole point: see application.WithLivenessTracker.
 	livenessTracker *application.LivenessTracker
+	imageIDs        *application.ImageIDCache
 	// restartBackoff is shared for the same reason as livenessTracker.
 	restartBackoff *application.RestartBackoff
 	// publicHost is APP_PUBLIC_HOST, threaded to the ingress controller
@@ -111,7 +114,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		}
 
 		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+len(nodes)+2)
-		controllers = append(controllers, appControllersFor(deps, services)...)
+		controllers = append(controllers, appControllersFor(ctx, deps, services)...)
 		controllers = append(controllers, databaseControllersFor(ctx, deps, databases)...)
 		controllers = append(controllers, modelControllersFor(deps, modelRows)...)
 		for _, n := range nodes {
@@ -150,6 +153,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithCloudflareDNSTokens(deps.secretsManager))
 			// Prefers Cloudflare if both DNS-01 providers are enabled.
 			ingressOpts = append(ingressOpts, ingressreconcile.WithRoute53DNSCredentials(deps.secretsManager))
+			ingressOpts = append(ingressOpts, ingressreconcile.WithGoogleCloudDNSKey(deps.secretsManager))
 			// Per-domain HTTP Basic Auth passwords: same nil-secretsManager
 			// hazard as Cloudflare DNS-01 above, same "no domain gets a
 			// basic_auth handler" fallback when absent.
@@ -287,17 +291,32 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 
 // appControllersFor builds one application.Controller per service,
 // skipping (with a warning) any whose node isn't currently reachable.
-func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
+func appControllersFor(ctx context.Context, deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
 	appOpts := appOptionsFor(deps)
+	snap := application.NewPassSnapshot(application.SnapshotMaxAgeFromEnv(os.Getenv))
 	controllers := make([]reconcile.Controller, 0, len(services))
+	targets := map[string]*prefetchNode{}
 	for _, svc := range services {
-		svcRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, svc.NodeID))
+		nodeID := runtimeNodeID(deps, svc.NodeID)
+		svcRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, nodeID)
 		if err != nil {
 			deps.logger.Warn("skipping service for this reconcile pass: node transport unavailable",
 				slog.String("service", svc.Name), slog.String("node_id", svc.NodeID), slog.String("error", err.Error()))
 			continue
 		}
-		controllers = append(controllers, application.New(svc.Name, deps.db, svcRuntime, appOpts...))
+		svcOpts := append(appOpts[:len(appOpts):len(appOpts)], application.WithPassSnapshot(snap, nodeID), application.WithImageIDCache(deps.imageIDs, nodeID))
+		controllers = append(controllers, application.New(svc.Name, deps.db, svcRuntime, svcOpts...))
+		if !svc.Suspended {
+			n := targets[nodeID]
+			if n == nil {
+				n = &prefetchNode{rt: svcRuntime}
+				targets[nodeID] = n
+			}
+			n.names = append(n.names, replicaTargets(svc)...)
+		}
+	}
+	for nodeID, n := range targets {
+		snap.Prefetch(ctx, nodeID, n.rt, n.names)
 	}
 	controllers = append(controllers, application.NewDeleteFinalizer(deps.db, func(nodeID string) (docker.Runtime, error) {
 		return resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, nodeID))
@@ -322,9 +341,21 @@ func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databas
 		if deps.meshCfg != nil {
 			dbOpts = append(dbOpts, database.WithMeshEndpoint(newMeshPathResolver(deps.meshCfg, deps.db), deps.db))
 		}
+		dbOpts = append(dbOpts, database.WithProvisionRecorder(provisionRecorder(deps.db)))
 		controllers = append(controllers, database.New(desired.Name, deps.db, dbRuntime, dbOpts...))
 	}
 	return controllers
+}
+
+var (
+	provisionRecorderOnce sync.Once
+	provisionRecorderInst *dbprovision.Recorder
+)
+
+// provisionRecorder is shared so its duplicate-event suppression survives reconcile passes.
+func provisionRecorder(s dbprovision.Store) *dbprovision.Recorder {
+	provisionRecorderOnce.Do(func() { provisionRecorderInst = dbprovision.NewRecorder(s) })
+	return provisionRecorderInst
 }
 
 // databaseCredentialOpts resolves desired's engine-specific credential
@@ -340,13 +371,13 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		} else if creds != nil {
 			opts = append(opts, database.WithPostgresCredentials(creds))
 		}
-		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name)...)
+		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)
 		opts = append(opts, database.WithSlowQueryThreshold(deps.databaseSlowQueryThresholdMs))
 	case store.EngineRedis:
 		// Redis needs no credentials to reconcile at all (this package's
 		// own doc comment), so TLS is the only per-engine option it ever
 		// gets here.
-		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name)...)
+		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)
 	case store.EngineMySQL:
 		creds, err := mysqlCredentialsFor(ctx, deps.secretsManager, desired.Name)
 		if err != nil {
@@ -355,6 +386,7 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		} else if creds != nil {
 			opts = append(opts, database.WithMySQLCredentials(creds))
 		}
+		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)
 		opts = append(opts, database.WithSlowQueryThreshold(deps.databaseSlowQueryThresholdMs))
 	case store.EngineMongoDB:
 		creds, err := mongoCredentialsFor(ctx, deps.secretsManager, desired.Name)
@@ -372,6 +404,7 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		} else if creds != nil {
 			opts = append(opts, database.WithMariaDBCredentials(creds))
 		}
+		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)
 	case store.EngineClickHouse:
 		creds, err := clickhouseCredentialsFor(ctx, deps.secretsManager, desired.Name)
 		if err != nil {
@@ -393,7 +426,17 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 }
 
 // Logs and skips on a transient error, like the other credential options.
-func databaseTLSOpt(ctx context.Context, deps dynamicSourceDeps, dbName string) []database.Option {
+func databaseTLSOpt(ctx context.Context, deps dynamicSourceDeps, dbName, engine string) []database.Option {
+	if engine != store.EnginePostgres {
+		mode, err := deps.db.GetDatabaseTLSMode(ctx, dbName)
+		if err != nil {
+			deps.logger.Warn("skipping tls mode for this reconcile pass", slog.String("database", dbName), slog.String("error", err.Error()))
+			return nil
+		}
+		if !store.DatabaseTLSEffective(engine, mode) {
+			return []database.Option{database.WithTLSDisabled()}
+		}
+	}
 	material, err := tlsMaterialFor(ctx, deps.secretsManager, dbName)
 	if err != nil {
 		deps.logger.Warn("skipping tls material for this reconcile pass",
@@ -432,4 +475,22 @@ func nodePendingExpireAfter() time.Duration {
 		return d
 	}
 	return time.Hour
+}
+
+type prefetchNode struct {
+	rt    docker.Runtime
+	names []string
+}
+
+// replicaTargets are the container names the application controller will look up for svc this pass.
+func replicaTargets(svc store.DesiredService) []string {
+	replicas := svc.Replicas
+	if replicas <= 0 {
+		replicas = store.DefaultReplicas
+	}
+	names := make([]string, replicas)
+	for i := range names {
+		names[i] = application.ReplicaContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce, i)
+	}
+	return names
 }

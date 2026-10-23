@@ -77,8 +77,7 @@ func (rt *Router) handleListImages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: list images: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list images: load app failed", err, slog.String("name", name))
 		return
 	}
 

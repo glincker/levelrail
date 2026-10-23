@@ -379,8 +379,7 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 	}
 
 	if taken, err := rt.nodeNameTaken(r.Context(), req.Name); err != nil {
-		rt.logger.Error("api: node provision: check name collision failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: node provision: check name collision failed", err)
 		return
 	} else if taken {
 		writeError(w, http.StatusConflict, "a node or an in-progress provision already uses this name")
@@ -395,8 +394,7 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 
 	token, err := rt.mintNodeJoinToken(r.Context(), nodeProvisionJoinTokenTTL)
 	if err != nil {
-		rt.logger.Error("api: node provision: mint join token failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: node provision: mint join token failed", err)
 		return
 	}
 
@@ -411,15 +409,13 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		MeshEnabled:      rt.mesh != nil,
 	})
 	if err != nil {
-		rt.logger.Error("api: node provision: render cloud-init failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: node provision: render cloud-init failed", err)
 		return
 	}
 
 	id, err := randomNodeProvisionID()
 	if err != nil {
-		rt.logger.Error("api: node provision: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: node provision: generate id failed", err)
 		return
 	}
 	now := time.Now()
@@ -428,8 +424,7 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		Status: store.NodeProvisionStatusCreating, CreatedAt: now, UpdatedAt: now,
 	}
 	if err := rt.nodeProvisions.SaveNodeProvision(r.Context(), rec); err != nil {
-		rt.logger.Error("api: node provision: save failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: node provision: save failed", err)
 		return
 	}
 
@@ -531,8 +526,7 @@ func (rt *Router) nodeNameTaken(ctx context.Context, name string) (bool, error) 
 func (rt *Router) handleListNodeProvisions(w http.ResponseWriter, r *http.Request) {
 	provisions, err := rt.nodeProvisions.ListNodeProvisions(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list node provisions failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list node provisions failed", err)
 		return
 	}
 	out := make([]nodeProvisionResource, 0, len(provisions))
@@ -554,8 +548,7 @@ func (rt *Router) handleGetNodeProvision(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get node provision failed", slog.String("provision_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get node provision failed", err, slog.String("provision_id", id))
 		return
 	}
 
@@ -586,6 +579,7 @@ func (rt *Router) refreshNodeProvision(ctx context.Context, p store.NodeProvisio
 				rt.logger.Error("api: node provision: apply role to node failed", slog.String("provision_id", p.ID), slog.String("node_id", n.ID), slog.String("error", werr.Error()))
 				return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusEnrolling, p.IPAddress, "", "node enrolled but its role could not be applied yet, retrying: "+werr.Error())
 			}
+			rt.fillProvisionedDomain(ctx, p, n)
 			return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusReady, p.IPAddress, n.ID, "")
 		}
 	} else {
@@ -662,4 +656,24 @@ func randomNodeProvisionID() (string, error) {
 		return "", fmt.Errorf("api: generate node provision id: %w", err)
 	}
 	return "npv_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// fillProvisionedDomain stamps provider, region and zone on a freshly enrolled
+// node, keeping any value the operator already set.
+func (rt *Router) fillProvisionedDomain(ctx context.Context, p store.NodeProvision, n store.Node) {
+	region, zone := provision.FailureDomain(p.Provider, p.Region)
+	provider, region, zone := firstSet(n.Provider, p.Provider), firstSet(n.Region, region), firstSet(n.Zone, zone)
+	if provider == n.Provider && region == n.Region && zone == n.Zone {
+		return
+	}
+	if err := rt.nodes.UpdateNodeFailureDomain(ctx, n.ID, provider, region, zone); err != nil {
+		rt.logger.Warn("api: node provision: fill failure domain failed", slog.String("provision_id", p.ID), slog.String("node_id", n.ID), slog.String("error", err.Error()))
+	}
+}
+
+func firstSet(current, fallback string) string {
+	if current != "" {
+		return current
+	}
+	return fallback
 }

@@ -182,8 +182,12 @@ export function mutationToastCallbacks(
   onSuccess?: () => void,
 ) {
   return {
-    onSuccess: () => {
-      toast.add({ title: successTitle, type: 'success' })
+    onSuccess: (data?: unknown) => {
+      const note =
+        typeof data === 'object' && data !== null && 'note' in data
+          ? String(data.note)
+          : undefined
+      toast.add({ title: successTitle, description: note, type: 'success' })
       onSuccess?.()
     },
     onError: (error: Error) => {

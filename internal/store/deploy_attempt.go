@@ -95,6 +95,10 @@ type DeployAttempt struct {
 	Branch        string
 	CommitMessage string
 	Author        string
+
+	// RerunOf is the attempt this one retried or rebuilt, empty when the
+	// attempt is not a rerun.
+	RerunOf string
 }
 
 // DeployAttemptEnvKind classifies one env var key captured in a
@@ -278,6 +282,10 @@ const (
 	// its configured branch, deployed through the same
 	// internal/api.deployFromGitSourceAs path a webhook push uses.
 	DeployAttemptSourceSchedule = "schedule"
+	// DeployAttemptSourcePoll marks a deploy the git source poller started because a webhook never arrived.
+	DeployAttemptSourcePoll = "poll"
+	// DeployAttemptSourceUpload marks a build from a directory uploaded by the CLI instead of a git checkout.
+	DeployAttemptSourceUpload = "upload"
 )
 
 // deployAttemptIDPrefix mirrors internal/api/tokens.go's "tok_" prefix
@@ -320,9 +328,9 @@ func (db *DB) SaveDeployAttempt(ctx context.Context, a DeployAttempt) error {
 		queuedAt = a.QueuedAt.UTC().Format(time.RFC3339Nano)
 	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO deploy_attempts (id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework, image_digest, digest_reason, sequence, reason, held_request, queued_at, branch, commit_message, author)
-		VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, a.ID, a.ServiceName, a.Image, a.CommitSHA, a.Source, a.Status, a.StartedAt.UTC().Format(time.RFC3339Nano), string(snapshotJSON), a.DetectedFramework, a.ImageDigest, a.DigestReason, a.Sequence, a.Reason, a.HeldRequest, queuedAt, a.Branch, a.CommitMessage, a.Author)
+		INSERT INTO deploy_attempts (id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework, image_digest, digest_reason, sequence, reason, held_request, queued_at, branch, commit_message, author, rerun_of)
+		VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''))
+	`, a.ID, a.ServiceName, a.Image, a.CommitSHA, a.Source, a.Status, a.StartedAt.UTC().Format(time.RFC3339Nano), string(snapshotJSON), a.DetectedFramework, a.ImageDigest, a.DigestReason, a.Sequence, a.Reason, a.HeldRequest, queuedAt, a.Branch, a.CommitMessage, a.Author, a.RerunOf)
 	if err != nil {
 		return fmt.Errorf("store: save deploy attempt %q: %w", a.ID, err)
 	}
@@ -467,7 +475,7 @@ func (db *DB) ListDeployAttempts(ctx context.Context, serviceName string) ([]Dep
 	return out, nil
 }
 
-const deployAttemptColumns = "id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework, image_digest, digest_reason, rollout_state, running_image_id, sequence, reason, held_request, branch, commit_message, author, queued_at, superseded_by, canceled_by"
+const deployAttemptColumns = "id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework, image_digest, digest_reason, rollout_state, running_image_id, sequence, reason, held_request, branch, commit_message, author, queued_at, superseded_by, canceled_by, rerun_of"
 
 func scanDeployAttempt(scan func(dest ...any) error) (*DeployAttempt, error) {
 	var (
@@ -476,8 +484,9 @@ func scanDeployAttempt(scan func(dest ...any) error) (*DeployAttempt, error) {
 		finishedAt, errString sql.NullString
 		snapshotJSON          string
 		queuedAt              string
+		rerunOf               sql.NullString
 	)
-	if err := scan(&a.ID, &a.ServiceName, &a.Image, &a.CommitSHA, &a.Source, &a.Status, &startedAt, &finishedAt, &errString, &snapshotJSON, &a.DetectedFramework, &a.ImageDigest, &a.DigestReason, &a.RolloutState, &a.RunningImageID, &a.Sequence, &a.Reason, &a.HeldRequest, &a.Branch, &a.CommitMessage, &a.Author, &queuedAt, &a.SupersededBy, &a.CanceledBy); err != nil {
+	if err := scan(&a.ID, &a.ServiceName, &a.Image, &a.CommitSHA, &a.Source, &a.Status, &startedAt, &finishedAt, &errString, &snapshotJSON, &a.DetectedFramework, &a.ImageDigest, &a.DigestReason, &a.RolloutState, &a.RunningImageID, &a.Sequence, &a.Reason, &a.HeldRequest, &a.Branch, &a.CommitMessage, &a.Author, &queuedAt, &a.SupersededBy, &a.CanceledBy, &rerunOf); err != nil {
 		return nil, err
 	}
 	if snapshotJSON != "" {
@@ -500,6 +509,7 @@ func scanDeployAttempt(scan func(dest ...any) error) (*DeployAttempt, error) {
 		a.FinishedAt = &t
 	}
 	a.Error = errString.String
+	a.RerunOf = rerunOf.String
 	if queuedAt != "" {
 		t, err := time.Parse(time.RFC3339Nano, queuedAt)
 		if err != nil {
@@ -509,4 +519,20 @@ func scanDeployAttempt(scan func(dest ...any) error) (*DeployAttempt, error) {
 	}
 
 	return &a, nil
+}
+
+// RerunChainPosition returns the 1-based position of id in its rerun
+// chain by following parent links, stopping at maxDepth and on a cycle
+// so corrupt data cannot loop. parent returns "" for a root or unknown id.
+func RerunChainPosition(id string, parent func(id string) string, maxDepth int) int {
+	seen := map[string]bool{id: true}
+	pos := 1
+	for cur := parent(id); cur != "" && pos < maxDepth; cur = parent(cur) {
+		if seen[cur] {
+			break
+		}
+		seen[cur] = true
+		pos++
+	}
+	return pos
 }

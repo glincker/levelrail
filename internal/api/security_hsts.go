@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net"
 	"net/http"
 	"sort"
@@ -161,8 +160,7 @@ func (rt *Router) handlePutHSTS(w http.ResponseWriter, r *http.Request) {
 	}
 	s.HSTSEnabled = req.Enabled
 	if err := rt.ingressSettings.UpdateIngressSettings(r.Context(), s); err != nil {
-		rt.logger.Error("api: hsts update failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: hsts update failed", err)
 		return
 	}
 	rt.hstsDBEnabled.Store(req.Enabled)

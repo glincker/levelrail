@@ -258,6 +258,7 @@ describe('CachesPage', () => {
               hits: 8,
               misses: 2,
               hit_rate: 0.8,
+              reasons: [],
             },
           ],
         }),
@@ -266,5 +267,107 @@ describe('CachesPage', () => {
     expect(await screen.findByText('web')).toBeTruthy()
     expect(screen.getByText('Where entries live')).toBeTruthy()
     expect(screen.getByText('80.0%')).toBeTruthy()
+  })
+
+  it('says why an app with no hits is not cached and offers the Next.js preset', async () => {
+    const vary = (detail: string) => ({
+      code: 'vary_header',
+      detail,
+      count: 40,
+      domains: ['web.test'],
+    })
+    const fn = mockFetch({
+      'GET /api/v1/system/cache': () =>
+        json({
+          limits,
+          totals: zero,
+          series: [],
+          apps: [
+            {
+              app: 'web',
+              domains: 1,
+              enabled_domains: 1,
+              requests: 40,
+              ...zero,
+              misses: 40,
+              reasons: [vary('Rsc'), vary('Next-Router-State-Tree')],
+              suggest_preset: 'nextjs',
+            },
+          ],
+        }),
+      'GET /api/v1/apps/web/domains/web.test/policies': () =>
+        json({ policy: { cache: { enabled: true, rules: [] } } }),
+      'PUT /api/v1/apps/web/domains/web.test/cache': () => json({}),
+    })
+    wrap(<CachesPage />)
+    expect(await screen.findAllByText('The app varies on Rsc')).toHaveLength(2)
+    expect(screen.getByText(/looks like a Next.js app/)).toBeTruthy()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Apply Next.js preset' }),
+    )
+    await waitFor(() =>
+      expect(fn.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(
+        true,
+      ),
+    )
+    const put = fn.mock.calls.find(([, init]) => init?.method === 'PUT')
+    const spec = JSON.parse(put?.[1]?.body as string) as {
+      enabled: boolean
+      rules: { vary?: string[] }[]
+    }
+    expect(spec.enabled).toBe(true)
+    expect(spec.rules.at(-1)?.vary).toContain('rsc')
+  })
+
+  it('adds a plain Vary header from the reason row', async () => {
+    const fn = mockFetch({
+      'GET /api/v1/system/cache': () =>
+        json({
+          limits,
+          totals: zero,
+          series: [],
+          apps: [
+            {
+              app: 'web',
+              domains: 1,
+              enabled_domains: 1,
+              requests: 5,
+              ...zero,
+              misses: 5,
+              reasons: [
+                {
+                  code: 'vary_header',
+                  detail: 'Accept-Language',
+                  count: 5,
+                  domains: ['web.test'],
+                },
+              ],
+            },
+          ],
+        }),
+      'GET /api/v1/apps/web/domains/web.test/policies': () =>
+        json({
+          policy: {
+            cache: {
+              enabled: true,
+              rules: [{ match: { kind: 'prefix', path: '/' }, ttl_seconds: 5 }],
+            },
+          },
+        }),
+      'PUT /api/v1/apps/web/domains/web.test/cache': () => json({}),
+    })
+    wrap(<CachesPage />)
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Add Accept-Language to Vary',
+      }),
+    )
+    await waitFor(() =>
+      expect(fn.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(
+        true,
+      ),
+    )
+    const put = fn.mock.calls.find(([, init]) => init?.method === 'PUT')
+    expect(put?.[1]?.body as string).toContain('"vary":["Accept-Language"]')
   })
 })

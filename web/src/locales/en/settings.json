@@ -237,7 +237,15 @@
       "secretsReveal": "Reveal secret values",
       "secretsRevealHint": "Lets this token read a secret value, but only when the server allows token reveal (APP_SECRET_REVEAL_TOKENS=on) and the request carries your password. Every reveal is audited. Root does not include it.",
       "secretsRevealNeedsSensitive": "Revealing secrets also needs read:sensitive"
-    }
+    },
+    "devFixtureBadge": "Dev fixture, local only",
+    "devFixtureRootWarning": "Full access with a publicly known secret. Never expose this server to a network.",
+    "devFixtureGroup": "Dev fixture tokens",
+    "devFixtureGroupCount_one": "{{count}} token",
+    "devFixtureGroupCount_other": "{{count}} tokens",
+    "devFixtureGroupBody": "Seeded for local testing, with public secrets. Never created in release builds. Safe to ignore.",
+    "rotate": "Rotate",
+    "rotateLabel": "Rotate {{name}}"
   },
   "hostFirewall": {
     "title": "Host firewall",
@@ -506,6 +514,14 @@
         "title": "Gitea App",
         "description": "Self-hosted Gitea repository access for git-based deploys."
       },
+      "forgejo-app": {
+        "title": "Forgejo App",
+        "description": "Self-hosted Forgejo repository access for git-based deploys."
+      },
+      "bitbucket-server-app": {
+        "title": "Bitbucket Server",
+        "description": "Bitbucket Server and Data Center repository access with a personal access token."
+      },
       "notification-channels": {
         "title": "Notification channels",
         "description": "Slack, Discord, Telegram, webhook, and email alerts."
@@ -550,6 +566,18 @@
         "title": "Email",
         "description": "Outbound SMTP for alerts and password resets."
       },
+      "email-templates": {
+        "title": "Email templates",
+        "description": "Edit every email the platform sends, with live preview."
+      },
+      "email-audiences": {
+        "title": "Email audiences",
+        "description": "Saved groups of people to write to, with opt-outs."
+      },
+      "email-messages": {
+        "title": "Email messages",
+        "description": "Write to an audience and see delivery history."
+      },
       "cloudflare-tunnel": {
         "title": "Cloudflare Tunnel",
         "description": "Expose this control plane without opening an inbound port."
@@ -566,6 +594,10 @@
         "title": "Event webhooks",
         "description": "Signed HTTPS callbacks for platform events, with retries and a delivery log."
       },
+      "traffic-export": {
+        "title": "Traffic export",
+        "description": "Stream request records to PostHog, OpenTelemetry or a webhook, without visitor identity by default."
+      },
       "observability": {
         "title": "Observability",
         "description": "Remote-read connection info and a link out to your own Grafana."
@@ -577,10 +609,6 @@
       "import-platform": {
         "title": "Import from another platform",
         "description": "Bring apps over from Coolify, Dokploy or CapRover."
-      },
-      "setup-wizard": {
-        "title": "Setup wizard",
-        "description": "Server checks, dashboard domain, git, and a first app."
       },
       "general": {
         "title": "General",
@@ -595,8 +623,8 @@
         "description": "Goroutines, database latency, reconcile lag and stream load, with fixes."
       },
       "system-status": {
-        "title": "System status",
-        "description": "Preflight checks: Docker, disk, ports, database, and firewall."
+        "title": "Doctor",
+        "description": "Health checks with fixes: Docker, disk, ports, certificates, backups, nodes."
       },
       "firewall": {
         "title": "Firewall",
@@ -637,6 +665,14 @@
       "audit-log": {
         "title": "Audit log",
         "description": "Who changed what, across every session and API token."
+      },
+      "git-connections": {
+        "title": "Git connections",
+        "description": "Every GitHub, GitLab, Bitbucket, Gitea and Forgejo account in one place."
+      },
+      "benchmarks": {
+        "title": "Benchmarks",
+        "description": "Stored benchmark runs with host, build, limits and a compare view."
       }
     },
     "search": "Search settings",
@@ -828,8 +864,28 @@
           "Repositories your authorized account can read",
           "Branches and commits for deploys",
           "Webhook delivery for push events"
+        ],
+        "forgejo": [
+          "Repositories your authorized account can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ],
+        "bitbucket_server": [
+          "Repositories the token owner can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
         ]
       }
+    },
+    "forgejo": {
+      "title": "Forgejo App",
+      "description": "Connect a Forgejo OAuth2 application, Codeberg or self-hosted, for repository browsing and webhook-driven deploys.",
+      "banner": "Once the application is authorized, its repositories are available to pick from when you create an app."
+    },
+    "bitbucket_server": {
+      "title": "Bitbucket Server",
+      "description": "Connect Bitbucket Server or Data Center with a personal access token for repository browsing and webhook-driven deploys.",
+      "banner": "Once the token is verified, its repositories are available to pick from when you create an app."
     }
   },
   "securityPage": {
@@ -1030,6 +1086,43 @@
         "title": "Live streams near the cap",
         "hint": "New log and event streams are refused at the cap. Raise APP_MAX_LIVE_STREAMS if the host has headroom."
       }
+    },
+    "banner": {
+      "description": "Live saturation of this instance, with a one-click fix for each finding.",
+      "diagram": {
+        "database": "database",
+        "disk": "disk",
+        "certificates": "certificates"
+      }
+    },
+    "recheck": "Re-check now",
+    "rechecking": "Checking",
+    "errorTitle": "Could not read control plane health",
+    "retry": "Try again",
+    "findingsTitle": "Needs attention",
+    "findingsCount_one": "{{count}} finding",
+    "findingsCount_other": "{{count}} findings",
+    "metricsTitle": "Runtime and database",
+    "readingChip": "Now {{value}} / limit {{limit}}",
+    "footprint": {
+      "title": "Footprint",
+      "status": {
+        "within_tolerance": "Within tolerance",
+        "over_tolerance": "Over tolerance",
+        "tolerance_unset": "Tolerances not set",
+        "no_baseline": "No baseline"
+      },
+      "basis": "Control plane process on {{platform}} against the committed idle baseline ({{apps}} apps, {{liveApps}} apps now).",
+      "noBaseline": "No committed idle baseline exists for {{platform}}, so only the live reading is shown.",
+      "metric": {
+        "rss": "Resident memory",
+        "cpu": "CPU",
+        "goroutines": "Goroutines",
+        "open_fds": "Open file descriptors"
+      },
+      "vs": "(baseline {{baseline}}, limit {{limit}})",
+      "meterLabel": "{{metric}} against its limit",
+      "footnote": "CPU is averaged over the last {{seconds}} s. Memory is held to the baseline peak. Limits come from the IDLE_TOL_* settings. The node agent is not measured here."
     }
   },
   "generalPage": {
@@ -1079,30 +1172,234 @@
     }
   },
   "emailPage": {
-    "rail": {
-      "label": "Email summary",
-      "delivery": "Delivery",
-      "backend": "Backend",
-      "from": "Sender address",
-      "usedFor": "Used for",
-      "usedForBody": "Alert notifications and password-reset links.",
-      "docs": "Docs",
-      "backends": {
-        "smtp": "SMTP",
-        "ses": "Amazon SES",
-        "resend": "Resend"
-      }
-    },
     "eyebrow": "Notifications",
     "title": "Email",
-    "description": "The backend that sends alert notifications and password-reset links.",
+    "description": "The providers that send alert notifications, invites and password-reset links.",
     "help": "Email notifications guide",
     "status": {
       "none": "Not configured"
+    }
+  },
+  "emailDelivery": {
+    "title": "Email delivery",
+    "validation": {
+      "fromRequired": "A from address is required",
+      "hostRequired": "Host is required",
+      "portRequired": "Port is required",
+      "regionRequired": "Pick an AWS region",
+      "accessKeyRequired": "Access key ID is required",
+      "smtpUsernameRequired": "SMTP username is required",
+      "domainRequired": "Sending domain is required",
+      "emailInvalid": "Enter a valid email address"
     },
-    "banner": {
-      "title": "No email backend is configured",
-      "body": "Alert emails and password-reset links will not be sent until you pick SMTP, Amazon SES, or Resend below."
+    "secretSet": "Already configured. Leave blank to keep it.",
+    "secretUnset": "Not set yet.",
+    "username": "Username",
+    "password": "Password",
+    "apiKey": "API key",
+    "providers": {
+      "smtp": "SMTP",
+      "ses": "AWS SES (API)",
+      "ses_smtp": "AWS SES (SMTP)",
+      "resend": "Resend",
+      "postmark": "Postmark",
+      "sendgrid": "SendGrid",
+      "mailgun": "Mailgun"
+    },
+    "sender": {
+      "title": "Sender",
+      "description": "Who the mail comes from. Every provider uses these.",
+      "fromName": "From name",
+      "fromAddress": "From address",
+      "replyTo": "Reply-to address",
+      "envelopeFrom": "Envelope sender",
+      "envelopeHelp": "Where bounces go. Leave blank to use the from address.",
+      "optional": "Optional."
+    },
+    "provider": {
+      "title": "Provider",
+      "description": "How mail is delivered. Pick one and fill in its details."
+    },
+    "smtp": {
+      "presets": "Quick fill for a known relay",
+      "host": "Host",
+      "hostPlaceholder": "smtp.example.com",
+      "port": "Port"
+    },
+    "ses": {
+      "region": "Region",
+      "regionHelp": "The AWS region where your sender identity is verified.",
+      "regionPlaceholder": "Choose a region",
+      "accessKeyId": "Access key ID",
+      "secretAccessKey": "Secret access key"
+    },
+    "sesSmtp": {
+      "credentialsTitle": "SES SMTP credentials are not your IAM keys",
+      "credentialsBody": "Create SMTP credentials in the SES console (SMTP settings) and enter that username and password here. IAM access keys will be rejected.",
+      "derivedHost": "Connects to email-smtp.{{region}}.amazonaws.com.",
+      "port587": "587 (STARTTLS)",
+      "port465": "465 (TLS)"
+    },
+    "mailgun": {
+      "domain": "Sending domain",
+      "domainPlaceholder": "mg.example.com",
+      "region": "Region",
+      "us": "United States",
+      "eu": "Europe"
+    },
+    "postmark": {
+      "token": "Server token"
+    },
+    "limits": {
+      "title": "Delivery limits",
+      "description": "Caps that protect your provider account from a runaway loop. Sends over the cap fail fast and show in the log.",
+      "perMinute": "Sends per minute",
+      "perDay": "Sends per day",
+      "zeroHelp": "0 uses the server default, which is unlimited unless set."
+    },
+    "security": {
+      "title": "Security",
+      "description": "How the connection to the mail server is protected.",
+      "tlsMode": "TLS mode",
+      "modes": {
+        "auto": "Automatic (STARTTLS when offered)",
+        "starttls": "Require STARTTLS",
+        "tls": "TLS from the start (port 465)",
+        "none": "No encryption"
+      },
+      "verify": "Verify the server certificate",
+      "verifyOff": "Certificate checks are off. Anyone between this server and the mail server could read or change your mail. Only do this for a trusted private network.",
+      "apiNote": "This provider is reached over HTTPS with a verified certificate. There is nothing to configure here."
+    },
+    "status": {
+      "configured": "Configured",
+      "fromEnv": "SMTP from server environment",
+      "openLog": "Delivery log",
+      "lastSuccess": "Last successful send",
+      "lastFailure": "Last failure",
+      "never": "Never",
+      "sent24h": "Sent in 24 hours",
+      "failed24h": "Failed in 24 hours"
+    },
+    "test": {
+      "title": "Send a test email",
+      "description": "Sends one real message through the saved provider, the same path alerts and password resets use. Leave the address blank to send to yourself.",
+      "placeholder": "Your own address",
+      "send": "Send test email",
+      "sending": "Sending...",
+      "success": "Test email sent to {{to}}.",
+      "response": "Provider: {{provider}}. Message id: {{id}}.",
+      "noId": "none returned",
+      "fix": "Fix:"
+    },
+    "failure": {
+      "auth_failed": {
+        "title": "The provider rejected the credentials",
+        "fix": "Re-enter the password or API key and save again. Check that the username belongs to the same account.",
+        "fixSesSmtp": "SES SMTP credentials are generated in the SES console and are not the same as IAM access keys. Create SMTP credentials there and paste the username and password here."
+      },
+      "sender_not_verified": {
+        "title": "The sender address is not verified",
+        "fix": "Verify the from address or its whole domain in the provider console, then send the test again."
+      },
+      "region_mismatch": {
+        "title": "Sender verified in a different region",
+        "fix": "Pick the region where the sender identity is verified, or verify it in the selected region."
+      },
+      "port_blocked": {
+        "title": "Could not reach the mail server",
+        "fix": "Check the host and port. Many clouds block port 25, so try 587 or 465, and check any firewall in front of this server."
+      },
+      "tls_error": {
+        "title": "The secure connection failed",
+        "fix": "Match the TLS mode to the port (STARTTLS on 587, TLS on 465). For a private server with its own certificate, turn off certificate verification under Security."
+      },
+      "rate_limited": {
+        "title": "Sending is rate limited",
+        "fix": "The provider or the send cap set here is throttling. Wait a minute and retry, or raise the cap under Delivery limits."
+      },
+      "not_configured": {
+        "title": "No provider is set up",
+        "fix": "Choose a provider, fill in its details and save before sending a test."
+      },
+      "other": {
+        "title": "The send failed",
+        "fix": "Read the provider response below. If it is unclear, check the provider dashboard for the rejected message."
+      }
+    },
+    "domain": {
+      "title": "Sender domain check",
+      "description": "Looks up SPF, DKIM and DMARC for your from address domain, so mail lands in the inbox instead of spam.",
+      "run": "Check domain",
+      "recheck": "Check again",
+      "checking": "Checking...",
+      "checked": "Records found for {{domain}}.",
+      "pass": "Pass",
+      "warn": "Needs attention",
+      "types": {
+        "spf": "SPF",
+        "dkim": "DKIM",
+        "dmarc": "DMARC"
+      },
+      "codes": {
+        "spf_ok": "An SPF record is published.",
+        "spf_missing": "No SPF record. Publish a TXT record starting with v=spf1 that authorizes your provider.",
+        "spf_multiple": "More than one SPF record exists. Merge them into one, receivers reject duplicates.",
+        "spf_permissive": "SPF ends in +all, which authorizes any sender. Use ~all or -all.",
+        "spf_no_include": "SPF does not include {{include}}. Add include:{{include}} unless your provider uses its own return-path domain.",
+        "dkim_found": "A DKIM key is published.",
+        "dkim_not_found": "No DKIM key found at common selectors. Add the DKIM records your provider shows on its domain verification page.",
+        "dmarc_ok": "A DMARC policy that quarantines or rejects is published.",
+        "dmarc_monitor_only": "DMARC is in monitor mode (p=none). Move to quarantine or reject once SPF and DKIM pass.",
+        "dmarc_missing": "No DMARC record. Publish a TXT record at _dmarc with v=DMARC1; p=none to start monitoring."
+      },
+      "providerHints": {
+        "ses": "SES: verify the domain under Verified identities and publish the three DKIM CNAME records it gives you.",
+        "ses_smtp": "SES: verify the domain under Verified identities and publish the three DKIM CNAME records it gives you.",
+        "resend": "Resend: add the domain under Domains and publish the SPF and DKIM records it lists, then wait for it to show Verified.",
+        "postmark": "Postmark: add the domain under Sender Signatures and publish the DKIM and Return-Path records it lists.",
+        "sendgrid": "SendGrid: run Domain Authentication and publish the CNAME records it generates.",
+        "mailgun": "Mailgun: add the sending domain and publish the SPF, DKIM and tracking records from its DNS page."
+      }
+    },
+    "log": {
+      "title": "Email delivery log",
+      "description": "Every outbound email attempt with its outcome. Recipients are shortened unless the server is set to keep full addresses.",
+      "back": "Email settings",
+      "searchPlaceholder": "Search recipient, message id or error",
+      "allStatuses": "All statuses",
+      "allProviders": "All providers",
+      "columns": {
+        "time": "Time",
+        "status": "Status",
+        "to": "To",
+        "provider": "Provider",
+        "kind": "Kind"
+      },
+      "statuses": {
+        "sent": "Sent",
+        "failed": "Failed",
+        "bounced": "Bounced"
+      },
+      "noKind": "General",
+      "emptyTitle": "No deliveries yet",
+      "emptyBody": "Sends appear here as alerts, password resets and test emails go out. Send a test email from the settings page to see the first row.",
+      "retry": "Retry",
+      "detailTitle": "Delivery detail",
+      "attempts": "Attempts",
+      "messageId": "Provider message id",
+      "failureKind": "Why it failed",
+      "error": "Provider response"
+    },
+    "reveal": {
+      "show": "Reveal",
+      "hide": "Hide",
+      "copy": "Copy",
+      "copied": "Copied",
+      "autoHide": "Hides itself after 30 seconds. Every reveal is recorded in the audit log.",
+      "stepUp": "Confirm it is you with your password and authenticator code to reveal this credential.",
+      "needsTwoFactor": "Revealing a credential needs two-factor authentication. Set it up under account security first.",
+      "failed": "Could not reveal the credential."
     }
   },
   "channelsPage": {
@@ -1180,6 +1477,35 @@
       "unused": "Nothing yet",
       "usedByMany_one": "{{count}} service",
       "usedByMany_other": "{{count}} services"
+    },
+    "cloud": {
+      "title": "Cloud registries that refresh themselves",
+      "description": "Connect ECR, Artifact Registry or ACR using the cloud account you already added. Logins are minted and renewed automatically before they expire.",
+      "nameLabel": "Credential name",
+      "regionLabel": "Region",
+      "hostLabel": "Registry host",
+      "hostPlaceholder": "myregistry.azurecr.io",
+      "test": "Test",
+      "connect": "Connect",
+      "testOk": "Login works for {{host}}, expires {{when}}.",
+      "refreshNow": "Refresh now",
+      "refreshHealthy": "Refreshing",
+      "refreshFailing": "Refresh failing",
+      "expires": "Expires {{when}}",
+      "lastRefresh": "Last refresh {{when}}",
+      "nextRefresh": "Next refresh {{when}}",
+      "ecr": {
+        "title": "Connect ECR",
+        "body": "Uses your AWS connection. The registry host is filled in from your account."
+      },
+      "artifact_registry": {
+        "title": "Connect Artifact Registry",
+        "body": "Uses your Google Cloud service account. Host defaults to <region>-docker.pkg.dev."
+      },
+      "acr": {
+        "title": "Connect ACR",
+        "body": "Uses your Azure connection. Enter the registry host, for example myregistry.azurecr.io."
+      }
     }
   },
   "backupTargetsPage": {
@@ -1222,7 +1548,20 @@
       "test": "Test connection",
       "testing": "Testing...",
       "testOk": "\"{{name}}\" connected successfully.",
-      "testFailed": "\"{{name}}\" failed to connect."
+      "testFailed": "\"{{name}}\" failed to connect.",
+      "encryption": "Dump encryption"
+    },
+    "encryption": {
+      "on": "Encrypted",
+      "off": "Not encrypted",
+      "enable": "Enable encryption",
+      "title": "Encrypt database dumps sent to \"{{name}}\"?",
+      "consequenceNew": "New database dumps to this destination are encrypted with age before upload, so the bucket never sees plaintext.",
+      "consequenceOld": "Dumps already stored there stay exactly as they are (unencrypted ones still restore normally).",
+      "consequenceKey": "Key loss warning: if the backup encryption key (backup-encryption.key in the data directory) is lost, encrypted backups cannot be restored. Keep a copy off this server.",
+      "confirm": "Enable encryption",
+      "pending": "Enabling...",
+      "enabled": "Database dumps to \"{{name}}\" are now encrypted."
     }
   },
   "certificatesPage": {
@@ -1580,7 +1919,15 @@
   },
   "builtInRegistryPage": {
     "title": "Container registry",
-    "description": "The built-in image registry: a build cache and distribution backend for multi-node deployments, with no external registry to sign up for. It is served over TLS through the embedded ingress and enforces its own login even if the published port is reached directly."
+    "description": "The built-in image registry: a build cache and distribution backend for multi-node deployments, with no external registry to sign up for. It is served over TLS through the embedded ingress and enforces its own login even if the published port is reached directly.",
+    "banner": {
+      "description": "Turn on the built-in image registry to share builds between nodes without signing up for an external registry.",
+      "diagram": {
+        "push": "Push",
+        "pull": "Pull",
+        "registry": "Registry"
+      }
+    }
   },
   "vaultPage": {
     "title": "Vault",
@@ -1687,7 +2034,14 @@
   },
   "nodeProvidersPage": {
     "title": "Cloud node providers",
-    "description": "API tokens for creating servers automatically from the Nodes page. Used only to create and inspect VMs, day to day operation never touches SSH."
+    "description": "API tokens for creating servers automatically from the Nodes page. Used only to create and inspect VMs, day to day operation never touches SSH.",
+    "banner": {
+      "description": "Connect a cloud provider with an API token to create servers from the Nodes page. Day to day operation never touches SSH.",
+      "diagram": {
+        "cloud": "Cloud",
+        "node": "Node"
+      }
+    }
   },
   "containersPage": {
     "title": "Containers",
@@ -1699,7 +2053,89 @@
   },
   "networkSharesPage": {
     "title": "Network shares",
-    "description": "NFS and CIFS/SMB exports, mounted as Docker volumes using Docker's own local-driver network passthrough. Attach one as a volume source when configuring an app's volumes."
+    "description": "NFS and CIFS/SMB exports, mounted as Docker volumes using Docker's own local-driver network passthrough. Attach one as a volume source when configuring an app's volumes.",
+    "banner": {
+      "description": "Mount storage from a NAS or file server as a Docker volume your apps can use.",
+      "whatFor": "A share lets an app read and write files that live on another machine, like media on a NAS or backups on a file server. Add one, then attach it from an app's volumes.",
+      "diagram": {
+        "app": "App",
+        "nfs": "NFS",
+        "smb": "SMB / CIFS",
+        "volume": "Mounted as a Docker volume"
+      }
+    },
+    "dialog": {
+      "open": "Add network share",
+      "title": "Add network share",
+      "description": "Connect storage from a NAS or file server so apps can mount it as a Docker volume.",
+      "protocol": "Protocol",
+      "nfs": {
+        "title": "NFS",
+        "body": "Linux and NAS, no password"
+      },
+      "smb": {
+        "title": "SMB / CIFS",
+        "body": "Windows, macOS and many NAS, needs a username"
+      },
+      "host": "Host",
+      "hostPlaceholder": "nas.lan or 192.168.1.50",
+      "hostHint": "The server's hostname or IP address (IPv4 or IPv6).",
+      "path": {
+        "nfs": "Export path",
+        "smb": "Share name"
+      },
+      "pathPlaceholder": {
+        "nfs": "/export/media",
+        "smb": "media"
+      },
+      "pathHint": {
+        "nfs": "The folder the server exports, starting with a slash.",
+        "smb": "The name of the shared folder on the server, without slashes."
+      },
+      "name": "Name",
+      "namePlaceholder": "media-nas",
+      "nameHint": "Used as the volume name. Lowercase letters, numbers and dashes.",
+      "nameFree": "This name is available.",
+      "username": "Username",
+      "password": "Password",
+      "passwordHint": "Stored encrypted. It is never shown again.",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "advanced": "Advanced",
+      "options": "Mount options",
+      "optionsOptional": "optional",
+      "optionsHint": "Comma-separated options passed straight to Docker's local driver. Pick a common one or type your own.",
+      "optionsPlaceholder": "ro,nfsvers=4",
+      "chips": {
+        "label": "Common options",
+        "ro": "Read-only",
+        "nfsvers4": "NFSv4",
+        "nfsvers3": "NFSv3",
+        "soft": "Soft mount",
+        "ids": "Set uid and gid",
+        "smbvers": "SMB 3.0"
+      },
+      "summary": "Mounts {{remote}} {{mode}} as Docker volume {{name}}",
+      "summaryEmpty": "Fill in the server and path to see what will be mounted.",
+      "readOnly": "read-only",
+      "readWrite": "read-write",
+      "cancel": "Cancel",
+      "submit": "Add network share",
+      "submitting": "Adding...",
+      "added": "Network share \"{{name}}\" added.",
+      "errors": {
+        "nameRequired": "Give the share a name.",
+        "nameFormat": "Use lowercase letters, numbers and dashes, starting and ending with a letter or number.",
+        "nameTaken": "A share with this name already exists.",
+        "hostRequired": "Enter the server's hostname or IP address.",
+        "hostFormat": "That is not a valid hostname or IP address.",
+        "pathRequired": "Enter the path on the server.",
+        "nfsPathFormat": "An NFS export path starts with a slash, for example /export/media.",
+        "smbPathFormat": "Enter just the share name, with no slashes or spaces.",
+        "usernameRequired": "SMB shares need a username.",
+        "passwordRequired": "SMB shares need a password."
+      }
+    }
   },
   "organizationsPage": {
     "title": "Organizations",
@@ -1952,8 +2388,9 @@
     "mountAs": "secret id {{id}}"
   },
   "storagePage": {
+    "gcsHmacHint": "Use an HMAC key, not a service account JSON. In Google Cloud, open Cloud Storage, Settings, Interoperability and create a key for a service account that can write to the bucket.",
     "title": "Storage destinations",
-    "description": "S3-compatible object storage for log archives and backups. AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, or any custom endpoint.",
+    "description": "S3-compatible object storage for log archives and backups. AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, Google Cloud Storage, or any custom endpoint.",
     "notConfiguredTitle": "Storage is not configured on this server",
     "notConfiguredBody": "Set APP_MASTER_KEY and restart the control plane so bucket credentials can be encrypted.",
     "loadErrorTitle": "Storage destinations could not be loaded",
@@ -1962,31 +2399,80 @@
     "logArchiveBody": "Ships node-local logs to a destination on a schedule. Apps with their own policy (app Logs, Archive tab) are kept separate.",
     "buildCacheTitle": "Build cache for all apps"
   },
-  "systemStatusPage": {
-    "title": "System status",
-    "description": "Preflight checks: Docker, disk, ports, database, firewall, and outbound network reachability.",
-    "troubleshootingGuide": "Troubleshooting guide",
+  "doctorPage": {
+    "title": "Doctor",
+    "description": "One health check for this server: Docker, disk, ports, certificates, backups, nodes and more. The CLI doctor command runs the same checks.",
+    "guide": "Doctor guide",
     "rerun": "Re-run checks",
+    "filterLabel": "Filter checks by status",
+    "filter": {
+      "all": "All",
+      "fail": "Failing",
+      "warn": "Warnings"
+    },
+    "lastChecked": "Last checked {{time}}",
+    "checking": "Checking...",
+    "copyDiagnostics": "Copy diagnostics",
+    "copyDone": "Diagnostics copied",
+    "copyFailed": "Could not copy to the clipboard",
+    "noMatches": "No checks match this filter.",
     "allPassedTitle": "All checks passed",
-    "allPassedBody": "Docker, disk space, ports, the database, and every other preflight check are all healthy right now.",
-    "failedTitle": "One or more checks failed",
-    "failing": "Failing: {{names}}.",
-    "reviewBelow": "Review the checks below for details.",
+    "allPassedBody": "Nothing needs attention right now.",
+    "failedTitle_one": "{{count}} check failed",
+    "failedTitle_other": "{{count}} checks failed",
+    "warnTitle_one": "{{count}} check needs a look",
+    "warnTitle_other": "{{count}} checks need a look",
+    "reviewBelow": "Each problem below has a fix or a next step, and a Re-check button.",
+    "progress": "{{done}} of {{total}} checks finished",
+    "streamErrorTitle": "The check stream was interrupted",
+    "streamErrorBody": "Results so far are shown. Use Re-run checks to start again.",
+    "counts": {
+      "fail_one": "{{count}} failing",
+      "fail_other": "{{count}} failing",
+      "warn_one": "{{count}} warning",
+      "warn_other": "{{count}} warnings",
+      "ok": "{{count}} passing",
+      "unknown": "{{count}} not checked"
+    },
+    "fixAll_one": "Fix {{count}} safe issue",
+    "fixAll_other": "Fix all {{count}} safe issues",
+    "fixAllTitle_one": "Apply {{count}} safe fix?",
+    "fixAllTitle_other": "Apply {{count}} safe fixes?",
+    "fixAllBody": "Only one-click fixes that are safe are included. Anything that restarts a service or opens access stays a separate, deliberate step. These are the changes:",
+    "fixAllConfirm": "Apply fixes",
+    "fixAllPending": "Applying...",
+    "fixAllCli": "Prefer a terminal? Run this on the server, it prints the same plan and asks first.",
     "ingressTitle": "Ingress is a single point of failure",
     "ingressBody": "Domain-based HTTPS routing runs embedded in this control plane process. If it crashes or restarts, routing is down until it comes back up, even though already-running containers keep serving traffic on their own ports the whole time.",
     "survivesCrash": "What survives a control plane crash",
     "groups": {
-      "infrastructure": {
-        "title": "Infrastructure",
-        "description": "Can this box run and reach what it needs to run containers."
+      "runtime": {
+        "title": "Container runtime",
+        "description": "Docker reachability, version, privileges and leftover data."
       },
-      "security": {
-        "title": "Security",
-        "description": "Hardening checks: firewall status and secret rotation age."
+      "host": {
+        "title": "This server",
+        "description": "Disk, inodes, memory, CPU and the database."
       },
       "network": {
         "title": "Network and reachability",
-        "description": "Outbound network access and whether the internet can reach this box."
+        "description": "Ports, firewall, DNS, certificates and whether the internet can reach this box."
+      },
+      "security": {
+        "title": "Security",
+        "description": "Secret rotation, tokens and release signature checks."
+      },
+      "backups": {
+        "title": "Backups",
+        "description": "Control plane snapshots, database schedules and restore drills."
+      },
+      "nodes": {
+        "title": "Nodes and mesh",
+        "description": "Agent connectivity, agent versions and the WireGuard mesh."
+      },
+      "hardware": {
+        "title": "Hardware",
+        "description": "GPUs and network share client tools."
       },
       "other": {
         "title": "Other checks",
@@ -1996,7 +2482,7 @@
   },
   "firewallRules": {
     "liveStatus": "Live firewall status",
-    "liveStatusNote": "From this host's own preflight check. See Settings, System status for the full hardening checklist.",
+    "liveStatusNote": "From this host's own preflight check. See Settings, Doctor for the full hardening checklist.",
     "emptyTitle": "No firewall rules configured",
     "emptyBody": "Add a rule to allow or deny traffic to a specific port, optionally restricted to a source CIDR.",
     "cols": {
@@ -2226,7 +2712,23 @@
     "cancel": "Cancel",
     "planTitle": "Plan",
     "resultTitle": "Result",
-    "resultCounts": "{{applied}} applied, {{failed}} failed, {{skipped}} skipped"
+    "resultCounts": "{{applied}} applied, {{failed}} failed, {{skipped}} skipped",
+    "banner": {
+      "description": "Describe projects, apps, domains and databases as YAML, review the plan, then apply.",
+      "diagram": {
+        "host": "host",
+        "docker": "Docker",
+        "ingress": "ingress"
+      }
+    },
+    "optionsTitle": "Options",
+    "optionsDescription": "Control how the apply treats apps it already knows about.",
+    "filesChosen_one": "{{count}} file ready",
+    "filesChosen_other": "{{count}} files ready",
+    "noFiles": "Paste YAML below or upload files to plan.",
+    "planAgain": "Plan again",
+    "planFailed": "The plan could not be built. Fix the files and plan again.",
+    "applyFailed": "The apply did not finish. Plan again to review the current state."
   },
   "githubManualDialog": {
     "title": "Connect a GitHub App manually",
@@ -2307,5 +2809,437 @@
     "title": "Build cache",
     "titleAll": "Build cache for all apps",
     "description": "Keep BuildKit layers in a storage destination so rebuilds skip unchanged steps. A cache problem never fails a build, it is reported as a warning."
+  },
+  "gitConnections": {
+    "empty": {
+      "title": "No account connected",
+      "description": {
+        "gitlab": "Register a GitLab OAuth application, then authorize it. gitlab.com and self-managed instances can be connected side by side.",
+        "bitbucket": "Register a Bitbucket OAuth consumer, then authorize it. Add a second consumer later for another workspace.",
+        "gitea": "Register a Gitea OAuth application, then authorize it. Each Gitea or Forgejo server is its own connection.",
+        "forgejo": "Register a Forgejo OAuth application, then authorize it. Codeberg and self-hosted servers are each their own connection.",
+        "bitbucket_server": "Create a personal access token on your Bitbucket Server, then add it here. Each server or account is its own connection."
+      }
+    },
+    "default": "Default",
+    "account": "Signed in as {{name}}",
+    "accountUnknown": "Account not read yet",
+    "sources_one": "{{count}} git source",
+    "sources_other": "{{count}} git sources",
+    "scopeNote": "Connections belong to this control plane and are managed by admins. Anyone allowed to read repositories can browse what an account can see.",
+    "state": {
+      "ok": "Connected",
+      "notAuthorized": "Not authorized",
+      "needsReconnect": "Needs reconnect",
+      "rateLimited": "Rate limited"
+    },
+    "authorize": "Authorize",
+    "reconnect": "Reconnect",
+    "setDefault": "Set default",
+    "rename": {
+      "action": "Rename",
+      "label": "Connection label",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "disconnect": {
+      "action": "Disconnect",
+      "pending": "Disconnecting",
+      "title": "Disconnect {{label}}?",
+      "description": "This control plane stops using this account and revokes its token at the provider where that is supported. Other connected accounts are not touched.",
+      "sources_one": "{{count}} git source uses this account. It stays, shows needs reconnect, and works again once you connect an account on the same host.",
+      "sources_other": "{{count}} git sources use this account. They stay, show needs reconnect, and work again once you connect an account on the same host."
+    },
+    "add": {
+      "first": "Add an account",
+      "another": "Add another account",
+      "title": {
+        "gitlab": "Add a GitLab account",
+        "bitbucket": "Add a Bitbucket account",
+        "gitea": "Add a Gitea account",
+        "forgejo": "Add a Forgejo account",
+        "bitbucket_server": "Add a Bitbucket Server account"
+      },
+      "description": "Create the OAuth application on the provider with redirect URI {{callback}}, then enter it here. You will be sent to the provider to authorize it.",
+      "application": "OAuth application",
+      "newApplication": "Register a new OAuth application",
+      "reuse": "Reuse the application of {{label}}",
+      "applicationHelp": "Reuse the same application to sign in with a different account on the same instance.",
+      "instanceUrl": "Instance URL",
+      "instanceHelp": "gitlab.com or a self-managed address, for example https://git.example.com.",
+      "clientId": {
+        "gitlab": "Application ID",
+        "bitbucket": "Consumer key",
+        "gitea": "Client ID",
+        "forgejo": "Client ID",
+        "bitbucket_server": "Client ID"
+      },
+      "clientSecret": "Secret",
+      "label": "Label (optional)",
+      "labelHelp": "Defaults to the account name once you authorize. You can rename it later.",
+      "cancel": "Cancel",
+      "submit": "Save and authorize",
+      "saving": "Saving",
+      "tokenDescription": "Create a personal access token on the server with repository read and write permission, then paste it here. It is verified, then stored encrypted.",
+      "token": "Personal access token",
+      "tokenHelp": "Under Manage account, Personal access tokens. The token is never shown again.",
+      "instanceHelpServer": "The base address of your server, for example https://bitbucket.example.com.",
+      "connect": "Verify and connect",
+      "verifying": "Verifying",
+      "test": "Test connection",
+      "testing": "Testing",
+      "testOk": "Connected. The server answered and the details look right.",
+      "testOkAccount": "Connected as {{account}}.",
+      "fixLabel": "Fix",
+      "testKind": {
+        "bad_url": {
+          "message": "That address does not look like this kind of server.",
+          "fix": "Use the root address of the instance, for example https://git.example.com, without a repository path."
+        },
+        "bad_token": {
+          "message": "The server rejected the token.",
+          "fix": "Create a new personal access token with repository read access and paste it again."
+        },
+        "tls": {
+          "message": "The server's TLS certificate was rejected.",
+          "fix": "Install a trusted certificate on the server, or add your private CA to this control plane's trust store."
+        },
+        "unreachable": {
+          "message": "This control plane could not reach the server.",
+          "fix": "Check the hostname and port, and that the network or firewall allows outbound access to it."
+        },
+        "bad_scope": {
+          "message": "The token is missing a scope this control plane needs.",
+          "fix": "Create the token again with every scope listed in the steps above ticked, then paste the new one."
+        }
+      },
+      "callbackLabel": "Callback URL",
+      "callbackCopy": "Copy",
+      "callbackCopied": "Copied"
+    },
+    "token": {
+      "title": "Connect with a token",
+      "description": "Paste an access token instead of registering an OAuth application. It works on a plain http install with no public domain.",
+      "host": "Host",
+      "guideLabel": "How to create the token",
+      "server": "Server:",
+      "serverEmpty": "enter the server URL above",
+      "serverHelp": "The address you open in a browser, for example http://git.lan:3000. http and https both work.",
+      "tick": "Tick these scopes:",
+      "scopes": "Scopes to tick",
+      "noDomain": "The token is stored encrypted and is never shown again. No public domain or callback URL is needed.",
+      "steps": {
+        "gitlab": {
+          "open": "Open your GitLab access token page:",
+          "create": "Select Add new token, name it {{name}}, and pick an expiry date you can live with.",
+          "copy": "Select Create personal access token and copy the token that starts with glpat-."
+        },
+        "bitbucket": {
+          "open": "Open Atlassian API tokens:",
+          "create": "Select Create API token with scopes, name it {{name}}, choose Bitbucket as the app, and pick your workspace.",
+          "copy": "Create the token, then paste it below as your Atlassian email, a colon, and the token (email:token)."
+        },
+        "gitea": {
+          "open": "Open your Gitea applications page:",
+          "create": "Under Generate New Token, name it {{name}}.",
+          "copy": "Select Generate Token and copy it now, Gitea shows it once."
+        },
+        "forgejo": {
+          "open": "Open your Forgejo applications page:",
+          "create": "Under Generate New Token, name it {{name}}.",
+          "copy": "Select Generate Token and copy it now, Forgejo shows it once."
+        }
+      },
+      "field": "Access token",
+      "fieldEmailToken": "Email and API token (email:token)",
+      "check": "Check token",
+      "scopesFound": "Scopes: {{scopes}}",
+      "scopesUnknown": "This host does not report a token's scopes. Repository access is checked instead.",
+      "repos_one": "Can reach {{count}}{{plus}} repository.",
+      "repos_other": "Can reach {{count}}{{plus}} repositories.",
+      "noRepos": "No repositories are reachable yet. Tick the repository scopes, or make sure the account is a member of a project.",
+      "connected": "Account connected",
+      "connectedBody": "The token was checked and stored encrypted."
+    },
+    "toast": {
+      "added": "Account saved",
+      "addedBody": "Authorize it with the provider to finish.",
+      "disconnected": "Account disconnected",
+      "renameFailed": "Could not rename the account",
+      "authorized": "Account authorized",
+      "authorizedBody": "Its repositories are now available to pick from."
+    }
+  },
+  "gitConnectionsHub": {
+    "title": "Git connections",
+    "description": "Every Git account connected to this server, across all hosts.",
+    "loadFailed": "Could not load your Git accounts. Try again in a moment.",
+    "attention_one": "{{count}} account needs attention. Reconnect it so its apps keep deploying.",
+    "attention_other": "{{count}} accounts need attention. Reconnect them so their apps keep deploying.",
+    "openSettings": "Provider settings",
+    "scopes": "Scopes: {{scopes}}",
+    "banner": {
+      "description": "Connect GitHub, GitLab, Bitbucket, Gitea or Forgejo accounts, as many as you need, and pick repositories from any of them.",
+      "whatFor": "Connect one account per person, team or organization. Apps stay tied to the account they were created from, so you can add or remove accounts without touching your apps.",
+      "diagram": {
+        "repos": "Repos",
+        "server": "Server",
+        "branches": "Branches"
+      }
+    },
+    "add": {
+      "action": "Add account",
+      "withToken": "Connect with a token",
+      "withTokenAsks": "GitLab, Bitbucket, Gitea or Forgejo. Paste a token, no OAuth app or public domain needed.",
+      "domainTitle": "Set a primary domain first",
+      "domainBody": "This host sends you back to your server after you sign in, so the server needs a public domain.",
+      "continue": "Continue"
+    },
+    "stats": {
+      "repos": "Repos",
+      "apps": "Apps"
+    },
+    "health": {
+      "connected": "Connected",
+      "needsReconnect": "Needs reconnect",
+      "notAuthorized": "Not authorized",
+      "rateLimited": "Rate limited"
+    },
+    "disconnect": {
+      "description": "Apps are never deleted. Any app that used this account keeps running and needs another account connected before its next deploy.",
+      "affected": "These apps need another account: {{apps}}"
+    },
+    "hosts": {
+      "github": {
+        "name": "GitHub",
+        "asks": "You will create or pick a GitHub App and install it on an account or organization.",
+        "access": "Access follows the repositories the App is installed on."
+      },
+      "gitlab": {
+        "name": "GitLab",
+        "asks": "You will paste an OAuth application ID and secret, then sign in.",
+        "access": "Access follows the OAuth scopes you granted."
+      },
+      "bitbucket": {
+        "name": "Bitbucket",
+        "asks": "You will paste an OAuth consumer key and secret, then sign in.",
+        "access": "Access follows the OAuth permissions you granted."
+      },
+      "bitbucket_server": {
+        "name": "Bitbucket Server",
+        "asks": "You will paste your server URL and a personal access token.",
+        "access": "Access follows the token's permissions."
+      },
+      "gitea": {
+        "name": "Gitea",
+        "asks": "You will enter your Gitea URL and an OAuth application ID and secret, then sign in.",
+        "access": "Access follows the OAuth scopes you granted."
+      },
+      "forgejo": {
+        "name": "Forgejo and Codeberg",
+        "asks": "You will enter the server URL (codeberg.org works) and an OAuth application ID and secret, then sign in.",
+        "access": "Access follows the OAuth scopes you granted."
+      }
+    }
+  },
+  "emailBranding": {
+    "title": "Branding",
+    "description": "The logo, accent color and footer every rich email shares: password resets, invites, alerts and announcements.",
+    "logo": "Logo URL",
+    "logoHint": "An https image URL. The server never fetches it, so a remote logo tells its host when a message is opened.",
+    "color": "Accent color",
+    "colorHint": "A six digit hex value such as #107292. Leave empty to use the brand color.",
+    "footerText": "Footer text",
+    "footerHint": "Plain text only. Variables: {{variables}}.",
+    "address": "Postal address",
+    "links": "Footer links",
+    "linkLabel": "Label",
+    "linkUrl": "https link",
+    "addLink": "Add link",
+    "removeLink": "Remove link",
+    "poweredBy": "Show the Powered by line",
+    "save": "Save branding",
+    "saving": "Saving...",
+    "saved": "Email branding saved.",
+    "preview": "Preview",
+    "previewTitle": "Email branding preview",
+    "invalidHttps": "Use a full https:// address. Plain http and other schemes are refused.",
+    "invalidColor": "Use a six digit hex color such as #107292.",
+    "templates": {
+      "label": "Start from a template",
+      "dashboardLink": "Open the dashboard",
+      "minimal": {
+        "name": "Minimal",
+        "text": "Sent by {{brand_name}}."
+      },
+      "standard": {
+        "name": "Standard",
+        "text": "Sent by {{brand_name}} from {{instance_name}}. Questions? Write to {{support_email}}. {{year}}"
+      },
+      "compliance": {
+        "name": "Compliance",
+        "text": "You get this message because of activity on {{instance_name}}. Questions? Write to {{support_email}}. {{year}} {{brand_name}}",
+        "address": "{{brand_name}}, replace this line with your postal address"
+      }
+    }
+  },
+  "emailProviders": {
+    "title": "Providers",
+    "description": "The primary sends all mail. If it fails, a backup takes over until the primary recovers.",
+    "loadError": "Could not load the providers: {{message}}",
+    "retry": "Try again",
+    "roles": {
+      "primary": "Primary",
+      "backup": "Backup"
+    },
+    "health": {
+      "healthy": "Healthy",
+      "failing": "Failing",
+      "paused": "Paused",
+      "untested": "Not tested yet",
+      "none": "Not set up"
+    },
+    "runningOnBackup": "Running on backup",
+    "status": {
+      "lastError": "Last error",
+      "noError": "None"
+    },
+    "row": {
+      "noFrom": "No sender address yet",
+      "lastOk": "Sent {{when}}",
+      "neverOk": "No send yet",
+      "enabledLabel": "Enable {{name}}",
+      "edit": "Edit",
+      "editLabel": "Edit {{name}}",
+      "test": "Test",
+      "testLabel": "Send a test through {{name}}",
+      "promote": "Make primary",
+      "promoteLabel": "Make {{name}} the primary",
+      "promoted": "{{name}} is now the primary",
+      "remove": "Remove",
+      "removeLabel": "Remove {{name}}",
+      "lastError": "Last error: {{kind}}. Run Test to see the fix."
+    },
+    "secret": {
+      "set": "Set",
+      "replace": "Replace",
+      "replaceLabel": "Replace {{label}}",
+      "replaceHint": "Type the new value. The stored one is overwritten on save.",
+      "keep": "Keep the stored value"
+    },
+    "panel": {
+      "editTitle": "Edit the {{role}} provider",
+      "addTitle": "Add the {{role}} provider",
+      "backend": "Provider",
+      "name": "Label",
+      "fromOverride": "From address for this provider",
+      "fromOverrideHelp": "Optional. Blank sends as {{from}}.",
+      "fromOverrideNoShared": "Needed unless you set a sender address below.",
+      "sesSmtpNote": "SES SMTP credentials come from the SES console (SMTP settings). They are not your IAM keys.",
+      "needsSender": "This provider has no sender address yet. Set one before saving.",
+      "needsSenderLink": "Go to Sender identity",
+      "save": "Save provider",
+      "add": "Add provider",
+      "cancel": "Cancel"
+    },
+    "remove": {
+      "title": "Remove {{name}}?",
+      "description": "The provider and its stored credentials are deleted.",
+      "primaryWithBackup": "The primary cannot be removed while a backup exists. Make the backup primary first, or remove the backup.",
+      "consequenceCredentials": "Its credentials are deleted and cannot be recovered.",
+      "consequenceNoFailover": "Mail no longer has a fallback if the primary fails.",
+      "consequenceNoMail": "Alerts, invites and password resets stop sending until you add a provider.",
+      "confirm": "Remove provider",
+      "removing": "Removing...",
+      "done": "{{name}} removed"
+    },
+    "add": {
+      "primary": {
+        "title": "Add a provider",
+        "body": "Pick where alerts, invites and password resets are sent from.",
+        "action": "Add provider"
+      },
+      "backup": {
+        "title": "Add a backup provider",
+        "body": "Mail switches to it automatically if the primary starts failing.",
+        "action": "Add backup"
+      }
+    }
+  },
+  "emailSender": {
+    "title": "Sender identity and limits",
+    "optional": "Optional",
+    "fromPlaceholder": "noreply@your-domain.com",
+    "envelopePlaceholder": "Optional, defaults to the from address",
+    "capsHelp": "Send caps: 0 uses the server default, which is unlimited unless set.",
+    "useSuggestion": "Suggested: {{value}}",
+    "useSuggestionLabel": "Use the suggested value {{value}}",
+    "domainHint": "Make sure {{domain}} is verified with your provider.",
+    "mailgunMismatch": "{{domain}} is not under your Mailgun domain {{mailgun}}, so Mailgun will likely refuse it.",
+    "domainHintLink": "Check SPF, DKIM and DMARC"
+  },
+  "emailTest": {
+    "title": "Delivery check",
+    "description": "Send a real message through one provider alone (no failover), then confirm its sender domain publishes SPF, DKIM and DMARC.",
+    "noProviders": "Add a provider above to send a test and check its domain.",
+    "provider": "Send through",
+    "to": "Send to",
+    "domainFor": "Domain for {{name}}"
+  },
+  "emailPresets": {
+    "intro": "Pick your provider. Its connection details are filled in, you only add the credential and sender.",
+    "docs": "Provider docs",
+    "items": {
+      "resend": {
+        "name": "Resend",
+        "bestFor": "Simple API sending with a verified domain.",
+        "credentialHint": "Create an API key under API Keys in the Resend dashboard."
+      },
+      "ses": {
+        "name": "Amazon SES (API)",
+        "bestFor": "AWS accounts that want the SES API with an IAM key.",
+        "credentialHint": "Use the secret of an IAM access key allowed to send with SES."
+      },
+      "ses_smtp": {
+        "name": "Amazon SES (SMTP)",
+        "bestFor": "AWS accounts that prefer SMTP credentials.",
+        "credentialHint": "Create SMTP credentials in the SES console under SMTP settings. They are not your IAM keys."
+      },
+      "postmark": {
+        "name": "Postmark",
+        "bestFor": "Transactional mail with a verified sender signature.",
+        "credentialHint": "Copy the Server API token from your Postmark server."
+      },
+      "sendgrid": {
+        "name": "SendGrid",
+        "bestFor": "Existing SendGrid accounts with domain authentication.",
+        "credentialHint": "Create an API key with Mail Send access under Settings, API Keys."
+      },
+      "mailgun": {
+        "name": "Mailgun",
+        "bestFor": "Sending from a domain you verified with Mailgun.",
+        "credentialHint": "Copy a sending API key from the Mailgun dashboard, then enter your sending domain."
+      },
+      "gmail": {
+        "name": "Google Workspace or Gmail",
+        "bestFor": "Low volume mail from a Google account.",
+        "credentialHint": "Use an app password for the account. Set the username to the full account address."
+      },
+      "microsoft365": {
+        "name": "Microsoft 365",
+        "bestFor": "Low volume mail from a Microsoft 365 mailbox.",
+        "credentialHint": "Use the mailbox password or app password. Set the username to the full mailbox address."
+      },
+      "brevo": {
+        "name": "Brevo",
+        "bestFor": "Brevo accounts that send through the SMTP relay.",
+        "credentialHint": "Create an SMTP key in your Brevo account. The username is your Brevo login."
+      },
+      "smtp": {
+        "name": "Other SMTP server",
+        "bestFor": "Any mail server or relay that speaks SMTP.",
+        "credentialHint": "Use the password your mail server gives you."
+      }
+    }
   }
 }

@@ -8,8 +8,9 @@ import (
 	"net"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/fixit"
 )
 
 // State is the outcome of one check.
@@ -48,18 +49,34 @@ const (
 )
 
 // Action is the one primary thing a fix offers: an API request to run
-// ("POST /api/v1/..."), a page to open, or a Value to copy.
+// ("POST /api/v1/..." with an optional JSON Body), a page to open, or a
+// Value to copy.
 type Action struct {
-	Kind  string `json:"kind"`
-	Label string `json:"label"`
-	API   string `json:"api,omitempty"`
-	Value string `json:"value,omitempty"`
+	Kind  string            `json:"kind"`
+	Label string            `json:"label"`
+	API   string            `json:"api,omitempty"`
+	Value string            `json:"value,omitempty"`
+	Body  map[string]string `json:"body,omitempty"`
 }
 
-// Fix is the remedy for a failed or warning check.
+// Record is one DNS record an operator or the connected DNS provider creates.
+type Record struct {
+	Name  string `json:"name"`
+	Type  string `json:"type"`
+	Value string `json:"value"`
+}
+
+// Fix is the remedy for a failed or warning check. Kind says how much the
+// control plane can do: auto applies Action itself, guided shows exact
+// Records or values, manual only explains. Every kind is followed by a
+// re-check of the whole domain.
 type Fix struct {
-	Summary string  `json:"summary"`
-	Action  *Action `json:"action,omitempty"`
+	Summary string     `json:"summary"`
+	Kind    fixit.Kind `json:"kind"`
+	Action  *Action    `json:"action,omitempty"`
+	Records []Record   `json:"records,omitempty"`
+	// CLI is the secondary, collapsed way to do the same from a terminal.
+	CLI string `json:"cli,omitempty"`
 }
 
 // Check is one ordered result.
@@ -83,6 +100,28 @@ type Report struct {
 	Probed    bool    `json:"probed"`
 	ProbeNote string  `json:"probe_note,omitempty"`
 	Checks    []Check `json:"checks"`
+	// Records are the DNS records this domain needs, inferred from apex versus
+	// subdomain and this server's address.
+	Records     []Record     `json:"records,omitempty"`
+	Propagation *Propagation `json:"propagation,omitempty"`
+	// GoLive is the dashboard path of the guided checklist for this app and domain.
+	GoLive string `json:"go_live,omitempty"`
+}
+
+// Propagation states.
+const (
+	PropagationSettled     = "settled"
+	PropagationPropagating = "propagating"
+	PropagationWaiting     = "waiting"
+)
+
+// Propagation tells the dashboard whether DNS has caught up and when to
+// look again.
+type Propagation struct {
+	State            string    `json:"state"`
+	Detail           string    `json:"detail"`
+	NextCheckSeconds int       `json:"next_check_seconds,omitempty"`
+	NextCheckAt      time.Time `json:"next_check_at,omitzero"`
 }
 
 // PortHolder is a container publishing host port 80 or 443.
@@ -134,6 +173,14 @@ type Facts struct {
 	ACMEFailure           *ACMEFailureFacts
 	// Target is set for a standalone domain, replacing the app check.
 	Target *TargetFacts
+	// ServerHost is the configured public hostname, used as a CNAME target.
+	ServerHost string
+	// DNSProvider and DNSZone describe the connected DNS provider that can
+	// create records; empty means none.
+	DNSProvider string
+	DNSZone     string
+	// CLIName is the command line tool's name for the secondary CLI hint.
+	CLIName string
 }
 
 // TargetFacts is a standalone domain's proxy target and whether this server
@@ -199,52 +246,6 @@ type run struct {
 	tls      *PeerCert
 	tlsErr   error
 	https    *HTTPResult
-}
-
-// Run executes every check in order and never returns an error: a check
-// that cannot run reports unavailable or skipped instead.
-func Run(ctx context.Context, facts Facts, probes Probes, opts Options) Report {
-	opts = opts.withDefaults()
-	ctx, cancel := context.WithTimeout(ctx, opts.Timeout)
-	defer cancel()
-
-	facts.Domain = strings.ToLower(strings.TrimSuffix(strings.TrimSpace(facts.Domain), "."))
-	rep := &Report{Domain: facts.Domain, App: facts.App, CheckedAt: opts.Now().UTC()}
-	rn := &run{facts: facts, probes: probes, opts: opts, report: rep}
-
-	steps := []func(context.Context) Check{
-		rn.checkResolves,
-		rn.checkPointsHere,
-		rn.checkAAAA,
-		rn.checkApexCNAME,
-		rn.checkCAA,
-		rn.checkApp,
-		rn.checkHeldBack,
-		rn.checkPortOwners,
-		rn.decideProbe,
-		rn.checkPort80,
-		rn.checkTLS,
-		rn.checkHTTPStatus,
-		rn.checkRedirects,
-		rn.checkHSTS,
-		rn.checkStoredCert,
-	}
-	timedOut := false
-	for _, step := range steps {
-		if ctx.Err() != nil {
-			timedOut = true
-			break
-		}
-		if c := step(ctx); c.ID != "" {
-			rep.Checks = append(rep.Checks, c)
-		}
-	}
-	if timedOut {
-		rep.Checks = append(rep.Checks, Check{ID: "doctor.timeout", Title: "Doctor finished every check", State: StateUnavailable, Tier: TierHygiene,
-			Detail: "the doctor ran out of time before every check finished; run it again"})
-	}
-	rep.Status = overall(rep.Checks)
-	return *rep
 }
 
 func overall(checks []Check) string {

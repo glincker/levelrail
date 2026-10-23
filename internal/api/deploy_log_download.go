@@ -22,8 +22,7 @@ func (rt *Router) handleDownloadDeployLog(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: download deploy log: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: download deploy log: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -33,8 +32,7 @@ func (rt *Router) handleDownloadDeployLog(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: download deploy log: load attempt failed", slog.String("error", err.Error()), slog.String("deploy_id", deployID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: download deploy log: load attempt failed", err, slog.String("deploy_id", deployID))
 		return
 	}
 	// Attempt IDs are globally unique but the route is app-scoped: a
@@ -64,8 +62,7 @@ func (rt *Router) handleDownloadDeployLog(w http.ResponseWriter, r *http.Request
 		}
 		entries, err := rt.deployLogStore.QueryDeployLog(r.Context(), deployID)
 		if err != nil {
-			rt.logger.Error("api: download deploy log: query persisted log failed", slog.String("error", err.Error()), slog.String("deploy_id", deployID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: download deploy log: query persisted log failed", err, slog.String("deploy_id", deployID))
 			return
 		}
 		for _, e := range rt.mergeTraceIntoLog(r.Context(), deployID, entries) {

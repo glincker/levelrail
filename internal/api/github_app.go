@@ -61,7 +61,7 @@ type GitHubAppClient interface {
 	ExchangeManifestCode(ctx context.Context, instanceURL, code string) (githubapp.Credentials, error)
 	GetInstallation(ctx context.Context, instanceURL, appJWT string, installationID int64) (githubapp.InstallationInfo, error)
 	MintInstallationToken(ctx context.Context, instanceURL, appJWT string, installationID int64) (githubapp.InstallationToken, error)
-	ListInstallationRepos(ctx context.Context, instanceURL, token string) ([]githubapp.Repo, error)
+	ListInstallationRepos(ctx context.Context, instanceURL, token string, opts githubapp.ListOptions) ([]githubapp.Repo, githubapp.ListResult, error)
 	GetRepo(ctx context.Context, instanceURL, token, owner, repo string) (githubapp.Repo, error)
 	ListBranches(ctx context.Context, instanceURL, token, owner, repo string) ([]githubapp.Branch, error)
 	CreateRepoWebhook(ctx context.Context, instanceURL, token, owner, repo, hookURL, secret string) error
@@ -123,8 +123,7 @@ func (rt *Router) handleGetGitHubAppStatus(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get github app connection status failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get github app connection status failed", err)
 		return
 	}
 
@@ -216,6 +215,7 @@ func (rt *Router) checkGitHubAppInstallation(ctx context.Context, conn store.Git
 // operator who wants the App itself gone from GitHub must delete it
 // from github.com/settings/apps themselves.
 func (rt *Router) handleDisconnectGitHubApp(w http.ResponseWriter, r *http.Request) {
+	rt.invalidateGitRepoCache(r.Context(), gitProviderGitHub)
 	ctx := r.Context()
 	err := rt.githubApp.DeleteGitHubAppConnection(ctx)
 	if errors.Is(err, store.ErrGitHubAppConnectionNotFound) {
@@ -223,8 +223,7 @@ func (rt *Router) handleDisconnectGitHubApp(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: disconnect github app failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: disconnect github app failed", err)
 		return
 	}
 
@@ -238,11 +237,10 @@ func (rt *Router) handleDisconnectGitHubApp(w http.ResponseWriter, r *http.Reque
 	// holding.
 	if rt.githubAppSecrets != nil {
 		if err := rt.githubAppSecrets.DeleteAll(ctx, store.GitHubAppSecretsKey()); err != nil {
-			rt.logger.Error("api: delete github app secrets failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: delete github app secrets failed", err)
 			return
 		}
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	rt.finishGitDisconnect(ctx, w, gitProviderGitHub, false, "Installation tokens are short lived and never stored, so there is nothing to revoke. The App stays installed on GitHub: uninstall it under Settings, Applications, Installed GitHub Apps.", nil)
 }

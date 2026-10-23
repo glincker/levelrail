@@ -1,0 +1,5 @@
+[
+  {"name": "Nightly cleanup", "command": "node scripts/cleanup.js", "frequency": "0 3 * * *", "enabled": true},
+  {"name": "Disabled report", "command": "node scripts/report.js", "frequency": "daily", "enabled": false},
+  {"name": "Hourly sync", "command": "node scripts/sync.js", "frequency": "hourly", "enabled": true}
+]

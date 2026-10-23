@@ -240,7 +240,7 @@ Without those env vars and with no user yet, the control plane generates a one-t
 
 - `GET /api/v1/auth/setup-status` (public) returns `{"needs_setup": true}` until the first admin exists, and the login page switches to its setup form on its own.
 - `POST /api/v1/auth/register` requires the token in `setup_token` (constant-time compare) and deletes the file on success, so whoever reaches the dashboard first can't claim the instance without shell access to the server.
-- `install.sh` prints the token and a `http://<ip>:8080/login?setup=<token>` link; `sudo levelrail setup-token` prints it again.
+- `install.sh` prints the token and a `http://<ip>:8080/login#setup=<token>` link; `sudo levelrail setup-token` prints it again.
 
 `POST /api/v1/auth/register` is gated at the database layer to succeed exactly once (a unique constraint, not an application check), so concurrent first-registration attempts cannot create two "first" admins. Either path grants `AbilityRoot` because no one else exists yet.
 
@@ -386,6 +386,10 @@ Scoped, revocable bearer credentials for the CLI, CI, and MCP integrations. Mint
 - An operator approves it from the dashboard's CLI Access page (`/settings/cli-access`) using their existing session.
 - The resulting token inherits exactly that operator's abilities. The CLI never picks the permissions.
 
+**Rotating a CLI token.** The command center and the CLI Access page offer Rotate on tokens a CLI sign-in created. It revokes the current token (`DELETE /api/v1/auth/tokens/{id}`), so that CLI stops working, then shows a fresh one-time pairing command to run on the CLI. Nothing rotates automatically, and the old token is never shown.
+
+**Dev fixture tokens.** When the server runs with `APP_DEV_MODE=1` in a non-release build, the tokens seeded from `test/fixtures/dev-fixtures.yml` carry `dev_fixture: true` in `GET /api/v1/auth/tokens`. They have publicly known secrets, are reseeded on every dev-mode start while they stay in the fixtures file, and are never created in release builds, where `dev_fixture` is never set. The CLI Access page lists them in a collapsed group below your real tokens.
+
 ### Session links
 
 A session link is a one-time login URL, not a credential you type. Mint one from an authenticated context and hand the URL to whatever needs to sign in next: CI, an AI agent driving the dashboard through browser automation, or a fresh incognito window. Opening it signs that browser in immediately.
@@ -514,6 +518,13 @@ A token owned by the user that holds `signin:approve` can decide too: `levelrail
 - A sign-in from a browser and network the account has not used before emails the owner a single-use **this wasn't me** link that signs that session out, drops trusted browsers and flags the account for a new password. See [New sign-in alerts](/security-center#new-sign-in-alerts).
 
 **Trusted browsers.** An approved browser, or one that signed in with a code, gets a trusted-device cookie: a random token stored only as a hash. Signing in again from that browser extends the same entry instead of adding one, and its next password sign-in goes straight through. Revoke one under **Settings > Security > Trusted browsers** or with `levelrail-cli auth devices revoke <id>`.
+
+**Sign in the CLI from the dashboard.** The first thing a new user does is sign the CLI in, so there are two guided paths, both safe against a stolen password:
+
+- *Pairing code.* The dashboard home shows a **Connect your CLI** card (`POST /api/v1/auth/cli-pairing`). It prints `levelrail-cli login --api-url <url> --code XXXX-XXXX`. The code has 40 bits of entropy, lives `APP_CLI_PAIRING_TTL` (default 5 minutes, 15 maximum), works once, and only a signed-in browser session can ask for it: a bearer token, a session link or an anonymous caller cannot. Only its SHA-256 is stored. Asking for a new code, changing or resetting the password, or signing out other sessions revokes the older ones. Redeeming it (`POST /api/v1/auth/cli-pairing/redeem`) is rate limited per IP (`APP_CLI_PAIR_PER_MINUTE`, default 10) and per code (5 wrong guesses burn it), and every refusal looks the same. The token it mints carries the account's abilities except `root`, like a device login, never `signin:approve`, and expires like a device token.
+- *Approval.* A password sign-in from a new device prints the page to approve it on (`/approve-sign-in`, which also appears as a card on the dashboard home within seconds), the number to type, a countdown and how to cancel. The CLI waits `--approval-timeout` (default 3 minutes, `APP_LOGIN_APPROVAL_TIMEOUT`), backing off between polls, and opens the page with `--open` at a desktop terminal. Without a terminal it fails at once with the fix unless `--wait` is set.
+
+A password alone never signs in a new device while another session of the account is live, and a pairing code is useless without a signed-in session that issued it. Audit actions: `cli_pairing.created`, `cli_pairing.paired`, `cli_pairing.failed` (never the code itself), `cli_pairing.revoked`, plus the existing `new_device.*` entries for approvals.
 
 Every trusted browser of an account is revoked when its password is changed or reset, when it signs out its other sessions, when `recover-admin` resets it, and when the user is deleted. The same events, plus turning two-factor authentication off or removing a passkey, also cancel the account's waiting approvals (approved ones not yet collected included) and lock its live sign-in codes. Expired entries are removed by the periodic sweep.
 
@@ -749,7 +760,7 @@ levelrail-cli tokens list
 levelrail-cli tokens revoke <id>
 
 # Auth: login, identity check, two-factor
-levelrail-cli auth login [--device] [--token-name NAME] [--abilities LIST] [--expires-in-days N]
+levelrail-cli auth login [--code XXXX-XXXX | --device] [--open] [--wait] [--approval-timeout DUR] [--token-name NAME] [--abilities LIST] [--expires-in-days N]
 levelrail-cli auth whoami
 levelrail-cli auth session-link
 levelrail-cli auth code                       # waiting sign-in codes and new-browser sign-ins
@@ -781,7 +792,7 @@ levelrail-cli audit-purge
   Sign-in covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook, Linear, Vercel, Hugging Face, Figma, Salesforce, Codeberg, Amazon Cognito, Dropbox, Kakao, Patreon, generic OIDC and [SAML 2.0](/sso-saml) (beta); accounts and groups sync through [SCIM](/scim). There is no LDAP sync.
 
 - There is no per-team or per-project access boundary. IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. The Organizations settings page groups projects for display and navigation only.
-- SAML sign-in and SCIM provisioning are beta (the `saml-scim` feature, off by default). They are built on the sign-in library, with Levelrail's own checks in front, and are tested against a local test identity provider, not yet against a live Okta, Entra ID or Keycloak tenant. See [SAML](/sso-saml) and [SCIM](/scim).
+- SAML sign-in and SCIM provisioning are beta (the `saml-scim` feature, off by default). They are built on the sign-in library, with Levelrail's own checks in front, and were run against Keycloak 26.0.8 and SimpleSAMLphp 1.15 in a local lab, not against Okta or Entra ID. See [SAML](/sso-saml) and [SCIM](/scim).
 - Dashboard sessions are stored in the database and survive a restart. Sessions minted from API-token session links are held in memory and end on restart.
 
 </Accordion>

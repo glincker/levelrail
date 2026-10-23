@@ -142,8 +142,7 @@ func (rt *Router) nodeProviderResources(ctx context.Context) ([]nodeProviderReso
 func (rt *Router) handleListNodeProviders(w http.ResponseWriter, r *http.Request) {
 	out, err := rt.nodeProviderResources(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list node providers failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list node providers failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -370,8 +369,7 @@ func (rt *Router) handleSetNodeProviderCredential(w http.ResponseWriter, r *http
 		}
 	}
 	if err := rt.nodeProviderSecrets.SetValue(r.Context(), store.NodeProviderSecretsKey(req.Provider), store.NodeProviderTokenEnvKey, value); err != nil {
-		rt.logger.Error("api: save node provider token failed", slog.String("provider", req.Provider), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: save node provider token failed", err, slog.String("provider", req.Provider))
 		return
 	}
 	rt.nodeProviderCatalog.invalidate(req.Provider)
@@ -482,15 +480,13 @@ func (rt *Router) handleDisconnectNodeProvider(w http.ResponseWriter, r *http.Re
 			return
 		}
 		if err := deleter.DeleteAll(r.Context(), store.NodeProviderSecretsKey(provider)); err != nil {
-			rt.logger.Error("api: delete node provider token failed", slog.String("provider", provider), slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: delete node provider token failed", err, slog.String("provider", provider))
 			return
 		}
 	}
 	if rt.nodeProviderConns != nil {
 		if err := rt.nodeProviderConns.DeleteNodeProviderConnection(r.Context(), provider); err != nil {
-			rt.logger.Error("api: delete node provider connection failed", slog.String("provider", provider), slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: delete node provider connection failed", err, slog.String("provider", provider))
 			return
 		}
 	}

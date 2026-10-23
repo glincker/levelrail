@@ -40,7 +40,7 @@ export interface AcmeFailure {
   action: AcmeAction
 }
 
-export type DnsProvider = 'cloudflare' | 'route53' | 'none'
+export type DnsProvider = 'cloudflare' | 'route53' | 'googleclouddns' | 'none'
 
 // Who terminates TLS for a hostname (internal/tlsowner).
 export type TlsOwner = 'acme' | 'internal' | 'proxy' | 'custom'

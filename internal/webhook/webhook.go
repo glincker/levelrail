@@ -392,6 +392,9 @@ type PushEvent struct {
 	// Before is the commit the branch moved from, the stale-deploy guard's
 	// strongest ordering signal.
 	Before string `json:"before"`
+	// Deleted marks a push that removed the ref (all-zero After on GitHub,
+	// GitLab and Gitea, a null new ref on Bitbucket).
+	Deleted bool `json:"deleted"`
 	// HeadCommitAt is the pushed head commit's timestamp, zero if unknown.
 	HeadCommitAt time.Time `json:"-"`
 	// HeadMessage and HeadAuthor are the pushed head commit's message and
@@ -501,6 +504,9 @@ func ParsePushEvent(body []byte) (PushEvent, error) {
 	ev := payload.PushEvent
 	if ev.After == "" || ev.Ref == "" {
 		return ev, ErrPushEventFieldsMissing
+	}
+	if isZeroSHA(ev.After) {
+		ev.Deleted = true
 	}
 	ev.Changed = changedFromCommits(payload.Commits)
 	for _, r := range []*pushRepo{payload.Repository, payload.Project} {
@@ -740,4 +746,8 @@ func (h *Handler) cloneAndCheckout(ctx context.Context, repoURL, sha string, pro
 	}
 	progress(build.ProgressEvent{Log: fmt.Sprintf("Checked out %s", sha), Stream: "stdout"})
 	return co.Dir, co.Cleanup, nil
+}
+
+func isZeroSHA(sha string) bool {
+	return sha != "" && strings.Trim(sha, "0") == ""
 }

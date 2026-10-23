@@ -35,7 +35,7 @@ const (
 	auditDNSHealthDelete   = "dns_health_check.delete"
 )
 
-const dnsNoProviderMessage = "no DNS provider is connected: connect Cloudflare or Route53 under Domains, DNS provider"
+const dnsNoProviderMessage = "no DNS provider is connected: connect Cloudflare, Route53 or Google Cloud DNS under Domains, DNS provider"
 
 // dnsDefaultTTL is APP_DNS_DEFAULT_TTL, else 300 seconds.
 func dnsDefaultTTL() int {
@@ -104,12 +104,23 @@ func (rt *Router) resolveDNSZoneProviders(ctx context.Context) (map[string]dnszo
 			}
 		}
 	}
+	key, err := rt.googleCloudDNSKey(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if key != "" {
+		p, err := rt.newGoogleCloudProvider(key)
+		if err != nil {
+			return nil, err
+		}
+		out[dnszones.ProviderGoogleCloud] = p
+	}
 	return out, nil
 }
 
 func providerNames(m map[string]dnszones.Provider) []string {
 	names := make([]string, 0, len(m))
-	for _, n := range []string{dnszones.ProviderCloudflare, dnszones.ProviderRoute53} {
+	for _, n := range []string{dnszones.ProviderCloudflare, dnszones.ProviderRoute53, dnszones.ProviderGoogleCloud} {
 		if _, ok := m[n]; ok {
 			names = append(names, n)
 		}

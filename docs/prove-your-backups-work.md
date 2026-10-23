@@ -94,6 +94,8 @@ New volume backups are compressed with zstd and encrypted with [age](https://age
 Copy that file somewhere that is not this server. Lose it and encrypted backups cannot be restored, including after a disaster that destroys the control plane.
 </Warning>
 
+Database dumps use the same key, switched on per backup target. New targets encrypt dumps by default. For an existing target, press **Enable encryption** on **Settings, Backup targets** (root only), or run `levelrail-cli backups encryption set <target-id> on`; `get` shows the current state. Only new dumps are encrypted: dumps already in the bucket stay as they are, and restores, drills and verification read both kinds. Encrypted rows show an **Encrypted** badge in the backup list. There is no key export action; the key is the `backup-encryption.key` file above.
+
 Set `APP_BACKUP_ENCRYPTION=off` to keep compression but skip encryption. Older backups taken before this feature stay readable; each backup records how it was encoded.
 
 ## Consistency hooks
@@ -122,6 +124,10 @@ Buckets count periods that actually have a backup, so a week with no backups doe
 | `APP_BACKUP_TIMEOUT_MINUTES` | unset | One backup, archive plus upload, is cancelled after this long. |
 | `APP_BACKUP_UPLOAD_ATTEMPTS` | `1` | How many times a failed upload is retried from a fresh archive. |
 | `APP_BACKUP_DRILL_INTERVAL_HOURS` | `168` | Scheduled drill period per resource. `0` disables. |
+| `APP_BACKUP_DRILL_MEMORY_MB` | `1024` | Memory cap for a scratch database container. It also runs with no network. |
+| `APP_BACKUP_DRILL_CPU_MILLI` | `1000` | CPU cap for a scratch container, in thousandths of a core. |
+
+Scratch containers are labelled, and any left by a crash are removed when the control plane starts.
 | `APP_BACKUP_STALE_RUNNING_MINUTES` | `360` | A backup still "running" after this long is settled from the bucket. |
 
 A live volume cannot be re-read from an offset, so a half-uploaded object is aborted and the volume is archived again rather than resumed. If the control plane stops mid-backup, a sweep finishes the row: an object that reached the bucket is checksummed and recorded as succeeded, a missing one is marked failed as interrupted.

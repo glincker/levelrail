@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -17,16 +15,6 @@ const passwordResetTokenTTL = 30 * time.Minute
 // passwordResetSendTimeout bounds handleForgotPassword's background
 // send, so a hung SMTP/SES backend can't leak a goroutine indefinitely.
 const passwordResetSendTimeout = 30 * time.Second
-
-const passwordResetTokenIDPrefix = "prt_"
-
-func randomPasswordResetTokenID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
-		return "", fmt.Errorf("api: generate password reset token id: %w", err)
-	}
-	return passwordResetTokenIDPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
-}
 
 // forgotPasswordIPKey and forgotPasswordEmailKey are two independent
 // budgets, both must allow a request through: per-email (so one email
@@ -78,20 +66,6 @@ func (rt *Router) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	go rt.requestLibPasswordReset(req.Email, clientIP(r))
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func (rt *Router) passwordResetMessageFor(url string) (subject, body string) {
-	subject = fmt.Sprintf("[%s] Reset your password", rt.brand.Name)
-	body = fmt.Sprintf(
-		"A password reset was requested for your %s account.\n\nReset your password: %s\n\nThis link expires in %d minutes. If you didn't request this, you can safely ignore this email.",
-		rt.brand.Name, url, int(passwordResetTokenTTL.Minutes()),
-	)
-	return subject, body
-}
-
-// passwordResetMessage builds the reset email for a raw token.
-func (rt *Router) passwordResetMessage(ctx context.Context, token string) (subject, body string) {
-	return rt.passwordResetMessageFor(rt.passwordResetURL(ctx, token))
 }
 
 // passwordResetURL builds the link the reset email points at: absolute

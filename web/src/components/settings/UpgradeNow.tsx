@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
 import { toast } from '../ui/toast'
@@ -11,11 +11,15 @@ import {
   selfUpgradeAttemptsQueryOptions,
   UPGRADE_POLL_MS,
   selfUpgradePlanQueryOptions,
+  selfUpgradeStatusQueryOptions,
   type SelfUpgradeAttempt,
+  UpgradeRunningError,
   useStartSelfUpgrade,
 } from '../../queries/selfUpgrade'
+import { isSeen, markSeen } from '../../lib/upgradeSeen'
 import { scheduleQueryOptions } from '../../queries/upgradeSchedule'
 import { ShieldCheck } from '@phosphor-icons/react/dist/ssr'
+import { CliFallback } from './CliFallback'
 import { CopyCommand } from './CopyCommand'
 import { ScheduleUpgradeDialog } from './ScheduleUpgradeDialog'
 import { ScheduledUpgradeBanner } from './ScheduledUpgradeBanner'
@@ -23,6 +27,8 @@ import { UpgradeCheckRow } from './UpgradeCheckRow'
 import { UpgradeConfirmDialog } from './UpgradeConfirmDialog'
 import { EdgeUpdateGuidance } from './EdgeUpdateGuidance'
 import { UpgradeProgress } from './UpgradeProgress'
+import { UpgradeStateHero } from './UpgradeStateHero'
+import { UpgradePlanPreview } from './UpgradePlanPreview'
 
 const POLL_MS = UPGRADE_POLL_MS
 const RECENT_MS = 15 * 60_000
@@ -61,6 +67,8 @@ export function UpgradeNow() {
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [dismissed, setDismissed] = useState('')
+  const [rechecking, setRechecking] = useState(false)
+  const queryClient = useQueryClient()
 
   const attempts = useQuery({
     ...selfUpgradeAttemptsQueryOptions(false),
@@ -77,8 +85,11 @@ export function UpgradeNow() {
     startedAt === null
       ? undefined
       : findFinished(attempts.data ?? [], target, startedAt)
+  const serverStatus = useQuery(selfUpgradeStatusQueryOptions())
   const active =
-    running !== undefined || (startedAt !== null && !finishedAttempt)
+    running !== undefined ||
+    Boolean(serverStatus.data?.running) ||
+    (startedAt !== null && !finishedAttempt)
   const status = useQuery({
     ...updatesQueryOptions(),
     refetchInterval: active ? POLL_MS : false,
@@ -98,9 +109,26 @@ export function UpgradeNow() {
     )
     return () => window.clearTimeout(id)
   }, [finishedVersion, target, t])
-  const recent = (attempts.data ?? []).find(
-    (a) => a.id !== dismissed && isRecentFinished(a),
+  const unseenFinished =
+    finishedAttempt && !isSeen('panel', finishedAttempt.id)
+      ? finishedAttempt
+      : undefined
+  const sessionSucceededId =
+    unseenFinished?.outcome === 'succeeded' ? unseenFinished.id : ''
+  useEffect(() => {
+    if (!sessionSucceededId) return
+    const onHide = () => markSeen('panel', sessionSucceededId)
+    window.addEventListener('pagehide', onHide)
+    return () => window.removeEventListener('pagehide', onHide)
+  }, [sessionSucceededId])
+  const olderFailure = (attempts.data ?? []).find(
+    (a) =>
+      a.id !== dismissed &&
+      a.outcome !== 'succeeded' &&
+      !isSeen('panel', a.id) &&
+      isRecentFinished(a),
   )
+  const recent = unseenFinished ?? olderFailure
   const planSteps = plan.data?.steps ?? []
   const reconnecting = attempts.isError || status.isError
 
@@ -117,18 +145,20 @@ export function UpgradeNow() {
     const schemaBlock = pre?.checks.find(
       (c) => c.code === 'schema_compat' && c.status === 'fail',
     )
-    if (!recent && schemaBlock) {
+    if (!recent && pre && (pre.state === 'ahead_of_releases' || schemaBlock)) {
       return (
-        <div className="space-y-2">
-          <p className="text-sm font-medium">
-            {t('upgradeNow.schemaBlockedTitle', {
-              version: pre?.latest_version ?? '',
-            })}
-          </p>
-          <ul className="space-y-3" aria-label={t('preflight.checksLabel')}>
-            <UpgradeCheckRow check={schemaBlock} />
-          </ul>
-        </div>
+        <UpgradeStateHero
+          pre={pre}
+          checking={rechecking}
+          onCheckAgain={() => {
+            setRechecking(true)
+            void fetch('/api/v1/updates/preflight?refresh=1')
+              .then(() =>
+                queryClient.invalidateQueries({ queryKey: ['updates'] }),
+              )
+              .finally(() => setRechecking(false))
+          }}
+        />
       )
     }
     if (!recent) return null
@@ -140,7 +170,10 @@ export function UpgradeNow() {
         startedAt={null}
         reconnecting={false}
         releaseUrl={pre?.release_url}
-        onDismiss={() => setDismissed(recent.id)}
+        onDismiss={() => {
+          markSeen('panel', recent.id)
+          setDismissed(recent.id)
+        }}
       />
     )
   }
@@ -185,18 +218,24 @@ export function UpgradeNow() {
 
   return (
     <div className="space-y-4">
-      {(finishedAttempt ?? recent) ? (
+      {recent ? (
         <UpgradeProgress
-          target={(finishedAttempt ?? recent)?.to_version ?? target}
+          target={recent.to_version}
           plannedSteps={planSteps}
-          attempt={finishedAttempt ?? recent}
+          attempt={recent}
           startedAt={null}
           reconnecting={false}
           releaseUrl={pre.release_url}
           onDismiss={() => {
-            const a = finishedAttempt ?? recent
-            if (a) setDismissed(a.id)
+            markSeen('panel', recent.id)
+            setDismissed(recent.id)
             setStartedAt(null)
+          }}
+          onRetry={() => {
+            markSeen('panel', recent.id)
+            setDismissed(recent.id)
+            setStartedAt(null)
+            setConfirmOpen(true)
           }}
         />
       ) : null}
@@ -221,6 +260,7 @@ export function UpgradeNow() {
           </ul>
         </div>
       ) : null}
+      <UpgradePlanPreview pre={pre} />
       {planData && planData.signature_pinned === false ? (
         <p className="flex items-start gap-2 text-sm text-muted-foreground">
           <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0" />
@@ -246,10 +286,12 @@ export function UpgradeNow() {
               reason: planData.cannot_apply_reason ?? '',
             })}
           </p>
-          <CopyCommand
-            label={t('selfUpgrade.hostCommand')}
-            command={planData.command}
-          />
+          <CliFallback>
+            <CopyCommand
+              label={t('selfUpgrade.hostCommand')}
+              command={planData.command}
+            />
+          </CliFallback>
         </div>
       ) : null}
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -291,6 +333,17 @@ export function UpgradeNow() {
                   onSuccess: () => {
                     setConfirmOpen(false)
                     setStartedAt(Date.now())
+                  },
+                  onError: (err) => {
+                    if (!(err instanceof UpgradeRunningError)) return
+                    setConfirmOpen(false)
+                    toast.add({
+                      title: t('result.running', {
+                        to: target,
+                        id: err.attemptId,
+                      }),
+                      type: 'info',
+                    })
                   },
                 },
               )

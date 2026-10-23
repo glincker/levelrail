@@ -61,8 +61,7 @@ func (rt *Router) toRoute53DNSResource(ctx context.Context, s store.Route53DNSSe
 func (rt *Router) handleGetRoute53DNSSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.route53DNS.GetRoute53DNSSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: get route53 dns settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, route53DNSInternalError)
+		rt.internalError(w, "api: get route53 dns settings failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toRoute53DNSResource(r.Context(), settings))
@@ -107,8 +106,7 @@ func (rt *Router) handleUpdateRoute53DNSSettings(w http.ResponseWriter, r *http.
 	if !hasCreds {
 		existingAccessKeyID, err := rt.route53DNSSecrets.Exists(r.Context(), key, store.Route53DNSAccessKeyIDEnvKey)
 		if err != nil {
-			rt.logger.Error("api: check route53 dns credentials failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, route53DNSInternalError)
+			rt.internalError(w, "api: check route53 dns credentials failed", err)
 			return
 		}
 		hasCreds = existingAccessKeyID
@@ -120,21 +118,18 @@ func (rt *Router) handleUpdateRoute53DNSSettings(w http.ResponseWriter, r *http.
 
 	if req.AccessKeyID != "" {
 		if err := rt.route53DNSSecrets.SetValue(r.Context(), key, store.Route53DNSAccessKeyIDEnvKey, req.AccessKeyID); err != nil {
-			rt.logger.Error("api: save route53 dns access key id failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, route53DNSInternalError)
+			rt.internalError(w, "api: save route53 dns access key id failed", err)
 			return
 		}
 		if err := rt.route53DNSSecrets.SetValue(r.Context(), key, store.Route53DNSSecretAccessKeyEnvKey, req.SecretAccessKey); err != nil {
-			rt.logger.Error("api: save route53 dns secret access key failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, route53DNSInternalError)
+			rt.internalError(w, "api: save route53 dns secret access key failed", err)
 			return
 		}
 	}
 
 	settings := store.Route53DNSSettings{Enabled: req.Enabled, Region: req.Region, HostedZoneID: req.HostedZoneID}
 	if err := rt.route53DNS.UpdateRoute53DNSSettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: update route53 dns settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, route53DNSInternalError)
+		rt.internalError(w, "api: update route53 dns settings failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toRoute53DNSResource(r.Context(), settings))
@@ -150,14 +145,12 @@ func (rt *Router) handleDisconnectRoute53DNS(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := rt.route53DNSSecrets.DeleteAll(r.Context(), store.Route53DNSSecretsKey()); err != nil {
-		rt.logger.Error("api: clear route53 dns credentials failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, route53DNSInternalError)
+		rt.internalError(w, "api: clear route53 dns credentials failed", err)
 		return
 	}
 	settings := store.Route53DNSSettings{Enabled: false}
 	if err := rt.route53DNS.UpdateRoute53DNSSettings(r.Context(), settings); err != nil {
-		rt.logger.Error("api: disconnect route53 dns failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, route53DNSInternalError)
+		rt.internalError(w, "api: disconnect route53 dns failed", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toRoute53DNSResource(r.Context(), settings))

@@ -188,7 +188,9 @@ func TestProxyIntegrationSetupConflicts(t *testing.T) {
 		wantText string
 	}{
 		{"nothing detected", func(e *proxyTestEnv) { e.det = proxyroutes.None() }, `{"confirm":true}`, proxyCodeNotDetected, "no reverse proxy"},
-		{"nginx", func(e *proxyTestEnv) { e.det.Kind = proxyroutes.KindNginx }, `{"confirm":true}`, proxyCodeUnsupported, "Traefik only"},
+		{"nginx without a certificate directory", func(e *proxyTestEnv) { e.det.Kind = proxyroutes.KindNginx }, `{"confirm":true}`, proxyCodeIncomplete, "cert_dir"},
+		{"provider does not match the proxy", func(*proxyTestEnv) {}, `{"confirm":true,"provider":"nginx"}`, proxyCodeProviderMismatch, "proxy on this host is traefik"},
+		{"unknown provider", func(*proxyTestEnv) {}, `{"provider":"apache"}`, proxyCodeUnknownProvider, "apache"},
 		{"incomplete", func(e *proxyTestEnv) {
 			e.det.Complete, e.det.Missing = false, []string{"no certificate resolver"}
 		}, `{"confirm":true}`, proxyCodeIncomplete, "no certificate resolver"},

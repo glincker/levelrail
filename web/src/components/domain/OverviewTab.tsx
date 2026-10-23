@@ -4,7 +4,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { DomainDnsCheck } from '../DomainDnsCheck'
 import { certificatesQueryOptions } from '../../queries/certificates'
+import { certTruth } from '../../lib/certTruth'
+import { CertTruthBadge } from '../CertTruthBadge'
+import { GetCertificateButton } from '../GetCertificateButton'
+import { RenewCertificateButton } from '../RenewCertificateButton'
 import type { DomainPolicies } from '../../queries/domainPolicyTypes'
+import type { DomainFix } from './domainSearch'
+import { FixTarget } from './FixTarget'
 import { PreviewPanel, Section } from './PolicyShared'
 
 const SECTIONS = ['redirects', 'geo', 'headers', 'cache', 'forwarders'] as const
@@ -13,10 +19,12 @@ export function OverviewTab({
   app,
   domain,
   policies,
+  fix,
 }: {
   app: string
   domain: string
   policies: DomainPolicies
+  fix?: DomainFix
 }) {
   const { t } = useTranslation('domainPolicies')
   const { data: certs } = useQuery(certificatesQueryOptions())
@@ -49,9 +57,7 @@ export function OverviewTab({
       <Section title={t('overview.certTitle')}>
         {cert ? (
           <div className="space-y-1 text-sm">
-            <Badge variant={cert.status === 'healthy' ? 'success' : 'warning'}>
-              {cert.status}
-            </Badge>
+            <CertTruthBadge cert={cert} />
             <p className="text-xs text-muted-foreground">
               {t('overview.certDetail', {
                 issuer: cert.issuer ?? cert.source,
@@ -64,9 +70,20 @@ export function OverviewTab({
             {t('overview.noCert')}
           </p>
         )}
+        <div className="mt-2">
+          <FixTarget active={fix === 'renew'}>
+            {certTruth(cert).wantsRealCert ? (
+              <GetCertificateButton domain={domain} />
+            ) : cert ? (
+              <RenewCertificateButton appName={app} domain={domain} />
+            ) : null}
+          </FixTarget>
+        </div>
       </Section>
       <Section title={t('overview.dnsTitle')}>
-        <DomainDnsCheck appName={app} domain={domain} />
+        <FixTarget active={fix === 'dns'}>
+          <DomainDnsCheck appName={app} domain={domain} />
+        </FixTarget>
       </Section>
       <PreviewPanel steps={policies.preview} loading={false} />
     </div>

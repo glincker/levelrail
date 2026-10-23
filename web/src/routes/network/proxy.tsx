@@ -1,15 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useTranslation } from 'react-i18next'
 import {
   networkProxyQueryOptions,
   useNetworkProxy,
 } from '../../queries/networkProxy'
 import { ProxyReachabilityTable } from '../../components/network/ProxyReachabilityTable'
-import { ProxySetupCard } from '../../components/ProxySetupCard'
+import { ProxyProviderCard } from '../../components/ProxyProviderCard'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { ArrowsLeftRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { PageBanner } from '../../components/PageBanner'
+import { LazyTopologyDiagram } from '../../components/banners/LazyPass3Diagrams'
 
 // The Traffic page: a flat, domain-by-domain reachability table rather
 // than a topology diagram (that's /network's own job, see
@@ -28,14 +29,26 @@ export const Route = createFileRoute('/network/proxy')({
 })
 
 function ProxyPage() {
-  const { t } = useTranslation('networkProxy')
   const { data } = useNetworkProxy()
 
+  const empty = data.domains.length === 0
+  const size = empty ? 'hero' : 'compact'
+
   return (
-    <div className="space-y-4">
-      <PageHeader title={t('page.title')} description={t('page.description')} />
-      <ProxySetupCard />
-      <ProxyReachabilityTable domains={data.domains} />
+    <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
+      <PageBanner
+        icon={<ArrowsLeftRightIcon />}
+        titleKey="networkProxy:page.title"
+        descriptionKey={
+          empty
+            ? 'networkProxy:banner.description'
+            : 'networkProxy:page.description'
+        }
+        illustration={<LazyTopologyDiagram size={size} />}
+        size={size}
+      />
+      <ProxyProviderCard />
+      {empty ? null : <ProxyReachabilityTable domains={data.domains} />}
     </div>
   )
 }

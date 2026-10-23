@@ -16,6 +16,8 @@ const (
 	RunFailed   RunStatus = "failed"
 	RunTimeout  RunStatus = "timeout"
 	RunCanceled RunStatus = "canceled"
+	// RunMemoryLimit is a build killed for exceeding its memory limit.
+	RunMemoryLimit RunStatus = "memory_limit"
 )
 
 // Run is one finished build as the Limiter saw it.

@@ -234,7 +234,9 @@
     "preset": "Cache static assets",
     "presetHelp": "Adds one rule for images, scripts, styles and fonts and turns caching on. Your app's own Cache-Control still wins.",
     "presetDone": "Static assets rule added.",
-    "presetAlready": "Static assets are already cached."
+    "presetAlready": "Static assets are already cached.",
+    "nextjsPreset": "Next.js preset",
+    "nextjsPresetHelp": "Keys cached pages by the Next.js router headers and keeps build files for a day. Your app's own Cache-Control still wins."
   },
   "ports": {
     "title": "Ports",

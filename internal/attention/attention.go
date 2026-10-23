@@ -73,6 +73,7 @@ type Input struct {
 // same severity.
 const (
 	KindNodeReenroll            = "node_reenroll"
+	KindNodeFailure             = "node_failure"
 	KindDeviceLogin             = "device_login"
 	KindDeviceLoginResolved     = "device_login_resolved"
 	KindApproval                = "approval"
@@ -99,6 +100,7 @@ const (
 	KindMaintenanceLong         = "maintenance_long"
 	KindGitHostUnreachable      = "git_host_unreachable"
 	KindFirewallAttackSuggested = "firewall_attack_suggested"
+	KindNodeCapacity            = "node_capacity"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {
@@ -255,6 +257,9 @@ func Build(in Input) []Item {
 			}
 			items = append(items, newItem(Critical, "node", n.Name, detail))
 		}
+		if f := n.Failure; f != nil {
+			items = append(items, nodeFailureItem(n, f))
+		}
 		items = append(items, nodeAgentItems(n, now)...)
 	}
 	for _, c := range in.Certs {
@@ -266,6 +271,9 @@ func Build(in Input) []Item {
 			items = append(items, newItem(Critical, "certificate", c.Domain, "expired "+c.NotAfter.Format("2006-01-02")+acmeReason(c)))
 		case "expiring_soon":
 			items = append(items, newItem(Warning, "certificate", c.Domain, "expires "+c.NotAfter.Format("2006-01-02")+acmeReason(c)))
+		}
+		if c.Status == "healthy" && c.ACMEFailure != nil {
+			items = append(items, newItem(Warning, "cert_renewal", c.Domain, "last renewal failed, certificate expires "+c.NotAfter.Format("2006-01-02")+"; retrying with backoff"+acmeReason(c)))
 		}
 		if c.Renewal == "stalled" && c.Status != "expired" {
 			items = append(items, newItem(Warning, "cert_renewal", c.Domain, "renewal looks stalled, certificate expires "+c.NotAfter.Format("2006-01-02")+acmeReason(c)))
@@ -336,6 +344,7 @@ func Collect(ctx context.Context, client *apiclient.Client) ([]Item, error) {
 		in.Devices, _ = client.ListPendingDeviceLogins(ctx)
 	}
 	items := Build(in)
+	items = dropSilenced(ctx, client, items)
 	markFixable(ctx, client, items)
 	return items, nil
 }
@@ -385,4 +394,31 @@ func markFixable(ctx context.Context, client *apiclient.Client, items []Item) {
 		}
 		it.Fixable = fixable[it.Subject]
 	}
+}
+
+// dropSilenced removes items an operator muted. A failed lookup keeps every item.
+func dropSilenced(ctx context.Context, client *apiclient.Client, items []Item) []Item {
+	silences, err := client.ListIssueSilences(ctx)
+	if err != nil || len(silences) == 0 {
+		return items
+	}
+	return FilterSilenced(items, silences, time.Now())
+}
+
+// FilterSilenced drops items an active silence covers.
+func FilterSilenced(items []Item, silences []apiclient.IssueSilenceResource, now time.Time) []Item {
+	out := make([]Item, 0, len(items))
+	for _, it := range items {
+		muted := false
+		for _, s := range silences {
+			if s.IssueKey == it.ID && !s.Expired && (s.Until == nil || now.Before(*s.Until)) {
+				muted = true
+				break
+			}
+		}
+		if !muted {
+			out = append(out, it)
+		}
+	}
+	return out
 }

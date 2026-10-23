@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { formatAge } from '../../lib/format'
 import {
   nodeDetailQueryOptions,
@@ -7,58 +7,37 @@ import {
   nodeListQueryOptions,
   useNode,
   useNodeHealth,
-  useSetNodeRegion,
   useSetNodeWorkloads,
 } from '../../queries/nodes'
-import type { NodeResource } from '../../types/nodeDetail'
 import { ConditionsPanel } from '../../components/ConditionsPanel'
 import { NodeDetailHeader } from '../../components/nodes/NodeDetailHeader'
+import { NodeStatusCard } from '../../components/nodes/NodeStatusCard'
 import { NodeAgentCard } from '../../components/NodeAgentCard'
 import { NodeNeverConnectedAlert } from '../../components/NodeNeverConnected'
 import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
+import { NodeCapacityCard } from '../../components/nodes/NodeCapacityCard'
 import { NodeCapacityForecastCard } from '../../components/NodeCapacityForecastCard'
 import { NodeGpuCard } from '../../components/NodeGpuCard'
 import { NodeDrainsCard } from '../../components/NodeDrainsCard'
+import { NodeFailureCard } from '../../components/NodeFailureCard'
 import { NodeLabelsCard } from '../../components/NodeLabelsCard'
+import { NodeRegionCard } from '../../components/nodes/NodeRegionCard'
 import { NodeAllocationCard } from '../../components/nodes/NodeAllocationCard'
 import { NodeMeshCard } from '../../components/NodeMeshCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
 import { NodeEventsCard } from '../../components/NodeEventsCard'
 import { routeErrorMessage } from '../../lib/apiError'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { InfoTip } from '../../components/kit/InfoTip'
-import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { Skeleton } from '@/components/ui/skeleton'
 
-// Node detail route, mirroring routes/databases/$name.tsx's shape: three
-// queries primed in the loader in parallel (the node itself, its health
-// conditions, and the full node list). The node list is needed here
-// too, not just on /nodes, because DrainNodeDialog's target-node picker
-// (useNodes() internally) must have real data the moment this route
-// renders, not just when an operator has already visited /nodes first
-// in the same session.
-//
-// This route exists because cordon/drain/health all produce genuinely
-// multi-line per-node content (a conditions list, a drain result listing
-// every moved/failed resource) that does not fit a list row, unlike the
-// plain status+address+last-seen fields NodeRow already showed inline.
-// Delete stays on the list row (NodeRow.tsx, unchanged): unlike
-// cordon/drain, delete needed no new state or multi-line result to show,
-// so there was no structural reason to move it, and DeleteNodeDialog.tsx
-// itself is left untouched per this task's own file-boundary note.
-//
-// NodeMetricsDashboard below is this route's other real content:
-// GET /api/v1/nodes/{id}/metrics (internal/api/node_metrics.go), fetched
-// by that component itself once mounted (same "not loader-primed, needs
-// component-local time-range state first" reasoning MetricsDashboard.tsx
-// already documents for the per-app equivalent), not primed in this
-// route's own loader above.
+// Loader primes the node, its health and the node list (the drain dialog's target picker needs it).
 export const Route = createFileRoute('/nodes/$id')({
   loader: ({ context: { queryClient }, params: { id } }) =>
     Promise.all([
@@ -78,14 +57,12 @@ export const Route = createFileRoute('/nodes/$id')({
   errorComponent: NodeDetailError,
 })
 
-function formatNodeDate(iso?: string): string {
-  if (!iso) {
-    return 'Never'
-  }
-  return new Date(iso).toLocaleString()
+function formatNodeDate(iso: string | undefined, never: string): string {
+  return iso ? new Date(iso).toLocaleString() : never
 }
 
 function NodeDetailPage() {
+  const { t } = useTranslation('nodes')
   const { id } = Route.useParams()
   const { reenroll } = Route.useSearch()
   const { data: node } = useNode(id)
@@ -94,37 +71,42 @@ function NodeDetailPage() {
 
   return (
     <NodeDetailHeader node={node}>
+      <NodeStatusCard node={node} />
+
       <Card>
         <CardHeader>
-          <CardTitle>Overview</CardTitle>
+          <CardTitle>{t('detail.overview.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <div>
               <dt className="text-xs text-muted-foreground uppercase">
-                Address
+                {t('detail.overview.address')}
               </dt>
               <dd className="mt-1 break-all font-mono text-sm text-foreground">
-                {node.address ?? 'Not set'}
+                {node.address ?? t('detail.overview.notSet')}
               </dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground uppercase">
-                Joined
+                {t('detail.overview.joined')}
               </dt>
               <dd className="mt-1 text-sm text-foreground">
-                {formatNodeDate(node.joined_at)}
+                {formatNodeDate(node.joined_at, t('detail.overview.never'))}
               </dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground uppercase">
-                Last seen
+                {t('detail.overview.lastSeen')}
               </dt>
               <dd
                 className="mt-1 text-sm text-foreground"
-                title={formatNodeDate(node.last_seen_at)}
+                title={formatNodeDate(
+                  node.last_seen_at,
+                  t('detail.overview.never'),
+                )}
               >
-                {formatAge(node.last_seen_at, 'Never')}
+                {formatAge(node.last_seen_at, t('detail.overview.never'))}
               </dd>
             </div>
           </dl>
@@ -137,7 +119,7 @@ function NodeDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Workload capabilities</CardTitle>
+          <CardTitle>{t('detail.workloads.title')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Field orientation="horizontal">
@@ -156,8 +138,8 @@ function NodeDetailPage() {
                     onSuccess: () => {
                       toast.add({
                         title: checked
-                          ? 'App workloads enabled.'
-                          : 'App workloads disabled.',
+                          ? t('detail.workloads.appsOn')
+                          : t('detail.workloads.appsOff'),
                         type: 'success',
                       })
                     },
@@ -166,12 +148,10 @@ function NodeDetailPage() {
               }}
             />
             <FieldLabel htmlFor="node-accepts-app-workloads">
-              Accepts app workloads
+              {t('detail.workloads.apps')}
             </FieldLabel>
           </Field>
-          <FieldDescription>
-            Whether this node is eligible for new application placements.
-          </FieldDescription>
+          <FieldDescription>{t('detail.workloads.appsHint')}</FieldDescription>
 
           <Field orientation="horizontal">
             <Switch
@@ -189,8 +169,8 @@ function NodeDetailPage() {
                     onSuccess: () => {
                       toast.add({
                         title: checked
-                          ? 'Build workloads enabled.'
-                          : 'Build workloads disabled.',
+                          ? t('detail.workloads.buildsOn')
+                          : t('detail.workloads.buildsOff'),
                         type: 'success',
                       })
                     },
@@ -202,19 +182,14 @@ function NodeDetailPage() {
               htmlFor="node-accepts-build-workloads"
               className="flex items-center gap-1.5"
             >
-              Accepts build workloads
-              <InfoTip label="What accepts build workloads does">
-                Sets whether new builds prefer this node. It does not move apps
-                or databases already running here, and it does not guarantee
-                builds never run here: if no node that accepts builds is
-                currently healthy, a build still runs on the primary node rather
-                than failing.
+              {t('detail.workloads.builds')}
+              <InfoTip label={t('detail.workloads.buildsTipLabel')}>
+                {t('detail.workloads.buildsTip')}
               </InfoTip>
             </FieldLabel>
           </Field>
           <FieldDescription>
-            A routing preference for where new builds run, not a hard placement
-            rule.
+            {t('detail.workloads.buildsHint')}
           </FieldDescription>
 
           {setWorkloads.isError ? (
@@ -235,9 +210,11 @@ function NodeDetailPage() {
       <NodeAllocationCard nodeId={id} />
       <NodeLabelsCard nodeId={id} />
       <NodeDrainsCard nodeId={id} />
+      <NodeFailureCard nodeId={id} />
 
       <NodePatchStatusCard nodeId={id} />
       <NodeEventsCard nodeId={id} />
+      <NodeCapacityCard nodeId={id} />
       <NodeCapacityForecastCard nodeId={id} />
 
       <NodeMetricsDashboard nodeId={id} />
@@ -247,12 +224,6 @@ function NodeDetailPage() {
   )
 }
 
-// Mirrors NodeDetailPage's own card stack (Overview, Location, Agent,
-// Workload capabilities, Alert status, GPU, Mesh, Patch status, Events,
-// Capacity forecast, Metrics, Conditions) so the loader's pending phase
-// renders the same outline that fills in once node/health/node-list
-// resolve. The skeleton's own card count below is a fixed round number
-// for the generic placeholder shape, not a literal match to this list.
 function NodeDetailSkeleton() {
   return (
     <div className="space-y-6" aria-hidden="true">
@@ -305,87 +276,32 @@ function NodeDetailSkeleton() {
   )
 }
 
-// Rendered with key={node.id} by its caller so switching to a different
-// node's detail page remounts this component instead of needing an
-// effect to resync local draft state with the new node's region.
-function NodeRegionCard({ node }: { node: NodeResource }) {
-  const setRegion = useSetNodeRegion()
-  const [regionDraft, setRegionDraft] = useState(node.region ?? '')
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Location</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <Field>
-          <FieldLabel
-            htmlFor="node-region"
-            className="flex items-center gap-1.5"
-          >
-            Region
-            <InfoTip label="What region does">
-              A free-text label such as "hetzner-fsn1" or "home-lab", used to
-              group this node into a zone on the network topology page. Display
-              only: it does not affect routing or access control.
-            </InfoTip>
-          </FieldLabel>
-          <div className="flex items-center gap-2">
-            <Input
-              id="node-region"
-              value={regionDraft}
-              placeholder="e.g. hetzner-fsn1"
-              disabled={setRegion.isPending}
-              onChange={(e) => setRegionDraft(e.target.value)}
-              className="max-w-xs"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={
-                setRegion.isPending || regionDraft === (node.region ?? '')
-              }
-              onClick={() => {
-                setRegion.mutate(
-                  { id: node.id, region: regionDraft.trim() },
-                  {
-                    onSuccess: () => {
-                      toast.add({ title: 'Region updated.', type: 'success' })
-                    },
-                  },
-                )
-              }}
-            >
-              Save
-            </Button>
-          </div>
-        </Field>
-        <FieldDescription>
-          Grouping metadata for the network topology view. Nodes with no region
-          set are grouped by node name instead.
-        </FieldDescription>
-        {setRegion.isError ? (
-          <Alert variant="destructive">
-            <AlertDescription>{setRegion.error.message}</AlertDescription>
-          </Alert>
-        ) : null}
-      </CardContent>
-    </Card>
-  )
-}
-
-// fetchNode (queries/nodes.ts) throws a plain ApiError for a 404, which
-// lands here rather than crashing the whole route tree, mirroring
-// DatabaseDetailError.
 function NodeDetailError({ error }: { error: unknown }) {
+  const { t } = useTranslation('nodes')
+  const router = useRouter()
   return (
     <Alert variant="destructive">
-      <AlertDescription>
+      <AlertDescription className="space-y-3">
         <p>{routeErrorMessage(error)}</p>
-        <Link to="/nodes" className="mt-2 inline-block underline">
-          Back to nodes
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => {
+              void router.invalidate()
+            }}
+          >
+            {t('detail.retry')}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            render={<Link to="/nodes" />}
+            nativeButton={false}
+          >
+            {t('detail.back')}
+          </Button>
+        </div>
       </AlertDescription>
     </Alert>
   )

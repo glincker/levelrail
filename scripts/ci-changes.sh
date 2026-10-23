@@ -102,7 +102,7 @@ for f in "${files[@]}"; do
 	tools/*)
 		go=true tools=true
 		;;
-	install.sh | install-cli.sh | scripts/test-install-sh.sh | scripts/test-install-cli.sh | deploy/packaging/*)
+	install.sh | install-cli.sh | install-cli.ps1 | scripts/test-install-sh.sh | scripts/test-install-cli.sh | scripts/test-install-cli-macos.sh | scripts/test-install-cli-ps1.ps1 | deploy/packaging/*)
 		installer=true
 		;;
 	web/*.go) ;;

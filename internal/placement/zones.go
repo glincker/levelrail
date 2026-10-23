@@ -1,6 +1,41 @@
 package placement
 
-import "sort"
+import (
+	"os"
+	"sort"
+	"strconv"
+)
+
+// EnvRegionSpreadWeight names the env var weighting region spread in replica
+// scoring. 0 turns region preference off.
+const EnvRegionSpreadWeight = "APP_PLACEMENT_REGION_SPREAD_WEIGHT"
+
+// EnvProviderSpreadWeight names the env var weighting provider spread in
+// replica scoring. 0 turns provider preference off.
+const EnvProviderSpreadWeight = "APP_PLACEMENT_PROVIDER_SPREAD_WEIGHT"
+
+const (
+	defaultRegionSpreadWeight   = 1
+	defaultProviderSpreadWeight = 1
+)
+
+func regionSpreadWeight() int { return spreadWeight(EnvRegionSpreadWeight, defaultRegionSpreadWeight) }
+
+func providerSpreadWeight() int {
+	return spreadWeight(EnvProviderSpreadWeight, defaultProviderSpreadWeight)
+}
+
+func spreadWeight(name string, def int) int {
+	v, ok := os.LookupEnv(name)
+	if !ok {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 {
+		return def
+	}
+	return n
+}
 
 // Well-known node label keys that name a failure domain.
 const (
@@ -18,23 +53,33 @@ type zoneSpread struct {
 	active   bool
 	siblings map[string]int
 	load     map[string]int
+	regions  map[string]int
+	weight   int
+	provs    map[string]int
+	provW    int
 }
 
 func newZoneSpread(cands []Candidate, evals []Evaluation, peers []string) zoneSpread {
 	zones := make(map[string]string, len(cands))
-	z := zoneSpread{siblings: map[string]int{}, load: map[string]int{}}
+	regions := make(map[string]string, len(cands))
+	provs := make(map[string]string, len(cands))
+	z := zoneSpread{siblings: map[string]int{}, load: map[string]int{}, regions: map[string]int{}, weight: regionSpreadWeight(), provs: map[string]int{}, provW: providerSpreadWeight()}
 	for _, c := range cands {
 		zone := ZoneOf(c.Labels)
 		zones[c.ID] = zone
+		regions[c.ID] = c.Labels[LabelRegion]
+		provs[c.ID] = c.Labels[LabelProvider]
 		z.load[zone] += c.Load
 	}
 	for _, e := range evals {
-		if e.Eligible && zones[e.NodeID] != "" {
+		if e.Eligible && (zones[e.NodeID] != "" || (z.weight > 0 && regions[e.NodeID] != "") || (z.provW > 0 && provs[e.NodeID] != "")) {
 			z.active = true
 		}
 	}
 	for _, id := range peers {
 		z.siblings[zones[id]]++
+		z.regions[regions[id]]++
+		z.provs[provs[id]]++
 	}
 	return z
 }
@@ -48,11 +93,28 @@ func applyZones(cands []Candidate, evals []Evaluation) {
 	for i := range evals {
 		evals[i].Zone = ZoneOf(byID[evals[i].NodeID])
 		evals[i].Region = byID[evals[i].NodeID][LabelRegion]
+		evals[i].Provider = byID[evals[i].NodeID][LabelProvider]
 	}
 }
 
+// regionScore is the weighted peer count of a region; unlabeled regions score
+// 0 so they never outrank a labeled one by accident.
+func (z zoneSpread) regionScore(region string) int {
+	if region == "" || z.weight == 0 {
+		return 0
+	}
+	return z.regions[region] * z.weight
+}
+
+func (z zoneSpread) providerScore(provider string) int {
+	if provider == "" || z.provW == 0 {
+		return 0
+	}
+	return z.provs[provider] * z.provW
+}
+
 // rankZones orders eligible evaluations: the zone holding the fewest peer
-// replicas first, then the least loaded zone, then the usual headroom order.
+// replicas first, then the region and then the provider holding the fewest, then the least loaded zone, then the usual headroom order.
 func rankZones(evals []Evaluation, z zoneSpread) []Evaluation {
 	out := rank(evals)
 	if !z.active {
@@ -62,6 +124,12 @@ func rankZones(evals []Evaluation, z zoneSpread) []Evaluation {
 		a, b := out[i], out[j]
 		if z.siblings[a.Zone] != z.siblings[b.Zone] {
 			return z.siblings[a.Zone] < z.siblings[b.Zone]
+		}
+		if ra, rb := z.regionScore(a.Region), z.regionScore(b.Region); ra != rb {
+			return ra < rb
+		}
+		if pa, pb := z.providerScore(a.Provider), z.providerScore(b.Provider); pa != pb {
+			return pa < pb
 		}
 		if z.load[a.Zone] != z.load[b.Zone] {
 			return z.load[a.Zone] < z.load[b.Zone]

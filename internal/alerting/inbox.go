@@ -35,12 +35,14 @@ type InboxPrefs struct {
 // InboxItem is one history entry as seen by a principal.
 type InboxItem struct {
 	HistoryEntry
-	Read bool
+	Read     bool
+	Resolved bool
 }
 
 // InboxFilter narrows ListInbox.
 type InboxFilter struct {
 	UnreadOnly bool
+	Archived   bool
 	Before     *time.Time
 	Limit      int
 }
@@ -92,7 +94,14 @@ const inboxBase = `
 	FROM alert_history h
 	LEFT JOIN inbox_read_state s ON s.principal = ?
 	LEFT JOIN inbox_read r ON r.principal = ? AND r.history_id = h.id
-	WHERE h.outcome IN ('sent','quiet_hours','failed') AND h.event IN ('fired','resolved','flapping','group')`
+	WHERE h.outcome IN ('sent','quiet_hours','failed') AND h.event IN ('fired','resolved','flapping','group')
+	AND EXISTS (SELECT 1 FROM inbox_archive a WHERE a.principal = ? AND a.item_id = h.id) = ?
+		AND NOT EXISTS (SELECT 1 FROM inbox_deleted d WHERE d.principal = ? AND d.item_id = h.id)`
+
+// A fired item counts as resolved once a later resolution exists for the same rule and target.
+const inboxResolvedExpr = `(h.event = 'resolved' OR (h.event = 'fired' AND EXISTS (
+		SELECT 1 FROM alert_history x WHERE x.rule_id = h.rule_id AND x.resource_id = h.resource_id AND x.app = h.app
+		AND x.event = 'resolved' AND x.at > h.at)))`
 
 const inboxReadExpr = `(r.history_id IS NOT NULL OR (s.read_before IS NOT NULL AND h.at <= s.read_before))`
 
@@ -148,19 +157,27 @@ func (db *DB) SaveInboxPrefs(ctx context.Context, p InboxPrefs, now time.Time) e
 
 // ListInbox returns the principal's items newest first, honoring its routing rules.
 func (db *DB) ListInbox(ctx context.Context, principal string, f InboxFilter) ([]InboxItem, error) {
-	prefs, err := db.GetInboxPrefs(ctx, principal)
-	if err != nil {
-		return nil, err
-	}
 	limit := f.Limit
 	if limit <= 0 || limit > inboxMaxLimit {
 		limit = inboxDefaultLimit
 	}
+	return db.listInbox(ctx, principal, f, limit)
+}
+
+func (db *DB) listInbox(ctx context.Context, principal string, f InboxFilter, limit int) ([]InboxItem, error) {
+	prefs, err := db.GetInboxPrefs(ctx, principal)
+	if err != nil {
+		return nil, err
+	}
 	before := f.Before
 	var out []InboxItem
 	for len(out) < limit {
-		q := `SELECT h.id, h.at, h.rule_id, h.rule_name, h.rule_kind, h.resource_id, h.app, h.node, h.severity, h.event, h.outcome, h.detail, h.silence_id, h.channel_id, h.error, ` + inboxReadExpr + inboxBase
-		args := []any{principal, principal}
+		q := `SELECT h.id, h.at, h.rule_id, h.rule_name, h.rule_kind, h.resource_id, h.app, h.node, h.severity, h.event, h.outcome, h.detail, h.silence_id, h.channel_id, h.error, h.cert_json, ` + inboxReadExpr + `, ` + inboxResolvedExpr + inboxBase
+		archivedArg := 0
+		if f.Archived {
+			archivedArg = 1
+		}
+		args := []any{principal, principal, principal, archivedArg, principal}
 		if before != nil {
 			q += ` AND h.at < ?`
 			args = append(args, fmtTime(*before))
@@ -178,12 +195,14 @@ func (db *DB) ListInbox(ctx context.Context, principal string, f InboxFilter) ([
 		var last time.Time
 		for rows.Next() {
 			var (
-				it   InboxItem
-				at   string
-				read int
+				it       InboxItem
+				at       string
+				certJSON string
+				read     int
+				resolved int
 			)
 			if err := rows.Scan(&it.ID, &at, &it.RuleID, &it.RuleName, &it.RuleKind, &it.ResourceID, &it.App, &it.Node, &it.Severity,
-				&it.Event, &it.Outcome, &it.Detail, &it.SilenceID, &it.ChannelID, &it.Error, &read); err != nil {
+				&it.Event, &it.Outcome, &it.Detail, &it.SilenceID, &it.ChannelID, &it.Error, &certJSON, &read, &resolved); err != nil {
 				_ = rows.Close()
 				return nil, fmt.Errorf("alerting: scan inbox row: %w", err)
 			}
@@ -191,7 +210,9 @@ func (db *DB) ListInbox(ctx context.Context, principal string, f InboxFilter) ([
 				_ = rows.Close()
 				return nil, fmt.Errorf("alerting: parse inbox time: %w", err)
 			}
+			it.Cert = decodeCertPayload(certJSON)
 			it.Read = read != 0
+			it.Resolved = resolved != 0
 			n++
 			last = it.At
 			if len(out) < limit && prefs.Visible(it.HistoryEntry) {
@@ -257,6 +278,62 @@ func (db *DB) MarkAllInboxRead(ctx context.Context, principal string, now time.T
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("alerting: mark all inbox read: %w", err)
+	}
+	return nil
+}
+
+// InboxState is the explicit read and archived ids a principal holds, for items the server does not list itself.
+type InboxState struct {
+	ReadIDs     []string
+	ArchivedIDs []string
+}
+
+// GetInboxState returns the principal's per-item read and archive rows.
+func (db *DB) GetInboxState(ctx context.Context, principal string) (InboxState, error) {
+	st := InboxState{ReadIDs: []string{}, ArchivedIDs: []string{}}
+	for _, q := range []struct {
+		sql string
+		dst *[]string
+	}{
+		{`SELECT history_id FROM inbox_read WHERE principal = ? ORDER BY history_id LIMIT 2000`, &st.ReadIDs},
+		{`SELECT item_id FROM inbox_archive WHERE principal = ? ORDER BY item_id LIMIT 2000`, &st.ArchivedIDs},
+	} {
+		rows, err := db.QueryContext(ctx, q.sql, principal)
+		if err != nil {
+			return st, fmt.Errorf("alerting: get inbox state: %w", err)
+		}
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				_ = rows.Close()
+				return st, fmt.Errorf("alerting: scan inbox state: %w", err)
+			}
+			*q.dst = append(*q.dst, id)
+		}
+		err = rows.Err()
+		_ = rows.Close()
+		if err != nil {
+			return st, fmt.Errorf("alerting: iterate inbox state: %w", err)
+		}
+	}
+	return st, nil
+}
+
+// ArchiveInbox archives the given item ids for principal, or restores them when archived is false.
+func (db *DB) ArchiveInbox(ctx context.Context, principal string, ids []string, archived bool) error {
+	if len(ids) == 0 || len(ids) > inboxMaxMarkIDs {
+		return fmt.Errorf("%w: ids must hold 1 to %d entries", ErrInboxInvalid, inboxMaxMarkIDs)
+	}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("alerting: archive inbox: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := archiveTx(ctx, tx, principal, ids, archived, time.Now()); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("alerting: archive inbox: %w", err)
 	}
 	return nil
 }

@@ -57,7 +57,7 @@ func (rt *Router) beginForgeDeployment(ctx context.Context, app string, gs store
 	if !gitStatusEnabled() || !gs.ReportStatus || rt.forgeDeployments == nil || sha == "" {
 		return nil
 	}
-	f, err := rt.resolveForge(ctx, gs.RepoURL)
+	f, err := rt.resolveForge(ctx, gs.RepoURL, gs.ConnectionID)
 	if err != nil || f.kind != forgeGitHub {
 		return nil
 	}
@@ -145,7 +145,7 @@ func (rt *Router) deactivateForgeDeployments(ctx context.Context, app string, gs
 	if !gitStatusEnabled() || !gs.ReportStatus || rt.forgeDeployments == nil {
 		return
 	}
-	f, err := rt.resolveForge(ctx, gs.RepoURL)
+	f, err := rt.resolveForge(ctx, gs.RepoURL, gs.ConnectionID)
 	if err != nil || f.kind != forgeGitHub {
 		return
 	}

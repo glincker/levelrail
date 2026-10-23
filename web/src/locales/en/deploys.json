@@ -78,7 +78,9 @@
       "clone": "a clone",
       "schedule": "a schedule",
       "auto_rollback": "an automatic rollback",
-      "git_push": "a git push to the server"
+      "git_push": "a git push to the server",
+      "poll": "a poll, because a webhook was missed",
+      "upload": "a directory uploaded from the CLI"
     }
   },
   "imageAutoUpdate": {
@@ -308,6 +310,41 @@
       "addressError": "Could not save the dashboard address.",
       "copied": "Workflow copied.",
       "copyFailed": "Could not copy to the clipboard."
+    }
+  },
+  "buildHooks": {
+    "title": "Build hooks",
+    "infoTipLabel": "About build hooks",
+    "description": "A build hook is a secret URL. POST to it (from a headless CMS or a cron job) to build and deploy this app's git source. An optional JSON body with title and body reaches the build as the TRIGGER_TITLE and TRIGGER_BODY build args.",
+    "empty": "No build hooks yet. Create one to trigger builds from outside.",
+    "defaultBranch": "app's branch",
+    "neverTriggered": "Never triggered",
+    "lastTriggered": "Last triggered {{when}} ({{count}} total). Result: {{result}}",
+    "nameLabel": "Hook name",
+    "namePlaceholder": "For example: cms publish",
+    "branchLabel": "Branch (optional)",
+    "branchPlaceholder": "Defaults to the app's branch",
+    "create": "Create hook",
+    "rotate": "Rotate",
+    "revoke": "Revoke",
+    "confirmRevoke": "Confirm revoke",
+    "copy": "Copy URL",
+    "urlLabel": "Build hook URL",
+    "shownOnce": "URL for {{name}}. Copy it now, it is not shown again.",
+    "toast": {
+      "errorTitle": "Build hook request failed",
+      "copied": "URL copied.",
+      "copyFailed": "Could not copy to the clipboard."
+    }
+  },
+  "banner": {
+    "title": "Deployments",
+    "description": "Every release across your apps, live while it builds, with one-click rollback. Deploy an app and it shows up here.",
+    "compactDescription": "Releases across every app, with rollback.",
+    "diagram": {
+      "image": "image",
+      "server": "server",
+      "rollback": "rollback"
     }
   }
 }

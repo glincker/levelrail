@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
+import { CodeBlock } from '@/components/ui/code-block'
 import { cn } from '@/lib/utils'
 import { useRedisKey, useRedisKeys } from '../../queries/databaseViewer'
 import type { RedisKey } from '../../types/databaseViewer'
@@ -147,9 +148,11 @@ export function RedisKeyBrowser({ databaseName }: { databaseName: string }) {
                   ? t('viewer.keys.noTtl')
                   : t('viewer.keys.ttlSeconds', { count: value.data.ttl })}
               </p>
-              <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">
-                {value.data.lines.join('\n')}
-              </pre>
+              <CodeBlock
+                code={value.data.lines.join('\n')}
+                wrap
+                maxHeight="lg"
+              />
               {value.data.truncated ? (
                 <p className="text-xs text-muted-foreground">
                   {t('viewer.keys.truncated')}

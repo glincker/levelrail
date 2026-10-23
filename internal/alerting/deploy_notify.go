@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
@@ -177,6 +178,9 @@ type DeployOutcome struct {
 	// LogLines is the tail of the failing build or container output. The
 	// dispatcher fills it for a failed deploy when a log source is set.
 	LogLines []string
+	// ReleaseNotes is optional markdown for a successful production or
+	// promotion deploy. Dispatch clamps it to the configured byte cap.
+	ReleaseNotes string
 }
 
 // deployLogExcerptLines is how many trailing lines a text channel shows.
@@ -228,6 +232,8 @@ type deployGenericPayload struct {
 	AttemptID string `json:"attempt_id,omitempty"`
 	// LogLines is the last lines of the failing build or container.
 	LogLines []string `json:"log_lines,omitempty"`
+	// ReleaseNotes is markdown, omitted when empty.
+	ReleaseNotes string `json:"release_notes,omitempty"`
 }
 
 // sendDeployOutcome sends ev to one target, dispatching on t.NotifyKind.
@@ -246,21 +252,21 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 
 	switch t.NotifyKind {
 	case NotifySlack:
-		return postJSON(ctx, client, t.NotifyURL, slackPayload{Text: summaryDeployText(ev)})
+		return postJSON(ctx, client, t.NotifyURL, slackPayload{Text: deployText(t.NotifyKind, ev)})
 	case NotifyDiscord:
-		return postJSON(ctx, client, t.NotifyURL, discordPayload{Content: summaryDeployText(ev)})
+		return postJSON(ctx, client, t.NotifyURL, discordPayload{Content: deployText(t.NotifyKind, ev)})
 	case NotifyTelegram:
 		chatID, err := parseTelegramChatID(t.NotifyURL)
 		if err != nil {
 			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
 		}
-		return postJSON(ctx, client, t.NotifyURL, telegramPayload{ChatID: chatID, Text: summaryDeployText(ev)})
+		return postJSON(ctx, client, t.NotifyURL, telegramPayload{ChatID: chatID, Text: deployText(t.NotifyKind, ev)})
 	case NotifyPushover:
 		token, user, err := parsePushoverCreds(t.NotifyURL)
 		if err != nil {
 			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
 		}
-		return postJSON(ctx, client, t.NotifyURL, pushoverPayload{Token: token, User: user, Message: summaryDeployText(ev), Title: ev.AppName})
+		return postJSON(ctx, client, t.NotifyURL, pushoverPayload{Token: token, User: user, Message: deployText(t.NotifyKind, ev), Title: ev.AppName})
 	case NotifyPagerDuty:
 		if t.NotifyURL == "" {
 			return fmt.Errorf("alerting: notify deploy outcome: no notify_url (pagerduty routing key) configured")
@@ -271,27 +277,27 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		}
 		return postJSON(ctx, client, pagerDutyEventsURL, pagerDutyPayload{
 			RoutingKey: t.NotifyURL, EventAction: "trigger",
-			Payload: pagerDutyDetails{Summary: summaryDeployText(ev), Source: ev.AppName, Severity: severity},
+			Payload: pagerDutyDetails{Summary: deployText(t.NotifyKind, ev), Source: ev.AppName, Severity: severity},
 		})
 	case NotifyTeams:
-		text := summaryDeployText(ev)
+		text := deployText(t.NotifyKind, ev)
 		return postJSON(ctx, client, t.NotifyURL, teamsPayload{
 			Type: "MessageCard", Context: "http://schema.org/extensions", Summary: text, Text: text,
 		})
 	case NotifyMattermost:
-		return postJSON(ctx, client, t.NotifyURL, mattermostPayload{Text: summaryDeployText(ev)})
+		return postJSON(ctx, client, t.NotifyURL, mattermostPayload{Text: deployText(t.NotifyKind, ev)})
 	case NotifyLark:
-		return postJSON(ctx, client, t.NotifyURL, larkPayload{MsgType: "text", Content: larkContent{Text: summaryDeployText(ev)}})
+		return postJSON(ctx, client, t.NotifyURL, larkPayload{MsgType: "text", Content: larkContent{Text: deployText(t.NotifyKind, ev)}})
 	case NotifyRocketChat:
 		emoji := ":rotating_light:"
 		if ev.Succeeded {
 			emoji = ":white_check_mark:"
 		}
-		return postJSON(ctx, client, t.NotifyURL, rocketChatPayload{Text: summaryDeployText(ev), Alias: "Levelrail", Emoji: emoji})
+		return postJSON(ctx, client, t.NotifyURL, rocketChatPayload{Text: deployText(t.NotifyKind, ev), Alias: "Levelrail", Emoji: emoji})
 	case NotifyWebex:
-		return postJSON(ctx, client, t.NotifyURL, webexPayload{Markdown: summaryDeployText(ev)})
+		return postJSON(ctx, client, t.NotifyURL, webexPayload{Markdown: deployText(t.NotifyKind, ev)})
 	case NotifyGoogleChat:
-		return postJSON(ctx, client, t.NotifyURL, googleChatPayload{Text: summaryDeployText(ev)})
+		return postJSON(ctx, client, t.NotifyURL, googleChatPayload{Text: deployText(t.NotifyKind, ev)})
 	case NotifyOpsgenie:
 		key, err := parseOpsgenieCreds(t.NotifyURL)
 		if err != nil {
@@ -301,14 +307,14 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		if ev.Succeeded {
 			priority = "P5"
 		}
-		payload := opsgeniePayload{Message: fmt.Sprintf("deploy: %s", ev.AppName), Description: summaryDeployText(ev), Priority: priority}
+		payload := opsgeniePayload{Message: fmt.Sprintf("deploy: %s", ev.AppName), Description: deployText(t.NotifyKind, ev), Priority: priority}
 		return postJSONWithAuth(ctx, client, opsgenieAPIURL, payload, "GenieKey "+key)
 	case NotifyGotify:
 		priority := 5
 		if ev.Succeeded {
 			priority = 2
 		}
-		return postJSON(ctx, client, t.NotifyURL, gotifyPayload{Title: ev.AppName, Message: summaryDeployText(ev), Priority: priority})
+		return postJSON(ctx, client, t.NotifyURL, gotifyPayload{Title: ev.AppName, Message: deployText(t.NotifyKind, ev), Priority: priority})
 	case NotifyNtfy:
 		token, cleanURL, err := extractNtfyToken(t.NotifyURL)
 		if err != nil {
@@ -318,11 +324,8 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		if ev.Succeeded {
 			priority = 3
 		}
-		payload := ntfyPayload{Title: ev.AppName, Message: summaryDeployText(ev), Priority: priority}
-		if token == "" {
-			return postJSON(ctx, client, cleanURL, payload)
-		}
-		return postJSONWithAuth(ctx, client, cleanURL, payload, bearerPrefix+token)
+		payload := ntfyPayload{Title: ev.AppName, Message: deployText(t.NotifyKind, ev), Priority: priority}
+		return postNtfy(ctx, client, cleanURL, token, payload)
 	case NotifyResend:
 		key, to, from, err := parseResendCreds(t.NotifyURL)
 		if err != nil {
@@ -332,7 +335,7 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		if !ev.Succeeded {
 			subject = fmt.Sprintf("[Levelrail] deploy FAILED: %s", ev.AppName)
 		}
-		payload := resendPayload{From: from, To: []string{to}, Subject: subject, Text: summaryDeployText(ev)}
+		payload := resendPayload{From: from, To: []string{to}, Subject: subject, Text: deployText(t.NotifyKind, ev)}
 		return postJSONWithAuth(ctx, client, resendAPIURL, payload, bearerPrefix+key)
 	case NotifyEmail:
 		if sender == nil {
@@ -345,7 +348,12 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		if !ev.Succeeded {
 			subject = fmt.Sprintf("[Levelrail] deploy FAILED: %s", ev.AppName)
 		}
-		if err := sendEmailWithRetry(ctx, sender, t.NotifyURL, subject, summaryDeployText(ev)); err != nil {
+		status := "succeeded"
+		if !ev.Succeeded {
+			status = "failed"
+		}
+		vals := map[string]string{"app_name": ev.AppName, "deploy_status": status}
+		if err := sendTemplated(ctx, sender, mailtemplates.EventDeployNotification, t.NotifyURL, vals, subject, deployText(t.NotifyKind, ev)); err != nil {
 			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
 		}
 		return nil
@@ -357,7 +365,7 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		if !ev.Succeeded {
 			title = fmt.Sprintf("Deploy FAILED: %s", ev.AppName)
 		}
-		if err := pushSender.Send(ctx, title, summaryDeployText(ev)); err != nil {
+		if err := pushSender.Send(ctx, title, deployText(t.NotifyKind, ev)); err != nil {
 			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
 		}
 		return nil
@@ -376,11 +384,26 @@ type DeployDispatcher struct {
 	logger     *slog.Logger
 	runtime    LogsSource
 	buildLogs  DeployLogSource
+	outcomes   *DeployOutcomeTracker
 }
 
 // DeployLogSource reads a deploy attempt's build output; *telemetry.DB satisfies it.
 type DeployLogSource interface {
 	QueryDeployLog(ctx context.Context, attemptID string) ([]telemetry.DeployLogEntry, error)
+}
+
+// WithOutcomeTracker feeds every terminal deploy outcome to t, which the deploy_failed rule reads.
+func (d *DeployDispatcher) WithOutcomeTracker(t *DeployOutcomeTracker) *DeployDispatcher {
+	d.outcomes = t
+	return d
+}
+
+// Outcomes returns the tracker fed by this dispatcher, or nil when none is attached.
+func (d *DeployDispatcher) Outcomes() DeployFailureSource {
+	if d.outcomes == nil {
+		return nil
+	}
+	return d.outcomes
 }
 
 // WithLogSources lets the dispatcher attach the tail of the failing build or
@@ -433,7 +456,11 @@ func NewDeployDispatcher(db *DB, client *http.Client, sender email.Sender, pushS
 // Dispatch sends ev to every enabled DeployTarget for its app. Call it only once the attempt is terminal.
 // Failures are logged, never returned: the deploy has already finished and must not look failed.
 func (d *DeployDispatcher) Dispatch(ctx context.Context, resourceID string, ev DeployOutcome) {
+	if d.outcomes != nil {
+		d.outcomes.Record(ev, time.Now())
+	}
 	d.attachLogs(ctx, resourceID, &ev)
+	ev.ReleaseNotes = ClampReleaseNotes(ev.ReleaseNotes, ReleaseNotesMaxBytes())
 	targets, err := d.db.ListDeployTargetsForResource(ctx, resourceID)
 	if err != nil {
 		d.logger.Error("alerting: list deploy targets failed",

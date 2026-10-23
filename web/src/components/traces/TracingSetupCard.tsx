@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
   CardContent,
@@ -9,6 +8,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { CommandBlock } from '@/components/ui/code-block'
 import { toast } from '@/components/ui/toast'
 import {
   useDisableTracing,
@@ -17,39 +17,8 @@ import {
 } from '../../queries/traces'
 import type { Tracing } from '../../types/traces'
 
-function CopyBlock({ value }: { value: string }) {
-  const { t } = useTranslation('traces')
-  const [copied, setCopied] = useState(false)
-  return (
-    <div className="flex items-start gap-2 rounded-md bg-muted px-3 py-2">
-      <pre className="min-w-0 flex-1 overflow-x-auto font-mono text-xs text-foreground">
-        {value}
-      </pre>
-      <Button
-        type="button"
-        size="icon-sm"
-        variant="ghost"
-        aria-label={t('setup.copy')}
-        onClick={() => {
-          void navigator.clipboard
-            .writeText(value)
-            .then(() => {
-              setCopied(true)
-              window.setTimeout(() => {
-                setCopied(false)
-              }, 1500)
-            })
-            .catch(() => undefined)
-        }}
-      >
-        {copied ? (
-          <CheckIcon aria-hidden="true" />
-        ) : (
-          <CopyIcon aria-hidden="true" />
-        )}
-      </Button>
-    </div>
-  )
+function CopyBlock({ value, secret }: { value: string; secret?: boolean }) {
+  return <CommandBlock code={value} prompt={false} secret={secret} />
 }
 
 /** TracingSetupCard turns the app's ingest key on and off and shows it once. */
@@ -114,7 +83,7 @@ export function TracingSetupCard({ app }: { app: string }) {
             <p className="text-xs text-muted-foreground">
               {t('setup.keyOnce')}
             </p>
-            <CopyBlock value={env} />
+            <CopyBlock value={env} secret />
             <p className="text-xs text-muted-foreground">
               {t('setup.protocolNote')}
             </p>

@@ -6,6 +6,8 @@ description: What Levelrail has shipped by area, what is still open, and what is
 
 Releases are listed on the [releases page](https://github.com/glincker/levelrail/releases). "Shipped" on this page means built and merged, not proven in production. For per-feature maturity and the evidence behind each label, see [feature status](/feature-status). Release-by-release detail is in the [changelog](/changelog). The decisions behind the build order are in the [ADRs](https://github.com/glincker/levelrail/tree/main/adr).
 
+The 0.8 release line adds an Inbox for alerts and approvals, recoverable upgrades, secret rotation, and provider, region and zone labels on nodes.
+
 The build did not follow the original phase plan in order. Parts of multi-node shipped while some single-node items (real public ACME renewal, a Linux idle-footprint measurement) are still open. This page describes what is true today, not a schedule.
 
 ## Phase status
@@ -19,7 +21,7 @@ flowchart LR
   P4 --> P5["Phase 5: Hardening<br/>Open"]
 ```
 
-Phase 5 (chaos testing, upgrade and downgrade testing across versions, security review, a published idle-footprint number, a shadow-running period) is the open work. Some of it has started: control-plane death survival, break-glass agent reconnect and a first live ACME run are covered, see [resilience](/resilience) and the [ACME runbook](/acme-verification-runbook).
+Phase 5 (chaos testing, upgrade and downgrade testing across versions, security review, a published idle-footprint number, a shadow-running period) is the open work. Some of it has started: control-plane death survival, break-glass agent reconnect and a first live ACME run are covered, see [resilience](/resilience) and the [ACME runbook](/acme-verification-runbook). Upgrade testing has started too: a harness upgrades the real v0.8.1 and v0.8.2 binaries with seeded data and checks restore points, automatic restore and the downgrade refusal (see [Upgrade safely](/upgrade-safely#upgrading-real-releases-with-real-data)); a second test upgrades v0.8.2 data across real migrations (email providers backfill, spend cap guard mode, the migration list, the downgrade refusal and restores), see [Cross-release schema migration](/upgrade-safely#cross-release-schema-migration).
 
 ## Shipped
 
@@ -37,26 +39,32 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 - Embedded Caddy ingress: automatic TLS (internal issuer by default, public ACME toggleable), zero-config `sslip.io` hostnames, per-domain bring-your-own certificates. See [domains and ingress](/domains-and-ingress).
 - Envelope-encrypted secrets with master-key rotation. See [security](/security).
 - Container exec and an interactive terminal (dashboard or `apps exec --interactive`), gated to root-level tokens.
-- [Service template](/templates-and-registry) catalog: 300+ entries (see [template catalog](/template-catalog)), reversing the original non-goal in [ADR 015](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md).
+- [Service template](/templates-and-registry) catalog: about 360 entries (see [template catalog](/template-catalog)), reversing the original non-goal in [ADR 015](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md).
+- Ingress abuse defense with per-app rate limits and address and User-Agent deny lists, starting in log only mode with a replay before enforcing. See [ingress abuse defense](/abuse-defense).
+- A chaos test matrix that maps daemon, disk, agent, image and OOM failures to the test that proves each one converges. See [chaos test coverage](/chaos-coverage).
 
 ### Data
 
-- Eight managed database engines: Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly and ClickHouse, with scheduled backups, restore, verification, metrics and log search. See [managing databases](/managing-databases).
-- Point-in-time restore for Postgres (opt-in WAL archiving, restore to a timestamp inside the recoverable window), restore into a new resource, and app volume backups to S3-compatible targets. See [backups and storage](/backups-and-storage).
-- TLS on newly created Postgres and Redis databases. Databases created before this feature are not switched.
+- Nine managed database engines: Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Valkey, Dragonfly and ClickHouse, with scheduled backups, restore, verification, metrics and log search. Meilisearch, Qdrant, Typesense and Memcached are built but not yet verified on a live Docker daemon. See [managing databases](/managing-databases).
+- Point-in-time restore for Postgres (opt-in WAL archiving, restore to a timestamp inside the recoverable window) and for MySQL and MariaDB (opt-in binary log archiving, restore into a new database), restore into a new resource, and app volume backups to S3-compatible targets. See [backups and storage](/backups-and-storage).
+- TLS on newly created Postgres, Redis, MySQL, MariaDB and MongoDB databases. Databases created before this feature are not switched.
 - Control-plane backups. See [control-plane backup](/control-plane-backup).
 
 ### Observability
 
 - Node-local metrics (15s resolution) and log store with full-text and JSON search, federated across nodes, and a Prometheus remote-read endpoint. Deploy markers appear on metric charts.
 - Crashloop detection with the last 200 log lines surfaced in the UI.
-- Alerting over 14 rule kinds and 18 notification channel kinds, with retries for transient failures and delivery history.
+- Alerting with 25 rule kinds and 18 notification channel kinds, with retries for transient failures and delivery history.
 - Attention list, [status page](/status-page), capacity forecast, right-sizing suggestions and certificate renewal visibility. See [observability](/observability).
+- Email providers with a primary and an optional backup that takes over automatically, provider templates, branding, and a credential reveal behind a password and two-factor check. See [email notifications](/email-notifications).
+- Monthly egress and cost caps per app and per project, with alerts at 50, 80 and 100 percent, a deploy guard with an audited override, a month-end forecast and a pause preview. See [spend caps](/spend-caps).
+- Traffic export of one record per finished ingress request to PostHog, OpenTelemetry or a webhook, with no visitor identity unless a destination opts in. See [traffic export](/traffic-export).
 
 ### Multi-node
 
 - Agent transport: in-process for a single node, gRPC with mTLS for remote nodes, with reconnection and version negotiation.
 - Node registry, join tokens, cordon, drain, heartbeats and connection history.
+- Guided add-node flow with provider, region and zone auto-detect from cloud metadata, preflight checks with fixes, and provider-aware spread (beta, see [add a node anywhere](/add-node-anywhere)).
 - Manual placement, moving an app with its volumes, WireGuard mesh with cross-node service DNS, and distributed certificate storage.
 
 The join flow is verified across two real Docker daemons, but not across a real WAN. The mesh itself is not verified on real hosts. See [multi-node](/multi-node).
@@ -72,8 +80,11 @@ The join flow is verified across two real Docker daemons, but not across a real 
 ### Operator surfaces
 
 - Dashboard, `levelrail-cli` (profiles, `--output` and `--query`, shell completion, device login, `doctor`, `apps create --interactive`) and `install.sh`.
-- Migration CLI: `levelrail-cli migrate coolify`, `dokploy` and `caprover`. See [migrate to Levelrail](/migrate-to-levelrail).
-- MCP server (`cmd/levelrail-mcp`): 156 tools in full mode, 146 in the default standard mode, 118 in read-only mode. See [MCP tool surface](/mcp-tool-surface) and the [AI assistant](/ai-assistant) page. Tokens are checked against the same abilities as the REST API.
+- Migration CLI: `levelrail-cli migrate coolify`, `dokploy` and `caprover`. See [migrating from Coolify, Dokploy and CapRover](/migrating-from-coolify-dokploy-and-caprover).
+- MCP server (`cmd/levelrail-mcp`): over 240 tools, grouped into toolsets that an agent enables on demand. See [MCP tool surface](/mcp-tool-surface) for the exact, generated numbers, and the [AI assistant](/ai-assistant) page. Tokens are checked against the same abilities as the REST API.
+- `migrate verify`, a parity report that compares the source with this server before DNS moves, shown on the Cutover tab of the Migrate page. See [migration reference](/migration-reference).
+- Cross-release schema migration tests that upgrade real v0.8.2 data across real migrations, with downgrade refusal and automatic restore. See [upgrade safely](/upgrade-safely).
+- The dashboard Start tab follows the project and environment picker. See [projects, organizations and environments](/projects-and-organizations).
 
 ### Shipped but off by default or beta
 
@@ -86,16 +97,18 @@ These exist and are tested, but are gated or carry a beta label. See [feature st
 
 - Real public ACME: one live run against Let's Encrypt on a public VPS is recorded in the [runbook](/acme-verification-runbook). Renewal close to expiry, DNS-01 wildcards and a deliberate failure against the production CA are not yet exercised live.
 - Multi-node on real hosts: the WireGuard mesh and cross-host remote transport are unverified outside fakes and local Docker daemons.
-- Idle footprint on Linux: measured only on an Apple M4 Max dev build so far. See [performance](/performance).
+- Idle footprint on Linux: measured in a Docker Desktop container (not bare metal) with a harness and opt-in regression guard. A bare metal or VPS number is still open. See [performance](/performance).
 - Load and failover numbers: the harness exists (`levelrail-cli bench run`), no published results yet. See [benchmarks](/benchmarks).
-- Template coverage: a sample of the 300+ templates is deployed by e2e tests, not the whole catalog.
-- Other database engines: PITR is Postgres only, and TLS by default is Postgres and Redis only.
+- Template coverage: a sample of the roughly 360 templates is deployed by e2e tests, not the whole catalog.
+- Other database engines: PITR covers Postgres, MySQL and MariaDB only (MongoDB has no oplog here), and the remaining engines have no TLS by default.
 - Stable release: none yet. Upgrade and downgrade testing across versions with real data is part of Phase 5.
+- Real pause or scale-to-zero for spend caps: `pause` serves a maintenance response and does not stop containers. A real pause needs an ADR first.
+- Remote Go build cache for CI: needs a storage bucket before it can be enabled.
 
 ## Out of scope
 
 - Container runtime: Docker Engine API only.
-- Scheduler: no bin-packing, affinity rules or autoscaling.
+- Scheduler: no bin-packing or affinity rules. Resource-aware placement, failure-domain spread and autoscaling are built, see [ADR 033](https://github.com/glincker/levelrail/blob/main/adr/033-scale-out-roadmap-and-non-goal-reversal.md) and [ADR 036](https://github.com/glincker/levelrail/blob/main/adr/036-autoscaler-dry-runs-and-multi-ingress-readiness.md).
 - Service mesh: WireGuard plus DNS only.
 - Windows or non-Linux nodes.
 - Managed cloud offering: not before the self-hosted version has real users.

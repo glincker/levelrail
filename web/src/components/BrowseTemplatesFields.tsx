@@ -246,8 +246,8 @@ export function BrowseTemplatesFields({
             className="space-y-4"
           >
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="min-w-0 text-sm font-medium break-words text-foreground">
                   {templateDetail.data.name}
                 </span>
                 <Badge variant="outline">{templateDetail.data.category}</Badge>

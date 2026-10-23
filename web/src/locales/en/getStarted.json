@@ -13,8 +13,8 @@
     "allDoneTitle": "Everything is set up",
     "allDoneBody": "Every step is done or skipped. Reset the guide any time to review your choices.",
     "serverAddress": "This server's address: {{address}}",
-    "essentialTitle": "Start here",
-    "essentialHelp": "Four steps get you from a fresh install to an app running over HTTPS."
+    "essentialTitle": "Ship your first app",
+    "essentialHelp": "Create an app from a git link or a template, then open it in your browser."
   },
   "actions": {
     "skip": "Skip",
@@ -160,8 +160,45 @@
     "error": "Could not deploy the sample app: {{message}}",
     "open": "Open sample app"
   },
+  "first": {
+    "title": "Deploy your first app",
+    "subtitle": "Pick a path. Each one ends with a running app and a link you can open.",
+    "sample": {
+      "title": "Sample app",
+      "description": "One click. Runs {{image}}, a few megabytes, with a health check on {{path}}.",
+      "cta": "Deploy sample app",
+      "creating": "Creating...",
+      "retry": "Try again"
+    },
+    "template": {
+      "title": "From a template",
+      "description": "Pick a ready-made service from the catalog.",
+      "cta": "Browse templates"
+    },
+    "repo": {
+      "title": "Your own repo",
+      "description": "Build from a repository. The name comes from the repo and the build is detected.",
+      "cta": "Deploy a repo"
+    },
+    "url": {
+      "preview": "With no domain set, an app gets an address like {{url}}."
+    },
+    "status": {
+      "live": "It is live",
+      "liveDetail": "{{name}} passed its health check and is serving traffic.",
+      "noAddress": "It has no public address yet. Add a domain on the app's Domains tab to reach it from the internet.",
+      "failed": "{{name}} is not healthy",
+      "diagnosing": "Diagnosing...",
+      "deploying": "Deploying {{name}}",
+      "deployingDetail": "{{status}}. Pulling the image, starting the container, and waiting for the health check to pass.",
+      "slow": "This is taking longer than usual. Large images take a while on a slow connection; the logs show what is happening.",
+      "openApp": "Open app",
+      "viewLogs": "View logs",
+      "done": "Go to the dashboard"
+    }
+  },
   "more": {
-    "title": "More recommended steps",
-    "help": "These make the server safer to run in production. None of them blocks your first deploy."
+    "title": "Make it production ready",
+    "help": "These make the server safer to run for real users. None of them blocks your first deploy."
   }
 }

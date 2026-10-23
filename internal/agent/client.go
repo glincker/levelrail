@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 	"sync"
 	"time"
 
@@ -19,6 +18,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/GLINCKER/levelrail/internal/agent/pinned"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -43,7 +43,7 @@ type Identity struct {
 
 // ErrCAFingerprintMismatch is returned by DialEnroll when the control
 // plane's CA does not match the pinned fingerprint.
-var ErrCAFingerprintMismatch = errors.New("agent: control plane CA does not match the pinned fingerprint")
+var ErrCAFingerprintMismatch = pinned.ErrMismatch
 
 // errControlPlaneGoAway ends serveSession when a GoAway frame arrives, so
 // a restarting control plane's bounded GracefulStop wait does not have to
@@ -78,7 +78,7 @@ func WithPinnedCAFingerprint(fingerprint string) EnrollOption {
 }
 
 func normalizeFingerprint(fp string) string {
-	return strings.ToLower(strings.ReplaceAll(strings.TrimSpace(fp), ":", ""))
+	return pinned.Normalize(fp)
 }
 
 // DialEnroll exchanges joinToken for an Identity over addr; the private key never leaves the agent.
@@ -191,37 +191,14 @@ func (c enrollConfig) checkPinnedCA(caPEM []byte) error {
 // verification is skipped because there is no root to give it yet;
 // with a pin, verifyPinnedChain replaces it.
 func enrollTrustConfig(caFingerprint string) *tls.Config {
-	cfg := &tls.Config{InsecureSkipVerify: true, NextProtos: []string{"h2"}} //nolint:gosec // replaced by verifyPinnedChain when a CA fingerprint is pinned, TOFU otherwise (see DialEnroll)
-	if caFingerprint != "" {
-		cfg.VerifyConnection = func(cs tls.ConnectionState) error {
-			return verifyPinnedChain(cs.PeerCertificates, caFingerprint)
-		}
-	}
-	return cfg
+	return pinned.EnrollTLSConfig(caFingerprint)
 }
 
 // verifyPinnedChain accepts the connection only if the presented chain
 // includes the pinned CA and the leaf is a valid server certificate
 // signed by it. Hostnames are not checked: the pin is the trust anchor.
 func verifyPinnedChain(chain []*x509.Certificate, caFingerprint string) error {
-	if len(chain) == 0 {
-		return fmt.Errorf("%w: server presented no certificate", ErrCAFingerprintMismatch)
-	}
-	roots := x509.NewCertPool()
-	pinned := false
-	for _, c := range chain[1:] {
-		if subtle.ConstantTimeCompare([]byte(CertFingerprint(c.Raw)), []byte(caFingerprint)) == 1 {
-			roots.AddCert(c)
-			pinned = true
-		}
-	}
-	if !pinned {
-		return fmt.Errorf("%w: server did not present the pinned CA", ErrCAFingerprintMismatch)
-	}
-	if _, err := chain[0].Verify(x509.VerifyOptions{Roots: roots, KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}}); err != nil {
-		return fmt.Errorf("%w: %w", ErrCAFingerprintMismatch, err)
-	}
-	return nil
+	return pinned.VerifyChain(chain, caFingerprint)
 }
 
 // agentClientStream is the narrow Session RPC surface serveSession needs, so tests can fake it.
@@ -293,6 +270,16 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 		go cfg.renewer.Run(renewCtx, client)
 		go reportRenewals(renewCtx, cfg.renewer, func(m *agentpb.AgentMessage) error { return rs.Send(m) })
 	}
+	if cfg.onboardingProbe != nil {
+		send := sessionStream.Send
+		if cfg.renewer == nil {
+			ls := &lockedStream{inner: stream}
+			sessionStream, send = ls, ls.Send
+		}
+		obCtx, stopOnboarding := context.WithCancel(ctx)
+		defer stopOnboarding()
+		go onboardingLoop(obCtx, cfg.onboardingProbe, cfg.onboardingEvery, send)
+	}
 
 	heartbeatInterval := defaultHeartbeatInterval
 	if cfg.heartbeatInterval > 0 {
@@ -312,6 +299,8 @@ type sessionConfig struct {
 	keepaliveTimeout  time.Duration
 	gpuProbe          GPUProbe
 	hostProbe         HostProbe
+	onboardingProbe   OnboardingProbe
+	onboardingEvery   time.Duration
 	renewer           *Renewer
 	fileRoot          string
 }

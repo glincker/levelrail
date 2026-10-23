@@ -207,6 +207,7 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   gmail: () => import('@thesvg/react/gmail'),
   mailgun: () => import('@thesvg/react/mailgun'),
   postmark: () => import('@thesvg/react/postmark'),
+  sendgrid: () => import('@thesvg/react/sendgrid-badge'),
   brevo: () => import('@thesvg/react/brevo'),
   mailtrap: () => import('@thesvg/react/mailtrap'),
   // Templates whose mark ships under another thesvg slug, or that are a
@@ -435,6 +436,7 @@ const LIGHT_SURFACE_VARIANTS: Record<string, LogoVariant> = {
   qdrant: 'light',
   rust: 'light',
   browserless: 'light',
+  resend: 'light',
 }
 
 // Dark-surface hook: add an id here to pick a thesvg variant when its tile

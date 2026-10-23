@@ -74,6 +74,36 @@ export interface CPHealthLoop {
   last_error?: string
 }
 
+export type IdleFootprintStatus =
+  'within_tolerance' | 'over_tolerance' | 'tolerance_unset' | 'no_baseline'
+
+export interface IdleFootprintCheck {
+  name: 'rss' | 'cpu' | 'goroutines' | 'open_fds'
+  unit: string
+  current: number
+  baseline: number
+  limit: number
+  ok: boolean
+}
+
+// Matches internal/footprint.Assessment.
+export interface IdleFootprint {
+  status: IdleFootprintStatus
+  detail?: string
+  platform: string
+  current: {
+    rss_bytes: number
+    cpu_percent: number
+    cpu_window_seconds: number
+    goroutines: number
+    open_fds: number
+    threads: number
+    apps: number
+  }
+  baseline?: { apps: number; peak_rss_mb: number }
+  checks: IdleFootprintCheck[]
+}
+
 // Matches internal/api's cpHealthResource.
 export interface CPHealth {
   checked_at: string
@@ -118,6 +148,7 @@ export interface CPHealth {
     memory_limit: { limit_bytes: number; source: string; percent: number }
     loops: CPHealthLoop[]
   }
+  idle_footprint?: IdleFootprint
   findings: CPHealthFinding[]
 }
 

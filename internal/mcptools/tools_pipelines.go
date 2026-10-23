@@ -58,7 +58,7 @@ func registerPipelineTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "explain_pipeline_run",
-		Description: "Explain a pipeline run: status and reason, the first failed job and step with exit code and its last output lines, approval gates it waits on, and skipped jobs. Read-only; never approves, cancels, or re-runs.",
+		Description: "Explain a pipeline run: status and reason, the first failed job and step with exit code and its last output lines, approval gates it waits on, and skipped jobs. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in pipelineRunInput) (*mcp.CallToolResult, pipelineRunExplanation, error) {
 		run, err := client.GetPipelineRun(ctx, in.Name, in.RunID)
 		if err != nil {

@@ -9,11 +9,13 @@ import (
 	"net/http"
 	"net/textproto"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
@@ -37,6 +39,9 @@ type Event struct {
 	LogLines []string
 	// CertNotices is set only on a firing cert_expiry event.
 	CertNotices []string
+	// CertFacts and CertBaseURL drive the actionable cert expiry email; the base URL is empty when no public address is configured.
+	CertFacts   []CertFact
+	CertBaseURL string
 	// PatchNotices is set only on a firing patch_status event.
 	PatchNotices []string
 	// DiskSpaceNotices is set only on a firing node_disk_space event.
@@ -469,8 +474,8 @@ func notifyGotify(ctx context.Context, client *http.Client, url string, ev Event
 	return postJSON(ctx, client, url, gotifyPayload{Title: ev.Rule.Name, Message: summaryText(ev), Priority: priority})
 }
 
-// The topic lives in rawURL's path, so it is not repeated in the body.
 type ntfyPayload struct {
+	Topic    string `json:"topic"`
 	Title    string `json:"title,omitempty"`
 	Message  string `json:"message"`
 	Priority int    `json:"priority,omitempty"`
@@ -488,10 +493,27 @@ func notifyNtfy(ctx context.Context, client *http.Client, rawURL string, ev Even
 		priority = 3
 	}
 	payload := ntfyPayload{Title: ev.Rule.Name, Message: summaryText(ev), Priority: priority}
-	if token == "" {
-		return postJSON(ctx, client, cleanURL, payload)
+	return postNtfy(ctx, client, cleanURL, token, payload)
+}
+
+// postNtfy publishes through ntfy's JSON API: the server root with the topic in the body.
+// JSON posted to a topic path is published as literal message text instead.
+func postNtfy(ctx context.Context, client *http.Client, topicURL, token string, payload ntfyPayload) error {
+	u, err := url.Parse(topicURL)
+	if err != nil {
+		return fmt.Errorf("invalid ntfy notify_url: %w", err)
 	}
-	return postJSONWithAuth(ctx, client, cleanURL, payload, bearerPrefix+token)
+	dir, topic := path.Split(strings.TrimRight(u.Path, "/"))
+	if topic == "" {
+		return fmt.Errorf("ntfy notify_url must end in a topic, such as https://ntfy.sh/my-topic")
+	}
+	u.Path, u.RawPath, u.RawQuery = dir, "", ""
+	payload.Topic = topic
+	authHeader := ""
+	if token != "" {
+		authHeader = bearerPrefix + token
+	}
+	return postJSONWithAuth(ctx, client, u.String(), payload, authHeader)
 }
 
 // Pulls the optional auth token out of rawURL; most ntfy topics need none.
@@ -771,11 +793,23 @@ func (n emailNotifier) Notify(ctx context.Context, ev Event) error {
 		return fmt.Errorf("alerting: notify: no notify_url (destination email address) configured")
 	}
 
+	if !ev.Resolved && len(ev.CertFacts) > 0 {
+		return n.notifyCert(ctx, ev)
+	}
+
 	subject := fmt.Sprintf("[Levelrail] %s", ev.Rule.Name)
 	if ev.Resolved {
 		subject = fmt.Sprintf("[Levelrail][RESOLVED] %s", ev.Rule.Name)
 	}
-	if err := sendEmailWithRetry(ctx, n.sender, n.to, subject, summaryText(ev)); err != nil {
+	status := "firing"
+	if ev.Resolved {
+		status = "resolved"
+	}
+	vals := map[string]string{
+		"alert_name": ev.Rule.Name, "severity": ev.Rule.Severity + " (" + status + ")",
+		"alert_summary": summaryText(ev), "app_name": ev.Rule.ResourceID,
+	}
+	if err := sendTemplated(ctx, n.sender, mailtemplates.EventAlertNotification, n.to, vals, subject, summaryText(ev)); err != nil {
 		return fmt.Errorf("alerting: notify: %w", err)
 	}
 	return nil
@@ -805,6 +839,10 @@ func (n webpushNotifier) Notify(ctx context.Context, ev Event) error {
 
 // Transport failures and SMTP 4xx replies are retried; 5xx replies are permanent, and retrying them only delays the fix.
 func isRetryableEmailError(err error) bool {
+	var sendErr *email.SendError
+	if errors.As(err, &sendErr) && sendErr.Attempts > 0 {
+		return false
+	}
 	var protoErr *textproto.Error
 	if errors.As(err, &protoErr) {
 		return protoErr.Code < 500
@@ -834,4 +872,28 @@ func sendEmailWithRetry(ctx context.Context, sender email.Sender, to, subject, b
 		delay *= 2
 	}
 	return lastErr
+}
+
+func (n emailNotifier) notifyCert(ctx context.Context, ev Event) error {
+	f := ev.CertFacts[0]
+	left := fmt.Sprintf("expires in %d days", f.DaysLeft)
+	switch {
+	case f.DaysLeft < 0:
+		left = "has expired"
+	case f.DaysLeft == 0:
+		left = "expires today"
+	case f.DaysLeft == 1:
+		left = "expires in 1 day"
+	}
+	vals := map[string]string{"domain": f.Domain, "issuer": f.Issuer, "days_left": left, "reason": f.Reason}
+	key := mailtemplates.EventCertExpiryPlain
+	if l := BuildCertLinks(ev.CertBaseURL, f, ""); l.Primary != "" {
+		key = mailtemplates.EventCertExpiry
+		vals["primary_label"], vals["primary_url"], vals["inbox_url"], vals["settings_url"] = l.PrimaryLabel, l.Primary, l.Inbox, l.Settings
+	}
+	subject := fmt.Sprintf("Certificate for %s %s", f.Domain, left)
+	if err := sendTemplated(ctx, n.sender, key, n.to, vals, subject, f.Notice()); err != nil {
+		return fmt.Errorf("alerting: notify: %w", err)
+	}
+	return nil
 }

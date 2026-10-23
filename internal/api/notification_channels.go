@@ -235,8 +235,7 @@ func (rt *Router) handleListNotificationChannels(w http.ResponseWriter, r *http.
 
 	channels, err := rt.notificationChannels.ListNotificationChannels(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list notification channels failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list notification channels failed", err)
 		return
 	}
 	out := make([]notificationChannelResource, 0, len(channels))
@@ -260,8 +259,7 @@ func (rt *Router) handleCreateNotificationChannel(w http.ResponseWriter, r *http
 
 	id, err := alerting.NewNotificationChannelID()
 	if err != nil {
-		rt.logger.Error("api: create notification channel: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create notification channel: generate id failed", err)
 		return
 	}
 
@@ -275,8 +273,7 @@ func (rt *Router) handleCreateNotificationChannel(w http.ResponseWriter, r *http
 	}
 
 	if err := rt.notificationChannels.SaveNotificationChannel(r.Context(), channel); err != nil {
-		rt.logger.Error("api: create notification channel failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create notification channel failed", err, slog.String("id", id))
 		return
 	}
 
@@ -308,8 +305,7 @@ func (rt *Router) handleUpdateNotificationChannel(w http.ResponseWriter, r *http
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: update notification channel: load channel failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update notification channel: load channel failed", err, slog.String("id", id))
 		return
 	}
 
@@ -331,15 +327,13 @@ func (rt *Router) handleUpdateNotificationChannel(w http.ResponseWriter, r *http
 	}
 
 	if err := rt.notificationChannels.SaveNotificationChannel(r.Context(), channel); err != nil {
-		rt.logger.Error("api: update notification channel failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update notification channel failed", err, slog.String("id", id))
 		return
 	}
 
 	updated, err := rt.notificationChannels.GetNotificationChannel(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: update notification channel: reload after save failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update notification channel: reload after save failed", err, slog.String("id", id))
 		return
 	}
 
@@ -362,8 +356,7 @@ func (rt *Router) handleDeleteNotificationChannel(w http.ResponseWriter, r *http
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: delete notification channel failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete notification channel failed", err, slog.String("id", id))
 		return
 	}
 
@@ -429,8 +422,7 @@ func (rt *Router) handleTestExistingNotificationChannel(w http.ResponseWriter, r
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: test notification channel: load channel failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: test notification channel: load channel failed", err, slog.String("id", id))
 		return
 	}
 
@@ -511,8 +503,7 @@ func (rt *Router) handleListNotificationDeliveries(w http.ResponseWriter, r *htt
 		writeError(w, http.StatusNotFound, "notification channel not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list notification deliveries: load channel failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list notification deliveries: load channel failed", err, slog.String("id", id))
 		return
 	}
 
@@ -541,8 +532,7 @@ func (rt *Router) handleListNotificationDeliveries(w http.ResponseWriter, r *htt
 
 	deliveries, err := rt.notificationDeliveries.ListNotificationDeliveries(r.Context(), id, limit, before)
 	if err != nil {
-		rt.logger.Error("api: list notification deliveries failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list notification deliveries failed", err, slog.String("id", id))
 		return
 	}
 

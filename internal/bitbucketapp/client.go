@@ -173,6 +173,7 @@ type Repo struct {
 	DefaultBranch string
 	CloneURL      string
 	WebURL        string
+	Fork          bool
 }
 
 type repoLinkHref struct {
@@ -190,6 +191,9 @@ type repoResponse struct {
 		HTML  repoLinkHref `json:"html"`
 		Clone []cloneLink  `json:"clone"`
 	} `json:"links"`
+	Parent *struct {
+		FullName string `json:"full_name"`
+	} `json:"parent"`
 }
 
 type cloneLink struct {
@@ -204,6 +208,7 @@ func toRepo(r repoResponse) Repo {
 		Private:       r.IsPrivate,
 		DefaultBranch: r.MainBranch.Name,
 		WebURL:        r.Links.HTML.Href,
+		Fork:          r.Parent != nil,
 	}
 	for _, link := range r.Links.Clone {
 		if link.Name == "https" {
@@ -229,31 +234,49 @@ const (
 	repositoriesAPI = "/repositories/"
 )
 
+// authValue builds the Authorization header for a stored credential. An
+// "email:token" pair is a Bitbucket API token (Basic); anything else is an
+// OAuth or access token (Bearer).
+func authValue(credential string) string {
+	if strings.Contains(credential, ":") {
+		return "Basic " + base64.StdEncoding.EncodeToString([]byte(credential))
+	}
+	return bearerPrefix + credential
+}
+
 type pagedRepoResponse struct {
 	Values []repoResponse `json:"values"`
 	Next   string         `json:"next"`
 }
 
-// ListRepos lists every repository the token's account is at least a
-// member of. Bitbucket paginates by an opaque "next" URL in the
-// response body, not a page number the caller increments (GitHub's and
-// GitLab's own shape): each iteration below follows that URL directly
-// rather than constructing one, until the response omits it or
-// listPageCap is hit.
-func (c *Client) ListRepos(ctx context.Context, accessToken string) ([]Repo, error) {
-	var out []Repo
+// ListRepos lists repositories the token's account is at least a member
+// of. Bitbucket paginates by an opaque "next" URL in the response body:
+// each iteration follows it until it is absent or the MaxItems cap is hit.
+func (c *Client) ListRepos(ctx context.Context, accessToken string, opts gitprovider.ListOptions) ([]Repo, gitprovider.ListResult, error) {
+	var (
+		out []Repo
+		res gitprovider.ListResult
+	)
 	next := c.apiBaseURL() + "/repositories?role=member&pagelen=100"
-	for page := 0; page < listPageCap && next != ""; page++ {
+	for next != "" {
 		var resp pagedRepoResponse
-		if err := c.do(ctx, http.MethodGet, next, bearerPrefix+accessToken, nil, &resp); err != nil {
-			return nil, err
+		err := gitprovider.WithRetry(ctx, opts.Retry, "bitbucket", func() error {
+			resp = pagedRepoResponse{}
+			return c.do(ctx, http.MethodGet, next, authValue(accessToken), nil, &resp)
+		})
+		if err != nil {
+			return nil, gitprovider.ListResult{}, err
 		}
 		for _, r := range resp.Values {
 			out = append(out, toRepo(r))
 		}
 		next = resp.Next
+		if next != "" && opts.Reached(len(out)) {
+			res.Truncated = true
+			break
+		}
 	}
-	return out, nil
+	return out, res, nil
 }
 
 // GetRepo looks up a single repository by its "workspace/repo_slug"
@@ -261,7 +284,7 @@ func (c *Client) ListRepos(ctx context.Context, accessToken string) ([]Repo, err
 func (c *Client) GetRepo(ctx context.Context, accessToken, fullName string) (Repo, error) {
 	var resp repoResponse
 	u := c.apiBaseURL() + repositoriesAPI + fullName
-	if err := c.do(ctx, http.MethodGet, u, bearerPrefix+accessToken, nil, &resp); err != nil {
+	if err := c.do(ctx, http.MethodGet, u, authValue(accessToken), nil, &resp); err != nil {
 		return Repo{}, err
 	}
 	return toRepo(resp), nil
@@ -292,7 +315,7 @@ func (c *Client) ListBranches(ctx context.Context, accessToken, fullName string)
 	next := c.apiBaseURL() + repositoriesAPI + fullName + "/refs/branches?pagelen=100"
 	for page := 0; page < listPageCap && next != ""; page++ {
 		var resp pagedBranchResponse
-		if err := c.do(ctx, http.MethodGet, next, bearerPrefix+accessToken, nil, &resp); err != nil {
+		if err := c.do(ctx, http.MethodGet, next, authValue(accessToken), nil, &resp); err != nil {
 			return nil, err
 		}
 		for _, b := range resp.Values {
@@ -333,7 +356,7 @@ func (c *Client) CreateRepoWebhook(ctx context.Context, accessToken, fullName, h
 		return fmt.Errorf("bitbucketapp: marshal webhook request: %w", err)
 	}
 	u := c.apiBaseURL() + repositoriesAPI + fullName + "/hooks"
-	return c.do(ctx, http.MethodPost, u, bearerPrefix+accessToken, bytes.NewReader(body), nil)
+	return c.do(ctx, http.MethodPost, u, authValue(accessToken), bytes.NewReader(body), nil)
 }
 
 type createPRCommentContent struct {
@@ -380,5 +403,34 @@ func (c *Client) CreateCommitBuildStatus(ctx context.Context, accessToken, fullN
 		return fmt.Errorf("bitbucketapp: marshal build status request: %w", err)
 	}
 	u := c.apiBaseURL() + repositoriesAPI + fullName + "/commit/" + url.PathEscape(commit) + "/statuses/build"
-	return c.do(ctx, http.MethodPost, u, bearerPrefix+accessToken, bytes.NewReader(payload), nil)
+	return c.do(ctx, http.MethodPost, u, authValue(accessToken), bytes.NewReader(payload), nil)
+}
+
+// Account is the authenticated user behind an access token.
+type Account struct {
+	ID    string
+	Login string
+}
+
+// CurrentUser returns the user an access token belongs to. It needs the
+// account scope on the OAuth consumer.
+func (c *Client) CurrentUser(ctx context.Context, accessToken string) (Account, error) {
+	var resp struct {
+		AccountID   string `json:"account_id"`
+		UUID        string `json:"uuid"`
+		Nickname    string `json:"nickname"`
+		DisplayName string `json:"display_name"`
+	}
+	if err := c.do(ctx, http.MethodGet, c.apiBaseURL()+"/user", authValue(accessToken), nil, &resp); err != nil {
+		return Account{}, err
+	}
+	id := resp.AccountID
+	if id == "" {
+		id = resp.UUID
+	}
+	login := resp.Nickname
+	if login == "" {
+		login = resp.DisplayName
+	}
+	return Account{ID: id, Login: login}, nil
 }

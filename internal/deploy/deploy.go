@@ -171,6 +171,11 @@ type Request struct {
 	// Commit, when set, runs right before desired state is written and can
 	// veto it (ErrCanceled), the last point a deploy is cancelable.
 	Commit func() error
+	// NoCache disables BuildKit's layer cache for a dockerfile build.
+	NoCache bool
+	// Preview marks a pull request preview build, which may not use
+	// build.secrets unless APP_PREVIEW_BUILD_SECRETS is true.
+	Preview bool
 }
 
 // Pipeline builds a service (when its build type requires a build) and
@@ -187,9 +192,14 @@ type Pipeline struct {
 	// both nil/empty is valid, the same "fail loudly without config"
 	// shape secrets above already establishes for a different optional
 	// feature.
-	staticSites    StaticSiteStore
-	staticRootDir  string
-	staticRecorder StaticPublishRecorder
+	staticSites   StaticSiteStore
+	staticRootDir string
+	// staticRouteLimits caps _redirects, _headers and spec routing rules.
+	staticRouteLimits spec.StaticLimits
+	staticRecorder    StaticPublishRecorder
+
+	staticExtractor  StaticExtractor // nil is valid: build.command then fails its deploy loudly
+	staticBuildImage string
 
 	apps AppStore // nil is valid: every method except DeploySpec ignores it, see WithAppStore
 
@@ -209,11 +219,15 @@ type Pipeline struct {
 	ordered      OrderedStore          // nil disables the stale-deploy guard
 	attempts     AttemptRecorder       // nil skips recording digests on attempts
 
-	buildSecrets BuildSecretSource // nil is valid: builds mount no package registry secrets
+	buildSecretValues BuildSecretValues // nil: build.secrets is rejected at deploy
+	buildSecrets      BuildSecretSource // nil is valid: builds mount no package registry secrets
 
 	attest      bool            // request BuildKit SBOM and provenance on Dockerfile builds
 	supplyChain SupplyChainHook // nil skips SBOM storage and the scan gate
 	secretScan  SecretScanHook  // nil skips deploy-time secret scanning
+	spendGuard  SpendGuardHook  // nil skips the block_deploys spend cap guard
+
+	locks PublishLocks // nil is valid: no publish lock is ever consulted
 }
 
 // New builds a Pipeline.
@@ -244,6 +258,9 @@ func New(builder ImageBuilder, svcStore ServiceStore, opts ...Option) *Pipeline 
 // build.ProgressEvent and build.SlogProgress. A static deploy never
 // invokes it: there is no build step to report progress on.
 func (p *Pipeline) Deploy(ctx context.Context, req Request, progress func(build.ProgressEvent)) (string, error) {
+	if err := p.checkSpendGuard(ctx, req); err != nil {
+		return "", err
+	}
 	if err := p.scanSecrets(ctx, req); err != nil {
 		return "", err
 	}
@@ -301,8 +318,13 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		BuildArgs:      req.Service.Build.Args,
 		S3Cache:        s3Cache,
 		Attest:         p.attest,
+		NoCache:        req.NoCache,
 	}
-	progress, err = p.applyBuildSecrets(ctx, req.ServiceName, &buildReq, progress)
+	if err := checkPreviewBuildSecrets(req.Preview, req.Service.Build.Secrets); err != nil {
+		cacheDone()
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+	progress, err = p.applyBuildSecrets(ctx, req.ServiceName, req.Service.Build.Secrets, &buildReq, progress)
 	if err != nil {
 		cacheDone()
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
@@ -372,24 +394,15 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	resolution := p.buildResolution(ctx, res.Tag, res.ExporterResponse)
 	resolution.apply(&desired)
 
-	if err := p.saveDesired(ctx, req, desired); err != nil {
+	held, err := p.saveDesired(ctx, req, desired)
+	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
 	}
 	p.recordDigest(ctx, req, resolution)
-	if err := p.saveLoadBalancer(ctx, req); err != nil {
-		return "", err
-	}
-	if err := p.saveSpendCap(ctx, req); err != nil {
-		return "", err
-	}
-	if err := p.saveAutoscale(ctx, req); err != nil {
-		return "", err
-	}
-	if err := p.saveCanaryPolicy(ctx, req); err != nil {
-		return "", err
-	}
-	if err := p.saveJobs(ctx, req); err != nil {
-		return "", err
+	if !held {
+		if err := p.saveLiveConfig(ctx, req); err != nil {
+			return "", err
+		}
 	}
 
 	// A metrics-store hiccup must never fail a deploy that already landed.
@@ -401,6 +414,16 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	}
 
 	return res.Tag, nil
+}
+
+// saveLiveConfig writes the per-app blocks that only apply once a release is live.
+func (p *Pipeline) saveLiveConfig(ctx context.Context, req Request) error {
+	for _, save := range []func(context.Context, Request) error{p.saveLoadBalancer, p.saveSpendCap, p.saveAutoscale, p.saveCanaryPolicy, p.saveJobs} {
+		if err := save(ctx, req); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // deployImage handles build.Type == spec.BuildImage: no build, the
@@ -426,24 +449,15 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 	resolution.apply(&desired)
-	if err := p.saveDesired(ctx, req, desired); err != nil {
+	held, err := p.saveDesired(ctx, req, desired)
+	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
 	}
 	p.recordDigest(ctx, req, resolution)
-	if err := p.saveLoadBalancer(ctx, req); err != nil {
-		return "", err
-	}
-	if err := p.saveSpendCap(ctx, req); err != nil {
-		return "", err
-	}
-	if err := p.saveAutoscale(ctx, req); err != nil {
-		return "", err
-	}
-	if err := p.saveCanaryPolicy(ctx, req); err != nil {
-		return "", err
-	}
-	if err := p.saveJobs(ctx, req); err != nil {
-		return "", err
+	if !held {
+		if err := p.saveLiveConfig(ctx, req); err != nil {
+			return "", err
+		}
 	}
 	return desired.Image, nil
 }

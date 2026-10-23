@@ -1,4 +1,5 @@
 import {
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -10,6 +11,18 @@ import type { AlertHistoryEntry } from '../types/alertNoise'
 // Matches internal/api's inboxItemResource and inboxPrefsResource.
 export interface InboxItem extends AlertHistoryEntry {
   read: boolean
+  resolved: boolean
+}
+
+export type InboxClearScope = 'read' | 'resolved' | 'archived'
+export type InboxClearAction = 'archive' | 'delete'
+
+export interface InboxClearBody {
+  action: InboxClearAction
+  scope: InboxClearScope
+  older_than_seconds?: number
+  dry_run?: boolean
+  confirm_count?: number
 }
 
 export interface InboxPrefs {
@@ -21,10 +34,16 @@ export interface InboxPrefs {
   last_digest_at?: string
 }
 
+export interface InboxState {
+  read_ids: string[]
+  archived_ids: string[]
+}
+
 export const inboxKeys = {
   all: ['inbox'] as const,
-  list: (unreadOnly: boolean) =>
-    [...inboxKeys.all, 'list', unreadOnly] as const,
+  list: (unreadOnly: boolean, archived = false) =>
+    [...inboxKeys.all, 'list', unreadOnly, archived] as const,
+  state: () => [...inboxKeys.all, 'state'] as const,
   count: () => [...inboxKeys.all, 'count'] as const,
   prefs: () => [...inboxKeys.all, 'prefs'] as const,
 }
@@ -47,15 +66,20 @@ async function request<T>(
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
-export function useInbox(unreadOnly: boolean) {
-  return useQuery({
-    queryKey: inboxKeys.list(unreadOnly),
-    queryFn: ({ signal }) =>
+const PAGE_SIZE = 50
+
+export function useInbox(unreadOnly: boolean, archived = false) {
+  return useInfiniteQuery({
+    queryKey: inboxKeys.list(unreadOnly, archived),
+    initialPageParam: '',
+    queryFn: ({ signal, pageParam }) =>
       request<InboxItem[]>(
-        `/api/v1/inbox?limit=50${unreadOnly ? '&unread=true' : ''}`,
+        `/api/v1/inbox?limit=${String(PAGE_SIZE)}${unreadOnly ? '&unread=true' : ''}${archived ? '&archived=true' : ''}${pageParam ? `&before=${encodeURIComponent(pageParam)}` : ''}`,
         'load inbox',
         { signal },
       ),
+    getNextPageParam: (last) =>
+      last.length >= PAGE_SIZE ? last.at(-1)?.at : undefined,
     retry: false,
     refetchInterval: 30_000,
   })
@@ -93,6 +117,31 @@ export function useMarkInboxRead() {
   })
 }
 
+export function useInboxState() {
+  return useQuery({
+    queryKey: inboxKeys.state(),
+    queryFn: ({ signal }) =>
+      request<InboxState>('/api/v1/inbox/state', 'load inbox state', {
+        signal,
+      }),
+    retry: false,
+    refetchInterval: 30_000,
+  })
+}
+
+export function useArchiveInbox() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { ids: string[]; restore?: boolean }) =>
+      request<void>('/api/v1/inbox/archive', 'archive', {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => invalidateInbox(qc),
+  })
+}
+
 export function useInboxPrefs() {
   return useQuery({
     queryKey: inboxKeys.prefs(),
@@ -113,6 +162,35 @@ export function useSaveInboxPrefs() {
         headers: JSON_HEADERS,
         body: JSON.stringify(prefs),
       }),
+    onSuccess: () => invalidateInbox(qc),
+  })
+}
+
+export function useDeleteInbox() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { ids: string[]; restore?: boolean }) =>
+      request<void>('/api/v1/inbox/delete', 'delete', {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => invalidateInbox(qc),
+  })
+}
+
+export function clearInbox(body: InboxClearBody): Promise<{ count: number }> {
+  return request<{ count: number }>('/api/v1/inbox/clear', 'clear inbox', {
+    method: 'POST',
+    headers: JSON_HEADERS,
+    body: JSON.stringify(body),
+  })
+}
+
+export function useClearInbox() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: clearInbox,
     onSuccess: () => invalidateInbox(qc),
   })
 }

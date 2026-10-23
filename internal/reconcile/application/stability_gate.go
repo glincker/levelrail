@@ -188,7 +188,7 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 			}
 			c.recordGate(ctx, desired, state.Name, deploysafety.PhaseStability, deploysafety.StatusFailed, reason, msg)
 			if obs.Running {
-				_ = c.runtime.Stop(ctx, state.ID, 10*time.Second)
+				_ = c.stopContainer(ctx, state.ID)
 			}
 			return &gateError{reason: reason, message: msg}
 		}

@@ -104,6 +104,9 @@ type Syncer struct {
 	// RouterPriority 0 means DefaultRouterPriority.
 	RouterPriority int
 	Logger         *slog.Logger
+	// Exec validates and reloads a managed proxy that needs it (nginx); nil
+	// makes such a provider refuse to write anything.
+	Exec Exec
 
 	// mu serialises passes from the reconciler and the API on one directory.
 	mu sync.Mutex
@@ -121,6 +124,7 @@ type Item struct {
 // Plan is what the directory should hold under the current settings.
 type Plan struct {
 	Settings store.ProxyIntegrationSettings
+	Provider Provider
 	Dir      *Dir
 	DirErr   error
 	Items    []Item
@@ -173,6 +177,20 @@ func (s *Syncer) Plan(ctx context.Context) (Plan, error) {
 	if err != nil {
 		return Plan{}, err
 	}
+	return s.PlanFor(ctx, settings, providerOfSettings(settings))
+}
+
+// providerOfSettings is the provider a saved mode selects; Traefik while off.
+func providerOfSettings(settings store.ProxyIntegrationSettings) Provider {
+	if p, ok := ProviderForMode(settings.Mode); ok {
+		return p
+	}
+	return traefikProvider{}
+}
+
+// PlanFor renders every routed domain with prov under settings, without
+// saving anything.
+func (s *Syncer) PlanFor(ctx context.Context, settings store.ProxyIntegrationSettings, prov Provider) (Plan, error) {
 	ingress, err := s.Store.GetIngressSettings(ctx)
 	if err != nil {
 		return Plan{}, fmt.Errorf("proxyroutes: ingress settings: %w", err)
@@ -185,9 +203,9 @@ func (s *Syncer) Plan(ctx context.Context) (Plan, error) {
 	if err != nil {
 		return Plan{}, fmt.Errorf("proxyroutes: static sites: %w", err)
 	}
-	p := Plan{Settings: settings}
+	p := Plan{Settings: settings, Provider: prov}
 	if settings.DynamicDir != "" {
-		p.Dir, p.DirErr = OpenDir(s.NS, settings.DynamicDir)
+		p.Dir, p.DirErr = OpenDirExt(s.NS, settings.DynamicDir, prov.Ext())
 	} else {
 		p.DirErr = errors.New("no dynamic configuration directory is set")
 	}
@@ -201,14 +219,14 @@ func (s *Syncer) Plan(ctx context.Context) (Plan, error) {
 		targets = WithStandalone(targets, extra)
 	}
 	for _, t := range targets {
-		p.Items = append(p.Items, s.render(settings, path, t))
+		p.Items = append(p.Items, s.render(prov, settings, path, t))
 	}
 	return p, nil
 }
 
-func (s *Syncer) render(settings store.ProxyIntegrationSettings, path UpstreamPath, t Target) Item {
+func (s *Syncer) render(prov Provider, settings store.ProxyIntegrationSettings, path UpstreamPath, t Target) Item {
 	it := Item{Target: t}
-	name, err := s.NS.FileName(t.Domain)
+	name, err := s.NS.FileNameExt(t.Domain, prov.Ext())
 	if err != nil {
 		it.Err = err
 		return it
@@ -221,9 +239,10 @@ func (s *Syncer) render(settings store.ProxyIntegrationSettings, path UpstreamPa
 	if it.Upstream, it.Err = path.Resolve(l); it.Err != nil {
 		return it
 	}
-	it.Content, it.Err = s.NS.Render(Route{
+	it.Content, it.Err = prov.Render(s.NS, Route{
 		Domain: t.Domain, EntrypointHTTP: settings.EntrypointHTTP, EntrypointHTTPS: settings.EntrypointHTTPS,
 		CertResolver: settings.CertResolver, Upstream: it.Upstream, Priority: s.RouterPriority,
+		CertDir: settings.CertDir, Webroot: settings.Webroot,
 	})
 	return it
 }
@@ -298,13 +317,41 @@ func (s *Syncer) Sync(ctx context.Context) (Report, error) {
 		byName[it.File] = it
 		want = append(want, File{Domain: it.Domain, Name: it.File, Content: it.Content})
 	}
+	if p.Provider.Mode() != "" && p.Provider.Kind() != KindTraefik && s.Exec == nil {
+		msg := "cannot reach the proxy container: Docker is not available to this process"
+		for _, it := range p.Items {
+			s.markFailed(ctx, it.Target, msg)
+			rep.Failed[it.Domain] = msg
+		}
+		return rep, errors.New(msg)
+	}
+	have, _, err := p.Dir.Managed()
+	if err != nil {
+		return rep, err
+	}
 	res, err := Apply(p.Dir, want, keep)
 	if err != nil {
 		return rep, err
 	}
+	rejected := s.checkAndReload(ctx, p, have, &res)
+	if rejected != nil {
+		for _, o := range res.Files {
+			if o.Changed {
+				rep.Failed[o.Domain] = rejected.Error()
+				s.markFailed(ctx, byName[o.Name].Target, rejected.Error())
+			}
+		}
+		for _, r := range res.Removed {
+			rep.Failed[r.Domain] = rejected.Error()
+		}
+		res.Removed = nil
+	}
 	now := time.Now()
 	for _, o := range res.Files {
 		it := byName[o.Name]
+		if rejected != nil && o.Changed {
+			continue
+		}
 		if o.Err != nil {
 			rep.Failed[o.Domain] = o.Err.Error()
 			s.markFailed(ctx, it.Target, o.Err.Error())
@@ -320,19 +367,104 @@ func (s *Syncer) Sync(ctx context.Context) (Report, error) {
 	}
 	s.recordRemovals(ctx, res.Removed, &rep)
 	s.forgetUnrouted(ctx, p.Items)
+	if rejected != nil {
+		return rep, rejected
+	}
 	if len(rep.Failed) > 0 {
 		return rep, fmt.Errorf("%d of %d managed routes could not be written", len(rep.Failed), len(p.Items))
 	}
 	return rep, nil
 }
 
-func (s *Syncer) disable(ctx context.Context, p Plan, rep *Report) error {
-	if p.Dir != nil {
-		res, err := Apply(p.Dir, nil, nil)
-		if err != nil {
-			return err
+// RejectedError is a proxy refusing the files that were written; they have
+// been rolled back. Its message is the proxy's own.
+type RejectedError struct{ Err error }
+
+func (e *RejectedError) Error() string { return e.Err.Error() }
+func (e *RejectedError) Unwrap() error { return e.Err }
+
+// checkAndReload validates what Apply wrote and reloads the proxy. When the
+// proxy rejects it, every change is undone and the proxy's own error is
+// returned; the proxy was never reloaded, so it keeps serving what it had.
+func (s *Syncer) checkAndReload(ctx context.Context, p Plan, have map[string][]byte, res *ApplyResult) *RejectedError {
+	if p.Provider.Kind() == KindTraefik || p.Provider.Mode() == "" || !res.changedAny() {
+		return nil
+	}
+	container := p.Settings.Container
+	err := p.Provider.Validate(ctx, s.Exec, container)
+	if err == nil {
+		err = p.Provider.Reload(ctx, s.Exec, container)
+	}
+	if err == nil {
+		return nil
+	}
+	if rbErr := rollback(p.Dir, have, *res); rbErr != nil {
+		err = fmt.Errorf("%w (rolling back also failed: %w)", err, rbErr)
+	}
+	s.warn(ctx, "proxy rejected routes", "", err)
+	return &RejectedError{Err: err}
+}
+
+func (r ApplyResult) changedAny() bool {
+	for _, o := range r.Files {
+		if o.Changed {
+			return true
 		}
-		s.recordRemovals(ctx, res.Removed, rep)
+	}
+	for _, rm := range r.Removed {
+		if rm.Err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+// rollback puts every file Apply changed back to what have recorded.
+func rollback(d *Dir, have map[string][]byte, res ApplyResult) error {
+	var errs []error
+	for _, o := range res.Files {
+		if !o.Changed {
+			continue
+		}
+		if prev, ok := have[o.Name]; ok {
+			errs = append(errs, d.Write(o.Name, prev))
+		} else {
+			errs = append(errs, d.Remove(o.Name))
+		}
+	}
+	for _, r := range res.Removed {
+		if r.Err == nil {
+			errs = append(errs, d.Write(r.Name, have[r.Name]))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func (s *Syncer) disable(ctx context.Context, p Plan, rep *Report) error {
+	if p.Settings.DynamicDir != "" {
+		for _, prov := range Providers() {
+			if !Managed(prov) {
+				continue
+			}
+			dir, err := OpenDirExt(s.NS, p.Settings.DynamicDir, prov.Ext())
+			if err != nil {
+				continue
+			}
+			res, err := Apply(dir, nil, nil)
+			if err != nil {
+				return err
+			}
+			s.recordRemovals(ctx, res.Removed, rep)
+			if prov.Kind() != KindTraefik && len(res.Removed) > 0 && s.Exec != nil && p.Settings.Container != "" {
+				rerr := prov.Validate(ctx, s.Exec, p.Settings.Container)
+				if rerr == nil {
+					rerr = prov.Reload(ctx, s.Exec, p.Settings.Container)
+				}
+				if rerr != nil {
+					s.warn(ctx, "reload after removal", "", rerr)
+				}
+			}
+		}
 	}
 	s.forgetUnrouted(ctx, nil)
 	return nil

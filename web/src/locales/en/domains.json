@@ -124,7 +124,7 @@
     "upstreamProxy": "The reverse proxy in front of this server obtains and renews the certificate. Point the domain at this server; the proxy must route it here.",
     "providerActive": "DNS-01 provider: {{provider}}. Certificates for wildcard domains are issued through it.",
     "providerNone": "No DNS-01 provider is connected yet.",
-    "setupStep": "Next step: connect Cloudflare or Route53 on the Domains page, then add a wildcard domain for your zone.",
+    "setupStep": "Next step: connect Cloudflare, Route53 or Google Cloud DNS on the Domains page, then add a wildcard domain for your zone.",
     "openDomains": "Open Domains settings",
     "connectivity": "Reachability from this server",
     "portOpen": "Port {{port}} answers",
@@ -139,10 +139,34 @@
     "redirectDone": "{{from}} now redirects to {{to}}.",
     "failed": "Could not add the domain."
   },
+  "googleCloudDns": {
+    "title": "Google Cloud DNS",
+    "description": "Manage records and issue wildcard certificates (DNS-01) through Cloud DNS. Paste a service account JSON key with the DNS Administrator role. If Cloudflare or Route53 is also enabled, they take precedence. Only tested against a local fake of the API.",
+    "enabledHint": "Use Cloud DNS for DNS records and wildcard certificates.",
+    "enabledLabel": "Google Cloud DNS enabled",
+    "project": "Project",
+    "clientEmail": "Service account",
+    "keyLabel": "Service account JSON key",
+    "keyPlaceholder": "Paste the contents of the JSON key file",
+    "keyPlaceholderSaved": "Paste a new key to replace the saved one",
+    "keySaved": "A key is saved. Leave this empty to keep it.",
+    "keyNone": "No key saved yet.",
+    "keyRequired": "A service account JSON key is required to enable Google Cloud DNS.",
+    "save": "Save",
+    "saving": "Saving...",
+    "test": "Test",
+    "testing": "Testing...",
+    "testOk": "Connected. Found {{count}} managed zone(s): {{zones}}",
+    "testFailed": "Could not list zones: {{error}}",
+    "disconnect": "Disconnect",
+    "saved": "Google Cloud DNS settings saved.",
+    "disconnected": "Google Cloud DNS disconnected."
+  },
   "provider": {
     "label": "DNS-01 provider",
     "cloudflare": "Cloudflare",
     "route53": "Route53",
+    "googleclouddns": "Google Cloud DNS",
     "none": "None",
     "noneHint": "Wildcard domains and private-address servers need one."
   },
@@ -292,6 +316,7 @@
       "manage": "Manage on the app",
       "open": "Open {{domain}} in a new tab",
       "dnsRecord": "Show DNS record",
+      "diagnose": "Diagnose",
       "copy": "Copy domain",
       "copied": "Domain copied",
       "recheck": "Re-check DNS",
@@ -325,9 +350,14 @@
       "domainsHint": "One per line, or separated by commas.",
       "ready_one": "{{count}} domain ready to add",
       "ready_other": "{{count}} domains ready to add",
-      "invalid": "Not valid: {{list}}",
-      "duplicates": "Repeated, counted once: {{list}}",
-      "claimed": "{{domain}} is already routed to {{app}}.",
+      "errors": {
+        "invalid": "Not a valid hostname",
+        "duplicate": "Duplicate",
+        "claimedHere": "Already added to this app",
+        "claimedOther": "Already routed to {{app}}",
+        "empty": "Enter at least one domain",
+        "appRequired": "Choose an app"
+      },
       "submit_one": "Add {{count}} domain",
       "submit_other": "Add {{count}} domains",
       "submitting": "Adding...",
@@ -360,6 +390,127 @@
       "target_unavailable": "Not routed: its target is unavailable."
     }
   },
+  "proxyPicker": {
+    "title": "Proxy",
+    "description": "Choose which proxy answers on ports 80 and 443. Managed providers get their route files written and reloaded for you. Manual providers show the configuration to add yourself.",
+    "choose": "Proxy provider",
+    "loadFailed": "Could not read the proxy status.",
+    "retry": "Check again",
+    "detected": "Detected",
+    "provider": {
+      "embedded": "Built-in Caddy",
+      "traefik": "Traefik",
+      "nginx": "nginx",
+      "caddy": "Caddy (external)",
+      "haproxy": "HAProxy"
+    },
+    "mode": {
+      "builtin": "Built in",
+      "managed": "Managed",
+      "manual": "Manual"
+    },
+    "embeddedBody": "Levelrail's own ingress serves ports 80 and 443 and handles certificates. Nothing is written to another proxy.",
+    "useEmbedded": "Use the built-in ingress",
+    "usingEmbedded": "Built-in ingress in use",
+    "embeddedDone": "Routing now uses the built-in ingress. Route files written to your proxy were removed.",
+    "embeddedFailed": "Could not switch to the built-in ingress.",
+    "notDetected": "This proxy was not found on this server. Start it with ports 80 and 443 published, then check again.",
+    "manualBody": "Levelrail does not change {{proxy}}. Dry run shows the configuration for your domains, you add it by hand, then check again.",
+    "managedBody": "Levelrail writes one route file per domain into {{proxy}}, checks it, reloads the proxy and verifies each domain over HTTPS.",
+    "dryRun": "Dry run",
+    "dryRunning": "Checking...",
+    "apply": "Apply and verify",
+    "applying": "Applying...",
+    "recheck": "Re-check",
+    "applyDone": "Routes applied. Waiting for your proxy to pick them up.",
+    "applyFailed": "Could not apply the routes.",
+    "dryRunFailed": "The dry run found a problem.",
+    "manualNoApply": "Manual providers are never applied automatically.",
+    "changes": {
+      "title": "What would change",
+      "none": "Nothing to change. Routes are already in place.",
+      "manualTitle": "Add this to your proxy"
+    },
+    "inputs": {
+      "dir": "Route directory on this server",
+      "dirHint": "The folder your proxy reads route files from. It could not be detected.",
+      "certDir": "Certificate directory inside the proxy container",
+      "certDirHint": "For example /etc/letsencrypt/live. It could not be detected."
+    },
+    "rejected": {
+      "title": "The proxy refused the new routes",
+      "body": "Nothing was kept: the files were rolled back and your proxy keeps serving what it had. Fix the problem below, then try again."
+    },
+    "rootOnly": "Changing the proxy needs a root account or token.",
+    "applyWaiting": "Apply and verify turns on as soon as {{proxy}} is found on this server. Install it above, or check again once it runs.",
+    "fixViaCli": "Fix via CLI"
+  },
+  "proxyMissing": {
+    "title": "{{proxy}} is not running on this server yet",
+    "looked": "Levelrail looked for a running container that publishes port 80 or 443 and uses a {{proxy}} image. It found none.",
+    "foundOther": "Levelrail looked for a {{proxy}} container on ports 80 and 443 and found {{other}} instead.",
+    "refusedTitle": "Nothing was changed",
+    "installed": "Proxy started. Checking what it detected.",
+    "installFailed": "The proxy could not be started.",
+    "install": {
+      "title": "Install and start {{proxy}} for me",
+      "body": "Levelrail starts an official {{proxy}} container for you, with ports 80 and 443 published. You see the exact plan first.",
+      "unsupported": "Automatic install is available for Traefik only. {{proxy}} needs certificates you provide, so start it yourself or pick another choice.",
+      "action": "Install and start {{proxy}} for me"
+    },
+    "builtin": {
+      "title": "Go back to the built-in Caddy",
+      "body": "Switch back to the ingress that ships with this control plane. Your domains and settings are kept.",
+      "action": "Use the built-in Caddy"
+    },
+    "elsewhere": {
+      "title": "It runs somewhere else",
+      "body": "Your proxy runs on another host or under another name. Enter how to reach it, then check again.",
+      "action": "Enter it by hand",
+      "hide": "Hide the fields"
+    },
+    "plan": {
+      "title": "Exactly what will happen",
+      "image": "Image",
+      "container": "Container",
+      "ports": "Ports",
+      "restart": "Restart policy",
+      "mount": "Mount",
+      "file": "Written to {{path}}",
+      "safety": "Only this container is created. Containers you already run are never stopped or removed, and running this twice does not create a second one.",
+      "confirm": "Confirm and start",
+      "installing": "Starting...",
+      "cancel": "Cancel"
+    },
+    "manual": {
+      "body": "These defaults match a standard setup. Change what differs on your server.",
+      "save": "Save these values",
+      "saved": "Proxy values saved. Check again to look for it.",
+      "saveFailed": "Could not save the proxy values.",
+      "fields": {
+        "container": "Container name",
+        "dynamic_dir": "Route directory on this server",
+        "entrypoint_http": "HTTP entrypoint",
+        "entrypoint_https": "HTTPS entrypoint",
+        "cert_resolver": "Certificate resolver",
+        "upstream_host": "Upstream host"
+      },
+      "hints": {
+        "container": "The name of the proxy container.",
+        "dynamic_dir": "The folder your proxy reads route files from.",
+        "entrypoint_http": "The entrypoint that listens on port 80.",
+        "entrypoint_https": "The entrypoint that listens on port 443.",
+        "cert_resolver": "Leave empty if the proxy does not issue certificates.",
+        "upstream_host": "How the proxy reaches this server, for example host.docker.internal."
+      },
+      "errors": {
+        "name": "Use letters, numbers, dots, dashes or underscores.",
+        "absolute": "Enter an absolute path that starts with /.",
+        "path": "No spaces or .. in the path.",
+        "host": "Enter a host name or address without http://."
+      }
+    }
+  },
   "proxySetup": {
     "title": "Make this domain live",
     "description": "Your proxy already owns ports 80 and 443. Levelrail writes the routes it needs, then checks that traffic and a certificate arrive.",
@@ -376,8 +527,10 @@
       "done": "Done",
       "todo": "To do",
       "blocked": "Blocked",
-      "error": "Error"
+      "error": "Error",
+      "waiting": "Waiting"
     },
+    "waitingDetail": "waiting until your proxy is found",
     "setup": "Set up routing",
     "settingUp": "Setting up...",
     "setupDone": "Routes written. Waiting for your proxy to pick them up.",
@@ -438,6 +591,7 @@
         "traefik": "Traefik",
         "nginx": "nginx",
         "caddy": "Caddy",
+        "haproxy": "HAProxy",
         "none": "None"
       }
     },
@@ -544,7 +698,7 @@
     "zoneFound": "Zone {{zone}} found at {{provider}}",
     "zoneNotFound": "No zone for this name at your DNS provider. Connect a provider that manages it first.",
     "noProvider": "No DNS provider is connected yet.",
-    "noProviderAction": "Connect Cloudflare or Route53 below.",
+    "noProviderAction": "Connect Cloudflare, Route53 or Google Cloud DNS below.",
     "backfillHelp": "Apps that already exist keep their address. Give the ones without a domain a {{base}} address:",
     "backfillPreview": "Preview existing apps",
     "backfillApply_one": "Apply to {{count}} app",
@@ -825,6 +979,34 @@
     "saved": "Edge settings saved.",
     "loadFailed": "Could not load the edge settings."
   },
+  "diagnose": {
+    "title": "Diagnose {{domain}}",
+    "description": "Checks DNS, ports, the certificate and the last certificate error, and gives each problem a fix.",
+    "running_one": "Checking... {{count}} result so far",
+    "running_other": "Checking... {{count}} results so far",
+    "status": {
+      "healthy": "Everything checks out.",
+      "warnings": "It works, with things worth fixing.",
+      "problems": "Something is stopping this domain from working."
+    },
+    "propagation": {
+      "settled": "DNS settled",
+      "propagating": "DNS propagating",
+      "waiting": "Waiting for DNS"
+    },
+    "nextCheck": "Checking again in about {{seconds}}s.",
+    "recheck": "Re-check",
+    "tryAgain": "Try again",
+    "applying": "Applying...",
+    "applied": "{{label}}: done. Checking again.",
+    "fixViaCli": "Fix via CLI",
+    "copyRecord": "Copy the {{type}} record for {{name}}",
+    "nothingToFix": "Nothing to fix.",
+    "showPassed": "Show {{count}} other checks",
+    "hidePassed": "Hide other checks",
+    "notFound": "This domain is not attached to an app yet. Add it to an app first, then diagnose it.",
+    "failed": "Could not run the diagnosis: {{message}}"
+  },
   "appLimits": {
     "title": "Request size cap",
     "description": "Cap how large a request body this app accepts. Header size and timeouts apply to the whole server.",
@@ -834,5 +1016,16 @@
     "save": "Save cap",
     "reset": "Use server value",
     "saved": "Request size cap saved."
+  },
+  "banner": {
+    "description": "Point your own web address at an app. HTTPS certificates are set up for you.",
+    "diagram": {
+      "domain": "app.example.com",
+      "certificate": "certificate",
+      "server": "server",
+      "browser": "browser"
+    },
+    "noApps": "Deploy an app first, then point a domain at it.",
+    "noAppsAction": "New app"
   }
 }

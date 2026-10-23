@@ -49,15 +49,13 @@ func (rt *Router) handleListAppBranchEnv(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list app branch env: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list app branch env: load app failed", err, slog.String("name", name))
 		return
 	}
 
 	overrides, err := rt.apps.ListServiceBranchEnvOverrides(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: list app branch env failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list app branch env failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, branchEnvOverrideResources(overrides))
@@ -98,8 +96,7 @@ func (rt *Router) handleSetAppBranchEnv(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set app branch env: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app branch env: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -111,8 +108,7 @@ func (rt *Router) handleSetAppBranchEnv(w http.ResponseWriter, r *http.Request) 
 		}
 		namespace := store.BranchEnvOverrideSecretsKey(name, req.BranchPattern)
 		if err := rt.secrets.SetValueGuarded(r.Context(), namespace, req.Key, req.Value, true); err != nil {
-			rt.logger.Error("api: set app branch env: encrypt value failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("key", req.Key))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: set app branch env: encrypt value failed", err, slog.String("name", name), slog.String("key", req.Key))
 			return
 		}
 		value = ""
@@ -120,8 +116,7 @@ func (rt *Router) handleSetAppBranchEnv(w http.ResponseWriter, r *http.Request) 
 
 	id, err := rt.apps.SetServiceBranchEnvOverride(r.Context(), name, req.BranchPattern, req.Key, value, req.Secret)
 	if err != nil {
-		rt.logger.Error("api: set app branch env failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("key", req.Key))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app branch env failed", err, slog.String("name", name), slog.String("key", req.Key))
 		return
 	}
 
@@ -147,8 +142,7 @@ func (rt *Router) handleDeleteAppBranchEnv(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: delete app branch env: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete app branch env: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -156,8 +150,7 @@ func (rt *Router) handleDeleteAppBranchEnv(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "branch env override not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: delete app branch env failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete app branch env failed", err, slog.String("name", name), slog.String("id", id))
 		return
 	}
 

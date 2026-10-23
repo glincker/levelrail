@@ -8,6 +8,9 @@ const (
 	WakeTokenHeader = "X-Wake-Token" //nolint:gosec // header name, not a credential
 	WakeAppHeader   = "X-Wake-App"
 	WakeURIHeader   = "X-Wake-Uri"
+	// WakeHeldHeader marks the hook's response so the edge record is flagged
+	// as a cold start; the edge strips it before the client sees it.
+	WakeHeldHeader = "X-Wake-Held"
 )
 
 // WakeRoute is a sleeping app's domains: any request starts the app and gets

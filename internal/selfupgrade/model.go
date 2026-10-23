@@ -89,6 +89,14 @@ type Attempt struct {
 	StartedAt  time.Time `json:"started_at"`
 	FinishedAt time.Time `json:"finished_at,omitempty"`
 
+	// DatabaseRestored is set when a rollback put the snapshot back, and
+	// RolledBackMinutes is how long the discarded changes span.
+	DatabaseRestored  bool      `json:"database_restored,omitempty"`
+	RolledBackMinutes int       `json:"rolled_back_minutes,omitempty"`
+	RestorePointID    string    `json:"restore_point_id,omitempty"`
+	AgentsBefore      int       `json:"agents_before,omitempty"`
+	SnapshotAt        time.Time `json:"snapshot_at,omitempty"`
+
 	PrevBinary    string `json:"prev_binary,omitempty"`
 	SnapshotPath  string `json:"snapshot_path,omitempty"`
 	SwappedBinary bool   `json:"swapped_binary,omitempty"`

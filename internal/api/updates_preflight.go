@@ -39,6 +39,16 @@ type updatePreflightResource struct {
 	ReleaseKind string        `json:"release_kind"`
 	Channel     string        `json:"channel"`
 	Edge        *edgeGuidance `json:"edge,omitempty"`
+	// State classifies this install against the newest release (UpdateState*).
+	State               string `json:"state"`
+	StateReason         string `json:"state_reason"`
+	DBSchema            *int   `json:"db_schema"`
+	LatestSchema        *int   `json:"latest_schema"`
+	MigrationsToApply   *int   `json:"migrations_to_apply"`
+	RestorePointFirst   bool   `json:"restore_point_first"`
+	VerifyWindowSeconds int    `json:"verify_window_seconds"`
+	// RollbackVersion is the newest retained release a rollback can return to.
+	RollbackVersion string `json:"rollback_version,omitempty"`
 }
 
 // handleUpdatePreflight handles GET /api/v1/updates/preflight: read-only
@@ -98,6 +108,7 @@ func (rt *Router) evaluatePreflight(ctx context.Context, release *upgrade.Releas
 		TrustRoot:          rt.trustRootState(),
 		Schema:             schema,
 	})
+	rt.fillInstallState(ctx, &out, upgradeTag, out.UpdateAvailable, assets)
 	if upgrade.SchemaBlocked(out.Checks) {
 		out.UpdateAvailable = false
 	}

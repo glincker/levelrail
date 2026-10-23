@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { CodeBlock } from '@/components/ui/code-block'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { useJobRun, useJobRuns } from '../queries/scheduledTasks'
 import type { JobRun, ScheduledTaskRunStatus } from '../types/scheduledTasks'
@@ -135,9 +136,7 @@ function RunLogsDialog({ appName, run }: { appName: string; run: JobRun }) {
             {t('history.logsLoading')}
           </p>
         ) : output ? (
-          <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted p-3 font-mono text-xs text-foreground">
-            {output}
-          </pre>
+          <CodeBlock code={output} wrap maxHeight="lg" />
         ) : (
           <p className="text-sm text-muted-foreground">
             {t('history.logsEmpty')}
@@ -206,7 +205,13 @@ export function JobRunsPanel({ appName }: { appName: string }) {
       header: t('history.columns.exit'),
       priority: 3,
       cell: (run) => (
-        <span className="font-mono text-xs">{run.exit_code ?? '-'}</span>
+        <span className="font-mono text-xs">
+          {run.exit_code === undefined
+            ? '-'
+            : run.mode === 'http'
+              ? t('history.httpStatus', { code: run.exit_code })
+              : run.exit_code}
+        </span>
       ),
     },
     {

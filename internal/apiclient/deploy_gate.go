@@ -27,6 +27,12 @@ type DeploySafetySettingsResource struct {
 	WatchMinRequests int     `json:"watch_min_requests"`
 	AutoRollback     bool    `json:"auto_rollback"`
 	RollbackPins     int     `json:"rollback_pins"`
+
+	WatchMode            string  `json:"watch_mode"`
+	WatchLatencyRatio    float64 `json:"watch_latency_ratio"`
+	WatchLatencyMinDelta string  `json:"watch_latency_min_delta"`
+	WatchSoftTicks       int     `json:"watch_soft_ticks"`
+	WatchSoftRollback    bool    `json:"watch_soft_rollback"`
 }
 
 // DeploySafetyOverrides is one app's overrides; a nil field inherits the default.
@@ -39,6 +45,10 @@ type DeploySafetyOverrides struct {
 	WatchErrorRate   *float64 `json:"watch_error_rate"`
 	WatchMinRequests *int     `json:"watch_min_requests"`
 	AutoRollback     *bool    `json:"auto_rollback"`
+
+	WatchMode         *string  `json:"watch_mode"`
+	WatchLatencyRatio *float64 `json:"watch_latency_ratio"`
+	WatchSoftRollback *bool    `json:"watch_soft_rollback"`
 }
 
 // DeploySafetyResource is GET and PUT /api/v1/apps/{name}/deploy-safety.
@@ -72,6 +82,42 @@ type DeployGateResource struct {
 	Events      []GateEventResource          `json:"events"`
 	Settings    DeploySafetySettingsResource `json:"settings"`
 	RollbackPin *RollbackTargetResource      `json:"rollback_pin"`
+	Watch       WatchStatusResource          `json:"watch"`
+}
+
+// WatchStatusResource is one release's post-deploy watch state.
+type WatchStatusResource struct {
+	State            string     `json:"state"`
+	Mode             string     `json:"mode"`
+	StartedAt        *time.Time `json:"started_at,omitempty"`
+	EndsAt           *time.Time `json:"ends_at,omitempty"`
+	RemainingSeconds int        `json:"remaining_seconds"`
+	WindowSeconds    int        `json:"window_seconds"`
+	Reason           string     `json:"reason,omitempty"`
+	Message          string     `json:"message,omitempty"`
+	Notice           string     `json:"notice,omitempty"`
+}
+
+// AppWatchResource is GET /api/v1/apps/{name}/watch.
+type AppWatchResource struct {
+	DeployID string                       `json:"deploy_id,omitempty"`
+	Image    string                       `json:"image,omitempty"`
+	Watch    WatchStatusResource          `json:"watch"`
+	Settings DeploySafetySettingsResource `json:"settings"`
+}
+
+// GetAppWatch calls GET /api/v1/apps/{name}/watch.
+func (c *Client) GetAppWatch(ctx context.Context, appName string) (AppWatchResource, error) {
+	var out AppWatchResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/watch", nil, &out)
+	return out, err
+}
+
+// StopAppWatch calls POST /api/v1/apps/{name}/watch/stop.
+func (c *Client) StopAppWatch(ctx context.Context, appName string) (AppWatchResource, error) {
+	var out AppWatchResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/watch/stop", nil, &out)
+	return out, err
 }
 
 // GetDeployGate calls GET /api/v1/apps/{name}/deploys/{deployId}/gate.

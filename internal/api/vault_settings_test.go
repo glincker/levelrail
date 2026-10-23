@@ -50,6 +50,21 @@ func (f *fakeVaultSecrets) DeleteAll(_ context.Context, _ string) error {
 	return nil
 }
 
+func (f *fakeVaultSecrets) Resolve(_ context.Context, _, envKey string) (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.values[envKey], nil
+}
+
+func (f *fakeVaultSecrets) DeleteValue(_ context.Context, _, envKey string) error {
+	if f.err != nil {
+		return f.err
+	}
+	delete(f.values, envKey)
+	return nil
+}
+
 func newTestRouterWithVaultSecrets(t *testing.T, s VaultSecrets) (*Router, *store.DB) {
 	t.Helper()
 	db := openTestDB(t)

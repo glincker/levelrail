@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { CodeBlock } from '@/components/ui/code-block'
 import { toast } from '@/components/ui/toast'
 import { curlExample } from '../lib/modelKeyForm'
 
@@ -70,23 +71,12 @@ export function ModelKeyRevealDialog({
           </div>
           {baseUrl ? (
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Try it</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    copy(curlExample(baseUrl, apiKey), 'curl command')
-                  }}
-                >
-                  <CopyIcon aria-hidden="true" />
-                  Copy curl
-                </Button>
-              </div>
-              <pre className="overflow-x-auto rounded-md border border-border bg-muted p-2 font-mono text-xs">
-                {curlExample(baseUrl, apiKey)}
-              </pre>
+              <span className="text-xs text-muted-foreground">Try it</span>
+              <CodeBlock
+                code={curlExample(baseUrl, apiKey)}
+                language="bash"
+                secret
+              />
             </div>
           ) : null}
           {baseUrl ? (

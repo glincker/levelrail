@@ -1,48 +1,43 @@
 import { useEffect } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { toast } from '@/components/ui/toast'
-import { BitbucketAppConnectionCard } from '../../components/BitbucketAppConnectionCard'
-import { BitbucketAppReposCard } from '../../components/BitbucketAppReposCard'
-import { bitbucketAppStatusQueryOptions } from '../../queries/bitbucketApp'
+import { GitProviderPage } from '@/components/settings/GitProviderPage'
+import { GitConnectionsCard } from '@/components/settings/GitConnectionsCard'
+import { gitConnectionsQueryOptions } from '../../queries/gitConnections'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '@/components/settings/SettingsSkeletons'
-import { GitProviderPage } from '@/components/settings/GitProviderPage'
 
-// Account-level, mirroring routes/settings/gitlab-app.tsx's own
-// structure and placement.
+// Account-level: every Bitbucket account connected to this control plane.
 export const Route = createFileRoute('/settings/bitbucket-app')({
   loader: ({ context: { queryClient } }) =>
-    queryClient.ensureQueryData(bitbucketAppStatusQueryOptions()),
-  component: BitbucketAppSettingsPage,
-  pendingComponent: BitbucketAppSettingsSkeleton,
+    queryClient.ensureQueryData(gitConnectionsQueryOptions('bitbucket')),
+  component: BitbucketSettingsPage,
+  pendingComponent: BitbucketSettingsSkeleton,
 })
 
-function BitbucketAppSettingsSkeleton() {
+function BitbucketSettingsSkeleton() {
   return (
     <div className="space-y-6" aria-hidden="true">
       <SettingsHeaderSkeleton icon />
-      <SettingsCardSkeleton rows={1} rowVariant="status" />
-      <SettingsCardSkeleton headerIcon rows={3} rowVariant="list" />
+      <SettingsCardSkeleton rows={3} rowVariant="list" />
     </div>
   )
 }
 
-function BitbucketAppSettingsPage() {
-  useSuspenseQuery(bitbucketAppStatusQueryOptions())
+function BitbucketSettingsPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation('settings')
 
-  // Bitbucket's OAuth callback redirect lands back here with
-  // ?bitbucket_app=connected on success, mirroring the gitlab-app
-  // route's own one-time toast then query-param strip.
+  // The OAuth callback lands back here with ?git_connection=connected.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    if (params.get('bitbucket_app') === 'connected') {
+    if (params.get('git_connection') === 'connected') {
       toast.add({
-        title: 'Bitbucket App authorized.',
-        description: 'Repositories are now available to pick from.',
+        title: t('gitConnections.toast.authorized'),
+        description: t('gitConnections.toast.authorizedBody'),
         type: 'success',
       })
       void navigate({ to: '/settings/bitbucket-app', replace: true })
@@ -52,8 +47,7 @@ function BitbucketAppSettingsPage() {
 
   return (
     <GitProviderPage provider="bitbucket">
-      <BitbucketAppConnectionCard />
-      <BitbucketAppReposCard />
+      <GitConnectionsCard provider="bitbucket" />
     </GitProviderPage>
   )
 }

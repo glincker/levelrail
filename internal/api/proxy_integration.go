@@ -68,6 +68,9 @@ type proxySettingsResource struct {
 	EntrypointHTTPS string `json:"entrypoint_https"`
 	CertResolver    string `json:"cert_resolver"`
 	UpstreamHost    string `json:"upstream_host"`
+	Container       string `json:"container"`
+	CertDir         string `json:"cert_dir"`
+	Webroot         string `json:"webroot"`
 }
 
 type proxyIngressResource struct {
@@ -111,6 +114,9 @@ type proxyIntegrationResource struct {
 	Ingress  proxyIngressResource  `json:"ingress"`
 	Domains  []proxyDomainResource `json:"domains"`
 	Steps    []proxyStepResource   `json:"steps"`
+	// Provider is the selected provider kind; Providers is the picker list.
+	Provider  string                  `json:"provider"`
+	Providers []proxyProviderResource `json:"providers"`
 }
 
 // Step ids and states of the contract.
@@ -131,6 +137,7 @@ func toProxySettingsResource(s store.ProxyIntegrationSettings) proxySettingsReso
 	return proxySettingsResource{
 		Integration: s.Mode, DynamicDir: s.DynamicDir, EntrypointHTTP: s.EntrypointHTTP,
 		EntrypointHTTPS: s.EntrypointHTTPS, CertResolver: s.CertResolver, UpstreamHost: s.UpstreamHost,
+		Container: s.Container, CertDir: s.CertDir, Webroot: s.Webroot,
 	}
 }
 
@@ -186,6 +193,8 @@ func (rt *Router) buildProxyIntegration(ctx context.Context, deps *proxyIntegrat
 		res.Domains = append(res.Domains, proxyDomain(plan, it, byDomain[it.Domain]))
 	}
 	res.Steps = rt.proxySteps(ctx, det, ingress, plan, res.Domains)
+	res.Provider = selectedProxyProvider(plan.Settings)
+	res.Providers = proxyProviders(det, plan.Settings)
 	return res, nil
 }
 

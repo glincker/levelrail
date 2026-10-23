@@ -36,12 +36,11 @@ func (rt *Router) handleAppResourceUsage(w http.ResponseWriter, r *http.Request)
 
 	svcs, err := rt.apps.ListDesiredServices(r.Context())
 	if err != nil {
-		rt.logger.Error("api: app resource usage: list apps failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: app resource usage: list apps failed", err)
 		return
 	}
 
-	canSee, err := rt.appVisibilityFilter(r)
+	canSee, err := rt.scopedAppVisibility(r)
 	if err != nil {
 		rt.internalError(w, "api: app resource usage: visibility", err)
 		return

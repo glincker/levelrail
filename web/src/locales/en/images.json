@@ -75,6 +75,13 @@
     "no_registry_digest": "Built locally, nothing to verify",
     "fix": "Set a public key file in the control plane settings, then check again."
   },
+  "dockerDegraded": {
+    "message": "Docker is not responding. Deploys and containers are paused.",
+    "recheck": "Re-check",
+    "rechecking": "Checking...",
+    "details": "Docker health",
+    "dismiss": "Dismiss until Docker recovers"
+  },
   "dockerHealth": {
     "title": "Docker engine",
     "recheck": "Re-check",
@@ -141,5 +148,12 @@
     "title": "Could not load images",
     "retry": "Check again",
     "unsupported": "This node does not report its images yet."
+  },
+  "banner": {
+    "description": "Images show up here after the first deploy or build, with their size, the apps that use them and whether they are safe to remove.",
+    "diagram": {
+      "layers": "Layers",
+      "node": "Node"
+    }
   }
 }

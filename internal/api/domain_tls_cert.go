@@ -160,8 +160,7 @@ func (rt *Router) handleGetDomainTLSCert(w http.ResponseWriter, r *http.Request)
 
 	cert, found, err := rt.domainTLSCert.GetDomainTLSCert(r.Context(), domain)
 	if err != nil {
-		rt.logger.Error("api: get domain tls cert failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get domain tls cert failed", err, slog.String("domain", domain))
 		return
 	}
 	res := toDomainTLSCertResource(domain, cert, found)
@@ -344,8 +343,7 @@ func (rt *Router) handleRenewDomainCertificate(w http.ResponseWriter, r *http.Re
 	}
 
 	if _, found, err := rt.domainTLSCert.GetDomainTLSCert(r.Context(), domain); err != nil {
-		rt.logger.Error("api: renew domain certificate: get domain tls cert failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: renew domain certificate: get domain tls cert failed", err, slog.String("domain", domain))
 		return
 	} else if found {
 		writeError(w, http.StatusConflict, fmt.Sprintf("domain %q uses an operator-uploaded certificate; renewal only applies to automatic ACME/internal issuance. Remove the custom certificate first.", domain))
@@ -354,8 +352,7 @@ func (rt *Router) handleRenewDomainCertificate(w http.ResponseWriter, r *http.Re
 
 	hadCert, err := alerting.DeleteCertificateForDomain(r.Context(), rt.certs, rt.certs, domain)
 	if err != nil {
-		rt.logger.Error("api: renew domain certificate failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: renew domain certificate failed", err, slog.String("domain", domain))
 		return
 	}
 

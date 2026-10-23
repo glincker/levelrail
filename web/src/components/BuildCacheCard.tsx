@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import {
   Select,
@@ -18,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { ApiError } from '../lib/apiError'
@@ -61,9 +63,10 @@ function CacheUsage({ appName }: { appName: string }) {
   return (
     <div className="space-y-4">
       {stats.isPending ? (
-        <p className="text-sm text-muted-foreground">
-          {t('buildCache.checking')}
-        </p>
+        <div role="status">
+          <span className="sr-only">{t('buildCache.checking')}</span>
+          <Skeleton decorative className="h-5 w-48" />
+        </div>
       ) : stats.isError ? (
         <p className="text-sm text-muted-foreground">
           {t('buildCache.readFailed', { message: stats.error.message })}
@@ -305,9 +308,7 @@ export function BuildCacheCard({ appName }: { appName: string }) {
       </Alert>
     )
   } else if (settings.isPending || destinations.isPending) {
-    body = (
-      <p className="text-sm text-muted-foreground">{t('buildCache.loading')}</p>
-    )
+    return <CardSkeleton titleWidth="w-40" rows={2} />
   } else if (destinations.data.length === 0) {
     body = (
       <Alert>

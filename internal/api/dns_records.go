@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dnsrecords"
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/libdns/libdns"
 )
@@ -142,10 +143,18 @@ func (rt *Router) resolveDNSRecordManager(ctx context.Context, domain string) (d
 	}
 
 	mgr, err = rt.resolveRoute53RecordManager(ctx)
+	if err != nil {
+		return nil, "", "", err
+	}
+	if mgr != nil {
+		return mgr, "route53", zone, nil
+	}
+
+	mgr, err = rt.resolveGoogleCloudRecordManager(ctx)
 	if err != nil || mgr == nil {
 		return nil, "", "", err
 	}
-	return mgr, "route53", zone, nil
+	return mgr, dnszones.ProviderGoogleCloud, zone, nil
 }
 
 func (rt *Router) resolveCloudflareRecordManager(ctx context.Context) (dnsrecords.Manager, error) {
@@ -291,12 +300,11 @@ func (rt *Router) requireDNSRecordManager(w http.ResponseWriter, r *http.Request
 
 	mgr, provider, zone, err := rt.dnsRecordManager(r.Context(), domain)
 	if err != nil {
-		rt.logger.Error("api: resolve dns record manager failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, dnsRecordsInternalError)
+		rt.internalError(w, "api: resolve dns record manager failed", err, slog.String("domain", domain))
 		return "", nil, "", "", false
 	}
 	if mgr == nil {
-		writeError(w, http.StatusNotImplemented, "no DNS provider is configured for records management (enable Cloudflare DNS or Route53 DNS under Domains)")
+		writeError(w, http.StatusNotImplemented, "no DNS provider is configured for records management (enable Cloudflare DNS, Route53 DNS or Google Cloud DNS under Domains)")
 		return "", nil, "", "", false
 	}
 	return domain, mgr, provider, zone, true
@@ -309,8 +317,7 @@ func (rt *Router) requireDNSRecordManager(w http.ResponseWriter, r *http.Request
 func (rt *Router) writeDNSRecords(w http.ResponseWriter, r *http.Request, mgr dnsrecords.Manager, domain, provider, zone string) {
 	recs, err := mgr.GetRecords(r.Context(), zone)
 	if err != nil {
-		rt.logger.Error("api: list dns records failed", slog.String("error", err.Error()), slog.String("domain", domain), slog.String("zone", zone))
-		writeError(w, http.StatusInternalServerError, dnsRecordsInternalError)
+		rt.internalError(w, "api: list dns records failed", err, slog.String("domain", domain), slog.String("zone", zone))
 		return
 	}
 	writeJSON(w, http.StatusOK, dnsRecordsResponse{
@@ -383,8 +390,7 @@ func (rt *Router) handleCreateDNSRecord(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if _, err := mgr.AppendRecords(r.Context(), zone, []libdns.Record{rr}); err != nil {
-		rt.logger.Error("api: create dns record failed", slog.String("error", err.Error()), slog.String("domain", domain), slog.String("zone", zone))
-		writeError(w, http.StatusInternalServerError, dnsRecordsInternalError)
+		rt.internalError(w, "api: create dns record failed", err, slog.String("domain", domain), slog.String("zone", zone))
 		return
 	}
 	rt.writeDNSRecords(w, r, mgr, domain, provider, zone)
@@ -418,13 +424,11 @@ func (rt *Router) handleUpdateDNSRecord(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if _, err := mgr.DeleteRecords(r.Context(), zone, []libdns.Record{oldRR}); err != nil {
-		rt.logger.Error("api: update dns record: delete original failed", slog.String("error", err.Error()), slog.String("domain", domain), slog.String("zone", zone))
-		writeError(w, http.StatusInternalServerError, dnsRecordsInternalError)
+		rt.internalError(w, "api: update dns record: delete original failed", err, slog.String("domain", domain), slog.String("zone", zone))
 		return
 	}
 	if _, err := mgr.AppendRecords(r.Context(), zone, []libdns.Record{newRR}); err != nil {
-		rt.logger.Error("api: update dns record: append replacement failed", slog.String("error", err.Error()), slog.String("domain", domain), slog.String("zone", zone))
-		writeError(w, http.StatusInternalServerError, dnsRecordsInternalError)
+		rt.internalError(w, "api: update dns record: append replacement failed", err, slog.String("domain", domain), slog.String("zone", zone))
 		return
 	}
 	rt.writeDNSRecords(w, r, mgr, domain, provider, zone)
@@ -451,8 +455,7 @@ func (rt *Router) handleDeleteDNSRecord(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if _, err := mgr.DeleteRecords(r.Context(), zone, []libdns.Record{rr}); err != nil {
-		rt.logger.Error("api: delete dns record failed", slog.String("error", err.Error()), slog.String("domain", domain), slog.String("zone", zone))
-		writeError(w, http.StatusInternalServerError, dnsRecordsInternalError)
+		rt.internalError(w, "api: delete dns record failed", err, slog.String("domain", domain), slog.String("zone", zone))
 		return
 	}
 	rt.writeDNSRecords(w, r, mgr, domain, provider, zone)

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { useNotificationDeliveries } from '../queries/notificationChannels'
 import type { NotificationChannel } from '../types/notificationChannel'
 
@@ -71,7 +72,7 @@ export function NotificationDeliveryHistoryDialog({
           </DialogDescription>
         </DialogHeader>
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <ListSkeleton rows={3} />
         ) : isError ? (
           <p className="text-sm text-destructive">{error.message}</p>
         ) : data && data.length > 0 ? (

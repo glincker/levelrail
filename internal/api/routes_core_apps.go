@@ -96,7 +96,12 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDeployHistory))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDeploy))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/cancel", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCancelDeploy))
-	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRollbackToDeploy))
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleRollbackToDeploy)))
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback-lock", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleRollbackAndLock)))
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/publish", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePublishHeldBuild))
+	mux.HandleFunc("GET /api/v1/apps/{name}/publish-lock", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetPublishLock))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/publish-lock", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutPublishLock))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/publish-lock", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeletePublishLock))
 	mux.HandleFunc("GET /api/v1/apps/{name}/cancel-superseded", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetCancelSuperseded))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/cancel-superseded", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetCancelSuperseded))
 	mux.HandleFunc("GET /api/v1/apps/{name}/auto-rollback", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAutoRollback))
@@ -139,7 +144,30 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/canary", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetCanaryWeight))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/canary", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleAbortCanary))
 	mux.HandleFunc("POST /api/v1/apps/{name}/canary/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePromoteCanary))
+	mux.HandleFunc("GET /api/v1/apps/{name}/split", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetSplit))
+	mux.HandleFunc("POST /api/v1/apps/{name}/split", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleStartSplit))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/split", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetSplitWeights))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/split", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleStopSplit))
+	mux.HandleFunc("POST /api/v1/apps/{name}/split/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePromoteSplit))
+	mux.HandleFunc("GET /api/v1/apps/{name}/build-hooks", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListBuildHooks))
+	mux.HandleFunc("POST /api/v1/apps/{name}/build-hooks", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleCreateBuildHook))
+	mux.HandleFunc("POST /api/v1/apps/{name}/build-hooks/{id}/rotate", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotateBuildHook))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/build-hooks/{id}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRevokeBuildHook))
+	mux.HandleFunc("POST /api/v1/hooks/deploy/{id}/{token}", rt.handleBuildHookTrigger)
 	mux.HandleFunc("POST /api/v1/hooks/image-update/{name}/{token}", rt.handleImageUpdateWebhook)
+	mux.HandleFunc("POST /api/v1/forms/{app}/{name}", rt.handleFormSubmit)
+	mux.HandleFunc("OPTIONS /api/v1/forms/{app}/{name}", rt.handleFormPreflight)
+	mux.HandleFunc("GET /api/v1/apps/{name}/forms", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListForms))
+	mux.HandleFunc("POST /api/v1/apps/{name}/forms", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCreateForm))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/forms/{form}", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleUpdateForm))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/forms/{form}", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteForm))
+	mux.HandleFunc("GET /api/v1/apps/{name}/forms/{form}/fields", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetFormFields))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/forms/{form}/fields", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetFormFields))
+	mux.HandleFunc("POST /api/v1/apps/{name}/forms/{form}/test", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSendFormTest))
+	mux.HandleFunc("GET /api/v1/apps/{name}/forms/{form}/submissions", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleListFormSubmissions))
+	mux.HandleFunc("GET /api/v1/apps/{name}/forms/{form}/export", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleExportFormSubmissions))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/forms/{form}/submissions/{id}/spam", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetFormSubmissionSpam))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/forms/{form}/submissions/{id}", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteFormSubmission))
 	mux.HandleFunc("POST /api/v1/ci/oidc-exchange", rt.handleCIOIDCExchange)
 	mux.HandleFunc("GET /api/v1/hooks/wake", rt.handleWakeHook)
 	mux.HandleFunc("GET /api/v1/sleep", rt.requireAbility(AbilityRead, rt.handleSleepFleet))
@@ -197,6 +225,14 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/deployments/summary", rt.requireAbility(AbilityRead, rt.handleDeploymentsSummary))
 	mux.HandleFunc("GET /api/v1/deployments/timeline", rt.requireAbility(AbilityRead, rt.handleDeploymentsTimeline))
 	mux.HandleFunc("GET /api/v1/deployments/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(deploymentsStreamResource, rt.handleDeploymentsStream)))
+	// Per-deploy event timeline (deploy_timeline.go): the whole story of one
+	// deploy as ordered events, a live SSE view that ends when the deploy
+	// settles, and a two-deploy comparison. Settled timelines are frozen for
+	// replay until APP_DEPLOY_TIMELINE_RETENTION. AbilityRead, filtered to
+	// the apps the caller can read.
+	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline", rt.requireAbility(AbilityRead, rt.handleGetDeployTimeline))
+	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(timelineStreamResource, rt.handleDeployTimelineStream)))
+	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline/compare", rt.requireAbility(AbilityRead, rt.handleCompareDeployTimelines))
 
 	// Deploy comparison (deploy_compare.go): a before/after diff between
 	// two attempts, or one attempt against the app's current live state
@@ -214,7 +250,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// AbilityRead like the comparison view above; the trigger itself is
 	// AbilityDeploy, matching POST .../deploys.
 	mux.HandleFunc("GET /api/v1/apps/{name}/promote/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePromotePreview))
-	mux.HandleFunc("POST /api/v1/apps/{name}/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePromoteApp))
+	mux.HandleFunc("POST /api/v1/apps/{name}/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handlePromoteApp)))
 
 	// Deploy-attempt build/log stream (deploy_attempts.go): SSE, serving
 	// either a live tail (attempt still running) or a full persisted
@@ -247,6 +283,9 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// AbilityRead, same sensitivity as the routes above; never writes
 	// anything.
 	mux.HandleFunc("GET /api/v1/apps/{name}/diagnose", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDiagnoseApp))
+
+	// Deterministic "why is this not running" for any reconciled resource.
+	mux.HandleFunc("GET /api/v1/diagnose/{kind}/{name}", rt.requireAbilityForResource(AbilityRead, stuckResourceFromPath, rt.handleDiagnoseStuck))
 
 	// Preflight checks (preflight.go): read-only probes of an existing
 	// app's stored config (AbilityRead, resource-scoped), or of a not yet
@@ -283,6 +322,8 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// configured. AbilityDeploy, the same boundary as the image-tag
 	// trigger above: this also ultimately writes desired state.
 	mux.HandleFunc("POST /api/v1/apps/{name}/builds", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleTriggerBuild))
+	mux.HandleFunc("POST /api/v1/apps/{name}/uploads", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleUploadSource))
+	mux.HandleFunc("GET /api/v1/apps/{name}/uploads", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListUploads))
 
 	// Multi-service fan-out (handleDeploySpec's own doc comment,
 	// apps_multi.go): one app.yaml's services: map, built and deployed as
@@ -313,6 +354,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/imports/plan", rt.requireAbility(AbilityWrite, rt.handleImportPlan))
 	mux.HandleFunc("POST /api/v1/imports/analyze", rt.requireAbility(AbilityWrite, rt.handleAnalyzeImport))
 	mux.HandleFunc("POST /api/v1/git-sources/analyze", rt.requireAbility(AbilityWrite, rt.handleAnalyzeImport))
+	mux.HandleFunc("POST /api/v1/git-sources/preview", rt.requireAbility(AbilityWrite, rt.handlePreviewRepo))
 
 	// Previously-built image tags for this app's repo, so the deploy
 	// trigger form can offer a dropdown instead of a hand-typed tag

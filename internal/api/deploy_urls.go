@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -41,7 +40,7 @@ func (rt *Router) DeployURLHost(ctx context.Context, serviceName string) string 
 	if rt.publicHost == "" {
 		return ""
 	}
-	host, _ := ingress.FallbackDomain(rt.publicHost, serviceName)
+	host, _ := rt.autoHost(ctx, serviceName)
 	return host
 }
 

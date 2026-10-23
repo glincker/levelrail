@@ -197,6 +197,10 @@
           "minLength": 1,
           "type": "string"
         },
+        "command": {
+          "minLength": 1,
+          "type": "string"
+        },
         "image": {
           "minLength": 1,
           "type": "string"
@@ -205,9 +209,21 @@
           "minLength": 1,
           "type": "string"
         },
+        "publish": {
+          "minLength": 1,
+          "type": "string"
+        },
         "registryCredential": {
           "minLength": 1,
           "type": "string"
+        },
+        "secrets": {
+          "items": {
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
         },
         "type": {
           "enum": [
@@ -249,6 +265,36 @@
           "maxItems": 10,
           "minItems": 1,
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "contextConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "build": {
+          "additionalProperties": false,
+          "properties": {
+            "args": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "command": {
+              "type": "string"
+            },
+            "publish": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
         }
       },
       "type": "object"
@@ -435,6 +481,33 @@
       },
       "required": [
         "project"
+      ],
+      "type": "object"
+    },
+    "headerRule": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "pattern": "^/",
+          "type": "string"
+        },
+        "remove": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "values": {
+          "additionalProperties": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "path"
       ],
       "type": "object"
     },
@@ -880,6 +953,47 @@
       },
       "type": "object"
     },
+    "route": {
+      "additionalProperties": false,
+      "properties": {
+        "force": {
+          "type": "boolean"
+        },
+        "from": {
+          "pattern": "^/",
+          "type": "string"
+        },
+        "query": {
+          "additionalProperties": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "status": {
+          "enum": [
+            200,
+            301,
+            302,
+            303,
+            307,
+            308,
+            404,
+            410,
+            451
+          ]
+        },
+        "to": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
     "service": {
       "additionalProperties": false,
       "anyOf": [
@@ -918,6 +1032,15 @@
           "minItems": 1,
           "type": "array"
         },
+        "contexts": {
+          "additionalProperties": {
+            "$ref": "#/$defs/contextConfig"
+          },
+          "propertyNames": {
+            "pattern": "^(deploy-preview|branch-deploy|branch:.+)$"
+          },
+          "type": "object"
+        },
         "dependsOn": {
           "items": {
             "minLength": 1,
@@ -941,6 +1064,12 @@
             "$ref": "#/$defs/envValue"
           },
           "type": "object"
+        },
+        "headers": {
+          "items": {
+            "$ref": "#/$defs/headerRule"
+          },
+          "type": "array"
         },
         "health": {
           "$ref": "#/$defs/health"
@@ -984,6 +1113,15 @@
         "resources": {
           "$ref": "#/$defs/resources"
         },
+        "routes": {
+          "items": {
+            "$ref": "#/$defs/route"
+          },
+          "type": "array"
+        },
+        "static": {
+          "$ref": "#/$defs/staticOptions"
+        },
         "strategy": {
           "enum": [
             "rolling",
@@ -997,6 +1135,29 @@
             "$ref": "#/$defs/volume"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "staticOptions": {
+      "additionalProperties": false,
+      "properties": {
+        "cleanUrls": {
+          "type": "boolean"
+        },
+        "notFound": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "spa": {
+          "type": "boolean"
+        },
+        "trailingSlash": {
+          "enum": [
+            "off",
+            "add",
+            "remove"
+          ]
         }
       },
       "type": "object"

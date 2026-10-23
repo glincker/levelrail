@@ -13,15 +13,19 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Levelrail documentation](/index): Self-hosted deployment platform. Push to git, get a running app with TLS, logs, metrics and rollback. One Go binary, no Kubernetes.
 - [What you need before you start](/what-you-need): A plain-language checklist for installing Levelrail: a Linux server, a few ports, and optionally a domain. No Kubernetes, no prior DevOps experience.
 - [Installing Levelrail](/installing): Requirements, then every supported way to get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
+- [Run it on your laptop](/local-development): Start a private Levelrail instance on macOS or Linux with one command, deploy apps to name.localhost addresses, and reset it whenever you like.
 - [Getting started](/getting-started): Install Levelrail on a Linux server, sign in, and deploy your first app in about ten minutes, from the dashboard or the CLI.
 - [One command quickstart](/quickstart-one-command): Deploy a project with `levelrail-cli up`, which infers the name, port and build, then keep every advanced flag when you need it.
+- [Deploy a Docker app to your own server](/tutorials/deploy-a-docker-app): Deploy a Docker image to your own Linux server with Levelrail, attach a custom domain, ship a second version, and roll back in one command. About 10 minutes.
 - [Server profiles](/profiles): Choose minimal, standard or suite to decide which optional parts of the control plane start, and switch later without losing data.
 - [Getting started](/getting-started): Install Levelrail on a Linux server, sign in, and deploy your first app in about ten minutes, from the dashboard or the CLI.
 
 ### Add to your setup
 
+- [Go live checklist](/go-live): One guided checklist from a running app to https on your own domain, with live status, one action per step, and a timeline of what happened.
 - [Domains and ingress](/domains-and-ingress): Automatic TLS, domain routing, WAF, rate limiting, and redirects, all embedded in the control plane, with no separate proxy to manage.
 - [App ports and exposure](/app-exposure): Change an app's container port live, choose between proxy-only and direct IP and port access, and test reachability, without port fights between apps.
+- [Tutorials](/tutorials/index): Step-by-step tutorials for self-hosting with Levelrail, from Docker deploys and Postgres to S3 backups, GitHub Actions, and built-in logs and metrics.
 - [Connect an app to a managed Postgres database](/tutorials/connect-an-app-to-postgres): Create a managed Postgres database on your own server, connect an app with one command, and confirm the connection string reaches the container.
 - [Deploy to your own server from GitHub Actions](/tutorials/deploy-from-github-actions): Build an image in GitHub Actions and deploy it to your own server with Levelrail on every push, failing the pipeline if the rollout fails. About 15 minutes.
 - [Environment variables and secrets](/environment-and-secrets): Masking, reveal policies, and protection for app environment variables and secrets.
@@ -31,6 +35,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Multi-node quickstart](/multi-node-quickstart): The short path to a second server, what has been verified on real infrastructure, and what to check before relying on the WireGuard mesh across hosts.
 - [Self-host Vaultwarden on your own server](/tutorials/self-host-vaultwarden): Self-host Vaultwarden, a Bitwarden-compatible password manager, with one Levelrail command, then add a domain and back up its data.
 - [Troubleshooting](/troubleshooting): Fixes for the most common problems when deploying, logging in, or running Levelrail.
+- [Doctor](/doctor): One health check for the server, in the dashboard and the CLI, with a fix or a next step for every problem.
 - [Fix-it engine](/fix-it): Turn a failing readiness or doctor check into a previewable, verifiable fix.
 
 ### Guides
@@ -62,7 +67,9 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### Essentials
 
 - [Troubleshooting](/troubleshooting): Fixes for the most common problems when deploying, logging in, or running Levelrail.
-- [Email notifications](/email-notifications): Configure SMTP, AWS SES, or Resend as the backend for alert emails and password resets, and send a test email to confirm it works.
+- [Doctor](/doctor): One health check for the server, in the dashboard and the CLI, with a fix or a next step for every problem.
+- [Email notifications](/email-notifications): Choose an email provider for alert emails, password resets and invites, check your sender domain, send a test, and read the delivery log.
+- [Email templates and messages](/email-templates): Edit every email the platform sends, build audiences, and send announcements with opt-outs, scheduling and delivery history.
 - [Alert inbox](/alert-inbox): An in-app inbox of the alerts that reached you, with per-account read state, routing rules and an optional daily digest, plus the guardrails on mass actions.
 - [Event webhooks](/event-webhooks): Push signed events to your own HTTPS endpoint when something changes, with retries, a dead letter state, a delivery log and one click replay.
 - [Attention center](/attention-center): How the dashboard surfaces what waits on an operator: CLI login approvals, deploy approvals, expiring tokens, failed data copies, overdue backups and renewals.
@@ -70,21 +77,28 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### Deploying
 
 - [Deploying and managing apps](/deploying-apps): Create, deploy, roll back, configure, promote, and operate an app on Levelrail, from the dashboard, CLI, or API.
+- [Deploy from your computer](/deploy-from-cli): Deploy the current directory with one command, no git remote and no registry needed.
+- [Drop deploy for static sites](/drop-deploy): Drag a folder or a .zip onto a static site and it goes live, with no git and no build.
 - [Compose apps](/compose-apps): Run a Docker Compose file as one app with per-service status, start order, rollback to an earlier compose file, teardown, and installable templates.
 - [New app wizard](/new-app-wizard): How the New app wizard reads a repository, pre-fills build, port, health path, env keys and databases with evidence, and deploys with one click.
 - [Importing apps](/importing-apps): Import an app from a repo URL, a docker run command, an image, a compose file or a Dockerfile, review the deployment plan, then deploy it.
 - [Static pages](/pages): Deploy static HTML sites directly from git with no container, served by the embedded ingress with full TLS and domain routing.
+- [Static site routing rules](/static-routing): Redirects, rewrites, response headers, single page app fallback, a custom 404 page and clean URLs for a static site, kept in your repository and published with each deploy.
 - [Deploy safety](/deploy-safety): What stands between a deploy trigger and serving: readiness gate, drain, pinned rollback targets, post-deploy watch with auto rollback, and freeze windows.
 - [Deploy failures](/deploy-failures): The structured failure object every failed or blocked deploy carries, and what each failure code means.
 - [Deploying through git host outages](/git-host-outages): What still deploys when GitHub, GitLab or your own git server is down, how the source cache works, and how to deploy from it.
 - [Deploy trace](/deploy-trace): The step-by-step pipeline every deploy records, with or without a build, and how to read it in the dashboard, the CLI and the log stream.
 - [Build performance](/build-performance): Cap build time and parallel builds, and read the per-app build duration trend and cache hit rate.
+- [build-center](/build-center)
 - [Scheduled deploys](/scheduled-deploys): Redeploy the latest commit on a branch on a recurring cron schedule, with freeze-window and restart-safe catch-up semantics.
 - [Scheduled jobs](/scheduled-jobs): Run commands on a cron schedule against your app, in a fresh container with the app's env, secrets and volumes, with run history, logs, retries and alerts.
+- [Scheduled and background functions](/scheduled-functions): Call a path on your app on a cron schedule, wake it if it sleeps, and let long calls finish in the background with retries, overlap control and run history.
 - [Image auto-update](/image-auto-update): Redeploy an image-based app automatically when its tag points at a new digest, with the same freeze and protection gates as a manual deploy.
+- [Build hooks](/build-hooks): Secret URLs that build and deploy an app when POSTed to, for headless CMS publishes and cron triggers.
 - [Sleep when idle](/sleep-when-idle): Stop an app that has had no requests for a while so it uses no memory or CPU, and wake it on the next request.
 - [Functions](/functions): Deploy a ten line handler in Node, Python or Go as a function that sleeps when idle and answers the first request after a cold start, like a serverless function on your own server.
 - [Canary deploys](/canary-deploys): Send a share of an app's traffic to a new image in stages, promote it, or let the control plane roll it back when errors or latency rise.
+- [Split testing](/split-testing): Send a share of an app's visitors to a branch deploy or a retained release, sticky per visitor, then promote the winner.
 - [Deployments page](/deployments-page): The cross-app Deployments page lists every deploy live, with filters kept in the URL, a details drawer, redeploy and rollback actions, and keyboard shortcuts.
 - [Images](/images): See every container image on a node with its size, layers and deploy lineage, promote an image between environments by digest without rebuilding, free disk space without losing a rollback target, and check image signatures.
 - [Deploy previews](/deploy-previews): Deploy thumbnails in three tiers, from free page metadata to a real screenshot in a short-lived browser container, with costs, cleanup and settings.
@@ -101,14 +115,17 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Running Levelrail in Docker](/docker): Run Levelrail control plane and node agent as Docker containers.
 - [Zero-downtime deploys with Docker: readiness-gated cutover and rollback](/zero-downtime-deploys): How Levelrail ships without downtime: blue-green, rolling or recreate strategies gated on real readiness probes and digest-pinned images.
 - [Preview environments per pull request on your own servers](/preview-environments): Levelrail deploys a preview environment for each pull request on GitHub, GitLab, Bitbucket and Gitea and tears it down when the pull request closes.
+- [Deploy contexts: env and build settings per kind of deploy](/deploy-contexts): Set env vars and static build settings separately for pull request previews, branch deploys and specific branches, and see the effective config for any deploy.
 
 ### Networking and multi-node
 
 - [Domains and ingress](/domains-and-ingress): Automatic TLS, domain routing, WAF, rate limiting, and redirects, all embedded in the control plane, with no separate proxy to manage.
 - [Standalone domains](/standalone-domains): Proxy a domain to a port on this server, a network address, an external URL, another app's port or a container, with no app needed, and find the DNS target.
 - [DNS zones and records](/dns): Manage DNS zones and records at Cloudflare or Route53, move a domain's name servers, verify delegation and propagation, and serve wildcard subdomains.
+- [Diagnose a domain](/domain-diagnosis): Find out why a domain is not working, see the exact DNS record to create, and fix it from the dashboard, the CLI or the API.
 - [Domain traffic controls](/domain-traffic-controls): Per-domain traffic controls in the embedded ingress: header rules, path forwarders, country rules, caching, redirects and raw ports, from the UI, CLI or API.
 - [CDN and caching](/cdn-and-caching): The response cache in the ingress: what it stores and what it never does, cache rules, purge by URL, prefix, tag or all, hit rate and bandwidth saved, and how to put a third party CDN in front.
+- [Forms](/forms): Collect submissions from the HTML forms on a static site with a public endpoint, a spam trap, per-address rate limits, an inbox with CSV export and notifications through your existing alert channels.
 - [Firewall](/firewall): Filter web requests at the embedded ingress: ordered rules, IP lists, automatic bans, a browser challenge, bot and AI crawler handling, attack mode, and a live view of what was blocked.
 - [Verifying real ACME issuance against a live domain](/acme-verification-runbook): Verify real ACME certificate issuance against a live public domain with Let's Encrypt or another RFC 8555 CA: what to check, common failures, a recorded run.
 - [Multi-node: adding and managing nodes](/multi-node): Enroll additional nodes, manage placement and health, migrate apps with their volumes, and configure the WireGuard mesh.
@@ -119,12 +136,14 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Multi-cloud provisioning quickstart](/multi-cloud-provisioning): Pick a cloud provider and add a provisioned node in three commands, with the credential each provider needs. Cost and gaps are on the node provisioning page.
 - [Network topology view](/network-topology): Read the Network page, how this server and nodes group into cards, how to turn the mesh on, and what the connection and reachability notes mean.
 - [Project topology graph](/service-topology-graph): Read a project's topology diagram, what each node and edge represents, and exactly which stored field each edge is derived from.
+- [Canvas](/canvas): Beta visual editor for a project: add apps and databases, connect them, review every change as a plan, then apply it. What it can and cannot do.
 - [Build node routing](/build-node-routing): Which node a deploy's build runs on, how to mark a node build-only, and what to do when a single node is under sustained load.
 
 ### Databases and storage
 
 - [Managing databases](/managing-databases): Create and manage databases with backups, point-in-time restore, and lifecycle management.
 - [Database upgrades](/database-upgrades): Schedule automatic database upgrades with security checks and automatic rollback on failure.
+- [Database version catalog](/database-version-catalog): Where the database versions, release channels and end-of-life dates offered at create and upgrade time come from: a published, signed catalog file.
 - [External databases](/external-databases): Connect a database that already runs somewhere else, or adopt a running container, without moving or changing any data, and point apps at it.
 - [Connecting apps to databases](/connecting-apps-to-databases): Connect apps to multiple databases and view reachability badges.
 - [Backup targets, registry credentials, and app volume backups](/backups-and-storage): Configure backup targets, registry credentials, and automated backup schedules with retention policies.
@@ -152,9 +171,11 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### CI/CD and automation
 
 - [Deploying from GitHub Actions](/github-actions): Deploy a prebuilt image from a GitHub Actions workflow with the bundled composite action, no Go toolchain needed.
+- [Use any CI](/use-any-ci): Build with GitLab CI, CircleCI, Jenkins, Buildkite or any other CI, and let Levelrail host. Templates, exit codes and safe retries.
 - [Pipelines](/pipelines): Define CI/CD pipelines as YAML with triggers, jobs, matrix builds, approvals, and deploys, and run them on your own nodes.
 - [Pipelines: OIDC federation](/pipelines-oidc): Mint short-lived OIDC tokens for pipeline jobs, and wire AWS, GCP, or Vault to trust them without a long-lived credential.
 - [Git integrations](/git-integrations): Connect GitHub, GitLab, Bitbucket or Gitea for automatic git-triggered deploys, per-pull-request preview environments, and webhook history with replay.
+- [Git reliability](/git-reliability): What the control plane caches, what it polls, what the connection and webhook statuses mean, the environment variables behind them, and how to recover when a push did not deploy.
 - [Deploy with git push](/git-push-deploy): Push a branch to a git remote on your own server and it builds and deploys that exact commit. A beta feature, off by default, with a per-app token.
 - [Import a repository](/import-a-repo): Go from a git repository to a running app in a few steps, with detection that tells you what it found and why.
 - [Monorepos](/monorepos): Detect workspaces, run one service per package from a single repository, and redeploy only the services a push actually changed.
@@ -177,6 +198,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Promotions and release notes](/promotions-and-releases): Promote the same image from one environment to another without a rebuild, see what a promotion or a deploy changes (commits, env var keys, image digest), and generate release notes from the commits between two deploys.
 - [Identity and access: users, roles, and IAM policies](/identity-and-access): Authentication, authorization, roles, IAM policies, and audit logging for users and API tokens.
 - [SAML single sign-on](/sso-saml): Sign in through Okta, Microsoft Entra ID, Keycloak or any SAML 2.0 identity provider, map directory groups to roles, require SSO and keep a break-glass path.
+- [OAuth and OIDC single sign-on](/sso-oidc): Map identity provider groups to roles, create accounts on first sign-in only when you allow it, restrict email domains and route people to the right provider by their email domain.
 - [SCIM provisioning](/scim): Provision and deprovision accounts and groups from Okta, Microsoft Entra ID or any SCIM 2.0 client, with hashed bearer tokens, instant revocation and audit.
 - [Session policy](/session-policy): Per-team idle timeout, maximum session age, IP allowlist and required two-factor sign-in, enforced on every request, plus a host-side lockout recovery.
 - [Projects, organizations, and environments](/projects-and-organizations): Organize apps and databases into optional projects, organizations, and environments with shared configuration and deployment gates.
@@ -226,7 +248,11 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Migrate from Docker Compose](/migrate-from-docker-compose): Turn a docker-compose.yml into Levelrail apps and managed databases with a plan first, then copy data and switch DNS while the old stack keeps running.
 - [Migration reference](/migration-reference): Flags, mapping tables, database copy and hub details, cutover verdicts and environment variables for the Levelrail migration importer.
 - [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover): This page moved. Start at the Levelrail migration overview, then follow the guide for Coolify, Dokploy, CapRover, Dokku or Docker Compose.
+- [Migration agent threat model](/migration-agent-threat-model): What the read-only migration agent on the old server can and cannot do, how it is constrained, and the risks that remain.
+- [Migrate on the same server](/migrate-same-server): Move from Coolify, Dokploy or CapRover to Levelrail on the same machine: install in coexist mode, import, verify, take over ports 80 and 443 with a verified rollback, and what can go wrong.
+- [Migrate over SSH](/migrate-over-ssh): Import apps, env, images and volumes from an old Coolify, Dokploy, CapRover or Dokku host with only an SSH login, read only, with no agent and no command run on the old host
 - [Migrating a Next.js app from Vercel](/migrating-from-vercel): A runbook for moving a Vercel Next.js app to Levelrail: inventory, concept mapping, a DNS cutover and rollback plan, gaps with no equivalent and a shadow run.
+- [Migrating a static site from Netlify](/migrating-from-netlify): A runbook for moving a Netlify site to Levelrail: build settings, netlify.toml mapping, redirects and headers, deploy contexts, forms, build hooks, a DNS cutover and the features with no equivalent.
 - [Migrating a service from Cloud Run](/migrating-from-cloud-run): A runbook for moving a Google Cloud Run service to Levelrail: concept mapping, deploying the same image, secrets, Cloud SQL, domains, jobs and what you give up.
 
 ### Beta and experimental
@@ -259,6 +285,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Mobile API](/mobile-api): Pair a phone with the control plane: one-time pairing codes, scoped device tokens, revocation, and the single round trip overview endpoint.
 - [Plugins](/plugins): Run signed, operator-approved plugins in locked-down containers. The first release supports notification channels.
 - [Publishing plugins](/plugin-publishing): Sign a plugin, make a marketplace index entry and sign an index, all offline.
+- [First-party plugins](/plugins-first-party): Notification channel plugins for services the built-in channels do not cover, built on the same public contract as any third-party plugin.
 - [mcp-tool-surface](/mcp-tool-surface): Estimated model context cost of the MCP tool list, by toolset.
 - [Agent tooling audit](/agent-tooling-audit): Size, overlap and annotation audit of the levelrail-mcp tool surface, with the token budget test that keeps it from regressing.
 - [Shared Go kit](/kit): Standard-library-only Go module with networking, scheduling, parsing and system helper packages.
@@ -290,7 +317,8 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Kamal alternative with a dashboard, history and built-in observability](/kamal-alternative): Levelrail is an open source Kamal alternative: the same zero-downtime idea plus a control plane, dashboard, deploy history and built-in metrics.
 - [Self-hosted Heroku alternative: push-to-deploy on your own servers](/heroku-alternative): Levelrail is an open source Heroku alternative for your own Linux servers: push-to-deploy from your git host, managed Postgres and Redis, TLS, logs and rollback.
 - [Self-hosted Railway alternative with built-in observability](/railway-alternative): Levelrail is an open source Railway alternative you run on your own servers: push-to-deploy from your git host, managed databases, domains with TLS.
-- [Self-hosted Vercel alternative for Next.js and Docker apps](/vercel-alternative): Levelrail is an open source, self-hosted Vercel alternative: push-to-deploy from your git host, automatic TLS and preview environments per pull request.
+- [Self-hosted Vercel alternative for Next.js and Docker apps](/vercel-alternative): Levelrail is an open source, self-hosted alternative to Vercel's Git deploys: webhook push-to-deploy, TLS and preview environments per pull request.
+- [Self-hosted Netlify alternative for static sites and Docker apps](/netlify-alternative): Levelrail is an open source, self-hosted alternative to Netlify's Git deploys for static sites: build and publish from git, _redirects and _headers, branch deploys, forms and build hooks on your own server.
 - [Self-hosted alternative to Cloud Run for steady workloads](/cloud-run-alternative): When an always-on container is cheaper on your own server than on Cloud Run, when it is not, and how Levelrail fits for git or image deploys.
 - [Self-host Next.js on your own server with TLS and rollback](/self-host-nextjs): How to self-host a Next.js app with Levelrail: Dockerfile build, automatic HTTPS, preview environments per pull request and env vars.
 
@@ -315,6 +343,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### Engineering notes
 
 - [CI](/ci): How the GitHub Actions checks on a pull request are chosen, what they cost, and which ones branch protection relies on.
+- [First-hour smoke test](/first-hour-smoke-test): Run the install-to-rollback journey in a Docker container to prove the first hour works, and wire it into a nightly job.
 - [VPS smoke test](/vps-smoke): scripts/vps-smoke.sh checks a real install end to end on a VPS you already have, without creating or deleting cloud resources.
 - [Internationalization (i18n)](/i18n): How the dashboard's i18n works for contributors: where strings live, how to add one to a component, and how TypeScript catches a mistyped key.
 - [GLINR design tokens](/design-tokens): The single source of truth for color, space, radius, elevation, type and motion in the Levelrail dashboard, and how to add or change a token.

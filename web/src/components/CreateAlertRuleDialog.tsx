@@ -20,6 +20,7 @@ import {
   GlobeIcon,
   ArchiveIcon,
   RocketLaunchIcon,
+  EnvelopeSimpleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -52,6 +53,13 @@ import { useCreateAlertRule } from '../queries/alerts'
 import { useNotificationChannelsOptional } from '../queries/notificationChannels'
 import { useScheduledTasks } from '../queries/scheduledTasks'
 import { useDatabases } from '../queries/databases'
+import { DatabaseRuleFields } from './DatabaseRuleFields'
+import {
+  isDatabaseRuleKind,
+  type DatabaseRuleFormShape,
+} from '@/lib/databaseRuleKinds'
+import { AlertKindGuidance } from './AlertKindGuidance'
+import { alertKindLabel, isAlertKindCopyKind } from './alertKindCopy'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
 import { METRIC_NAME_LABEL, METRIC_NAME_OPTIONS } from './metricName'
 import {
@@ -85,12 +93,6 @@ const GO_DURATION_REGEX = /^-?(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/
 // lives engine-wide, set by APP_ALERT_PATCH_STATUS_THRESHOLD).
 const DEFAULT_PATCH_STATUS_THRESHOLD = 1
 
-// DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT mirrors
-// internal/alerting.DefaultNodeDiskSpaceThresholdPercent the same way,
-// for the node_disk_space description below (the real, enforced value
-// lives engine-wide, set by APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT).
-const DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT = 90
-
 // DEFAULT_NODE_CPU_THRESHOLD_PERCENT/DEFAULT_NODE_MEMORY_THRESHOLD_GIB
 // mirror internal/alerting.DefaultNodeCPUThresholdPercent/
 // DefaultNodeMemoryThresholdBytes for the node_resource_usage
@@ -103,7 +105,7 @@ const DEFAULT_NODE_MEMORY_THRESHOLD_GIB = 4
 
 const KIND_OPTIONS: {
   value: AlertRuleKind
-  label: string
+  label?: string
   Icon: typeof GaugeIcon
 }[] = [
   { value: 'threshold', label: 'Threshold', Icon: GaugeIcon },
@@ -129,7 +131,7 @@ const KIND_OPTIONS: {
     label: 'Job running too long',
     Icon: ClockCountdownIcon,
   },
-  { value: 'node_disk_space', label: 'Node disk space', Icon: HardDriveIcon },
+  { value: 'node_disk_space', Icon: HardDriveIcon },
   {
     value: 'node_resource_usage',
     label: 'Node CPU/memory usage',
@@ -137,6 +139,22 @@ const KIND_OPTIONS: {
   },
   { value: 'domain_health', label: 'Domain health', Icon: GlobeIcon },
   { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
+  {
+    value: 'database_disk_high',
+    Icon: ArchiveIcon,
+  },
+  {
+    value: 'database_connections_high',
+    Icon: ArchiveIcon,
+  },
+  {
+    value: 'database_down',
+    Icon: ArchiveIcon,
+  },
+  {
+    value: 'database_backup_stale',
+    Icon: ArchiveIcon,
+  },
   { value: 'node_offline', label: 'Node offline', Icon: HardDriveIcon },
   {
     value: 'node_cert_expiring',
@@ -156,6 +174,10 @@ const KIND_OPTIONS: {
     Icon: RocketLaunchIcon,
   },
   { value: 'budget_threshold', label: 'Budget threshold', Icon: GaugeIcon },
+  {
+    value: 'email_delivery_failing',
+    Icon: EnvelopeSimpleIcon,
+  },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -186,6 +208,10 @@ const createAlertRuleSchema = z
       'node_resource_usage',
       'domain_health',
       'backup_missing',
+      'database_disk_high',
+      'database_connections_high',
+      'database_down',
+      'database_backup_stale',
       'node_offline',
       'node_cert_expiring',
       'control_plane_backup_stale',
@@ -193,6 +219,7 @@ const createAlertRuleSchema = z
       'slo_burn',
       'version_skew',
       'budget_threshold',
+      'email_delivery_failing',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -226,6 +253,7 @@ const createAlertRuleSchema = z
       data.kind === 'control_plane_backup_stale' ||
       data.kind === 'log_archive_stale' ||
       data.kind === 'version_skew' ||
+      data.kind === 'email_delivery_failing' ||
       data.kind === 'budget_threshold'
     ) {
       return
@@ -297,6 +325,28 @@ const createAlertRuleSchema = z
           code: 'custom',
           message: 'Must be a positive whole number',
           path: ['restartCountThreshold'],
+        })
+      }
+      return
+    }
+
+    if (isDatabaseRuleKind(data.kind)) {
+      if (!data.backupDatabaseName) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose which database to watch',
+          path: ['backupDatabaseName'],
+        })
+      }
+      const max = data.kind === 'database_backup_stale' ? 8760 : 100
+      if (
+        data.kind !== 'database_down' &&
+        (data.threshold < 0 || data.threshold > max)
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Must be between 0 and ${max}`,
+          path: ['threshold'],
         })
       }
       return
@@ -467,6 +517,11 @@ export function CreateAlertRuleDialog({
         values.sloTarget,
         values.sloLatencyMs,
       )
+    } else if (isDatabaseRuleKind(values.kind)) {
+      req.backup_database_name = values.backupDatabaseName
+      if (values.kind !== 'database_down') {
+        req.threshold = values.threshold
+      }
     } else if (values.kind === 'backup_missing') {
       req.backup_resource_kind = values.backupResourceKind || undefined
       req.for_duration = values.forDuration.trim() || undefined
@@ -548,6 +603,11 @@ export function CreateAlertRuleDialog({
                     if (next === 'control_plane_backup_stale') {
                       setValue('forDuration', '72h')
                     }
+                    if (next === 'database_disk_high') setValue('threshold', 85)
+                    if (next === 'database_connections_high')
+                      setValue('threshold', 80)
+                    if (next === 'database_backup_stale')
+                      setValue('threshold', 26)
                   }}
                 >
                   <SelectTrigger id="rule-kind" className="w-full">
@@ -560,7 +620,9 @@ export function CreateAlertRuleDialog({
                           className="size-3.5 text-muted-foreground"
                           aria-hidden="true"
                         />
-                        {option.label}
+                        {isAlertKindCopyKind(option.value)
+                          ? alertKindLabel(t, option.value)
+                          : option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -584,14 +646,7 @@ export function CreateAlertRuleDialog({
               APP_ALERT_PATCH_STATUS_THRESHOLD).
             </p>
           ) : kind === 'node_disk_space' ? (
-            <p className="text-sm text-muted-foreground">
-              Watches every node&apos;s disk usage on the whole control plane,
-              not just the ones this app happens to run on, and fires as soon as
-              any node&apos;s disk is at least{' '}
-              {DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT}% used (the control
-              plane&apos;s configured threshold, overridable via
-              APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT).
-            </p>
+            <AlertKindGuidance kind="node_disk_space" />
           ) : kind === 'node_cert_expiring' ? (
             <p className="text-sm text-muted-foreground">
               Watches every node&apos;s agent certificate and fires when one is
@@ -827,6 +882,17 @@ export function CreateAlertRuleDialog({
                 <FieldError errors={[formState.errors.restartCountThreshold]} />
               </Field>
             </>
+          ) : isDatabaseRuleKind(kind) ? (
+            <DatabaseRuleFields
+              idPrefix="rule"
+              kind={kind}
+              control={control as unknown as Control<DatabaseRuleFormShape>}
+              errors={
+                formState.errors as unknown as FieldErrors<DatabaseRuleFormShape>
+              }
+              register={register}
+              databases={databases}
+            />
           ) : kind === 'backup_missing' ? (
             <BackupMissingFields
               idPrefix="rule"
@@ -836,6 +902,8 @@ export function CreateAlertRuleDialog({
               databases={databases}
               volumes={volumes}
             />
+          ) : kind === 'email_delivery_failing' ? (
+            <AlertKindGuidance kind="email_delivery_failing" />
           ) : kind === 'budget_threshold' ? (
             <p className="text-sm text-muted-foreground">
               {t('budgetThreshold.hint')}

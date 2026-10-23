@@ -179,7 +179,39 @@ message AgentMessage {
     // RenewalReport is the agent's certificate renewal state, sent at
     // session start and after every renewal attempt.
     RenewalReport renewal = 11;
+    // OnboardingReport is the node's facts for the add-node preflight and
+    // the provider, region and zone it detected. Control planes that
+    // predate it ignore the frame.
+    OnboardingReport onboarding = 12;
   }
+}
+
+// OnboardingReport carries raw facts only; the control plane judges them so
+// thresholds and fix text live in one place. Fields are additive only.
+message OnboardingReport {
+  // cloud_* is what cloud metadata (or the operator's APP_NODE_* env)
+  // reported; cloud_source is "metadata" or "env", empty when nothing was found.
+  string cloud_provider = 1;
+  string cloud_region = 2;
+  string cloud_zone = 3;
+  string cloud_instance_id = 4;
+  string cloud_source = 5;
+  string os = 6;
+  string arch = 7;
+  bool docker_ok = 8;
+  string docker_error = 9;
+  string docker_version = 10;
+  bool wireguard_kernel = 11;
+  bool mesh_enabled = 12;
+  uint32 mesh_port = 13;
+  // mesh_port_bindable is only meaningful when mesh_enabled is false; a
+  // running mesh holds the port itself.
+  bool mesh_port_bindable = 14;
+  uint64 disk_total_bytes = 15;
+  uint64 disk_free_bytes = 16;
+  // agent_unix_nano is the agent's wall clock when the report was built.
+  int64 agent_unix_nano = 17;
+  bool metadata_disabled = 18;
 }
 
 // RenewalReport describes the agent's renewal schedule and last failure.
@@ -417,6 +449,11 @@ message HostReport {
   uint32 cpu_cores = 6;
   uint64 disk_total_bytes = 7;
   uint64 disk_free_bytes = 8;
+  // Inode and swap counts are zero when unreadable; no swap reads as total 0.
+  uint64 disk_inodes_total = 9;
+  uint64 disk_inodes_free = 10;
+  uint64 swap_total_bytes = 11;
+  uint64 swap_free_bytes = 12;
 }
 
 message ContainerState {

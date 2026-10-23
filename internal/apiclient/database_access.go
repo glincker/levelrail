@@ -181,11 +181,13 @@ type DatabaseNetwork struct {
 		Environment string `json:"environment,omitempty"`
 	} `json:"scope"`
 	TLS struct {
-		Supported bool   `json:"supported"`
-		Enabled   bool   `json:"enabled"`
-		Required  bool   `json:"required"`
-		State     string `json:"state,omitempty"`
-		Drift     bool   `json:"drift"`
+		Supported  bool   `json:"supported"`
+		Enabled    bool   `json:"enabled"`
+		Required   bool   `json:"required"`
+		State      string `json:"state,omitempty"`
+		Drift      bool   `json:"drift"`
+		Toggleable bool   `json:"toggleable"`
+		Mode       string `json:"mode,omitempty"`
 	} `json:"tls"`
 	Caveats []string `json:"caveats"`
 }
@@ -337,6 +339,20 @@ func (c *Client) SetDatabaseScope(ctx context.Context, name, scope string, dryRu
 // SetDatabaseRequireTLS calls PUT /api/v1/databases/{name}/network/tls.
 func (c *Client) SetDatabaseRequireTLS(ctx context.Context, name string, require bool) error {
 	return c.do(ctx, http.MethodPut, dbPath(name, "/network/tls"), map[string]bool{"require": require}, nil)
+}
+
+// DatabaseTLSToggle is the result of switching server TLS.
+type DatabaseTLSToggle struct {
+	Database string `json:"database"`
+	Mode     string `json:"mode"`
+	Enabled  bool   `json:"enabled"`
+}
+
+// SetDatabaseTLSEnabled calls PUT /api/v1/databases/{name}/tls: server TLS for MySQL, MariaDB, MongoDB and Redis.
+func (c *Client) SetDatabaseTLSEnabled(ctx context.Context, name string, enabled bool) (DatabaseTLSToggle, error) {
+	var out DatabaseTLSToggle
+	err := c.do(ctx, http.MethodPut, dbPath(name, "/tls"), map[string]bool{"enabled": enabled}, &out)
+	return out, err
 }
 
 // MakeDatabasePrivate calls POST /api/v1/databases/{name}/network/make-private.

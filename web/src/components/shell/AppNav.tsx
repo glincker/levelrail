@@ -1,5 +1,13 @@
-import { useId } from 'react'
-import { Link, useRouterState } from '@tanstack/react-router'
+import { useEffect, useId } from 'react'
+import { useTranslation } from 'react-i18next'
+import {
+  EyeIcon,
+  HardDrivesIcon,
+  RocketLaunchIcon,
+  ShareNetworkIcon,
+  WrenchIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import { Link } from '@tanstack/react-router'
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -9,6 +17,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
+import { BetaBadge } from '../BetaBadge'
 import {
   BETA_FEATURES_PATH,
   isFeatureLocked,
@@ -18,15 +27,23 @@ import { LockedFeatureMark } from './LockedFeatureMark'
 import { AppNavHeader } from './AppNavHeader'
 import { CollapsibleSection } from './CollapsibleSection'
 import {
-  activeAppSection,
   isSingleSection,
   resolveOpen,
-  visibleAppSections,
   type AppNavItem,
   type AppNavSection,
 } from './navModel'
+import { useAppTabs } from '../apps/useAppTabs'
+import type { AppTabGroupId } from '@/lib/appTabGroups'
 import { useExperimentalFeatures } from '@/hooks/useExperimental'
 import { usePersistedToggles } from './usePersistedToggles'
+
+const GROUP_ICONS: Record<AppTabGroupId, React.ReactNode> = {
+  basics: <RocketLaunchIcon />,
+  network: <ShareNetworkIcon />,
+  data: <HardDrivesIcon />,
+  observe: <EyeIcon />,
+  advanced: <WrenchIcon />,
+}
 
 const APP_NAV_STORAGE_KEY = 'shell.nav.app.open'
 
@@ -78,6 +95,7 @@ function ItemLink({
       >
         {item.icon}
         <span>{item.label}</span>
+        {item.beta && <BetaBadge className="ml-auto" />}
       </SidebarMenuButton>
     </SidebarMenuItem>
   )
@@ -113,12 +131,32 @@ function SectionRail({
 }
 
 export function AppNav({ name }: { name: string }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname })
   const { state } = useSidebar()
   const rail = state === 'collapsed'
   const [stored, setOpen] = usePersistedToggles(APP_NAV_STORAGE_KEY)
-  const active = activeAppSection(pathname)
+  const { t } = useTranslation('common')
   const experimental = useExperimentalFeatures()
+  const tabs = useAppTabs(name)
+  const sections: AppNavSection[] = tabs.groups.map((g) => ({
+    id: g.id,
+    label: t(`appTabs.groups.${g.id}`),
+    icon: GROUP_ICONS[g.id],
+    items: g.items,
+  }))
+  const activeSectionId = tabs.activeGroup
+  const active = {
+    section: { id: activeSectionId },
+    item: { id: tabs.activeSlug },
+  }
+
+  // Persist the visited group as open so leaving it never collapses it and shifts the list.
+  useEffect(() => {
+    if (activeSectionId && stored[activeSectionId] !== true) {
+      setOpen(activeSectionId, true)
+    }
+    // Only a route change into a group re-opens it; a manual collapse stays collapsed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSectionId])
 
   return (
     <>
@@ -126,7 +164,7 @@ export function AppNav({ name }: { name: string }) {
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
-            {visibleAppSections().map((section) => {
+            {sections.map((section) => {
               const only = section.items[0]
               if (only && isSingleSection(section) && !rail) {
                 return (

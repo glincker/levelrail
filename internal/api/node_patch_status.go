@@ -43,8 +43,7 @@ func (rt *Router) handleGetNodePatchStatus(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: get node patch status: look up node failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, errInternal)
+		rt.internalError(w, "api: get node patch status: look up node failed", err, slog.String("node_id", id))
 		return
 	}
 
@@ -53,8 +52,7 @@ func (rt *Router) handleGetNodePatchStatus(w http.ResponseWriter, r *http.Reques
 
 	total, err := rt.telemetry.QueryMetrics(r.Context(), nodeResourceID(id), telemetry.MetricOSPatchesAvailable, from, now)
 	if err != nil {
-		rt.logger.Error("api: get node patch status: query total failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, errInternal)
+		rt.internalError(w, "api: get node patch status: query total failed", err, slog.String("node_id", id))
 		return
 	}
 	if len(total) == 0 {
@@ -64,8 +62,7 @@ func (rt *Router) handleGetNodePatchStatus(w http.ResponseWriter, r *http.Reques
 
 	security, err := rt.telemetry.QueryMetrics(r.Context(), nodeResourceID(id), telemetry.MetricOSSecurityPatchesAvailable, from, now)
 	if err != nil {
-		rt.logger.Error("api: get node patch status: query security failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, errInternal)
+		rt.internalError(w, "api: get node patch status: query security failed", err, slog.String("node_id", id))
 		return
 	}
 

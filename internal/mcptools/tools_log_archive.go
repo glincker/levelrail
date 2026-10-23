@@ -108,7 +108,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_archived_logs",
-		Description: "List archived log objects (key, size, modified time) in a storage destination, newest partitions last, optionally for one app. Read-only; use the CLI or dashboard to download an object.",
+		Description: "List archived log objects (key, size, modified time) in a storage destination, newest partitions last, optionally for one app. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in archivedLogsInput) (*mcp.CallToolResult, apiclient.LogArchiveObjects, error) {
 		out, err := client.ListLogArchiveObjects(ctx, in.TargetID, in.AppName, in.Cursor)
 		if err != nil {

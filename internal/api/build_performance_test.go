@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -71,7 +72,7 @@ func TestBuildStatsAndLimits(t *testing.T) {
 	if lim.Effective.TimeoutSeconds != 90 || lim.Effective.MaxConcurrent != 3 || lim.Default.TimeoutSeconds != 600 {
 		t.Fatalf("after put = %+v", lim)
 	}
-	if got := BuildLimitsSource(db, build.LimitsFromEnv(func(string) (string, bool) { return "", false }))(ctx); got.Timeout != 90*time.Second {
+	if got := BuildLimitsSource(db, build.LimitsFromEnv(func(string) (string, bool) { return "", false }))(ctx, "web"); got.Timeout != 90*time.Second {
 		t.Fatalf("source = %+v", got)
 	}
 	for _, bad := range []string{`{}`, `{"max_concurrent":-1}`, `{"timeout_seconds":99999999}`} {
@@ -83,5 +84,57 @@ func TestBuildStatsAndLimits(t *testing.T) {
 	_ = json.Unmarshal(do(http.MethodDelete, "/api/v1/build-limits", "").Body.Bytes(), &lim)
 	if lim.Overrides.TimeoutSeconds != nil || lim.Effective.TimeoutSeconds != 600 {
 		t.Fatalf("after reset = %+v", lim)
+	}
+}
+
+func TestAppBuildLimitsOverrideGlobal(t *testing.T) {
+	t.Setenv(build.EnvBuildMemoryMB, "4096")
+	t.Setenv(build.EnvBuildCPUMillis, "2000")
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithBuildPerformance(db))
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	for _, n := range []string{"web", "api"} {
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: n, Image: "levelrail/" + n + ":1", Port: 3000}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	do := func(method, path, body string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(w, authedRequest(t, cookie, method, path, body))
+		return w
+	}
+
+	if w := do(http.MethodPut, "/api/v1/apps/web/build-limits", `{"memory_mb":1024,"max_concurrent":9}`); w.Code != http.StatusOK {
+		t.Fatalf("put %d: %s", w.Code, w.Body)
+	}
+	var got appBuildLimitsResponse
+	_ = json.Unmarshal(do(http.MethodGet, "/api/v1/apps/web/build-limits", "").Body.Bytes(), &got)
+	if got.Effective.MemoryMB != 1024 || got.Effective.CPUMillis != 2000 || got.Global.MemoryMB != 4096 ||
+		got.Overrides.MemoryMB == nil || got.Overrides.MaxConcurrent != nil {
+		t.Fatalf("web = %+v", got)
+	}
+
+	src := BuildLimitsSource(db, build.LimitsFromEnv(os.LookupEnv))
+	if l := src(ctx, "web"); l.MemoryMB != 1024 || l.CPUMillis != 2000 {
+		t.Fatalf("web source = %+v", l)
+	}
+	if l := src(ctx, "api"); l.MemoryMB != 4096 {
+		t.Fatalf("api must keep the global default, got %+v", l)
+	}
+
+	for _, bad := range []string{`{}`, `{"memory_mb":-1}`, `{"cpu_millis":99999999}`} {
+		if w := do(http.MethodPut, "/api/v1/apps/web/build-limits", bad); w.Code != http.StatusBadRequest {
+			t.Fatalf("put %s: %d", bad, w.Code)
+		}
+	}
+	if w := do(http.MethodPut, "/api/v1/apps/ghost/build-limits", `{"memory_mb":1}`); w.Code != http.StatusNotFound {
+		t.Fatalf("unknown app: %d", w.Code)
+	}
+
+	got = appBuildLimitsResponse{}
+	_ = json.Unmarshal(do(http.MethodDelete, "/api/v1/apps/web/build-limits", "").Body.Bytes(), &got)
+	if got.Overrides.MemoryMB != nil || got.Effective.MemoryMB != 4096 {
+		t.Fatalf("after reset = %+v", got)
 	}
 }

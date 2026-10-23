@@ -87,7 +87,7 @@ export function DeployAttemptsList({
                     className="size-3.5"
                     data-icon="inline-start"
                   />
-                  Deploy
+                  {t('deployHistory.deployNow')}
                 </Button>
               ) : undefined
             }
@@ -98,7 +98,11 @@ export function DeployAttemptsList({
   }
 
   const latestAttemptId = attempts[0]?.id
-  const visibleAttempts = filterDeployAttempts(attempts, filters)
+  // The latest attempt is pinned above the filters so it is never hidden by
+  // them; the filtered list below shows the rest.
+  const latestAttempt = attempts[0]
+  const matching = filterDeployAttempts(attempts, filters)
+  const visibleAttempts = matching.filter((a) => a.id !== latestAttemptId)
 
   const toggleSelected = (id: string) => {
     setSelected((prev) => {
@@ -123,6 +127,22 @@ export function DeployAttemptsList({
     return { from: a.id, to: b.id }
   })()
 
+  const rowFor = (a: DeployAttempt, pinned: boolean) => (
+    <DeployAttemptRow
+      key={a.id}
+      appName={appName}
+      visitUrl={visitUrl}
+      attempt={a}
+      pinned={pinned}
+      isLatestAttempt={a.id === latestAttemptId}
+      conditions={conditions}
+      isSelected={selected.includes(a.id)}
+      onToggleSelected={() => toggleSelected(a.id)}
+      protectedEnv={protectedEnv}
+      ackProtected={ackProtected}
+    />
+  )
+
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
@@ -130,6 +150,7 @@ export function DeployAttemptsList({
         {compareSelectedSearch ? (
           <Button
             size="sm"
+            variant="outline"
             nativeButton={false}
             render={
               <Link
@@ -147,6 +168,12 @@ export function DeployAttemptsList({
             Select one more deploy to compare
           </p>
         ) : null}
+        {onDeploy ? (
+          <Button size="sm" onClick={onDeploy} className="ml-auto">
+            <RocketLaunchIcon className="size-3.5" data-icon="inline-start" />
+            {t('deployHistory.deployNow')}
+          </Button>
+        ) : null}
       </CardHeader>
       <CardContent>
         {protectedEnv?.protected ? (
@@ -157,6 +184,21 @@ export function DeployAttemptsList({
             onAcknowledgedChange={setAckProtected}
           />
         ) : null}
+        {latestAttempt ? (
+          <section aria-label={t('deployHistory.latest')} className="mb-4">
+            <h3 className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t('deployHistory.latest')}
+            </h3>
+            <ul className="overflow-hidden rounded-lg border border-border bg-muted/20">
+              {rowFor(latestAttempt, true)}
+            </ul>
+          </section>
+        ) : null}
+        {attempts.length > 1 ? (
+          <h3 className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {t('deployHistory.earlier')}
+          </h3>
+        ) : null}
         {attempts.length > 1 ? (
           <DeployAttemptFilterBar
             attempts={attempts}
@@ -164,7 +206,7 @@ export function DeployAttemptsList({
             onChange={setFilters}
           />
         ) : null}
-        {visibleAttempts.length === 0 ? (
+        {matching.length === 0 ? (
           <EmptyState
             compact
             icon={<MagnifyingGlassIcon className="size-5" />}
@@ -181,22 +223,11 @@ export function DeployAttemptsList({
             }
           />
         ) : null}
-        <ul className="-mx-4 -mb-4 divide-y divide-border border-t border-border">
-          {visibleAttempts.map((a) => (
-            <DeployAttemptRow
-              key={a.id}
-              appName={appName}
-              visitUrl={visitUrl}
-              attempt={a}
-              isLatestAttempt={a.id === latestAttemptId}
-              conditions={conditions}
-              isSelected={selected.includes(a.id)}
-              onToggleSelected={() => toggleSelected(a.id)}
-              protectedEnv={protectedEnv}
-              ackProtected={ackProtected}
-            />
-          ))}
-        </ul>
+        {visibleAttempts.length > 0 ? (
+          <ul className="-mx-4 -mb-4 divide-y divide-border border-t border-border">
+            {visibleAttempts.map((a) => rowFor(a, false))}
+          </ul>
+        ) : null}
       </CardContent>
     </Card>
   )

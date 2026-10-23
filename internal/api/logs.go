@@ -79,8 +79,7 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 		writeError(w, http.StatusNotFound, noun+" not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: "+opName+": load "+noun+" failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: "+opName+": load "+noun+" failed", err, slog.String("name", name))
 		return
 	}
 
@@ -125,8 +124,7 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 	entries, err := rt.telemetry.QueryLogs(r.Context(), resourceID, from, to, query)
 	if err != nil {
 		if len(entries) == 0 {
-			rt.logger.Error("api: "+opName+" failed", slog.String("error", err.Error()), slog.String("name", name))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: "+opName+" failed", err, slog.String("name", name))
 			return
 		}
 		// Same partial-result handling as handleQueryMetrics: a

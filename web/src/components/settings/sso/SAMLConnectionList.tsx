@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   BuildingsIcon,
@@ -6,6 +6,8 @@ import {
   PlusIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { SAMLConnection } from '@/queries/sso'
+import { fetchSAMLTestResult } from '@/queries/sso'
+import type { SSOTestResult } from '@/queries/ssoOidc'
 import type { RoleResource } from '@/queries/roles'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,6 +21,26 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { SAMLConnectionForm } from './SAMLConnectionForm'
+import { SAMLTestResult } from './SAMLTestResult'
+
+const TEST_PARAM = 'sso_test'
+const TEST_PREFIX = 'saml:'
+
+// A test sign-in ends on this page with saml:<id> in the query string.
+function returnedConnectionID(): string | null {
+  try {
+    const v = new URLSearchParams(window.location.search).get(TEST_PARAM)
+    return v?.startsWith(TEST_PREFIX) ? v.slice(TEST_PREFIX.length) : null
+  } catch {
+    return null
+  }
+}
+
+function clearReturnedTest() {
+  const url = new URL(window.location.href)
+  url.searchParams.delete(TEST_PARAM)
+  window.history.replaceState(null, '', url)
+}
 
 type Editing = { kind: 'new' } | { kind: 'edit'; connection: SAMLConnection }
 
@@ -42,7 +64,29 @@ export function SAMLConnectionList({
   roles: RoleResource[]
 }) {
   const { t, i18n } = useTranslation('sso')
-  const [editing, setEditing] = useState<Editing | null>(null)
+  const [returnedID] = useState(returnedConnectionID)
+  const [editing, setEditing] = useState<Editing | null>(() => {
+    const back = connections.find((c) => c.id === returnedID)
+    return back ? { kind: 'edit', connection: back } : null
+  })
+  const [result, setResult] = useState<SSOTestResult | null>(null)
+
+  useEffect(() => {
+    if (!returnedID) return
+    let live = true
+    fetchSAMLTestResult(returnedID)
+      .then((r) => {
+        if (live && r.status !== 'none') setResult(r)
+      })
+      .catch(() => {
+        if (live)
+          setResult({ status: 'failed', failure_code: 'response_invalid' })
+      })
+    return () => {
+      live = false
+    }
+    // One-shot result: read once for the connection the page returned with.
+  }, [returnedID])
   const current =
     editing?.kind === 'edit'
       ? (connections.find((c) => c.id === editing.connection.id) ??
@@ -117,7 +161,11 @@ export function SAMLConnectionList({
       <Sheet
         open={editing !== null}
         onOpenChange={(open) => {
-          if (!open) setEditing(null)
+          if (!open) {
+            setEditing(null)
+            setResult(null)
+            clearReturnedTest()
+          }
         }}
       >
         <SheetContent className="data-[side=right]:sm:max-w-xl">
@@ -129,7 +177,14 @@ export function SAMLConnectionList({
             </SheetTitle>
             <SheetDescription>{t('form.sheetDescription')}</SheetDescription>
           </SheetHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-4 pb-4">
+            {current && result ? (
+              <SAMLTestResult
+                result={result}
+                connection={current}
+                roles={roles}
+              />
+            ) : null}
             {editing ? (
               <SAMLConnectionForm
                 key={current?.id ?? 'new'}

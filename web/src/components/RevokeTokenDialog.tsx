@@ -26,6 +26,15 @@ export function RevokeTokenDialog({ token }: { token: TokenResource }) {
     )
   }
 
+  if (token.dev_fixture) {
+    consequences.push(
+      t('confirmAction.token.devFixture', {
+        defaultValue:
+          'Dev fixture tokens are reseeded on the next dev-mode start unless you remove them from the fixtures file.',
+      }),
+    )
+  }
+
   return (
     <ConfirmAction
       trigger={(openDialog) => (

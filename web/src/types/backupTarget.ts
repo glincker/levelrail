@@ -21,6 +21,16 @@ export interface BackupTarget {
   region?: string
   bucket: string
   created_at: string
+  // True when new database dumps to this target are age-sealed.
+  encrypt_dumps: boolean
+}
+
+export interface BackupTargetEncryption {
+  target_id: string
+  enabled: boolean
+  key_available: boolean
+  recipient?: string
+  key_stored_off_box: boolean
 }
 
 export interface CreateBackupTargetRequest {
@@ -33,4 +43,6 @@ export interface CreateBackupTargetRequest {
   bucket: string
   access_key_id: string
   secret_access_key: string
+  // Omit to use the server default (on when a backup key exists).
+  encrypt_dumps?: boolean
 }

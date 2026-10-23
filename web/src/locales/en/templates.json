@@ -45,7 +45,7 @@
   },
   "page": {
     "title": "Service templates",
-    "description": "Curated, one-click services from the catalog. Pick one to see what it deploys.",
+    "description": "Ready-made apps and databases. Pick one to see what you get before you deploy.",
     "new": "New from a template"
   },
   "marketplace": {
@@ -85,7 +85,9 @@
       "ramLabel": "Recommended memory {{size}}",
       "services": "{{count}} services",
       "gpu": "GPU required",
-      "details": "View {{name}}"
+      "details": "View {{name}}",
+      "database": "Needs database",
+      "volume": "Keeps data"
     },
     "empty": {
       "title": "No templates match",
@@ -139,5 +141,90 @@
       "exposure_report": "Exposure report shows what is reachable from outside",
       "firewall": "Host firewall rules managed for published ports"
     }
+  },
+  "banner": {
+    "description": "Pick from the catalog, set a few values, and the app runs on your own server.",
+    "diagram": {
+      "catalog": "catalog",
+      "oneClick": "one click",
+      "server": "your server"
+    }
+  },
+  "what": {
+    "title": "What you will get",
+    "description_one": "One service, ready to run.",
+    "description_other": "{{count}} services, ready to run together.",
+    "url": "Web address",
+    "urlValue": "{{slug}}.<your server domain>",
+    "ports": "Ports",
+    "portsNone": "No web port",
+    "resources": "Memory and CPU",
+    "memory": "About {{size}} of memory",
+    "memoryNone": "No memory limit set",
+    "cpu": "{{count}} CPU limit",
+    "cpuShared": "shared CPU",
+    "volumes": "Storage",
+    "volumesNone": "No persistent storage",
+    "dependencies": "Dependencies",
+    "databaseCreated": "A {{engines}} database is created for you",
+    "dependenciesNone": "None, it runs on its own",
+    "backups": "Backups",
+    "backupsVolumes": "Storage can be backed up and restored from the Backups page",
+    "backupsNone": "Nothing to back up"
+  },
+  "form": {
+    "title": "Set up and deploy",
+    "descriptionRequired": "Fill in the required values, then deploy. Everything else has a sensible default.",
+    "descriptionNone": "Nothing is required. Deploy now or adjust the optional settings first.",
+    "generated": {
+      "title": "Generated for you",
+      "placeholder": "Created when you deploy",
+      "reveal": "Reveal",
+      "hide": "Hide",
+      "regenerate": "Regenerate",
+      "hint": "Stored encrypted and reused on every redeploy."
+    },
+    "domain": {
+      "title": "Address",
+      "auto": "Automatic address",
+      "custom": "Use my own domain",
+      "autoHint": "You get a working HTTPS address right away. Add your own domain later if you want.",
+      "customHint": "Point its DNS at this server and HTTPS is set up for you.",
+      "none": "This template has no web address to configure.",
+      "label": "Domain for {{service}} (port {{port}})",
+      "placeholder": "app.example.com",
+      "hint": "Optional. Leave empty to use the automatic address."
+    },
+    "optional": {
+      "title": "Optional settings",
+      "count_one": "({{count}} setting)",
+      "count_other": "({{count}} settings)"
+    },
+    "name": {
+      "label": "App name",
+      "hint": "Lowercase letters, digits and dashes. Leave empty to pick one for you."
+    },
+    "errors": {
+      "required": "{{field}} is required",
+      "name": "Use lowercase letters, digits and dashes, starting with a letter.",
+      "domain": "Enter a valid domain such as app.example.com.",
+      "summary_one": "Fix {{count}} field to continue.",
+      "summary_other": "Fix {{count}} fields to continue."
+    },
+    "summary": "{{name}} will run as {{app}} at {{address}}. {{generated}} secrets are generated for you.",
+    "summaryAuto": "an automatic address",
+    "deploy": "Deploy",
+    "deploying": "Deploying...",
+    "success": "Deployed {{app}}"
+  },
+  "card": {
+    "ramRecommended": "~{{size}} RAM recommended",
+    "needsGpu": "Needs NVIDIA GPU",
+    "deployNow": "Deploy now",
+    "deployNowSetup": "Deploy now (needs setup)",
+    "deploying": "Deploying...",
+    "searchPlaceholder": "Search templates...",
+    "searchLabel": "Search templates",
+    "noMatch": "No templates match “{{search}}”."
   }
 }

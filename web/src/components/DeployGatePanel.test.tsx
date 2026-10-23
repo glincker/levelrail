@@ -3,7 +3,11 @@ import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { describe, expect, it } from 'vitest'
 import { GateView } from './DeployGatePanel'
-import { toOverrides } from '../lib/deploySafetyForm'
+import {
+  EMPTY_OVERRIDES,
+  WATCH_FIELDS,
+  toOverrides,
+} from '../lib/deploySafetyForm'
 import deploySafetyEn from '../locales/en/deploySafety.json'
 import type { DeployGate, GateEvent } from '../types/deployGate'
 
@@ -46,6 +50,19 @@ const base: DeployGate = {
     watch_min_requests: 20,
     auto_rollback: true,
     rollback_pins: 3,
+    watch_mode: 'auto',
+    watch_latency_ratio: 2,
+    watch_latency_min_delta: '100ms',
+    watch_soft_ticks: 3,
+    watch_soft_rollback: false,
+  },
+  watch: {
+    state: 'rolled_back',
+    mode: 'auto',
+    remaining_seconds: 0,
+    window_seconds: 300,
+    reason: 'PostDeployErrorRate',
+    message: '40% of 200 requests returned 5xx after cutover',
   },
   rollback_pin: null,
   events: [
@@ -76,8 +93,9 @@ describe('GateView', () => {
     expect(screen.getByText(/2 readiness passes in a row and 10s/)).toBeTruthy()
     expect(screen.getByText('Post-deploy watch')).toBeTruthy()
     expect(
-      screen.getByText(/returned 5xx after cutover \(PostDeployErrorRate\)/),
-    ).toBeTruthy()
+      screen.getAllByText(/returned 5xx after cutover \(PostDeployErrorRate\)/)
+        .length,
+    ).toBeGreaterThan(0)
     expect(screen.getByText('rolled back to deploy dep_2')).toBeTruthy()
   })
 
@@ -93,28 +111,29 @@ describe('GateView', () => {
 })
 
 describe('toOverrides', () => {
-  it('turns empty fields into inherit and the 5xx percentage into a fraction', () => {
+  it('turns empty watch fields into inherit and the 5xx percentage into a fraction', () => {
     const out = toOverrides(
       {
-        success_threshold: '',
-        stable_window: ' 20s ',
+        success_threshold: '9',
+        stable_window: '',
         drain_timeout: '',
-        watch_window: '',
+        watch_window: ' 10m ',
         watch_max_restarts: '3',
         watch_error_rate: '25',
         watch_min_requests: '',
+        watch_latency_ratio: '2.5',
       },
-      false,
+      EMPTY_OVERRIDES,
+      WATCH_FIELDS,
+      { watch_mode: 'auto' },
     )
     expect(out).toEqual({
-      success_threshold: null,
-      stable_window: '20s',
-      drain_timeout: null,
-      watch_window: null,
+      ...EMPTY_OVERRIDES,
+      watch_window: '10m',
       watch_max_restarts: 3,
       watch_error_rate: 0.25,
-      watch_min_requests: null,
-      auto_rollback: false,
+      watch_latency_ratio: 2.5,
+      watch_mode: 'auto',
     })
   })
 })

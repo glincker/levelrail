@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/miekg/dns"
@@ -21,6 +22,8 @@ type ResolverAnswer struct {
 	IPv4     []string `json:"ipv4,omitempty"`
 	IPv6     []string `json:"ipv6,omitempty"`
 	Error    string   `json:"error,omitempty"`
+	// TTL is the longest record TTL the resolver reported, in seconds.
+	TTL uint32 `json:"ttl,omitempty"`
 }
 
 // CAARecord is one CAA resource record and the name it was found at.
@@ -91,10 +94,21 @@ func (d NetDNS) public() []string {
 
 // Answers implements DNSProbe.
 func (d NetDNS) Answers(ctx context.Context, host string) []ResolverAnswer {
-	out := []ResolverAnswer{systemAnswer(ctx, host)}
-	for _, server := range d.public() {
-		out = append(out, serverAnswer(ctx, server, host))
+	servers := d.public()
+	out := make([]ResolverAnswer, 1+len(servers))
+	var wg sync.WaitGroup
+	wg.Add(len(out))
+	go func() {
+		defer wg.Done()
+		out[0] = systemAnswer(ctx, host)
+	}()
+	for i, server := range servers {
+		go func() {
+			defer wg.Done()
+			out[i+1] = serverAnswer(ctx, server, host)
+		}()
 	}
+	wg.Wait()
 	return out
 }
 
@@ -125,9 +139,20 @@ func dnsErrorText(err error) string {
 
 func serverAnswer(ctx context.Context, server, host string) ResolverAnswer {
 	ans := ResolverAnswer{Resolver: strings.TrimSuffix(server, ":53")}
-	for _, qtype := range []uint16{dns.TypeA, dns.TypeAAAA} {
-		msg, err := exchange(ctx, server, host, qtype)
-		if err != nil {
+	qtypes := []uint16{dns.TypeA, dns.TypeAAAA}
+	msgs := make([]*dns.Msg, len(qtypes))
+	errs := make([]error, len(qtypes))
+	var wg sync.WaitGroup
+	wg.Add(len(qtypes))
+	for i, qtype := range qtypes {
+		go func() {
+			defer wg.Done()
+			msgs[i], errs[i] = exchange(ctx, server, host, qtype)
+		}()
+	}
+	wg.Wait()
+	for i, msg := range msgs {
+		if errs[i] != nil {
 			ans.Error = "no answer"
 			continue
 		}
@@ -135,6 +160,7 @@ func serverAnswer(ctx context.Context, server, host string) ResolverAnswer {
 			ans.Error = "not found"
 		}
 		for _, rr := range msg.Answer {
+			ans.TTL = max(ans.TTL, rr.Header().Ttl)
 			switch v := rr.(type) {
 			case *dns.A:
 				ans.IPv4 = append(ans.IPv4, v.A.String())

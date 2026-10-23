@@ -9,7 +9,8 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
-export type BuildRunStatus = 'success' | 'failed' | 'timeout' | 'canceled'
+export type BuildRunStatus =
+  'success' | 'failed' | 'timeout' | 'canceled' | 'memory_limit'
 
 export interface BuildTrend {
   builds: number
@@ -68,23 +69,34 @@ export interface BuildSpeed {
 export interface BuildLimitValues {
   max_concurrent: number
   timeout_seconds: number
-}
-
-export interface BuildLimits {
-  effective: BuildLimitValues
-  default: BuildLimitValues
-  overrides: { max_concurrent?: number; timeout_seconds?: number }
+  memory_mb: number
+  cpu_millis: number
 }
 
 export interface BuildLimitsRequest {
   max_concurrent?: number
   timeout_seconds?: number
+  memory_mb?: number
+  cpu_millis?: number
+}
+
+export interface BuildLimits {
+  effective: BuildLimitValues
+  default: BuildLimitValues
+  overrides: BuildLimitsRequest
+}
+
+export interface AppBuildLimits {
+  effective: BuildLimitValues
+  global: BuildLimitValues
+  overrides: BuildLimitsRequest
 }
 
 export const buildPerformanceKeys = {
   stats: (app: string, limit: number) =>
     ['apps', app, 'build-stats', limit] as const,
   limits: () => ['build-limits'] as const,
+  appLimits: (app: string) => ['apps', app, 'build-limits'] as const,
   speed: (app: string) => ['apps', app, 'build-speed'] as const,
 }
 
@@ -179,6 +191,57 @@ export function useResetBuildLimits() {
       ),
     onSuccess: (data) => {
       qc.setQueryData(buildPerformanceKeys.limits(), data)
+    },
+  })
+}
+
+const appLimitsUrl = (app: string) =>
+  `/api/v1/apps/${encodeURIComponent(app)}/build-limits`
+
+export function useAppBuildLimits(app: string) {
+  return useQuery(
+    queryOptions({
+      queryKey: buildPerformanceKeys.appLimits(app),
+      queryFn: () =>
+        requestJson<AppBuildLimits>(
+          appLimitsUrl(app),
+          undefined,
+          'fetch app build limits',
+        ),
+    }),
+  )
+}
+
+export function useSetAppBuildLimits(app: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (req: BuildLimitsRequest) =>
+      requestJson<AppBuildLimits>(
+        appLimitsUrl(app),
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(req),
+        },
+        'save app build limits',
+      ),
+    onSuccess: (data) => {
+      qc.setQueryData(buildPerformanceKeys.appLimits(app), data)
+    },
+  })
+}
+
+export function useResetAppBuildLimits(app: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      requestJson<AppBuildLimits>(
+        appLimitsUrl(app),
+        { method: 'DELETE' },
+        'reset app build limits',
+      ),
+    onSuccess: (data) => {
+      qc.setQueryData(buildPerformanceKeys.appLimits(app), data)
     },
   })
 }

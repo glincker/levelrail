@@ -9,6 +9,8 @@ import {
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { useExperimentalFeatures } from '../hooks/useExperimental'
 import { isFeatureVisible } from '../lib/experimental'
+import { useEnvironmentScope } from '../lib/environmentScope'
+import { currentScope, scopeKey, scopeUrl } from '../lib/scopeQuery'
 import { devModeKeys } from './devMode'
 import { appKeys } from './apps'
 import { databaseKeys } from './databases'
@@ -24,7 +26,8 @@ export const advisorKeys = {
   all: ['resource-advisor'] as const,
   findings: (resource: string, includeHidden: boolean) =>
     [...advisorKeys.all, 'findings', resource, includeHidden] as const,
-  summary: () => [...advisorKeys.all, 'summary'] as const,
+  summary: (scope: readonly unknown[] = []) =>
+    [...advisorKeys.all, 'summary', ...scope] as const,
   preview: (id: string) => [...advisorKeys.all, 'preview', id] as const,
 }
 
@@ -76,11 +79,12 @@ export function advisorFindingsQueryOptions(
 }
 
 export function advisorSummaryQueryOptions() {
+  const scope = currentScope()
   return queryOptions({
-    queryKey: advisorKeys.summary(),
+    queryKey: advisorKeys.summary(scopeKey(scope)),
     queryFn: () =>
       request<AdvisorSummary>(
-        '/api/v1/resource-advisor/summary',
+        scopeUrl('/api/v1/resource-advisor/summary', scope),
         {},
         'fetch resource advice summary',
       ),
@@ -103,6 +107,7 @@ export function useAdvisorFindings(resource = '', includeHidden = false) {
 }
 
 export function useAdvisorSummary() {
+  useEnvironmentScope()
   const enabled = useResourceAdvisorEnabled()
   return useQuery({ ...advisorSummaryQueryOptions(), enabled })
 }

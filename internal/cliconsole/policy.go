@@ -12,7 +12,7 @@ import (
 // machine: they read or write local files, local config, or need a TTY.
 var deniedCommands = []string{
 	"auth", "login", "up", "profile", "completion", "init", "tui", "proxy", "migrate",
-	"import", "apply", "diff", "export",
+	"import", "apply", "diff", "export", "update",
 	"tokens create",
 	"pipelines validate", "pipelines save",
 	"apps exec",

@@ -94,6 +94,18 @@ export function formatCondition(rule: AlertRule): string {
   if (rule.kind === 'control_plane_backup_stale') {
     return `control plane's newest snapshot older than ${rule.for_duration || '3d (default)'} (platform-wide)`
   }
+  if (rule.kind === 'database_disk_high') {
+    return `${rule.backup_database_name ?? '?'} data disk at or above ${rule.threshold || 85}%`
+  }
+  if (rule.kind === 'database_connections_high') {
+    return `${rule.backup_database_name ?? '?'} connections at or above ${rule.threshold || 80}% of the limit`
+  }
+  if (rule.kind === 'database_down') {
+    return `${rule.backup_database_name ?? '?'} not accepting connections`
+  }
+  if (rule.kind === 'database_backup_stale') {
+    return `${rule.backup_database_name ?? '?'} last good backup older than ${rule.threshold || 26}h`
+  }
   if (rule.kind === 'backup_missing') {
     const target =
       rule.backup_resource_kind === 'volume'
@@ -163,6 +175,15 @@ export function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'control_plane_backup_stale') {
     return `${rule.last_value.toFixed(1)}h since newest control plane snapshot`
+  }
+  if (
+    rule.kind === 'database_disk_high' ||
+    rule.kind === 'database_connections_high'
+  ) {
+    return `${rule.last_value.toFixed(0)}%`
+  }
+  if (rule.kind === 'database_backup_stale') {
+    return `${rule.last_value.toFixed(1)}h since last successful backup`
   }
   if (rule.kind === 'backup_missing') {
     return `${rule.last_value.toFixed(1)}h since last successful backup`

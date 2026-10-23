@@ -25,6 +25,13 @@ func (rt *Router) registerPublicRoutes(mux *http.ServeMux) {
 	// dir writability, ingress port availability, SQLite reachability),
 	// AbilityRead like system/status above.
 	mux.HandleFunc("GET /api/v1/system/doctor", rt.requireAbility(AbilityRead, rt.handleSystemDoctor))
+	// Same checks as the report: list them, stream results as each finishes, re-run one. Fixes apply through POST /api/v1/fixes/{id}/apply (root, audit-logged).
+	mux.HandleFunc("GET /api/v1/system/resilience", rt.requireAbility(AbilityRead, rt.handleGetResilience))
+	mux.HandleFunc("POST /api/v1/system/resilience/simulate", rt.requireAbility(AbilityWrite, rt.handleSimulateResilience))
+	mux.HandleFunc("POST /api/v1/system/resilience/snapshot", rt.requireAbility(AbilityRoot, rt.handleResilienceFix))
+	mux.HandleFunc("GET /api/v1/system/doctor/checks", rt.requireAbility(AbilityRead, rt.handleListDoctorChecks))
+	mux.HandleFunc("GET /api/v1/system/doctor/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(doctorStreamResource, rt.handleStreamDoctor)))
+	mux.HandleFunc("POST /api/v1/system/doctor/checks/{id}/run", rt.requireAbility(AbilityRead, rt.handleRunDoctorCheck))
 	mux.HandleFunc("GET /api/v1/system/reverse-proxy", rt.requireAbility(AbilityRead, rt.handleReverseProxyGuide))
 	// Every container on this node, Levelrail-managed or not (containers.go's
 	// own doc comment on why a Managed one stays read-only here),
@@ -100,7 +107,13 @@ func (rt *Router) registerPublicRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/system/readiness", rt.requireAbility(AbilityRead, rt.handleServerReadiness))
 	mux.HandleFunc("GET /api/v1/updates/self-upgrade/plan", rt.requireAbility(AbilityRead, rt.handleSelfUpgradePlan))
 	mux.HandleFunc("GET /api/v1/updates/self-upgrade/attempts", rt.requireAbility(AbilityRead, rt.handleSelfUpgradeAttempts))
+	mux.HandleFunc("GET /api/v1/updates/self-upgrade/status", rt.requireAbility(AbilityRead, rt.handleSelfUpgradeStatus))
 	mux.HandleFunc("POST /api/v1/updates/self-upgrade", rt.requireAbility(AbilityRoot, rt.handleSelfUpgradeStart))
+	mux.HandleFunc("GET /api/v1/updates/restore-points", rt.requireAbility(AbilityRoot, rt.handleRestorePointList))
+	mux.HandleFunc("POST /api/v1/updates/restore-points/{id}/restore", rt.requireAbility(AbilityRoot, rt.handleRestorePointRestore))
+	mux.HandleFunc("POST /api/v1/updates/self-upgrade/attempts/{id}/fix", rt.requireAbility(AbilityWrite, rt.handleSelfUpgradeAttemptFix))
+	mux.HandleFunc("POST /api/v1/updates/self-upgrade/attempts/{id}/retry", rt.requireAbility(AbilityWrite, rt.handleSelfUpgradeAttemptRetry))
+	mux.HandleFunc("POST /api/v1/updates/self-upgrade/attempts/{id}/rollback", rt.requireAbility(AbilityWrite, rt.handleSelfUpgradeAttemptRollback))
 	mux.HandleFunc("POST /api/v1/updates/rollback", rt.requireAbility(AbilityRoot, rt.handleRollbackStart))
 	mux.HandleFunc("GET /api/v1/updates/schedule", rt.requireAbility(AbilityRead, rt.handleGetUpgradeSchedule))
 	mux.HandleFunc("POST /api/v1/updates/schedule", rt.requireAbility(AbilityRoot, rt.handleCreateUpgradeSchedule))

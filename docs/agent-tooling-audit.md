@@ -6,7 +6,7 @@ description: Size, overlap and annotation audit of the levelrail-mcp tool surfac
 
 An MCP client loads every tool definition from `tools/list` into the model's context before the first user message. This page records what that costs for `levelrail-mcp` in each mode, which tools overlap, and the tests that stop the listing growing unnoticed.
 
-Numbers are estimates: the serialized `tools/list` JSON length divided by 4 (no tokenizer is in `go.mod`). They are good for comparing modes and catching regressions, not for billing. They are a snapshot of the 156 registered tools and drift as tools are added, so rerun the commands below for current figures.
+Numbers are estimates: the serialized `tools/list` JSON length divided by 4 (no tokenizer is in `go.mod`). They are good for comparing modes and catching regressions, not for billing. They are a snapshot that drifts as tools are added (over 240 tools in on-demand toolsets, see [MCP tool surface](/mcp-tool-surface) for exact numbers), so rerun the commands below for current figures.
 
 [MCP tool surface](/mcp-tool-surface) counts each tool's name, description and input schema per toolset. This page measures the whole serialized `tools/list` response a client receives, which also carries output schemas and annotations, so its totals are larger.
 
@@ -14,13 +14,13 @@ Numbers are estimates: the serialized `tools/list` JSON length divided by 4 (no 
 
 Measured by `go test -run TestToolListTokenBudget -v ./internal/mcptools` (or `scripts/mcp-token-budget.sh`).
 
-| Mode | Tools | Estimated tokens | Test budget |
-| --- | --- | --- | --- |
-| `read-only` | 118 | about 46,200 | 47,000 |
-| `standard` (default) | 146 | about 61,200 | 62,000 |
-| `full` | 156 | about 66,700 | 68,000 |
+| Mode | Registers | Test budget (estimated tokens) |
+| --- | --- | --- |
+| `read-only` | read tools | see `TestToolListTokenBudget` |
+| `standard` (default) | read and mutating tools | see `TestToolListTokenBudget` |
+| `full` | every tool | see `TestToolListTokenBudget` |
 
-Modes are defined in `internal/mcptools/modes.go` and driven by the class table in `internal/mcptools/classes.go`: 118 read, 28 mutating and 10 destructive tools. `read-only` registers read tools, `standard` adds mutating tools, and `full` adds destructive ones. The API token's own abilities still apply on top of the mode.
+Modes are defined in `internal/mcptools/modes.go` and driven by the class table in `internal/mcptools/classes.go`. `read-only` registers read tools, `standard` adds mutating tools, and `full` adds destructive ones. The API token's own abilities still apply on top of the mode.
 
 ## The agent-core profile
 

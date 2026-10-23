@@ -21,8 +21,10 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/nodefailure"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -54,6 +56,7 @@ type rootDeps struct {
 	agentCAFingerprint  string
 	emailSender         email.Sender
 	scheduledTaskRunner *scheduledtask.Runner
+	functionQueue       *functions.Queue
 	engine              *reconcile.Engine
 	ingressDriver       *ingressdriver.Driver
 	pushVAPIDPublicKey  string
@@ -81,6 +84,10 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 	agentCAFingerprint := d.agentCAFingerprint
 	emailSender := d.emailSender
 	scheduledTaskRunner := d.scheduledTaskRunner
+	fq := d.functionQueue
+	if fq == nil {
+		fq = &functions.Queue{Config: functions.TriggerConfigFromEnv(os.LookupEnv)}
+	}
 	engine := d.engine
 	ingressDriver := d.ingressDriver
 	pushVAPIDPublicKey := d.pushVAPIDPublicKey
@@ -103,6 +110,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithRequestSummaryWindow(requestSummaryWindow()),
 		api.WithAlertRules(alertingDB),
 		api.WithAlertNoise(alertingDB),
+		api.WithAlertDefaults(alertingDB),
 		api.WithInbox(alertingDB),
 		api.WithStatusPage(db, statusPageConfig(logger), statusPageRateLimit(logger)),
 		api.WithDeployNotifyTargets(alertingDB),
@@ -136,6 +144,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
 		api.WithArchives(archive.New(db.DB, dataDir), db),
 		multiNodeOption(db),
+		api.WithNodeFailure(db, nodefailure.ConfigFromEnv(os.LookupEnv)),
 		api.WithNodeJoinTokenTTL(nodeJoinTokenTTL(logger)),
 		api.WithControlPlaneBackupScheduleDisabled(controlPlaneBackupInterval(logger) == 0),
 		api.WithDockerPinger(client),
@@ -173,6 +182,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		// Applied unconditionally: scheduledTaskRunner is always non-nil.
 		api.WithScheduledTaskRunner(scheduledTaskRunner),
 		api.WithJobLimits(jobsPerAppCap(scheduledTaskRunner)),
+		api.WithFunctionTriggers(db, fq.Config, fq.Kick),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
 		api.WithCertRenewalTracking(alertingDB, certRenewalStalledThreshold(logger)),
 		api.WithNodeAlertThresholds(
@@ -201,6 +211,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
 		api.WithDeploySafety(db, client),
+		api.WithPublishLocks(db),
 		api.WithDeployMaxConcurrent(deployMaxConcurrent(logger)),
 		api.WithWakeToken(appWakeToken()),
 		api.WithLogBroadcaster(logBroadcaster),
@@ -230,6 +241,10 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		// Email settings' SMTP password / SES secret access key go
 		// through the same secretsManager as everything else here.
 		opts = append(opts, api.WithEmailSecrets(secretsManager))
+		// Traffic export sink credentials use the same secretsManager; the service taps the ingress access log.
+		if svc := startTrafficExport(context.Background(), logger, b, db, secretsManager); svc != nil {
+			opts = append(opts, api.WithTrafficExport(secretsManager, svc))
+		}
 		// Cloudflare Tunnel's token goes through the same secretsManager,
 		// same nil-interface hazard as everything else in this block.
 		opts = append(opts, api.WithCloudflareTunnelSecrets(secretsManager))
@@ -246,6 +261,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		// through secretsManager.
 		opts = append(opts, api.WithCloudflareDNSTokenResolver(secretsManager))
 		opts = append(opts, api.WithRoute53DNSCredentialResolver(secretsManager))
+		opts = append(opts, api.WithGoogleCloudDNSSecrets(secretsManager))
 		// A cloud node provider's API token (Hetzner, DigitalOcean) goes
 		// through the same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithNodeProviderSecrets(secretsManager))
@@ -302,6 +318,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			// registryCredential field): same secretsManager, same
 			// nil-interface hazard as everything else in this block.
 			api.WithRegistryCredentialSecrets(secretsManager),
+			api.WithRegistryRefresher(newRegistryRefresher(db, secretsManager, logger)),
 			// Network shares (CIFS password only; NFS shares write no
 			// secret): same secretsManager, same nil-interface hazard.
 			api.WithNetworkShareSecrets(secretsManager),
@@ -317,6 +334,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 				Secrets:    secretsManager,
 				Downloader: routedStorage(agentRegistry),
 				Restorer:   &backup.ContainerRestorer{Runtime: client},
+				Identities: backupIdentities(backupRunner),
 			}),
 			// Creates the volume synchronously: a bare volume has no reconciler to wait on.
 			api.WithVolumeCloneRestoreRunner(&backup.VolumeCloneRestoreRunner{
@@ -356,18 +374,9 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			}),
 			// Reads and writes through secretsManager directly, so no separate runner type is needed.
 			api.WithGitHubAppSecrets(secretsManager),
-			// GitLab App connection: same secretsManager, same
-			// nil-interface hazard, the OAuth-Application counterpart of
-			// the GitHub App connection just above.
-			api.WithGitLabAppSecrets(secretsManager),
-			// Gitea App connection: same secretsManager, same
-			// nil-interface hazard, the GitLab-shaped self-hosted
-			// counterpart just above.
-			api.WithGiteaAppSecrets(secretsManager),
-			// Bitbucket App connection: same secretsManager, same
-			// nil-interface hazard, the third OAuth-consumer counterpart
-			// alongside the GitHub and GitLab App connections above.
-			api.WithBitbucketAppSecrets(secretsManager),
+			// GitLab, Bitbucket and Gitea connections share the secrets manager, same
+			// nil-interface hazard as the GitHub App connection just above.
+			api.WithGitConnectionSecrets(secretsManager),
 			api.WithAIVault(ai.NewVault(db, secretsManager, logger)),
 			api.WithAIUsage(db),
 			// Point-in-time restore (baseBackupRunner/pitrRunner just
@@ -375,6 +384,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			// restore endpoint.
 			api.WithBaseBackupRunner(baseBackupRunner),
 			api.WithPITRRestoreRunner(pitrRunner),
+			api.WithMySQLPITRRestoreRunner(newMySQLPITRRunner(db, secretsManager, client, routedStorage(agentRegistry), logger)),
 			api.WithMajorUpgrader(newMajorUpgradeRunner(db, client, engine.Nudge, logger)),
 		)
 		// Optional: without a dial address the
@@ -421,6 +431,7 @@ func composeMux(apiHandler http.Handler, webhookHandler http.Handler, webHandler
 	mux.Handle("/api/", apiHandler)
 	mux.Handle("/public/", apiHandler)
 	mux.Handle("/gate/", apiHandler)
+	mux.Handle("/mail/unsubscribe", apiHandler)
 	if webhookHandler != nil {
 		mux.Handle("POST /webhook", webhookHandler)
 	}

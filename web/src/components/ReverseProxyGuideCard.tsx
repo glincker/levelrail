@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { CodeBlock } from '@/components/ui/code-block'
 import { useTranslation } from 'react-i18next'
-import { CopyIcon, PlugsIcon } from '@phosphor-icons/react/dist/ssr'
+import { PlugsIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,7 +22,6 @@ export function ReverseProxyGuideCard() {
   const guide = useReverseProxyGuide()
   const [domain, setDomain] = useState('')
   const [proxy, setProxy] = useState<string>('')
-  const [copied, setCopied] = useState(false)
   const data = guide.data
   const plan = data?.plan
 
@@ -106,25 +106,7 @@ export function ReverseProxyGuideCard() {
                 <li key={s}>{s}</li>
               ))}
             </ol>
-            <div className="relative">
-              <pre className="overflow-x-auto rounded-md border border-border bg-muted/40 p-3 text-xs">
-                {plan.snippet}
-              </pre>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="absolute right-2 top-2"
-                onClick={() => {
-                  void navigator.clipboard.writeText(plan.snippet).then(() => {
-                    setCopied(true)
-                  })
-                }}
-              >
-                <CopyIcon className="size-3" />
-                {copied ? t('reverseProxy.copied') : t('reverseProxy.copy')}
-              </Button>
-            </div>
+            <CodeBlock code={plan.snippet} />
           </div>
         ) : null}
         {data?.check ? (

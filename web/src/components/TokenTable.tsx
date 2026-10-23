@@ -1,10 +1,24 @@
-import { KeyIcon, RobotIcon } from '@phosphor-icons/react/dist/ssr'
+import { useState } from 'react'
+import {
+  CaretDownIcon,
+  KeyIcon,
+  RobotIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
 } from '@/components/ui/responsive-table'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { RotateCliTokenDialog } from './cli/RotateCliTokenDialog'
+import { cliOrigin } from '../lib/cliConnection'
 import { RelativeTime } from './kit/RelativeTime'
 import { RevokeTokenDialog } from './RevokeTokenDialog'
 import { TOKEN_ABILITY_BADGE_VARIANT } from '../types/token'
@@ -21,8 +35,45 @@ function isActiveNow(lastUsed: string | undefined): boolean {
   return lastUsed ? Date.now() - Date.parse(lastUsed) < ACTIVE_NOW_MS : false
 }
 
-export function TokenTable({ tokens }: { tokens: TokenResource[] }) {
+interface TokenTableProps {
+  tokens: TokenResource[]
+  // Ids of CLI tokens the caller owns and may rotate; omitted hides Rotate.
+  rotatableIds?: ReadonlySet<string>
+}
+
+export function TokenTable({ tokens, rotatableIds }: TokenTableProps) {
   const { t } = useTranslation('settings')
+  const real = tokens.filter((tok) => !tok.dev_fixture)
+  const fixtures = tokens.filter((tok) => tok.dev_fixture)
+  return (
+    <div className="space-y-4">
+      <TokenRows tokens={real} rotatableIds={rotatableIds} />
+      {fixtures.length > 0 ? (
+        <Collapsible className="rounded-lg border border-border px-4 py-3">
+          <CollapsibleTrigger className="flex items-center justify-between gap-2 text-sm font-medium">
+            <span className="flex items-center gap-2">
+              {t('tokens.devFixtureGroup')}
+              <Badge variant="muted">
+                {t('tokens.devFixtureGroupCount', { count: fixtures.length })}
+              </Badge>
+            </span>
+            <CaretDownIcon className="size-4" aria-hidden="true" />
+          </CollapsibleTrigger>
+          <CollapsiblePanel className="space-y-3 pt-3">
+            <p className="text-sm text-muted-foreground">
+              {t('tokens.devFixtureGroupBody')}
+            </p>
+            <TokenRows tokens={fixtures} />
+          </CollapsiblePanel>
+        </Collapsible>
+      ) : null}
+    </div>
+  )
+}
+
+function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
+  const { t } = useTranslation('settings')
+  const [rotateTarget, setRotateTarget] = useState<TokenResource | null>(null)
   if (tokens.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
@@ -47,9 +98,22 @@ export function TokenTable({ tokens }: { tokens: TokenResource[] }) {
       primary: true,
       header: t('tokens.name'),
       cell: (token) => (
-        <span className="font-medium break-all text-foreground">
-          {token.name}
-        </span>
+        <div className="space-y-1">
+          <span className="font-medium break-all text-foreground">
+            {token.name}
+          </span>
+          {token.dev_fixture ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge variant="muted">{t('tokens.devFixtureBadge')}</Badge>
+              {token.abilities.includes('root') ? (
+                <span className="inline-flex items-center gap-1 text-xs text-tone-danger">
+                  <WarningIcon className="size-3.5" aria-hidden="true" />
+                  {t('tokens.devFixtureRootWarning')}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       ),
     },
     {
@@ -172,17 +236,43 @@ export function TokenTable({ tokens }: { tokens: TokenResource[] }) {
   ]
 
   return (
-    <ResponsiveTable
-      rows={tokens}
-      columns={columns}
-      getRowId={(token) => token.id}
-      ariaLabel={t('tokens.tableLabel')}
-      getRowProps={(token) => ({
-        className: token.revoked_at ? 'opacity-60' : undefined,
-      })}
-      renderActions={(token) =>
-        token.revoked_at ? null : <RevokeTokenDialog token={token} />
-      }
-    />
+    <>
+      <ResponsiveTable
+        rows={tokens}
+        columns={columns}
+        getRowId={(token) => token.id}
+        ariaLabel={t('tokens.tableLabel')}
+        getRowProps={(token) => ({
+          className: token.revoked_at ? 'opacity-60' : undefined,
+        })}
+        renderActions={(token) =>
+          token.revoked_at ? null : (
+            <div className="flex gap-2">
+              {rotatableIds?.has(token.id) && cliOrigin(token.name) ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-label={t('tokens.rotateLabel', { name: token.name })}
+                  onClick={() => {
+                    setRotateTarget(token)
+                  }}
+                >
+                  {t('tokens.rotate')}
+                </Button>
+              ) : null}
+              <RevokeTokenDialog token={token} />
+            </div>
+          )
+        }
+      />
+      {rotateTarget ? (
+        <RotateCliTokenDialog
+          token={rotateTarget}
+          onClose={() => {
+            setRotateTarget(null)
+          }}
+        />
+      ) : null}
+    </>
   )
 }

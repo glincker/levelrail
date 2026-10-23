@@ -36,7 +36,7 @@ type pruneBuildCacheInput struct {
 func registerBuildTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_builds",
-		Description: "List the build queue and history across apps with duration, cache hit ratio, image size change, node and platform, or with id one build and its failure hint. Read only.",
+		Description: "List the build queue and history across apps with duration, cache hit ratio, image size change, node and platform, or with id one build and its failure hint.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listBuildsInput) (*mcp.CallToolResult, listBuildsOutput, error) {
 		if in.ID != "" {
 			b, err := client.GetBuild(ctx, in.ID)
@@ -54,7 +54,7 @@ func registerBuildTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_build_speed",
-		Description: "Build speed of one app: time saved by cache (cold vs cached build median) and typed suggestions to speed builds up. Read only.",
+		Description: "Build speed of one app: time saved by cache (cold vs cached build median) and typed suggestions to speed builds up.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in buildSpeedInput) (*mcp.CallToolResult, apiclient.BuildSpeed, error) {
 		out, err := client.GetBuildSpeed(ctx, in.App)
 		if err != nil {
@@ -65,7 +65,7 @@ func registerBuildTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_buildkit_cache",
-		Description: "BuildKit cache usage of a node: total, in use and reclaimable bytes and the largest records. Read only.",
+		Description: "BuildKit cache usage of a node: total, in use and reclaimable bytes and the largest records.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in buildCacheInput) (*mcp.CallToolResult, apiclient.BuildCacheResource, error) {
 		out, err := client.GetBuildCache(ctx, in.Node)
 		if err != nil {

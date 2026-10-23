@@ -296,8 +296,7 @@ func (rt *Router) handleClearDomainAuthGate(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if err := rt.domainAuthGate.DeleteDomainAuthGate(r.Context(), domain); err != nil {
-		rt.logger.Error("api: clear domain auth gate failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear domain auth gate failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, toDomainAuthGateResource(domain, store.DomainAuthGate{}, false))

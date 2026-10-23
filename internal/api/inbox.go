@@ -17,6 +17,10 @@ type InboxStore interface {
 	InboxUnreadCount(ctx context.Context, principal string) (int, error)
 	MarkInboxRead(ctx context.Context, principal string, ids []string) error
 	MarkAllInboxRead(ctx context.Context, principal string, now time.Time) error
+	GetInboxState(ctx context.Context, principal string) (alerting.InboxState, error)
+	ArchiveInbox(ctx context.Context, principal string, ids []string, archived bool) error
+	DeleteInbox(ctx context.Context, principal string, ids []string, restore bool, now time.Time) error
+	ClearInbox(ctx context.Context, principal, action string, sel alerting.InboxSelector, dryRun bool) (int, error)
 	GetInboxPrefs(ctx context.Context, principal string) (alerting.InboxPrefs, error)
 	SaveInboxPrefs(ctx context.Context, p alerting.InboxPrefs, now time.Time) error
 }
@@ -28,7 +32,8 @@ func WithInbox(s InboxStore) Option {
 
 type inboxItemResource struct {
 	alertHistoryResource
-	Read bool `json:"read"`
+	Read     bool `json:"read"`
+	Resolved bool `json:"resolved"`
 }
 
 type inboxPrefsResource struct {
@@ -43,6 +48,50 @@ type inboxPrefsResource struct {
 type inboxReadRequest struct {
 	IDs []string `json:"ids,omitempty"`
 	All bool     `json:"all,omitempty"`
+}
+
+type inboxArchiveRequest struct {
+	IDs     []string `json:"ids"`
+	Restore bool     `json:"restore,omitempty"`
+}
+
+type inboxStateResource struct {
+	ReadIDs     []string `json:"read_ids"`
+	ArchivedIDs []string `json:"archived_ids"`
+}
+
+func (rt *Router) handleInboxState(w http.ResponseWriter, r *http.Request) {
+	principal, ok := rt.inboxPrincipal(w, r)
+	if !ok {
+		return
+	}
+	st, err := rt.inbox.GetInboxState(r.Context(), principal)
+	if err != nil {
+		rt.internalError(w, "api: inbox state failed", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, inboxStateResource{ReadIDs: st.ReadIDs, ArchivedIDs: st.ArchivedIDs})
+}
+
+func (rt *Router) handleInboxArchive(w http.ResponseWriter, r *http.Request) {
+	principal, ok := rt.inboxPrincipal(w, r)
+	if !ok {
+		return
+	}
+	var req inboxArchiveRequest
+	if err := decodeJSONBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if err := rt.inbox.ArchiveInbox(r.Context(), principal, req.IDs, !req.Restore); err != nil {
+		if errors.Is(err, alerting.ErrInboxInvalid) {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		rt.internalError(w, "api: inbox archive failed", err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func toInboxPrefsResource(p alerting.InboxPrefs) inboxPrefsResource {
@@ -78,7 +127,7 @@ func (rt *Router) handleListInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := r.URL.Query()
-	f := alerting.InboxFilter{UnreadOnly: q.Get("unread") == "true"}
+	f := alerting.InboxFilter{UnreadOnly: q.Get("unread") == "true", Archived: q.Get("archived") == "true"}
 	if v := q.Get("limit"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 1 {
@@ -110,10 +159,10 @@ func (rt *Router) handleListInbox(w http.ResponseWriter, r *http.Request) {
 		if e.App != "" && !canSee(e.App) {
 			continue
 		}
-		out = append(out, inboxItemResource{Read: e.Read, alertHistoryResource: alertHistoryResource{
+		out = append(out, inboxItemResource{Read: e.Read, Resolved: e.Resolved, alertHistoryResource: alertHistoryResource{
 			ID: e.ID, At: e.At.UTC(), RuleID: e.RuleID, RuleName: e.RuleName, RuleKind: e.RuleKind, ResourceID: e.ResourceID,
 			App: e.App, Node: e.Node, Severity: e.Severity, Event: e.Event, Outcome: e.Outcome, Detail: e.Detail,
-			SilenceID: e.SilenceID, ChannelID: e.ChannelID, Error: e.Error}})
+			SilenceID: e.SilenceID, ChannelID: e.ChannelID, Error: e.Error, Cert: certPayloadFrom(e.Cert)}})
 	}
 	writeJSON(w, http.StatusOK, out)
 }

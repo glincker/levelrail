@@ -1,10 +1,7 @@
-import { useState } from 'react'
-import {
-  createFileRoute,
-  Link,
-  Outlet,
-  useRouterState,
-} from '@tanstack/react-router'
+import { StuckPanel } from '../../components/StuckPanel'
+import { DelayedFallback } from '../../components/ui/delayed-fallback'
+import { Suspense, useState } from 'react'
+import { createFileRoute, Outlet, useRouterState } from '@tanstack/react-router'
 import { appDetailQueryOptions, useApp } from '../../queries/apps'
 import {
   deployStatusQueryOptions,
@@ -12,9 +9,9 @@ import {
 } from '../../queries/deploys'
 import { summarizeAppStatus } from '../../lib/appStatus'
 import { useAppAsleep } from '../../queries/appSleep'
-import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { AppActionBar } from '../../components/apps/AppActionBar'
+import { AppTabStrip } from '../../components/apps/AppTabStrip'
 import { AppPaletteActions } from '../../components/apps/AppPaletteActions'
 import { parseAppAction, type AppPaletteAction } from '../../lib/paletteAction'
 import { AppHeaderBadges } from '../../components/apps/AppHeaderBadges'
@@ -23,9 +20,14 @@ import {
   type DeployTab,
 } from '../../components/overview/DeploySheet'
 import { PendingDeployApprovalBanner } from '../../components/PendingDeployApprovalBanner'
+import {
+  PublishLockBanner,
+  PublishLockToggle,
+} from '../../components/PublishLockControls'
 import { AppMaintenanceBanner } from '../../components/maintenance/AppMaintenanceBanner'
+import { FixReturnBanner } from '../../components/deployDetail/FixReturnBanner'
 import { TrialAppBanner } from '../../components/TrialAppBanner'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { resourceErrorComponent } from '@/components/resourceErrorComponent'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { APP_SECTION_HELP } from '@/components/apps/appSectionHelp'
@@ -41,6 +43,7 @@ const APP_SECTION_LABELS: Record<string, string> = {
   overview: 'Overview',
   deploys: 'Deploys',
   domains: 'Domains',
+  'go-live': 'Go live',
   network: 'Network',
   services: 'Services',
   environment: 'Environment',
@@ -53,6 +56,7 @@ const APP_SECTION_LABELS: Record<string, string> = {
   integrations: 'Integrations',
   'scheduled-tasks': 'Jobs',
   'feature-flags': 'Feature flags',
+  'split-testing': 'Split testing',
   metrics: 'Metrics',
   logs: 'Logs',
   alerts: 'Alerts',
@@ -76,7 +80,7 @@ export const Route = createFileRoute('/apps/$name')({
   },
   component: AppDetailLayout,
   pendingComponent: AppDetailLayoutSkeleton,
-  errorComponent: AppDetailError,
+  errorComponent: resourceErrorComponent('app'),
 })
 
 function AppDetailLayout() {
@@ -124,7 +128,9 @@ function AppDetailLayout() {
     <>
       {app.is_trial ? <TrialAppBanner app={app} /> : null}
       <PendingDeployApprovalBanner appName={app.name} />
+      <PublishLockBanner appName={app.name} />
       <AppMaintenanceBanner appName={app.name} />
+      <FixReturnBanner appName={app.name} image={app.image} />
     </>
   )
   const content = (
@@ -137,7 +143,11 @@ function AppDetailLayout() {
         }}
       />
       <AppPaletteActions app={app} action={action} onDeploy={setDeployTab} />
-      <Outlet />
+      <StuckPanel kind="app" name={app.name} />
+      <AppTabStrip name={app.name} />
+      <Suspense fallback={<DelayedFallback />}>
+        <Outlet />
+      </Suspense>
     </>
   )
 
@@ -164,6 +174,7 @@ function AppDetailLayout() {
             className="hidden h-5 w-px bg-border lg:block"
           />
           <div className="flex items-center gap-2">
+            <PublishLockToggle appName={app.name} />
             <AppActionBar app={app} onDeploy={setDeployTab} />
           </div>
         </>
@@ -209,21 +220,5 @@ function AppDetailLayoutSkeleton() {
         <Skeleton className="h-4 w-2/3" />
       </div>
     </div>
-  )
-}
-
-// fetchApp (queries/apps.ts) throws a plain Error for a 404, which lands
-// here rather than crashing the whole route tree. Kept deliberately
-// minimal: a name, a message, and a way back to the list.
-function AppDetailError({ error }: { error: unknown }) {
-  return (
-    <Alert variant="destructive">
-      <AlertDescription>
-        <p>{routeErrorMessage(error)}</p>
-        <Link to="/apps" className="mt-2 inline-block underline">
-          Back to apps
-        </Link>
-      </AlertDescription>
-    </Alert>
   )
 }

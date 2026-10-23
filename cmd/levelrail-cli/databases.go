@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -20,7 +21,12 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	case "create":
 		return runDatabasesCreate(prog, rest, stdout, stderr, lookupEnv, os.Stdin)
 	case "connect":
+		if len(rest) > 0 && !strings.HasPrefix(rest[0], "-") {
+			return runDatabasesConnectManaged(prog, rest, stdout, stderr, lookupEnv)
+		}
 		return runDatabasesConnect(prog, rest, os.Stdin, stdout, stderr, lookupEnv)
+	case "tunnel":
+		return runDatabasesTunnel(prog, rest, stdout, stderr, lookupEnv)
 	case "adopt":
 		return runDatabasesAdopt(prog, rest, os.Stdin, stdout, stderr, lookupEnv)
 	case "probe":
@@ -63,6 +69,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesPublicAccess(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-password":
 		return runDatabasesRotatePassword(prog, rest, stdout, stderr, lookupEnv)
+	case "credentials":
+		return runDatabasesCredentials(prog, rest, stdout, stderr, lookupEnv)
 	case "users":
 		return runDatabasesUsers(prog, rest, stdout, stderr, lookupEnv)
 	case "access":
@@ -107,6 +115,8 @@ func databasesUsage(prog string) string {
   %[1]s databases create [flags]     create a managed database
   %[1]s databases create --interactive  guided, step-by-step creation
   %[1]s databases connect --name N --engine E --host H [flags]  connect an existing database where it is, no data moved (--password-stdin, --test)
+  %[1]s databases connect <name> [--user U] [--launch] [flags]  tunnel to a managed database, print a connection string, optionally start psql, mysql or redis-cli
+  %[1]s databases tunnel <name> [--port N] [--bind ADDR] [flags]  open a local port to a managed database through the control plane
   %[1]s databases adopt --container C [--node N] [flags]  adopt a running database container without touching it (--list to browse)
   %[1]s databases link <name> <app> [--env-var VAR] [--field F] [flags]  connect an app: injects the connection env var
   %[1]s databases links <name> [flags]  list the apps connected to a database
@@ -130,6 +140,7 @@ func databasesUsage(prog string) string {
   %[1]s databases clear-node <name> [flags]  move a database back to the local node
   %[1]s databases public-access set <name> [flags]    expose a database on a host port
   %[1]s databases public-access clear <name> [flags]  return a database to internal-network-only
+  %[1]s databases credentials <name> [flags]  print the owner password (owner only, audited)
   %[1]s databases users list|create|rotate|disable|enable|delete <name> ...  manage database logins
   %[1]s databases rotate-password <name> [--dry-run|--status|--every-days N] [flags]  rotate the owner password, restart linked apps
   %[1]s databases access temp|list|revoke|who|grant <name> ...  temporary credentials and who can access

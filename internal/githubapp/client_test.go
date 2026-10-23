@@ -234,7 +234,7 @@ func TestListInstallationRepos_Paginates(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(listRepositoriesResponse{TotalCount: total, Repositories: repos})
 	})
 
-	repos, err := c.ListInstallationRepos(context.Background(), "", "tok")
+	repos, _, err := c.ListInstallationRepos(context.Background(), "", "tok", ListOptions{})
 	if err != nil {
 		t.Fatalf("ListInstallationRepos() error = %v", err)
 	}

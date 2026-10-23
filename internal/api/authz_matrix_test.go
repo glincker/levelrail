@@ -63,6 +63,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/auth/sign-in-alert/disown":         "authenticated by the signed single-use link from the owner's new-sign-in email, rate limited per IP",
 	"POST /api/v1/auth/device/start":                 "CLI device login start, rate limited",
 	"POST /api/v1/auth/device/token":                 "CLI device login poll, authenticated by the device code",
+	"POST /api/v1/auth/cli-pairing/redeem":           "CLI pairing, authenticated by the single-use code a signed-in browser issued, rate limited per IP and code",
 	"POST /api/v1/mobile/pair":                       "phone pairing, authenticated by the one-time pairing code, rate limited per IP and code",
 	"GET /api/v1/auth/oauth/providers":               "login screen lists enabled providers",
 	"GET /api/v1/auth/saml/providers":                "login screen lists enabled SAML connections, id and name only",
@@ -77,14 +78,18 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /api/v1/auth/session-links/{token}/consume": "retired form, always answers 405",
 	"GET /.well-known/jwks.json":                     "pipeline OIDC verification key set, meant to be fetched by AWS/GCP/Vault with no session; answers 404 rather than 401 when OIDC is unconfigured (router.go's oidcJWKS is nil), which leaks nothing either",
 	"POST /api/v1/webhooks/github/{name}":            "authenticated by the HMAC signature of the app's webhook secret",
+	"POST /api/v1/webhooks/functions/{name}":         "authenticated by the HMAC of timestamp and body with the function's own webhook secret, inside a replay window, rate limited per IP and function",
 	"POST /api/v1/hooks/pipeline/{id}/{token}":       "authenticated by the per-pipeline secret URL token (sha256 compared in constant time, uniform 404 on any mismatch), optionally plus a body HMAC, rate limited",
 	"POST /api/v1/ci/oidc-exchange":                  "authenticated by a CI provider OIDC identity token (signature, issuer, audience and expiry verified) that must match a per-app trust, rate limited",
+	"POST /api/v1/hooks/deploy/{id}/{token}":         "authenticated by the per-hook secret token in the path (hash compared in constant time); any mismatch answers a uniform 404",
 	"POST /api/v1/hooks/image-update/{name}/{token}": "authenticated by the per-app secret token in the path (hash compared in constant time); any mismatch answers a uniform 404",
 	"POST /api/v1/otlp/v1/traces":                    "OTLP exporters send a per-app ingest key as a bearer token; a missing or wrong key answers 401",
 	"POST /api/v1/sentry/api/{project}/envelope/":    "Sentry SDKs send the app's DSN public key in X-Sentry-Auth; a missing or wrong key answers 401, rate limited per app",
 	"POST /api/v1/sentry/api/{project}/store/":       "legacy Sentry store endpoint, same DSN key auth and per-app rate limit as the envelope route",
 	"OPTIONS /api/v1/sentry/api/{project}/envelope/": "CORS preflight for browser Sentry SDKs, answers headers only",
 	"OPTIONS /api/v1/sentry/api/{project}/store/":    "CORS preflight for browser Sentry SDKs, answers headers only",
+	"POST /api/v1/forms/{app}/{name}":                "public form capture for static sites: write-only, per-IP and per-form rate limited, size capped, unknown forms answer 404, never returns stored data",
+	"OPTIONS /api/v1/forms/{app}/{name}":             "CORS preflight for browser form posts, answers headers only",
 	"GET /api/v1/hooks/wake":                         "called by the ingress wake route with a per-process secret header; any mismatch answers 404",
 	"POST /api/v1/webhooks/slack/interactions":       "authenticated by the X-Slack-Signature HMAC of the channel's own interactive secret",
 	"POST /api/v1/webhooks/discord/interactions":     "authenticated by the Ed25519 signature of the channel's own Discord application public key",
@@ -98,7 +103,11 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 // public routes (not token-gated at all) and pure computations that
 // change no state.
 var readOnlyMayMutate = map[string]string{
+	"POST /api/v1/apps/{name}/abuse/dry-run":                     "replays recent in-memory access records against a draft policy and counts what it would block, persists nothing",
+	"POST /api/v1/apps/{name}/budget/dry-run":                    "previews what pausing the app would stop and save, persists nothing",
+	"POST /api/v1/costs/budgets/{id}/dry-run":                    "previews what pausing a budget's apps would stop and save, persists nothing",
 	"POST /api/v1/fixes/{id}/preview":                            "re-runs the originating check and lists the changes an apply would make, persists nothing",
+	"POST /api/v1/system/doctor/checks/{id}/run":                 "re-runs one read-only health check, persists nothing",
 	"POST /api/v1/pipelines/validate":                            "validates YAML, persists nothing",
 	"POST /api/v1/pipelines/filters":                             "rewrites submitted YAML with path filters, persists nothing",
 	"POST /api/v1/apps/{name}/log-pipeline/preview":              "runs submitted rules over submitted sample lines, persists nothing",
@@ -119,6 +128,9 @@ var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/apps/{name}/validate-spec":                     "validates submitted app.yaml, persists nothing",
 	"POST /api/v1/apps/{name}/domains/{domain}/policies/preview": "explains a draft traffic policy, persists nothing",
 	"POST /api/v1/apps/{name}/domains/{domain}/doctor":           "runs read-only diagnostics against this server and public DNS, persists nothing",
+	"POST /api/v1/domains/{domain}/diagnose":                     "same read-only diagnostics addressed by domain, persists nothing",
+	"POST /api/v1/apps/{name}/static-routes/test":                "runs one request through the published rules and files, persists nothing",
+	"POST /api/v1/apps/{name}/static-routes/lint":                "parses submitted _redirects and _headers text, persists nothing",
 	"POST /api/v1/network-shares/{id}/test":                      "reachability dial only, gated by AbilityRead, persists nothing",
 	"DELETE /api/v1/teams/{id}/members/me":                       "self service: removes only the caller's own team membership",
 	"DELETE /api/v1/mobile/devices/{id}":                         "self service: revokes only a phone the caller paired, or any phone for root",
@@ -214,6 +226,7 @@ func TestAuthzMatrix_PublicAllowlistIsCurrent(t *testing.T) {
 }
 
 func TestAuthzMatrix_UnauthenticatedGets401(t *testing.T) {
+	t.Parallel()
 	rt, _, _ := newPipelineRouter(t)
 	var bad []string
 	for _, r := range loadMatrixRoutes(t) {
@@ -275,6 +288,7 @@ var resourceKinds = []struct {
 }
 
 func TestAuthzMatrix_ResourceDenyReturns403(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newPipelineRouter(t)
 	bootstrapTestAdmin(t, db)
 	user := storeUserWithAbilitiesForTest(t, db, "deny-matrix@example.com", []string{AbilityRoot})

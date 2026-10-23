@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/appsleep"
+	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -259,10 +261,26 @@ func (rt *Router) handleWakeHook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := r.Header.Get(ingress.WakeAppHeader)
+	w.Header().Set(ingress.WakeHeldHeader, "1")
 	setting, _ := rt.appSleep.GetAppSleep(r.Context(), name)
 	timing := rt.wakeTiming(r.Context(), name)
 	cfg := appsleep.ConfigFromEnv(nil)
 	hold := cfg.HoldTimeout(timing.ReadyP95Ms)
+	if setting.HoldRequests {
+		fnSettings := rt.loadFunctionSettings(r.Context(), name)
+		lim := functions.LimitsFromEnv(nil)
+		if t := lim.Timeout(fnSettings); t > 0 {
+			hold = t
+		}
+		release, ok := rt.functionLimiter.Acquire(name, lim.Concurrency(fnSettings))
+		if !ok {
+			rt.logger.Warn("api: wake hook: function at max concurrency", slog.String("function", name))
+			w.Header().Set("Retry-After", strconv.Itoa(wakeRetryAfterSeconds(timing)))
+			writeError(w, http.StatusTooManyRequests, "function is at its concurrency limit")
+			return
+		}
+		defer release()
+	}
 	start := time.Now()
 	woke, err := appsleep.Wake(r.Context(), rt.appSleep, rt.apps, rt.reconcileNudger, name, start)
 	var eventID int64

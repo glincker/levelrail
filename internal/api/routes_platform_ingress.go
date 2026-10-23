@@ -30,6 +30,13 @@ func (rt *Router) registerIngressRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/settings/ingress/https", rt.requireAbility(AbilityRoot, rt.handleEnableHTTPS))
 	mux.HandleFunc("GET /api/v1/settings/ingress/check", rt.requireAbility(AbilityRoot, rt.handleCheckIngressDomain))
 
+	mux.HandleFunc("GET /api/v1/settings/dns-provider", rt.requireAbility(AbilityRead, rt.handleGetDNSProvider))
+	mux.HandleFunc("PUT /api/v1/settings/dns-provider", rt.requireAbility(AbilityRoot, rt.handleSetDNSProvider))
+	mux.HandleFunc("POST /api/v1/settings/dns-provider/test", rt.requireAbility(AbilityRoot, rt.handleTestDNSProvider))
+	mux.HandleFunc("GET /api/v1/apps/{name}/dns-provider", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppDNSProvider))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/dns-provider", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppDNSProvider))
+	mux.HandleFunc("POST /api/v1/apps/{name}/dns-provider/test", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleTestAppDNSProvider))
+
 	// Domain DNS check (domain_check.go): the guidance layer on top of
 	// domain connection, so DomainEditor can show an operator the exact
 	// DNS record to add and watch it flip to "connected" once it actually

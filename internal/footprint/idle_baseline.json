@@ -1,0 +1,44 @@
+[
+  {
+    "os": "linux",
+    "arch": "arm64",
+    "apps": 0,
+    "app_mode": "stopped",
+    "window_seconds": 60,
+    "rss_mb": 211.9609375,
+    "peak_rss_mb": 211.9609375,
+    "cpu_percent": 0.38251260190128633,
+    "goroutines": 129,
+    "open_fds": 27,
+    "threads": 19,
+    "loops": 42
+  },
+  {
+    "os": "linux",
+    "arch": "arm64",
+    "apps": 20,
+    "app_mode": "stopped",
+    "window_seconds": 60,
+    "rss_mb": 148.01953125,
+    "peak_rss_mb": 233.15234375,
+    "cpu_percent": 0.8291936785181501,
+    "goroutines": 127,
+    "open_fds": 29,
+    "threads": 19,
+    "loops": 42
+  },
+  {
+    "os": "linux",
+    "arch": "arm64",
+    "apps": 5,
+    "app_mode": "stopped",
+    "window_seconds": 60,
+    "rss_mb": 216.12109375,
+    "peak_rss_mb": 216.12109375,
+    "cpu_percent": 0.5986168883364645,
+    "goroutines": 124,
+    "open_fds": 27,
+    "threads": 19,
+    "loops": 42
+  }
+]

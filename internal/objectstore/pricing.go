@@ -9,7 +9,7 @@ import (
 const PricePrefix = "APP_STORAGE_PRICE_PER_GB_MONTH_"
 
 var defaultPricePerGBMonth = map[string]float64{
-	PresetAWS: 0.023, PresetR2: 0.015, PresetB2: 0.006, PresetWasabi: 0.0069,
+	PresetAWS: 0.023, PresetR2: 0.015, PresetB2: 0.006, PresetWasabi: 0.0069, PresetGCS: 0.020,
 }
 
 // PricePerGBMonth is the list price used for cost estimates; self-hosted and node directories cost nothing.

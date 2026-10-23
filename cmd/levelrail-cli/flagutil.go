@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"golang.org/x/term"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // stringMapFlag is a flag.Value for a repeatable "KEY=VALUE" flag (e.g.
@@ -126,7 +128,17 @@ func bindOutputQueryFlags(fs *flag.FlagSet) (outputFlag, queryFlag *string) {
 func apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag string, lookupEnv func(string) (string, bool)) *Client {
 	profile := resolveProfile(profileFlag, lookupEnv)
 	applyScope(prog, profile, lookupEnv)
-	return NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
+	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
+	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
+	if token == "" && firstRunInteractive() {
+		if u, t, ok := offerFirstRunLogin(prog, profile, apiURL, lookupEnv, os.Stdin, os.Stdout, os.Stderr); ok {
+			apiURL, token = u, t
+		}
+	}
+	if token == "" {
+		return NewClient(apiURL, token, apiclient.WithNoCredentialsFix(notSignedInFix(prog, profile, apiURL)))
+	}
+	return NewClient(apiURL, token)
 }
 
 // Bundled to keep parameter counts under golangci-lint's limit.
@@ -179,7 +191,7 @@ func loggedInSessionClient(ctx context.Context, sf sessionFlags, prog string, lo
 
 	loginResp, err := sessionClient.Login(ctx, resolvedUsername, resolvedPassword)
 	if err == nil && loginResp.ApprovalRequired {
-		loginResp, err = sessionClient.awaitApproval(ctx, prog, loginResp.ApprovalID, loginResp.ApprovalMatch, stderr)
+		loginResp, err = sessionClient.awaitApproval(ctx, prog, loginResp, lookupEnv, stderr)
 	}
 	if err != nil {
 		return nil, loginResponse{}, fmt.Errorf("log in as %q: %w", resolvedUsername, err)

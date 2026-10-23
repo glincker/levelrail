@@ -20,7 +20,7 @@ Fastest path: connect the provider in the dashboard ([Connect a provider](#conne
 
 Two records are involved, and keeping them separate is deliberate.
 
-- A **provider connection** (a GitHub App, GitLab OAuth Application, Bitbucket OAuth consumer, or Gitea OAuth2 Application) is a control-plane-wide credential that can see many repositories across many organizations or workspaces. You connect it once.
+- A **provider connection** (a GitHub App installation, or a GitLab, Bitbucket or Gitea account authorized through an OAuth application) is a control-plane-wide credential that can see many repositories across many organizations or workspaces. You can connect several of each kind: see [Connecting more than one account](#connecting-more-than-one-account).
 - An app's **git source** (`GET/PUT/DELETE /api/v1/apps/{name}/git-source`) is a per-app record: one repository URL, one branch, one build configuration, one webhook secret, and one [deploy trigger mode](#deploy-triggers-push-or-release). Each app has its own webhook secret and its own enable and disable state.
 
 So you connect GitHub once, wire ten apps to ten different repositories, and never paste a personal token into an app by hand.
@@ -40,7 +40,7 @@ All four support webhooks, [preview environments](/previews), and PR comments an
 
 ## Connect a provider
 
-Connecting is done in the dashboard on purpose. Each flow ends in a real browser redirect to github.com, your GitLab instance, or bitbucket.org, which a script or the CLI cannot drive. `github-app`, `gitlab-app`, `bitbucket-app` and `gitea-app` with no subcommand only print usage.
+Connecting is done in the dashboard on purpose. Each flow ends in a real browser redirect to github.com, your GitLab instance, or bitbucket.org, which a script or the CLI cannot drive. The CLI can register, rename, list and disconnect accounts, and print the authorize path to open in a browser.
 
 <Note>
 All four need a master key configured on the control plane, the same one that encrypts every secret. Routes that need it return `501` without one. GitHub's manifest flow also needs a primary domain set in ingress settings first, because GitHub needs a reachable callback URL. Without one you get a `409` that says so.
@@ -83,7 +83,7 @@ If the control plane has no publicly reachable primary domain yet, create the Ap
 
 Open the GitLab App settings page (`/settings/gitlab-app`).
 
-Register an OAuth Application in GitLab, then paste its `instance_url`, `client_id`, and `client_secret`. Authorize through the redirect to your instance's `/oauth/authorize`.
+Register an OAuth Application in GitLab with redirect URI `<your control plane>/api/v1/gitlab-app/callback` and scope `api`, then paste its `instance_url`, `client_id`, and `client_secret`. Authorize through the redirect to your instance's `/oauth/authorize`.
 
 </Tab>
 <Tab title="Bitbucket">
@@ -102,7 +102,100 @@ Register an OAuth2 application in Gitea, then paste its `instance_url`, `client_
 </Tab>
 </Tabs>
 
-To disconnect, call `DELETE /api/v1/github-app` (or `/gitlab-app`, `/bitbucket-app`, `/gitea-app`) removes the connection and its secrets from the control plane only. It does not revoke the token or delete the App on the provider's side. Remove it there yourself, for example from `github.com/settings/apps`.
+To disconnect GitHub, call `DELETE /api/v1/github-app`. To disconnect one GitLab, Bitbucket or Gitea account, call `DELETE /api/v1/git-connections/{id}` (or press Disconnect on its row). Either removes the connection and its secrets from the control plane, revokes the OAuth token at GitLab, and answers `{disconnected, token_revoked, note, affected_sources}`. It does not uninstall the GitHub App or delete the application on the provider's side; the note says where to do that. Other connected accounts are not touched.
+
+### Connect with a token instead
+
+GitLab, Bitbucket Cloud, Gitea and Forgejo can also connect with an access token, with no OAuth application and no public domain, so it works on a plain `http://` install. In the dashboard choose Add account, then Connect with a token, or press it on a provider's settings page. The panel shows where to create the token and which scopes to tick:
+
+| Host | Scopes | Paste |
+| --- | --- | --- |
+| GitLab | `api` | the `glpat-` token |
+| Bitbucket Cloud | `read:user:bitbucket`, `read:repository:bitbucket`, `write:repository:bitbucket`, `read:pullrequest:bitbucket`, `write:pullrequest:bitbucket`, `read:webhook:bitbucket`, `write:webhook:bitbucket` | `email:token` |
+| Gitea, Forgejo | `read:user`, `write:repository` | the generated token |
+
+Check Token asks the host for the account, the scopes (GitLab reports them) and how many repositories the token reaches before anything is saved. Connecting stores the token encrypted and the account shows up like any other, with health. From the CLI: `git-providers test --type gitlab --instance-url URL --pat TOKEN`, then `git-providers add` with the same flags. A self-hosted server on a private network needs `APP_GIT_ALLOW_PRIVATE_NETWORKS=true` on the control plane. Tokens do not refresh: when one expires or is revoked the account shows Needs reconnect, and you add a new token.
+
+## Connecting more than one account
+
+The quickest way to see and manage every account is the **Git connections** page (**Settings, Git connections**, `/settings/git-connections`). It lists each GitHub, GitLab, Bitbucket, Bitbucket Server, Gitea and Forgejo (including Codeberg) account in one place with its health, repository count and the apps using it. Its **Add account** menu starts the connect flow for any host and, where the host needs one, asks for a primary domain first. In the repository picker, when more than one account is connected, account chips filter the list and the last choice is remembered per user.
+
+GitHub supports many installations. GitLab, Bitbucket and Gitea support many accounts too: a personal and a work Bitbucket workspace, several GitLab groups or accounts, gitlab.com next to a self-managed GitLab, or two Gitea servers. Each one is a **connection** with its own label, host, signed-in account, scopes and health.
+
+To add another account:
+
+1. Open the provider's settings page (`/settings/gitlab-app`, `/settings/bitbucket-app` or `/settings/gitea-app`) and press **Add another account**.
+2. To sign in with a different account on an instance you already use, choose **Reuse the application of ...**. Nothing else to enter. To use another instance or another OAuth application, choose **Register a new OAuth application** and paste its `instance_url` (GitLab, Gitea), client ID and secret. Optionally give it a label.
+3. Press **Save and authorize**. You are sent to the provider to approve; you come back to the settings page with the new account listed.
+
+From the CLI, `levelrail-cli git-providers add gitlab --instance-url https://git.example.com --client-id ID --client-secret SECRET` registers the application and prints the authorize path to open in a browser. `--reuse <connection id>` copies another connection's application.
+
+Forgejo (including Codeberg) connects exactly like Gitea, under its own provider. Bitbucket Server and Data Center connect with a personal access token instead of an OAuth application: `levelrail-cli git-providers add bitbucket_server --instance-url https://bitbucket.example.com --pat TOKEN` verifies the token and connects at once. Repositories there are addressed as `PROJECT/slug`, and the webhook it registers delivers `repo:refs_changed` pushes (pull request previews are not supported on Bitbucket Server yet).
+
+How it behaves:
+
+- Connecting again with a **different** account adds a connection and never replaces another. Connecting again with the **same** account (same host, same remote account, same OAuth application) updates that connection's tokens instead of adding a duplicate. The same login through a different OAuth application is a separate connection, which is what a Bitbucket workspace consumer needs.
+- The label defaults to `account @ host` once the account is known. Rename it any time.
+- The first connection of a provider is its **default**. Set another with **Set default** or `levelrail-cli git-providers default <id>`. The default is used when a request does not name a connection.
+- **Reconnect** on a row sends that connection through authorization again, for example after its grant was revoked.
+- **Disconnect** removes only that connection. Git sources that used it stay, show **needs reconnect**, and are never deleted. They attach to the next connection you add on the same host.
+- Connections belong to the control plane and are created, renamed and removed by an admin (the `root` ability). Anyone with the `read:sensitive` ability can list them (no credentials are ever returned) and browse the repositories an account can see, as with the GitHub App.
+- Existing GitLab, Bitbucket and Gitea connections from before this change became the first connection of their provider on upgrade, with their tokens and git sources intact. The account name fills in the first time the connection is used.
+
+```bash
+levelrail-cli git-providers connections --provider gitlab
+levelrail-cli git-providers rename <id> "Work GitLab"
+levelrail-cli git-providers disconnect --id <id>
+levelrail-cli git-providers repos gitlab --connection <id>
+```
+
+Pick the account when you choose a repository: the picker shows every connected account, filters by account, and shows the owner and account on each row, so `acme/api` from your work account and `acme/api` from your personal one are never confused. The git source records the account it came from, and its webhook is registered with that account's token.
+
+## Listing repositories
+
+The repository picker, `GET /api/v1/git/repos` and `levelrail-cli git-providers repos <provider>` all read one cached list per connection. Nothing is cut off at a fixed page count: the control plane pages through the provider until it runs out, up to `APP_GIT_REPO_LIST_MAX` repositories per connection (default `10000`). If an account has more than that, the response says `truncated: true` and the picker says so; paste a repository URL for one beyond the cap.
+
+Search, owner, archived and fork filters and paging are applied on the server, so a large account never reaches the browser in one response.
+
+| Parameter | Meaning |
+| --- | --- |
+| `provider` | `github`, `gitlab`, `bitbucket` or `gitea`. Omit it to merge every connected account of every provider. |
+| `connection` | One connection id, for example `gc_...` (GitHub installations use `github:<installation id>`). Each response lists its `connections` and each row carries `connection_id`, `connection_label` and `account`. |
+| `search` | Words that must all appear in the `owner/name` path. |
+| `owner` | One owner or organization. |
+| `archived`, `forks` | `include` (default), `exclude` or `only`. |
+| `limit`, `offset` | Page size (default 100, at most 500) and start. `next_offset` in the response is the following page. |
+| `refresh=1` | Re-list from the provider now. Throttled to once per `APP_GIT_REPO_REFRESH_MIN` per connection. |
+
+A list is served from the cache for `APP_GIT_REPO_CACHE_TTL` (default `5m`). After that it is still served for up to `APP_GIT_REPO_CACHE_STALE_MAX` (default `24h`) while one background refresh runs, and concurrent requests share a single provider call. GitHub pages are revalidated with ETags, so an unchanged page costs no rate limit budget. Disconnecting a provider, changing its connection or removing a GitHub installation drops its cached list. The dashboard picker has a Refresh button; the CLI has `--refresh`.
+
+When a provider answers 429 or a secondary rate limit, the control plane waits for a short `Retry-After` (at most `APP_GIT_RATE_LIMIT_MAX_WAIT`, default `5s`, up to `APP_GIT_RATE_LIMIT_RETRIES` times, default `2`). A longer wait is not slept on: a saved list is served with a `rate_limit.next_check_at` notice, or, with nothing saved yet, the call returns `429` with a `Retry-After` header and the next check time. `APP_GIT_RATE_LIMIT_BACKOFF` (default `60s`) is the assumed wait when the provider sends no `Retry-After`.
+
+```bash
+levelrail-cli git-providers repos github --search api --archived exclude
+levelrail-cli git-providers repos gitlab --owner platform --all
+levelrail-cli git-providers repos gitea --refresh
+levelrail-cli git-providers repos gitlab --connection <id>
+```
+
+## Reconnecting a provider
+
+Each connection has a health state, shown on its settings page, in `GET /api/v1/git-providers` (`connection.status`), in `levelrail-cli git-providers` and in the System Doctor check `git_connections`.
+
+| Status | Meaning | What to do |
+| --- | --- | --- |
+| `ok` | The provider accepted the last call. | Nothing. |
+| `needs_reauthorize` | The grant was revoked or expired, or the provider answered 401 or 403 to the stored credential. | Press Reconnect on that account's row on the provider's settings page. |
+| `revoked` | The GitHub App installation (or the authorization) no longer exists on the provider. | Press Reconnect, which opens the App page to install it again. |
+| `rate_limited` | The provider is rate limiting this control plane. | Nothing: saved lists are used and the provider is asked again after `next_check_at`. |
+
+API calls that hit a `needs_reauthorize` or `revoked` connection answer `409` with `{"code": "needs_reauthorize"}` (or `revoked`) instead of an internal error. A rate limit answers `429` with `Retry-After`. The status clears itself on the next call the provider accepts.
+
+GitLab, Bitbucket and Gitea refresh their OAuth tokens one caller at a time per connection. A caller that waited reuses the token another caller just refreshed, and a refresh token is never spent twice, so concurrent requests cannot break a provider that rotates refresh tokens.
+
+Disconnecting a provider reports what happened on the provider's side: GitLab's token is revoked at GitLab; GitHub (installation tokens are minted per call and never stored), Bitbucket and Gitea have nothing the control plane can revoke, and the response says where to remove the grant by hand.
+
+GitLab asks for the broad `api` OAuth scope, because it is the one scope that covers listing projects and registering webhooks. It grants read and write on everything the connecting account can see. Connect with a dedicated, least-privileged GitLab account or a bot user if that is too wide.
 
 ## Use a repository as an app's source
 
@@ -118,32 +211,14 @@ levelrail-cli github-app use-as-source <owner> <repo> --app-name my-app --branch
 ```
 
 </Tab>
-<Tab title="GitLab">
+<Tab title="GitLab, Bitbucket, Gitea">
 
-GitLab identifies a project by its numeric ID, so these commands take one positional argument.
-
-```bash
-levelrail-cli gitlab-app projects
-levelrail-cli gitlab-app branches <project-id>
-levelrail-cli gitlab-app use-as-source <project-id> --app-name my-app
-```
-
-</Tab>
-<Tab title="Bitbucket">
+These three share one set of commands, because each can hold several accounts. `--id` names the connection (see `git-providers connections`). `--repo` is a project ID for GitLab and `owner/name` for Bitbucket and Gitea.
 
 ```bash
-levelrail-cli bitbucket-app repos
-levelrail-cli bitbucket-app branches <workspace> <repo-slug>
-levelrail-cli bitbucket-app use-as-source <workspace> <repo-slug> --app-name my-app
-```
-
-</Tab>
-<Tab title="Gitea">
-
-```bash
-levelrail-cli gitea-app repos
-levelrail-cli gitea-app branches <owner> <repo>
-levelrail-cli gitea-app use-as-source <owner> <repo> --app-name my-app
+levelrail-cli git-providers repos gitlab --connection <id>
+levelrail-cli git-providers branches --id <id> --repo <project-id>
+levelrail-cli git-providers use-as-source --id <id> --repo <owner/name> --app-name my-app
 ```
 
 </Tab>
@@ -548,26 +623,23 @@ The TTL sweep covers a pull-request-closed delivery that never arrived. A backgr
 | Method | Path | Ability |
 | --- | --- | --- |
 | `GET` | `/api/v1/git-providers` | `read:sensitive` |
+| `GET` | `/api/v1/git/repos` | `read:sensitive` |
 | `GET`, `DELETE` | `/api/v1/github-app` | `root` |
 | `PUT` | `/api/v1/github-app/manual` | `root` |
 | `GET` | `/api/v1/github-app/register/preview`, `/register/start`, `/callback`, `/installed` | `root` |
 | `GET` | `/api/v1/github-app/repos`, `/repos/{owner}/{repo}/branches` | `read:sensitive` |
 | `POST` | `/api/v1/github-app/repos/{owner}/{repo}/use-as-source` | `write:sensitive` |
-| `GET`, `PUT`, `DELETE` | `/api/v1/gitlab-app` | `root` |
-| `GET` | `/api/v1/gitlab-app/connect`, `/callback` | `root` |
-| `GET` | `/api/v1/gitlab-app/projects`, `/projects/{id}/branches` | `read:sensitive` |
-| `POST` | `/api/v1/gitlab-app/projects/{id}/use-as-source` | `write:sensitive` |
-| `GET`, `PUT`, `DELETE` | `/api/v1/bitbucket-app` | `root` |
-| `GET` | `/api/v1/bitbucket-app/connect`, `/callback` | `root` |
-| `GET` | `/api/v1/bitbucket-app/repos`, `/repos/{workspace}/{repoSlug}/branches` | `read:sensitive` |
-| `POST` | `/api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source` | `write:sensitive` |
-| `GET`, `PUT`, `DELETE` | `/api/v1/gitea-app` | `root` |
-| `GET` | `/api/v1/gitea-app/connect`, `/callback` | `root` |
-| `GET` | `/api/v1/gitea-app/repos`, `/repos/{owner}/{repo}/branches` | `read:sensitive` |
-| `POST` | `/api/v1/gitea-app/repos/{owner}/{repo}/use-as-source` | `write:sensitive` |
+| `GET` | `/api/v1/git-connections`, `/api/v1/git-connections/{id}` | `read:sensitive` |
+| `POST` | `/api/v1/git-connections` | `root` |
+| `PATCH`, `DELETE` | `/api/v1/git-connections/{id}` | `root` |
+| `POST` | `/api/v1/git-connections/{id}/default` | `root` |
+| `GET` | `/api/v1/gitlab-app/connect`, `/callback` (also `bitbucket-app`, `gitea-app`) | `root` |
+| `GET` | `/api/v1/git-connections/{id}/branches?repo=` | `read:sensitive` |
+| `POST` | `/api/v1/git-connections/{id}/use-as-source` | `write:sensitive` |
 | `PUT` | `/api/v1/apps/{name}/git-source/build` | `write:sensitive` |
 | `POST` | `/api/v1/apps/{name}/git-source/detect` | `deploy` |
 | `POST` | `/api/v1/webhooks/github/{name}` | none (signature verified) |
+| `POST` | `/api/v1/apps/{name}/git-source/webhook/register` | `write:sensitive` |
 | `GET` | `/api/v1/apps/{name}/webhook-deliveries` | `read` |
 | `POST` | `/api/v1/apps/{name}/webhook-deliveries/{id}/replay` | `deploy` |
 | `PUT` | `/api/v1/apps/{name}/preview-settings` | `write:sensitive` |
@@ -602,17 +674,21 @@ Both have their own release webhook events that Levelrail does not subscribe to.
 `use-as-source` connects the repository and registers the webhook, but does not carry the OAuth token forward as the git source's deploy token. A private repository only builds once you paste a personal access token into the app's git source card. GitHub does not have this gap, because its installation token is minted fresh on every call. Likewise `can_auth_clone` in `GET /api/v1/git-providers` is true only for GitHub.
 
 </Accordion>
-<Accordion title="GitHub Enterprise Server clone authentication">
+<Accordion title="GitHub Enterprise Server is not tested against a live instance">
 
-A GitHub Enterprise Server connection works for the App itself, but the authenticated-clone path only recognizes `github.com` URLs.
+A GitHub Enterprise Server connection uses the instance's own host for the App, for listing and for authenticated clones: a repository URL on the connected instance's host gets the installation token, exactly like `github.com`. This is covered by unit tests only; it has not been run against a live Enterprise Server.
 
 </Accordion>
-<Accordion title="Disconnecting does not revoke anything on the provider">
+<Accordion title="Disconnecting only revokes the token on GitLab">
 
-Disconnecting deletes the local connection and its secrets. It never revokes the token, uninstalls the App, or deletes the OAuth application on the provider's side.
+Disconnecting deletes the local connection and its secrets and, for GitLab, revokes the OAuth token. It never uninstalls the GitHub App or deletes the OAuth application on any provider, and Bitbucket and Gitea offer no API to revoke a token. The disconnect response and the toast say which of these applied.
 
 </Accordion>
 </AccordionGroup>
+
+## When webhooks do not arrive
+
+A push can reach a git source without a webhook ever being called: the webhook address was `localhost`, registration failed, or the git host was down. [Git reliability](/git-reliability) describes what the control plane does about it: it flags an unreachable webhook address, shows registration failures with a Register again button, polls the branch head for missed pushes and ignores a late delivery for a commit older than the one already deployed.
 
 ## Troubleshooting
 

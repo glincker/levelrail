@@ -81,7 +81,8 @@ func (rt *Router) SweepStalePreviewEnvironments(ctx context.Context) (swept int,
 func (rt *Router) RunPreviewSweeper(ctx context.Context, interval time.Duration) error {
 	return footprint.Every(ctx, "preview sweep", interval, rt.logger, func(ctx context.Context) error {
 		_, err := rt.SweepStalePreviewEnvironments(ctx)
-		return err
+		_, branchErr := rt.SweepStaleBranchDeploys(ctx)
+		return errors.Join(err, branchErr)
 	})
 }
 

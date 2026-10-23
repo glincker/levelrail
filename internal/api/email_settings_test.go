@@ -19,28 +19,61 @@ import (
 // same pattern fakeBackupSecretsSetter (backup_targets_test.go) already
 // establishes for the structurally identical backup-target interface.
 type fakeEmailSecretsStore struct {
-	err    error
-	values map[string]string // envKey -> plaintext, keyed loosely (serviceName is always the same sentinel in practice)
+	err error
+	// values is keyed by envKey for the shared email-settings namespace and by service|envKey for any other.
+	values map[string]string
 }
 
 func newFakeEmailSecretsStore() *fakeEmailSecretsStore {
 	return &fakeEmailSecretsStore{values: map[string]string{}}
 }
 
-func (f *fakeEmailSecretsStore) SetValue(_ context.Context, _, envKey, plaintext string) error {
+func fakeEmailSlot(service, envKey string) string {
+	if service == store.EmailSettingsSecretsKey() {
+		return envKey
+	}
+	return service + "|" + envKey
+}
+
+func (f *fakeEmailSecretsStore) SetValue(_ context.Context, service, envKey, plaintext string) error {
 	if f.err != nil {
 		return f.err
 	}
-	f.values[envKey] = plaintext
+	f.values[fakeEmailSlot(service, envKey)] = plaintext
 	return nil
 }
 
-func (f *fakeEmailSecretsStore) Exists(_ context.Context, _, envKey string) (bool, error) {
+func (f *fakeEmailSecretsStore) Exists(_ context.Context, service, envKey string) (bool, error) {
 	if f.err != nil {
 		return false, f.err
 	}
-	_, ok := f.values[envKey]
+	_, ok := f.values[fakeEmailSlot(service, envKey)]
 	return ok, nil
+}
+
+func (f *fakeEmailSecretsStore) Resolve(_ context.Context, service, envKey string) (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	v, ok := f.values[fakeEmailSlot(service, envKey)]
+	if !ok {
+		return "", secrets.ErrValueNotFound
+	}
+	return v, nil
+}
+
+func (f *fakeEmailSecretsStore) DeleteValue(_ context.Context, service, envKey string) error {
+	delete(f.values, fakeEmailSlot(service, envKey))
+	return f.err
+}
+
+func (f *fakeEmailSecretsStore) DeleteAll(_ context.Context, service string) error {
+	for k := range f.values {
+		if strings.HasPrefix(k, service+"|") {
+			delete(f.values, k)
+		}
+	}
+	return f.err
 }
 
 func newTestRouterWithEmailSecrets(t *testing.T, secrets EmailSecretsStore) (*Router, *store.DB) {
@@ -130,8 +163,8 @@ func TestHandleUpdateEmailSettings_SMTP_Success(t *testing.T) {
 	if settings.Backend != store.EmailBackendSMTP || settings.SMTPHost != "smtp.example.com" || settings.SMTPPort != 587 {
 		t.Errorf("got %+v, want smtp backend with the submitted fields", settings)
 	}
-	if secrets.values[emailSecretsSMTPPasswordKey] != "shh" {
-		t.Errorf("stored smtp password = %q, want shh", secrets.values[emailSecretsSMTPPasswordKey])
+	if secrets.values[store.EmailSecretSMTPPassword] != "shh" {
+		t.Errorf("stored smtp password = %q, want shh", secrets.values[store.EmailSecretSMTPPassword])
 	}
 }
 
@@ -151,8 +184,8 @@ func TestHandleUpdateEmailSettings_OmittedPasswordLeavesExistingIntact(t *testin
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
 	}
 
-	if secrets.values[emailSecretsSMTPPasswordKey] != "original" {
-		t.Errorf("stored smtp password = %q, want it left untouched at 'original'", secrets.values[emailSecretsSMTPPasswordKey])
+	if secrets.values[store.EmailSecretSMTPPassword] != "original" {
+		t.Errorf("stored smtp password = %q, want it left untouched at 'original'", secrets.values[store.EmailSecretSMTPPassword])
 	}
 	settings, err := db.GetEmailSettings(context.Background())
 	if err != nil {
@@ -174,8 +207,8 @@ func TestHandleUpdateEmailSettings_SES_Success(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
 	}
-	if secrets.values[emailSecretsSESSecretAccessKey] != "shh" {
-		t.Errorf("stored ses secret = %q, want shh", secrets.values[emailSecretsSESSecretAccessKey])
+	if secrets.values[store.EmailSecretSESSecretKey] != "shh" {
+		t.Errorf("stored ses secret = %q, want shh", secrets.values[store.EmailSecretSESSecretKey])
 	}
 }
 
@@ -198,8 +231,8 @@ func TestHandleUpdateEmailSettings_Resend_Success(t *testing.T) {
 	if settings.Backend != store.EmailBackendResend || settings.ResendFrom != "a@example.com" {
 		t.Errorf("got %+v, want resend backend with the submitted from address", settings)
 	}
-	if secrets.values[emailSecretsResendAPIKey] != "shh" {
-		t.Errorf("stored resend api key = %q, want shh", secrets.values[emailSecretsResendAPIKey])
+	if secrets.values[store.EmailSecretResendAPIKey] != "shh" {
+		t.Errorf("stored resend api key = %q, want shh", secrets.values[store.EmailSecretResendAPIKey])
 	}
 
 	var got emailSettingsResource
@@ -221,7 +254,12 @@ func TestValidateEmailSettingsRequest(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "empty backend valid", req: emailSettingsResource{Backend: ""}, wantErr: false},
-		{name: "unknown backend", req: emailSettingsResource{Backend: "mailgun"}, wantErr: true},
+		{name: "unknown backend", req: emailSettingsResource{Backend: "carrier-pigeon"}, wantErr: true},
+		{name: "ses hostname as region", req: emailSettingsResource{Backend: store.EmailBackendSES, SESRegion: "email-smtp.us-east-1.amazonaws.com", SESFrom: "a@example.com", SESAccessKeyID: "id"}, wantErr: true},
+		{name: "ses smtp valid", req: emailSettingsResource{Backend: store.EmailBackendSESSMTP, SESRegion: "eu-west-1", FromAddress: "a@example.com", SESSMTPUsername: "u", SESSMTPPort: 465}, wantErr: false},
+		{name: "ses smtp bad port", req: emailSettingsResource{Backend: store.EmailBackendSESSMTP, SESRegion: "eu-west-1", FromAddress: "a@example.com", SESSMTPUsername: "u", SESSMTPPort: 80}, wantErr: true},
+		{name: "mailgun needs domain", req: emailSettingsResource{Backend: store.EmailBackendMailgun, FromAddress: "a@example.com"}, wantErr: true},
+		{name: "postmark valid", req: emailSettingsResource{Backend: store.EmailBackendPostmark, FromAddress: "a@example.com"}, wantErr: false},
 		{name: "smtp missing host", req: emailSettingsResource{Backend: store.EmailBackendSMTP, SMTPFrom: "a@example.com", SMTPPort: 587}, wantErr: true},
 		{name: "smtp missing from", req: emailSettingsResource{Backend: store.EmailBackendSMTP, SMTPHost: "h", SMTPPort: 587}, wantErr: true},
 		{name: "smtp missing port", req: emailSettingsResource{Backend: store.EmailBackendSMTP, SMTPHost: "h", SMTPFrom: "a@example.com"}, wantErr: true},
@@ -335,14 +373,14 @@ func TestHandleUpdateEmailSettings_RealSecretsManager_RoundTripsThroughEncryptio
 	ctx := context.Background()
 	key := store.EmailSettingsSecretsKey()
 
-	gotSMTPPassword, err := secretsManager.Resolve(ctx, key, emailSecretsSMTPPasswordKey)
+	gotSMTPPassword, err := secretsManager.Resolve(ctx, key, store.EmailSecretSMTPPassword)
 	if err != nil {
 		t.Fatalf("Resolve(smtp_password) error = %v", err)
 	}
 	if gotSMTPPassword != smtpPassword {
 		t.Errorf("Resolve(smtp_password) = %q, want %q", gotSMTPPassword, smtpPassword)
 	}
-	gotSESSecret, err := secretsManager.Resolve(ctx, key, emailSecretsSESSecretAccessKey)
+	gotSESSecret, err := secretsManager.Resolve(ctx, key, store.EmailSecretSESSecretKey)
 	if err != nil {
 		t.Fatalf("Resolve(ses_secret_access_key) error = %v", err)
 	}
@@ -352,14 +390,14 @@ func TestHandleUpdateEmailSettings_RealSecretsManager_RoundTripsThroughEncryptio
 
 	// Only ciphertext ever reaches disk: the raw ciphertext column must
 	// never equal, and must never even contain, either plaintext value.
-	smtpCiphertext, err := db.GetSecretValue(ctx, key, emailSecretsSMTPPasswordKey)
+	smtpCiphertext, err := db.GetSecretValue(ctx, key, store.EmailSecretSMTPPassword)
 	if err != nil {
 		t.Fatalf("GetSecretValue(smtp_password) error = %v", err)
 	}
 	if strings.Contains(string(smtpCiphertext), smtpPassword) {
 		t.Error("smtp_password ciphertext contains the raw plaintext: encryption is not actually happening")
 	}
-	sesCiphertext, err := db.GetSecretValue(ctx, key, emailSecretsSESSecretAccessKey)
+	sesCiphertext, err := db.GetSecretValue(ctx, key, store.EmailSecretSESSecretKey)
 	if err != nil {
 		t.Fatalf("GetSecretValue(ses_secret_access_key) error = %v", err)
 	}
@@ -375,8 +413,8 @@ func TestHandleTestEmail_Success(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/settings/email/test", `{"to":"ops@example.com"}`))
-	if rec.Code != http.StatusNoContent {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNoContent, rec.Body.String())
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
 	}
 	sent := waitForSend(t, sender.calls)
 	if sent.to != "ops@example.com" {

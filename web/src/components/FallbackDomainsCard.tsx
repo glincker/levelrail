@@ -15,6 +15,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import { DnsProviderPicker } from './DnsProviderPicker'
 
 /** FallbackDomainsCard toggles the automatic sslip.io hostname every app without a domain gets. */
 export function FallbackDomainsCard() {
@@ -60,6 +61,7 @@ export function FallbackDomainsCard() {
             {t('fallback.toggleLabel')}
           </Label>
         </div>
+        <DnsProviderPicker />
         <p className="text-xs text-muted-foreground">
           {host
             ? t('fallback.publicHost', {

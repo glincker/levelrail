@@ -28,6 +28,8 @@ func runVault(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runVaultSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "disconnect":
 		return runVaultDisconnect(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rotate-credential":
+		return runVaultRotateCredential(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown vault subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, vaultUsage(prog))
@@ -41,6 +43,7 @@ func vaultUsage(prog string) string {
   %[1]s vault set --address URL --auth-method token --vault-token TOKEN   configure and enable (token auth)
   %[1]s vault set --address URL --auth-method approle --role-id ID --secret-id SECRET_ID   configure and enable (AppRole auth)
   %[1]s vault disconnect [flags]                                    disable and forget the stored credential
+  %[1]s vault rotate-credential --credential-file PATH|- [flags]    replace the stored credential, keep the old one for the grace window
 
 Configures resolving an app.yaml env var's value live from an external
 HashiCorp Vault instance ({ vault: { path, key } }), as an alternative to
@@ -173,4 +176,7 @@ func printVaultSettings(out io.Writer, s vaultSettingsResource) {
 	}
 	_, _ = fmt.Fprintf(out, "mount_path:     %s\n", s.MountPath)
 	_, _ = fmt.Fprintf(out, "has_credential: %v\n", s.HasCredential)
+	if s.CredentialRotatedAt != "" {
+		_, _ = fmt.Fprintf(out, "last_rotated:   %s\n", s.CredentialRotatedAt)
+	}
 }

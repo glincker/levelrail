@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { ApiError } from '../lib/apiError'
 import {
   useDeleteLogArchivePolicy,
@@ -229,7 +230,7 @@ export function LogArchivePanel({ appName }: { appName: string }) {
     )
   }
   if (destinations.isPending || policies.isPending) {
-    return <p className="text-sm text-muted-foreground">Loading...</p>
+    return <ListSkeleton rows={3} />
   }
 
   const policy = policies.data.find((p) => p.app_name === appName)

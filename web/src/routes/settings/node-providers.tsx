@@ -2,8 +2,13 @@ import { createFileRoute } from '@tanstack/react-router'
 import { CloudIcon } from '@phosphor-icons/react/dist/ssr'
 import { useTranslation } from 'react-i18next'
 import { PageTemplate } from '@/components/shell/PageTemplate'
+import { PageBanner } from '../../components/PageBanner'
+import { LazyCloudProvidersDiagram } from '../../components/banners/LazyPass3Diagrams'
 import { pickStringSearch } from '../../lib/urlDialog'
-import { nodeProviderListQueryOptions } from '../../queries/nodeProvision'
+import {
+  nodeProviderListQueryOptions,
+  useNodeProviders,
+} from '../../queries/nodeProvision'
 import { NodeProviderCredentialsCard } from '../../components/NodeProviderCredentialsCard'
 import {
   SettingsCardSkeleton,
@@ -43,12 +48,26 @@ function NodeProvidersSettingsSkeleton() {
 
 function NodeProvidersSettingsPage() {
   const { t } = useTranslation('settings')
+  const providers = useNodeProviders().data
+  const connected = providers?.some((p) => p.has_token) ?? false
+  const size = connected ? 'compact' : 'hero'
 
   return (
     <PageTemplate
-      icon={<CloudIcon />}
       title={t('nodeProvidersPage.title')}
-      description={t('nodeProvidersPage.description')}
+      banner={
+        <PageBanner
+          icon={<CloudIcon />}
+          titleKey="settings:nodeProvidersPage.title"
+          descriptionKey={
+            connected
+              ? 'settings:nodeProvidersPage.description'
+              : 'settings:nodeProvidersPage.banner.description'
+          }
+          illustration={<LazyCloudProvidersDiagram size={size} />}
+          size={size}
+        />
+      }
     >
       <NodeProviderCredentialsCard />
     </PageTemplate>

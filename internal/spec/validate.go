@@ -187,8 +187,20 @@ func (svc *Service) validateBuild(name string) error {
 	if svc.Build.Type == BuildImage && svc.Build.Path != "" {
 		return fmt.Errorf("spec: service %q: build.path is not meaningful for build.type: image, there is nothing to build", name)
 	}
-	if len(svc.Build.Args) > 0 && svc.Build.Type != BuildDockerfile {
+	if err := svc.Build.validateStaticBuild(name); err != nil {
+		return err
+	}
+	if err := svc.validateContexts(name); err != nil {
+		return err
+	}
+	if err := svc.validateStaticRouting(name); err != nil {
+		return err
+	}
+	if len(svc.Build.Args) > 0 && svc.Build.Type != BuildDockerfile && !svc.Build.RunsStaticBuild() {
 		return fmt.Errorf("spec: service %q: build.args is not meaningful for build.type %q", name, svc.Build.Type)
+	}
+	if err := svc.Build.validateBuildSecrets(name); err != nil {
+		return err
 	}
 	if svc.Build.BaseDirectory == "" {
 		return nil

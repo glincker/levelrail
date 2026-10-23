@@ -32,6 +32,9 @@ export interface DatabaseResource {
   // omitted node_id and simple spread scheduling picked a non-local node
   // for it.
   auto_placed?: boolean
+  // provision_state: set while the database has no container yet.
+  provision_state?: 'pending' | 'failed'
+  provision_reason?: string
   // project_id: response-only on PUT, the same shape appDetail.ts
   // documents for AppDetail's own project_id, set via
   // PUT /api/v1/databases/{name}/project (useSetDatabaseProject) or, at

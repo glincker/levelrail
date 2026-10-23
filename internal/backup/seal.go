@@ -33,6 +33,9 @@ const (
 // ErrNoDecryptionKey means an encrypted object was opened without identities.
 var ErrNoDecryptionKey = errors.New("backup is encrypted and this control plane has no decryption key")
 
+// ErrDumpEncryptionUnavailable means a destination requires encrypted dumps but no backup key is loaded.
+var ErrDumpEncryptionUnavailable = errors.New("this backup destination encrypts database dumps but no backup encryption key is loaded (check APP_BACKUP_ENCRYPTION)")
+
 // Sealer compresses and optionally encrypts a stream. A nil Sealer means the
 // legacy raw encoding.
 type Sealer struct {

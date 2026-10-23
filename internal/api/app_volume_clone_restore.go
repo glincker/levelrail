@@ -90,8 +90,7 @@ func (rt *Router) handleVolumeCloneRestore(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: volume clone restore: load backup history failed", slog.String("error", err.Error()), slog.String("backup_id", req.BackupID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: volume clone restore: load backup history failed", err, slog.String("backup_id", req.BackupID))
 		return
 	}
 	if backup.ServiceName != serviceName || backup.VolumeName != volumeName {
@@ -107,16 +106,14 @@ func (rt *Router) handleVolumeCloneRestore(w http.ResponseWriter, r *http.Reques
 	if newVolumeName == "" {
 		newVolumeName, err = defaultVolumeCloneName(serviceName, volumeName)
 		if err != nil {
-			rt.logger.Error("api: volume clone restore: generate default volume name failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: volume clone restore: generate default volume name failed", err)
 			return
 		}
 	}
 
 	historyID, err := randomVolumeCloneRestoreID()
 	if err != nil {
-		rt.logger.Error("api: volume clone restore: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: volume clone restore: generate id failed", err)
 		return
 	}
 
@@ -146,8 +143,7 @@ func (rt *Router) handleListVolumeCloneRestores(w http.ResponseWriter, r *http.R
 
 	history, err := rt.volumeCloneRestoreHistory.ListVolumeCloneRestores(r.Context(), serviceName, volumeName)
 	if err != nil {
-		rt.logger.Error("api: list volume clone restores failed", slog.String("error", err.Error()), slog.String("service", serviceName), slog.String("volume", volumeName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list volume clone restores failed", err, slog.String("service", serviceName), slog.String("volume", volumeName))
 		return
 	}
 	out := make([]volumeCloneRestoreResource, 0, len(history))

@@ -75,7 +75,7 @@ func argsConfirmTrust(args []string, lookupEnv func(string) (string, bool)) bool
 
 func stdinIsTerminal() bool {
 	st, err := os.Stdin.Stat()
-	return err == nil && st.Mode()&os.ModeCharDevice != 0
+	return !ciMode && err == nil && st.Mode()&os.ModeCharDevice != 0
 }
 
 // installServerTrust wires trust-on-first-use for profiles that have no pinned server yet.

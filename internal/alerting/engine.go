@@ -53,6 +53,8 @@ type Engine struct {
 	domainApps     AppDomainSource
 	domainChecker  DomainCheckSource
 	backups        BackupSource
+	databaseHealth DatabaseHealthSource
+	deployFailures DeployFailureSource
 	traffic        trafficKinds
 	newNotifier    func(Rule) Notifier
 	logger         *slog.Logger
@@ -69,6 +71,11 @@ type Engine struct {
 	sloAutoRollbackTracker *AutoRollbackTracker
 
 	certExpiryWarningWindow     time.Duration
+	certPolicy                  CertExpiryPolicy
+	certMu                      sync.Mutex
+	certFacts                   map[string][]CertFact
+	certReminded                map[string]time.Time
+	clock                       func() time.Time
 	certRenewalStalledThreshold time.Duration
 	patchStatusThreshold        float64
 	nodeDiskSpaceThreshold      float64
@@ -85,6 +92,8 @@ type Engine struct {
 
 	exportHealth ExportHealthSource
 
+	registryRefresh RegistryRefreshSource
+
 	restoreDrills RestoreDrillSource
 
 	nodeCertWarning, nodeCertCritical time.Duration
@@ -95,6 +104,8 @@ type Engine struct {
 	versionSkewSettings VersionSkewSettingsSource
 	versionSkewFetchers upgrade.Fetchers
 	versionSkewCache    *upgrade.Cache
+
+	emailDelivery EmailDeliverySource
 
 	budgets       BudgetSource
 	budgetTracker *budgetTracker
@@ -186,6 +197,9 @@ func (e *Engine) SetControlPlaneBackups(src ControlPlaneBackupSource, maxAge tim
 // SetLogArchive enables kind=log_archive_stale rules.
 func (e *Engine) SetLogArchive(src LogArchiveSource) { e.logArchive = src }
 
+// SetRegistryRefresh enables kind=registry_refresh_failing rules.
+func (e *Engine) SetRegistryRefresh(src RegistryRefreshSource) { e.registryRefresh = src }
+
 // SetExportHealth enables kind=export_behind rules.
 func (e *Engine) SetExportHealth(src ExportHealthSource) { e.exportHealth = src }
 
@@ -198,6 +212,15 @@ func (e *Engine) SetVersionSkew(settings VersionSkewSettingsSource, fetchers upg
 	e.versionSkewFetchers = fetchers
 	e.versionSkewCache = upgrade.NewCache()
 }
+
+// SetEmailDelivery enables kind=email_delivery_failing rules.
+func (e *Engine) SetEmailDelivery(src EmailDeliverySource) { e.emailDelivery = src }
+
+// SetDeployFailures wires the source the deploy_failed rule reads.
+func (e *Engine) SetDeployFailures(src DeployFailureSource) { e.deployFailures = src }
+
+// SetDatabaseHealth wires the live probe the database_connections and database_disk rules read.
+func (e *Engine) SetDatabaseHealth(src DatabaseHealthSource) { e.databaseHealth = src }
 
 // SetBudgets enables kind=budget_threshold rules.
 func (e *Engine) SetBudgets(src BudgetSource) {
@@ -223,6 +246,69 @@ func (e *Engine) SetChanges(src ChangeSource, link func(app string) string) {
 	e.changes, e.changesLink = src, link
 }
 
+// SetCertExpiryPolicy turns on the quieter cert_expiry behavior: one window per certificate, platform-managed certificates skipped, and a rate-limited reminder.
+func (e *Engine) SetCertExpiryPolicy(p CertExpiryPolicy) {
+	p.Enabled = true
+	if e.traffic.acme != nil && p.ACME == nil {
+		p.ACME = e.traffic.acme
+	}
+	e.certPolicy = p
+}
+
+func (e *Engine) now() time.Time {
+	if e.clock != nil {
+		return e.clock()
+	}
+	return time.Now()
+}
+
+func (e *Engine) setCertFacts(id string, f []CertFact) {
+	e.certMu.Lock()
+	defer e.certMu.Unlock()
+	if e.certFacts == nil {
+		e.certFacts = map[string][]CertFact{}
+	}
+	e.certFacts[id] = f
+}
+
+func (e *Engine) takeCertFacts(id string) []CertFact {
+	e.certMu.Lock()
+	defer e.certMu.Unlock()
+	return e.certFacts[id]
+}
+
+// certReminderDue records the first sighting without notifying and then allows one reminder per interval.
+func (e *Engine) certReminderDue(id string, now time.Time) bool {
+	e.certMu.Lock()
+	defer e.certMu.Unlock()
+	if e.certReminded == nil {
+		e.certReminded = map[string]time.Time{}
+	}
+	last, seen := e.certReminded[id]
+	if !seen {
+		e.certReminded[id] = now
+		return false
+	}
+	if e.certPolicy.ReminderInterval <= 0 || now.Sub(last) < e.certPolicy.ReminderInterval {
+		return false
+	}
+	e.certReminded[id] = now
+	return true
+}
+
+func (e *Engine) certReminderReset(id string, now time.Time, keep bool) {
+	e.certMu.Lock()
+	defer e.certMu.Unlock()
+	if e.certReminded == nil {
+		e.certReminded = map[string]time.Time{}
+	}
+	if keep {
+		e.certReminded[id] = now
+		return
+	}
+	delete(e.certReminded, id)
+}
+
 // SetNoiseControl enables silences, grouping, flapping control and alert
 // history. Unset, every transition notifies directly.
 func (e *Engine) SetNoiseControl(n *NoiseControl) { e.noise = n }
@@ -234,7 +320,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 		return fmt.Errorf("alerting: list enabled rules: %w", err)
 	}
 
-	now := time.Now()
+	now := e.now()
 	var errs []error
 	if e.noise != nil {
 		defer e.noise.Sweep(ctx, now, e.sendEvent)
@@ -245,6 +331,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string
 		var taskFailureNotice, backupMissingNoticeText, sloNotice, versionSkewNotice string
 		var budgetKeys []string
+		var certSuperseded bool
 		switch r.Kind {
 		case KindThreshold:
 			next, err = EvaluateThreshold(ctx, e.metrics, r, now)
@@ -259,11 +346,22 @@ func (e *Engine) Tick(ctx context.Context) error {
 				e.logger.Warn("alerting: cert_expiry rule found but no cert source configured, skipping", slog.String("rule_id", r.ID))
 				continue
 			}
-			next, certNotices, err = EvaluateCertExpiry(ctx, e.certs, e.rules, r, e.certExpiryWarningWindow, e.certRenewalStalledThreshold, now, e.logger)
+			window := e.certExpiryWarningWindow
+			if r.ForDuration > 0 {
+				window = r.ForDuration // per-rule lead time, so escalating cert rules each warn at their own day count
+			}
+			policy := e.certPolicy
+			if policy.Enabled {
+				policy.Windows = certRuleWindows(rules, e.certExpiryWarningWindow)
+			}
+			var certRes CertEvalResult
+			next, certRes, err = EvaluateCertExpiryPolicy(ctx, e.certs, e.rules, r, window, e.certRenewalStalledThreshold, now, e.logger, policy)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+			certNotices, certSuperseded = certRes.Notices, certRes.Superseded
+			e.setCertFacts(r.ID, certRes.Facts)
 		case KindPatchStatus:
 			if e.nodes == nil {
 				e.logger.Warn("alerting: patch_status rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
@@ -364,6 +462,21 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindDatabaseConnections, KindDatabaseDisk, KindDatabaseBackupFailing, KindDatabaseDown, KindDatabaseBackupStale, KindBackupFailed:
+			next, backupMissingNoticeText, err = EvaluateDatabaseRuleAll(ctx, e.databaseHealth, e.backups, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindDeployFailed:
+			if e.deployFailures == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateDeployFailed(ctx, e.deployFailures, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindSLOBurn:
 			if !e.sloThrottle.ready(r.ID, e.slo.EvalEvery, now) {
 				continue
@@ -414,6 +527,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindRegistryRefreshFailing:
+			if e.registryRefresh == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateRegistryRefreshFailing(ctx, e.registryRefresh, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindRestoreDrillFailed:
 			if e.restoreDrills == nil {
 				continue
@@ -428,6 +550,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				continue
 			}
 			next, versionSkewNotice, err = EvaluateVersionSkew(ctx, e.versionSkewSettings, e.versionSkewFetchers, e.versionSkewCache, r, version.Version, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindEmailDeliveryFailing:
+			if e.emailDelivery == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateEmailDeliveryFailing(ctx, e.emailDelivery, r, now)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
@@ -457,6 +588,8 @@ func (e *Engine) Tick(ctx context.Context) error {
 			} else {
 				certNotices = notices
 			}
+		case KindNodeHostGuardrail:
+			continue
 		default:
 			e.logger.Warn("alerting: rule has unknown kind, skipping", slog.String("rule_id", r.ID), slog.String("kind", string(r.Kind)))
 			continue
@@ -476,6 +609,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 		switch {
 		case becameFiring:
+			if r.Kind == KindCertExpiry {
+				e.certReminderReset(r.ID, now, true)
+			}
 			if r.Kind == KindSLOBurn {
 				e.sloEscalated(r.ID, next.Severity)
 			}
@@ -491,6 +627,12 @@ func (e *Engine) Tick(ctx context.Context) error {
 				MaybeAutoRollbackOnSLOBurn(ctx, e.sloAutoRollback, e.sloAutoRollbackHistory, e.sloAutoRollbackNudger, e.sloAutoRollbackTracker, next, sloNotice, e.logger)
 			}
 		case becameResolved:
+			if r.Kind == KindCertExpiry {
+				e.certReminderReset(r.ID, now, false)
+				if certSuperseded {
+					continue
+				}
+			}
 			if r.Kind == KindSLOBurn {
 				e.sloForget(r.ID)
 			}
@@ -499,6 +641,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 			}
 			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, nil, "", "", "", "")
 		case stillFiring:
+			if r.Kind == KindCertExpiry && e.certPolicy.Enabled && len(certNotices) > 0 && e.certReminderDue(r.ID, now) {
+				e.dispatch(ctx, next, false, certNotices, nil, nil, nil, nil, nil, "", "", "", "")
+			}
 			if r.Kind == KindBudgetThreshold && e.budgetTracker.record(r.ID, budgetKeys) {
 				e.dispatch(ctx, next, false, nil, nil, nil, nil, nil, nodeNotices, "", "", "", "")
 			}
@@ -557,6 +702,9 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	}
 	if (r.Kind == KindCertExpiry || r.Kind == KindCertExpiring || r.Kind == KindCertRenewalStalled) && !resolved {
 		ev.CertNotices = certNotices
+		if r.Kind == KindCertExpiry {
+			ev.CertFacts, ev.CertBaseURL = e.takeCertFacts(r.ID), e.certPolicy.BaseURL
+		}
 	}
 	if r.Kind == KindPatchStatus && !resolved {
 		ev.PatchNotices = patchNotices
@@ -579,7 +727,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindRestoreDrillFailed) && !resolved {
+	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {
@@ -626,6 +774,9 @@ func (e *Engine) attachChanges(ctx context.Context, ev *Event) {
 // returned so NoiseControl can record the outcome; it is already logged.
 func (e *Engine) sendEvent(ctx context.Context, ev Event) error {
 	r := ev.Rule
+	if strings.HasPrefix(r.ID, defaultRulePrefix) && r.ChannelID == "" && r.NotifyURL == "" {
+		return nil // seeded rule with no destination: in-app only: the noise router records history for the inbox
+	}
 	sendErr := e.revealRuleTarget(ctx, &r)
 	if sendErr == nil {
 		sendErr = e.newNotifier(r).Notify(ctx, ev)
@@ -711,4 +862,19 @@ func (e *Engine) Run(ctx context.Context, interval time.Duration) error {
 			}
 		}
 	}
+}
+
+func certRuleWindows(rules []Rule, fallback time.Duration) []time.Duration {
+	var out []time.Duration
+	for _, r := range rules {
+		if r.Kind != KindCertExpiry {
+			continue
+		}
+		w := r.ForDuration
+		if w <= 0 {
+			w = fallback
+		}
+		out = append(out, w)
+	}
+	return out
 }

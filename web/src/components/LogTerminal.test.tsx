@@ -110,3 +110,49 @@ describe('LogTerminal fullscreen toggle', () => {
     })
   })
 })
+
+describe('LogTerminal scrollTarget', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('pauses follow mode once when asked to scroll to a line', () => {
+    const pause = vi.fn()
+    const resume = vi.fn()
+    const target = { id: 1 }
+    const { rerender } = render(
+      <LogTerminal
+        lines={lines}
+        isPaused={false}
+        pause={pause}
+        resume={resume}
+        scrollTarget={target}
+      />,
+    )
+    expect(pause).toHaveBeenCalledTimes(1)
+    rerender(
+      <LogTerminal
+        lines={lines}
+        isPaused={true}
+        pause={pause}
+        resume={resume}
+        scrollTarget={target}
+      />,
+    )
+    expect(pause).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores a target that is not in the shown lines', () => {
+    const pause = vi.fn()
+    render(
+      <LogTerminal
+        lines={lines}
+        isPaused={false}
+        pause={pause}
+        resume={vi.fn()}
+        scrollTarget={{ id: 99 }}
+      />,
+    )
+    expect(pause).not.toHaveBeenCalled()
+  })
+})

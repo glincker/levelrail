@@ -103,8 +103,7 @@ func (rt *Router) requireOwnedDomain(w http.ResponseWriter, r *http.Request) (do
 			writeError(w, http.StatusNotFound, "app not found")
 			return "", false
 		}
-		rt.logger.Error("api: domain basic auth: get app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: domain basic auth: get app failed", err, slog.String("name", name))
 		return "", false
 	}
 	if !owns {
@@ -127,8 +126,7 @@ func (rt *Router) handleGetDomainBasicAuth(w http.ResponseWriter, r *http.Reques
 
 	auth, found, err := rt.domainBasicAuth.GetDomainBasicAuth(r.Context(), domain)
 	if err != nil {
-		rt.logger.Error("api: get domain basic auth failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get domain basic auth failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toDomainBasicAuthResource(r.Context(), domain, auth, found))
@@ -174,8 +172,7 @@ func (rt *Router) handleSetDomainBasicAuth(w http.ResponseWriter, r *http.Reques
 	if !hasPassword {
 		exists, err := rt.domainBasicAuthSecrets.Exists(r.Context(), key, store.DomainBasicAuthPasswordEnvKey)
 		if err != nil {
-			rt.logger.Error("api: check domain basic auth password failed", slog.String("error", err.Error()), slog.String("domain", domain))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: check domain basic auth password failed", err, slog.String("domain", domain))
 			return
 		}
 		hasPassword = exists
@@ -187,22 +184,19 @@ func (rt *Router) handleSetDomainBasicAuth(w http.ResponseWriter, r *http.Reques
 
 	if req.Password != "" {
 		if err := rt.domainBasicAuthSecrets.SetValue(r.Context(), key, store.DomainBasicAuthPasswordEnvKey, req.Password); err != nil {
-			rt.logger.Error("api: save domain basic auth password failed", slog.String("error", err.Error()), slog.String("domain", domain))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: save domain basic auth password failed", err, slog.String("domain", domain))
 			return
 		}
 	}
 
 	if err := rt.domainBasicAuth.SetDomainBasicAuth(r.Context(), domain, req.Username); err != nil {
-		rt.logger.Error("api: set domain basic auth failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set domain basic auth failed", err, slog.String("domain", domain))
 		return
 	}
 
 	auth, found, err := rt.domainBasicAuth.GetDomainBasicAuth(r.Context(), domain)
 	if err != nil {
-		rt.logger.Error("api: get domain basic auth failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get domain basic auth failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toDomainBasicAuthResource(r.Context(), domain, auth, found))
@@ -225,13 +219,11 @@ func (rt *Router) handleClearDomainBasicAuth(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := rt.domainBasicAuthSecrets.DeleteAll(r.Context(), store.DomainBasicAuthSecretsKey(domain)); err != nil {
-		rt.logger.Error("api: clear domain basic auth password failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear domain basic auth password failed", err, slog.String("domain", domain))
 		return
 	}
 	if err := rt.domainBasicAuth.DeleteDomainBasicAuth(r.Context(), domain); err != nil {
-		rt.logger.Error("api: clear domain basic auth failed", slog.String("error", err.Error()), slog.String("domain", domain))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear domain basic auth failed", err, slog.String("domain", domain))
 		return
 	}
 	writeJSON(w, http.StatusOK, domainBasicAuthResource{Domain: domain})

@@ -95,6 +95,13 @@ export function NodesTable({
                   })}
                 </Badge>
               ) : null}
+              {node.zone || node.region ? (
+                <Badge variant="outline">
+                  {[node.provider, node.region, node.zone]
+                    .filter(Boolean)
+                    .join(' / ')}
+                </Badge>
+              ) : null}
               <NodeNeverConnectedBadge node={node} />
               <NodeCertBadge cert={node.cert} showOk={false} />
             </span>

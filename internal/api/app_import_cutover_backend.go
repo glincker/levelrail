@@ -390,7 +390,9 @@ func (b cutoverBackend) WriteRoute(ctx context.Context, domain string) error {
 	if deps == nil || deps.syncer == nil {
 		return errors.New("managed proxy routes are not available on this control plane")
 	}
-	b.rt.syncProxyRoutes(ctx, deps)
+	if err := b.rt.syncProxyRoutes(ctx, deps); err != nil {
+		return fmt.Errorf("sync the proxy routes for %s: %w", domain, err)
+	}
 	plan, err := deps.syncer.Plan(ctx)
 	if err != nil {
 		return fmt.Errorf("read the proxy plan: %w", err)
@@ -419,7 +421,9 @@ func (b cutoverBackend) RemoveRoute(ctx context.Context, domain string) error {
 		}
 	}
 	if deps := b.rt.proxyIntegration; deps != nil && deps.syncer != nil {
-		b.rt.syncProxyRoutes(ctx, deps)
+		if err := b.rt.syncProxyRoutes(ctx, deps); err != nil {
+			return fmt.Errorf("sync the proxy routes after removing %s: %w", domain, err)
+		}
 	}
 	return nil
 }

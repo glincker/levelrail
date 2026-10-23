@@ -7,6 +7,7 @@ const PRESET_LOGO: Record<StoragePreset, string | undefined> = {
   b2: 'backblaze',
   minio: 'minio',
   wasabi: 'wasabi',
+  gcs: 'google-cloud-storage',
   custom: undefined,
 }
 
@@ -22,5 +23,6 @@ export const STORAGE_PRESET_LABEL: Record<StoragePreset, string> = {
   b2: 'Backblaze B2',
   minio: 'MinIO',
   wasabi: 'Wasabi',
+  gcs: 'Google Cloud Storage',
   custom: 'S3 compatible',
 }

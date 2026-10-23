@@ -84,8 +84,7 @@ func (rt *Router) handleListBuildCache(w http.ResponseWriter, r *http.Request) {
 	}
 	settings, err := d.BuildCacheSettings.ListBuildCacheSettings(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list build cache settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list build cache settings failed", err)
 		return
 	}
 	out := make([]buildCacheResource, 0, len(settings))
@@ -136,14 +135,12 @@ func (rt *Router) handleSetBuildCache(w http.ResponseWriter, r *http.Request) {
 		Mode: mode, UpdatedAt: time.Now().UTC().Format(time.RFC3339),
 	}
 	if err := d.BuildCacheSettings.UpsertBuildCacheSetting(r.Context(), s); err != nil {
-		rt.logger.Error("api: set build cache failed", slog.String("error", err.Error()), slog.String("app", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set build cache failed", err, slog.String("app", req.AppName))
 		return
 	}
 	saved, err := d.BuildCacheSettings.GetBuildCacheSetting(r.Context(), req.AppName)
 	if err != nil {
-		rt.logger.Error("api: reload build cache failed", slog.String("error", err.Error()), slog.String("app", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: reload build cache failed", err, slog.String("app", req.AppName))
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toBuildCacheResource(d, saved))
@@ -166,8 +163,7 @@ func (rt *Router) handleDeleteBuildCache(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: delete build cache failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete build cache failed", err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

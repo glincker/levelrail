@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 )
 
 // runSettingsEmail dispatches "settings email <verb> [flags]" to one of
@@ -23,6 +24,10 @@ func runSettingsEmail(prog string, args []string, stdout, stderr io.Writer, look
 		return runSettingsEmailGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "set":
 		return runSettingsEmailSet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "providers":
+		return runSettingsEmailProviders(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
+	case "branding":
+		return runSettingsEmailBranding(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown settings email subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, settingsEmailUsage(prog))
@@ -33,13 +38,21 @@ func runSettingsEmail(prog string, args []string, stdout, stderr io.Writer, look
 func settingsEmailUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s settings email get [flags]
-  %[1]s settings email set --backend smtp|ses [flags]
+  %[1]s settings email set --backend smtp|ses|ses_smtp|resend|postmark|sendgrid|mailgun [flags]
+  %[1]s settings email providers list|add|set|rm|test|promote [flags]   primary plus backup providers
+  %[1]s settings email branding get|set|preview [flags]   logo, accent color and footer for every rich email
+
+"settings email get" and "settings email set" read and write the primary
+provider and the sender identity; use "providers" to manage a backup.
 
 Configures outbound email, used for invite/notification delivery. Backend
-is "smtp", "ses", or "" (unconfigured). SMTP requires --smtp-host,
---smtp-port, and --smtp-from; SES requires --ses-region, --ses-access-key-id,
-and --ses-from. Credential flags may be omitted on an update to leave the
-currently stored value unchanged.
+is one of the providers above, or "" (unconfigured). Every provider needs
+--from. SMTP also needs --smtp-host and --smtp-port; SES needs --ses-region
+(a region such as us-east-1) and --ses-access-key-id; ses_smtp needs
+--ses-region and --ses-smtp-username (SES SMTP credentials differ from IAM
+keys); mailgun needs --mailgun-domain. Credential flags may be omitted on an
+update to leave the currently stored value unchanged. The command replaces
+the whole row, so pass every non-credential flag you want to keep.
 
 Run "%[1]s settings email <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -61,7 +74,26 @@ func runSettingsEmailSet(prog string, args []string, stdout, stderr io.Writer, l
 	var backend, smtpHost, smtpUsername, smtpFrom, smtpPassword string
 	var smtpPort int
 	var sesRegion, sesAccessKeyID, sesFrom, sesSecretAccessKey string
-	fs.StringVar(&backend, "backend", "", "email backend: \"smtp\", \"ses\", or \"\" to unconfigure")
+	var r emailSettingsResource
+	fs.StringVar(&backend, "backend", "", "provider: smtp, ses, ses_smtp, resend, postmark, sendgrid, mailgun, or \"\" to unconfigure")
+	fs.StringVar(&r.FromName, "from-name", "", "display name on outgoing mail")
+	fs.StringVar(&r.FromAddress, "from", "", "sender address (every provider)")
+	fs.StringVar(&r.ReplyTo, "reply-to", "", "Reply-To address")
+	fs.StringVar(&r.EnvelopeFrom, "envelope-from", "", "SMTP envelope sender (bounce address)")
+	fs.IntVar(&r.SendsPerMinute, "sends-per-minute", 0, "cap on sends per minute (0 uses the env default)")
+	fs.IntVar(&r.SendsPerDay, "sends-per-day", 0, "cap on sends per day (0 uses the env default)")
+	fs.StringVar(&r.TLSMode, "tls-mode", "", "SMTP TLS: \"\" (auto), starttls, tls or none")
+	fs.BoolVar(&r.TLSSkipVerify, "tls-skip-verify", false, "do not verify the SMTP server certificate")
+	fs.StringVar(&r.SESSMTPUsername, "ses-smtp-username", "", "SES SMTP username (backend ses_smtp)")
+	fs.StringVar(&r.SESSMTPPassword, "ses-smtp-password", "", "SES SMTP password (omit on update to keep the stored value)")
+	fs.IntVar(&r.SESSMTPPort, "ses-smtp-port", 0, "SES SMTP port: 587 (default), 465, 25, 2587 or 2465")
+	fs.StringVar(&r.ResendFrom, "resend-from", "", "legacy Resend sender (prefer --from)")
+	fs.StringVar(&r.ResendAPIKey, "resend-api-key", "", "Resend API key (omit on update to keep the stored value)")
+	fs.StringVar(&r.PostmarkServerToken, "postmark-token", "", "Postmark server token (omit on update to keep the stored value)")
+	fs.StringVar(&r.SendGridAPIKey, "sendgrid-api-key", "", "SendGrid API key (omit on update to keep the stored value)")
+	fs.StringVar(&r.MailgunAPIKey, "mailgun-api-key", "", "Mailgun API key (omit on update to keep the stored value)")
+	fs.StringVar(&r.MailgunDomain, "mailgun-domain", "", "Mailgun sending domain")
+	fs.StringVar(&r.MailgunRegion, "mailgun-region", "", "Mailgun region: us (default) or eu")
 	fs.StringVar(&smtpHost, "smtp-host", "", "SMTP server hostname (required when backend is smtp)")
 	fs.IntVar(&smtpPort, "smtp-port", 0, "SMTP server port (required when backend is smtp)")
 	fs.StringVar(&smtpUsername, "smtp-username", "", "SMTP username")
@@ -72,7 +104,7 @@ func runSettingsEmailSet(prog string, args []string, stdout, stderr io.Writer, l
 	fs.StringVar(&sesFrom, "ses-from", "", "AWS SES \"from\" address (required when backend is ses)")
 	fs.StringVar(&sesSecretAccessKey, "ses-secret-access-key", "", "AWS SES secret access key (omit on update to keep the stored value)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings email set --backend smtp|ses [flags]\n\nConfigures outbound email.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings email set --backend smtp|ses|ses_smtp|resend|postmark|sendgrid|mailgun [flags]\n\nConfigures outbound email. Sender: --from, --from-name, --reply-to, --envelope-from.\nLimits: --sends-per-minute, --sends-per-day. Security: --tls-mode, --tls-skip-verify.\nSES over SMTP: --ses-smtp-username, --ses-smtp-password, --ses-smtp-port.\nAPI providers: --resend-from, --resend-api-key, --postmark-token, --sendgrid-api-key,\n--mailgun-api-key, --mailgun-domain, --mailgun-region.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
@@ -83,18 +115,10 @@ func runSettingsEmailSet(prog string, args []string, stdout, stderr io.Writer, l
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
-	settings, err := client.UpdateEmailSettings(context.Background(), emailSettingsResource{
-		Backend:            backend,
-		SMTPHost:           smtpHost,
-		SMTPPort:           smtpPort,
-		SMTPUsername:       smtpUsername,
-		SMTPFrom:           smtpFrom,
-		SMTPPassword:       smtpPassword,
-		SESRegion:          sesRegion,
-		SESAccessKeyID:     sesAccessKeyID,
-		SESFrom:            sesFrom,
-		SESSecretAccessKey: sesSecretAccessKey,
-	})
+	r.Backend = backend
+	r.SMTPHost, r.SMTPPort, r.SMTPUsername, r.SMTPFrom, r.SMTPPassword = smtpHost, smtpPort, smtpUsername, smtpFrom, smtpPassword
+	r.SESRegion, r.SESAccessKeyID, r.SESFrom, r.SESSecretAccessKey = sesRegion, sesAccessKeyID, sesFrom, sesSecretAccessKey
+	settings, err := client.UpdateEmailSettings(context.Background(), r)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set email settings: %w", err))
 	}
@@ -104,12 +128,27 @@ func runSettingsEmailSet(prog string, args []string, stdout, stderr io.Writer, l
 
 func printEmailSettingsHuman(out io.Writer, s emailSettingsResource) {
 	_, _ = fmt.Fprintf(out, "backend:                  %s\n", s.Backend)
+	if s.FromAddress != "" {
+		_, _ = fmt.Fprintf(out, "from:                     %s <%s>\n", s.FromName, s.FromAddress)
+	}
+	if s.ReplyTo != "" {
+		_, _ = fmt.Fprintf(out, "reply_to:                 %s\n", s.ReplyTo)
+	}
 	if s.Backend == "smtp" {
 		_, _ = fmt.Fprintf(out, "smtp_host:                %s\n", s.SMTPHost)
 		_, _ = fmt.Fprintf(out, "smtp_port:                %d\n", s.SMTPPort)
 		_, _ = fmt.Fprintf(out, "smtp_username:            %s\n", s.SMTPUsername)
 		_, _ = fmt.Fprintf(out, "smtp_from:                %s\n", s.SMTPFrom)
 		_, _ = fmt.Fprintf(out, "smtp_password_set:        %v\n", s.SMTPPasswordSet)
+	}
+	if s.Backend == "ses_smtp" {
+		_, _ = fmt.Fprintf(out, "ses_region:               %s\n", s.SESRegion)
+		_, _ = fmt.Fprintf(out, "ses_smtp_username:        %s\n", s.SESSMTPUsername)
+		_, _ = fmt.Fprintf(out, "ses_smtp_password_set:    %v\n", s.SESSMTPPasswordSet)
+	}
+	if s.Backend == "mailgun" {
+		_, _ = fmt.Fprintf(out, "mailgun_domain:           %s\n", s.MailgunDomain)
+		_, _ = fmt.Fprintf(out, "mailgun_api_key_set:      %v\n", s.MailgunAPIKeySet)
 	}
 	if s.Backend == "ses" {
 		_, _ = fmt.Fprintf(out, "ses_region:               %s\n", s.SESRegion)

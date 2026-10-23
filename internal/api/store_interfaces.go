@@ -232,9 +232,11 @@ type Store interface {
 	AppGitHubActionsStore
 	CIOIDCTrustStore
 	ImageAutoUpdateStore
+	BuildHookStore
 	AppSleepStore
 	DataImportStore
 	MigrationHubStore
+	MigrationVerifyStore
 	MigrationChecklistStore
 	AppImportStore
 	LoginCodeStore
@@ -243,18 +245,20 @@ type Store interface {
 	CanaryStore
 	DatabaseQueryStore
 	PreviewEnvironmentStore
+	BranchDeployStore
 	GitHubAppStore
-	GitLabAppStore
-	BitbucketAppStore
-	GiteaAppStore
+	GitConnectionsStore
 	OAuthSettingsStore
 	OAuthIdentityStore
 	EmailSettingsStore
+	EmailProviderStore
+	TrafficExportStore
 	ObservabilityStore
 	CloudflareTunnelStore
 	RegistryStore
 	CloudflareDNSStore
 	Route53DNSStore
+	GoogleCloudDNSStore
 	NodeProvisionStore
 	NodeProviderConnectionStore
 	PackageRegistryStore

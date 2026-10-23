@@ -1,10 +1,12 @@
 import { useEffect, useId, useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
+import { PushPinIcon } from '@phosphor-icons/react/dist/ssr'
 import { useTranslation } from 'react-i18next'
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
@@ -24,6 +26,7 @@ import {
   defaultGroupOpen,
   isGlobalItemActive,
   linkTarget,
+  pinnedGlobalItems,
   resolveOpen,
   visibleGlobalFooter,
   visibleGlobalGroups,
@@ -35,8 +38,51 @@ import { ProjectsNavItem } from './ProjectsNavTree'
 import { useNavCounts } from './useNavCounts'
 import { usePersistedToggles } from './usePersistedToggles'
 import { GetStartedNavItem } from './GetStartedNavItem'
+import { useNavPins } from './useNavPins'
 
 const GLOBAL_NAV_STORAGE_KEY = 'shell.nav.global.open'
+
+interface PinControl {
+  pinned: boolean
+  full: boolean
+  max: number
+  onToggle: (id: string) => void
+}
+
+function PinButton({
+  item,
+  label,
+  pin,
+}: {
+  item: GlobalNavItem
+  label: string
+  pin: PinControl
+}) {
+  const { t } = useTranslation()
+  const blocked = pin.full && !pin.pinned
+  return (
+    <SidebarMenuAction
+      showOnHover={!pin.pinned}
+      className={
+        pin.pinned
+          ? 'peer-data-active/menu-button:text-sidebar-active-foreground'
+          : undefined
+      }
+      aria-pressed={pin.pinned}
+      aria-label={t('shell.pins.pin', { label })}
+      aria-disabled={blocked || undefined}
+      title={blocked ? t('shell.pins.limit', { max: pin.max }) : undefined}
+      onClick={() => {
+        if (!blocked) pin.onToggle(item.id)
+      }}
+    >
+      <PushPinIcon
+        weight={pin.pinned ? 'fill' : 'regular'}
+        aria-hidden="true"
+      />
+    </SidebarMenuAction>
+  )
+}
 
 const TRAFFIC_BADGE_KEYS = {
   'domains-attention': 'nav.domainsAttention',
@@ -47,9 +93,11 @@ const TRAFFIC_BADGE_KEYS = {
 function LockedNavLinkItem({
   item,
   feature,
+  pin,
 }: {
   item: GlobalNavItem
   feature: ExperimentalFeature
+  pin?: PinControl
 }) {
   const { t: tc } = useTranslation()
   const describedBy = useId()
@@ -72,6 +120,7 @@ function LockedNavLinkItem({
         <span>{label}</span>
         <LockedFeatureMark id={describedBy} />
       </SidebarMenuButton>
+      {pin ? <PinButton item={item} label={label} pin={pin} /> : null}
     </SidebarMenuItem>
   )
 }
@@ -81,17 +130,19 @@ function NavLinkItem({
   pathname,
   counts,
   experimental,
+  pin,
 }: {
   item: GlobalNavItem
   pathname: string
   counts: Record<string, number>
   experimental: readonly string[]
+  pin?: PinControl
 }) {
   const { t } = useTranslation('traffic')
   const { t: tc } = useTranslation()
   const label = tc(`shell.nav.${item.id}`, { defaultValue: item.label })
   if (isFeatureLocked(item.feature, experimental)) {
-    return <LockedNavLinkItem item={item} feature={item.feature} />
+    return <LockedNavLinkItem item={item} feature={item.feature} pin={pin} />
   }
   const chord = chordFor(item.to)
   const count = item.badge ? (counts[item.badge] ?? 0) : 0
@@ -104,7 +155,9 @@ function NavLinkItem({
       ? t(trafficKey, { count })
       : item.badge === 'approvals'
         ? `${String(count)} pending approvals`
-        : `${String(count)} failing apps`
+        : item.badge === 'inbox'
+          ? `${String(count)} unread in inbox`
+          : `${String(count)} failing apps`
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
@@ -123,10 +176,15 @@ function NavLinkItem({
         <span>{label}</span>
         <NavBadge
           count={count}
-          tone={item.badge === 'approvals' ? 'warning' : 'danger'}
+          tone={
+            item.badge === 'approvals' || item.badge === 'inbox'
+              ? 'warning'
+              : 'danger'
+          }
           label={badgeLabel}
         />
       </SidebarMenuButton>
+      {pin ? <PinButton item={item} label={label} pin={pin} /> : null}
     </SidebarMenuItem>
   )
 }
@@ -158,6 +216,14 @@ export function GlobalNav() {
   const experimental = useExperimentalFeatures()
   const routeAvailable = useRouteAvailable()
   const groups = visibleGlobalGroups(routeAvailable)
+  const { pins, toggle, full, max } = useNavPins()
+  const pinned = pinnedGlobalItems(groups, pins)
+  const pinFor = (id: string): PinControl => ({
+    pinned: pins.includes(id),
+    full,
+    max,
+    onToggle: toggle,
+  })
 
   // Decided once on mount so navigating never flips a group the user did not touch.
   const [initialOpen] = useState<Record<string, boolean>>(() =>
@@ -178,6 +244,27 @@ export function GlobalNav() {
     <>
       <div className="flex flex-col gap-1 p-2">
         <GetStartedNavItem />
+        {!rail && pinned.length > 0 ? (
+          <CollapsibleSection
+            id="global-pinned"
+            open={resolveOpen(stored, 'pinned', true)}
+            onOpenChange={(open) => setOpen('pinned', open)}
+            header={t('shell.pins.group')}
+          >
+            <SidebarMenu>
+              {pinned.map((item) => (
+                <NavLinkItem
+                  key={item.id}
+                  item={item}
+                  pathname={pathname}
+                  counts={counts}
+                  experimental={experimental}
+                  pin={pinFor(item.id)}
+                />
+              ))}
+            </SidebarMenu>
+          </CollapsibleSection>
+        ) : null}
         {groups.map((group) => {
           const menu = (
             <SidebarMenu>
@@ -195,6 +282,7 @@ export function GlobalNav() {
                     pathname={pathname}
                     counts={counts}
                     experimental={experimental}
+                    pin={pinFor(item.id)}
                   />
                 ),
               )}

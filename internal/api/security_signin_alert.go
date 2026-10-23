@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/mailtemplates"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -144,11 +145,12 @@ func (rt *Router) emailSignInAlert(parent context.Context, user store.User, a st
 	}
 	ctx, cancel := context.WithTimeout(parent, libMailTimeout)
 	defer cancel()
-	subject := fmt.Sprintf("[%s] New sign-in from %s", rt.brand.Name, a.Label)
-	body := fmt.Sprintf("Your %s account signed in from a browser it has not used before.\n\nBrowser: %s\nAddress: %s\nTime: %s\n\n"+
-		"If this was you, there is nothing to do.\n\nIf it was not you, open this link to end that session, forget your trusted browsers and flag the account for a new password:\n%s\n\nThe link works once and expires at %s.",
-		rt.brand.Name, a.Label, safeSignInIP(a.IP), a.CreatedAt.UTC().Format(time.RFC1123), link, a.ExpiresAt.UTC().Format(time.RFC1123))
-	if err := rt.emailSender.Send(ctx, user.Email, subject, body); err != nil && !errors.Is(err, email.ErrNotConfigured) {
+	vals := map[string]string{
+		"display_name": user.DisplayName, "first_name": firstWord(user.DisplayName),
+		"browser": a.Label, "ip_address": safeSignInIP(a.IP), "occurred_at": a.CreatedAt.UTC().Format(time.RFC1123),
+		"disown_link": link, "expires_in": a.ExpiresAt.UTC().Format(time.RFC1123),
+	}
+	if err := rt.sendMailEvent(ctx, mailtemplates.EventSignInAlert, user.Email, vals); err != nil && !errors.Is(err, email.ErrNotConfigured) {
 		rt.logger.Warn("api: sign-in alert email failed", slog.String("user_id", user.ID), slog.String("error", err.Error()))
 	}
 }

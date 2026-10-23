@@ -21,10 +21,14 @@ var trafficWindows = map[string]bool{"5m": true, "1h": true, "24h": true, "7d": 
 // runTraffic implements "traffic <app>": GET /api/v1/apps/{name}/traffic,
 // request rate, errors and latency percentiles per app and per replica.
 func runTraffic(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) > 0 && args[0] == "export" {
+		return runTrafficExport(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
+	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "traffic", "print the traffic report as JSON to stdout and nothing else", stderr)
 	var window, intervalStr string
 	var watch bool
 	fs.StringVar(&window, "window", "1h", "time window: 5m, 1h, 24h or 7d")
+	fs.StringVar(&window, "since", "1h", "alias of --window")
 	fs.BoolVar(&watch, "watch", false, "refresh the report until interrupted")
 	fs.StringVar(&intervalStr, "interval", defaultTrafficInterval.String(), "how often --watch refreshes")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, trafficUsage(prog)) }
@@ -95,6 +99,9 @@ func printTrafficHuman(out io.Writer, r apiclient.AppTrafficResource) {
 		}
 		_, _ = fmt.Fprintf(out, "shield blocked: %.0f (%s)\n", r.Shield.Blocked, strings.Join(parts, ", "))
 	}
+	if a := r.Abuse; a.Blocked > 0 || a.WouldBlock > 0 || a.FailOpen > 0 {
+		_, _ = fmt.Fprintf(out, "abuse defense: allowed %.0f  would block %.0f  blocked %.0f  fail-open %.0f\n", a.Allowed, a.WouldBlock, a.Blocked, a.FailOpen)
+	}
 	if r.SLO != nil {
 		_, _ = fmt.Fprintf(out, "slo: %s %.2f%%  burn %.2fx  budget left %.1f%%\n", r.SLO.Objective, r.SLO.Target, r.SLO.BurnRate, r.SLO.BudgetRemaining*100)
 	}
@@ -107,6 +114,14 @@ func printTrafficHuman(out io.Writer, r apiclient.AppTrafficResource) {
 		}
 		_ = tw.Flush()
 	}
+	if len(r.TopRoutes) > 0 {
+		_, _ = fmt.Fprintln(out, "\ntop paths:")
+		_, _ = fmt.Fprintln(tw, "ROUTE\tREQ\tAVGMS\t4XX%\t5XX%")
+		for _, rt := range r.TopRoutes {
+			_, _ = fmt.Fprintf(tw, "%s\t%.0f\t%.0f\t%.2f\t%.2f\n", rt.Route, rt.Requests, rt.AvgMs, rt.ErrorRate4xx*100, rt.ErrorRate5xx*100)
+		}
+		_ = tw.Flush()
+	}
 	if len(r.SlowRoutes) > 0 {
 		_, _ = fmt.Fprintln(out, "\nslowest routes:")
 		_, _ = fmt.Fprintln(tw, "ROUTE\tREQ\tAVGMS\t5XX%")
@@ -115,6 +130,7 @@ func printTrafficHuman(out io.Writer, r apiclient.AppTrafficResource) {
 		}
 		_ = tw.Flush()
 	}
+	printTrafficSpikes(out, tw, r.ErrorSpikes)
 	printTrafficLabels(out, tw, "top referrers:", "REFERRER", r.Referrers)
 	printTrafficLabels(out, tw, "top countries:", "COUNTRY", r.Countries)
 	if len(r.Samples) > 0 {
@@ -125,6 +141,22 @@ func printTrafficHuman(out io.Writer, r apiclient.AppTrafficResource) {
 		}
 		_ = tw.Flush()
 	}
+}
+
+func printTrafficSpikes(out io.Writer, tw *tabwriter.Writer, spikes []apiclient.TrafficErrorSpike) {
+	if len(spikes) == 0 {
+		return
+	}
+	_, _ = fmt.Fprintln(out, "\n5xx spikes (newest first):")
+	_, _ = fmt.Fprintln(tw, "START\tEND\tPEAK 5XX%\tBASELINE%\t5XX\tDEPLOY")
+	for _, s := range spikes {
+		deploy := "-"
+		if s.DeployID != "" {
+			deploy = fmt.Sprintf("%s %s", s.DeployID, s.DeployImage)
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%.1f\t%.1f\t%.0f\t%s\n", s.Start.Format(time.RFC3339), s.End.Format(time.RFC3339), s.PeakRate5xx*100, s.BaselineRate*100, s.Errors5xx, deploy)
+	}
+	_ = tw.Flush()
 }
 
 func printTrafficLabels(out io.Writer, tw *tabwriter.Writer, title, header string, rows []apiclient.TrafficLabel) {
@@ -141,11 +173,11 @@ func printTrafficLabels(out io.Writer, tw *tabwriter.Writer, title, header strin
 
 func trafficUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s traffic <app> [--window 1h] [--watch] [--json] [flags]
+  %[1]s traffic <app> [--window|--since 1h] [--watch] [--json] [flags]
 
 Shows an app's request rate, errors and latency percentiles (p50, p95, p99)
 as measured at the ingress, with a per replica breakdown, the slowest route
-templates, top referrer hosts and countries (countries need a geo source),
+templates, 5xx spikes tied to the deploy that preceded them, top referrer hosts and countries (countries need a geo source),
 sampled slow or failed requests and the SLO error-budget burn.
 
 Flags:

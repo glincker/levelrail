@@ -3,6 +3,7 @@ import {
   ArrowCircleUpIcon,
   BroomIcon,
   BuildingsIcon,
+  ChartBarIcon,
   ChartLineIcon,
   ClockCounterClockwiseIcon,
   CloudArrowUpIcon,
@@ -18,6 +19,7 @@ import {
   GaugeIcon,
   GearIcon,
   GitBranchIcon,
+  GitForkIcon,
   GithubLogoIcon,
   GitlabLogoIcon,
   GlobeIcon,
@@ -29,9 +31,9 @@ import {
   LockKeyIcon,
   PlugsConnectedIcon,
   RobotIcon,
+  ShareNetworkIcon,
   ShieldCheckIcon,
   ShieldIcon,
-  SparkleIcon,
   StackIcon,
   TeaBagIcon,
   TerminalWindowIcon,
@@ -71,11 +73,6 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'account',
         to: '/settings/account',
         icon: UserIcon,
-      },
-      {
-        id: 'setup-wizard',
-        to: '/settings/setup-wizard',
-        icon: SparkleIcon,
       },
       {
         id: 'general',
@@ -285,8 +282,28 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: WebhooksLogoIcon,
       },
       {
+        id: 'traffic-export',
+        to: '/settings/traffic-export',
+        icon: ShareNetworkIcon,
+      },
+      {
         id: 'email',
         to: '/settings/email',
+        icon: EnvelopeIcon,
+      },
+      {
+        id: 'email-templates',
+        to: '/settings/email-templates',
+        icon: EnvelopeIcon,
+      },
+      {
+        id: 'email-audiences',
+        to: '/settings/email-audiences',
+        icon: UsersThreeIcon,
+      },
+      {
+        id: 'email-messages',
+        to: '/settings/email-messages',
         icon: EnvelopeIcon,
       },
       {
@@ -315,6 +332,11 @@ export const settingsNavSections: SettingsNavSection[] = [
     id: 'integrations',
     items: [
       {
+        id: 'git-connections',
+        to: '/settings/git-connections',
+        icon: GitBranchIcon,
+      },
+      {
         id: 'github-app',
         to: '/settings/github-app',
         icon: GithubLogoIcon,
@@ -333,6 +355,16 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'gitea-app',
         to: '/settings/gitea-app',
         icon: TeaBagIcon,
+      },
+      {
+        id: 'forgejo-app',
+        to: '/settings/forgejo-app',
+        icon: GitForkIcon,
+      },
+      {
+        id: 'bitbucket-server-app',
+        to: '/settings/bitbucket-server-app',
+        icon: GitBranchIcon,
       },
     ],
   },
@@ -389,6 +421,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'control-plane-health',
         to: '/settings/control-plane-health',
         icon: GaugeIcon,
+      },
+      {
+        id: 'benchmarks',
+        to: '/settings/benchmarks',
+        icon: ChartBarIcon,
       },
     ],
   },

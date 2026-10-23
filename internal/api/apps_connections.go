@@ -78,8 +78,7 @@ func (rt *Router) createAppConnection(w http.ResponseWriter, r *http.Request, na
 		writeError(w, http.StatusBadRequest, "unknown database")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: create app connection: look up database failed", slog.String("error", err.Error()), slog.String("database", req.Database))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create app connection: look up database failed", err, slog.String("database", req.Database))
 		return
 	}
 	if !databaseFieldSupported(external, desiredDB.Engine, field) {
@@ -92,8 +91,7 @@ func (rt *Router) createAppConnection(w http.ResponseWriter, r *http.Request, na
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: create app connection: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create app connection: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -110,8 +108,7 @@ func (rt *Router) createAppConnection(w http.ResponseWriter, r *http.Request, na
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: create app connection failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create app connection failed", err, slog.String("name", name))
 		return
 	}
 
@@ -128,8 +125,7 @@ func (rt *Router) handleDeleteAppConnection(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: delete app connection failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("env_var", envVar))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete app connection failed", err, slog.String("name", name), slog.String("env_var", envVar))
 		return
 	}
 
@@ -146,8 +142,7 @@ func (rt *Router) handleListAppConnections(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list app connections: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list app connections: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -157,8 +152,7 @@ func (rt *Router) handleListAppConnections(w http.ResponseWriter, r *http.Reques
 		if errors.Is(err, store.ErrDatabaseNotFound) {
 			continue
 		} else if err != nil {
-			rt.logger.Error("api: list app connections: look up database failed", slog.String("error", err.Error()), slog.String("database", ref.Database))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: list app connections: look up database failed", err, slog.String("database", ref.Database))
 			return
 		}
 		out = append(out, rt.externalizeConnection(r.Context(), rt.toAppConnectionResource(envVar, ref, desiredDB, svc.NodeID), external))
@@ -200,8 +194,7 @@ func (rt *Router) handleListConnectableDatabases(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: list connectable databases: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list connectable databases: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -210,10 +203,12 @@ func (rt *Router) handleListConnectableDatabases(w http.ResponseWriter, r *http.
 		databases, err = rt.databases.ListDesiredDatabasesByProject(r.Context(), svc.ProjectID)
 	} else {
 		databases, err = rt.databases.ListDesiredDatabases(r.Context())
+		if err == nil {
+			databases = rt.withoutPendingDatabases(r.Context(), databases)
+		}
 	}
 	if err != nil {
-		rt.logger.Error("api: list connectable databases: list databases failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list connectable databases: list databases failed", err, slog.String("name", name))
 		return
 	}
 

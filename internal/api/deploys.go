@@ -39,6 +39,8 @@ type deployTriggerRequest struct {
 	// Rollback refuses an image that was never a previous deploy of this app
 	// at trigger time instead of failing later at pull time.
 	Rollback bool `json:"rollback,omitempty"`
+	// RerunOf is the deploy attempt of this app that this deploy retries.
+	RerunOf string `json:"rerun_of,omitempty"`
 	freezeOverride
 	policyOverride
 }
@@ -82,8 +84,7 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: trigger deploy: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: trigger deploy: load app failed", err, slog.String("name", name))
 		return
 	}
 
@@ -97,6 +98,11 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := validateImageReference(req.Image); err != nil {
 		writeCodedError(w, http.StatusBadRequest, errCodeInvalidImageRef, "image: "+err.Error())
+		return
+	}
+
+	if status, msg := rt.validateRerunOf(r.Context(), name, req.RerunOf); status != 0 {
+		writeError(w, status, msg)
 		return
 	}
 
@@ -128,7 +134,7 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		return
 	}
 	// Rollbacks skip guardrails: restoring a known state must never be blocked.
-	if rollbackTo == "" && rt.refuseLowDisk(w, diskguard.OpPull) {
+	if rollbackTo == "" && (rt.refuseLowDisk(w, diskguard.OpPull) || rt.refuseNodeCritical(r.Context(), w, existing.NodeID)) {
 		return
 	}
 	if rollbackTo == "" {
@@ -171,7 +177,7 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		return
 	}
 
-	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note})
+	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note, rerunOf: req.RerunOf})
 	if err != nil {
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
 		if req.Pull {
@@ -199,16 +205,21 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 type confirmedDeployOptions struct {
 	pull   bool
 	reason string
+	// rerunOf is the validated attempt this deploy retries, empty if none.
+	rerunOf string
 }
 
 func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.DesiredService, image string, opts confirmedDeployOptions) (store.DesiredService, error) {
-	updated, err := rt.imageTrigger(ctx, existing, opts.pull, opts.reason).Deploy(ctx, existing, image)
+	trigger := rt.imageTrigger(ctx, existing, opts.pull, opts.reason)
+	trigger.RerunOf = opts.rerunOf
+	updated, err := trigger.Deploy(ctx, existing, image)
 	if err != nil {
 		return store.DesiredService{}, err
 	}
 	if rt.deployNotifier != nil {
 		rt.deployNotifier.Dispatch(ctx, resourceIDForApp(existing.Name), alerting.DeployOutcome{
 			AppName: existing.Name, Image: updated.Image, Succeeded: true,
+			ReleaseNotes: rt.releaseNotesForDeploy(ctx, existing.Name, ""),
 		})
 	}
 	return updated, nil
@@ -266,8 +277,7 @@ func (rt *Router) handleGetAutoRollback(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get auto-rollback: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get auto-rollback: load app failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, autoRollbackSettingResource{Enabled: svc.AutoRollbackOnCrashloop})
@@ -292,8 +302,7 @@ func (rt *Router) handleSetAutoRollback(w http.ResponseWriter, r *http.Request) 
 			writeError(w, http.StatusNotFound, "app not found")
 			return
 		}
-		rt.logger.Error("api: set auto-rollback failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set auto-rollback failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, autoRollbackSettingResource(req))
@@ -333,8 +342,7 @@ func (rt *Router) handleGetAutoRollbackSLOBurn(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get auto-rollback-slo-burn: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get auto-rollback-slo-burn: load app failed", err, slog.String("name", name))
 		return
 	}
 	mode := svc.AutoRollbackOnSLOBurn
@@ -368,8 +376,7 @@ func (rt *Router) handleSetAutoRollbackSLOBurn(w http.ResponseWriter, r *http.Re
 			writeError(w, http.StatusNotFound, "app not found")
 			return
 		}
-		rt.logger.Error("api: set auto-rollback-slo-burn failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set auto-rollback-slo-burn failed", err, slog.String("name", name))
 		return
 	}
 	writeJSON(w, http.StatusOK, autoRollbackSLOBurnSettingResource(req))
@@ -450,6 +457,7 @@ func (rt *Router) recordResolvedDeployAttempt(ctx context.Context, svc store.Des
 	if rt.deployNotifier != nil {
 		rt.deployNotifier.Dispatch(ctx, resourceIDForApp(serviceName), alerting.DeployOutcome{
 			AppName: serviceName, Image: image, Succeeded: true,
+			ReleaseNotes: rt.releaseNotesForDeploy(ctx, serviceName, source),
 		})
 	}
 }
@@ -486,15 +494,13 @@ func (rt *Router) handleDeployHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: deploy history: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy history: load app failed", err, slog.String("name", name))
 		return
 	}
 
 	conditions, err := rt.deploys.GetConditions(r.Context(), applicationControllerName(name))
 	if err != nil {
-		rt.logger.Error("api: deploy history failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: deploy history failed", err, slog.String("name", name))
 		return
 	}
 	// This app's own controller never sees CrossNodeIngress, reported

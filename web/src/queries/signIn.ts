@@ -133,6 +133,16 @@ export function signInRequestsQueryOptions() {
   })
 }
 
+export interface CLIPairing {
+  code: string
+  expires_at: string
+  server_url: string
+}
+
+export function createCLIPairing() {
+  return send<CLIPairing>('POST', '/api/v1/auth/cli-pairing')
+}
+
 export function revealLoginCode(id: string) {
   return send<{ code: string; expires_at: string }>(
     'POST',
@@ -145,13 +155,29 @@ export function useDecideApproval() {
   return useMutation<
     undefined,
     ApiError,
-    { id: string; approve: boolean; match?: number }
+    {
+      id: string
+      approve: boolean
+      match?: number
+      password?: string
+      code?: string
+    }
   >({
-    mutationFn: ({ id, approve, match }) =>
+    mutationFn: ({ id, approve, match, password, code }) =>
       send(
         'POST',
         `/api/v1/auth/login-approvals/${encodeURIComponent(id)}/${approve ? 'approve' : 'deny'}`,
-        approve ? { match } : undefined,
+        approve
+          ? password
+            ? {
+                step_up: {
+                  method: 'password',
+                  password,
+                  code: code || undefined,
+                },
+              }
+            : { match }
+          : undefined,
       ),
     onSettled: () => qc.invalidateQueries({ queryKey: signInKeys.requests }),
   })

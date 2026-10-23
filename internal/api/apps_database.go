@@ -63,8 +63,7 @@ func (rt *Router) handleSetAppDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "unknown database_name")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set app database: look up database failed", slog.String("error", err.Error()), slog.String("database_name", req.DatabaseName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app database: look up database failed", err, slog.String("database_name", req.DatabaseName))
 		return
 	}
 	if !databaseFieldSupported(external, desiredDB.Engine, field) {
@@ -85,8 +84,7 @@ func (rt *Router) handleSetAppDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: set app database failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app database failed", err, slog.String("name", name))
 		return
 	}
 
@@ -101,8 +99,7 @@ func (rt *Router) handleClearAppDatabase(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: clear app database failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: clear app database failed", err, slog.String("name", name))
 		return
 	}
 

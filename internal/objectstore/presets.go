@@ -16,6 +16,7 @@ const (
 	PresetB2      = "b2"
 	PresetMinIO   = "minio"
 	PresetWasabi  = "wasabi"
+	PresetGCS     = "gcs"
 	PresetCustom  = "custom"
 	defaultRegion = "us-east-1"
 )
@@ -41,6 +42,7 @@ var presets = []Preset{
 	{ID: PresetR2, Label: "Cloudflare R2", EndpointTemplate: "https://{account_id}.r2.cloudflarestorage.com", DefaultRegion: "auto", PathStyle: true, NeedsAccountID: true, Provider: "r2"},
 	{ID: PresetB2, Label: "Backblaze B2", EndpointTemplate: "https://s3.{region}.backblazeb2.com", NeedsRegion: true, PathStyle: true, Provider: "custom"},
 	{ID: PresetWasabi, Label: "Wasabi", EndpointTemplate: "https://s3.{region}.wasabisys.com", DefaultRegion: defaultRegion, NeedsRegion: true, PathStyle: true, Provider: "custom"},
+	{ID: PresetGCS, Label: "Google Cloud Storage", EndpointTemplate: "https://storage.googleapis.com", DefaultRegion: "auto", PathStyle: true, Provider: "custom"},
 	{ID: PresetMinIO, Label: "MinIO", DefaultRegion: defaultRegion, PathStyle: true, NeedsEndpoint: true, Provider: "custom"},
 	{ID: PresetCustom, Label: "S3 compatible", DefaultRegion: defaultRegion, PathStyle: true, NeedsEndpoint: true, Provider: "custom"},
 }

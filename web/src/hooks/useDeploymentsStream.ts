@@ -111,7 +111,7 @@ export function useDeploymentsStream(
     }
 
     const connect = () => {
-      if (stopped) return
+      if (stopped || document.visibilityState === 'hidden') return
       const es = new EventSource(STREAM_URL)
       source = es
       es.onopen = () => {
@@ -157,7 +157,20 @@ export function useDeploymentsStream(
       }
     }
     connect()
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        clearTimeout(retry)
+        source?.close()
+        source = null
+        hadError = true
+      } else if (!source && !stopped) {
+        attempt = 0
+        connect()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
     return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
       stopped = true
       source?.close()
       clearTimeout(retry)

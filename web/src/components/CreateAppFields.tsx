@@ -1,8 +1,7 @@
 import { NewAppPreflight } from './PreflightPanel'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
@@ -28,7 +27,9 @@ import { Switch } from '@/components/ui/switch'
 import { useCreateApp } from '../queries/apps'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
+import { getProjectScope } from '../lib/projectScope'
 import { useFormDraft } from '../hooks/useFormDraft'
+import { useAppForm } from '../hooks/useAppForm'
 import {
   HEALTH_CHECK_DEFAULT_PATH,
   healthCheckFrom,
@@ -141,7 +142,7 @@ const createAppSchema = z
 type CreateAppFormInput = z.input<typeof createAppSchema>
 type CreateAppFormOutput = z.output<typeof createAppSchema>
 
-const DEFAULT_VALUES: CreateAppFormInput = {
+const BASE_VALUES: CreateAppFormInput = {
   name: '',
   image: '',
   port: '',
@@ -155,6 +156,11 @@ const DEFAULT_VALUES: CreateAppFormInput = {
   // to turn off for the ones that don't implement it.
   healthCheckEnabled: true,
   healthCheckPath: HEALTH_CHECK_DEFAULT_PATH,
+}
+
+// New apps start in the project picked in the scope picker.
+function initialValues(): CreateAppFormInput {
+  return { ...BASE_VALUES, project: getProjectScope() || NO_PROJECT_VALUE }
 }
 
 // The name/image/port(/node/health) field set and its submit logic,
@@ -215,14 +221,13 @@ export function CreateAppFields({
     watch,
     setValue,
     getValues,
-  } = useForm<CreateAppFormInput, unknown, CreateAppFormOutput>({
-    resolver: zodResolver(createAppSchema),
-    defaultValues: DEFAULT_VALUES,
+  } = useAppForm<CreateAppFormInput, CreateAppFormOutput>(createAppSchema, {
+    defaultValues: initialValues(),
   })
 
   useEffect(() => {
     if (!open) {
-      reset(DEFAULT_VALUES)
+      reset(initialValues())
       createApp.reset()
     }
     // Only reacting to the dialog's open transition, not to reset/
@@ -236,7 +241,7 @@ export function CreateAppFields({
       open,
       watch,
       reset,
-      defaultValues: DEFAULT_VALUES,
+      defaultValues: initialValues(),
     })
   const healthCheckEnabled = watch('healthCheckEnabled')
 

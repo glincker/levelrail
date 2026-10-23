@@ -1,6 +1,7 @@
 package alerting
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509"
 	"encoding/pem"
@@ -42,6 +43,8 @@ type CertInfo struct {
 	// Status is "healthy", "expiring_soon", or "expired"; see
 	// CertExpiryStatus.
 	Status string
+	// Internal marks a self-signed or local-CA certificate the platform issues by design.
+	Internal bool
 }
 
 // Certificate expiry buckets reported by CertExpiryStatus.
@@ -108,11 +111,20 @@ func ListCertificates(ctx context.Context, source CertSource, warningWindow time
 			NotBefore: cert.NotBefore,
 			NotAfter:  cert.NotAfter,
 			Status:    CertExpiryStatus(cert.NotAfter, now, warningWindow),
+			Internal:  isInternalCert(cert, key),
 		})
 	}
 
 	sort.Slice(out, func(i, j int) bool { return out[i].Domain < out[j].Domain })
 	return out, nil
+}
+
+func isInternalCert(cert *x509.Certificate, key string) bool {
+	if bytes.Equal(cert.RawIssuer, cert.RawSubject) || strings.Contains(cert.Issuer.CommonName, "Local Authority") {
+		return true
+	}
+	parts := strings.Split(key, "/")
+	return len(parts) > 2 && parts[1] == "local"
 }
 
 // parseLeafCertificate parses the first certificate in a PEM-encoded
@@ -203,9 +215,24 @@ type CertExpiryObservationStore interface {
 	ListCertExpiryObservations(ctx context.Context, ruleID string) ([]CertExpiryObservation, error)
 }
 
+// CertEvalResult is what one cert_expiry evaluation reports besides the rule state.
+type CertEvalResult struct {
+	Notices []string
+	Facts   []CertFact
+	// Superseded is true when this rule saw unhealthy certificates but a tighter rule owns them all.
+	Superseded bool
+}
+
 // EvaluateCertExpiry returns one notice per non-healthy certificate, with no debounce since expiry moves only with real time.
 // A renewal stuck on the same NotAfter past stalledThreshold is reported as stalled, not a plain warning.
 func EvaluateCertExpiry(ctx context.Context, certs CertSource, snapshots CertExpiryObservationStore, r Rule, warningWindow, stalledThreshold time.Duration, now time.Time, logger *slog.Logger) (Rule, []string, error) {
+	next, res, err := EvaluateCertExpiryPolicy(ctx, certs, snapshots, r, warningWindow, stalledThreshold, now, logger, CertExpiryPolicy{})
+	return next, res.Notices, err
+}
+
+// EvaluateCertExpiryPolicy is EvaluateCertExpiry with the quieting policy applied: one window per certificate, no alert for certificates the platform renews itself.
+func EvaluateCertExpiryPolicy(ctx context.Context, certs CertSource, snapshots CertExpiryObservationStore, r Rule, warningWindow, stalledThreshold time.Duration, now time.Time, logger *slog.Logger, policy CertExpiryPolicy) (Rule, CertEvalResult, error) {
+	var res CertEvalResult
 	if warningWindow <= 0 {
 		warningWindow = DefaultCertExpiryWarningWindow
 	}
@@ -215,7 +242,7 @@ func EvaluateCertExpiry(ctx context.Context, certs CertSource, snapshots CertExp
 
 	infos, err := ListCertificates(ctx, certs, warningWindow, now, logger)
 	if err != nil {
-		return r, nil, fmt.Errorf("alerting: evaluate rule %q: %w", r.ID, err)
+		return r, res, fmt.Errorf("alerting: evaluate rule %q: %w", r.ID, err)
 	}
 
 	next := r
@@ -225,12 +252,12 @@ func EvaluateCertExpiry(ctx context.Context, certs CertSource, snapshots CertExp
 		next.PendingSince = nil
 		next.Firing = false
 		next.FiringSince = nil
-		return next, nil, nil
+		return next, res, nil
 	}
 
 	prev, err := snapshots.ListCertExpiryObservations(ctx, r.ID)
 	if err != nil {
-		return r, nil, fmt.Errorf("alerting: evaluate rule %q: load cert expiry observations: %w", r.ID, err)
+		return r, res, fmt.Errorf("alerting: evaluate rule %q: load cert expiry observations: %w", r.ID, err)
 	}
 	prevByDomain := make(map[string]CertExpiryObservation, len(prev))
 	for _, o := range prev {
@@ -238,7 +265,6 @@ func EvaluateCertExpiry(ctx context.Context, certs CertSource, snapshots CertExp
 	}
 
 	var (
-		notices      []string
 		anyUnhealthy bool
 		minDays      float64
 		haveMinDays  bool
@@ -251,20 +277,16 @@ func EvaluateCertExpiry(ctx context.Context, certs CertSource, snapshots CertExp
 		}
 
 		if info.Status == certStatusHealthy {
-			// Clear any stale episode: the next time this domain goes
-			// unhealthy, it starts a fresh one rather than reusing an
-			// old, unrelated expiry's episode start.
 			obs := CertExpiryObservation{
 				RuleID: r.ID, Domain: info.Domain, Status: info.Status, NotAfter: info.NotAfter,
 				EpisodeNotAfter: info.NotAfter, EpisodeStartedAt: now, ObservedAt: now,
 			}
 			if err := snapshots.UpsertCertExpiryObservation(ctx, obs); err != nil {
-				return r, nil, fmt.Errorf("alerting: evaluate rule %q: save cert expiry observation for %q: %w", r.ID, info.Domain, err)
+				return r, res, fmt.Errorf("alerting: evaluate rule %q: save cert expiry observation for %q: %w", r.ID, info.Domain, err)
 			}
 			continue
 		}
 
-		anyUnhealthy = true
 		episodeNotAfter, episodeStartedAt := info.NotAfter, now
 		stalled := false
 		if p, ok := prevByDomain[info.Domain]; ok &&
@@ -279,15 +301,33 @@ func EvaluateCertExpiry(ctx context.Context, certs CertSource, snapshots CertExp
 			EpisodeNotAfter: episodeNotAfter, EpisodeStartedAt: episodeStartedAt, ObservedAt: now,
 		}
 		if err := snapshots.UpsertCertExpiryObservation(ctx, obs); err != nil {
-			return r, nil, fmt.Errorf("alerting: evaluate rule %q: save cert expiry observation for %q: %w", r.ID, info.Domain, err)
+			return r, res, fmt.Errorf("alerting: evaluate rule %q: save cert expiry observation for %q: %w", r.ID, info.Domain, err)
 		}
 
-		notices = append(notices, certExpiryNotice(info, stalled))
+		if !policy.Enabled {
+			anyUnhealthy = true
+			res.Notices = append(res.Notices, certExpiryNotice(info, stalled))
+			continue
+		}
+		if t := policy.tightest(info.NotAfter.Sub(now)); t != 0 && t != warningWindow {
+			res.Superseded = true
+			continue
+		}
+		fact, alert := policy.assess(info, now, stalledThreshold, stalled)
+		if !alert {
+			continue
+		}
+		anyUnhealthy = true
+		res.Facts = append(res.Facts, fact)
+		res.Notices = append(res.Notices, fact.Notice())
 	}
 
 	next.LastValue = &minDays
+	if anyUnhealthy {
+		res.Superseded = false
+	}
 
-	return advanceState(next, r, anyUnhealthy, 0, now), notices, nil
+	return advanceState(next, r, anyUnhealthy, 0, now), res, nil
 }
 
 func certExpiryNotice(info CertInfo, stalled bool) string {
