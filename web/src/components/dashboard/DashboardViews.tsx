@@ -1,7 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { DashboardView } from '@/components/dashboards/DashboardView'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDashboardTabs } from '@/hooks/useDashboardTabs'
 import {
@@ -15,10 +14,19 @@ import {
 import { useDashboards } from '@/queries/customDashboards'
 import { DashboardTabBar } from './DashboardTabBar'
 import { ManageMenu } from './ManageMenu'
-import { MetricsView } from './MetricsView'
 import { NewDashboardDialog } from './NewDashboardDialog'
 import { RenameBoardDialog } from './RenameBoardDialog'
 import { useBoardActions } from './useBoardActions'
+
+// Non-Start tabs stay out of the home route chunk until selected.
+const DashboardView = lazy(() =>
+  import('@/components/dashboards/DashboardView').then((m) => ({
+    default: m.DashboardView,
+  })),
+)
+const MetricsView = lazy(() =>
+  import('./MetricsView').then((m) => ({ default: m.MetricsView })),
+)
 
 /** Tab bar plus the active view: Start (passed in), the built-in Metrics, or a saved board. Only the shown tab mounts, so hidden boards fetch nothing. */
 export function DashboardViews({
@@ -140,7 +148,9 @@ export function DashboardViews({
         id="dashboard-tabpanel"
         aria-labelledby={`dashboard-tab-${tabs.selected}`}
       >
-        {body}
+        <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+          {body}
+        </Suspense>
       </div>
       <NewDashboardDialog
         open={starterOpen}

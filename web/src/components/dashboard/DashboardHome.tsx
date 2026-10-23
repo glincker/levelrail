@@ -7,7 +7,6 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import type { AppListEntry } from '../../types/appDetail'
 import type { AppsSummary } from '../../queries/appPages'
-import { appListQueryOptions } from '../../queries/apps'
 import { anyAppsQueryOptions } from '../../queries/appPages'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { useDashboardLayout } from '../../hooks/useDashboardLayout'
@@ -19,8 +18,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import { FleetUtilizationSummary } from '../FleetUtilizationSummary'
-import { TopResourceConsumers } from '../TopResourceConsumers'
 import { DashboardHero } from './DashboardHero'
 import { FleetTiles } from './FleetTiles'
 import { NextSteps } from './NextSteps'
@@ -32,13 +29,10 @@ import { WidgetFrame } from './WidgetFrame'
 import { QuickStart } from './QuickStart'
 import { ResourcesSection } from './ResourcesSection'
 import { RecommendationsLine } from './RecommendationsLine'
-import { ReservedUsageCard } from './ReservedUsageCard'
 import { ResourceAdvisorTile } from '../resourceAdvisor/ResourceAdvisorTile'
-import { StorageUsageCard } from './StorageUsageCard'
-import { SleepFleetCard } from './SleepFleetCard'
 import { PlatformCapabilities } from './PlatformCapabilities'
 import { DashboardViews } from './DashboardViews'
-import { InstanceWideLabel, ScopeIndicator } from './ScopeIndicator'
+import { ScopeIndicator } from './ScopeIndicator'
 import { useEnvironmentScope } from '../../lib/environmentScope'
 
 const FirstDeploy = lazy(() =>
@@ -47,26 +41,13 @@ const FirstDeploy = lazy(() =>
   })),
 )
 
-const FleetResourceChart = lazy(() =>
-  import('../FleetResourceChart').then((m) => ({
-    default: m.FleetResourceChart,
-  })),
+const UsageDetailsBody = lazy(() =>
+  import('./UsageDetailsBody').then((m) => ({ default: m.UsageDetailsBody })),
 )
 
 const RecentAlertsCard = lazy(() =>
   import('../RecentAlertsCard').then((m) => ({ default: m.RecentAlertsCard })),
 )
-
-function UsageApps() {
-  useEnvironmentScope()
-  const { data: apps = [] } = useQuery(appListQueryOptions())
-  return (
-    <>
-      <TopResourceConsumers apps={apps} />
-      <ReservedUsageCard apps={apps} />
-    </>
-  )
-}
 
 function UsageDetails() {
   const { t } = useTranslation('dashboard')
@@ -88,16 +69,9 @@ function UsageDetails() {
         />
       </button>
       {open ? (
-        <div className="space-y-4">
-          <InstanceWideLabel />
-          <FleetUtilizationSummary />
-          <Suspense fallback={null}>
-            <FleetResourceChart />
-          </Suspense>
-          <UsageApps />
-          <StorageUsageCard />
-          <SleepFleetCard />
-        </div>
+        <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+          <UsageDetailsBody />
+        </Suspense>
       ) : null}
     </section>
   )

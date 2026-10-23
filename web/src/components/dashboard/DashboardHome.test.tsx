@@ -160,7 +160,7 @@ describe('DashboardHome', () => {
       await screen.findByRole('tab', { name: 'Start', selected: true }),
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('tab', { name: 'Metrics' }))
-    expect(screen.getByText('No metrics yet')).toBeInTheDocument()
+    expect(await screen.findByText('No metrics yet')).toBeInTheDocument()
     fireEvent.click(
       screen.getByRole('button', { name: 'Deploy your first app' }),
     )
