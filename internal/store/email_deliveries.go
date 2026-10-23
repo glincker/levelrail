@@ -35,6 +35,10 @@ type EmailDelivery struct {
 	Error     string    `json:"error"`
 	ErrorKind string    `json:"error_kind"`
 	Attempts  int       `json:"attempts"`
+
+	// ProviderID and FailoverFrom are internal until the API slice exposes them.
+	ProviderID   string `json:"-"`
+	FailoverFrom string `json:"-"`
 }
 
 // EmailDeliveryFilter narrows ListEmailDeliveries.
@@ -84,22 +88,22 @@ func (db *DB) InsertEmailDelivery(ctx context.Context, d EmailDelivery, rawTo st
 		d.Attempts = 1
 	}
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO email_deliveries (id, created_at, provider, to_hash, to_display, kind, status, message_id, error, error_kind, attempts)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO email_deliveries (id, created_at, provider, to_hash, to_display, kind, status, message_id, error, error_kind, attempts, provider_id, failover_from)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, d.ID, d.CreatedAt.UTC().Format(emailDeliveryTimeFormat), d.Provider, EmailRecipientHash(rawTo), EmailRecipientDisplay(rawTo, fullAddress),
-		d.Kind, d.Status, d.MessageID, d.Error, d.ErrorKind, d.Attempts)
+		d.Kind, d.Status, d.MessageID, d.Error, d.ErrorKind, d.Attempts, d.ProviderID, d.FailoverFrom)
 	if err != nil {
 		return fmt.Errorf("store: insert email delivery: %w", err)
 	}
 	return nil
 }
 
-const emailDeliveryColumns = `id, created_at, provider, to_hash, to_display, kind, status, message_id, error, error_kind, attempts`
+const emailDeliveryColumns = `id, created_at, provider, to_hash, to_display, kind, status, message_id, error, error_kind, attempts, provider_id, failover_from`
 
 func scanEmailDelivery(sc interface{ Scan(...any) error }) (EmailDelivery, error) {
 	var d EmailDelivery
 	var created string
-	if err := sc.Scan(&d.ID, &created, &d.Provider, &d.ToHash, &d.ToDisplay, &d.Kind, &d.Status, &d.MessageID, &d.Error, &d.ErrorKind, &d.Attempts); err != nil {
+	if err := sc.Scan(&d.ID, &created, &d.Provider, &d.ToHash, &d.ToDisplay, &d.Kind, &d.Status, &d.MessageID, &d.Error, &d.ErrorKind, &d.Attempts, &d.ProviderID, &d.FailoverFrom); err != nil {
 		return EmailDelivery{}, err
 	}
 	t, err := time.Parse(time.RFC3339Nano, created)
