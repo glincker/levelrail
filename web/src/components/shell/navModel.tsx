@@ -294,6 +294,8 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         id: 'network',
         label: 'Topology',
         to: '/network',
+        // Proxy and Private networks live under /network/*, so prefix matching lit two rows.
+        exact: true,
         icon: <ShareNetworkIcon />,
       },
       {

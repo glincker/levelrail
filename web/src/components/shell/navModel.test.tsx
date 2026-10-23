@@ -140,6 +140,10 @@ describe('global nav model', () => {
     ['/apps/web/logs', '/apps', true],
     ['/appsettings', '/apps', false],
     ['/status', '/', false],
+    ['/network', '/network', true],
+    ['/network/proxy', '/network', false],
+    ['/network/private', '/network', false],
+    ['/network/proxy', '/network/proxy', true],
   ])('active match %s vs %s', (path, to, want) => {
     const item = allGlobalItems().find((i) => i.to === to)
     expect(item && isGlobalItemActive(path, item)).toBe(want)
