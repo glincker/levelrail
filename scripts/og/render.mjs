@@ -24,13 +24,13 @@ const H1W = Number(process.env.H1W || 700);
 const fontDir = join(root, "scripts", "og", "fonts");
 const FONTFACE = `@font-face{font-family:Inter;src:url(file://${fontDir}/inter-var.woff2);font-weight:100 900}@font-face{font-family:JB;src:url(file://${fontDir}/jetbrains-mono-var.woff2);font-weight:100 800}`;
 const GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><filter id="n" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncR type="linear" slope="3" intercept="-1.15"/><feFuncG type="linear" slope="3" intercept="-1.15"/><feFuncB type="linear" slope="3" intercept="-1.15"/></feComponentTransfer></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>')}")`;
-const CHIPS = ["Apache 2.0", "300+ templates", "No Kubernetes"];
+const CHIPS = ["350+ templates", "Imports Coolify, Dokploy, CapRover", "Apache 2.0", "No Kubernetes"];
 
 // h1 line 2 is the accent line.
 const COPY = {
   vercelstyle: { h1: "Vercel-style deploys,<br><em>on your own server.</em>", sub: "Git push to a live app with HTTPS, logs, metrics and one-click rollback, on hardware you own. No Kubernetes.", chips: CHIPS },
   anotheroption: { h1: "Another option<br><em>for your own server.</em>", sub: "Git push to a live app with HTTPS, logs, metrics and one-click rollback. Open source, one Go binary, no Kubernetes.", chips: CHIPS },
-  alternative: { h1: "The self-hosted alternative<br><em>to Vercel and Coolify.</em>", sub: "Deploy with git push, and bring your apps over from Coolify, Dokploy or CapRover with a dry run first.", chips: ["Apache 2.0", "Dry-run import", "300+ templates"] },
+  alternative: { h1: "The self-hosted alternative<br><em>to Vercel and Coolify.</em>", sub: "Deploy with git push, and bring your apps over from Coolify, Dokploy or CapRover with a dry run first.", chips: ["Apache 2.0", "Dry-run import", "350+ templates"] },
   vercel: { cta: "Get started", h1: "Your own Vercel.<br><em>On your server.</em>", sub: "The lightweight, self-hosted alternative to Vercel, Heroku and Coolify.", chips: CHIPS },
   push: { cta: "Get started", h1: "Push to git.<br><em>Get a running app.</em>", sub: "Self-hosted deploys with HTTPS, live logs, metrics and one-click rollback.", chips: CHIPS },
   docs: { cta: "Read the docs", h1: "Deploy, observe,<br><em>roll back.</em>", sub: "Install and run the platform on your own servers.", chips: ["Guides", "CLI", "API", "Templates"] },
@@ -132,7 +132,7 @@ function page(v) {
   const T = theme(dark);
   const small = v.h < 450;
   const aspect = { "get-started": 1000, "dashboard-sleeping-apps": 1100 }[v.shot] ?? 900;
-  const cta = v.chips && c.cta && !small ? `<div class="cta"><span class="btn">${c.cta}</span><span class="proof">Open source on GitHub</span></div>` : "";
+  const cta = false && v.chips && c.cta && !small ? `<div class="cta"><span class="btn">${c.cta}</span><span class="proof">Open source on GitHub</span></div>` : "";
   const chips = v.chips ? `<ul class="chips">${c.chips.map((x) => `<li>${x}</li>`).join("")}</ul>` : "";
   const sub = v.sub ? `<p class="sub">${c.sub}</p>` : "";
   const fh = v.fhh ?? Math.round((v.fw * aspect) / 1280);
@@ -161,8 +161,8 @@ h1 em{font-style:normal;background:${T.grad};-webkit-background-clip:text;backgr
 .btn{padding:11px 22px;border-radius:11px;background:${LIVE};color:#10130a;font-weight:600;font-size:${v.h1 < 62 ? 16 : 18}px;box-shadow:0 8px 28px rgba(238,243,95,${dark ? ".22" : ".35"})}
 .proof{font-family:${MONO};font-size:14px;color:${T.sub}}
 .chips{display:flex;flex-wrap:wrap;gap:10px;margin:${Math.round(v.h1 * 0.3)}px 0 0;padding:0;list-style:none}
-.chips li{padding:6px 13px;border-radius:50px;background:${dark ? "#090c0f" : "rgba(255,255,255,.7)"};box-shadow:inset 0 0 0 1px ${dark ? "#2a323a" : "#c9d2d9"};font-family:${MONO};font-size:${v.h1 < 62 ? 14 : 15}px;color:${dark ? "#cfd6dc" : "#2c353c"}}
-.chips li::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 8px 1px 0;background:${dark ? "#eef35f" : "#b9a800"}}
+.chips li{padding:6px 13px;border-radius:50px;background:${dark ? "rgba(238,243,95,.10)" : "#eef35f"};box-shadow:inset 0 0 0 1px ${dark ? "rgba(238,243,95,.55)" : "#cdd23a"};font-family:${MONO};font-size:${v.h1 < 62 ? 14 : 15}px;color:${dark ? "#f3f7a8" : "#14160a"}}
+.chips li::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 8px 1px 0;background:${dark ? "#eef35f" : "#14160a"}}
 .url{position:absolute;left:${v.pad}px;${v.urlTop ? `top:${Math.round(v.pad * 0.75) + 6}px;left:auto;right:${v.pad}px` : `bottom:${Math.round(v.pad * 0.55)}px`};font-family:${MONO};font-size:${small ? 18 : 20}px;color:${T.url};z-index:10}
 .frame{position:absolute;left:${v.fx}px;top:${v.fy}px;width:${v.fw}px;height:${fh}px;transform-origin:0 0;transform:${tilt};border-radius:16px;overflow:hidden;background:${dark ? "#0a0d10" : "#fff"};box-shadow:0 0 0 1px ${ring},0 0 54px ${dark ? "rgba(47,179,220,.30)" : "rgba(47,179,220,.25)"},-28px 44px 80px rgba(0,0,0,${dark ? ".75" : ".28"});z-index:2}
 .frame img{position:absolute;width:${v.iw ?? v.fw}px;left:${v.ix ?? 0}px;top:${v.iy ?? 0}px;display:block}
@@ -209,8 +209,8 @@ h1 em{font-style:normal;background:${T.grad};-webkit-background-clip:text;backgr
 .cmd{display:inline-flex;align-items:center;gap:10px;padding:13px 20px;border-radius:12px;background:${T.pillBg};box-shadow:inset 0 0 0 1px ${T.pillLine},0 12px 30px rgba(0,0,0,${dark ? ".5" : ".18"});font-family:${MONO};font-size:17px;color:${T.pillInk};white-space:nowrap}
 .cmd b{color:${LIVE};font-weight:700}
 .chips{display:flex;gap:10px;margin:22px 0 0;padding:0;list-style:none}
-.chips li{padding:6px 13px;border-radius:50px;background:${dark ? "#090c0f" : "rgba(255,255,255,.7)"};box-shadow:inset 0 0 0 1px ${dark ? "#2a323a" : "#c9d2d9"};font-family:${MONO};font-size:14px;color:${dark ? "#cfd6dc" : "#2c353c"}}
-.chips li::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 8px 1px 0;background:${dark ? "#eef35f" : "#b9a800"}}
+.chips li{padding:6px 13px;border-radius:50px;background:${dark ? "rgba(238,243,95,.10)" : "#eef35f"};box-shadow:inset 0 0 0 1px ${dark ? "rgba(238,243,95,.55)" : "#cdd23a"};font-family:${MONO};font-size:14px;color:${dark ? "#cfd6dc" : "#2c353c"}}
+.chips li::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 8px 1px 0;background:${dark ? "#eef35f" : "#14160a"}}
 .url{position:absolute;left:64px;bottom:34px;font-family:${MONO};font-size:20px;color:${T.url};z-index:10}
 .tag{position:absolute;right:64px;bottom:36px;font-family:${MONO};font-size:16px;letter-spacing:.16em;text-transform:uppercase;color:${T.tag};z-index:10}
 .grain{position:absolute;inset:0;z-index:20;pointer-events:none;background-image:${GRAIN};background-size:300px 300px;opacity:${dark ? 0.05 : 0.07};mix-blend-mode:${T.blend}}
@@ -219,7 +219,7 @@ h1 em{font-style:normal;background:${T.grad};-webkit-background-clip:text;backgr
 <div class="copy"><h1>${dash ? COPY.vercel.h1 : "Your own cloud.<br><em>No Kubernetes.</em>"}</h1>
 <p class="sub">${dash ? COPY.vercel.sub : "Deploy from a git push. One Go binary, agents that dial out, no SSH."}</p>
 ${dash ? "" : `<div class="cta"><span class="cmd"><b>$</b>curl -fsSL ${SITE}/install.sh | sh</span></div>`}
-<ul class="chips">${(dash ? CHIPS : ["Apache 2.0", "300+ templates"]).map((x) => `<li>${x}</li>`).join("")}</ul></div>
+<ul class="chips">${(dash ? CHIPS : ["Apache 2.0", "350+ templates"]).map((x) => `<li>${x}</li>`).join("")}</ul></div>
 ${dash ? `<div class="frame"><img src="file://${join(root, SHOT(v.shot))}"><b></b></div><div class="pill" style="left:590px;top:70px"><i></i>git push</div><div class="pill" style="left:610px;top:548px"><i class="g"></i>TLS ready</div>` : `<div class="scene">${ISO_SVG}</div>`}
 <div class="url">${dash ? domain : SITE}</div>${dash ? "" : '<div class="tag">Go / Docker / Caddy</div>'}<div class="grain"></div></div></body></html>`;
 }
