@@ -306,3 +306,30 @@ func TestRequireAbility_RateLimit_UnauthenticatedByIP(t *testing.T) {
 		t.Fatalf("third unauthenticated attempt: status = %d, want %d, body = %s", rec.Code, http.StatusTooManyRequests, rec.Body.String())
 	}
 }
+
+func TestAPIRateLimit_AdmitSetsHeaders(t *testing.T) {
+	l := newAPIRateLimit(10, 4)
+	rec := httptest.NewRecorder()
+	if ok, _ := l.admit(rec, AbilityWrite, "k"); !ok {
+		t.Fatal("first request denied")
+	}
+	h := rec.Header()
+	if h.Get("X-RateLimit-Limit") != "4" || h.Get("X-RateLimit-Remaining") != "3" {
+		t.Errorf("limit/remaining = %q/%q, want 4/3", h.Get("X-RateLimit-Limit"), h.Get("X-RateLimit-Remaining"))
+	}
+	if n, err := strconv.Atoi(h.Get("X-RateLimit-Reset")); err != nil || n < 1 || n > 60 {
+		t.Errorf("reset = %q, want 1..60", h.Get("X-RateLimit-Reset"))
+	}
+	for i := 0; i < 3; i++ {
+		l.admit(httptest.NewRecorder(), AbilityWrite, "k")
+	}
+	denied := httptest.NewRecorder()
+	if ok, _ := l.admit(denied, AbilityWrite, "k"); ok || denied.Header().Get("X-RateLimit-Limit") != "" {
+		t.Errorf("denied request: ok=%v headers=%v, want denied and no headers from admit", ok, denied.Header())
+	}
+	off := httptest.NewRecorder()
+	newAPIRateLimit(0, 0).admit(off, AbilityRead, "k")
+	if off.Header().Get("X-RateLimit-Limit") != "" {
+		t.Error("disabled limiter must not emit headers")
+	}
+}
