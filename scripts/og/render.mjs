@@ -133,7 +133,9 @@ function page(v) {
   const small = v.h < 450;
   const aspect = { "get-started": 1000, "dashboard-sleeping-apps": 1100 }[v.shot] ?? 900;
   const cta = false && v.chips && c.cta && !small ? `<div class="cta"><span class="btn">${c.cta}</span><span class="proof">Open source on GitHub</span></div>` : "";
-  const chips = v.chips ? `<ul class="chips">${c.chips.map((x) => `<li>${x}</li>`).join("")}</ul>` : "";
+  const split = Math.ceil(c.chips.length / 2);
+  const row = (cls, list) => (list.length ? `<ul class="chips ${cls}">${list.map((x) => `<li>${x}</li>`).join("")}</ul>` : "");
+  const chips = v.chips ? row("p", c.chips.slice(0, split)) + row("s", c.chips.slice(split)) : "";
   const sub = v.sub ? `<p class="sub">${c.sub}</p>` : "";
   const fh = v.fhh ?? Math.round((v.fw * aspect) / 1280);
   const tilt = v.tilt ? "perspective(2200px) rotateX(14deg) rotateY(-10deg) rotateZ(-1.5deg)" : `perspective(${Math.round(v.fw * 2.2)}px) rotateY(-12deg) rotateX(3deg) rotateZ(-1deg)`;
@@ -142,7 +144,7 @@ function page(v) {
     ? [[v.fx + 40, v.fy - 40], [v.fx + v.fw * 0.55, v.fy + 10]]
     : [[v.fx - 12, v.fy - 42], [v.fx + v.fw * 0.74, v.fy - 42]]);
   const pills = v.pills ? pill(pp[0][0], pp[0][1], "git push", false) + pill(pp[1][0], pp[1][1], "TLS ready", true) : "";
-  const shot = v.light && existsSync(join(root, SHOT(v.shot + "-light"))) ? v.shot + "-light" : v.shot;
+  const shot = v.shot;
   const mask = `-webkit-mask-image:${GRAIN};mask-image:${GRAIN};-webkit-mask-size:300px 300px;mask-size:300px 300px`;
   const ring = dark ? "rgba(92,196,232,.55)" : "rgba(13,106,134,.35)";
   return `<!doctype html><html><head><meta charset="utf-8"><style>${FONTFACE}
@@ -163,6 +165,11 @@ h1 em{font-style:normal;background:${T.grad};-webkit-background-clip:text;backgr
 .chips{display:flex;flex-wrap:wrap;gap:10px;margin:${Math.round(v.h1 * 0.3)}px 0 0;padding:0;list-style:none}
 .chips li{padding:6px 13px;border-radius:50px;background:${dark ? "rgba(238,243,95,.10)" : "#eef35f"};box-shadow:inset 0 0 0 1px ${dark ? "rgba(238,243,95,.55)" : "#cdd23a"};font-family:${MONO};font-size:${v.h1 < 62 ? 14 : 15}px;color:${dark ? "#f3f7a8" : "#14160a"}}
 .chips li::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 8px 1px 0;background:${dark ? "#eef35f" : "#14160a"}}
+.chips+.chips{margin-top:10px}
+.chips.p li{background:${dark ? "#eef35f" : "#eef35f"};box-shadow:${dark ? "0 6px 22px rgba(238,243,95,.18)" : "inset 0 0 0 1px #cdd23a"};color:#12150a;font-weight:600}
+.chips.p li::before{background:#12150a}
+.chips.s li{background:${dark ? "rgba(92,196,232,.16)" : "rgba(13,106,134,.12)"};box-shadow:inset 0 0 0 1px ${dark ? "rgba(92,196,232,.5)" : "rgba(13,106,134,.4)"};color:${dark ? "#bfeaf7" : "#0b556b"}}
+.chips.s li::before{background:${dark ? "#5cc4e8" : "#0d6a86"}}
 .url{position:absolute;left:${v.pad}px;${v.urlTop ? `top:${Math.round(v.pad * 0.75) + 6}px;left:auto;right:${v.pad}px` : `bottom:${Math.round(v.pad * 0.55)}px`};font-family:${MONO};font-size:${small ? 18 : 20}px;color:${T.url};z-index:10}
 .frame{position:absolute;left:${v.fx}px;top:${v.fy}px;width:${v.fw}px;height:${fh}px;transform-origin:0 0;transform:${tilt};border-radius:16px;overflow:hidden;background:${dark ? "#0a0d10" : "#fff"};box-shadow:0 0 0 1px ${ring},0 0 54px ${dark ? "rgba(47,179,220,.30)" : "rgba(47,179,220,.25)"},-28px 44px 80px rgba(0,0,0,${dark ? ".75" : ".28"});z-index:2}
 .frame img{position:absolute;width:${v.iw ?? v.fw}px;left:${v.ix ?? 0}px;top:${v.iy ?? 0}px;display:block}

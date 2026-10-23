@@ -31,7 +31,7 @@ One Go binary &middot; Docker runtime &middot; agents instead of SSH &middot; ob
   <a href="https://github.com/glincker/levelrail/discussions">Discussions</a> &middot;
   <a href="https://discord.gg/Ar5pcaZB99">Discord</a>
 </p>
-<img src="docs/assets/brand/social/github-social-1280x640.jpg" alt="Levelrail: your own Vercel, on your server. The lightweight, self-hosted alternative to Vercel, Heroku and Coolify." width="880">
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/social/github-social-1280x640.jpg"><img src="docs/assets/brand/social/github-social-1280x640-light.jpg" alt="Levelrail: your own Vercel, on your server. The lightweight, self-hosted alternative to Vercel, Heroku and Coolify." width="880"></picture>
 </div>
 
 Levelrail is an open source (Apache 2.0) **self-hosted PaaS**: a Vercel and Heroku alternative that runs on any Linux server you own, from a small VPS to a rack (the one measured host is a 2 vCPU, 8 GB box). It turns plain servers into a private cloud with Git deploys (forge webhooks), HTTPS (self-signed by default, Let's Encrypt when enabled), databases with verified backups, metrics, logs and alerts, without Kubernetes and without the monitoring stack you would otherwise bolt on.
