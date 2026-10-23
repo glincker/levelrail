@@ -36,7 +36,19 @@
     "schemas": {
       "ErrorResponse": {
         "properties": {
+          "code": {
+            "description": "Stable machine readable code, for example not_found, validation_failed, unauthorized, forbidden, conflict, rate_limited or internal_error.",
+            "type": "string"
+          },
           "error": {
+            "description": "Human readable message.",
+            "type": "string"
+          },
+          "fix": {
+            "description": "Optional suggested remedy, a string or an object with id and label."
+          },
+          "request_id": {
+            "description": "Correlation id, equal to the X-Request-Id response header.",
             "type": "string"
           }
         },

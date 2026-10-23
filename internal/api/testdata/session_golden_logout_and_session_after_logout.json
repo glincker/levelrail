@@ -11,14 +11,14 @@
   {
     "Step": "session after logout",
     "Status": 401,
-    "Body": "{\"error\":\"authentication required\"}",
+    "Body": "{\"code\":\"unauthorized\",\"error\":\"authentication required\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": false
   },
   {
     "Step": "logout again",
     "Status": 401,
-    "Body": "{\"error\":\"authentication required\"}",
+    "Body": "{\"code\":\"unauthorized\",\"error\":\"authentication required\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": false
   }

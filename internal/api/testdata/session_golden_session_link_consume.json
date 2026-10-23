@@ -25,14 +25,14 @@
   {
     "Step": "consume again",
     "Status": 400,
-    "Body": "{\"error\":\"invalid or expired session link\"}",
+    "Body": "{\"code\":\"validation_failed\",\"error\":\"invalid or expired session link\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": false
   },
   {
     "Step": "consume unknown",
     "Status": 400,
-    "Body": "{\"error\":\"invalid or expired session link\"}",
+    "Body": "{\"code\":\"validation_failed\",\"error\":\"invalid or expired session link\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": false
   }
