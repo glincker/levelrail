@@ -60,6 +60,12 @@ Exit codes are stable and shared by every command:
 
 Codes 3 and 4 are broad on purpose so existing scripts keep working; the JSON error object carries the finer distinction.
 
+## CI mode
+
+The CLI reads `LEVELRAIL_TOKEN`, `LEVELRAIL_API_URL` and `LEVELRAIL_PROFILE` as env-only auth. Precedence: flag, then these, then `APP_API_TOKEN` / `APP_API_URL` / `APP_PROFILE`, then the saved profile.
+
+With `CI=true`, `LEVELRAIL_CI=1`, or stdin or stdout not a terminal, the CLI never prompts (a command that needs input exits non-zero and names the flag or env var to set), prints no color and shows no animation. `NO_COLOR` is honored everywhere. `auth whoami` prints a `source:` line (flag, env name or profile), never the token.
+
 ## Scripting: `--debug`
 
 `--debug` works anywhere on the command line (before or after the subcommand) and traces every outgoing request this invocation makes to stderr: method, URL, and the response status and timing, one line per call. It never prints request or response headers or bodies, so `Authorization` and any token value never appear, even in debug mode; a token that somehow ended up in a URL's query string is also redacted. stdout is untouched, so `--debug` composes with `--json`/`--query` for scripting.

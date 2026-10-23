@@ -14,11 +14,19 @@ import (
 
 func main() {
 	prog := filepath.Base(os.Args[0])
+	// Piped stdin or stdout implies CI mode; run() only sees env so tests stay deterministic.
+	forceCI = !isTerminal(os.Stdin) || !isTerminal(os.Stdout)
 	os.Exit(run(prog, os.Args[1:], os.Stdout, os.Stderr, os.LookupEnv))
 }
 
 // run returns an int exit code instead of calling os.Exit, so tests can drive dispatch directly.
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	rawLookupEnv = lookupEnv
+	lookupEnv = envAliasLookup(lookupEnv)
+	ciMode = forceCI || ciEnv(rawLookupEnv)
+	if colorDisabled(rawLookupEnv, ciMode) {
+		_ = os.Setenv(envNoColor, "1")
+	}
 	args, debug := extractDebugFlag(args)
 	args, scopeFlags = extractScopeFlags(args)
 	installServerTrust(prog, args, stderr, lookupEnv)
