@@ -1,5 +1,4 @@
 import { Suspense, lazy, useState, type ReactNode } from 'react'
-import { SignInHomeCards } from '../signin/SignInHomeCards'
 import {
   CaretDownIcon,
   SlidersHorizontalIcon,
@@ -151,7 +150,6 @@ function StartView({
           </span>
         }
       />
-      <SignInHomeCards />
       <div className="@container">
         <div className="grid gap-4 @4xl:grid-cols-2">
           {shown.map((id, index) => (
@@ -210,7 +208,6 @@ export function DashboardHome({
   if (!hasApps || (deployStarted && !firstRunDone)) {
     return (
       <div className="space-y-8">
-        <SignInHomeCards />
         <Suspense fallback={null}>
           <FirstDeploy
             onStarted={() => {
