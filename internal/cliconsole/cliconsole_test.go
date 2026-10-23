@@ -89,6 +89,7 @@ func TestCheck(t *testing.T) {
 		{"import ./compose.yaml", "import", true},
 		{"apply -f -", "", true},
 		{"export", "export", true},
+		{"update", "update", true},
 		{"tokens create --name x", "tokens create", true},
 		{"pipelines validate /etc/passwd", "pipelines validate", true},
 		{"apps exec web -- sh", "", true},

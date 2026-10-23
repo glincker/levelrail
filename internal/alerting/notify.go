@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/textproto"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -473,8 +474,8 @@ func notifyGotify(ctx context.Context, client *http.Client, url string, ev Event
 	return postJSON(ctx, client, url, gotifyPayload{Title: ev.Rule.Name, Message: summaryText(ev), Priority: priority})
 }
 
-// The topic lives in rawURL's path, so it is not repeated in the body.
 type ntfyPayload struct {
+	Topic    string `json:"topic"`
 	Title    string `json:"title,omitempty"`
 	Message  string `json:"message"`
 	Priority int    `json:"priority,omitempty"`
@@ -492,10 +493,27 @@ func notifyNtfy(ctx context.Context, client *http.Client, rawURL string, ev Even
 		priority = 3
 	}
 	payload := ntfyPayload{Title: ev.Rule.Name, Message: summaryText(ev), Priority: priority}
-	if token == "" {
-		return postJSON(ctx, client, cleanURL, payload)
+	return postNtfy(ctx, client, cleanURL, token, payload)
+}
+
+// postNtfy publishes through ntfy's JSON API: the server root with the topic in the body.
+// JSON posted to a topic path is published as literal message text instead.
+func postNtfy(ctx context.Context, client *http.Client, topicURL, token string, payload ntfyPayload) error {
+	u, err := url.Parse(topicURL)
+	if err != nil {
+		return fmt.Errorf("invalid ntfy notify_url: %w", err)
 	}
-	return postJSONWithAuth(ctx, client, cleanURL, payload, bearerPrefix+token)
+	dir, topic := path.Split(strings.TrimRight(u.Path, "/"))
+	if topic == "" {
+		return fmt.Errorf("ntfy notify_url must end in a topic, such as https://ntfy.sh/my-topic")
+	}
+	u.Path, u.RawPath, u.RawQuery = dir, "", ""
+	payload.Topic = topic
+	authHeader := ""
+	if token != "" {
+		authHeader = bearerPrefix + token
+	}
+	return postJSONWithAuth(ctx, client, u.String(), payload, authHeader)
 }
 
 // Pulls the optional auth token out of rawURL; most ntfy topics need none.

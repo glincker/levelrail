@@ -40,7 +40,7 @@ Send an `Idempotency-Key` header (up to 255 characters) on `POST /api/v1/apps`, 
 
 List routes for apps, nodes, a tag's apps, previews and passkeys take optional `limit` (capped at 500) and `offset`. `X-Total-Count` carries the match count before paging. Without `limit` the whole list returns.
 
-Public status page and deploy badge routes answer errors as `text/plain` on purpose, so they render in an `<img>` or a plain fetch. Every other route answers errors as JSON `{"error": "..."}`.
+Public status page and deploy badge routes answer errors as `text/plain` on purpose, so they render in an `<img>` or a plain fetch. Every other route answers errors as JSON `{"error": "...", "code": "...", "request_id": "..."}`. `error` is the human message. `code` is a stable machine string: from the HTTP status (`validation_failed`, `unauthorized`, `forbidden`, `not_found`, `conflict`, `rate_limited`, `internal_error`) or a more specific one such as `step_up_required`. `request_id` equals the `X-Request-Id` response header, so quote it when reporting a problem. Some errors add `fix`, a suggested remedy. The CLI prints `fix:` and `request id:` lines on stderr, and `--json` errors carry `api_code`, `request_id` and `fix`.
 
 ## Related
 

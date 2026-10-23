@@ -155,13 +155,29 @@ export function useDecideApproval() {
   return useMutation<
     undefined,
     ApiError,
-    { id: string; approve: boolean; match?: number }
+    {
+      id: string
+      approve: boolean
+      match?: number
+      password?: string
+      code?: string
+    }
   >({
-    mutationFn: ({ id, approve, match }) =>
+    mutationFn: ({ id, approve, match, password, code }) =>
       send(
         'POST',
         `/api/v1/auth/login-approvals/${encodeURIComponent(id)}/${approve ? 'approve' : 'deny'}`,
-        approve ? { match } : undefined,
+        approve
+          ? password
+            ? {
+                step_up: {
+                  method: 'password',
+                  password,
+                  code: code || undefined,
+                },
+              }
+            : { match }
+          : undefined,
       ),
     onSettled: () => qc.invalidateQueries({ queryKey: signInKeys.requests }),
   })

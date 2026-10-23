@@ -26,11 +26,17 @@ const statusVariant: Record<
   unsupported: 'muted',
 }
 
-function CopyForm({ db, onDone }: { db: DatabaseCopy; onDone: () => void }) {
+export function CopyForm({
+  db,
+  onDone,
+}: {
+  db: DatabaseCopy
+  onDone: () => void
+}) {
   const { t } = useTranslation('migration')
   const start = useStartDatabaseCopy()
   const [host, setHost] = useState(db.source_host ?? '')
-  const [port, setPort] = useState('')
+  const [port, setPort] = useState(db.source_port ? String(db.source_port) : '')
   const [user, setUser] = useState('')
   const [password, setPassword] = useState('')
   const [database, setDatabase] = useState(db.source_database ?? '')

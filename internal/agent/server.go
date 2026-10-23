@@ -48,13 +48,14 @@ const (
 // Server implements agentpb.AgentServiceServer.
 type Server struct {
 	agentpb.UnimplementedAgentServiceServer
-	ca        *CA
-	store     EnrollStore
-	registry  *Registry
-	logger    *slog.Logger
-	gpuSink   GPUSink        // nil is valid: GPU reports are ignored
-	hostSink  HostReportSink // nil is valid: host reports are ignored
-	onSession func(nodeID, remoteIP string)
+	ca             *CA
+	store          EnrollStore
+	registry       *Registry
+	logger         *slog.Logger
+	gpuSink        GPUSink        // nil is valid: GPU reports are ignored
+	hostSink       HostReportSink // nil is valid: host reports are ignored
+	onboardingSink OnboardingSink // nil is valid: onboarding reports are ignored
+	onSession      func(nodeID, remoteIP string)
 
 	certValidity time.Duration
 	renewGrace   time.Duration
@@ -284,6 +285,11 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 		hostReport: func(r *agentpb.HostReport) {
 			if s.hostSink != nil {
 				s.hostSink.SetNodeHostReport(nodeID, hostReportFromPB(r))
+			}
+		},
+		onboarding: func(r *agentpb.OnboardingReport) {
+			if s.onboardingSink != nil {
+				s.onboardingSink.SetNodeOnboarding(nodeID, onboardingFromPB(r), s.now())
 			}
 		},
 		heartbeat: func() {

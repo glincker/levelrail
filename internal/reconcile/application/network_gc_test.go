@@ -96,3 +96,38 @@ func TestCreateFailureReasonPoolExhausted(t *testing.T) {
 		t.Fatalf("reason %q", got)
 	}
 }
+
+type selectiveAdminRuntime struct {
+	*adminRuntime
+	inspected []string
+}
+
+func (r *selectiveAdminRuntime) DescribeNetworksSelective(_ context.Context, _ string, needAttached func(string, map[string]string) bool) ([]docker.NetworkDetail, error) {
+	for _, d := range r.details {
+		if needAttached(d.Name, d.Labels) {
+			r.inspected = append(r.inspected, d.Name)
+		}
+	}
+	return r.details, nil
+}
+
+func TestNetworkCleanupInspectsOnlyOrphansOfThisInstance(t *testing.T) {
+	old := time.Now().Add(-time.Hour)
+	own := map[string]string{appspec.InstanceLabelKey: "me"}
+	rt := &selectiveAdminRuntime{adminRuntime: &adminRuntime{fakeRuntime: newFakeRuntime(0), details: []docker.NetworkDetail{
+		{Name: "p-app-live", Labels: own, Created: old},
+		{Name: "p-app-live2", Labels: own, Created: old},
+		{Name: "p-app-gone", Labels: own, Created: old},
+		{Name: "p-app-theirs", Labels: map[string]string{appspec.InstanceLabelKey: "them"}, Created: old},
+	}}}
+	c := NewNetworkCleanupController(&fakeAppLister{apps: []store.App{{ID: "live"}, {ID: "live2"}}}, rt, "p", "me")
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(rt.inspected) != 1 || rt.inspected[0] != "p-app-gone" {
+		t.Errorf("inspected %v, want only the orphan p-app-gone", rt.inspected)
+	}
+	if len(rt.removed) != 1 || rt.removed[0] != "p-app-gone" {
+		t.Errorf("removed %v, want only p-app-gone", rt.removed)
+	}
+}

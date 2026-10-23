@@ -59,13 +59,16 @@ describe('CliModal', () => {
     open()
     const dialog = await screen.findByRole('dialog')
     expect(dialog).toHaveAccessibleName('Command line tool')
-    expect(screen.getByText(CLI_INSTALL_COMMAND)).toBeInTheDocument()
+    expect(await screen.findByText(CLI_INSTALL_COMMAND)).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Show my command' }),
     ).toBeInTheDocument()
     expect(
       await screen.findByText(/No CLI is connected yet/),
     ).toBeInTheDocument()
+    expect(screen.getByTestId('cli-status-chip')).toHaveTextContent(
+      'Not connected',
+    )
     expect(
       screen.getByRole('link', { name: 'Manage all CLI access' }),
     ).toHaveAttribute('href', '/settings/cli-access')
@@ -121,6 +124,9 @@ describe('CliModal', () => {
     open()
     expect(await screen.findByText('cli-pairing laptop')).toBeInTheDocument()
     expect(screen.queryByText('ci-deploy')).toBeNull()
+    expect(screen.getByTestId('cli-status-chip')).toHaveTextContent(
+      '1 connected',
+    )
     expect(screen.getByText(/203\.0\.113\.9/)).toBeInTheDocument()
     fireEvent.click(
       screen.getByRole('button', { name: 'Revoke cli-pairing laptop' }),
@@ -135,5 +141,115 @@ describe('CliModal', () => {
       within(confirm as HTMLElement).getByRole('button', { name: 'Revoke' }),
     )
     expect(revokeMutate).toHaveBeenCalledWith('tok-1', expect.any(Object))
+  })
+
+  it('offers Rotate on a CLI row and hides fixture tokens', async () => {
+    stubFetch({
+      [CREDS]: {
+        body: {
+          sessions: [],
+          tokens: [
+            {
+              id: 'tok-1',
+              name: 'cli-pairing laptop',
+              created_at: '2026-01-01T00:00:00Z',
+            },
+            {
+              id: 'fx',
+              name: 'cli-pairing fixture',
+              dev_fixture: true,
+              created_at: '2026-01-01T00:00:00Z',
+            },
+          ],
+        },
+      },
+    })
+    renderCli(<CliModal />)
+    open()
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Rotate cli-pairing laptop' }),
+    )
+    expect(await screen.findByText('Rotate this CLI token?')).toBeVisible()
+    expect(revokeMutate).not.toHaveBeenCalled()
+    expect(screen.queryByText('cli-pairing fixture')).toBeNull()
+  })
+
+  it('lists device-flow and password tokens but hides other API tokens', async () => {
+    const base = { created_at: '2026-01-01T00:00:00Z', abilities: ['read'] }
+    stubFetch({
+      [CREDS]: {
+        body: {
+          sessions: [],
+          tokens: [
+            {
+              ...base,
+              id: 'a',
+              name: 'device: Mac.lan',
+              abilities: ['read', 'write', 'deploy'],
+            },
+            {
+              ...base,
+              id: 'b',
+              name: 'levelrail-cli-20260101-000000',
+              abilities: ['read:sensitive'],
+            },
+            { ...base, id: 'c', name: 'cli-pairing', abilities: ['root'] },
+            { ...base, id: 'd', name: 'github-actions' },
+            { ...base, id: 'e', name: 'device-ish' },
+          ],
+        },
+      },
+    })
+    renderCli(<CliModal />)
+    open()
+    expect(await screen.findByText('device: Mac.lan')).toBeInTheDocument()
+    expect(
+      screen.getByText('levelrail-cli-20260101-000000'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('cli-pairing')).toBeInTheDocument()
+    expect(screen.queryByText('github-actions')).toBeNull()
+    expect(screen.queryByText('device-ish')).toBeNull()
+    expect(screen.getByTestId('cli-status-chip')).toHaveTextContent(
+      '3 connected',
+    )
+    expect(screen.getByText('Full access')).toBeInTheDocument()
+    expect(screen.getByText('Sensitive')).toBeInTheDocument()
+    expect(screen.getByText('Deploy')).toBeInTheDocument()
+  })
+
+  it('shows an expired CLI as expired and not connected', async () => {
+    stubFetch({
+      [CREDS]: {
+        body: {
+          sessions: [],
+          tokens: [
+            {
+              id: 'x',
+              name: 'device: old',
+              abilities: ['read'],
+              created_at: '2026-01-01T00:00:00Z',
+              expires_at: '2026-01-02T00:00:00Z',
+            },
+          ],
+        },
+      },
+    })
+    renderCli(<CliModal />)
+    open()
+    expect(await screen.findByText('device: old')).toBeInTheDocument()
+    expect(screen.getByText('Expired')).toBeInTheDocument()
+    expect(screen.getByTestId('cli-status-chip')).toHaveTextContent(
+      'Not connected',
+    )
+  })
+
+  it('offers verified common commands with the brand binary name', async () => {
+    stubFetch({ [CREDS]: { body: { sessions: [], tokens: [] } } })
+    renderCli(<CliModal />)
+    open()
+    expect(
+      await screen.findByText('testcli apps logs <app> --follow'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('testcli status')).toBeInTheDocument()
   })
 })

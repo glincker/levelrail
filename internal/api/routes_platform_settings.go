@@ -4,11 +4,41 @@ import "net/http"
 
 // registerSettingsRoutes registers the email, observability, DNS, vault, registries, static sites and firewall routes.
 func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
-	// Email settings: same precedent as ingress settings just above.
-	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
+	// Deprecated: kept for the dashboard, CLI and scripts that predate email providers. Reads the primary provider plus sender identity, use /api/v1/settings/email/providers.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))
+	// Deprecated: writes the primary provider and the sender identity together. Use /api/v1/settings/email/providers for providers.
 	mux.HandleFunc("PUT /api/v1/settings/email", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailSettings))
+	// One primary plus at most one backup. List and get are AbilityRead; every write, test and promote is AbilityRoot.
+	mux.HandleFunc("GET /api/v1/settings/email/providers", rt.requireAbility(AbilityRead, rt.handleListEmailProviders))
+	// Creates the primary, or the backup when a primary exists. Root: it stores credentials.
+	mux.HandleFunc("POST /api/v1/settings/email/providers", rt.requireAbility(AbilityRoot, rt.handleCreateEmailProvider))
+	mux.HandleFunc("GET /api/v1/settings/email/providers/{id}", rt.requireAbility(AbilityRead, rt.handleGetEmailProvider))
+	// Replaces the provider fields; an empty credential keeps the stored value.
+	mux.HandleFunc("PUT /api/v1/settings/email/providers/{id}", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailProvider))
+	// Refused for the primary while a backup exists.
+	mux.HandleFunc("DELETE /api/v1/settings/email/providers/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteEmailProvider))
+	// Root: sends one real message through that provider alone, with no failover.
+	mux.HandleFunc("POST /api/v1/settings/email/providers/{id}/test", rt.requireAbility(AbilityRoot, rt.handleTestEmailProvider))
+	// Swaps the primary and backup roles atomically, moving credentials with them.
+	mux.HandleFunc("POST /api/v1/settings/email/providers/{id}/promote", rt.requireAbility(AbilityRoot, rt.handlePromoteEmailProvider))
+	// Traffic export sinks: list and status are AbilityRead; every write and test is AbilityRoot. Credentials are write-only and come back as *_set booleans.
+	mux.HandleFunc("GET /api/v1/settings/traffic-export/sinks", rt.requireAbility(AbilityRead, rt.handleListTrafficExportSinks))
+	// Root: stores credentials. A new sink exports no visitor identity unless its fields list opts in.
+	mux.HandleFunc("POST /api/v1/settings/traffic-export/sinks", rt.requireAbility(AbilityRoot, rt.handleCreateTrafficExportSink))
+	mux.HandleFunc("GET /api/v1/settings/traffic-export/sinks/{id}", rt.requireAbility(AbilityRead, rt.handleGetTrafficExportSink))
+	// Omitted fields and empty credentials keep the stored value; the kind cannot change.
+	mux.HandleFunc("PUT /api/v1/settings/traffic-export/sinks/{id}", rt.requireAbility(AbilityRoot, rt.handleUpdateTrafficExportSink))
+	mux.HandleFunc("DELETE /api/v1/settings/traffic-export/sinks/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteTrafficExportSink))
+	// Root: sends one synthetic record through that sink alone; a failed delivery returns ok false with an error kind.
+	mux.HandleFunc("POST /api/v1/settings/traffic-export/sinks/{id}/test", rt.requireAbility(AbilityRoot, rt.handleTestTrafficExportSink))
+	// Last success, last error kind, queued and dropped counters per sink.
+	mux.HandleFunc("GET /api/v1/settings/traffic-export/status", rt.requireAbility(AbilityRead, rt.handleTrafficExportStatus))
+	// Root plus a fresh step-up and an enrolled authenticator: returns one stored credential, no-store, audited, never via MCP.
+	mux.HandleFunc("POST /api/v1/settings/email/providers/{id}/secrets/{field}/reveal", rt.requireAbility(AbilityRoot, rt.handleRevealEmailSecret))
 	// Root: a test send goes to any address, so it is not open to ordinary write tokens.
+	mux.HandleFunc("GET /api/v1/settings/email/branding", rt.requireAbility(AbilityRead, rt.handleGetEmailBranding))
+	mux.HandleFunc("PUT /api/v1/settings/email/branding", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailBranding))
+	mux.HandleFunc("POST /api/v1/settings/email/branding/preview", rt.requireAbility(AbilityRoot, rt.handlePreviewEmailBranding))
 	mux.HandleFunc("POST /api/v1/settings/email/test", rt.requireAbility(AbilityRoot, rt.handleTestEmail))
 	mux.HandleFunc("GET /api/v1/settings/email/status", rt.requireAbility(AbilityRead, rt.handleEmailStatus))
 	mux.HandleFunc("GET /api/v1/settings/email/domain-check", rt.requireAbility(AbilityRoot, rt.handleEmailDomainCheck))

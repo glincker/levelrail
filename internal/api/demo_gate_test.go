@@ -64,6 +64,7 @@ func samplePath(p string) string {
 // TestDemoGateEveryNonGETRoute walks the generated route table so a newly
 // added route is blocked by default until it is deliberately allowlisted.
 func TestDemoGateEveryNonGETRoute(t *testing.T) {
+	t.Parallel()
 	e := newDemoTestEnv(t)
 	allowed := map[string]bool{}
 	for _, a := range demoWriteAllowlist {

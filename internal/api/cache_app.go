@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 
@@ -44,6 +45,47 @@ func numbersOf(s ingress.CacheStats) cacheNumbers {
 	}
 }
 
+// cacheReason is one "why not cached" entry for an app. Domains lists the
+// hosts it was seen on so a fix can target them.
+type cacheReason struct {
+	Code    string   `json:"code"`
+	Detail  string   `json:"detail,omitempty"`
+	Count   uint64   `json:"count"`
+	Domains []string `json:"domains"`
+}
+
+// appReasons merges the domains' reasons, keeps the top few and notes which
+// domains each applies to.
+func appReasons(domains []string, stats []ingress.CacheStats) []cacheReason {
+	merged := ingress.MergeCacheStats(stats...).Reasons
+	out := make([]cacheReason, 0, len(merged))
+	for _, r := range merged[:min(len(merged), ingress.TopReasonCount())] {
+		cr := cacheReason{Code: r.Code, Detail: r.Detail, Count: r.Count, Domains: []string{}}
+		for i, st := range stats {
+			if slices.ContainsFunc(st.Reasons, func(x ingress.CacheReason) bool { return x.Code == r.Code && x.Detail == r.Detail }) {
+				cr.Domains = append(cr.Domains, domains[i])
+			}
+		}
+		out = append(out, cr)
+	}
+	return out
+}
+
+// suggestedPreset names a preset when the reasons show an upstream the
+// preset was made for.
+func suggestedPreset(reasons []cacheReason) string {
+	var names []string
+	for _, r := range reasons {
+		if r.Code == ingress.ReasonVaryHeader {
+			names = append(names, r.Detail)
+		}
+	}
+	if trafficpolicy.MatchesNextJSVary(names) {
+		return trafficpolicy.PresetNextJS
+	}
+	return ""
+}
+
 type cacheLimits struct {
 	MaxBytes       int64  `json:"max_bytes"`
 	UsedBytes      int64  `json:"used_bytes"`
@@ -78,6 +120,10 @@ type appCacheResponse struct {
 	Series  []ingress.CacheBucket     `json:"series"`
 	Domains []appCacheDomain          `json:"domains"`
 	Preset  []trafficpolicy.CacheRule `json:"static_preset"`
+	// NextJSPreset is the rule set behind suggest_preset "nextjs".
+	NextJSPreset  []trafficpolicy.CacheRule `json:"nextjs_preset"`
+	Reasons       []cacheReason             `json:"reasons"`
+	SuggestPreset string                    `json:"suggest_preset,omitempty"`
 }
 
 func (rt *Router) cachePolicyFor(ctx context.Context, domain string) (trafficpolicy.Cache, error) {
@@ -97,7 +143,7 @@ func (rt *Router) handleGetAppCache(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	resp := appCacheResponse{App: app, Limits: rt.cacheLimits(), Domains: []appCacheDomain{}, Preset: trafficpolicy.StaticAssetsPreset()}
+	resp := appCacheResponse{App: app, Limits: rt.cacheLimits(), Domains: []appCacheDomain{}, Preset: trafficpolicy.StaticAssetsPreset(), NextJSPreset: trafficpolicy.NextJSPreset()}
 	var all []ingress.CacheStats
 	for _, d := range domains {
 		pol, err := rt.cachePolicyFor(r.Context(), d)
@@ -114,6 +160,8 @@ func (rt *Router) handleGetAppCache(w http.ResponseWriter, r *http.Request) {
 	if resp.Series == nil {
 		resp.Series = []ingress.CacheBucket{}
 	}
+	resp.Reasons = appReasons(domains, all)
+	resp.SuggestPreset = suggestedPreset(resp.Reasons)
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -315,6 +363,8 @@ type systemCacheApp struct {
 	EnabledDomains int    `json:"enabled_domains"`
 	Requests       uint64 `json:"requests"`
 	cacheNumbers
+	Reasons       []cacheReason `json:"reasons"`
+	SuggestPreset string        `json:"suggest_preset,omitempty"`
 }
 
 type systemCacheResponse struct {
@@ -350,6 +400,8 @@ func (rt *Router) handleSystemCache(w http.ResponseWriter, r *http.Request) {
 		all = append(all, merged)
 		row.cacheNumbers = numbersOf(merged)
 		row.Requests = merged.Hits + merged.Stale + merged.Misses + merged.Bypasses
+		row.Reasons = appReasons(svc.Domains, per)
+		row.SuggestPreset = suggestedPreset(row.Reasons)
 		resp.Apps = append(resp.Apps, row)
 	}
 	sort.Slice(resp.Apps, func(i, j int) bool {

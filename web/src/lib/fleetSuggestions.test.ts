@@ -187,3 +187,33 @@ describe('seedMessageFor', () => {
     )
   })
 })
+
+describe('failed data copy', () => {
+  it('retries in place first and keeps opening the database as a second action', () => {
+    const [spec] = attentionToSuggestions(
+      [
+        item({
+          id: 'data_copy:geokit:1',
+          severity: 'warning',
+          target: { kind: 'path', to: '/databases/geokit' },
+          copy: {
+            state: 'failed',
+            code: 'ssl',
+            database: 'geokit',
+            dismissKey: 'k',
+          },
+        }),
+      ],
+      t,
+    )
+    expect(spec?.groupKey).toBe('copy:ssl')
+    expect(spec?.actions[0]).toMatchObject({
+      primary: true,
+      spec: { kind: 'copy-retry', database: 'geokit' },
+    })
+    expect(spec?.actions[1]?.spec).toEqual({
+      kind: 'path',
+      to: '/databases/geokit',
+    })
+  })
+})

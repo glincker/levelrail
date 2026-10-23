@@ -1,17 +1,23 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MetricChartCard } from '@/components/MetricChartCard'
-import { isDashboardMetric } from '@/lib/dashboardGrid'
+import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { isDashboardMetric, isHttpUrl } from '@/lib/dashboardGrid'
 import { chartPalette } from '@/lib/chartPalette'
 import { formatMoney } from '@/lib/usageFormat'
 import { mergeMetricSeries, type ChartUnit } from '@/lib/metricChart'
 import type { ResolvedTimeRange } from '@/lib/timeRange'
+import { getProjectScope } from '@/lib/projectScope'
+import { useEnvironmentScope } from '@/lib/environmentScope'
 import { useAlertRules } from '@/queries/alerts'
+import { appsSummaryQueryOptions } from '@/queries/appPages'
 import { fetchTimeline } from '@/queries/appTimeline'
 import { useAppTraffic } from '@/queries/appTraffic'
 import { useDatabaseMetricSeries } from '@/queries/databaseMetrics'
+import { useDatabases } from '@/queries/databases'
+import { InstanceWideLabel } from '@/components/dashboard/ScopeIndicator'
 import { useLogSearch } from '@/queries/logs'
 import { useMetricSeries } from '@/queries/metrics'
 import { useNodeMetricSeries } from '@/queries/nodeMetrics'
@@ -38,11 +44,20 @@ function Muted({ children }: { children: string }) {
   return <p className="text-sm text-muted-foreground">{children}</p>
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
+function Stat({
+  value,
+  label,
+  note,
+}: {
+  value: string
+  label: string
+  note?: ReactNode
+}) {
   return (
     <div>
       <p className="text-2xl font-semibold tabular-nums">{value}</p>
       <p className="text-sm text-muted-foreground">{label}</p>
+      {note}
     </div>
   )
 }
@@ -176,9 +191,21 @@ function DeployWidget({ app }: { app: string }) {
 
 function CountsWidget() {
   const { t } = useTranslation('dashboards')
+  const environment = useEnvironmentScope()
+  const project = getProjectScope()
+  const scoped = environment !== '' || project !== ''
   const q = useResourceList({ ...NO_FILTER, tags: [] })
-  if (q.isLoading) return <Skeleton className="h-12 w-full" />
-  const counts = q.data?.counts ?? {}
+  // Apps and databases honour the picker through the same filters their lists use; nodes and domains are instance-wide.
+  const apps = useQuery({ ...appsSummaryQueryOptions(), enabled: scoped })
+  const dbs = useDatabases(scoped)
+  if (q.isLoading || (scoped && (apps.isLoading || dbs.isLoading))) {
+    return <Skeleton className="h-12 w-full" />
+  }
+  const counts = { ...(q.data?.counts ?? {}) }
+  if (scoped) {
+    counts.app = apps.data?.total ?? 0
+    counts.database = dbs.data?.length ?? 0
+  }
   return (
     <div className="flex flex-wrap gap-6">
       {(['app', 'database', 'node', 'domain'] as const).map((k) => (
@@ -186,6 +213,7 @@ function CountsWidget() {
           key={k}
           value={String(counts[k] ?? 0)}
           label={t(`widget.count.${k}`)}
+          note={k === 'node' || k === 'domain' ? <InstanceWideLabel /> : null}
         />
       ))}
     </div>
@@ -194,9 +222,21 @@ function CountsWidget() {
 
 function CostWidget() {
   const { t } = useTranslation('dashboards')
+  const environment = useEnvironmentScope()
+  const project = getProjectScope()
   const q = useUsageReport('mtd')
   if (q.isLoading) return <Skeleton className="h-24 w-full" />
   if (!q.data) return <Muted>{t('widget.noCost')}</Muted>
+  if (environment !== '' || project !== '') {
+    const groups = environment ? q.data.environments : q.data.projects
+    const group = groups.find((g) => g.key === (environment || project))
+    return (
+      <Stat
+        value={formatMoney(group?.total ?? 0, q.data.currency)}
+        label={t('widget.scopedCost')}
+      />
+    )
+  }
   const rows = (q.data.tags ?? []).slice(0, COST_ROWS)
   if (rows.length === 0) return <Muted>{t('widget.noCost')}</Muted>
   return (
@@ -253,9 +293,33 @@ function CapacityWidget({ node }: { node: string }) {
               : t('widget.unknown')
           }
           label={t(`widget.capacity.${key}`)}
+          note={<InstanceWideLabel />}
         />
       ))}
     </div>
+  )
+}
+
+function LinkWidget({ w }: { w: DashboardWidget }) {
+  const url = w.url ?? ''
+  if (!isHttpUrl(url)) return null
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm transition-colors hover:bg-muted/50"
+    >
+      <span className="min-w-0">
+        <span className="block truncate font-medium text-foreground">
+          {w.title}
+        </span>
+        <span className="block truncate text-xs text-muted-foreground">
+          {new URL(url).host}
+        </span>
+      </span>
+      <ArrowSquareOutIcon aria-hidden="true" className="size-4 shrink-0" />
+    </a>
   )
 }
 
@@ -287,5 +351,7 @@ export function WidgetBody({
       return <AlertWidget app={target} />
     case 'node_capacity':
       return <CapacityWidget node={target} />
+    case 'link':
+      return <LinkWidget w={w} />
   }
 }

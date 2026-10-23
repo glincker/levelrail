@@ -46,7 +46,7 @@ let navigateToLogin: ((signedOut: boolean) => void) | null = null
 // Error, so a 401 arriving from any query or mutation, anywhere in the
 // app, is detected here in exactly one place and redirected to /login,
 // distinct from how a 404/500 still renders in each route's own error
-// boundary (AppDetailError and friends keep working exactly as before,
+// boundary (each route's own error component keeps working as before,
 // since onError here only acts on 401).
 function handleQueryError(error: unknown): void {
   reportError(error)
@@ -75,7 +75,7 @@ attachConnectionClient(queryClient)
 // defaultErrorComponent/defaultPendingComponent are the fallback for the
 // majority of routes that define no errorComponent/pendingComponent of
 // their own; routes with route-specific needs (e.g. apps/$name.tsx's
-// AppDetailError) still override these per-route.
+// resourceErrorComponent) still override these per-route.
 const router = createRouter({
   routeTree,
   context: { queryClient },

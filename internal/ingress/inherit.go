@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
 )
 
 // Socket names in the systemd .socket unit (FileDescriptorName=).
@@ -73,7 +72,7 @@ func InheritSockets(getenv func(string) string, pid int, mode string) (*Inherite
 		default:
 			continue
 		}
-		syscall.CloseOnExec(fd)
+		closeOnExec(fd)
 	}
 	if out.HTTPS == 0 {
 		return missing("no socket named " + SocketNameHTTPS + " was passed")
@@ -92,13 +91,13 @@ func ClearListenEnv() {
 func fdTCPPort(fd int) int {
 	// Probe a duplicate: closing an os.File built on fd itself would close the
 	// inherited descriptor and let the runtime reuse its number.
-	dup, err := syscall.Dup(fd)
+	dup, err := dupFD(fd)
 	if err != nil {
 		return 0
 	}
 	f := os.NewFile(uintptr(dup), "inherited")
 	if f == nil {
-		_ = syscall.Close(dup)
+		closeFD(dup)
 		return 0
 	}
 	ln, err := net.FileListener(f)

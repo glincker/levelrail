@@ -22,7 +22,7 @@ const (
 
 type importAppsFlags struct {
 	from, url, token, only, collision, apiURL, profile, session, snapshot, appName string
-	tokenStdin, plan, apply, verify, receipt, rollback                             bool
+	tokenStdin, plan, apply, verify, receipt, rollback, exitReport, test           bool
 	acceptSuggested, insecure, allowPrivate, allowLoopback                         bool
 	jsonOut                                                                        bool
 	images                                                                         imageMoveFlags
@@ -57,6 +57,9 @@ func (f importAppsFlags) onlyList() []string {
 // runImportApps implements "import apps": plan or stage the applications of
 // another platform, then verify, roll back or print the receipt of a session.
 func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if hasResumeFlag(args) {
+		return runMigrateResume(prog, args, stdin, stdout, stderr, lookupEnv)
+	}
 	var f importAppsFlags
 	fs := flag.NewFlagSet(prog+" import apps", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -68,9 +71,11 @@ func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr i
 	fs.StringVar(&f.token, "token", "", "source token (prefer "+envImportSourceToken+" or --token-stdin)")
 	fs.BoolVar(&f.tokenStdin, "token-stdin", false, "read the source token from the first line of stdin")
 	fs.BoolVar(&f.plan, "plan", false, "print the inventory, verdicts and preflight, create nothing")
+	fs.BoolVar(&f.test, "test", false, "connect to the source once and report what it holds, store nothing")
 	fs.BoolVar(&f.apply, "apply", false, "stage the selected apps (stopped, unrouted) in a new session")
 	fs.StringVar(&f.session, "session", "", "an existing import session id (for --verify, --rollback, --receipt)")
 	fs.BoolVar(&f.verify, "verify", false, "build or pull the staged apps and wait for readiness (needs --session)")
+	fs.BoolVar(&f.exitReport, "exit-report", false, "print a Coolify session's exit report: outcomes per resource and the cutover checklist (needs --session)")
 	fs.BoolVar(&f.rollback, "rollback", false, "remove the apps this session staged (needs --session)")
 	fs.BoolVar(&f.receipt, "receipt", false, "print the session receipt as JSON (needs --session)")
 	fs.StringVar(&f.only, "only", "", "comma-separated app names or source ids")
@@ -110,10 +115,17 @@ func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr i
 		return runImportAppsCopyVolumes(ctx, prog, client, f, stdout, stderr)
 	case f.images.any():
 		return runImportAppsImages(ctx, prog, client, f, stdin, stdout, stderr, lookupEnv)
+	case f.session != "" && f.exitReport:
+		rep, err := client.AppImportExitReport(ctx, f.session)
+		if err != nil {
+			return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("exit report: %w", err))
+		}
+		return printCoolifyExit(stdout, stderr, prog, f.jsonOut, rep)
 	case f.session != "" && (f.verify || f.rollback || f.receipt):
 		return runImportAppsSession(ctx, client, f, stdout, stderr)
 	case f.from == platformDockerSSH && f.ssh.testOnly:
 		return runImportAppsSSH(ctx, prog, client, f, stdin, stdout, stderr, lookupEnv)
+	case f.test && f.plan == f.apply:
 	case f.plan == f.apply:
 		_, _ = fmt.Fprintf(stderr, "%s: choose exactly one of --plan or --apply (or --session with --verify, --rollback or --receipt)\n", prog)
 		return exitUsage
@@ -154,6 +166,9 @@ func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr i
 	}
 	req := apiclient.AppImportRequest{Platform: f.from, URL: srcURL, Token: token, Snapshot: snapshot, SSH: conn, AppName: f.appName, InsecureTLS: f.insecure, AllowPrivate: f.allowPrivate,
 		AllowLoopback: f.allowLoopback, Collision: f.collision, Mappings: f.maps, Only: f.onlyList()}
+	if f.test {
+		return runImportAppsTest(ctx, client, f, req, stdout, stderr)
+	}
 	if f.plan {
 		view, err := client.PlanAppImport(ctx, req)
 		if err != nil {
@@ -332,6 +347,9 @@ func importAppsUsage(prog string) string {
   %[1]s import apps --session ID --transfer-images --ssh user@host[:port] --ssh-key FILE|--ssh-agent [--only NAME]
   %[1]s import apps --session ID --images|--cancel-images
   %[1]s import apps --session ID --verify|--rollback|--receipt [--only NAME]
+  %[1]s import apps --session ID --exit-report
+  %[1]s import apps --from dokploy --url URL --token-stdin --test
+  %[1]s import apps --resume ID [--retry] [--follow] [--retire [--probe]]
 
 Plans and stages the applications of another platform. The source is only
 ever read (GET requests). --apply creates the apps stopped and not routed,
@@ -397,4 +415,31 @@ func runImportAppsSSH(ctx context.Context, prog string, client *Client, f import
 		return code
 	}
 	return runImportAppsSSHTest(ctx, prog, client, f, conn, stdout, stderr)
+}
+
+func runImportAppsTest(ctx context.Context, client *Client, f importAppsFlags, req apiclient.AppImportRequest, stdout, stderr io.Writer) int {
+	res, err := client.TestMigrationSource(ctx, req)
+	if err != nil {
+		return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("test the source: %w", err))
+	}
+	code := exitOK
+	if !res.OK {
+		code = exitCheckFailed
+	}
+	if f.jsonOut {
+		if c := emitJSON(stdout, stderr, res); c != exitOK {
+			return c
+		}
+		return code
+	}
+	if !res.OK {
+		_, _ = fmt.Fprintf(stdout, "Could not use the source (%s): %s\n", res.Failure, res.Message)
+		return code
+	}
+	_, _ = fmt.Fprintf(stdout, "Connected to %s: %d app(s), %d database(s), %d volume(s), %d domain(s), %d cron job(s), %d the importer cannot move\n",
+		res.Platform, res.Apps, res.Databases, res.Volumes, res.Domains, res.Crons, res.Unsupported)
+	for _, w := range res.Warnings {
+		_, _ = fmt.Fprintf(stdout, "  warning: %s\n", w)
+	}
+	return code
 }

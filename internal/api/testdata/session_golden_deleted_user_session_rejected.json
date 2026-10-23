@@ -16,14 +16,14 @@
   {
     "Step": "dev session after delete",
     "Status": 401,
-    "Body": "{\"error\":\"authentication required\"}",
+    "Body": "{\"code\":\"unauthorized\",\"error\":\"authentication required\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": false
   },
   {
     "Step": "dev login after delete",
     "Status": 401,
-    "Body": "{\"error\":\"invalid credentials\"}",
+    "Body": "{\"code\":\"unauthorized\",\"error\":\"invalid credentials\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": false
   }

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/cloudmeta"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -153,6 +154,9 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 		opts = append(opts, agent.WithMesh(holder.Current().NodeID, meshCfg.sink))
 	}
 	opts = append(opts, agent.WithHostProbe(agent.NewHostProbe(rt, agentDataDir())))
+	opts = append(opts, agent.WithOnboardingProbe(
+		agent.NewOnboardingProbe(rt, agentDataDir(), meshCfg != nil, cloudmeta.SystemConfig()),
+		agent.OnboardingIntervalFromEnv(os.LookupEnv)))
 	if rl, ok := rt.(gpu.RuntimeLister); ok {
 		opts = append(opts, agent.WithGPUProbe(func(ctx context.Context) gpu.Info {
 			return gpu.Detect(ctx, gpu.ExecRunner{}, rl)

@@ -89,6 +89,7 @@ const (
 
 	// Same one-minute value as the backup scheduler, for the same cron granularity reason.
 	defaultAppScheduleSchedulerInterval = 1 * time.Minute
+	defaultAppScheduleOneShotCatchUp    = 24 * time.Hour
 
 	// An hour: a days-scale TTL needs no minute-granularity checks.
 	defaultPreviewSweepInterval = 1 * time.Hour

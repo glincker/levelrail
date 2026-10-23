@@ -9,6 +9,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SecretInput } from '@/components/ui/secret-input'
 import {
   Field,
   FieldDescription,
@@ -179,9 +180,8 @@ export function RegistryVendorForm({
           <FieldLabel htmlFor={id('password')}>
             {t('registryVendors.password')}
           </FieldLabel>
-          <Input
+          <SecretInput
             id={id('password')}
-            type="password"
             autoComplete="off"
             className="font-mono"
             value={password}

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/repolayout"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -259,4 +260,70 @@ func newestCommitAttemptID(attempts []store.DeployAttempt) string {
 		}
 	}
 	return ""
+}
+
+// envReleaseNotesTimeoutSeconds bounds notes generation for a deploy notification.
+const envReleaseNotesTimeoutSeconds = "RELEASE_NOTES_TIMEOUT_SECONDS"
+
+// releaseNotesForDeploy returns markdown release notes for a deploy that just
+// succeeded, or "" when the app is not in a production environment and the
+// deploy is not a promotion, or when anything goes wrong. It never fails the caller.
+func (rt *Router) releaseNotesForDeploy(ctx context.Context, app, source string) (notes string) {
+	defer func() {
+		if p := recover(); p != nil {
+			rt.logger.Error("api: deploy release notes panicked", slog.String("name", app))
+			notes = ""
+		}
+	}()
+	if rt.apps == nil || rt.deployAttempts == nil || rt.gitSources == nil {
+		return ""
+	}
+	timeout := time.Duration(envIntDefault(envReleaseNotesTimeoutSeconds, 5)) * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	if source != store.DeployAttemptSourcePromote && !rt.isProductionApp(ctx, app) {
+		return ""
+	}
+	attempts, err := rt.deployAttempts.ListDeployAttempts(ctx, app)
+	if err != nil {
+		rt.logger.Warn("api: deploy release notes: list attempts failed", slog.String("error", err.Error()), slog.String("name", app))
+		return ""
+	}
+	sorted := append([]store.DeployAttempt(nil), attempts...)
+	sort.SliceStable(sorted, func(i, j int) bool { return sorted[i].StartedAt.After(sorted[j].StartedAt) })
+	var to, from *store.DeployAttempt
+	for i := range sorted {
+		a := &sorted[i]
+		if a.CommitSHA == "" || a.Status != store.DeployAttemptStatusSucceeded {
+			continue
+		}
+		if to == nil {
+			to = a
+		} else if a.CommitSHA != to.CommitSHA {
+			from = a
+			break
+		}
+	}
+	if to == nil || from == nil {
+		return ""
+	}
+	list := rt.commitsForRange
+	if rt.releaseCommits != nil {
+		list = rt.releaseCommits
+	}
+	commits, note := list(ctx, app, from.CommitSHA, to.CommitSHA)
+	if note != "" || len(commits) == 0 {
+		return ""
+	}
+	return renderReleaseNotesMarkdown(app, shortSHA(from.CommitSHA), shortSHA(to.CommitSHA), groupReleaseNotes(commits))
+}
+
+func (rt *Router) isProductionApp(ctx context.Context, app string) bool {
+	svc, err := rt.apps.GetDesiredService(ctx, app)
+	if err != nil || svc.EnvironmentID == "" || rt.environments == nil {
+		return false
+	}
+	env, err := rt.environments.GetEnvironment(ctx, svc.EnvironmentID)
+	return err == nil && env.Kind == store.EnvironmentKindProduction
 }

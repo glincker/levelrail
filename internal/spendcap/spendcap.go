@@ -8,7 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -28,8 +31,35 @@ const (
 	maxCostCeiling     = 1e12
 )
 
+// Guard modes decide whether reaching the limit also refuses new deploys.
+const (
+	GuardAlert        = "alert"
+	GuardBlockDeploys = "block_deploys"
+)
+
+// EnvWarnPercents overrides the default alert levels, for example "80,100".
+const EnvWarnPercents = "APP_SPEND_WARN_PERCENTS"
+
 // DefaultThresholds are the alert levels, in percent of the limit.
-var DefaultThresholds = []int{50, 80, 100}
+var DefaultThresholds = ParseWarnPercents(os.Getenv(EnvWarnPercents), []int{50, 80, 100})
+
+// ParseWarnPercents reads comma separated whole percents. Anything invalid
+// falls back, so a typo in the environment can never disable alerting.
+func ParseWarnPercents(raw string, fallback []int) []int {
+	if strings.TrimSpace(raw) == "" {
+		return append([]int(nil), fallback...)
+	}
+	var out []int
+	for _, p := range strings.Split(raw, ",") {
+		n, err := strconv.Atoi(strings.TrimSpace(p))
+		if err != nil || n < 1 || n > 100 || len(out) >= MaxThresholds {
+			return append([]int(nil), fallback...)
+		}
+		out = append(out, n)
+	}
+	sort.Ints(out)
+	return out
+}
 
 // ErrNotFound is returned when an app has no cap.
 var ErrNotFound = errors.New("spendcap: not found")
@@ -42,6 +72,7 @@ type Cap struct {
 	Thresholds         []int   `json:"thresholds"`
 	Action             string  `json:"action"`
 	ThrottleRPS        int     `json:"throttle_rps"`
+	GuardMode          string  `json:"guard_mode"`
 }
 
 // Usage is an app's month to date consumption.
@@ -54,6 +85,9 @@ type Usage struct {
 func (c Cap) Normalize() Cap {
 	if c.Action == "" {
 		c.Action = ActionNone
+	}
+	if c.GuardMode == "" {
+		c.GuardMode = GuardAlert
 	}
 	if len(c.Thresholds) == 0 {
 		c.Thresholds = append([]int(nil), DefaultThresholds...)
@@ -93,6 +127,9 @@ func (c Cap) Validate() error {
 	default:
 		return fmt.Errorf("action must be %s, %s or %s", ActionNone, ActionThrottle, ActionPause)
 	}
+	if err := ValidateGuardMode(c.GuardMode); err != nil {
+		return err
+	}
 	if c.Action == ActionThrottle && (c.ThrottleRPS < 1 || c.ThrottleRPS > MaxThrottleRPS) {
 		return fmt.Errorf("throttle_rps must be between 1 and %d", MaxThrottleRPS)
 	}
@@ -103,6 +140,14 @@ func (c Cap) Validate() error {
 		if t < 1 || t > 100 {
 			return errors.New("thresholds must be whole percents between 1 and 100")
 		}
+	}
+	return nil
+}
+
+// ValidateGuardMode rejects an unknown guard mode.
+func ValidateGuardMode(m string) error {
+	if m != GuardAlert && m != GuardBlockDeploys {
+		return fmt.Errorf("guard_mode must be %s or %s", GuardAlert, GuardBlockDeploys)
 	}
 	return nil
 }
@@ -166,6 +211,7 @@ const (
 	ReasonLimitAlertOnly     = "LimitReachedAlertOnly"
 	ReasonThrottled          = "Throttled"
 	ReasonPaused             = "Paused"
+	ReasonDeploysBlocked     = "DeploysBlocked"
 	ReasonEnforcementPending = "EnforcementPending"
 )
 
@@ -187,6 +233,8 @@ func Conditions(c Cap, e Eval, enforced, nudged string) Condition {
 		return Condition{Reason: ReasonPaused, Message: fmt.Sprintf("Limit reached at %.0f%%. The app serves a maintenance response until next month or until the limit is raised.", e.Pct)}
 	case enforced == ActionThrottle:
 		return Condition{Reason: ReasonThrottled, Message: fmt.Sprintf("Limit reached at %.0f%%. Each client is limited to %d requests per second until next month or until the limit is raised.", e.Pct, c.ThrottleRPS)}
+	case e.Exhausted && c.GuardMode == GuardBlockDeploys:
+		return Condition{Reason: ReasonDeploysBlocked, Message: fmt.Sprintf("Limit reached at %.0f%%. The app keeps serving, but new deploys are refused until next month, until the limit is raised or until a root user overrides.", e.Pct)}
 	case e.Exhausted:
 		return Condition{Reason: ReasonLimitAlertOnly, Message: fmt.Sprintf("Limit reached at %.0f%%. The action is alert only, so the app keeps serving.", e.Pct)}
 	case len(e.Crossed) > 0:

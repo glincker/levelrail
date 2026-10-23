@@ -315,6 +315,7 @@ type costBudgetInput struct {
 	Thresholds  *[]int   `json:"thresholds"`
 	Action      *string  `json:"action"`
 	ThrottleRPS *int     `json:"throttle_rps"`
+	GuardMode   *string  `json:"guard_mode"`
 }
 
 func (in costBudgetInput) apply(b costbudget.Budget) costbudget.Budget {
@@ -338,6 +339,9 @@ func (in costBudgetInput) apply(b costbudget.Budget) costbudget.Budget {
 	}
 	if in.ThrottleRPS != nil {
 		b.ThrottleRPS = *in.ThrottleRPS
+	}
+	if in.GuardMode != nil {
+		b.GuardMode = *in.GuardMode
 	}
 	return b
 }

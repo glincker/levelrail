@@ -81,6 +81,7 @@ type mux struct {
 
 	onHostReport func(*agentpb.HostReport)
 	onRenewal    func(*agentpb.RenewalReport)
+	onOnboarding func(*agentpb.OnboardingReport)
 }
 
 // frameSub delivers one multi-frame operation's frames. Only recvLoop closes its channels, so callers must not.
@@ -125,6 +126,7 @@ type muxHandlers struct {
 	hello      func(*agentpb.AgentInfo)
 	hostReport func(*agentpb.HostReport)
 	renewal    func(*agentpb.RenewalReport)
+	onboarding func(*agentpb.OnboardingReport)
 }
 
 // newMuxWithHandlers is newMux plus h. They are passed here, before
@@ -143,6 +145,7 @@ func newMuxWithHandlers(stream sessionStream, h muxHandlers) *mux {
 	m.onHello = h.hello
 	m.onHostReport = h.hostReport
 	m.onRenewal = h.renewal
+	m.onOnboarding = h.onboarding
 	go m.recvLoop()
 	return m
 }
@@ -186,6 +189,10 @@ func (m *mux) recvLoop() {
 		case *agentpb.AgentMessage_Renewal:
 			if m.onRenewal != nil {
 				m.onRenewal(p.Renewal)
+			}
+		case *agentpb.AgentMessage_Onboarding:
+			if m.onOnboarding != nil {
+				m.onOnboarding(p.Onboarding)
 			}
 		}
 	}

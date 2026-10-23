@@ -16,6 +16,7 @@ APP_DATA_DIR=/var/lib/demo-data levelrail demo seed --seed 1
 
 - `--seed` picks the deterministic data set. The same seed and anchor always produce the same rows.
 - `--anchor` sets the "now" the 14 days of history are counted back from (RFC 3339, default the current hour).
+- `--scenario` picks the storyline: `incident` (default, the public demo with a crashlooping app, pending approvals and a firing disk alert) or `calm` (a healthy fleet with succeeded deploys only and at most one pending approval, used for marketing screenshots). Unknown values are rejected.
 - Seeding refuses a data directory that already holds users, and re-running with the same options is a no-op.
 
 To refresh the time anchor, seed into a new empty data directory and swap it in.

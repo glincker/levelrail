@@ -439,6 +439,11 @@ func recordEarlyFailure(ctx context.Context, journal *selfupgrade.Journal, live 
 }
 
 func recordAttempt(ctx context.Context, live string, journal *selfupgrade.Journal, logger *slog.Logger) {
+	if have, want, behind := schemaBehindBinary(ctx, live); behind {
+		logger.Warn("self-upgrade history deferred to next boot: the database is on an older schema than this binary",
+			slog.Int("database_schema", have), slog.Int("binary_schema", want))
+		return
+	}
 	db, err := store.Open(ctx, live)
 	if err != nil {
 		logger.Warn("self-upgrade history deferred to next boot", slog.String("error", err.Error()))
@@ -657,4 +662,18 @@ func installerPrefix() string {
 		slug = b.RepoSlug()
 	}
 	return "curl -fsSL https://raw.githubusercontent.com/" + slug + "/main/install.sh | sudo"
+}
+
+// schemaBehindBinary reports whether the live database is on an older schema than this binary
+// migrates to. store.Open would migrate it forward, which undoes a restore to an older release.
+func schemaBehindBinary(ctx context.Context, live string) (have, want int, behind bool) {
+	have, err := rollback.DBSchemaVersion(ctx, live)
+	if err != nil {
+		return 0, 0, false
+	}
+	want, err = store.MaxSchemaVersion()
+	if err != nil {
+		return have, 0, false
+	}
+	return have, want, have < want
 }

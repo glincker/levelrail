@@ -49,7 +49,7 @@ func (rt *Router) databaseTLSMode(ctx context.Context, name string) string {
 	return mode
 }
 
-// handleSetDatabaseTLSEnabled handles PUT /api/v1/databases/{name}/tls: switches server TLS for MySQL, MariaDB and Redis.
+// handleSetDatabaseTLSEnabled handles PUT /api/v1/databases/{name}/tls: switches server TLS for MySQL, MariaDB, MongoDB and Redis.
 func (rt *Router) handleSetDatabaseTLSEnabled(w http.ResponseWriter, r *http.Request) {
 	var req databaseTLSToggleRequest
 	if err := decodeJSONBody(r, &req); err != nil {
@@ -66,7 +66,7 @@ func (rt *Router) handleSetDatabaseTLSEnabled(w http.ResponseWriter, r *http.Req
 		return
 	}
 	if !store.DatabaseTLSToggleable(d.Engine) {
-		writeError(w, http.StatusBadRequest, "TLS can be switched for MySQL, MariaDB and Redis databases only")
+		writeError(w, http.StatusBadRequest, "TLS can be switched for MySQL, MariaDB, MongoDB and Redis databases only")
 		return
 	}
 	mode := store.DatabaseTLSModeOff
@@ -97,4 +97,24 @@ func (rt *Router) handleSetDatabaseTLSEnabled(w http.ResponseWriter, r *http.Req
 	rt.logger.Info("api: database tls switched", slog.String("database", d.Name), slog.String("mode", mode))
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusOK, databaseTLSToggleResponse{Database: d.Name, Mode: mode, Enabled: req.Enabled})
+}
+
+// enableTLSAtCreate stores TLS mode on for engines that start with TLS. A failure is
+// logged and leaves the database on the engine default rather than failing the create.
+func (rt *Router) enableTLSAtCreate(ctx context.Context, name, engine string) {
+	if !store.DatabaseTLSOnAtCreate(engine) {
+		return
+	}
+	var modes databaseTLSModeStore
+	if m, ok := rt.databases.(databaseTLSModeStore); ok {
+		modes = m
+	} else if m, ok := rt.databaseTLSModeStore(); ok {
+		modes = m
+	}
+	if modes == nil {
+		return
+	}
+	if err := modes.SetDatabaseTLSMode(ctx, name, store.DatabaseTLSModeOn); err != nil {
+		rt.logger.Warn("api: create database: enable tls failed", slog.String("name", name), slog.String("error", err.Error()))
+	}
 }

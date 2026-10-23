@@ -182,6 +182,15 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	dbs = visibleDBs
+	if project := r.URL.Query().Get("project"); project != "" {
+		inProject := dbs[:0:0]
+		for _, d := range dbs {
+			if d.ProjectID == project {
+				inProject = append(inProject, d)
+			}
+		}
+		dbs = inProject
+	}
 	if dbs, err = rt.filterDatabasesByEnvironment(r, dbs); err != nil {
 		rt.internalError(w, "api: list databases: environment filter", err)
 		return
@@ -272,6 +281,7 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 	}
 	req.ExistingVolume = ""
 	req.ProvisionState = provisionStatePending
+	rt.enableTLSAtCreate(r.Context(), req.Name, req.Engine)
 
 	if req.BackupSchedule != "" {
 		if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), req.Name, req.BackupTargetID, req.BackupSchedule, req.BackupRetain, req.BackupRetainDays); err != nil {

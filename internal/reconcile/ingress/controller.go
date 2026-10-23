@@ -69,6 +69,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -286,6 +287,11 @@ type Controller struct {
 	// lastDial keeps each service's last resolved backend so a Docker API outage keeps routes instead of dropping them.
 	lastDial sync.Map
 
+	// listing shares one local container listing across a single Reconcile.
+	listing atomic.Pointer[containerListing]
+	// inspected holds the local service containers read in one call at the start of a Reconcile.
+	inspected atomic.Pointer[docker.InspectSet]
+
 	serverName     string
 	requestStats   bool
 	firewall       bool
@@ -297,9 +303,10 @@ type Controller struct {
 	adminListen          string
 	storageDir           string
 
-	hardening *ingress.Hardening
-	inherited *ingress.InheritedSockets
-	holds     *ingress.HoldTracker
+	hardening    *ingress.Hardening
+	abuseApplied abuseApplied
+	inherited    *ingress.InheritedSockets
+	holds        *ingress.HoldTracker
 
 	modelHosts ModelHostSource // nil is valid: no model routes, see WithModelHosts
 
@@ -713,10 +720,14 @@ func (c *Controller) Name() string { return "ingress" }
 // an error.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	c.issues.reset()
+	c.listing.Store(&containerListing{})
+	defer c.listing.Store(nil)
 	services, err := c.store.ListDesiredServices(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list desired services: %w", err)
 	}
+	c.inspected.Store(docker.FetchInspectSet(ctx, c.runtime, c.localTargets(services)))
+	defer c.inspected.Store(nil)
 	staticSites, err := c.store.ListStaticSites(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list static sites: %w", err)
@@ -971,6 +982,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if routes, err = c.applyTrafficPolicies(ctx, routes, claimedHosts, settings, tlsCertOverrides, sleeping); err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain traffic policies: %w", err)
 	}
+	routes = c.applyAbusePolicies(ctx, routes, claimedHosts, settings)
 	if routes, err = c.applyAuthGates(ctx, routes); err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain auth gates: %w", err)
 	}
@@ -1334,7 +1346,7 @@ func (c *Controller) resolveRoute53DNSProvider(ctx context.Context) ingress.DNS0
 func (c *Controller) dialForService(ctx context.Context, svc store.DesiredService, targetReady bool) (string, bool) {
 	target := application.ContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce)
 
-	state, err := c.runtime.InspectByName(ctx, target)
+	state, err := c.inspectLocal(ctx, target)
 	if err != nil {
 		c.logger.WarnContext(ctx, "ingress: inspecting service container failed, keeping the last known backend",
 			slog.String("service", svc.Name), slog.String("container", target), slog.String("error", err.Error()))
@@ -1428,7 +1440,7 @@ func dialAddr(state *docker.ContainerState) (string, bool) {
 // dialPreviousRelease finds another running, ported container for
 // serviceName besides exclude, to keep serving while exclude isn't ready.
 func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName, exclude string) (string, bool) {
-	containers, err := c.runtime.ListByPrefix(ctx, serviceName+"-")
+	containers, err := c.listLocal(ctx, serviceName+"-")
 	if err != nil {
 		c.logger.WarnContext(ctx, "ingress: list previous release containers failed",
 			slog.String("service", serviceName), slog.String("error", err.Error()))

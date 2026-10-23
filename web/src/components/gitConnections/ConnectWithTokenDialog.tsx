@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { SecretInput } from '@/components/ui/secret-input'
 import {
   Select,
   SelectContent,
@@ -182,9 +183,8 @@ export default function ConnectWithTokenDialog({
                   : 'gitConnections.token.field',
               )}
             </FieldLabel>
-            <Input
+            <SecretInput
               id="token-value"
-              type="password"
               autoComplete="off"
               spellCheck={false}
               value={token}

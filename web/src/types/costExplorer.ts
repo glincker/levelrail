@@ -6,6 +6,7 @@ export type CostPeriod = 'mtd' | '30d' | 'last_month'
 export type CostConfidence = 'low' | 'medium' | 'high'
 export type CostBudgetScope = 'project' | 'tag' | 'app'
 export type CostBudgetAction = 'none' | 'throttle' | 'pause'
+export type SpendGuardMode = 'alert' | 'block_deploys'
 export type CostBudgetLevel = '' | 'warn' | 'over' | 'forecast'
 
 export interface CostSeries {
@@ -61,6 +62,7 @@ export interface CostBudget {
   thresholds: number[]
   action: CostBudgetAction
   throttle_rps: number
+  guard_mode: SpendGuardMode
 }
 
 export interface CostBudgetStatus extends CostBudget {

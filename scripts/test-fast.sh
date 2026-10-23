@@ -9,6 +9,7 @@
 #   -r  only internal/api tests whose names match this regex (e.g. '^(TestA|TestB)$')
 #   package...  other packages to test in one plain process (default: only internal/api)
 # Environment: TEST_FAST_TIMEOUT (default 30m), TEST_FAST_SHARDS.
+# Prints per-shard seconds; on failure only failing tests and their output lines.
 set -uo pipefail
 
 root="$(git rev-parse --show-toplevel)" || exit 2
@@ -86,7 +87,14 @@ if [ "$run_api" -eq 1 ]; then
 			mine="$(scripts/ci-shard-names.sh "$i" "$shards" <<<"$names" | paste -sd'|' -)"
 			if [ -n "$mine" ]; then
 				mkdir -p "$work/tmp-$i"
-				(cd internal/api && TMPDIR="$work/tmp-$i" "$work/api.test" -test.short -test.timeout "$timeout" -test.run "^($mine)\$" >"$work/api-$i.log" 2>&1) &
+				(
+					cd internal/api || exit 2
+					t0="$(date +%s)"
+					TMPDIR="$work/tmp-$i" "$work/api.test" -test.short -test.timeout "$timeout" -test.run "^($mine)\$" >"$work/api-$i.log" 2>&1
+					rc=$?
+					echo $(($(date +%s) - t0)) >"$work/api-$i.sec"
+					exit "$rc"
+				) &
 				pids+=("$!")
 				labels+=("internal/api shard $i/$shards")
 			fi
@@ -99,10 +107,11 @@ fi
 report_failures() {
 	local log="$1"
 	{
-		grep -E '^[[:space:]]*--- FAIL' "$log"
+		# Each failing test with its indented output lines, not the whole log.
+		awk '/^[[:space:]]*--- FAIL/ {p=1; print; next} p && /^[[:space:]]/ {print; next} {p=0}' "$log"
 		grep -E '^(panic:|FAIL|fatal error:|.*test timed out)' "$log"
 		awk '/^running tests:/{f=1;next} f&&/^\t/{print "stuck: " $0;next} {f=0}' "$log"
-	} | sort -u | head -n 60
+	} | head -n 150
 }
 
 status=0
@@ -125,6 +134,11 @@ done
 
 [ -f "$work/other.log" ] && [ "$status" -eq 0 ] && cat "$work/other.log"
 elapsed=$(($(date +%s) - start))
+secs=""
+for f in "$work"/api-*.sec; do
+	[ -f "$f" ] && secs="$secs $(basename "$f" .sec | sed 's/^api-//')=$(cat "$f")s"
+done
+[ -n "$secs" ] && echo "test-fast: shard seconds:$secs"
 if [ "$status" -eq 0 ]; then
 	ok=1
 	echo "test-fast: passed in ${elapsed}s"

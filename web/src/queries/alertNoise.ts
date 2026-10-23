@@ -9,6 +9,8 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { alertRuleKeys } from './alerts'
+import { useEnvironmentScope } from '../lib/environmentScope'
+import { currentScope, withScope } from '../lib/scopeQuery'
 import type {
   AlertHistoryEntry,
   AlertHistoryFilter,
@@ -167,7 +169,10 @@ export function useDeleteMaintenanceWindow() {
 }
 
 export function useAlertHistory(filter: AlertHistoryFilter) {
+  useEnvironmentScope()
+  const scope = filter.scoped ? currentScope() : undefined
   const params = new URLSearchParams()
+  if (scope) withScope(params, scope)
   if (filter.outcome) params.set('outcome', filter.outcome)
   if (filter.event) params.set('event', filter.event)
   params.set('limit', String(filter.limit ?? 50))
@@ -175,7 +180,7 @@ export function useAlertHistory(filter: AlertHistoryFilter) {
     ? `/api/v1/apps/${encodeURIComponent(filter.app)}/alert-history`
     : '/api/v1/alert-history'
   return useQuery({
-    queryKey: alertNoiseKeys.history(filter),
+    queryKey: alertNoiseKeys.history({ ...filter, scope }),
     queryFn: () =>
       request<AlertHistoryEntry[]>(
         `${path}?${params.toString()}`,

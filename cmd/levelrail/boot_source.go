@@ -70,6 +70,7 @@ type dynamicSourceDeps struct {
 	// livenessTracker outlives the per-pass controllers below, which is
 	// the whole point: see application.WithLivenessTracker.
 	livenessTracker *application.LivenessTracker
+	imageIDs        *application.ImageIDCache
 	// restartBackoff is shared for the same reason as livenessTracker.
 	restartBackoff *application.RestartBackoff
 	// publicHost is APP_PUBLIC_HOST, threaded to the ingress controller
@@ -113,7 +114,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		}
 
 		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+len(nodes)+2)
-		controllers = append(controllers, appControllersFor(deps, services)...)
+		controllers = append(controllers, appControllersFor(ctx, deps, services)...)
 		controllers = append(controllers, databaseControllersFor(ctx, deps, databases)...)
 		controllers = append(controllers, modelControllersFor(deps, modelRows)...)
 		for _, n := range nodes {
@@ -290,17 +291,32 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 
 // appControllersFor builds one application.Controller per service,
 // skipping (with a warning) any whose node isn't currently reachable.
-func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
+func appControllersFor(ctx context.Context, deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
 	appOpts := appOptionsFor(deps)
+	snap := application.NewPassSnapshot(application.SnapshotMaxAgeFromEnv(os.Getenv))
 	controllers := make([]reconcile.Controller, 0, len(services))
+	targets := map[string]*prefetchNode{}
 	for _, svc := range services {
-		svcRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, svc.NodeID))
+		nodeID := runtimeNodeID(deps, svc.NodeID)
+		svcRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, nodeID)
 		if err != nil {
 			deps.logger.Warn("skipping service for this reconcile pass: node transport unavailable",
 				slog.String("service", svc.Name), slog.String("node_id", svc.NodeID), slog.String("error", err.Error()))
 			continue
 		}
-		controllers = append(controllers, application.New(svc.Name, deps.db, svcRuntime, appOpts...))
+		svcOpts := append(appOpts[:len(appOpts):len(appOpts)], application.WithPassSnapshot(snap, nodeID), application.WithImageIDCache(deps.imageIDs, nodeID))
+		controllers = append(controllers, application.New(svc.Name, deps.db, svcRuntime, svcOpts...))
+		if !svc.Suspended {
+			n := targets[nodeID]
+			if n == nil {
+				n = &prefetchNode{rt: svcRuntime}
+				targets[nodeID] = n
+			}
+			n.names = append(n.names, replicaTargets(svc)...)
+		}
+	}
+	for nodeID, n := range targets {
+		snap.Prefetch(ctx, nodeID, n.rt, n.names)
 	}
 	controllers = append(controllers, application.NewDeleteFinalizer(deps.db, func(nodeID string) (docker.Runtime, error) {
 		return resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, nodeID))
@@ -459,4 +475,22 @@ func nodePendingExpireAfter() time.Duration {
 		return d
 	}
 	return time.Hour
+}
+
+type prefetchNode struct {
+	rt    docker.Runtime
+	names []string
+}
+
+// replicaTargets are the container names the application controller will look up for svc this pass.
+func replicaTargets(svc store.DesiredService) []string {
+	replicas := svc.Replicas
+	if replicas <= 0 {
+		replicas = store.DefaultReplicas
+	}
+	names := make([]string, replicas)
+	for i := range names {
+		names[i] = application.ReplicaContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce, i)
+	}
+	return names
 }

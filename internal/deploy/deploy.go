@@ -173,6 +173,9 @@ type Request struct {
 	Commit func() error
 	// NoCache disables BuildKit's layer cache for a dockerfile build.
 	NoCache bool
+	// Preview marks a pull request preview build, which may not use
+	// build.secrets unless APP_PREVIEW_BUILD_SECRETS is true.
+	Preview bool
 }
 
 // Pipeline builds a service (when its build type requires a build) and
@@ -216,11 +219,13 @@ type Pipeline struct {
 	ordered      OrderedStore          // nil disables the stale-deploy guard
 	attempts     AttemptRecorder       // nil skips recording digests on attempts
 
-	buildSecrets BuildSecretSource // nil is valid: builds mount no package registry secrets
+	buildSecretValues BuildSecretValues // nil: build.secrets is rejected at deploy
+	buildSecrets      BuildSecretSource // nil is valid: builds mount no package registry secrets
 
 	attest      bool            // request BuildKit SBOM and provenance on Dockerfile builds
 	supplyChain SupplyChainHook // nil skips SBOM storage and the scan gate
 	secretScan  SecretScanHook  // nil skips deploy-time secret scanning
+	spendGuard  SpendGuardHook  // nil skips the block_deploys spend cap guard
 
 	locks PublishLocks // nil is valid: no publish lock is ever consulted
 }
@@ -253,6 +258,9 @@ func New(builder ImageBuilder, svcStore ServiceStore, opts ...Option) *Pipeline 
 // build.ProgressEvent and build.SlogProgress. A static deploy never
 // invokes it: there is no build step to report progress on.
 func (p *Pipeline) Deploy(ctx context.Context, req Request, progress func(build.ProgressEvent)) (string, error) {
+	if err := p.checkSpendGuard(ctx, req); err != nil {
+		return "", err
+	}
 	if err := p.scanSecrets(ctx, req); err != nil {
 		return "", err
 	}
@@ -312,7 +320,11 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		Attest:         p.attest,
 		NoCache:        req.NoCache,
 	}
-	progress, err = p.applyBuildSecrets(ctx, req.ServiceName, &buildReq, progress)
+	if err := checkPreviewBuildSecrets(req.Preview, req.Service.Build.Secrets); err != nil {
+		cacheDone()
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+	progress, err = p.applyBuildSecrets(ctx, req.ServiceName, req.Service.Build.Secrets, &buildReq, progress)
 	if err != nil {
 		cacheDone()
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)

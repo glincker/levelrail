@@ -421,6 +421,8 @@ levelrail-cli nodes zones
 
 When at least one eligible node has a `zone` label, placement spreads across zones by default: the zone holding the fewest replicas of the same workload wins, then the zone carrying the fewest workloads overall, then the usual headroom order. Drains and auto-placement use the same ranking, so draining a node prefers another zone. If no node has a zone label nothing changes. A node with no `region` label shows the free-text region set on the node, if any. `GET /api/v1/nodes/zones` returns each zone with its nodes and workload counts, and the **Failure domains** card on the nodes page shows the same view, with a button to the node page when no zone is set yet.
 
+For the guided add-node flow that detects these labels from cloud metadata, see [Add a node anywhere](/add-node-anywhere). Placement also spreads across providers, and an app whose replicas all share one zone gets a warning.
+
 ### Dry runs: where would it land, and what if a zone dies
 
 Both checks use the real scheduler on a copy of the fleet and change nothing.

@@ -53,7 +53,9 @@ func seedStores(t *testing.T, anchor time.Time) seededStores {
 func TestSeedLintClean(t *testing.T) {
 	// A fresh anchor, not liveAnchor: migrations stamp rows with the wall
 	// clock, and on a loaded CI runner the package-init anchor is minutes old.
-	s := seedStores(t, time.Now().UTC().Truncate(time.Minute))
+	// Round, not Truncate: truncating can land 59s in the past, which with the
+	// lint slack made late-minute starts flag migration rows as future.
+	s := seedStores(t, time.Now().UTC().Round(time.Minute))
 	findings, err := Lint(context.Background(), s.Stores, LintOptions{})
 	if err != nil {
 		t.Fatalf("Lint() error = %v", err)
@@ -125,7 +127,7 @@ func exec(t *testing.T, db *store.DB, q string) {
 func TestSeedStoryMetricsAndLogs(t *testing.T) {
 	ctx := context.Background()
 	s := seedStores(t, liveAnchor)
-	story := storyFor(liveAnchor)
+	story := storyFor(liveAnchor, false)
 	id := "service:" + incidentApp
 
 	p95 := func(at time.Time) float64 {

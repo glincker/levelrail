@@ -5,6 +5,7 @@ import { HardDrivesIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SecretInput } from '@/components/ui/secret-input'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
@@ -203,9 +204,8 @@ export function TargetSetupForm({
           label={t('target.field.secretAccessKey')}
           invalid={missing === 'secretAccessKey'}
         >
-          <Input
+          <SecretInput
             id="target-secret"
-            type="password"
             value={values.secretAccessKey}
             autoComplete="new-password"
             onChange={(e) => {

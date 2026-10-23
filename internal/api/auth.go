@@ -321,7 +321,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 				return
 			}
 			if rt.apiRateLimit != nil {
-				if allowed, retryAfter := rt.apiRateLimit.allow(required, "session:"+pinned.userID); !allowed {
+				if allowed, retryAfter := rt.apiRateLimit.admit(w, required, "session:"+pinned.userID); !allowed {
 					writeRateLimited(w, retryAfter)
 					return
 				}
@@ -352,7 +352,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 
 		if userID, ok := rt.currentSessionUserID(r); ok {
 			if rt.apiRateLimit != nil {
-				if allowed, retryAfter := rt.apiRateLimit.allow(required, "session:"+userID); !allowed {
+				if allowed, retryAfter := rt.apiRateLimit.admit(w, required, "session:"+userID); !allowed {
 					writeRateLimited(w, retryAfter)
 					return
 				}
@@ -385,7 +385,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		token, ok := bearerToken(r)
 		if !ok {
 			if rt.apiRateLimit != nil {
-				if allowed, retryAfter := rt.apiRateLimit.allow(required, "ip:"+clientIP(r)); !allowed {
+				if allowed, retryAfter := rt.apiRateLimit.admit(w, required, "ip:"+clientIP(r)); !allowed {
 					writeRateLimited(w, retryAfter)
 					return
 				}
@@ -398,7 +398,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		// before the lookup below, so a leaked token gets throttled even
 		// while repeatedly hitting an already-revoked or expired record.
 		if rt.apiRateLimit != nil {
-			if allowed, retryAfter := rt.apiRateLimit.allow(required, "token:"+hashToken(token)); !allowed {
+			if allowed, retryAfter := rt.apiRateLimit.admit(w, required, "token:"+hashToken(token)); !allowed {
 				writeRateLimited(w, retryAfter)
 				return
 			}

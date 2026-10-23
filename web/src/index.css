@@ -463,11 +463,11 @@ body {
 /* Page width: PageTemplate reads these two tokens, so one attribute retunes every page. */
 :root,
 :root[data-width='comfortable'] {
-  --glinr-content-max: 72rem;
-  --glinr-content-max-wide: 96rem;
+  --glinr-content-max: 88rem;
+  --glinr-content-max-wide: 112rem;
 }
 :root[data-width='wide'] {
-  --glinr-content-max: 80rem;
+  --glinr-content-max: 104rem;
   --glinr-content-max-wide: 120rem;
 }
 :root[data-width='full'] {

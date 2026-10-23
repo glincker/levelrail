@@ -17,7 +17,7 @@ import (
 func registerAppScheduleTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_schedule",
-		Description: "Show an app's configured recurring redeploy schedule (cron expression, branch, timezone, whether it's enabled, and its next run time), or that none is configured.",
+		Description: "Show an app's configured redeploy schedule (cron expression or one-time run_at, branch, timezone, whether it's enabled, and its next run time), or that none is configured.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.AppScheduleResource, error) {
 		res, err := client.GetAppSchedule(ctx, in.Name)
 		if err != nil {

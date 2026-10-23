@@ -1,7 +1,7 @@
 {
-  "title": "Dashboards",
-  "description": "Build your own views of metrics, logs, deploys and cost. Keep them private or share them with everyone, and export them as JSON to keep in version control.",
-  "common": { "cancel": "Cancel" },
+  "common": {
+    "cancel": "Cancel"
+  },
   "grid": {
     "label": "Dashboard widgets",
     "controls": "Controls for {{title}}",
@@ -20,7 +20,8 @@
       "resource_counts": "Resource counts",
       "cost": "Cost by tag",
       "alert_status": "Alert status",
-      "node_capacity": "Node capacity"
+      "node_capacity": "Node capacity",
+      "link": "Link"
     },
     "noTraffic": "No requests in the last window.",
     "p95": "p95 latency",
@@ -35,11 +36,15 @@
       "domain": "Domains"
     },
     "noCost": "No cost data yet. Set prices in Usage and cost to see spend by tag.",
+    "scopedCost": "Spend this month in the selected scope",
     "untagged": "Untagged",
     "rulesEnabled": "alert rules enabled",
     "noRules": "This app has no alert rules yet.",
     "unknown": "Unknown",
-    "capacity": { "disk": "Disk used", "memory": "Memory used" }
+    "capacity": {
+      "disk": "Disk used",
+      "memory": "Memory used"
+    }
   },
   "metric": {
     "cpu_percent": "CPU",
@@ -51,7 +56,11 @@
     "disk_used_bytes": "Disk used",
     "container_restart_count": "Restarts"
   },
-  "kind": { "app": "App", "database": "Database", "node": "Node" },
+  "kind": {
+    "app": "App",
+    "database": "Database",
+    "node": "Node"
+  },
   "range": {
     "15m": "Last 15 minutes",
     "1h": "Last hour",
@@ -71,17 +80,13 @@
     "range": "Time range",
     "refresh": "Auto refresh",
     "refreshNow": "Refresh",
-    "export": "Export JSON",
-    "import": "Import",
-    "importFile": "Dashboard JSON file",
-    "edit": "Edit",
     "addWidget": "Add widget",
     "shared": "Shared with everyone",
     "project": "Project",
     "noProject": "No project",
     "isDefault": "Default for the project",
-    "delete": "Delete",
-    "save": "Save changes"
+    "save": "Save changes",
+    "done": "Done editing"
   },
   "add": {
     "title": "Add a widget",
@@ -93,16 +98,13 @@
     "metric": "Metric",
     "query": "Log filter",
     "queryPlaceholder": "Text to search for, optional",
-    "submit": "Add widget"
-  },
-  "list": {
-    "label": "Your dashboards",
-    "default": "Default",
-    "shared": "Shared"
+    "submit": "Add widget",
+    "linkTitle": "Title",
+    "linkTitlePlaceholder": "Runbook",
+    "linkUrl": "Address"
   },
   "template": {
     "label": "Starter dashboards",
-    "new": "New from a starter",
     "use": "Use this starter",
     "pickApp": "App for {{name}}",
     "app-health": {
@@ -119,15 +121,8 @@
     }
   },
   "empty": {
-    "title": "No dashboards yet",
-    "body": "Start from a ready made dashboard below, or import a JSON file you exported earlier.",
     "widgetsTitle": "This dashboard is empty",
     "widgetsBody": "Turn on Edit and add a widget to get started."
-  },
-  "delete": {
-    "title": "Delete {{name}}?",
-    "body": "The dashboard is removed for everyone who can see it. Exported JSON files are not affected.",
-    "confirm": "Delete dashboard"
   },
   "toast": {
     "saved": "Dashboard saved",

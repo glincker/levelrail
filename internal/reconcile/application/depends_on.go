@@ -84,7 +84,7 @@ func (c *Controller) dependencyReady(ctx context.Context, depName string) (bool,
 // prefix match) so a dependency name that happens to prefix-match a
 // differently-owned service's containers is never mistaken for it.
 func (c *Controller) dependencyStarted(ctx context.Context, depName string) (bool, error) {
-	states, err := c.runtime.ListByPrefix(ctx, depName+"-")
+	states, err := c.listPrefix(ctx, depName+"-")
 	if err != nil {
 		return false, fmt.Errorf("list containers for %s: %w", depName, err)
 	}

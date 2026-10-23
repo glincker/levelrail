@@ -162,6 +162,7 @@ func (db *DB) HasSecretValueForServices(ctx context.Context, serviceNames []stri
 type SecretKeyInfo struct {
 	Key       string
 	Locked    bool
+	BuildTime bool
 	UpdatedAt time.Time
 }
 
@@ -171,7 +172,7 @@ type SecretKeyInfo struct {
 // can safely return this straight to a browser.
 func (db *DB) ListSecretKeys(ctx context.Context, serviceName string) ([]SecretKeyInfo, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT env_key, locked, updated_at FROM service_secret_values
+		SELECT env_key, locked, build_time, updated_at FROM service_secret_values
 		WHERE service_name = ? ORDER BY env_key
 	`, serviceName)
 	if err != nil {
@@ -184,12 +185,13 @@ func (db *DB) ListSecretKeys(ctx context.Context, serviceName string) ([]SecretK
 	var keys []SecretKeyInfo
 	for rows.Next() {
 		var info SecretKeyInfo
-		var locked int
+		var locked, buildTime int
 		var updatedAtRaw string
-		if err := rows.Scan(&info.Key, &locked, &updatedAtRaw); err != nil {
+		if err := rows.Scan(&info.Key, &locked, &buildTime, &updatedAtRaw); err != nil {
 			return nil, fmt.Errorf("store: scan secret key for %q: %w", serviceName, err)
 		}
 		info.Locked = locked != 0
+		info.BuildTime = buildTime != 0
 		updatedAt, err := time.Parse(time.RFC3339Nano, updatedAtRaw)
 		if err != nil {
 			return nil, fmt.Errorf("store: parse secret key updated_at for %q/%q: %w", serviceName, info.Key, err)
@@ -427,4 +429,43 @@ func (db *DB) ReplaceSecretCiphertext(ctx context.Context, serviceName, envKey s
 		return false, fmt.Errorf("store: replace secret ciphertext for %q/%q: %w", serviceName, envKey, err)
 	}
 	return n == 1, nil
+}
+
+// GetSecretBuildTime reports whether (serviceName, envKey) has a value and
+// is enabled for build.secrets. exists is false when no value is set.
+func (db *DB) GetSecretBuildTime(ctx context.Context, serviceName, envKey string) (exists, buildTime bool, err error) {
+	var v int
+	scanErr := db.QueryRowContext(ctx, `
+		SELECT build_time FROM service_secret_values WHERE service_name = ? AND env_key = ?
+	`, serviceName, envKey).Scan(&v)
+	if errors.Is(scanErr, sql.ErrNoRows) {
+		return false, false, nil
+	}
+	if scanErr != nil {
+		return false, false, fmt.Errorf("store: get secret build_time for %q/%q: %w", serviceName, envKey, scanErr)
+	}
+	return true, v != 0, nil
+}
+
+// SetSecretBuildTime sets the build_time flag of an existing value. It
+// returns ErrSecretValueNotFound when no value is set for the key.
+func (db *DB) SetSecretBuildTime(ctx context.Context, serviceName, envKey string, buildTime bool) error {
+	v := 0
+	if buildTime {
+		v = 1
+	}
+	res, err := db.ExecContext(ctx, `
+		UPDATE service_secret_values SET build_time = ? WHERE service_name = ? AND env_key = ?
+	`, v, serviceName, envKey)
+	if err != nil {
+		return fmt.Errorf("store: set secret build_time for %q/%q: %w", serviceName, envKey, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set secret build_time for %q/%q: %w", serviceName, envKey, err)
+	}
+	if n == 0 {
+		return ErrSecretValueNotFound
+	}
+	return nil
 }

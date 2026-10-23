@@ -44,7 +44,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_domain_redirect",
-		Description: "Get whether one of an app's domains redirects to a target URL instead of proxying to the app, and the target and status code (301 or 302). Read-only. Maintenance mode takes precedence over a redirect.",
+		Description: "Get whether one of an app's domains redirects to a target URL instead of proxying to the app, and the target and status code (301 or 302). Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainRedirectResource, error) {
 		status, err := client.GetDomainRedirect(ctx, in.Name, in.Domain)
 		if err != nil {

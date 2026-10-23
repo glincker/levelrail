@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"sync"
 
@@ -34,6 +35,7 @@ const (
 	WidgetCost           = "cost"
 	WidgetAlertStatus    = "alert_status"
 	WidgetNodeCapacity   = "node_capacity"
+	WidgetLink           = "link"
 )
 
 // Target names the app, database or node a widget reads from.
@@ -51,6 +53,7 @@ type Widget struct {
 	Target *Target `json:"target,omitempty"`
 	Metric string  `json:"metric,omitempty"`
 	Query  string  `json:"query,omitempty"`
+	URL    string  `json:"url,omitempty"`
 }
 
 // Doc is the exportable body of a dashboard.
@@ -173,6 +176,12 @@ func (d Doc) checkWidgets() error {
 			return fmt.Errorf("%w: widgets.%d: duplicate id %q", ErrInvalid, i, w.ID)
 		}
 		seen[w.ID] = true
+		if w.Type == WidgetLink {
+			if err := checkLink(w); err != nil {
+				return fmt.Errorf("%w: widgets.%d: %w", ErrInvalid, i, err)
+			}
+			continue
+		}
 		kinds, needs := allowedTargets[w.Type]
 		if !needs {
 			continue
@@ -190,6 +199,18 @@ func (d Doc) checkWidgets() error {
 		if w.Type == WidgetMetricChart && w.Metric == "" {
 			return fmt.Errorf("%w: widgets.%d: metric_chart needs a metric", ErrInvalid, i)
 		}
+	}
+	return nil
+}
+
+// checkLink keeps a link widget to a titled http or https address, so a shared dashboard cannot carry script or data URLs.
+func checkLink(w Widget) error {
+	if strings.TrimSpace(w.Title) == "" {
+		return errors.New("link needs a title")
+	}
+	u, err := url.Parse(w.URL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return errors.New("link needs an http or https address")
 	}
 	return nil
 }

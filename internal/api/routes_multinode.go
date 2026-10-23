@@ -15,6 +15,8 @@ func (rt *Router) registerMultiNodeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/placement/decision", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetPlacementDecision(store.NodeMoveKindApp)))
 	mux.HandleFunc("GET /api/v1/databases/{name}/placement/decision", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetPlacementDecision(store.NodeMoveKindDatabase)))
 	mux.HandleFunc("GET /api/v1/nodes/allocations", rt.requireAbility(AbilityRoot, rt.handleNodeAllocations))
+	mux.HandleFunc("GET /api/v1/nodes/domains", rt.requireAbility(AbilityRoot, rt.handleNodeDomains))
+	mux.HandleFunc("GET /api/v1/nodes/{id}/onboarding", rt.requireAbility(AbilityRoot, rt.handleGetNodeOnboarding))
 	mux.HandleFunc("GET /api/v1/nodes/zones", rt.requireAbility(AbilityRoot, rt.handleListZones))
 	mux.HandleFunc("GET /api/v1/nodes/placement-simulation", rt.requireAbility(AbilityRoot, rt.handlePlacementSimulation))
 	mux.HandleFunc("GET /api/v1/nodes/failure-simulation", rt.requireAbility(AbilityRoot, rt.handleFailureSimulation))
