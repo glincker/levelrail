@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { activeCliTokens, isCliConnected } from './cliConnection'
+import {
+  activeCliTokens,
+  cliTokenStatus,
+  isCliConnected,
+} from './cliConnection'
 
 const now = Date.parse('2026-06-01T12:00:00Z')
 const future = '2026-07-01T00:00:00Z'
@@ -34,6 +38,27 @@ describe('activeCliTokens', () => {
   it('treats a token with no expiry as live', () => {
     const tokens = [{ name: 'cli-pairing', expires_at: null }]
     expect(activeCliTokens(tokens, now)).toHaveLength(1)
+  })
+})
+
+describe('cli origins and status', () => {
+  it('keeps device-flow and password-login tokens', () => {
+    const tokens = [
+      { name: 'device: Mac.lan' },
+      { name: 'levelrail-cli-20260101-000000' },
+      { name: 'github-actions' },
+    ]
+    expect(activeCliTokens(tokens, now)).toHaveLength(2)
+  })
+
+  it('reports expiring within the window and expired after', () => {
+    expect(
+      cliTokenStatus({ name: 'a', expires_at: '2026-06-03T00:00:00Z' }, now),
+    ).toBe('expiring')
+    expect(cliTokenStatus({ name: 'a', expires_at: future }, now)).toBe(
+      'active',
+    )
+    expect(cliTokenStatus({ name: 'a', expires_at: past }, now)).toBe('expired')
   })
 })
 

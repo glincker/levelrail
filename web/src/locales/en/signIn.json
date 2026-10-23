@@ -130,21 +130,21 @@
     "badge": "Connect CLI",
     "badgeLabel": "Connect the command line tool. No CLI is connected yet.",
     "title": "Command line tool",
-    "description": "Install the CLI, connect it to this server, and manage the ones already connected.",
+    "description": "Install the CLI, connect it to this server and manage every CLI that can reach it.",
     "openAction": "Open CLI setup",
     "openKeywords": "cli terminal command line install connect pair token",
     "install": {
-      "title": "1. Install",
+      "title": "Install",
       "lead": "Run this once in your terminal to install the CLI.",
       "label": "Install command"
     },
     "connect": {
-      "title": "2. Connect",
+      "title": "Connect",
       "lead": "Get a one-line command that signs your terminal in to this server. No password, no approval step."
     },
     "manage": {
       "title": "Connected CLIs",
-      "empty": "No CLI is connected yet. Connect one above.",
+      "empty": "No CLI is connected yet. Get your connect command on the left and run it in your terminal.",
       "loading": "Loading connected CLIs...",
       "lastUsed": "Last used {{when}}",
       "neverUsed": "Never used",
@@ -160,7 +160,55 @@
       "revokeCancel": "Cancel",
       "revokeFailed": "Could not revoke this CLI",
       "revoked": "CLI revoked",
-      "fullPage": "Manage all CLI access"
+      "fullPage": "Manage all CLI access",
+      "emptyAction": "Show my command",
+      "connectAnother": "Connect another CLI",
+      "listLabel": "Connected CLIs",
+      "origin": {
+        "pairing": "Pairing code",
+        "device": "Device sign-in",
+        "password": "Password sign-in"
+      },
+      "created": "Created {{when}}",
+      "abilities": "Abilities",
+      "abilityRead": "Read",
+      "abilityWrite": "Write",
+      "abilityDeploy": "Deploy",
+      "abilitySensitive": "Sensitive",
+      "abilityRoot": "Full access",
+      "status": {
+        "active": "Active",
+        "expiring": "Expires soon",
+        "expired": "Expired"
+      },
+      "expired": "Expired {{when}}",
+      "loadFailed": "Could not load connected CLIs"
+    },
+    "subtitle": "Deploy, tail logs and manage apps from your terminal.",
+    "status": {
+      "connected_one": "{{count}} connected",
+      "connected_other": "{{count}} connected",
+      "none": "Not connected",
+      "loading": "Checking..."
+    },
+    "loadingBody": "Loading the command line tool...",
+    "started": {
+      "title": "Get started",
+      "done": "Done",
+      "show": "Show setup steps",
+      "hide": "Hide setup steps"
+    },
+    "commands": {
+      "title": "Common commands",
+      "lead": "Run these in a terminal where the CLI is connected.",
+      "copy": "Copy {{command}}",
+      "copied": "Copied",
+      "status": "Check control plane health",
+      "list": "List your apps",
+      "logs": "Follow an app's logs",
+      "wait": "Wait for an app to be ready",
+      "open": "Print an app's public URLs",
+      "up": "Deploy the current directory"
     }
   },
   "request": {
