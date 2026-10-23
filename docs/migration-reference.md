@@ -382,6 +382,35 @@ The source keeps serving until you change DNS, and keeps serving the clients who
 
 Writes accepted by the source after the final copy and before clients move are not carried over. For databases with steady writes, put the source app in maintenance mode for the last copy and the switch.
 
+## Parity check before cutover
+
+`migrate verify` proves this server matches the source before you switch DNS. It reads the source with the same readers as the importer and compares:
+
+- apps (matched by import label, then by name), domains, scheduled jobs and volume mounts
+- environment variable **names** only. Values are never read into the comparison, the stored report or the output.
+- databases and their engines and versions
+- a live HTTP probe of every domain on both sides: status code, TLS validity and days to expiry, latency and redirect target
+
+```bash
+levelrail-cli migrate verify coolify --url https://coolify.example.com --token "$COOLIFY_TOKEN" --target-ip 203.0.113.10
+levelrail-cli migrate verify --recheck        # again, with the credential the server still holds
+levelrail-cli migrate verify --latest --output json
+```
+
+Every difference is **blocking** (hold the cutover), **warning** (check it) or **info** (nothing to do), with a one-line fix. The command exits 1 when any blocking difference exists, so it works as a gate in a script. A staged app that holds its domains back until cutover shows those domains as warnings, not blocking.
+
+Probes never follow a redirect: they report where it points and flag one that leaves the domain's family. They refuse private and loopback addresses, and cloud metadata addresses always. Allowing private probes needs both `--allow-private-probes` and `APP_MIGRATE_VERIFY_ALLOW_PRIVATE_PROBES=true` on the control plane. `--target-ip` and `--source-ip` dial a given IP while keeping the domain as the host name, so you can probe this server before DNS moves.
+
+| Setting | Flag | Environment | Default |
+| --- | --- | --- | --- |
+| Probe timeout | `--probe-timeout` | `APP_MIGRATE_VERIFY_PROBE_TIMEOUT` | 10s, at most 60s |
+| Domains probed at once | `--probe-concurrency` | `APP_MIGRATE_VERIFY_PROBE_CONCURRENCY` | 6, at most 32 |
+| Certificate warning window | | `APP_MIGRATE_VERIFY_TLS_WARN_DAYS` | 14 days |
+| Slower-than-source factor and floor | | `APP_MIGRATE_VERIFY_LATENCY_FACTOR`, `APP_MIGRATE_VERIFY_LATENCY_FLOOR_MS` | 3 times, 300 ms |
+| How long the server holds the source token for Re-check | | `APP_MIGRATE_VERIFY_CREDENTIAL_TTL` | 30m, memory only |
+
+The API is `POST /api/v1/migrations/verify` (root token) and `GET /api/v1/migrations/verify/latest` (read). The dashboard shows the latest report on the Cutover tab of the Migrate page with a Re-check button, and the read-only MCP tool is `get_migration_verify_report`.
+
 ## What does not migrate
 
 - Databases the copy step does not support (ClickHouse, KeyDB, Dragonfly), and any database you did not run the copy for. They stay empty.

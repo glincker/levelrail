@@ -41,15 +41,22 @@ func (p Prober) dial() func(ctx context.Context, network, addr string) (net.Conn
 // go to this node's addresses with the domain as SNI, so they pass or fail
 // independently of how far DNS has propagated.
 func (p Prober) PostSwitch(ctx context.Context, domain, healthPath string, targets []string) []Check {
-	st := p.Resolver.Lookup(ctx, domain)
-	checks := []Check{dnsResolvesHere(domain, st, targets)}
+	return append([]Check{p.Resolves(ctx, domain, targets)}, p.Responds(ctx, domain, healthPath, targets)...)
+}
 
+// Resolves checks only that public DNS sends domain to this node.
+func (p Prober) Resolves(ctx context.Context, domain string, targets []string) Check {
+	return dnsResolvesHere(domain, p.Resolver.Lookup(ctx, domain), targets)
+}
+
+// Responds checks the certificate and the health path through this node's own
+// addresses with the domain as SNI, so it works before DNS has moved.
+func (p Prober) Responds(ctx context.Context, domain, healthPath string, targets []string) []Check {
 	cert := p.probeTLS(ctx, domain, targets)
-	checks = append(checks, cert)
 	if cert.Status != CheckPass {
-		return append(checks, Check{ID: "health", Status: CheckFail, Detail: "not tried, TLS failed first"})
+		return []Check{cert, {ID: "health", Status: CheckFail, Detail: "not tried, TLS failed first"}}
 	}
-	return append(checks, p.probeHealth(ctx, domain, healthPath, targets))
+	return []Check{cert, p.probeHealth(ctx, domain, healthPath, targets)}
 }
 
 func dnsResolvesHere(domain string, st DomainState, targets []string) Check {

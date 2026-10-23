@@ -27,6 +27,7 @@ import { nodeListQueryOptions } from '../../queries/nodes'
 import { useGpuNodes } from '../../queries/models'
 import { useFleetDeploys } from '../../queries/fleetTraffic'
 import { useAppsMetrics } from '../../queries/appsMetrics'
+import { InstanceWideLabel } from './ScopeIndicator'
 
 export const SAMPLE_APP_CAP = 8
 
@@ -74,9 +75,21 @@ export function FleetTiles({
         <MetricTile
           label={tr('tiles.requests')}
           icon={<PulseIcon className="size-3.5" />}
-          value={Number(t.ratePerSec.toFixed(1))}
-          unit="req/s"
-          series={t.series}
+          value={
+            t.ratePerSec > 0
+              ? Number(t.ratePerSec.toFixed(1))
+              : tr('tiles.idle')
+          }
+          unit={t.ratePerSec > 0 ? 'req/s' : undefined}
+          series={t.ratePerSec > 0 ? t.series : undefined}
+          cta={
+            t.ratePerSec > 0
+              ? undefined
+              : {
+                  label: tr('tiles.addDomain'),
+                  onAction: () => void navigate({ to: '/domains' }),
+                }
+          }
           tone="accent"
           info={<span className="sr-only">{sampled}</span>}
           loading={traffic.isPending}
@@ -97,8 +110,16 @@ export function FleetTiles({
           label={tr('tiles.deploys24h')}
           icon={<RocketLaunchIcon className="size-3.5" />}
           value={d.total}
-          series={d.buckets}
+          series={d.total > 0 ? d.buckets : undefined}
           tone="info"
+          cta={
+            d.total > 0
+              ? undefined
+              : {
+                  label: tr('tiles.deployApp'),
+                  onAction: () => void navigate({ to: '/apps' }),
+                }
+          }
           loading={deploys.isPending}
         />
         <MetricTile
@@ -107,6 +128,7 @@ export function FleetTiles({
           value={`${nodeTotals.online} / ${nodeTotals.total}`}
           tone={nodeTotals.online < nodeTotals.total ? 'warning' : 'success'}
           loading={nodes.isPending}
+          note={<InstanceWideLabel />}
           onClick={() => void navigate({ to: '/nodes' })}
         />
         {gpuCount > 0 ? (

@@ -59,8 +59,14 @@ func DatabaseTLSEffective(engine, mode string) bool {
 // DatabaseTLSToggleable reports whether the operator can switch TLS for engine.
 func DatabaseTLSToggleable(engine string) bool {
 	switch engine {
-	case EngineMySQL, EngineMariaDB, EngineRedis:
+	case EngineMySQL, EngineMariaDB, EngineMongoDB, EngineRedis:
 		return true
 	}
 	return false
+}
+
+// DatabaseTLSOnAtCreate reports whether a newly created database of engine starts with
+// TLS on. Databases created before this existed have no stored mode and keep their behaviour.
+func DatabaseTLSOnAtCreate(engine string) bool {
+	return engine == EngineMySQL || engine == EngineMariaDB || engine == EngineMongoDB
 }

@@ -2,42 +2,42 @@
   {
     "Step": "attempt 1",
     "Status": 401,
-    "Body": "{\"error\":\"invalid credentials\"}",
+    "Body": "{\"code\":\"unauthorized\",\"error\":\"invalid credentials\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": false
   },
   {
     "Step": "attempt 2",
     "Status": 401,
-    "Body": "{\"error\":\"invalid credentials\"}",
+    "Body": "{\"code\":\"unauthorized\",\"error\":\"invalid credentials\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": false
   },
   {
     "Step": "attempt 3",
     "Status": 401,
-    "Body": "{\"error\":\"invalid credentials\"}",
+    "Body": "{\"code\":\"unauthorized\",\"error\":\"invalid credentials\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": false
   },
   {
     "Step": "attempt 4",
     "Status": 401,
-    "Body": "{\"error\":\"invalid credentials\"}",
+    "Body": "{\"code\":\"unauthorized\",\"error\":\"invalid credentials\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": false
   },
   {
     "Step": "attempt 5",
     "Status": 429,
-    "Body": "{\"error\":\"too many failed attempts, try again later\"}",
+    "Body": "{\"code\":\"rate_limited\",\"error\":\"too many failed attempts, try again later\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": true
   },
   {
     "Step": "attempt 6",
     "Status": 429,
-    "Body": "{\"error\":\"too many failed attempts, try again later\"}",
+    "Body": "{\"code\":\"rate_limited\",\"error\":\"too many failed attempts, try again later\",\"request_id\":\"\\u003cvolatile\\u003e\"}",
     "Cookies": null,
     "Retry": true
   }

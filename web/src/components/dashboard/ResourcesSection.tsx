@@ -27,6 +27,8 @@ import {
   type DashboardResources,
 } from '../../queries/dashboardResources'
 import { allocateWidths, widthClass } from './widthClass'
+import { FLOATING_CARD } from './cardStyle'
+import { InstanceWideLabel } from './ScopeIndicator'
 
 const TOP_ROWS = 8
 const TABLE_CAP = 50
@@ -85,7 +87,7 @@ function HostCard({ host }: { host: HostGauge }) {
     ? ratio(host.cpu.percent / 100, host.cpu.cores)
     : undefined
   return (
-    <div className="space-y-3 rounded-lg border border-border bg-card p-4">
+    <div className={cn('space-y-3 p-4', FLOATING_CARD)}>
       <div className="flex items-center justify-between gap-2">
         <h3 className="truncate text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
           {host.name}
@@ -359,7 +361,9 @@ export function TopConsumers({ consumers }: { consumers: Consumer[] }) {
           ))}
         </div>
       </div>
-      <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+      <ul
+        className={cn('divide-y divide-border overflow-hidden', FLOATING_CARD)}
+      >
         {shown.map((c) => (
           <li key={`${c.kind}:${c.name}`}>
             <ConsumerRow c={c} max={max} sort={sort} />
@@ -414,10 +418,13 @@ export function ResourcesView({ data }: { data: DashboardResources }) {
         ) : null}
       </div>
       {data.gauges.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {data.gauges.map((g) => (
-            <HostCard key={g.id} host={g} />
-          ))}
+        <div className="space-y-2">
+          <InstanceWideLabel />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 @4xl:grid-cols-4">
+            {data.gauges.map((g) => (
+              <HostCard key={g.id} host={g} />
+            ))}
+          </div>
         </div>
       ) : null}
       {data.breakdown ? <MemoryStack breakdown={data.breakdown} /> : null}

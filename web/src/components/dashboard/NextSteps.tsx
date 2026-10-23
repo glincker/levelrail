@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
+  CaretDownIcon,
   CheckCircleIcon,
   CircleDashedIcon,
   WarningCircleIcon,
@@ -11,10 +12,16 @@ import { SkeletonList } from '@/components/kit'
 import { TONE } from '@/components/kit/tone'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { SnoozeButton } from './SnoozeButton'
 import { cn } from '@/lib/utils'
 import type { AppListEntry } from '../../types/appDetail'
 import type { AppsSummary } from '../../queries/appPages'
-import { buildNextSteps, type NextStep } from '../../lib/dashboardHome'
+import {
+  buildNextSteps,
+  type AttentionStep,
+  type NextStep,
+  type StepGroup,
+} from '../../lib/dashboardHome'
 import { attentionToSuggestions } from '../../lib/fleetSuggestions'
 import {
   deploysPerHour,
@@ -25,13 +32,25 @@ import { showGuideEntryPoints } from '../../lib/setupGuide'
 import { useMinuteNow } from '../../hooks/useMinuteNow'
 import { useFleetDeploys } from '../../queries/fleetTraffic'
 import { useSetupGuide } from '../../queries/setupGuide'
-import { useAttentionSummary } from '../shell/useAttentionSummary'
+import { useDashboardAttention } from './useDashboardAttention'
 import { SAMPLE_APP_CAP } from './FleetTiles'
+import { FLOATING_CARD } from './cardStyle'
 import { useSuggestionRunner } from './useSuggestionRunner'
 
 const MAX_SHOWN = 4
+const MAX_LABEL = 24
 
-function StepRow({ step, onRun }: { step: NextStep; onRun: () => void }) {
+type SingleStep = Exclude<NextStep, StepGroup>
+
+function StepRow({
+  step,
+  onRun,
+  nested = false,
+}: {
+  step: SingleStep
+  onRun: () => void
+  nested?: boolean
+}) {
   const { t } = useTranslation(['dashboard', 'getStarted'])
   const attention = step.source === 'attention'
   const tone = attention ? step.tone : 'neutral'
@@ -46,13 +65,23 @@ function StepRow({ step, onRun }: { step: NextStep; onRun: () => void }) {
   const detail = attention
     ? step.detail
     : t(`getStarted:steps.${step.stepId}.what`)
+  // A server next-step sentence is guidance, not a button label.
+  const sentence =
+    attention && step.actionLabel.length > MAX_LABEL ? step.actionLabel : ''
   const label = attention
-    ? step.actionLabel
+    ? sentence
+      ? t('dashboard:nextSteps.review')
+      : step.actionLabel
     : step.inProgress
       ? t('dashboard:nextSteps.continue')
       : t(`getStarted:steps.${step.stepId}.cta`)
   return (
-    <li className="@container flex flex-col gap-3 py-3 first:pt-0 last:pb-0 @md:flex-row @md:items-center">
+    <li
+      className={cn(
+        '@container flex flex-col gap-3 py-3 @md:flex-row @md:items-center',
+        nested ? 'pl-8' : 'first:pt-0 last:pb-0',
+      )}
+    >
       <div className="flex min-w-0 flex-1 items-start gap-3">
         <span
           aria-hidden="true"
@@ -69,16 +98,99 @@ function StepRow({ step, onRun }: { step: NextStep; onRun: () => void }) {
               {detail}
             </span>
           ) : null}
+          {sentence ? (
+            <span className="mt-0.5 line-clamp-2 block text-xs text-foreground/80">
+              {sentence}
+            </span>
+          ) : null}
         </span>
       </div>
-      <Button
-        size="sm"
-        variant={attention ? 'default' : 'outline'}
-        className="self-start @md:self-auto"
-        onClick={onRun}
-      >
-        {label}
-      </Button>
+      <span className="flex shrink-0 items-center gap-1 self-start @md:self-auto">
+        <Button
+          size="sm"
+          variant={attention ? 'default' : 'outline'}
+          className="whitespace-nowrap"
+          onClick={onRun}
+        >
+          {label}
+        </Button>
+        {attention && tone !== 'danger' ? (
+          <SnoozeButton ids={[step.id]} />
+        ) : null}
+      </span>
+    </li>
+  )
+}
+
+function GroupRow({
+  group,
+  onRun,
+}: {
+  group: StepGroup
+  onRun: (step: AttentionStep) => void
+}) {
+  const { t } = useTranslation('dashboard')
+  const [open, setOpen] = useState(false)
+  const count = group.items.length
+  return (
+    <li className="py-3 first:pt-0 last:pb-0">
+      <div className="@container flex flex-col gap-3 @md:flex-row @md:items-center">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <span
+            aria-hidden="true"
+            className={cn(
+              'mt-0.5 shrink-0 [&_svg]:size-5',
+              TONE[group.tone].text,
+            )}
+          >
+            <WarningIcon weight="fill" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-medium text-foreground">
+              {t('nextSteps.group.copy', { count })}
+            </span>
+            <span className="mt-0.5 line-clamp-2 block text-sm text-muted-foreground">
+              {group.detail}
+            </span>
+          </span>
+        </div>
+        <span className="flex shrink-0 items-center gap-1 self-start @md:self-auto">
+          <Button
+            size="sm"
+            variant="default"
+            aria-expanded={open}
+            className="whitespace-nowrap"
+            onClick={() => {
+              setOpen((v) => !v)
+            }}
+          >
+            {open
+              ? t('nextSteps.group.hide')
+              : t('nextSteps.group.show', { count })}
+            <CaretDownIcon
+              aria-hidden="true"
+              className={cn('transition-transform', open && 'rotate-180')}
+            />
+          </Button>
+          {group.tone !== 'danger' ? (
+            <SnoozeButton ids={group.items.map((i) => i.id)} />
+          ) : null}
+        </span>
+      </div>
+      {open ? (
+        <ul className="mt-2 divide-y divide-border border-l border-border">
+          {group.items.map((item) => (
+            <StepRow
+              key={item.id}
+              step={item}
+              nested
+              onRun={() => {
+                onRun(item)
+              }}
+            />
+          ))}
+        </ul>
+      ) : null}
     </li>
   )
 }
@@ -94,13 +206,13 @@ export function NextStepsView({
   loading: boolean
   percent: number | undefined
   quiet: { running: number; total: number; deploys: number }
-  onRun: (step: NextStep) => void
+  onRun: (step: SingleStep) => void
 }) {
   const { t } = useTranslation('dashboard')
   return (
     <section
       aria-label={t('nextSteps.title')}
-      className="space-y-4 rounded-lg border border-border bg-card p-4 sm:p-5"
+      className={cn('space-y-4 p-4 sm:p-5', FLOATING_CARD)}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
@@ -137,15 +249,19 @@ export function NextStepsView({
         </p>
       ) : (
         <ul className="divide-y divide-border">
-          {steps.map((s) => (
-            <StepRow
-              key={s.id}
-              step={s}
-              onRun={() => {
-                onRun(s)
-              }}
-            />
-          ))}
+          {steps.map((s) =>
+            s.source === 'group' ? (
+              <GroupRow key={s.id} group={s} onRun={onRun} />
+            ) : (
+              <StepRow
+                key={s.id}
+                step={s}
+                onRun={() => {
+                  onRun(s)
+                }}
+              />
+            ),
+          )}
         </ul>
       )}
     </section>
@@ -160,7 +276,7 @@ export function NextSteps({
   sample: AppListEntry[]
 }) {
   const { t } = useTranslation('dashboard')
-  const { visible, isLoading } = useAttentionSummary()
+  const { visible, isLoading } = useDashboardAttention()
   const { data: guide } = useSetupGuide()
   const run = useSuggestionRunner()
   const now = useMinuteNow()

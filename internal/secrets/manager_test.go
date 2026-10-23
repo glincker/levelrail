@@ -17,9 +17,11 @@ import (
 // multi-call scenarios (a DEK generated on one call must be found by the
 // next), not just a call counter.
 type fakeStore struct {
-	deks   map[string][]byte
-	values map[string]map[string][]byte
-	locked map[string]map[string]bool
+	deks          map[string][]byte
+	values        map[string]map[string][]byte
+	locked        map[string]map[string]bool
+	buildTime     map[string]map[string]bool
+	failBuildTime error
 	// failGetDEK, if set, makes GetServiceDEK return this error for
 	// every service, standing in for a real database failure distinct
 	// from "not found".
@@ -555,5 +557,56 @@ func TestManager_SetLocked_KeyNotFound(t *testing.T) {
 	err := m.SetLocked(context.Background(), "web", "GHOST", true)
 	if !errors.Is(err, store.ErrSecretValueNotFound) {
 		t.Errorf("error = %v, want store.ErrSecretValueNotFound", err)
+	}
+}
+
+func (f *fakeStore) GetSecretBuildTime(_ context.Context, serviceName, envKey string) (exists, buildTime bool, err error) {
+	if f.failBuildTime != nil {
+		return false, false, f.failBuildTime
+	}
+	if _, ok := f.values[serviceName][envKey]; !ok {
+		return false, false, nil
+	}
+	return true, f.buildTime[serviceName][envKey], nil
+}
+
+func (f *fakeStore) SetSecretBuildTime(_ context.Context, serviceName, envKey string, buildTime bool) error {
+	if _, ok := f.values[serviceName][envKey]; !ok {
+		return store.ErrSecretValueNotFound
+	}
+	if f.buildTime == nil {
+		f.buildTime = map[string]map[string]bool{}
+	}
+	if f.buildTime[serviceName] == nil {
+		f.buildTime[serviceName] = map[string]bool{}
+	}
+	f.buildTime[serviceName][envKey] = buildTime
+	return nil
+}
+
+func TestManager_BuildEnabled_DefaultDenyAndToggle(t *testing.T) {
+	m, fs := testManager(t)
+	ctx := context.Background()
+	if ok, err := m.BuildEnabled(ctx, "web", "TOKEN"); err != nil || ok {
+		t.Fatalf("missing secret: ok=%v err=%v, want false nil", ok, err)
+	}
+	if err := m.SetValue(ctx, "web", "TOKEN", "v"); err != nil {
+		t.Fatal(err)
+	}
+	if ok, err := m.BuildEnabled(ctx, "web", "TOKEN"); err != nil || ok {
+		t.Fatalf("new secret: ok=%v err=%v, want false nil", ok, err)
+	}
+	if err := m.SetBuildEnabled(ctx, "web", "TOKEN", true); err != nil {
+		t.Fatal(err)
+	}
+	if ok, err := m.BuildEnabled(ctx, "web", "TOKEN"); err != nil || !ok {
+		t.Fatalf("enabled secret: ok=%v err=%v, want true nil", ok, err)
+	}
+	if err := m.SetBuildEnabled(ctx, "web", "GHOST", true); !errors.Is(err, store.ErrSecretValueNotFound) {
+		t.Fatalf("ghost: err = %v, want ErrSecretValueNotFound", err)
+	}
+	fs.failBuildTime = errors.New("db down")
+	if ok, err := m.BuildEnabled(ctx, "web", "TOKEN"); err == nil || ok {
+		t.Fatalf("lookup error: ok=%v err=%v, want false and an error", ok, err)
 	}
 }

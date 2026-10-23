@@ -1,5 +1,9 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
-import { activeCliTokens } from '../lib/cliConnection'
+import {
+  activeCliTokens,
+  cliTokenStatus,
+  listCliTokens,
+} from '../lib/cliConnection'
 import { ApiError } from '../lib/apiError'
 import type { TokenResource } from '../types/token'
 
@@ -39,5 +43,19 @@ export function useCliTokens() {
   return useQuery({
     ...myCredentialsQueryOptions(),
     select: (data) => activeCliTokens(data.tokens, Date.now()),
+  })
+}
+
+export function useCliTokenRows(enabled: boolean) {
+  return useQuery({
+    ...myCredentialsQueryOptions(),
+    enabled,
+    select: (data) => {
+      const now = Date.now()
+      return listCliTokens(data.tokens).map((token) => ({
+        token,
+        status: cliTokenStatus(token, now),
+      }))
+    },
   })
 }

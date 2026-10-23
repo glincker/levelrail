@@ -13,6 +13,8 @@ import (
 type EmailSettingsStore interface {
 	GetEmailSettings(ctx context.Context) (store.EmailSettings, error)
 	UpdateEmailSettings(ctx context.Context, s store.EmailSettings) error
+	GetEmailBranding(ctx context.Context) (store.EmailBranding, error)
+	SetEmailBranding(ctx context.Context, b store.EmailBranding) error
 }
 
 // CloudflareTunnelStore is the store surface GET/PUT/DELETE

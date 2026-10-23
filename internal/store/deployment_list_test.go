@@ -230,3 +230,24 @@ func TestBuildDeploymentSummary(t *testing.T) {
 		t.Errorf("empty summary should have nil rate and median: %+v", empty)
 	}
 }
+
+func TestListDeploymentsProjectFilter(t *testing.T) {
+	now := time.Now().UTC()
+	db := openTestDB(t)
+	seedDeployments(t, db, now)
+	ctx := context.Background()
+	if err := db.SaveProject(ctx, Project{ID: "p1", Name: "proj", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("seed project: %v", err)
+	}
+	if err := db.UpdateServiceProject(ctx, "api", "p1"); err != nil {
+		t.Fatalf("assign project: %v", err)
+	}
+	got, _, err := db.ListDeployments(ctx, DeploymentFilter{Project: "p1"})
+	if err != nil {
+		t.Fatalf("ListDeployments: %v", err)
+	}
+	g := ids(got)
+	if len(g) != 2 || g[0] != "dep_5" || g[1] != "dep_4" {
+		t.Fatalf("ids = %v, want [dep_5 dep_4]", g)
+	}
+}

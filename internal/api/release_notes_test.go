@@ -1,9 +1,12 @@
 package api
 
 import (
+	"context"
+	"github.com/GLINCKER/levelrail/internal/store"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/repolayout"
 )
@@ -96,5 +99,73 @@ func TestDiffDeployCompareSidesDigest(t *testing.T) {
 	got := diffDeployCompareSides(deployCompareSide{Image: "a", ImageDigest: "sha256:1"}, deployCompareSide{Image: "a", ImageDigest: "sha256:2"})
 	if len(got) != 1 || got[0].Field != "image_digest" {
 		t.Fatalf("changes = %+v", got)
+	}
+}
+
+func seedNotesApp(t *testing.T, db *store.DB, envKind string) {
+	t.Helper()
+	ctx := context.Background()
+	if err := db.SaveProject(ctx, store.Project{ID: "proj_n", Name: "n", CreatedAt: "2026-08-20T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveEnvironment(ctx, store.Environment{ID: "env_n", ProjectID: "proj_n", Name: "e", Kind: envKind, CreatedAt: "2026-08-20T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "x:1", Port: 3000}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetServiceEnvironment(ctx, "web", "env_n"); err != nil {
+		t.Fatal(err)
+	}
+	for i, sha := range []string{"aaaaaaa1111", "bbbbbbb2222"} {
+		a := store.DeployAttempt{
+			ID: "dep_" + sha[:3], ServiceName: "web", Image: "x", CommitSHA: sha,
+			Source: store.DeployAttemptSourceGitPush, Status: store.DeployAttemptStatusSucceeded,
+			StartedAt: time.Now().Add(time.Duration(i) * time.Minute),
+		}
+		if err := db.SaveDeployAttempt(ctx, a); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func fixedCommits(context.Context, string, string, string) ([]repolayout.Commit, string) {
+	return []repolayout.Commit{{SHA: "bbbbbbb2222", Message: "feat: add thing"}}, ""
+}
+
+func TestReleaseNotesForDeploy(t *testing.T) {
+	tests := []struct {
+		name    string
+		kind    string
+		source  string
+		lister  func(context.Context, string, string, string) ([]repolayout.Commit, string)
+		wantSub string
+	}{
+		{"production", store.EnvironmentKindProduction, "", fixedCommits, "add thing"},
+		{"promotion in non-production", "uat", store.DeployAttemptSourcePromote, fixedCommits, "add thing"},
+		{"non-production", "uat", "", fixedCommits, ""},
+		{"generator reports a note", store.EnvironmentKindProduction, "", func(context.Context, string, string, string) ([]repolayout.Commit, string) {
+			return nil, "outside window"
+		}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			seedNotesApp(t, db, tt.kind)
+			rt.releaseCommits = tt.lister
+			got := rt.releaseNotesForDeploy(context.Background(), "web", tt.source)
+			if (tt.wantSub == "") != (got == "") || !strings.Contains(got, tt.wantSub) {
+				t.Fatalf("notes = %q, want containing %q", got, tt.wantSub)
+			}
+		})
+	}
+}
+
+func TestReleaseNotesForDeploy_GeneratorPanicIsContained(t *testing.T) {
+	rt, db := newTestRouter(t)
+	seedNotesApp(t, db, store.EnvironmentKindProduction)
+	rt.releaseCommits = func(context.Context, string, string, string) ([]repolayout.Commit, string) { panic("boom") }
+	if got := rt.releaseNotesForDeploy(context.Background(), "web", ""); got != "" {
+		t.Fatalf("notes = %q, want empty", got)
 	}
 }

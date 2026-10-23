@@ -1,34 +1,22 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useTranslation } from 'react-i18next'
-import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
-import { PageTemplate } from '@/components/shell/PageTemplate'
-import { DashboardsPanel } from '@/components/dashboards/DashboardsPanel'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
-interface DashboardsSearch {
-  id?: string
-}
-
+// The Dashboards page now lives on the home Dashboard; old links keep working.
 export const Route = createFileRoute('/dashboards')({
-  validateSearch: (search: Record<string, unknown>): DashboardsSearch =>
-    typeof search.id === 'string' && search.id ? { id: search.id } : {},
-  component: DashboardsPage,
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { id?: string; board?: string } => ({
+    ...(typeof search.id === 'string' && search.id ? { id: search.id } : {}),
+    ...(typeof search.board === 'string' && search.board
+      ? { board: search.board }
+      : {}),
+  }),
+  beforeLoad: ({ search }) => {
+    const board = search.board ?? search.id
+    redirect({
+      to: '/',
+      search: board ? { board } : {},
+      replace: true,
+      throw: true,
+    })
+  },
 })
-
-function DashboardsPage() {
-  const { t } = useTranslation('dashboards')
-  const search = Route.useSearch()
-  const navigate = useNavigate({ from: Route.fullPath })
-  return (
-    <PageTemplate
-      title={t('title')}
-      description={t('description')}
-      icon={<SquaresFourIcon />}
-      width="wide"
-    >
-      <DashboardsPanel
-        selectedId={search.id ?? ''}
-        onSelect={(id) => void navigate({ search: { id }, replace: true })}
-      />
-    </PageTemplate>
-  )
-}

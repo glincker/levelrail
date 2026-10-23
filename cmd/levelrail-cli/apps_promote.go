@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
@@ -15,11 +16,12 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps promote", "print the result as JSON to stdout and nothing else", stderr)
 	var to, target string
 	var preview, confirm, includeEnv, force, overrideFreeze bool
-	var overrideReason string
+	var overrideReason, idemKey string
 	fs.BoolVar(&includeEnv, "include-env", false, "also apply added and removed plain env keys (values of keys both apps have stay as they are)")
 	fs.BoolVar(&force, "force", false, "promote even if the source app is unhealthy or its last deploy failed")
 	fs.BoolVar(&overrideFreeze, "override-freeze", false, "promote even though a deploy freeze window is active")
 	fs.StringVar(&overrideReason, "override-reason", "", "required with --override-freeze, recorded on the deploy")
+	fs.StringVar(&idemKey, "idempotency-key", "", "override the derived Idempotency-Key so a retried run is applied once")
 	fs.StringVar(&to, "to", "", "destination environment ID (required)")
 	fs.StringVar(&target, "target", "", "target app name, when more than one app in --to belongs to the same project")
 	fs.BoolVar(&preview, "preview", false, "show what promoting would change, without applying it")
@@ -49,6 +51,10 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 		return exitOK
 	}
 
+	if idemKey == "" {
+		idemKey = idempotencyKey(lookupEnv, time.Now(), "promote", name, to, target)
+	}
+	ctx = apiclient.WithIdempotencyKey(ctx, idemKey)
 	result, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (deployTriggerResult, error) {
 		return client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: confirm, IncludeEnv: includeEnv, Force: force, OverrideFreeze: overrideFreeze, OverrideReason: overrideReason})
 	})
@@ -152,6 +158,7 @@ Flags:
   --force                    promote even if the source is unhealthy or its last deploy failed
   --preview                 show what would change, don't apply it
   --dry-run                 alias for --preview
+  --idempotency-key string   override the derived Idempotency-Key (default: from app, image and CI run id)
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

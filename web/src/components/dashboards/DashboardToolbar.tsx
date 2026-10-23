@@ -1,13 +1,8 @@
-import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowsClockwiseIcon,
-  DownloadSimpleIcon,
   FloppyDiskIcon,
-  PencilSimpleIcon,
   PlusIcon,
-  TrashIcon,
-  UploadSimpleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -22,7 +17,7 @@ import { Switch } from '@/components/ui/switch'
 import { REFRESH_CHOICES } from '@/lib/dashboardGrid'
 import { TIME_RANGE_PRESETS, type TimeRangeKey } from '@/lib/timeRange'
 import { useProjectListOptional } from '@/queries/projects'
-import type { CustomDashboard, DashboardScope } from '@/types/dashboards'
+import type { DashboardScope } from '@/types/dashboards'
 
 const NO_PROJECT = 'none'
 
@@ -33,7 +28,6 @@ export interface Placement {
 }
 
 export function DashboardToolbar({
-  current,
   editing,
   dirty,
   saving,
@@ -44,14 +38,10 @@ export function DashboardToolbar({
   onRefreshSeconds,
   onRefreshNow,
   onPlacement,
-  onToggleEdit,
+  onDoneEditing,
   onAdd,
   onSave,
-  onExport,
-  onImportFile,
-  onDelete,
 }: {
-  current: CustomDashboard
   editing: boolean
   dirty: boolean
   saving: boolean
@@ -62,15 +52,11 @@ export function DashboardToolbar({
   onRefreshSeconds: (s: number) => void
   onRefreshNow: () => void
   onPlacement: (p: Placement) => void
-  onToggleEdit: () => void
+  onDoneEditing: () => void
   onAdd: () => void
   onSave: () => void
-  onExport: () => void
-  onImportFile: (f: File) => void
-  onDelete: () => void
 }) {
   const { t } = useTranslation('dashboards')
-  const fileRef = useRef<HTMLInputElement>(null)
   const projects = useProjectListOptional()
   return (
     <div className="space-y-3">
@@ -119,38 +105,6 @@ export function DashboardToolbar({
           <ArrowsClockwiseIcon data-icon="inline-start" />
           {t('toolbar.refreshNow')}
         </Button>
-        <div className="ml-auto flex flex-wrap gap-2">
-          <Button variant="outline" onClick={onExport}>
-            <DownloadSimpleIcon data-icon="inline-start" />
-            {t('toolbar.export')}
-          </Button>
-          <Button variant="outline" onClick={() => fileRef.current?.click()}>
-            <UploadSimpleIcon data-icon="inline-start" />
-            {t('toolbar.import')}
-          </Button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/json,.json"
-            className="sr-only"
-            aria-label={t('toolbar.importFile')}
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (f) onImportFile(f)
-              e.target.value = ''
-            }}
-          />
-          {current.editable ? (
-            <Button
-              variant={editing ? 'secondary' : 'outline'}
-              aria-pressed={editing}
-              onClick={onToggleEdit}
-            >
-              <PencilSimpleIcon data-icon="inline-start" />
-              {t('toolbar.edit')}
-            </Button>
-          ) : null}
-        </div>
       </div>
       {editing ? (
         <div className="flex flex-wrap items-end gap-4 rounded-lg border border-border p-3">
@@ -213,9 +167,8 @@ export function DashboardToolbar({
             <Label htmlFor="dash-default">{t('toolbar.isDefault')}</Label>
           </div>
           <div className="ml-auto flex gap-2">
-            <Button variant="outline" onClick={onDelete}>
-              <TrashIcon data-icon="inline-start" />
-              {t('toolbar.delete')}
+            <Button variant="outline" onClick={onDoneEditing}>
+              {t('toolbar.done')}
             </Button>
             <Button disabled={!dirty || saving} onClick={onSave}>
               <FloppyDiskIcon data-icon="inline-start" />

@@ -21,15 +21,30 @@ func runNodesAdd(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	fs.StringVar(&req.NodeName, "name", "", "name the new node enrolls with (lowercase, digits, dashes)")
 	fs.StringVar(&req.ControlPlaneAddr, "control-plane", "", "host:port the new server dials (default: the control plane's advertised agent address)")
 	fs.BoolVar(&req.Mesh, "mesh", false, "join the WireGuard mesh (needed for cross-node database connections)")
+	fs.StringVar(&req.Provider, "provider", "", "provider label (aws, gcp, azure, hetzner, digitalocean, home...); default: the agent auto-detects it from cloud metadata")
+	fs.StringVar(&req.Region, "region", "", "region label; default: auto-detected")
+	fs.StringVar(&req.Zone, "zone", "", "zone label; default: auto-detected")
+	var preflight bool
+	var timeout, interval time.Duration
+	fs.BoolVar(&preflight, "preflight", false, "after printing the command, wait for the node to join and report its preflight checks (needs --name)")
+	fs.DurationVar(&timeout, "timeout", defaultPreflightTimeout, "how long --preflight waits for the node")
+	fs.DurationVar(&interval, "poll-interval", defaultPreflightInterval, "how often --preflight polls")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesAddUsage(prog)) }
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
+	if preflight && req.NodeName == "" {
+		_, _ = fmt.Fprintf(stderr, "%s: --preflight needs --name so the new node can be found\n", prog)
+		return exitUsage
+	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	created, err := client.CreateNodeJoinTokenFor(context.Background(), req)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create join token: %w", err))
+	}
+	if preflight {
+		return addWithPreflight(client, req.NodeName, created, timeout, interval, of, jsonOut, stdout, stderr)
 	}
 	if err := renderResult(stdout, of.Format, of.Query, created, func() {
 		if created.JoinCommands == nil {
@@ -39,7 +54,7 @@ func runNodesAdd(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		}
 		_, _ = fmt.Fprintf(stdout, "Run this on the new server (single use, expires %s):\n\n%s\n\n", created.ExpiresAt.Format(time.RFC3339), created.JoinCommands.Docker)
 		_, _ = fmt.Fprintf(stdout, "Or, with the agent binary installed:\n\n%s\n\n", created.JoinCommands.Binary)
-		_, _ = fmt.Fprintln(stdout, "Then watch it appear with: nodes list")
+		_, _ = fmt.Fprintln(stdout, "Then watch it appear with: nodes list, or re-run with --preflight to wait and check it")
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
@@ -308,8 +323,8 @@ func printKV(out io.Writer, kv map[string]string, empty string) {
 }
 
 func nodesAddUsage(prog string) string {
-	return nodesSimpleUsage(prog, "add [--name NAME] [--control-plane HOST:PORT] [--mesh]",
-		"Mints a single-use join token (15 minutes by default, APP_NODE_JOIN_TOKEN_TTL on the\ncontrol plane changes it) and prints the one command that enrolls a new server.")
+	return nodesSimpleUsage(prog, "add [--name NAME] [--provider P] [--region R] [--zone Z] [--control-plane HOST:PORT] [--mesh] [--preflight]",
+		"Mints a single-use join token (15 minutes by default, APP_NODE_JOIN_TOKEN_TTL on the\ncontrol plane changes it) and prints the one command that enrolls a new server.\nProvider, region and zone are detected from the cloud's metadata service when you do\nnot pass them. --preflight (needs --name) then waits for the node to join and prints\neach check with its fix, exiting non-zero if one failed. --timeout (default 10m) and\n--poll-interval (default 3s) control the wait.")
 }
 
 func nodesMoveUsage(prog string) string {
@@ -332,4 +347,28 @@ Flags:
   --query string          JMESPath expression to filter the result
   -h, --help              show this help
 `, prog, synopsis, about, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+// addWithPreflight prints the join command, then waits for the node and
+// reports its preflight. The token is printed before waiting because it is
+// shown only once and the wait can take minutes.
+func addWithPreflight(client *apiclient.Client, name string, created apiclient.CreateNodeJoinTokenResponse, timeout, interval time.Duration, of outputFlags, jsonOut bool, stdout, stderr io.Writer) int {
+	human := of.Format == "" || of.Format == "table" || of.Format == "text"
+	if human && !jsonOut && created.JoinCommands != nil {
+		_, _ = fmt.Fprintf(stdout, "Run this on the new server (single use, expires %s):\n\n%s\n\n", created.ExpiresAt.Format(time.RFC3339), created.JoinCommands.Docker)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	ob, err := waitForNodeOnboarding(ctx, client, name, interval, stderr)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
+	if err := renderResult(stdout, of.Format, of.Query, ob, func() { printOnboarding(stdout, ob) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	if ob.Summary.Fail > 0 {
+		return exitAPIError
+	}
+	return exitOK
 }

@@ -34,8 +34,8 @@ vi.mock('../ui/sidebar', () => ({
   ),
 }))
 vi.mock('../teams/TeamSwitcher', () => ({ TeamSwitcher: () => null }))
-vi.mock('../environments/EnvironmentSwitcher', () => ({
-  EnvironmentSwitcher: () => null,
+vi.mock('../environments/ScopePicker', () => ({
+  ScopePicker: () => null,
 }))
 vi.mock('../HelpMenu', () => ({ HelpMenu: () => null }))
 vi.mock('../ThemeToggle', () => ({ ThemeToggle: () => null }))

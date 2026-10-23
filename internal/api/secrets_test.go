@@ -18,6 +18,7 @@ import (
 type fakeSecretKeyInfo struct {
 	key       string
 	locked    bool
+	buildTime bool
 	updatedAt time.Time
 }
 
@@ -40,6 +41,9 @@ type fakeSecretSetter struct {
 	setLockedErr       error
 	lastLockedKey      string
 	lastLockedTo       bool
+	lastBuildKey       string
+	lastBuildTo        bool
+	buildErr           error
 	// existsValues/existsErr back Exists: keyed by serviceName+"/"+envKey,
 	// so a test can make one specific (service, key) pair "exist" without
 	// affecting any other lookup the router makes during the same
@@ -104,7 +108,7 @@ func (f *fakeSecretSetter) ListKeys(_ context.Context, _ string) ([]store.Secret
 	}
 	out := make([]store.SecretKeyInfo, len(f.keys))
 	for i, k := range f.keys {
-		out[i] = store.SecretKeyInfo{Key: k.key, Locked: k.locked, UpdatedAt: k.updatedAt}
+		out[i] = store.SecretKeyInfo{Key: k.key, Locked: k.locked, BuildTime: k.buildTime, UpdatedAt: k.updatedAt}
 	}
 	return out, nil
 }
@@ -125,6 +129,15 @@ func (f *fakeSecretSetter) DeleteAll(_ context.Context, serviceName string) erro
 		return f.deleteAllErr
 	}
 	f.deletedNamespaces = append(f.deletedNamespaces, serviceName)
+	return nil
+}
+
+func (f *fakeSecretSetter) SetBuildEnabled(_ context.Context, _, envKey string, enabled bool) error {
+	if f.buildErr != nil {
+		return f.buildErr
+	}
+	f.lastBuildKey = envKey
+	f.lastBuildTo = enabled
 	return nil
 }
 
@@ -496,5 +509,54 @@ func TestHandleListSecrets_PlainReadTokenSucceeds(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d: a key name is no more sensitive than any other read-scoped app resource", rec.Code, http.StatusOK)
+	}
+}
+
+func TestHandleSecretBuildTime_RoundTripAndAudit(t *testing.T) {
+	setter := &fakeSecretSetter{keys: []fakeSecretKeyInfo{{key: "NPM_TOKEN", buildTime: true}, {key: "OTHER"}}}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "img:v1", Port: 80}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/secrets/NPM_TOKEN/build-time", `{"build_time":true}`))
+	if rec.Code != http.StatusNoContent || setter.lastBuildKey != "NPM_TOKEN" || !setter.lastBuildTo {
+		t.Fatalf("status=%d key=%q to=%v body=%s", rec.Code, setter.lastBuildKey, setter.lastBuildTo, rec.Body.String())
+	}
+
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/secrets/NPM_TOKEN", `{"value":"sk-new","build_time":false}`))
+	if rec.Code != http.StatusNoContent || setter.lastBuildTo {
+		t.Fatalf("PUT status=%d build_to=%v body=%s", rec.Code, setter.lastBuildTo, rec.Body.String())
+	}
+
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/secrets", ""))
+	body := rec.Body.String()
+	if !strings.Contains(body, `"key":"NPM_TOKEN"`) || !strings.Contains(body, `"build_time":true`) || !strings.Contains(body, `"build_time":false`) || strings.Contains(body, "sk-") {
+		t.Errorf("list body = %s", body)
+	}
+
+	entries, err := db.ListAuditEntries(context.Background(), 50, nil, store.AuditEntryFilter{})
+	if err != nil {
+		t.Fatalf("audit list: %v", err)
+	}
+	found := false
+	for _, e := range entries {
+		if e.Method == http.MethodPost && e.Path == "/api/v1/apps/web/secrets/NPM_TOKEN/build-time" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("no audit entry for the build-time toggle in %+v", entries)
+	}
+
+	setter.buildErr = store.ErrSecretValueNotFound
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/secrets/GHOST/build-time", `{"build_time":true}`))
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("ghost status = %d, want 404", rec.Code)
 	}
 }

@@ -32,8 +32,8 @@ describe('CliStatusBadge', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('is hidden once a CLI is connected', async () => {
-    const calls = stubFetch({
+  it('stays visible with a connected state and count once a CLI is connected', async () => {
+    stubFetch({
       [URL]: {
         body: {
           sessions: [],
@@ -44,16 +44,47 @@ describe('CliStatusBadge', () => {
               created_at: future,
               expires_at: future,
             },
+            {
+              id: 't2',
+              name: 'device: Mac.lan',
+              created_at: future,
+              expires_at: future,
+            },
           ],
         },
       },
     })
-    const { container } = renderCli(<CliStatusBadge />)
-    await vi.waitFor(() => {
-      expect(calls).toContain(URL)
+    renderCli(<CliStatusBadge />)
+    const button = await screen.findByRole('button')
+    expect(button).toHaveAccessibleName(/2 CLIs are connected/i)
+    expect(screen.getByTestId('cli-badge-dot')).toHaveAttribute(
+      'data-state',
+      'connected',
+    )
+  })
+
+  it('does not count an expired CLI as connected', async () => {
+    stubFetch({
+      [URL]: {
+        body: {
+          sessions: [],
+          tokens: [
+            {
+              id: 't1',
+              name: 'device: Mac.lan',
+              created_at: future,
+              expires_at: '2000-01-01T00:00:00Z',
+            },
+          ],
+        },
+      },
     })
-    await new Promise((r) => setTimeout(r, 20))
-    expect(container).toBeEmptyDOMElement()
+    renderCli(<CliStatusBadge />)
+    await screen.findByRole('button')
+    expect(screen.getByTestId('cli-badge-dot')).toHaveAttribute(
+      'data-state',
+      'none',
+    )
   })
 
   it('is hidden when the user may not read credentials', async () => {

@@ -37,7 +37,7 @@ type sleepFleetResource struct {
 // handleSleepFleet handles GET /api/v1/sleep: every app with sleeping on that
 // the caller can read, and what the asleep ones are not using.
 func (rt *Router) handleSleepFleet(w http.ResponseWriter, r *http.Request) {
-	canRead, _, err := rt.callerAppVisibility(r)
+	canRead, err := rt.scopedAppVisibility(r)
 	if err != nil {
 		rt.internalError(w, "api: sleep fleet: resolve caller", err)
 		return

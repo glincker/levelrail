@@ -86,6 +86,12 @@ func WithEmailSecrets(s EmailSecretsStore) Option {
 	return func(rt *Router) { rt.emailSecrets = s }
 }
 
+// WithTrafficExport enables sink writes (secrets) and the status and test routes.
+// Either argument may be nil: writes then return 501, as do status and test.
+func WithTrafficExport(secrets TrafficExportSecrets, exporter TrafficExporter) Option {
+	return func(rt *Router) { rt.trafficExportSecrets, rt.trafficExporter = secrets, exporter }
+}
+
 // WithAIVault enables the routes under /api/v1/settings/ai-assistant.
 func WithAIVault(v AIVault) Option {
 	return func(rt *Router) { rt.aiVault = v }
@@ -315,6 +321,12 @@ func WithBaseBackupRunner(r BaseBackupRunner) Option {
 // same "not configured" shape WithRestoreRunner's absence produces.
 func WithPITRRestoreRunner(r PITRRestoreRunner) Option {
 	return func(rt *Router) { rt.pitrRestoreRunner = r }
+}
+
+// WithMySQLPITRRestoreRunner enables point-in-time restore for MySQL and MariaDB,
+// which restores into a new database instead of overwriting the source.
+func WithMySQLPITRRestoreRunner(r MySQLPITRRestoreRunner) Option {
+	return func(rt *Router) { rt.mysqlPITRRestoreRunner = r }
 }
 
 // WithServiceVolumeBackupRunner enables

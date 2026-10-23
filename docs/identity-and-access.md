@@ -386,6 +386,10 @@ Scoped, revocable bearer credentials for the CLI, CI, and MCP integrations. Mint
 - An operator approves it from the dashboard's CLI Access page (`/settings/cli-access`) using their existing session.
 - The resulting token inherits exactly that operator's abilities. The CLI never picks the permissions.
 
+**Rotating a CLI token.** The command center and the CLI Access page offer Rotate on tokens a CLI sign-in created. It revokes the current token (`DELETE /api/v1/auth/tokens/{id}`), so that CLI stops working, then shows a fresh one-time pairing command to run on the CLI. Nothing rotates automatically, and the old token is never shown.
+
+**Dev fixture tokens.** When the server runs with `APP_DEV_MODE=1` in a non-release build, the tokens seeded from `test/fixtures/dev-fixtures.yml` carry `dev_fixture: true` in `GET /api/v1/auth/tokens`. They have publicly known secrets, are reseeded on every dev-mode start while they stay in the fixtures file, and are never created in release builds, where `dev_fixture` is never set. The CLI Access page lists them in a collapsed group below your real tokens.
+
 ### Session links
 
 A session link is a one-time login URL, not a credential you type. Mint one from an authenticated context and hand the URL to whatever needs to sign in next: CI, an AI agent driving the dashboard through browser automation, or a fresh incognito window. Opening it signs that browser in immediately.

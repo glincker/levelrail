@@ -976,3 +976,27 @@ func TestHandleDeleteDatabase_Safety(t *testing.T) {
 		})
 	}
 }
+
+func TestHandleListDatabases_ProjectFilter(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveProject(ctx, store.Project{ID: "p1", Name: "proj", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("seed project: %v", err)
+	}
+	mustCreateDatabase(t, rt, cookie, `{"name":"in-proj","engine":"redis","version":"7"}`)
+	mustCreateDatabase(t, rt, cookie, `{"name":"other","engine":"redis","version":"7"}`)
+	if err := db.UpdateDatabaseProject(ctx, "in-proj", "p1"); err != nil {
+		t.Fatalf("assign project: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases?project=p1", ""))
+	var list []databaseResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(list) != 1 || list[0].Name != "in-proj" {
+		t.Fatalf("list = %+v, want only in-proj", list)
+	}
+}

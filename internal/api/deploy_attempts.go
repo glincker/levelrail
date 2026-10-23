@@ -136,9 +136,13 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		}
 		// Fires only after FinishDeployAttempt persists the terminal status.
 		if rt.deployNotifier != nil {
-			rt.deployNotifier.Dispatch(finishCtx, resourceIDForApp(req.ServiceName), alerting.DeployOutcome{
+			outcome := alerting.DeployOutcome{
 				AppName: req.ServiceName, Image: image, Succeeded: deployErr == nil, Error: errMsg, AttemptID: id,
-			})
+			}
+			if deployErr == nil {
+				outcome.ReleaseNotes = rt.releaseNotesForDeploy(finishCtx, req.ServiceName, "")
+			}
+			rt.deployNotifier.Dispatch(finishCtx, resourceIDForApp(req.ServiceName), outcome)
 		}
 	}
 

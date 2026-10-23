@@ -12,6 +12,7 @@ import {
   SaveBar,
   Section,
 } from './PolicyShared'
+import { withNextjsPreset } from '../../lib/cachePresets'
 import { splitList } from './policyUtils'
 import { usePolicyEditor } from './usePolicyEditor'
 import type {
@@ -65,6 +66,19 @@ export function CacheTab({
               onClick={() => preset.mutate(domain)}
             >
               {t('cache.preset')}
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted/40 px-4 py-3">
+            <p className="min-w-48 flex-1 text-sm text-muted-foreground">
+              {t('cache.nextjsPresetHelp')}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => ed.setDraft(withNextjsPreset(c))}
+            >
+              {t('cache.nextjsPreset')}
             </Button>
           </div>
           <FieldMessage message={preset.error?.message} />

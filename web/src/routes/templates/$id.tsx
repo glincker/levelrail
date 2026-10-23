@@ -28,8 +28,8 @@ import {
   primaryVersion,
 } from '../../lib/templateSummary'
 import { formatBytes } from '../../lib/format'
-import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { resourceErrorComponent } from '@/components/resourceErrorComponent'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -39,7 +39,7 @@ export const Route = createFileRoute('/templates/$id')({
     queryClient.ensureQueryData(serviceTemplateQueryOptions(id)),
   component: TemplateDetailRoute,
   pendingComponent: TemplateDetailSkeleton,
-  errorComponent: TemplateDetailError,
+  errorComponent: resourceErrorComponent('template'),
 })
 
 function TemplateDetailRoute() {
@@ -221,19 +221,5 @@ function TemplateDetailSkeleton() {
       </div>
       <Skeleton className="h-40 w-full rounded-xl" />
     </div>
-  )
-}
-
-function TemplateDetailError({ error }: { error: unknown }) {
-  const { t } = useTranslation('templates')
-  return (
-    <Alert variant="destructive">
-      <AlertDescription>
-        <p>{routeErrorMessage(error)}</p>
-        <Link to="/templates" className="mt-2 inline-block underline">
-          {t('detail.back')}
-        </Link>
-      </AlertDescription>
-    </Alert>
   )
 }

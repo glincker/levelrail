@@ -22,6 +22,10 @@ const (
 	MetricHTTPBytesOut       = "http_bytes_out"
 
 	metricHTTPShieldPrefix = "http_shield_"
+	metricHTTPAbusePrefix  = "http_abuse_"
+	// AbuseReasonCount mirrors abuse.ReasonCount; a test in internal/ingress
+	// keeps the two in step without an import.
+	AbuseReasonCount = 4
 	// ShieldReasonCount mirrors trafficpolicy.ShieldReasonCount; a test in
 	// internal/ingress keeps the two in step without an import.
 	ShieldReasonCount       = 4
@@ -62,6 +66,8 @@ type RequestWindow struct {
 	Latency        [LatencyBucketCount]uint64
 	// Shield counts requests the abuse shield turned away, by reason.
 	Shield [ShieldReasonCount]uint64
+	// Abuse counts the per-app ingress abuse defense decisions.
+	Abuse AbuseWindow
 	// Routes and Statuses are the bounded per-route and exact-status
 	// breakdown; they are stored in request_breakdown, not as samples.
 	Routes   map[string]RouteStat
@@ -98,8 +104,41 @@ func (w RequestWindow) Samples(resourceID string, at time.Time) []Sample {
 	for i, n := range w.Shield {
 		add(ShieldMetric(i), n)
 	}
+	add(MetricAbuseAllowed, w.Abuse.Allowed)
+	add(MetricAbuseFailOpen, w.Abuse.FailOpen)
+	for i := range w.Abuse.WouldBlock {
+		add(AbuseWouldBlockMetric(i), w.Abuse.WouldBlock[i])
+		add(AbuseBlockedMetric(i), w.Abuse.Blocked[i])
+	}
 	return out
 }
+
+// AbuseWindow counts one tick of the per-app ingress abuse defense. WouldBlock
+// is what log_only saw; Blocked is what enforce turned away. FailOpen counts
+// requests served unchecked because the defense itself failed.
+type AbuseWindow struct {
+	Allowed    uint64
+	WouldBlock [AbuseReasonCount]uint64
+	Blocked    [AbuseReasonCount]uint64
+	FailOpen   uint64
+}
+
+// Abuse metric names. The per-reason ones are suffixed with AbuseReasons.
+const (
+	MetricAbuseAllowed  = metricHTTPAbusePrefix + "allowed"
+	MetricAbuseFailOpen = metricHTTPAbusePrefix + "fail_open"
+)
+
+// AbuseReasons are the metric suffixes, indexed like abuse.Reason.
+var AbuseReasons = [AbuseReasonCount]string{"rate_limit", "deny_cidr", "deny_user_agent", "missing_user_agent"}
+
+// AbuseWouldBlockMetric counts requests log_only would have turned away for reason i.
+func AbuseWouldBlockMetric(i int) string {
+	return metricHTTPAbusePrefix + "would_block_" + AbuseReasons[i]
+}
+
+// AbuseBlockedMetric counts requests enforce turned away for reason i.
+func AbuseBlockedMetric(i int) string { return metricHTTPAbusePrefix + "blocked_" + AbuseReasons[i] }
 
 // ShieldReasons are the metric suffixes, indexed like trafficpolicy.ShieldReason.
 var ShieldReasons = [ShieldReasonCount]string{"rate_limit", "concurrency", "bad_bot", "body_too_large"}
@@ -124,6 +163,12 @@ func (w *RequestWindow) Add(o RequestWindow) {
 	}
 	for i := range w.Shield {
 		w.Shield[i] += o.Shield[i]
+	}
+	w.Abuse.Allowed += o.Abuse.Allowed
+	w.Abuse.FailOpen += o.Abuse.FailOpen
+	for i := range w.Abuse.WouldBlock {
+		w.Abuse.WouldBlock[i] += o.Abuse.WouldBlock[i]
+		w.Abuse.Blocked[i] += o.Abuse.Blocked[i]
 	}
 	w.mergeBreakdown(o)
 	w.mergeDetail(o)

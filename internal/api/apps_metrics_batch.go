@@ -50,7 +50,7 @@ func (rt *Router) handleBatchAppMetrics(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")
 		return
 	}
-	canSee, err := rt.appVisibilityFilter(r)
+	canSee, err := rt.scopedAppVisibility(r)
 	if err != nil {
 		rt.internalError(w, "api: apps metrics: visibility", err)
 		return

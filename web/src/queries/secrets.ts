@@ -37,6 +37,8 @@ export interface SecretKeyState {
   // (APP_SECRET_ROTATION_WARN_DAYS, default 90 days).
   updatedAt: string
   stale: boolean
+  // buildTime reports whether build.secrets may read this key (default off).
+  buildTime: boolean
 }
 
 interface SecretKeyResource {
@@ -44,6 +46,7 @@ interface SecretKeyResource {
   locked: boolean
   updated_at: string
   stale: boolean
+  build_time?: boolean
 }
 
 // Fetches every known secret key for an app, with its locked state,
@@ -67,6 +70,7 @@ export async function fetchSecretKeys(
     locked: r.locked,
     updatedAt: r.updated_at,
     stale: r.stale,
+    buildTime: r.build_time === true,
   }))
 }
 
@@ -168,6 +172,64 @@ export function useSetSecretLock(appName: string) {
     mutationFn: (input: SetSecretLockInput) => setSecretLock(appName, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: secretKeys.list(appName) })
+    },
+  })
+}
+
+export interface SetSecretBuildTimeInput {
+  key: string
+  enabled: boolean
+}
+
+// POST /api/v1/apps/{name}/secrets/{key}/build-time. 404 if no value has
+// been set for that key yet.
+export async function setSecretBuildTime(
+  appName: string,
+  input: SetSecretBuildTimeInput,
+): Promise<void> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(appName)}/secrets/${encodeURIComponent(input.key)}/build-time`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ build_time: input.enabled }),
+    },
+  )
+  if (res.status === 204) {
+    return
+  }
+  if (res.status === 501) {
+    throw new SecretsNotConfiguredError()
+  }
+  throw new ApiError(
+    res.status,
+    await readErrorMessage(res, `set secret build time failed: ${res.status}`),
+  )
+}
+
+// Flips the row at once and restores the previous list if the call
+// fails, then refetches either way so the list matches the server.
+export function useSetSecretBuildTime(appName: string) {
+  const queryClient = useQueryClient()
+  const listKey = secretKeys.list(appName)
+  return useMutation({
+    mutationFn: (input: SetSecretBuildTimeInput) =>
+      setSecretBuildTime(appName, input),
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: listKey })
+      const previous = queryClient.getQueryData<SecretKeyState[]>(listKey)
+      queryClient.setQueryData<SecretKeyState[]>(listKey, (old) =>
+        old?.map((k) =>
+          k.key === input.key ? { ...k, buildTime: input.enabled } : k,
+        ),
+      )
+      return { previous }
+    },
+    onError: (_err, _input, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(listKey, ctx.previous)
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: listKey })
     },
   })
 }

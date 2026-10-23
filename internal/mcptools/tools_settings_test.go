@@ -59,13 +59,20 @@ func TestGetOAuthProviders_NotFound(t *testing.T) {
 
 func TestGetEmailSettings(t *testing.T) {
 	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/settings/email" {
-			t.Errorf("path = %q, want /api/v1/settings/email", r.URL.Path)
-		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(apiclient.EmailSettingsResource{
-			Backend: "smtp", SMTPHost: "smtp.example.com", SMTPPasswordSet: true,
-		})
+		switch r.URL.Path {
+		case "/api/v1/settings/email":
+			_ = json.NewEncoder(w).Encode(apiclient.EmailSettingsResource{
+				Backend: "smtp", SMTPHost: "smtp.example.com", SMTPPasswordSet: true,
+			})
+		case "/api/v1/settings/email/providers":
+			_ = json.NewEncoder(w).Encode(apiclient.EmailProviderList{Providers: []apiclient.EmailProvider{
+				{ID: "prov_a", Role: "primary", Backend: "smtp", SMTPPasswordSet: true},
+				{ID: "prov_b", Role: "backup", Backend: "resend"},
+			}})
+		default:
+			t.Errorf("unexpected path %q", r.URL.Path)
+		}
 	})
 
 	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "get_email_settings", Arguments: map[string]any{}})
@@ -76,6 +83,11 @@ func TestGetEmailSettings(t *testing.T) {
 	decodeStructured(t, result, &settings)
 	if settings.Backend != "smtp" || !settings.SMTPPasswordSet {
 		t.Errorf("settings = %+v, want backend=smtp SMTPPasswordSet=true", settings)
+	}
+	var withProviders emailSettingsWithProviders
+	decodeStructured(t, result, &withProviders)
+	if len(withProviders.Providers) != 2 || withProviders.Providers[0].Role != "primary" || !withProviders.Providers[0].CredentialSet || withProviders.Providers[1].CredentialSet {
+		t.Errorf("providers = %+v, want primary with a credential then backup without", withProviders.Providers)
 	}
 	if strings.Contains(toolResultText(result), "hunter2") {
 		t.Errorf("result text = %q, must never contain a raw credential value", toolResultText(result))

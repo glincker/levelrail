@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Banner } from '@/components/ui/banner'
@@ -18,8 +18,13 @@ import { AppImportImages } from './AppImportImages'
 import { AppImportInventory } from './AppImportInventory'
 import { AppImportPreflight } from './AppImportPreflight'
 import { AppImportRun } from './AppImportRun'
+import { CoolifyExitReportPanel } from './CoolifyExitReport'
 import { AppImportVolumes } from './AppImportVolumes'
 import { PortTakeoverPanel } from './PortTakeoverPanel'
+
+const MigrationRetire = lazy(() => import('./MigrationRetire'))
+
+const EXIT_REPORT_PLATFORMS = ['coolify', 'dokploy', 'caprover', 'docker-ssh']
 import {
   APP_IMPORT_STEPS,
   stepReached,
@@ -109,6 +114,9 @@ function Session({
         </Button>
       </div>
       <Stepper current={current} reached={reached} onGo={setView} />
+      {EXIT_REPORT_PLATFORMS.includes(session.platform) ? (
+        <CoolifyExitReportPanel sessionId={session.id} />
+      ) : null}
       {current === 'connect' ? (
         <AppImportConnect
           reconnect={{
@@ -167,7 +175,15 @@ function Session({
         />
       ) : null}
       {current === 'takeover' ? (
-        <PortTakeoverPanel onBack={() => go('cutover')} />
+        <PortTakeoverPanel
+          onBack={() => go('cutover')}
+          onNext={() => go('retire')}
+        />
+      ) : null}
+      {current === 'retire' ? (
+        <Suspense fallback={null}>
+          <MigrationRetire session={session} onBack={() => go('takeover')} />
+        </Suspense>
       ) : null}
     </div>
   )

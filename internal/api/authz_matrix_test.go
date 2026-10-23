@@ -103,6 +103,9 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 // public routes (not token-gated at all) and pure computations that
 // change no state.
 var readOnlyMayMutate = map[string]string{
+	"POST /api/v1/apps/{name}/abuse/dry-run":                     "replays recent in-memory access records against a draft policy and counts what it would block, persists nothing",
+	"POST /api/v1/apps/{name}/budget/dry-run":                    "previews what pausing the app would stop and save, persists nothing",
+	"POST /api/v1/costs/budgets/{id}/dry-run":                    "previews what pausing a budget's apps would stop and save, persists nothing",
 	"POST /api/v1/fixes/{id}/preview":                            "re-runs the originating check and lists the changes an apply would make, persists nothing",
 	"POST /api/v1/system/doctor/checks/{id}/run":                 "re-runs one read-only health check, persists nothing",
 	"POST /api/v1/pipelines/validate":                            "validates YAML, persists nothing",
@@ -223,6 +226,7 @@ func TestAuthzMatrix_PublicAllowlistIsCurrent(t *testing.T) {
 }
 
 func TestAuthzMatrix_UnauthenticatedGets401(t *testing.T) {
+	t.Parallel()
 	rt, _, _ := newPipelineRouter(t)
 	var bad []string
 	for _, r := range loadMatrixRoutes(t) {
@@ -284,6 +288,7 @@ var resourceKinds = []struct {
 }
 
 func TestAuthzMatrix_ResourceDenyReturns403(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newPipelineRouter(t)
 	bootstrapTestAdmin(t, db)
 	user := storeUserWithAbilitiesForTest(t, db, "deny-matrix@example.com", []string{AbilityRoot})

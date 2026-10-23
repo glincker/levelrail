@@ -40,7 +40,7 @@ func (rt *Router) handleAppResourceUsage(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	canSee, err := rt.appVisibilityFilter(r)
+	canSee, err := rt.scopedAppVisibility(r)
 	if err != nil {
 		rt.internalError(w, "api: app resource usage: visibility", err)
 		return

@@ -61,6 +61,7 @@ type bootState struct {
 	agentRegistry       *agent.Registry
 	meshEndpoints       *meshEndpointBook
 	hostReports         *agent.HostReportStore
+	onboardingReports   *agent.OnboardingStore
 	agentServer         *agent.Server
 	migrationAgent      *migrateagent.Service
 	secretsManager      *secrets.Manager

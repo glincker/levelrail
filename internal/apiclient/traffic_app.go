@@ -69,6 +69,22 @@ type TrafficSLO struct {
 	BudgetRemaining float64 `json:"budget_remaining"`
 }
 
+// TrafficErrorSpike is a run of buckets with an unusual 5xx share, tied to the
+// deploy that most plausibly caused it when one started shortly before.
+type TrafficErrorSpike struct {
+	Start        time.Time  `json:"start"`
+	End          time.Time  `json:"end"`
+	Requests     float64    `json:"requests"`
+	Errors5xx    float64    `json:"errors_5xx"`
+	PeakRate5xx  float64    `json:"peak_error_rate_5xx"`
+	BaselineRate float64    `json:"baseline_error_rate_5xx"`
+	DeployID     string     `json:"deploy_id,omitempty"`
+	DeployAt     *time.Time `json:"deploy_at,omitempty"`
+	DeployStatus string     `json:"deploy_status,omitempty"`
+	DeployImage  string     `json:"deploy_image,omitempty"`
+	DeployCommit string     `json:"deploy_commit,omitempty"`
+}
+
 // AppTrafficResource is GET /api/v1/apps/{name}/traffic.
 type AppTrafficResource struct {
 	App            string               `json:"app"`
@@ -91,6 +107,8 @@ type AppTrafficResource struct {
 	Countries      []TrafficLabel       `json:"countries"`
 	SLO            *TrafficSLO          `json:"slo,omitempty"`
 	Shield         TrafficShield        `json:"shield"`
+	Abuse          AbuseCounters        `json:"abuse"`
+	ErrorSpikes    []TrafficErrorSpike  `json:"error_spikes"`
 }
 
 // GetAppTraffic calls GET /api/v1/apps/{name}/traffic for window 5m, 1h, 24h or 7d.
