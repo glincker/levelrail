@@ -29,12 +29,11 @@ import { PauseResumeProjectButton } from '../../../components/PauseResumeProject
 import { MoveToOrganizationDialog } from '../../../components/MoveToOrganizationDialog'
 import { RestartProjectButton } from '../../../components/RestartProjectButton'
 import { CanvasLink } from '../../../components/canvas/CanvasLink'
-import { routeErrorMessage } from '../../../lib/apiError'
 import { QuotaCard } from '../../../components/teams/QuotaCard'
 import { ProjectEnvironmentsPanel } from '../../../components/ProjectEnvironmentsPanel'
 import { ProjectEnvEditor } from '../../../components/ProjectEnvEditor'
 import { SharedEnvSecretsCard } from '../../../components/SharedEnvSecretsCard'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { resourceErrorComponent } from '@/components/resourceErrorComponent'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '../../../components/ui/empty-state'
@@ -69,7 +68,7 @@ export const Route = createFileRoute('/projects/$id/')({
     ]),
   component: ProjectDetailPage,
   pendingComponent: ProjectDetailPending,
-  errorComponent: ProjectDetailError,
+  errorComponent: resourceErrorComponent('project'),
 })
 
 function ProjectDetailPage() {
@@ -243,18 +242,5 @@ function ProjectDetailPending() {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
-function ProjectDetailError({ error }: { error: unknown }) {
-  return (
-    <Alert variant="destructive">
-      <AlertDescription>
-        <p>{routeErrorMessage(error)}</p>
-        <Link to="/projects" className="mt-2 inline-block underline">
-          Back to projects
-        </Link>
-      </AlertDescription>
-    </Alert>
   )
 }

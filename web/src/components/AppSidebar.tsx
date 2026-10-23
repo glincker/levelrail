@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { Link, useRouterState } from '@tanstack/react-router'
+import { CatchBoundary, Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -111,17 +111,29 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
+      {/* A missing app or database makes the scoped nav throw; without this the
+          root boundary replaced the whole shell with the error card. */}
       <SidebarContent className="[view-transition-name:nav-panel]">
         {scopedAppName ? (
-          <Suspense fallback={null}>
-            <AppScopedSidebar name={decodeURIComponent(scopedAppName)} />
-          </Suspense>
+          <CatchBoundary
+            getResetKey={() => pathname}
+            errorComponent={GlobalNav}
+          >
+            <Suspense fallback={null}>
+              <AppScopedSidebar name={decodeURIComponent(scopedAppName)} />
+            </Suspense>
+          </CatchBoundary>
         ) : scopedDatabaseName ? (
-          <Suspense fallback={null}>
-            <DatabaseScopedSidebar
-              name={decodeURIComponent(scopedDatabaseName)}
-            />
-          </Suspense>
+          <CatchBoundary
+            getResetKey={() => pathname}
+            errorComponent={GlobalNav}
+          >
+            <Suspense fallback={null}>
+              <DatabaseScopedSidebar
+                name={decodeURIComponent(scopedDatabaseName)}
+              />
+            </Suspense>
+          </CatchBoundary>
         ) : isSettingsScoped ? (
           <Suspense fallback={null}>
             <SettingsScopedSidebar />

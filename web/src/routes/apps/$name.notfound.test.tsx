@@ -1,0 +1,106 @@
+import { act, render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+  RouterProvider,
+  createMemoryHistory,
+  createRouter,
+} from '@tanstack/react-router'
+import { Suspense } from 'react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { routeTree } from '../../routeTree.gen'
+import { RouteErrorFallback } from '../../components/RouteErrorFallback'
+import { setStoredUsername } from '../../lib/authStore'
+import { AllI18n } from '../../test/allI18n'
+
+const BRAND = {
+  Name: 'Brand',
+  ShortName: 'brand',
+  BinaryName: 'brand',
+  Domain: 'example.test',
+  PrimaryColor: '#107292',
+  LogoSVG: '',
+}
+
+function json(body: unknown, status = 200) {
+  return Promise.resolve(
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    }),
+  )
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+describe('/apps/$name for a missing app', () => {
+  it('keeps the sidebar and shows the not-found state', async () => {
+    setStoredUsername('dev')
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      onchange: null,
+      dispatchEvent: () => false,
+    }))
+    vi.stubGlobal(
+      'EventSource',
+      class {
+        close() {}
+        addEventListener() {}
+        removeEventListener() {}
+      },
+    )
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: RequestInfo | URL) => {
+        const raw =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.href
+              : input.url
+        const url = raw.split('?')[0] ?? ''
+        if (/fail-demo/.test(url)) {
+          return json({ error: 'app not found: fail-demo' }, 404)
+        }
+        if (/\/brand$/.test(url)) return json(BRAND)
+        if (/\/demo$/.test(url)) return json({ enabled: false })
+        if (/\/(session|me)$/.test(url)) return json({ username: 'dev' })
+        return json([])
+      }),
+    )
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+    const router = createRouter({
+      routeTree,
+      context: { queryClient },
+      defaultErrorComponent: RouteErrorFallback,
+      history: createMemoryHistory({
+        initialEntries: ['/apps/fail-demo/deploys'],
+      }),
+    })
+    render(
+      <AllI18n>
+        <QueryClientProvider client={queryClient}>
+          <Suspense fallback={null}>
+            <RouterProvider router={router} />
+          </Suspense>
+        </QueryClientProvider>
+      </AllI18n>,
+    )
+    expect(await screen.findByText('App not found')).toBeTruthy()
+    expect(screen.getByText(/fail-demo/)).toBeTruthy()
+    // The scoped sidebar is lazy; once it loads it must not take the shell down.
+    await act(async () => {
+      await import('../../components/AppScopedSidebar')
+    })
+    expect(document.querySelector('[data-sidebar="sidebar"]')).not.toBeNull()
+    expect(screen.queryByText('Something went wrong')).toBeNull()
+  })
+})

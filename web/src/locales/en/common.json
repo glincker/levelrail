@@ -840,5 +840,56 @@
     "copyRequestId": "Copy request ID",
     "copied": "Copied",
     "generic": "Something went wrong on the server."
+  },
+  "notFound": {
+    "requested": "Requested: {{name}}",
+    "causes": "It may have been renamed or deleted, or it belongs to a different project or environment than the one selected in the header switcher.",
+    "didYouMean": "Did you mean",
+    "resources": {
+      "app": {
+        "title": "App not found",
+        "list": "Back to apps",
+        "create": "Deploy a new app"
+      },
+      "database": {
+        "title": "Database not found",
+        "list": "Back to databases"
+      },
+      "domain": {
+        "title": "Domain not found",
+        "list": "Back to domains"
+      },
+      "template": {
+        "title": "Template not found",
+        "list": "Back to templates"
+      },
+      "project": {
+        "title": "Project not found",
+        "list": "Back to projects"
+      },
+      "generic": {
+        "title": "Page not found",
+        "list": "Back to dashboard"
+      }
+    }
+  },
+  "routeError": {
+    "generic": {
+      "title": "Something went wrong",
+      "body": "This page hit an unexpected error. Trying again often clears it. If it keeps happening, copy the details and report it.",
+      "retry": "Try again",
+      "home": "Back to dashboard"
+    },
+    "unreachable": {
+      "title": "Can't reach the control plane",
+      "body": "The server did not answer or returned an error. Your apps keep running. Check that the control plane is up, then retry.",
+      "retry": "Retry"
+    },
+    "details": "Details",
+    "copy": "Copy details",
+    "copied": "Copied",
+    "report": "Report an issue",
+    "requestId": "Request ID: {{id}}",
+    "detailsHeader": "Error report"
   }
 }

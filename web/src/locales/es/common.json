@@ -498,5 +498,56 @@
     "hide": "Ocultar",
     "region": "Código",
     "commandRegion": "Comando"
+  },
+  "notFound": {
+    "requested": "Solicitado: {{name}}",
+    "causes": "Puede que se haya renombrado o eliminado, o que pertenezca a un proyecto o entorno distinto del seleccionado en el selector de la cabecera.",
+    "didYouMean": "Quisiste decir",
+    "resources": {
+      "app": {
+        "title": "App no encontrada",
+        "list": "Volver a las apps",
+        "create": "Desplegar una app nueva"
+      },
+      "database": {
+        "title": "Base de datos no encontrada",
+        "list": "Volver a las bases de datos"
+      },
+      "domain": {
+        "title": "Dominio no encontrado",
+        "list": "Volver a los dominios"
+      },
+      "template": {
+        "title": "Plantilla no encontrada",
+        "list": "Volver a las plantillas"
+      },
+      "project": {
+        "title": "Proyecto no encontrado",
+        "list": "Volver a los proyectos"
+      },
+      "generic": {
+        "title": "Página no encontrada",
+        "list": "Volver al panel"
+      }
+    }
+  },
+  "routeError": {
+    "generic": {
+      "title": "Algo salió mal",
+      "body": "Esta página tuvo un error inesperado. Reintentar suele resolverlo. Si persiste, copia los detalles y repórtalo.",
+      "retry": "Reintentar",
+      "home": "Volver al panel"
+    },
+    "unreachable": {
+      "title": "No se puede contactar con el plano de control",
+      "body": "El servidor no respondió o devolvió un error. Tus apps siguen funcionando. Comprueba que el plano de control esté activo y reintenta.",
+      "retry": "Reintentar"
+    },
+    "details": "Detalles",
+    "copy": "Copiar detalles",
+    "copied": "Copiado",
+    "report": "Reportar un problema",
+    "requestId": "ID de solicitud: {{id}}",
+    "detailsHeader": "Informe de error"
   }
 }
