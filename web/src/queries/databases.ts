@@ -23,13 +23,14 @@ import {
   readErrorMessage,
 } from '../lib/apiError'
 import { getEnvironmentScope } from '../lib/environmentScope'
+import { getProjectScope } from '../lib/projectScope'
 
 export const databaseKeys = {
   all: ['databases'] as const,
-  list: (environment = '') =>
-    environment === ''
+  list: (environment = '', project = '') =>
+    environment === '' && project === ''
       ? ([...databaseKeys.all, 'list'] as const)
-      : ([...databaseKeys.all, 'list', { environment }] as const),
+      : ([...databaseKeys.all, 'list', { environment, project }] as const),
   detail: (name: string) => [...databaseKeys.all, 'detail', name] as const,
   status: (name: string) => [...databaseKeys.detail(name), 'status'] as const,
 }
@@ -40,11 +41,13 @@ export const databaseKeys = {
 // summary, no cursor, matching fetchApps's own reasoning.
 export async function fetchDatabases(
   environment = '',
+  project = '',
 ): Promise<DatabaseListEntry[]> {
+  const qs = new URLSearchParams()
+  if (environment) qs.set('environment', environment)
+  if (project) qs.set('project', project)
   const res = await fetch(
-    environment === ''
-      ? '/api/v1/databases'
-      : `/api/v1/databases?environment=${encodeURIComponent(environment)}`,
+    qs.size ? `/api/v1/databases?${qs.toString()}` : '/api/v1/databases',
   )
   if (!res.ok) {
     throw new ApiError(
@@ -60,9 +63,10 @@ export async function fetchDatabases(
 // call, the same pattern databaseDetailQueryOptions below uses.
 export function databaseListQueryOptions() {
   const environment = getEnvironmentScope()
+  const project = getProjectScope()
   return queryOptions({
-    queryKey: databaseKeys.list(environment),
-    queryFn: () => fetchDatabases(environment),
+    queryKey: databaseKeys.list(environment, project),
+    queryFn: () => fetchDatabases(environment, project),
   })
 }
 
