@@ -57,6 +57,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | AI models (GPU) | hide-behind-flag | Needs NVIDIA hardware, every test uses fakes, docs state v1 scope is NVIDIA on Linux only. |
 | Load balancer | hide-behind-flag | Live e2e with real traffic and drain (`test/e2e/loadbalancer_test.go`), but gated behind `load-balancer` and not exercised across real hosts. |
 | Platform as code (iac) | hide-behind-flag | Live e2e covers export, plan and apply (`test/e2e/iac_apply_test.go`), but the apply path changes many resources in one run and stays gated behind `iac`. |
+| Canvas | beta | Visual project editor behind the `canvas` toggle, off by default. Unit and component tests only (`web/src/lib/canvasDraft.test.ts`, `web/src/components/canvas/canvas.test.tsx`); it reuses the platform-as-code plan and apply, so it also needs `iac` on. No e2e, not yet run against a real instance. [Canvas](/canvas) |
 | Cloudflare tunnel | hide-behind-flag | Reconciler unit tests only, needs a real Cloudflare account, no dedicated doc page. |
 
 ## Identity and access

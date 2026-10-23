@@ -28,6 +28,7 @@ import { DeleteProjectDialog } from '../../../components/DeleteProjectDialog'
 import { PauseResumeProjectButton } from '../../../components/PauseResumeProjectButton'
 import { MoveToOrganizationDialog } from '../../../components/MoveToOrganizationDialog'
 import { RestartProjectButton } from '../../../components/RestartProjectButton'
+import { CanvasLink } from '../../../components/canvas/CanvasLink'
 import { routeErrorMessage } from '../../../lib/apiError'
 import { QuotaCard } from '../../../components/teams/QuotaCard'
 import { ProjectEnvironmentsPanel } from '../../../components/ProjectEnvironmentsPanel'
@@ -108,6 +109,7 @@ function ProjectDetailPage() {
                 Topology
               </Link>
             )}
+            <CanvasLink projectId={project.id} />
             {isEmpty ? null : (
               <PauseResumeProjectButton id={project.id} name={project.name} />
             )}

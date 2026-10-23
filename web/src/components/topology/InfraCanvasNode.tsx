@@ -74,7 +74,7 @@ function InfraCanvasNodeBase({
     moved: boolean
   } | null>(null)
   const Icon = KIND_ICON[node.kind]
-  const healthLabel = t(`status.${health}`)
+  const healthLabel = node.draft ? t('status.draft') : t(`status.${health}`)
 
   const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return
@@ -149,6 +149,7 @@ function InfraCanvasNodeBase({
         'absolute left-0 top-0 flex touch-none cursor-grab select-none items-center gap-2 rounded-lg border bg-card px-3 text-left text-sm active:cursor-grabbing',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         selected ? 'border-ring' : 'border-border hover:border-ring',
+        node.draft && 'border-dashed',
         KIND_CLASS[node.kind],
       )}
     >

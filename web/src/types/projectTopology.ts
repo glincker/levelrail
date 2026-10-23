@@ -35,6 +35,8 @@ export interface ProjectTopologyNode {
   kind: ProjectTopologyNodeKind
   label: string
   status?: ProjectTopologyStatus
+  // Client-only: set by the Canvas beta on nodes that exist only in the draft.
+  draft?: boolean
 }
 
 export interface ProjectTopologyEdge {

@@ -226,6 +226,7 @@
               "multi-cloud-provisioning",
               "network-topology",
               "service-topology-graph",
+              "canvas",
               "build-node-routing"
             ],
             "icon": "/assets/icons/globe-hemisphere-west.svg"

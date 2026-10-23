@@ -31,7 +31,8 @@
     "healthy": "Healthy",
     "deploying": "Deploying",
     "failed": "Failed",
-    "idle": "No status"
+    "idle": "No status",
+    "draft": "Draft, not applied yet"
   },
   "toolbar": {
     "label": "Canvas controls",
