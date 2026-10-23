@@ -5,6 +5,7 @@ import {
   appsSummaryQueryOptions,
 } from '../queries/appPages'
 import { userListQueryOptions } from '../queries/users'
+import { useEnvironmentScope } from '../lib/environmentScope'
 import { DashboardHome } from '../components/dashboard/DashboardHome'
 import { PanelHost } from '../components/plugins/PanelHost'
 import { SkeletonLine, SkeletonTile } from '@/components/kit'
@@ -31,6 +32,7 @@ export const Route = createFileRoute('/')({
 })
 
 function DashboardPage() {
+  useEnvironmentScope()
   const { data: summary } = useSuspenseQuery({
     ...appsSummaryQueryOptions(),
     refetchInterval: 15_000,

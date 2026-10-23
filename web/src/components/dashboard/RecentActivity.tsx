@@ -18,6 +18,8 @@ import { deployRows, type DeployRow } from '../../lib/dashboardHome'
 import { pickSampleApps } from '../../lib/fleetStats'
 import { useFleetDeploys } from '../../queries/fleetTraffic'
 import { BrandTile } from '../BrandLogoBadge'
+import { FLOATING_CARD } from './cardStyle'
+import { useScopeName } from './useScopeName'
 
 const ACTIVITY_APP_CAP = 6
 const ROWS_SHOWN = 6
@@ -91,11 +93,12 @@ export function RecentActivity({ sample }: { sample: AppListEntry[] }) {
     [sample],
   )
   const { byApp, isPending } = useFleetDeploys(names)
+  const scoped = useScopeName() !== ''
   const rows = deployRows(byApp, ROWS_SHOWN)
   return (
     <section
       aria-label={t('deploys.title')}
-      className="space-y-3 rounded-lg border border-border bg-card p-4 sm:p-5"
+      className={cn('space-y-3 p-4 sm:p-5', FLOATING_CARD)}
     >
       <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
         {t('deploys.title')}
@@ -103,7 +106,13 @@ export function RecentActivity({ sample }: { sample: AppListEntry[] }) {
       {isPending ? (
         <SkeletonList rows={4} />
       ) : rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('deploys.empty')}</p>
+        <p className="text-sm text-muted-foreground">
+          {t(
+            scoped && sample.length === 0
+              ? 'deploys.emptyScoped'
+              : 'deploys.empty',
+          )}
+        </p>
       ) : (
         <ol className="flex flex-col">
           {rows.map((row, i) => (

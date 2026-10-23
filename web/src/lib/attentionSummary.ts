@@ -75,3 +75,27 @@ export function attentionHref(target: AttentionTarget): string {
       return target.to
   }
 }
+
+const SIGN_IN_ID_PREFIXES = ['login_code:', 'login_approval:']
+
+export function isSignInItem(i: AttentionItem): boolean {
+  return SIGN_IN_ID_PREFIXES.some((p) => i.id.startsWith(p))
+}
+
+// Drops items another surface already shows, keeping count and level in step.
+export function withoutItems(
+  s: AttentionSummary,
+  drop: (i: AttentionItem) => boolean,
+): AttentionSummary {
+  const visible = s.visible.filter((i) => !drop(i))
+  let level: AttentionLevel = 'ok'
+  if (visible.some((i) => i.severity === 'critical')) level = 'critical'
+  else if (visible.length > 0) level = 'warning'
+  return {
+    ...s,
+    level,
+    count: visible.length,
+    visible,
+    snoozed: s.snoozed.filter((i) => !drop(i)),
+  }
+}

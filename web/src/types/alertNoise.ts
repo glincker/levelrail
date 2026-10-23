@@ -99,6 +99,10 @@ export interface AlertHistoryFilter {
   outcome?: AlertOutcome | ''
   event?: AlertEventName | ''
   limit?: number
+  /** Follow the project and environment picker (dashboard panels). */
+  scoped?: boolean
+  /** Set by useAlertHistory: the scope part of the cache key. */
+  scope?: { environment: string; project: string }
 }
 
 // Quick silence durations offered from an alert row and the dashboard.

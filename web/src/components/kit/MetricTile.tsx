@@ -19,6 +19,8 @@ export interface MetricTileProps {
   tone?: Tone
   icon?: ReactNode
   info?: ReactNode
+  // Small line under the value, for qualifiers such as an instance-wide marker.
+  note?: ReactNode
   loading?: boolean
   onClick?: () => void
   // Shown when the tile has nothing to measure yet; ignored with onClick.
@@ -58,6 +60,7 @@ export function MetricTile({
   tone = 'neutral',
   icon,
   info,
+  note,
   loading,
   onClick,
   cta,
@@ -92,6 +95,7 @@ export function MetricTile({
           ariaLabel={`${label} trend`}
         />
       )}
+      {note}
     </>
   )
 

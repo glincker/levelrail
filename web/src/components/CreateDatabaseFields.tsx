@@ -39,6 +39,7 @@ import {
   resolveSubmittedProjectId,
 } from '../lib/createResourcePlacement'
 import { CreateFormShell } from './CreateFormShell'
+import { getProjectScope } from '../lib/projectScope'
 import { PostgresFlavorField } from './PostgresFlavorField'
 import { withFlavor, type PostgresFlavor } from '@/lib/databaseCatalog'
 import {
@@ -191,7 +192,7 @@ export function CreateDatabaseFields({
     engine: engine ?? engines[0]?.id ?? '',
     version: '',
     node: LOCAL_NODE_VALUE,
-    project: NO_PROJECT_VALUE,
+    project: getProjectScope() || NO_PROJECT_VALUE,
   }
   const {
     control,

@@ -38,6 +38,8 @@ import { StorageUsageCard } from './StorageUsageCard'
 import { SleepFleetCard } from './SleepFleetCard'
 import { PlatformCapabilities } from './PlatformCapabilities'
 import { DashboardViews } from './DashboardViews'
+import { InstanceWideLabel, ScopeIndicator } from './ScopeIndicator'
+import { useEnvironmentScope } from '../../lib/environmentScope'
 
 const FirstDeploy = lazy(() =>
   import('../getStarted/FirstDeploy').then((m) => ({
@@ -56,6 +58,7 @@ const RecentAlertsCard = lazy(() =>
 )
 
 function UsageApps() {
+  useEnvironmentScope()
   const { data: apps = [] } = useQuery(appListQueryOptions())
   return (
     <>
@@ -86,6 +89,7 @@ function UsageDetails() {
       </button>
       {open ? (
         <div className="space-y-4">
+          <InstanceWideLabel />
           <FleetUtilizationSummary />
           <Suspense fallback={null}>
             <FleetResourceChart />
@@ -108,6 +112,7 @@ function StartView({
 }) {
   const { t } = useTranslation('dashboard')
   const { layout, move, toggle, reset } = useDashboardLayout()
+  useEnvironmentScope()
   const [editing, setEditing] = useState(false)
 
   const widgets: Record<WidgetId, ReactNode> = {
@@ -132,6 +137,7 @@ function StartView({
         apps={summary.total}
         trailing={
           <span className="flex items-center gap-1">
+            <ScopeIndicator />
             {editing ? (
               <Button size="sm" variant="ghost" onClick={reset}>
                 {t('customize.reset')}
