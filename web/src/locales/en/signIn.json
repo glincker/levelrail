@@ -129,6 +129,10 @@
   "cliModal": {
     "badge": "Connect CLI",
     "badgeLabel": "Connect the command line tool. No CLI is connected yet.",
+    "badgeConnected_one": "{{count}} CLI",
+    "badgeConnected_other": "{{count}} CLIs",
+    "badgeLabelConnected_one": "Open the CLI command center. {{count}} CLI is connected.",
+    "badgeLabelConnected_other": "Open the CLI command center. {{count}} CLIs are connected.",
     "title": "Command line tool",
     "description": "Install the CLI, connect it to this server and manage every CLI that can reach it.",
     "openAction": "Open CLI setup",
