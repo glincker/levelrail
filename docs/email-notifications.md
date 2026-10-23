@@ -80,6 +80,29 @@ The **Sender domain check** card looks up SPF, DKIM and DMARC for the from addre
 levelrail-cli email check-domain
 ```
 
+## Branding
+
+The **Branding** card on **Settings > Email** sets the logo, accent color and footer every rich message shares (password resets, invites, alerts, announcements). A live preview renders in a sandboxed frame before you save.
+
+- **Logo** is an `https` URL. The control plane never fetches it; it is embedded as an image, so a remote logo tells its host when a message is opened. Host it somewhere you control.
+- **Accent color** is a six digit hex value. Empty uses the brand default.
+- **Footer** is plain text, an address and up to five `https` links. There is no HTML field. Footer text accepts the global variables `{{brand_name}}`, `{{support_email}}`, `{{dashboard_url}}`, `{{instance_name}}` and `{{year}}`. An unknown variable is refused on save, and a substituted value is never expanded a second time.
+- **Powered by** line is off by default.
+
+`javascript:`, `data:` and plain `http` URLs are refused, and logo and link URLs are capped in length.
+
+```bash
+levelrail-cli settings email branding set --logo-url https://cdn.example.com/logo.png --brand-color "#107292" --footer-link "Privacy|https://example.com/privacy"
+levelrail-cli settings email branding preview > preview.html
+```
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `APP_EMAIL_BRANDING_MAX_LOGO_URL` | `500` | Longest logo or link URL accepted. |
+| `APP_EMAIL_BRANDING_MAX_FOOTER_LINKS` | `5` | Most footer links. |
+| `APP_EMAIL_BRANDING_MAX_FOOTER_TEXT`, `APP_EMAIL_BRANDING_MAX_FOOTER_ADDRESS` | `1000`, `300` | Footer text and address length. |
+| `APP_EMAIL_BRANDING_MAX_LINK_LABEL` | `60` | Footer link label length. |
+
 ## Delivery log
 
 Every outbound send is recorded with its provider, outcome, provider message id and error, and can be searched and filtered at **Settings > Email > Delivery log** or with `levelrail-cli email log --status failed`. Recipients are stored hashed and shown shortened (`a***@example.com`).

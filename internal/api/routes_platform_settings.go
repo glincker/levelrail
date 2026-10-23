@@ -24,6 +24,9 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	// Root plus a fresh step-up and an enrolled authenticator: returns one stored credential, no-store, audited, never via MCP.
 	mux.HandleFunc("POST /api/v1/settings/email/providers/{id}/secrets/{field}/reveal", rt.requireAbility(AbilityRoot, rt.handleRevealEmailSecret))
 	// Root: a test send goes to any address, so it is not open to ordinary write tokens.
+	mux.HandleFunc("GET /api/v1/settings/email/branding", rt.requireAbility(AbilityRead, rt.handleGetEmailBranding))
+	mux.HandleFunc("PUT /api/v1/settings/email/branding", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailBranding))
+	mux.HandleFunc("POST /api/v1/settings/email/branding/preview", rt.requireAbility(AbilityRoot, rt.handlePreviewEmailBranding))
 	mux.HandleFunc("POST /api/v1/settings/email/test", rt.requireAbility(AbilityRoot, rt.handleTestEmail))
 	mux.HandleFunc("GET /api/v1/settings/email/status", rt.requireAbility(AbilityRead, rt.handleEmailStatus))
 	mux.HandleFunc("GET /api/v1/settings/email/domain-check", rt.requireAbility(AbilityRoot, rt.handleEmailDomainCheck))

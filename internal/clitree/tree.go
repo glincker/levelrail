@@ -379,7 +379,7 @@ var Tree = map[string]*Node{
 	"completion":     {Subs: map[string]*Node{"bash": nil, "zsh": nil, "fish": nil}},
 	"settings": {Subs: map[string]*Node{
 		"oauth":         {Subs: map[string]*Node{"list": nil, "set": nil}},
-		"email":         {Subs: map[string]*Node{"get": nil, "set": nil, "providers": {Subs: map[string]*Node{"list": nil, "add": nil, "set": nil, "rm": nil, "test": nil, "promote": nil, "reveal": nil}}}},
+		"email":         {Subs: map[string]*Node{"get": nil, "set": nil, "providers": {Subs: map[string]*Node{"list": nil, "add": nil, "set": nil, "rm": nil, "test": nil, "promote": nil, "reveal": nil}}, "branding": {Subs: map[string]*Node{"get": nil, "set": nil, "preview": nil}}}},
 		"edge":          {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},
 		"ingress":       {Subs: map[string]*Node{"get": nil, "set": nil, "https": {Subs: map[string]*Node{"status": nil, "enable": nil}}}},
 		"dashboard-url": {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},

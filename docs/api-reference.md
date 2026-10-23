@@ -1070,6 +1070,9 @@ Endpoints for:
 | POST | /api/v1/settings/email/providers/{id}/test | AbilityRoot | handleTestEmailProvider |
 | POST | /api/v1/settings/email/providers/{id}/promote | AbilityRoot | handlePromoteEmailProvider |
 | POST | /api/v1/settings/email/providers/{id}/secrets/{field}/reveal | AbilityRoot | handleRevealEmailSecret |
+| GET | /api/v1/settings/email/branding | AbilityRead | handleGetEmailBranding |
+| PUT | /api/v1/settings/email/branding | AbilityRoot | handleUpdateEmailBranding |
+| POST | /api/v1/settings/email/branding/preview | AbilityRoot | handlePreviewEmailBranding |
 
 </Accordion>
 

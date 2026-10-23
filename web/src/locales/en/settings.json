@@ -3046,5 +3046,27 @@
         "access": "Access follows the OAuth scopes you granted."
       }
     }
+  },
+  "emailBranding": {
+    "title": "Branding",
+    "description": "The logo, accent color and footer every rich email shares: password resets, invites, alerts and announcements.",
+    "logo": "Logo URL",
+    "logoHint": "An https image URL. The server never fetches it, so a remote logo tells its host when a message is opened.",
+    "color": "Accent color",
+    "colorHint": "A six digit hex value such as #107292. Leave empty to use the brand color.",
+    "footerText": "Footer text",
+    "footerHint": "Plain text only. Variables: {{variables}}.",
+    "address": "Postal address",
+    "links": "Footer links",
+    "linkLabel": "Label",
+    "linkUrl": "https link",
+    "addLink": "Add link",
+    "removeLink": "Remove link",
+    "poweredBy": "Show the Powered by line",
+    "save": "Save branding",
+    "saving": "Saving...",
+    "saved": "Email branding saved.",
+    "preview": "Preview",
+    "previewTitle": "Email branding preview"
   }
 }

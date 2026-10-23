@@ -5,6 +5,7 @@ import {
 } from '../../queries/emailSettings'
 import { EmailSettingsCard } from '../../components/EmailSettingsCard'
 import { EmailDomainCheckCard } from '../../components/email/EmailDomainCheckCard'
+import { EmailBrandingCard } from '../../components/email/EmailBrandingCard'
 import { EmailStatusHeader } from '../../components/email/EmailStatusHeader'
 import { EmailTestCard } from '../../components/email/EmailTestCard'
 import { EmailPageShell } from '../../components/settings/EmailPageShell'
@@ -39,6 +40,7 @@ function EmailSettingsPage() {
         <EmailSettingsCard settings={settings} />
         <EmailTestCard provider={settings.backend} />
         <EmailDomainCheckCard provider={settings.backend} />
+        <EmailBrandingCard />
       </div>
     </EmailPageShell>
   )

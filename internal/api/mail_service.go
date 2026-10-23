@@ -95,22 +95,43 @@ func (rt *Router) mailBranding(ctx context.Context) mailtemplates.Branding {
 	if u, err := url.Parse(base); err == nil && u.Host != "" {
 		instance = u.Host
 	}
-	return mailtemplates.Branding{
+	b := mailtemplates.Branding{
 		Name: rt.brand.Name, PrimaryColor: rt.brand.PrimaryColor, PrimaryColorDark: rt.brand.PrimaryColorDark,
 		SupportEmail: rt.brand.SupportEmail, DashboardURL: base, InstanceName: instance,
 	}
+	return withBrandColor(b, rt.emailBranding(ctx).BrandColor)
 }
 
+// withBrandColor applies the operator's accent color to both color schemes.
+func withBrandColor(b mailtemplates.Branding, color string) mailtemplates.Branding {
+	if color != "" {
+		b.PrimaryColor, b.PrimaryColorDark = color, color
+	}
+	return b
+}
+
+// mailLayout is the legacy mail_layout row overlaid with the sender-identity branding, which wins where set.
 func (rt *Router) mailLayout(ctx context.Context) mailtemplates.Layout {
-	if rt.mail.db == nil {
-		return mailtemplates.Layout{}
+	var layout mailtemplates.Layout
+	if rt.mail.db != nil {
+		if l, err := rt.mail.db.GetMailLayout(ctx); err != nil {
+			rt.logger.Warn("api: load mail layout failed", slog.String("error", err.Error()))
+		} else {
+			layout = mailtemplates.Layout{HeaderImageURL: l.HeaderImageURL, FooterText: l.FooterText}
+		}
 	}
-	l, err := rt.mail.db.GetMailLayout(ctx)
-	if err != nil {
-		rt.logger.Warn("api: load mail layout failed", slog.String("error", err.Error()))
-		return mailtemplates.Layout{}
+	return overlayBranding(layout, rt.emailBranding(ctx))
+}
+
+func overlayBranding(layout mailtemplates.Layout, b mailtemplates.EmailBranding) mailtemplates.Layout {
+	if b.LogoURL != "" {
+		layout.HeaderImageURL = b.LogoURL
 	}
-	return mailtemplates.Layout{HeaderImageURL: l.HeaderImageURL, FooterText: l.FooterText}
+	if b.FooterText != "" {
+		layout.FooterText = b.FooterText
+	}
+	layout.FooterAddress, layout.FooterLinks, layout.ShowPoweredBy = b.FooterAddress, b.FooterLinks, b.ShowPoweredBy
+	return layout
 }
 
 // effectiveTemplate is the operator's override for key or the built-in default.
