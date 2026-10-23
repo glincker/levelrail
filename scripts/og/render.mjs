@@ -57,6 +57,8 @@ const VARIANTS = {
   // Conversion card: isometric scene plus the install command. Dark for social, light twin for README <picture>.
   "og-home-iso": { w: 1200, h: 630, scale: 1, iso: "dark", out: "docs/assets/og/og-home-iso.png" },
   "og-home-iso-light": { w: 1200, h: 630, scale: 1, iso: "light", out: "docs/assets/og/og-home-iso-light.png" },
+  "og-home-dash": { w: 1200, h: 630, scale: 1, iso: "dark", shot: "dashboard-home", out: "docs/assets/og/og-home-dash.png" },
+  "og-home-dash-light": { w: 1200, h: 630, scale: 1, iso: "light", shot: "dashboard-home-light", out: "docs/assets/og/og-home-dash-light.png" },
   github: wide(1280, 640, "docs/assets/brand/social/github-social-1280x640.jpg", { h1: 66, tTop: 150, tW: 560, fx: 640, fy: 96, fw: 900, pills: true }),
   twitter: wide(1200, 675, "docs/assets/brand/social/twitter-card-1200x675.jpg", { pad: 64, h1: 62, tTop: 165, tW: 540, fx: 620, fy: 112, fw: 860, pills: true }),
   producthunt: wide(1270, 760, "docs/assets/brand/social/producthunt-gallery-1270x760.jpg", { copy: "push", shot: "deploy-live-log", pad: 72, h1: 62, sub: 24, tTop: 200, tW: 600, fx: 690, fy: 130, fw: 960, pills: true }),
@@ -139,6 +141,7 @@ const SITE = domain.replace(/^docs\./, "");
 
 // Glows are masked by the grain tile (its alpha is the noise), so they dissolve into speckle instead of banding.
 function isoPage(v) {
+  const dash = !!v.shot;
   const dark = v.iso === "dark";
   const T = dark
     ? { bg: "#050709", ink: "#f4f6f8", sub: "#9aa6ae", pillBg: "#090c0f", pillLine: "#2a323a", pillInk: "#cfd6dc", url: "#5cc4e8", tag: "#7d8a93", grad: `linear-gradient(90deg,#5cc4e8 0%,#9fe0c8 45%,${LIVE} 100%)`,
@@ -159,11 +162,17 @@ html,body{margin:0;width:${v.w}px;height:${v.h}px;overflow:hidden;background:${T
 .floor{position:absolute;inset:0;background:${T.floor}}
 .scene{position:absolute;left:540px;top:58px;width:660px;z-index:2}
 .scene svg{display:block;width:100%;height:auto;overflow:visible;${svgVars}}
+.frame{position:absolute;left:600px;top:112px;width:760px;height:560px;overflow:hidden;border-radius:16px;transform-origin:0 0;transform:perspective(1700px) rotateY(-12deg) rotateX(3deg) rotateZ(-1deg);background:${dark ? "#0a0d10" : "#fff"};box-shadow:0 0 0 1px ${dark ? "rgba(92,196,232,.55)" : "rgba(13,106,134,.35)"},0 0 54px ${dark ? "rgba(47,179,220,.30)" : "rgba(47,179,220,.25)"},-28px 44px 80px rgba(0,0,0,${dark ? ".75" : ".28"});z-index:2}
+.frame img{position:absolute;width:1024px;left:-210px;top:-218px;display:block}
+.frame b{position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,${dark ? ".07" : ".25"}),transparent 35%)}
+.pill{position:absolute;display:flex;align-items:center;gap:9px;padding:8px 15px;border-radius:12px;background:#090c0f;box-shadow:inset 0 0 0 1px #2a323a,0 12px 30px rgba(0,0,0,.5);font-family:${MONO};font-size:17px;color:#cfd6dc;white-space:nowrap;z-index:12}
+.pill i{width:9px;height:9px;border-radius:50%;background:${LIVE};box-shadow:0 0 10px ${LIVE}}
+.pill i.g{background:#3ddc97;box-shadow:0 0 10px #3ddc97}
 .brand{position:absolute;left:64px;top:46px;display:flex;align-items:center;gap:12px;font-size:20px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:${T.ink};z-index:10}
 .copy{position:absolute;left:64px;top:128px;width:520px;z-index:10}
 h1{margin:0;font-weight:300;font-size:64px;line-height:1.06;letter-spacing:-.034em;color:${T.ink}}
 h1 em{font-style:normal;background:${T.grad};-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.04em}
-.sub{margin:22px 0 0;font-size:22px;line-height:1.4;color:${T.sub};font-weight:400;width:470px}
+.sub{margin:22px 0 0;font-size:22px;line-height:1.4;color:${T.sub};font-weight:400;width:${dash ? 500 : 470}px}
 .cta{display:flex;align-items:center;gap:10px;margin-top:30px}
 .cmd{display:inline-flex;align-items:center;gap:10px;padding:13px 20px;border-radius:12px;background:${T.pillBg};box-shadow:inset 0 0 0 1px ${T.pillLine},0 12px 30px rgba(0,0,0,${dark ? ".5" : ".18"});font-family:${MONO};font-size:17px;color:${T.pillInk};white-space:nowrap}
 .cmd b{color:${LIVE};font-weight:700}
@@ -174,12 +183,12 @@ h1 em{font-style:normal;background:${T.grad};-webkit-background-clip:text;backgr
 .grain{position:absolute;inset:0;z-index:20;pointer-events:none;background-image:${GRAIN};background-size:300px 300px;opacity:${dark ? 0.05 : 0.07};mix-blend-mode:${T.blend}}
 </style></head><body><div class="stage"><div class="soft"></div><div class="glow"></div><div class="floor"></div>
 <div class="brand">${logo(34, T.logoDark)}<span>${name}</span></div>
-<div class="copy"><h1>Your own cloud.<br><em>No Kubernetes.</em></h1>
-<p class="sub">Deploy from a git push. One Go binary, agents that dial out, no SSH.</p>
-<div class="cta"><span class="cmd"><b>$</b>curl -fsSL ${SITE}/install.sh | sh</span></div>
-<ul class="chips"><li>Apache 2.0</li><li>300+ templates</li></ul></div>
-<div class="scene">${ISO_SVG}</div>
-<div class="url">${SITE}</div><div class="tag">Go / Docker / Caddy</div><div class="grain"></div></div></body></html>`;
+<div class="copy"><h1>${dash ? COPY.vercel.h1 : "Your own cloud.<br><em>No Kubernetes.</em>"}</h1>
+<p class="sub">${dash ? COPY.vercel.sub : "Deploy from a git push. One Go binary, agents that dial out, no SSH."}</p>
+${dash ? "" : `<div class="cta"><span class="cmd"><b>$</b>curl -fsSL ${SITE}/install.sh | sh</span></div>`}
+<ul class="chips">${(dash ? CHIPS : ["Apache 2.0", "300+ templates"]).map((x) => `<li>${x}</li>`).join("")}</ul></div>
+${dash ? `<div class="frame"><img src="file://${join(root, SHOT(v.shot))}"><b></b></div><div class="pill" style="left:590px;top:70px"><i></i>git push</div><div class="pill" style="left:610px;top:548px"><i class="g"></i>TLS ready</div>` : `<div class="scene">${ISO_SVG}</div>`}
+<div class="url">${dash ? domain : SITE}</div>${dash ? "" : '<div class="tag">Go / Docker / Caddy</div>'}<div class="grain"></div></div></body></html>`;
 }
 
 // Tab icon: a dark plate with a brighter ramp so the three rails read at 16px.

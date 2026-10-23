@@ -17,6 +17,7 @@ Output goes to `docs/public/og/<slug>.png` (slashes become dashes), served at `<
 
 - `og-home-iso`: dark 1200x630 hero card with the isometric scene, install command and grainy glows (grain-masked radial gradients). Output `docs/assets/og/og-home-iso.png`.
 - `og-home-iso-light`: light twin for README `<picture>` use. Output `docs/assets/og/og-home-iso-light.png`.
+- `og-home-dash`, `og-home-dash-light`: same look with the original copy ("Your own Vercel.") and the populated dashboard in a tilted glass frame (`dashboard-home.png` / `dashboard-home-light.png`, offset in the frame to crop the attention banner). Outputs `docs/assets/og/og-home-dash.png` and `og-home-dash-light.png`.
 - Scene source: `scripts/og/assets/iso-hero.svg`, a static copy of the site hero (resting state, token parked, no animation).
 - Review samples: `docs/assets/og/preview/`.
 
