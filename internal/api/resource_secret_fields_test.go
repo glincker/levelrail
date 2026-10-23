@@ -42,6 +42,7 @@ var sensitiveFieldAllowlist = map[string]string{ //nolint:gosec // field names a
 	"cliPairResponse.Token":                             "minted credential returned once to the CLI that redeemed a single-use pairing code",
 	"createNodeJoinTokenResponse.Token":                 "show-once join token at creation",
 	"createTokenResponse.Token":                         "show-once API token at creation",
+	"trafficExportSinkResource.Token":                   "input-only request field, responses are built by trafficExportView and carry only token_set",
 	"reenrollTokenResponse.Token":                       "show-once re-enroll token",
 	"mintSessionLinkResponse.Token":                     "show-once sign-in link token for the requester",
 	"mobilePairResponse.Token":                          "show-once mobile pairing token",
