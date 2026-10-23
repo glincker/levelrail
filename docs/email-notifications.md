@@ -90,8 +90,13 @@ Every outbound send is recorded with its provider, outcome, provider message id 
 | `APP_EMAIL_LOG_FULL_ADDRESS` | off | Set to `true` to store and show full recipient addresses. |
 | `APP_EMAIL_SENDS_PER_MINUTE`, `APP_EMAIL_SENDS_PER_DAY` | unlimited | Default caps, used when the page leaves a cap at 0. |
 | `APP_EMAIL_RETRY_ATTEMPTS`, `APP_EMAIL_RETRY_BASE_MS` | `3`, `500` | Attempts and first backoff for transient provider failures. |
+| `APP_EMAIL_REVEAL_PER_MINUTE` | `3` | Credential reveals allowed per user per minute. |
 
 Transient failures (provider 5xx, rate limiting, SMTP 4xx, dropped connections) are retried with doubling backoff. Authentication, sender and TLS failures are not retried.
+
+## Reveal a stored credential
+
+Stored credentials are write-only everywhere except one path: **Reveal** next to a configured credential in **Settings > Email**, or `levelrail-cli settings email providers reveal <id> <field> --yes-print`. It needs your password and an authenticator or recovery code, so an account without two-factor authentication is refused. The value shows for 30 seconds, is never cached, and every attempt is recorded in the audit log without the value. There is no MCP tool for it.
 
 The alert rule kind `email_delivery_failing` fires while recent sends mostly fail. It is available through the alerts API and has no default rule.
 

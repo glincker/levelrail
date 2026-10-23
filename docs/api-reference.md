@@ -1069,6 +1069,7 @@ Endpoints for:
 | DELETE | /api/v1/settings/email/providers/{id} | AbilityRoot | handleDeleteEmailProvider |
 | POST | /api/v1/settings/email/providers/{id}/test | AbilityRoot | handleTestEmailProvider |
 | POST | /api/v1/settings/email/providers/{id}/promote | AbilityRoot | handlePromoteEmailProvider |
+| POST | /api/v1/settings/email/providers/{id}/secrets/{field}/reveal | AbilityRoot | handleRevealEmailSecret |
 
 </Accordion>
 

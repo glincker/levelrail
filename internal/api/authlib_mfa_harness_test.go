@@ -31,7 +31,7 @@ type mfaHarness struct {
 }
 
 // newMFAHarness builds a router over a fresh database holding the bootstrap admin.
-func newMFAHarness(t *testing.T) *mfaHarness {
+func newMFAHarness(t *testing.T, extra ...Option) *mfaHarness {
 	t.Helper()
 	db := openTestDB(t)
 	h := &mfaHarness{t: t, db: db, key: make([]byte, 32)}
@@ -53,7 +53,7 @@ func newMFAHarness(t *testing.T) *mfaHarness {
 		t.Fatalf("authengine.New: %v", err)
 	}
 	t.Cleanup(eng.Close)
-	h.rt = NewRouter(discardLogger(), testBrand(), db, WithAuthEngine(eng))
+	h.rt = NewRouter(discardLogger(), testBrand(), db, append([]Option{WithAuthEngine(eng)}, extra...)...)
 	h.cookie = loginTestSession(t, h.rt, db)
 	return h
 }

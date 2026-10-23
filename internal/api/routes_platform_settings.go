@@ -21,6 +21,8 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/settings/email/providers/{id}/test", rt.requireAbility(AbilityRoot, rt.handleTestEmailProvider))
 	// Swaps the primary and backup roles atomically, moving credentials with them.
 	mux.HandleFunc("POST /api/v1/settings/email/providers/{id}/promote", rt.requireAbility(AbilityRoot, rt.handlePromoteEmailProvider))
+	// Root plus a fresh step-up and an enrolled authenticator: returns one stored credential, no-store, audited, never via MCP.
+	mux.HandleFunc("POST /api/v1/settings/email/providers/{id}/secrets/{field}/reveal", rt.requireAbility(AbilityRoot, rt.handleRevealEmailSecret))
 	// Root: a test send goes to any address, so it is not open to ordinary write tokens.
 	mux.HandleFunc("POST /api/v1/settings/email/test", rt.requireAbility(AbilityRoot, rt.handleTestEmail))
 	mux.HandleFunc("GET /api/v1/settings/email/status", rt.requireAbility(AbilityRead, rt.handleEmailStatus))

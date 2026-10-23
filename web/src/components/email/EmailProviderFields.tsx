@@ -15,7 +15,12 @@ import type {
   EmailSettingsFormInput,
   EmailSettingsFormOutput,
 } from '../EmailSettingsSchema'
+import {
+  usePrimaryEmailProviderId,
+  type EmailSecretField,
+} from '../../queries/emailSecretReveal'
 import { EmailField } from './EmailField'
+import { EmailSecretRevealSlot } from './RevealEmailSecret'
 import { ProviderMark } from './ProviderMark'
 import { SES_SMTP_PORTS, SMTP_PRESETS } from './emailProviders'
 
@@ -35,6 +40,18 @@ function SecretHint({ set }: { set?: boolean }) {
   return (
     <>{set ? t('emailDelivery.secretSet') : t('emailDelivery.secretUnset')}</>
   )
+}
+
+function SecretReveal({
+  field,
+  isSet,
+}: {
+  field: EmailSecretField
+  isSet?: boolean
+}) {
+  const primary = usePrimaryEmailProviderId()
+  if (!isSet) return null
+  return <EmailSecretRevealSlot field={field} providerId={primary.data} />
 }
 
 function SmtpFields({ form, settings }: Props) {
@@ -95,6 +112,12 @@ function SmtpFields({ form, settings }: Props) {
           id="smtp-password"
           label={t('emailDelivery.password')}
           description={<SecretHint set={settings.smtp_password_set} />}
+          trailing={
+            <SecretReveal
+              field="smtp_password"
+              isSet={settings.smtp_password_set}
+            />
+          }
         >
           <Input
             id="smtp-password"
@@ -137,6 +160,12 @@ function SesApiFields({
         id="ses-secret-access-key"
         label={t('emailDelivery.ses.secretAccessKey')}
         description={<SecretHint set={settings.ses_secret_access_key_set} />}
+        trailing={
+          <SecretReveal
+            field="ses_secret_access_key"
+            isSet={settings.ses_secret_access_key_set}
+          />
+        }
         className="sm:col-span-2"
       >
         <Input
@@ -248,6 +277,12 @@ function SesSmtpFields({
           id="ses-smtp-password"
           label={t('emailDelivery.password')}
           description={<SecretHint set={settings.ses_smtp_password_set} />}
+          trailing={
+            <SecretReveal
+              field="ses_smtp_password"
+              isSet={settings.ses_smtp_password_set}
+            />
+          }
         >
           <Input
             id="ses-smtp-password"
@@ -265,17 +300,24 @@ function ApiKeyField({
   form,
   id,
   name,
+  field,
   label,
   isSet,
 }: {
   form: EmailForm
   id: string
   name: 'resendApiKey' | 'postmarkToken' | 'sendgridApiKey' | 'mailgunApiKey'
+  field: EmailSecretField
   label: string
   isSet?: boolean
 }) {
   return (
-    <EmailField id={id} label={label} description={<SecretHint set={isSet} />}>
+    <EmailField
+      id={id}
+      label={label}
+      description={<SecretHint set={isSet} />}
+      trailing={<SecretReveal field={field} isSet={isSet} />}
+    >
       <Input
         id={id}
         type="password"
@@ -328,6 +370,7 @@ function MailgunFields({ form, settings }: Props) {
           form={form}
           id="mailgun-api-key"
           name="mailgunApiKey"
+          field="mailgun_api_key"
           label={t('emailDelivery.apiKey')}
           isSet={settings.mailgun_api_key_set}
         />
@@ -353,6 +396,7 @@ export function EmailProviderFields({ form, settings }: Props) {
           form={form}
           id="resend-api-key"
           name="resendApiKey"
+          field="resend_api_key"
           label={t('emailDelivery.apiKey')}
           isSet={settings.resend_api_key_set}
         />
@@ -363,6 +407,7 @@ export function EmailProviderFields({ form, settings }: Props) {
           form={form}
           id="postmark-token"
           name="postmarkToken"
+          field="postmark_server_token"
           label={t('emailDelivery.postmark.token')}
           isSet={settings.postmark_server_token_set}
         />
@@ -373,6 +418,7 @@ export function EmailProviderFields({ form, settings }: Props) {
           form={form}
           id="sendgrid-api-key"
           name="sendgridApiKey"
+          field="sendgrid_api_key"
           label={t('emailDelivery.apiKey')}
           isSet={settings.sendgrid_api_key_set}
         />

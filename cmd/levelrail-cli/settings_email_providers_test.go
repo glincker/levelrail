@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -164,5 +165,62 @@ func TestSettingsEmailProviders_Usage(t *testing.T) {
 	}
 	if code, out, _ := runProviders(t, "", "-h"); code != exitOK || !strings.Contains(out, "promote") {
 		t.Errorf("help exit = %d", code)
+	}
+}
+
+func TestSettingsEmailProviders_RevealRefusesWithoutYesPrint(t *testing.T) {
+	srv, calls := providerServer(t, func(providerCall) (int, any) { return http.StatusOK, map[string]string{"value": "x"} })
+	prev := promptHidden
+	promptHidden = func(io.Writer, string) (string, error) {
+		t.Error("prompted before --yes-print was confirmed")
+		return "", nil
+	}
+	t.Cleanup(func() { promptHidden = prev })
+	code, stdout, stderr := runProviders(t, "", "reveal", "prov_1", "resend_api_key", "--api-url", srv.URL)
+	if code != exitValidation || stdout != "" || !strings.Contains(stderr, "--yes-print") {
+		t.Fatalf("exit = %d stdout = %q stderr = %q", code, stdout, stderr)
+	}
+	if len(*calls) != 0 {
+		t.Fatalf("made %d API calls without --yes-print", len(*calls))
+	}
+}
+
+func TestSettingsEmailProviders_RevealPromptsForPasswordThenCode(t *testing.T) {
+	var proofs []apiclient.StepUpProof
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			StepUp apiclient.StepUpProof `json:"step_up"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		proofs = append(proofs, body.StepUp)
+		if r.URL.RawQuery != "" {
+			t.Error("proof must travel in the body, not the query")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if body.StepUp.Code == "" {
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error":"code needed","code":"step_up_code_required"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"value":"re_secret_value"}`))
+	}))
+	t.Cleanup(srv.Close)
+	answers := []string{"pw", "123456"}
+	prev := promptHidden
+	promptHidden = func(io.Writer, string) (string, error) {
+		a := answers[0]
+		answers = answers[1:]
+		return a, nil
+	}
+	t.Cleanup(func() { promptHidden = prev })
+	code, stdout, stderr := runProviders(t, "", "reveal", "prov_1", "resend_api_key", "--yes-print", "--api-url", srv.URL)
+	if code != exitOK || strings.TrimSpace(stdout) != "re_secret_value" {
+		t.Fatalf("exit = %d stdout = %q stderr = %q", code, stdout, stderr)
+	}
+	if strings.Contains(stderr, "re_secret_value") {
+		t.Errorf("stderr leaked the value: %q", stderr)
+	}
+	if len(proofs) != 2 || proofs[1].Password != "pw" || proofs[1].Code != "123456" {
+		t.Fatalf("proofs = %+v", proofs)
 	}
 }
