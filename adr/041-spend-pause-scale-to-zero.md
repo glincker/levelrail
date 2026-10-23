@@ -171,16 +171,21 @@ What exists and must be reused, not duplicated:
   budgets (they stay alert only).
 - No automatic arming, and no AI in deciding or enforcing a pause.
 
+## Owner decisions (2026-10-23)
+
+1. Final warning: a fixed warning at 90 percent is always sent, even when the cap
+   has no level below 100. At 100 percent the pause waits a short countdown (set
+   by an environment variable), and a raised cap, an override or a resume
+   cancels it.
+2. Rollover: paused apps resume on their own when the month rolls over. An app
+   can be marked manual-resume per app, and then it stays paused until a root
+   user resumes it.
+3. Databases are never paused automatically. There is no opt-in for them.
+4. A protected-environment app is excluded from the automatic pause. A root user
+   can opt one in per app (`include_protected`). No second approver is required.
+
 ## Open questions for the owner
 
-1. Which level triggers the final warning when a cap has no warn level below 100
-   (default 90, or none)?
-2. Is rollover resume acceptable for every app, or should some need a manual
-   resume (for example after an abuse spike)?
-3. Should databases ever be pausable (a compute-only stop of a replica
-   database), or is "never" permanent?
-4. Does including a protected environment need a recorded second approver
-   (`deploy_approval`), or is root opt-in enough?
 5. How many manual override extensions per month, and how long, before an app
    must stay paused?
 6. Dry-run validity: 30 days plus "app set unchanged", or shorter?
