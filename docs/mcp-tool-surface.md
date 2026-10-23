@@ -49,13 +49,13 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | scheduled | 4 | 331 |
 | search | 2 | 237 |
 | security | 3 | 142 |
-| settings | 3 | 159 |
+| settings | 3 | 188 |
 | storage | 5 | 558 |
 | system | 13 | 735 |
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 145 |
-| **total** | **248** | **24653** |
+| **total** | **248** | **24682** |
 
 ## Default session (progressive disclosure)
 

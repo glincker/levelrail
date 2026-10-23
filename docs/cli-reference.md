@@ -1755,6 +1755,12 @@ levelrail-cli settings oauth list [flags]
 levelrail-cli settings oauth set <provider> [flags]
 levelrail-cli settings email get [flags]
 levelrail-cli settings email set [flags]
+levelrail-cli settings email providers list [flags]
+levelrail-cli settings email providers add --backend NAME [--name N] [--from ADDR] [--secret-stdin] [flags]
+levelrail-cli settings email providers set <id> [flags]
+levelrail-cli settings email providers rm <id> [flags]
+levelrail-cli settings email providers test <id> [--to ADDR] [flags]
+levelrail-cli settings email providers promote <id> [flags]
 levelrail-cli settings ingress get [flags]
 levelrail-cli settings ingress set [--primary-domain D] [--acme-enabled] [--public-https-port N] [--tls-terminated-upstream] [--apps-base-domain HOST] [--dns-cname-target HOST] [--dns-ttl SECONDS] [--dns-proxied] [flags]
 levelrail-cli settings ingress https status [flags]
@@ -1774,6 +1780,7 @@ levelrail-cli settings ai-assistant get|set|clear [flags]
 ```
 
 - `oauth set <provider>` enables, configures or disables one sign in provider; `<provider>` is `google`, `github` or `oidc`.
+- `email get|set` reads and writes the primary provider plus the sender identity and is kept for scripts that predate providers. `email providers` manages one primary and at most one backup: the first provider added is the primary, the second the backup, and sending falls over to the backup when the primary fails before a message is accepted. The credential is read from stdin (`--secret-stdin`) or a hidden prompt, never from arguments; `set` keeps the stored one unless you supply another. `test <id>` sends through that provider alone, `promote <id>` swaps the roles, and `rm` on the primary is refused while a backup exists.
 - `ingress get` shows the primary domain, ACME settings, the automatic hostname toggle and the detected public address. `ingress set` changes them (`--primary-domain`, `--acme-enabled`, `--acme-email`, `--acme-directory-url`, `--fallback-domains=false`, `--hsts-enabled`, `--apps-base-domain`, `--dns-cname-target`, `--dns-ttl`, `--dns-proxied`); flags you leave out keep their current value.
 - `ingress https status` shows whether the dashboard's free sslip.io HTTPS is off, pending, issued or failed. `ingress https enable` points the dashboard at `<dashed-ip>.sslip.io` and issues a real Let's Encrypt certificate for it, with no DNS setup. `--email` defaults to your admin account email. Plain HTTP sign-in stops once the https dashboard URL is saved.
 - `edge get|set|fix` shows and changes request limits and the trusted proxy list; `fix` detects the proxy in front of this server and trusts it. `levelrail-cli ingress-limits show|set|clear APP` is the per-app request body cap. See [Domains and ingress](/domains-and-ingress#edge-limits-client-ips-and-failover).

@@ -61,6 +61,9 @@ func emailConfigLoader(db *store.DB, secretsManager *secrets.Manager, envFallbac
 func emailProvidersLoader(db *store.DB, secretsManager *secrets.Manager, envFallback *email.SMTPConfig) email.ProvidersLoader {
 	single := emailConfigLoader(db, secretsManager, envFallback)
 	return func(ctx context.Context) ([]email.ProviderConfig, error) {
+		if only := email.OnlyProviderID(ctx); only != "" {
+			return onlyProviderConfig(ctx, db, secretsManager, only)
+		}
 		rows, err := db.ListEmailProviders(ctx)
 		if err != nil {
 			return nil, err
@@ -105,6 +108,28 @@ func emailProvidersLoader(db *store.DB, secretsManager *secrets.Manager, envFall
 	}
 }
 
+// onlyProviderConfig resolves one provider by id, enabled or not, for a test send that must not fail over.
+func onlyProviderConfig(ctx context.Context, db *store.DB, m *secrets.Manager, id string) ([]email.ProviderConfig, error) {
+	if m == nil {
+		return nil, fmt.Errorf("email providers: no master key is configured")
+	}
+	r, err := db.GetEmailProvider(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	settings, err := db.GetEmailSettings(ctx)
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := emailConfigFromSettings(providerSettings(settings, r), func(key string) (string, error) {
+		return resolveEmailProviderSecret(ctx, m, r, key)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return []email.ProviderConfig{{ID: r.ID, Config: cfg}}, nil
+}
+
 // providerSettings overlays a provider row's transport fields on the shared sender identity and caps.
 func providerSettings(shared store.EmailSettings, p store.EmailProvider) store.EmailSettings {
 	s := shared
@@ -118,11 +143,7 @@ func providerSettings(shared store.EmailSettings, p store.EmailProvider) store.E
 // resolveEmailProviderSecret reads the primary's credentials from the shared email-settings service name
 // (unchanged) and every other provider's from its own.
 func resolveEmailProviderSecret(ctx context.Context, m *secrets.Manager, p store.EmailProvider, envKey string) (string, error) {
-	service := store.EmailSettingsSecretsKey()
-	if p.Role != store.EmailRolePrimary {
-		service = store.EmailSettingsSecretsKey() + "/" + p.ID
-	}
-	value, err := m.Resolve(ctx, service, envKey)
+	value, err := m.Resolve(ctx, store.EmailProviderSecretsKey(p.Role, p.ID), envKey)
 	if errors.Is(err, secrets.ErrValueNotFound) {
 		return "", nil
 	}

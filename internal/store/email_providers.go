@@ -17,6 +17,15 @@ const (
 // EmailPrimaryProviderID is the id the migration gives a backfilled primary.
 const EmailPrimaryProviderID = "prov_primary"
 
+// EmailProviderSecretsKey is the internal/secrets service name holding a provider's credentials. The primary keeps
+// the shared email-settings namespace so existing installs keep working; a backup gets its own.
+func EmailProviderSecretsKey(role, id string) string {
+	if role == EmailRolePrimary {
+		return EmailSettingsSecretsKey()
+	}
+	return EmailSettingsSecretsKey() + "/" + id
+}
+
 // ErrEmailProviderInvalid wraps every validation failure of UpsertEmailProvider and DeleteEmailProvider.
 var ErrEmailProviderInvalid = errors.New("store: invalid email provider")
 
@@ -218,8 +227,42 @@ func (db *DB) UpsertEmailProvider(ctx context.Context, p EmailProvider) error {
 	if err != nil {
 		return fmt.Errorf("store: upsert email provider: %w", err)
 	}
+	if p.Role == EmailRolePrimary {
+		if err := syncPrimaryToSettings(ctx, tx, &p); err != nil {
+			return err
+		}
+	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("store: upsert email provider: %w", err)
+	}
+	return nil
+}
+
+// syncPrimaryToSettings mirrors the primary's transport fields into email_settings (nil clears the backend), so
+// readers of the single-row settings keep seeing the active primary. Identity and caps are never touched.
+func syncPrimaryToSettings(ctx context.Context, tx *sql.Tx, p *EmailProvider) error {
+	if p == nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE email_settings SET backend = '' WHERE id = 1`); err != nil {
+			return fmt.Errorf("store: sync email settings: %w", err)
+		}
+		return nil
+	}
+	skip := 0
+	if p.TLSSkipVerify {
+		skip = 1
+	}
+	_, err := tx.ExecContext(ctx, `
+		UPDATE email_settings
+		SET backend = ?, smtp_host = ?, smtp_port = ?, smtp_username = ?, smtp_from = ?,
+		    ses_region = ?, ses_access_key_id = ?, ses_from = ?, resend_from = ?,
+		    tls_mode = ?, tls_skip_verify = ?, ses_smtp_port = ?, ses_smtp_username = ?,
+		    mailgun_domain = ?, mailgun_region = ?
+		WHERE id = 1
+	`, p.Backend, p.SMTPHost, p.SMTPPort, p.SMTPUsername, p.SMTPFrom,
+		p.SESRegion, p.SESAccessKeyID, p.SESFrom, p.ResendFrom,
+		p.TLSMode, skip, p.SESSMTPPort, p.SESSMTPUsername, p.MailgunDomain, p.MailgunRegion)
+	if err != nil {
+		return fmt.Errorf("store: sync email settings: %w", err)
 	}
 	return nil
 }
@@ -252,6 +295,11 @@ func (db *DB) DeleteEmailProvider(ctx context.Context, id string) error {
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM email_providers WHERE id = ?`, id); err != nil {
 		return fmt.Errorf("store: delete email provider: %w", err)
+	}
+	if role == EmailRolePrimary {
+		if err := syncPrimaryToSettings(ctx, tx, nil); err != nil {
+			return err
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("store: delete email provider: %w", err)

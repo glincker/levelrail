@@ -1062,6 +1062,13 @@ Endpoints for:
 | GET | /api/v1/settings/email/deliveries | AbilityRoot | handleListEmailDeliveries |
 | GET | /api/v1/settings/email/deliveries/{id} | AbilityRoot | handleGetEmailDelivery |
 | POST | /api/v1/settings/vault/rotate-credential | AbilityRoot | handleRotateVaultCredential |
+| GET | /api/v1/settings/email/providers | AbilityRead | handleListEmailProviders |
+| POST | /api/v1/settings/email/providers | AbilityRoot | handleCreateEmailProvider |
+| GET | /api/v1/settings/email/providers/{id} | AbilityRead | handleGetEmailProvider |
+| PUT | /api/v1/settings/email/providers/{id} | AbilityRoot | handleUpdateEmailProvider |
+| DELETE | /api/v1/settings/email/providers/{id} | AbilityRoot | handleDeleteEmailProvider |
+| POST | /api/v1/settings/email/providers/{id}/test | AbilityRoot | handleTestEmailProvider |
+| POST | /api/v1/settings/email/providers/{id}/promote | AbilityRoot | handlePromoteEmailProvider |
 
 </Accordion>
 

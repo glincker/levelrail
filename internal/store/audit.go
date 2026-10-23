@@ -107,6 +107,9 @@ func SaveAuditEntryTx(ctx context.Context, tx *sql.Tx, e AuditEntry) error {
 	return insertAuditEntry(ctx, tx, e)
 }
 
+// AuditActionEmailSecretsChanged marks a write to email provider credentials; its Detail names fields, never values.
+const AuditActionEmailSecretsChanged = "email_provider.secrets_changed"
+
 // AuditActionSSHProvisionHostKeySkipped marks an SSH node provision that skipped host key verification.
 const AuditActionSSHProvisionHostKeySkipped = "node_ssh_provision.host_key_skipped"
 

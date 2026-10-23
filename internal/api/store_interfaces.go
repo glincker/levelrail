@@ -250,6 +250,7 @@ type Store interface {
 	OAuthSettingsStore
 	OAuthIdentityStore
 	EmailSettingsStore
+	EmailProviderStore
 	ObservabilityStore
 	CloudflareTunnelStore
 	RegistryStore

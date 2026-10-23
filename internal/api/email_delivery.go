@@ -30,10 +30,11 @@ type testEmailRequest struct {
 }
 
 type testEmailResponse struct {
-	To        string `json:"to"`
-	Provider  string `json:"provider"`
-	MessageID string `json:"message_id,omitempty"`
-	Attempts  int    `json:"attempts"`
+	To         string `json:"to"`
+	Provider   string `json:"provider"`
+	ProviderID string `json:"provider_id,omitempty"`
+	MessageID  string `json:"message_id,omitempty"`
+	Attempts   int    `json:"attempts"`
 }
 
 type detailedSender interface {
@@ -46,6 +47,11 @@ type detailedSender interface {
 // test proves the real send path works. With no "to", it goes to the
 // signed-in user's own address.
 func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
+	rt.sendTestEmail(w, r, "")
+}
+
+// sendTestEmail is the test send; a non-empty providerID aims it at that provider alone, with no failover.
+func (rt *Router) sendTestEmail(w http.ResponseWriter, r *http.Request, providerID string) {
 	if rt.emailSender == nil {
 		writeError(w, http.StatusNotImplemented, "email is not configured on this control plane")
 		return
@@ -68,7 +74,11 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(email.WithoutRetry(email.WithKind(r.Context(), "test")), emailTestTimeout)
+	base := email.WithKind(r.Context(), "test")
+	if providerID != "" {
+		base = email.WithOnlyProvider(base, providerID)
+	}
+	ctx, cancel := context.WithTimeout(email.WithoutRetry(base), emailTestTimeout)
 	defer cancel()
 	subject := "Test email from " + rt.brand.Name
 	body := "This is a test email from your " + rt.brand.Name + " control plane. If you received this, your email settings are working."
@@ -86,7 +96,7 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 		writeCodedError(w, http.StatusBadGateway, string(kind), err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, testEmailResponse{To: to, Provider: res.Provider, MessageID: res.MessageID, Attempts: max(res.Attempts, 1)})
+	writeJSON(w, http.StatusOK, testEmailResponse{To: to, Provider: res.Provider, ProviderID: providerID, MessageID: res.MessageID, Attempts: max(res.Attempts, 1)})
 }
 
 func (rt *Router) signedInUserEmail(r *http.Request) string {
