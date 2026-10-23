@@ -1923,6 +1923,8 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/benchmarks/{id} | AbilityRoot | handleDeleteBenchmark |
 | GET | /api/v1/costs/app-caps | AbilityRead | handleListSpendCaps |
 | POST | /api/v1/costs/budgets/{id}/dry-run | AbilityRead | handleCostBudgetDryRun |
+| POST | /api/v1/migrations/verify | AbilityRoot | handleMigrationVerify |
+| GET | /api/v1/migrations/verify/latest | AbilityRead | handleLatestMigrationVerify |
 
 ## See also
 

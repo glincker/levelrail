@@ -236,6 +236,7 @@ type Store interface {
 	AppSleepStore
 	DataImportStore
 	MigrationHubStore
+	MigrationVerifyStore
 	MigrationChecklistStore
 	AppImportStore
 	LoginCodeStore

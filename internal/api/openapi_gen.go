@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1698 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1700 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1259,6 +1259,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/migration/takeover/runs/{run}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetTakeoverRun", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/takeover/runs/{run}/rollback", Ability: "AbilityRoot", Group: "Other", Handler: "handleRollbackTakeover", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/volumes", Ability: "AbilityRead", Group: "Other", Handler: "handleVolumeGuide", Description: ""},
+	{Method: "POST", Path: "/api/v1/migrations/verify", Ability: "AbilityRoot", Group: "Other", Handler: "handleMigrationVerify", Description: ""},
+	{Method: "GET", Path: "/api/v1/migrations/verify/latest", Ability: "AbilityRead", Group: "Other", Handler: "handleLatestMigrationVerify", Description: ""},
 	{Method: "GET", Path: "/api/v1/mobile/devices", Ability: "AbilityRead", Group: "Other", Handler: "handleListMobileDevices", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/mobile/devices/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleRevokeMobileDevice", Description: "Read tier so a device owner (or the phone itself) can revoke; root or owner is checked inside."},
 	{Method: "GET", Path: "/api/v1/mobile/overview", Ability: "AbilityRead", Group: "Other", Handler: "handleMobileOverview", Description: ""},

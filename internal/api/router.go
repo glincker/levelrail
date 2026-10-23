@@ -595,6 +595,8 @@ type Router struct {
 	appSleep                     AppSleepStore                                         // always set, sleep-when-idle settings
 	dataImports                  DataImportStore                                       // always set, live data copy status
 	migrationHub                 MigrationHubStore                                     // always set, server migration hub sessions
+	migrationVerify              MigrationVerifyStore                                  // always set, latest migration parity report
+	verifyLive                   *verifyLive                                           // in-memory source credential of the last parity check
 	migrationAgent               MigrationAgentService                                 // nil until the control plane registers the migration agent service
 	migrationChecklists          MigrationChecklistStore                               // always set, per-app cutover checklists
 	appImports                   AppImportStore                                        // always set, guided app import sessions
@@ -928,6 +930,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		appSleep:                    s,
 		dataImports:                 s,
 		migrationHub:                s,
+		migrationVerify:             s,
+		verifyLive:                  &verifyLive{},
 		migrationChecklists:         s,
 		appImports:                  s,
 		appImportLive:               newAppImportState(),

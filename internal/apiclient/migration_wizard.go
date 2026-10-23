@@ -5,8 +5,42 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/GLINCKER/levelrail/internal/migrateverify"
 	"github.com/GLINCKER/levelrail/internal/migrationplan"
 )
+
+// MigrationVerifyRequest is the source credential plus the probe settings
+// for POST /api/v1/migrations/verify. Recheck reuses the last request.
+type MigrationVerifyRequest struct {
+	MigrationSourceRequest
+	Recheck             bool   `json:"recheck,omitempty"`
+	SkipProbes          bool   `json:"skip_probes,omitempty"`
+	ProbeTimeoutSeconds int    `json:"probe_timeout_seconds,omitempty"`
+	ProbeConcurrency    int    `json:"probe_concurrency,omitempty"`
+	AllowPrivateProbes  bool   `json:"allow_private_probes,omitempty"`
+	TargetIP            string `json:"target_ip,omitempty"`
+	SourceIP            string `json:"source_ip,omitempty"`
+}
+
+// MigrationVerifyReport is the parity report plus whether Re-check is possible.
+type MigrationVerifyReport struct {
+	migrateverify.Report
+	CanRecheck bool `json:"can_recheck"`
+}
+
+// VerifyMigration calls POST /api/v1/migrations/verify. It changes nothing but stores the report.
+func (c *Client) VerifyMigration(ctx context.Context, req MigrationVerifyRequest) (MigrationVerifyReport, error) {
+	var out MigrationVerifyReport
+	err := c.do(ctx, http.MethodPost, "/api/v1/migrations/verify", req, &out)
+	return out, err
+}
+
+// LatestMigrationVerify calls GET /api/v1/migrations/verify/latest.
+func (c *Client) LatestMigrationVerify(ctx context.Context) (MigrationVerifyReport, error) {
+	var out MigrationVerifyReport
+	err := c.do(ctx, http.MethodGet, "/api/v1/migrations/verify/latest", nil, &out)
+	return out, err
+}
 
 // MigrationPlanReport is the read-only plan of a source platform.
 type MigrationPlanReport = migrationplan.Report

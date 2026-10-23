@@ -952,6 +952,10 @@
   "step",
   "verified"
  ],
+ "get_migration_verify_report": [
+  "differences",
+  "verdict"
+ ],
  "get_model": [
   "api_key_prefix",
   "context_length",

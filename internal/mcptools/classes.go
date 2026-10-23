@@ -266,6 +266,7 @@ var toolTable = map[string]Meta{
 	"get_migration_plan":                    {clsR, "databases", 0},
 	"get_app_import_plan":                   {clsR, "migrate", unt},
 	"get_app_import_exit_report":            {clsR, "migrate", unt},
+	"get_migration_verify_report":           {clsR, "migrate", unt},
 	"get_migration_job_status":              {clsR, "migrate", unt},
 	"list_app_import_sessions":              {clsR, "migrate", 0},
 	"get_app_import_cutover_plan":           {clsR, "migrate", unt},
