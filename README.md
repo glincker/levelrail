@@ -81,6 +81,18 @@ Signing in with your password from a new device needs approval: the CLI prints t
 
 Without `--deploy`, `import` only prints the deployment plan. To see the app's address, run `levelrail-cli open your-app`. It prints the custom domain first, then the automatic URL.
 
+### Or let your coding agent do it
+
+Install the skill once, then ask your agent in plain words. It deploys, waits for the rollout to actually converge, reads the failure if there is one, and rolls back safely:
+
+```bash
+npx skills add https://github.com/glincker/levelrail --skill levelrail
+```
+
+> Deploy this repo to my Levelrail and tell me when it is live.
+
+The skill is also listed at [skills.sh](https://www.skills.sh/glincker/levelrail/levelrail). Details: [Agents](docs/agents.md).
+
 ### If something fails
 
 | Step | Error you see | Fix |
