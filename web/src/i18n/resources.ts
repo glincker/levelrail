@@ -53,6 +53,7 @@ import type backups from '../locales/en/backups.json'
 import type sleepHistory from '../locales/en/sleepHistory.json'
 import type forms from '../locales/en/forms.json'
 import type splitTesting from '../locales/en/splitTesting.json'
+import type scheduledDeploy from '../locales/en/scheduledDeploy.json'
 import type gitBuild from '../locales/en/gitBuild.json'
 import type frameworks from '../locales/en/frameworks.json'
 import type teams from '../locales/en/teams.json'
@@ -159,6 +160,7 @@ declare module 'i18next' {
       sleepHistory: typeof sleepHistory
       forms: typeof forms
       splitTesting: typeof splitTesting
+      scheduledDeploy: typeof scheduledDeploy
       gitBuild: typeof gitBuild
       frameworks: typeof frameworks
       teams: typeof teams

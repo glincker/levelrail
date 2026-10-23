@@ -23,7 +23,8 @@ export interface AppSchedule {
 }
 
 export interface AppScheduleInput {
-  cron: string
+  cron?: string
+  run_at?: string
   branch: string
   timezone?: string
   enabled?: boolean

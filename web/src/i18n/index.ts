@@ -114,6 +114,7 @@ export const NAMESPACES = [
   'account',
   'palette',
   'splitTesting',
+  'scheduledDeploy',
 ] as const
 
 // New language: add its code here and a locales/<code>/ folder; untranslated namespaces and keys fall back to en.
