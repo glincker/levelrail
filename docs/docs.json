@@ -269,6 +269,7 @@
             "group": "CI/CD and automation",
             "pages": [
               "github-actions",
+              "use-any-ci",
               "pipelines",
               "pipelines-oidc",
               "git-integrations",

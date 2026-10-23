@@ -95,6 +95,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Control plane backup](https://docs.levelrail.com/control-plane-backup): back up and restore the control plane's own database.
 - [Disaster recovery](https://docs.levelrail.com/disaster-recovery): encrypted off-box backups, master key escrow, and scheduled restore drills.
 - [Deploying from GitHub Actions](https://docs.levelrail.com/github-actions): trigger Levelrail deploys from CI.
+- [Use any CI](https://docs.levelrail.com/use-any-ci): build in GitLab CI, CircleCI, Jenkins or Buildkite and let Levelrail host; templates, exit codes, safe retries.
 - [Pipelines](https://docs.levelrail.com/pipelines): define CI/CD pipelines as YAML with triggers, jobs, matrix builds, and approvals.
 - [Pipelines: OIDC federation](https://docs.levelrail.com/pipelines-oidc): mint short-lived OIDC tokens for pipeline jobs instead of long-lived cloud credentials.
 - [Platform as code](https://docs.levelrail.com/platform-as-code): describe projects, environments, apps, domains, and databases as YAML and apply the plan.

@@ -4,7 +4,7 @@ description: How the GitHub Actions checks on a pull request are chosen, what th
 "og:url": "https://docs.levelrail.com/ci"
 ---
 
-How the GitHub Actions checks on a pull request are chosen and which ones gate a merge. This page is for contributors to Levelrail itself.
+How the GitHub Actions checks on a pull request are chosen and which ones gate a merge. This page is for contributors to Levelrail itself. To deploy your own apps from CI, see [Use any CI](/use-any-ci).
 
 ## The short version
 

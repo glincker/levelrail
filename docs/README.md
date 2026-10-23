@@ -59,6 +59,7 @@ Four main types, plus two Levelrail-specific categories:
 | [deploying-apps.md](/deploying-apps) | An app's lifecycle: create, deploy, roll back, promote, health checks, resource limits, exec, and scheduled tasks |
 | [pages.md](/pages) | Deploy static HTML sites from git with no container, served by the embedded ingress with full TLS and domain routing |
 | [github-actions.md](/github-actions) | Deploy from a GitHub Actions workflow with the bundled composite Action |
+| [use-any-ci.md](/use-any-ci) | Build in any CI and deploy with the CLI: GitLab CI, CircleCI, Jenkins and Buildkite templates |
 | [git-integrations.md](/git-integrations) | Connect GitHub, GitLab, and Bitbucket, webhooks, and preview environments |
 | [pipelines.md](/pipelines) | Test, build, approve, and deploy with YAML pipelines: triggers, matrix, secrets, and approvals |
 

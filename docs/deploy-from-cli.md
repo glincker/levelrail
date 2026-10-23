@@ -121,5 +121,6 @@ Responses also carry `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLim
 
 ## Related
 
+- [Use any CI](/use-any-ci) has GitLab CI, CircleCI, Jenkins and Buildkite templates that build elsewhere and deploy with `apps deploy --image`.
 - [Deploying apps](/deploying-apps) covers git sources, images, rollbacks and promotion.
 - [Getting started](/getting-started) installs the control plane and the CLI.
