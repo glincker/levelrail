@@ -6,7 +6,7 @@ description: Build your own views of metrics, logs, deploys, alerts and cost, sh
 
 A custom dashboard is a named grid of widgets that you assemble yourself, against any app, database or node. Dashboards read the telemetry and resource endpoints the platform already has, so they add no new storage and no agents.
 
-Open **Dashboards** in the sidebar. With no dashboards yet you get three one click starters.
+Open **Dashboard** in the sidebar. Your boards are tabs next to **Start** and **Metrics**, and the **Manage** menu creates, imports, renames, exports and deletes them. The tab you used last opens first; before that it is a board once you have apps, and Start before your first app. Old `/dashboards` links open the same board here. **New from a starter** offers three one click starters.
 
 ## Starters
 
@@ -34,7 +34,7 @@ App based starters ask which app to read from. Every widget can be changed after
 
 ## Layout and editing
 
-Turn on **Edit** to change a dashboard. Each widget has buttons to move it earlier or later, to resize it (S is a quarter row, M a half row, L a full row) and to remove it. They are plain buttons, so everything works from the keyboard. **Add widget** picks the widget, what it reads from and, for charts, the metric.
+Choose **Manage**, then **Edit board**, to change a dashboard. Each widget has buttons to move it earlier or later, to resize it (S is a quarter row, M a half row, L a full row) and to remove it. They are plain buttons, so everything works from the keyboard. **Add widget** picks the widget, what it reads from and, for charts, the metric.
 
 The time range and the auto refresh interval (manual, 15 seconds, 30 seconds, a minute or 5 minutes) sit above the grid and are saved with the dashboard.
 

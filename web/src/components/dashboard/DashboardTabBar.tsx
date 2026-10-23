@@ -1,6 +1,6 @@
-import { useRef, type KeyboardEvent } from 'react'
+import { useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CaretDownIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -18,7 +18,8 @@ export interface TabBarProps {
   selected: string
   labelOf: (id: string) => string
   onSelect: (id: string) => void
-  onAdd: () => void
+  /** The Manage menu, rendered at the end of the bar. */
+  manage?: ReactNode
   onHide: (id: string) => void
   onShow: (id: string) => void
   onMove: (id: string, to: number) => void
@@ -31,7 +32,7 @@ export function DashboardTabBar({
   selected,
   labelOf,
   onSelect,
-  onAdd,
+  manage,
   onHide,
   onShow,
   onMove,
@@ -76,7 +77,7 @@ export function DashboardTabBar({
       <div
         role="tablist"
         aria-label={t('tabs.label')}
-        className="flex min-w-0 items-center gap-1 overflow-x-auto"
+        className="flex min-w-0 items-center gap-1 overflow-x-auto overscroll-x-contain"
       >
         {visible.map((id) => {
           const active = id === selected
@@ -153,15 +154,7 @@ export function DashboardTabBar({
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        aria-label={t('tabs.add')}
-        onClick={onAdd}
-      >
-        <PlusIcon />
-      </Button>
+      <div className="ml-auto shrink-0">{manage}</div>
     </div>
   )
 }

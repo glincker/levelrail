@@ -329,7 +329,6 @@
     "label": "Dashboard views",
     "start": "Start",
     "metrics": "Metrics",
-    "add": "New dashboard",
     "more": "More views",
     "hiddenSuffix": "{{name}} (hidden)",
     "addTitle": "New dashboard",
@@ -337,8 +336,27 @@
     "empty": "Empty dashboard",
     "metricsNote": "Fleet-wide totals. Customize it to make your own copy.",
     "customize": "Customize",
-    "copyFailed": "Could not copy the Metrics view",
     "emptyName": "Untitled dashboard",
-    "createFailed": "Could not create the dashboard"
+    "metricsEmptyTitle": "No metrics yet",
+    "metricsEmptyBody": "Metrics fill in once your first app is running. Deploy one to see CPU, memory and traffic here.",
+    "metricsEmptyAction": "Deploy your first app"
+  },
+  "manage": {
+    "label": "Manage",
+    "new": "New board",
+    "starter": "New from a starter",
+    "import": "Import JSON",
+    "importFile": "Dashboard JSON file",
+    "edit": "Edit board",
+    "doneEditing": "Stop editing",
+    "rename": "Rename",
+    "renameTitle": "Rename board",
+    "name": "Name",
+    "export": "Export JSON",
+    "delete": "Delete",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteBody": "The board is removed for everyone who can see it. Exported JSON files are not affected.",
+    "cancel": "Cancel",
+    "save": "Save"
   }
 }

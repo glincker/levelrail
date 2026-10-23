@@ -110,6 +110,7 @@ Four main types, plus two Levelrail-specific categories:
 | --- | --- |
 | [projects-and-organizations.md](/projects-and-organizations) | The optional organization/project/environment grouping hierarchy for apps and databases |
 | [service-topology-graph.md](/service-topology-graph) | A project's apps, databases, and shared volumes drawn as a diagram, with real derived edges |
+| [canvas.md](/canvas) | The beta Canvas editor: add apps and databases, connect them, review the plan, then apply; what it cannot do yet |
 | [identity-and-access.md](/identity-and-access) | Users, roles, abilities, IAM policies, invites, tokens, 2FA, OAuth, and audit logging |
 | [tags.md](/tags) | Label and organize apps with arbitrary tags for filtering and grouping |
 

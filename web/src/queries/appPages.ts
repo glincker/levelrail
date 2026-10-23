@@ -122,6 +122,21 @@ export function appsSummaryQueryOptions() {
   })
 }
 
+// Unscoped on purpose: a project or environment filter with no apps must not
+// look like a fresh install.
+export function anyAppsQueryOptions() {
+  return queryOptions({
+    queryKey: [...appKeys.all, 'any'] as const,
+    queryFn: async ({ signal }): Promise<boolean> => {
+      const res = await fetch('/api/v1/apps?limit=1', { signal })
+      if (!res.ok) return false
+      const items = (await res.json()) as unknown[]
+      return Number(res.headers.get('X-Total-Count') ?? items.length) > 0
+    },
+    staleTime: DEDUPE_STALE_MS,
+  })
+}
+
 // Failing apps first, then the first page by name: what the dashboard needs
 // to sample deploys and traffic without the whole list.
 export function appSampleQueryOptions() {

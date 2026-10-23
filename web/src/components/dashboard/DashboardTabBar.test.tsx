@@ -28,7 +28,7 @@ function Harness({ ids }: { ids: string[] }) {
         selected={tabs.selected}
         labelOf={labelOf}
         onSelect={tabs.select}
-        onAdd={vi.fn()}
+        manage={null}
         onHide={tabs.hide}
         onShow={tabs.show}
         onMove={tabs.move}

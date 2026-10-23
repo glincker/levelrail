@@ -1,7 +1,10 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createInstance } from 'i18next'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import templatesEn from '../locales/en/templates.json'
 import { BrowseTemplatesFields } from './BrowseTemplatesFields'
 
 // ServiceTemplateGrid's card links each template's name/logo to
@@ -38,14 +41,24 @@ function fakeJsonResponse(body: unknown, status = 200): Response {
   } as unknown as Response
 }
 
+const testI18n = createInstance()
+void testI18n.use(initReactI18next).init({
+  lng: 'en',
+  resources: { en: { templates: templatesEn } },
+  defaultNS: 'templates',
+  interpolation: { escapeValue: false },
+})
+
 function renderFields() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   render(
-    <QueryClientProvider client={queryClient}>
-      <BrowseTemplatesFields open onCreated={() => {}} />
-    </QueryClientProvider>,
+    <I18nextProvider i18n={testI18n}>
+      <QueryClientProvider client={queryClient}>
+        <BrowseTemplatesFields open onCreated={() => {}} />
+      </QueryClientProvider>
+    </I18nextProvider>,
   )
 }
 

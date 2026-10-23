@@ -216,5 +216,15 @@
     "deploy": "Deploy",
     "deploying": "Deploying...",
     "success": "Deployed {{app}}"
+  },
+  "card": {
+    "ramRecommended": "~{{size}} RAM recommended",
+    "needsGpu": "Needs NVIDIA GPU",
+    "deployNow": "Deploy now",
+    "deployNowSetup": "Deploy now (needs setup)",
+    "deploying": "Deploying...",
+    "searchPlaceholder": "Search templates...",
+    "searchLabel": "Search templates",
+    "noMatch": "No templates match “{{search}}”."
   }
 }

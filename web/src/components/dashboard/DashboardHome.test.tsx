@@ -95,7 +95,9 @@ function routeFetch(handlers: Record<string, unknown>) {
   )
 }
 
-function renderHome(apps: AppListEntry[]) {
+function renderHome(apps: AppListEntry[], tab: string | null = 'start') {
+  window.localStorage.clear()
+  if (tab) window.localStorage.setItem('dashboard.tab.v1', tab)
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <I18nextProvider i18n={testI18n}>
@@ -134,12 +136,54 @@ afterEach(() => {
 })
 
 describe('DashboardHome', () => {
+  it('lands on Metrics when apps exist and no tab was chosen', async () => {
+    routeFetch({})
+    renderHome([makeApp('web', true)], null)
+    expect(
+      await screen.findByRole('tab', { name: 'Metrics', selected: true }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Deploy sample app')).not.toBeInTheDocument()
+  })
+
+  it('keeps the last chosen tab over the apps default', async () => {
+    routeFetch({})
+    renderHome([makeApp('web', true)], 'start')
+    expect(
+      await screen.findByRole('tab', { name: 'Start', selected: true }),
+    ).toBeInTheDocument()
+  })
+
+  it('lands on Start with no apps and explains the empty Metrics tab', async () => {
+    routeFetch({})
+    renderHome([], null)
+    expect(
+      await screen.findByRole('tab', { name: 'Start', selected: true }),
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('tab', { name: 'Metrics' }))
+    expect(screen.getByText('No metrics yet')).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Deploy your first app' }),
+    )
+    expect(
+      screen.getByRole('tab', { name: 'Start', selected: true }),
+    ).toBeInTheDocument()
+  })
+
+  it('treats apps hidden by the scope filter as an existing install', async () => {
+    routeFetch({ '/api/v1/apps?limit=1': [{ name: 'web' }] })
+    renderHome([], null)
+    expect(
+      await screen.findByRole('tab', { name: 'Metrics', selected: true }),
+    ).toBeInTheDocument()
+  })
+
   it('first run shows the single first-deploy path and the adaptive quick start', async () => {
     routeFetch({})
     renderHome([])
     expect(
       await screen.findByRole('button', { name: 'Deploy sample app' }),
     ).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Metrics' })).toBeInTheDocument()
     expect(screen.getByText('Import anything')).toBeInTheDocument()
     expect(screen.getByText('Deploy a template')).toBeInTheDocument()
     expect(screen.getByText('Connect Git')).toBeInTheDocument()

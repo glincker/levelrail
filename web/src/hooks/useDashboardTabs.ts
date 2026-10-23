@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import {
   DEFAULT_TAB_PREFS,
   START_TAB,
+  defaultTab,
   hiddenTabs,
   hideTab,
   moveTab,
@@ -41,8 +42,8 @@ function store(key: string, value: string) {
   }
 }
 
-/** Tab order, hidden tabs and the selected tab, kept in localStorage. */
-export function useDashboardTabs(dashboardIds: string[]) {
+/** Tab order, hidden tabs and the selected tab (last choice, else a board with apps, else Start), kept in localStorage. */
+export function useDashboardTabs(dashboardIds: string[], hasApps = false) {
   const [prefs, setPrefs] = useState(loadPrefs)
   // Held raw so a saved dashboard tab survives the moment before the list loads.
   const [stored, setStored] = useState(loadTab)
@@ -53,7 +54,7 @@ export function useDashboardTabs(dashboardIds: string[]) {
   )
   const shown = useMemo(() => shownTabs(all, prefs), [all, prefs])
   const hidden = useMemo(() => hiddenTabs(all, prefs), [all, prefs])
-  const selected = pickSelected(stored, shown)
+  const selected = pickSelected(stored, shown, defaultTab(hasApps, shown))
 
   const select = useCallback((id: string) => {
     setStored(id)
@@ -69,6 +70,7 @@ export function useDashboardTabs(dashboardIds: string[]) {
     hidden,
     selected,
     storedTab: stored ?? START_TAB,
+    hasStored: stored !== null,
     select,
     hide: (id: string) => {
       updatePrefs(hideTab(prefs, id))

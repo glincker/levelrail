@@ -11,7 +11,15 @@ import { SkeletonLine, SkeletonTile } from '@/components/kit'
 
 // Same loader/useSuspenseQuery split as routes/apps/index.tsx: the
 // loader primes the cache, the component only reads it.
+interface HomeSearch {
+  board?: string
+}
+
 export const Route = createFileRoute('/')({
+  validateSearch: (search: Record<string, unknown>): HomeSearch =>
+    typeof search.board === 'string' && search.board
+      ? { board: search.board }
+      : {},
   loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.ensureQueryData(appsSummaryQueryOptions()),
@@ -31,9 +39,10 @@ function DashboardPage() {
     ...appSampleQueryOptions(),
     refetchInterval: 15_000,
   })
+  const { board } = Route.useSearch()
   return (
     <div className="space-y-8">
-      <DashboardHome summary={summary} sample={sample} />
+      <DashboardHome summary={summary} sample={sample} board={board} />
       <PanelHost slot="dashboard" />
     </div>
   )

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
 import { addWidget } from '@/lib/dashboardGrid'
@@ -10,11 +9,7 @@ import {
   resolveTimeRange,
   type TimeRangeKey,
 } from '@/lib/timeRange'
-import {
-  useDeleteDashboard,
-  useImportDashboard,
-  useUpdateDashboard,
-} from '@/queries/customDashboards'
+import { useUpdateDashboard } from '@/queries/customDashboards'
 import type {
   CustomDashboard,
   DashboardDoc,
@@ -25,25 +20,18 @@ import { DashboardGrid } from './DashboardGrid'
 import { DashboardToolbar, type Placement } from './DashboardToolbar'
 import { WidgetBody } from './WidgetBody'
 
-function downloadJson(name: string, doc: DashboardDoc) {
-  const blob = new Blob([JSON.stringify(doc, null, 2)], {
-    type: 'application/json',
-  })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${name.replace(/[^a-z0-9-]+/gi, '-').toLowerCase()}.json`
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
-/** One saved dashboard: toolbar, widget grid, add dialog and delete confirm, with local edits until saved. */
-export function DashboardView({ current }: { current: CustomDashboard }) {
+/** One saved dashboard: range and refresh controls, widget grid and add dialog, with local edits until saved. Edit mode is driven by the Manage menu. */
+export function DashboardView({
+  current,
+  editing,
+  onEditingChange,
+}: {
+  current: CustomDashboard
+  editing: boolean
+  onEditingChange: (editing: boolean) => void
+}) {
   const { t } = useTranslation('dashboards')
   const update = useUpdateDashboard()
-  const remove = useDeleteDashboard()
-  const importer = useImportDashboard()
-  const [editing, setEditing] = useState(false)
   const [widgets, setWidgets] = useState<DashboardWidget[]>(current.doc.widgets)
   const [timeRange, setTimeRange] = useState<TimeRangeKey>(
     current.doc.time_range ?? DEFAULT_TIME_RANGE_KEY,
@@ -58,7 +46,6 @@ export function DashboardView({ current }: { current: CustomDashboard }) {
   })
   const [now, setNow] = useState(() => new Date())
   const [adding, setAdding] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
     if (refreshSeconds <= 0) return
@@ -109,35 +96,9 @@ export function DashboardView({ current }: { current: CustomDashboard }) {
     )
   }
 
-  async function importFile(file: File) {
-    try {
-      const parsed = JSON.parse(await file.text()) as DashboardDoc
-      importer.mutate(parsed, {
-        onSuccess: (d) =>
-          toast.add({
-            title: t('toast.imported', { name: d.name }),
-            type: 'success',
-          }),
-        onError: (e) =>
-          toast.add({
-            title: t('toast.importFailed'),
-            description: e.message,
-            type: 'error',
-          }),
-      })
-    } catch {
-      toast.add({
-        title: t('toast.importFailed'),
-        description: t('toast.notJson'),
-        type: 'error',
-      })
-    }
-  }
-
   return (
     <div className="space-y-4">
       <DashboardToolbar
-        current={current}
         editing={editing}
         dirty={dirty}
         saving={update.isPending}
@@ -148,12 +109,9 @@ export function DashboardView({ current }: { current: CustomDashboard }) {
         onRefreshSeconds={setRefreshSeconds}
         onRefreshNow={() => setNow(new Date())}
         onPlacement={setPlacement}
-        onToggleEdit={() => setEditing((e) => !e)}
+        onDoneEditing={() => onEditingChange(false)}
         onAdd={() => setAdding(true)}
         onSave={save}
-        onExport={() => downloadJson(current.name, doc)}
-        onImportFile={(f) => void importFile(f)}
-        onDelete={() => setConfirmDelete(true)}
       />
       {widgets.length === 0 ? (
         <EmptyState
@@ -175,29 +133,6 @@ export function DashboardView({ current }: { current: CustomDashboard }) {
         onOpenChange={setAdding}
         existing={widgets}
         onAdd={(w) => setWidgets((cur) => addWidget(cur, w))}
-      />
-      <ConfirmDialog
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
-        title={t('delete.title', { name: current.name })}
-        description={t('delete.body')}
-        confirmLabel={t('delete.confirm')}
-        tone="destructive"
-        pending={remove.isPending}
-        onConfirm={() =>
-          remove.mutate(current.id, {
-            onSuccess: () => {
-              setConfirmDelete(false)
-              toast.add({ title: t('toast.deleted'), type: 'success' })
-            },
-            onError: (e) =>
-              toast.add({
-                title: t('toast.deleteFailed'),
-                description: e.message,
-                type: 'error',
-              }),
-          })
-        }
       />
     </div>
   )
