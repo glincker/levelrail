@@ -182,6 +182,15 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	dbs = visibleDBs
+	if project := r.URL.Query().Get("project"); project != "" {
+		inProject := dbs[:0:0]
+		for _, d := range dbs {
+			if d.ProjectID == project {
+				inProject = append(inProject, d)
+			}
+		}
+		dbs = inProject
+	}
 	if dbs, err = rt.filterDatabasesByEnvironment(r, dbs); err != nil {
 		rt.internalError(w, "api: list databases: environment filter", err)
 		return
