@@ -13,8 +13,13 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import type { AppListEntry } from '../../types/appDetail'
 import { VARIANT_TONE, sortApps } from '../../lib/dashboardApps'
+import { useEnvironmentScope } from '../../lib/environmentScope'
 import { appListQueryOptions } from '../../queries/apps'
 import { AppLogo } from '../apps/AppMetaChips'
+import { NewAppMenu } from '../NewAppMenu'
+import { FLOATING_CARD } from './cardStyle'
+import { clearScope, useScopeName } from './useScopeName'
+import { Button } from '@/components/ui/button'
 
 const SHOWN = 12
 const VIEW_KEY = 'dashboard.apps.view'
@@ -74,6 +79,8 @@ function AppTile({ app, list }: { app: AppListEntry; list: boolean }) {
 
 export function AppsPanel() {
   const { t } = useTranslation('dashboard')
+  useEnvironmentScope()
+  const scopeName = useScopeName()
   const { data: apps = [], isPending } = useQuery(appListQueryOptions())
   const [query, setQuery] = useState('')
   const [view, setView] = useState<View>(readView)
@@ -94,7 +101,7 @@ export function AppsPanel() {
   return (
     <section
       aria-label={t('apps.title')}
-      className="space-y-3 rounded-lg border border-border bg-card p-4 sm:p-5"
+      className={cn('space-y-3 p-4 sm:p-5', FLOATING_CARD)}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
@@ -141,12 +148,31 @@ export function AppsPanel() {
       </div>
       {isPending ? (
         <SkeletonList rows={3} />
+      ) : apps.length === 0 && scopeName !== '' ? (
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg bg-muted/40 p-4">
+          <div className="min-w-0 space-y-1">
+            <p className="text-sm font-medium text-foreground">
+              {t('apps.emptyScopedTitle', { scope: scopeName })}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {t('apps.emptyScopedBody')}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <NewAppMenu />
+            <Button size="sm" variant="ghost" onClick={clearScope}>
+              {t('apps.emptyScopedClear')}
+            </Button>
+          </div>
+        </div>
       ) : rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('apps.none')}</p>
       ) : (
         <ul
           className={cn(
-            list ? 'divide-y divide-border' : 'grid gap-2 @2xl:grid-cols-2',
+            list
+              ? 'divide-y divide-border'
+              : 'grid gap-2 @2xl:grid-cols-2 @5xl:grid-cols-3',
           )}
         >
           {rows.slice(0, SHOWN).map((app) => (

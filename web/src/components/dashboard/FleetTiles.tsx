@@ -27,6 +27,7 @@ import { nodeListQueryOptions } from '../../queries/nodes'
 import { useGpuNodes } from '../../queries/models'
 import { useFleetDeploys } from '../../queries/fleetTraffic'
 import { useAppsMetrics } from '../../queries/appsMetrics'
+import { InstanceWideLabel } from './ScopeIndicator'
 
 export const SAMPLE_APP_CAP = 8
 
@@ -127,6 +128,7 @@ export function FleetTiles({
           value={`${nodeTotals.online} / ${nodeTotals.total}`}
           tone={nodeTotals.online < nodeTotals.total ? 'warning' : 'success'}
           loading={nodes.isPending}
+          note={<InstanceWideLabel />}
           onClick={() => void navigate({ to: '/nodes' })}
         />
         {gpuCount > 0 ? (

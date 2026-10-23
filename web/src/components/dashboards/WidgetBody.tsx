@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -17,6 +17,7 @@ import { fetchTimeline } from '@/queries/appTimeline'
 import { useAppTraffic } from '@/queries/appTraffic'
 import { useDatabaseMetricSeries } from '@/queries/databaseMetrics'
 import { useDatabases } from '@/queries/databases'
+import { InstanceWideLabel } from '@/components/dashboard/ScopeIndicator'
 import { useLogSearch } from '@/queries/logs'
 import { useMetricSeries } from '@/queries/metrics'
 import { useNodeMetricSeries } from '@/queries/nodeMetrics'
@@ -43,11 +44,20 @@ function Muted({ children }: { children: string }) {
   return <p className="text-sm text-muted-foreground">{children}</p>
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
+function Stat({
+  value,
+  label,
+  note,
+}: {
+  value: string
+  label: string
+  note?: ReactNode
+}) {
   return (
     <div>
       <p className="text-2xl font-semibold tabular-nums">{value}</p>
       <p className="text-sm text-muted-foreground">{label}</p>
+      {note}
     </div>
   )
 }
@@ -203,6 +213,7 @@ function CountsWidget() {
           key={k}
           value={String(counts[k] ?? 0)}
           label={t(`widget.count.${k}`)}
+          note={k === 'node' || k === 'domain' ? <InstanceWideLabel /> : null}
         />
       ))}
     </div>
@@ -282,6 +293,7 @@ function CapacityWidget({ node }: { node: string }) {
               : t('widget.unknown')
           }
           label={t(`widget.capacity.${key}`)}
+          note={<InstanceWideLabel />}
         />
       ))}
     </div>

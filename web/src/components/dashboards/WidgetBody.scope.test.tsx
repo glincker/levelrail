@@ -7,14 +7,15 @@ import { WidgetBody } from './WidgetBody'
 import { resetProjectScopeForTests, setProjectScope } from '@/lib/projectScope'
 import { resolveTimeRange } from '@/lib/timeRange'
 import dashboardsEn from '@/locales/en/dashboards.json'
+import dashboardEn from '@/locales/en/dashboard.json'
 
 const i18n = i18next.createInstance()
 void i18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['dashboards'],
+  ns: ['dashboards', 'dashboard'],
   defaultNS: 'dashboards',
-  resources: { en: { dashboards: dashboardsEn } },
+  resources: { en: { dashboards: dashboardsEn, dashboard: dashboardEn } },
   interpolation: { escapeValue: false },
 })
 
@@ -69,6 +70,26 @@ describe('resource counts widget scope', () => {
     expect(urls).toContain('/api/v1/apps-summary?project=p1')
     expect(urls).toContain('/api/v1/databases?project=p1')
     expect(screen.queryByText('9')).toBeNull()
+  })
+
+  it('labels nodes and domains as instance-wide only while scoped', async () => {
+    const urls: string[] = []
+    mockApi(urls)
+    setProjectScope('p1')
+    renderWidget()
+    await waitFor(() => {
+      expect(screen.getAllByText('All projects')).toHaveLength(2)
+    })
+  })
+
+  it('shows no instance-wide label without a scope', async () => {
+    const urls: string[] = []
+    mockApi(urls)
+    renderWidget()
+    await waitFor(() => {
+      expect(screen.getAllByText('9')).toHaveLength(2)
+    })
+    expect(screen.queryByText('All projects')).toBeNull()
   })
 
   it('keeps the instance-wide counts without a scope', async () => {

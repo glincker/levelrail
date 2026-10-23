@@ -32,8 +32,9 @@ import { showGuideEntryPoints } from '../../lib/setupGuide'
 import { useMinuteNow } from '../../hooks/useMinuteNow'
 import { useFleetDeploys } from '../../queries/fleetTraffic'
 import { useSetupGuide } from '../../queries/setupGuide'
-import { useAttentionSummary } from '../shell/useAttentionSummary'
+import { useDashboardAttention } from './useDashboardAttention'
 import { SAMPLE_APP_CAP } from './FleetTiles'
+import { FLOATING_CARD } from './cardStyle'
 import { useSuggestionRunner } from './useSuggestionRunner'
 
 const MAX_SHOWN = 4
@@ -211,7 +212,7 @@ export function NextStepsView({
   return (
     <section
       aria-label={t('nextSteps.title')}
-      className="space-y-4 rounded-lg border border-border bg-card p-4 sm:p-5"
+      className={cn('space-y-4 p-4 sm:p-5', FLOATING_CARD)}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
@@ -275,7 +276,7 @@ export function NextSteps({
   sample: AppListEntry[]
 }) {
   const { t } = useTranslation('dashboard')
-  const { visible, isLoading } = useAttentionSummary()
+  const { visible, isLoading } = useDashboardAttention()
   const { data: guide } = useSetupGuide()
   const run = useSuggestionRunner()
   const now = useMinuteNow()

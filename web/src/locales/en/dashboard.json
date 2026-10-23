@@ -217,6 +217,7 @@
   "deploys": {
     "title": "Recent deploys",
     "empty": "No deploys yet. Push to a connected repo to see them here.",
+    "emptyScoped": "No deploys yet for the apps in this scope.",
     "status": {
       "succeeded": "Deployed",
       "failed": "Failed",
@@ -257,10 +258,20 @@
     "showSnoozed_one": "Show {{count}} snoozed",
     "showSnoozed_other": "Show {{count}} snoozed"
   },
+  "scope": {
+    "label": "Showing {{name}}",
+    "clear": "Clear scope, show all projects",
+    "allProjects": "All projects",
+    "instanceWide": "All projects",
+    "instanceWideHint": "Instance-wide: not filtered by the project or environment you picked."
+  },
   "apps": {
     "title": "Apps",
     "search": "Search apps",
     "none": "No apps match.",
+    "emptyScopedTitle": "No apps in {{scope}} yet",
+    "emptyScopedBody": "Deploy one here and it lands in this scope, or switch to all projects to see everything.",
+    "emptyScopedClear": "Show all projects",
     "viewAll": "View all {{count}}",
     "view": {
       "grid": "Grid view",

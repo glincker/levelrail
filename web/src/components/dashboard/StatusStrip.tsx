@@ -16,7 +16,7 @@ import { causeCount } from '../../lib/dashboardHome'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { updatesQueryOptions } from '../../queries/updates'
 import { unsnoozeNow } from '../shell/snoozeStore'
-import { useAttentionSummary } from '../shell/useAttentionSummary'
+import { useDashboardAttention } from './useDashboardAttention'
 import { NoticeRows } from './DashboardBanners'
 import { useDashboardNotices } from '../../hooks/useDashboardNotices'
 
@@ -56,7 +56,7 @@ export function StatusStrip({
   trailing?: ReactNode
 }) {
   const { t } = useTranslation('dashboard')
-  const { level, count, visible, snoozed, isLoading } = useAttentionSummary()
+  const { level, count, visible, snoozed, isLoading } = useDashboardAttention()
   const notices = useDashboardNotices()
   const [open, setOpen] = useState(false)
   const worst: Tone = notices.some((n) => n.tone === 'danger')

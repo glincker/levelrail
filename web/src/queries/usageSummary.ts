@@ -3,6 +3,13 @@
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useEnvironmentScope } from '../lib/environmentScope'
+import {
+  currentScope,
+  scopeKey,
+  scopeUrl,
+  type ScopeParams,
+} from '../lib/scopeQuery'
 
 export interface DatabaseUsage {
   name: string
@@ -46,8 +53,10 @@ export const usageSummaryKeys = {
   all: ['usage', 'summary'] as const,
 }
 
-export async function fetchUsageSummary(): Promise<UsageSummary> {
-  const res = await fetch('/api/v1/usage/summary')
+export async function fetchUsageSummary(
+  scope: ScopeParams = currentScope(),
+): Promise<UsageSummary> {
+  const res = await fetch(scopeUrl('/api/v1/usage/summary', scope))
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -58,9 +67,10 @@ export async function fetchUsageSummary(): Promise<UsageSummary> {
 }
 
 export function usageSummaryQueryOptions() {
+  const scope = currentScope()
   return queryOptions({
-    queryKey: usageSummaryKeys.all,
-    queryFn: fetchUsageSummary,
+    queryKey: [...usageSummaryKeys.all, ...scopeKey(scope)] as const,
+    queryFn: () => fetchUsageSummary(scope),
   })
 }
 
@@ -68,6 +78,7 @@ const POLL_INTERVAL_MS = 60_000
 
 // refetchIntervalInBackground stays false: a hidden tab does not poll.
 export function useUsageSummary() {
+  useEnvironmentScope()
   return useQuery({
     ...usageSummaryQueryOptions(),
     retry: false,
