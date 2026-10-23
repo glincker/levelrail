@@ -319,6 +319,7 @@
               "rollback",
               "resilience",
               "resilience-summary",
+              "chaos-coverage",
               "observability",
               "traffic-observability",
               "status-page",

@@ -110,6 +110,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Tags: organizing apps](https://docs.levelrail.com/tags): label and organize apps with arbitrary tags for filtering and grouping.
 - [Resilience](https://docs.levelrail.com/resilience): what actually survives a control plane crash, measured against a real SIGKILL.
 - [Resilience, in short](https://docs.levelrail.com/resilience-summary): a one-paragraph summary of the resilience page's findings.
+- [Chaos test coverage](https://docs.levelrail.com/chaos-coverage): which failure scenarios have a test, what each asserts, and whether it is fast or live.
 - [Observability](https://docs.levelrail.com/observability): metrics, log search, alerting, and deploy markers.
 - [Data export](https://docs.levelrail.com/data-export): send logs, audit events and metrics to Loki, syslog, a webhook, a bucket, Prometheus or OTLP.
 - [Public status page](https://docs.levelrail.com/status-page): an opt-in public status page with uptime bars, incidents, and an RSS feed.
