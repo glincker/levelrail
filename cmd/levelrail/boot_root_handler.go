@@ -241,6 +241,10 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		// Email settings' SMTP password / SES secret access key go
 		// through the same secretsManager as everything else here.
 		opts = append(opts, api.WithEmailSecrets(secretsManager))
+		// Traffic export sink credentials use the same secretsManager; the service taps the ingress access log.
+		if svc := startTrafficExport(context.Background(), logger, b, db, secretsManager); svc != nil {
+			opts = append(opts, api.WithTrafficExport(secretsManager, svc))
+		}
 		// Cloudflare Tunnel's token goes through the same secretsManager,
 		// same nil-interface hazard as everything else in this block.
 		opts = append(opts, api.WithCloudflareTunnelSecrets(secretsManager))

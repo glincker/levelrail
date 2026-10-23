@@ -378,6 +378,7 @@ Usage:
   %[1]s logs archive set|status|remove, logs dump|ls|fetch [flags]   archive node-local logs to a storage destination
   %[1]s logs search|failure <app> [flags]   search stored logs by text, level, container and JSON fields; show the failing container's last lines
   %[1]s metrics query|top|investigate [flags]   downsampled series with period comparison, top apps, and the spike investigation view
+  %[1]s traffic export sinks list|add|set|rm|test|status [flags]   export edge requests to an analytics vendor (PostHog, OTLP, webhook), no visitor identity by default
   %[1]s traffic <app> [--since 5m|1h|24h|7d] [--watch] [flags]   request rate, errors and p50/p95/p99 latency per app and replica, slow routes, SLO burn
   %[1]s cache status|rules|purge|history <app> [flags]   response cache at the ingress: hit rate, rules, purge by URL, prefix, tag or all
   %[1]s forms list|create|update|snippet|fields|test|delete|submissions|spam|unspam|remove|export <app> [flags]   form capture endpoints for static sites with spam trap, inbox and CSV export

@@ -290,6 +290,13 @@ Endpoints for:
 | PUT | /api/v1/settings/google-cloud-dns | AbilityRoot | handleUpdateGoogleCloudDNSSettings |
 | DELETE | /api/v1/settings/google-cloud-dns | AbilityRoot | handleDisconnectGoogleCloudDNS |
 | POST | /api/v1/settings/google-cloud-dns/test | AbilityRoot | handleTestGoogleCloudDNS |
+| GET | /api/v1/settings/traffic-export/sinks | AbilityRead | handleListTrafficExportSinks |
+| POST | /api/v1/settings/traffic-export/sinks | AbilityRoot | handleCreateTrafficExportSink |
+| GET | /api/v1/settings/traffic-export/sinks/{id} | AbilityRead | handleGetTrafficExportSink |
+| PUT | /api/v1/settings/traffic-export/sinks/{id} | AbilityRoot | handleUpdateTrafficExportSink |
+| DELETE | /api/v1/settings/traffic-export/sinks/{id} | AbilityRoot | handleDeleteTrafficExportSink |
+| POST | /api/v1/settings/traffic-export/sinks/{id}/test | AbilityRoot | handleTestTrafficExportSink |
+| GET | /api/v1/settings/traffic-export/status | AbilityRead | handleTrafficExportStatus |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |

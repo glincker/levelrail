@@ -656,6 +656,9 @@ type Router struct {
 	emailSettings                EmailSettingsStore                                         // always set, same shape as ingressSettings above
 	emailProviders               EmailProviderStore                                         // always set, same shape as emailSettings above
 	emailSecrets                 EmailSecretsStore                                          // nil is valid: PUT /api/v1/settings/email returns 501
+	trafficExport                TrafficExportStore                                         // always set, same shape as emailProviders above
+	trafficExportSecrets         TrafficExportSecrets                                       // nil is valid: sink writes return 501, same shape as emailSecrets
+	trafficExporter              TrafficExporter                                            // nil is valid: status and test return 501
 	emailDeliveries              EmailDeliveryStore                                         // nil is valid: the delivery log endpoints return empty results
 	emailDNS                     email.DNSLookup                                            // nil means the system resolver; overridable in tests
 	observability                ObservabilityStore                                         // always set, same shape as emailSettings above
@@ -971,6 +974,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		oauthClientFactory:          defaultOAuthClientFactory,
 		emailSettings:               s,
 		emailProviders:              s,
+		trafficExport:               s,
 		observability:               s,
 		cloudflareTunnel:            s,
 		cloudflareDNS:               s,

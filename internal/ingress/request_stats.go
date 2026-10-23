@@ -78,11 +78,19 @@ func (m requestStatsModule) ServeHTTP(w http.ResponseWriter, r *http.Request, ne
 		UpstreamErr: upstreamErr, Upstream: upstreamHostport(r), RequestID: requestID, At: start,
 		Referrer: requestReferrerHost(r), Country: requestCountry(r),
 	})
-	DefaultAccessLog().Record(m.Key, AccessRecord{
+	ar := AccessRecord{
 		Time: start, Host: r.Host, Method: r.Method, Path: r.URL.Path, Status: status,
 		Millis: float64(elapsed) / float64(time.Millisecond), BytesIn: in, BytesOut: rec.bytes,
 		RequestID: requestID, TraceID: traceID, Upstream: upstreamErr, Cold: rec.cold,
-	})
+	}
+	if DefaultAccessLog().IdentityWanted() {
+		ip := ""
+		if a := requestClientAddr(r); a.IsValid() {
+			ip = a.String()
+		}
+		ar.Identity = &RequestIdentity{ClientIP: ip, UserAgent: r.UserAgent(), ReferrerHost: requestReferrerHost(r)}
+	}
+	DefaultAccessLog().Record(m.Key, ar)
 	return err
 }
 
@@ -257,6 +265,14 @@ func (s *RequestStats) ObserveRequest(key string, o RequestObservation) {
 			DurationMS: ms, Upstream: o.Upstream, RequestID: o.RequestID,
 		}, sampleCfg.TickMax)
 	}
+}
+
+// OwnerOf returns the app that owns route key, or "" when none does.
+func (s *RequestStats) OwnerOf(key string) string {
+	if p := s.owners.Load(); p != nil {
+		return (*p)[key]
+	}
+	return ""
 }
 
 // UpstreamTotals returns a copy of the cumulative per-replica counters since

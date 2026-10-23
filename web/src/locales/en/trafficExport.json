@@ -1,0 +1,111 @@
+{
+  "title": "Traffic export",
+  "description": "Send one record per finished request to PostHog, an OpenTelemetry collector or your own endpoint. Delivery is queued off the request path and never slows or fails a request.",
+  "card": {
+    "title": "Export destinations",
+    "description": "Records carry no visitor identity unless you opt in per destination."
+  },
+  "add": "Add destination",
+  "loadError": "Could not load traffic export: {{message}}",
+  "notConfigured": "Traffic export needs a master key to store destination credentials.",
+  "empty": {
+    "title": "No export destinations",
+    "description": "Add a destination to stream request records to your analytics tool."
+  },
+  "kinds": {
+    "posthog": "PostHog",
+    "otlp": "OpenTelemetry",
+    "webhook": "Webhook"
+  },
+  "state": {
+    "active": "Active",
+    "idle": "Not delivering",
+    "disabled": "Paused",
+    "invalid": "Needs attention",
+    "failing": "Failing"
+  },
+  "errorKinds": {
+    "auth": "Credentials rejected",
+    "rejected": "Request rejected",
+    "rate_limited": "Rate limited",
+    "server": "Destination error",
+    "blocked_target": "Address not allowed",
+    "timeout": "Timed out",
+    "network": "Unreachable",
+    "config": "Invalid settings",
+    "other": "Delivery failed"
+  },
+  "row": {
+    "lastSuccess": "Last delivery {{when}}",
+    "never": "No delivery yet",
+    "queued": "{{count}} queued",
+    "dropped": "{{count}} dropped",
+    "failed": "{{count}} failed",
+    "identity": "Identity fields on",
+    "noIdentity": "No visitor identity",
+    "target": "Sends to {{host}}",
+    "enabled": "Enabled",
+    "test": "Send test",
+    "testing": "Sending",
+    "testOk": "{{name}} accepted the test record",
+    "testFailed": "{{name}} did not accept the test record: {{reason}}",
+    "edit": "Edit",
+    "remove": "Remove"
+  },
+  "remove": {
+    "title": "Remove {{name}}?",
+    "description": "Its stored credentials are deleted and queued records are discarded.",
+    "confirm": "Remove destination"
+  },
+  "sheet": {
+    "addTitle": "Add export destination",
+    "editTitle": "Edit {{name}}",
+    "description": "Credentials are stored encrypted and never shown again.",
+    "name": "Name",
+    "namePlaceholder": "Product analytics",
+    "kind": "Destination type",
+    "host": "PostHog region or URL",
+    "hostPlaceholder": "us, eu or https://posthog.example.com",
+    "token": "Project token",
+    "tokenStored": "A token is stored. Leave blank to keep it.",
+    "url": "Endpoint URL",
+    "urlPlaceholder": "https://collector.example.com",
+    "urlStored": "A URL is stored. Leave blank to keep it.",
+    "authHeader": "Authorization header value",
+    "authHeaderHint": "Optional, for example Bearer followed by a token. Leave blank to keep the stored value.",
+    "fieldsTitle": "Optional fields",
+    "fieldsHint": "Every record already has the method, path, status, timings and request id. Nothing below is sent unless you tick it.",
+    "ipTruncate": "Truncate client IP",
+    "ipTruncateHint": "Zero the last octet of an IPv4 address or the last 80 bits of an IPv6 address.",
+    "sample": "Share of traces exported",
+    "sampleHint": "A number from 0 to 1. 1 exports every request.",
+    "enabled": "Deliver to this destination",
+    "save": "Save destination",
+    "saving": "Saving",
+    "cancel": "Cancel",
+    "saveFailed": "Could not save: {{message}}"
+  },
+  "fields": {
+    "referrer_host": {
+      "label": "Referrer host",
+      "hint": "The site the request came from, host only."
+    },
+    "client_ip": {
+      "label": "Client IP address",
+      "hint": "Personal data in many places."
+    },
+    "user_agent": {
+      "label": "User agent",
+      "hint": "Browser and device string."
+    },
+    "visitor_id": {
+      "label": "Anonymous visitor id",
+      "hint": "A daily-rotating hash of IP and user agent. Still counts as an identifier."
+    }
+  },
+  "disclaimer": {
+    "title": "This destination will receive visitor identity",
+    "body": "Client IP, user agent or visitor id can identify a person. Only enable them if your privacy notice covers sharing this data with the destination and you have a lawful basis. Cookies, auth headers, query strings and request bodies are never exported."
+  },
+  "privacy": "By default no client IP, user agent or visitor id is exported. Cookies, auth headers, query strings and request bodies are never exported."
+}

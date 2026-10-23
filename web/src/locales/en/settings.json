@@ -586,6 +586,10 @@
         "title": "Event webhooks",
         "description": "Signed HTTPS callbacks for platform events, with retries and a delivery log."
       },
+      "traffic-export": {
+        "title": "Traffic export",
+        "description": "Stream request records to PostHog, OpenTelemetry or a webhook, without visitor identity by default."
+      },
       "observability": {
         "title": "Observability",
         "description": "Remote-read connection info and a link out to your own Grafana."
