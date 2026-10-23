@@ -28,6 +28,9 @@ const CHIPS = ["Apache 2.0", "300+ templates", "No Kubernetes"];
 
 // h1 line 2 is the accent line.
 const COPY = {
+  vercelstyle: { h1: "Vercel-style deploys,<br><em>on your own server.</em>", sub: "Git push to a live app with HTTPS, logs, metrics and one-click rollback, on hardware you own. No Kubernetes.", chips: CHIPS },
+  anotheroption: { h1: "Another option<br><em>for your own server.</em>", sub: "Git push to a live app with HTTPS, logs, metrics and one-click rollback. Open source, one Go binary, no Kubernetes.", chips: CHIPS },
+  alternative: { h1: "The self-hosted alternative<br><em>to Vercel and Coolify.</em>", sub: "Deploy with git push, and bring your apps over from Coolify, Dokploy or CapRover with a dry run first.", chips: ["Apache 2.0", "Dry-run import", "300+ templates"] },
   vercel: { cta: "Get started", h1: "Your own Vercel.<br><em>On your server.</em>", sub: "The lightweight, self-hosted alternative to Vercel, Heroku and Coolify.", chips: CHIPS },
   push: { cta: "Get started", h1: "Push to git.<br><em>Get a running app.</em>", sub: "Self-hosted deploys with HTTPS, live logs, metrics and one-click rollback.", chips: CHIPS },
   docs: { cta: "Read the docs", h1: "Deploy, observe,<br><em>roll back.</em>", sub: "Install and run the platform on your own servers.", chips: ["Guides", "CLI", "API", "Templates"] },
@@ -46,6 +49,9 @@ const wide = (w, h, out, o) => ({ w, h, out, copy: "vercel", shot: "dashboard-ho
 const og = (copy, out, shot) => wide(1200, 630, out, { copy, shot, pad: 64, h1: 60, tTop: 152, tW: 530, fx: 640, fy: 100, fw: 860, scale: 1, grain: 0.08, pills: true });
 // Hero card: dashboard cropped to the stats row and deploy list (banner out), bleeding off the right and bottom edge.
 const home = (out, light) => ({ ...og("vercel", out, "dashboard-home"), light, h1: 64, tTop: 128, tW: 495, sub: 22, fx: 575, fy: 170, fw: 660, fhh: 520, iw: 896, ix: -190, iy: -190, pp: [[560, 128], [985, 128]] });
+// Reddit and social headline angles: dark and light twins, files under docs/assets/og/angles.
+const ANGLE_FIT = { vercelstyle: { h1: 52, sub: 18 }, anotheroption: { h1: 56, sub: 17 }, alternative: { h1: 40, sub: 20 } };
+const angle = (name, copy, shot, light) => ({ ...home(`docs/assets/og/angles/${name}${light ? "-light" : ""}.png`, light), copy, shot, ...ANGLE_FIT[copy] });
 const VARIANTS = {
   "og-home": home("docs/assets/og-home.png", false),
   "og-home-light": home("docs/assets/og-home-light.png", true),
@@ -58,6 +64,10 @@ const VARIANTS = {
   "og-mcp": og("mcp", "docs/assets/og/mcp.jpg", "plugins"),
   "og-push": og("push", "docs/assets/brand/social/headline-push-1200x630.jpg", "deploy-live-log"),
   // Conversion card: isometric scene plus the install command. Dark for social, light twin for README <picture>.
+  ...Object.fromEntries([["vercel-style", "vercelstyle", "dashboard-home"], ["another-option", "anotheroption", "dashboard-home"], ["alternative", "alternative", "apps-list"]].flatMap(([k, copy, shot]) => [
+    [`og-angle-${k}`, angle(k, copy, shot, false)],
+    [`og-angle-${k}-light`, angle(k, copy, shot, true)],
+  ])),
   "og-home-iso": { w: 1200, h: 630, scale: 1, iso: "dark", out: "docs/assets/og/og-home-iso.png" },
   "og-home-iso-light": { w: 1200, h: 630, scale: 1, iso: "light", out: "docs/assets/og/og-home-iso-light.png" },
   github: wide(1280, 640, "docs/assets/brand/social/github-social-1280x640.jpg", { h1: 66, tTop: 150, tW: 560, fx: 640, fy: 96, fw: 900, pills: true }),
@@ -68,6 +78,10 @@ const VARIANTS = {
   x: wide(1500, 500, "docs/assets/brand/social/x-header-1500x500.jpg", { pad: 72, h1: 60, sub: 0, chips: false, tTop: 150, tW: 700, fx: 800, fy: 50, fw: 780 }),
   linkedin: wide(1584, 396, "docs/assets/brand/social/linkedin-banner-1584x396.jpg", { pad: 72, h1: 42, sub: 0, chips: false, tTop: 125, tW: 720, fx: 930, fy: 30, fw: 700 }),
 };
+// Light twins of the social formats sit next to the dark files as *-light.jpg.
+for (const k of ["github", "twitter", "producthunt", "devto", "square", "x", "linkedin"]) {
+  VARIANTS[`${k}-light`] = { ...VARIANTS[k], light: true, out: VARIANTS[k].out.replace(/\.jpg$/, "-light.jpg") };
+}
 // Logos render on transparent backgrounds unless bg is set.
 const FAV = { w: 64, h: 64, kind: "favicon" };
 const PLATE = { w: 64, h: 64, kind: "plate" };
