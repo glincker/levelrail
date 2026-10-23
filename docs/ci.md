@@ -478,10 +478,17 @@ pre-push bounds every `go test` it runs with `-timeout`, default `30m`,
 overridable with `LEVELRAIL_PUSH_TEST_TIMEOUT`. The default `go test`
 timeout of 10 minutes is shorter than a whole internal/api run.
 
-`scripts/test-fast.sh` runs `go test -short` for internal/api in up to 6
-shards from one binary, with CI's weights and quarantine skips (`-r REGEX`
-narrows tests). pre-push uses it. Failures print test names and keep the
-shard logs. Test builds hash passwords at bcrypt's minimum cost: over 10
+`scripts/test-fast.sh` runs `go test -short` for internal/api in shards
+from one binary, with CI's weights and quarantine skips (`-r REGEX`
+narrows tests). pre-push uses it for every internal/api run, in
+`min(4, cores)` shards, overridable with `LEVELRAIL_PREPUSH_API_SHARDS`
+(`1` keeps one `go test` process in the `affected` and full lanes). With
+coverage on, internal/api stays in the single `go test` run. Each shard's
+output is captured; a failure prints only the failing tests with their
+output lines, and the shard logs are kept. The run ends with per-shard
+seconds so a skewed split shows up. `scripts/test-api-shards.sh` checks that
+the shard split covers every internal/api test from `go test -list` exactly
+once. Test builds hash passwords at bcrypt's minimum cost: over 10
 minutes serial became about 3.
 
 ## Expected effect of the lane changes

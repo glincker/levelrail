@@ -223,6 +223,7 @@ func TestAuthzMatrix_PublicAllowlistIsCurrent(t *testing.T) {
 }
 
 func TestAuthzMatrix_UnauthenticatedGets401(t *testing.T) {
+	t.Parallel()
 	rt, _, _ := newPipelineRouter(t)
 	var bad []string
 	for _, r := range loadMatrixRoutes(t) {
@@ -284,6 +285,7 @@ var resourceKinds = []struct {
 }
 
 func TestAuthzMatrix_ResourceDenyReturns403(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newPipelineRouter(t)
 	bootstrapTestAdmin(t, db)
 	user := storeUserWithAbilitiesForTest(t, db, "deny-matrix@example.com", []string{AbilityRoot})
