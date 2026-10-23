@@ -24,6 +24,7 @@ func settingsEmailProvidersUsage(prog string) string {
   %[1]s settings email providers rm <id> [flags]
   %[1]s settings email providers test <id> [--to ADDRESS] [flags]
   %[1]s settings email providers promote <id> [flags]
+  %[1]s settings email providers reveal <id> <field> --yes-print [flags]
 
 One primary provider plus at most one backup. The first provider added is the
 primary, the second the backup. When the primary fails before a message is
@@ -34,6 +35,11 @@ stdin is a terminal; "--secret-stdin" reads it from the first line of stdin, and
 "--prompt-secret" forces the prompt. On "set", the stored credential is kept unless
 one of those flags is given. The credential that applies is the one for the backend
 (SMTP password, SES secret access key, API key or token).
+
+"reveal" prints one stored credential after asking for your password and
+authenticator code at the terminal. It needs two-factor authentication on your
+account, is rate limited and is audited. It refuses unless --yes-print is given,
+because the value goes to stdout.
 
 Run "%[1]s settings email providers <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -69,6 +75,8 @@ func runSettingsEmailProviders(prog string, args []string, stdin io.Reader, stdo
 		return runEmailProviderTest(prog, args[1:], stdout, stderr, lookupEnv)
 	case "promote":
 		return runEmailProviderPromote(prog, args[1:], stdout, stderr, lookupEnv)
+	case "reveal":
+		return runEmailProviderReveal(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown settings email providers subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, settingsEmailProvidersUsage(prog))
@@ -343,6 +351,37 @@ func runEmailProviderPromote(prog string, args []string, stdout, stderr io.Write
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("promote email provider %q: %w", id, err))
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, list, func() { printEmailProviderList(stdout, list) })
+}
+
+func runEmailProviderReveal(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	const label = "settings email providers reveal"
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, label, "print the value as JSON to stdout and nothing else", stderr)
+	yesPrint := fs.Bool("yes-print", false, "confirm that the credential may be printed to stdout")
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s %s <id> <field> --yes-print [flags]\n\nPrints one stored credential (field is an envKey such as resend_api_key or smtp_password). Asks for your\npassword and authenticator code at the terminal, never from arguments or the environment.\n\nFlags:\n", prog, label)
+		fs.PrintDefaults()
+	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	rest, ok := requireArgs(fs, stderr, prog, label, "a provider id and a credential field", 2)
+	if !ok {
+		return exitUsage
+	}
+	if !*yesPrint {
+		_, _ = fmt.Fprintf(stderr, "%s: refusing to print a credential without --yes-print\n", prog)
+		return exitValidation
+	}
+	id, field := rest[0], rest[1]
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	res, err := withStepUp(stderr, func(p *apiclient.StepUpProof) (apiclient.EmailSecretRevealed, error) {
+		return client.RevealEmailSecret(context.Background(), id, field, p)
+	})
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("reveal %s of email provider %q: %w", field, id, err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, res, func() { _, _ = fmt.Fprintln(stdout, res.Value) })
 }
 
 func printEmailProviderList(out io.Writer, l apiclient.EmailProviderList) {

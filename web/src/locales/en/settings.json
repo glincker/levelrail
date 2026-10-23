@@ -1395,6 +1395,16 @@
       "messageId": "Provider message id",
       "failureKind": "Why it failed",
       "error": "Provider response"
+    },
+    "reveal": {
+      "show": "Reveal",
+      "hide": "Hide",
+      "copy": "Copy",
+      "copied": "Copied",
+      "autoHide": "Hides itself after 30 seconds. Every reveal is recorded in the audit log.",
+      "stepUp": "Confirm it is you with your password and authenticator code to reveal this credential.",
+      "needsTwoFactor": "Revealing a credential needs two-factor authentication. Set it up under account security first.",
+      "failed": "Could not reveal the credential."
     }
   },
   "channelsPage": {

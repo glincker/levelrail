@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1690 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1691 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -803,6 +803,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/settings/email/providers/{id}", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetEmailProvider", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/email/providers/{id}", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateEmailProvider", Description: "Replaces the provider fields; an empty credential keeps the stored value."},
 	{Method: "POST", Path: "/api/v1/settings/email/providers/{id}/promote", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handlePromoteEmailProvider", Description: "Swaps the primary and backup roles atomically, moving credentials with them."},
+	{Method: "POST", Path: "/api/v1/settings/email/providers/{id}/secrets/{field}/reveal", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleRevealEmailSecret", Description: "Root plus a fresh step-up and an enrolled authenticator: returns one stored credential, no-store, audited, never via MCP."},
 	{Method: "POST", Path: "/api/v1/settings/email/providers/{id}/test", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleTestEmailProvider", Description: "Root: sends one real message through that provider alone, with no failover."},
 	{Method: "GET", Path: "/api/v1/settings/email/status", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleEmailStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/settings/email/test", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleTestEmail", Description: "Root: a test send goes to any address, so it is not open to ordinary write tokens."},
