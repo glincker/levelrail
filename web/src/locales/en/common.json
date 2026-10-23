@@ -163,6 +163,12 @@
     "pending": "Working...",
     "alreadyStopped": "{{name}} is already stopped."
   },
+  "unsavedGuard": {
+    "title": "Discard unsaved changes?",
+    "description": "You have edits that are not saved. Leaving now will lose them.",
+    "keep": "Keep editing",
+    "discard": "Discard"
+  },
   "confirmDialog": {
     "cancel": "Cancel",
     "typePrompt": "Type {{value}} to confirm"

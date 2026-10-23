@@ -1,12 +1,12 @@
 import { useTranslation } from 'react-i18next'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
+import { useAppForm } from '../../hooks/useAppForm'
+import { useUnsavedGuard } from '../../hooks/useUnsavedGuard'
 import { useEmailProviders } from '../../queries/emailProviders'
 import {
   useUpdateEmailSettings,
@@ -54,13 +54,13 @@ export function EmailSenderCard({
   const { data: providers } = useEmailProviders()
   const suggestions = useEmailSuggestions()
   const smtpBased = (providers ?? []).some((p) => SMTP_BACKENDS.has(p.backend))
-  const form = useForm<FormInput, unknown, FormOutput>({
-    resolver: zodResolver(schema),
+  const form = useAppForm<FormInput, FormOutput>(schema, {
     mode: 'onChange',
     values: toValues(settings),
     resetOptions: { keepDirtyValues: true },
   })
   const { register, formState, setError, setValue, watch } = form
+  const unsavedGuard = useUnsavedGuard(formState.isDirty)
   const fromRequired = settings.backend !== ''
   const fromName = watch('fromName') ?? ''
   const fromAddress = watch('fromAddress') ?? ''
@@ -109,6 +109,7 @@ export function EmailSenderCard({
 
   return (
     <Card size="sm" className={CARD_FLOAT}>
+      {unsavedGuard}
       <CardContent>
         <form
           onSubmit={(e) => {

@@ -1,8 +1,7 @@
 import { NewAppPreflight } from './PreflightPanel'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
@@ -30,6 +29,7 @@ import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
 import { getProjectScope } from '../lib/projectScope'
 import { useFormDraft } from '../hooks/useFormDraft'
+import { useAppForm } from '../hooks/useAppForm'
 import {
   HEALTH_CHECK_DEFAULT_PATH,
   healthCheckFrom,
@@ -221,8 +221,7 @@ export function CreateAppFields({
     watch,
     setValue,
     getValues,
-  } = useForm<CreateAppFormInput, unknown, CreateAppFormOutput>({
-    resolver: zodResolver(createAppSchema),
+  } = useAppForm<CreateAppFormInput, CreateAppFormOutput>(createAppSchema, {
     defaultValues: initialValues(),
   })
 

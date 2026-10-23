@@ -148,6 +148,12 @@
     "pending": "Trabajando...",
     "alreadyStopped": "{{name}} ya está detenida."
   },
+  "unsavedGuard": {
+    "title": "¿Descartar los cambios sin guardar?",
+    "description": "Tienes ediciones sin guardar. Si sales ahora, se perderán.",
+    "keep": "Seguir editando",
+    "discard": "Descartar"
+  },
   "confirmDialog": {
     "cancel": "Cancelar",
     "typePrompt": "Escribe {{value}} para confirmar"
