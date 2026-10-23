@@ -25,7 +25,7 @@ func TestApplyBuildSecrets_MountsSecretsAndRedactsProgress(t *testing.T) {
 	p := &Pipeline{buildSecrets: fakeBuildSecretSource{out: out}}
 	req := build.Request{BuildArgs: map[string]string{"KEEP": "1"}}
 	var got []build.ProgressEvent
-	wrapped, err := p.applyBuildSecrets(context.Background(), "web", &req, func(ev build.ProgressEvent) { got = append(got, ev) })
+	wrapped, err := p.applyBuildSecrets(context.Background(), "web", nil, &req, func(ev build.ProgressEvent) { got = append(got, ev) })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,64 @@ func TestApplyBuildSecrets_MountsSecretsAndRedactsProgress(t *testing.T) {
 func TestApplyBuildSecrets_NoSourceIsNoop(t *testing.T) {
 	p := &Pipeline{}
 	req := build.Request{}
-	if _, err := p.applyBuildSecrets(context.Background(), "web", &req, nil); err != nil || req.Secrets != nil {
+	if _, err := p.applyBuildSecrets(context.Background(), "web", nil, &req, nil); err != nil || req.Secrets != nil {
 		t.Fatalf("err = %v, secrets = %v", err, req.Secrets)
+	}
+}
+
+type fakeSecretValues map[string]string
+
+func (f fakeSecretValues) Exists(_ context.Context, _, k string) (bool, error) {
+	_, ok := f[k]
+	return ok, nil
+}
+
+func (f fakeSecretValues) Resolve(_ context.Context, _, k string) (string, error) { return f[k], nil }
+
+func TestApplyBuildSecrets_UserSecretsMountedAndMasked(t *testing.T) {
+	const val = "npm_supersecret_value"
+	p := &Pipeline{buildSecretValues: fakeSecretValues{"NPM_TOKEN": val}}
+	req := build.Request{BuildArgs: map[string]string{"A": "b"}}
+	var got []build.ProgressEvent
+	wrapped, err := p.applyBuildSecrets(context.Background(), "web", []string{"NPM_TOKEN"}, &req, func(ev build.ProgressEvent) { got = append(got, ev) })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(req.Secrets["NPM_TOKEN"]) != val {
+		t.Fatal("secret not attached under its id")
+	}
+	for k, v := range req.BuildArgs {
+		if strings.Contains(v, val) || strings.Contains(k, val) {
+			t.Errorf("secret leaked into build args")
+		}
+	}
+	wrapped(build.ProgressEvent{Step: "s " + val, Log: "token=" + val, Error: "e " + val})
+	if ev := got[0]; strings.Contains(ev.Step+ev.Log+ev.Error, val) {
+		t.Errorf("secret reached progress: %+v", ev)
+	}
+}
+
+func TestApplyBuildSecrets_MissingSecretErrorNamesIt(t *testing.T) {
+	p := &Pipeline{buildSecretValues: fakeSecretValues{}}
+	_, err := p.applyBuildSecrets(context.Background(), "web", []string{"NPM_TOKEN"}, &build.Request{}, nil)
+	if err == nil || !strings.Contains(err.Error(), `"NPM_TOKEN"`) || !strings.Contains(err.Error(), "create it under the app's secrets") {
+		t.Fatalf("err = %v", err)
+	}
+	p = &Pipeline{}
+	if _, err = p.applyBuildSecrets(context.Background(), "web", []string{"X"}, &build.Request{}, nil); err == nil {
+		t.Fatalf("want error without a store, got %v", err)
+	}
+}
+
+func TestPipeline_Deploy_Dockerfile_BuildSecretsReachBuilder(t *testing.T) {
+	builder := &fakeBuilder{result: &build.Result{Tag: "levelrail/web:abc1234"}}
+	p := New(builder, &fakeServiceStore{}, WithBuildSecretValues(fakeSecretValues{"NPM_TOKEN": "tok-123456"}))
+	svc := dockerfileService()
+	svc.Build.Secrets = []string{"NPM_TOKEN"}
+	if _, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if string(builder.lastReq.Secrets["NPM_TOKEN"]) != "tok-123456" {
+		t.Error("builder request lacks the secret")
 	}
 }

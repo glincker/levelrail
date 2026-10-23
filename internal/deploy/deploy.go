@@ -216,7 +216,8 @@ type Pipeline struct {
 	ordered      OrderedStore          // nil disables the stale-deploy guard
 	attempts     AttemptRecorder       // nil skips recording digests on attempts
 
-	buildSecrets BuildSecretSource // nil is valid: builds mount no package registry secrets
+	buildSecretValues BuildSecretValues // nil: build.secrets is rejected at deploy
+	buildSecrets      BuildSecretSource // nil is valid: builds mount no package registry secrets
 
 	attest      bool            // request BuildKit SBOM and provenance on Dockerfile builds
 	supplyChain SupplyChainHook // nil skips SBOM storage and the scan gate
@@ -316,7 +317,7 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		Attest:         p.attest,
 		NoCache:        req.NoCache,
 	}
-	progress, err = p.applyBuildSecrets(ctx, req.ServiceName, &buildReq, progress)
+	progress, err = p.applyBuildSecrets(ctx, req.ServiceName, req.Service.Build.Secrets, &buildReq, progress)
 	if err != nil {
 		cacheDone()
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)

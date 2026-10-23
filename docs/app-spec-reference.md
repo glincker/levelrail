@@ -114,7 +114,8 @@ A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the 
 | `baseDirectory` | string | no | repo root | Subdirectory used as the build context, for a monorepo (`apps/web`). Must be relative and stay inside the repo. Rejected for `image` and `compose` (a compose file's own `context:` already scopes each service). |
 | `image` | string | conditional | none | Full registry reference such as `ghcr.io/org/app:v1.2.3`. Required when `type` is `image`, rejected otherwise. Nothing is built; the image is deployed as is. |
 | `registryCredential` | string | no | none | Name of a registry credential saved in Levelrail, used to pull `image` from a private registry. Empty means an unauthenticated pull. |
-| `args` | map of string to string | no | none | Dockerfile build-time `ARG` values, passed through to BuildKit as `--build-arg` equivalents. Only meaningful when `type` is `dockerfile`. |
+| `args` | map of string to string | no | none | Dockerfile build-time `ARG` values, passed through to BuildKit as `--build-arg` equivalents. Only meaningful when `type` is `dockerfile`. Values are plain text and end up in image history, so never put a secret in `args`. |
+| `secrets` | list of string | no | none | Names of app secrets mounted as BuildKit secrets with the same id, for `RUN --mount=type=secret,id=NAME`. Each name must be a valid variable name, unique, and already created under the app's secrets. Build logs mask the value and it is never written to the image. Only valid when `type` is `dockerfile`; the cap is `APP_BUILD_SECRETS_MAX` (default 20). |
 
 ### `Egress`
 
@@ -400,7 +401,22 @@ Checked by `(*Spec).Validate` in `internal/spec/validate.go` for anything the sc
 - `build.image` is required when `build.type` is `image` and rejected for any other type. `build.path` and `build.baseDirectory` are rejected for `image`, and `build.baseDirectory` is rejected for `compose`.
 - `build.baseDirectory` must be relative and must not escape the repository root.
 - `routes`, `headers` and `static` are only meaningful when `build.type` is `static`; see [Static site routing rules](/static-routing).
-- `build.args` is only meaningful when `build.type` is `dockerfile`. Set with any other build type, it is rejected rather than silently ignored.
+- `build.args` is only meaningful when `build.type` is `dockerfile`. Set with any other build type, it is rejected rather than silently ignored. `build.secrets` follows the same rule.
+
+Example of a build secret:
+
+```yaml
+services:
+  web:
+    build:
+      type: dockerfile
+      secrets: [NPM_TOKEN]
+```
+
+```dockerfile
+RUN --mount=type=secret,id=NPM_TOKEN \
+    NPM_TOKEN=$(cat /run/secrets/NPM_TOKEN) npm ci
+```
 
 **Port configuration**
 
