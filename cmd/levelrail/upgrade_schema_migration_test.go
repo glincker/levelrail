@@ -32,8 +32,6 @@ import (
 // v082LastMigration is the newest migration the v0.8.1 and v0.8.2 releases ship.
 const v082LastMigration = 2830
 
-const envHarnessKnownGaps = "LEVELRAIL_UPGRADE_RUN_KNOWN_GAPS"
-
 const (
 	schemaTestSMTPUser = "sink-user"
 	schemaTestSMTPPass = "sink-pass-0451"
@@ -645,9 +643,6 @@ func runSchemaMigration(t *testing.T, tag string) {
 	})
 
 	t.Run("manual restore returns the old schema and data", func(t *testing.T) {
-		if os.Getenv(envHarnessKnownGaps) == "" {
-			t.Skip("known gap: restore-point run by the current binary restores the v0.8.2 database and binary, then recordAttempt (cmd/levelrail/restore_point.go) calls store.Open on the live database, which migrates the restored database forward to the current schema while v0.8.2 runs; set " + envHarnessKnownGaps + "=1 to see it fail")
-		}
 		out, err := h.run("restore-point", "--id", point.ID, "--stop-cmd", h.stopSh, "--start-cmd", h.startSh, "--health-url", h.health())
 		if err != nil {
 			t.Fatalf("restore-point: %v\n%s", err, out)
