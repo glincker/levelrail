@@ -13,14 +13,14 @@ Output goes to `docs/public/og/<slug>.png` (slashes become dashes), served at `<
 
 ## Social card renderer
 
-`node scripts/og/render.mjs [name ...]` renders brand and social images. `OUT_DIR=/some/dir` writes every output under that directory (same relative paths) instead of the repo, so test renders touch nothing tracked (the favicon .ico step still uses the repo).
+`node scripts/og/render.mjs [name ...]` renders brand and social images (all of them with no names). Every card shares one look: Inter 300 headline with a gradient accent line, grain-masked glows, a floor gradient, mono pills and the dashboard in a tilted glass frame. `OUT_DIR=/some/dir` writes everything under that directory (same relative paths) so test renders touch nothing tracked.
 
-- `og-home-iso`: dark 1200x630 hero card with the isometric scene, install command and grainy glows (grain-masked radial gradients). Output `docs/assets/og/og-home-iso.png`.
-- `og-home-iso-light`: light twin for README `<picture>` use. Output `docs/assets/og/og-home-iso-light.png`.
-- `og-home-dash`, `og-home-dash-light`: same look with the original copy ("Your own Vercel.") and the populated dashboard in a tilted glass frame (`dashboard-home.png` / `dashboard-home-light.png`, offset in the frame to crop the attention banner). Outputs `docs/assets/og/og-home-dash.png` and `og-home-dash-light.png`.
-- Scene source: `scripts/og/assets/iso-hero.svg`, a static copy of the site hero (resting state, token parked, no animation).
-- Review samples: `docs/assets/og/preview/`.
+- `og-home` / `og-home-light`: hero card, dark and light twin, written to `docs/assets/og-home.png` and `og-home-light.png` (light is for README `<picture>` use).
+- `og-home-iso` / `og-home-iso-light`: alternate card with the isometric scene and install command; scene source is `scripts/og/assets/iso-hero.svg`.
+- Other variants (`og-docs`, `og-install`, `github`, `square`, ...) keep their own copy and screenshot; see `COPY` and `VARIANTS` in `render.mjs`.
+- `generate.mjs` uses the same look for the per-page docs cards and honors `OUT_DIR` too.
 
 ```
-OUT_DIR=/tmp/og node scripts/og/render.mjs og-home-iso og-home-iso-light
+node scripts/og/render.mjs && node scripts/og/generate.mjs --all   # into the repo
+OUT_DIR=/tmp/og node scripts/og/render.mjs                         # scratch copy
 ```
