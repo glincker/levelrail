@@ -81,12 +81,12 @@ func (f *fakeScheduleStore) RecordAppScheduleHistory(_ context.Context, e store.
 	return nil
 }
 
-func (f *fakeScheduleStore) historyFor(serviceName string) []store.AppScheduleHistoryEntry {
+func (f *fakeScheduleStore) webHistory() []store.AppScheduleHistoryEntry {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	var out []store.AppScheduleHistoryEntry
 	for _, e := range f.history {
-		if e.ServiceName == serviceName {
+		if e.ServiceName == "web" {
 			out = append(out, e)
 		}
 	}
@@ -268,7 +268,7 @@ func TestScheduler_Tick_FreezeWindowSkipsAndRecordsReason(t *testing.T) {
 	if trigger.count() != 0 {
 		t.Fatalf("frozen tick called Trigger %d times, want 0", trigger.count())
 	}
-	hist := fakeStore.historyFor("web")
+	hist := fakeStore.webHistory()
 	if len(hist) != 1 || hist[0].Status != store.AppScheduleHistorySkippedFreeze {
 		t.Fatalf("history = %+v, want exactly one skipped_freeze entry", hist)
 	}
@@ -289,7 +289,7 @@ func TestScheduler_Tick_TriggerFailureRecordsFailedAndPropagates(t *testing.T) {
 		t.Fatal("Tick() error = nil, want the trigger failure wrapped and returned")
 	}
 
-	hist := fakeStore.historyFor("web")
+	hist := fakeStore.webHistory()
 	if len(hist) != 1 || hist[0].Status != store.AppScheduleHistoryFailed {
 		t.Fatalf("history = %+v, want exactly one failed entry", hist)
 	}

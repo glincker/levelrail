@@ -41,7 +41,7 @@ func TestOneShot_NotBeforeRunAtThenFiresOnceAndCompletes(t *testing.T) {
 	if got.Enabled || got.CompletedAt == nil {
 		t.Fatalf("schedule = %+v, want disabled and completed", got)
 	}
-	h := fs.historyFor("web")
+	h := fs.webHistory()
 	if len(h) != 1 || h[0].Status != store.AppScheduleHistoryFired || !h[0].ScheduledFor.Equal(oneShotAt) {
 		t.Fatalf("history = %+v, want one fired entry for run_at", h)
 	}
@@ -64,7 +64,7 @@ func TestOneShot_FreezeWindowSkipsAndCompletes(t *testing.T) {
 	if trigger.count() != 0 {
 		t.Fatalf("frozen one-shot fired %d times", trigger.count())
 	}
-	h := fs.historyFor("web")
+	h := fs.webHistory()
 	if len(h) != 1 || h[0].Status != store.AppScheduleHistorySkippedFreeze {
 		t.Fatalf("history = %+v, want one skipped_freeze entry", h)
 	}
@@ -97,7 +97,7 @@ func TestOneShot_MissedBeyondWindowRecordedSkipped(t *testing.T) {
 	if trigger.count() != 0 {
 		t.Fatalf("fired a one-shot missed beyond the window")
 	}
-	h := fs.historyFor("web")
+	h := fs.webHistory()
 	if len(h) != 1 || h[0].Status != store.AppScheduleHistorySkippedMissed {
 		t.Fatalf("history = %+v, want one skipped_missed entry", h)
 	}
