@@ -30,6 +30,7 @@ import { MoveToOrganizationDialog } from '../../../components/MoveToOrganization
 import { RestartProjectButton } from '../../../components/RestartProjectButton'
 import { CanvasLink } from '../../../components/canvas/CanvasLink'
 import { QuotaCard } from '../../../components/teams/QuotaCard'
+import { ProjectSpendCard } from '../../../components/spend/ProjectSpendCard'
 import { ProjectEnvironmentsPanel } from '../../../components/ProjectEnvironmentsPanel'
 import { ProjectEnvEditor } from '../../../components/ProjectEnvEditor'
 import { SharedEnvSecretsCard } from '../../../components/SharedEnvSecretsCard'
@@ -149,6 +150,7 @@ function ProjectDetailPage() {
 
       <ProjectEnvironmentsPanel projectId={project.id} />
       <QuotaCard scope="project" scopeId={project.id} />
+      <ProjectSpendCard projectId={project.id} projectName={project.name} />
       <ProjectEnvEditor projectId={project.id} />
       <SharedEnvSecretsCard scope="project" id={project.id} />
 

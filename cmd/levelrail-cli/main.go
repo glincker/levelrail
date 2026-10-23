@@ -257,6 +257,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runResources(prog, args[1:], stdout, stderr, lookupEnv)
 	case "costs":
 		return runCosts(prog, args[1:], stdout, stderr, lookupEnv)
+	case "spend":
+		return runSpend(prog, args[1:], stdout, stderr, lookupEnv)
 	case "usage":
 		return runUsage(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ingress-limits":
@@ -428,6 +430,7 @@ Usage:
   %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning
   %[1]s resources list|tag|untag|views [flags]                 every app, database, node, domain, bucket and network in one list, tags, bulk tag with --dry-run, saved views
   %[1]s usage report|settings|budgets [flags]                  cost showback per app, project and team
+  %[1]s spend caps list|status|set|rm|dry-run|override        per app and project spend caps with a deploy guard and a pause preview
   %[1]s costs explore|budgets [flags]                         cost explorer with forecast and movers, named budgets with alerts and a 100%% action
   %[1]s ingress-limits show|set|clear APP [flags]             per-app request body cap
   %[1]s budget show|set|clear APP [flags]                      per-app monthly egress and cost cap with throttle or pause

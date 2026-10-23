@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1694 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1698 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -128,7 +128,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/budget", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteSpendCap", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/budget", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetSpendCap", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/budget", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutSpendCap", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/budget/dry-run", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppSpendDryRun", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/budget/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendCapHistory", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/budget/override", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendOverride", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-hooks", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListBuildHooks", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/build-hooks", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateBuildHook", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-hooks/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRevokeBuildHook", Description: ""},
@@ -944,10 +946,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/compliance/evidence-packs/{id}/verify", Ability: "AbilityRoot", Group: "Other", Handler: "handleVerifyEvidencePack", Description: ""},
 	{Method: "GET", Path: "/api/v1/compose", Ability: "AbilityRead", Group: "Other", Handler: "handleListComposeStacks", Description: ""},
 	{Method: "POST", Path: "/api/v1/compose/preview", Ability: "AbilityDeploy", Group: "Other", Handler: "handlePreviewCompose", Description: "Parse only, nothing saved; deploy tier so the endpoint is not a free YAML parser for read-only tokens."},
+	{Method: "GET", Path: "/api/v1/costs/app-caps", Ability: "AbilityRead", Group: "Other", Handler: "handleListSpendCaps", Description: ""},
 	{Method: "GET", Path: "/api/v1/costs/budgets", Ability: "AbilityRead", Group: "Other", Handler: "handleListCostBudgets", Description: ""},
 	{Method: "POST", Path: "/api/v1/costs/budgets", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateCostBudget", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/costs/budgets/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteCostBudget", Description: ""},
 	{Method: "PUT", Path: "/api/v1/costs/budgets/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateCostBudget", Description: ""},
+	{Method: "POST", Path: "/api/v1/costs/budgets/{id}/dry-run", Ability: "AbilityRead", Group: "Other", Handler: "handleCostBudgetDryRun", Description: ""},
 	{Method: "GET", Path: "/api/v1/costs/explore", Ability: "AbilityRead", Group: "Other", Handler: "handleCostExplore", Description: ""},
 	{Method: "GET", Path: "/api/v1/dashboards", Ability: "AbilityRead", Group: "Other", Handler: "handleListDashboards", Description: ""},
 	{Method: "POST", Path: "/api/v1/dashboards", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateDashboard", Description: ""},

@@ -308,6 +308,7 @@ var Tree = map[string]*Node{
 	"ingress-limits":           {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},
 	"budget":                   {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil, "delete": nil}},
 	"costs":                    {Subs: map[string]*Node{"explore": nil, "budgets": {Subs: map[string]*Node{"list": nil, "create": nil, "set": nil, "delete": nil}}}},
+	"spend":                    {Subs: map[string]*Node{"caps": {Subs: map[string]*Node{"list": nil, "status": nil, "set": nil, "rm": nil, "dry-run": nil, "override": nil}}}},
 	"usage":                    {Subs: map[string]*Node{"report": nil, "settings": {Subs: map[string]*Node{"set": nil}}, "budgets": {Subs: map[string]*Node{"set": nil, "delete": nil}}}},
 	"doctor":                   nil,
 	"resilience":               {Subs: map[string]*Node{"check": nil}},
