@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { AppListEntry } from '../../types/appDetail'
 import type { AppsSummary } from '../../queries/appPages'
 import { appListQueryOptions } from '../../queries/apps'
+import { anyAppsQueryOptions } from '../../queries/appPages'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { useDashboardLayout } from '../../hooks/useDashboardLayout'
 import {
@@ -17,6 +18,7 @@ import {
   type WidgetId,
 } from '../../lib/dashboardLayout'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { FleetUtilizationSummary } from '../FleetUtilizationSummary'
 import { TopResourceConsumers } from '../TopResourceConsumers'
@@ -198,14 +200,21 @@ function StartView({
 export function DashboardHome({
   summary,
   sample,
+  board,
 }: {
   summary: AppsSummary
   sample: AppListEntry[]
+  board?: string
 }) {
   const isRoot = useIsRoot()
+  const anyApps = useQuery(anyAppsQueryOptions())
   const [deployStarted, setDeployStarted] = useState(false)
   const [firstRunDone, setFirstRunDone] = useState(false)
-  const hasApps = summary.total > 0
+  const hasApps = summary.total > 0 || anyApps.data === true
+
+  if (summary.total === 0 && anyApps.isPending) {
+    return <Skeleton className="h-64 w-full" />
+  }
 
   if (!hasApps || (deployStarted && !firstRunDone)) {
     const firstRun = (
@@ -231,12 +240,16 @@ export function DashboardHome({
       </div>
     )
     // Keep the board tabs reachable before the first app so Metrics and saved boards are not hidden.
-    return <DashboardViews start={firstRun} />
+    return <DashboardViews start={firstRun} hasApps={hasApps} board={board} />
   }
 
   return (
     <DashboardHero>
-      <DashboardViews start={<StartView summary={summary} sample={sample} />} />
+      <DashboardViews
+        start={<StartView summary={summary} sample={sample} />}
+        hasApps
+        board={board}
+      />
     </DashboardHero>
   )
 }

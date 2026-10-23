@@ -82,17 +82,13 @@
     "range": "Time range",
     "refresh": "Auto refresh",
     "refreshNow": "Refresh",
-    "export": "Export JSON",
-    "import": "Import",
-    "importFile": "Dashboard JSON file",
-    "edit": "Edit",
     "addWidget": "Add widget",
     "shared": "Shared with everyone",
     "project": "Project",
     "noProject": "No project",
     "isDefault": "Default for the project",
-    "delete": "Delete",
-    "save": "Save changes"
+    "save": "Save changes",
+    "done": "Done editing"
   },
   "add": {
     "title": "Add a widget",

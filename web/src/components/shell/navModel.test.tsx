@@ -17,7 +17,6 @@ import { isBoolRecord, readJson, writeJson } from './persist'
 const EXPECTED_GLOBAL = [
   '/',
   '/status',
-  '/dashboards',
   '/apps',
   '/deployments',
   '/functions',
@@ -95,6 +94,15 @@ describe('global nav model', () => {
       .map((i) => i.to)
       .sort()
     expect(tos).toEqual([...EXPECTED_GLOBAL].sort())
+  })
+
+  it('has one Dashboard entry and no separate Dashboards page', () => {
+    const labels = allGlobalItems().map((i) => i.label)
+    expect(labels).toContain('Dashboard')
+    expect(labels).not.toContain('Dashboards')
+    expect(
+      allGlobalItems().some((i) => i.to === ('/dashboards' as string)),
+    ).toBe(false)
   })
 
   it('keeps groups short', () => {

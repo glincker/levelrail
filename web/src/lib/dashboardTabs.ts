@@ -102,7 +102,24 @@ export function showTab(prefs: TabPrefs, id: string): TabPrefs {
   return { ...prefs, hidden: prefs.hidden.filter((h) => h !== id) }
 }
 
-/** pickSelected falls back to Start when the stored tab no longer exists or is hidden. */
-export function pickSelected(stored: string | null, shown: string[]): string {
-  return stored !== null && shown.includes(stored) ? stored : START_TAB
+/** defaultTab lands on a board once there are apps, and on Start before the first one. */
+export function defaultTab(hasApps: boolean, shown: string[]): string {
+  if (!hasApps) return START_TAB
+  const saved = shown.find((id) => savedDashboardId(id) !== null)
+  if (saved) return saved
+  return shown.includes(METRICS_TAB) ? METRICS_TAB : START_TAB
+}
+
+/** pickSelected keeps the stored tab while it is still shown, else uses the fallback. */
+export function pickSelected(
+  stored: string | null,
+  shown: string[],
+  fallback: string = START_TAB,
+): string {
+  return stored !== null && shown.includes(stored) ? stored : fallback
+}
+
+/** boardTab maps a ?board= value (a saved id or a built-in tab) to a tab id. */
+export function boardTab(board: string): string {
+  return BUILTIN_TABS.includes(board) ? board : savedTabId(board)
 }

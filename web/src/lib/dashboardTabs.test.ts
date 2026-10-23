@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_TAB_PREFS,
+  boardTab,
+  defaultTab,
   hideTab,
   metricsDoc,
   moveTab,
@@ -63,6 +65,21 @@ describe('dashboardTabs', () => {
     expect(pickSelected('d:a', ['start', 'd:a'])).toBe('d:a')
     expect(pickSelected('d:a', ['start'])).toBe('start')
     expect(pickSelected(null, ['start'])).toBe('start')
+  })
+
+  it('picks the default tab from apps and saved boards', () => {
+    expect(defaultTab(false, ['start', 'metrics', 'd:a'])).toBe('start')
+    expect(defaultTab(true, ['start', 'metrics'])).toBe('metrics')
+    expect(defaultTab(true, ['start', 'metrics', 'd:a', 'd:b'])).toBe('d:a')
+    expect(defaultTab(true, ['start'])).toBe('start')
+    expect(pickSelected(null, ['start', 'metrics'], 'metrics')).toBe('metrics')
+    expect(pickSelected('start', ['start', 'metrics'], 'metrics')).toBe('start')
+  })
+
+  it('maps a board param to a tab id', () => {
+    expect(boardTab('abc')).toBe('d:abc')
+    expect(boardTab('metrics')).toBe('metrics')
+    expect(boardTab('start')).toBe('start')
   })
 
   it('builds a metrics doc from target-less widgets only', () => {
