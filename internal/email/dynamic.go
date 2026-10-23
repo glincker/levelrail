@@ -55,6 +55,7 @@ const (
 	kindKey ctxKey = iota
 	noRetryKey
 	noFailoverKey
+	onlyProviderKey
 )
 
 // WithKind tags sends made with ctx (for example "password_reset") in the delivery log.
@@ -71,6 +72,18 @@ func WithoutRetry(ctx context.Context) context.Context {
 // WithoutFailover keeps sends made with ctx on the primary provider even when it fails.
 func WithoutFailover(ctx context.Context) context.Context {
 	return context.WithValue(ctx, noFailoverKey, true)
+}
+
+// WithOnlyProvider aims sends made with ctx at one provider id, with no failover. A ProvidersLoader should honor it
+// even for a disabled provider, so a test send can prove a provider before it is enabled.
+func WithOnlyProvider(ctx context.Context, id string) context.Context {
+	return context.WithValue(WithoutFailover(ctx), onlyProviderKey, id)
+}
+
+// OnlyProviderID returns the id set by WithOnlyProvider, or "".
+func OnlyProviderID(ctx context.Context) string {
+	id, _ := ctx.Value(onlyProviderKey).(string)
+	return id
 }
 
 // ProviderHealth persists the last outcome per provider. Implementations are best effort.
@@ -132,7 +145,19 @@ func (d *DynamicSender) WithLogger(l *slog.Logger) *DynamicSender {
 
 func (d *DynamicSender) providers(ctx context.Context) ([]ProviderConfig, error) {
 	if d.loadProviders != nil {
-		return d.loadProviders(ctx)
+		provs, err := d.loadProviders(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if only := OnlyProviderID(ctx); only != "" {
+			for _, p := range provs {
+				if p.ID == only {
+					return []ProviderConfig{p}, nil
+				}
+			}
+			return nil, fmt.Errorf("email provider %q is not available", only)
+		}
+		return provs, nil
 	}
 	cfg, err := d.load(ctx)
 	if err != nil {

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1683 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1690 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -792,11 +792,18 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/settings/cloudflare-tunnel", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateCloudflareTunnelSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/dashboard-url", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDashboardURL", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/dashboard-url", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateDashboardURL", Description: ""},
-	{Method: "GET", Path: "/api/v1/settings/email", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetEmailSettings", Description: "Email settings: same precedent as ingress settings just above. GET is AbilityRead; PUT is AbilityRoot, real infrastructure config."},
-	{Method: "PUT", Path: "/api/v1/settings/email", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateEmailSettings", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/email", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetEmailSettings", Description: "Deprecated: kept for the dashboard, CLI and scripts that predate email providers. Reads the primary provider plus sender identity, use /api/v1/settings/email/providers."},
+	{Method: "PUT", Path: "/api/v1/settings/email", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateEmailSettings", Description: "Deprecated: writes the primary provider and the sender identity together. Use /api/v1/settings/email/providers for providers."},
 	{Method: "GET", Path: "/api/v1/settings/email/deliveries", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleListEmailDeliveries", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/email/deliveries/{id}", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetEmailDelivery", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/email/domain-check", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleEmailDomainCheck", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/email/providers", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleListEmailProviders", Description: "One primary plus at most one backup. List and get are AbilityRead; every write, test and promote is AbilityRoot."},
+	{Method: "POST", Path: "/api/v1/settings/email/providers", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleCreateEmailProvider", Description: "Creates the primary, or the backup when a primary exists. Root: it stores credentials."},
+	{Method: "DELETE", Path: "/api/v1/settings/email/providers/{id}", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleDeleteEmailProvider", Description: "Refused for the primary while a backup exists."},
+	{Method: "GET", Path: "/api/v1/settings/email/providers/{id}", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetEmailProvider", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/email/providers/{id}", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateEmailProvider", Description: "Replaces the provider fields; an empty credential keeps the stored value."},
+	{Method: "POST", Path: "/api/v1/settings/email/providers/{id}/promote", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handlePromoteEmailProvider", Description: "Swaps the primary and backup roles atomically, moving credentials with them."},
+	{Method: "POST", Path: "/api/v1/settings/email/providers/{id}/test", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleTestEmailProvider", Description: "Root: sends one real message through that provider alone, with no failover."},
 	{Method: "GET", Path: "/api/v1/settings/email/status", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleEmailStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/settings/email/test", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleTestEmail", Description: "Root: a test send goes to any address, so it is not open to ordinary write tokens."},
 	{Method: "GET", Path: "/api/v1/settings/ingress", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetIngressSettings", Description: "Ingress settings: GET is AbilityRead. PUT is AbilityRoot, since flipping acme_enabled changes certificate automation fleet-wide on the next reconcile."},

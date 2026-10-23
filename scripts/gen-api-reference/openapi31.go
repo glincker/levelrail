@@ -132,6 +132,9 @@ func genOpenAPI31(routes []route, groups map[string]string, brand brandInfo) ([]
 			summary = r.method + " " + r.path
 		}
 		op["summary"] = summary
+		if strings.HasPrefix(strings.TrimSpace(r.description), "Deprecated") {
+			op["deprecated"] = true
+		}
 
 		id := r.handler
 		if id == "" || usedIDs[id] {
