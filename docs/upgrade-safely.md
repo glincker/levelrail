@@ -237,13 +237,27 @@ For each tag the harness:
 5. upgrades to a release that rewrites the database and never becomes healthy, and checks the automatic restore: the previous binary is back byte for byte, the database is the pre-upgrade one and every seeded record is intact;
 6. upgrades again, then attempts a downgrade with `self-upgrade --to <old tag>`, which is refused without touching the binary. It then marks the database as written by a newer release and starts the old binary on it: the binary must exit with status 78, leave the database file byte for byte unchanged, and the current release must start again once the marker is removed.
 
+### Cross-release schema migration
+
+`TestReleaseUpgradeSchemaMigration` and `TestReleaseUpgradeSchemaAutoRestore` (same switch, same `scripts/upgrade-harness.sh`) upgrade a data directory that the real v0.8.2 binary created to the current build. v0.8.2 ships migrations up to 2830 and the current tree ships more, so the upgrade runs real migrations on real data. It seeds a legacy single-row email backend (SMTP, with a stored password) and an app spend cap through the v0.8.2 API, sends a test email through a local SMTP sink to prove the credential works, and then checks:
+
+1. email: `prov_primary` exists in `email_providers` with every non-secret column equal to the old `email_settings` row, `GET /api/v1/settings/email` and `GET /api/v1/settings/email/providers` agree, the primary reports its credential as set, and a test send through the primary reaches the sink with the original password. The deprecated `PUT /api/v1/settings/email` still round-trips, keeps the credential when none is sent, and both views follow it;
+2. spend caps: the cap row and its history survive unchanged, `guard_mode` is `alert`, no budget or override is blocking, and the app's deploy guard reports allowed;
+3. migrations: `schema_migrations` holds exactly the shipped list (no gaps, no extras, names match), the migrations the old release had are not applied again, the new ones carry an `applied_at` from the upgrade, and restarting the current build against the same data directory changes nothing and takes no snapshot;
+4. downgrade: the v0.8.2 binary started on the upgraded database exits with status 78, prints the documented message, and leaves the database file (and its WAL) byte for byte unchanged. `self-upgrade --to v0.8.2` is refused too;
+5. restore: the pre-upgrade restore point holds the v0.8.2 binary and a database at the old schema with no `email_providers` table. In `TestReleaseUpgradeSchemaAutoRestore` the current build migrates for real, its health check is made to fail, and the v0.8.2 `self-upgrade` rolls back on its own: the old binary, schema, migration list, legacy email row, cap and probe row all come back, v0.8.2 sends the test email again, and a later upgrade migrates the restored data cleanly.
+
+Known gap: restoring that point by hand with the current binary (`restore-point`) swaps the v0.8.2 binary and database back, and then the command opens the live database to record the attempt, which migrates the restored database forward again while v0.8.2 is running. The step is kept in the test, skipped with the reason, and runs when `LEVELRAIL_UPGRADE_RUN_KNOWN_GAPS=1` is set. The automatic restore is not affected because the old binary does the recording.
+
+`TestUpgradeSchemaMigrationInProcess` is the fast version and runs under `go test -short`: it builds the schema v0.8.2 shipped from the real migration files, seeds a legacy email row and a cap, migrates to the current tree and checks the backfill, the `alert` default, the migration list and that a reopen is a no-op. It does not use a release binary.
+
 ### What this does and does not prove
 
 Proven for v0.8.1 and v0.8.2 as the starting release: data written by the old binary survives the upgrade, a failed verification puts back the old binary and database, a restore point restores a working old release, and a downgrade is refused by both the upgrade command and the old binary's start-up guard.
 
 Limits:
 
-- v0.8.1, v0.8.2 and the current tree share one schema version, so the upgrade did not run a real migration. The migration path itself is covered by the matrix above; the harness cannot show that a new migration is lossless. The newer-database state in step 6 is simulated with a marker row, not a real later release.
+- The newer-database state in step 6 of the first test is simulated with a marker row. The schema migration tests above use the real schema difference instead.
 - A manual restore point restore only swaps the database when the schema differs, so with equal schemas it keeps the database ("database kept") and the harness checks exactly that. The database swap on restore is proven by step 5 (automatic restore), where the failing release rewrites the database.
 - No containers run: the harness uses the control plane in dev mode without Docker, so app deploys, agent reconnection and the unit file restore (systemd) are not exercised. The agent reconnect part of the verification is skipped because no agent is enrolled.
 - The release is served from a local test server over plain HTTP with `LEVELRAIL_INSECURE_MIRROR`, so the signature check reports "no signature bundle, checksum only". Signature verification has its own tests.
