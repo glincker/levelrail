@@ -40,6 +40,8 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 - Envelope-encrypted secrets with master-key rotation. See [security](/security).
 - Container exec and an interactive terminal (dashboard or `apps exec --interactive`), gated to root-level tokens.
 - [Service template](/templates-and-registry) catalog: about 360 entries (see [template catalog](/template-catalog)), reversing the original non-goal in [ADR 015](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md).
+- Ingress abuse defense with per-app rate limits and address and User-Agent deny lists, starting in log only mode with a replay before enforcing. See [ingress abuse defense](/abuse-defense).
+- A chaos test matrix that maps daemon, disk, agent, image and OOM failures to the test that proves each one converges. See [chaos test coverage](/chaos-coverage).
 
 ### Data
 
@@ -54,6 +56,9 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 - Crashloop detection with the last 200 log lines surfaced in the UI.
 - Alerting with 25 rule kinds and 18 notification channel kinds, with retries for transient failures and delivery history.
 - Attention list, [status page](/status-page), capacity forecast, right-sizing suggestions and certificate renewal visibility. See [observability](/observability).
+- Email providers with a primary and an optional backup that takes over automatically, provider templates, branding, and a credential reveal behind a password and two-factor check. See [email notifications](/email-notifications).
+- Monthly egress and cost caps per app and per project, with alerts at 50, 80 and 100 percent, a deploy guard with an audited override, a month-end forecast and a pause preview. See [spend caps](/spend-caps).
+- Traffic export of one record per finished ingress request to PostHog, OpenTelemetry or a webhook, with no visitor identity unless a destination opts in. See [traffic export](/traffic-export).
 
 ### Multi-node
 
@@ -77,6 +82,9 @@ The join flow is verified across two real Docker daemons, but not across a real 
 - Dashboard, `levelrail-cli` (profiles, `--output` and `--query`, shell completion, device login, `doctor`, `apps create --interactive`) and `install.sh`.
 - Migration CLI: `levelrail-cli migrate coolify`, `dokploy` and `caprover`. See [migrating from Coolify, Dokploy and CapRover](/migrating-from-coolify-dokploy-and-caprover).
 - MCP server (`cmd/levelrail-mcp`): over 240 tools, grouped into toolsets that an agent enables on demand. See [MCP tool surface](/mcp-tool-surface) for the exact, generated numbers, and the [AI assistant](/ai-assistant) page. Tokens are checked against the same abilities as the REST API.
+- `migrate verify`, a parity report that compares the source with this server before DNS moves, shown on the Cutover tab of the Migrate page. See [migration reference](/migration-reference).
+- Cross-release schema migration tests that upgrade real v0.8.2 data across real migrations, with downgrade refusal and automatic restore. See [upgrade safely](/upgrade-safely).
+- The dashboard Start tab follows the project and environment picker. See [projects, organizations and environments](/projects-and-organizations).
 
 ### Shipped but off by default or beta
 
@@ -94,11 +102,13 @@ These exist and are tested, but are gated or carry a beta label. See [feature st
 - Template coverage: a sample of the roughly 360 templates is deployed by e2e tests, not the whole catalog.
 - Other database engines: PITR covers Postgres, MySQL and MariaDB only (MongoDB has no oplog here), and the remaining engines have no TLS by default.
 - Stable release: none yet. Upgrade and downgrade testing across versions with real data is part of Phase 5.
+- Real pause or scale-to-zero for spend caps: `pause` serves a maintenance response and does not stop containers. A real pause needs an ADR first.
+- Remote Go build cache for CI: needs a storage bucket before it can be enabled.
 
 ## Out of scope
 
 - Container runtime: Docker Engine API only.
-- Scheduler: no bin-packing, affinity rules or autoscaling.
+- Scheduler: no bin-packing or affinity rules. Resource-aware placement, failure-domain spread and autoscaling are built, see [ADR 033](https://github.com/glincker/levelrail/blob/main/adr/033-scale-out-roadmap-and-non-goal-reversal.md) and [ADR 036](https://github.com/glincker/levelrail/blob/main/adr/036-autoscaler-dry-runs-and-multi-ingress-readiness.md).
 - Service mesh: WireGuard plus DNS only.
 - Windows or non-Linux nodes.
 - Managed cloud offering: not before the self-hosted version has real users.
