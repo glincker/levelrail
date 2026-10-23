@@ -556,3 +556,33 @@ func TestGetMasterKeyRotatedAt_NeverRotated(t *testing.T) {
 		t.Errorf("GetMasterKeyRotatedAt() on a fresh store = (ok=%v, err=%v), want ok=false, err=nil", ok, err)
 	}
 }
+
+func TestSecretBuildTime_DefaultDeniedSurvivesRotation(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveServiceDEK(ctx, "web", []byte("dek")); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveSecretValue(ctx, "web", "TOKEN", []byte("ct1")); err != nil {
+		t.Fatal(err)
+	}
+	if exists, on, err := db.GetSecretBuildTime(ctx, "web", "TOKEN"); err != nil || !exists || on {
+		t.Fatalf("new secret: exists=%v on=%v err=%v, want true false nil", exists, on, err)
+	}
+	if err := db.SetSecretBuildTime(ctx, "web", "TOKEN", true); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveSecretValue(ctx, "web", "TOKEN", []byte("ct2")); err != nil {
+		t.Fatal(err)
+	}
+	keys, err := db.ListSecretKeys(ctx, "web")
+	if err != nil || len(keys) != 1 || !keys[0].BuildTime {
+		t.Fatalf("after rotation: keys=%+v err=%v, want build_time kept", keys, err)
+	}
+	if err := db.SetSecretBuildTime(ctx, "web", "GHOST", true); !errors.Is(err, ErrSecretValueNotFound) {
+		t.Errorf("ghost error = %v", err)
+	}
+	if exists, on, err := db.GetSecretBuildTime(ctx, "web", "GHOST"); err != nil || exists || on {
+		t.Errorf("ghost get: %v %v %v", exists, on, err)
+	}
+}

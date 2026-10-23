@@ -1732,6 +1732,7 @@ type CustomTemplateDetail struct {
 type SetSecretRequest struct {
 	Value           string `json:"value"`
 	OverwriteLocked bool   `json:"overwrite_locked"`
+	BuildTime       *bool  `json:"build_time,omitempty"`
 }
 
 // SecretKeyResource mirrors internal/api's secretKeyResource
@@ -1741,8 +1742,14 @@ type SetSecretRequest struct {
 type SecretKeyResource struct {
 	Key       string `json:"key"`
 	Locked    bool   `json:"locked"`
+	BuildTime bool   `json:"build_time"`
 	UpdatedAt string `json:"updated_at"`
 	Stale     bool   `json:"stale"`
+}
+
+// SetSecretBuildTimeRequest mirrors internal/api's setSecretBuildTimeRequest.
+type SetSecretBuildTimeRequest struct {
+	BuildTime bool `json:"build_time"`
 }
 
 // SetSecretLockRequest mirrors internal/api's setSecretLockRequest

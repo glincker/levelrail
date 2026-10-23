@@ -52,6 +52,7 @@ func (f *fakeSecretResolver) SetValueGuarded(context.Context, string, string, st
 func (f *fakeSecretResolver) ListKeys(context.Context, string) ([]store.SecretKeyInfo, error) {
 	return nil, errors.New("not implemented")
 }
+func (f *fakeSecretResolver) SetBuildEnabled(context.Context, string, string, bool) error { return nil }
 func (f *fakeSecretResolver) SetLocked(context.Context, string, string, bool) error {
 	return errors.New("not implemented")
 }

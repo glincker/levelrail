@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1710 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1711 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1572,6 +1572,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/secrets", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListSecrets", Description: "List known secret keys (never values) and toggle a key's lock. GET at AbilityRead, matching GET .../git-source's own GET=Read/PUT=WriteSensitive split just below: a key NAME is no more sensitive than a git-source's connection config."},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/secrets/{key}", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleDeleteSecret", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/secrets/{key}", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetSecret", Description: "Secrets. Set-only: there is deliberately no GET, returning a value (even to its own owner over an authenticated session) is exactly the kind of exposure envelope encryption exists to avoid."},
+	{Method: "POST", Path: "/api/v1/apps/{name}/secrets/{key}/build-time", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetSecretBuildTime", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/secrets/{key}/lock", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetSecretLock", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/secrets/{key}/reveal", Ability: "AbilityReadSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleRevealSecret", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/secrets/{key}/rotate", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleRotateSecretValue", Description: ""},
