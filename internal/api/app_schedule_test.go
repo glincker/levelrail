@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -211,5 +212,79 @@ func TestTriggerScheduledDeploy_NoGitSourceConnected(t *testing.T) {
 
 	if _, err := rt.TriggerScheduledDeploy(context.Background(), "web", "main"); err == nil {
 		t.Fatal("TriggerScheduledDeploy() error = nil, want an error for a missing git source")
+	}
+}
+
+func putSchedule(t *testing.T, rt *Router, cookie *http.Cookie, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/schedule", body))
+	return rec
+}
+
+func TestHandleSetAppSchedule_RunAtValidation(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	seedGitSourceForSchedule(t, db)
+
+	soon := time.Now().Add(2 * time.Hour).UTC().Format(time.RFC3339)
+	cases := []struct {
+		name, body, wantMsg string
+	}{
+		{"both", `{"cron":"0 3 * * *","run_at":"` + soon + `","branch":"main"}`, "exactly one of cron or run_at"},
+		{"neither", `{"branch":"main"}`, "one of cron or run_at is required"},
+		{"past", `{"run_at":"2020-01-01T00:00:00Z","branch":"main"}`, "in the future"},
+		{"beyond horizon", `{"run_at":"` + time.Now().Add(800*24*time.Hour).UTC().Format(time.RFC3339) + `","branch":"main"}`, "within"},
+		{"bad format", `{"run_at":"next tuesday","branch":"main"}`, "RFC 3339"},
+	}
+	for _, c := range cases {
+		rec := putSchedule(t, rt, cookie, c.body)
+		if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), c.wantMsg) {
+			t.Errorf("%s: status = %d body = %s, want 400 containing %q", c.name, rec.Code, rec.Body.String(), c.wantMsg)
+		}
+	}
+}
+
+func TestHandleSetAppSchedule_RunAtSuccessAndRearm(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	seedGitSourceForSchedule(t, db)
+
+	at := time.Now().Add(3 * time.Hour).UTC().Truncate(time.Second)
+	rec := putSchedule(t, rt, cookie, `{"run_at":"`+at.Format(time.RFC3339)+`","branch":"main"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var saved appScheduleResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &saved); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if saved.RunAt == nil || !saved.RunAt.Equal(at) || saved.NextRunAt == nil || !saved.NextRunAt.Equal(at) || saved.Cron != "" {
+		t.Fatalf("saved = %+v, want run_at and next_run_at both %v and no cron", saved, at)
+	}
+
+	if err := db.CompleteAppSchedule(context.Background(), "web", time.Now()); err != nil {
+		t.Fatalf("CompleteAppSchedule: %v", err)
+	}
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/schedule", ""))
+	var done appScheduleResource
+	_ = json.Unmarshal(rec.Body.Bytes(), &done)
+	if done.CompletedAt == nil || done.Enabled {
+		t.Fatalf("after completion = %+v, want completed_at set and disabled", done)
+	}
+
+	later := at.Add(time.Hour)
+	if rec := putSchedule(t, rt, cookie, `{"run_at":"`+later.Format(time.RFC3339)+`","branch":"main"}`); rec.Code != http.StatusOK {
+		t.Fatalf("re-arm PUT status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/schedule", ""))
+	var rearmed appScheduleResource
+	_ = json.Unmarshal(rec.Body.Bytes(), &rearmed)
+	if rearmed.CompletedAt != nil || !rearmed.Enabled {
+		t.Fatalf("after re-arm = %+v, want completed_at cleared and enabled", rearmed)
 	}
 }

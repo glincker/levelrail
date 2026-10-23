@@ -113,6 +113,21 @@ func scheduledTaskSchedulerInterval(logger *slog.Logger) time.Duration {
 	return d
 }
 
+// appScheduleOneShotCatchUp bounds how late a one-time scheduled deploy may
+// still fire after its run_at (default 24h); 0 disables the bound.
+func appScheduleOneShotCatchUp(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_SCHEDULE_ONESHOT_CATCHUP")
+	if raw == "" {
+		return defaultAppScheduleOneShotCatchUp
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil || d < 0 {
+		logger.Warn("invalid APP_SCHEDULE_ONESHOT_CATCHUP, using the default", slog.String("value", raw))
+		return defaultAppScheduleOneShotCatchUp
+	}
+	return d
+}
+
 func appScheduleSchedulerInterval(logger *slog.Logger) time.Duration {
 	raw := os.Getenv("APP_SCHEDULE_DEPLOY_SCHEDULER_INTERVAL")
 	if raw == "" {

@@ -273,6 +273,7 @@ func (s *bootState) startSchedulers() {
 
 	// Fires through the same git-source deploy path a webhook push uses.
 	appScheduleScheduler := scheduledeploy.NewScheduler(db, db, apiRouter, logger)
+	appScheduleScheduler.OneShotCatchUp = appScheduleOneShotCatchUp(logger)
 	go func() {
 		if err := appScheduleScheduler.Run(ctx, appScheduleSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("scheduled deploy scheduler stopped", slog.String("error", err.Error()))

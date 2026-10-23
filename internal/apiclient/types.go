@@ -1978,12 +1978,15 @@ type AppScheduleResource struct {
 	Timezone    string     `json:"timezone"`
 	Enabled     bool       `json:"enabled"`
 	NextRunAt   *time.Time `json:"next_run_at,omitempty"`
+	RunAt       *time.Time `json:"run_at,omitempty"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
 }
 
 // SetAppScheduleRequest mirrors internal/api's setAppScheduleRequest.
 // Enabled defaults to true server-side when nil.
 type SetAppScheduleRequest struct {
-	Cron     string `json:"cron"`
+	Cron     string `json:"cron,omitempty"`
+	RunAt    string `json:"run_at,omitempty"`
 	Branch   string `json:"branch"`
 	Timezone string `json:"timezone,omitempty"`
 	Enabled  *bool  `json:"enabled,omitempty"`

@@ -18,6 +18,8 @@ export interface AppSchedule {
   timezone: string
   enabled: boolean
   next_run_at?: string
+  run_at?: string
+  completed_at?: string
 }
 
 export interface AppScheduleInput {
@@ -31,7 +33,7 @@ export interface AppScheduleHistoryEntry {
   id: string
   scheduled_for: string
   fired_at: string
-  status: 'fired' | 'skipped_freeze' | 'failed'
+  status: 'fired' | 'skipped_freeze' | 'skipped_missed' | 'failed'
   reason?: string
 }
 

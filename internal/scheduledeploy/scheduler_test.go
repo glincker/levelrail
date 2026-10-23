@@ -61,6 +61,19 @@ func (f *fakeScheduleStore) ArmAppScheduleNextRun(_ context.Context, serviceName
 	return nil
 }
 
+func (f *fakeScheduleStore) CompleteAppSchedule(_ context.Context, serviceName string, at time.Time) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	s, ok := f.schedules[serviceName]
+	if !ok {
+		return nil
+	}
+	t := at
+	s.CompletedAt, s.Enabled = &t, false
+	f.schedules[serviceName] = s
+	return nil
+}
+
 func (f *fakeScheduleStore) RecordAppScheduleHistory(_ context.Context, e store.AppScheduleHistoryEntry) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()

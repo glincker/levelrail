@@ -46,7 +46,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | plugins | 3 | 171 |
 | previews | 2 | 163 |
 | registry | 3 | 243 |
-| scheduled | 4 | 331 |
+| scheduled | 4 | 334 |
 | search | 2 | 237 |
 | security | 3 | 142 |
 | settings | 3 | 188 |
@@ -55,7 +55,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 145 |
-| **total** | **249** | **24645** |
+| **total** | **249** | **24648** |
 
 ## Default session (progressive disclosure)
 
