@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"net/http"
+	"net/netip"
 	"os"
 	"sort"
 	"strconv"
@@ -20,8 +21,8 @@ const (
 	defaultAccessCapacity = 1000
 )
 
-// AccessRecord is one finished edge request. The query string and client
-// address are never captured.
+// AccessRecord is one finished edge request. The query string is never
+// captured, and the client address stays in process memory only.
 type AccessRecord struct {
 	Time      time.Time `json:"time"`
 	Host      string    `json:"host"`
@@ -35,7 +36,14 @@ type AccessRecord struct {
 	TraceID   string    `json:"trace_id,omitempty"`
 	Upstream  bool      `json:"upstream_error,omitempty"`
 	Cold      bool      `json:"cold_start,omitempty"`
+	// Client and UserAgent stay in process memory for the abuse defense dry
+	// run. They are never serialized, so no read API can return them.
+	Client    netip.Addr `json:"-"`
+	UserAgent string     `json:"-"`
 }
+
+// maxRecordedAgent bounds the User-Agent kept per record.
+const maxRecordedAgent = 160
 
 // AccessFilter narrows a ring read.
 type AccessFilter struct {
@@ -178,6 +186,31 @@ func (l *AccessLog) Query(keys []string, f AccessFilter) []AccessRecord {
 	if len(out) > limit {
 		out = out[:limit]
 	}
+	return out
+}
+
+// Since returns every retained record for the given keys at or after since,
+// oldest first. Unlike Query it is not capped, because a replay needs them all.
+func (l *AccessLog) Since(keys []string, since time.Time) []AccessRecord {
+	if l == nil {
+		return nil
+	}
+	var out []AccessRecord
+	for _, key := range keys {
+		l.mu.RLock()
+		r := l.rings[key]
+		l.mu.RUnlock()
+		if r == nil {
+			continue
+		}
+		for _, rec := range r.snapshot() {
+			if rec.Time.Before(since) || (l.retention > 0 && time.Since(rec.Time) > l.retention) {
+				continue
+			}
+			out = append(out, rec)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Time.Before(out[j].Time) })
 	return out
 }
 

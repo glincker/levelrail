@@ -96,6 +96,9 @@ func printTrafficHuman(out io.Writer, r apiclient.AppTrafficResource) {
 		}
 		_, _ = fmt.Fprintf(out, "shield blocked: %.0f (%s)\n", r.Shield.Blocked, strings.Join(parts, ", "))
 	}
+	if a := r.Abuse; a.Blocked > 0 || a.WouldBlock > 0 || a.FailOpen > 0 {
+		_, _ = fmt.Fprintf(out, "abuse defense: allowed %.0f  would block %.0f  blocked %.0f  fail-open %.0f\n", a.Allowed, a.WouldBlock, a.Blocked, a.FailOpen)
+	}
 	if r.SLO != nil {
 		_, _ = fmt.Fprintf(out, "slo: %s %.2f%%  burn %.2fx  budget left %.1f%%\n", r.SLO.Objective, r.SLO.Target, r.SLO.BurnRate, r.SLO.BudgetRemaining*100)
 	}

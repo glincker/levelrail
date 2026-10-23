@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1700 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1703 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -101,6 +101,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetApp", Description: "Resource-scoped (iam.go): a policy can Deny or narrowly Allow write/delete on one specific app by name, e.g. a token whose flat abilities grant write everywhere except an app: prod-web Deny policy attached to it. Every other per-app and per-database mutating route in this file and routes_platform.go is now on the same requireAbilityForResource gate; only POST /apps (creation, no existing resource to scope to) and GET .../terminal (websocket upgrade, not touched in this pass) remain on plain requireAbility."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUpdateApp", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/abuse", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppAbuse", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/abuse", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutAppAbuse", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/abuse/dry-run", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAbuseDryRun", Description: "Replays the recent access log against a draft policy and counts what it would have blocked."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/access", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppAccess", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/alert-history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppAlertHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/apply-pending", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleApplyPending", Description: ""},

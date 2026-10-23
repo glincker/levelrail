@@ -1,3 +1,5 @@
+import type { AbuseCounters } from './abuse'
+
 // Wire types for GET /api/v1/apps/{name}/traffic
 // (internal/api/traffic_app.go's trafficResponse).
 
@@ -104,5 +106,6 @@ export interface TrafficDetail {
   countries: TrafficLabel[]
   slo?: TrafficSLO
   shield: TrafficShield
+  abuse: AbuseCounters
   error_spikes: TrafficErrorSpike[]
 }
