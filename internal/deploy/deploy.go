@@ -173,6 +173,9 @@ type Request struct {
 	Commit func() error
 	// NoCache disables BuildKit's layer cache for a dockerfile build.
 	NoCache bool
+	// Preview marks a pull request preview build, which may not use
+	// build.secrets unless APP_PREVIEW_BUILD_SECRETS is true.
+	Preview bool
 }
 
 // Pipeline builds a service (when its build type requires a build) and
@@ -316,6 +319,10 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		S3Cache:        s3Cache,
 		Attest:         p.attest,
 		NoCache:        req.NoCache,
+	}
+	if err := checkPreviewBuildSecrets(req.Preview, req.Service.Build.Secrets); err != nil {
+		cacheDone()
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 	progress, err = p.applyBuildSecrets(ctx, req.ServiceName, req.Service.Build.Secrets, &buildReq, progress)
 	if err != nil {

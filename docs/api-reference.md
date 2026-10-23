@@ -695,6 +695,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/git-source/webhook/register | AbilityWriteSensitive | handleRegisterGitSourceWebhook |
 | POST | /api/v1/apps/{name}/secrets/{key}/rotate | AbilityWriteSensitive | handleRotateSecretValue |
 | POST | /api/v1/webhooks/functions/{name} | Public | handleFunctionWebhook |
+| POST | /api/v1/apps/{name}/secrets/{key}/build-time | AbilityWriteSensitive | handleSetSecretBuildTime |
 
 ## Telemetry
 

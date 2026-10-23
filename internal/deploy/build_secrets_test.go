@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -62,6 +63,79 @@ func (f fakeSecretValues) Exists(_ context.Context, _, k string) (bool, error) {
 }
 
 func (f fakeSecretValues) Resolve(_ context.Context, _, k string) (string, error) { return f[k], nil }
+
+// BuildEnabled is true for every key; gatedValues overrides it.
+func (f fakeSecretValues) BuildEnabled(context.Context, string, string) (bool, error) {
+	return true, nil
+}
+
+type gatedValues struct {
+	fakeSecretValues
+	enabled bool
+	err     error
+}
+
+func (g gatedValues) BuildEnabled(context.Context, string, string) (bool, error) {
+	return g.enabled, g.err
+}
+
+func TestResolveBuildSecret_DefaultDenyAndFailClosed(t *testing.T) {
+	vals := fakeSecretValues{"NPM_TOKEN": "tok-123456"}
+	p := &Pipeline{buildSecretValues: gatedValues{fakeSecretValues: vals}}
+	_, err := p.resolveBuildSecret(context.Background(), "web", "NPM_TOKEN")
+	if err == nil || !strings.Contains(err.Error(), "NPM_TOKEN is not enabled for build use, enable it under the app's secrets") || strings.Contains(err.Error(), "tok-123456") {
+		t.Fatalf("flag off: err = %v", err)
+	}
+	p = &Pipeline{buildSecretValues: gatedValues{fakeSecretValues: vals, err: errors.New("db down")}}
+	if v, err := p.resolveBuildSecret(context.Background(), "web", "NPM_TOKEN"); err == nil || v != "" {
+		t.Fatalf("lookup error must fail closed: v=%q err=%v", v, err)
+	}
+	p = &Pipeline{buildSecretValues: gatedValues{fakeSecretValues: vals, enabled: true}}
+	if v, err := p.resolveBuildSecret(context.Background(), "web", "NPM_TOKEN"); err != nil || v != "tok-123456" {
+		t.Fatalf("enabled: v=%q err=%v", v, err)
+	}
+}
+
+func TestCheckPreviewBuildSecrets(t *testing.T) {
+	names := []string{"NPM_TOKEN"}
+	t.Setenv(EnvPreviewBuildSecrets, "")
+	if err := checkPreviewBuildSecrets(true, names); err == nil || !strings.Contains(err.Error(), EnvPreviewBuildSecrets) {
+		t.Fatalf("preview default: err = %v", err)
+	}
+	if err := checkPreviewBuildSecrets(false, names); err != nil {
+		t.Fatalf("non-preview: %v", err)
+	}
+	if err := checkPreviewBuildSecrets(true, nil); err != nil {
+		t.Fatalf("preview without secrets: %v", err)
+	}
+	t.Setenv(EnvPreviewBuildSecrets, "true")
+	if err := checkPreviewBuildSecrets(true, names); err != nil {
+		t.Fatalf("opted in: %v", err)
+	}
+	t.Setenv(EnvPreviewBuildSecrets, "banana")
+	if err := checkPreviewBuildSecrets(true, names); err == nil {
+		t.Fatal("garbage value must stay denied")
+	}
+}
+
+func TestPipeline_Deploy_PreviewRejectsBuildSecrets(t *testing.T) {
+	t.Setenv(EnvPreviewBuildSecrets, "")
+	builder := &fakeBuilder{result: &build.Result{Tag: "levelrail/web:abc1234"}}
+	p := New(builder, &fakeServiceStore{}, WithBuildSecretValues(fakeSecretValues{"NPM_TOKEN": "tok-123456"}))
+	svc := dockerfileService()
+	svc.Build.Secrets = []string{"NPM_TOKEN"}
+	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web", Preview: true}, nil)
+	if err == nil || !strings.Contains(err.Error(), "preview") {
+		t.Fatalf("err = %v", err)
+	}
+	if builder.lastReq.Secrets != nil {
+		t.Error("builder must not receive secrets")
+	}
+	t.Setenv(EnvPreviewBuildSecrets, "1")
+	if _, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web", Preview: true}, nil); err != nil {
+		t.Fatalf("opted in: %v", err)
+	}
+}
 
 func TestApplyBuildSecrets_UserSecretsMountedAndMasked(t *testing.T) {
 	const val = "npm_supersecret_value"

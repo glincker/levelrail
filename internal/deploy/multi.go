@@ -44,6 +44,8 @@ type MultiRequest struct {
 	// after the app itself rather than a redundant "<app>-<service>"
 	// suffix; every other caller leaves it empty.
 	SingleServiceName string
+	// Preview marks a pull request preview build (see Request.Preview).
+	Preview bool
 }
 
 // ServiceOutcome is one service's own fan-out result: Image is set on
@@ -134,6 +136,7 @@ func (p *Pipeline) DeploySpec(ctx context.Context, req MultiRequest, progress fu
 			SourceDir:   req.SourceDir,
 			CommitSHA:   req.CommitSHA,
 			ImageRepo:   req.ImageRepoBase + "-" + key,
+			Preview:     req.Preview,
 		}, svcProgress)
 		if deployErr != nil {
 			outcomes = append(outcomes, ServiceOutcome{ServiceKey: key, ServiceName: svcName, Err: deployErr})

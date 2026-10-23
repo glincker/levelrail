@@ -349,7 +349,7 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 	}
 	svcSpec.Domains = domainSlice(wantDomain)
 	svcSpec.Env = injectPreviewEnv(svcSpec.Env, vars, rt.previewURLFor(ctx, wantDomain))
-	req := deploy.Request{ServiceName: previewName, Service: svcSpec, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepo: previewName}
+	req := deploy.Request{ServiceName: previewName, Service: svcSpec, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepo: previewName, Preview: true}
 
 	_, deployErr := rt.builder.Deploy(ctx, req, build.SlogProgress(rt.logger))
 	usedDomain = wantDomain
@@ -403,7 +403,7 @@ func (rt *Router) deployPreviewMulti(ctx context.Context, appName, previewName s
 	}
 
 	outcomes, err := rt.builder.DeploySpec(ctx, deploy.MultiRequest{
-		AppName: previewName, Services: services, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepoBase: previewName,
+		AppName: previewName, Services: services, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepoBase: previewName, Preview: true,
 	}, nil)
 	if err != nil {
 		return "", false, err

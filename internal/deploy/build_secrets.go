@@ -3,6 +3,9 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/pkgregistry"
@@ -19,6 +22,25 @@ type BuildSecretSource interface {
 type BuildSecretValues interface {
 	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
 	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+	// BuildEnabled reports whether the secret is opted in for build use.
+	BuildEnabled(ctx context.Context, serviceName, envKey string) (bool, error)
+}
+
+// EnvPreviewBuildSecrets names the env var that, when true, lets preview
+// (pull request) builds use build.secrets. Off by default: a PR author
+// controls app.yaml and the Dockerfile.
+const EnvPreviewBuildSecrets = "APP_PREVIEW_BUILD_SECRETS" //nolint:gosec // env var name, not a credential
+
+// checkPreviewBuildSecrets rejects build.secrets on a preview build unless
+// the operator opted in. The env var is read on every call.
+func checkPreviewBuildSecrets(preview bool, names []string) error {
+	if !preview || len(names) == 0 {
+		return nil
+	}
+	if v, err := strconv.ParseBool(strings.TrimSpace(os.Getenv(EnvPreviewBuildSecrets))); err == nil && v {
+		return nil
+	}
+	return fmt.Errorf("build.secrets is not allowed on preview builds: a pull request can change the Dockerfile and read the secret; set %s=true to allow it", EnvPreviewBuildSecrets)
 }
 
 // WithBuildSecretValues enables build.secrets on Dockerfile builds.
@@ -93,6 +115,13 @@ func (p *Pipeline) resolveBuildSecret(ctx context.Context, serviceName, name str
 	}
 	if !ok {
 		return "", fmt.Errorf("build.secrets %q: no secret with that name exists for this app, create it under the app's secrets and redeploy", name)
+	}
+	enabled, err := p.buildSecretValues.BuildEnabled(ctx, serviceName, name)
+	if err != nil {
+		return "", fmt.Errorf("build.secrets %q: check build-time access: %w", name, err)
+	}
+	if !enabled {
+		return "", fmt.Errorf("build.secrets %q: secret %s is not enabled for build use, enable it under the app's secrets", name, name)
 	}
 	val, err := p.buildSecretValues.Resolve(ctx, serviceName, name)
 	if err != nil {

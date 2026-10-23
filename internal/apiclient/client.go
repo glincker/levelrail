@@ -1913,6 +1913,18 @@ func (c *Client) SetSecret(ctx context.Context, name, key, value string, overwri
 	return c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key), SetSecretRequest{Value: value, OverwriteLocked: overwriteLocked}, nil)
 }
 
+// SetSecretWithBuildTime is SetSecret plus an explicit build_time flag
+// (whether build.secrets may mount the secret).
+func (c *Client) SetSecretWithBuildTime(ctx context.Context, name, key, value string, overwriteLocked, buildTime bool) error {
+	return c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key), SetSecretRequest{Value: value, OverwriteLocked: overwriteLocked, BuildTime: &buildTime}, nil)
+}
+
+// SetSecretBuildTime calls POST /api/v1/apps/{name}/secrets/{key}/build-time:
+// opts an existing secret in or out of build.secrets.
+func (c *Client) SetSecretBuildTime(ctx context.Context, name, key string, buildTime bool) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key)+"/build-time", SetSecretBuildTimeRequest{BuildTime: buildTime}, nil)
+}
+
 // ListSecrets calls GET /api/v1/apps/{name}/secrets: every known secret
 // key for the app with its locked state, never a value.
 func (c *Client) ListSecrets(ctx context.Context, name string) ([]SecretKeyResource, error) {
