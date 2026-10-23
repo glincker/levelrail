@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  activeCliTokens,
-  cliTokenStatus,
-  isCliConnected,
-} from './cliConnection'
+import { activeCliTokens, cliTokenStatus } from './cliConnection'
 
 const now = Date.parse('2026-06-01T12:00:00Z')
 const future = '2026-07-01T00:00:00Z'
@@ -59,19 +55,5 @@ describe('cli origins and status', () => {
       'active',
     )
     expect(cliTokenStatus({ name: 'a', expires_at: past }, now)).toBe('expired')
-  })
-})
-
-describe('isCliConnected', () => {
-  it('is false for no tokens', () => {
-    expect(isCliConnected([], now)).toBe(false)
-  })
-
-  it('is true when one token qualifies among others', () => {
-    const tokens = [
-      { name: 'cli-pairing', revoked_at: past },
-      { name: 'cli-pairing mac', expires_at: future },
-    ]
-    expect(isCliConnected(tokens, now)).toBe(true)
   })
 })

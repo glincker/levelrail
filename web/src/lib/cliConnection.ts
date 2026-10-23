@@ -1,13 +1,3 @@
-// Name prefixes of every credential a CLI sign-in mints: a pairing code
-// ("cli-pairing", internal/api/cli_pairing.go), the device flow ("device: "
-// + client name) and a password login (the CLI's "levelrail-cli-<stamp>"
-// default, cmd/levelrail-cli/auth_login.go). Other API tokens stay out.
-export const CLI_TOKEN_PREFIXES = [
-  'cli-pairing',
-  'device:',
-  'levelrail-cli-',
-] as const
-
 export type CliOrigin = 'pairing' | 'device' | 'password'
 export type CliStatus = 'active' | 'expiring' | 'expired'
 
@@ -20,6 +10,8 @@ export interface CliTokenLike {
 const EXPIRING_DAYS = Number(import.meta.env.VITE_CLI_EXPIRING_DAYS ?? 7)
 const DAY_MS = 86_400_000
 
+// Every credential a CLI sign-in mints: a pairing code (internal/api/cli_pairing.go),
+// the device flow ("device: " + client) and a password login (cmd/levelrail-cli/auth_login.go).
 export function cliOrigin(name: string): CliOrigin | null {
   if (name.startsWith('cli-pairing')) {
     return 'pairing'
@@ -62,11 +54,4 @@ export function activeCliTokens<T extends CliTokenLike>(
   return listCliTokens(tokens).filter(
     (tok) => cliTokenStatus(tok, now) !== 'expired',
   )
-}
-
-export function isCliConnected(
-  tokens: readonly CliTokenLike[],
-  now: number,
-): boolean {
-  return activeCliTokens(tokens, now).length > 0
 }
