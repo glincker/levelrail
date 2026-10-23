@@ -81,6 +81,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/functions"
 	"github.com/GLINCKER/levelrail/internal/nodefailure"
+	"github.com/GLINCKER/levelrail/internal/repolayout"
 	"github.com/GLINCKER/levelrail/internal/repolist"
 	"github.com/GLINCKER/levelrail/internal/search"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -534,56 +535,57 @@ type Router struct {
 	dbRotationOnce               sync.Once
 	dbRotationSvc                *dbrotate.Service
 	dbAccessTTL                  dbaccess.TTLLimits
-	backupHistory                BackupHistoryStore               // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
-	backupRunner                 BackupRunner                     // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
-	backupDownloader             BackupDownloader                 // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above
-	backupDeleter                BackupDeleter                    // nil is valid: DELETE .../backups/{historyId} returns 501, same shape as backupDownloader above
-	backupVerifications          BackupVerificationStore          // always set, same "core Store interface" shape as backupHistory above: listing verification attempts needs no runner configuration, only triggering a new one does
-	backupVerifier               BackupVerifier                   // nil is valid: POST .../backups/{historyId}/verify returns 501, same shape as backupRunner above
-	backupTargetTester           BackupTargetTester               // nil is valid: POST /api/v1/backup-targets/{id}/test returns 501, same shape as registryAuthTester above
-	restoreHistory               RestoreHistoryStore              // always set, same "core Store interface" shape as backupHistory above
-	restoreRunner                RestoreRunner                    // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
-	cloneRestoreHistory          CloneRestoreHistoryStore         // always set, same "core Store interface" shape as restoreHistory above
-	cloneRestoreRunner           CloneRestoreRunner               // nil is valid: POST /api/v1/databases/{name}/restore-as-new returns 501, same shape as restoreRunner above
-	baseBackupHistory            BaseBackupHistoryStore           // always set, same "core Store interface" shape as backupHistory above
-	baseBackupRunner             BaseBackupRunner                 // nil is valid: POST /api/v1/databases/{name}/base-backups returns 501, same shape as backupRunner above
-	majorUpgrader                MajorUpgrader                    // nil is valid: the major upgrade routes return 501
-	dbUpgrader                   DatabaseUpgrader                 // nil is valid: the database upgrade routes return 501
-	dbVersions                   DatabaseVersionCatalog           // nil is valid: the database version routes return 501
-	majorUpgrades                MajorUpgradeStore                // always set, same "core Store interface" shape as pitrRestoreHistory
-	pitrRestoreHistory           PITRRestoreHistoryStore          // always set, same "core Store interface" shape as restoreHistory above
-	walShipStatus                WALShipStatusSource              // nil is valid: "pitr status" omits wal_ship
-	mysqlPITRRestoreRunner       MySQLPITRRestoreRunner           // nil is valid: MySQL and MariaDB point-in-time restore returns 501
-	pitrRestoreRunner            PITRRestoreRunner                // nil is valid: POST /api/v1/databases/{name}/pitr-restore returns 501, same shape as restoreRunner above
-	serviceVolumeBackupHistory   ServiceVolumeBackupHistoryStore  // always set, same "core Store interface" shape as backupHistory above
-	serviceVolumeBackupSchedule  ServiceVolumeBackupScheduleStore // always set, same "core Store interface" shape as backupTargets above: reading a volume's schedule needs no runner configuration, only triggering a manual backup does
-	serviceVolumeBackupRunner    ServiceVolumeBackupRunner        // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/backups returns 501, same shape as backupRunner above
-	serviceVolumeRestoreHistory  ServiceVolumeRestoreHistoryStore // always set, same "core Store interface" shape as restoreHistory above
-	serviceVolumeRestoreRunner   ServiceVolumeRestoreRunner       // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore returns 501, same shape as restoreRunner above
-	volumeCloneRestoreHistory    VolumeCloneRestoreHistoryStore   // always set, same "core Store interface" shape as cloneRestoreHistory above
-	appVolumeMoves               AppVolumeMoveStore               // always set, same "core Store interface" shape as backupHistory above
-	volumeCloneRestoreRunner     VolumeCloneRestoreRunner         // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new returns 501, same shape as cloneRestoreRunner above
-	deployAttempts               DeployAttemptStore               // always set, same "core Store interface" shape as certs/staticSites above
-	probeAttempts                ProbeAttemptStore                // always set, same "core Store interface" shape as deployAttempts above
-	buildStartMu                 sync.Mutex                       // serializes the running-attempt check and row insert in handleTriggerBuild
-	cancels                      *deploy.CancelRegistry           // always set by NewRouter: in-flight deploys an operator can cancel
-	startingDeploys              map[string]int                   // guarded by buildStartMu: apps whose webhook deploy is fetching before its attempt row exists
-	deployMaxConcurrent          int                              // 0 means unlimited, set via WithDeployMaxConcurrent
-	deployLogStore               DeployLogQuerier                 // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
-	deployExits                  DeployExitStore                  // nil is valid: exits are reported without their captured output
-	trialKeeper                  TrialKeeper                      // nil is valid: POST /apps/{name}/keep returns 501
-	deployRecorder               *deploylog.Recorder              // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
-	logBroadcaster               *telemetry.LogBroadcaster        // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above
-	deployNotifyTargets          DeployNotifyTargets              // nil is valid: deploy-notify-target routes return 501, same shape as alertRules above
-	deployNotifier               DeployNotifier                   // nil is valid: recordPlainDeployAttempt/beginBuildDeployAttempt simply don't dispatch a deploy-outcome notification, same "optional signal, absence is not an error" shape as dockerPinger above
-	notificationChannels         NotificationChannels             // nil is valid: notification-channel routes return 501, same shape as deployNotifyTargets above
-	notificationChannelTester    NotificationChannelTester        // nil is valid: the test-send routes return 501, same shape as deployNotifier above
-	notificationDeliveries       NotificationDeliveryStore        // nil is valid: the deliveries route returns 501, and test-send simply doesn't record history, same shape as notificationChannelTester above
-	approvalChatNotifier         ApprovalChatNotifier             // nil is valid: requestDeployApproval simply doesn't post an interactive chat message, same "optional signal, absence is not an error" shape as deployNotifier above
-	pushSubscriptions            PushSubscriptions                // always set, same "core Store interface" shape as passkeys below: registering/listing/deleting a browser subscription needs no secrets configuration, only actually sending to one does
-	pushVAPIDPublicKey           string                           // "" means browser push is not configured on this control plane (no master key set), same nil-secretsManager hazard as every Secrets-flavored dependency
-	gitSources                   GitSourceStore                   // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does
-	buildHooks                   BuildHookStore                   // always set, incoming build hook URLs
+	backupHistory                BackupHistoryStore                                                                  // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
+	backupRunner                 BackupRunner                                                                        // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
+	backupDownloader             BackupDownloader                                                                    // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above
+	backupDeleter                BackupDeleter                                                                       // nil is valid: DELETE .../backups/{historyId} returns 501, same shape as backupDownloader above
+	backupVerifications          BackupVerificationStore                                                             // always set, same "core Store interface" shape as backupHistory above: listing verification attempts needs no runner configuration, only triggering a new one does
+	backupVerifier               BackupVerifier                                                                      // nil is valid: POST .../backups/{historyId}/verify returns 501, same shape as backupRunner above
+	backupTargetTester           BackupTargetTester                                                                  // nil is valid: POST /api/v1/backup-targets/{id}/test returns 501, same shape as registryAuthTester above
+	restoreHistory               RestoreHistoryStore                                                                 // always set, same "core Store interface" shape as backupHistory above
+	restoreRunner                RestoreRunner                                                                       // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
+	cloneRestoreHistory          CloneRestoreHistoryStore                                                            // always set, same "core Store interface" shape as restoreHistory above
+	cloneRestoreRunner           CloneRestoreRunner                                                                  // nil is valid: POST /api/v1/databases/{name}/restore-as-new returns 501, same shape as restoreRunner above
+	baseBackupHistory            BaseBackupHistoryStore                                                              // always set, same "core Store interface" shape as backupHistory above
+	baseBackupRunner             BaseBackupRunner                                                                    // nil is valid: POST /api/v1/databases/{name}/base-backups returns 501, same shape as backupRunner above
+	majorUpgrader                MajorUpgrader                                                                       // nil is valid: the major upgrade routes return 501
+	dbUpgrader                   DatabaseUpgrader                                                                    // nil is valid: the database upgrade routes return 501
+	dbVersions                   DatabaseVersionCatalog                                                              // nil is valid: the database version routes return 501
+	majorUpgrades                MajorUpgradeStore                                                                   // always set, same "core Store interface" shape as pitrRestoreHistory
+	pitrRestoreHistory           PITRRestoreHistoryStore                                                             // always set, same "core Store interface" shape as restoreHistory above
+	walShipStatus                WALShipStatusSource                                                                 // nil is valid: "pitr status" omits wal_ship
+	mysqlPITRRestoreRunner       MySQLPITRRestoreRunner                                                              // nil is valid: MySQL and MariaDB point-in-time restore returns 501
+	pitrRestoreRunner            PITRRestoreRunner                                                                   // nil is valid: POST /api/v1/databases/{name}/pitr-restore returns 501, same shape as restoreRunner above
+	serviceVolumeBackupHistory   ServiceVolumeBackupHistoryStore                                                     // always set, same "core Store interface" shape as backupHistory above
+	serviceVolumeBackupSchedule  ServiceVolumeBackupScheduleStore                                                    // always set, same "core Store interface" shape as backupTargets above: reading a volume's schedule needs no runner configuration, only triggering a manual backup does
+	serviceVolumeBackupRunner    ServiceVolumeBackupRunner                                                           // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/backups returns 501, same shape as backupRunner above
+	serviceVolumeRestoreHistory  ServiceVolumeRestoreHistoryStore                                                    // always set, same "core Store interface" shape as restoreHistory above
+	serviceVolumeRestoreRunner   ServiceVolumeRestoreRunner                                                          // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore returns 501, same shape as restoreRunner above
+	volumeCloneRestoreHistory    VolumeCloneRestoreHistoryStore                                                      // always set, same "core Store interface" shape as cloneRestoreHistory above
+	appVolumeMoves               AppVolumeMoveStore                                                                  // always set, same "core Store interface" shape as backupHistory above
+	volumeCloneRestoreRunner     VolumeCloneRestoreRunner                                                            // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new returns 501, same shape as cloneRestoreRunner above
+	deployAttempts               DeployAttemptStore                                                                  // always set, same "core Store interface" shape as certs/staticSites above
+	probeAttempts                ProbeAttemptStore                                                                   // always set, same "core Store interface" shape as deployAttempts above
+	buildStartMu                 sync.Mutex                                                                          // serializes the running-attempt check and row insert in handleTriggerBuild
+	cancels                      *deploy.CancelRegistry                                                              // always set by NewRouter: in-flight deploys an operator can cancel
+	startingDeploys              map[string]int                                                                      // guarded by buildStartMu: apps whose webhook deploy is fetching before its attempt row exists
+	deployMaxConcurrent          int                                                                                 // 0 means unlimited, set via WithDeployMaxConcurrent
+	deployLogStore               DeployLogQuerier                                                                    // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
+	deployExits                  DeployExitStore                                                                     // nil is valid: exits are reported without their captured output
+	trialKeeper                  TrialKeeper                                                                         // nil is valid: POST /apps/{name}/keep returns 501
+	deployRecorder               *deploylog.Recorder                                                                 // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
+	logBroadcaster               *telemetry.LogBroadcaster                                                           // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above
+	deployNotifyTargets          DeployNotifyTargets                                                                 // nil is valid: deploy-notify-target routes return 501, same shape as alertRules above
+	releaseCommits               func(ctx context.Context, app, fromSHA, toSHA string) ([]repolayout.Commit, string) // nil uses commitsForRange; tests inject commits
+	deployNotifier               DeployNotifier                                                                      // nil is valid: recordPlainDeployAttempt/beginBuildDeployAttempt simply don't dispatch a deploy-outcome notification, same "optional signal, absence is not an error" shape as dockerPinger above
+	notificationChannels         NotificationChannels                                                                // nil is valid: notification-channel routes return 501, same shape as deployNotifyTargets above
+	notificationChannelTester    NotificationChannelTester                                                           // nil is valid: the test-send routes return 501, same shape as deployNotifier above
+	notificationDeliveries       NotificationDeliveryStore                                                           // nil is valid: the deliveries route returns 501, and test-send simply doesn't record history, same shape as notificationChannelTester above
+	approvalChatNotifier         ApprovalChatNotifier                                                                // nil is valid: requestDeployApproval simply doesn't post an interactive chat message, same "optional signal, absence is not an error" shape as deployNotifier above
+	pushSubscriptions            PushSubscriptions                                                                   // always set, same "core Store interface" shape as passkeys below: registering/listing/deleting a browser subscription needs no secrets configuration, only actually sending to one does
+	pushVAPIDPublicKey           string                                                                              // "" means browser push is not configured on this control plane (no master key set), same nil-secretsManager hazard as every Secrets-flavored dependency
+	gitSources                   GitSourceStore                                                                      // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does
+	buildHooks                   BuildHookStore                                                                      // always set, incoming build hook URLs
 	buildHookLimiters            buildHookLimiters
 	imageAutoUpdates             ImageAutoUpdateStore // always set, per-app registry auto-update opt-in
 	forms                        FormsStore           // nil is valid: form routes return 501

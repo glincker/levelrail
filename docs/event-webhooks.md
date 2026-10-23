@@ -44,6 +44,16 @@ The URL must be a public http(s) address. Internal addresses are refused unless 
 }
 ```
 
+## Deploy notifications with release notes
+
+A generic notification channel attached to an app (see [Notification channels](/alerting)) receives its own deploy outcome JSON, separate from the signed events above. For a successful deploy into a production environment, or a completed promotion, it carries an optional `release_notes` field: the markdown generated for the commits since the previous successful deploy that recorded a commit.
+
+```json
+{ "app_name": "web", "image": "web:8b7d0e4", "succeeded": true, "attempt_id": "dep_9f2", "release_notes": "## web: 3f2a9c1 to 8b7d0e4\n\n### Features\n\n- add promotion preview (8b7d0e4)\n" }
+```
+
+The field is left out when there are no notes, the app has no connected git source, the range cannot be listed, or generation fails or times out. Generation never fails or blocks the deploy or the notification. `RELEASE_NOTES_MAX_BYTES` (default 4000) caps the field; longer notes end with `...(truncated)`. `RELEASE_NOTES_TIMEOUT_SECONDS` (default 5) bounds generation.
+
 ## Verify the signature
 
 Every request carries these headers, with the brand short name as the prefix (shown here as `X-Brand`):
