@@ -101,6 +101,8 @@ export function EmailSenderCard({
       },
       {
         onSuccess: () => {
+          // Re-baseline so the next edit is dirty again.
+          form.reset(v)
           toast.add({ title: t('email.saveSuccess'), type: 'success' })
         },
       },

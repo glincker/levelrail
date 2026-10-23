@@ -3,7 +3,7 @@ import { useRouter } from '@tanstack/react-router'
 import { UnsavedGuardDialog } from '@/components/UnsavedGuardDialog'
 
 // useUnsavedGuard(isDirty) blocks in-app nav and tab close while dirty; render the returned node.
-// Pass `isDirty && !isSubmitSuccessful` so it clears after a save. A clean form is never blocked.
+// Pass plain `isDirty` and reset() the form after a save so it re-baselines. A clean form is never blocked.
 export function useUnsavedGuard(isDirty: boolean): ReactElement | null {
   const router = useRouter({ warn: false })
 
