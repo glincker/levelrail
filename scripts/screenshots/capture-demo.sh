@@ -78,7 +78,7 @@ log "building control plane binary"
 export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/Library/Caches/ms-playwright}"
 
 log "seeding demo data"
-APP_BRAND_FILE="$REPO_ROOT/brand.yaml" APP_DATA_DIR="$DATA_DIR" "$BIN" demo seed --seed 1 >"$SCRATCH_DIR/seed.log" 2>&1 \
+APP_BRAND_FILE="$REPO_ROOT/brand.yaml" APP_DATA_DIR="$DATA_DIR" "$BIN" demo seed --seed 1 --scenario "${SCENARIO:-calm}" >"$SCRATCH_DIR/seed.log" 2>&1 \
   || { cat "$SCRATCH_DIR/seed.log"; fail "demo seed failed"; }
 
 # demo serve refuses to start when any of the unset variables is present.

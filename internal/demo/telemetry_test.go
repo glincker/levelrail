@@ -127,7 +127,7 @@ func exec(t *testing.T, db *store.DB, q string) {
 func TestSeedStoryMetricsAndLogs(t *testing.T) {
 	ctx := context.Background()
 	s := seedStores(t, liveAnchor)
-	story := storyFor(liveAnchor)
+	story := storyFor(liveAnchor, false)
 	id := "service:" + incidentApp
 
 	p95 := func(at time.Time) float64 {

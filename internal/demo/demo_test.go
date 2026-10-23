@@ -257,3 +257,45 @@ func TestSeedReadiness(t *testing.T) {
 		t.Errorf("legacy-cms condition = %+v, want Suspended", c)
 	}
 }
+
+func TestSeedCalmScenario(t *testing.T) {
+	ctx := context.Background()
+	db := openDB(t)
+	if _, err := Seed(ctx, db, Options{Seed: 1, Anchor: testAnchor, Scenario: ScenarioCalm}); err != nil {
+		t.Fatalf("Seed() error = %v", err)
+	}
+	for _, a := range appSpecs {
+		conds, err := db.GetConditionsForControllers(ctx, []string{"application/" + a.name})
+		if err != nil {
+			t.Fatalf("conditions for %s: %v", a.name, err)
+		}
+		c := conds["application/"+a.name][0]
+		if c.Status != "True" && c.Reason != "Suspended" {
+			t.Errorf("%s condition = %+v, want ready or stopped", a.name, c)
+		}
+		attempts, err := db.ListDeployAttempts(ctx, a.name)
+		if err != nil {
+			t.Fatalf("attempts for %s: %v", a.name, err)
+		}
+		for _, at := range attempts {
+			if at.Status == store.DeployAttemptStatusFailed {
+				t.Errorf("%s has failed attempt %s in calm scenario", a.name, at.ID)
+			}
+		}
+	}
+	list, err := db.ListDeployApprovals(ctx, store.DeployApprovalStatusPending, "")
+	if err != nil {
+		t.Fatalf("ListDeployApprovals() error = %v", err)
+	}
+	pending := len(list)
+	if pending > 1 {
+		t.Errorf("pending approvals = %d, want at most 1", pending)
+	}
+}
+
+func TestSeedUnknownScenario(t *testing.T) {
+	db := openDB(t)
+	if _, err := Seed(context.Background(), db, Options{Seed: 1, Anchor: testAnchor, Scenario: "chaos"}); err == nil {
+		t.Fatal("Seed() with unknown scenario succeeded, want error")
+	}
+}

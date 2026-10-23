@@ -23,7 +23,7 @@ func (s *seeder) readiness() error {
 		}
 		status, reason, msg, since := "True", "Running", fmt.Sprintf("%d/%d replicas ready", a.replicas, a.replicas), ok.at
 		switch {
-		case a.name == crashloopApp:
+		case a.name == crashloopApp && !s.opts.calm():
 			status, reason, since = "False", "CrashLoopBackOff", s.opts.Anchor.Add(-20*time.Minute)
 			msg = "container exited 137 (out of memory) 4 times in 5 minutes"
 		case a.suspended:
@@ -36,7 +36,7 @@ func (s *seeder) readiness() error {
 		if err != nil {
 			return fmt.Errorf("demo: save condition for %q: %w", a.name, err)
 		}
-		if a.name == crashloopApp || a.suspended {
+		if (a.name == crashloopApp && !s.opts.calm()) || a.suspended {
 			continue
 		}
 		if err := s.db.SetDeployAttemptRollout(s.ctx, ok.id, store.RolloutStateServing); err != nil {
