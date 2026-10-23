@@ -35,7 +35,7 @@ const COPY = {
   push: { cta: "Get started", h1: "Push to git.<br><em>Get a running app.</em>", sub: "Self-hosted deploys with HTTPS, live logs, metrics and one-click rollback.", chips: CHIPS },
   docs: { cta: "Read the docs", h1: "Deploy, observe,<br><em>roll back.</em>", sub: "Install and run the platform on your own servers.", chips: ["Guides", "CLI", "API", "Templates"] },
   install: { cta: "Install in minutes", h1: "One command.<br><em>Your own cloud.</em>", sub: "Install on a fresh Linux box and open the dashboard in minutes.", chips: ["curl | sh", "Single binary", "Docker"] },
-  migrate: { cta: "Plan your migration", h1: "Leaving Coolify?<br><em>Bring your apps.</em>", sub: "Read the old server, stage apps and databases, then cut over.", chips: ["Coolify", "Dokploy", "CapRover"] },
+  migrate: { cta: "Plan your migration", h1: "Moving from Coolify?<br><em>Bring your apps.</em>", sub: "Read the old server, stage apps and databases, then cut over.", chips: ["Coolify", "Dokploy", "CapRover"] },
   templates: { cta: "Browse templates", h1: "300+ templates.<br><em>One click each.</em>", sub: "Databases, analytics and automation, each a tested compose file.", chips: ["Postgres", "Redis", "n8n"] },
   canary: { cta: "Read the guide", h1: "Canary deploys,<br><em>no service mesh.</em>", sub: "Send a slice of traffic to the new version, watch, then commit.", chips: ["Weighted traffic", "Instant rollback"] },
   sleep: { cta: "Read the guide", h1: "Idle apps sleep.<br><em>Requests wake.</em>", sub: "Stop paying in RAM for the side projects nobody visits at 3am.", chips: ["Scale to zero", "Wake on request"] },
@@ -117,7 +117,7 @@ const SITE = domain.replace(/^docs\./, "");
 function theme(dark) {
   return dark
     ? { bg: "#050709", ink: "#f4f6f8", sub: "#9aa6ae", pillBg: "#090c0f", pillLine: "#2a323a", pillInk: "#cfd6dc", url: "#5cc4e8", tag: "#7d8a93", grad: `linear-gradient(90deg,#5cc4e8 0%,#9fe0c8 45%,${LIVE} 100%)`,
-        glows: ["radial-gradient(ellipse 52% 80% at 100% 0%,rgba(47,179,220,.95),transparent 70%)", "radial-gradient(ellipse 40% 70% at 62% 0%,rgba(70,100,235,.85),transparent 70%)", `radial-gradient(ellipse 34% 60% at 0% 0%,rgba(20,170,150,.8),transparent 72%)`, `radial-gradient(ellipse 30% 55% at 84% 2%,rgba(238,243,95,.95),transparent 72%)`],
+        glows: ["radial-gradient(ellipse 52% 80% at 100% 0%,rgba(47,179,220,.8),transparent 70%)", "radial-gradient(ellipse 40% 70% at 62% 0%,rgba(70,100,235,.7),transparent 70%)", `radial-gradient(ellipse 34% 60% at 0% 0%,rgba(20,170,150,.8),transparent 72%)`, `radial-gradient(ellipse 26% 45% at 86% 0%,rgba(238,243,95,.55),transparent 72%)`],
         soft: "radial-gradient(ellipse 60% 70% at 85% 0%,rgba(47,179,220,.16),transparent 70%)",
         floor: "linear-gradient(to top,rgba(30,60,70,.30),transparent 38%)", blend: "screen", scene: "", logoDark: true }
     : { bg: "#f7f8fb", ink: "#0e1013", sub: "#4a525a", pillBg: "#0b0e11", pillLine: "#2a323a", pillInk: "#e3e8ec", url: "#0d6a86", tag: "#5a646c", grad: "linear-gradient(90deg,#0d6a86 0%,#3f7d6a 55%,#8a8f00 100%)",
@@ -132,6 +132,7 @@ function page(v) {
   const T = theme(dark);
   const small = v.h < 450;
   const aspect = { "get-started": 1000, "dashboard-sleeping-apps": 1100 }[v.shot] ?? 900;
+  const cta = v.chips && c.cta && !small ? `<div class="cta"><span class="btn">${c.cta}</span><span class="proof">Open source on GitHub</span></div>` : "";
   const chips = v.chips ? `<ul class="chips">${c.chips.map((x) => `<li>${x}</li>`).join("")}</ul>` : "";
   const sub = v.sub ? `<p class="sub">${c.sub}</p>` : "";
   const fh = v.fhh ?? Math.round((v.fw * aspect) / 1280);
@@ -153,11 +154,15 @@ html,body{margin:0;width:${v.w}px;height:${v.h}px;overflow:hidden;background:${T
 .grain{position:absolute;inset:0;z-index:20;pointer-events:none;background-image:${GRAIN};background-size:300px 300px;opacity:${dark ? 0.05 : 0.07};mix-blend-mode:${T.blend}}
 .brand{position:absolute;left:${v.pad}px;top:${Math.round(v.pad * 0.72)}px;display:flex;align-items:center;gap:12px;font-size:${small ? 18 : 20}px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:${T.ink};z-index:10}
 .copy{position:absolute;left:${v.pad}px;top:${v.tTop}px;width:${v.tW}px;z-index:10}
-h1{margin:0;font-weight:300;font-size:${v.h1}px;line-height:1.06;letter-spacing:-.034em;color:${T.ink}}
+h1{margin:0;font-weight:500;font-size:${v.h1}px;line-height:1.06;letter-spacing:-.034em;color:${T.ink}}
 h1 em{font-style:normal;background:${T.grad};-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.04em}
-.sub{margin:${Math.round(v.h1 * 0.36)}px 0 0;font-size:${v.sub}px;line-height:1.4;color:${T.sub};font-weight:400}
-.chips{display:flex;flex-wrap:wrap;gap:10px;margin:${Math.round(v.h1 * 0.4)}px 0 0;padding:0;list-style:none}
+.sub{margin:${Math.round(v.h1 * 0.36)}px 0 0;font-size:${v.sub}px;line-height:1.4;color:${T.sub};font-weight:450}
+.cta{display:flex;align-items:center;gap:16px;margin:${Math.round(v.h1 * 0.5)}px 0 0}
+.btn{padding:11px 22px;border-radius:11px;background:${LIVE};color:#10130a;font-weight:600;font-size:${v.h1 < 62 ? 16 : 18}px;box-shadow:0 8px 28px rgba(238,243,95,${dark ? ".22" : ".35"})}
+.proof{font-family:${MONO};font-size:14px;color:${T.sub}}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:${Math.round(v.h1 * 0.3)}px 0 0;padding:0;list-style:none}
 .chips li{padding:6px 13px;border-radius:50px;background:${dark ? "#090c0f" : "rgba(255,255,255,.7)"};box-shadow:inset 0 0 0 1px ${dark ? "#2a323a" : "#c9d2d9"};font-family:${MONO};font-size:${v.h1 < 62 ? 14 : 15}px;color:${dark ? "#cfd6dc" : "#2c353c"}}
+.chips li::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 8px 1px 0;background:${dark ? "#eef35f" : "#b9a800"}}
 .url{position:absolute;left:${v.pad}px;${v.urlTop ? `top:${Math.round(v.pad * 0.75) + 6}px;left:auto;right:${v.pad}px` : `bottom:${Math.round(v.pad * 0.55)}px`};font-family:${MONO};font-size:${small ? 18 : 20}px;color:${T.url};z-index:10}
 .frame{position:absolute;left:${v.fx}px;top:${v.fy}px;width:${v.fw}px;height:${fh}px;transform-origin:0 0;transform:${tilt};border-radius:16px;overflow:hidden;background:${dark ? "#0a0d10" : "#fff"};box-shadow:0 0 0 1px ${ring},0 0 54px ${dark ? "rgba(47,179,220,.30)" : "rgba(47,179,220,.25)"},-28px 44px 80px rgba(0,0,0,${dark ? ".75" : ".28"});z-index:2}
 .frame img{position:absolute;width:${v.iw ?? v.fw}px;left:${v.ix ?? 0}px;top:${v.iy ?? 0}px;display:block}
@@ -167,7 +172,7 @@ h1 em{font-style:normal;background:${T.grad};-webkit-background-clip:text;backgr
 .pill i.g{background:#3ddc97;box-shadow:0 0 10px #3ddc97}
 </style></head><body><div class="stage"><div class="soft"></div><div class="glow"></div><div class="floor"></div>
 <div class="brand">${logo(Math.round(v.pad * 0.5), dark)}<span>${name}</span></div>
-<div class="copy"><h1>${c.h1}</h1>${sub}${chips}</div>
+<div class="copy"><h1>${c.h1}</h1>${sub}${cta}${chips}</div>
 <div class="frame"><img src="file://${join(root, SHOT(shot))}"><b></b></div>${pills}
 <div class="url">${domain}</div><div class="grain"></div></div></body></html>`;
 }
@@ -197,14 +202,15 @@ html,body{margin:0;width:${v.w}px;height:${v.h}px;overflow:hidden;background:${T
 .pill i.g{background:#3ddc97;box-shadow:0 0 10px #3ddc97}
 .brand{position:absolute;left:64px;top:46px;display:flex;align-items:center;gap:12px;font-size:20px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:${T.ink};z-index:10}
 .copy{position:absolute;left:64px;top:128px;width:520px;z-index:10}
-h1{margin:0;font-weight:300;font-size:64px;line-height:1.06;letter-spacing:-.034em;color:${T.ink}}
+h1{margin:0;font-weight:500;font-size:64px;line-height:1.06;letter-spacing:-.034em;color:${T.ink}}
 h1 em{font-style:normal;background:${T.grad};-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.04em}
-.sub{margin:22px 0 0;font-size:22px;line-height:1.4;color:${T.sub};font-weight:400;width:${dash ? 500 : 470}px}
+.sub{margin:22px 0 0;font-size:22px;line-height:1.4;color:${T.sub};font-weight:450;width:${dash ? 500 : 470}px}
 .cta{display:flex;align-items:center;gap:10px;margin-top:30px}
 .cmd{display:inline-flex;align-items:center;gap:10px;padding:13px 20px;border-radius:12px;background:${T.pillBg};box-shadow:inset 0 0 0 1px ${T.pillLine},0 12px 30px rgba(0,0,0,${dark ? ".5" : ".18"});font-family:${MONO};font-size:17px;color:${T.pillInk};white-space:nowrap}
 .cmd b{color:${LIVE};font-weight:700}
 .chips{display:flex;gap:10px;margin:22px 0 0;padding:0;list-style:none}
 .chips li{padding:6px 13px;border-radius:50px;background:${dark ? "#090c0f" : "rgba(255,255,255,.7)"};box-shadow:inset 0 0 0 1px ${dark ? "#2a323a" : "#c9d2d9"};font-family:${MONO};font-size:14px;color:${dark ? "#cfd6dc" : "#2c353c"}}
+.chips li::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 8px 1px 0;background:${dark ? "#eef35f" : "#b9a800"}}
 .url{position:absolute;left:64px;bottom:34px;font-family:${MONO};font-size:20px;color:${T.url};z-index:10}
 .tag{position:absolute;right:64px;bottom:36px;font-family:${MONO};font-size:16px;letter-spacing:.16em;text-transform:uppercase;color:${T.tag};z-index:10}
 .grain{position:absolute;inset:0;z-index:20;pointer-events:none;background-image:${GRAIN};background-size:300px 300px;opacity:${dark ? 0.05 : 0.07};mix-blend-mode:${T.blend}}
