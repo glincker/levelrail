@@ -148,6 +148,12 @@
     "pending": "Trabajando...",
     "alreadyStopped": "{{name}} ya está detenida."
   },
+  "unsavedGuard": {
+    "title": "¿Descartar los cambios sin guardar?",
+    "description": "Tienes ediciones sin guardar. Si sales ahora, se perderán.",
+    "keep": "Seguir editando",
+    "discard": "Descartar"
+  },
   "confirmDialog": {
     "cancel": "Cancelar",
     "typePrompt": "Escribe {{value}} para confirmar"
@@ -549,5 +555,10 @@
     "report": "Reportar un problema",
     "requestId": "ID de solicitud: {{id}}",
     "detailsHeader": "Informe de error"
+  },
+  "secretInput": {
+    "show": "Mostrar valor",
+    "hide": "Ocultar valor",
+    "existing": "Definido. Déjalo en blanco para conservar el valor actual."
   }
 }

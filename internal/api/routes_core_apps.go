@@ -96,8 +96,8 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDeployHistory))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDeploy))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/cancel", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCancelDeploy))
-	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRollbackToDeploy))
-	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback-lock", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRollbackAndLock))
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleRollbackToDeploy)))
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback-lock", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleRollbackAndLock)))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/publish", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePublishHeldBuild))
 	mux.HandleFunc("GET /api/v1/apps/{name}/publish-lock", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetPublishLock))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/publish-lock", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutPublishLock))
@@ -250,7 +250,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// AbilityRead like the comparison view above; the trigger itself is
 	// AbilityDeploy, matching POST .../deploys.
 	mux.HandleFunc("GET /api/v1/apps/{name}/promote/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePromotePreview))
-	mux.HandleFunc("POST /api/v1/apps/{name}/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePromoteApp))
+	mux.HandleFunc("POST /api/v1/apps/{name}/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handlePromoteApp)))
 
 	// Deploy-attempt build/log stream (deploy_attempts.go): SSE, serving
 	// either a live tail (attempt still running) or a full persisted

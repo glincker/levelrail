@@ -45,6 +45,8 @@ type Client struct {
 	hc        *http.Client
 	userAgent string
 	noAuthFix string
+	retry     RetryPolicy
+	sleep     func(context.Context, time.Duration) error
 }
 
 // Option configures a Client at construction time. See WithUserAgent.
@@ -93,21 +95,53 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 // (ListNodesFiltered) that needs a response header such as
 // X-Total-Count alongside the decoded body.
 func (c *Client) doHeaders(ctx context.Context, method, path string, body, out any) (http.Header, error) {
-	var reqBody io.Reader
+	var payload []byte
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
 			return nil, fmt.Errorf("encode request body: %w", err)
 		}
-		reqBody = bytes.NewReader(b)
+		payload = b
+	}
+	sleep := c.sleep
+	if sleep == nil {
+		sleep = sleepCtx
+	}
+	var waited time.Duration
+	for attempt := 0; ; attempt++ {
+		h, err := c.doOnce(ctx, method, path, payload, out)
+		var apiErr *APIError
+		if err == nil || !errors.As(err, &apiErr) || attempt >= c.retry.MaxRetries ||
+			(apiErr.StatusCode != http.StatusTooManyRequests && apiErr.StatusCode != http.StatusServiceUnavailable) ||
+			!retrySafe(method, idempotencyKeyFrom(ctx)) {
+			return h, err
+		}
+		delay := c.retry.retryDelay(apiErr.RetryAfter, attempt)
+		if waited+delay > c.retry.MaxWait {
+			return h, err
+		}
+		if serr := sleep(ctx, delay); serr != nil {
+			return h, err
+		}
+		waited += delay
+	}
+}
+
+func (c *Client) doOnce(ctx context.Context, method, path string, payload []byte, out any) (http.Header, error) {
+	var reqBody io.Reader
+	if payload != nil {
+		reqBody = bytes.NewReader(payload)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reqBody) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
 	if err != nil {
 		return nil, fmt.Errorf("build request: %w", err)
 	}
-	if body != nil {
+	if payload != nil {
 		req.Header.Set(headerContentType, contentTypeJSON)
+	}
+	if key := idempotencyKeyFrom(ctx); key != "" {
+		req.Header.Set(headerIdempotencyKey, key)
 	}
 	if c.token != "" {
 		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
@@ -182,21 +216,20 @@ func ExtractErrorMessage(data []byte) string {
 	return trimmed
 }
 
-// retryAfterHeader parses a Retry-After response header as a delay,
-// seconds form only (the only form this control plane ever sends,
-// internal/api/api_rate_limit.go's own writeRateLimited): 0 if absent or
-// not a plain non-negative integer, so a caller checking APIError.RetryAfter
-// only sees a real value when the server actually sent one it can trust.
+// retryAfterHeader parses Retry-After as a delay, in seconds or HTTP-date form:
+// 0 if absent, malformed or already past, so a caller only sees a value it can trust.
 func retryAfterHeader(h http.Header) time.Duration {
-	raw := h.Get("Retry-After")
+	raw := strings.TrimSpace(h.Get("Retry-After"))
 	if raw == "" {
 		return 0
 	}
-	seconds, err := strconv.Atoi(raw)
-	if err != nil || seconds < 0 {
-		return 0
+	if seconds, err := strconv.Atoi(raw); err == nil {
+		return time.Duration(max(seconds, 0)) * time.Second
 	}
-	return time.Duration(seconds) * time.Second
+	if t, err := http.ParseTime(raw); err == nil {
+		return max(time.Until(t), 0)
+	}
+	return 0
 }
 
 // CreateApp calls POST /api/v1/apps.

@@ -163,6 +163,12 @@
     "pending": "Working...",
     "alreadyStopped": "{{name}} is already stopped."
   },
+  "unsavedGuard": {
+    "title": "Discard unsaved changes?",
+    "description": "You have edits that are not saved. Leaving now will lose them.",
+    "keep": "Keep editing",
+    "discard": "Discard"
+  },
   "confirmDialog": {
     "cancel": "Cancel",
     "typePrompt": "Type {{value}} to confirm"
@@ -892,5 +898,10 @@
     "report": "Report an issue",
     "requestId": "Request ID: {{id}}",
     "detailsHeader": "Error report"
+  },
+  "secretInput": {
+    "show": "Show value",
+    "hide": "Hide value",
+    "existing": "Set. Leave blank to keep the current value."
   }
 }

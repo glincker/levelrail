@@ -61,6 +61,16 @@ Leave `--to` out to end at the newest deploy that recorded a commit. The output 
 
 In the dashboard, open a comparison and use Generate release notes, then Copy markdown. The HTTP route is `GET /api/v1/apps/{name}/deploys/release-notes?from=ID&to=ID`.
 
+## Push release notes to notifications
+
+Notes are also pushed, not only pulled. When a deploy succeeds in a production environment, or a promotion completes, the same generator output is attached to the deploy-succeeded notification. It is on by default for those deploys and has no per-app switch.
+
+- Generic webhook channels get an optional `release_notes` field (see [Event webhooks](/event-webhooks)).
+- Slack, Mattermost, Rocket.Chat, Webex, Google Chat, Teams, email and Resend get the full markdown after the summary line.
+- Discord, Telegram, ntfy, Gotify and Lark get the first 3 lines only. Paging and push channels stay unchanged.
+- `RELEASE_NOTES_MAX_BYTES` (default 4000) caps the text, `RELEASE_NOTES_PREVIEW_BYTES` (default 300) caps the short-channel excerpt, `RELEASE_NOTES_TIMEOUT_SECONDS` (default 5) bounds generation.
+- If generation fails or the range cannot be listed, the notification goes out without notes. A promotion only gets notes when the target app has deploys that recorded a git commit.
+
 ## Example flow
 
 1. Deploy to staging and let it settle.

@@ -1,12 +1,13 @@
-import { zodResolver } from '@hookform/resolvers/zod'
 import { useMemo } from 'react'
-import { useFieldArray, useForm, useWatch, type Control } from 'react-hook-form'
+import { useFieldArray, useWatch, type Control } from 'react-hook-form'
 import { z } from 'zod'
 import {
   PlusIcon,
   BracketsCurlyIcon,
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { useAppForm } from '../hooks/useAppForm'
+import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { EnvExportButton } from './EnvExportButton'
 import { EnvPasteDialog } from './EnvPasteDialog'
 import { EnvPendingDiff } from './EnvPendingDiff'
@@ -151,11 +152,13 @@ export function EnvVarsForm({
     [values],
   )
   const { control, register, handleSubmit, formState, getValues } =
-    useForm<EnvFormValues>({
-      resolver: zodResolver(envSchema),
+    useAppForm<EnvFormValues>(envSchema, {
       values: syncedValues,
       resetOptions: { keepDirtyValues: true },
     })
+  const unsavedGuard = useUnsavedGuard(
+    formState.isDirty && !formState.isSubmitSuccessful,
+  )
   const watchedVars = useWatch({ control, name: 'vars' })
   const { fields, append, remove, replace, update } = useFieldArray({
     control,
@@ -219,6 +222,7 @@ export function EnvVarsForm({
 
   return (
     <Card>
+      {unsavedGuard}
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BracketsCurlyIcon className="size-4" />
