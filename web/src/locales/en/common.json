@@ -609,7 +609,8 @@
       "abilities": "Abilities: {{abilities}}",
       "confirm": "Revoke token",
       "pending": "Revoking...",
-      "success": "Token \"{{name}}\" revoked."
+      "success": "Token \"{{name}}\" revoked.",
+      "devFixture": "Dev fixture tokens are reseeded on the next dev-mode start unless you remove them from the fixtures file."
     },
     "alertRule": {
       "trigger": "Delete",

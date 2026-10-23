@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -17,16 +15,6 @@ const passwordResetTokenTTL = 30 * time.Minute
 // passwordResetSendTimeout bounds handleForgotPassword's background
 // send, so a hung SMTP/SES backend can't leak a goroutine indefinitely.
 const passwordResetSendTimeout = 30 * time.Second
-
-const passwordResetTokenIDPrefix = "prt_"
-
-func randomPasswordResetTokenID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
-		return "", fmt.Errorf("api: generate password reset token id: %w", err)
-	}
-	return passwordResetTokenIDPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
-}
 
 // forgotPasswordIPKey and forgotPasswordEmailKey are two independent
 // budgets, both must allow a request through: per-email (so one email

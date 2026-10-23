@@ -79,8 +79,6 @@ type unbindResult struct {
 	Unbound bool `json:"unbound"`
 }
 
-type noInput struct{}
-
 type listZonesInput struct {
 	NodeID   string `json:"node_id,omitempty"`
 	Capacity bool   `json:"capacity,omitempty"`

@@ -28,6 +28,7 @@ import { CLI_INSTALL_COMMAND } from '../../lib/cliInstall'
 import { formatAbsoluteTime, formatRelativeTime } from '../../lib/relativeTime'
 import { myCredentialsKey, useCliTokenRows } from '../../queries/myCredentials'
 import { useRevokeToken } from '../../queries/tokens'
+import { RotateCliTokenDialog } from './RotateCliTokenDialog'
 import type { TokenResource } from '../../types/token'
 
 const STATUS_DOT: Record<CliStatus, string> = {
@@ -165,6 +166,7 @@ export default function CliCommandCenter({
   const revoke = useRevokeToken()
   const p = useCliPairing()
   const [target, setTarget] = useState<TokenResource | null>(null)
+  const [rotateTarget, setRotateTarget] = useState<TokenResource | null>(null)
   const [setupOpen, setSetupOpen] = useState<boolean | null>(null)
 
   const connected = (rows ?? []).filter((r) => r.status !== 'expired').length
@@ -367,19 +369,34 @@ export default function CliCommandCenter({
                       ))}
                     </ul>
                   </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    aria-label={t('cliModal.manage.revokeLabel', {
-                      name: tok.name,
-                    })}
-                    onClick={() => {
-                      setTarget(tok)
-                    }}
-                  >
-                    {t('cliModal.manage.revoke')}
-                  </Button>
+                  <div className="flex shrink-0 gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      aria-label={t('cliModal.manage.rotateLabel', {
+                        name: tok.name,
+                      })}
+                      onClick={() => {
+                        setRotateTarget(tok)
+                      }}
+                    >
+                      {t('cliModal.manage.rotate')}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      aria-label={t('cliModal.manage.revokeLabel', {
+                        name: tok.name,
+                      })}
+                      onClick={() => {
+                        setTarget(tok)
+                      }}
+                    >
+                      {t('cliModal.manage.revoke')}
+                    </Button>
+                  </div>
                 </li>
               )
             })}
@@ -395,6 +412,15 @@ export default function CliCommandCenter({
       </section>
 
       <CommonCommands />
+
+      {rotateTarget ? (
+        <RotateCliTokenDialog
+          token={rotateTarget}
+          onClose={() => {
+            setRotateTarget(null)
+          }}
+        />
+      ) : null}
 
       <ConfirmDialog
         open={target !== null}

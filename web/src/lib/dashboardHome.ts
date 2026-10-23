@@ -13,24 +13,6 @@ export function dayPeriod(hour: number): DayPeriod {
   return 'night'
 }
 
-export type HeroSentence =
-  | { key: 'allHealthy'; count: number }
-  | { key: 'needAttention'; count: number }
-  | { key: 'noApps'; count: 0 }
-
-export function heroSentence(input: {
-  apps: number
-  failing: number
-  attention: number
-}): HeroSentence {
-  if (input.attention > 0) {
-    return { key: 'needAttention', count: input.attention }
-  }
-  if (input.failing > 0) return { key: 'needAttention', count: input.failing }
-  if (input.apps === 0) return { key: 'noApps', count: 0 }
-  return { key: 'allHealthy', count: input.apps }
-}
-
 export interface AttentionStep {
   id: string
   source: 'attention'

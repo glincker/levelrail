@@ -143,6 +143,37 @@ describe('CliModal', () => {
     expect(revokeMutate).toHaveBeenCalledWith('tok-1', expect.any(Object))
   })
 
+  it('offers Rotate on a CLI row and hides fixture tokens', async () => {
+    stubFetch({
+      [CREDS]: {
+        body: {
+          sessions: [],
+          tokens: [
+            {
+              id: 'tok-1',
+              name: 'cli-pairing laptop',
+              created_at: '2026-01-01T00:00:00Z',
+            },
+            {
+              id: 'fx',
+              name: 'cli-pairing fixture',
+              dev_fixture: true,
+              created_at: '2026-01-01T00:00:00Z',
+            },
+          ],
+        },
+      },
+    })
+    renderCli(<CliModal />)
+    open()
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Rotate cli-pairing laptop' }),
+    )
+    expect(await screen.findByText('Rotate this CLI token?')).toBeVisible()
+    expect(revokeMutate).not.toHaveBeenCalled()
+    expect(screen.queryByText('cli-pairing fixture')).toBeNull()
+  })
+
   it('lists device-flow and password tokens but hides other API tokens', async () => {
     const base = { created_at: '2026-01-01T00:00:00Z', abilities: ['read'] }
     stubFetch({
