@@ -41,6 +41,11 @@ type BaseBackupRunner struct {
 	// WAL, when set, ships the local WAL archive to the target right after a
 	// successful base backup, so the bucket holds what a restore replays.
 	WAL WALShipping
+	// ByEngine and EngineOf route MySQL and MariaDB databases to their own
+	// base backuper and binlog shipper; a nil EngineOf means every database is Postgres.
+	ByEngine  map[string]BaseBackuper
+	BinlogWAL WALShipping
+	EngineOf  func(ctx context.Context, databaseName string) (string, error)
 	// WorkDir/Now match Runner's own identically-named fields exactly
 	// (runner.go's own doc comments for each apply here unchanged).
 	WorkDir string
@@ -80,12 +85,20 @@ func (r *BaseBackupRunner) RunBaseBackup(ctx context.Context, historyID, databas
 		return fmt.Errorf("backup: start base backup history %q: %w", historyID, err)
 	}
 
+	engine := r.engine(ctx, databaseName)
+	mysqlFamily := engine == store.EngineMySQL || engine == store.EngineMariaDB
 	lsn := ""
-	if r.Runtime != nil {
+	if r.Runtime != nil && !mysqlFamily {
 		lsn = StartLSN(ctx, r.Runtime, containerName)
 	}
 
-	size, runErr := r.runBaseBackupAndUpload(ctx, containerName, targetID, objectKey)
+	size, position, runErr := r.runBaseBackupAndUpload(ctx, engine, containerName, targetID, objectKey)
+	if mysqlFamily {
+		lsn = position
+		if runErr == nil && lsn == "" {
+			runErr = fmt.Errorf("mysql base backup for %q recorded no binlog position: is point-in-time restore enabled and the binlog on?", databaseName)
+		}
+	}
 
 	status := store.BackupStatusSucceeded
 	errMsg := ""
@@ -97,8 +110,8 @@ func (r *BaseBackupRunner) RunBaseBackup(ctx context.Context, historyID, databas
 	if err := r.Store.FinishBaseBackupHistory(ctx, historyID, status, size, lsn, errMsg, finishedAt); err != nil {
 		return fmt.Errorf("backup: finish base backup history %q: %w", historyID, err)
 	}
-	if runErr == nil && r.WAL != nil && r.Runtime != nil {
-		if err := r.shipWAL(ctx, databaseName, containerName, targetID); err != nil {
+	if runErr == nil && r.shipperFor(engine) != nil && r.Runtime != nil {
+		if err := r.shipWAL(ctx, engine, databaseName, containerName, targetID); err != nil {
 			slog.Warn("backup: wal shipping after base backup failed", slog.String("database", databaseName), slog.String("error", err.Error()))
 		}
 	}
@@ -115,15 +128,37 @@ type BaseBackupMaintainer interface {
 	Prune(ctx context.Context, databaseName, containerName string) error
 }
 
-func (r *BaseBackupRunner) runBaseBackupAndUpload(ctx context.Context, containerName, targetID, objectKey string) (size int64, err error) {
+func (r *BaseBackupRunner) engine(ctx context.Context, databaseName string) string {
+	if r.EngineOf == nil {
+		return store.EnginePostgres
+	}
+	engine, err := r.EngineOf(ctx, databaseName)
+	if err != nil {
+		return store.EnginePostgres
+	}
+	return engine
+}
+
+func (r *BaseBackupRunner) shipperFor(engine string) WALShipping {
+	if engine == store.EngineMySQL || engine == store.EngineMariaDB {
+		return r.BinlogWAL
+	}
+	return r.WAL
+}
+
+func (r *BaseBackupRunner) runBaseBackupAndUpload(ctx context.Context, engine, containerName, targetID, objectKey string) (size int64, position string, err error) {
 	dest, err := resolveTargetDestination(ctx, r.Store, r.Secrets, targetID)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
-	tar, err := r.BaseBackuper.BaseBackup(ctx, containerName)
+	backuper := r.BaseBackuper
+	if b, ok := r.ByEngine[engine]; ok {
+		backuper = b
+	}
+	tar, err := backuper.BaseBackup(ctx, containerName)
 	if err != nil {
-		return 0, fmt.Errorf("base backup container %q: %w", containerName, err)
+		return 0, "", fmt.Errorf("base backup container %q: %w", containerName, err)
 	}
 	defer func() {
 		_ = tar.Close()
@@ -131,9 +166,12 @@ func (r *BaseBackupRunner) runBaseBackupAndUpload(ctx context.Context, container
 
 	counted := &countingReader{r: tar, hash: sha256.New()}
 	if err := r.Uploader.Upload(ctx, dest, objectKey, counted, -1); err != nil {
-		return counted.n, fmt.Errorf("upload base backup for container %q to target %q: %w", containerName, targetID, err)
+		return counted.n, "", fmt.Errorf("upload base backup for container %q to target %q: %w", containerName, targetID, err)
 	}
-	return counted.n, nil
+	if p, ok := tar.(interface{ Position() string }); ok {
+		position = p.Position()
+	}
+	return counted.n, position, nil
 }
 
 // WALShipping is the WALShipper surface BaseBackupRunner and the ship
@@ -144,14 +182,17 @@ type WALShipping interface {
 
 // shipWAL forces the current segment into the archive first: the base backup
 // is only restorable once the WAL written during it is archived too.
-func (r *BaseBackupRunner) shipWAL(ctx context.Context, databaseName, containerName, targetID string) error {
-	if _, err := RecoverableWindowEnd(ctx, r.Runtime, containerName); err != nil {
-		return err
+func (r *BaseBackupRunner) shipWAL(ctx context.Context, engine, databaseName, containerName, targetID string) error {
+	// BinlogShipper rotates the binlog itself, so only Postgres needs the explicit switch.
+	if engine != store.EngineMySQL && engine != store.EngineMariaDB {
+		if _, err := RecoverableWindowEnd(ctx, r.Runtime, containerName); err != nil {
+			return err
+		}
 	}
 	dest, err := resolveTargetDestination(ctx, r.Store, r.Secrets, targetID)
 	if err != nil {
 		return err
 	}
-	_, err = r.WAL.Ship(ctx, dest, databaseName, containerName)
+	_, err = r.shipperFor(engine).Ship(ctx, dest, databaseName, containerName)
 	return err
 }

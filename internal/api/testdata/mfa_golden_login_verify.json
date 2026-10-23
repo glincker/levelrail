@@ -13,21 +13,27 @@
     "Step": "verify with an unknown token",
     "Status": 401,
     "Body": {
-      "error": "login session expired, sign in again"
+      "code": "unauthorized",
+      "error": "login session expired, sign in again",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
     "Step": "verify with a bad code",
     "Status": 401,
     "Body": {
-      "error": "invalid code"
+      "code": "unauthorized",
+      "error": "invalid code",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {
     "Step": "verify with a missing code",
     "Status": 400,
     "Body": {
-      "error": "mfa_token and code or recovery_code are required"
+      "code": "validation_failed",
+      "error": "mfa_token and code or recovery_code are required",
+      "request_id": "\u003credacted\u003e"
     }
   },
   {

@@ -222,6 +222,10 @@ type Controller struct {
 	conditions        ConditionReader
 	store             ServiceStore
 	runtime           docker.Runtime
+	snap              *PassSnapshot // nil is valid: every listing goes to the runtime, see WithPassSnapshot
+	snapNode          string
+	imageIDs          *ImageIDCache // nil is valid: every check asks the runtime, see WithImageIDCache
+	imageNode         string
 	httpClient        *http.Client
 	probeLimits       probe.Limits
 	readyBudget       time.Duration
@@ -560,7 +564,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if desired.Suspended {
 		// One container listing serves both teardowns: this runs for every
 		// suspended app on every resync.
-		all, err := c.runtime.ListByPrefix(ctx, c.serviceName+"-")
+		all, err := c.listPrefix(ctx, c.serviceName+"-")
 		if err != nil {
 			err = fmt.Errorf("list containers for %s: %w", c.serviceName, err)
 			return notReady("SuspendFailed", err), fmt.Errorf("application/%s: suspend: remove containers: %w", c.serviceName, err)
@@ -721,7 +725,7 @@ func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, d
 func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, desired *store.DesiredService) (reconcile.Result, error) {
 	allRunning := true
 	for _, target := range targets {
-		state, err := c.runtime.InspectByName(ctx, target)
+		state, err := c.inspectByName(ctx, target)
 		if err != nil {
 			return notReady("InspectFailed", err), fmt.Errorf("application/%s: inspect %q: %w", c.serviceName, target, err)
 		}
@@ -907,20 +911,20 @@ type replicaOutcome struct {
 // the old container still serving in its place) purely because Docker
 // reports it Running.
 func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, index int, desired *store.DesiredService) (replicaOutcome, error) {
-	state, err := c.runtime.InspectByName(ctx, target)
+	state, err := c.inspectByName(ctx, target)
 	if err != nil {
 		return replicaOutcome{reason: "InspectFailed"}, fmt.Errorf("inspect %q: %w", target, err)
 	}
 
 	if pinnedPortUnbound(state, desired) {
-		if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+		if err := c.removeContainer(ctx, state.ID); err != nil {
 			return replicaOutcome{reason: reasonPinnedPortUnbound}, fmt.Errorf("remove %q running without its pinned host port %d: %w", target, *desired.HostPort, err)
 		}
 		state = nil
 	}
 
 	if c.meshBindStale(ctx, state, desired) {
-		if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+		if err := c.removeContainer(ctx, state.ID); err != nil {
 			return replicaOutcome{reason: "MeshBindRecreateFailed"}, fmt.Errorf("remove %q to republish its port on the mesh address: %w", target, err)
 		}
 		state = nil
@@ -928,7 +932,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 
 	meshIP, _ := c.meshBindIP(ctx, desired)
 	if publishedPortDrifted(state, desired, meshIP) {
-		if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+		if err := c.removeContainer(ctx, state.ID); err != nil {
 			return replicaOutcome{reason: reasonPortDriftRecreate}, fmt.Errorf("remove %q to republish its changed port or bind address: %w", target, err)
 		}
 		state = nil
@@ -981,7 +985,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			}
 			return replicaOutcome{reason: reason}, fmt.Errorf("restart %q: %w", target, err)
 		}
-		if err := c.runtime.Start(ctx, state.ID); err != nil {
+		if err := c.startContainer(ctx, state.ID); err != nil {
 			// EnsureNetwork just succeeded, so a Start failure here means
 			// this specific container is broken (a container whose first
 			// Start ever failed can be left with no network binding at
@@ -989,7 +993,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			// network is missing again. Remove and recreate, the same
 			// operation a redeploy already performs routinely.
 			startErr := err
-			if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+			if err := c.removeContainer(ctx, state.ID); err != nil {
 				return replicaOutcome{reason: "StartFailed"}, fmt.Errorf("restart %q: start failed (%w) and the broken container could not be removed for recreation: %w", target, startErr, err)
 			}
 			if err := c.createAndStart(ctx, target, desired); err != nil {
@@ -1031,8 +1035,8 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		return replicaOutcome{reason: "VanishedAfterStart"}, fmt.Errorf("%q not found immediately after starting it", target)
 	}
 	if pinnedPortUnbound(state, desired) {
-		_ = c.runtime.Stop(ctx, state.ID, 10*time.Second)
-		_ = c.runtime.Remove(ctx, state.ID, true)
+		_ = c.stopContainer(ctx, state.ID)
+		_ = c.removeContainer(ctx, state.ID)
 		cause := fmt.Errorf("%q started without publishing pinned host port %d", target, *desired.HostPort)
 		return replicaOutcome{reason: reasonPinnedPortUnbound}, c.abortHandoff(ctx, target, released, cause)
 	}
@@ -1056,8 +1060,8 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			// container survives, but Reconcile still reports failure
 			// (this method's own error return) so it's never mistaken for
 			// a healthy deploy.
-			_ = c.runtime.Stop(ctx, state.ID, 10*time.Second)
-			_ = c.runtime.Remove(ctx, state.ID, true)
+			_ = c.stopContainer(ctx, state.ID)
+			_ = c.removeContainer(ctx, state.ID)
 			return replicaOutcome{reason: "PreDeployHookFailed"}, c.abortHandoff(ctx, target, released, fmt.Errorf("pre-deploy hook: %w", err))
 		}
 	}
@@ -1247,7 +1251,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		spec.OnPull = ct.onPull
 	}
 	stopWatch := c.watchLifecycle(ctx, tr, name, c.effectiveReadyBudget(desired))
-	id, err := c.runtime.Create(ctx, spec)
+	id, err := c.createContainer(ctx, spec)
 	ct.created(id, err)
 	if err != nil {
 		stopWatch()
@@ -1256,12 +1260,12 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	c.traceImageInspect(ctx, tr, desired.Image)
 	c.holdApplied(name, c.appliedSnapshot(ctx, name, desired))
 	startSpan := tr.Begin(ctx, deploytrace.StepContainerStart, "starting "+name)
-	if err := c.runtime.Start(ctx, id); err != nil {
+	if err := c.startContainer(ctx, id); err != nil {
 		// A container whose first start failed can be started again by Docker
 		// without its port bindings, so it is never left behind to retry.
 		startSpan.Fail(ctx, "StartFailed", err)
 		stopWatch()
-		_ = c.runtime.Remove(ctx, id, true)
+		_ = c.removeContainer(ctx, id)
 		return fmt.Errorf("start %q after create: %w", name, err)
 	}
 	startSpan.Done(ctx, name+" is running")
@@ -2262,7 +2266,7 @@ func (c *Controller) removeStale(ctx context.Context, keep []string) error {
 // same Docker daemon happening to run a service with the identical name
 // and image hash (see internal/spec.InstanceLabelKey's own doc comment).
 func (c *Controller) staleContainers(ctx context.Context, keep []string) ([]docker.ContainerState, error) {
-	all, err := c.runtime.ListByPrefix(ctx, c.serviceName+"-")
+	all, err := c.listPrefix(ctx, c.serviceName+"-")
 	if err != nil {
 		return nil, fmt.Errorf("list containers for %s: %w", c.serviceName, err)
 	}
@@ -2335,10 +2339,10 @@ func mergeLabel(labels map[string]string, key, value string) map[string]string {
 func (c *Controller) removeContainers(ctx context.Context, cs []docker.ContainerState) error {
 	var firstErr error
 	for _, container := range cs {
-		if err := c.runtime.Stop(ctx, container.ID, 10*time.Second); err != nil && firstErr == nil {
+		if err := c.stopContainer(ctx, container.ID); err != nil && firstErr == nil {
 			firstErr = fmt.Errorf("stop stale container %s: %w", container.Name, err)
 		}
-		if err := c.runtime.Remove(ctx, container.ID, true); err != nil && firstErr == nil {
+		if err := c.removeContainer(ctx, container.ID); err != nil && firstErr == nil {
 			firstErr = fmt.Errorf("remove stale container %s: %w", container.Name, err)
 		}
 	}

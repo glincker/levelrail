@@ -6,6 +6,9 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { withNextjsPreset, withVary } from '../lib/cachePresets'
+import { base, jsonInit, request } from './domainPolicies'
+import type { CacheSpec, DomainPolicies } from './domainPolicyTypes'
 
 export type CdnWindow = '5m' | '1h' | '24h'
 export type PurgeScope = 'url' | 'prefix' | 'tag' | 'all'
@@ -38,6 +41,28 @@ export interface CacheLimits {
   location: string
 }
 
+export type CacheReasonCode =
+  | 'vary_header'
+  | 'set_cookie'
+  | 'private'
+  | 'no_store'
+  | 'no_cache'
+  | 'status_not_cached'
+  | 'too_large'
+  | 'range'
+  | 'authorization'
+  | 'cookie_request'
+  | 'upgrade'
+  | 'other'
+
+/** One "why not cached" entry; detail is the Vary header for vary_header. */
+export interface CacheReason {
+  code: CacheReasonCode
+  detail?: string
+  count: number
+  domains: string[]
+}
+
 export interface AppCacheDomain extends CacheNumbers {
   domain: string
   enabled: boolean
@@ -50,6 +75,8 @@ export interface AppCache {
   totals: CacheNumbers
   series: CacheBucket[]
   domains: AppCacheDomain[]
+  reasons: CacheReason[]
+  suggest_preset?: 'nextjs'
 }
 
 export interface SystemCacheApp extends CacheNumbers {
@@ -57,6 +84,8 @@ export interface SystemCacheApp extends CacheNumbers {
   domains: number
   enabled_domains: number
   requests: number
+  reasons: CacheReason[]
+  suggest_preset?: 'nextjs'
 }
 
 export interface SystemCache {
@@ -237,6 +266,45 @@ export function useApplyCachePreset(app: string) {
         domain ? { domain } : {},
         'apply cache preset',
       ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: cdnKeys.all })
+      void queryClient.invalidateQueries({ queryKey: ['apps'] })
+    },
+  })
+}
+
+export interface CacheVaryFix {
+  domains: string[]
+  headers: string[]
+  // Apply the whole Next.js preset instead of only adding the headers.
+  nextjs?: boolean
+}
+
+/** Adds headers to each domain's cache rules using the traffic policy API. */
+export function useFixCacheVary(app: string) {
+  const queryClient = useQueryClient()
+  return useMutation<void, ApiError, CacheVaryFix>({
+    mutationFn: async ({ domains, headers, nextjs }) => {
+      for (const domain of domains) {
+        const cur = await request<DomainPolicies>(
+          `${base(app, domain)}/policies`,
+          undefined,
+          'load traffic controls failed',
+        )
+        const spec: CacheSpec = cur.policy.cache ?? {
+          enabled: false,
+          rules: [],
+        }
+        const next = nextjs
+          ? withVary(withNextjsPreset(spec), headers, [])
+          : withVary(spec, headers, [])
+        await request(
+          `${base(app, domain)}/cache`,
+          jsonInit('PUT', next),
+          'save cache failed',
+        )
+      }
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: cdnKeys.all })
       void queryClient.invalidateQueries({ queryKey: ['apps'] })

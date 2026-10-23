@@ -275,3 +275,89 @@ func TestHeldFilter(t *testing.T) {
 		t.Fatalf("after the hold, due = %d until = %v, want 3 and none", len(due), until)
 	}
 }
+
+type countingDigestRuntime struct {
+	*digestRuntime
+	inspects int
+}
+
+func (r *countingDigestRuntime) InspectImageID(ctx context.Context, ref string) (string, error) {
+	r.inspects++
+	return r.digestRuntime.InspectImageID(ctx, ref)
+}
+
+func TestImageIDCache_PinnedDigestIsInspectedOncePerTTL(t *testing.T) {
+	ref := "nginx:latest@sha256:new"
+	rt := &countingDigestRuntime{digestRuntime: newDigestRuntime(map[string]string{ref: "sha256:cfgnew"})}
+	desired := &store.DesiredService{Name: "web", Image: ref, Port: 80}
+	rt.seedRunning(ContainerName("web", NameImage(*desired), ""), "sha256:cfgnew", time.Now())
+
+	cache := NewImageIDCache(time.Minute)
+	now := time.Now()
+	cache.now = func() time.Time { return now }
+	for pass := 0; pass < 5; pass++ {
+		c := New("web", &fakeStore{svc: desired}, rt, WithImageIDCache(cache, "local"))
+		if result, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatalf("pass %d: %v (%+v)", pass, err, result)
+		}
+	}
+	if rt.inspects != 1 {
+		t.Errorf("image inspects over 5 passes = %d, want 1", rt.inspects)
+	}
+
+	now = now.Add(2 * time.Minute)
+	c := New("web", &fakeStore{svc: desired}, rt, WithImageIDCache(cache, "local"))
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if rt.inspects != 2 {
+		t.Errorf("image inspects after the ttl = %d, want 2", rt.inspects)
+	}
+}
+
+func TestImageIDCache_RunningContentMismatchIsStillCaughtWhileCached(t *testing.T) {
+	ref := "nginx:latest@sha256:new"
+	rt := &countingDigestRuntime{digestRuntime: newDigestRuntime(map[string]string{ref: "sha256:cfgnew"})}
+	desired := &store.DesiredService{Name: "web", Image: ref, Port: 80}
+	target := ContainerName("web", NameImage(*desired), "")
+	rt.seedRunning(target, "sha256:cfgnew", time.Now())
+	cache := NewImageIDCache(time.Hour)
+
+	first := New("web", &fakeStore{svc: desired}, rt, WithImageIDCache(cache, "local"))
+	if _, err := first.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	rt.mu.Lock()
+	rt.containers[target].ImageID = "sha256:tampered"
+	rt.mu.Unlock()
+
+	second := New("web", &fakeStore{svc: desired}, rt, WithImageIDCache(cache, "local"))
+	result, err := second.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("a container whose content drifted must still be refused with a warm cache")
+	}
+	if cond := conditionOf(t, result); cond.Reason != "ImageDigestMismatch" {
+		t.Errorf("condition = %+v, want ImageDigestMismatch", cond)
+	}
+	if rt.inspects != 1 {
+		t.Errorf("image inspects = %d, want the cached answer reused", rt.inspects)
+	}
+}
+
+func TestImageIDCache_NilAndEmptyAreNeverCached(t *testing.T) {
+	var nilCache *ImageIDCache
+	nilCache.put("n", "r", "id")
+	if _, ok := nilCache.get("n", "r"); ok {
+		t.Error("nil cache returned a hit")
+	}
+	c := NewImageIDCache(time.Minute)
+	c.put("n", "r", "")
+	if _, ok := c.get("n", "r"); ok {
+		t.Error("an absent image (empty id) must not be cached: it may be pulled next")
+	}
+	c.put("n", "r", "id")
+	if _, ok := c.get("other", "r"); ok {
+		t.Error("entries must not leak across nodes")
+	}
+}

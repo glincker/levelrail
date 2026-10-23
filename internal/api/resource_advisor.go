@@ -190,9 +190,18 @@ func (rt *Router) handleResourceAdvisorSummary(w http.ResponseWriter, r *http.Re
 		rt.internalError(w, "api: resource advisor visibility", err)
 		return
 	}
-	plain := make([]resourceadvisor.Finding, len(visible))
-	for i, f := range visible {
-		plain[i] = f.Finding
+	plain := make([]resourceadvisor.Finding, 0, len(visible))
+	var inScope func(resourceadvisor.Ref) bool
+	if requestScoped(r) {
+		if inScope, err = rt.scopedAdvisorRefs(r); err != nil {
+			rt.internalError(w, "api: resource advisor scope", err)
+			return
+		}
+	}
+	for _, f := range visible {
+		if inScope == nil || inScope(f.Resource) {
+			plain = append(plain, f.Finding)
+		}
 	}
 	writeJSON(w, http.StatusOK, advisorSummaryResponse{GeneratedAt: rt.advisorGeneratedAt(), Summary: resourceadvisor.Summarize(plain, advisorTopSavings)})
 }

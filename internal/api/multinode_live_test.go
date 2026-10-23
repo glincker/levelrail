@@ -15,9 +15,11 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/GLINCKER/levelrail/internal/cloudmeta"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/nodemove"
+	"github.com/GLINCKER/levelrail/internal/nodepreflight"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -66,12 +68,14 @@ func TestMultiNode_Live_MoveAndDrainKeepDatabaseConnection(t *testing.T) {
 
 	db := openTestDB(t)
 	registry := agent.NewRegistry()
-	addr := startLiveAgentServer(t, db, registry)
+	onboarding := agent.NewOnboardingStore()
+	addr := startLiveAgentServer(t, db, registry, onboarding)
 	cfg := nodemove.Config{VerifyTimeout: 4 * time.Minute, MaxAttempts: 5, Interval: 500 * time.Millisecond}
 	rt := NewRouter(discardLogger(), testBrand(), db,
 		WithExecRuntime(func(id string) (docker.Runtime, error) { return registry.Get(id) }),
 		WithMultiNode(db, cfg, 21000, 21099))
 	rt.SetLocalNodeID("live-control-plane")
+	rt.SetNodeOnboarding(onboarding, nodepreflight.ConfigFromEnv(func(string) (string, bool) { return "", false }))
 	cookie := loginTestSession(t, rt, db)
 
 	nodeIDs := make([]string, len(daemons))
@@ -81,6 +85,7 @@ func TestMultiNode_Live_MoveAndDrainKeepDatabaseConnection(t *testing.T) {
 		endpoints[nodeIDs[i]] = d.meshIP
 	}
 	nodeA, nodeB := nodeIDs[0], nodeIDs[1]
+	assertLiveOnboarding(ctx, t, rt, db, cookie, nodeIDs)
 
 	seedLiveWorkload(ctx, t, db, nodeA)
 	go runLiveReconcileLoop(ctx, db, registry, endpoints)
@@ -129,7 +134,36 @@ func TestMultiNode_Live_MoveAndDrainKeepDatabaseConnection(t *testing.T) {
 	})
 }
 
-func startLiveAgentServer(t *testing.T, db *store.DB, registry *agent.Registry) string {
+// assertLiveOnboarding checks the preflight a real agent reports about a
+// real Docker daemon, and that its manual labels reach the node row.
+func assertLiveOnboarding(ctx context.Context, t *testing.T, rt *Router, db *store.DB, cookie *http.Cookie, nodeIDs []string) {
+	t.Helper()
+	for i, id := range nodeIDs {
+		var ob nodeOnboardingResponse
+		waitLive(t, time.Minute, "onboarding report from "+id, func() (bool, string) {
+			rec := mnDo(t, rt, cookie, http.MethodGet, "/api/v1/nodes/"+id+"/onboarding", "")
+			if err := json.Unmarshal(rec.Body.Bytes(), &ob); err != nil {
+				return false, err.Error()
+			}
+			return ob.Reported, rec.Body.String()
+		})
+		for _, c := range ob.Checks {
+			if c.ID == nodepreflight.CheckDocker && c.Status != nodepreflight.StatusPass {
+				t.Errorf("node %d docker check = %+v against a live daemon", i, c)
+			}
+		}
+		if ob.Detected == nil || ob.Detected.Provider != "livelab" || ob.Detected.Source != cloudmeta.SourceEnv {
+			t.Errorf("node %d detected = %+v", i, ob.Detected)
+		}
+		rt.syncDetectedDomains(ctx)
+		n, err := db.GetNode(ctx, id)
+		if err != nil || n.Provider != "livelab" || n.Zone != fmt.Sprintf("lab-%d", i) {
+			t.Errorf("node %d row = %+v err=%v", i, n, err)
+		}
+	}
+}
+
+func startLiveAgentServer(t *testing.T, db *store.DB, registry *agent.Registry, onboarding *agent.OnboardingStore) string {
 	t.Helper()
 	ca, err := agent.GenerateCA()
 	if err != nil {
@@ -144,7 +178,7 @@ func startLiveAgentServer(t *testing.T, db *store.DB, registry *agent.Registry) 
 		t.Fatal(err)
 	}
 	srv := grpc.NewServer(grpc.Creds(creds))
-	agentpb.RegisterAgentServiceServer(srv, agent.NewServer(ca, db, registry, nil))
+	agentpb.RegisterAgentServiceServer(srv, agent.NewServer(ca, db, registry, nil, agent.WithOnboardingSink(onboarding)))
 	go func() { _ = srv.Serve(lis) }()
 	t.Cleanup(srv.Stop)
 	return lis.Addr().String()
@@ -176,7 +210,11 @@ func enrollLiveAgent(ctx context.Context, t *testing.T, rt *Router, cookie *http
 	}
 	sctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
-	go func() { _ = agent.RunSession(sctx, addr, id, client, nil) }()
+	cloud := cloudmeta.Config{Disabled: true, Override: cloudmeta.Info{Provider: "livelab", Region: "lab", Zone: strings.Replace(name, "worker-", "lab-", 1)}}
+	probe := agent.NewOnboardingProbe(client, t.TempDir(), false, cloud)
+	go func() {
+		_ = agent.RunSession(sctx, addr, id, client, nil, agent.WithOnboardingProbe(probe, 200*time.Millisecond))
+	}()
 	waitLive(t, 30*time.Second, name+" session", func() (bool, string) {
 		_, err := registry.Get(id.NodeID)
 		return err == nil, fmt.Sprint(err)

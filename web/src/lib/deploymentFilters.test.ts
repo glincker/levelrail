@@ -73,6 +73,11 @@ describe('filter to URL mapping', () => {
     expect(serverFilters({ ...EMPTY_FILTERS, author: 'ada' }).author).toBe('')
   })
 
+  it('adds the project scope only when one is selected', () => {
+    expect(toApiParams(EMPTY_FILTERS).has('project')).toBe(false)
+    expect(toApiParams(EMPTY_FILTERS, '', 50, 'p1').get('project')).toBe('p1')
+  })
+
   it('counts active filters', () => {
     expect(activeFilterCount(EMPTY_FILTERS)).toBe(0)
     expect(

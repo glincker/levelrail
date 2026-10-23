@@ -28,6 +28,7 @@ import {
   type SystemCacheApp,
 } from '../../queries/cdnCache'
 import { AppPicker } from './AppPicker'
+import { CacheReasons, DominantReason } from './CacheReasons'
 import { CdnFrame } from './CdnFrame'
 import { formatCount, formatHitRate } from './format'
 import { HitRateChart } from './HitRateChart'
@@ -136,12 +137,30 @@ function AppsTable({ apps }: Readonly<{ apps: SystemCacheApp[] }>) {
       id: 'hitRate',
       header: t('apps.hitRate'),
       align: 'end',
+      cell: (a) => {
+        const noHits = a.hits + a.stale === 0
+        if (a.requests > 0 && noHits && a.reasons.length > 0) {
+          return <DominantReason reasons={a.reasons} />
+        }
+        return (
+          <span className="tabular-nums">
+            {a.hits + a.stale + a.misses > 0
+              ? formatHitRate(a.hit_rate)
+              : t('tiles.none')}
+          </span>
+        )
+      },
+    },
+    {
+      id: 'why',
+      header: t('reasons.column'),
+      priority: 2,
       cell: (a) => (
-        <span className="tabular-nums">
-          {a.hits + a.stale + a.misses > 0
-            ? formatHitRate(a.hit_rate)
-            : t('tiles.none')}
-        </span>
+        <CacheReasons
+          app={a.app}
+          reasons={a.reasons}
+          suggestPreset={a.suggest_preset}
+        />
       ),
     },
     {
@@ -195,7 +214,7 @@ function CachesSkeleton() {
         ))}
       </div>
       <Skeleton className="h-48 rounded-xl" />
-      <TableSkeleton columnCount={5} rowCount={4} />
+      <TableSkeleton columnCount={6} rowCount={4} />
     </div>
   )
 }

@@ -19,12 +19,12 @@ import (
 // ErrCostBudgetNameTaken is returned when another budget already uses a name.
 var ErrCostBudgetNameTaken = errors.New("store: a cost budget with that name already exists")
 
-const costBudgetColumns = `id, name, scope, scope_value, monthly, thresholds, action, throttle_rps`
+const costBudgetColumns = `id, name, scope, scope_value, monthly, thresholds, action, throttle_rps, guard_mode`
 
 func scanCostBudget(sc interface{ Scan(...any) error }) (costbudget.Budget, error) {
 	var b costbudget.Budget
 	var thresholds string
-	if err := sc.Scan(&b.ID, &b.Name, &b.Scope, &b.ScopeValue, &b.Monthly, &thresholds, &b.Action, &b.ThrottleRPS); err != nil {
+	if err := sc.Scan(&b.ID, &b.Name, &b.Scope, &b.ScopeValue, &b.Monthly, &thresholds, &b.Action, &b.ThrottleRPS, &b.GuardMode); err != nil {
 		return b, err
 	}
 	if err := json.Unmarshal([]byte(thresholds), &b.Thresholds); err != nil {
@@ -78,12 +78,12 @@ func (db *DB) SaveCostBudget(ctx context.Context, b costbudget.Budget, now time.
 		b.ID = "cb_" + hex.EncodeToString(buf[:])
 	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO cost_budgets (id, name, scope, scope_value, monthly, thresholds, action, throttle_rps, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO cost_budgets (id, name, scope, scope_value, monthly, thresholds, action, throttle_rps, guard_mode, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET name = excluded.name, scope = excluded.scope, scope_value = excluded.scope_value,
 			monthly = excluded.monthly, thresholds = excluded.thresholds, action = excluded.action,
-			throttle_rps = excluded.throttle_rps, updated_at = excluded.updated_at`,
-		b.ID, b.Name, b.Scope, b.ScopeValue, b.Monthly, string(thresholds), b.Action, b.ThrottleRPS, ts, ts)
+			throttle_rps = excluded.throttle_rps, guard_mode = excluded.guard_mode, updated_at = excluded.updated_at`,
+		b.ID, b.Name, b.Scope, b.ScopeValue, b.Monthly, string(thresholds), b.Action, b.ThrottleRPS, b.GuardMode, ts, ts)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed: cost_budgets.name") {
 			return b, ErrCostBudgetNameTaken

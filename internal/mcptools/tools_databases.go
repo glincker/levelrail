@@ -44,7 +44,7 @@ func registerDatabaseTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_external_databases",
-		Description: "Databases connected in place or adopted, not run here: name, engine, host, port, last health probe. Never a password. Read only.",
+		Description: "Databases connected in place or adopted, not run here: name, engine, host, port, last health probe. Never a password.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.ExternalDatabase, error) {
 		databases, err := client.ListExternalDatabases(ctx)
 		if err != nil {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"reflect"
+	"strings"
 	"testing"
 
 	bkclient "github.com/moby/buildkit/client"
@@ -145,5 +146,23 @@ func TestNewSolveOpt(t *testing.T) {
 				t.Errorf("CacheExports = %+v, want %+v", opt.CacheExports, wantExports)
 			}
 		})
+	}
+}
+
+func TestNewSolveOpt_SecretsAttachedNotInFrontendAttrs(t *testing.T) {
+	const val = "tok-never-in-attrs"
+	req := Request{ContextDir: "testdata", Tag: "levelrail-spike:latest", Secrets: map[string][]byte{"NPM_TOKEN": []byte(val)}}
+	opt, err := newSolveOpt(req, CacheConfig{}, discardWriteCloser{io.Discard})
+	if err != nil {
+		t.Fatalf("newSolveOpt() error = %v", err)
+	}
+	if len(opt.Session) != 1 {
+		t.Fatalf("Session = %d attachables, want the secrets provider", len(opt.Session))
+	}
+	// Frontend attrs feed the cache key, so the value must not be in them.
+	for k, v := range opt.FrontendAttrs {
+		if strings.Contains(k, val) || strings.Contains(v, val) {
+			t.Errorf("secret value found in frontend attr %q", k)
+		}
 	}
 }

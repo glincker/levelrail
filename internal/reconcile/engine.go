@@ -86,6 +86,10 @@ type Engine struct {
 	drainTimeout time.Duration
 
 	requeue requeueState
+
+	persisted  persistLedger
+	fullResync time.Duration
+	now        func() time.Time
 }
 
 // Source dynamically supplies the current set of controllers to reconcile,
@@ -115,6 +119,15 @@ func NewEngine(logger *slog.Logger, controllers ...Controller) *Engine {
 		lastErr:     make(map[string]error, len(controllers)),
 		nudge:       make(chan struct{}, 1),
 		guard:       NewGuard(GuardConfigFromEnv(os.Getenv)),
+		fullResync:  FullResyncFromEnv(os.Getenv),
+		now:         time.Now,
+	}
+}
+
+// SetFullResync overrides how long an unchanged status skips its database write. Call it before Run.
+func (e *Engine) SetFullResync(d time.Duration) {
+	if d > 0 {
+		e.fullResync = d
 	}
 }
 
@@ -196,7 +209,9 @@ func (e *Engine) ReconcileAll(ctx context.Context) {
 	start := time.Now()
 	n := len(e.controllers)
 	defer func() { e.recordPass(start, n) }()
+	live := make(map[string]struct{}, n)
 	for _, c := range e.controllers {
+		live[c.Name()] = struct{}{}
 		e.reconcileOne(ctx, c)
 	}
 	if e.source == nil {
@@ -209,8 +224,10 @@ func (e *Engine) ReconcileAll(ctx context.Context) {
 	}
 	n += len(dynamic)
 	for _, c := range dynamic {
+		live[c.Name()] = struct{}{}
 		e.reconcileOne(ctx, c)
 	}
+	e.persisted.forget(live)
 }
 
 // safeReconcile turns a controller panic into an error so one broken resource cannot crash the process.
@@ -246,12 +263,22 @@ func (e *Engine) reconcileOne(ctx context.Context, c Controller) {
 	// itself: a database hiccup must never stop the controller from
 	// converging the actual resource, so a store failure is logged, not
 	// propagated as this reconcile's error.
+	// An unchanged status is rewritten only when the full resync is due: the
+	// row's updated_at then still proves the controller is being reconciled.
+	changed := true
 	if e.store != nil && len(result.Conditions) > 0 {
-		if serr := e.store.UpsertConditions(ctx, c.Name(), result.Conditions); serr != nil {
-			e.logger.Error("persisting reconcile status failed",
-				slog.String("controller", c.Name()),
-				slog.String("error", serr.Error()),
-			)
+		now := e.now()
+		sig, due := e.persisted.due(c.Name(), result.Conditions, now, e.fullResync)
+		changed = due
+		if due {
+			if serr := e.store.UpsertConditions(ctx, c.Name(), result.Conditions); serr != nil {
+				e.logger.Error("persisting reconcile status failed",
+					slog.String("controller", c.Name()),
+					slog.String("error", serr.Error()),
+				)
+			} else {
+				e.persisted.record(c.Name(), sig, now)
+			}
 		}
 	}
 
@@ -272,7 +299,11 @@ func (e *Engine) reconcileOne(ctx context.Context, c Controller) {
 		e.logger.Error("reconcile failed", append(attrs, slog.String("error", err.Error()))...)
 		return
 	}
-	e.logger.Info("reconciled", attrs...)
+	if changed {
+		e.logger.Info("reconciled", attrs...)
+		return
+	}
+	e.logger.Debug("reconciled", attrs...)
 }
 
 // LastResult returns the most recent Result and error for a controller by

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNow } from '../hooks/useNow'
 import { buildAttentionItems } from '../lib/attention'
 import { buildWaitingItems, rankAttentionItems } from '../lib/attentionWaiting'
+import { useEnvironmentScope } from '../lib/environmentScope'
 import { useDeviceActivity, useLiveDeviceAuthRequests } from './deviceAuth'
 import { attentionFeedQueryOptions } from './attentionFeed'
 import { deployApprovalListQueryOptions } from './deployApprovals'
@@ -21,6 +22,7 @@ const NOW_TICK_MS = 15_000
 // Each source is optional: a failing or forbidden endpoint drops its own
 // items instead of blocking the whole view.
 export function useAttentionItems() {
+  useEnvironmentScope()
   const opts = { retry: false, refetchInterval: REFRESH_MS } as const
   const apps = useQuery({ ...failingAppsQueryOptions(), ...opts })
   const nodes = useQuery({ ...nodeListQueryOptions(), ...opts })

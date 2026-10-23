@@ -39,6 +39,7 @@ func TestBetaFeatures_ListDescribesEveryGatedFeature(t *testing.T) {
 		{"iac", true, true, experimental.MaturityExperimental},
 		{"resource-advisor", true, false, experimental.MaturityBeta},
 		{"ai-chat", true, false, experimental.MaturityBeta},
+		{"canvas", true, false, experimental.MaturityBeta},
 	}
 	for _, c := range cases {
 		t.Run(c.id, func(t *testing.T) {

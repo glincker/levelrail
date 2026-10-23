@@ -20,6 +20,8 @@ type SecretSetter interface {
 	SetValueGuarded(ctx context.Context, serviceName, envKey, plaintext string, overwriteLocked bool) error
 	ListKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
 	SetLocked(ctx context.Context, serviceName, envKey string, locked bool) error
+	// SetBuildEnabled flips whether build.secrets may mount the secret.
+	SetBuildEnabled(ctx context.Context, serviceName, envKey string, enabled bool) error
 	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
 	// ExistsForServices is Exists batched over many service names in one
 	// call, used by databases.go's handleListDatabases to show every

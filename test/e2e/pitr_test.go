@@ -71,7 +71,7 @@ func TestPITR_Live_HTTPRoundTrip_RestoresBeforeMarkerNotAfterMarker(t *testing.T
 	defer cancel()
 
 	minioPort := freePort(t)
-	startMinio(ctx, t, runtime, minioName, minioPort)
+	startSeaweedS3(ctx, t, runtime, minioName, minioPort)
 	minioEndpoint := fmt.Sprintf("http://127.0.0.1:%d", minioPort)
 	createBucket(ctx, t, minioEndpoint, bucket)
 
@@ -212,45 +212,6 @@ func TestPITR_Live_HTTPRoundTrip_RestoresBeforeMarkerNotAfterMarker(t *testing.T
 	if count != "1" {
 		t.Errorf("row count after restore = %q, want exactly 1 (only the before marker)", count)
 	}
-}
-
-func startMinio(ctx context.Context, t *testing.T, rt docker.Runtime, name string, hostPort int) {
-	t.Helper()
-	id, err := rt.Create(ctx, docker.ContainerSpec{
-		Name:  name,
-		Image: "minio/minio:RELEASE.2024-10-13T13-34-11Z",
-		Env: map[string]string{
-			"MINIO_ROOT_USER":     "minioadmin",
-			"MINIO_ROOT_PASSWORD": "minioadmin",
-		},
-		Command: []string{"server", "/data"},
-		Ports: []docker.PortBinding{
-			{ContainerPort: 9000, HostPort: hostPort, HostIP: "127.0.0.1"},
-		},
-	})
-	if err != nil {
-		// A registry outage or auth failure is not a regression in this code.
-		if strings.Contains(err.Error(), "pull image") {
-			t.Skipf("minio image unavailable, skipping: %v", err)
-		}
-		t.Fatalf("create minio container: %v", err)
-	}
-	if err := rt.Start(ctx, id); err != nil {
-		t.Fatalf("start minio container: %v", err)
-	}
-
-	deadline := time.Now().Add(30 * time.Second)
-	for time.Now().Before(deadline) {
-		resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/minio/health/live", hostPort)) //nolint:noctx,gosec // test helper, loopback-only
-		if err == nil {
-			_ = resp.Body.Close()
-			if resp.StatusCode == http.StatusOK {
-				return
-			}
-		}
-		time.Sleep(300 * time.Millisecond)
-	}
-	t.Fatalf("minio never became healthy on port %d", hostPort)
 }
 
 func createBucket(ctx context.Context, t *testing.T, endpoint, bucket string) {

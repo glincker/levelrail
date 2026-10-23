@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 import {
   databaseDetailQueryOptions,
   databaseStatusQueryOptions,
@@ -6,7 +6,6 @@ import {
   useDatabaseStatus,
 } from '../../queries/databases'
 import { summarizeDatabaseStatus } from '../../lib/databaseStatus'
-import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { StuckPanel } from '../../components/StuckPanel'
 import { DatabaseActionBar } from '../../components/databases/DatabaseActionBar'
@@ -16,8 +15,7 @@ import {
   type DatabasePaletteAction,
 } from '../../lib/paletteAction'
 import { DeleteExternalDatabaseDialog } from '../../components/ExternalDatabaseOverview'
-import { useTranslation } from 'react-i18next'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { resourceErrorComponent } from '@/components/resourceErrorComponent'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -39,7 +37,7 @@ export const Route = createFileRoute('/databases/$name')({
   },
   component: DatabaseDetailLayout,
   pendingComponent: DatabaseDetailSkeleton,
-  errorComponent: DatabaseDetailError,
+  errorComponent: resourceErrorComponent('database'),
 })
 
 function DatabaseDetailLayout() {
@@ -125,22 +123,5 @@ function DatabaseDetailSkeleton() {
         </Card>
       ))}
     </div>
-  )
-}
-
-// fetchDatabase (queries/databases.ts) throws a plain ApiError for a
-// 404, which lands here rather than crashing the whole route tree,
-// mirroring AppDetailError.
-function DatabaseDetailError({ error }: { error: unknown }) {
-  const { t } = useTranslation('databases')
-  return (
-    <Alert variant="destructive">
-      <AlertDescription>
-        <p>{routeErrorMessage(error)}</p>
-        <Link to="/databases" className="mt-2 inline-block underline">
-          {t('detail.backToList')}
-        </Link>
-      </AlertDescription>
-    </Alert>
   )
 }

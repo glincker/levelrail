@@ -118,6 +118,7 @@ func routeIsTenantOpen(key, path string) bool {
 // every role of team A against team B's objects: none may answer anything
 // but 403 or 404, so nothing of team B can be read or changed.
 func TestTeamAuthzMatrix_OtherTeamIsInvisible(t *testing.T) {
+	t.Parallel()
 	f := newTeamFixture(t)
 	routes := loadMatrixRoutes(t)
 	for _, role := range allTeamRoles {
@@ -155,6 +156,7 @@ func TestTeamAuthzMatrix_OtherTeamIsInvisible(t *testing.T) {
 // TestTeamAuthzMatrix_TenantInstanceRoutesClosed checks every route that is
 // neither team owned nor reviewed for tenants answers a tenant with 403.
 func TestTeamAuthzMatrix_TenantInstanceRoutesClosed(t *testing.T) {
+	t.Parallel()
 	f := newTeamFixture(t)
 	var bad []string
 	for _, r := range loadMatrixRoutes(t) {

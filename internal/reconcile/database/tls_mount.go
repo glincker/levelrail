@@ -19,6 +19,8 @@ const (
 	certsMountPath = "/certs"
 	tlsCertFile    = "tls.crt"
 	tlsKeyFile     = "tls.key"
+	// tlsPEMFile is key plus certificate in one file, the shape MongoDB reads.
+	tlsPEMFile = "tls.pem"
 
 	// dbTLSUID/dbTLSGID match the official postgres and redis Docker
 	// images' own runtime service account (both create a uid/gid 999
@@ -126,6 +128,7 @@ func tlsTarArchive(material *TLSMaterial) (*bytes.Buffer, error) {
 	}{
 		{tlsCertFile, 0o644, material.CertPEM},
 		{tlsKeyFile, 0o600, material.KeyPEM},
+		{tlsPEMFile, 0o600, append(append([]byte{}, material.KeyPEM...), material.CertPEM...)},
 	}
 	for _, e := range entries {
 		hdr := &tar.Header{

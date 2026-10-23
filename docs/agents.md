@@ -38,8 +38,10 @@ Flags:
 The repository ships an agent skill that covers the deploy, wait, diagnose and roll back loop, so an agent follows the safe path without you pasting in instructions:
 
 ```bash
-npx skills add glincker/levelrail
+npx skills add https://github.com/glincker/levelrail --skill levelrail
 ```
+
+Then ask your agent: "Deploy this repo to my Levelrail and tell me when it is live." The skill makes it block on `levelrail-cli apps wait <app>`, whose exit code (and `--json` outcome) says whether that exact deploy converged.
 
 `levelrail-cli init` writes the same guidance into a project's own `AGENTS.md`, filled in with that project's app name and API URL.
 

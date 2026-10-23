@@ -17,7 +17,7 @@ type pluginNameInput struct {
 func registerPluginTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_plugins",
-		Description: "Installed plugins: publisher, version, abilities, state, health, signature status, suggested fix. Root token and plugins feature needed. Read only.",
+		Description: "Installed plugins: publisher, version, abilities, state, health, signature status, suggested fix. Root token and plugins feature needed.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.Plugin, error) {
 		plugins, err := client.ListPlugins(ctx)
 		if err != nil {
@@ -28,7 +28,7 @@ func registerPluginTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_marketplace_plugins",
-		Description: "Plugins in the signed marketplace indexes: publisher, version, abilities, digest, key trust, state. Root token and plugins feature needed. Read only.",
+		Description: "Plugins in the signed marketplace indexes: publisher, version, abilities, digest, key trust, state. Root token and plugins feature needed.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.MarketplaceEntry, error) {
 		cat, err := client.MarketplaceCatalog(ctx)
 		if err != nil {
@@ -39,7 +39,7 @@ func registerPluginTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_plugin",
-		Description: "Get one installed plugin: its signed manifest, abilities requested and approved, outbound hosts, health, verification status, last error and contributed panels. Read only.",
+		Description: "Get one installed plugin: its manifest, abilities requested and approved, outbound hosts, health, verification, last error and panels.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in pluginNameInput) (*mcp.CallToolResult, apiclient.Plugin, error) {
 		p, err := client.GetPlugin(ctx, in.Name)
 		if err != nil {

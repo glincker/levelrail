@@ -12,8 +12,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-const googleCloudDNSInternalError = "internal error"
-
 const googleCloudDNSNoMasterKey = "google cloud dns is not configured on this control plane (no master key set)"
 
 // GoogleCloudDNSSecrets is the surface the Cloud DNS handlers need from

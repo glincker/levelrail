@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowsClockwiseIcon,
@@ -28,6 +29,12 @@ import {
   type CPHealthFinding,
   type CPHealthFix,
 } from '../../queries/controlPlaneHealth'
+
+const FootprintCard = lazy(() =>
+  import('@/components/settings/FootprintCard').then((m) => ({
+    default: m.FootprintCard,
+  })),
+)
 
 const MIB = 1 << 20
 
@@ -315,6 +322,11 @@ export function ControlPlaneHealthPage() {
               })}
             </section>
           )}
+          {data.idle_footprint ? (
+            <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+              <FootprintCard idle={data.idle_footprint} />
+            </Suspense>
+          ) : null}
           <IntegrityCard />
           <ReconcileGuardCard guard={data.reconcile.guard} />
           <Card>

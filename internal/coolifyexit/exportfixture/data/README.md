@@ -1,0 +1,1 @@
+These JSON files imitate the Coolify v4 REST API responses the importer reads. They were written from the documented response shapes, not captured from a real instance, and every credential in them is fake. Field names such as `is_build_time`, `manual_webhook_secret_github` and the `/databases/{uuid}/backups` route are unverified against a live Coolify.

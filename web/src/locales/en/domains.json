@@ -350,9 +350,14 @@
       "domainsHint": "One per line, or separated by commas.",
       "ready_one": "{{count}} domain ready to add",
       "ready_other": "{{count}} domains ready to add",
-      "invalid": "Not valid: {{list}}",
-      "duplicates": "Repeated, counted once: {{list}}",
-      "claimed": "{{domain}} is already routed to {{app}}.",
+      "errors": {
+        "invalid": "Not a valid hostname",
+        "duplicate": "Duplicate",
+        "claimedHere": "Already added to this app",
+        "claimedOther": "Already routed to {{app}}",
+        "empty": "Enter at least one domain",
+        "appRequired": "Choose an app"
+      },
       "submit_one": "Add {{count}} domain",
       "submit_other": "Add {{count}} domains",
       "submitting": "Adding...",

@@ -1,0 +1,52 @@
+{
+  "name": "production",
+  "applications": [
+    {
+      "uuid": "app-web", "name": "storefront", "fqdn": "https://shop.example.com,https://www.shop.example.com",
+      "build_pack": "dockerfile", "git_repository": "acme/storefront", "git_branch": "main",
+      "dockerfile_location": "/Dockerfile", "base_directory": "/", "ports_exposes": "3000",
+      "health_check_enabled": true, "health_check_path": "/healthz", "health_check_type": "http",
+      "health_check_interval": 10, "health_check_timeout": 3, "health_check_retries": 4,
+      "limits_memory": "1g", "limits_cpus": "1",
+      "build_command": "npm run build", "start_command": "node server.js",
+      "custom_labels": "dHJhZWZpay5odHRwLm1pZGRsZXdhcmVzLmF1dGg=",
+      "is_http_basic_auth_enabled": false, "redirect": "www",
+      "manual_webhook_secret_github": "fake-webhook-secret",
+      "is_preview_deployments_enabled": true,
+      "destination": {"server": {"name": "hetzner-1"}}
+    },
+    {
+      "uuid": "app-api", "name": "go-api", "fqdn": "https://api.example.com",
+      "build_pack": "nixpacks", "git_repository": "git@github.com:acme/api.git", "git_branch": "main",
+      "ports_exposes": "8080", "private_key_id": 3, "start_command": "./api serve",
+      "destination": {"server": {"name": "hetzner-1"}}
+    },
+    {
+      "uuid": "app-docs", "name": "docs site", "fqdn": "https://docs.example.com",
+      "build_pack": "static", "git_repository": "acme/docs", "git_branch": "main",
+      "publish_directory": "/dist", "ports_exposes": "80", "is_http_basic_auth_enabled": true,
+      "destination": {"server": {"name": "hetzner-1"}}
+    },
+    {
+      "uuid": "app-umami", "name": "umami", "fqdn": "https://stats.example.com",
+      "build_pack": "dockerimage", "docker_registry_image_name": "ghcr.io/umami-software/umami",
+      "docker_registry_image_tag": "postgresql-latest", "ports_exposes": "3000",
+      "limits_memory": "512m", "limits_cpus": "0.5",
+      "destination": {"server": {"name": "hetzner-1"}}
+    },
+    {
+      "uuid": "app-collab", "name": "collab", "fqdn": "https://collab.example.com",
+      "build_pack": "dockercompose", "ports_exposes": "1234",
+      "destination": {"server": {"name": "hetzner-2"}}
+    }
+  ],
+  "postgresqls": [{"uuid": "db-pg", "name": "main-db", "image": "postgres:16-alpine"}],
+  "redis": [{"uuid": "db-redis", "name": "cache", "image": "redis:7.2"}],
+  "mysqls": [{"uuid": "db-mysql", "name": "legacy-mysql", "image": "mysql:8.0"}],
+  "mariadbs": [],
+  "mongodbs": [{"uuid": "db-mongo", "name": "events", "image": "mongo:7"}],
+  "keydbs": [{"uuid": "db-keydb", "name": "sessions", "image": "eqalpha/keydb:latest"}],
+  "dragonflies": [],
+  "clickhouses": [{"uuid": "db-ch", "name": "analytics", "image": "clickhouse/clickhouse-server:24.3"}],
+  "services": [{"uuid": "svc-plausible", "name": "plausible", "service_type": "plausible", "destination": {"server": {"name": "hetzner-2"}}}]
+}

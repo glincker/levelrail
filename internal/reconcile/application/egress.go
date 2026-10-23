@@ -227,7 +227,7 @@ func egressSidecarSpec(target, appContainerID string, policy *store.ServiceEgres
 // they were created for: reconcileEgress diffs this against the current
 // desired target set itself.
 func (c *Controller) egressSidecars(ctx context.Context) ([]docker.ContainerState, error) {
-	all, err := c.runtime.ListByPrefix(ctx, c.serviceName+"-")
+	all, err := c.listPrefix(ctx, c.serviceName+"-")
 	if err != nil {
 		return nil, fmt.Errorf("list containers for %s: %w", c.serviceName, err)
 	}
@@ -434,7 +434,7 @@ func (c *Controller) waitEgressReady(ctx context.Context, sidecarID string) (boo
 // not get there, either because the app container isn't up yet or the
 // sidecar hasn't finished booting, not a hard failure in either case.
 func (c *Controller) ensureEgressSidecar(ctx context.Context, target string, existing docker.ContainerState, policy *store.ServiceEgressPolicy) (applied bool, err error) {
-	appState, err := c.runtime.InspectByName(ctx, target)
+	appState, err := c.inspectByName(ctx, target)
 	if err != nil {
 		return false, fmt.Errorf("inspect %q for egress sidecar: %w", target, err)
 	}
@@ -463,11 +463,11 @@ func (c *Controller) ensureEgressSidecar(ctx context.Context, target string, exi
 	}
 
 	spec := egressSidecarSpec(target, appState.ID, policy)
-	id, err := c.runtime.Create(ctx, spec)
+	id, err := c.createContainer(ctx, spec)
 	if err != nil {
 		return false, fmt.Errorf("create egress sidecar %q: %w", sidecarName, err)
 	}
-	if err := c.runtime.Start(ctx, id); err != nil {
+	if err := c.startContainer(ctx, id); err != nil {
 		return false, fmt.Errorf("start egress sidecar %q: %w", sidecarName, err)
 	}
 	ready, err := c.waitEgressReady(ctx, id)

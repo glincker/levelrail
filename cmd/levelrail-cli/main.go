@@ -14,11 +14,22 @@ import (
 
 func main() {
 	prog := filepath.Base(os.Args[0])
-	os.Exit(run(prog, os.Args[1:], os.Stdout, os.Stderr, os.LookupEnv))
+	// Piped stdin or stdout implies CI mode; run() only sees env so tests stay deterministic.
+	forceCI = !isTerminal(os.Stdin) || !isTerminal(os.Stdout)
+	finishHint := startUpdateHint(prog, os.Args[1:], os.Stderr, os.LookupEnv)
+	code := run(prog, os.Args[1:], os.Stdout, os.Stderr, os.LookupEnv)
+	finishHint()
+	os.Exit(code)
 }
 
 // run returns an int exit code instead of calling os.Exit, so tests can drive dispatch directly.
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	rawLookupEnv = lookupEnv
+	lookupEnv = envAliasLookup(lookupEnv)
+	ciMode = forceCI || ciEnv(rawLookupEnv)
+	if colorDisabled(rawLookupEnv, ciMode) {
+		_ = os.Setenv(envNoColor, "1")
+	}
 	args, debug := extractDebugFlag(args)
 	args, scopeFlags = extractScopeFlags(args)
 	installServerTrust(prog, args, stderr, lookupEnv)
@@ -197,6 +208,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runReadiness(prog, args[1:], stdout, stderr, lookupEnv)
 	case "version":
 		return runVersion(prog, args[1:], stdout, stderr, lookupEnv)
+	case "update":
+		return runUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "changelog":
 		return runChangelog(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ai-control":
@@ -257,6 +270,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runResources(prog, args[1:], stdout, stderr, lookupEnv)
 	case "costs":
 		return runCosts(prog, args[1:], stdout, stderr, lookupEnv)
+	case "spend":
+		return runSpend(prog, args[1:], stdout, stderr, lookupEnv)
 	case "usage":
 		return runUsage(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ingress-limits":
@@ -376,6 +391,7 @@ Usage:
   %[1]s logs archive set|status|remove, logs dump|ls|fetch [flags]   archive node-local logs to a storage destination
   %[1]s logs search|failure <app> [flags]   search stored logs by text, level, container and JSON fields; show the failing container's last lines
   %[1]s metrics query|top|investigate [flags]   downsampled series with period comparison, top apps, and the spike investigation view
+  %[1]s traffic export sinks list|add|set|rm|test|status [flags]   export edge requests to an analytics vendor (PostHog, OTLP, webhook), no visitor identity by default
   %[1]s traffic <app> [--since 5m|1h|24h|7d] [--watch] [flags]   request rate, errors and p50/p95/p99 latency per app and replica, slow routes, SLO burn
   %[1]s cache status|rules|purge|history <app> [flags]   response cache at the ingress: hit rate, rules, purge by URL, prefix, tag or all
   %[1]s forms list|create|update|snippet|fields|test|delete|submissions|spam|unspam|remove|export <app> [flags]   form capture endpoints for static sites with spam trap, inbox and CSV export
@@ -415,6 +431,7 @@ Usage:
   %[1]s upgrade --history [--json] | --ack <id>                recorded upgrades, rollbacks and installs, and acknowledging one
   %[1]s updates restore-points list|restore <id> [--yes]       pre-upgrade restore points and putting one back
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
+  %[1]s update [--check] [--version TAG] [--dry-run] [--yes]  check for a newer CLI release, or replace this binary with a verified one
   %[1]s changelog [--limit N] [flags]                         recent release notes from the control plane's own CHANGELOG.md
   %[1]s ai-control status|set|revoke-agents [flags]           what agents and AI may do: off, observe, operate, admin
   %[1]s network mesh status|enable|disable [flags]            the WireGuard mesh between nodes
@@ -428,6 +445,7 @@ Usage:
   %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning
   %[1]s resources list|tag|untag|views [flags]                 every app, database, node, domain, bucket and network in one list, tags, bulk tag with --dry-run, saved views
   %[1]s usage report|settings|budgets [flags]                  cost showback per app, project and team
+  %[1]s spend caps list|status|set|rm|dry-run|override        per app and project spend caps with a deploy guard and a pause preview
   %[1]s costs explore|budgets [flags]                         cost explorer with forecast and movers, named budgets with alerts and a 100%% action
   %[1]s ingress-limits show|set|clear APP [flags]             per-app request body cap
   %[1]s budget show|set|clear APP [flags]                      per-app monthly egress and cost cap with throttle or pause

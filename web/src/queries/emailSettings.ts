@@ -184,12 +184,25 @@ export class EmailTestError extends ApiError {
 export interface EmailTestResult {
   to: string
   provider: string
+  provider_id?: string
   message_id?: string
   attempts: number
 }
 
-export async function sendTestEmail(to: string): Promise<EmailTestResult> {
-  const res = await fetch('/api/v1/settings/email/test', {
+export interface SendTestEmailInput {
+  to: string
+  /** Aim the send at one provider alone, with no failover. */
+  providerId?: string
+}
+
+export async function sendTestEmail({
+  to,
+  providerId,
+}: SendTestEmailInput): Promise<EmailTestResult> {
+  const path = providerId
+    ? `/api/v1/settings/email/providers/${encodeURIComponent(providerId)}/test`
+    : '/api/v1/settings/email/test'
+  const res = await fetch(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ to }),
@@ -214,6 +227,9 @@ export function useSendTestEmail() {
     mutationFn: sendTestEmail,
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: emailSettingsKeys.status })
+      void queryClient.invalidateQueries({
+        queryKey: ['email-settings', 'providers'],
+      })
     },
   })
 }
@@ -234,8 +250,11 @@ export interface EmailDomainCheck {
   spf_include?: string
 }
 
-export async function fetchEmailDomainCheck(): Promise<EmailDomainCheck> {
-  const res = await fetch('/api/v1/settings/email/domain-check')
+export async function fetchEmailDomainCheck(
+  providerId?: string,
+): Promise<EmailDomainCheck> {
+  const query = providerId ? `?provider=${encodeURIComponent(providerId)}` : ''
+  const res = await fetch(`/api/v1/settings/email/domain-check${query}`)
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -246,7 +265,9 @@ export async function fetchEmailDomainCheck(): Promise<EmailDomainCheck> {
 }
 
 export function useEmailDomainCheck() {
-  return useMutation({ mutationFn: fetchEmailDomainCheck })
+  return useMutation({
+    mutationFn: (providerId?: string) => fetchEmailDomainCheck(providerId),
+  })
 }
 
 export interface EmailDelivery {

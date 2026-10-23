@@ -6,6 +6,12 @@ import "net/http"
 // route that carries or uses the source credential is AbilityWriteSensitive.
 func (rt *Router) registerAppImportRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/migration/apps/plan", rt.requireAbility(AbilityWriteSensitive, rt.handleAppImportPlan))
+	mux.HandleFunc("POST /api/v1/migration/apps/test", rt.requireAbility(AbilityWriteSensitive, rt.handleAppImportTest))
+	mux.HandleFunc("GET /api/v1/migration/apps/sessions/{id}/progress", rt.requireAbility(AbilityRead, rt.handleAppImportProgress))
+	mux.HandleFunc("GET /api/v1/migration/apps/sessions/{id}/events", rt.requireAbility(AbilityRead, rt.withStreamReauth(migrationStreamResource, rt.handleAppImportEvents)))
+	mux.HandleFunc("POST /api/v1/migration/apps/sessions/{id}/probe", rt.requireAbility(AbilityWriteSensitive, rt.handleAppImportProbe))
+	mux.HandleFunc("GET /api/v1/migration/apps/sessions/{id}/retire", rt.requireAbility(AbilityRead, rt.handleAppImportRetire))
+	mux.HandleFunc("POST /api/v1/migration/apps/sessions/{id}/retire", rt.requireAbility(AbilityWriteSensitive, rt.handleAppImportRetire))
 	mux.HandleFunc("POST /api/v1/migration/apps/sessions", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateAppImportSession))
 	mux.HandleFunc("GET /api/v1/migration/apps/sessions", rt.requireAbility(AbilityRead, rt.handleListAppImportSessions))
 	mux.HandleFunc("GET /api/v1/migration/apps/sessions/{id}", rt.requireAbility(AbilityRead, rt.handleGetAppImportSession))
@@ -28,6 +34,9 @@ func (rt *Router) registerAppImportRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/migration/apps/sessions/{id}/cutover", rt.requireAbility(AbilityRead, rt.handleAppImportCutover))
 	mux.HandleFunc("GET /api/v1/migration/apps/sessions/{id}/cutover/verify", rt.requireAbility(AbilityWriteSensitive, rt.handleAppImportCutoverVerify))
 	mux.HandleFunc("POST /api/v1/migration/apps/sessions/{id}/items/{item}/route", rt.requireAbility(AbilityWriteSensitive, rt.handleRouteAppImport))
+	mux.HandleFunc("POST /api/v1/migration/coolify/exit-report", rt.requireAbility(AbilityWriteSensitive, rt.handleCoolifyExitReport))
+	mux.HandleFunc("POST /api/v1/migration/exit-report", rt.requireAbility(AbilityWriteSensitive, rt.handleCoolifyExitReport))
+	mux.HandleFunc("GET /api/v1/migration/apps/sessions/{id}/exit-report", rt.requireAbility(AbilityRead, rt.handleAppImportExitReport))
 	mux.HandleFunc("GET /api/v1/migration/apps/sessions/{id}/receipt", rt.requireAbility(AbilityRead, rt.handleAppImportReceipt))
 	rt.registerAppImportCutoverRunRoutes(mux)
 }

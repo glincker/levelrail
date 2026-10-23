@@ -5,7 +5,7 @@ import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Kbd } from '@/components/kit'
 import { TeamSwitcher } from '../teams/TeamSwitcher'
-import { EnvironmentSwitcher } from '../environments/EnvironmentSwitcher'
+import { ScopePicker } from '../environments/ScopePicker'
 import { DockToggle } from '../dock/DockToggle'
 import { HelpMenu } from '../HelpMenu'
 import { ThemeToggle } from '../ThemeToggle'
@@ -72,7 +72,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
             </span>
           </Button>
           <div className="order-last w-full empty:hidden @4xl:order-none @4xl:w-auto">
-            <EnvironmentSwitcher />
+            <ScopePicker />
           </div>
           {pageTitle ? (
             <span

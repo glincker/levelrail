@@ -64,6 +64,34 @@ type PITRRestoreRunner interface {
 	RunPITRRestore(ctx context.Context, historyID, databaseName, containerName, dataVolumeName, baseBackupHistoryID string, targetTime time.Time) error
 }
 
+// MySQLPITRRestoreRunner is the MySQL and MariaDB counterpart of PITRRestoreRunner.
+// Their restore lands in a new database, so it takes the new database's names.
+type MySQLPITRRestoreRunner interface {
+	WindowBounds(ctx context.Context, databaseName, containerName string) (hasBaseBackup bool, start, end time.Time, err error)
+	ValidateTarget(ctx context.Context, databaseName, containerName string, target time.Time) error
+	RunPITRCloneRestore(ctx context.Context, historyID, sourceName, newName, baseBackupHistoryID, engine, sourceContainer, newContainer, newController string, target time.Time) error
+}
+
+type pitrWindower interface {
+	WindowBounds(ctx context.Context, databaseName, containerName string) (hasBaseBackup bool, start, end time.Time, err error)
+}
+
+const (
+	pitrRestoreModeInPlace     = "in_place"
+	pitrRestoreModeNewDatabase = "new_database"
+)
+
+func pitrRestoreMode(engine string) string {
+	if isMySQLFamilyEngine(engine) {
+		return pitrRestoreModeNewDatabase
+	}
+	return pitrRestoreModeInPlace
+}
+
+func isMySQLFamilyEngine(engine string) bool {
+	return engine == store.EngineMySQL || engine == store.EngineMariaDB
+}
+
 func toBaseBackupHistoryResource(h store.BaseBackupHistory) baseBackupHistoryResource {
 	return baseBackupHistoryResource{
 		ID:           h.ID,
@@ -91,6 +119,9 @@ type baseBackupHistoryResource struct {
 }
 
 type pitrStatusResource struct {
+	Engine string `json:"engine"`
+	// RestoreMode is in_place (Postgres) or new_database (MySQL, MariaDB).
+	RestoreMode   string `json:"restore_mode"`
 	Enabled       bool   `json:"enabled"`
 	EnabledAt     string `json:"enabled_at,omitempty"`
 	HasBaseBackup bool   `json:"has_base_backup"`
@@ -164,8 +195,8 @@ func (rt *Router) handleEnablePITR(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if db.Engine != store.EnginePostgres {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("point-in-time restore is only supported for postgres, not %q", db.Engine))
+	if db.Engine != store.EnginePostgres && !isMySQLFamilyEngine(db.Engine) {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("point-in-time restore is only supported for postgres, mysql and mariadb, not %q", db.Engine))
 		return
 	}
 
@@ -222,8 +253,18 @@ func (rt *Router) handleGetPITRStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resource := pitrStatusResource{Enabled: db.PITREnabled, EnabledAt: db.PITREnabledAt}
-	if db.PITREnabled && rt.pitrRestoreRunner != nil {
-		hasBaseBackup, start, end, err := rt.pitrRestoreRunner.WindowBounds(r.Context(), name, databaseContainerName(name))
+	var windows pitrWindower
+	if isMySQLFamilyEngine(db.Engine) {
+		if rt.mysqlPITRRestoreRunner != nil {
+			windows = rt.mysqlPITRRestoreRunner
+		}
+	} else if rt.pitrRestoreRunner != nil {
+		windows = rt.pitrRestoreRunner
+	}
+	resource.Engine = db.Engine
+	resource.RestoreMode = pitrRestoreMode(db.Engine)
+	if db.PITREnabled && windows != nil {
+		hasBaseBackup, start, end, err := windows.WindowBounds(r.Context(), name, databaseContainerName(name))
 		if err != nil {
 			resource.WindowError = err.Error()
 		} else {
@@ -318,6 +359,8 @@ func (rt *Router) handleListBaseBackupHistory(w http.ResponseWriter, r *http.Req
 type triggerPITRRestoreRequest struct {
 	BaseBackupID string `json:"base_backup_id"`
 	TargetTime   string `json:"target_time"`
+	// RestoreAs names the new database a MySQL or MariaDB restore creates; Postgres restores in place and ignores it.
+	RestoreAs string `json:"restore_as,omitempty"`
 }
 
 // handleTriggerPITRRestore handles POST /api/v1/databases/{name}/pitr-restore:
@@ -327,15 +370,18 @@ type triggerPITRRestoreRequest struct {
 // immediately) so a bad request never reaches Postgres's own recovery,
 // which would hang rather than fail on one (ADR 016).
 func (rt *Router) handleTriggerPITRRestore(w http.ResponseWriter, r *http.Request) {
-	if rt.pitrRestoreRunner == nil {
-		writeError(w, http.StatusNotImplemented, "restores are not configured on this control plane (no master key set)")
-		return
-	}
-
 	name := r.PathValue("name")
 
 	db, ok := rt.loadDatabaseForRunner(w, r, name, "api: trigger pitr restore: load database failed")
 	if !ok {
+		return
+	}
+	if isMySQLFamilyEngine(db.Engine) {
+		rt.handleTriggerMySQLPITRRestore(w, r, db)
+		return
+	}
+	if rt.pitrRestoreRunner == nil {
+		writeError(w, http.StatusNotImplemented, "restores are not configured on this control plane (no master key set)")
 		return
 	}
 	if !db.PITREnabled {

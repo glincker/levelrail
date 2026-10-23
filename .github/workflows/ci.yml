@@ -499,7 +499,7 @@ jobs:
       ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.lint != 'none'
       || needs.changes.outputs.workflows == 'true') }}
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       LINT: ${{ needs.changes.outputs.lint }}
       WORKFLOWS: ${{ needs.changes.outputs.workflows }}

@@ -20,9 +20,15 @@ func newBaseBackupRunner(db *store.DB, secretsManager *secrets.Manager, client *
 		Store:        db,
 		Secrets:      secretsManager,
 		BaseBackuper: &backup.ContainerBaseBackuper{Runtime: client},
-		Uploader:     backup.S3Uploader{},
-		Runtime:      client,
-		WAL:          &backup.WALShipper{Runtime: client, Uploader: backup.S3Uploader{}, Lister: backup.S3Lister{}, Logger: logger},
+		ByEngine: map[string]backup.BaseBackuper{
+			store.EngineMySQL:   &backup.MySQLBaseBackuper{Runtime: client},
+			store.EngineMariaDB: &backup.MySQLBaseBackuper{Runtime: client},
+		},
+		EngineOf:  databaseEngineOf(db),
+		BinlogWAL: &backup.BinlogShipper{Runtime: client, Uploader: backup.S3Uploader{}, Lister: backup.S3Lister{}, Logger: logger},
+		Uploader:  backup.S3Uploader{},
+		Runtime:   client,
+		WAL:       &backup.WALShipper{Runtime: client, Uploader: backup.S3Uploader{}, Lister: backup.S3Lister{}, Logger: logger},
 		Maintainer: &backup.PITRMaintainer{
 			Store:   db,
 			Resolve: runner.ResolveDestination,
@@ -45,6 +51,7 @@ func newWALShipScheduler(db *store.DB, client *docker.Client, runner *backup.Run
 	return &backup.WALShipScheduler{
 		Store:         db,
 		Shipper:       &backup.WALShipper{Runtime: client, Uploader: backup.S3Uploader{}, Lister: backup.S3Lister{}, Logger: logger},
+		BinlogShipper: &backup.BinlogShipper{Runtime: client, Uploader: backup.S3Uploader{}, Lister: backup.S3Lister{}, Logger: logger},
 		Resolve:       runner.ResolveDestination,
 		ContainerName: func(name string) string { return "db-" + name },
 		IsLocal:       isLocal,
@@ -99,4 +106,27 @@ func durationFromEnv(key string, def time.Duration, logger *slog.Logger) time.Du
 		return def
 	}
 	return d
+}
+
+func databaseEngineOf(db *store.DB) func(ctx context.Context, name string) (string, error) {
+	return func(ctx context.Context, name string) (string, error) {
+		d, err := db.GetDesiredDatabase(ctx, name)
+		if err != nil {
+			return "", err
+		}
+		return d.Engine, nil
+	}
+}
+
+// newMySQLPITRRunner builds the binlog replay restore for MySQL and MariaDB.
+func newMySQLPITRRunner(db *store.DB, secretsManager *secrets.Manager, client *docker.Client, downloader backup.Downloader, logger *slog.Logger) *backup.MySQLPITRRunner {
+	return &backup.MySQLPITRRunner{
+		Store:      db,
+		Secrets:    secretsManager,
+		Downloader: downloader,
+		Lister:     backup.S3Lister{},
+		Restorer:   &backup.ContainerRestorer{Runtime: client},
+		Shipper:    &backup.BinlogShipper{Runtime: client, Uploader: backup.S3Uploader{}, Lister: backup.S3Lister{}, Logger: logger},
+		Runtime:    client,
+	}
 }
