@@ -119,6 +119,7 @@ type trafficResponse struct {
 	Countries      []trafficLabel              `json:"countries"`
 	SLO            *trafficSLO                 `json:"slo,omitempty"`
 	Shield         trafficShield               `json:"shield"`
+	Abuse          trafficAbuse                `json:"abuse"`
 	ErrorSpikes    []telemetry.ErrorSpike      `json:"error_spikes"`
 }
 
@@ -375,6 +376,7 @@ func (rt *Router) handleAppTraffic(w http.ResponseWriter, r *http.Request) {
 	resp.ErrorSpikes = rt.errorSpikes(ctx, name, from, to, window)
 	resp.SLO = rt.trafficSLO(ctx, name, from, to)
 	resp.Shield = shieldCounts(ctx, rt.telemetry, name, from, to)
+	resp.Abuse = abuseTraffic(ctx, rt.telemetry, name, from, to)
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, resp)
 }

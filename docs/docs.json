@@ -213,6 +213,7 @@
               "dns",
               "domain-diagnosis",
               "domain-traffic-controls",
+              "abuse-defense",
               "cdn-and-caching",
               "forms",
               "firewall",

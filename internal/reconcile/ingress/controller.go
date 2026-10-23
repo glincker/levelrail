@@ -303,9 +303,10 @@ type Controller struct {
 	adminListen          string
 	storageDir           string
 
-	hardening *ingress.Hardening
-	inherited *ingress.InheritedSockets
-	holds     *ingress.HoldTracker
+	hardening    *ingress.Hardening
+	abuseApplied abuseApplied
+	inherited    *ingress.InheritedSockets
+	holds        *ingress.HoldTracker
 
 	modelHosts ModelHostSource // nil is valid: no model routes, see WithModelHosts
 
@@ -981,6 +982,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if routes, err = c.applyTrafficPolicies(ctx, routes, claimedHosts, settings, tlsCertOverrides, sleeping); err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain traffic policies: %w", err)
 	}
+	routes = c.applyAbusePolicies(ctx, routes, claimedHosts, settings)
 	if routes, err = c.applyAuthGates(ctx, routes); err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain auth gates: %w", err)
 	}

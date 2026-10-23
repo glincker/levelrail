@@ -641,6 +641,9 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/forms/{form}/test | AbilityDeploy | handleSendFormTest |
 | POST | /api/v1/apps/{name}/budget/dry-run | AbilityRead | handleAppSpendDryRun |
 | POST | /api/v1/apps/{name}/budget/override | AbilityRoot | handleSpendOverride |
+| GET | /api/v1/apps/{name}/abuse | AbilityRead | handleGetAppAbuse |
+| PUT | /api/v1/apps/{name}/abuse | AbilityWriteSensitive | handlePutAppAbuse |
+| POST | /api/v1/apps/{name}/abuse/dry-run | AbilityReadSensitive | handleAbuseDryRun |
 
 </Accordion>
 

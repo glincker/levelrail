@@ -107,6 +107,7 @@ type AppTrafficResource struct {
 	Countries      []TrafficLabel       `json:"countries"`
 	SLO            *TrafficSLO          `json:"slo,omitempty"`
 	Shield         TrafficShield        `json:"shield"`
+	Abuse          AbuseCounters        `json:"abuse"`
 	ErrorSpikes    []TrafficErrorSpike  `json:"error_spikes"`
 }
 

@@ -83,6 +83,10 @@ traffic <app> [--window|--since 5m|1h|24h|7d] [--watch] [--interval 5s] [--json]
 
 With `--watch --json` each refresh is printed as one JSON line.
 
+## Abuse defense counters
+
+The traffic report carries an `abuse` section when an app has an [abuse defense](abuse-defense): requests allowed, requests that log only mode would have blocked, requests enforce blocked (both by reason), and requests served unchecked because the defense failed. The Traffic tab shows them beside the policy.
+
 ## Measured overhead
 
 The ingress handler does one map lookup and a few counter increments per request under a short lock, and nothing is written to disk on the request path. Aggregates are drained once per tick into the node-local store. `BenchmarkRequestStatsObservePath` in `internal/ingress` measured about 410 ns and 4 allocations per request with 14 goroutines contending on one app, on an Apple M4 Max (one run, not a Linux VPS). Memory is bounded by the replica and route caps above. End to end proxy overhead under load has not been measured yet.
