@@ -8,6 +8,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { CARD_FLOAT } from './emailStyles'
 import {
   Field,
   FieldDescription,
@@ -61,8 +62,8 @@ export function EmailBrandingCard() {
     setEdits({ ...draft, ...patch })
 
   return (
-    <Card>
-      <CardContent className="space-y-4">
+    <Card size="sm" className={CARD_FLOAT}>
+      <CardContent className="space-y-3">
         <div>
           <FieldTitle>{t('emailBranding.title')}</FieldTitle>
           <FieldDescription>{t('emailBranding.description')}</FieldDescription>

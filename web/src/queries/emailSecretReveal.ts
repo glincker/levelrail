@@ -2,8 +2,7 @@
 // (internal/api/email_secret_reveal.go). The value is returned to the caller
 // only: it is never put in a query key or a cache entry.
 
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { ApiError, readErrorMessage } from '../lib/apiError'
+import { useMutation } from '@tanstack/react-query'
 import { EnvApiError } from './envProtection'
 
 export const EMAIL_SECRET_STEP_UP_APP = 'email-secret'
@@ -60,34 +59,5 @@ export function useRevealEmailSecret(providerId: string) {
     gcTime: 0,
     mutationFn: (field: EmailSecretField) =>
       revealEmailSecret(providerId, field),
-  })
-}
-
-interface ProviderRow {
-  id?: string
-  role?: string
-}
-
-async function fetchPrimaryProviderId(): Promise<string | null> {
-  const res = await fetch('/api/v1/settings/email/providers')
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(
-        res,
-        `fetch email providers failed: ${res.status}`,
-      ),
-    )
-  }
-  const body = (await res.json()) as { providers?: ProviderRow[] }
-  return body.providers?.find((p) => p.role === 'primary')?.id ?? null
-}
-
-// The settings card edits the primary provider, so its reveal buttons target it.
-export function usePrimaryEmailProviderId() {
-  return useQuery({
-    queryKey: ['email-settings', 'primary-provider-id'] as const,
-    queryFn: fetchPrimaryProviderId,
-    staleTime: 60_000,
   })
 }

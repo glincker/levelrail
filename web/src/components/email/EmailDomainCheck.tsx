@@ -7,11 +7,11 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   useEmailDomainCheck,
   type EmailRecordCheck,
 } from '../../queries/emailSettings'
+import { PRESS } from './emailStyles'
 
 const PROVIDER_HINT_KEYS = new Set([
   'ses',
@@ -32,7 +32,7 @@ function RecordRow({
   const { t } = useTranslation('settings')
   const pass = record.status === 'pass'
   return (
-    <li className="space-y-1 rounded-md border border-border p-3">
+    <li className="space-y-1 rounded-md border border-border bg-background/40 p-2">
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant={pass ? 'success' : 'warning'}>
           {pass ? (
@@ -47,7 +47,7 @@ function RecordRow({
         <span className="text-sm font-medium">
           {t(`emailDelivery.domain.types.${record.type}`)}
         </span>
-        <span className="font-mono text-xs text-muted-foreground break-all">
+        <span className="font-mono text-xs break-all text-muted-foreground">
           {record.name}
         </span>
       </div>
@@ -65,62 +65,58 @@ function RecordRow({
   )
 }
 
-/** EmailDomainCheckCard looks up SPF, DKIM and DMARC for the From domain through the control plane. */
-export function EmailDomainCheckCard({ provider }: { provider: string }) {
+/** DomainCheckInline looks up SPF, DKIM and DMARC for one provider's sender domain through the control plane. */
+export function DomainCheckInline({
+  providerId,
+  backend,
+}: Readonly<{ providerId?: string; backend: string }>) {
   const { t } = useTranslation('settings')
   const check = useEmailDomainCheck()
   const data = check.data
 
   return (
-    <Card>
-      <CardContent className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="min-w-0 flex-1 space-y-0.5">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <ShieldCheckIcon className="size-4" aria-hidden="true" />
-              {t('emailDelivery.domain.title')}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {t('emailDelivery.domain.description')}
-            </p>
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={check.isPending}
-            onClick={() => check.mutate()}
-          >
-            {check.isPending
-              ? t('emailDelivery.domain.checking')
-              : data
-                ? t('emailDelivery.domain.recheck')
-                : t('emailDelivery.domain.run')}
-          </Button>
-        </div>
+    <div className="space-y-2">
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className={PRESS}
+        disabled={check.isPending}
+        onClick={() => {
+          check.mutate(providerId)
+        }}
+      >
+        <ShieldCheckIcon aria-hidden="true" />
+        {check.isPending
+          ? t('emailDelivery.domain.checking')
+          : data
+            ? t('emailDelivery.domain.recheck')
+            : t('emailDelivery.domain.run')}
+      </Button>
+      <div aria-live="polite" className="space-y-2 empty:hidden">
         {check.isError ? (
           <Alert variant="destructive">
             <AlertDescription>{check.error.message}</AlertDescription>
           </Alert>
         ) : null}
         {data ? (
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
+          <>
+            <p className="text-xs text-muted-foreground">
               {t('emailDelivery.domain.checked', { domain: data.domain })}
             </p>
-            <ul className="space-y-2">
+            <ul className="space-y-1.5">
               {data.records.map((r) => (
                 <RecordRow key={r.type} record={r} include={data.spf_include} />
               ))}
             </ul>
-            {PROVIDER_HINT_KEYS.has(provider) ? (
-              <p className="text-sm text-muted-foreground">
-                {t(`emailDelivery.domain.providerHints.${provider as 'ses'}`)}
+            {PROVIDER_HINT_KEYS.has(backend) ? (
+              <p className="text-xs text-muted-foreground">
+                {t(`emailDelivery.domain.providerHints.${backend as 'ses'}`)}
               </p>
             ) : null}
-          </div>
+          </>
         ) : null}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
