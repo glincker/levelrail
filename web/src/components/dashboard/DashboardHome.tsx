@@ -208,7 +208,7 @@ export function DashboardHome({
   const hasApps = summary.total > 0
 
   if (!hasApps || (deployStarted && !firstRunDone)) {
-    return (
+    const firstRun = (
       <div className="space-y-8">
         <SignInHomeCards />
         <Suspense fallback={null}>
@@ -230,6 +230,8 @@ export function DashboardHome({
         )}
       </div>
     )
+    // Keep the board tabs reachable before the first app so Metrics and saved boards are not hidden.
+    return <DashboardViews start={firstRun} />
   }
 
   return (

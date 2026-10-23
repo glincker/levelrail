@@ -140,6 +140,7 @@ describe('DashboardHome', () => {
     expect(
       await screen.findByRole('button', { name: 'Deploy sample app' }),
     ).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Metrics' })).toBeInTheDocument()
     expect(screen.getByText('Import anything')).toBeInTheDocument()
     expect(screen.getByText('Deploy a template')).toBeInTheDocument()
     expect(screen.getByText('Connect Git')).toBeInTheDocument()
