@@ -1,6 +1,4 @@
 {
-  "title": "Dashboards",
-  "description": "Build your own views of metrics, logs, deploys and cost. Keep them private or share them with everyone, and export them as JSON to keep in version control.",
   "common": {
     "cancel": "Cancel"
   },
@@ -105,14 +103,8 @@
     "linkTitlePlaceholder": "Runbook",
     "linkUrl": "Address"
   },
-  "list": {
-    "label": "Your dashboards",
-    "default": "Default",
-    "shared": "Shared"
-  },
   "template": {
     "label": "Starter dashboards",
-    "new": "New from a starter",
     "use": "Use this starter",
     "pickApp": "App for {{name}}",
     "app-health": {
@@ -129,15 +121,8 @@
     }
   },
   "empty": {
-    "title": "No dashboards yet",
-    "body": "Start from a ready made dashboard below, or import a JSON file you exported earlier.",
     "widgetsTitle": "This dashboard is empty",
     "widgetsBody": "Turn on Edit and add a widget to get started."
-  },
-  "delete": {
-    "title": "Delete {{name}}?",
-    "body": "The dashboard is removed for everyone who can see it. Exported JSON files are not affected.",
-    "confirm": "Delete dashboard"
   },
   "toast": {
     "saved": "Dashboard saved",

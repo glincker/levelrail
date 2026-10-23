@@ -1,42 +1,11 @@
 {
   "needsAttention": {
-    "title": "Needs attention",
-    "seeAll": "See all {{count}}",
     "askAi": "Ask AI",
     "review": "Review",
     "retryCopy": "Retry the copy",
     "openDatabase": "Open database"
   },
   "fleet": {
-    "databases": {
-      "title": "Databases",
-      "viewAll": "View all {{count}}",
-      "emptyTitle": "No databases yet",
-      "emptyBody": "Create a managed database and it shows up here with its health, size and load.",
-      "emptyAction": "Go to databases",
-      "total": "Databases",
-      "healthy": "Healthy",
-      "unhealthy": "Unhealthy",
-      "starting_one": "{{count}} starting",
-      "starting_other": "{{count}} starting",
-      "stoppedCount_one": "{{count}} stopped",
-      "stoppedCount_other": "{{count}} stopped",
-      "totalSize": "Total size",
-      "sizeScope": "Volumes on the control plane node.",
-      "sizedOf": "Measured for {{known}} of {{total}} databases.",
-      "sizeUnknown": "Not reported by this node.",
-      "largest": "Largest",
-      "busiest": "Busiest",
-      "cpuValue": "{{value}}% CPU",
-      "more_one": "{{count}} more database",
-      "more_other": "{{count}} more databases",
-      "health": {
-        "healthy": "Healthy",
-        "unhealthy": "Unhealthy",
-        "starting": "Starting",
-        "stopped": "Stopped"
-      }
-    },
     "reserved": {
       "title": "Reserved versus used",
       "subtitle": "Configured limits of {{active}} running apps and databases, replicas included. {{suspended}} stopped are left out.",
@@ -181,14 +150,7 @@
     "greetingNamed_morning": "Good morning, {{name}}",
     "greetingNamed_afternoon": "Good afternoon, {{name}}",
     "greetingNamed_evening": "Good evening, {{name}}",
-    "greetingNamed_night": "Working late, {{name}}",
-    "sentence": {
-      "allHealthy_one": "Your app is healthy",
-      "allHealthy_other": "All {{count}} apps healthy",
-      "needAttention_one": "{{count}} thing needs attention",
-      "needAttention_other": "{{count}} things need attention",
-      "noApps": "No apps yet. Deploy one and it shows up here."
-    }
+    "greetingNamed_night": "Working late, {{name}}"
   },
   "banners": {
     "httpsTitle": "This dashboard is on plain HTTP",
@@ -253,7 +215,6 @@
     "update": "{{version}} available",
     "notices_one": "{{count}} notice",
     "notices_other": "{{count}} notices",
-    "hideNotices": "Hide notices",
     "showSnoozed_one": "Show {{count}} snoozed",
     "showSnoozed_other": "Show {{count}} snoozed"
   },
@@ -281,7 +242,6 @@
     "edit": "Customize",
     "done": "Done",
     "reset": "Reset layout",
-    "hidden": "Hidden",
     "show": "Show {{name}}",
     "moveUp": "Move {{name}} up",
     "moveDown": "Move {{name}} down",

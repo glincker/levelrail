@@ -53,7 +53,6 @@
   "requests": {
     "bannerTitle": "Someone is signing in to your account",
     "codeTitle": "Sign-in code requested",
-    "approvalTitle": "Sign-in from a new browser",
     "context": "From {{ip}}, {{agent}}, at {{time}}.",
     "warning": "Only continue if you started this sign-in yourself.",
     "show": "Show code",
@@ -61,10 +60,6 @@
     "notRevealable": "The code is no longer available here. Ask for a new one from the sign-in page.",
     "approve": "Approve",
     "deny": "Deny",
-    "matchPrompt": "Type the two digit number the waiting browser shows. A wrong number denies the sign-in.",
-    "matchInput": "Number shown in the waiting browser",
-    "confirmApprove": "Confirm approval",
-    "cancel": "Cancel",
     "approved": "Sign-in approved",
     "denied": "Sign-in denied",
     "actionFailed": "Could not update the sign-in request",
@@ -106,15 +101,12 @@
   },
   "approvalCard": {
     "title": "Approve this sign-in?",
-    "lead": "A password sign-in from a new device is waiting. It stays blocked until you approve it here.",
     "pageTitle": "Approve a sign-in",
     "pageDescription": "Approve or deny a password sign-in from a new device, for example the CLI.",
     "empty": "Nothing is waiting for approval. If you just started a sign-in, it appears here within a few seconds.",
     "regionLabel": "Sign-in approvals"
   },
   "connectCli": {
-    "title": "Connect your CLI",
-    "lead": "Copy one command into your terminal to sign it in. No password, no approval step.",
     "generate": "Show my command",
     "regenerate": "New command",
     "copy": "Copy",
@@ -134,7 +126,6 @@
     "badgeLabelConnected_one": "Open the CLI command center. {{count}} CLI is connected.",
     "badgeLabelConnected_other": "Open the CLI command center. {{count}} CLIs are connected.",
     "title": "Command line tool",
-    "description": "Install the CLI, connect it to this server and manage every CLI that can reach it.",
     "openAction": "Open CLI setup",
     "openKeywords": "cli terminal command line install connect pair token",
     "install": {
@@ -198,9 +189,7 @@
     "loadingBody": "Loading the command line tool...",
     "started": {
       "title": "Get started",
-      "done": "Done",
-      "show": "Show setup steps",
-      "hide": "Hide setup steps"
+      "done": "Done"
     },
     "commands": {
       "title": "Common commands",
