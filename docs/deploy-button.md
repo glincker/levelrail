@@ -34,21 +34,30 @@ Unknown parameters are ignored and listed in a notice on the reader's form. The 
 
 ## Badge
 
-Two SVG badges live in this repository under `docs/assets/brand`: `deploy-button.svg` (yellow `#eef35f` with dark text) and `deploy-button-dark.svg` (dark with light text).
+Three SVG badges live in this repository under `docs/assets/brand`:
+
+| File | Look | Use it on |
+| --- | --- | --- |
+| `deploy-button-split.svg` | Dark logo segment, yellow label, 1px border | Any README (the safe default) |
+| `deploy-button-light.svg` | Pale fill, 2px teal border | Light backgrounds |
+| `deploy-button-dark.svg` | Dark fill, 2px cyan-to-yellow gradient border | Dark backgrounds |
 
 The snippets load the badge from the jsDelivr CDN, which serves the file straight from this public repository, so README views never hit the Levelrail site. The `@main` part follows the main branch; pin a release tag instead (for example `@v0.8.4`) if you want a badge that never changes. Only clicking the button reaches `levelrail.com/deploy`.
 
 ## Markdown snippet
 
 ```md
-[![Deploy to Levelrail](https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button.svg)](https://levelrail.com/deploy?image=ghcr.io%2Fyou%2Fapp%3A1.2&port=3000&health=%2Fhealthz&env=DATABASE_URL)
+[![Deploy to Levelrail](https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button-split.svg)](https://levelrail.com/deploy?image=ghcr.io%2Fyou%2Fapp%3A1.2&port=3000&health=%2Fhealthz&env=DATABASE_URL)
 ```
 
-## HTML snippet
+## HTML snippet with matching light and dark badges
 
 ```html
 <a href="https://levelrail.com/deploy?image=ghcr.io%2Fyou%2Fapp%3A1.2&amp;port=3000&amp;health=%2Fhealthz&amp;env=DATABASE_URL">
-  <img src="https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button.svg" alt="Deploy to Levelrail" height="40">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button-dark.svg">
+    <img src="https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button-light.svg" alt="Deploy to Levelrail" height="40">
+  </picture>
 </a>
 ```
 

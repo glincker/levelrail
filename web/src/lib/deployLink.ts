@@ -185,7 +185,7 @@ export function stringifySearch(
 export const DEPLOY_BUTTON_PAGE = 'https://levelrail.com/deploy'
 /** Badge served by the jsDelivr CDN from this repository, so README views do not reach the site. */
 export const DEPLOY_BUTTON_BADGE =
-  'https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button.svg'
+  'https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button-split.svg'
 
 export interface DeployButtonInput {
   image: string
