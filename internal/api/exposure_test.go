@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -31,8 +32,20 @@ func (f *fakeIptables) run(_ context.Context, _ string, args ...string) ([]byte,
 		}
 		return []byte(out), nil
 	case "-I":
-		f.rules = append([]string{strings.Join(a[3:], " ")}, f.rules...)
+		pos, err := strconv.Atoi(a[2])
+		if err != nil || pos < 1 || pos > len(f.rules)+1 {
+			return []byte("bad position"), errors.New("exit 1")
+		}
+		spec := strings.Join(a[3:], " ")
+		f.rules = append(f.rules[:pos-1], append([]string{spec}, f.rules[pos-1:]...)...)
 	case "-D":
+		if pos, err := strconv.Atoi(a[2]); err == nil && len(a) == 3 {
+			if pos < 1 || pos > len(f.rules) {
+				return []byte("bad position"), errors.New("exit 1")
+			}
+			f.rules = append(f.rules[:pos-1], f.rules[pos:]...)
+			return nil, nil
+		}
 		spec := strings.Join(a[2:], " ")
 		for i, r := range f.rules {
 			if r == spec {
