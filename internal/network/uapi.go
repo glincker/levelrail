@@ -47,9 +47,6 @@ import (
 // is skipped rather than written as 32 zero bytes: writing zeros would
 // tell the device to discard its identity, which is the opposite of
 // "this field is not being changed."
-// isUAPIControl reports characters that would end the line or start a new key.
-func isUAPIControl(r rune) bool { return r < 0x20 || r == 0x7f || r == '=' }
-
 func EncodeUAPI(cfg DeviceConfig, current []Key) string {
 	var b strings.Builder
 
@@ -274,3 +271,6 @@ func peerKeys(st Status) []Key {
 func hostPrefix(a netip.Addr) netip.Prefix {
 	return netip.PrefixFrom(a, a.BitLen())
 }
+
+// isUAPIControl reports characters that would end the line or start a new key.
+func isUAPIControl(r rune) bool { return r < 0x20 || r == 0x7f || r == '=' }
