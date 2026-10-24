@@ -14,6 +14,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/deploytrace"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -216,6 +217,8 @@ type confirmedDeployOptions struct {
 }
 
 func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.DesiredService, image string, opts confirmedDeployOptions) (store.DesiredService, error) {
+	// Read before Deploy, which records its own newest attempt.
+	recreate := rt.redeployNeedsRecreate(ctx, existing)
 	trigger := rt.imageTrigger(ctx, existing, opts.pull, opts.reason)
 	trigger.RerunOf = opts.rerunOf
 	updated, err := trigger.Deploy(ctx, existing, image)
@@ -223,9 +226,9 @@ func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.Des
 		return store.DesiredService{}, err
 	}
 	// Same image means the same container name, so an exited container would be
-	// restarted with its old env behind the crash backoff. A new nonce makes this
-	// an explicit recreate, which is not a retry.
-	if updated.Image == existing.Image {
+	// restarted with its old env behind the crash backoff. Recreate only when
+	// the app is broken or its env changed; a healthy unchanged app is left alone.
+	if updated.Image == existing.Image && recreate {
 		if err := rt.apps.RestartService(ctx, existing.Name); err != nil {
 			return store.DesiredService{}, fmt.Errorf("deploy: recreate %q for redeploy: %w", existing.Name, err)
 		}
@@ -550,4 +553,43 @@ func (rt *Router) markRestartRollingOut(ctx context.Context, svc store.DesiredSe
 		}
 	}
 	return out
+}
+
+// recreateSignals are the facts that make a same-image redeploy recreate the
+// container instead of leaving it alone.
+type recreateSignals struct {
+	containerStopped bool
+	latestFailed     bool
+	failingReason    string
+	envChanged       bool
+}
+
+var recreateFailureReasons = map[string]bool{
+	deploysafety.ReasonReadinessFailed:       true,
+	deploysafety.ReasonExitedDuringReadiness: true,
+	deploysafety.ReasonWatchCrashloop:        true,
+	"CrashLoopBackOff":                       true,
+	"ContainerCrashed":                       true,
+}
+
+func (s recreateSignals) needed() bool {
+	return s.containerStopped || s.latestFailed || recreateFailureReasons[s.failingReason] || s.envChanged
+}
+
+// redeployNeedsRecreate gathers the signals from existing status helpers. The
+// env signal is the env_dirty latch; there is no cheaper spec-drift check.
+func (rt *Router) redeployNeedsRecreate(ctx context.Context, existing store.DesiredService) bool {
+	sig := recreateSignals{envChanged: existing.EnvDirty}
+	if st, ok := rt.appRunState(ctx, existing.Name); ok && !st.Running {
+		sig.containerStopped = true
+	}
+	if rt.deploys != nil {
+		sig.failingReason, _ = rt.failingReadyCondition(ctx, existing.Name)
+	}
+	if rt.deployAttempts != nil {
+		if list, err := rt.deployAttempts.ListDeployAttempts(ctx, existing.Name); err == nil && len(list) > 0 {
+			sig.latestFailed = list[0].Status == store.DeployAttemptStatusFailed
+		}
+	}
+	return sig.needed()
 }

@@ -2276,21 +2276,45 @@ func TestHandleDeployHistory_RestartInFlightIsNotReady(t *testing.T) {
 	}
 }
 
-// A redeploy of the image the app already runs must recreate the container
-// (new restart nonce), else a crashed container is restarted with its old env
-// behind the crash backoff. A different image already gets a new name.
+// A same-image redeploy recreates the container only when needed: a failed
+// latest attempt, a crashlooping condition or changed env. A healthy,
+// unchanged app keeps today's behavior.
 func TestHandleTriggerDeploy_RestartNonce(t *testing.T) {
+	failedAttempt := func(t *testing.T, db *store.DB) {
+		if err := db.SaveDeployAttempt(context.Background(), store.DeployAttempt{ID: "dep_failed", ServiceName: "web", Image: "levelrail/web:1", Status: store.DeployAttemptStatusFailed, StartedAt: time.Now()}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	crashloop := func(t *testing.T, db *store.DB) {
+		conds := []reconcile.Condition{{Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: "CrashLoopBackOff"}}
+		if err := db.UpsertConditions(context.Background(), applicationControllerName("web"), conds); err != nil {
+			t.Fatal(err)
+		}
+	}
 	tests := []struct {
 		name      string
+		envDirty  bool
+		seed      func(*testing.T, *store.DB)
 		image     string
 		wantNonce bool
 	}{
-		{"same image recreates", "levelrail/web:1", true},
-		{"new image keeps nonce", "levelrail/web:2", false},
+		{"healthy unchanged keeps container", false, nil, "levelrail/web:1", false},
+		{"failed latest attempt recreates", false, failedAttempt, "levelrail/web:1", true},
+		{"crashloop condition recreates", false, crashloop, "levelrail/web:1", true},
+		{"env changed recreates", true, nil, "levelrail/web:1", true},
+		{"new image keeps nonce", true, nil, "levelrail/web:2", false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			rt, db, cookie := newEnvDirtyAppTestRouter(t)
+			if !tc.envDirty {
+				if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if tc.seed != nil {
+				tc.seed(t, db)
+			}
 			rec := httptest.NewRecorder()
 			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"`+tc.image+`"}`))
 			if rec.Code != http.StatusAccepted {
@@ -2302,6 +2326,29 @@ func TestHandleTriggerDeploy_RestartNonce(t *testing.T) {
 			}
 			if (got.RestartNonce != "") != tc.wantNonce {
 				t.Errorf("RestartNonce = %q, want set = %v", got.RestartNonce, tc.wantNonce)
+			}
+		})
+	}
+}
+
+func TestRecreateSignals(t *testing.T) {
+	tests := []struct {
+		name string
+		sig  recreateSignals
+		want bool
+	}{
+		{"healthy unchanged", recreateSignals{}, false},
+		{"exited container", recreateSignals{containerStopped: true}, true},
+		{"failed latest attempt", recreateSignals{latestFailed: true}, true},
+		{"post deploy crashloop", recreateSignals{failingReason: "PostDeployCrashloop"}, true},
+		{"readiness failed", recreateSignals{failingReason: "ReadinessFailed"}, true},
+		{"unrelated reason", recreateSignals{failingReason: "Progressing"}, false},
+		{"env changed", recreateSignals{envChanged: true}, true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.sig.needed(); got != tc.want {
+				t.Errorf("needed() = %v, want %v", got, tc.want)
 			}
 		})
 	}
