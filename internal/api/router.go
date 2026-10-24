@@ -96,6 +96,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
+	"github.com/GLINCKER/levelrail/internal/cleanup"
 	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/janitor"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
@@ -514,6 +515,7 @@ type Router struct {
 	storage                      *StorageDeps                    // nil is valid: /api/v1/storage and /api/v1/log-archive routes return 501
 	backupSecrets                BackupSecretsSetter             // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
 	dataExport                   DataExportService               // nil is valid: export routes and GET /metrics return 501
+	cleanup                      *cleanup.Center                 // nil is valid: /api/v1/cleanup returns 501
 	eventWebhooks                EventWebhookService             // nil is valid: event webhook routes return 501
 	scheduledMaintenance         ScheduledMaintenanceStore       // nil is valid: scheduled maintenance routes return 501
 	registryCredentials          RegistryCredentialStore         // always set, same "core Store interface" shape as backupTargets above

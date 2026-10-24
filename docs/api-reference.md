@@ -304,6 +304,7 @@ Endpoints for:
 | DELETE | /api/v1/settings/runtime/{key} | AbilityRoot | handleResetRuntimeSetting |
 | POST | /api/v1/settings/runtime/apply | AbilityRoot | handleApplyRuntimeSettings |
 | POST | /api/v1/settings/runtime/onboarding/ack | AbilityRoot | handleAckRuntimeOnboarding |
+| POST | /api/v1/auth/tokens/cleanup | AbilityRoot | handleCleanupTokens |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -317,7 +318,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| POST | /api/v1/auth/tokens/cleanup | AbilityRoot | handleCleanupTokens |
 
 </Accordion>
 
@@ -1946,6 +1946,11 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migrations/verify/latest | AbilityRead | handleLatestMigrationVerify |
 | POST | /api/v1/imports/repo/plan | AbilityWrite | handleImportRepoPlan |
 | POST | /api/v1/imports/repo/apply | AbilityWrite | handleImportRepoApply |
+| GET | /api/v1/cleanup | AbilityRead | handleGetCleanup |
+| GET | /api/v1/cleanup/runs | AbilityRead | handleListCleanupRuns |
+| POST | /api/v1/cleanup/{id}/preview | AbilityRoot | handlePreviewCleanup |
+| POST | /api/v1/cleanup/{id}/run | AbilityRoot | handleRunCleanup |
+| PUT | /api/v1/cleanup/{id}/mode | AbilityRoot | handleSetCleanupMode |
 
 ## See also
 

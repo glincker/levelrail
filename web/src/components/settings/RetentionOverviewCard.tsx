@@ -27,7 +27,7 @@ interface RetentionKnob {
     | '/settings/audit-log'
     | '/settings/email-log'
     | '/settings/event-webhooks'
-    | '/settings/janitor'
+    | '/settings/cleanup'
     | '/settings/observability'
 }
 
@@ -66,7 +66,7 @@ const KNOBS: RetentionKnob[] = [
   { label: 'overview.items.inboxArchive', env: 'APP_INBOX_ARCHIVE_RETENTION' },
   {
     label: 'overview.items.deployAttempts',
-    to: '/settings/janitor',
+    to: '/settings/cleanup',
   },
   {
     label: 'overview.items.metricsAndLogs',

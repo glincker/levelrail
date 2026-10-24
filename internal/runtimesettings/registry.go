@@ -19,6 +19,7 @@ const (
 	KindDuration   Kind = "duration"
 	KindStringList Kind = "string_list"
 	KindInt        Kind = "int"
+	KindString     Kind = "string"
 )
 
 // Category groups settings in the dashboard.
@@ -92,6 +93,14 @@ type Definition struct {
 	AllowedInts []int
 	// CheckItem validates one string_list entry; nil accepts any non-empty entry.
 	CheckItem func(item string) error
+	// AllowedStrings limits a string setting to these values.
+	AllowedStrings []string
+	// CheckValue vets a canonical value on API writes only (floors and minimums); env and saved rows are not rechecked.
+	CheckValue func(canonical string) error
+	// EnvConvert rewrites the env value into this setting's unit before validation (for example a Go duration into days).
+	EnvConvert func(raw string) (string, error)
+	// EnvLoose lets an int setting take any non-negative env value, not only the presets, so existing deployments keep working.
+	EnvLoose bool
 }
 
 var (
@@ -122,6 +131,12 @@ func Register(d Definition) {
 		}
 	}
 	reg = append(reg, d)
+}
+
+func registryLen() int {
+	regMu.RLock()
+	defer regMu.RUnlock()
+	return len(reg)
 }
 
 // Definitions returns a copy of the registry in registration order.

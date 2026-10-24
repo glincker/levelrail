@@ -39,7 +39,7 @@ func (rt *Router) ComplianceSecuritySnapshot(ctx context.Context) (any, error) {
 		"posture_checks":         checks,
 		"posture_generated_at":   at,
 		"session_ttl_hours":      rt.sessionLifetime().Hours(),
-		"audit_retention_days":   int(rt.effectiveAuditLogRetention().Hours() / 24),
+		"audit_retention_days":   int(rt.effectiveAuditLogRetention(ctx).Hours() / 24),
 		"new_device_approval_on": rt.newDeviceApproval,
 	}, nil
 }

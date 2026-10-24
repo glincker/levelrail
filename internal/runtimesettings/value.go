@@ -70,6 +70,12 @@ func canonicalFromString(d Definition, s string) (string, error) {
 			return "", fmt.Errorf("%d is not an allowed value, choose one of %v", n, d.AllowedInts)
 		}
 		return strconv.Itoa(n), nil
+	case KindString:
+		v := strings.TrimSpace(s)
+		if len(d.AllowedStrings) > 0 && !slices.Contains(d.AllowedStrings, v) {
+			return "", fmt.Errorf("%q is not an allowed value, choose one of %v", v, d.AllowedStrings)
+		}
+		return v, nil
 	case KindStringList:
 		var items []string
 		if t := strings.TrimSpace(s); strings.HasPrefix(t, "[") {
@@ -133,6 +139,12 @@ func ParseJSON(d Definition, raw json.RawMessage) (string, error) {
 		default:
 			return fail("value must be an integer")
 		}
+	case KindString:
+		str, ok := v.(string)
+		if !ok {
+			return fail("value must be a string")
+		}
+		s = str
 	case KindStringList:
 		switch x := v.(type) {
 		case string:
@@ -159,7 +171,31 @@ func ParseJSON(d Definition, raw json.RawMessage) (string, error) {
 	if err != nil {
 		return fail(err.Error())
 	}
+	if d.CheckValue != nil {
+		if err := d.CheckValue(c); err != nil {
+			return fail(err.Error())
+		}
+	}
 	return c, nil
+}
+
+// canonicalEnv validates an env value; EnvConvert and EnvLoose keep legacy env formats working.
+func canonicalEnv(d Definition, raw string) (string, error) {
+	if d.EnvConvert != nil {
+		conv, err := d.EnvConvert(raw)
+		if err != nil {
+			return "", err
+		}
+		raw = conv
+	}
+	if d.EnvLoose && d.Kind == KindInt {
+		n, err := strconv.Atoi(strings.TrimSpace(raw))
+		if err != nil || n < 0 {
+			return "", fmt.Errorf("%q is not a non-negative integer", raw)
+		}
+		return strconv.Itoa(n), nil
+	}
+	return canonicalFromString(d, raw)
 }
 
 // typed renders a canonical value as its JSON type for the API.

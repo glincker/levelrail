@@ -1,0 +1,175 @@
+{
+  "title": "Cleanup",
+  "description": "Control how long each kind of data is kept, see what a cleanup would remove before it runs, and review every run.",
+  "tabs": {
+    "label": "Cleanup sections",
+    "overview": "Overview",
+    "disk": "Disk and Docker",
+    "history": "History"
+  },
+  "loadError": "Could not load the cleanup targets: {{message}}",
+  "retry": "Retry",
+  "readOnly": "You can view cleanup settings. Changing retention, switching modes and running a cleanup need a root account.",
+  "empty": {
+    "title": "No cleanup targets yet",
+    "body": "This control plane did not report any data types to clean. Check again after the next upgrade."
+  },
+  "categories": {
+    "auth": "Sign-in and tokens",
+    "audit": "Audit",
+    "deploys": "Deploys",
+    "docker": "Docker",
+    "data": "Data",
+    "observability": "Observability",
+    "messaging": "Messaging",
+    "other": "Other"
+  },
+  "hero": {
+    "reclaimable": "Reclaimable",
+    "reclaimableHint": "Stored by data types that cleanup manages",
+    "usageLabel": "Where cleanup-managed data lives",
+    "segmentLabel": "{{category}}: {{size}}, {{percent}}% of the total",
+    "legendFilter": "Show only {{category}}",
+    "clearFilter": "Show all categories",
+    "lastRun": "Last run",
+    "neverRun": "No cleanup has run yet",
+    "scheduler": "Scheduler",
+    "schedulerOn": "Running every {{interval}}",
+    "schedulerOff": "Scheduler is off",
+    "previewCount_one": "{{count}} data type is in preview mode",
+    "previewCount_other": "{{count}} data types are in preview mode",
+    "previewNone": "Nothing is waiting in preview mode",
+    "reviewAction": "Review and enable"
+  },
+  "group": {
+    "count_one": "{{count}} data type",
+    "count_other": "{{count}} data types"
+  },
+  "target": {
+    "usage": "{{rows}} rows, {{size}}",
+    "usageEmpty": "Nothing stored",
+    "oldest": "oldest {{when}}",
+    "shareLabel": "{{title}} holds {{percent}}% of {{category}} data",
+    "retention": "Keep for",
+    "floor": "Minimum {{days}} days",
+    "floorTip": "Security policy keeps at least {{days}} days. Choose a longer period, or Never to keep everything.",
+    "mode": "Mode",
+    "modes": {
+      "off": "Off",
+      "preview": "Preview",
+      "on": "On"
+    },
+    "status": {
+      "off": "Off",
+      "preview": "Preview",
+      "on": "On",
+      "running": "Running"
+    },
+    "previewBadge": "Preview mode, nothing is deleted yet",
+    "lastRun": "Last run {{when}}",
+    "lastRunDry": "Last run {{when}} (dry run)",
+    "lastRunFailed": "Last run {{when}} failed",
+    "neverRun": "Never run",
+    "nextRun": "Next {{when}}",
+    "noNextRun": "Not scheduled",
+    "preview": "Preview",
+    "previewing": "Checking...",
+    "cleanNow": "Clean now",
+    "readThrough": "Managed in Disk and Docker",
+    "readThroughAction": "Open Disk and Docker",
+    "keepForever": "Retention is set to Never, so nothing is removed.",
+    "destructive": "Deletes data permanently"
+  },
+  "impact": {
+    "title": "What would be removed",
+    "summary": "Will remove {{rows}} rows, about {{size}}, older than {{days}} days.",
+    "nothing": "Nothing is older than {{days}} days. Nothing would be removed.",
+    "close": "Close",
+    "error": "Could not preview: {{message}}"
+  },
+  "run": {
+    "running": "Removing old data...",
+    "done": "Removed {{rows}} rows, {{size}}. Deletion is permanent.",
+    "more": "More old rows remain, run again to continue.",
+    "failed": "Cleanup failed: {{message}}",
+    "dismiss": "Dismiss"
+  },
+  "confirmRun": {
+    "title": "Clean up {{title}}?",
+    "body": "This permanently removes {{rows}} rows, about {{size}}, older than {{days}} days.",
+    "consequence": "Removed rows cannot be restored. Nothing else is deleted.",
+    "action": "Clean now",
+    "cancel": "Cancel"
+  },
+  "confirmMode": {
+    "title": "Turn on {{title}}?",
+    "body": "From the next scheduled run, rows older than {{days}} days are deleted for real. Until now this only recorded what would be removed.",
+    "consequence": "Deleted rows cannot be restored.",
+    "action": "Turn on",
+    "cancel": "Cancel"
+  },
+  "confirmShorten": {
+    "title": "Keep {{title}} for a shorter time?",
+    "body": "Rows older than the new period will be removed on the next run.",
+    "consequence": "This is a destructive change to how long data is kept.",
+    "action": "Shorten retention",
+    "cancel": "Cancel"
+  },
+  "toast": {
+    "retentionSaved": "Retention for {{title}} saved.",
+    "retentionError": "Could not save retention for {{title}}: {{message}}",
+    "modeSaved": "{{title}} is now {{mode}}.",
+    "modeError": "Could not change {{title}}: {{message}}"
+  },
+  "history": {
+    "title": "Run history",
+    "filters": {
+      "target": "Data type",
+      "allTargets": "All data types",
+      "since": "From",
+      "until": "To",
+      "kind": "Type",
+      "status": "Status",
+      "allKinds": "Dry and real",
+      "dry": "Dry runs",
+      "real": "Real runs",
+      "allStatuses": "Any status",
+      "ok": "Succeeded",
+      "failed": "Failed",
+      "reset": "Reset filters"
+    },
+    "exportCsv": "Export CSV",
+    "exportJson": "Export JSON",
+    "exportLabel": "Export the filtered history",
+    "loadError": "Could not load the run history: {{message}}",
+    "empty": {
+      "title": "No runs match",
+      "body": "Cleanup runs show up here, scheduled and manual, dry and real."
+    },
+    "emptyFiltered": "No runs match these filters. Reset them to see all runs.",
+    "dryRun": "Dry run",
+    "realRun": "Removed",
+    "failed": "Failed",
+    "outcomeDry": "Would remove {{rows}} rows, {{size}}",
+    "outcomeReal": "Removed {{rows}} rows, {{size}}",
+    "meta": "{{trigger}}, keeping {{days}} days",
+    "byActor": "by {{actor}}",
+    "trigger": {
+      "scheduled": "Scheduled",
+      "manual": "Manual",
+      "cli": "CLI",
+      "api": "API"
+    },
+    "columns": {
+      "when": "When",
+      "target": "Data type",
+      "kind": "Type",
+      "result": "Result",
+      "trigger": "Trigger",
+      "days": "Keep"
+    },
+    "timeline": "Run timeline",
+    "loadMore": "Load more",
+    "loadingMore": "Loading..."
+  }
+}

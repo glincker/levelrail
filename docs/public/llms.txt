@@ -114,6 +114,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Resilience, in short](https://docs.levelrail.com/resilience-summary): a one-paragraph summary of the resilience page's findings.
 - [Chaos test coverage](https://docs.levelrail.com/chaos-coverage): which failure scenarios have a test, what each asserts, and whether it is fast or live.
 - [Observability](https://docs.levelrail.com/observability): metrics, log search, alerting, and deploy markers.
+- [Cleanup center](https://docs.levelrail.com/cleanup-center): retention per data type, scheduled cleanup with preview mode, floors for security data, run history and export.
 - [Data export](https://docs.levelrail.com/data-export): send logs, audit events and metrics to Loki, syslog, a webhook, a bucket, Prometheus or OTLP.
 - [Traffic export](https://docs.levelrail.com/traffic-export): stream request records to PostHog, OTLP or a webhook, with no visitor identity unless a destination opts in.
 - [Public status page](https://docs.levelrail.com/status-page): an opt-in public status page with uptime bars, incidents, and an RSS feed.

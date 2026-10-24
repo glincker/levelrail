@@ -42,6 +42,7 @@ type Setting struct {
 	Onboarding     bool            `json:"onboarding"`
 	Sensitive      bool            `json:"sensitive"`
 	AllowedValues  []int           `json:"allowed_values,omitempty"`
+	AllowedStrings []string        `json:"allowed_strings,omitempty"`
 	PendingRestart bool            `json:"pending_restart"`
 	UpdatedAt      *time.Time      `json:"updated_at"`
 	UpdatedBy      string          `json:"updated_by"`
@@ -54,6 +55,8 @@ type Service struct {
 	lookup func(string) (string, bool)
 	defs   []Definition
 	index  map[string]Definition
+	// live follows the global registry, so a setting registered after New (a cleanup target) still resolves.
+	live bool
 
 	mu     sync.RWMutex
 	saved  map[string]store.RuntimeSettingRow
@@ -63,7 +66,32 @@ type Service struct {
 
 // New builds a Service over the global registry. lookup defaults to os.LookupEnv.
 func New(s Store, lookup func(string) (string, bool)) *Service {
-	return NewWithDefinitions(s, lookup, Definitions())
+	svc := NewWithDefinitions(s, lookup, Definitions())
+	svc.live = true
+	return svc
+}
+
+// snapshot returns the definitions and index, refreshing them first when the global registry grew.
+func (s *Service) snapshot() ([]Definition, map[string]Definition) {
+	if s.live && registryLen() != len(s.defsLocked()) {
+		defs := Definitions()
+		idx := make(map[string]Definition, len(defs))
+		for _, d := range defs {
+			idx[d.Key] = d
+		}
+		s.mu.Lock()
+		s.defs, s.index = defs, idx
+		s.mu.Unlock()
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.defs, s.index
+}
+
+func (s *Service) defsLocked() []Definition {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.defs
 }
 
 // NewWithDefinitions builds a Service over an explicit definition list.
@@ -94,7 +122,8 @@ func (s *Service) definition(key string) (Definition, bool) {
 		}
 		return Definition{}, false
 	}
-	d, ok := s.index[key]
+	_, idx := s.snapshot()
+	d, ok := idx[key]
 	return d, ok
 }
 
@@ -149,7 +178,7 @@ func (s *Service) resolve(ctx context.Context, d Definition) (resolved, error) {
 		}
 	}
 	if v, ok := s.lookupEnv(d.Env); ok && v != "" {
-		if c, perr := canonicalFromString(d, v); perr == nil {
+		if c, perr := canonicalEnv(d, v); perr == nil {
 			return resolved{def: d, canonical: c, source: SourceEnv}, err
 		}
 		warnInvalidEnv(d)
@@ -174,7 +203,7 @@ func (s *Service) build(r resolved) Setting {
 		Key: d.Key, Category: string(d.Category), Kind: string(d.Kind), Title: d.Title, Description: d.Description,
 		Default: typed(d, def), Value: typed(d, r.canonical), Source: r.source, Env: d.Env,
 		Apply: string(d.Apply), Risk: string(d.Risk), Onboarding: d.Onboarding, Sensitive: d.Sensitive,
-		AllowedValues: d.AllowedInts,
+		AllowedValues: d.AllowedInts, AllowedStrings: d.AllowedStrings,
 	}
 	if d.Sensitive {
 		out.Default, out.Value = maskSensitive(out.Default), maskSensitive(out.Value)
@@ -209,7 +238,7 @@ func (s *Service) Get(ctx context.Context, key string) (Setting, error) {
 func (s *Service) All(ctx context.Context) ([]Setting, error) {
 	defs := Definitions()
 	if s != nil {
-		defs = s.defs
+		defs, _ = s.snapshot()
 	}
 	out := make([]Setting, 0, len(defs))
 	for _, d := range defs {
@@ -290,6 +319,8 @@ func (s *Service) WeakensTo(ctx context.Context, key string, raw json.RawMessage
 		return next == "false"
 	case KindDuration:
 		return durationOf(next) < durationOf(cur.canonical)
+	case KindInt:
+		return shorterDays(cur.canonical, next)
 	case KindStringList:
 		old := listOf(cur.canonical)
 		if len(old) == 0 {
@@ -318,7 +349,8 @@ func (s *Service) CaptureBoot(ctx context.Context) error {
 	if s == nil {
 		return nil
 	}
-	for _, d := range s.defs {
+	defs, _ := s.snapshot()
+	for _, d := range defs {
 		if d.Apply != ApplyRestart {
 			continue
 		}
@@ -400,6 +432,25 @@ func (s *Service) Duration(ctx context.Context, key string) time.Duration {
 // List returns a string_list setting.
 func (s *Service) List(ctx context.Context, key string) []string {
 	return listOf(s.value(ctx, key))
+}
+
+// String returns a string setting.
+func (s *Service) String(ctx context.Context, key string) string {
+	return s.value(ctx, key)
+}
+
+// shorterDays reports whether next keeps data for fewer days than cur; 0 means forever.
+func shorterDays(cur, next string) bool {
+	var c, n int
+	_, _ = fmt.Sscanf(cur, "%d", &c)
+	_, _ = fmt.Sscanf(next, "%d", &n)
+	switch {
+	case n == c || n == 0:
+		return false
+	case c == 0:
+		return true
+	}
+	return n < c
 }
 
 // Int returns an int setting.

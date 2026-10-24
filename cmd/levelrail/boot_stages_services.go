@@ -210,6 +210,7 @@ func (s *bootState) wireRouter() {
 	setupEventWebhooks(ctx, logger, b, db, secretsManager, apiRouter)
 	startScheduledMaintenance(ctx, logger, db, alertingDB, deployDispatcher, apiRouter)
 	startKeyLifecycle(ctx, logger, db, secretsManager, alertingDB, deployDispatcher, apiRouter)
+	setupCleanup(ctx, logger, db, alertingDB, deployDispatcher, apiRouter)
 	startDiskGuard(ctx, logger, agentDataDir, alertingDB, deployDispatcher, apiRouter, db)
 	setupCompliance(ctx, logger, db, secretsManager, agentDataDir, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)

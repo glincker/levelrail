@@ -224,6 +224,9 @@ func (rt *Router) writeRuntimeOnboarding(w http.ResponseWriter, r *http.Request)
 		rt.internalError(w, "api: runtime settings onboarding", err)
 		return
 	}
+	if item, ok := rt.cleanupPreviewReviewItem(r.Context()); ok {
+		items = append(items, item)
+	}
 	writeJSON(w, http.StatusOK, runtimeOnboarding{Items: items, Reviewed: reviewed})
 }
 
