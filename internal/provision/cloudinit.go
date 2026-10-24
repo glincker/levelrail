@@ -59,6 +59,9 @@ func RenderCloudInit(p CloudInitParams) (string, error) {
 	if p.ControlPlaneAddr == "" || p.JoinToken == "" || p.NodeName == "" || p.AgentName == "" || p.DisplayName == "" {
 		return "", fmt.Errorf("provision: render cloud-init: control plane address, join token, node name, agent name and display name are required")
 	}
+	if p.CAFingerprint == "" {
+		return "", fmt.Errorf("provision: render cloud-init: the control plane CA fingerprint is required so the agent can pin it")
+	}
 	for _, v := range []string{p.ControlPlaneAddr, p.JoinToken, p.CAFingerprint, p.NodeName, p.AgentName, p.DisplayName} {
 		if strings.ContainsAny(v, "\n\r") {
 			return "", fmt.Errorf("provision: render cloud-init: value contains a newline")
@@ -69,9 +72,7 @@ func RenderCloudInit(p CloudInitParams) (string, error) {
 	fmt.Fprintf(&envLines, "APP_CONTROL_PLANE_ADDR=%s\n", p.ControlPlaneAddr)
 	fmt.Fprintf(&envLines, "APP_JOIN_TOKEN=%s\n", p.JoinToken)
 	fmt.Fprintf(&envLines, "APP_NODE_NAME=%s\n", p.NodeName)
-	if p.CAFingerprint != "" {
-		fmt.Fprintf(&envLines, "APP_CA_FINGERPRINT=%s\n", p.CAFingerprint)
-	}
+	fmt.Fprintf(&envLines, "APP_CA_FINGERPRINT=%s\n", p.CAFingerprint)
 	fmt.Fprintf(&envLines, "APP_AGENT_IDENTITY_FILE=/var/lib/%s-data/identity.json\n", p.AgentName)
 	meshFlags := ""
 	if p.MeshEnabled {

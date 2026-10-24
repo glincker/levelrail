@@ -63,7 +63,7 @@ func CheckCA(caPEM []byte, fingerprint string) error {
 // EnrollTLSConfig builds the enrollment TLS config. Go's own verification is
 // skipped because no root exists yet; with a pin, VerifyChain replaces it.
 func EnrollTLSConfig(caFingerprint string) *tls.Config {
-	cfg := &tls.Config{InsecureSkipVerify: true, NextProtos: []string{"h2"}} //nolint:gosec // replaced by VerifyChain when a CA fingerprint is pinned
+	cfg := &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS13, NextProtos: []string{"h2"}} //nolint:gosec // replaced by VerifyChain when a CA fingerprint is pinned
 	if caFingerprint != "" {
 		cfg.VerifyConnection = func(cs tls.ConnectionState) error {
 			return VerifyChain(cs.PeerCertificates, caFingerprint)
