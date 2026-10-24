@@ -75,6 +75,7 @@ export const NAMESPACES = [
   'edgeAccess',
   'trafficDetail',
   'betaFeatures',
+  'runtimeSettings',
   'newApp',
   'getStarted',
   'usage',
