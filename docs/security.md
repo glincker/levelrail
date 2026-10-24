@@ -246,12 +246,41 @@ Data and install directories must be absolute, free of shell and unit metacharac
 </Accordion>
 </AccordionGroup>
 
+## Node trust
+
+A new node enrolls with a join token. The control plane stores only a SHA-256 hash of it, shows the plaintext once, and the token is single use and expires after 15 minutes by default (`APP_NODE_JOIN_TOKEN_TTL`). The agent generates its own private key and sends only a certificate signing request, so the key never leaves the node. The control plane signs a client certificate, and later connections present it and are checked against the agent CA. Details and failure modes: [Multi-node](/multi-node).
+
+## AI assistant safety
+
+The built-in assistant cannot change anything on its own. The server, not the model or the browser, decides which tool calls pause:
+
+- A tool call that is not marked read-only pauses for an explicit human confirmation before it runs. A tool with no annotations is treated as mutating and also pauses.
+- Tools whose output can contain untrusted text (logs, remote content) mark the conversation as tainted. Once tainted, even read-only tools that reach outside the system or return sensitive data pause for confirmation.
+- A confirmation belongs to one chat session and can be resolved once.
+
+This lives in `internal/ai` (`classify.go`, `engine.go`). See [AI assistant](/ai-assistant) and [AI control](/ai-control).
+
+## Production hardening checklist
+
+1. Set an `https://` dashboard URL and serve it through the ingress. Sign-in over plain HTTP is then refused.
+2. Keep port `8080` on loopback (the default in `docker-compose.yml`) and reach it through the ingress or an SSH tunnel.
+3. Set `APP_CA_FINGERPRINT` on every agent, using the fingerprint shown with the join token.
+4. Turn on two-factor sign-in for every account that holds `root`.
+5. Keep the master key outside the data directory and outside host snapshots, or wrap it with Vault or OpenBao. See [Master key rotation](/master-key-rotation).
+6. Back up the control plane on a schedule and test a restore. See [Control plane backup](/control-plane-backup).
+7. Update on a regular cadence, because fixes ship only in the latest release. See [Upgrade safely](/upgrade-safely).
+8. Open the [Security center](/security-center) and clear what it flags.
+9. Read the [threat model](/threat-model), [deploy safety](/deploy-safety) and [supply chain](/supply-chain) pages for what each layer covers.
+
 ## Reporting a vulnerability
 
 Levelrail does not yet have a dedicated security disclosure address. Until one exists, open a private security advisory on the [GitHub repository](https://github.com/glincker/levelrail/security/advisories/new) rather than a public issue. The repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/.github/SECURITY.md) has the full policy, including what to expect after reporting.
 
 ## What this does not cover yet
 
+- No third-party penetration test or formal certification (such as SOC 2 or ISO 27001) is claimed.
+- The node agent runs as root in its container with access to the Docker socket, because it manages containers and creates the WireGuard device. A stolen node certificate, or a compromised control plane, is therefore equivalent to root on the nodes it manages. Keep node enrollment tokens short-lived and pin the agent CA fingerprint.
+- One control plane runs the whole install. There is no high-availability control plane, so back it up.
 - No LDAP. Sign-in is local password, passkey, email sign-in code, OAuth or OIDC (20 providers plus generic OpenID Connect, see [Identity and access](/identity-and-access)), or beta [SAML](/sso-saml) single sign-on (off by default), with beta [SCIM](/scim) provisioning. SAML and SCIM sit behind the `saml-scim` feature toggle and have not been verified against a live identity provider yet.
 - [Secret scanning](/secret-scanning) checks the checked-out tree and plain env values at deploy time, but not git history or image layers.
 - Dashboard sessions are stored in the database and survive a restart. Sessions minted from API-token session links are held in memory and end on restart. API tokens are unaffected.
