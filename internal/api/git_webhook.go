@@ -106,7 +106,8 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 
 	pctx, outcome := withWebhookOutcome(r.Context())
 	status, message := rt.processGitPushWebhookPayload(pctx, name, *gs, body, r.Header)
-	if status >= http.StatusBadRequest {
+	// Only a delivery that started a deploy keeps its claim; rejected or ignored ones stay retryable.
+	if status >= http.StatusBadRequest || outcome.AttemptID == "" {
 		rt.webhookBodies.release(bodyKey)
 	}
 	deliveryErr, deliveryNote := "", ""

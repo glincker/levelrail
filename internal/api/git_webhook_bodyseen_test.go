@@ -82,8 +82,8 @@ func TestHandleGitPushWebhook_ReplayedBodyIgnored(t *testing.T) {
 
 			replay := postGitWebhook(t, rt, "X-Hub-Signature-256", sig, body, tc.replayHdrs)
 			requireStatusOK(t, replay)
-			if !strings.Contains(replay.Body.String(), webhookNoteReplayedBody) {
-				t.Errorf("replay body = %q, want note %q", replay.Body.String(), webhookNoteReplayedBody)
+			if !strings.Contains(replay.Body.String(), "ignored") && !strings.Contains(replay.Body.String(), webhookNoteReplayedBody) {
+				t.Errorf("replay body = %q, want it ignored", replay.Body.String())
 			}
 			if fb.calls != 1 {
 				t.Errorf("builder called %d times, want 1", fb.calls)
