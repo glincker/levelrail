@@ -2275,3 +2275,34 @@ func TestHandleDeployHistory_RestartInFlightIsNotReady(t *testing.T) {
 		t.Errorf("after serving Ready = %s/%s, want True/AlreadyRunning", st, reason)
 	}
 }
+
+// A redeploy of the image the app already runs must recreate the container
+// (new restart nonce), else a crashed container is restarted with its old env
+// behind the crash backoff. A different image already gets a new name.
+func TestHandleTriggerDeploy_RestartNonce(t *testing.T) {
+	tests := []struct {
+		name      string
+		image     string
+		wantNonce bool
+	}{
+		{"same image recreates", "levelrail/web:1", true},
+		{"new image keeps nonce", "levelrail/web:2", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, db, cookie := newEnvDirtyAppTestRouter(t)
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"`+tc.image+`"}`))
+			if rec.Code != http.StatusAccepted {
+				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+			}
+			got, err := db.GetDesiredService(context.Background(), "web")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if (got.RestartNonce != "") != tc.wantNonce {
+				t.Errorf("RestartNonce = %q, want set = %v", got.RestartNonce, tc.wantNonce)
+			}
+		})
+	}
+}

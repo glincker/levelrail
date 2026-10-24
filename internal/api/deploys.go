@@ -222,6 +222,17 @@ func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.Des
 	if err != nil {
 		return store.DesiredService{}, err
 	}
+	// Same image means the same container name, so an exited container would be
+	// restarted with its old env behind the crash backoff. A new nonce makes this
+	// an explicit recreate, which is not a retry.
+	if updated.Image == existing.Image {
+		if err := rt.apps.RestartService(ctx, existing.Name); err != nil {
+			return store.DesiredService{}, fmt.Errorf("deploy: recreate %q for redeploy: %w", existing.Name, err)
+		}
+		if fresh, err := rt.apps.GetDesiredService(ctx, existing.Name); err == nil {
+			updated = *fresh
+		}
+	}
 	if rt.deployNotifier != nil {
 		rt.deployNotifier.Dispatch(ctx, resourceIDForApp(existing.Name), alerting.DeployOutcome{
 			AppName: existing.Name, Image: updated.Image, Succeeded: true,
