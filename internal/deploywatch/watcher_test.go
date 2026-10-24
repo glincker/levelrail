@@ -23,7 +23,18 @@ func (f fakeInspector) InspectExitState(_ context.Context, name string) (*docker
 
 type fakeRestarts int
 
-func (f fakeRestarts) CountSince(string, time.Time) int { return int(f) }
+func (f fakeRestarts) CountContainersSince([]string, time.Time) int { return int(f) }
+
+// restartsByContainer reports restarts only for the containers asked about.
+type restartsByContainer map[string]int
+
+func (f restartsByContainer) CountContainersSince(names []string, _ time.Time) int {
+	total := 0
+	for _, n := range names {
+		total += f[n]
+	}
+	return total
+}
 
 type fakeMetrics map[string]float64
 
@@ -299,5 +310,22 @@ func TestWatcher_NoTargetAndSuperseded(t *testing.T) {
 	g.watcher.Tick(ctx)
 	if events := g.events(t); len(events) != 1 {
 		t.Errorf("superseded release got watch events: %+v", events)
+	}
+}
+
+// A failing release left running beside the live one restarts under the same
+// service; those restarts must not trip the live release's watch.
+func TestWatcher_IgnoresRestartsOfOtherReleaseContainers(t *testing.T) {
+	f := newWatchFixture(t, true)
+	other := application.ReplicaContainerName("web", "app:v3", "", 0)
+	f.watcher.Restarts = restartsByContainer{other: 5}
+	f.watcher.Tick(context.Background())
+	if hasEvent(f.events(t), deploysafety.PhaseWatch, deploysafety.StatusFailed, "") {
+		t.Fatalf("watch tripped on another release's restarts: %+v", f.events(t))
+	}
+	f.watcher.Restarts = restartsByContainer{currentContainer(): 5}
+	f.watcher.Tick(context.Background())
+	if !hasEvent(f.events(t), deploysafety.PhaseWatch, deploysafety.StatusFailed, deploysafety.ReasonWatchCrashloop) {
+		t.Fatalf("own restarts should trip: %+v", f.events(t))
 	}
 }
