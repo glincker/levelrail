@@ -10,6 +10,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/platformimport"
 )
 
 const envImportSourceToken = "APP_IMPORT_SOURCE_TOKEN" //nolint:gosec // env var name, not a credential
@@ -29,8 +30,8 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 		return exitOK
 	}
 	platform := args[0]
-	if platform != "coolify" && platform != "dokploy" && platform != "caprover" {
-		_, _ = fmt.Fprintf(stderr, "%s: unknown platform %q, want coolify, dokploy or caprover\n", prog, platform)
+	if platform != "coolify" && platform != "dokploy" && platform != "caprover" && platform != "heroku" {
+		_, _ = fmt.Fprintf(stderr, "%s: unknown platform %q, want coolify, dokploy, caprover or heroku\n", prog, platform)
 		return exitUsage
 	}
 	var f importPlatformFlags
@@ -51,6 +52,9 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 	fs.BoolVar(&f.jsonOut, "json", false, "print the report as JSON")
 	if err := fs.Parse(args[1:]); err != nil {
 		return exitUsage
+	}
+	if f.url == "" && platform == "heroku" {
+		f.url = platformimport.DefaultHerokuURL
 	}
 	if f.url == "" {
 		_, _ = fmt.Fprintf(stderr, "%s: --url is required\n", prog)
@@ -149,19 +153,19 @@ func printPlatformImportReport(w io.Writer, rep apiclient.PlatformImportReport, 
 
 func importPlatformUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s import platform coolify|dokploy|caprover --url URL [flags]
+  %[1]s import platform coolify|dokploy|caprover|heroku --url URL [flags]
 
 Reads apps, databases and settings from another platform (read-only) and
 creates them here. Use --dry-run first. Databases and volumes are created
 empty, data is not migrated. Re-running skips what was already imported.
 
-The source token (Coolify API token, Dokploy API key, CapRover password) is
+The source token (Coolify API token, Dokploy API key, CapRover password, Heroku API token) is
 read from %[2]s, or --token-stdin, or --token (warns: it lands in shell
 history). It is sent to this control plane in the request body only and is
 never stored.
 
 Flags:
-  --url string          source platform base URL (required)
+  --url string          source platform base URL (required, Heroku defaults to its public API)
   --dry-run             report only, create nothing
   --only string         comma-separated source ids or names to import
   --collision string    suffix (default) or skip when a name is taken

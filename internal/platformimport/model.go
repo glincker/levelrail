@@ -13,6 +13,7 @@ const (
 	Coolify  Platform = "coolify"
 	Dokploy  Platform = "dokploy"
 	CapRover Platform = "caprover"
+	Heroku   Platform = "heroku"
 	Compose  Platform = "compose"
 	Dokku    Platform = "dokku"
 	// Docker is a docker inspect snapshot of one host, no platform API.
