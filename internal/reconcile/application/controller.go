@@ -30,6 +30,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1147,28 +1148,43 @@ func (c *Controller) connectReferencedDatabases(ctx context.Context, desired *st
 	if att := desired.DatabaseAttachment; att != nil {
 		names[att.DatabaseName] = true
 	}
+	// Sorted so the pass and the combined error are deterministic.
+	sorted := make([]string, 0, len(names))
 	for dbName := range names {
-		allowed, why, err := c.databaseScopeAllows(ctx, desired, dbName)
-		if err != nil {
-			return err
+		sorted = append(sorted, dbName)
+	}
+	slices.Sort(sorted)
+	// One database failing must not keep the others from being connected.
+	var errs []error
+	for _, dbName := range sorted {
+		if err := c.connectReferencedDatabase(ctx, desired, networkName, dbName); err != nil {
+			errs = append(errs, err)
 		}
-		if !allowed {
-			return c.enforceDatabaseScope(ctx, networkName, dbName, why)
-		}
-		if c.crossNodeDatabaseName(ctx, desired.NodeID, dbName) {
-			continue
-		}
-		containerName := database.ContainerName(dbName)
-		state, err := c.runtime.InspectByName(ctx, containerName)
-		if err != nil {
-			return fmt.Errorf("inspect database %q before network connect: %w", dbName, err)
-		}
-		if state == nil {
-			continue
-		}
-		if err := c.runtime.NetworkConnect(ctx, networkName, containerName); err != nil {
-			return fmt.Errorf("connect database %q to network %q: %w", dbName, networkName, err)
-		}
+	}
+	return errors.Join(errs...)
+}
+
+func (c *Controller) connectReferencedDatabase(ctx context.Context, desired *store.DesiredService, networkName, dbName string) error {
+	allowed, why, err := c.databaseScopeAllows(ctx, desired, dbName)
+	if err != nil {
+		return err
+	}
+	if !allowed {
+		return c.enforceDatabaseScope(ctx, networkName, dbName, why)
+	}
+	if c.crossNodeDatabaseName(ctx, desired.NodeID, dbName) {
+		return nil
+	}
+	containerName := database.ContainerName(dbName)
+	state, err := c.runtime.InspectByName(ctx, containerName)
+	if err != nil {
+		return fmt.Errorf("inspect database %q before network connect: %w", dbName, err)
+	}
+	if state == nil {
+		return nil
+	}
+	if err := c.runtime.NetworkConnect(ctx, networkName, containerName); err != nil {
+		return fmt.Errorf("connect database %q to network %q: %w", dbName, networkName, err)
 	}
 	return nil
 }

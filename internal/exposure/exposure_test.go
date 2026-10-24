@@ -3,6 +3,8 @@ package exposure
 import (
 	"context"
 	"errors"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -130,7 +132,13 @@ func TestAuditMergesDualStackAndSkipsStopped(t *testing.T) {
 type fakeChain struct {
 	rules []string
 	calls [][]string
+	// failOn, when set, returns an error for a matching mutating call (before it applies).
+	failOn func(args []string) error
+	// history is a snapshot of rules after every mutating call.
+	history [][]string
 }
+
+func (f *fakeChain) snapshot() { f.history = append(f.history, append([]string(nil), f.rules...)) }
 
 func (f *fakeChain) run(_ context.Context, _ string, args ...string) ([]byte, error) {
 	f.calls = append(f.calls, args)
@@ -143,14 +151,35 @@ func (f *fakeChain) run(_ context.Context, _ string, args ...string) ([]byte, er
 		}
 		return []byte(out), nil
 	case "-I":
+		if f.failOn != nil {
+			if err := f.failOn(args); err != nil {
+				return []byte("boom"), err
+			}
+		}
+		pos, _ := strconv.Atoi(a[2])
 		spec := render(a[3:])
-		f.rules = append([]string{spec}, f.rules...)
+		f.rules = slices.Insert(f.rules, pos-1, spec)
+		f.snapshot()
 		return nil, nil
 	case "-D":
+		if f.failOn != nil {
+			if err := f.failOn(args); err != nil {
+				return []byte("boom"), err
+			}
+		}
+		if pos, err := strconv.Atoi(a[2]); err == nil && len(a) == 3 {
+			if pos < 1 || pos > len(f.rules) {
+				return []byte("no match"), errors.New("exit 1")
+			}
+			f.rules = slices.Delete(f.rules, pos-1, pos)
+			f.snapshot()
+			return nil, nil
+		}
 		spec := render(a[2:])
 		for i, r := range f.rules {
 			if r == spec {
 				f.rules = append(f.rules[:i], f.rules[i+1:]...)
+				f.snapshot()
 				return nil, nil
 			}
 		}
@@ -235,11 +264,11 @@ func TestPlanRendersExactRules(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(p.Commands) != 2 || !strings.Contains(p.Commands[0], "-j DROP") || !strings.Contains(p.Commands[1], "-s 10.0.0.2/32") {
+	if len(p.Commands) != 2 || !strings.Contains(p.Commands[1], "-j DROP") || !strings.Contains(p.Commands[0], "-s 10.0.0.2/32") {
 		t.Fatalf("commands = %v", p.Commands)
 	}
-	if !strings.Contains(p.Commands[0], "--comment acme:exposure:tcp/8108") {
-		t.Fatalf("missing tag: %v", p.Commands[0])
+	if !strings.Contains(p.Commands[1], "--comment acme:exposure:tcp/8108") {
+		t.Fatalf("missing tag: %v", p.Commands[1])
 	}
 }
 
@@ -264,5 +293,164 @@ func TestUnreadableOffLinux(t *testing.T) {
 	}
 	if _, err := m.Apply(context.Background(), Restriction{Port: 8108, Allow: []string{"10.0.0.0/8"}}); err == nil {
 		t.Fatal("apply succeeded off linux")
+	}
+}
+
+const (
+	tagged8108 = "-m comment --comment acme:exposure:tcp/8108"
+	ctPrefix   = "-p tcp -m conntrack --ctorigdstport 8108 --ctdir ORIGINAL"
+)
+
+func ownRule(source, target string) string {
+	if source != "" {
+		return ctPrefix + " -s " + source + " " + tagged8108 + " -j " + target
+	}
+	return ctPrefix + " " + tagged8108 + " -j " + target
+}
+
+func mutations(f *fakeChain) []string {
+	var out []string
+	for _, c := range f.calls {
+		if c[1] == "-I" || c[1] == "-D" {
+			out = append(out, c[1]+" "+strings.Join(c[2:], " "))
+		}
+	}
+	return out
+}
+
+func hasDrop(rules []string) bool {
+	for _, r := range rules {
+		if strings.Contains(r, tagged8108) && strings.HasSuffix(r, "-j DROP") {
+			return true
+		}
+	}
+	return false
+}
+
+func TestApplyReplacesWithoutGap(t *testing.T) {
+	other := "-j RETURN"
+	old := []string{ownRule("10.0.0.1/32", "RETURN"), ownRule("", "DROP"), other}
+	f := &fakeChain{rules: slices.Clone(old)}
+	m := newTestManager(f)
+	changed, err := m.Apply(context.Background(), Restriction{Port: 8108, Allow: []string{"10.0.0.2", "10.0.0.3"}})
+	if err != nil || !changed {
+		t.Fatalf("changed=%v err=%v", changed, err)
+	}
+	want := []string{ownRule("10.0.0.2/32", "RETURN"), ownRule("10.0.0.3/32", "RETURN"), ownRule("", "DROP"), other}
+	if !slices.Equal(f.rules, want) {
+		t.Fatalf("rules = %v, want %v", f.rules, want)
+	}
+	for i, snap := range f.history {
+		if !hasDrop(snap) {
+			t.Fatalf("step %d has no drop rule for the port: %v", i, snap)
+		}
+	}
+	// New rules go in at their final positions first, then stale ones are
+	// removed by position, highest first.
+	wantCalls := []string{
+		"-I DOCKER-USER 1 " + ctPrefix + " -s 10.0.0.2/32 " + tagged8108 + " -j RETURN",
+		"-I DOCKER-USER 2 " + ctPrefix + " -s 10.0.0.3/32 " + tagged8108 + " -j RETURN",
+		"-I DOCKER-USER 3 " + ctPrefix + " " + tagged8108 + " -j DROP",
+		"-D DOCKER-USER 5",
+		"-D DOCKER-USER 4",
+	}
+	gotCalls := mutations(f)
+	if !slices.Equal(gotCalls, wantCalls) {
+		t.Fatalf("calls =\n%s\nwant\n%s", strings.Join(gotCalls, "\n"), strings.Join(wantCalls, "\n"))
+	}
+}
+
+func TestApplyFailureModes(t *testing.T) {
+	old := []string{ownRule("10.0.0.1/32", "RETURN"), ownRule("", "DROP"), "-j RETURN"}
+	req := Restriction{Port: 8108, Allow: []string{"10.0.0.2", "10.0.0.3"}}
+	tests := []struct {
+		name      string
+		failOn    func(args []string) error
+		wantRules []string
+	}{
+		{
+			name: "insert failure keeps previous rules",
+			failOn: func(a []string) error {
+				if a[1] == "-I" && a[3] == "2" {
+					return errors.New("exit 4")
+				}
+				return nil
+			},
+			wantRules: old,
+		},
+		{
+			name: "first insert failure changes nothing",
+			failOn: func(a []string) error {
+				if a[1] == "-I" && a[3] == "1" {
+					return errors.New("exit 4")
+				}
+				return nil
+			},
+			wantRules: old,
+		},
+		{
+			name: "stale removal failure is reported and new rules stay",
+			failOn: func(a []string) error {
+				if a[1] == "-D" {
+					return errors.New("exit 1")
+				}
+				return nil
+			},
+			wantRules: []string{
+				ownRule("10.0.0.2/32", "RETURN"), ownRule("10.0.0.3/32", "RETURN"), ownRule("", "DROP"),
+				ownRule("10.0.0.1/32", "RETURN"), ownRule("", "DROP"), "-j RETURN",
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			f := &fakeChain{rules: slices.Clone(old), failOn: tc.failOn}
+			m := newTestManager(f)
+			if _, err := m.Apply(context.Background(), req); err == nil {
+				t.Fatal("expected an error")
+			}
+			if !slices.Equal(f.rules, tc.wantRules) {
+				t.Fatalf("rules = %v\nwant %v", f.rules, tc.wantRules)
+			}
+			for i, snap := range f.history {
+				if !hasDrop(snap) {
+					t.Fatalf("step %d has no drop rule for the port: %v", i, snap)
+				}
+			}
+		})
+	}
+}
+
+func TestApplyFinishesInterruptedCleanup(t *testing.T) {
+	// New set on top, previous set left below by an earlier cut-short pass.
+	f := &fakeChain{rules: []string{
+		ownRule("10.0.0.2/32", "RETURN"), ownRule("", "DROP"),
+		ownRule("10.0.0.1/32", "RETURN"), ownRule("", "DROP"), "-j RETURN",
+	}}
+	m := newTestManager(f)
+	changed, err := m.Apply(context.Background(), Restriction{Port: 8108, Allow: []string{"10.0.0.2"}})
+	if err != nil || !changed {
+		t.Fatalf("changed=%v err=%v", changed, err)
+	}
+	want := []string{ownRule("10.0.0.2/32", "RETURN"), ownRule("", "DROP"), "-j RETURN"}
+	if !slices.Equal(f.rules, want) {
+		t.Fatalf("rules = %v", f.rules)
+	}
+	for _, c := range mutations(f) {
+		if strings.HasPrefix(c, "-I") {
+			t.Fatalf("cleanup pass inserted again: %s", c)
+		}
+	}
+}
+
+func TestApplyReapplyIsNoOp(t *testing.T) {
+	f := &fakeChain{rules: []string{ownRule("10.0.0.2/32", "RETURN"), ownRule("", "DROP")}}
+	m := newTestManager(f)
+	changed, err := m.Apply(context.Background(), Restriction{Port: 8108, Allow: []string{"10.0.0.2"}})
+	if err != nil || changed {
+		t.Fatalf("changed=%v err=%v", changed, err)
+	}
+	if got := mutations(f); len(got) != 0 {
+		t.Fatalf("mutated: %v", got)
 	}
 }
