@@ -1,6 +1,7 @@
 name: sonar
 
 # Advisory SonarCloud analysis. Never on a PR, never in `CI required`.
+# The scan step is continue-on-error so a failed analysis never paints a commit red.
 # Every step skips with a notice when SONAR_TOKEN is not set.
 on:
   push:
@@ -26,7 +27,6 @@ jobs:
     name: SonarCloud scan
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    continue-on-error: true
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       # Release branch pushes are frequent; the full -short test run only
@@ -58,5 +58,6 @@ jobs:
         run: go test -short -timeout=25m -coverprofile=coverage.out ./internal/...
 
       - name: SonarCloud scan
+        continue-on-error: true
         if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
