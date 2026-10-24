@@ -3,7 +3,7 @@ import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { GlobeIcon, PlusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
 import { DOMAIN_PATTERN } from '../lib/domainWizard'
 import { DomainEnvironmentTabs } from './DomainEnvironmentTabs'
@@ -42,19 +42,24 @@ import { Field, FieldError, FieldGroup, FieldHint } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 
-const domainSchema = z.object({
-  domains: z.array(
-    z.object({
-      value: z
-        .string()
-        .trim()
-        .min(1, 'Domain is required')
-        .regex(DOMAIN_PATTERN, 'Enter a valid domain, e.g. app.example.com'),
-    }),
-  ),
-})
+// Built per render so validation messages follow the active language.
+function buildDomainSchema(
+  t: (key: 'editor.errors.required' | 'editor.errors.invalid') => string,
+) {
+  return z.object({
+    domains: z.array(
+      z.object({
+        value: z
+          .string()
+          .trim()
+          .min(1, t('editor.errors.required'))
+          .regex(DOMAIN_PATTERN, t('editor.errors.invalid')),
+      }),
+    ),
+  })
+}
 
-type DomainFormValues = z.infer<typeof domainSchema>
+type DomainFormValues = z.infer<ReturnType<typeof buildDomainSchema>>
 
 function toFieldValues(domains?: string[]): { value: string }[] {
   return (domains ?? []).map((value) => ({ value }))
@@ -67,6 +72,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
   const { t } = useTranslation('domains')
   const [wizardOpen, setWizardOpen] = useState(false)
   const updateApp = useUpdateApp(app.name)
+  const domainSchema = useMemo(() => buildDomainSchema(t), [t])
   const { data: certificates } = useCertificates()
   const { control, register, handleSubmit, formState } =
     useForm<DomainFormValues>({
@@ -99,7 +105,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
       },
       {
         onSuccess: () => {
-          toast.add({ title: 'Domains saved.', type: 'success' })
+          toast.add({ title: t('editor.saved'), type: 'success' })
         },
       },
     )
@@ -110,15 +116,14 @@ export function DomainEditor({ app }: { app: AppDetail }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <GlobeIcon className="size-4" aria-hidden="true" />
-          Domains
+          {t('editor.title')}
         </CardTitle>
         <CardDescription>
-          Domains routed to this app through the ingress layer. Platform-wide
-          ACME and primary domain settings live under{' '}
-          <Link to="/domains" className="underline">
-            Domains
-          </Link>
-          .
+          <Trans
+            t={t}
+            i18nKey="editor.description"
+            components={{ link: <Link to="/domains" className="underline" /> }}
+          />
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -144,16 +149,14 @@ export function DomainEditor({ app }: { app: AppDetail }) {
           >
             <FieldHint
               href="https://developers.cloudflare.com/dns/manage-dns-records/reference/dns-record-types/"
-              linkText="DNS record types explained"
+              linkText={t('editor.dnsHintLink')}
             >
-              Point an A record at this server&apos;s IP address (or a CNAME at
-              its hostname), then a TLS certificate is issued automatically once
-              it resolves.
+              {t('editor.dnsHint')}
             </FieldHint>
             <AutomaticDomainRow appName={app.name} />
             {fields.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No domains configured.
+                {t('editor.empty')}
               </p>
             ) : (
               <FieldGroup className="gap-3">
@@ -170,8 +173,8 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                           <Input
                             {...register(`domains.${index}.value`)}
                             className="font-mono"
-                            placeholder="app.example.com"
-                            aria-label="Domain"
+                            placeholder={t('editor.inputPlaceholder')}
+                            aria-label={t('editor.inputLabel')}
                           />
                           <FieldError
                             errors={
@@ -190,7 +193,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                           }}
                         >
                           <XIcon aria-hidden="true" />
-                          <span className="sr-only">Remove domain</span>
+                          <span className="sr-only">{t('editor.remove')}</span>
                         </Button>
                       </Field>
 
@@ -200,7 +203,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                           {isSaved ? (
                             <>
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span>TLS certificate:</span>
+                                <span>{t('editor.tlsLabel')}</span>
                                 {cert ? (
                                   <>
                                     <CertTruthBadge cert={cert} />
@@ -221,7 +224,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                                     domain={domain}
                                     fallback={
                                       <Badge variant="muted">
-                                        Provisioning
+                                        {t('editor.provisioning')}
                                       </Badge>
                                     }
                                   />
@@ -283,10 +286,10 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                 }}
               >
                 <PlusIcon aria-hidden="true" />
-                Add domain
+                {t('editor.add')}
               </Button>
               <Button type="submit" size="sm" disabled={updateApp.isPending}>
-                {updateApp.isPending ? 'Saving...' : 'Save domains'}
+                {updateApp.isPending ? t('editor.saving') : t('editor.save')}
               </Button>
             </div>
             {updateApp.isError ? (

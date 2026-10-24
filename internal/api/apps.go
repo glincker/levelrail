@@ -856,6 +856,9 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if !rt.requireWildcardDNS01(w, r, req.Domains) {
+		return
+	}
 	if len(req.Secrets) > 0 {
 		writeError(w, http.StatusBadRequest, "secret values cannot be set through this endpoint: use PUT /api/v1/apps/{name}/secrets/{key}")
 		return

@@ -100,3 +100,48 @@ func TestDomainIssues_WildcardWithoutDNSProviderIsDegraded(t *testing.T) {
 		t.Fatalf("conditions = %+v, want a degraded dns01_unavailable entry", rec.got)
 	}
 }
+
+// One host with a broken credential or a wildcard lacking DNS-01 must not
+// take the app's healthy hosts out of the routing table.
+func TestDomainIssues_BadHostDoesNotBreakSiblingHosts(t *testing.T) {
+	desired := store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Domains: []string{"good.example.com", "locked.example.com", "*.wild.example.com"},
+	}
+	rt := newFakeRuntime()
+	rt.seedRunning(application.ContainerName(desired.Name, desired.Image, ""), 34567)
+	st := &fakeStore{
+		services:  []store.DesiredService{desired},
+		settings:  store.IngressSettings{ACMEEnabled: true},
+		basicAuth: []store.DomainBasicAuth{{Domain: "locked.example.com", Username: "operator"}},
+	}
+	rec := &fakeDomainConds{}
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger()), WithDomainConditionsRecorder(rec),
+		WithDomainBasicAuthSecrets(&fakePasswordResolver{err: errors.New("gone")}))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Reason != "DomainsDropped" {
+		t.Fatalf("Ready = %+v, want DomainsDropped surfaced, not a failed pass", cond)
+	}
+	if _, ok := rec.find("locked.example.com", store.DomainCondBasicAuthUnresolved); !ok {
+		t.Errorf("conditions = %+v, want basic_auth_unresolved for the locked host", rec.got)
+	}
+	if _, ok := rec.find("*.wild.example.com", store.DomainCondDNS01Unavailable); !ok {
+		t.Errorf("conditions = %+v, want dns01_unavailable for the wildcard host", rec.got)
+	}
+	routed := map[string]bool{}
+	for _, r := range applier.routes(t) {
+		for _, m := range r.Match {
+			for _, h := range m.Host {
+				routed[h] = true
+			}
+		}
+	}
+	if !routed["good.example.com"] {
+		t.Errorf("routed hosts = %v, want good.example.com still routed", routed)
+	}
+}

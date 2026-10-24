@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { GlobeIcon } from '@phosphor-icons/react/dist/ssr'
 import { useApp } from '../../../queries/apps'
 import { certificatesQueryOptions } from '../../../queries/certificates'
@@ -36,12 +37,13 @@ function DomainsSection() {
 // Mirrors DomainEditor's own card: header, a couple of domain rows (input
 // plus a few status lines), then the add/save button row.
 function DomainsSectionSkeleton() {
+  const { t } = useTranslation('domains')
   return (
     <Card aria-hidden="true">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <GlobeIcon className="size-4" />
-          Domains
+          {t('editor.title')}
         </CardTitle>
         <Skeleton className="h-4 w-72" />
       </CardHeader>
