@@ -30,8 +30,8 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 		return exitOK
 	}
 	platform := args[0]
-	if platform != "coolify" && platform != "dokploy" && platform != "caprover" && platform != "heroku" && platform != "vercel" {
-		_, _ = fmt.Fprintf(stderr, "%s: unknown platform %q, want coolify, dokploy, caprover, heroku or vercel\n", prog, platform)
+	if platform != "coolify" && platform != "dokploy" && platform != "caprover" && platform != "heroku" && platform != "vercel" && platform != "render" {
+		_, _ = fmt.Fprintf(stderr, "%s: unknown platform %q, want coolify, dokploy, caprover, heroku, vercel or render\n", prog, platform)
 		return exitUsage
 	}
 	var f importPlatformFlags
@@ -60,6 +60,9 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 	}
 	if f.url == "" && platform == "vercel" {
 		f.url = platformimport.DefaultVercelURL
+	}
+	if f.url == "" && platform == "render" {
+		f.url = platformimport.DefaultRenderURL
 	}
 	if f.url == "" {
 		_, _ = fmt.Fprintf(stderr, "%s: --url is required\n", prog)
@@ -173,19 +176,19 @@ func printPlatformImportReport(w io.Writer, rep apiclient.PlatformImportReport, 
 
 func importPlatformUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s import platform coolify|dokploy|caprover|heroku|vercel --url URL [flags]
+  %[1]s import platform coolify|dokploy|caprover|heroku|vercel|render --url URL [flags]
 
 Reads apps, databases and settings from another platform (read-only) and
 creates them here. Use --dry-run first. Databases and volumes are created
 empty, data is not migrated. Re-running skips what was already imported.
 
-The source token (Coolify API token, Dokploy API key, CapRover password, Heroku API token, Vercel token) is
+The source token (Coolify API token, Dokploy API key, CapRover password, Heroku API token, Vercel token, Render API key) is
 read from %[2]s, or --token-stdin, or --token (warns: it lands in shell
 history). It is sent to this control plane in the request body only and is
 never stored.
 
 Flags:
-  --url string          source platform base URL (required, Heroku and Vercel default to their public API)
+  --url string          source platform base URL (required, Heroku, Vercel and Render default to their public API)
   --dry-run             report only, create nothing
   --only string         comma-separated source ids or names to import
   --collision string    suffix (default) or skip when a name is taken
