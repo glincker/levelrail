@@ -14,6 +14,7 @@ const (
 	Dokploy  Platform = "dokploy"
 	CapRover Platform = "caprover"
 	Heroku   Platform = "heroku"
+	Vercel   Platform = "vercel"
 	Compose  Platform = "compose"
 	Dokku    Platform = "dokku"
 	// Docker is a docker inspect snapshot of one host, no platform API.

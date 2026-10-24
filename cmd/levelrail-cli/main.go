@@ -495,7 +495,7 @@ Usage:
   %[1]s mobile pair|devices [flags]   pair a phone with the mobile app and manage paired phones
   %[1]s plugins list|show|inspect|install|upgrade|approve|enable|disable|restart|uninstall|run|trust [flags]   signed plugins (needs the plugins experimental feature)
   %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
-  %[1]s import platform coolify|dokploy|caprover|heroku --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
+  %[1]s import platform coolify|dokploy|caprover|heroku|vercel --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
   %[1]s import config [dir] [--out FILE] [--strict] [--json]   offline: propose an app.yaml from Procfile, app.json and vercel.json, see "%[1]s import config -h"
   %[1]s import takeover plan|run|status|rollback [flags]   move this server's ports 80 and 443 from the old proxy to the built-in ingress, see "%[1]s import takeover -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
