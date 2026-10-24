@@ -70,6 +70,8 @@ var demoReadDenylist = []string{
 	"/api/v1/apps/{name}/deploys/{deployId}/logs/download",
 	"/api/v1/log-archive/objects",
 	"/api/v1/log-archive/objects/download",
+	"/api/v1/storage/buckets/{id}/objects/download",
+	"/api/v1/apps/{name}/pipeline-runs/{id}/artifacts/{aid}/download",
 	// Third-party connect and callback flows.
 	"/api/v1/github-app",
 	"/api/v1/github-app/callback",
@@ -126,6 +128,11 @@ var demoReadDenylist = []string{
 	"/api/v1/mesh/connectivity",
 	"/api/v1/storage/providers",
 	"/api/v1/storage/orphans",
+	"/api/v1/domains/{domain}/diagnose/stream",
+	"/api/v1/domains/{domain}/cert/preflight",
+	"/api/v1/settings/email/domain-check",
+	"/api/v1/sso/oidc/{provider}/test/start",
+	"/api/v1/sso/saml/connections/{id}/test/start",
 	// AI chat: costs money and takes free text.
 	"/api/v1/ai/sessions",
 	"/api/v1/ai/sessions/{id}",

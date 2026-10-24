@@ -5,10 +5,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/GLINCKER/levelrail/internal/demo"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -223,5 +227,72 @@ func TestDemoReadElevation(t *testing.T) {
 	plain.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden {
 		t.Errorf("non-demo read-only user on root route: status = %d, want 403", rec.Code)
+	}
+}
+
+// demoSecretKeyRe matches JSON keys that normally carry credential material.
+var demoSecretKeyRe = regexp.MustCompile(`(?i)secret|token|key|password`)
+
+// demoUnmaskedSecrets walks decoded JSON and returns the key paths whose
+// string value is non-empty and not obviously masked.
+func demoUnmaskedSecrets(v any, at string) []string {
+	var out []string
+	switch x := v.(type) {
+	case map[string]any:
+		for k, val := range x {
+			if s, ok := val.(string); ok && demoSecretKeyRe.MatchString(k) {
+				if s != "" && !strings.Contains(s, "*") && !strings.Contains(s, "•") && !strings.EqualFold(s, "redacted") && !strings.EqualFold(s, "masked") {
+					out = append(out, at+"."+k)
+				}
+				continue
+			}
+			out = append(out, demoUnmaskedSecrets(val, at+"."+k)...)
+		}
+	case []any:
+		for i, val := range x {
+			out = append(out, demoUnmaskedSecrets(val, at+"["+strconv.Itoa(i)+"]")...)
+		}
+	}
+	return out
+}
+
+// TestDemoSecretBearingReadsStayMasked keeps credential-bearing reads either
+// denied or free of unmasked secret-like values for the demo visitor.
+func TestDemoSecretBearingReadsStayMasked(t *testing.T) {
+	db := openTestDB(t)
+	m, err := demo.Seed(t.Context(), db, demo.Options{Seed: 1, Anchor: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)})
+	if err != nil {
+		t.Fatalf("demo.Seed() error = %v", err)
+	}
+	rt := NewRouter(discardLogger(), testBrand(), db, WithDemoMode(DemoConfig{VisitorUserID: demo.VisitorUserID, Username: demo.VisitorUsername, Password: demo.VisitorPassword}))
+	e := &demoTestEnv{rt: rt, db: db, cookie: sessionCookieForTest(t, rt, demo.VisitorUserID)}
+	routes := []string{
+		"/api/v1/apps/{name}/secrets",
+		"/api/v1/databases/{name}/key",
+		"/api/v1/databases/{name}/keys",
+		"/api/v1/mail/tokens",
+		"/api/v1/nodes/join-tokens",
+		"/api/v1/sso/scim/tokens",
+		"/api/v1/backup-targets/{id}",
+		"/api/v1/registry-credentials",
+	}
+	for _, pat := range routes {
+		t.Run(pat, func(t *testing.T) {
+			target := strings.NewReplacer("{name}", m.Services[0], "{id}", "1").Replace(pat)
+			if strings.Contains(pat, "databases") {
+				target = strings.Replace(pat, "{name}", m.Databases[0], 1)
+			}
+			rec := e.do(http.MethodGet, target, nil)
+			if rec.Code == http.StatusForbidden {
+				return
+			}
+			var body any
+			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+				return
+			}
+			if bad := demoUnmaskedSecrets(body, ""); len(bad) > 0 {
+				t.Errorf("GET %s (status %d) returned unmasked values at %v", pat, rec.Code, bad)
+			}
+		})
 	}
 }
