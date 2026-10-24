@@ -1,12 +1,5 @@
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { stackLabel } from '../../../lib/repoImport'
 import type { ImportAnalysis } from '../../../queries/importAnalyze'
 
@@ -14,12 +7,12 @@ import type { ImportAnalysis } from '../../../queries/importAnalyze'
 export function DetectedStack({
   analysis,
   baseDirectory,
-  onBaseDirectory,
+  onChooseApp,
   onEdit,
 }: {
   analysis: ImportAnalysis
   baseDirectory: string
-  onBaseDirectory: (dir: string) => void
+  onChooseApp: () => void
   onEdit: () => void
 }) {
   const { t } = useTranslation('newApp')
@@ -42,30 +35,15 @@ export function DetectedStack({
         </Button>
       </div>
       {analysis.monorepo && packages.length > 1 ? (
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">
-            {t('import.detected.monorepo')}
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-border pt-2">
+          <p className="min-w-0 text-xs text-muted-foreground">
+            {t('import.detected.monorepo', {
+              dir: baseDirectory || (packages[0]?.dir ?? ''),
+            })}
           </p>
-          <Select
-            value={baseDirectory || (packages[0]?.dir ?? '')}
-            onValueChange={(v) => {
-              if (v) onBaseDirectory(v)
-            }}
-          >
-            <SelectTrigger
-              className="w-full min-w-0 sm:w-72"
-              aria-label={t('import.detected.monorepo')}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {packages.map((p) => (
-                <SelectItem key={p.dir} value={p.dir}>
-                  {p.name} ({p.dir})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Button size="sm" variant="outline" onClick={onChooseApp}>
+            {t('import.detected.chooseApp')}
+          </Button>
         </div>
       ) : null}
     </div>

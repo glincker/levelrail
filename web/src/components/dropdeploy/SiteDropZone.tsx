@@ -47,7 +47,7 @@ export function SiteDropZone({
       onDragLeave={() => setDragging(false)}
       onDrop={(e) => void onDrop(e)}
       className={cn(
-        'flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-4 py-8 text-center transition-colors',
+        'flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-4 py-4 text-center transition-colors sm:flex-row sm:text-left',
         dragging && 'border-brand bg-muted',
       )}
     >
@@ -55,10 +55,14 @@ export function SiteDropZone({
         className="size-6 text-muted-foreground"
         aria-hidden="true"
       />
-      <p className="text-sm font-medium text-foreground">
-        {t('drop.dropHere')}
-      </p>
-      <p className="max-w-md text-xs text-muted-foreground">{t('drop.hint')}</p>
+      <div className="min-w-0 sm:flex-1">
+        <p className="text-sm font-medium text-foreground">
+          {t('drop.dropHere')}
+        </p>
+        <p className="max-w-md text-xs text-muted-foreground">
+          {t('drop.hint')}
+        </p>
+      </div>
       <div className="flex flex-wrap justify-center gap-2">
         <Button
           type="button"

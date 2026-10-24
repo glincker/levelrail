@@ -256,7 +256,7 @@ describe('NewAppWizard', () => {
       '/settings/bitbucket-app',
       '/settings/gitea-app',
     ])
-    expect(screen.getByLabelText('Repository URL')).toBeInTheDocument()
+    expect(screen.getByLabelText('Repository')).toBeInTheDocument()
   })
 
   it('filters the repository list by search', async () => {
@@ -264,10 +264,7 @@ describe('NewAppWizard', () => {
     mockApi()
     renderWizard()
     await screen.findByRole('button', { name: /acme\/shop/ })
-    await user.type(
-      screen.getByLabelText('Search repositories or languages'),
-      'mdx',
-    )
+    await user.type(screen.getByLabelText('Repository'), 'mdx')
     expect(screen.queryByRole('button', { name: /acme\/shop/ })).toBeNull()
     expect(
       screen.getByRole('button', { name: /acme\/docs/ }),
@@ -284,7 +281,7 @@ describe('NewAppWizard', () => {
     })
     renderWizard()
     await user.type(
-      await screen.findByLabelText('Repository URL'),
+      await screen.findByLabelText('Repository'),
       'https://github.com/acme/private',
     )
     expect(
@@ -292,7 +289,7 @@ describe('NewAppWizard', () => {
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Continue' }))
     expect(await screen.findByText('denied')).toBeInTheDocument()
-    expect(screen.getByLabelText('Repository URL')).toHaveValue(
+    expect(screen.getByLabelText('Repository')).toHaveValue(
       'https://github.com/acme/private',
     )
   })
@@ -330,7 +327,7 @@ describe('NewAppWizard', () => {
     })
     renderWizard()
     await user.type(
-      await screen.findByLabelText('Repository URL'),
+      await screen.findByLabelText('Repository'),
       'https://github.com/acme/shop',
     )
     await user.click(await screen.findByRole('button', { name: 'Continue' }))

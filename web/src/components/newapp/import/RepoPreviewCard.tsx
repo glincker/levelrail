@@ -8,13 +8,6 @@ import {
   StarIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { BrandTile } from '../../BrandLogoBadge'
 import { hostBrand } from '../../../lib/repoImport'
@@ -116,17 +109,13 @@ export function PreviewSkeleton({ label }: { label: string }) {
 export function RepoPreviewCard({
   preview,
   branch,
-  onBranch,
   children,
 }: {
   preview: RepoPreview
   branch: string
-  onBranch: (branch: string) => void
   children?: ReactNode
 }) {
   const { t, i18n } = useTranslation('newApp')
-  const branches = preview.branches ?? []
-  const options = branches.includes(branch) ? branches : [branch, ...branches]
   const commit = preview.last_commit
   return (
     <article className="min-w-0 space-y-4 rounded-lg border border-border bg-card p-4">
@@ -164,6 +153,14 @@ export function RepoPreviewCard({
             {preview.forks.toLocaleString(i18n.language)}
           </Chip>
         ) : null}
+        {branch !== '' ? (
+          <Chip
+            icon={<GitBranchIcon aria-hidden="true" className="size-3.5" />}
+          >
+            <span className="sr-only">{t('import.card.branch')}: </span>
+            {branch}
+          </Chip>
+        ) : null}
         {preview.license ? (
           <Chip icon={<ScalesIcon aria-hidden="true" className="size-3.5" />}>
             {preview.license}
@@ -188,34 +185,6 @@ export function RepoPreviewCard({
         <p className="line-clamp-4 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
           {preview.readme_excerpt}
         </p>
-      ) : null}
-      {options.length > 0 && branch !== '' ? (
-        <div className="flex min-w-0 items-center gap-2">
-          <GitBranchIcon
-            aria-hidden="true"
-            className="size-4 shrink-0 text-muted-foreground"
-          />
-          <Select
-            value={branch}
-            onValueChange={(v) => {
-              if (v) onBranch(v)
-            }}
-          >
-            <SelectTrigger
-              className="w-full min-w-0 sm:w-64"
-              aria-label={t('import.card.branch')}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map((b) => (
-                <SelectItem key={b} value={b}>
-                  {b}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       ) : null}
       {children}
     </article>

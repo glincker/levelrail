@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { NewAppWizard } from '../../components/newapp/NewAppWizard'
-import { StarterTemplatesDialog } from '../../components/newapp/StarterTemplatesDialog'
 import {
   DeployLinkForm,
   DeployLinkNotice,
@@ -31,7 +30,11 @@ function NewAppPage() {
     )
   }
   return (
-    <PageTemplate title={t('title')} description={t('description')}>
+    <PageTemplate
+      title={t('title')}
+      description={t('description')}
+      width="wide"
+    >
       {prefill.active ? (
         <div className="mx-auto w-full max-w-3xl space-y-3">
           <DeployLinkNotice prefill={prefill} />
@@ -40,9 +43,6 @@ function NewAppPage() {
           </p>
         </div>
       ) : null}
-      <div className="mx-auto mb-3 flex w-full max-w-3xl justify-end">
-        <StarterTemplatesDialog />
-      </div>
       <NewAppWizard />
     </PageTemplate>
   )
