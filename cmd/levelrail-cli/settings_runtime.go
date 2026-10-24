@@ -197,7 +197,10 @@ func runSettingsRuntimeApply(prog string, args []string, stdout, stderr io.Write
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
 		msg, _ := result["message"].(string)
 		if msg == "" {
-			msg = "restart requested"
+			msg = "no restart needed"
+			if pending, _ := result["pending"].(bool); pending {
+				msg = "restart requested"
+			}
 		}
 		_, _ = fmt.Fprintln(stdout, msg)
 	})
