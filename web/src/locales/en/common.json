@@ -34,7 +34,9 @@
     "settingsLinkHint": "Build, run, safety and automation options for this app live in one place.",
     "settingsLinkCta": "Open deploy settings",
     "rerunOf": "Retry of {{id}}",
-    "rerunOfLabel": "Open the logs of {{id}}, the deploy this one re-ran"
+    "rerunOfLabel": "Open the logs of {{id}}, the deploy this one re-ran",
+    "current": "Current",
+    "rollbackBadge": "Rollback"
   },
   "actions": {
     "copy": "Copy",

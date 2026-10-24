@@ -72,6 +72,10 @@ export interface DeployAttempt {
   /** URL of this deploy's preview thumbnail, when one was captured. */
   preview_image_url?: string
   /** What the controller last saw running: 'serving' or 'mismatch'. */
+  /** True for the one deploy serving the app now; set by the server. */
+  live?: boolean
+  /** Server classification, e.g. "rollback" for a redeploy of an earlier image. */
+  trigger?: string
   rollout_state?: 'serving' | 'mismatch'
   running_image_id?: string
   sequence?: number

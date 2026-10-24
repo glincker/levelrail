@@ -337,11 +337,15 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 	held := rt.heldBuildIDs(r.Context(), name)
 	out := make([]deployAttemptResource, 0, len(attempts))
 	chainPos := rerunChainPositions(attempts)
+	liveID := newestSucceededID(attempts)
 	for _, a := range attempts {
 		res := toDeployAttemptResource(a)
+		if isRedeployOfEarlierImage(a, attempts) {
+			res.Trigger = store.DeploymentTriggerRollback
+		}
 		res.ChainPosition = chainPos(a.ID)
 		res.DeployURL = deployURLs[a.ID]
-		res.Live = a.Status == store.DeployAttemptStatusSucceeded && a.Image == svc.Image
+		res.Live = a.ID == liveID && a.Image == svc.Image
 		if held[a.ID] && (!res.Live || isStaticAttempt(a)) {
 			res.Live = false
 			res.PublishState = publishStateHeld

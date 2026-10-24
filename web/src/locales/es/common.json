@@ -28,7 +28,9 @@
     "settingsLinkHint": "Las opciones de compilación, ejecución, seguridad y automatización de esta aplicación están en un solo lugar.",
     "settingsLinkCta": "Abrir ajustes de despliegue",
     "rerunOf": "Reintento de {{id}}",
-    "rerunOfLabel": "Abrir los registros de {{id}}, el despliegue que este repitió"
+    "rerunOfLabel": "Abrir los registros de {{id}}, el despliegue que este repitió",
+    "current": "Actual",
+    "rollbackBadge": "Reversión"
   },
   "actions": {
     "copy": "Copiar",

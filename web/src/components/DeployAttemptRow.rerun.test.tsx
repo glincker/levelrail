@@ -87,3 +87,20 @@ describe('DeployAttemptRow rerun lineage', () => {
     expect(screen.queryByText(/Retry of/)).toBeNull()
   })
 })
+
+describe('DeployAttemptRow current and rollback markers', () => {
+  it('marks only the server-flagged live deploy as Current', () => {
+    renderRow({ ...base, status: 'succeeded', rollout_state: 'serving' })
+    expect(screen.queryByText('Current')).toBeNull()
+  })
+
+  it('shows Current when the server flags the attempt live', () => {
+    renderRow({ ...base, status: 'succeeded', live: true })
+    expect(screen.getByText('Current')).toBeTruthy()
+  })
+
+  it('labels a rollback deploy so it does not read as a duplicate', () => {
+    renderRow({ ...base, status: 'succeeded', trigger: 'rollback' })
+    expect(screen.getByText('Rollback')).toBeTruthy()
+  })
+})
