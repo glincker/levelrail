@@ -1,0 +1,7 @@
+[Unit]
+Description=Reset the Levelrail hosted demo data
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/levelrail-demo/reseed.sh
