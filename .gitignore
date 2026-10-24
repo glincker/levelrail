@@ -69,3 +69,6 @@ __pycache__/
 
 # SSO lab: generated self-signed IdP certificate
 test/sso-lab/certs/
+
+# Local planning output from agent skills, never published
+/docs/superpowers/
