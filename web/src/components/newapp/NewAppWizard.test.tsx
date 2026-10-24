@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { NewAppWizard } from './NewAppWizard'
 import { jsonResponse, nextAnalysis } from '../../test/newAppFixtures'
 import { NewAppI18n } from '../../test/newAppI18n'
@@ -185,6 +185,11 @@ function urlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
   return input instanceof URL ? input.href : input.url
 }
+
+// Warm the lazy chunk so its first-use compile is not charged to a findBy.
+beforeAll(async () => {
+  await import('./import/RepoImportFlow')
+})
 
 afterEach(() => {
   vi.restoreAllMocks()

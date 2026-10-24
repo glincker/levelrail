@@ -7,6 +7,8 @@ import { docsManifestPlugin } from './vite-plugins/docsManifest.js'
 // plugin generates routeTree.gen.ts from src/routes at build time, which
 // component tests never need since they exercise components directly,
 // not the router.
+const asyncTimeoutMs = Number(process.env.TEST_ASYNC_TIMEOUT_MS ?? 4000)
+
 export default defineConfig({
   plugins: [react(), docsManifestPlugin()],
   resolve: {
@@ -34,5 +36,10 @@ export default defineConfig({
     // reporter (on by default in Actions) lists retried tests under
     // "Flaky Tests" in the job summary, so a retry is visible, not hidden.
     retry: process.env.CI ? 2 : 0,
+    // One knob for findBy/waitFor and the per-test limit: lazy routes and
+    // i18n namespaces compile on first import, which outlasts the 1s
+    // Testing Library default on a loaded 4-core runner.
+    testTimeout: asyncTimeoutMs * 5,
+    env: { TEST_ASYNC_TIMEOUT_MS: String(asyncTimeoutMs) },
   },
 })
