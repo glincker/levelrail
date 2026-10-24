@@ -1,6 +1,6 @@
 {
   "title": "New app",
-  "description": "Pick where it comes from. We read the repository, suggest everything, and you confirm.",
+  "description": "Pick a repository or another source. We read it through the provider API, suggest the setup, and you confirm. Nothing is cloned or created until you deploy.",
   "steps": {
     "label": "New app steps",
     "source": "Where is it from",
@@ -17,57 +17,51 @@
     "privateRepoConnect": "Connect a git provider",
     "analyze": "Analyze repository",
     "repos": {
-      "search": "Search repositories or languages",
       "listLabel": "Connected repositories",
-      "noMatch": "No repository matches \"{{query}}\". Try another name or paste its URL.",
+      "loading": "Loading your repositories",
+      "noMatch": "No repository matches \"{{query}}\". Paste its full URL to use it directly.",
       "private": "Private repository",
       "pushed": "pushed {{when}}",
       "partial": "Some connected accounts could not be listed. Paste a URL for anything missing.",
-      "emptyTitle": "No git provider is connected yet",
-      "emptyBody": "Connect GitHub to pick a repository from a list. You can also paste any public git URL.",
-      "connect": "Connect GitHub"
-    },
-    "url": {
-      "label": "Repository URL",
-      "hint": "Paste any GitHub, GitLab, Gitea or Bitbucket URL (https, git@ or a /tree/branch link). Files are read through the provider API, nothing is cloned yet.",
-      "advanced": "Private repository or a specific branch?",
-      "branch": "Branch",
-      "token": "Access token",
-      "tokenHint": "Used once to read files and to build. Leave empty for a public repository."
+      "retry": "Retry",
+      "refresh": "Refresh repositories",
+      "refreshing": "Refreshing...",
+      "emptyTitle": "No repositories found",
+      "emptyBody": "Your connected accounts have no repositories we can see yet. Refresh the list after granting access, or paste a repository URL above.",
+      "failedTitle": "Could not list your repositories",
+      "failedBody": "The provider did not answer. Refresh to try again, check the connection in Settings, or paste a repository URL above."
     },
     "git": {
       "title": "Import from Git",
-      "description": "Pick a repository and its files are read through the provider API. Nothing is cloned or created until you deploy.",
       "connectTitle": "Connect a git provider",
-      "connectBody": "Connect an account to choose from your repositories, or paste a repository URL below.",
+      "connectBody": "Connect an account to pick from your repositories, or paste a repository URL above.",
       "connect": "Connect",
       "manageAll": "Manage all Git connections",
       "connectLabel": "Connect {{provider}}",
       "connected": "Connected",
-      "pickTitle": "Your repositories",
-      "urlTitle": "Paste a repository URL",
       "needsAddress": "GitHub sign-in needs a public address for this server.",
-      "useUrlInstead": "Continue with a repository URL instead"
+      "useUrlInstead": "Continue with a repository URL instead",
+      "manage": "Manage connections"
     },
     "templates": {
       "title": "Start from a template",
-      "description": "Ready-made services with sane defaults. Open one to see what it deploys.",
       "seeAll": "See all {{count}} templates",
       "browse": "Browse the template catalog",
       "loading": "Loading templates",
       "unavailable": "The template list is not available right now. The full catalog is one click away.",
-      "gridLabel": "Featured templates"
+      "gridLabel": "Featured templates",
+      "retry": "Retry",
+      "search": "Search templates",
+      "categories": "Template categories",
+      "noMatch": "No template matches \"{{query}}\". Try another word or browse the full catalog."
     },
-    "other": {
-      "title": "Other ways to start",
-      "description": "Bring a container image, a compose file or a docker run command.",
-      "image": "Container image",
-      "imageHint": "Deploy a prebuilt image from a registry.",
-      "compose": "Docker Compose",
-      "composeHint": "Paste or upload a compose file.",
-      "run": "docker run command",
-      "runHint": "Turn a command into a managed app.",
-      "hide": "Hide"
+    "errorManage": "Check Git connections",
+    "find": {
+      "label": "Repository",
+      "placeholder": "Search repos or paste a git URL",
+      "hint": "Type to filter your repositories, or paste a GitHub, GitLab, Gitea or Bitbucket URL (https, git@ or a /tree/branch link).",
+      "useUrl": "Use this URL",
+      "clear": "Clear"
     }
   },
   "findings": {
@@ -228,7 +222,7 @@
     }
   },
   "starter": {
-    "open": "Start from a template",
+    "open": "Starter config files",
     "title": "Starter templates",
     "description": "Pick a starting point, answer a few questions, and get validated files to commit to your repository.",
     "generate": "Generate files",
@@ -236,7 +230,8 @@
     "copy": "Copy",
     "copied": "Copied {{path}}",
     "next": "Commit these files to your repository, then deploy it from the Where is it from step.",
-    "viaCli": "Generate with the CLI instead"
+    "viaCli": "Generate with the CLI instead",
+    "openHint": "Generate app.yaml to commit to your repo."
   },
   "packages": {
     "title": "Workspace packages",
@@ -281,14 +276,20 @@
   },
   "upload": {
     "title": "Deploy from your computer",
-    "description": "No git remote needed. Run this in your project folder and the directory is uploaded, built and deployed.",
-    "note": "Create an API token under Settings, then run the CLI login once. Files in .gitignore, node_modules and .env files are never uploaded.",
+    "description": "No git remote needed. The folder is uploaded, built and deployed.",
+    "note": "Run both in your project folder. Files in .gitignore, node_modules and .env files are never uploaded.",
     "copy": "Copy",
-    "copied": "Copied"
+    "copied": "Copied",
+    "tokenName": "CLI deploy {{date}}",
+    "createToken": "Create a deploy token",
+    "creating": "Creating...",
+    "tokenHint": "Valid for {{days}} days, can read, edit and deploy apps.",
+    "tokenOnce": "Copy these now. The token is shown once and valid for {{days}} days.",
+    "hideToken": "I copied them, hide",
+    "createFailed": "Could not create a token: {{reason}}",
+    "openTokens": "Create one in Settings"
   },
   "drop": {
-    "title": "Drop a static site",
-    "description": "Drag a folder or a .zip of your built site. It goes live right away, with no git and no build.",
     "cardTitle": "Publish by dropping a folder",
     "cardDescription": "Drop a folder or a .zip of a built site to replace what is live. _redirects, _headers and 404.html are honored, and you can roll back from deploy history.",
     "zoneLabel": "Drop a site folder or zip here",
@@ -378,7 +379,8 @@
     "detected": {
       "line": "Detected: {{stack}}, builds with {{builder}}, listens on {{port}}",
       "edit": "Edit",
-      "monorepo": "This repository has several apps. Pick the one to deploy."
+      "monorepo": "Several apps found. Deploying {{dir}}.",
+      "chooseApp": "Choose app"
     },
     "notice": {
       "private_needs_account": "This repository looks private. Connect an account that can see it, or use a deploy token.",
@@ -419,7 +421,9 @@
       "buildType": "Build type",
       "deploy": "Deploy",
       "deploying": "Deploying..."
-    }
+    },
+    "pushOn": "Deploys on every push.",
+    "pushOff": "Pushes will not deploy."
   },
   "deployOptions": {
     "title": "Deploy options",
@@ -459,6 +463,42 @@
       "deployOnPush": "Deploy on push could not be set up: {{reason}}.",
       "previews": "Previews could not be enabled: {{reason}}.",
       "job": "The job {{path}} was not created: {{reason}}."
+    }
+  },
+  "gitSettings": {
+    "open": "Git settings",
+    "accounts": "Connected accounts",
+    "none": "No git account is connected yet. Connect one to pick from your repositories.",
+    "loaded": "{{count}} repositories",
+    "failed": "could not list",
+    "refreshFailed": "Could not refresh: {{reason}}",
+    "defaults": "Defaults for this app",
+    "pickFirst": "Pick a repository to set its branch, app directory and deploy on push.",
+    "directory": "App directory",
+    "pushOn": "Every push to this branch deploys."
+  },
+  "more": {
+    "title": "More ways to start",
+    "hide": "Close",
+    "image": {
+      "title": "Container image",
+      "hint": "Deploy a prebuilt image."
+    },
+    "compose": {
+      "title": "Docker Compose",
+      "hint": "Paste or upload a file."
+    },
+    "run": {
+      "title": "docker run",
+      "hint": "Turn a command into an app."
+    },
+    "site": {
+      "title": "Static site",
+      "hint": "Drop a folder or zip."
+    },
+    "computer": {
+      "title": "From your computer",
+      "hint": "Deploy a folder with the CLI."
     }
   }
 }
