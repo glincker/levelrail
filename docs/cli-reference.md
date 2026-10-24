@@ -1163,6 +1163,17 @@ levelrail-cli janitor policy [--enabled=BOOL] [--dry-run=BOOL] [--interval-minut
 ```
 Disk cleanup with preview and quarantine. See [Automatic cleanup](/janitor).
 
+## Cleanup center
+
+```
+levelrail-cli cleanup list [flags]
+levelrail-cli cleanup preview ID [--days N] [flags]
+levelrail-cli cleanup run ID [--days N] [--dry-run] [--yes] [flags]
+levelrail-cli cleanup mode ID off|preview|on [flags]
+levelrail-cli cleanup runs [--target ID] [--since DATE] [--format table|json|csv] [flags]
+```
+`list` shows every cleanup target with its usage, retention, mode and last run. `preview` reports the rows and bytes a run would delete and deletes nothing. `run` deletes data for one target: without `--dry-run` it prints the preview row count first and refuses unless `--yes` is given; `--dry-run` only records what would be deleted and is audited like any other run. `--days` must be at least 1 and overrides the target's retention for that call only; retention itself is the runtime setting (see `settings runtime`). `mode` sets a target to `off`, `preview` (scheduled runs only record) or `on`. `runs` lists the run history, newest first, and `--format csv` prints it as CSV for a SIEM or spreadsheet. Viewing needs a read token; `preview`, `run` and `mode` need a root API token.
+
 ## Search
 
 ```

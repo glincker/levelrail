@@ -159,6 +159,7 @@ var Tree = map[string]*Node{
 	}}}},
 	"profile": {Subs: map[string]*Node{"list": nil}},
 	"tokens":  {Subs: map[string]*Node{"create": nil, "list": nil, "revoke": nil, "cleanup": nil}},
+	"cleanup": {Subs: map[string]*Node{"list": nil, "preview": nil, "run": nil, "mode": nil, "runs": nil}},
 	"plugins": {Subs: map[string]*Node{"list": nil, "show": nil, "inspect": nil, "install": nil, "upgrade": nil, "restart": nil, "uninstall": nil, "approve": nil, "enable": nil, "disable": nil, "remove": nil, "test": nil, "dns-provider": nil, "run": nil, "trust": {Subs: map[string]*Node{"add": nil, "list": nil, "remove": nil}}, "marketplace": {Subs: map[string]*Node{"search": nil, "info": nil, "install": nil, "update": nil, "refresh": nil, "sources": {Subs: map[string]*Node{"list": nil, "add": nil, "remove": nil}}}}}},
 	"mobile":  {Subs: map[string]*Node{"pair": nil, "devices": {Subs: map[string]*Node{"list": nil, "revoke": nil}}}},
 	"domains": {Subs: map[string]*Node{
