@@ -3,6 +3,7 @@ package reconcile
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,6 +24,21 @@ func openLiveStore(t *testing.T) *store.DB { return testenv.OpenLiveStore(t) }
 
 func cleanupContainers(ctx context.Context, t *testing.T, rt docker.Runtime, serviceName string) {
 	testenv.CleanupContainers(ctx, t, rt, serviceName)
+}
+
+// skipIfRegistryThrottled skips on an upstream registry rate limit or outage:
+// the pull is outside the code under test and would turn CI red for hours.
+func skipIfRegistryThrottled(t *testing.T, err error) {
+	t.Helper()
+	if err == nil {
+		return
+	}
+	msg := err.Error()
+	for _, marker := range []string{"toomanyrequests", "429 Too Many Requests", "rate limit"} {
+		if strings.Contains(msg, marker) {
+			t.Skipf("registry throttled the image pull, not a product failure: %v", err)
+		}
+	}
 }
 
 func freePort(t *testing.T) int { return testenv.FreePort(t) }

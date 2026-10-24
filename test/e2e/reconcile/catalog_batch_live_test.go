@@ -65,6 +65,7 @@ func TestCatalogAutomationBatch_Live(t *testing.T) {
 			for _, svc := range orderByDependsOn(services) {
 				ctrl := application.New(svc.Name, svcStore, runtime, application.WithReadyBudget(tt.readyBudget))
 				result, err := ctrl.Reconcile(ctx)
+				skipIfRegistryThrottled(t, err)
 				if err != nil {
 					t.Fatalf("Reconcile(%q) error = %v, conditions = %+v", svc.Name, err, result.Conditions)
 				}
