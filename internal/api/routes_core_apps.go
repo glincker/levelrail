@@ -355,6 +355,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/imports/analyze", rt.requireAbility(AbilityWrite, rt.handleAnalyzeImport))
 	mux.HandleFunc("POST /api/v1/git-sources/analyze", rt.requireAbility(AbilityWrite, rt.handleAnalyzeImport))
 	mux.HandleFunc("POST /api/v1/imports/repo/plan", rt.requireAbility(AbilityWrite, rt.handleImportRepoPlan))
+	mux.HandleFunc("POST /api/v1/imports/repo/apply", rt.requireAbility(AbilityWrite, rt.handleImportRepoApply))
 	mux.HandleFunc("POST /api/v1/git-sources/preview", rt.requireAbility(AbilityWrite, rt.handlePreviewRepo))
 
 	// Previously-built image tags for this app's repo, so the deploy

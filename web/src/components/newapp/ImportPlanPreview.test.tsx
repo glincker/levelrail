@@ -58,7 +58,11 @@ function mount() {
 }
 
 function mockFetch(res: Promise<Response>) {
-  const fn = vi.fn(() => res)
+  const fn = vi.fn((url: string) =>
+    url.includes('/imports/repo/plan')
+      ? res
+      : Promise.resolve(Response.json([])),
+  )
   vi.stubGlobal('fetch', fn)
   return fn
 }
@@ -79,11 +83,15 @@ describe('ImportPlanPreview', () => {
     mount()
     expect(fetchFn).not.toHaveBeenCalled()
     await openPlan()
-    expect(await screen.findByText('mono-web')).toBeInTheDocument()
+    expect(await screen.findByDisplayValue('mono-web')).toBeInTheDocument()
     expect(screen.getByText('apps/api')).toBeInTheDocument()
-    expect(screen.getByText('3000')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('3000')).toBeInTheDocument()
     expect(screen.getByText(/No Dockerfile here/)).toBeInTheDocument()
-    expect(fetchFn).toHaveBeenCalledTimes(1)
+    expect(
+      fetchFn.mock.calls.filter(([url]) =>
+        String(url).includes('/imports/repo/plan'),
+      ),
+    ).toHaveLength(1)
   })
 
   it('shows the loading state while the plan is built', async () => {

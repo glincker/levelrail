@@ -373,6 +373,7 @@ func importUsage(prog string) string {
   %[1]s import -f compose.yaml|Dockerfile [flags]
   %[1]s import --docker-run "docker run -p 80:80 nginx:1" [flags]
   %[1]s import repo plan <repo-url> [--branch B] [--dir D]   proposed app per monorepo package, nothing created
+  %[1]s import repo apply <repo-url> [flags]                 create one app per monorepo package
 
 Classifies the input (GitHub, GitLab, Gitea or Bitbucket repo URL, docker
 run command, image reference, docker-compose.yml or Dockerfile) and prints

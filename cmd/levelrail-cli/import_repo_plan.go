@@ -11,10 +11,13 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runImportRepo implements "import repo": today only the read-only plan.
+// runImportRepo implements "import repo": the read-only plan and the apply.
 func runImportRepo(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) > 0 && args[0] == "apply" {
+		return runImportRepoApply(prog, args[1:], stdout, stderr, lookupEnv)
+	}
 	if len(args) == 0 || args[0] != "plan" {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s import repo plan <repo-url> [--branch B] [--dir D] [--json]\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s import repo plan <repo-url> [--branch B] [--dir D] [--json]\n  %s import repo apply <repo-url> [flags]\n", prog, prog)
 		return exitUsage
 	}
 	return runImportRepoPlan(prog, args[1:], stdout, stderr, lookupEnv)

@@ -254,8 +254,8 @@
     "error": "Could not build the plan: {{message}}",
     "retry": "Try again",
     "empty": "No workspace packages were found, so there is nothing to plan. Configure this repository as a single app below.",
-    "summary_one": "{{count}} package, {{flagged}} with warnings. Nothing is created by this preview.",
-    "summary_other": "{{count}} packages, {{flagged}} with warnings. Nothing is created by this preview.",
+    "summary_one": "{{count}} package, {{flagged}} with warnings. Nothing is created until you confirm.",
+    "summary_other": "{{count}} packages, {{flagged}} with warnings. Nothing is created until you confirm.",
     "none": "None",
     "columns": {
       "name": "Name",
@@ -280,6 +280,62 @@
       "duplicate_name": "Another package maps to the same name, a suffix was added.",
       "name_taken": "An app with this name already exists, a suffix was added.",
       "detect_failed": "This package could not be analyzed."
+    },
+    "editor": {
+      "project": "Project",
+      "noProject": "No project",
+      "environment": "Environment",
+      "noEnvironment": "No environment",
+      "protectedEnv": "{{name}} (protected, not available here)",
+      "deploy": "Start the first build of each app",
+      "columns": {
+        "include": "Include",
+        "env": "Environment variables",
+        "status": "Status",
+        "detail": "Details"
+      },
+      "includeRow": "Include {{name}}",
+      "nameOf": "App name for {{directory}}",
+      "portOf": "Port for {{name}}",
+      "envButton_one": "{{count}} variable",
+      "envButton_other": "{{count}} variables",
+      "envTitle": "Environment variables for {{name}}",
+      "envHint": "Values are sent once to create the app. Tick Secret to store a value encrypted, it is never shown again.",
+      "envEmpty": "No variables yet.",
+      "envKey": "Name",
+      "envValue": "Value",
+      "envSecret": "Secret",
+      "envRemove": "Remove variable",
+      "envAdd": "Add variable",
+      "envDone": "Done",
+      "review_one": "Check {{count}} app before creating",
+      "review_other": "Check {{count}} apps before creating",
+      "checking": "Checking...",
+      "reviewHint": "Nothing is created yet. The check lists every problem first.",
+      "dryRunSummary": "{{create}} apps can be created, {{problems}} have problems and will be skipped. Nothing has been created.",
+      "create_one": "Create {{count}} app",
+      "create_other": "Create {{count}} apps",
+      "creating": "Creating...",
+      "backToEdit": "Back to editing",
+      "resultsSummary": "{{created}} apps created, {{failed}} need attention.",
+      "retryFailed_one": "Retry {{count}} failed app",
+      "retryFailed_other": "Retry {{count}} failed apps",
+      "deployError": "(first build: {{message}})",
+      "error": "The import request failed: {{message}}",
+      "status": {
+        "created": "Created",
+        "already_exists": "Already exists",
+        "skipped_dependency": "Skipped",
+        "failed": "Failed",
+        "would_create": "Ready"
+      },
+      "confirm": {
+        "title_one": "Create {{count}} app?",
+        "title_other": "Create {{count}} apps?",
+        "description": "This is more than {{above}} apps at once. Review the list, then confirm to create them.",
+        "confirm_one": "Create {{count}} app",
+        "confirm_other": "Create {{count}} apps"
+      }
     }
   },
   "fields": {
