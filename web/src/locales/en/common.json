@@ -903,5 +903,15 @@
     "show": "Show value",
     "hide": "Hide value",
     "existing": "Set. Leave blank to keep the current value."
+  },
+  "lbTraffic": {
+    "title": "Traffic",
+    "empty": "No traffic data yet",
+    "emptyHint": "Rates appear once requests have gone through the ingress.",
+    "rps": "{{value}} req/s",
+    "errors": "{{value}} errors",
+    "p50": "p50 {{value}} ms",
+    "p95": "p95 {{value}} ms",
+    "sparkline": "Requests per second over the last {{minutes}} minutes for {{dial}}"
   }
 }

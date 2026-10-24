@@ -15,6 +15,7 @@ import type {
 } from '../../queries/loadBalancerLive'
 import { adminActions, UNSUPPORTED_HINT } from './adminActions'
 import { HealthHistoryStrip } from './HealthHistoryStrip'
+import { LbTrafficCell } from './LbTrafficCell'
 import { StateGlyphIcon } from './StateGlyphIcon'
 import {
   changedAt,
@@ -34,7 +35,7 @@ interface Props {
 }
 
 const COLS =
-  'md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1.3fr)_120px_52px_52px_168px_36px] md:items-center md:gap-3'
+  'md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1.3fr)_120px_150px_52px_52px_168px_36px] md:items-center md:gap-3'
 
 function LatencyCell({
   u,
@@ -88,6 +89,7 @@ export function LbUpstreamTable({
         <span>Upstream</span>
         <span>Status</span>
         <span>Latency</span>
+        <span>Traffic</span>
         <span>Conns</span>
         <span>Share</span>
         <span>Last 12 checks</span>
@@ -152,6 +154,7 @@ export function LbUpstreamTable({
                 ) : null}
               </div>
               <LatencyCell u={u} h={h} supported={historySupported} />
+              <LbTrafficCell u={u} />
               <span className="text-sm tabular-nums" title="Open connections">
                 <span className="text-xs text-muted-foreground md:hidden">
                   conns{' '}
