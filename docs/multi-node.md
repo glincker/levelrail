@@ -127,7 +127,7 @@ APP_AGENT_IDENTITY_FILE=/var/lib/levelrail-agent/identity.json \
 | --- | --- |
 | `APP_CONTROL_PLANE_ADDR` | `host:port` of the control plane's agent gRPC listener. Required. |
 | `APP_JOIN_TOKEN` | The token from step 1. Single use. |
-| `APP_CA_FINGERPRINT` | The control plane's CA fingerprint, shown next to the token. Recommended: the agent then refuses to enroll, and never sends the token, unless the control plane's certificate chains to this CA. Without it, the agent trusts whatever answers at the address on first use. |
+| `APP_CA_FINGERPRINT` | The control plane's CA fingerprint, shown next to the token. Required: the agent refuses to enroll, and never sends the token, unless the control plane's certificate chains to this CA. To trust whatever answers at the address on first use anyway, set `APP_ALLOW_UNPINNED_ENROLL=1` (not recommended). |
 | `APP_NODE_NAME` | Optional. Defaults to the machine hostname. |
 | `APP_AGENT_IDENTITY_FILE` | Where to save the identity, mode `0600`. Default `./levelrail-agent-identity.json`. |
 
@@ -707,7 +707,7 @@ This does not move databases or app streams onto the mesh, and auto-placement st
 An agent dials out to the control plane; nothing connects in. Trust is established once, by the operator, and then checked on every connection.
 
 1. **Join token.** The operator mints a single-use token (15 minutes). It is stored hashed and spent before anything else happens, so a failed enrollment never leaves it reusable. Only the token's id is ever logged or shown in security events, never the token.
-2. **CA fingerprint pin.** Before the agent sends the token it can check the control plane's CA against the SHA-256 fingerprint the join command carries (`APP_CA_FINGERPRINT`). With a pin, an impostor control plane is refused before it sees the token. Without one the agent trusts the control plane on first use and says so in its log; the node page shows **Not pinned**.
+2. **CA fingerprint pin.** Before the agent sends the token it can check the control plane's CA against the SHA-256 fingerprint the join command carries (`APP_CA_FINGERPRINT`). With a pin, an impostor control plane is refused before it sees the token. Without one the agent refuses to enroll unless `APP_ALLOW_UNPINNED_ENROLL=1` is set; in that case it trusts the control plane on first use, says so in its log, and the node page shows **Not pinned**.
 3. **Agent-side key.** The agent generates its own private key and sends a certificate request. The control plane signs it and never sees the key.
 4. **Mutual TLS on every connection.** The agent verifies the control plane against the CA it stored at enrollment. The control plane verifies the agent's certificate on every handshake (chain to its CA, client auth usage, validity window), then again when the session opens, and checks that the certificate's fingerprint is the one recorded for that node (or the previous one, inside the renewal overlap). A revoked node is refused here too.
 5. **Renewal.** At a fraction of the certificate's lifetime the agent renews over its authenticated connection (see [Automatic renewal](#automatic-renewal)).

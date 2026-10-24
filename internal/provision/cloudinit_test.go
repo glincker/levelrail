@@ -40,6 +40,7 @@ func TestRenderCloudInit_FallsBackToEdgeWithNoVersion(t *testing.T) {
 	out, err := RenderCloudInit(CloudInitParams{
 		ControlPlaneAddr: "cp.example.com:9443",
 		JoinToken:        "tok",
+		CAFingerprint:    "abc123",
 		NodeName:         "web-1",
 		AgentName:        "acme-agent",
 		DisplayName:      "Acme",
@@ -56,6 +57,7 @@ func TestRenderCloudInit_FallsBackToEdgeForDevBuilds(t *testing.T) {
 	out, err := RenderCloudInit(CloudInitParams{
 		ControlPlaneAddr: "cp.example.com:9443",
 		JoinToken:        "tok",
+		CAFingerprint:    "abc123",
 		NodeName:         "web-1",
 		AgentName:        "acme-agent",
 		DisplayName:      "Acme",
@@ -73,6 +75,7 @@ func TestRenderCloudInit_CustomAgentImage(t *testing.T) {
 	out, err := RenderCloudInit(CloudInitParams{
 		ControlPlaneAddr: "cp.example.com:9443",
 		JoinToken:        "tok",
+		CAFingerprint:    "abc123",
 		NodeName:         "web-1",
 		AgentName:        "acme-agent",
 		DisplayName:      "Acme",
@@ -105,6 +108,7 @@ func TestRenderCloudInit_RejectsNewlineInjection(t *testing.T) {
 	_, err := RenderCloudInit(CloudInitParams{
 		ControlPlaneAddr: "cp.example.com:9443",
 		JoinToken:        "tok\nmalicious: true",
+		CAFingerprint:    "abc123",
 		NodeName:         "n",
 	})
 	if err == nil {
@@ -113,7 +117,7 @@ func TestRenderCloudInit_RejectsNewlineInjection(t *testing.T) {
 }
 
 func TestRenderCloudInit_MeshFlags(t *testing.T) {
-	base := CloudInitParams{ControlPlaneAddr: "cp:9443", JoinToken: "tok", NodeName: "n1", AgentName: "acme-agent", DisplayName: "Acme"}
+	base := CloudInitParams{ControlPlaneAddr: "cp:9443", JoinToken: "tok", CAFingerprint: "abc123", NodeName: "n1", AgentName: "acme-agent", DisplayName: "Acme"}
 	tests := []struct {
 		name string
 		mesh bool
@@ -136,5 +140,12 @@ func TestRenderCloudInit_MeshFlags(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestRenderCloudInit_RequiresCAFingerprint(t *testing.T) {
+	_, err := RenderCloudInit(CloudInitParams{ControlPlaneAddr: "cp:9443", JoinToken: "tok", NodeName: "n", AgentName: "a", DisplayName: "A"})
+	if err == nil {
+		t.Fatal("a missing CA fingerprint must be refused")
 	}
 }
