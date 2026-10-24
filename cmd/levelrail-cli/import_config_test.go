@@ -80,3 +80,19 @@ func TestImportConfigJSONAndOut(t *testing.T) {
 		t.Fatalf("code=%d out=%q err=%v", code, out, err)
 	}
 }
+
+func TestImportConfigPrintsNextSteps(t *testing.T) {
+	dir := writeConfigDir(t, map[string]string{
+		"Procfile": "web: node server.js\nworker: node w.js\n",
+		"app.json": `{"addons":["heroku-postgresql:essential-0"],"env":{"STRIPE_KEY":{"required":true}}}`,
+	})
+	code, _, errOut := runConfigCmd(t, nil, dir)
+	if code != exitOK {
+		t.Fatalf("code=%d", code)
+	}
+	for _, want := range []string{"NEXT STEPS", "apps create --file app.yaml --service web", "--service worker", "--secret STRIPE_KEY=VALUE", "databases create --name main --engine postgres"} {
+		if !strings.Contains(errOut, want) {
+			t.Errorf("stderr missing %q:\n%s", want, errOut)
+		}
+	}
+}

@@ -192,3 +192,50 @@ func TestPortOptionsOverrideDefaults(t *testing.T) {
 		t.Fatalf("default:\n%s\noverride:\n%s", def, got)
 	}
 }
+
+func TestMergeClashKeepsVercelCrons(t *testing.T) {
+	files := map[string][]byte{
+		"Procfile":    []byte("web: node server.js\n"),
+		"vercel.json": []byte(`{"framework":"nextjs","crons":[{"path":"/api/tick","schedule":"0 * * * *"}]}`),
+	}
+	res := Translate(files)
+	jobs := res.Fragment.Services["web"].Jobs
+	if len(jobs) != 1 || jobs[0].Name != "api-tick" {
+		t.Fatalf("jobs = %+v, want the Vercel cron attached to the Heroku web service", jobs)
+	}
+	if got := strings.Join(jobs[0].Command, " "); !strings.Contains(got, "127.0.0.1:8080/api/tick") {
+		t.Errorf("cron command %q should target the Heroku port", got)
+	}
+	var msg string
+	for _, f := range res.Findings {
+		if f.Code == "merge.service-clash" {
+			msg = f.Message
+		}
+	}
+	if !strings.Contains(msg, "api-tick") {
+		t.Errorf("clash finding should name the moved cron, got %q", msg)
+	}
+	y, _ := res.Fragment.YAML()
+	if _, err := spec.Parse(y); err != nil {
+		t.Errorf("merged proposal invalid: %v\n%s", err, y)
+	}
+}
+
+func TestNextStepsAndSourceFinding(t *testing.T) {
+	res := Translate(loadCase(t, "heroku-full"))
+	var src int
+	for _, f := range res.Findings {
+		if f.Code == "config.source.unknown" {
+			src++
+		}
+	}
+	if src != 3 {
+		t.Errorf("source findings = %d, want one per built service", src)
+	}
+	steps := strings.Join(NextSteps(res.Fragment, "levelrail", "app.yaml"), "\n")
+	for _, want := range []string{"--service web", "--service clock", "--secret STRIPE_KEY=VALUE", "--image-repo", "databases create --name main --engine postgres"} {
+		if !strings.Contains(steps, want) {
+			t.Errorf("next steps missing %q:\n%s", want, steps)
+		}
+	}
+}
