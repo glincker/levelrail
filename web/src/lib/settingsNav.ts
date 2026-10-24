@@ -403,8 +403,8 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: StackIcon,
       },
       {
-        id: 'janitor',
-        to: '/settings/janitor',
+        id: 'cleanup',
+        to: '/settings/cleanup',
         icon: BroomIcon,
       },
       {

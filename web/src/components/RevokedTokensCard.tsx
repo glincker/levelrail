@@ -95,7 +95,7 @@ export function RevokedTokensCard({ tokens }: { tokens: TokenResource[] }) {
         <p className="text-xs text-muted-foreground">
           {t('tokensPage.revoked.schedule')}{' '}
           <Link
-            to="/settings/janitor"
+            to="/settings/cleanup"
             className="underline underline-offset-4 hover:no-underline"
           >
             {t('tokensPage.revoked.janitorLink')}

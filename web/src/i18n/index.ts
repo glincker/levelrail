@@ -94,6 +94,7 @@ export const NAMESPACES = [
   'maintenance',
   'buildPerformance',
   'janitor',
+  'cleanup',
   'sso',
   'cdn',
   'models',

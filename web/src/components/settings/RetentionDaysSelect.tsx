@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { belowFloor } from '../../lib/cleanup'
 
 const DAYS_PER_YEAR = 365
 
@@ -16,11 +17,14 @@ export function RetentionDaysSelect({
   allowed,
   disabled,
   ariaLabel,
+  floor = 0,
   onChange,
 }: {
   id?: string
   value: number
   allowed: number[]
+  /** Positive windows shorter than this are shown but cannot be picked. */
+  floor?: number
   disabled?: boolean
   ariaLabel: string
   onChange: (days: number) => void
@@ -44,7 +48,11 @@ export function RetentionDaysSelect({
       </SelectTrigger>
       <SelectContent>
         {allowed.map((days) => (
-          <SelectItem key={days} value={String(days)}>
+          <SelectItem
+            key={days}
+            value={String(days)}
+            disabled={belowFloor(days, floor)}
+          >
             {label(days)}
           </SelectItem>
         ))}
