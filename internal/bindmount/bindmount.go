@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 )
 
 // ForbiddenPaths are host paths a bind mount may never target, enforced
@@ -65,6 +66,41 @@ var credentialDirs = map[string]bool{
 // bind mounts must sit inside one of them.
 const EnvAllowedRoots = "APP_BIND_ALLOWED_ROOTS"
 
+// EnvBlockCredentialDirs turns the credential directory block off when set to 0 or false.
+const EnvBlockCredentialDirs = "APP_BIND_BLOCK_CREDENTIAL_DIRS" //nolint:gosec // env var name, not a credential
+
+// Settings are the operator-tunable bind mount rules.
+type Settings struct {
+	BlockCredentialDirs bool
+	AllowedRoots        []string
+}
+
+var provider atomic.Pointer[func() Settings]
+
+// SetProvider injects the runtime settings source at boot; nil restores the env fallback.
+func SetProvider(fn func() Settings) {
+	if fn == nil {
+		provider.Store(nil)
+		return
+	}
+	provider.Store(&fn)
+}
+
+func currentSettings() Settings {
+	if p := provider.Load(); p != nil {
+		return (*p)()
+	}
+	s := Settings{BlockCredentialDirs: true}
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(EnvBlockCredentialDirs))) {
+	case "0", "false", "no", "off":
+		s.BlockCredentialDirs = false
+	}
+	if raw := strings.TrimSpace(os.Getenv(EnvAllowedRoots)); raw != "" {
+		s.AllowedRoots = strings.Split(raw, ":")
+	}
+	return s
+}
+
 // forbiddenPaths is ForbiddenPaths plus the data directory this process was
 // actually configured with, since the default path is only one possibility.
 func forbiddenPaths() []string {
@@ -92,10 +128,13 @@ func ValidateHostPath(hostPath string) error {
 			return fmt.Errorf("bind-mount host path %q is not allowed: it contains the protected system path %q", hostPath, forbidden)
 		}
 	}
-	if err := rejectCredentialPaths(hostPath, clean); err != nil {
-		return err
+	cfg := currentSettings()
+	if cfg.BlockCredentialDirs {
+		if err := rejectCredentialPaths(hostPath, clean); err != nil {
+			return err
+		}
 	}
-	return checkAllowedRoots(hostPath, clean)
+	return checkAllowedRoots(hostPath, clean, cfg.AllowedRoots)
 }
 
 // rejectCredentialPaths blocks credential directories and bare home directories,
@@ -114,12 +153,11 @@ func rejectCredentialPaths(hostPath, clean string) error {
 }
 
 // checkAllowedRoots enforces the operator allowlist when one is configured.
-func checkAllowedRoots(hostPath, clean string) error {
-	raw := strings.TrimSpace(os.Getenv(EnvAllowedRoots))
-	if raw == "" {
+func checkAllowedRoots(hostPath, clean string, roots []string) error {
+	if len(roots) == 0 {
 		return nil
 	}
-	for _, root := range strings.Split(raw, ":") {
+	for _, root := range roots {
 		root = filepath.Clean(strings.TrimSpace(root))
 		if filepath.IsAbs(root) && root != "/" && (clean == root || strings.HasPrefix(clean, root+"/")) {
 			return nil

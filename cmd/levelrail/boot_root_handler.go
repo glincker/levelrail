@@ -418,6 +418,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		}))
 	}
 	rt := api.NewRouter(logger, b, db, opts...)
+	wireBindMountSettings(rt)
 	return rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, rt.WithHSTS(web.Handler(b))))), rt
 }
 

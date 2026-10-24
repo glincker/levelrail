@@ -162,6 +162,14 @@ func (rt *Router) collectSetupGuideInput(r *http.Request) setupguide.Input {
 		in.DashboardURL = u
 	}
 
+	if rt.runtimeSettings == nil {
+		unavailable(setupguide.StepSecurityReview)
+	} else if reviewed, err := rt.runtimeSettings.Reviewed(ctx); err != nil {
+		fail("security review", err, setupguide.StepSecurityReview)
+	} else {
+		in.SecurityReviewed = reviewed
+	}
+
 	rt.collectSetupGuideSecurity(r, &in, unavailable)
 	rt.collectSetupGuideSignInRecovery(r.Context(), &in)
 	rt.collectSetupGuideSource(ctx, &in)

@@ -105,7 +105,7 @@ func toPolicies(stored []store.SessionPolicy) []accesspolicy.Policy {
 }
 
 func peerTrusted(a netip.Addr) bool {
-	if a.IsLoopback() {
+	if a.IsLoopback() && loopbackTrusted() {
 		return true
 	}
 	return peerIsTrustedProxy(&http.Request{RemoteAddr: net.JoinHostPort(a.String(), "0")})
