@@ -1452,7 +1452,9 @@ func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName, exclu
 	var best *docker.ContainerState
 	for i := range containers {
 		cs := &containers[i]
-		if cs.Name == exclude || !cs.Running || len(cs.Ports) == 0 {
+		// The "name-" prefix also matches sibling services (per-deploy
+		// preview services), which must never take over the primary route.
+		if cs.Name == exclude || !cs.Running || len(cs.Ports) == 0 || !application.OwnsContainer(serviceName, cs.Name) {
 			continue
 		}
 		if best == nil || cs.Created.After(best.Created) {

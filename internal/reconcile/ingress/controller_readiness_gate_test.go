@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -102,5 +103,51 @@ func TestController_DialForService_Ready_RoutesToTarget(t *testing.T) {
 	}
 	if routes := applier.routes(t); len(routes) != 1 {
 		t.Errorf("applied routes = %v, want exactly 1", routes)
+	}
+}
+
+// TestController_DialForService_NotReadyKeepsNewestServingRelease covers a
+// failed third deploy: v1 is still held, v2 was serving, v3 never became
+// ready. Traffic must stay on v2, not drop back to the older v1.
+func TestController_DialForService_NotReadyKeepsNewestServingRelease(t *testing.T) {
+	desired := store.DesiredService{Name: "web", Image: "img:v3", Port: 80, Domains: []string{"web.example.com"}}
+	v3 := application.ContainerName(desired.Name, "img:v3", "")
+	v2 := application.ContainerName(desired.Name, "img:v2", "")
+	v1 := application.ContainerName(desired.Name, "img:v1", "")
+
+	rt := newFakeRuntime()
+	rt.seedRunning(v1, 34561)
+	rt.seedRunning(v2, 34562)
+	rt.seedRunning(v3, 34563)
+	// A per-deploy preview service named "web-dep209p" shares the "web-"
+	// prefix and is the newest container; it must never be a fallback.
+	sibling := application.ContainerName("web-dep209p", "levelrail-rollback/web:dep_209", "")
+	rt.seedRunning(sibling, 34564)
+	base := time.Now().Add(-10 * time.Minute)
+	rt.containers[sibling].Created = base.Add(4 * time.Minute)
+	rt.containers[v1].Created = base
+	rt.containers[v2].Created = base.Add(3 * time.Minute)
+	rt.containers[v3].Created = base.Add(6 * time.Minute)
+
+	st := &fakeStore{
+		services:         []store.DesiredService{desired},
+		notReadyServices: map[string]bool{"web": true},
+	}
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger()))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	routes := applier.routes(t)
+	if len(routes) != 1 {
+		t.Fatalf("applied routes = %v, want exactly 1", routes)
+	}
+	handler, ok := routes[0].Handle[0].(ingress.ReverseProxyHandler)
+	if !ok {
+		t.Fatalf("route handler is %T, want ingress.ReverseProxyHandler", routes[0].Handle[0])
+	}
+	if len(handler.Upstreams) != 1 || handler.Upstreams[0].Dial != "127.0.0.1:34562" {
+		t.Errorf("upstream = %+v, want dial 127.0.0.1:34562 (v2, last serving), not v1", handler.Upstreams)
 	}
 }
