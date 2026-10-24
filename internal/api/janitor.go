@@ -18,6 +18,7 @@ const janitorHistoryDefault = 20
 // NewJanitor builds the cleanup engine over this router's stores and attaches
 // it, so the API, the disk Fix button and the reconcile loop share one engine.
 func (rt *Router) NewJanitor(db janitor.Store, dk janitor.Docker) *janitor.Engine {
+	batch, maxBatches := tokenCleanupBounds()
 	eng := janitor.New(janitor.Deps{
 		Store:             db,
 		Docker:            dk,
@@ -35,7 +36,11 @@ func (rt *Router) NewJanitor(db janitor.Store, dk janitor.Docker) *janitor.Engin
 			}
 			return rt.orphanedVolumes.RemoveVolume(ctx, name)
 		},
-		Logger: rt.logger,
+		Logger:          rt.logger,
+		TokenWindows:    rt.tokenWindows,
+		TokenBatch:      batch,
+		TokenMaxBatches: maxBatches,
+		Audit:           rt.recordTokenCleanupAudit,
 	})
 	rt.janitor = eng
 	rt.janitorStore = db

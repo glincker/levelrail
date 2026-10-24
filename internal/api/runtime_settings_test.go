@@ -39,7 +39,7 @@ func TestRuntimeSettings_ListAndGet(t *testing.T) {
 		t.Fatalf("list = %d %s", rec.Code, rec.Body.String())
 	}
 	var list runtimeSettingsList
-	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil || len(list.Settings) != 6 || list.Restart.PendingRestart {
+	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil || len(list.Settings) != 8 || list.Restart.PendingRestart {
 		t.Fatalf("list body = %+v, %v", list, err)
 	}
 
@@ -72,6 +72,9 @@ func TestRuntimeSettings_PutValidationAndWeakening(t *testing.T) {
 		{"shorter window needs confirm", runtimesettings.KeyWebhookReplayWindow, `{"value":"1m"}`, http.StatusBadRequest, "confirmation_required"},
 		{"weakening confirmed", audit, `{"value":false,"confirm_weakening":true}`, http.StatusOK, ""},
 		{"strengthening needs no confirm", audit, `{"value":true}`, http.StatusOK, ""},
+		{"token retention rejects a non preset", runtimesettings.KeyRevokedTokenDays, `{"value":45}`, http.StatusBadRequest, "invalid_value"},
+		{"token retention accepts a preset", runtimesettings.KeyRevokedTokenDays, `{"value":30}`, http.StatusOK, ""},
+		{"token retention accepts keep forever", runtimesettings.KeyRevokedTokenDays, `{"value":0}`, http.StatusOK, ""},
 		{"bad json", audit, `{`, http.StatusBadRequest, ""},
 	}
 	for _, tc := range tests {

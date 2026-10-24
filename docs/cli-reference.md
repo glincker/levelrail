@@ -765,8 +765,9 @@ List configured credentials profiles and their API URLs.
 levelrail-cli tokens create --name NAME (--abilities LIST | --preset observer|deployer|operator) [--agent NAME] [--agent-description TEXT] [flags]
 levelrail-cli tokens list [flags]
 levelrail-cli tokens revoke <id> [flags]
+levelrail-cli tokens cleanup [--older-than-days N] [flags]
 ```
-Every `tokens` subcommand requires a username and password (prompted if omitted), because these routes are session only server side and a bearer token cannot call them. `create` mints a new API token; `--agent` labels it as issued to an AI agent so audit entries record the agent name. `list` never shows a secret.
+Every `tokens` subcommand requires a username and password (prompted if omitted), because these routes are session only server side and a bearer token cannot call them. `create` mints a new API token; `--agent` labels it as issued to an AI agent so audit entries record the agent name. `list` never shows a secret. `cleanup` permanently removes revoked tokens that were revoked more than `--older-than-days` days ago (default 90, `0` removes every revoked token) and prints how many it removed; unlike the other subcommands it takes a root API token (`--token` or the stored one) instead of a password, and it never touches an active token. The dashboard setting **Delete revoked API tokens after** (Settings, API tokens) does the same on a schedule.
 
 ## Domains
 

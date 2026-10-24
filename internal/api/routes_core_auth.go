@@ -177,4 +177,6 @@ func (rt *Router) registerAuthRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/auth/tokens", rt.requireAuth(rt.handleCreateToken))
 	mux.HandleFunc("GET /api/v1/auth/tokens", rt.sessionOrRootToken(rt.handleListTokens))
 	mux.HandleFunc("DELETE /api/v1/auth/tokens/{id}", rt.requireAuth(rt.handleRevokeToken))
+	// Removing revoked tokens is irreversible bookkeeping on the token set, so AbilityRoot.
+	mux.HandleFunc("POST /api/v1/auth/tokens/cleanup", rt.requireAbility(AbilityRoot, rt.handleCleanupTokens))
 }

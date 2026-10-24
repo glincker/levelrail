@@ -3,6 +3,7 @@ package runtimesettings
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -64,6 +65,9 @@ func canonicalFromString(d Definition, s string) (string, error) {
 		n, err := strconv.Atoi(strings.TrimSpace(s))
 		if err != nil {
 			return "", fmt.Errorf("%q is not an integer", s)
+		}
+		if len(d.AllowedInts) > 0 && !slices.Contains(d.AllowedInts, n) {
+			return "", fmt.Errorf("%d is not an allowed value, choose one of %v", n, d.AllowedInts)
 		}
 		return strconv.Itoa(n), nil
 	case KindStringList:

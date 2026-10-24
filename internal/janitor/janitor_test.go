@@ -64,6 +64,10 @@ func (f *fakeStore) DeleteDeployAttempts(_ context.Context, ids []string) error 
 	return nil
 }
 
+func (f *fakeStore) PurgeInactiveAPITokens(context.Context, store.TokenPurgeKind, time.Time, int, bool) (int, error) {
+	return 0, nil
+}
+
 type fakeDocker struct {
 	containersPruned, imagesPruned, cachePruned int
 }

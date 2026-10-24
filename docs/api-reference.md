@@ -317,6 +317,7 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
+| POST | /api/v1/auth/tokens/cleanup | AbilityRoot | handleCleanupTokens |
 
 </Accordion>
 

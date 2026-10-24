@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { DurationInput } from '@/components/ui/duration-input'
 import { Input } from '@/components/ui/input'
 import { SettingRow } from '@/components/ui/setting-row'
+import { RetentionDaysSelect } from './RetentionDaysSelect'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
@@ -134,6 +135,17 @@ export function RuntimeSettingRow({
                 value={draft}
                 disabled={!canEdit || busy}
                 onChange={setDraft}
+              />
+            ) : setting.kind === 'int' && setting.allowed_values?.length ? (
+              <RetentionDaysSelect
+                id={fieldId}
+                value={Number(draft)}
+                allowed={setting.allowed_values}
+                disabled={!canEdit || busy}
+                ariaLabel={title}
+                onChange={(days) => {
+                  setDraft(String(days))
+                }}
               />
             ) : setting.kind === 'int' ? (
               <Input

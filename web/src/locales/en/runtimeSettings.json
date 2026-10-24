@@ -13,7 +13,8 @@
     "networking": "Networking",
     "deploys": "Deploys",
     "observability": "Observability",
-    "experimental": "Experimental"
+    "experimental": "Experimental",
+    "retention": "Data retention"
   },
   "source": {
     "default": "Default",
@@ -74,5 +75,30 @@
     "true": "On",
     "false": "Off",
     "empty": "none"
+  },
+  "retention": {
+    "never": "Never delete",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "year": "1 year"
+  },
+  "overview": {
+    "title": "Data retention",
+    "intro": "How long each kind of history is kept. Token windows change here and in Settings, API tokens; the rest are set by environment variable or by their own page.",
+    "open": "Open",
+    "policy": "Set by the cleanup policy",
+    "items": {
+      "revokedTokens": "Revoked API tokens",
+      "expiredTokens": "Expired API tokens",
+      "auditLog": "Audit log",
+      "emailLog": "Email log",
+      "eventWebhooks": "Event webhook deliveries",
+      "webhookDeliveries": "Git webhook deliveries",
+      "alertHistory": "Alert history",
+      "inboxArchive": "Archived inbox items",
+      "deployAttempts": "Old deploy attempts",
+      "metricsAndLogs": "Metrics and logs",
+      "pipelineArtifacts": "Pipeline artifacts"
+    }
   }
 }
