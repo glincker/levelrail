@@ -311,7 +311,7 @@ func (db *DB) DeleteDesiredDatabase(ctx context.Context, name string) error {
 
 // ListDesiredDatabases returns every saved database, ordered by name.
 func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT `+desiredDatabaseColumns+`
 		FROM desired_databases
 		ORDER BY name

@@ -100,7 +100,7 @@ func (db *DB) GetEnvironmentsByIDs(ctx context.Context, ids []string) (map[strin
 	if err != nil {
 		return nil, fmt.Errorf("store: marshal batched environment ids: %w", err)
 	}
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT `+environmentColumns+`
 		FROM environments
 		WHERE id IN (SELECT value FROM json_each(?))

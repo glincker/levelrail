@@ -1356,7 +1356,7 @@ func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredServi
 
 // ListDesiredServices returns every saved service, ordered by name.
 func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT `+desiredServiceColumns+`
 		FROM desired_services
 		ORDER BY name
@@ -1391,7 +1391,7 @@ func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error)
 // doc comment) is a valid argument, matching every other node_id
 // comparison in this package.
 func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]DesiredService, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT `+desiredServiceColumns+`
 		FROM desired_services
 		WHERE node_id = ?
@@ -1424,7 +1424,7 @@ func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]D
 // (internal/api/project_stop_start.go) and internal/api's bulk-restart
 // endpoint to find every app in a project without listing every service.
 func (db *DB) ListDesiredServicesByProject(ctx context.Context, projectID string) ([]DesiredService, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT `+desiredServiceColumns+`
 		FROM desired_services
 		WHERE project_id = ?
@@ -1459,7 +1459,7 @@ func (db *DB) ListDesiredServicesByProject(ctx context.Context, projectID string
 // in-memory the way promote.go's own findPromotionCandidates still does
 // for its narrower single-app lookup.
 func (db *DB) ListDesiredServicesByEnvironment(ctx context.Context, environmentID string) ([]DesiredService, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT `+desiredServiceColumns+`
 		FROM desired_services
 		WHERE environment_id = ?

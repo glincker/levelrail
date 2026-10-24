@@ -280,7 +280,7 @@ func (db *DB) ListBackupHistory(ctx context.Context, databaseName string, limit 
 		err  error
 	)
 	if before != nil {
-		rows, err = db.QueryContext(ctx, `
+		rows, err = db.reader().QueryContext(ctx, `
 			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
 			FROM backup_history
 			WHERE database_name = ? AND started_at < ?
@@ -288,7 +288,7 @@ func (db *DB) ListBackupHistory(ctx context.Context, databaseName string, limit 
 			LIMIT ?
 		`, databaseName, before.UTC().Format(time.RFC3339), limit)
 	} else {
-		rows, err = db.QueryContext(ctx, `
+		rows, err = db.reader().QueryContext(ctx, `
 			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
 			FROM backup_history
 			WHERE database_name = ?

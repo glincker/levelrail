@@ -128,7 +128,7 @@ func (db *DB) GetConditionsForControllers(ctx context.Context, controllerNames [
 		return nil, fmt.Errorf("store: marshal batched condition names: %w", err)
 	}
 
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT controller_name, condition_type, status, reason, message, updated_at
 		FROM reconcile_status
 		WHERE controller_name IN (SELECT value FROM json_each(?))

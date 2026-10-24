@@ -127,7 +127,7 @@ func (db *DB) ListSecretRotationPolicies(ctx context.Context, serviceName string
 		query += ` WHERE service_name = ?`
 		args = append(args, serviceName)
 	}
-	rows, err := db.QueryContext(ctx, query+` ORDER BY service_name, env_key`, args...)
+	rows, err := db.reader().QueryContext(ctx, query+` ORDER BY service_name, env_key`, args...)
 	if err != nil {
 		return nil, fmt.Errorf("store: list secret rotation policies: %w", err)
 	}

@@ -84,7 +84,7 @@ func (db *DB) FinishRestoreHistory(ctx context.Context, id, status, errMsg, fini
 // newest first (migrations/0019's own index is built for exactly this
 // query shape, the same as ListBackupHistory's).
 func (db *DB) ListRestoreHistory(ctx context.Context, databaseName string) ([]RestoreHistory, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT id, database_name, resource_kind, service_name, volume_name, backup_history_id, status, error, started_at, finished_at
 		FROM restore_history
 		WHERE database_name = ?

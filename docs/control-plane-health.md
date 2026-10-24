@@ -58,5 +58,6 @@ Applying a fix needs a root token. Reading health needs read access. The API is 
 | `APP_CPHEALTH_STORM_EVENTS` | 100 | passes or resource runs held back by rate limits in the last 5 minutes |
 | `APP_GOMEMLIMIT_PERCENT` | 80 | soft Go memory limit as a share of container or host memory, 0 disables, ignored when `GOMEMLIMIT` is set |
 | `APP_DB_SLOW_QUERY_MS` | 200 | a statement slower than this is logged as slow |
+| `APP_DB_READ_CONNS` | 4 | read-only SQLite connections for dashboard reads, so they do not queue behind reconcile writes. 0 sends reads to the single writer connection |
 
 See [Benchmarks](/benchmarks#control-plane-at-1000-apps) for measured latency at 1000 apps.

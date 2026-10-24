@@ -84,7 +84,7 @@ func (db *DB) ListDesiredServicesFiltered(ctx context.Context, f AppListFilter) 
 		return nil, 0, err
 	}
 	var total int
-	if err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM desired_services`+where, args...).Scan(&total); err != nil {
+	if err := db.reader().QueryRowContext(ctx, `SELECT COUNT(*) FROM desired_services`+where, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("store: count filtered services: %w", err)
 	}
 	query := `SELECT ` + desiredServiceColumns + ` FROM desired_services` + where + ` ORDER BY name`
@@ -92,7 +92,7 @@ func (db *DB) ListDesiredServicesFiltered(ctx context.Context, f AppListFilter) 
 		query += ` LIMIT ? OFFSET ?`
 		args = append(args, f.Limit, f.Offset)
 	}
-	rows, err := db.QueryContext(ctx, query, args...)
+	rows, err := db.reader().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("store: list filtered services: %w", err)
 	}
@@ -124,7 +124,7 @@ func (db *DB) ListAppNamesFiltered(ctx context.Context, f AppListFilter) ([]stri
 	if err != nil {
 		return nil, err
 	}
-	rows, err := db.QueryContext(ctx, `SELECT name FROM desired_services`+where+` ORDER BY name`, args...)
+	rows, err := db.reader().QueryContext(ctx, `SELECT name FROM desired_services`+where+` ORDER BY name`, args...)
 	if err != nil {
 		return nil, fmt.Errorf("store: list filtered app names: %w", err)
 	}
