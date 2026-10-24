@@ -209,15 +209,32 @@ const maxRestartRetention = 24 * time.Hour
 func resolveResourceID(services []store.DesiredService, containerName string) (resourceID string, ok bool) {
 	for _, svc := range services {
 		suffix, hasPrefix := strings.CutPrefix(containerName, svc.Name+"-")
-		if !hasPrefix || len(suffix) != containerHashLen {
+		if !hasPrefix {
 			continue
 		}
-		if !isHexString(suffix) {
+		// Replicas 1 and up carry an extra "-rN" after the hash.
+		hash, replica, hasReplica := strings.Cut(suffix, "-r")
+		if len(hash) != containerHashLen || !isHexString(hash) {
+			continue
+		}
+		if hasReplica && !isDecimal(replica) {
 			continue
 		}
 		return "service:" + svc.Name, true
 	}
 	return "", false
+}
+
+func isDecimal(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func isHexString(s string) bool {

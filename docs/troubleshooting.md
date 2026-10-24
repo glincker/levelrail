@@ -324,6 +324,24 @@ Log text is untrusted: every excerpt is cleaned and secret-redacted before it le
 
 `GET /healthz` is a bare liveness check. `GET /readyz` is unauthenticated and cheap, and returns `200 {"ready":true,"checks":[...]}` only when the control plane can serve: the database answers a query, every migration is applied, and the reconcile engine has started. Otherwise it returns `503` and the failing check has `"status":"failing"`. A Docker daemon outage shows as `"status":"degraded"` on the `docker` check but keeps `ready` true, so the dashboard stays reachable to show it. `levelrail healthcheck --ready` runs the same probe from inside the container (the shipped image uses it for its `HEALTHCHECK`); it exits non-zero on 503. During startup the engine check fails for a moment, which is what the image's `--start-period` absorbs.
 
+## Files left behind after uninstall
+
+`install.sh uninstall` removes the service, the unit and the `levelrail` binary. `--purge` also deletes the data directory. Three things stay either way, so a reinstall can roll back and verify releases:
+
+- `levelrail-cli`, installed next to the control plane in `/usr/local/bin`.
+- `cosign`, at `/usr/local/bin/cosign` (or `LEVELRAIL_COSIGN_BIN`), which other tools may use.
+- `levelrail.releases`, the retained previous binaries kept for rollback, in the install directory (or `LEVELRAIL_RELEASES_DIR`). It can reach several hundred MB.
+
+To remove them by hand after you are sure you will not reinstall:
+
+```sh
+sudo rm -f /usr/local/bin/levelrail-cli
+sudo rm -f /usr/local/bin/cosign
+sudo rm -rf /usr/local/bin/levelrail.releases
+```
+
+Adjust the paths if you set `LEVELRAIL_INSTALL_DIR`, `LEVELRAIL_COSIGN_BIN` or `LEVELRAIL_RELEASES_DIR`. Skip the `cosign` line if anything else on the host uses it.
+
 ## Still stuck?
 
 Open a [GitHub Discussion](https://github.com/glincker/levelrail/discussions) with your `app.yaml`, the relevant log output, and what you already tried. For anything that looks like a real bug, [file an issue](https://github.com/glincker/levelrail/issues) instead.

@@ -1168,3 +1168,32 @@ func TestAttachPlanVolumes_HostPathRejected(t *testing.T) {
 		t.Error("attachPlanVolumes() made an HTTP call for a rejected hostPath volume")
 	}
 }
+
+func TestApplyCreateHealth(t *testing.T) {
+	var f createFlags
+	f.readiness.which, f.liveness.which = "readiness", "liveness"
+	var body appResource
+	if err := applyCreateHealth(f, &body, false); err != nil || body.Health != nil {
+		t.Fatalf("no flags: err=%v health=%v, want untouched", err, body.Health)
+	}
+	f.readiness.path, f.liveness.preset, f.readyTimeout = "/ready", "healthz", "90s"
+	if err := applyCreateHealth(f, &body, false); err != nil {
+		t.Fatal(err)
+	}
+	if body.Health.Readiness == nil || body.Health.Readiness.Path != "/ready" {
+		t.Errorf("readiness = %+v", body.Health.Readiness)
+	}
+	if body.Health.Liveness == nil || body.Health.Liveness.Path != "/healthz" || body.Health.Liveness.Failures != 3 {
+		t.Errorf("liveness = %+v, want healthz preset with 3 failures", body.Health.Liveness)
+	}
+	if body.Health.ReadyTimeout != int64(90*time.Second) {
+		t.Errorf("ReadyTimeout = %d", body.Health.ReadyTimeout)
+	}
+	if err := applyCreateHealth(f, &body, true); err == nil {
+		t.Error("static site accepted health flags")
+	}
+	f.readiness.path, f.readiness.preset = "", "nope"
+	if err := applyCreateHealth(f, &body, false); err == nil {
+		t.Error("unknown preset accepted")
+	}
+}

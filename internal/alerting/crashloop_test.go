@@ -158,6 +158,9 @@ func TestResolveResourceID(t *testing.T) {
 	}{
 		{name: "exact match", containerName: "web-abc12345", wantID: "service:web", wantOK: true},
 		{name: "different service that happens to prefix-match", containerName: "web-worker-abc12345", wantID: "service:web-worker", wantOK: true},
+		{name: "replica suffix", containerName: "web-abc12345-r1", wantID: "service:web", wantOK: true},
+		{name: "replica suffix on prefixed service", containerName: "web-worker-abc12345-r12", wantID: "service:web-worker", wantOK: true},
+		{name: "bad replica suffix", containerName: "web-abc12345-rx", wantOK: false},
 		{name: "unrelated name", containerName: "totally-unrelated", wantOK: false},
 		{name: "right prefix, wrong suffix length", containerName: "web-abc", wantOK: false},
 		{name: "right prefix, non-hex suffix", containerName: "web-zzzzzzzz", wantOK: false},

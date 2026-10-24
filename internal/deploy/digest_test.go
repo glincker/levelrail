@@ -58,6 +58,7 @@ func TestResolveImageMapsSources(t *testing.T) {
 		{name: "pinned input never asks the registry", image: "nginx:1@sha256:aa", resolver: &fakeResolver{}, wantImage: "nginx:1@sha256:aa", wantDigest: "sha256:aa", wantReason: store.DigestReasonPinned},
 		{name: "registry digest pins the tag", image: "nginx:latest", resolver: &fakeResolver{res: docker.ResolvedImage{Digest: "sha256:new", Source: docker.ImageSourceRegistry}}, wantImage: "nginx:latest@sha256:new", wantDigest: "sha256:new", wantReason: store.DigestReasonResolved, wantCalls: 1},
 		{name: "registry down falls back to cache and says so", image: "nginx:latest", resolver: &fakeResolver{res: docker.ResolvedImage{Digest: "sha256:old", Source: docker.ImageSourceCache, RegistryErr: regErr}}, wantImage: "nginx:latest@sha256:old", wantDigest: "sha256:old", wantReason: store.DigestReasonPullFailedUsingCached, wantCalls: 1},
+		{name: "local-only image is not a failed pull", image: "myapp:dev", resolver: &fakeResolver{res: docker.ResolvedImage{Ref: "myapp:dev", LocalID: "sha256:loc", Source: docker.ImageSourceCache, RegistryErr: regErr}}, wantImage: "myapp:dev", wantDigest: "sha256:loc", wantReason: store.DigestReasonLocalImage, wantCalls: 1},
 		{name: "nothing known stays unpinned", image: "nginx:latest", resolver: &fakeResolver{res: docker.ResolvedImage{Ref: "nginx:latest", Source: docker.ImageSourceNone, RegistryErr: regErr}}, wantImage: "nginx:latest", wantReason: store.DigestReasonUnresolved, wantCalls: 1},
 	}
 	for _, tt := range tests {

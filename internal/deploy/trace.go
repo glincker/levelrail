@@ -26,6 +26,8 @@ func ResolveImageTraced(ctx context.Context, tr *deploytrace.Tracer, r docker.Im
 	switch res.Reason {
 	case store.DigestReasonPullFailedUsingCached:
 		span.End(ctx, store.TraceStatusWarning, res.Reason, "registry unreachable, using the cached local image: "+res.Note)
+	case store.DigestReasonLocalImage:
+		span.End(ctx, store.TraceStatusSkipped, res.Reason, "image exists only locally, no registry digest to resolve")
 	case store.DigestReasonUnresolved:
 		span.End(ctx, store.TraceStatusWarning, res.Reason, "no digest known, the node pulls the tag as given")
 	case store.DigestReasonPinned:
