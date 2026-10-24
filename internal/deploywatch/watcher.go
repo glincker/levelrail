@@ -30,10 +30,10 @@ type WatchStore interface {
 	ListRollbackPins(ctx context.Context, serviceName string) ([]store.RollbackPin, error)
 }
 
-// RestartCounter counts container restarts per resource since a time.
+// RestartCounter counts restarts of the named containers since a time.
 // alerting.RestartTracker satisfies it.
 type RestartCounter interface {
-	CountSince(resourceID string, since time.Time) int
+	CountContainersSince(names []string, since time.Time) int
 }
 
 // Notifier tells operators a live release was rolled back or needs one.
@@ -194,18 +194,23 @@ func (w *Watcher) watchOne(ctx context.Context, service, attemptID string, now t
 func (w *Watcher) observe(ctx context.Context, svc *store.DesiredService, attemptID string, cfg deploysafety.Effective, since, now time.Time) (deploysafety.WatchObservation, error) {
 	obs := deploysafety.WatchObservation{SinceCutover: now.Sub(since)}
 	resourceID := "service:" + svc.Name
+	replicas := svc.Replicas
+	if replicas <= 0 {
+		replicas = store.DefaultReplicas
+	}
+	names := make([]string, replicas)
+	for i := range names {
+		names[i] = application.ReplicaContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce, i)
+	}
+	// Restarts are counted per container of this release: a failed release
+	// still held beside it restarts under the same service name.
 	if w.Restarts != nil {
-		obs.Restarts = w.Restarts.CountSince(resourceID, since)
+		obs.Restarts = w.Restarts.CountContainersSince(names, since)
 	}
 	if w.Inspectors != nil {
 		inspector, err := w.Inspectors(svc.NodeID)
 		if err == nil && inspector != nil {
-			replicas := svc.Replicas
-			if replicas <= 0 {
-				replicas = store.DefaultReplicas
-			}
-			for i := 0; i < replicas; i++ {
-				name := application.ReplicaContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce, i)
+			for _, name := range names {
 				es, err := inspector.InspectExitState(ctx, name)
 				if err != nil || es == nil {
 					continue
