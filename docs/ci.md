@@ -578,3 +578,52 @@ interfaces, moving shared types to leaf packages) is the lasting fix for
   tests start from a copy of one migrated template database instead of
   replaying every migration per test. New test helpers that open a store in
   a hot path should do the same.
+
+## Nightly and flaky tests
+
+What the numbers said (60 days to 2026-10-24, `nightly.yml` on `main`): 69 runs,
+8 green, 60 red, 1 cancelled, so a red nightly carried no signal. Median wall
+time 43 minutes (max 75). About 190 billable job minutes a night, 326 on a
+Sunday with `-race` (roughly 1,450 a week). The `race` and `docker` lanes were
+about 120 of those minutes and hit their 60 minute job limit most nights.
+`template-smoke.yml` and `vps-smoke.yml` are near idle (1 and 0 runs in that
+window) and cost nothing worth tuning.
+
+Red nights were mostly a handful of real, unfixed regressions seen again every
+night (dashboard budget test 12 nights, live log blue-green test 9, the
+`Controller_Reconcile_Live` and ExecTTY live tests for about two weeks),
+plus lane timeouts (about 15 nights) and registry throttling (429 from
+`public.ecr.aws`). Only one test was a true timing flake
+(`TestAuthLibSessionsUnknownUserTimingMatchesWrongPassword`).
+
+Decision: keep a daily run, make it cheap, and move the expensive lanes to a
+weekly sweep.
+
+| Run | Cron | Lanes |
+| --- | --- | --- |
+| Daily | Monday to Saturday 04:00 UTC | Scoped to changes since the last all-green run: `api-1..4` (shuffled, no `-race`), `rest-heavy`, `rest-light`, kit, govulncheck, install.sh |
+| Weekly sweep | Sunday 04:00 UTC and manual dispatch | Everything above with `-race` where it applies, plus `docker` and the `race-a` / `race-b` halves of the concurrent packages, unscoped, with 75 minute test timeouts |
+
+Estimated cost is about 55 job minutes on a busy daily run and 300 to 350 on
+the Sunday sweep, about 650 a week, down from about 1,450.
+
+How it reports without turning `main` red:
+
+- Every test step has `continue-on-error` and writes `status-<lane>` as an
+  artifact, so the run itself stays green. It is a scheduled workflow, never a
+  required check (`CI required` is the only one).
+- The `summary` job writes one table to the job summary, opens or updates a
+  single `nightly-failure` issue while any lane is red, and closes it when
+  green. Flake sweep and quarantine lanes are advisory and never count.
+- An all-green run uploads a `nightly-green` marker. The next daily run diffs
+  against that commit, so a failed lane is retried until it passes.
+
+Quarantine: `.github/flaky-tests.txt` entries (with an issue link, 14 day limit)
+are skipped by every lane and run alone, non-blocking, in the `quarantined` job
+(`QUARANTINE=only`). Prefer fixing: inject a clock or resolver, use
+`t.TempDir` and `t.Setenv`, wait on a condition instead of sleeping.
+
+Test hygiene found this way: a test that saves a URL with a public hostname
+must not resolve DNS (set `netguard.AllowPrivateEnv` through a helper), a live
+test that parses an SSE stream must skip `event: status` frames, and a timing
+comparison should use the fastest of several runs, not the median.

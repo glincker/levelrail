@@ -177,7 +177,7 @@ func TestHandleLiveLogStream_Live_BlueGreenOverlap_HidesDeadContainerFromCurrent
 	}
 	reader := bufio.NewReader(resp.Body)
 
-	first, err := nextSSEData(reader)
+	first, err := nextLogSSEData(reader)
 	if err != nil {
 		t.Fatalf("read backfill event: %v", err)
 	}
@@ -195,7 +195,7 @@ func TestHandleLiveLogStream_Live_BlueGreenOverlap_HidesDeadContainerFromCurrent
 	// line, any further read either blocks until reqCtx's own 3s timeout
 	// (success: nothing else was ever sent) or, if the fix regressed,
 	// would return the dead container's line instead.
-	second, err := nextSSEData(reader)
+	second, err := nextLogSSEData(reader)
 	if err == nil {
 		t.Fatalf("received a second live event = %q, want none: the dead container's lines must never reach the live view", second)
 	}
@@ -251,5 +251,26 @@ func removeAPILogTestContainerIfExists(t *testing.T, c *docker.Client, name stri
 	}
 	if err := c.Remove(context.Background(), state.ID, true); err != nil {
 		t.Logf("cleanup: remove %s: %v", name, err)
+	}
+}
+
+// nextLogSSEData is nextSSEData minus "event: status" frames: the stream now
+// opens with a run-state frame that is not a log line.
+func nextLogSSEData(r *bufio.Reader) (string, error) {
+	status := false
+	for {
+		line, err := r.ReadString('\n')
+		if err != nil {
+			return "", err
+		}
+		line = strings.TrimRight(line, "\r\n")
+		switch {
+		case line == "":
+			status = false
+		case line == "event: status":
+			status = true
+		case strings.HasPrefix(line, "data: ") && !status:
+			return strings.TrimPrefix(line, "data: "), nil
+		}
 	}
 }
