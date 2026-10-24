@@ -1,7 +1,12 @@
 // Matches the runtime settings API (internal/runtimesettings, /api/v1/settings/runtime).
 
 export type RuntimeSettingCategory =
-  'security' | 'networking' | 'deploys' | 'observability' | 'experimental'
+  | 'security'
+  | 'networking'
+  | 'deploys'
+  | 'observability'
+  | 'experimental'
+  | 'retention'
 
 export type RuntimeSettingKind = 'bool' | 'duration' | 'string_list' | 'int'
 export type RuntimeSettingSource = 'saved' | 'env' | 'default'
@@ -23,6 +28,8 @@ export interface RuntimeSetting {
   apply: RuntimeSettingApply
   risk: RuntimeSettingRisk
   onboarding: boolean
+  /** Set for an int setting limited to a fixed list of values. */
+  allowed_values?: number[]
   pending_restart: boolean
   updated_at?: string
   updated_by?: string

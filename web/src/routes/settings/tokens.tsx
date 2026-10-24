@@ -5,6 +5,7 @@ import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
 import { tokenListQueryOptions } from '../../queries/tokens'
 import { TokenTable } from '../../components/TokenTable'
 import { CreateTokenDialog } from '../../components/CreateTokenDialog'
+import { RevokedTokensCard } from '../../components/RevokedTokensCard'
 import { useBrand } from '../../hooks/useBrand'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageTemplate } from '@/components/shell/PageTemplate'
@@ -83,7 +84,8 @@ function TokensPage() {
           {t('tokensPage.docsLink')}
         </a>
       ) : null}
-      <TokenTable tokens={tokens} />
+      <TokenTable tokens={active} />
+      <RevokedTokensCard tokens={tokens} />
     </PageTemplate>
   )
 }

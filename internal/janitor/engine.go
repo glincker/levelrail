@@ -33,6 +33,8 @@ const (
 	maxAttemptsPerPass      = 500
 	maxVolumeRemovalsPerRun = 5
 	volumeKind              = "volume"
+	// AuditTokensCleanup is the audit action written once per token cleanup run.
+	AuditTokensCleanup = "tokens.cleanup"
 )
 
 // ErrBusy means another pass is already running.
@@ -43,7 +45,9 @@ type Item struct {
 	Name      string `json:"name"`
 	Detail    string `json:"detail,omitempty"`
 	SizeBytes int64  `json:"size_bytes"`
-	Action    string `json:"action"`
+	// Count is how many rows the item covers, for stages that remove rows rather than bytes.
+	Count  int    `json:"count,omitempty"`
+	Action string `json:"action"`
 }
 
 // StageResult is what one stage did in a pass.
@@ -90,6 +94,7 @@ type Store interface {
 	DeleteJanitorQuarantine(ctx context.Context, kind, name string) error
 	ListPrunableDeployAttempts(ctx context.Context, cutoff time.Time, keep, limit int) ([]store.PrunableAttempt, error)
 	DeleteDeployAttempts(ctx context.Context, ids []string) error
+	TokenPurger
 }
 
 // Deps are the engine's collaborators.
@@ -103,8 +108,14 @@ type Deps struct {
 	// OrphanVolumes lists named volumes no desired state or container references.
 	OrphanVolumes func(ctx context.Context) ([]docker.NamedVolume, error)
 	RemoveVolume  func(ctx context.Context, name string) error
-	Logger        *slog.Logger
-	Now           func() time.Time
+	// TokenWindows reads the live token retention settings; nil skips the tokens stage.
+	TokenWindows func(ctx context.Context) TokenWindows
+	// TokenBatch and TokenMaxBatches bound one pass; zero uses the defaults.
+	TokenBatch, TokenMaxBatches int
+	// Audit records a system audit row with a JSON detail.
+	Audit  func(ctx context.Context, action, detail string)
+	Logger *slog.Logger
+	Now    func() time.Time
 }
 
 // Engine runs cleanup passes one at a time.
@@ -167,6 +178,7 @@ func (e *Engine) Run(ctx context.Context, opts Options) (Report, error) {
 		{StageBuildCache, func() StageResult { return e.buildCache(ctx, policy, opts.DryRun, pressure, now) }},
 		{StageVolumes, func() StageResult { return e.volumes(ctx, policy, opts.DryRun, pressure, now) }},
 		{StageAttempts, func() StageResult { return e.attempts(ctx, policy, opts.DryRun, now) }},
+		{StageTokens, func() StageResult { return e.tokens(ctx, opts.DryRun, opts.Trigger, now) }},
 	}
 	for _, s := range steps {
 		if len(opts.Stages) > 0 && !slices.Contains(opts.Stages, s.stage) {

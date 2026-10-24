@@ -11,6 +11,7 @@ export const CATEGORY_ORDER: RuntimeSettingCategory[] = [
   'deploys',
   'observability',
   'experimental',
+  'retention',
 ]
 
 export function groupByCategory(

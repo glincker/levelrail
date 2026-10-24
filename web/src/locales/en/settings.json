@@ -1613,6 +1613,22 @@
       "title_one": "{{count}} root token never expires",
       "title_other": "{{count}} root tokens never expire",
       "body": "A leaked root token can change anything on this instance. Revoke it and mint a narrower one with an expiry."
+    },
+    "revoked": {
+      "title": "Revoked tokens",
+      "autoDelete": "Delete revoked tokens after",
+      "schedule": "Removal runs with the scheduled cleanup, which must be on and not in preview mode.",
+      "janitorLink": "Cleanup settings",
+      "cleanNow": "Clean up now",
+      "empty": "No revoked tokens. Tokens you revoke show up here until they are removed.",
+      "revokedAt": "Revoked",
+      "confirmTitle": "Remove revoked tokens?",
+      "confirmBody_one": "{{count}} revoked token will be removed for good.",
+      "confirmBody_other": "{{count}} revoked tokens will be removed for good.",
+      "confirmConsequence": "Active tokens are not touched. Audit history keeps the names of who used them.",
+      "confirmAction": "Remove revoked tokens",
+      "cleaned_one": "Removed {{count}} revoked token.",
+      "cleaned_other": "Removed {{count}} revoked tokens."
     }
   },
   "usersPage": {

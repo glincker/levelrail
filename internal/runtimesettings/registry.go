@@ -31,6 +31,7 @@ const (
 	CategoryDeploys       Category = "deploys"
 	CategoryObservability Category = "observability"
 	CategoryExperimental  Category = "experimental"
+	CategoryRetention     Category = "retention"
 )
 
 // Apply says when a changed value takes effect.
@@ -66,6 +67,8 @@ const (
 	KeyBindBlockCredentialDirs = "security.bind_block_credential_dirs"
 	KeyBindAllowedRoots        = "security.bind_allowed_roots"
 	KeyTrustLoopbackForwarded  = "security.trust_loopback_forwarded_headers"
+	KeyRevokedTokenDays        = "retention.revoked_token_days" //nolint:gosec // setting key, not a credential
+	KeyExpiredTokenDays        = "retention.expired_token_days" //nolint:gosec // setting key, not a credential
 )
 
 // Definition describes one setting. Default and values are in string form
@@ -85,6 +88,8 @@ type Definition struct {
 	DescKey     string
 	Title       string
 	Description string
+	// AllowedInts limits an int setting to these values; empty accepts any integer.
+	AllowedInts []int
 	// CheckItem validates one string_list entry; nil accepts any non-empty entry.
 	CheckItem func(item string) error
 }
@@ -176,7 +181,24 @@ func init() {
 		Title:       "Trust forwarded headers from loopback",
 		Description: "Believe X-Forwarded-For when the request arrives from this host. Turn off when nothing local proxies to the control plane.",
 	})
+	Register(Definition{
+		Key: KeyRevokedTokenDays, Category: CategoryRetention, Kind: KindInt, Default: "90", AllowedInts: TokenRetentionPresets,
+		Env: "APP_RETENTION_REVOKED_TOKEN_DAYS", Apply: ApplyLive,
+		TitleKey: "runtimeSettings:items.revokedTokenDays.title", DescKey: "runtimeSettings:items.revokedTokenDays.description",
+		Title:       "Delete revoked API tokens after",
+		Description: "Days a revoked API token stays listed before the cleanup removes it. 0 keeps them forever.",
+	})
+	Register(Definition{
+		Key: KeyExpiredTokenDays, Category: CategoryRetention, Kind: KindInt, Default: "90", AllowedInts: TokenRetentionPresets,
+		Env: "APP_RETENTION_EXPIRED_TOKEN_DAYS", Apply: ApplyLive,
+		TitleKey: "runtimeSettings:items.expiredTokenDays.title", DescKey: "runtimeSettings:items.expiredTokenDays.description",
+		Title:       "Delete expired API tokens after",
+		Description: "Days an expired API token stays listed before the cleanup removes it. 0 keeps them forever.",
+	})
 }
+
+// TokenRetentionPresets are the day counts an operator may pick; 0 keeps tokens forever.
+var TokenRetentionPresets = []int{0, 30, 60, 90, 365}
 
 // ParseDuration parses a positive duration.
 func ParseDuration(s string) (time.Duration, error) {

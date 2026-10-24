@@ -20,10 +20,11 @@ const (
 	StageBuildCache Stage = "build_cache"
 	StageVolumes    Stage = "volumes"
 	StageAttempts   Stage = "deploy_attempts"
+	StageTokens     Stage = "api_tokens"
 )
 
 // AllStages lists every stage in the order a pass runs them.
-var AllStages = []Stage{StageContainers, StageImages, StageBuildCache, StageVolumes, StageAttempts}
+var AllStages = []Stage{StageContainers, StageImages, StageBuildCache, StageVolumes, StageAttempts, StageTokens}
 
 // Policy is the operator-editable cleanup configuration.
 type Policy struct {

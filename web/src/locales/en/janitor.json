@@ -51,14 +51,16 @@
     "images": "Dangling images",
     "build_cache": "Build cache",
     "volumes": "Orphaned volumes",
-    "deploy_attempts": "Old deploy attempts"
+    "deploy_attempts": "Old deploy attempts",
+    "api_tokens": "Revoked and expired API tokens"
   },
   "stageHelp": {
     "containers": "Stopped containers no app or database still wants. Runs when disk is short.",
     "images": "Untagged images only. Tagged images, which include rollback targets, are never removed.",
     "build_cache": "Idle build cache past the age limit, and more when the cache is over budget.",
     "volumes": "Volumes no app uses are held in quarantine, then deleted only if you allow it. Database data is never removed.",
-    "deploy_attempts": "Failed, superseded and canceled attempts past retention. Succeeded attempts and rollback pins stay."
+    "deploy_attempts": "Failed, superseded and canceled attempts past retention. Succeeded attempts and rollback pins stay.",
+    "api_tokens": "Revoked or expired API tokens past their retention window. Active tokens are never removed. Set the windows under Settings, API tokens."
   },
   "action": {
     "removed": "Removed",

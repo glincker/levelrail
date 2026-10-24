@@ -41,6 +41,7 @@ type Setting struct {
 	Risk           string          `json:"risk"`
 	Onboarding     bool            `json:"onboarding"`
 	Sensitive      bool            `json:"sensitive"`
+	AllowedValues  []int           `json:"allowed_values,omitempty"`
 	PendingRestart bool            `json:"pending_restart"`
 	UpdatedAt      *time.Time      `json:"updated_at"`
 	UpdatedBy      string          `json:"updated_by"`
@@ -173,6 +174,7 @@ func (s *Service) build(r resolved) Setting {
 		Key: d.Key, Category: string(d.Category), Kind: string(d.Kind), Title: d.Title, Description: d.Description,
 		Default: typed(d, def), Value: typed(d, r.canonical), Source: r.source, Env: d.Env,
 		Apply: string(d.Apply), Risk: string(d.Risk), Onboarding: d.Onboarding, Sensitive: d.Sensitive,
+		AllowedValues: d.AllowedInts,
 	}
 	if d.Sensitive {
 		out.Default, out.Value = maskSensitive(out.Default), maskSensitive(out.Value)

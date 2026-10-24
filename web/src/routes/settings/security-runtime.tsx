@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { SettingRows } from '@/components/ui/setting-row'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { RuntimeRestartBanner } from '@/components/settings/RuntimeRestartBanner'
+import { RetentionOverviewCard } from '@/components/settings/RetentionOverviewCard'
 import { RuntimeSettingRow } from '@/components/settings/RuntimeSettingRow'
 import {
   SettingsCardSkeleton,
@@ -93,6 +94,7 @@ function SecurityRuntimePage() {
           </CardContent>
         </Card>
       ))}
+      {settings.length > 0 ? <RetentionOverviewCard /> : null}
     </PageTemplate>
   )
 }

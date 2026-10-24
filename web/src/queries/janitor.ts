@@ -4,7 +4,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export type JanitorStageName =
-  'containers' | 'images' | 'build_cache' | 'volumes' | 'deploy_attempts'
+  | 'containers'
+  | 'images'
+  | 'build_cache'
+  | 'volumes'
+  | 'deploy_attempts'
+  | 'api_tokens'
 
 export const JANITOR_STAGES: JanitorStageName[] = [
   'containers',
@@ -12,6 +17,7 @@ export const JANITOR_STAGES: JanitorStageName[] = [
   'build_cache',
   'volumes',
   'deploy_attempts',
+  'api_tokens',
 ]
 
 export interface JanitorPolicy {
@@ -32,6 +38,8 @@ export interface JanitorItem {
   name: string
   detail?: string
   size_bytes: number
+  /** Rows covered by the item, for stages that remove rows rather than bytes. */
+  count?: number
   action:
     'removed' | 'would_remove' | 'quarantined' | 'would_quarantine' | 'kept'
 }
