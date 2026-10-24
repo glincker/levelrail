@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"golang.org/x/oauth2"
 )
@@ -148,7 +149,12 @@ func (rt *Router) beginOAuthFlow(w http.ResponseWriter, r *http.Request, purpose
 		return
 	}
 
-	client, err := rt.oauthClientFactory(provider, settings, clientSecret, oauthRedirectURL(r, provider))
+	redirectURL, err := rt.oauthRedirectURL(r, provider)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, authengine.ErrOAuthRedirectUnavailable.Error())
+		return
+	}
+	client, err := rt.oauthClientFactory(provider, settings, clientSecret, redirectURL)
 	if err != nil {
 		rt.internalError(w, "api: oauth start: build client failed", err, slog.String("provider", provider))
 		return
@@ -231,7 +237,12 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client, err := rt.oauthClientFactory(provider, settings, clientSecret, oauthRedirectURL(r, provider))
+	redirectURL, err := rt.oauthRedirectURL(r, provider)
+	if err != nil {
+		redirectOAuthError(w, r, "not_configured")
+		return
+	}
+	client, err := rt.oauthClientFactory(provider, settings, clientSecret, redirectURL)
 	if err != nil {
 		rt.logger.Error("api: oauth callback: build client failed", slog.String("provider", provider), slog.String("error", err.Error()))
 		redirectOAuthError(w, r, "internal_error")
@@ -308,16 +319,11 @@ func redirectOAuthError(w http.ResponseWriter, r *http.Request, code string) {
 	http.Redirect(w, r, "/login?oauth_error="+code, http.StatusFound)
 }
 
-// oauthRedirectURL builds this callback's own absolute URL from the
-// incoming request rather than a fixed setting: a registered OAuth
-// redirect URI must exactly match, and the request's own Host is always
-// correct for whatever domain the operator is reaching this through.
-func oauthRedirectURL(r *http.Request, provider string) string {
-	scheme := "http"
-	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
-		scheme = proto
-	} else if r.TLS != nil {
-		scheme = "https"
+// oauthRedirectURL resolves the callback URL through the library resolver, so
+// the dashboard URL wins and Host is trusted only from a trusted peer.
+func (rt *Router) oauthRedirectURL(r *http.Request, provider string) (string, error) {
+	if rt.authLibOAuth == nil {
+		return authengine.OAuthRedirectResolver{}.Resolve(r, provider)
 	}
-	return scheme + "://" + r.Host + "/api/v1/auth/oauth/" + provider + "/callback"
+	return rt.authLibOAuth.OAuthRedirectURI(r, provider)
 }

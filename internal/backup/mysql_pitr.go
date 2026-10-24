@@ -276,15 +276,20 @@ func PruneRemoteBinlogs(ctx context.Context, dest Destination, lister Lister, de
 // binlogToolCmd prints the path of the binlog reader an image ships, failing when it has none.
 var binlogToolCmd = []string{"bash", "-c", `command -v mariadb-binlog || command -v mysqlbinlog`}
 
+// binlogSQLScript reads every variable part from positional args, so a schema
+// name can never reach the shell as code.
+const binlogSQLScript = `B=$(command -v mariadb-binlog || command -v mysqlbinlog); SRC=$1; DST=$2; START=$3; STOP=$4; shift 4; ` +
+	`case "$B" in *mariadb-binlog) F=$SRC;; *) F=$DST;; esac; ` +
+	`cd /tmp/pitr-binlog && TZ=UTC exec "$B" --start-position="$START" --stop-datetime="$STOP" --database="$F" --rewrite-db="$SRC->$DST" "$@"`
+
 // binlogSQLCmd turns the staged binlog files into SQL for the schema dstDB, stopping
 // before stopAt. The schema is renamed because the new resource's own database
 // carries a different name than the source's.
 func binlogSQLCmd(files []string, startPos int64, stopAt time.Time, srcDB, dstDB string) []string {
 	// MySQL's mysqlbinlog applies --database after the rewrite, MariaDB's before it.
-	return []string{"bash", "-c", fmt.Sprintf(
-		`B=$(command -v mariadb-binlog || command -v mysqlbinlog); case "$B" in *mariadb-binlog) F=%q;; *) F=%q;; esac; `+
-			`cd /tmp/pitr-binlog && TZ=UTC exec "$B" --start-position=%d --stop-datetime=%q --database="$F" --rewrite-db=%q %s`,
-		srcDB, dstDB, startPos, stopAt.UTC().Format("2006-01-02 15:04:05"), srcDB+"->"+dstDB, strings.Join(files, " "))}
+	args := []string{"bash", "-c", binlogSQLScript, "bash", srcDB, dstDB,
+		strconv.FormatInt(startPos, 10), stopAt.UTC().Format("2006-01-02 15:04:05")}
+	return append(args, files...)
 }
 
 // mysqlLoadCmd feeds SQL on stdin into the managed schema.
