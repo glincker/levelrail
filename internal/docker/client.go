@@ -206,6 +206,23 @@ func (c *Client) ServerVersion(ctx context.Context) (string, error) {
 	return v.Version, nil
 }
 
+// EngineIdentity asks the daemon who it is (/version, then /info for the
+// OS string), so the doctor can tell Podman and desktop runtimes apart.
+func (c *Client) EngineIdentity(ctx context.Context) (EngineIdentity, error) {
+	v, err := c.cli.ServerVersion(ctx)
+	if err != nil {
+		return EngineIdentity{}, fmt.Errorf("docker: engine identity: %w", err)
+	}
+	id := EngineIdentity{PlatformName: v.Platform.Name}
+	for _, comp := range v.Components {
+		id.Components = append(id.Components, comp.Name)
+	}
+	if info, err := c.cli.Info(ctx); err == nil {
+		id.OperatingSystem = info.OperatingSystem
+	}
+	return id, nil
+}
+
 // TestRegistryAuth asks the daemon to authenticate against host with
 // username/password, the daemon's own `docker login`-equivalent check,
 // without pulling anything. Same narrow-interface-on-the-concrete-type

@@ -188,7 +188,7 @@ The control plane and each agent reach Docker through an in-process allowlisting
 
 ## Rootless and Podman
 
-`GET /api/v1/system/doctor`'s `container_runtime` check (`levelrail-cli doctor`) reports which container engine and privilege mode the control plane is talking to: Docker or Podman, rootful or rootless, and which setting decided the socket (`APP_CONTAINER_RUNTIME_SOCKET`, then the standard `DOCKER_HOST`, then a well-known rootless or Podman socket path, then the rootful default `/var/run/docker.sock`).
+`GET /api/v1/system/doctor`'s `container_runtime` check (`levelrail-cli doctor`) reports which container engine, privilege mode and support level the control plane has: Docker, Podman, Docker Desktop, Colima, OrbStack, Rancher Desktop or unknown, rootful or rootless (rootful Docker on Linux is `supported`, other known engines `best-effort`, unknown `unverified`), and which setting decided the socket (`APP_CONTAINER_RUNTIME_SOCKET`, then the standard `DOCKER_HOST`, then a well-known rootless, Podman or desktop runtime socket path (`~/.docker/run`, `~/.colima/default`, `~/.orbstack/run`, `~/.rd`), then the rootful default `/var/run/docker.sock`).
 
 Podman exposes a Docker-compatible Engine API socket, so the existing Docker Engine API client talks to it unchanged, no CLI shelling and no new client library, consistent with the rule that Levelrail never shells out to the Docker CLI. `APP_CONTAINER_RUNTIME_SOCKET` pins the connection to a specific socket (for example `unix:///run/user/1000/podman/podman.sock`) ahead of `DOCKER_HOST`, for operators who would rather not export `DOCKER_HOST` into the whole process environment.
 
@@ -200,7 +200,7 @@ Container hardening (above) adjusts automatically under detected rootless: `Pids
 - **Low host ports.** Rootless port publishing goes through a userspace proxy (`rootlesskit`/`slirp4netns`), which by default can't bind host ports below 1024 regardless of the container's own capabilities. The embedded ingress runs on the host directly, not in a rootless container, so this only affects an app that needs to publish a low host port itself.
 - **cgroup limits beyond PidsLimit.** Memory and CPU limits also need a delegated cgroup v2 controller under rootless; unlike PidsLimit, this isn't currently detected or adjusted for `Resources.MemoryBytes`/`NanoCPUs`.
 
-Treat single-container rootless or Podman hosts as best-effort, not fully verified, until tested against a real installation.
+Source builds (Dockerfile, Railpack) need BuildKit inside dockerd: on Podman, image and compose deploys are expected to work and source builds are not verified. Treat single-container rootless or Podman hosts as best-effort, not fully verified, until tested against a real installation.
 
 ## Other hardening details
 

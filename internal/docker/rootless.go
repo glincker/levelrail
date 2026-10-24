@@ -8,14 +8,19 @@ import (
 )
 
 // RuntimeKind is the container engine DetectRuntimeSocket believes it is
-// talking to, decided from the socket path alone.
+// talking to, decided from the socket path and, when available, refined
+// from the engine's own /version and /info answer (see RefineKind).
 type RuntimeKind string
 
 // RuntimeKind values DetectRuntimeSocket can return.
 const (
-	RuntimeKindDocker  RuntimeKind = "docker"
-	RuntimeKindPodman  RuntimeKind = "podman"
-	RuntimeKindUnknown RuntimeKind = "unknown"
+	RuntimeKindDocker         RuntimeKind = "docker"
+	RuntimeKindPodman         RuntimeKind = "podman"
+	RuntimeKindDockerDesktop  RuntimeKind = "docker-desktop"
+	RuntimeKindColima         RuntimeKind = "colima"
+	RuntimeKindOrbStack       RuntimeKind = "orbstack"
+	RuntimeKindRancherDesktop RuntimeKind = "rancher-desktop"
+	RuntimeKindUnknown        RuntimeKind = "unknown"
 )
 
 // envRuntimeSocket overrides which Docker Engine API host this client
@@ -87,18 +92,102 @@ func candidateSockets(lookupEnv func(string) (string, bool)) []string {
 		)
 	}
 	if home, ok := lookupEnv("HOME"); ok && strings.TrimSpace(home) != "" {
-		out = append(out, filepath.Join(strings.TrimSpace(home), ".docker", "run", "docker.sock"))
+		home = strings.TrimSpace(home)
+		out = append(out,
+			filepath.Join(home, ".docker", "run", "docker.sock"),
+			filepath.Join(home, ".colima", "default", "docker.sock"),
+			filepath.Join(home, ".orbstack", "run", "docker.sock"),
+			filepath.Join(home, ".rd", "docker.sock"),
+		)
 	}
 	return append(out, "/run/podman/podman.sock", "/var/run/docker.sock")
 }
 
 func classifySocket(host, source string) RuntimeInfo {
-	kind := RuntimeKindDocker
-	if strings.Contains(strings.ToLower(host), "podman") {
-		kind = RuntimeKindPodman
-	}
-	rootless := strings.Contains(host, "/run/user/") || strings.Contains(host, "/.docker/run/")
+	lower := strings.ToLower(host)
+	kind := kindFromPath(lower)
+	rootless := strings.Contains(lower, "/run/user/")
 	return RuntimeInfo{Kind: kind, Rootless: rootless, Host: host, Source: source}
+}
+
+// kindFromPath names the engine from a lower-cased socket URL. Desktop
+// runtimes run a VM and are not rootless in the Linux sense. A tcp or ssh
+// host or an unrecognised socket name stays unknown until the engine answers.
+func kindFromPath(lower string) RuntimeKind {
+	switch {
+	case strings.Contains(lower, "podman"):
+		return RuntimeKindPodman
+	case strings.Contains(lower, "/.colima/"):
+		return RuntimeKindColima
+	case strings.Contains(lower, "/.orbstack/"):
+		return RuntimeKindOrbStack
+	case strings.Contains(lower, "/.rd/"), strings.Contains(lower, "/.rancher-desktop/"):
+		return RuntimeKindRancherDesktop
+	case strings.Contains(lower, "/.docker/run/"), strings.Contains(lower, "/.docker/desktop/"):
+		return RuntimeKindDockerDesktop
+	case strings.HasPrefix(lower, "unix://") && strings.HasSuffix(lower, "docker.sock"):
+		return RuntimeKindDocker
+	}
+	return RuntimeKindUnknown
+}
+
+// EngineIdentity is what an engine says about itself on /version and /info.
+type EngineIdentity struct {
+	PlatformName    string
+	Components      []string
+	OperatingSystem string
+}
+
+// RefineKind corrects a path-derived kind with the engine's own answer.
+// A kind the path already pinned to a specific product is kept, except
+// that a Podman answer always wins (Podman can sit behind a docker.sock path).
+func RefineKind(pathKind RuntimeKind, id EngineIdentity) RuntimeKind {
+	all := strings.ToLower(id.PlatformName + " " + id.OperatingSystem + " " + strings.Join(id.Components, " "))
+	switch {
+	case strings.Contains(all, "podman"):
+		return RuntimeKindPodman
+	case pathKind != RuntimeKindDocker && pathKind != RuntimeKindUnknown:
+		return pathKind
+	case strings.Contains(all, "orbstack"):
+		return RuntimeKindOrbStack
+	case strings.Contains(all, "colima"):
+		return RuntimeKindColima
+	case strings.Contains(all, "rancher desktop"):
+		return RuntimeKindRancherDesktop
+	case strings.Contains(all, "docker desktop"):
+		return RuntimeKindDockerDesktop
+	case strings.Contains(all, "docker engine"), strings.Contains(all, "moby"):
+		return RuntimeKindDocker
+	}
+	return pathKind
+}
+
+// SupportLevel says how much this platform vouches for a runtime.
+type SupportLevel string
+
+// SupportLevel values reported by the container_runtime doctor check.
+const (
+	SupportSupported  SupportLevel = "supported"
+	SupportBestEffort SupportLevel = "best-effort"
+	SupportUnverified SupportLevel = "unverified"
+)
+
+// SupportFor grades a detected runtime: rootful Docker Engine on Linux is
+// supported, everything else known is best-effort, unknown is unverified.
+func SupportFor(info RuntimeInfo, goos string) (SupportLevel, string) {
+	switch {
+	case info.Kind == RuntimeKindUnknown:
+		return SupportUnverified, "engine not recognised, behaviour untested"
+	case info.Kind == RuntimeKindPodman:
+		return SupportBestEffort, "Podman is exercised through its Docker-compatible API only"
+	case info.Kind != RuntimeKindDocker:
+		return SupportBestEffort, "desktop runtime, intended for levelrail-cli dev rather than production hosts"
+	case info.Rootless:
+		return SupportBestEffort, "rootless Docker has UID mapping and low-port limits"
+	case goos != "linux":
+		return SupportBestEffort, "Docker Engine outside Linux is intended for levelrail-cli dev"
+	}
+	return SupportSupported, "rootful Docker Engine on Linux"
 }
 
 func socketExists(path string) bool {
