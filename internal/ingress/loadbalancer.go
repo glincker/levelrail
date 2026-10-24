@@ -93,7 +93,9 @@ type LBRoute struct {
 func (lb *LBRoute) selectionPolicy() *SelectionPolicy {
 	switch lb.Policy {
 	case "", LBPolicyRoundRobin:
-		return nil
+		// Caddy's default is random, so rotation must be explicit. The empty
+		// policy (implicit LB) gets the same, since the docs promise rotation.
+		return &SelectionPolicy{Policy: LBPolicyRoundRobin}
 	case LBPolicyWeighted:
 		if len(lb.Weights) == 0 {
 			return nil

@@ -212,11 +212,10 @@ func TestDriver_LoadBalancer_PassiveHealthEjectsAndRejoins(t *testing.T) {
 	}, a, b)
 	b.appStatus.Store(http.StatusBadGateway)
 
-	// The default policy renders as Caddy's random selection (see
-	// selectionPolicy), so allow many tries to reach b; its 5xx trips the
-	// passive counter. Then wait for a clean run of a.
+	// Round robin reaches b within two requests; its 5xx trips the passive
+	// counter. Then wait for a clean run of a.
 	sawFail := false
-	for i := 0; i < 30 && !sawFail; i++ {
+	for i := 0; i < 2 && !sawFail; i++ {
 		st, _ := lbGet(t, lbClient, "http://"+addr+"/")
 		sawFail = st == http.StatusBadGateway
 	}
