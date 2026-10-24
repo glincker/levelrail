@@ -221,7 +221,7 @@ func TestRuntimeSettings_OnboardingAndSetupGuide(t *testing.T) {
 				return s.State
 			}
 		}
-		t.Fatal("security-review step missing")
+		t.Fatal("security_review step missing")
 		return ""
 	}
 	if got := guideState(); got != "todo" {
