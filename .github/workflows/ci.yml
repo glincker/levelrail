@@ -434,6 +434,7 @@ jobs:
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 5
     env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       COVERAGE: ${{ needs.plan.outputs.coverage }}
       LANES: ${{ needs.plan.outputs.lanes }}
       BASE: ${{ needs.changes.outputs.base }}
@@ -489,6 +490,19 @@ jobs:
       - name: Changed-line coverage gate (50% for /internal)
         if: env.COVERAGE != 'full'
         run: scripts/check-changed-file-coverage.sh coverage.out "$BASE" internal/ 50
+
+      # Advisory: runs after the gates, and an upload failure never fails CI.
+      - name: Upload coverage to Codecov
+        if: >-
+          env.CODECOV_TOKEN != '' && github.event_name == 'push'
+          && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+        continue-on-error: true
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.out
+          flags: go
+          fail_ci_if_error: false
 
   # Go lint and, when a workflow file changed, actionlint: one check line
   # instead of two.

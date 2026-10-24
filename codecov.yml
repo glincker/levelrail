@@ -1,0 +1,39 @@
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+comment: false
+
+# CI uploads impact-scoped profiles, so a flag keeps its last full value.
+flags:
+  go:
+    paths:
+      - internal/
+      - cmd/
+      - kit/
+    carryforward: true
+  web:
+    paths:
+      - web/src/
+    carryforward: true
+
+ignore:
+  - "internal/store/migrations/**"
+  - "test/fixtures/**"
+  - "internal/functions/starters/**"
+  - "web/src/routeTree.gen.ts"
+  - "internal/api/openapi_gen.go"
+  - "**/*.gen.ts"
+  - "**/*.gen.go"
+  - "**/*.pb.go"
+  - "**/*_test.go"
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "docs/**"
+  - "scripts/**"
+  - "web/public/**"
