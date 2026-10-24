@@ -170,7 +170,7 @@ func TestUpdateSuccess(t *testing.T) {
 		t.Fatal("replaced binary lost its executable bit")
 	}
 	entries, _ := os.ReadDir(filepath.Dir(exe))
-	if len(entries) != 1 {
+	if len(entries) != 2 { // the binary and its .bak
 		t.Fatalf("staging file left behind: %v", entries)
 	}
 }
@@ -236,7 +236,7 @@ func TestUpdateNotWritable(t *testing.T) {
 	}
 	srv := newFakeServer(t, listing, map[string]fakeRelease{"v1.2.0": {binary: fakeBinary("v1.2.0"), bundle: true}})
 	_, err := Update(context.Background(), Options{Source: srv.source(), Current: "v1.0.0", ExePath: exe, Verify: okVerify})
-	if !errors.Is(err, ErrNotWritable) || !strings.Contains(err.Error(), "sudo") {
+	if !errors.Is(err, ErrNotWritable) || !strings.Contains(err.Error(), "sudo") || !strings.Contains(err.Error(), "install-cli.sh") {
 		t.Fatalf("err=%v", err)
 	}
 }
@@ -330,5 +330,86 @@ func TestHinterBacksOffAfterFailure(t *testing.T) {
 	_ = h.Check(context.Background())
 	if f.hits.Load() != hits {
 		t.Fatal("retried within the backoff window")
+	}
+}
+
+func TestLatestChannels(t *testing.T) {
+	srv := newFakeServer(t, listing, nil)
+	for _, tc := range []struct{ channel, want string }{
+		{"", "v1.2.0"},
+		{ChannelStable, "v1.2.0"},
+		{ChannelBeta, "v1.3.0-beta.1"},
+	} {
+		s := srv.source()
+		s.Channel = tc.channel
+		got, err := s.Latest(context.Background())
+		if err != nil || got != tc.want {
+			t.Errorf("channel %q: got %q, %v want %q", tc.channel, got, err, tc.want)
+		}
+	}
+	s := srv.source()
+	s.Channel = "nightly"
+	if _, err := s.Latest(context.Background()); err == nil {
+		t.Error("unknown channel must fail")
+	}
+	onlyPre := newFakeServer(t, `[{"tag_name":"v2.0.0-rc.1","prerelease":true,"assets":[{"name":"tool-cli-linux-amd64"}]}]`, nil).source()
+	onlyPre.Channel = ChannelStable
+	if got, _ := onlyPre.Latest(context.Background()); got != "" {
+		t.Errorf("stable channel must not fall back to a prerelease, got %q", got)
+	}
+}
+
+func TestUpdateKeepsBackup(t *testing.T) {
+	exe := setup(t)
+	srv := newFakeServer(t, listing, map[string]fakeRelease{"v1.2.0": {binary: fakeBinary("v1.2.0"), bundle: true}})
+	res, err := Update(context.Background(), Options{Source: srv.source(), Current: "v1.0.0", ExePath: exe, Verify: okVerify})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Backup != exe+".bak" || content(t, res.Backup) != fakeBinary("v1.0.0") {
+		t.Fatalf("backup=%q", res.Backup)
+	}
+	if content(t, exe) != fakeBinary("v1.2.0") {
+		t.Fatal("binary not replaced")
+	}
+}
+
+func TestManagedPathHint(t *testing.T) {
+	for _, tc := range []struct{ path, want string }{
+		{"/usr/bin/levelrail-cli", "system package manager"},
+		{"/opt/homebrew/Cellar/levelrail-cli/1.0/bin/levelrail-cli", "brew upgrade"},
+		{"/opt/homebrew/bin/levelrail-cli", "brew upgrade"},
+		{"/nix/store/abc-levelrail/bin/levelrail-cli", "Nix"},
+		{"/usr/local/bin/levelrail-cli", ""},
+		{"/home/me/.local/bin/levelrail-cli", ""},
+	} {
+		got := ManagedPathHint(tc.path)
+		if (tc.want == "") != (got == "") || !strings.Contains(got, tc.want) {
+			t.Errorf("%s: got %q want contains %q", tc.path, got, tc.want)
+		}
+	}
+}
+
+func TestUpdateRefusesManagedPathUnlessForced(t *testing.T) {
+	exe := setup(t)
+	managed := filepath.Join(filepath.Dir(exe), "Cellar", "x")
+	if err := os.MkdirAll(managed, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	managedExe := filepath.Join(managed, "tool-cli")
+	if err := os.WriteFile(managedExe, []byte(fakeBinary("v1.0.0")), 0o755); err != nil { //nolint:gosec // test fixture
+		t.Fatal(err)
+	}
+	srv := newFakeServer(t, listing, map[string]fakeRelease{"v1.2.0": {binary: fakeBinary("v1.2.0"), bundle: true}})
+	o := Options{Source: srv.source(), Current: "v1.0.0", ExePath: managedExe, Verify: okVerify}
+	if _, err := Update(context.Background(), o); !errors.Is(err, ErrManagedPath) || !strings.Contains(err.Error(), "brew upgrade") {
+		t.Fatalf("err=%v", err)
+	}
+	if content(t, managedExe) != fakeBinary("v1.0.0") {
+		t.Fatal("managed binary changed")
+	}
+	o.Force = true
+	if _, err := Update(context.Background(), o); err != nil {
+		t.Fatalf("forced update: %v", err)
 	}
 }

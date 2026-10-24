@@ -12,7 +12,7 @@ import (
 )
 
 // hintSkipVerbs never carry the hint: they are about versions already, or are scripted by tools.
-var hintSkipVerbs = map[string]bool{"help": true, "completion": true, "version": true, "update": true, "-h": true, "--help": true}
+var hintSkipVerbs = map[string]bool{"help": true, "completion": true, "version": true, "update": true, "self-update": true, "-h": true, "--help": true}
 
 func wantsJSONOutput(args []string) bool {
 	for i, a := range args {

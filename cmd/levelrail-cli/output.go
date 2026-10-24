@@ -17,14 +17,15 @@ import (
 // Distinct exit codes so scripts and agents can branch on why a call failed without parsing stderr.
 const (
 	exitOK            = 0
-	exitUsage         = 1 // unknown command, missing positional argument, bad flag syntax
-	exitCheckFailed   = 1 // "control-plane-backups verify": the call worked but a check failed
-	exitValidation    = 2 // well-formed flags/file, but the request they describe is invalid
-	exitNetwork       = 3 // could not reach the API at all (connection refused, DNS, timeout)
-	exitAPIError      = 4 // the API was reached and returned a non-2xx response
-	exitDeployFailed  = 5 // "apps wait": every API call succeeded, but the deploy itself converged as a failure
-	exitDeployTimeout = 6 // "apps wait": gave up before the deploy converged either way
-	exitNotLive       = 7 // "go-live --wait": every call worked, but the domain is not live yet
+	exitUsage         = 1  // unknown command, missing positional argument, bad flag syntax
+	exitCheckFailed   = 1  // "control-plane-backups verify": the call worked but a check failed
+	exitValidation    = 2  // well-formed flags/file, but the request they describe is invalid
+	exitNetwork       = 3  // could not reach the API at all (connection refused, DNS, timeout)
+	exitAPIError      = 4  // the API was reached and returned a non-2xx response
+	exitDeployFailed  = 5  // "apps wait": every API call succeeded, but the deploy itself converged as a failure
+	exitDeployTimeout = 6  // "apps wait": gave up before the deploy converged either way
+	exitNotLive       = 7  // "go-live --wait": every call worked, but the domain is not live yet
+	exitUpdateAvail   = 10 // "update --check --exit-code": the check worked and a newer release exists
 )
 
 // errors.As unwraps wrapped errors, so classification survives any added context.

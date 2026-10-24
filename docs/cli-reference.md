@@ -41,9 +41,11 @@ levelrail-cli update --check          # current version, latest release, update 
 levelrail-cli update --dry-run        # show what would change, download nothing
 levelrail-cli update --yes            # replace this binary with the latest release
 levelrail-cli update --version v0.8.2 --yes   # pin a tag, also works as a downgrade
+levelrail-cli update --check --exit-code      # exit 10 when an update is available, for scripts
+levelrail-cli update --channel beta --yes     # include prereleases
 ```
 
-`update --check` always exits 0 when the check itself worked, even when you are out of date, and honors `--json` and `--output`. `update` downloads the asset for your OS and architecture, verifies its checksum and the release's Sigstore signature, runs the new binary once to confirm its version, then atomically replaces the running file. If the signature or checksum cannot be verified, or the directory is not writable (a package manager path, or a root-owned `/usr/local/bin`: update it that way or re-run with `sudo`), nothing is changed. In CI mode or without a terminal it needs `--yes`. Windows is not supported in place: re-run `install-cli.ps1`.
+`self-update` is an alias of `update`, and `version --check` is a shortcut for `update --check`. `update --check` exits 0 when the check itself worked, even when you are out of date, unless you add `--exit-code`: then it exits 10 when an update is available. It honors `--json` and `--output`. `--channel stable|beta` (or `LEVELRAIL_CHANNEL`) works like `install-cli.sh`: `stable` only considers stable releases, `beta` also considers prereleases, and with neither the newest stable release wins, falling back to a prerelease only when no stable one ships your binary. The previous binary is kept next to the new one as `levelrail-cli.bak`; to roll back run `mv levelrail-cli.bak levelrail-cli` in that directory. When a package manager owns the binary (Homebrew, Nix, `/usr/bin`) the command refuses and names the right upgrade command; `--force` overrides that. On a non-writable directory it prints the `sudo` and `install-cli.sh` commands to use. `update` downloads the asset for your OS and architecture, verifies its checksum and the release's Sigstore signature, runs the new binary once to confirm its version, then atomically replaces the running file. If the signature or checksum cannot be verified, or the directory is not writable (a package manager path, or a root-owned `/usr/local/bin`: update it that way or re-run with `sudo`), nothing is changed. In CI mode or without a terminal it needs `--yes`. Windows is not supported in place: re-run `install-cli.ps1`.
 
 Interactive runs print one line to stderr when a newer release exists, at most once per interval. It never runs in CI mode, with `--json` output, or for `help`, `version` and `update`, and it is cut off after a short wait so it cannot slow a command.
 
@@ -52,6 +54,7 @@ Interactive runs print one line to stderr when a newer release exists, at most o
 | `LEVELRAIL_NO_UPDATE_CHECK` | `1` turns the hint off | unset |
 | `LEVELRAIL_UPDATE_CHECK_DAYS` | days between hints, `0` disables | `7` |
 | `LEVELRAIL_UPDATE_HINT_WAIT_MS` | longest the hint may wait after a command ends | `750` |
+| `LEVELRAIL_CHANNEL` | `stable` or `beta`, same as `--channel` | unset |
 | `LEVELRAIL_RELEASE_API_URL` | releases API base | `https://api.github.com` |
 | `LEVELRAIL_RELEASE_BASE_URL` | asset download base, https only | the release repo's GitHub releases |
 ## Scripting: `--json` and exit codes
@@ -78,6 +81,7 @@ Exit codes are stable and shared by every command:
 | 5 | Deploy failed: `apps wait` reached a failed deploy |
 | 6 | Deploy timeout: `apps wait` or `apps deploys wait` gave up before the deploy converged |
 | 7 | `apps deploys wait` ended on a deploy that failed, was canceled, superseded or blocked |
+| 10 | `update --check --exit-code` found a newer CLI release (the check itself worked) |
 
 Codes 3 and 4 are broad on purpose so existing scripts keep working; the JSON error object carries the finer distinction.
 

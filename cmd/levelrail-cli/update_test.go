@@ -145,3 +145,35 @@ func TestUpdateHintPrintsOneLine(t *testing.T) {
 		t.Fatalf("stderr=%q", got)
 	}
 }
+
+func TestUpdateCheckExitCodeFlag(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		tag  string
+		args []string
+		want int
+	}{
+		{"outdated default stays 0", "v0.2.0", []string{"--check"}, exitOK},
+		{"outdated with flag is 10", "v0.2.0", []string{"--check", "--exit-code"}, exitUpdateAvail},
+		{"current with flag is 0", "v0.0.1", []string{"--check", "--exit-code"}, exitOK},
+		{"self-update style version shortcut", "v0.2.0", []string{"--check", "--exit-code", "--channel", "beta"}, exitUpdateAvail},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			env, _ := updateTestEnv(t, tc.tag, nil)
+			var out, errb bytes.Buffer
+			if code := runUpdate("levelrail-cli", tc.args, &out, &errb, env); code != tc.want {
+				t.Fatalf("code=%d want %d stderr=%s", code, tc.want, errb.String())
+			}
+		})
+	}
+}
+
+func TestVersionCheckAndSelfUpdateAlias(t *testing.T) {
+	env, _ := updateTestEnv(t, "v0.2.0", nil)
+	for _, args := range [][]string{{"version", "--check", "--exit-code"}, {"self-update", "--check", "--exit-code"}} {
+		var out, errb bytes.Buffer
+		if code := run("levelrail-cli", args, &out, &errb, env); code != exitUpdateAvail {
+			t.Fatalf("%v: code=%d stderr=%s", args, code, errb.String())
+		}
+	}
+}
