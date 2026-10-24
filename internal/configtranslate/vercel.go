@@ -9,7 +9,6 @@ import (
 
 const (
 	fileVercel = "vercel.json"
-	nodePort   = 3000
 )
 
 // staticFrameworks are Vercel framework presets that build to a folder of files.
@@ -76,7 +75,7 @@ func str(p *string) string {
 	return strings.TrimSpace(*p)
 }
 
-func translateVercel(files map[string][]byte) (Fragment, []Finding) {
+func translateVercel(files map[string][]byte, o options) (Fragment, []Finding) {
 	frag := Fragment{Version: 1, Services: map[string]Service{}}
 	var fs []Finding
 	add := func(code string, sev Severity, subject, msg, fix string) {
@@ -97,7 +96,7 @@ func translateVercel(files map[string][]byte) (Fragment, []Finding) {
 		svc.Build, fs = staticBuild(v, fs)
 	} else {
 		svc.Build = Build{Type: "railpack"}
-		svc.Port = nodePort
+		svc.Port = o.nodePort
 		if fw == "" {
 			add("vercel.framework.unknown", SeverityInfo, "", "no framework is set, Railpack detects the app from the repo", "Check the detected provider in the Deploy from git wizard.")
 		}
@@ -129,7 +128,7 @@ func translateVercel(files map[string][]byte) (Fragment, []Finding) {
 
 	fs = append(fs, vercelFunctions(&svc, v, isStatic)...)
 	fs = append(fs, vercelRouting(&svc, v, isStatic)...)
-	fs = append(fs, vercelCrons(&svc, v, isStatic)...)
+	fs = append(fs, vercelCrons(&svc, v, isStatic, o)...)
 	frag.Services["web"] = svc
 	return frag, fs
 }
@@ -296,7 +295,7 @@ func vercelRouting(svc *Service, v vercelJSON, isStatic bool) []Finding {
 
 var nonSlug = regexp.MustCompile(`[^a-z0-9]+`)
 
-func vercelCrons(svc *Service, v vercelJSON, isStatic bool) []Finding {
+func vercelCrons(svc *Service, v vercelJSON, isStatic bool, o options) []Finding {
 	if len(v.Crons) == 0 {
 		return nil
 	}
@@ -320,7 +319,7 @@ func vercelCrons(svc *Service, v vercelJSON, isStatic bool) []Finding {
 		used[name] = true
 		svc.Jobs = append(svc.Jobs, Job{
 			Name: name, Schedule: c.Schedule, Timezone: "UTC", Mode: "exec",
-			Command: []string{"curl", "-fsS", fmt.Sprintf("http://127.0.0.1:%d%s", nodePort, c.Path)},
+			Command: []string{"curl", "-fsS", fmt.Sprintf("http://127.0.0.1:%d%s", o.nodePort, c.Path)},
 		})
 		fs = append(fs, Finding{Code: "vercel.cron.http", Severity: SeverityWarn, Source: fileVercel, Subject: c.Path,
 			Message: "Vercel cron makes an HTTP call, a Levelrail task runs a command in the container, so curl is proposed",

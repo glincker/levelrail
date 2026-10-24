@@ -183,3 +183,12 @@ func TestMergeClash(t *testing.T) {
 		t.Error("expected merge.service-clash finding")
 	}
 }
+
+func TestPortOptionsOverrideDefaults(t *testing.T) {
+	files := map[string][]byte{"Procfile": []byte("web: node server.js\n")}
+	def, _ := Translate(files).Fragment.YAML()
+	got, _ := Translate(files, WithWebPort(9191), WithNodePort(0)).Fragment.YAML()
+	if !strings.Contains(string(def), "8080") || !strings.Contains(string(got), "9191") || strings.Contains(string(got), "8080") {
+		t.Fatalf("default:\n%s\noverride:\n%s", def, got)
+	}
+}

@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	fileProcfile = "Procfile"
-	fileAppJSON  = "app.json"
-	herokuPort   = 8080
+	fileProcfile      = "Procfile"
+	fileAppJSON       = "app.json"
+	defaultHerokuPort = 8080
 )
 
 var procLineRe = regexp.MustCompile(`^([A-Za-z0-9_-]+):\s+(.+)$`)
@@ -47,7 +47,7 @@ type envObj struct {
 	Generator   string          `json:"generator"`
 }
 
-func translateHeroku(files map[string][]byte) (Fragment, []Finding) {
+func translateHeroku(files map[string][]byte, o options) (Fragment, []Finding) {
 	frag := Fragment{Version: 1, Services: map[string]Service{}}
 	var fs []Finding
 	add := func(f Finding) { fs = append(fs, f) }
@@ -84,8 +84,8 @@ func translateHeroku(files map[string][]byte) (Fragment, []Finding) {
 			svc.Command = []string{"sh", "-c", cmd}
 		}
 		if name == "web" {
-			svc.Port = herokuPort
-			svc.Env = map[string]Env{"PORT": {Value: fmt.Sprint(herokuPort)}}
+			svc.Port = o.webPort
+			svc.Env = map[string]Env{"PORT": {Value: fmt.Sprint(o.webPort)}}
 			add(Finding{Code: "heroku.web.port", Severity: SeverityInfo, Source: fileProcfile, Subject: "web",
 				Message: "Heroku injects $PORT, here the service listens on a fixed port and PORT is set to match",
 				Fix:     "Change port and the PORT env value together if your app expects another port."})
@@ -97,7 +97,7 @@ func translateHeroku(files map[string][]byte) (Fragment, []Finding) {
 					Fix:     "Add health.readiness with a cheap path such as /health."})
 			}
 		} else {
-			svc.Port = herokuPort
+			svc.Port = o.webPort
 			add(Finding{Code: "heroku.process.port", Severity: SeverityInfo, Source: fileProcfile, Subject: name,
 				Message: "the spec requires a port on every non-static service, nothing needs to listen on it",
 				Fix:     "Leave it as is, or add an exec health probe."})

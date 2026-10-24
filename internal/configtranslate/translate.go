@@ -52,9 +52,42 @@ type Result struct {
 	Findings []Finding `json:"findings"`
 }
 
+// Default ports proposed when the source config names none.
+const (
+	DefaultWebPort  = 8080
+	DefaultNodePort = 3000
+)
+
+type options struct{ webPort, nodePort int }
+
+// Option tunes a translation without making the package read the environment.
+type Option func(*options)
+
+// WithWebPort sets the port proposed for Heroku web and worker services.
+func WithWebPort(p int) Option {
+	return func(o *options) {
+		if p > 0 {
+			o.webPort = p
+		}
+	}
+}
+
+// WithNodePort sets the port proposed for a Vercel server service.
+func WithNodePort(p int) Option {
+	return func(o *options) {
+		if p > 0 {
+			o.nodePort = p
+		}
+	}
+}
+
 // Translate detects the known config files in files (keyed by repo-relative
 // path) and returns the merged proposal. Unknown files are ignored.
-func Translate(files map[string][]byte) Result {
+func Translate(files map[string][]byte, opts ...Option) Result {
+	o := options{webPort: DefaultWebPort, nodePort: DefaultNodePort}
+	for _, opt := range opts {
+		opt(&o)
+	}
 	res := Result{Fragment: Fragment{Version: 1}}
 	res.Detected = Detect(files)
 	for _, f := range res.Detected {
@@ -62,9 +95,9 @@ func Translate(files map[string][]byte) Result {
 		var fs []Finding
 		switch f {
 		case FormatHeroku:
-			part, fs = translateHeroku(files)
+			part, fs = translateHeroku(files, o)
 		case FormatVercel:
-			part, fs = translateVercel(files)
+			part, fs = translateVercel(files, o)
 		}
 		res.Findings = append(res.Findings, fs...)
 		res.Findings = append(res.Findings, res.Fragment.merge(part)...)

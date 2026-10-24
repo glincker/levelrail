@@ -12,7 +12,7 @@ This is a runbook for moving one Vercel-hosted Next.js app onto a Levelrail inst
 Some areas are still beta (see [feature status](/feature-status)), and real public ACME has one recorded live run but no renewal or wildcard verification yet (see the [ACME verification runbook](/acme-verification-runbook)). Run the new deployment in parallel with Vercel, and keep Vercel as the rollback path until the shadow run in section 6 is clean.
 </Warning>
 
-Unlike the platform importer in [Migrate to Levelrail](/migrate-to-levelrail), there is no importer for Vercel. Everything below is manual.
+Unlike the platform importer in [Migrate to Levelrail](/migrate-to-levelrail), there is no platform API importer for Vercel. One offline helper exists: `levelrail-cli import config` reads `vercel.json` (and a `Procfile` or `app.json` if present) from a directory and prints a proposed `app.yaml` plus findings for what has no equivalent, each with a fix. It needs no token and changes nothing; review its output before using it. Everything else below is manual.
 
 ## 1. Inventory what Vercel holds
 

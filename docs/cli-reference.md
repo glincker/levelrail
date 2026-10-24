@@ -1767,6 +1767,7 @@ levelrail-cli import -f compose.yaml|Dockerfile [flags]
 levelrail-cli import --docker-run "docker run -p 80:80 nginx:1" [flags]
 levelrail-cli import platform coolify|dokploy|caprover --url URL [flags]
 levelrail-cli import cutover plan|run|status|rollback|confirm-dns --session ID --app NAME [flags]
+levelrail-cli import config [dir] [--out FILE] [--strict] [--json]
 levelrail-cli import takeover plan|run|status|rollback [flags]
 ```
 
@@ -1777,6 +1778,8 @@ levelrail-cli import takeover plan|run|status|rollback [flags]
 `import platform` reads apps, databases and settings from another platform (read only) and creates them here. Use `--dry-run` first. Databases and volumes are created empty; data is not migrated. Re-running skips what was already imported. The source token is read from `APP_IMPORT_SOURCE_TOKEN`, `--token-stdin` or `--token` (which lands in shell history). Other flags: `--only`, `--collision suffix|skip`, `--insecure-tls`, `--allow-private`, `--allow-loopback`. See [migrating from Coolify, Dokploy or CapRover](/migrating-from-coolify-dokploy-and-caprover).
 
 `import cutover` moves one staged app's traffic in a reversible flow. `plan` prints the readiness checklist, `run --dry-run` exercises everything except the switch, `run --confirm NAME` switches and verifies (rolling back on its own if verification fails), `status` shows the timeline, and `rollback` restores the previous DNS value and stops the staged app. Other flags: `--run ID`, `--accept-warnings`, `--no-wait`, `--wait DURATION`, `--json`. See [guided cutover](/migrating-from-coolify-dokploy-and-caprover#guided-cutover-of-one-staged-app).
+
+`import config` reads `Procfile`, `app.json` and `vercel.json` from a directory (default: the current one) and prints a proposed `app.yaml`. Findings go to stderr, blockers first, each with a fix. It is offline and read-only, needs no token and creates nothing. `--out FILE` writes the spec to a file, `--json` prints `{detected, spec, findings}`, and `--strict` exits 2 when any finding is a blocker (otherwise it exits 0). `LEVELRAIL_IMPORT_WEB_PORT` (default 8080) and `LEVELRAIL_IMPORT_NODE_PORT` (default 3000) set the proposed ports.
 
 `import takeover` moves this server's ports 80 and 443 from the old platform's proxy to the built-in ingress. `plan` and `run --dry-run` print the preflight and steps and change nothing, `run --confirm takeover` does it and waits through the restart, `status` shows the latest run and `rollback` restores the previous addresses and starts the old proxy again. Other flags: `--accept-unmanaged`, `--run ID`, `--reason TEXT`, `--no-wait`, `--wait DURATION`, `--json`. Root only. See [Migrate on the same server](/migrate-same-server).
 
