@@ -64,7 +64,7 @@
       "why": "If you lose your password or passkey, this is how you get back to your servers.",
       "cta": "Open security"
     },
-    "security-review": {
+    "security_review": {
       "title": "Review your security defaults",
       "what": "Look over the protections that ship turned on, such as webhook replay protection and audit of sensitive reads, and change any that do not fit your setup.",
       "why": "These defaults are safe for most installs. Reviewing them once means no protection is off by accident.",

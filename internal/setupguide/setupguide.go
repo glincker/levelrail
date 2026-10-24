@@ -11,7 +11,7 @@ type StepID string
 const (
 	StepSecureAdmin    StepID = "secure_admin"
 	StepSignInRecovery StepID = "sign_in_recovery"
-	StepSecurityReview StepID = "security-review"
+	StepSecurityReview StepID = "security_review"
 	StepPublicAddress  StepID = "public_address"
 	StepGitProvider    StepID = "git_provider"
 	StepFirstApp       StepID = "first_app"

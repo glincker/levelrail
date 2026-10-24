@@ -217,7 +217,7 @@ func TestRuntimeSettings_OnboardingAndSetupGuide(t *testing.T) {
 			t.Fatalf("guide: %v: %s", err, rec.Body.String())
 		}
 		for _, s := range g.Steps {
-			if s.ID == "security-review" {
+			if s.ID == "security_review" {
 				return s.State
 			}
 		}

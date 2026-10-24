@@ -157,7 +157,7 @@ func (rt *Router) handleSetRuntimeSetting(w http.ResponseWriter, r *http.Request
 	}
 	if rt.runtimeSettings.WeakensTo(r.Context(), key, req.Value) && !req.ConfirmWeakening {
 		writeJSON(w, http.StatusBadRequest, runtimeSettingError{
-			Error: "turning this protection off weakens security; send confirm_weakening: true to proceed",
+			Error: "lowering this protection weakens security; send confirm_weakening: true to proceed",
 			Code:  errCodeConfirmRequired, Field: "confirm_weakening",
 		})
 		return
