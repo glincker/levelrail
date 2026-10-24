@@ -57,7 +57,7 @@ func InventoryListCommand(engine string) ([]string, error) {
 	case EnginePostgres:
 		script = `export PGHOST="$SRC_HOST" PGPORT="$SRC_PORT" PGUSER="$SRC_USER" PGPASSWORD="$SRC_PASSWORD" PGDATABASE="${SRC_DB:-` + maintenanceDB + `}" PGCONNECT_TIMEOUT=20
 ` + pgReadOnly + `
-if [ -n "$SRC_TLS" ]; then export PGSSLMODE=require; fi
+` + pgTLS + `
 psql --no-password -At -F '|' -v ON_ERROR_STOP=1 <<'SQL'
 SELECT 'version|' || split_part(current_setting('server_version'), ' ', 1);
 SELECT 'db|' || datname || '|' || pg_database_size(datname) FROM pg_database WHERE NOT datistemplate AND datallowconn AND has_database_privilege(datname, 'CONNECT') ORDER BY datname;
@@ -90,7 +90,7 @@ exec mongosh "$@" --eval '` + mongoListJS + `'`
 func InventoryDatabaseCommand(dbName string) []string {
 	script := `export PGHOST="$SRC_HOST" PGPORT="$SRC_PORT" PGUSER="$SRC_USER" PGPASSWORD="$SRC_PASSWORD" PGDATABASE="$1" PGCONNECT_TIMEOUT=20
 ` + pgReadOnly + `
-if [ -n "$SRC_TLS" ]; then export PGSSLMODE=require; fi
+` + pgTLS + `
 psql --no-password -At -F '|' -v ON_ERROR_STOP=1 <<'SQL'
 SELECT 'tables|' || count(*) FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_schema NOT IN ('pg_catalog', 'information_schema');
 SELECT 'ext|' || extname FROM pg_extension WHERE extname <> 'plpgsql' ORDER BY extname;

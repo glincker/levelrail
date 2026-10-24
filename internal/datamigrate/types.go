@@ -30,6 +30,8 @@ type Source struct {
 	// AuthDatabase is MongoDB's authentication database, "admin" when empty.
 	AuthDatabase string `json:"auth_database,omitempty"`
 	TLS          bool   `json:"tls,omitempty"`
+	// SSLMode is the libpq sslmode for Postgres when TLS is set, "require" when empty.
+	SSLMode string `json:"ssl_mode,omitempty"`
 }
 
 // TableCount is one table (or collection) compared across both sides.
