@@ -159,3 +159,80 @@ func TestController_StreamFallsBackToServingRelease(t *testing.T) {
 		}
 	}
 }
+
+// B17/P1: after a rollback the Ready condition still belongs to the failed
+// retry of the abandoned release. The rollback target is running and passed
+// readiness before, so it keeps serving instead of the older held release.
+func TestController_RollbackTargetKeepsServingWhileStaleReadyIsFalse(t *testing.T) {
+	desired := store.DesiredService{Name: "web", Image: "img:v2", Port: 80, Domains: []string{"web.example.com"}}
+	base := time.Now().Add(-time.Hour)
+	rt := newFakeRuntime()
+	seedRelease(rt, "web", "img:v2", 34562, base.Add(time.Minute))
+	seedRelease(rt, "web", "img:v1", 34561, base)
+	applier := &fakeApplier{}
+	st := &fakeStore{
+		services:         []store.DesiredService{desired},
+		notReadyServices: map[string]bool{"web": true},
+		attempts: map[string][]store.DeployAttempt{"web": {
+			{Image: "img:v2", Status: store.DeployAttemptStatusRunning, StartedAt: time.Now()}, failed("img:v3"), succeeded("img:v2"), succeeded("img:v1"),
+		}},
+	}
+	c := New(st, rt, applier, WithLogger(discardLogger()))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if got := onlyUpstream(t, applier); got != "127.0.0.1:34562" {
+		t.Errorf("dial = %s, want the rollback target 127.0.0.1:34562", got)
+	}
+}
+
+// Half-succeeded: a desired container that never passed readiness stays
+// behind the serving release even though it is running.
+func TestController_UnprovenTargetStaysBehindServingReleaseWhenNotReady(t *testing.T) {
+	desired := store.DesiredService{Name: "web", Image: "img:v2", Port: 80, Domains: []string{"web.example.com"}}
+	base := time.Now().Add(-time.Hour)
+	rt := newFakeRuntime()
+	seedRelease(rt, "web", "img:v2", 34562, base.Add(time.Minute))
+	seedRelease(rt, "web", "img:v1", 34561, base)
+	applier := &fakeApplier{}
+	st := &fakeStore{
+		services:         []store.DesiredService{desired},
+		notReadyServices: map[string]bool{"web": true},
+		attempts:         map[string][]store.DeployAttempt{"web": {failed("img:v2"), succeeded("img:v1")}},
+	}
+	c := New(st, rt, applier, WithLogger(discardLogger()))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if got := onlyUpstream(t, applier); got != "127.0.0.1:34561" {
+		t.Errorf("dial = %s, want the serving release 127.0.0.1:34561", got)
+	}
+}
+
+// A restart or same-tag redeploy creates a new container with a proven
+// image; it must still wait for Ready.
+func TestController_FreshContainerOfProvenImageWaitsForReady(t *testing.T) {
+	desired := store.DesiredService{Name: "web", Image: "img:v2", Port: 80, Domains: []string{"web.example.com"}}
+	base := time.Now().Add(-time.Hour)
+	rt := newFakeRuntime()
+	seedRelease(rt, "web", "img:v2", 34562, time.Now().Add(time.Minute))
+	seedRelease(rt, "web", "img:v1", 34561, base)
+	applier := &fakeApplier{}
+	st := &fakeStore{
+		services:         []store.DesiredService{desired},
+		notReadyServices: map[string]bool{"web": true},
+		attempts: map[string][]store.DeployAttempt{"web": {
+			{Image: "img:v2", Status: store.DeployAttemptStatusRunning, StartedAt: time.Now()}, succeeded("img:v2"), succeeded("img:v1"),
+		}},
+	}
+	c := New(st, rt, applier, WithLogger(discardLogger()))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if got := onlyUpstream(t, applier); got != "127.0.0.1:34561" {
+		t.Errorf("dial = %s, want the serving release 127.0.0.1:34561", got)
+	}
+}

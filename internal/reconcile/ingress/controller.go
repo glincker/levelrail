@@ -1365,7 +1365,7 @@ func (c *Controller) dialForService(ctx context.Context, svc store.DesiredServic
 		if dial, ok := c.lastDial.Load(svc.Name); ok {
 			return dial.(string), true //nolint:errcheck,forcetypeassert // only strings are stored
 		}
-	} else if dial, ok := dialAddr(state); ok && targetReady {
+	} else if dial, ok := dialAddr(state); ok && (targetReady || c.passedReadiness(ctx, svc.Name, state)) {
 		c.lastDial.Store(svc.Name, dial)
 		return dial, true
 	}
@@ -1378,6 +1378,30 @@ func (c *Controller) dialForService(ctx context.Context, svc store.DesiredServic
 	c.logger.DebugContext(ctx, "ingress: no ready backend for service, skipping",
 		slog.String("service", svc.Name), slog.String("container", target))
 	return "", false
+}
+
+// passedReadiness reports whether state is a container that already
+// served: it runs a succeeded image and predates the newest deploy
+// attempt, so the current deploy did not create it. The Ready condition can
+// still belong to a failed retry of an abandoned release right after a
+// rollback, and the rollback target must not lose traffic to an older
+// release meanwhile. A container the newest deploy just created never
+// qualifies, so restarts and same-tag redeploys still wait for Ready.
+func (c *Controller) passedReadiness(ctx context.Context, serviceName string, state *docker.ContainerState) bool {
+	l, ok := c.store.(attemptLister)
+	if !ok || state == nil || state.Image == "" || state.Created.IsZero() {
+		return false
+	}
+	attempts, err := l.ListDeployAttempts(ctx, serviceName)
+	if err != nil || len(attempts) == 0 || !state.Created.Before(attempts[0].StartedAt) {
+		return false
+	}
+	for _, a := range attempts {
+		if a.Status == store.DeployAttemptStatusSucceeded && a.Image == state.Image {
+			return true
+		}
+	}
+	return false
 }
 
 // streamRoutes builds one ingress.StreamRoute per app stream
