@@ -66,6 +66,7 @@ func TestResolveImage(t *testing.T) {
 		{name: "registry down uses the cached digest", ref: "nginx:latest", dist: 500, local: 200, body: cached, wantRef: "nginx:latest@" + testCacheDigest, wantDigest: testCacheDigest, wantSource: ImageSourceCache},
 		{name: "registry down local-only image keeps the tag", ref: "myapp:dev", dist: 500, local: 200, body: localOnly, wantRef: "myapp:dev", wantLocalID: "sha256:localonly", wantSource: ImageSourceCache},
 		{name: "registry down and nothing cached", ref: "nginx:latest", dist: 500, local: 404, body: notFound, wantRef: "nginx:latest", wantSource: ImageSourceNone},
+		{name: "registry says the tag does not exist and nothing cached", ref: "nginx:nosuchtag", dist: 404, local: 404, body: notFound, wantErr: true},
 		{name: "require fresh fails when registry is down", ref: "nginx:latest", dist: 500, local: 200, body: cached, requireFresh: true, wantErr: true},
 	}
 	for _, tt := range tests {

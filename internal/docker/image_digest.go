@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -23,6 +24,9 @@ const (
 	// ImageSourceNone means neither the registry nor the local cache knew the tag.
 	ImageSourceNone ImageSource = "none"
 )
+
+// ErrImageNotFound means the registry has no such tag and no copy is cached.
+var ErrImageNotFound = errors.New("image not found")
 
 // ResolvedImage is a floating reference turned into content.
 type ResolvedImage struct {
@@ -115,6 +119,9 @@ func (c *Client) ResolveImage(ctx context.Context, ref string, auth *RegistryAut
 	local, err := c.cli.ImageInspect(ctx, ref)
 	if err != nil {
 		if cerrdefs.IsNotFound(err) {
+			if registrySaysMissing(regErr) {
+				return ResolvedImage{}, fmt.Errorf("docker: %w: %q is not in its registry and not cached locally: %w", ErrImageNotFound, ref, regErr)
+			}
 			return ResolvedImage{Ref: ref, Source: ImageSourceNone, RegistryErr: regErr}, nil
 		}
 		return ResolvedImage{}, fmt.Errorf("docker: resolve image %q: inspect local: %w", ref, err)
@@ -123,6 +130,16 @@ func (c *Client) ResolveImage(ctx context.Context, ref string, auth *RegistryAut
 		return ResolvedImage{Ref: PinImageRef(ref, d), Digest: d, Source: ImageSourceCache, RegistryErr: regErr}, nil
 	}
 	return ResolvedImage{Ref: ref, LocalID: local.ID, Source: ImageSourceCache, RegistryErr: regErr}, nil
+}
+
+// registrySaysMissing reports a definitive "no such tag" answer, as opposed
+// to an unreachable registry, which a node may still be able to pull from.
+func registrySaysMissing(err error) bool {
+	if cerrdefs.IsNotFound(err) {
+		return true
+	}
+	m := strings.ToLower(err.Error())
+	return strings.Contains(m, "manifest unknown") || strings.Contains(m, "not found")
 }
 
 // repoDigestFor picks the digest of the repo digest entry matching named.

@@ -180,6 +180,10 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note, rerunOf: req.RerunOf})
 	if err != nil {
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
+		if errors.Is(err, docker.ErrImageNotFound) {
+			writeError(w, http.StatusUnprocessableEntity, "image pull failed: "+err.Error())
+			return
+		}
 		if req.Pull {
 			writeError(w, http.StatusBadGateway, "could not resolve the image from its registry; retry without pull to use the cached image")
 			return

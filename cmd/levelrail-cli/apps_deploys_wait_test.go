@@ -61,3 +61,34 @@ func TestRun_AppsDeploysWait(t *testing.T) {
 		})
 	}
 }
+
+func TestRun_AppsDeploysWait_FrozenAfterRefusedDeploy(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/deploy-freeze") {
+			_, _ = w.Write([]byte(`{"windows":[],"status":{"frozen":true,"reason":"release freeze"}}`))
+			return
+		}
+		_ = json.NewEncoder(w).Encode(deployAttemptResource{ID: "dep_old", ServiceName: "web", Status: "succeeded", Outcome: "healthy"})
+	}))
+	t.Cleanup(srv.Close)
+	for _, tc := range []struct {
+		name     string
+		extra    []string
+		wantExit int
+	}{
+		{"implicit latest is blocked", nil, exitDeployNotHealthy},
+		{"explicit id still reports healthy", []string{"dep_old"}, exitOK},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			args := append([]string{"apps", "deploys", "wait", "web"}, tc.extra...)
+			args = append(args, "--poll-interval", "5ms", "--api-url", srv.URL)
+			var stdout, stderr bytes.Buffer
+			if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != tc.wantExit {
+				t.Fatalf("exit = %d, want %d (stdout %q stderr %q)", got, tc.wantExit, stdout.String(), stderr.String())
+			}
+			if tc.wantExit != exitOK && !strings.Contains(stderr.String(), "frozen") {
+				t.Errorf("stderr %q should name the freeze", stderr.String())
+			}
+		})
+	}
+}
