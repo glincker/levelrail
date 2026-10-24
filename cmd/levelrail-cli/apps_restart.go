@@ -32,7 +32,7 @@ func runAppsRestart(prog string, args []string, stdout, stderr io.Writer, lookup
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, restarted, func() {
-		_, _ = fmt.Fprintf(stderr, "app %q restart requested; reconcile is asynchronous, check \"%s apps status %s\"\n", restarted.Name, prog, restarted.Name)
+		_, _ = fmt.Fprintf(stderr, "app %q restart requested; rolling restart in progress, follow it with \"%s apps deploys wait %s\"\n", restarted.Name, prog, restarted.Name)
 		printAppHuman(stdout, restarted)
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
@@ -49,6 +49,12 @@ Forces an existing app's running container to be recreated with no image
 change. Different from "apps deploy" and "apps rollback": neither of
 those force a restart when the image is unchanged; this command always
 does, useful when a process needs a fresh start without a new build.
+
+The restart is rolling: a new container must pass readiness before traffic
+switches, and the old one is kept for a while. It also picks up saved env
+changes. It is recorded as a deploy with trigger "restart", so "apps deploys
+list" and "apps deploys wait" cover it. A stopped app is refused: run
+"apps start" first.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

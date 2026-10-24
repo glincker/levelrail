@@ -78,6 +78,24 @@ func TestRun_AppsRestart_NotFound(t *testing.T) {
 	}
 }
 
+func TestRun_AppsRestart_StoppedApp(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"error":"app is stopped, so there is nothing to restart; start it first"}`))
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "restart", "web", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitAPIError {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitAPIError, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "is stopped") {
+		t.Errorf("stderr = %q, want the stopped-app message", stderr.String())
+	}
+}
+
 func TestRun_AppsRestart_NoName(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"apps", "restart"}, &stdout, &stderr, envMap())

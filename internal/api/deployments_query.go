@@ -24,7 +24,7 @@ var (
 	}
 	deploymentTriggerValues = []string{
 		store.DeploymentTriggerGitPush, store.DeploymentTriggerManual, store.DeploymentTriggerRollback,
-		store.DeploymentTriggerAPI, store.DeploymentTriggerPreview, store.DeploymentTriggerSchedule, "pipeline",
+		store.DeploymentTriggerAPI, store.DeploymentTriggerPreview, store.DeploymentTriggerSchedule, store.DeploymentTriggerRestart, "pipeline",
 	}
 )
 

@@ -270,6 +270,10 @@ const (
 	DeployAttemptSourceCompose      = "compose"
 	DeployAttemptSourcePromote      = "promote"
 	DeployAttemptSourceAutoRollback = "auto_rollback"
+	// DeployAttemptSourceRestart marks a restart of the running release:
+	// same image, fresh container. It has its own row so a failed restart
+	// never rewrites the deploy it re-ran.
+	DeployAttemptSourceRestart = "restart"
 	// DeployAttemptSourceClone marks the first deploy of an app created
 	// by cloning a whole environment (internal/api/environment_clone.go's
 	// handleCloneEnvironment): a fresh app, same shape as the plain

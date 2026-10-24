@@ -253,6 +253,8 @@ func triggerEvent(in Inputs) (Event, TriggerInfo) {
 		e.Code, e.Title = "trigger.compose", "Compose deploy requested"
 	case store.DeployAttemptSourcePromote:
 		e.Code, e.Title = "trigger.promote", "Promotion requested"
+	case store.DeployAttemptSourceRestart:
+		e.Code, e.Title = "trigger.restart", "Restart requested"
 	case store.DeployAttemptSourceAutoRollback:
 		e.Code, e.Title = "trigger.auto_rollback", "Automatic rollback started"
 	default:
