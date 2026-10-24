@@ -4231,6 +4231,79 @@ func (c *Client) UpdateDashboardURL(ctx context.Context, req DashboardURLResourc
 	return out, err
 }
 
+// RuntimeSettingResource mirrors one entry of /api/v1/settings/runtime. Value and
+// Default are typed by the setting's kind (bool, string, []string or number).
+type RuntimeSettingResource struct {
+	Key            string `json:"key"`
+	Category       string `json:"category"`
+	Kind           string `json:"kind"`
+	Title          string `json:"title"`
+	Description    string `json:"description"`
+	Default        any    `json:"default"`
+	Value          any    `json:"value"`
+	Source         string `json:"source"`
+	Env            string `json:"env"`
+	Apply          string `json:"apply"`
+	Risk           string `json:"risk"`
+	Onboarding     bool   `json:"onboarding"`
+	PendingRestart bool   `json:"pending_restart"`
+	UpdatedAt      string `json:"updated_at"`
+	UpdatedBy      string `json:"updated_by"`
+}
+
+// RuntimeSettingsRestart reports whether the control plane can restart itself and has a restart pending.
+type RuntimeSettingsRestart struct {
+	Supported      bool `json:"supported"`
+	PendingRestart bool `json:"pending_restart"`
+}
+
+// RuntimeSettingsListResource mirrors the body of GET /api/v1/settings/runtime.
+type RuntimeSettingsListResource struct {
+	Settings []RuntimeSettingResource `json:"settings"`
+	Restart  RuntimeSettingsRestart   `json:"restart"`
+}
+
+// RuntimeSettingWrite is the PUT body. ConfirmWeakening is only set for settings whose risk is weakens_security.
+type RuntimeSettingWrite struct {
+	Value            any  `json:"value"`
+	ConfirmWeakening bool `json:"confirm_weakening,omitempty"`
+}
+
+// GetRuntimeSettings calls GET /api/v1/settings/runtime.
+func (c *Client) GetRuntimeSettings(ctx context.Context) (RuntimeSettingsListResource, error) {
+	var out RuntimeSettingsListResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/runtime", nil, &out)
+	return out, err
+}
+
+// GetRuntimeSetting calls GET /api/v1/settings/runtime/{key}.
+func (c *Client) GetRuntimeSetting(ctx context.Context, key string) (RuntimeSettingResource, error) {
+	var out RuntimeSettingResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/runtime/"+url.PathEscape(key), nil, &out)
+	return out, err
+}
+
+// PutRuntimeSetting calls PUT /api/v1/settings/runtime/{key}.
+func (c *Client) PutRuntimeSetting(ctx context.Context, key string, req RuntimeSettingWrite) (RuntimeSettingResource, error) {
+	var out RuntimeSettingResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/runtime/"+url.PathEscape(key), req, &out)
+	return out, err
+}
+
+// DeleteRuntimeSetting calls DELETE /api/v1/settings/runtime/{key}, dropping the saved value.
+func (c *Client) DeleteRuntimeSetting(ctx context.Context, key string) (RuntimeSettingResource, error) {
+	var out RuntimeSettingResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/runtime/"+url.PathEscape(key), nil, &out)
+	return out, err
+}
+
+// ApplyRuntimeSettings calls POST /api/v1/settings/runtime/apply.
+func (c *Client) ApplyRuntimeSettings(ctx context.Context) (map[string]any, error) {
+	out := map[string]any{}
+	err := c.do(ctx, http.MethodPost, "/api/v1/settings/runtime/apply", nil, &out)
+	return out, err
+}
+
 // GetSetupStatus calls GET /api/v1/auth/setup-status.
 func (c *Client) GetSetupStatus(ctx context.Context) (SetupStatusResource, error) {
 	var out SetupStatusResource

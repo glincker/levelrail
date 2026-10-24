@@ -386,6 +386,7 @@ var Tree = map[string]*Node{
 		"edge":          {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},
 		"ingress":       {Subs: map[string]*Node{"get": nil, "set": nil, "https": {Subs: map[string]*Node{"status": nil, "enable": nil}}}},
 		"dashboard-url": {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},
+		"runtime":       {Subs: map[string]*Node{"list": nil, "get": nil, "set": nil, "reset": nil, "apply": nil}},
 		"ai-assistant": {Subs: map[string]*Node{"get": nil, "use": nil, "usage": nil,
 			"providers": {Subs: map[string]*Node{"list": nil, "set": nil, "test": nil, "remove": nil, "models": nil}},
 			"fallback":  {Subs: map[string]*Node{"set": nil}}}},
