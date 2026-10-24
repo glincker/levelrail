@@ -71,14 +71,16 @@ const (
 // Definition describes one setting. Default and values are in string form
 // (bool "true", duration "10m", int "5", string_list as colon separated).
 type Definition struct {
-	Key         string
-	Category    Category
-	Kind        Kind
-	Default     string
-	Env         string
-	Apply       Apply
-	Risk        Risk
-	Onboarding  bool
+	Key        string
+	Category   Category
+	Kind       Kind
+	Default    string
+	Env        string
+	Apply      Apply
+	Risk       Risk
+	Onboarding bool
+	// Sensitive masks the value in API responses and audit rows; required for credential-like settings.
+	Sensitive   bool
 	TitleKey    string
 	DescKey     string
 	Title       string

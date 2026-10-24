@@ -35,6 +35,12 @@ Each process reads these variables once at startup, so a change only takes effec
 
 Duration values use Go duration syntax such as `30s`, `5m`, `1h30m`. Most variables fall back to their default when the value is unset or invalid; the exceptions are called out in the tables.
 
+## Sessions and cookies
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_COOKIE_SECURE` | unset (Secure only when the dashboard URL is `https://`) | Set to `true` to always mark the session cookie Secure. Use it when a proxy terminates TLS in front of an `http://` dashboard URL. Control plane. |
+
 ## Builds and build cache
 
 The control plane builds images with BuildKit. By default each build starts from whatever cache BuildKit already holds. These variables add a shared cache on top of that. See [Build node routing](/build-node-routing) for dedicated build nodes.

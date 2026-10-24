@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -38,6 +40,7 @@ type Setting struct {
 	Apply          string          `json:"apply"`
 	Risk           string          `json:"risk"`
 	Onboarding     bool            `json:"onboarding"`
+	Sensitive      bool            `json:"sensitive"`
 	PendingRestart bool            `json:"pending_restart"`
 	UpdatedAt      *time.Time      `json:"updated_at"`
 	UpdatedBy      string          `json:"updated_by"`
@@ -148,9 +151,19 @@ func (s *Service) resolve(ctx context.Context, d Definition) (resolved, error) {
 		if c, perr := canonicalFromString(d, v); perr == nil {
 			return resolved{def: d, canonical: c, source: SourceEnv}, err
 		}
+		warnInvalidEnv(d)
 	}
 	c, _ := canonicalFromString(d, d.Default)
 	return resolved{def: d, canonical: c, source: SourceDefault}, err
+}
+
+// maskSensitive hides a credential-like value but still tells the UI whether one is set.
+func maskSensitive(v json.RawMessage) json.RawMessage {
+	switch strings.TrimSpace(string(v)) {
+	case "", `""`, "null", "[]", "false", "0":
+		return v
+	}
+	return json.RawMessage(`"***"`)
 }
 
 func (s *Service) build(r resolved) Setting {
@@ -159,7 +172,10 @@ func (s *Service) build(r resolved) Setting {
 	out := Setting{
 		Key: d.Key, Category: string(d.Category), Kind: string(d.Kind), Title: d.Title, Description: d.Description,
 		Default: typed(d, def), Value: typed(d, r.canonical), Source: r.source, Env: d.Env,
-		Apply: string(d.Apply), Risk: string(d.Risk), Onboarding: d.Onboarding,
+		Apply: string(d.Apply), Risk: string(d.Risk), Onboarding: d.Onboarding, Sensitive: d.Sensitive,
+	}
+	if d.Sensitive {
+		out.Default, out.Value = maskSensitive(out.Default), maskSensitive(out.Value)
 	}
 	if r.row != nil {
 		t := r.row.UpdatedAt
@@ -389,4 +405,14 @@ func (s *Service) Int(ctx context.Context, key string) int {
 	var n int
 	_, _ = fmt.Sscanf(s.value(ctx, key), "%d", &n)
 	return n
+}
+
+var warnedInvalidEnv sync.Map
+
+// warnInvalidEnv logs once per setting; the value itself is never logged because it may be a secret.
+func warnInvalidEnv(d Definition) {
+	if _, seen := warnedInvalidEnv.LoadOrStore(d.Key, struct{}{}); seen {
+		return
+	}
+	slog.Warn("runtime setting ignored an invalid environment value, using the saved or default value", slog.String("key", d.Key), slog.String("env", d.Env))
 }
