@@ -34,13 +34,16 @@ Unknown parameters are ignored and listed in a notice on the reader's form. The 
 
 ## Badge
 
-Three SVG badges live in this repository under `docs/assets/brand`:
+Four SVG badges live in this repository under `docs/assets/brand`:
 
 | File | Look | Use it on |
 | --- | --- | --- |
 | `deploy-button-split.svg` | Dark logo segment, yellow label, 1px border | Any README (the safe default) |
-| `deploy-button-light.svg` | Pale fill, 2px teal border | Light backgrounds |
-| `deploy-button-dark.svg` | Dark fill, 2px cyan-to-yellow gradient border | Dark backgrounds |
+| `deploy-button-gradient-light.svg` | White fill, 2px teal-to-olive gradient border | Light backgrounds |
+| `deploy-button-gradient-dark.svg` | Dark fill, 2px cyan-to-yellow gradient border | Dark backgrounds |
+| `deploy-button-outline-light.svg` | Pale fill, 2px teal border | Light backgrounds, a quieter look |
+
+The two gradient badges are a matched light and dark pair for the HTML snippet below.
 
 The snippets load the badge from the jsDelivr CDN, which serves the file straight from this public repository, so README views never hit the Levelrail site. The `@main` part follows the main branch; pin a release tag instead (for example `@v0.8.4`) if you want a badge that never changes. Only clicking the button reaches `levelrail.com/deploy`.
 
@@ -55,8 +58,8 @@ The snippets load the badge from the jsDelivr CDN, which serves the file straigh
 ```html
 <a href="https://levelrail.com/deploy?image=ghcr.io%2Fyou%2Fapp%3A1.2&amp;port=3000&amp;health=%2Fhealthz&amp;env=DATABASE_URL">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button-dark.svg">
-    <img src="https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button-light.svg" alt="Deploy to Levelrail" height="40">
+    <source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button-gradient-dark.svg">
+    <img src="https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button-gradient-light.svg" alt="Deploy to Levelrail" height="40">
   </picture>
 </a>
 ```
