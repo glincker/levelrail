@@ -592,5 +592,20 @@
       "title": "From your computer",
       "hint": "Deploy a folder with the CLI."
     }
+  },
+  "deployButton": {
+    "title": "Add a Deploy to Levelrail button to your README",
+    "description": "Build a link that opens this form on the reader's own server. It carries no secrets.",
+    "image": "Image",
+    "name": "App name (optional)",
+    "namePlaceholder": "my-app",
+    "port": "Port (optional)",
+    "health": "Health check path (optional)",
+    "env": "Environment variable names (optional)",
+    "envHint": "Names only, separated by commas or new lines. Readers enter values on their own server.",
+    "envError": "Use upper case names such as DATABASE_URL, with no values, at most 50.",
+    "snippet": "Markdown snippet",
+    "copy": "Copy Markdown",
+    "copied": "Copied"
   }
 }

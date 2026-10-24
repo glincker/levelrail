@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildDeployButtonUrl,
+  deployButtonMarkdown,
   isValidAppName,
   isValidEnvKey,
   isValidHealthPath,
@@ -159,5 +161,99 @@ describe('stringifySearch', () => {
     expect(
       stringifySearch({ port: 3000, deploy: 1, x: { a: 1 }, name: 'a' }),
     ).toEqual({ port: '3000', deploy: '1', name: 'a' })
+  })
+})
+
+describe('parseDeployLink hostile input', () => {
+  it.each([
+    ['env value pair', { env: 'TOKEN=abc123' }, 'env', []],
+    ['env lowercase', { env: 'token' }, 'env', []],
+    ['env mixed', { env: 'GOOD,bad=1' }, 'env', ['GOOD']],
+    [
+      'oversized env list',
+      { env: Array.from({ length: 51 }, (_, i) => `K${i}`).join(',') },
+      'env',
+      null,
+    ],
+    ['oversized image', { image: 'a'.repeat(256) }, 'image', []],
+    [
+      'script source',
+      { image: 'nginx', source: 'javascript:alert(1)' },
+      'source',
+      [],
+    ],
+    [
+      'userinfo source',
+      { image: 'nginx', source: 'https://u:p@github.com/a/b' },
+      'source',
+      [],
+    ],
+    [
+      'oversized source',
+      { image: 'nginx', source: `https://example.com/${'a'.repeat(2100)}` },
+      'source',
+      [],
+    ],
+    [
+      'protocol-relative health',
+      { image: 'nginx', health: '//evil.example' },
+      'health',
+      [],
+    ],
+  ])('%s', (_label, extra, rejected, env) => {
+    const got = parseDeployLink({ deploy: '1', image: 'nginx', ...extra })
+    expect(got.ignored).toContain(rejected)
+    if (env !== null) expect(got.env).toEqual(env)
+    else expect(got.env.length).toBeLessThanOrEqual(50)
+  })
+
+  it('never exposes a secret-looking value anywhere in the result', () => {
+    const got = parseDeployLink({
+      deploy: '1',
+      image: 'nginx',
+      env: 'API_KEY=sk_live_123',
+      password: 'hunter2',
+    })
+    expect(JSON.stringify(got)).not.toContain('sk_live_123')
+    expect(JSON.stringify(got)).not.toContain('hunter2')
+  })
+})
+
+describe('buildDeployButtonUrl', () => {
+  it('builds a url that parseDeployLink accepts unchanged', () => {
+    const { url, invalid } = buildDeployButtonUrl({
+      image: 'ghcr.io/you/app:1.2',
+      name: 'my-app',
+      port: '3000',
+      env: 'DATABASE_URL\nSESSION_KEY, DATABASE_URL',
+      health: '/healthz',
+      source: 'https://github.com/you/app',
+    })
+    expect(invalid).toEqual([])
+    const params = Object.fromEntries(new URL(url ?? '').searchParams)
+    const parsed = parseDeployLink({ deploy: '1', ...params })
+    expect(parsed.ignored).toEqual([])
+    expect(parsed.env).toEqual(['DATABASE_URL', 'SESSION_KEY'])
+    expect(parsed.port).toBe(3000)
+  })
+
+  it.each([
+    ['bad image', { image: 'Not An Image' }, ['image']],
+    ['env with value', { image: 'nginx', env: 'A=b' }, ['env']],
+    ['bad port', { image: 'nginx', port: '70000' }, ['port']],
+    ['bad health', { image: 'nginx', health: 'healthz' }, ['health']],
+    ['bad source', { image: 'nginx', source: 'ftp://x.io/a' }, ['source']],
+    ['bad name', { image: 'nginx', name: 'Bad_Name' }, ['name']],
+  ])('%s', (_label, input, invalid) => {
+    const got = buildDeployButtonUrl(input)
+    expect(got.url).toBeNull()
+    expect(got.invalid).toEqual(invalid)
+  })
+
+  it('wraps the url in a markdown badge', () => {
+    const md = deployButtonMarkdown('https://levelrail.com/deploy?image=nginx')
+    expect(md).toBe(
+      '[![Deploy to Levelrail](https://levelrail.com/badge/deploy.svg)](https://levelrail.com/deploy?image=nginx)',
+    )
   })
 })

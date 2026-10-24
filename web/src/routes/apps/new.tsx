@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { PageTemplate } from '@/components/shell/PageTemplate'
@@ -8,6 +9,10 @@ import {
 } from '../../components/newapp/DeployLinkForm'
 import { useDeployLinkPrefill } from '../../hooks/useDeployLinkPrefill'
 import { stringifySearch } from '../../lib/deployLink'
+
+const DeployButtonBuilder = lazy(
+  () => import('../../components/newapp/DeployButtonBuilder'),
+)
 
 type NewAppSearch = Record<string, string>
 
@@ -44,6 +49,11 @@ function NewAppPage() {
         </div>
       ) : null}
       <NewAppWizard />
+      {prefill.active ? null : (
+        <Suspense fallback={null}>
+          <DeployButtonBuilder />
+        </Suspense>
+      )}
     </PageTemplate>
   )
 }

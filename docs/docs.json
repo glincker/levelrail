@@ -346,6 +346,7 @@
               "templates-and-registry",
               "private-registries",
               "template-catalog",
+              "deploy-button",
               "templates-status",
               "templates"
             ],
