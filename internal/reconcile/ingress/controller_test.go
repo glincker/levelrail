@@ -52,6 +52,11 @@ type fakeStore struct {
 	streamsErr         error
 	statusPage         store.StatusPageSettings
 	statusPageErr      error
+	attempts           map[string][]store.DeployAttempt
+}
+
+func (f *fakeStore) ListDeployAttempts(_ context.Context, name string) ([]store.DeployAttempt, error) {
+	return f.attempts[name], nil
 }
 
 // GetConditionsForControllers defaults every requested controller to
