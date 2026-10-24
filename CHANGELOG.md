@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.4](https://github.com/glincker/levelrail/compare/v0.8.3...v0.8.4) (2026-10-24)
+
+
+### Features
+
+* cleanup center, security settings, safer enrollment and faster CI ([#1376](https://github.com/glincker/levelrail/issues/1376)) ([7ee64bf](https://github.com/glincker/levelrail/commit/7ee64bf050acf5f8a31f238e43aca3d998347992))
+
 ## [0.8.3](https://github.com/glincker/levelrail/compare/v0.8.2...v0.8.3) (2026-10-23)
 
 
