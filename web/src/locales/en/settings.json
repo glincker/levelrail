@@ -434,6 +434,10 @@
         "title": "Security",
         "description": "Sessions and login protection."
       },
+      "security-runtime": {
+        "title": "Security and runtime",
+        "description": "Webhook replay protection, bind mount limits and other protections, on by default."
+      },
       "security-center": {
         "title": "Security center",
         "description": "Security score, every session and device, and token policy."

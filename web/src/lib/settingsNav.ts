@@ -6,6 +6,7 @@ import {
   ChartBarIcon,
   ChartLineIcon,
   ClockCounterClockwiseIcon,
+  SlidersHorizontalIcon,
   CloudArrowUpIcon,
   CloudCheckIcon,
   CodeIcon,
@@ -173,6 +174,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'security-center',
         to: '/security',
         icon: ShieldCheckIcon,
+      },
+      {
+        id: 'security-runtime',
+        to: '/settings/security-runtime',
+        icon: SlidersHorizontalIcon,
       },
       {
         id: 'vault',

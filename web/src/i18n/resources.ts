@@ -86,6 +86,7 @@ import type errors from '../locales/en/errors.json'
 import type edgeAccess from '../locales/en/edgeAccess.json'
 import type trafficDetail from '../locales/en/trafficDetail.json'
 import type betaFeatures from '../locales/en/betaFeatures.json'
+import type runtimeSettings from '../locales/en/runtimeSettings.json'
 import type newApp from '../locales/en/newApp.json'
 import type getStarted from '../locales/en/getStarted.json'
 import type usage from '../locales/en/usage.json'
@@ -189,6 +190,7 @@ declare module 'i18next' {
       edgeAccess: typeof edgeAccess
       trafficDetail: typeof trafficDetail
       betaFeatures: typeof betaFeatures
+      runtimeSettings: typeof runtimeSettings
       newApp: typeof newApp
       getStarted: typeof getStarted
       usage: typeof usage
