@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -97,6 +98,12 @@ func (db *DB) ListDesiredServicesFiltered(ctx context.Context, f AppListFilter) 
 	}
 	defer func() { _ = rows.Close() }()
 	var out []DesiredService
+	if total > 0 {
+		out = make([]DesiredService, 0, total)
+		if f.Limit > 0 {
+			out = make([]DesiredService, 0, min(total, f.Limit))
+		}
+	}
 	for rows.Next() {
 		svc, err := scanDesiredService(rows.Scan)
 		if err != nil {
@@ -132,6 +139,45 @@ func (db *DB) ListAppNamesFiltered(ctx context.Context, f AppListFilter) ([]stri
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("store: iterate filtered app names: %w", err)
+	}
+	return out, nil
+}
+
+// ListServiceHeads returns every service matching f ordered by name with only
+// Name, NodeID, EnvironmentID, Domains and Volumes set. Status, summary and
+// coverage callers need no more, and skipping the other JSON columns keeps
+// those requests cheap at high app counts.
+func (db *DB) ListServiceHeads(ctx context.Context, f AppListFilter) ([]DesiredService, error) {
+	where, args, err := f.where()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := db.QueryContext(ctx, `SELECT name, node_id, environment_id, domains, volumes FROM desired_services`+where+` ORDER BY name`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("store: list service heads: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []DesiredService
+	for rows.Next() {
+		var (
+			svc                  DesiredService
+			envID                sql.NullString
+			domainsJSON, volumes string
+		)
+		if err := rows.Scan(&svc.Name, &svc.NodeID, &envID, &domainsJSON, &volumes); err != nil {
+			return nil, fmt.Errorf("store: scan service head row: %w", err)
+		}
+		svc.EnvironmentID = envID.String
+		if err := json.Unmarshal([]byte(domainsJSON), &svc.Domains); err != nil {
+			return nil, fmt.Errorf("store: unmarshal service head domains: %w", err)
+		}
+		if err := json.Unmarshal([]byte(volumes), &svc.Volumes); err != nil {
+			return nil, fmt.Errorf("store: unmarshal service head volumes: %w", err)
+		}
+		out = append(out, svc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate service head rows: %w", err)
 	}
 	return out, nil
 }

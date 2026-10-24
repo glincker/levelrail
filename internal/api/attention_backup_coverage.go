@@ -48,7 +48,7 @@ func (rt *Router) unprotectedAttentionItems(r *http.Request) []attention.Item {
 		return nil
 	}
 	dbs = rt.withoutPendingDatabases(ctx, dbs)
-	services, err := rt.apps.ListDesiredServices(ctx)
+	services, err := listAppHeads(ctx, rt.apps, store.AppListFilter{})
 	if err != nil {
 		rt.logger.Warn("api: attention feed: list apps failed", slog.String("error", err.Error()))
 		return nil
