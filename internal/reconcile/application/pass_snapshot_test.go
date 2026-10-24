@@ -333,3 +333,60 @@ func TestPassSnapshot_PrefetchWithoutBatchSupportChangesNothing(t *testing.T) {
 		t.Errorf("state=%v runtime calls=%d, want the runtime to answer", cs, rt.inspectCalls)
 	}
 }
+
+func TestStopGraceFromEnv(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want time.Duration
+	}{
+		{"unset", "", 10 * time.Second},
+		{"valid", "45s", 45 * time.Second},
+		{"minutes", "2m", 2 * time.Minute},
+		{"zero", "0s", 10 * time.Second},
+		{"negative", "-5s", 10 * time.Second},
+		{"garbage", "soon", 10 * time.Second},
+		{"bare number", "30", 10 * time.Second},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := StopGraceFromEnv(func(string) string { return tt.raw })
+			if got != tt.want {
+				t.Errorf("StopGraceFromEnv(%q) = %v, want %v", tt.raw, got, tt.want)
+			}
+		})
+	}
+}
+
+// graceRuntime records the timeout passed to Stop.
+type graceRuntime struct {
+	*fakeRuntime
+	got time.Duration
+}
+
+func (r *graceRuntime) Stop(ctx context.Context, id string, timeout time.Duration) error {
+	r.got = timeout
+	return r.fakeRuntime.Stop(ctx, id, timeout)
+}
+
+func TestStopContainer_UsesConfiguredGrace(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		opts []Option
+		want time.Duration
+	}{
+		{"configured", []Option{WithStopGrace(90 * time.Second)}, 90 * time.Second},
+		{"default", nil, 10 * time.Second},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := &graceRuntime{fakeRuntime: newFakeRuntime(0)}
+			c := New("app", &fakeStore{svc: runningDesired("app")}, rt, tt.opts...)
+			if err := c.stopContainer(context.Background(), "id1"); err != nil {
+				t.Fatalf("stopContainer() error = %v", err)
+			}
+			if rt.got != tt.want {
+				t.Errorf("Stop timeout = %v, want %v", rt.got, tt.want)
+			}
+		})
+	}
+}

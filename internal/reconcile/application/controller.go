@@ -267,6 +267,7 @@ type Controller struct {
 
 	rollouts            RolloutRecorder       // nil is valid: rollout state just isn't recorded
 	servingImageID      string                // image ID of the last replica proven ready this pass
+	stopGrace           time.Duration         // 0 uses defaultStopGrace
 	previousReleaseHold time.Duration         // 0 removes the previous release at cutover
 	applied             AppliedConfigRecorder // nil is valid: pending changes just aren't tracked
 	lastHeldUntil       time.Time

@@ -243,6 +243,7 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	// Storage targets and database attachments need no master key; only their credentials do.
 	sharedEnvResolver := sharedenv.NewResolver(deps.db, deps.secretsManager)
 	appOpts := []application.Option{
+		application.WithStopGrace(application.StopGraceFromEnv(os.Getenv)),
 		application.WithDeployRecorder(deps.telemetryDB),
 		application.WithHookRunRecorder(deps.db),
 		application.WithProbeAttemptRecorder(deps.db),
