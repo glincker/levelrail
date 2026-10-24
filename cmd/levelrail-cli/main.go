@@ -100,6 +100,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runProfile(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tokens":
 		return runTokens(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cleanup":
+		return runCleanup(prog, args[1:], stdout, stderr, lookupEnv)
 	case "mobile":
 		return runMobile(prog, args[1:], stdout, stderr, lookupEnv)
 	case "plugins":
