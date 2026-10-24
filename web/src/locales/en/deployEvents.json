@@ -57,6 +57,7 @@
     "trigger_compose": "Compose deploy requested",
     "trigger_promote": "Promotion requested",
     "trigger_auto_rollback": "Automatic rollback started",
+    "trigger_restart": "Restart requested",
     "trigger_queued": "Queued behind another deploy",
     "build_detecting": "Detecting how to build",
     "build_building": "Build",

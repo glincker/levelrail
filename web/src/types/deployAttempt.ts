@@ -38,6 +38,7 @@ export type DeployAttemptSource =
   | 'clone'
   | 'schedule'
   | 'auto_rollback'
+  | 'restart'
   | 'git_push'
   | 'poll'
   | 'upload'

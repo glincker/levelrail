@@ -77,4 +77,5 @@ export const DEPLOY_ATTEMPT_SOURCE_LABEL: Record<DeployAttemptSource, string> =
     git_push: 'Git push remote',
     poll: 'Poll, webhook not received',
     upload: 'Uploaded',
+    restart: 'Restart',
   }

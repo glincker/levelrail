@@ -27,6 +27,7 @@ const SOURCE_ACTOR: Record<DeployAttemptSource, string> = {
   clone: 'clone',
   schedule: 'schedule',
   auto_rollback: 'auto rollback',
+  restart: 'restart',
   git_push: 'git push',
   poll: 'poll',
   upload: 'cli upload',
@@ -35,6 +36,7 @@ const SOURCE_ACTOR: Record<DeployAttemptSource, string> = {
 function attemptTitle(a: DeployAttempt): string {
   if (a.source === 'auto_rollback')
     return `Rolled back to ${imageTagOf(a.image)}`
+  if (a.source === 'restart') return `Restart ${imageTagOf(a.image)}`
   if (a.commit_sha) return `Deploy ${a.commit_sha.slice(0, 7)}`
   return `Deploy ${imageTagOf(a.image)}`
 }

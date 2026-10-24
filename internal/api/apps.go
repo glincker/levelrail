@@ -1102,12 +1102,30 @@ func (rt *Router) handleSetAppProject(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
+	// A stopped app has no container to recreate, so the nonce bump would
+	// be accepted and then do nothing.
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: restart app failed", err, slog.String("name", name))
+		return
+	} else if svc.Suspended {
+		writeError(w, http.StatusConflict, "app is stopped, so there is nothing to restart; start it first (apps start, or Start in the dashboard)")
+		return
+	}
+
 	if err := rt.apps.RestartService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
 		rt.internalError(w, "api: restart app failed", err, slog.String("name", name))
 		return
+	}
+	// Own attempt row, like a rollback: the rollout outcome lands on it
+	// instead of the deploy being restarted.
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
+		rt.recordInstantDeployAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceRestart)
 	}
 
 	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventRestart, Title: "Restarted"})

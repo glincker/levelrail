@@ -104,6 +104,9 @@ func TestTimelineRecordsEventsWithKeyNamesOnly(t *testing.T) {
 		t.Fatalf("scale title = %q", kinds["scale"].Title)
 	}
 	for _, it := range tl.Items {
+		if it.Ref != nil {
+			continue
+		}
 		if it.Actor == "" || it.Status != "info" {
 			t.Fatalf("event item %+v", it)
 		}
