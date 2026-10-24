@@ -52,9 +52,11 @@ function CleanupPage() {
         </nav>
       }
     >
-      {tab === 'overview' ? <CleanupOverviewTab /> : null}
-      {tab === 'disk' ? <DiskDockerTab /> : null}
-      {tab === 'history' ? <CleanupHistoryTab /> : null}
+      <div className="pb-24">
+        {tab === 'overview' ? <CleanupOverviewTab /> : null}
+        {tab === 'disk' ? <DiskDockerTab /> : null}
+        {tab === 'history' ? <CleanupHistoryTab /> : null}
+      </div>
     </PageTemplate>
   )
 }

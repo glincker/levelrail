@@ -4599,6 +4599,7 @@ type CleanupTargetResource struct {
 	Description string              `json:"description"`
 	PolicyKey   string              `json:"policy_key"`
 	Days        int                 `json:"days"`
+	Source      string              `json:"source,omitempty"`
 	Mode        string              `json:"mode"`
 	Origin      string              `json:"origin"`
 	Destructive bool                `json:"destructive"`

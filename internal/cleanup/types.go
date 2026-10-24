@@ -82,11 +82,28 @@ func (e *FloorError) Error() string {
 	return fmt.Sprintf("retention cannot be shorter than %d days", e.Floor)
 }
 
-// Usage is what a target holds now. Bytes is 0 when the store cannot report size.
+// Usage is what a target holds now. NoBytes marks a store that cannot report size, so the wire says null.
 type Usage struct {
+	Rows    int64
+	Bytes   int64
+	Oldest  *time.Time
+	NoBytes bool
+}
+
+// UsageView is Usage on the wire: bytes is null when size is not measurable.
+type UsageView struct {
 	Rows   int64      `json:"rows"`
-	Bytes  int64      `json:"bytes"`
+	Bytes  *int64     `json:"bytes"`
 	Oldest *time.Time `json:"oldest"`
+}
+
+func (u Usage) view() UsageView {
+	v := UsageView{Rows: u.Rows, Oldest: u.Oldest}
+	if !u.NoBytes {
+		b := u.Bytes
+		v.Bytes = &b
+	}
+	return v
 }
 
 // Impact is what a run with a given window would remove.

@@ -45,8 +45,14 @@ function useOutcome() {
   const { t } = useTranslation('cleanup')
   return (run: CleanupRun) => {
     const args = {
+      count: run.rows,
       rows: run.rows.toLocaleString(),
       size: formatSize(run.bytes),
+    }
+    if (run.rows === 0) {
+      return t(
+        run.dry_run ? 'history.outcomeDryNone' : 'history.outcomeRealNone',
+      )
     }
     return run.dry_run
       ? t('history.outcomeDry', args)

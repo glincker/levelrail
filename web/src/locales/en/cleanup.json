@@ -25,8 +25,9 @@
     "other": "Other"
   },
   "hero": {
+    "stored": "Data stored",
     "reclaimable": "Reclaimable",
-    "reclaimableHint": "Stored by data types that cleanup manages",
+    "storedHint": "Stored by data types that cleanup manages",
     "usageLabel": "Where cleanup-managed data lives",
     "segmentLabel": "{{category}}: {{size}}, {{percent}}% of the total",
     "legendFilter": "Show only {{category}}",
@@ -34,19 +35,25 @@
     "lastRun": "Last run",
     "neverRun": "No cleanup has run yet",
     "scheduler": "Scheduler",
-    "schedulerOn": "Running every {{interval}}",
+    "schedulerOn": "Every {{interval}}",
     "schedulerOff": "Scheduler is off",
     "previewCount_one": "{{count}} data type is in preview mode",
     "previewCount_other": "{{count}} data types are in preview mode",
     "previewNone": "Nothing is waiting in preview mode",
-    "reviewAction": "Review and enable"
+    "reviewAction": "Review and enable",
+    "reclaimableHint": "Rows and size the enabled data types would remove at their current retention",
+    "calculate": "Calculate reclaimable",
+    "calculating": "Checking {{done}} of {{total}}",
+    "calculateFailed": "Could not check {{title}}: {{message}}",
+    "reclaimableNone": "Nothing is past its retention window"
   },
   "group": {
     "count_one": "{{count}} data type",
     "count_other": "{{count}} data types"
   },
   "target": {
-    "usage": "{{rows}} rows, {{size}}",
+    "usage_one": "{{rows}} row, {{size}}",
+    "usage_other": "{{rows}} rows, {{size}}",
     "usageEmpty": "Nothing stored",
     "oldest": "oldest {{when}}",
     "shareLabel": "{{title}} holds {{percent}}% of {{category}} data",
@@ -78,25 +85,31 @@
     "readThrough": "Managed in Disk and Docker",
     "readThroughAction": "Open Disk and Docker",
     "keepForever": "Retention is set to Never, so nothing is removed.",
-    "destructive": "Deletes data permanently"
+    "destructive": "Deletes data permanently",
+    "unknown": "-",
+    "lockedOption": "Below the {{days}} day minimum. Choose a longer period."
   },
   "impact": {
     "title": "What would be removed",
-    "summary": "Will remove {{rows}} rows, about {{size}}, older than {{days}} days.",
+    "summary_one": "Will remove {{rows}} row, about {{size}}, older than {{days}} days.",
+    "summary_other": "Will remove {{rows}} rows, about {{size}}, older than {{days}} days.",
     "nothing": "Nothing is older than {{days}} days. Nothing would be removed.",
     "close": "Close",
     "error": "Could not preview: {{message}}"
   },
   "run": {
     "running": "Removing old data...",
-    "done": "Removed {{rows}} rows, {{size}}. Deletion is permanent.",
+    "done_one": "Removed {{rows}} row, {{size}}. Deletion is permanent.",
+    "done_other": "Removed {{rows}} rows, {{size}}. Deletion is permanent.",
+    "nothing": "Nothing to remove. No rows were past the retention window.",
     "more": "More old rows remain, run again to continue.",
     "failed": "Cleanup failed: {{message}}",
     "dismiss": "Dismiss"
   },
   "confirmRun": {
     "title": "Clean up {{title}}?",
-    "body": "This permanently removes {{rows}} rows, about {{size}}, older than {{days}} days.",
+    "body_one": "This permanently removes {{rows}} row, about {{size}}, older than {{days}} days.",
+    "body_other": "This permanently removes {{rows}} rows, about {{size}}, older than {{days}} days.",
     "consequence": "Removed rows cannot be restored. Nothing else is deleted.",
     "action": "Clean now",
     "cancel": "Cancel"
@@ -150,8 +163,12 @@
     "dryRun": "Dry run",
     "realRun": "Removed",
     "failed": "Failed",
-    "outcomeDry": "Would remove {{rows}} rows, {{size}}",
-    "outcomeReal": "Removed {{rows}} rows, {{size}}",
+    "outcomeDry_one": "Would remove {{rows}} row, {{size}}",
+    "outcomeDry_other": "Would remove {{rows}} rows, {{size}}",
+    "outcomeDryNone": "Nothing would be removed",
+    "outcomeReal_one": "Removed {{rows}} row, {{size}}",
+    "outcomeReal_other": "Removed {{rows}} rows, {{size}}",
+    "outcomeRealNone": "Nothing to remove",
     "meta": "{{trigger}}, keeping {{days}} days",
     "byActor": "by {{actor}}",
     "trigger": {

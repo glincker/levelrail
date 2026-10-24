@@ -1,4 +1,6 @@
+import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
+import { LockSimpleIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Select,
   SelectContent,
@@ -18,6 +20,7 @@ export function RetentionDaysSelect({
   disabled,
   ariaLabel,
   floor = 0,
+  lockedHint,
   onChange,
 }: {
   id?: string
@@ -25,11 +28,14 @@ export function RetentionDaysSelect({
   allowed: number[]
   /** Positive windows shorter than this are shown but cannot be picked. */
   floor?: number
+  /** Describes why a window below the floor is locked; read by screen readers on the option. */
+  lockedHint?: string
   disabled?: boolean
   ariaLabel: string
   onChange: (days: number) => void
 }) {
   const { t } = useTranslation('runtimeSettings')
+  const hintId = useId()
   const label = (days: number) => {
     if (days === 0) return t('retention.never')
     if (days === DAYS_PER_YEAR) return t('retention.year')
@@ -47,15 +53,28 @@ export function RetentionDaysSelect({
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {allowed.map((days) => (
-          <SelectItem
-            key={days}
-            value={String(days)}
-            disabled={belowFloor(days, floor)}
-          >
-            {label(days)}
-          </SelectItem>
-        ))}
+        {allowed.map((days) => {
+          const locked = belowFloor(days, floor)
+          return (
+            <SelectItem
+              key={days}
+              value={String(days)}
+              disabled={locked}
+              aria-disabled={locked || undefined}
+              aria-describedby={locked && lockedHint ? hintId : undefined}
+            >
+              {label(days)}
+              {locked ? (
+                <LockSimpleIcon className="size-3.5" aria-hidden="true" />
+              ) : null}
+            </SelectItem>
+          )
+        })}
+        {lockedHint ? (
+          <span id={hintId} className="sr-only">
+            {lockedHint}
+          </span>
+        ) : null}
       </SelectContent>
     </Select>
   )

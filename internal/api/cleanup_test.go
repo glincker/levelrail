@@ -111,6 +111,16 @@ func TestCleanupOverviewShape(t *testing.T) {
 	if fresh := byID["apitest.fresh"]; fresh == nil || fresh["mode"] != "preview" {
 		t.Fatalf("a new target must start in preview: %v", fresh)
 	}
+	if audit["source"] != "default" {
+		t.Fatalf("audit source = %v, want default", audit["source"])
+	}
+	tok := byID["auth.api_tokens"]
+	if tok == nil {
+		t.Fatal("no token target")
+	}
+	if u, _ := tok["usage"].(map[string]any); u == nil || u["bytes"] != nil {
+		t.Fatalf("token usage = %v, want bytes null", tok["usage"])
+	}
 	jan := byID["docker.images"]
 	if jan == nil || jan["read_through"] != true || jan["policy_key"] != "" || jan["mode"] != "preview" {
 		t.Fatalf("janitor target = %v", jan)
@@ -132,6 +142,7 @@ func TestCleanupRunPreviewHistoryAndCSV(t *testing.T) {
 		Bytes int64  `json:"bytes"`
 		More  bool   `json:"more_remaining"`
 		Error string `json:"error"`
+		Dry   bool   `json:"dry_run"`
 	}
 	call := func(path, body string) resp {
 		rec := cleanupDo(t, rt, cookie, http.MethodPost, path, body)
@@ -144,16 +155,16 @@ func TestCleanupRunPreviewHistoryAndCSV(t *testing.T) {
 		}
 		return r
 	}
-	if p := call("/api/v1/cleanup/messaging.email_log/preview", `{"days":30}`); p.Rows != 2 || p.Error != "" {
+	if p := call("/api/v1/cleanup/messaging.email_log/preview", `{"days":30}`); p.Rows != 2 || p.Error != "" || !p.Dry {
 		t.Fatalf("preview = %+v", p)
 	}
-	if d := call("/api/v1/cleanup/messaging.email_log/run", `{"days":30,"dry_run":true}`); d.Rows != 2 {
+	if d := call("/api/v1/cleanup/messaging.email_log/run", `{"days":30,"dry_run":true}`); d.Rows != 2 || !d.Dry {
 		t.Fatalf("dry run = %+v", d)
 	}
 	if n, _ := db.CleanupStats(ctx, store.CleanupEmailDeliveries); n.Rows != 3 {
 		t.Fatalf("a dry run deleted rows: %d left", n.Rows)
 	}
-	if r := call("/api/v1/cleanup/messaging.email_log/run", `{"days":30}`); r.Rows != 2 || r.More {
+	if r := call("/api/v1/cleanup/messaging.email_log/run", `{"days":30}`); r.Rows != 2 || r.More || r.Dry {
 		t.Fatalf("run = %+v", r)
 	}
 	if n, _ := db.CleanupStats(ctx, store.CleanupEmailDeliveries); n.Rows != 1 {
@@ -276,8 +287,8 @@ func TestCleanupPreviewReviewItem(t *testing.T) {
 	}
 	for _, it := range body.Items {
 		if it.Key == CleanupPreviewKey {
-			if string(it.Value) != "1" || !it.Onboarding {
-				t.Fatalf("review item = %+v, want a count of 1 preview target", it)
+			if string(it.Value) != "6" || !it.Onboarding {
+				t.Fatalf("review item = %+v, want 6: one managed target plus the five janitor stages in dry run", it)
 			}
 			return
 		}

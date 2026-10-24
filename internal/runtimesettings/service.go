@@ -419,6 +419,16 @@ func (s *Service) value(ctx context.Context, key string) string {
 	return r.canonical
 }
 
+// Source reports whether a key's value is saved, from the environment, or the default.
+func (s *Service) Source(ctx context.Context, key string) string {
+	d, ok := s.definition(key)
+	if !ok {
+		return SourceDefault
+	}
+	r, _ := s.resolve(ctx, d)
+	return r.source
+}
+
 // Bool returns a bool setting; an unknown key or a non-bool kind yields false.
 func (s *Service) Bool(ctx context.Context, key string) bool {
 	return s.value(ctx, key) == "true"

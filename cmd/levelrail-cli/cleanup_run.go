@@ -88,11 +88,11 @@ func runCleanupRun(prog string, args []string, stdout, stderr io.Writer, lookupE
 }
 
 func printCleanupRunResult(out io.Writer, id string, r apiclient.CleanupRunResult) {
-	verb := "deleted"
 	if r.DryRun {
-		verb = "dry run: would delete"
+		_, _ = fmt.Fprintf(out, "%s would delete %d rows (%d bytes) (dry run)\n", id, r.Rows, r.Bytes)
+	} else {
+		_, _ = fmt.Fprintf(out, "%s deleted %d rows (%d bytes)\n", id, r.Rows, r.Bytes)
 	}
-	_, _ = fmt.Fprintf(out, "%s %s %d rows (%d bytes)\n", id, verb, r.Rows, r.Bytes)
 	if r.MoreRemaining {
 		_, _ = fmt.Fprintln(out, "more rows remain past this run's cap, run again to continue")
 	}

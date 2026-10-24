@@ -21,8 +21,9 @@ const (
 )
 
 type tokenCleanupRequest struct {
-	// OlderThanDays 0 removes every revoked token.
-	OlderThanDays int `json:"older_than_days"`
+	// OlderThanDays is required; 0 removes every revoked token and needs Confirm.
+	OlderThanDays *int `json:"older_than_days"`
+	Confirm       bool `json:"confirm"`
 }
 
 type tokenCleanupResponse struct {
@@ -62,15 +63,24 @@ func (rt *Router) recordTokenCleanupAudit(ctx context.Context, action, detail st
 
 // handleCleanupTokens handles POST /api/v1/auth/tokens/cleanup (AbilityRoot).
 // It removes revoked tokens older than older_than_days now, whatever the
-// scheduled setting says; an active token is never touched.
+// scheduled setting says; older_than_days is required and 0 needs confirm; an active token is never touched.
 func (rt *Router) handleCleanupTokens(w http.ResponseWriter, r *http.Request) {
 	var req tokenCleanupRequest
 	if err := decodeJSONBody(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.OlderThanDays < 0 || req.OlderThanDays > maxTokenCleanupDays {
+	if req.OlderThanDays == nil {
+		writeJSON(w, http.StatusBadRequest, runtimeSettingError{Error: "older_than_days is required", Code: errCodeInvalidValue, Field: "older_than_days"})
+		return
+	}
+	days := *req.OlderThanDays
+	if days < 0 || days > maxTokenCleanupDays {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("older_than_days must be between 0 and %d", maxTokenCleanupDays))
+		return
+	}
+	if days == 0 && !req.Confirm {
+		writeJSON(w, http.StatusBadRequest, runtimeSettingError{Error: "older_than_days 0 removes every revoked token, pass confirm true to proceed", Code: errCodeInvalidValue, Field: "confirm"})
 		return
 	}
 	purger, ok := rt.tokens.(janitor.TokenPurger)
@@ -79,7 +89,7 @@ func (rt *Router) handleCleanupTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	batch, maxBatches := tokenCleanupBounds()
-	n, err := janitor.PurgeTokens(r.Context(), purger, store.TokenPurgeRevoked, req.OlderThanDays, time.Now(), batch, maxBatches, false)
+	n, err := janitor.PurgeTokens(r.Context(), purger, store.TokenPurgeRevoked, days, time.Now(), batch, maxBatches, false)
 	if err != nil {
 		rt.internalError(w, "api: token cleanup failed", err)
 		return

@@ -39,7 +39,7 @@ export function isReadThrough(target: CleanupTarget): boolean {
 }
 
 export function totalBytes(targets: CleanupTarget[]): number {
-  return targets.reduce((sum, t) => sum + Math.max(0, t.usage.bytes), 0)
+  return targets.reduce((sum, t) => sum + Math.max(0, t.usage.bytes ?? 0), 0)
 }
 
 export interface CategorySlice {
@@ -65,6 +65,13 @@ export function groupTargets(targets: CleanupTarget[]): CategorySlice[] {
 export function percentOf(part: number, whole: number): number {
   if (whole <= 0 || part <= 0) return 0
   return Math.min(100, (part / whole) * 100)
+}
+
+/** Targets a preview-all pass can measure: managed here, switched on or to preview, with a window. */
+export function measurableTargets(targets: CleanupTarget[]): CleanupTarget[] {
+  return targets.filter(
+    (t) => !isReadThrough(t) && t.mode !== 'off' && t.days > 0,
+  )
 }
 
 export function previewTargets(targets: CleanupTarget[]): CleanupTarget[] {

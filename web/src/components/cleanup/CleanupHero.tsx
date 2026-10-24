@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { formatGoDuration } from '../../lib/goDuration'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { AnimatedNumber } from '../kit/AnimatedNumber'
@@ -20,6 +21,7 @@ import type {
   CleanupTarget,
 } from '../../types/cleanup'
 import { UsageBar } from './UsageBar'
+import type { Calculation, Reclaimable } from './useReclaimable'
 
 export function CleanupHero({
   targets,
@@ -27,14 +29,22 @@ export function CleanupHero({
   filter,
   onFilter,
   onReview,
+  reclaimable,
+  calculation,
+  onCalculate,
+  canCalculate,
 }: {
   targets: CleanupTarget[]
   scheduler: CleanupScheduler
   filter: CleanupCategory | null
   onFilter: (category: CleanupCategory | null) => void
   onReview: () => void
+  reclaimable: Reclaimable | null
+  calculation: Calculation
+  onCalculate: () => void
+  canCalculate: boolean
 }) {
-  const { t } = useTranslation('cleanup')
+  const { t, i18n } = useTranslation('cleanup')
   const total = totalBytes(targets)
   const groups = groupTargets(targets)
   const last = latestRun(targets)
@@ -44,20 +54,56 @@ export function CleanupHero({
 
   return (
     <section
-      aria-label={t('hero.reclaimable')}
+      aria-label={t('hero.stored')}
       className="space-y-4 rounded-lg border border-border bg-card p-4 sm:p-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
           <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            {t('hero.reclaimable')}
+            {t('hero.stored')}
           </p>
           <p className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
             <AnimatedNumber value={total} format={(n) => formatSize(n)} />
           </p>
           <p className="text-sm text-muted-foreground">
-            {t('hero.reclaimableHint')}
+            {t('hero.storedHint')}
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
+            {reclaimable ? (
+              <p className="text-foreground" title={t('hero.reclaimableHint')}>
+                <span className="text-muted-foreground">
+                  {t('hero.reclaimable')}:{' '}
+                </span>
+                {reclaimable.rows > 0
+                  ? t('target.usage', {
+                      count: reclaimable.rows,
+                      rows: reclaimable.rows.toLocaleString(),
+                      size: formatSize(reclaimable.bytes),
+                    })
+                  : t('hero.reclaimableNone')}
+              </p>
+            ) : null}
+            {canCalculate ? (
+              <Button
+                size="xs"
+                variant="outline"
+                disabled={calculation.running}
+                onClick={onCalculate}
+              >
+                {calculation.running
+                  ? t('hero.calculating', {
+                      done: calculation.done,
+                      total: calculation.total,
+                    })
+                  : t('hero.calculate')}
+              </Button>
+            ) : null}
+          </div>
+          {calculation.error ? (
+            <p role="alert" className="mt-1 text-xs text-destructive">
+              {calculation.error}
+            </p>
+          ) : null}
         </div>
         <StatusPill
           tone={scheduler.enabled ? 'success' : 'neutral'}
@@ -65,7 +111,9 @@ export function CleanupHero({
           size="md"
           label={
             scheduler.enabled
-              ? t('hero.schedulerOn', { interval: scheduler.interval })
+              ? t('hero.schedulerOn', {
+                  interval: formatGoDuration(scheduler.interval, i18n.language),
+                })
               : t('hero.schedulerOff')
           }
         />

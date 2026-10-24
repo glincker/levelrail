@@ -117,14 +117,17 @@ export function useRevokeToken() {
 }
 
 // POST /api/v1/auth/tokens/cleanup (internal/api/tokens_cleanup.go). Root only;
-// olderThanDays 0 removes every revoked token.
+// olderThanDays is required; 0 removes every revoked token and sends confirm.
 export async function cleanupTokens(
   olderThanDays: number,
 ): Promise<{ deleted: number }> {
   const res = await fetch('/api/v1/auth/tokens/cleanup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ older_than_days: olderThanDays }),
+    body: JSON.stringify({
+      older_than_days: olderThanDays,
+      ...(olderThanDays === 0 ? { confirm: true } : {}),
+    }),
   })
   if (!res.ok) {
     throw new Error(

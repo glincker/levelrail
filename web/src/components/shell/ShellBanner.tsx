@@ -33,12 +33,12 @@ function Bar({
   return (
     <div
       role="alert"
-      className="flex h-9 shrink-0 items-center gap-2 border-b border-destructive/20 bg-destructive/10 px-4 text-sm text-destructive"
+      className="flex min-h-9 shrink-0 items-center gap-2 border-b border-destructive/20 bg-destructive/10 px-4 py-1 text-sm text-destructive"
     >
       <span aria-hidden="true" className="[&_svg]:size-4">
         {icon}
       </span>
-      <span className="min-w-0 flex-1 truncate">{children}</span>
+      <span className="min-w-0 flex-1 break-words">{children}</span>
       {action}
       <Button
         type="button"
