@@ -282,6 +282,7 @@ type Controller struct {
 	gateRecorder        GateRecorder
 	gateTick            time.Duration
 	drain               *DrainTracker
+	cutoverImage        string // image of the last recorded cutover, empty until this controller saw one
 	pinner              RollbackPinner
 	exitRecorder        ExitRecorder  // nil is valid: exits are only reported, not captured
 	startupWatch        time.Duration // see WithStartupWatch
@@ -845,8 +846,17 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 // every strategy's reconcile* method ends with.
 func (c *Controller) finishReconcile(ctx context.Context, targets []string, desired *store.DesiredService, justDeployed bool) (reconcile.Result, error) {
 	if !justDeployed {
+		// An instant rollback converges onto a held, already running
+		// release, so no container is created: record the cutover anyway or
+		// the post-deploy watch never arms for it.
+		if c.cutoverImage != "" && c.cutoverImage != desired.Image {
+			c.cutoverImage = desired.Image
+			c.recordGate(ctx, desired, targets[0], deploysafety.PhaseCutover, deploysafety.StatusPassed, "",
+				fmt.Sprintf("traffic moved to %d ready replica(s) of the held release", len(targets)))
+		}
 		return c.steadyStateResult(ctx, targets, desired)
 	}
+	c.cutoverImage = desired.Image
 
 	// Every target was just (re)started and proven ready, so its
 	// liveness history belongs to an instance that no longer exists.
