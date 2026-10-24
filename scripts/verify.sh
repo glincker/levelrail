@@ -34,8 +34,8 @@ run_backend() {
     echo "==> golangci-lint not installed, skipping (CI still runs it)"
   fi
 
-  echo "==> go test ./... -race -coverprofile=coverage.out"
-  go test ./... -race -coverprofile=coverage.out
+  echo "==> go test -timeout ./... -race -coverprofile=coverage.out"
+  go test -timeout="${LEVELRAIL_VERIFY_TEST_TIMEOUT:-45m}" ./... -race -coverprofile=coverage.out
 
   echo "==> coverage gate (internal/, 70%)"
   scripts/check-coverage.sh coverage.out internal/ 70

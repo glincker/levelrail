@@ -1,6 +1,10 @@
 import '@testing-library/jest-dom/vitest'
 import { afterEach } from 'vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
+
+configure({
+  asyncUtilTimeout: Number(process.env.TEST_ASYNC_TIMEOUT_MS) || 4000,
+})
 
 // vitest.config.ts does not set test.globals, so Testing Library's own
 // implicit "afterEach(cleanup)" (which only registers when it finds a

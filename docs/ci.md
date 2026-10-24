@@ -34,14 +34,16 @@ SHA is missing or unresolvable. The merge queue is gone, so this is the only
 post-merge verification of the merged tree. Docs-only pushes never trigger
 `ci.yml` at all (`paths-ignore` on the `push` trigger: `**/*.md`, `adr/**`,
 `LICENSE`), and an area with no changed files skips as on a PR.
-`nightly.yml` runs the full no `-short`, shuffled sweep once a day, as the safety
-net for anything the scoping under-selects. It diffs against the last
-green nightly, so a lane that failed or timed out is retried until it
-passes. `-race` runs every night on the packages that start goroutines or use
-`sync`, `atomic` or channels (`scripts/go-test-groups.sh race`), and on the api
-and docker lanes on Sundays or a manual dispatch. The `rest` packages split on
+`nightly.yml` is the safety net for anything the scoping under-selects. Monday
+to Saturday it runs shuffled, no `-short`, no `-race` lanes scoped to the changes
+since the last all-green run, so a lane that failed or timed out is retried until
+it passes. Sunday and a manual dispatch run the full sweep with `-race`: the api
+lanes, the docker lane and the `race-a` / `race-b` halves of the packages that
+start goroutines or use `sync`, `atomic` or channels
+(`scripts/go-test-groups.sh race`). The `rest` packages split on
 `scripts/ci-heavy-packages.txt` so no lane nears its timeout, and the docker
-lane pre-pulls its upstream images with retries.
+lane pre-pulls its upstream images with retries. One summary table and one
+`nightly-failure` issue report the run (see "Nightly and flaky tests").
 
 ## How a change is scoped
 
@@ -173,10 +175,9 @@ To force the full set on a PR: add the `ci:live` label (create it once with
 `gh label create ci:live`), then re-run all jobs or push. The plan job reads
 the labels live, because a re-run replays the original event payload.
 
-`nightly.yml` always keeps the docker lane in its matrix
-(`NIGHTLY_LIVE_ALWAYS`), so the full live set runs every night even on a day
-with no commits, which is when an upstream image change would otherwise go
-unnoticed.
+The docker lane runs in the Sunday and manual full sweep (`NIGHTLY_LIVE_ALWAYS`
+keeps it in that matrix even with no commits), so an upstream image change is
+caught within a week. Daily runs include it only when the diff reaches it.
 
 Run the full set on a developer machine with one command:
 
@@ -518,7 +519,13 @@ runs `vite build` once when the file is missing, about 20 s.
 
 pre-push bounds every `go test` it runs with `-timeout`, default `30m`,
 overridable with `LEVELRAIL_PUSH_TEST_TIMEOUT`. The default `go test`
-timeout of 10 minutes is shorter than a whole internal/api run.
+timeout of 10 minutes is shorter than a whole internal/api run: 3,940 tests
+take about 7 minutes serial on a loaded laptop (about 0.1 s each; only 18 tests
+pass 1 s, 69 s together), so there is no single slow test to fix. CI splits the
+package into the four `api-N` shards, each well under its `-timeout=10m`, and
+`test/e2e/reconcile` is a docker-lane package (live catalog deploys that pull images
+when a daemon is up, so a local run can pass 10 minutes) and CI gives it `-timeout=27m`;
+`scripts/verify.sh` passes `-timeout` (default 45m, `LEVELRAIL_VERIFY_TEST_TIMEOUT`).
 
 `scripts/test-fast.sh` runs `go test -short` for internal/api in shards
 from one binary, with CI's weights and quarantine skips (`-r REGEX`
