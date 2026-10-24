@@ -83,7 +83,7 @@ export function CleanupTargetRow({
   const status: CleanupMode | 'running' = running ? 'running' : target.mode
   const days = target.days
   const nothingToKeep = days === 0
-  const share = percentOf(target.usage.bytes, categoryBytes)
+  const share = percentOf(target.usage.bytes ?? 0, categoryBytes)
   const style = CATEGORY_STYLE[target.category]
 
   function saveRetention(next: number, confirmWeakening = false) {
@@ -268,17 +268,23 @@ export function CleanupTargetRow({
 
         <div className="min-w-0 space-y-1">
           <p className="text-xs text-foreground tabular-nums">
-            {target.usage.rows > 0 || target.usage.bytes > 0
+            {target.usage.rows > 0 || (target.usage.bytes ?? 0) > 0
               ? t('target.usage', {
+                  count: target.usage.rows,
                   rows: target.usage.rows.toLocaleString(),
-                  size: formatSize(target.usage.bytes),
+                  size:
+                    target.usage.bytes === null
+                      ? t('target.unknown')
+                      : formatSize(target.usage.bytes),
                 })
               : t('target.usageEmpty')}
-            {target.usage.oldest ? (
+            {target.usage.rows > 0 || target.usage.oldest ? (
               <span className="text-muted-foreground">
                 {' · '}
                 {t('target.oldest', {
-                  when: formatRelative(target.usage.oldest),
+                  when: target.usage.oldest
+                    ? formatRelative(target.usage.oldest)
+                    : t('target.unknown'),
                 })}
               </span>
             ) : null}
@@ -326,6 +332,7 @@ export function CleanupTargetRow({
                     days,
                   )}
                   floor={target.floor}
+                  lockedHint={t('target.lockedOption', { days: target.floor })}
                   disabled={!canEdit || setRetention.isPending}
                   ariaLabel={`${t('target.retention')}: ${target.title}`}
                   onChange={changeRetention}
@@ -417,6 +424,7 @@ export function CleanupTargetRow({
               <p className="text-sm text-foreground">
                 {impact.rows > 0
                   ? t('impact.summary', {
+                      count: impact.rows,
                       rows: impact.rows.toLocaleString(),
                       size: formatSize(impact.bytes),
                       days,
@@ -466,10 +474,13 @@ export function CleanupTargetRow({
               <span>
                 {result.error
                   ? t('run.failed', { message: result.error })
-                  : t('run.done', {
-                      rows: result.rows.toLocaleString(),
-                      size: formatSize(result.bytes),
-                    })}
+                  : result.rows === 0
+                    ? t('run.nothing')
+                    : t('run.done', {
+                        count: result.rows,
+                        rows: result.rows.toLocaleString(),
+                        size: formatSize(result.bytes),
+                      })}
                 {result.more_remaining ? ` ${t('run.more')}` : ''}
               </span>
             </p>
@@ -491,6 +502,7 @@ export function CleanupTargetRow({
         onOpenChange={setConfirmRun}
         title={t('confirmRun.title', { title: target.title })}
         description={t('confirmRun.body', {
+          count: impact?.rows ?? 0,
           rows: (impact?.rows ?? 0).toLocaleString(),
           size: formatSize(impact?.bytes ?? 0),
           days,

@@ -94,6 +94,6 @@ describe('RevokedTokensCard', () => {
     })
     const call = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
     expect(call[0]).toBe('/api/v1/auth/tokens/cleanup')
-    expect(call[1].body).toBe('{"older_than_days":0}')
+    expect(call[1].body).toBe('{"older_than_days":0,"confirm":true}')
   })
 })

@@ -87,7 +87,7 @@ func (t *tokenTarget) Measure(ctx context.Context) (Usage, error) {
 		}
 		total += n
 	}
-	return Usage{Rows: int64(total)}, nil
+	return Usage{Rows: int64(total), NoBytes: true}, nil
 }
 
 func (t *tokenTarget) Preview(ctx context.Context, days int) (Impact, error) {

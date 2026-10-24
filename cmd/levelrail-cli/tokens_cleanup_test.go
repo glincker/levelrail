@@ -28,7 +28,8 @@ func TestRun_TokensCleanup(t *testing.T) {
 	}{
 		{"default window", nil, `{"older_than_days":90}`, "removed 3 revoked tokens", exitOK},
 		{"explicit days", []string{"--older-than-days", "30"}, `{"older_than_days":30}`, "removed 3", exitOK},
-		{"zero removes all revoked", []string{"--older-than-days", "0"}, `{"older_than_days":0}`, "removed 3", exitOK},
+		{"zero needs yes", []string{"--older-than-days", "0"}, "", "", exitValidation},
+		{"zero removes all revoked", []string{"--older-than-days", "0", "--yes"}, `{"older_than_days":0,"confirm":true}`, "removed 3", exitOK},
 		{"json output", []string{"--json"}, `{"older_than_days":90}`, `"deleted"`, exitOK},
 		{"negative days", []string{"--older-than-days", "-1"}, "", "", exitValidation},
 	}

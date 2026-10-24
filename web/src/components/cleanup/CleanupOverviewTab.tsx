@@ -12,6 +12,7 @@ import { useRuntimeSettings } from '../../queries/runtimeSettings'
 import type { CleanupCategory } from '../../types/cleanup'
 import { CleanupHero } from './CleanupHero'
 import { CleanupTargetRow } from './CleanupTargetRow'
+import { useReclaimable } from './useReclaimable'
 
 export function CleanupOverviewTab() {
   const { t } = useTranslation('cleanup')
@@ -20,6 +21,7 @@ export function CleanupOverviewTab() {
   const settings = useRuntimeSettings()
   const [category, setCategory] = useState<CleanupCategory | null>(null)
   const [reviewOnly, setReviewOnly] = useState(false)
+  const reclaim = useReclaimable(overview.data?.targets ?? [])
 
   if (overview.isPending) {
     return (
@@ -84,6 +86,10 @@ export function CleanupOverviewTab() {
       <CleanupHero
         targets={targets}
         scheduler={overview.data.scheduler}
+        reclaimable={reclaim.reclaimable}
+        calculation={reclaim.calculation}
+        canCalculate={isRoot && reclaim.canCalculate}
+        onCalculate={reclaim.calculate}
         filter={category}
         onFilter={(c) => {
           setCategory(c)

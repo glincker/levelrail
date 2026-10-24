@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 )
@@ -44,10 +45,17 @@ func TestTokenCleanupEndpoint(t *testing.T) {
 	if rec := post(aliceCookie, `{"older_than_days":30}`); rec.Code != http.StatusForbidden {
 		t.Errorf("non-root status = %d, want 403", rec.Code)
 	}
-	for _, body := range []string{`{"older_than_days":-1}`, `{"older_than_days":99999}`} {
+	for _, body := range []string{`{}`, `{"older_than_days":-1}`, `{"older_than_days":99999}`, `{"older_than_days":0}`, `{"older_than_days":0,"confirm":false}`} {
 		if rec := post(adminCookie, body); rec.Code != http.StatusBadRequest {
 			t.Errorf("body %s status = %d, want 400", body, rec.Code)
 		}
+	}
+
+	if rec := post(adminCookie, `{}`); !strings.Contains(rec.Body.String(), `"field":"older_than_days"`) {
+		t.Errorf("missing field body = %s, want a field error", rec.Body.String())
+	}
+	if rec := post(adminCookie, `{"older_than_days":0}`); !strings.Contains(rec.Body.String(), `"field":"confirm"`) {
+		t.Errorf("unconfirmed zero body = %s, want a confirm field error", rec.Body.String())
 	}
 
 	rec := post(adminCookie, `{"older_than_days":30}`)
@@ -63,7 +71,7 @@ func TestTokenCleanupEndpoint(t *testing.T) {
 		t.Errorf("ids after cleanup = %v", ids)
 	}
 
-	rec = post(adminCookie, `{"older_than_days":0}`)
+	rec = post(adminCookie, `{"older_than_days":0,"confirm":true}`)
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil || got.Deleted != 1 {
 		t.Fatalf("explicit 0 response = %s, want the remaining revoked token", rec.Body.String())
 	}

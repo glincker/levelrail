@@ -65,7 +65,7 @@ Each older environment variable is now the env override of the same runtime sett
 | `PUT /api/v1/cleanup/{id}/mode` | Root | Body `{"mode": "off\|preview\|on"}`; returns the updated target |
 | `GET /api/v1/cleanup/runs` | Read | Paged history. Filters `target`, `since`, `until`, `dry_run`, `status` (`ok` or `failed`), `limit`, `cursor`; `format=csv` exports |
 
-Preview and run answer `{"rows", "bytes", "more_remaining", "error"}`; `error` is an empty string on success, and a failure of the run itself is reported there with status 200 and recorded in history. The first-run review (`GET /api/v1/settings/runtime/onboarding`) adds an informational item with key `cleanup.preview_mode` whose value is the number of targets still in preview.
+Preview and run answer `{"rows", "bytes", "dry_run", "more_remaining", "error"}` (`dry_run` is true for a preview or a dry run); `error` is an empty string on success, and a failure of the run itself is reported there with status 200 and recorded in history. The first-run review (`GET /api/v1/settings/runtime/onboarding`) adds an informational item with key `cleanup.preview_mode` whose value is the number of targets still in preview, janitor stages in dry run included. Each target in `GET /api/v1/cleanup` carries `source` (`default`, `env` or `saved`) for where its retention days came from, and `usage.bytes` is `null` when the store cannot measure size (API tokens).
 
 ## Add a target
 

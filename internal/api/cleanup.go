@@ -54,6 +54,7 @@ type cleanupModeRequest struct {
 type cleanupRunResponse struct {
 	Rows          int64  `json:"rows"`
 	Bytes         int64  `json:"bytes"`
+	DryRun        bool   `json:"dry_run"`
 	MoreRemaining bool   `json:"more_remaining"`
 	Error         string `json:"error"`
 }
@@ -107,7 +108,7 @@ func (rt *Router) handlePreviewCleanup(w http.ResponseWriter, r *http.Request) {
 		rt.writeCleanupError(w, "api: preview cleanup", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, cleanupRunResponse{Rows: imp.Rows, Bytes: imp.Bytes})
+	writeJSON(w, http.StatusOK, cleanupRunResponse{Rows: imp.Rows, Bytes: imp.Bytes, DryRun: true})
 }
 
 func cleanupTriggerFor(r *http.Request) cleanup.Trigger {
@@ -140,7 +141,7 @@ func (rt *Router) handleRunCleanup(w http.ResponseWriter, r *http.Request) {
 		rt.writeCleanupError(w, "api: run cleanup", err)
 		return
 	}
-	out := cleanupRunResponse{Rows: res.Rows, Bytes: res.Bytes, MoreRemaining: res.More}
+	out := cleanupRunResponse{Rows: res.Rows, Bytes: res.Bytes, DryRun: req.DryRun, MoreRemaining: res.More}
 	if res.Err != nil {
 		out.Error = res.Err.Error()
 	}

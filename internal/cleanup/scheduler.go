@@ -3,18 +3,24 @@ package cleanup
 import (
 	"context"
 	"log/slog"
+	"maps"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
-const hoursPerDay = 24
+const (
+	hoursPerDay      = 24
+	minSchedulerWait = time.Second
+)
 
-// Start runs the scheduler until ctx ends. The first pass waits out the startup delay; each later pass
-// waits the current interval, re-read every cycle so a changed setting applies without a restart.
+// Start runs the scheduler until ctx ends. Each target is due at its last run plus the interval, or at the
+// startup delay plus its stagger slot before it has run; the schedule is re-read every cycle so a changed
+// setting applies without a restart.
 func (c *Center) Start(ctx context.Context) {
 	c.mu.Lock()
 	c.started = true
+	c.bootedAt = c.cfg.Now()
 	c.mu.Unlock()
 	defer func() {
 		c.mu.Lock()
@@ -22,15 +28,61 @@ func (c *Center) Start(ctx context.Context) {
 		c.nextRun = map[string]time.Time{}
 		c.mu.Unlock()
 	}()
-	wait := c.cfg.Limits.StartupDelay
 	for {
-		c.planNext(ctx, c.cfg.Now().Add(wait))
-		if !sleep(ctx, wait) {
+		plan := c.dueTimes(ctx)
+		c.mu.Lock()
+		c.nextRun = plan
+		c.mu.Unlock()
+		if !sleep(ctx, c.untilNext(ctx, plan)) {
 			return
 		}
-		c.Tick(ctx)
-		wait = c.interval(ctx)
+		c.runDue(ctx)
 	}
+}
+
+// untilNext is how long to wait for the earliest due target, or one interval when nothing is scheduled.
+func (c *Center) untilNext(ctx context.Context, plan map[string]time.Time) time.Duration {
+	if len(plan) == 0 || !c.cfg.Settings.Bool(ctx, runtimesettings.KeyCleanupEnabled) {
+		return c.interval(ctx)
+	}
+	now := c.cfg.Now()
+	var first time.Time
+	for _, at := range plan {
+		if first.IsZero() || at.Before(first) {
+			first = at
+		}
+	}
+	return max(first.Sub(now), minSchedulerWait)
+}
+
+// dueTimes plans when each eligible target runs next: last run plus interval, never earlier than the
+// startup delay plus its stagger slot, which is also the time of a target that has never run.
+func (c *Center) dueTimes(ctx context.Context) map[string]time.Time {
+	last, err := c.lastRuns(ctx)
+	if err != nil {
+		c.cfg.Logger.Warn("cleanup: schedule history unreadable", slog.String("error", err.Error()))
+	}
+	interval := c.interval(ctx)
+	c.mu.Lock()
+	booted := c.bootedAt
+	attempts := maps.Clone(c.attempted)
+	c.mu.Unlock()
+	if booted.IsZero() {
+		booted = c.cfg.Now()
+	}
+	plan := map[string]time.Time{}
+	for i, t := range c.eligible(ctx) {
+		id := t.Meta().ID
+		at := booted.Add(c.cfg.Limits.StartupDelay + time.Duration(i)*c.cfg.Limits.Stagger)
+		if r, ok := last[id]; ok && r.FinishedAt.Add(interval).After(at) {
+			at = r.FinishedAt.Add(interval)
+		}
+		if a, ok := attempts[id]; ok && a.Add(interval).After(at) {
+			at = a.Add(interval)
+		}
+		plan[id] = at
+	}
+	return plan
 }
 
 // eligible lists the targets a scheduled pass would run, in registration order.
@@ -46,14 +98,22 @@ func (c *Center) eligible(ctx context.Context) []Target {
 	return out
 }
 
-func (c *Center) planNext(ctx context.Context, at time.Time) {
-	plan := map[string]time.Time{}
-	for i, t := range c.eligible(ctx) {
-		plan[t.Meta().ID] = at.Add(time.Duration(i) * c.cfg.Limits.Stagger)
+// runDue runs the targets whose due time has passed.
+func (c *Center) runDue(ctx context.Context) {
+	if !c.cfg.Settings.Bool(ctx, runtimesettings.KeyCleanupEnabled) {
+		return
 	}
-	c.mu.Lock()
-	c.nextRun = plan
-	c.mu.Unlock()
+	c.pruneHistory(ctx)
+	plan := c.dueTimes(ctx)
+	now := c.cfg.Now()
+	for _, t := range c.eligible(ctx) {
+		if ctx.Err() != nil {
+			return
+		}
+		if at, ok := plan[t.Meta().ID]; ok && !at.After(now) {
+			c.runScheduled(ctx, t)
+		}
+	}
 }
 
 // Tick runs one scheduled pass: every target whose mode is on (a real run) or preview (a dry run), spaced by the stagger.
@@ -75,6 +135,9 @@ func (c *Center) Tick(ctx context.Context) {
 
 func (c *Center) runScheduled(ctx context.Context, t Target) {
 	m := t.Meta()
+	c.mu.Lock()
+	c.attempted[m.ID] = c.cfg.Now()
+	c.mu.Unlock()
 	mode := c.ModeOf(ctx, m)
 	days := c.cfg.Settings.Int(ctx, m.PolicySetting)
 	if days <= 0 || mode == ModeOff {

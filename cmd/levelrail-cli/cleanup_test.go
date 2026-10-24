@@ -204,7 +204,7 @@ func TestRun_CleanupDryRunOutput(t *testing.T) {
 	if code := run("lr", []string{"cleanup", "run", "audit_log", "--dry-run", "--token", "t", "--api-url", srv.URL}, &stdout, &stderr, envMap()); code != exitOK {
 		t.Fatalf("exit = %d, stderr = %q", code, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "dry run: would delete 12 rows") || !strings.Contains(stdout.String(), "more rows remain") {
+	if !strings.Contains(stdout.String(), "would delete 12 rows (4096 bytes) (dry run)") || !strings.Contains(stdout.String(), "more rows remain") {
 		t.Errorf("stdout = %q", stdout.String())
 	}
 }

@@ -11,12 +11,14 @@ export type CleanupCategory =
   | 'other'
 
 export type CleanupMode = 'off' | 'preview' | 'on'
+export type CleanupSource = 'default' | 'env' | 'saved'
 export type CleanupOrigin = 'new' | 'existing'
 export type CleanupTrigger = 'scheduled' | 'manual' | 'cli' | 'api'
 
 export interface CleanupUsage {
   rows: number
-  bytes: number
+  /** Null when the store cannot measure size. */
+  bytes: number | null
   oldest?: string | null
 }
 
@@ -30,6 +32,8 @@ export interface CleanupTarget {
   /** Runtime setting key holding the retention preset; empty for read-through targets. */
   policy_key: string
   days: number
+  /** Where the retention days came from. */
+  source?: CleanupSource
   mode: CleanupMode
   origin: CleanupOrigin
   destructive: boolean
@@ -58,6 +62,7 @@ export interface CleanupImpact {
 export interface CleanupResult {
   rows: number
   bytes: number
+  dry_run?: boolean
   error?: string
   more_remaining?: boolean
 }

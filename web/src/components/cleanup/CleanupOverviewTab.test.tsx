@@ -102,6 +102,45 @@ describe('CleanupOverviewTab', () => {
     ).toBeInTheDocument()
   })
 
+  it('labels the total as stored data and only shows reclaimable after a calculation', async () => {
+    await renderInRouter(<CleanupOverviewTab />)
+    await screen.findByText('Audit log')
+    expect(screen.getByText('Data stored')).toBeInTheDocument()
+    expect(screen.queryByText(/Reclaimable:/)).not.toBeInTheDocument()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Calculate reclaimable' }),
+    )
+    expect(await screen.findByText(/Reclaimable:/)).toBeInTheDocument()
+    expect(
+      calls.filter((c) => c.url.includes('/preview')).length,
+    ).toBeGreaterThan(0)
+  })
+
+  it('formats the scheduler interval instead of the raw Go duration', async () => {
+    await renderInRouter(<CleanupOverviewTab />)
+    expect(await screen.findByText(/Every 6 hours?/)).toBeInTheDocument()
+    expect(screen.queryByText(/6h0m0s/)).not.toBeInTheDocument()
+  })
+
+  it('shows a dash for unknown bytes and oldest', async () => {
+    overview.targets.push(
+      target({
+        id: 'auth.api_tokens',
+        category: 'auth',
+        title: 'Inactive API tokens',
+        policy_key: 'retention.revoked_token_days',
+        usage: { rows: 4, bytes: null, oldest: null },
+      }),
+    )
+    await renderInRouter(<CleanupOverviewTab />)
+    await screen.findByText('Inactive API tokens')
+    const row = document.querySelector(
+      '[data-target="auth.api_tokens"]',
+    ) as HTMLElement
+    expect(within(row).getByText(/4 rows, -/)).toBeInTheDocument()
+    overview.targets.pop()
+  })
+
   it('shows the inline impact summary and the previewed count in the confirm dialog', async () => {
     await renderInRouter(<CleanupOverviewTab />)
     await screen.findByText('Audit log')

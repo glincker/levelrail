@@ -571,3 +571,61 @@ func TestLimitsFromEnv(t *testing.T) {
 		t.Fatalf("limits = %+v", l)
 	}
 }
+
+type managedTarget struct {
+	*fakeTarget
+	state ManagedState
+}
+
+func (m managedTarget) State(context.Context) (ManagedState, error) { return m.state, nil }
+
+func TestPreviewCountIncludesJanitorPreview(t *testing.T) {
+	prev := tgt("m.prev", OriginNew, 0)
+	ro := &managedTarget{fakeTarget: tgt("m.ro", OriginExisting, 0), state: ManagedState{Days: 7, Mode: ModePreview, DryRun: true}}
+	ro.meta.ReadOnly = true
+	live := &managedTarget{fakeTarget: tgt("m.live", OriginExisting, 0), state: ManagedState{Days: 7, Mode: ModeOn}}
+	live.meta.ReadOnly = true
+	h := newHarness(t, prev)
+	h.reg.Register(ro)
+	h.reg.Register(live)
+	if got := h.c.PreviewCount(t.Context()); got != 2 {
+		t.Fatalf("PreviewCount = %d, want 2 (one managed target, one read-through in dry run)", got)
+	}
+	ro.state.Mode = ModeOn
+	if got := h.c.PreviewCount(t.Context()); got != 1 {
+		t.Fatalf("PreviewCount = %d, want 1 once the janitor stops dry-running", got)
+	}
+}
+
+func TestViewReportsSourceAndNullBytes(t *testing.T) {
+	h := newHarness(t, tgt("s.one", OriginExisting, 0))
+	ov, err := h.c.List(t.Context())
+	if err != nil || ov.Targets[0].Source != "default" || ov.Targets[0].Usage.Bytes == nil {
+		t.Fatalf("view = %+v, %v", ov.Targets, err)
+	}
+	if body, _ := json.Marshal(Usage{Rows: 3, NoBytes: true}.view()); !strings.Contains(string(body), `"bytes":null`) {
+		t.Fatalf("unmeasurable usage JSON = %s, want bytes null", body)
+	}
+}
+
+func TestDueTimesFollowLastRunAndStartupDelay(t *testing.T) {
+	a, b := tgt("d.a", OriginExisting, 0), tgt("d.b", OriginExisting, 0)
+	h := newHarness(t, a, b)
+	h.c.cfg.Limits.Stagger = 5 * time.Second
+	h.c.bootedAt = h.now
+	// fakeSettings.Duration is one hour, which is the interval here.
+	plan := h.c.dueTimes(t.Context())
+	boot := h.now.Add(time.Hour)
+	if !plan["d.a"].Equal(boot) || !plan["d.b"].Equal(boot.Add(5*time.Second)) {
+		t.Fatalf("before any run: %v, want startup delay plus stagger slot", plan)
+	}
+	h.now = h.now.Add(2 * time.Hour)
+	h.runs.rows = append(h.runs.rows, store.CleanupRun{ID: 1, Target: "d.a", StartedAt: h.now, FinishedAt: h.now})
+	plan = h.c.dueTimes(t.Context())
+	if want := h.now.Add(time.Hour); !plan["d.a"].Equal(want) {
+		t.Fatalf("after a run: %v, want last run plus interval %v", plan["d.a"], want)
+	}
+	if want := h.c.bootedAt.Add(time.Hour + 5*time.Second); !plan["d.b"].Equal(want) {
+		t.Fatalf("a target that never ran moved to %v", plan["d.b"])
+	}
+}

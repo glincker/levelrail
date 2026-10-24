@@ -62,11 +62,13 @@ type Config struct {
 type Center struct {
 	cfg Config
 
-	mu      sync.Mutex
-	running map[string]bool
-	nextRun map[string]time.Time
-	started bool
-	usage   map[string]usageEntry
+	mu        sync.Mutex
+	running   map[string]bool
+	nextRun   map[string]time.Time
+	started   bool
+	bootedAt  time.Time
+	attempted map[string]time.Time
+	usage     map[string]usageEntry
 }
 
 type usageEntry struct {
@@ -89,7 +91,7 @@ func New(cfg Config) *Center {
 	if cfg.Limits.MaxRows == 0 {
 		cfg.Limits = LimitsFromEnv(func(string) (string, bool) { return "", false })
 	}
-	return &Center{cfg: cfg, running: map[string]bool{}, nextRun: map[string]time.Time{}, usage: map[string]usageEntry{}}
+	return &Center{cfg: cfg, running: map[string]bool{}, nextRun: map[string]time.Time{}, attempted: map[string]time.Time{}, usage: map[string]usageEntry{}}
 }
 
 // RunRecord is one history row on the wire.
@@ -122,12 +124,13 @@ type TargetView struct {
 	DescriptionKey string     `json:"description_key,omitempty"`
 	PolicyKey      string     `json:"policy_key"`
 	Days           int        `json:"days"`
+	Source         string     `json:"source"`
 	Mode           string     `json:"mode"`
 	Origin         string     `json:"origin"`
 	Destructive    bool       `json:"destructive"`
 	Floor          int        `json:"floor"`
 	Presets        []int      `json:"presets"`
-	Usage          Usage      `json:"usage"`
+	Usage          UsageView  `json:"usage"`
 	UsageError     string     `json:"usage_error,omitempty"`
 	LastRun        *RunRecord `json:"last_run"`
 	NextRun        *time.Time `json:"next_run"`
@@ -200,10 +203,11 @@ func (c *Center) view(ctx context.Context, t Target, last map[string]store.Clean
 		PolicyKey: m.PolicySetting, Origin: string(m.Origin), Destructive: m.Destructive, Floor: m.Floor, Presets: presets,
 		ReadThrough: m.ReadOnly, Link: m.Link,
 	}
-	v.Usage, v.UsageError = c.usageOf(ctx, t)
+	u, usageErr := c.usageOf(ctx, t)
+	v.Usage, v.UsageError = u.view(), usageErr
 	if mg, ok := t.(Managed); ok {
 		if st, err := mg.State(ctx); err == nil {
-			v.Days, v.Mode = st.Days, string(st.Mode)
+			v.Days, v.Mode, v.Source = st.Days, string(st.Mode), runtimesettings.SourceSaved
 			dry := st.DryRun
 			v.DryRun = &dry
 		} else {
@@ -211,6 +215,7 @@ func (c *Center) view(ctx context.Context, t Target, last map[string]store.Clean
 		}
 	} else {
 		v.Days = c.cfg.Settings.Int(ctx, m.PolicySetting)
+		v.Source = c.sourceOf(ctx, m.PolicySetting)
 		v.Mode = string(c.ModeOf(ctx, m))
 	}
 	if r, ok := last[m.ID]; ok {
@@ -223,6 +228,16 @@ func (c *Center) view(ctx context.Context, t Target, last map[string]store.Clean
 	}
 	c.mu.Unlock()
 	return v
+}
+
+// sourceOf says where a setting's value came from; a Settings without that detail reports the default.
+func (c *Center) sourceOf(ctx context.Context, key string) string {
+	if s, ok := c.cfg.Settings.(interface {
+		Source(ctx context.Context, key string) string
+	}); ok {
+		return s.Source(ctx, key)
+	}
+	return runtimesettings.SourceDefault
 }
 
 func (c *Center) lastRuns(ctx context.Context) (map[string]store.CleanupRun, error) {
@@ -254,11 +269,19 @@ func (c *Center) List(ctx context.Context) (Overview, error) {
 	return out, nil
 }
 
-// PreviewCount is how many managed targets run as dry runs now, for the first-run review.
+// PreviewCount is how many targets only measure now, for the first-run review. Read-through targets count
+// when the janitor is in dry-run, which is a real preview state.
 func (c *Center) PreviewCount(ctx context.Context) int {
 	n := 0
 	for _, t := range c.cfg.Registry.Targets() {
-		if m := t.Meta(); !m.ReadOnly && c.ModeOf(ctx, m) == ModePreview {
+		m := t.Meta()
+		if mg, ok := t.(Managed); ok && m.ReadOnly {
+			if st, err := mg.State(ctx); err == nil && st.Mode == ModePreview {
+				n++
+			}
+			continue
+		}
+		if c.ModeOf(ctx, m) == ModePreview {
 			n++
 		}
 	}
