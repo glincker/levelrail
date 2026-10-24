@@ -200,6 +200,11 @@ func runDev(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 			_, _ = fmt.Fprintf(stderr, "%s dev: %v\n", prog, err)
 			return exitValidation
 		}
+		if o.sub == "stop" || o.sub == "status" {
+			if dir, ok := followCustomDevDir(o.dataDir); ok {
+				o.dataDir = dir
+			}
+		}
 	}
 	switch o.sub {
 	case "stop":
@@ -235,6 +240,11 @@ func devStart(prog string, o devOptions, stdout, stderr io.Writer, lookupEnv fun
 	if err := os.MkdirAll(o.dataDir, 0o750); err != nil {
 		_, _ = fmt.Fprintf(stderr, "%s dev: create data directory: %v\n", prog, err)
 		return exitValidation
+	}
+	if def, derr := defaultDevDataDir(prog, lookupEnv); derr == nil {
+		if err := recordCustomDevDir(def, o.dataDir); err != nil {
+			_, _ = fmt.Fprintf(stderr, "%s dev: warning: could not record data dir for stop: %v\n", prog, err)
+		}
 	}
 	ports, err := localmode.ChoosePorts(o.port, localmode.LoopbackFree)
 	if err != nil {
@@ -449,7 +459,7 @@ func devStop(prog string, o devOptions, stdout, stderr io.Writer) int {
 	}
 	if !ok || !processAlive(st.PID) {
 		localmode.ClearState(o.dataDir)
-		_, _ = fmt.Fprintln(stdout, "not running")
+		_, _ = fmt.Fprintf(stdout, "not running (data dir %s)\nif it was started with a custom directory, pass the same --data-dir\n", o.dataDir)
 		return exitOK
 	}
 	if err := terminateProcess(st.PID); err != nil {
@@ -485,4 +495,45 @@ func openBrowser(ctx context.Context, url string) error {
 	}
 	go func() { _ = cmd.Wait() }()
 	return nil
+}
+
+const devLastDirFile = "last-custom-dir"
+
+// recordCustomDevDir leaves a pointer in the default dir when an instance
+// starts elsewhere, so stop and status without --data-dir can find it.
+func recordCustomDevDir(defaultDir, dir string) error {
+	ptr := filepath.Join(defaultDir, devLastDirFile)
+	if filepath.Clean(dir) == filepath.Clean(defaultDir) {
+		if err := os.Remove(ptr); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("clear data dir pointer: %w", err)
+		}
+		return nil
+	}
+	if err := os.MkdirAll(defaultDir, 0o750); err != nil {
+		return fmt.Errorf("create default data dir: %w", err)
+	}
+	if err := os.WriteFile(ptr, []byte(dir), 0o600); err != nil {
+		return fmt.Errorf("write data dir pointer: %w", err)
+	}
+	return nil
+}
+
+// followCustomDevDir returns the recorded custom dir only while an
+// instance there is still alive, and only when the default has none.
+func followCustomDevDir(defaultDir string) (string, bool) {
+	if st, ok, _ := localmode.ReadState(defaultDir); ok && processAlive(st.PID) {
+		return "", false
+	}
+	b, err := os.ReadFile(filepath.Join(defaultDir, devLastDirFile)) //nolint:gosec // fixed file name under the per-user default dir
+	if err != nil {
+		return "", false
+	}
+	dir := strings.TrimSpace(string(b))
+	if dir == "" || !filepath.IsAbs(dir) {
+		return "", false
+	}
+	if st, ok, _ := localmode.ReadState(dir); ok && processAlive(st.PID) {
+		return dir, true
+	}
+	return "", false
 }

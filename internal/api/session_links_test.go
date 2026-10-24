@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -285,5 +286,45 @@ func TestConsumeSessionLink_GETIsMethodNotAllowed(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "POST") {
 		t.Errorf("body = %s, want a message pointing at POST", rec.Body.String())
+	}
+}
+
+// The consumed session cookie must be accepted by the next request on
+// both transports: Secure only over TLS (a Secure cookie is dropped by
+// browsers on plain http LAN origins), always HttpOnly, Lax and Path "/".
+func TestSessionLink_ConsumedCookieAttributes(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		tls        bool
+		wantSecure bool
+	}{{"plain http", false, false}, {"tls", true, true}} {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			tok := seedRootAPIToken(t, db, "sl-attr-"+strings.ReplaceAll(tc.name, " ", "-"), []string{AbilityRoot})
+			minted, rec := mintSessionLink(t, rt, nil, tok)
+			if rec.Code != http.StatusCreated {
+				t.Fatalf("mint: %d %s", rec.Code, rec.Body.String())
+			}
+			body, _ := json.Marshal(map[string]string{"token": minted.Token})
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/session-links/consume", strings.NewReader(string(body)))
+			if tc.tls {
+				req = httptest.NewRequest(http.MethodPost, "https://example.test/api/v1/auth/session-links/consume", strings.NewReader(string(body)))
+				req.TLS = &tls.ConnectionState{}
+			}
+			out := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(out, req)
+			if out.Code != http.StatusOK {
+				t.Fatalf("consume: %d %s", out.Code, out.Body.String())
+			}
+			c := sessionCookieFromRecorder(t, out)
+			if c.Secure != tc.wantSecure || !c.HttpOnly || c.SameSite != http.SameSiteLaxMode || c.Path != "/" || c.Domain != "" {
+				t.Errorf("cookie = %+v, want Secure=%v HttpOnly Lax Path=/ no Domain", c, tc.wantSecure)
+			}
+			next := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(next, authedRequest(t, c, http.MethodGet, "/api/v1/auth/session", ""))
+			if next.Code != http.StatusOK {
+				t.Errorf("next request with cookie: %d %s", next.Code, next.Body.String())
+			}
+		})
 	}
 }

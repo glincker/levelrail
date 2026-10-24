@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 )
 
 // runAuthSessionLink mints a session link via POST /api/v1/auth/session-links. The server requires AbilityRoot.
@@ -21,6 +22,10 @@ func runAuthSessionLink(prog string, args []string, stdout, stderr io.Writer, lo
 	created, err := client.MintSessionLink(context.Background())
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("mint session link: %w", err))
+	}
+
+	if strings.HasPrefix(created.URL, "/") {
+		created.URL = client.BaseURL() + created.URL
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, created, func() {

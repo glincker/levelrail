@@ -84,6 +84,17 @@ type sessionInfoResponse struct {
 
 // Email stays under the 'username' wire key for frontend compatibility.
 func (rt *Router) handleGetSession(w http.ResponseWriter, r *http.Request) {
+	// A session-link session minted from an API token has no user row; the
+	// SPA's sign-in check must still see it as signed in or the cookie
+	// looks rejected. Read-only: password and profile routes stay user-only.
+	if pinned, ok := rt.currentPinnedSession(r); ok {
+		writeJSON(w, http.StatusOK, sessionInfoResponse{
+			Email:       pinned.pinnedDisplayName,
+			DisplayName: pinned.pinnedDisplayName,
+			ExpiresAt:   pinned.expiresAt.UTC().Format(time.RFC3339),
+		})
+		return
+	}
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "authentication required")

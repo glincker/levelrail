@@ -11,7 +11,15 @@ func (rt *Router) registerAuthRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/auth/setup-status", rt.handleSetupStatus)
 	mux.HandleFunc("POST /api/v1/auth/logout", rt.requireAuth(rt.handleLogout))
 	mux.HandleFunc("PUT /api/v1/auth/password", rt.requireAuth(rt.handleChangePassword))
-	mux.HandleFunc("GET /api/v1/auth/session", rt.requireAuth(rt.handleGetSession))
+	// Pinned (token-minted) sessions have no user row and cannot pass requireAuth.
+	userSession := rt.requireAuth(rt.handleGetSession)
+	mux.HandleFunc("GET /api/v1/auth/session", func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := rt.currentPinnedSession(r); ok {
+			rt.handleGetSession(w, r)
+			return
+		}
+		userSession(w, r)
+	})
 	mux.HandleFunc("GET /api/v1/auth/whoami", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleWhoami))
 	mux.HandleFunc("PATCH /api/v1/auth/profile", rt.requireAuth(rt.handleUpdateProfile))
 	mux.HandleFunc("GET /api/v1/auth/my-access", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleMyAccess))

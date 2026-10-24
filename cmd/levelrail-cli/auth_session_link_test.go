@@ -59,3 +59,19 @@ func TestRun_AuthSessionLink_Help(t *testing.T) {
 		t.Errorf("stderr = %q, want usage text", stderr)
 	}
 }
+
+// A relative link (no primary domain configured) is not openable from a
+// terminal, so the CLI anchors it to the API URL it just talked to.
+func TestRun_AuthSessionLink_RelativeURLIsAnchored(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(sessionLinkResource{Token: "sl_x", URL: "/login?session_link=sl_x"})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"auth", "session-link", "--api-url", srv.URL})
+	if want := srv.URL + "/login?session_link=sl_x"; !strings.Contains(stdout, want) {
+		t.Errorf("stdout = %q, want %q", stdout, want)
+	}
+}
