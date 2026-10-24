@@ -124,8 +124,13 @@ func selectPurgeTargets(ctx context.Context, tx *sql.Tx, q purgeSelect, cutoff t
 // audit log holds actor names only, so no history row points at these.
 func deleteTokenRows(ctx context.Context, tx txRunner, t purgeTarget) error {
 	for _, table := range []string{"api_token_scopes", "api_token_bindings", "token_hygiene_notices"} {
-		if _, err := tx.ExecContext(ctx, `DELETE FROM `+table+` WHERE token_id IN (?, ?)`, t.engineID, t.legacyID); err != nil {
-			return fmt.Errorf("store: purge tokens: delete %s: %w", table, err)
+		for _, id := range []string{t.engineID, t.legacyID} {
+			if id == "" {
+				continue
+			}
+			if _, err := tx.ExecContext(ctx, `DELETE FROM `+table+` WHERE token_id = ?`, id); err != nil {
+				return fmt.Errorf("store: purge tokens: delete %s: %w", table, err)
+			}
 		}
 	}
 	if t.engineID != "" {
