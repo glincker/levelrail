@@ -3,6 +3,7 @@ package datamigrate
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -202,6 +203,10 @@ func TestDumpFilterLongLineAndNoTrailingNewline(t *testing.T) {
 type hostedRuntime struct {
 	fakeRuntime
 	probe string
+	// target is the output of TargetStateCommand; execs records role creation.
+	target string
+	objs   string
+	execs  []string
 }
 
 func (h *hostedRuntime) Exec(ctx context.Context, c string, cmd []string) (io.ReadCloser, error) {
@@ -210,6 +215,14 @@ func (h *hostedRuntime) Exec(ctx context.Context, c string, cmd []string) (io.Re
 		return io.NopCloser(strings.NewReader(h.probe)), nil
 	case DiskFreeCommand()[2]:
 		return io.NopCloser(strings.NewReader("free|107374182400\n")), nil
+	case TargetStateCommand()[2]:
+		return io.NopCloser(strings.NewReader(h.target)), nil
+	case ObjectCountsCommand()[2]:
+		return io.NopCloser(strings.NewReader(h.objs)), nil
+	}
+	if strings.Contains(cmd[len(cmd)-1], "CREATE ROLE") {
+		h.execs = append(h.execs, cmd[len(cmd)-1])
+		return io.NopCloser(strings.NewReader("")), nil
 	}
 	return h.fakeRuntime.Exec(ctx, c, cmd)
 }
@@ -224,6 +237,8 @@ func newHosted(probe string, dumpErr error) (*Copier, *hostedRuntime, *fakeResto
 	rs := &fakeRestorer{}
 	return &Copier{Runtime: rt, Restorer: rs, VerifyAttempts: 1, VerifyInterval: time.Millisecond}, rt, rs
 }
+
+const rlsProbe = okProbe + "policyrole|readonly_hosted\n"
 
 const okProbe = "version_num|160004\nversion|16.4\nsize|1048576\ntables|1\next|pgcrypto\n"
 
@@ -302,4 +317,134 @@ func TestHostedHelperEnvCarriesSSLMode(t *testing.T) {
 		t.Errorf("env = %v", env)
 	}
 	var _ docker.Runtime = (*hostedRuntime)(nil)
+}
+
+func TestHostedRolesAgainstTarget(t *testing.T) {
+	cfg := HostedConfig{MaxBytes: 1 << 30}
+	plan := HostedPlan{URL: SecretURL(hostedRaw), TargetName: "app", WritesFrozen: true, TargetExists: true, OwnTarget: true}
+
+	t.Run("blocks while the target lacks the role", func(t *testing.T) {
+		c, rt, _ := newHosted(rlsProbe, nil)
+		rt.target = "role|postgres\nusertables|0\n"
+		_, res, err := c.PreflightHosted(t.Context(), plan, cfg, 1.5, 20)
+		if err != nil || severityOf(res.Preflight, "policy_roles") != SeverityBlock || len(res.MissingRoles) != 1 {
+			t.Fatalf("err=%v res=%+v", err, res)
+		}
+	})
+	t.Run("clears once the role exists on the target", func(t *testing.T) {
+		c, rt, _ := newHosted(rlsProbe, nil)
+		rt.target = "role|postgres\nrole|readonly_hosted\nusertables|0\n"
+		_, res, err := c.PreflightHosted(t.Context(), plan, cfg, 1.5, 20)
+		if err != nil || res.Preflight.Blocked || severityOf(res.Preflight, "policy_roles") != SeverityOK {
+			t.Fatalf("err=%v blocked=%v checks=%+v", err, res.Preflight.Blocked, res.Preflight.Checks)
+		}
+	})
+	t.Run("role names are compared exactly", func(t *testing.T) {
+		got := MissingRoles([]string{"Reader", "writer"}, []string{"reader", "writer"})
+		if len(got) != 1 || got[0] != "Reader" {
+			t.Errorf("missing = %v", got)
+		}
+	})
+	t.Run("unreadable target blocks instead of guessing", func(t *testing.T) {
+		in := HostedPreflightInput{Plan: HostedPlan{TargetName: "app", WritesFrozen: true}, Config: cfg, DiskMargin: 1.5,
+			Probe: HostedProbe{Major: 16, SizeBytes: 1 << 20, FreeBytes: 10 << 30, PolicyRoles: []string{"r"}}}
+		if got := severityOf(HostedPreflight(in), "policy_roles"); got != SeverityBlock {
+			t.Errorf("severity = %s", got)
+		}
+	})
+	t.Run("dry run says which roles would be created", func(t *testing.T) {
+		c, rt, _ := newHosted(rlsProbe, nil)
+		rt.target = "role|postgres\nusertables|0\n"
+		p := plan
+		p.CreateMissingRoles = true
+		_, res, err := c.PreflightHosted(t.Context(), p, cfg, 1.5, 20)
+		if err != nil || res.Preflight.Blocked || severityOf(res.Preflight, "policy_roles") != SeverityWarn {
+			t.Fatalf("err=%v res=%+v", err, res.Preflight.Checks)
+		}
+		for _, ch := range res.Preflight.Checks {
+			if ch.ID == "policy_roles" && !strings.Contains(ch.Message, "readonly_hosted") {
+				t.Errorf("message = %q", ch.Message)
+			}
+		}
+		if len(rt.execs) != 0 {
+			t.Error("dry run created a role")
+		}
+	})
+	t.Run("move creates the roles NOLOGIN NOINHERIT and reports it", func(t *testing.T) {
+		c, rt, _ := newHosted(rlsProbe, nil)
+		rt.target = "role|postgres\nusertables|0\n"
+		rt.objs = "sequences|2\nviews|1\nfunctions|3\nextensions|1\n"
+		p := plan
+		p.CreateMissingRoles = true
+		res, err := c.MoveHosted(t.Context(), p, cfg, 1.5, 20)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(rt.execs) != 1 || !strings.Contains(rt.execs[0], `CREATE ROLE "readonly_hosted" NOLOGIN NOINHERIT`) {
+			t.Fatalf("execs = %v", rt.execs)
+		}
+		found := false
+		for _, f := range res.Verification.Findings {
+			found = found || f.ID == "roles_created"
+		}
+		if !found || res.Verification.Objects == nil || res.Verification.Objects.Functions != 3 || res.Verification.Objects.Sequences != 2 {
+			t.Errorf("verification = %+v", res.Verification)
+		}
+	})
+	t.Run("unsafe role names are refused", func(t *testing.T) {
+		if _, err := CreateRolesCommand([]string{`x"; DROP DATABASE y; --`}); err == nil {
+			t.Error("unsafe name accepted")
+		}
+	})
+}
+
+func TestHostedCollisionOnlyWhenTargetHasData(t *testing.T) {
+	base := HostedPreflightInput{
+		Plan:   HostedPlan{TargetName: "app", WritesFrozen: true, TargetExists: true, OwnTarget: true},
+		Config: HostedConfig{MaxBytes: 1 << 30}, DiskMargin: 1.5,
+		Probe: HostedProbe{Major: 16, SizeBytes: 1 << 20, FreeBytes: 10 << 30},
+	}
+	empty := base
+	empty.Target = TargetState{Known: true}
+	if got := severityOf(HostedPreflight(empty), "collision"); got != SeverityOK {
+		t.Errorf("empty target collision = %s", got)
+	}
+	used := base
+	used.Target = TargetState{Known: true, UserTables: 4}
+	if got := severityOf(HostedPreflight(used), "collision"); got != SeverityWarn {
+		t.Errorf("imported target collision = %s", got)
+	}
+}
+
+func TestDumpFilterDropsDeclaredSchemas(t *testing.T) {
+	in := "CREATE SCHEMA heroku_ext;\nCREATE SCHEMA IF NOT EXISTS \"Other\";\nCREATE SCHEMA public;\nCREATE SCHEMA pg_x;\n"
+	var runs [2]string
+	for i := range runs {
+		b, err := io.ReadAll((&dumpFilter{}).wrap(strings.NewReader(in)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		runs[i] = string(b)
+	}
+	out := runs[0]
+	for _, want := range []string{"DROP SCHEMA IF EXISTS heroku_ext CASCADE;\nCREATE SCHEMA heroku_ext;", `DROP SCHEMA IF EXISTS "Other" CASCADE;`} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "DROP SCHEMA IF EXISTS public") || strings.Contains(out, "DROP SCHEMA IF EXISTS pg_") || runs[0] != runs[1] {
+		t.Errorf("system schema dropped or output unstable:\n%s", out)
+	}
+}
+
+func TestTidyExecErrorKeepsOnlyTheCause(t *testing.T) {
+	script := strings.Repeat("export PGHOST=x\n", 30)
+	err := fmt.Errorf("probe the hosted database: %w", &docker.ExecExitError{
+		Cmd: []string{"sh", "-c", script}, Container: "c", ExitCode: 2,
+		Stderr: "noise\npsql: error: connection to server failed\n\tpassword authentication failed\n",
+	})
+	got := tidyExecError(err).Error()
+	if strings.Contains(got, "PGHOST") || !strings.Contains(got, "password authentication failed") || !strings.Contains(got, "exited 2") {
+		t.Errorf("got %q", got)
+	}
 }

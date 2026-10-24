@@ -49,8 +49,18 @@ type DataCopyStatus struct {
 	Checked        int              `json:"checked"`
 	Mismatched     int              `json:"mismatched"`
 	Tables         []DataCopyTable  `json:"tables,omitempty"`
+	Objects        *DataCopyObjects `json:"objects,omitempty"`
+	Findings       []HostedCheck    `json:"findings,omitempty"`
 	StartedAt      string           `json:"started_at,omitempty"`
 	FinishedAt     string           `json:"finished_at,omitempty"`
+}
+
+// DataCopyObjects counts the non-table objects that arrived in a hosted move.
+type DataCopyObjects struct {
+	Sequences  int `json:"sequences"`
+	Views      int `json:"views"`
+	Functions  int `json:"functions"`
+	Extensions int `json:"extensions"`
 }
 
 // CutoverCheck is one named check with what to do about it.
@@ -118,6 +128,8 @@ type HostedImportRequest struct {
 	URL          string `json:"url"`
 	WritesFrozen bool   `json:"writes_frozen"`
 	AllowLarge   bool   `json:"allow_large"`
+	// CreateMissingRoles asks the server to create policy roles absent from the target.
+	CreateMissingRoles bool `json:"create_missing_roles,omitempty"`
 }
 
 // HostedCheck is one preflight finding with its fix.

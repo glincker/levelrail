@@ -325,7 +325,7 @@ levelrail-cli databases import-hosted mydb --from-env SOURCE_DATABASE_URL --writ
 5. Run it. Without `--writes-frozen` it refuses. It copies, restores and compares row counts per table. Follow it with `migrate db-status mydb`.
 6. Verify the counts, link the app to the new database so its connection variable changes, and deploy. `heroku maintenance:off` is not needed after the cutover, because the old app is retired.
 
-The same two steps are available over the API: `POST /api/v1/imports/platform/databases/{name}/hosted/preflight` and `.../hosted/run` (ability `write:sensitive`). The body is `{"url", "writes_frozen", "allow_large"}`. The URL is held in memory for the request and the helper container, never stored or logged, and every response shows it with the password masked. Run answers `409` until `writes_frozen` is true, and `202` once the move starts.
+The same two steps are available over the API: `POST /api/v1/imports/platform/databases/{name}/hosted/preflight` and `.../hosted/run` (ability `write:sensitive`). The body is `{"url", "writes_frozen", "allow_large", "create_missing_roles"}`. The URL is held in memory for the request and the helper container, never stored or logged, and every response shows it with the password masked. Run answers `409` until `writes_frozen` is true, and `202` once the move starts.
 
 Limits, stated plainly:
 
@@ -334,7 +334,8 @@ Limits, stated plainly:
 - A public host must use TLS. `sslmode=disable`, `allow` or `prefer` are refused unless `APP_MIGRATE_HOSTED_ALLOW_INSECURE=true`.
 - Provider extension schemas (such as `heroku_ext`) are rewritten to `public`, and provider-only extensions are skipped with a warning.
 - Owners and grants are not copied. Every object belongs to the managed database user.
-- Row level security policies that name roles missing on the target are a blocker. There is no automatic fix yet: create those roles on the target first, or drop the policies on the source.
+- Row level security policies that name roles missing on the target are a blocker (the check reads the target's own roles, so it clears once the role exists). Pass `--create-missing-roles` (API `create_missing_roles`) to create them as NOLOGIN NOINHERIT before the restore; the dry run lists which roles would be created and the result reports them.
+- Running the import again replaces the previous copy: every schema the dump declares, such as `heroku_ext`, is dropped and recreated in the same transaction as the restore.
 - It has not been verified against a real Heroku database yet. Test it on a copy first.
 
 ## Migrating a whole database server (Migration hub)

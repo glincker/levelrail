@@ -29,20 +29,22 @@ type DataImportStore interface {
 }
 
 type dataImportResource struct {
-	Database       string                   `json:"database"`
-	Engine         string                   `json:"engine"`
-	Status         string                   `json:"status"`
-	Reason         string                   `json:"reason,omitempty"`
-	Failure        *datamigrate.FailureInfo `json:"failure,omitempty"`
-	NextAction     string                   `json:"next_action,omitempty"`
-	SourceHost     string                   `json:"source_host,omitempty"`
-	SourcePort     int                      `json:"source_port,omitempty"`
-	SourceDatabase string                   `json:"source_database,omitempty"`
-	Checked        int                      `json:"checked"`
-	Mismatched     int                      `json:"mismatched"`
-	Tables         []datamigrate.TableCount `json:"tables,omitempty"`
-	StartedAt      string                   `json:"started_at,omitempty"`
-	FinishedAt     string                   `json:"finished_at,omitempty"`
+	Database       string                       `json:"database"`
+	Engine         string                       `json:"engine"`
+	Status         string                       `json:"status"`
+	Reason         string                       `json:"reason,omitempty"`
+	Failure        *datamigrate.FailureInfo     `json:"failure,omitempty"`
+	NextAction     string                       `json:"next_action,omitempty"`
+	SourceHost     string                       `json:"source_host,omitempty"`
+	SourcePort     int                          `json:"source_port,omitempty"`
+	SourceDatabase string                       `json:"source_database,omitempty"`
+	Checked        int                          `json:"checked"`
+	Mismatched     int                          `json:"mismatched"`
+	Tables         []datamigrate.TableCount     `json:"tables,omitempty"`
+	Objects        *datamigrate.ObjectCounts    `json:"objects,omitempty"`
+	Findings       []datamigrate.PreflightCheck `json:"findings,omitempty"`
+	StartedAt      string                       `json:"started_at,omitempty"`
+	FinishedAt     string                       `json:"finished_at,omitempty"`
 }
 
 func copyTimeout() time.Duration {
@@ -74,7 +76,7 @@ func toDataImportResource(db store.DesiredDatabase, row store.DatabaseDataImport
 	if row.Detail != "" {
 		var v datamigrate.Verification
 		if json.Unmarshal([]byte(row.Detail), &v) == nil {
-			res.Tables = v.Tables
+			res.Tables, res.Objects, res.Findings = v.Tables, v.Objects, v.Findings
 		}
 	}
 	if !row.StartedAt.IsZero() {

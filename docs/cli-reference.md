@@ -651,7 +651,7 @@ levelrail-cli databases query <name> --sql "select ..." [--explain] [--write --c
 levelrail-cli databases connect --name <n> --engine <e> --host <h> [--password-stdin] [--test] [flags]
 levelrail-cli databases adopt --container <c> [--node <id>] [--list] [--password-stdin] [flags]
 levelrail-cli databases probe <name> [flags]
-levelrail-cli databases import-hosted <name> (--from-env VAR | --from-stdin) [--writes-frozen] [--allow-large] [--dry-run] [--json] [flags]
+levelrail-cli databases import-hosted <name> (--from-env VAR | --from-stdin) [--writes-frozen] [--allow-large] [--create-missing-roles] [--dry-run] [--json] [flags]
 levelrail-cli databases resource-recommendation <name> [flags]
 levelrail-cli databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]
 levelrail-cli databases set-project <name> <project-id> [flags]

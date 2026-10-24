@@ -186,6 +186,12 @@ func (rt *Router) writeImportError(w http.ResponseWriter, err error, token strin
 		msg = strings.ReplaceAll(msg, token, "[redacted]")
 	}
 	rt.logger.Warn("api: platform import failed", slog.String("error", msg))
+	var upstream *platformimport.APIError
+	if errors.As(err, &upstream) && (upstream.Status == http.StatusUnauthorized || upstream.Status == http.StatusForbidden) {
+		// A rejected token is the caller's input, not a fault of this server.
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("the source rejected the token (HTTP %d): check that it is valid and can read the account, then try again", upstream.Status))
+		return
+	}
 	writeError(w, http.StatusBadGateway, msg)
 }
 

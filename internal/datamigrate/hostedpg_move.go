@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 )
 
 // ErrWritesNotFrozen is returned when a move is attempted before the caller
@@ -20,9 +23,11 @@ type HostedResult struct {
 	Preflight PreflightResult `json:"preflight"`
 	Probe     HostedProbe     `json:"probe"`
 	// Restore holds what the restore changed to tolerate provider objects.
-	Restore      []PreflightCheck `json:"restore,omitempty"`
-	Verification Verification     `json:"verification"`
-	Redacted     string           `json:"source"`
+	Restore []PreflightCheck `json:"restore,omitempty"`
+	// MissingRoles are the policy roles absent from the target at preflight time.
+	MissingRoles []string     `json:"missing_roles,omitempty"`
+	Verification Verification `json:"verification"`
+	Redacted     string       `json:"source"`
 }
 
 // PreflightHosted validates the URL, probes the database with read-only
@@ -37,8 +42,24 @@ func (c *Copier) PreflightHosted(ctx context.Context, plan HostedPlan, cfg Hoste
 	if err != nil {
 		return hs, HostedResult{Redacted: hs.Redacted}, err
 	}
-	res := HostedPreflight(HostedPreflightInput{Plan: plan, Source: hs, Probe: probe, Config: cfg, DiskMargin: diskMargin, MBPerSecond: mbps})
-	return hs, HostedResult{Preflight: res, Probe: probe, Redacted: hs.Redacted}, nil
+	target := c.targetState(ctx, plan.TargetName)
+	res := HostedPreflight(HostedPreflightInput{Plan: plan, Source: hs, Probe: probe, Target: target, Config: cfg, DiskMargin: diskMargin, MBPerSecond: mbps})
+	out := HostedResult{Preflight: res, Probe: probe, Redacted: hs.Redacted}
+	if target.Known {
+		out.MissingRoles = MissingRoles(probe.PolicyRoles, target.Roles)
+	}
+	return hs, out, nil
+}
+
+// targetState reads the managed database's roles and table count. A failure
+// leaves Known false so the role check blocks instead of guessing.
+func (c *Copier) targetState(ctx context.Context, name string) TargetState {
+	out, err := execCapture(ctx, c.Runtime, database.ContainerName(name), TargetStateCommand())
+	if err != nil {
+		c.logger().Warn("datamigrate: read target state failed", slog.String("database", name), slog.String("error", Redact(err.Error())))
+		return TargetState{}
+	}
+	return ParseTargetState(out)
 }
 
 // MoveHosted copies a hosted Postgres database into a managed one: refuse
@@ -58,17 +79,43 @@ func (c *Copier) MoveHosted(ctx context.Context, plan HostedPlan, cfg HostedConf
 		return res, fmt.Errorf("%w: %s", ErrPreflightBlocked, blockedSummary(res.Preflight))
 	}
 
+	var created []PreflightCheck
+	if plan.CreateMissingRoles && len(res.MissingRoles) > 0 {
+		if created, err = c.createRoles(ctx, plan.TargetName, res.MissingRoles); err != nil {
+			return res, errors.New(hs.Scrub(err.Error()))
+		}
+	}
+
 	filter := &dumpFilter{}
 	cp := *c
 	cp.Restorer = filteringRestorer{inner: c.Restorer, filter: filter}
 	target := Target{Name: plan.TargetName, Engine: EnginePostgres, Version: res.Preflight.TargetVersion}
 	v, err := cp.Copy(ctx, target, hs.Source)
 	res.Verification = v
-	res.Restore = filter.Findings()
+	res.Restore = append(created, filter.Findings()...)
+	res.Verification.Findings = res.Restore
 	if err != nil {
-		return res, errors.New(hs.Scrub(err.Error()))
+		c.logger().Debug("datamigrate: hosted move failed", slog.String("error", hs.Scrub(err.Error())))
+		return res, errors.New(hs.Scrub(tidyExecError(err).Error()))
+	}
+	if out, oerr := execCapture(ctx, c.Runtime, database.ContainerName(plan.TargetName), ObjectCountsCommand()); oerr == nil {
+		res.Verification.Objects = ParseObjectCounts(out)
 	}
 	return res, nil
+}
+
+// createRoles makes the missing policy roles on the target and reports it.
+func (c *Copier) createRoles(ctx context.Context, name string, roles []string) ([]PreflightCheck, error) {
+	cmd, err := CreateRolesCommand(roles)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := execCapture(ctx, c.Runtime, database.ContainerName(name), cmd); err != nil {
+		return nil, fmt.Errorf("create the missing roles on the target: %w", tidyExecError(err))
+	}
+	return []PreflightCheck{{ID: "roles_created", Severity: SeverityWarn,
+		Message:    "Created role(s) on the target as NOLOGIN NOINHERIT: " + strings.Join(roles, ", ") + ".",
+		NextAction: "Grant them what the app needs; they have no password."}}, nil
 }
 
 func blockedSummary(p PreflightResult) string {

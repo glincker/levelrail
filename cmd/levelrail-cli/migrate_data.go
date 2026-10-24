@@ -183,6 +183,12 @@ func printDataCopy(w io.Writer, rows []apiclient.DataCopyStatus, detail, verbose
 			}
 			_, _ = fmt.Fprintf(w, "  %-40s source=%d target=%d %s\n", t.Name, t.Source, t.Target, mark)
 		}
+		if o := r.Objects; o != nil {
+			_, _ = fmt.Fprintf(w, "  also copied: %d sequences, %d views, %d functions, %d extensions\n", o.Sequences, o.Views, o.Functions, o.Extensions)
+		}
+		for _, f := range r.Findings {
+			_, _ = fmt.Fprintf(w, "  [%s] %s\n", f.ID, f.Message)
+		}
 		if r.NextAction != "" {
 			_, _ = fmt.Fprintf(w, "  next: %s\n", r.NextAction)
 		}

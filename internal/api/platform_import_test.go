@@ -127,6 +127,20 @@ func TestPlatformImportRejectsUnsafeRequests(t *testing.T) {
 	}
 }
 
+func TestPlatformImportRejectedTokenIsAValidationError(t *testing.T) {
+	t.Setenv(platformimport.AllowLoopbackEnv, "true")
+	src := newImportSourceServer(t)
+	rt, db := newTestRouterWithBuilderAndSecrets(t, &fakeBuilder{}, nil, &fakeSecretSetter{})
+	cookie := loginTestSession(t, rt, db)
+	const bad = "wrong-token-value"
+	body := `{"platform":"dokploy","url":"` + src.URL + `","token":"` + bad + `","allow_loopback":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/imports/platform/discover", body))
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "rejected the token") || strings.Contains(rec.Body.String(), bad) {
+		t.Errorf("status %d body %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestPlatformImportVercelTeamScopesEveryCall(t *testing.T) {
 	t.Setenv(platformimport.AllowLoopbackEnv, "true")
 	fake := fakevercel.New()
