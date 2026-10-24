@@ -95,8 +95,21 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	bodyKey := webhookBodyKey(provider+"|"+eventType, name, body)
+	if !rt.webhookBodies.claim(bodyKey, time.Now(), webhookReplayWindow()) {
+		rt.logger.Warn("api: git push webhook: replayed body ignored", slog.String("name", name), slog.String("provider", provider))
+		rt.saveWebhookDeliveryIDs(r.Context(), name, provider, eventType, headerFields, true, true, http.StatusOK, body, "", webhookNoteReplayedBody, deliveryID, "")
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprintf(w, "%s\n", webhookNoteReplayedBody)
+		return
+	}
+
 	pctx, outcome := withWebhookOutcome(r.Context())
 	status, message := rt.processGitPushWebhookPayload(pctx, name, *gs, body, r.Header)
+	// Only a delivery that started a deploy keeps its claim; rejected or ignored ones stay retryable.
+	if status >= http.StatusBadRequest || outcome.AttemptID == "" {
+		rt.webhookBodies.release(bodyKey)
+	}
 	deliveryErr, deliveryNote := "", ""
 	if status >= http.StatusBadRequest {
 		deliveryErr = message
