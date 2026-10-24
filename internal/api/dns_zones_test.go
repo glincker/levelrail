@@ -381,3 +381,41 @@ func TestUpdateAppWildcardNeedsDNS01(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateAppWildcardNeedsDNS01(t *testing.T) {
+	tests := []struct {
+		name    string
+		connect bool
+		domains string
+		want    int
+	}{
+		{"wildcard without provider", false, `["*.example.com"]`, http.StatusBadRequest},
+		{"wildcard among plain without provider", false, `["a.example.com","*.example.com"]`, http.StatusBadRequest},
+		{"plain without provider", false, `["a.example.com"]`, http.StatusCreated},
+		{"wildcard with provider", true, `["*.example.com"]`, http.StatusCreated},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, cookie, _ := newGCDTestRouter(t)
+			if tc.connect {
+				body := `{"enabled":true,"service_account_json":` + jsonString(testGCDKey) + `}`
+				rec := serveDNS(t, rt, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/google-cloud-dns", body))
+				if rec.Code != http.StatusOK {
+					t.Fatalf("connect = %d %s", rec.Code, rec.Body)
+				}
+			}
+			body := `{"name":"web","image":"levelrail/web:1","port":3000,"domains":` + tc.domains + `}`
+			rec := serveDNS(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+			if rec.Code != tc.want {
+				t.Fatalf("status = %d, want %d: %s", rec.Code, tc.want, rec.Body)
+			}
+			if tc.want != http.StatusBadRequest {
+				return
+			}
+			var got wildcardRejection
+			if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil || got.Code != wildcardNeedsDNS01 || got.FixURL == "" || got.FixCLI == "" {
+				t.Fatalf("rejection = %s", rec.Body)
+			}
+		})
+	}
+}

@@ -525,6 +525,9 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if !rt.requireWildcardDNS01(w, r, req.Domains) {
+		return
+	}
 	if _, err := envredact.Merge(req.Env, nil); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
