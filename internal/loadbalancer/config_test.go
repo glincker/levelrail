@@ -65,3 +65,35 @@ func TestEffectiveWeightsSlowStart(t *testing.T) {
 		}
 	}
 }
+
+func TestConfigDefaults(t *testing.T) {
+	tests := []struct {
+		name  string
+		cfg   Config
+		check func(Config) bool
+	}{
+		{"empty gets round robin", Config{}, func(c Config) bool { return c.Algorithm == AlgoRoundRobin }},
+		{"cookie gets default name", Config{Algorithm: AlgoCookie}, func(c Config) bool { return c.CookieName == "lb" }},
+		{"cookie keeps custom name", Config{Algorithm: AlgoCookie, CookieName: "sid"}, func(c Config) bool { return c.CookieName == "sid" }},
+		{"active health fills probe defaults", Config{ActiveHealth: &ActiveHealth{Path: "/h"}}, func(c Config) bool {
+			h := c.ActiveHealth
+			return h.Interval == "10s" && h.Timeout == "5s" && h.Passes == 1 && h.Fails == 1
+		}},
+		{"passive health fills defaults", Config{PassiveHealth: &PassiveHealth{}}, func(c Config) bool {
+			return c.PassiveHealth.FailDuration == "30s" && c.PassiveHealth.MaxFails == 1
+		}},
+		{"retries fill try duration", Config{Retries: &Retries{Count: 2}}, func(c Config) bool { return c.Retries.TryDuration == "5s" }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cfg.Defaults(); !tt.check(got) {
+				t.Fatalf("Defaults() = %+v", got)
+			}
+		})
+	}
+	in := Config{ActiveHealth: &ActiveHealth{Path: "/h"}}
+	_ = in.Defaults()
+	if in.ActiveHealth.Interval != "" {
+		t.Fatal("Defaults mutated the receiver's nested config")
+	}
+}
