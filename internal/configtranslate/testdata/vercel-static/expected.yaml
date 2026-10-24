@@ -1,0 +1,30 @@
+version: 1
+services:
+  web:
+    build:
+      type: static
+      command: npm ci && npm run build
+      publish: dist
+    routes:
+      - from: /old
+        to: /new
+        status: 308
+      - from: /tmp
+        to: /elsewhere
+        status: 307
+      - from: /docs/*
+        to: /guide/:splat
+        status: 200
+      - from: /*
+        to: /index.html
+        status: 200
+    headers:
+      - path: /*
+        values:
+          X-Frame-Options: DENY
+      - path: /assets/*
+        values:
+          Cache-Control: public, max-age=31536000, immutable
+    static:
+      cleanUrls: true
+      trailingSlash: remove

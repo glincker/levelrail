@@ -1,0 +1,15 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "pnpm build",
+  "regions": ["iad1", "fra1"],
+  "crons": [
+    {"path": "/api/cron/daily", "schedule": "0 5 * * *"},
+    {"path": "/api/cron/daily?full=1", "schedule": "0 6 * * *"}
+  ],
+  "functions": {
+    "app/api/og/route.ts": {"runtime": "edge"},
+    "app/api/report/route.ts": {"memory": 1024, "maxDuration": 60}
+  },
+  "rewrites": [{"source": "/blog/:slug", "destination": "/posts/:slug"}],
+  "build": {"env": {"NEXT_PUBLIC_API": "https://api.example.com"}}
+}

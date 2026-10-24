@@ -1,0 +1,61 @@
+version: 1
+services:
+  clock:
+    build:
+      type: railpack
+    port: 8080
+    command:
+      - sh
+      - -c
+      - bundle exec clockwork clock.rb
+    env:
+      CACHE_URL: {from: redis.cache.url}
+      DATABASE_URL: {from: postgres.main.url}
+      LOG_LEVEL: info
+      RAILS_ENV: production
+      SECRET_KEY_BASE: {required: true, secret: true}
+      STRIPE_KEY: {required: true, secret: true}
+  web:
+    build:
+      type: railpack
+    port: 8080
+    health:
+      readiness:
+        path: /up
+    replicas: 2
+    command:
+      - sh
+      - -c
+      - bundle exec puma -C config/puma.rb
+    hooks:
+      preDeploy: bundle exec rake db:migrate
+      postDeploy: bundle exec rake db:seed
+    env:
+      CACHE_URL: {from: redis.cache.url}
+      DATABASE_URL: {from: postgres.main.url}
+      LOG_LEVEL: info
+      PORT: "8080"
+      RAILS_ENV: production
+      SECRET_KEY_BASE: {required: true, secret: true}
+      STRIPE_KEY: {required: true, secret: true}
+  worker:
+    build:
+      type: railpack
+    port: 8080
+    replicas: 1
+    command:
+      - sh
+      - -c
+      - bundle exec sidekiq
+    env:
+      CACHE_URL: {from: redis.cache.url}
+      DATABASE_URL: {from: postgres.main.url}
+      LOG_LEVEL: info
+      RAILS_ENV: production
+      SECRET_KEY_BASE: {required: true, secret: true}
+      STRIPE_KEY: {required: true, secret: true}
+databases:
+  cache:
+    engine: redis
+  main:
+    engine: postgres
