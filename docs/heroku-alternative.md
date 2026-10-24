@@ -62,7 +62,9 @@ Two offline or read-only helpers exist, and neither changes anything on Heroku:
 - `levelrail-cli import config` reads `Procfile` and `app.json` from a directory and prints a proposed `app.yaml`, with findings for what has no equivalent (each with a fix). It is offline and needs no token.
 - `levelrail-cli import platform heroku --dry-run` reads your apps through the Heroku Platform API with a token and reports what would be created.
 
-Both are previews you review, not a one-click migration. Add-ons and anything the findings flag as a blocker still need manual work. See [Migrate to Levelrail](/migrate-to-levelrail).
+To move the Postgres data itself, create a managed database and run `levelrail-cli databases import-hosted` while the Heroku app is in maintenance mode. The steps and limits are in [Move a hosted Postgres](/migration-reference#move-a-hosted-postgres-heroku).
+
+The two helpers above are previews you review, not a one-click migration. Add-ons and anything the findings flag as a blocker still need manual work. See [Migrate to Levelrail](/migrate-to-levelrail).
 
 ## Frequently asked questions
 

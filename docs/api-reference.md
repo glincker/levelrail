@@ -138,7 +138,6 @@ Endpoints for:
 | GET | /api/v1/auth/setup-status | Public | handleSetupStatus |
 | POST | /api/v1/auth/logout | Session | handleLogout |
 | PUT | /api/v1/auth/password | Session | handleChangePassword |
-| GET | /api/v1/auth/session | Session | handleGetSession |
 | POST | /api/v1/auth/sessions/revoke-others | Session | handleRevokeOtherSessions |
 | POST | /api/v1/auth/users | AbilityRoot | handleCreateUser |
 | GET | /api/v1/users | AbilityRead | handleListUsers |
@@ -1951,6 +1950,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/cleanup/{id}/preview | AbilityRoot | handlePreviewCleanup |
 | POST | /api/v1/cleanup/{id}/run | AbilityRoot | handleRunCleanup |
 | PUT | /api/v1/cleanup/{id}/mode | AbilityRoot | handleSetCleanupMode |
+| POST | /api/v1/imports/platform/databases/{name}/hosted/preflight | AbilityWriteSensitive | handleHostedPreflight |
+| POST | /api/v1/imports/platform/databases/{name}/hosted/run | AbilityWriteSensitive | handleHostedRun |
 
 ## See also
 

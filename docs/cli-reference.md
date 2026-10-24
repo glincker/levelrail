@@ -651,6 +651,7 @@ levelrail-cli databases query <name> --sql "select ..." [--explain] [--write --c
 levelrail-cli databases connect --name <n> --engine <e> --host <h> [--password-stdin] [--test] [flags]
 levelrail-cli databases adopt --container <c> [--node <id>] [--list] [--password-stdin] [flags]
 levelrail-cli databases probe <name> [flags]
+levelrail-cli databases import-hosted <name> (--from-env VAR | --from-stdin) [--writes-frozen] [--allow-large] [--dry-run] [--json] [flags]
 levelrail-cli databases resource-recommendation <name> [flags]
 levelrail-cli databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]
 levelrail-cli databases set-project <name> <project-id> [flags]
@@ -667,6 +668,7 @@ levelrail-cli databases major-upgrade-discard <name> <id> [flags]
 ```
 
 - `status` shows a database's current reconcile conditions (useful when it exists but is not running yet).
+- `import-hosted` copies a hosted Postgres (such as Heroku) into an existing managed Postgres database. The source URL is read from the environment variable named by `--from-env` or from the first line of stdin, never from an argument. `--dry-run` runs the preflight only and prints blockers, warnings and info with the fix for each. Without `--writes-frozen` a real run refuses. Exit code 1 means the preflight is blocked or the move failed. See [Migration reference](/migration-reference#move-a-hosted-postgres-heroku).
 - `delete` stops and removes a database but keeps its data volume; `--force` is needed if apps use it.
 - `slow-queries` lists a Postgres or MySQL database's slow query log.
 - `schema` lists a SQL database's tables with row estimates and sizes; `query` runs one statement through the control plane, read-only by default. See [Database viewer](/database-viewer). `db` is a short alias for `databases`.

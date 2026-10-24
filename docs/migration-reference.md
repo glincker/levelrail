@@ -306,6 +306,37 @@ Practical notes:
 - ClickHouse, KeyDB and Dragonfly are reported `unsupported`. Take a dump with the source's own tools and restore it with the backup and restore tools.
 - Redis is copied as an RDB snapshot and the target restarts to load it. Keys that expire during the copy can make the key counts differ slightly, in which case the status is `failed` with both numbers shown. Re-run it.
 
+## Move a hosted Postgres (Heroku)
+
+`databases import-hosted` copies a hosted Postgres into a managed Postgres database you created first. It is a logical dump and restore, so the old app must stop writing while it runs.
+
+```bash
+heroku maintenance:on -a APP
+export SOURCE_DATABASE_URL="$(heroku config:get DATABASE_URL -a APP)"
+levelrail-cli databases create --name mydb --engine postgres --version 16
+levelrail-cli databases import-hosted mydb --from-env SOURCE_DATABASE_URL --writes-frozen --dry-run
+levelrail-cli databases import-hosted mydb --from-env SOURCE_DATABASE_URL --writes-frozen
+```
+
+1. Turn maintenance mode on and stop workers and schedulers, so nothing writes to the source.
+2. Read the URL with `heroku config:get DATABASE_URL -a APP` into an environment variable. The CLI never takes the URL as an argument, because arguments show up in process lists. `--from-stdin` reads it from the first line of stdin instead.
+3. Create the target with `databases create`. Use the same or a newer major version than the source. The target container must be running.
+4. Dry-run. It only reads from the source and prints blockers, warnings and info, each with the fix.
+5. Run it. Without `--writes-frozen` it refuses. It copies, restores and compares row counts per table. Follow it with `migrate db-status mydb`.
+6. Verify the counts, link the app to the new database so its connection variable changes, and deploy. `heroku maintenance:off` is not needed after the cutover, because the old app is retired.
+
+The same two steps are available over the API: `POST /api/v1/imports/platform/databases/{name}/hosted/preflight` and `.../hosted/run` (ability `write:sensitive`). The body is `{"url", "writes_frozen", "allow_large"}`. The URL is held in memory for the request and the helper container, never stored or logged, and every response shows it with the password masked. Run answers `409` until `writes_frozen` is true, and `202` once the move starts.
+
+Limits, stated plainly:
+
+- It is a logical dump only. There is no continuous replication, so downtime lasts as long as the dump and restore.
+- Databases above `APP_MIGRATE_HOSTED_MAX_BYTES` (default 100 GiB) are blocked unless you pass `--allow-large` and accept a long downtime.
+- A public host must use TLS. `sslmode=disable`, `allow` or `prefer` are refused unless `APP_MIGRATE_HOSTED_ALLOW_INSECURE=true`.
+- Provider extension schemas (such as `heroku_ext`) are rewritten to `public`, and provider-only extensions are skipped with a warning.
+- Owners and grants are not copied. Every object belongs to the managed database user.
+- Row level security policies that name roles missing on the target are a blocker. There is no automatic fix yet: create those roles on the target first, or drop the policies on the source.
+- It has not been verified against a real Heroku database yet. Test it on a copy first.
+
 ## Migrating a whole database server (Migration hub)
 
 When the source is a database server with many databases, use the Migration
