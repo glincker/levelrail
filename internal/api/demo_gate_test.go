@@ -23,7 +23,7 @@ type demoTestEnv struct {
 func newDemoTestEnv(t *testing.T) *demoTestEnv {
 	t.Helper()
 	db := openTestDB(t)
-	visitor := store.User{ID: demoTestVisitorID, Email: "demo", DisplayName: "Demo Visitor", Abilities: []string{AbilityRead}}
+	visitor := store.User{ID: demoTestVisitorID, Email: "demo", DisplayName: "Alex Rivera", Abilities: []string{AbilityRead}}
 	if err := db.CreateUser(t.Context(), visitor); err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}
