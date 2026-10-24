@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 func seedFailedDeploy(t *testing.T, db *store.DB) {
@@ -108,5 +110,39 @@ func TestGetDeployNotFound(t *testing.T) {
 		if rec.Code != http.StatusNotFound {
 			t.Errorf("GET %s = %d, want 404", path, rec.Code)
 		}
+	}
+}
+
+func TestDeployFailureExcerptSkipsPreviousContainer(t *testing.T) {
+	rt, db, tdb := newTestRouterWithTelemetry(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Second)
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:2", Port: 3000}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveDeployAttempt(ctx, store.DeployAttempt{ID: "dep_crash", ServiceName: "web", Image: "levelrail/web:2", Source: store.DeployAttemptSourceImage, Status: store.DeployAttemptStatusFailed, Reason: "ExitedDuringReadiness", StartedAt: now.Add(-time.Minute)}); err != nil {
+		t.Fatal(err)
+	}
+	if err := tdb.WriteLogBatch(ctx, []telemetry.LogEntry{
+		{ResourceID: "service:web", ContainerID: "old", Stream: "stdout", Timestamp: now.Add(-30 * time.Second), Message: "starting v1 listening 3000"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.RecordDeployExit(ctx, store.DeployExit{
+		ServiceName: "web", AttemptID: "dep_crash", Image: "levelrail/web:2", Container: "web-new", ExitCode: 1,
+		Reason: "ExitedDuringReadiness", StartedAt: now.Add(-20 * time.Second), FinishedAt: now.Add(-19 * time.Second),
+		LogTail: []store.DeployExitLine{{Timestamp: now, Stream: "stderr", Message: "fatal: DATABASE_URL is required"}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/deploys/dep_crash", ""))
+	var got deployAttemptResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Failure == nil || !strings.Contains(got.Failure.LogExcerpt, "DATABASE_URL") || strings.Contains(got.Failure.LogExcerpt, "starting v1") {
+		t.Fatalf("failure = %+v, want an excerpt from the failing container only", got.Failure)
 	}
 }

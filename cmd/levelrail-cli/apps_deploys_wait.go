@@ -19,6 +19,8 @@ type deploysWaitResult struct {
 	Status   string                          `json:"status"`
 	Failure  *apiclient.DeployFailure        `json:"failure,omitempty"`
 	Deploy   apiclient.DeployAttemptResource `json:"deploy"`
+	// CrashLoop is the plain-language crash loop line, set when the failure is a container crash.
+	CrashLoop string `json:"crash_loop,omitempty"`
 }
 
 // runAppsDeploysWait implements "apps deploys wait <name> [deploy-id]".
@@ -67,6 +69,10 @@ func runAppsDeploysWait(prog string, args []string, stdout, stderr io.Writer, lo
 	if !res.Done {
 		out.Status = "timeout"
 	}
+	if res.Done && out.Failure != nil && out.Failure.Code == failureCodeContainerCrashed {
+		conds, _ := client.GetDeployStatus(context.Background(), name)
+		out.CrashLoop = crashLoopLine(conds, true)
+	}
 	if frozenReason != "" {
 		out.Status = "blocked"
 		_, _ = fmt.Fprintf(stderr, "%s: deploys of %q are frozen (%s), so a deploy you just requested was likely refused; %s is the previous deploy, not a new one. Pass its id to wait on it anyway.\n", prog, name, frozenReason, res.Deploy.ID)
@@ -106,6 +112,9 @@ func printDeploysWaitHuman(w io.Writer, r deploysWaitResult, timeout string) {
 	_, _ = fmt.Fprintf(w, "deploy %s of %q: %s\n", r.DeployID, r.App, r.Status)
 	if r.Failure != nil {
 		printDeployFailure(w, r.Failure)
+	}
+	if r.CrashLoop != "" {
+		_, _ = fmt.Fprintln(w, r.CrashLoop)
 	}
 }
 

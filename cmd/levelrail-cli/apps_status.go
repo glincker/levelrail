@@ -4,7 +4,32 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 )
+
+// failureCodeContainerCrashed is the deploy failure code for a container that exited.
+const failureCodeContainerCrashed = "container_crashed"
+
+// crashLoopLine explains a crash loop from the stored Ready condition, or
+// returns "" when the app is not in one. forCrash also yields a generic line
+// for a crashed release that has not hit the restart backoff yet.
+func crashLoopLine(conditions []conditionResource, forCrash bool) string {
+	for _, c := range conditions {
+		if c.Reason != deploysafety.ReasonCrashLoopBackOff {
+			continue
+		}
+		if n, wait, ok := deploysafety.ParseCrashLoop(c.Message); ok {
+			return fmt.Sprintf("crash loop detected: the release restarted %d times, next retry in %s (backoff, no retry limit)", n, wait.Round(time.Second))
+		}
+		return "crash loop detected: the release keeps exiting and restarts are backing off"
+	}
+	if forCrash {
+		return "container crash: the release exited; the control plane retries with a growing delay, see apps status for the next retry"
+	}
+	return ""
+}
 
 // Separate from apps get: its --json shape is a stable script contract that must not gain conditions.
 func runAppsStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -26,6 +51,9 @@ func runAppsStatus(prog string, args []string, stdout, stderr io.Writer, lookupE
 
 	return writeScheduledTaskResult(stdout, stderr, of, conditions, func() {
 		printConditionsHuman(stdout, conditions)
+		if line := crashLoopLine(conditions, false); line != "" {
+			_, _ = fmt.Fprintf(stdout, "\n%s\n", line)
+		}
 		printStatusExtras(context.Background(), client, prog, name, stdout, conditions)
 	})
 }

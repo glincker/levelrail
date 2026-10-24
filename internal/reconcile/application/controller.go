@@ -970,7 +970,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		created = true
 	case !state.Running:
 		if wait, restarts := c.restartBackoff.remaining(target, time.Now()); wait > 0 {
-			return replicaOutcome{reason: reasonCrashLoopBackOff}, fmt.Errorf("%q keeps exiting (%d restarts), next restart in %s", target, restarts, wait.Round(time.Second))
+			return replicaOutcome{reason: reasonCrashLoopBackOff}, errors.New(deploysafety.CrashLoopMessage(target, restarts, wait))
 		}
 		c.restartBackoff.recordRestart(target, time.Now())
 		// The container's own network can go missing between reconcile

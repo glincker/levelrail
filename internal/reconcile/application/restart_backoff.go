@@ -3,9 +3,11 @@ package application
 import (
 	"sync"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 )
 
-const reasonCrashLoopBackOff = "CrashLoopBackOff"
+const reasonCrashLoopBackOff = deploysafety.ReasonCrashLoopBackOff
 
 type backoffEntry struct {
 	restarts  int

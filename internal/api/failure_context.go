@@ -1,11 +1,13 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -15,10 +17,12 @@ const (
 	envFailureContextRestarts = "APP_FAILURE_CONTEXT_RESTARTS"
 	envFailureContextWindow   = "APP_FAILURE_CONTEXT_WINDOW"
 	envFailureContextLines    = "APP_FAILURE_CONTEXT_LINES"
+	envFailureContextQuiet    = "APP_FAILURE_CONTEXT_QUIET"
 
 	defaultFailureContextRestarts = 3
 	defaultFailureContextWindow   = 15 * time.Minute
 	defaultFailureContextLines    = 200
+	defaultFailureContextQuiet    = 2 * time.Minute
 	maxFailureContextLines        = 1000
 
 	failureStateHealthy      = "healthy"
@@ -98,8 +102,9 @@ func (rt *Router) handleFailureContext(w http.ResponseWriter, r *http.Request) {
 		failed = &a
 	}
 
+	recovered := len(restarts) >= threshold && rt.crashRecovered(ctx, name, restarts[len(restarts)-1].Timestamp, now)
 	switch {
-	case len(restarts) >= threshold:
+	case len(restarts) >= threshold && !recovered:
 		resp.State = failureStateCrashlooping
 		since := restarts[0].Timestamp
 		resp.Since = &since
@@ -127,6 +132,10 @@ func (rt *Router) handleFailureContext(w http.ResponseWriter, r *http.Request) {
 		resp.Exit = toDeployExitResource(exit)
 	}
 	switch {
+	case exit != nil && len(exit.LogTail) > 0 && (resp.State != failureStateDeployFailed || !attemptFailedDuringBuild(failed)):
+		// The capture is the failing container's own output, unlike the stored
+		// stream where the previous release's lines interleave.
+		fillExitLines(&resp, maxLines)
 	case resp.State == failureStateDeployFailed && attemptFailedDuringBuild(failed) && rt.deployLogStore != nil:
 		rt.fillBuildLines(r, &resp, failed.ID, maxLines)
 	case rt.telemetry != nil:
@@ -141,6 +150,24 @@ func (rt *Router) handleFailureContext(w http.ResponseWriter, r *http.Request) {
 		resp.Exit.Lines = []failureContextLine{}
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// crashRecovered reports an app that is Ready again with no restart for the
+// quiet period, so a past crash loop stops showing as current.
+func (rt *Router) crashRecovered(ctx context.Context, name string, lastRestart, now time.Time) bool {
+	if rt.deploys == nil || now.Sub(lastRestart) < envDuration(envFailureContextQuiet, defaultFailureContextQuiet) {
+		return false
+	}
+	conds, err := rt.deploys.GetConditions(ctx, applicationControllerName(name))
+	if err != nil {
+		return false
+	}
+	for _, c := range conds {
+		if c.Type == "Ready" {
+			return c.Status == reconcile.ConditionTrue
+		}
+	}
+	return false
 }
 
 // fillExitLines uses the exit capture when the log store has nothing: the
