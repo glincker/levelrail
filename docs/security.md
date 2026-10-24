@@ -120,7 +120,7 @@ Evaluation order, the full ability list, and policy examples: [Identity and acce
 - HSTS (`Strict-Transport-Security`) is opt-in, not on by default, because turning it on for a domain that later loses TLS locks users out until the header expires. See [Domains and ingress](/domains-and-ingress#tls-whats-actually-shipped-today).
 - WAF mode and rate limiting are configurable per domain, with a detect-only mode for testing rules before enforcing them. See [Domains and ingress](/domains-and-ingress#opt-in-waf-and-rate-limiting).
 - The node agent dials **out** to the control plane. No inbound ports need to be open on a managed server for enrollment or day-to-day operation.
-- **Agent enrollment pins the control plane CA.** A join token is shown together with the agent CA's SHA-256 fingerprint; with `APP_CA_FINGERPRINT` set, the agent checks the control plane's certificate against that CA before it sends the token, so an attacker in the network path cannot capture the token or pose as the control plane. Without the fingerprint the agent falls back to trust on first use and logs a warning. After enrollment every connection is mutual TLS against the saved CA.
+- **Agent enrollment pins the control plane CA.** A join token is shown together with the agent CA's SHA-256 fingerprint; with `APP_CA_FINGERPRINT` set, the agent checks the control plane's certificate against that CA before it sends the token, so an attacker in the network path cannot capture the token or pose as the control plane. Without the fingerprint the agent refuses to enroll, so the token is never sent to an unverified server; setting `APP_ALLOW_UNPINNED_ENROLL=1` opts back in to trust on first use and logs a warning. The enrollment connection requires TLS 1.3. After enrollment every connection is mutual TLS against the saved CA.
 - **Container installs bind plain HTTP to loopback.** The committed `docker-compose.yml` publishes `8080` on `127.0.0.1` only (override with `LEVELRAIL_HTTP_BIND`), see [Docker](/docker#control-plane).
 - **`install.sh` fails closed on checksums.** A release without a usable `checksums.txt` aborts the install unless you pass `LEVELRAIL_SKIP_CHECKSUM=1`. Release checksums are cosign-signed; `APP_INSTALL_VERIFY=require` makes the installer insist on a valid signature, see [Verifying release binaries](/installing#verifying-release-binaries).
 
@@ -151,9 +151,15 @@ A short list for the server itself, independent of anything Levelrail configures
 - **Don't expose anything Levelrail didn't ask you to.** Docker's daemon socket, the SQLite database file, and the mesh DNS listener (`:5390` by default, see [Multi-node](/multi-node#wireguard-mesh-and-internal-dns)) are all meant to stay local to the box.
 - **Keep the OS patched.** The `patch_status` alert (see [Observability](/observability)) can warn you about pending security patches on a managed node, but it only reports, it doesn't apply anything; that's still on you (`unattended-upgrades`, `dnf-automatic`, or your distro's equivalent).
 
+## Security settings and data retention
+
+Security protections default to on. An environment variable can only override a default, and an administrator can change any registered setting under **Settings, Security and runtime** or with `levelrail-cli settings runtime`. A saved value beats the environment variable, which beats the default. Turning a protection off needs an explicit confirmation, writes an audit row, and the page says which settings need a restart. A first-run review in the Get Started hub lists the defaults for you to confirm.
+
+Retention is managed in one place, **Settings, Cleanup**: a retention period per data type with a minimum for security data (audit entries cannot be kept for less than 90 days, security events for less than 365), a dry-run preview before anything is deleted, a history of every run, and CSV and JSON export. See [Cleanup center](/cleanup-center).
+
 ## Audit log
 
-Every mutating API call from an authenticated principal is recorded: who, what, when, and the outcome. The log is queryable, exportable as NDJSON or CSV, verifiable as a hash chain, and streamable to a webhook or an S3 bucket. See [Identity and access](/identity-and-access#audit-log).
+Every mutating API call from an authenticated principal is recorded: who, what, when, and the outcome. The log is queryable, exportable as NDJSON or CSV, verifiable as a hash chain, and streamable to a webhook or an S3 bucket. Reads that can expose secrets or personal data, such as app and database logs, Loki queries and data exports, are recorded too. Every change to a security setting and every cleanup run is audited with counts only, never row contents or secret values. See [Identity and access](/identity-and-access#audit-log).
 
 ## Container hardening
 
@@ -217,6 +223,15 @@ Stored certificates from other CAs are purged only when the configured CA change
 <Accordion title="Bind mounts">
 
 In addition to `/etc`, `/root` and the Docker socket, `/run`, `/dev`, the directories that hold executables (`/bin`, `/sbin`, `/lib`, `/usr/bin`, `/usr/local/bin` and similar), `/var/spool/cron`, the control plane and agent data directories (including a custom `APP_DATA_DIR`), and any parent directory that would contain a protected path (`/var`, `/var/lib`) are refused. Paths are checked lexically: a symlink on the host that points into a protected path is not followed, so do not create such symlinks inside a directory you let apps mount.
+
+
+
+Paths that are or sit inside a credential directory (`.ssh`, `.gnupg`, `.aws`, `.kube`, `.docker`), a bare home directory such as `/home/deploy`, `/var/log` and `/usr/local/etc` are refused too. Set `APP_BIND_ALLOWED_ROOTS` (colon-separated absolute directories) to allow bind mounts only inside those directories; it is also a setting under **Settings, Security and runtime**.
+
+</Accordion>
+<Accordion title="Webhook replay protection">
+
+A git webhook is accepted only with a valid signature. A signed body that already started a deploy is also ignored for a short window (`APP_WEBHOOK_REPLAY_WINDOW`, 10 minutes by default), even if the delivery header changes or is missing, because delivery headers are not covered by the signature. A rejected or ignored delivery does not use up the window, so a provider retry still works. The window is kept in memory and resets on restart.
 
 </Accordion>
 <Accordion title="Registry port">
