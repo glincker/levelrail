@@ -103,6 +103,7 @@ The token is sent to this control plane in the request body, used in memory for 
 | `--url` | Source platform base URL (required) |
 | `--dry-run` | Report only, create nothing |
 | `--only a,b` | Import only these source ids or names |
+| `--db-version postgres=16,redis=7.4` | Engine version for source databases that report none (Heroku), checked against the version catalog |
 | `--collision suffix\|skip` | When a name is taken: rename with a numeric suffix (default) or skip |
 | `--insecure-tls` | Skip TLS verification of the source (self-signed certificates) |
 | `--allow-private`, `--allow-loopback` | Allow a private-network or loopback source, see below |
@@ -243,6 +244,15 @@ Secret-looking names are values whose key matches password, secret, token, key, 
 | CapRover | none (databases are ordinary apps or one-click apps) | not applicable |
 
 A database whose engine or version cannot be determined is reported as unsupported.
+
+### Heroku
+
+`levelrail import platform heroku` reads the public Heroku Platform API, so `--url` is optional. The token is a Heroku API key, from `heroku authorizations:create` or the account settings page. Only read-only GET requests are sent.
+
+- **Maps.** Apps (with their config vars, formation, domains and worker dynos) and `heroku-postgresql` and `heroku-redis` add-ons, which become empty [managed databases](/managing-databases).
+- **Does not map.** Other add-ons are listed as warnings to set up by hand. Source code and buildpack builds are not imported: point the app at an image or repository. Release phase commands are not run.
+- **Database version.** Heroku reports no engine version. Pass `--db-version postgres=16,redis=7.4` to choose one; otherwise the newest version in the catalog is used and the report warns that you must check compatibility before restoring data.
+- **Procfile and app.json.** The config translator can turn these into settings for the imported app once it is available.
 
 ### Compose files and Dokku
 

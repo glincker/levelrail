@@ -6,7 +6,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
-export type ImportPlatform = 'coolify' | 'dokploy' | 'caprover'
+export type ImportPlatform = 'coolify' | 'dokploy' | 'caprover' | 'heroku'
 
 export type ImportItemStatus =
   | 'mapped'
@@ -26,6 +26,7 @@ export interface PlatformImportRequest {
   allow_loopback?: boolean
   only?: string[]
   collision?: 'suffix' | 'skip'
+  db_versions?: Record<string, string>
 }
 
 export interface PlatformImportItem {

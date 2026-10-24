@@ -36,6 +36,8 @@ type platformImportRequest struct {
 	AllowLoopback bool     `json:"allow_loopback,omitempty"`
 	Only          []string `json:"only,omitempty"`
 	Collision     string   `json:"collision,omitempty"`
+	// DBVersions picks the engine version for source databases that report none.
+	DBVersions map[string]string `json:"db_versions,omitempty"`
 	// SSH is the login of a docker-ssh source: read-only access to its Docker socket.
 	SSH *sshConnection `json:"ssh,omitempty"`
 }
@@ -165,6 +167,9 @@ func (rt *Router) importPlanOptions(ctx context.Context, req platformImportReque
 	}
 	for _, d := range dbs {
 		opts.ExistingDatabases[d.Name] = d.Engine + ":" + d.Version
+	}
+	if opts.DBVersions, opts.LatestDBVersions, err = rt.importDBVersions(req.DBVersions); err != nil {
+		return platformimport.PlanOptions{}, nil, err
 	}
 	return opts, domains, nil
 }

@@ -61,7 +61,7 @@ func (v *verifyLive) remember(req parityVerifyRequest) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	switch req.Platform {
-	case string(platformimport.Coolify), string(platformimport.Dokploy), string(platformimport.CapRover):
+	case string(platformimport.Coolify), string(platformimport.Dokploy), string(platformimport.CapRover), string(platformimport.Heroku):
 		cp := req
 		cp.Recheck = false
 		v.req, v.expires = &cp, time.Now().Add(envDuration(envVerifyCredentialTTL, defaultVerifyCredentials))

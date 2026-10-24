@@ -16,9 +16,9 @@ import (
 const envImportSourceToken = "APP_IMPORT_SOURCE_TOKEN" //nolint:gosec // env var name, not a credential
 
 type importPlatformFlags struct {
-	url, token, only, collision, apiURL, profile string
-	tokenStdin, dryRun, jsonOut                  bool
-	insecure, allowPrivate, allowLoopback        bool
+	url, token, only, collision, apiURL, profile, dbVersion string
+	tokenStdin, dryRun, jsonOut                             bool
+	insecure, allowPrivate, allowLoopback                   bool
 }
 
 func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -44,6 +44,7 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 	fs.BoolVar(&f.dryRun, "dry-run", false, "report what would be created without creating anything")
 	fs.StringVar(&f.only, "only", "", "comma-separated source ids or names to import")
 	fs.StringVar(&f.collision, "collision", "suffix", "name collision handling: suffix or skip")
+	fs.StringVar(&f.dbVersion, "db-version", "", "engine version for source databases that report none, e.g. postgres=16,redis=7.4")
 	fs.BoolVar(&f.insecure, "insecure-tls", false, "skip TLS verification of the source")
 	fs.BoolVar(&f.allowPrivate, "allow-private", false, "allow a private-network source (also needs the control plane env opt-in)")
 	fs.BoolVar(&f.allowLoopback, "allow-loopback", false, "allow a loopback source (also needs the control plane env opt-in)")
@@ -69,6 +70,12 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 	}
 	req := apiclient.PlatformImportRequest{Platform: platform, URL: f.url, Token: token, InsecureTLS: f.insecure,
 		AllowPrivate: f.allowPrivate, AllowLoopback: f.allowLoopback, Collision: f.collision}
+	dbv, err := platformimport.ParseDBVersions(f.dbVersion)
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: --db-version: %v\n", prog, err)
+		return exitUsage
+	}
+	req.DBVersions = dbv
 	for _, o := range strings.Split(f.only, ",") {
 		if o = strings.TrimSpace(o); o != "" {
 			req.Only = append(req.Only, o)
@@ -77,7 +84,6 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 	client := apiClientFromFlags(prog, f.apiURL, "", f.profile, lookupEnv)
 	ctx := context.Background()
 	var rep apiclient.PlatformImportReport
-	var err error
 	if f.dryRun {
 		rep, err = client.DiscoverPlatformImport(ctx, req)
 	} else {
@@ -172,6 +178,7 @@ Flags:
   --dry-run             report only, create nothing
   --only string         comma-separated source ids or names to import
   --collision string    suffix (default) or skip when a name is taken
+  --db-version string   engine version for databases the source reports none for (postgres=16,redis=7.4)
   --insecure-tls        skip TLS verification of the source
   --allow-private       allow a private-network source (control plane also needs APP_IMPORT_ALLOW_PRIVATE_NETWORKS=true)
   --allow-loopback      allow a loopback source (control plane also needs APP_IMPORT_ALLOW_LOOPBACK=true)

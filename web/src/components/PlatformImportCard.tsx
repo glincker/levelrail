@@ -27,6 +27,7 @@ const platforms: {
   { id: 'coolify', label: 'Coolify', tokenKey: 'tokenApi' },
   { id: 'dokploy', label: 'Dokploy', tokenKey: 'tokenKey' },
   { id: 'caprover', label: 'CapRover', tokenKey: 'tokenPassword' },
+  { id: 'heroku', label: 'Heroku', tokenKey: 'tokenKey' },
 ]
 
 // Three steps: connect (source URL and credential), review (the dry-run
@@ -233,8 +234,12 @@ export function PlatformImportCard() {
             <Input
               id="import-url"
               type="url"
-              required
-              placeholder="https://coolify.example.com"
+              required={platform !== 'heroku'}
+              placeholder={
+                platform === 'heroku'
+                  ? t('platformImport.herokuUrlPlaceholder')
+                  : 'https://coolify.example.com'
+              }
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />

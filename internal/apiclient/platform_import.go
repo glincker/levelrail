@@ -16,6 +16,8 @@ type PlatformImportRequest struct {
 	AllowLoopback bool     `json:"allow_loopback,omitempty"`
 	Only          []string `json:"only,omitempty"`
 	Collision     string   `json:"collision,omitempty"`
+	// DBVersions picks the engine version for source databases that report none.
+	DBVersions map[string]string `json:"db_versions,omitempty"`
 }
 
 // PlatformImportItem is one row of a platform import report.

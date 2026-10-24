@@ -695,6 +695,7 @@
     "connectIntro": "Reads apps, databases and settings from the other platform without changing it. The credential is sent to this control plane once per step and is never stored.",
     "platform": "Platform",
     "sourceUrl": "Source URL",
+    "herokuUrlPlaceholder": "Leave empty for the public Heroku API",
     "skipTakenLabel": "Skip names already in use",
     "skipTaken": "Skip resources whose name is already taken (default renames them)",
     "privateLabel": "Source is on a private network",
