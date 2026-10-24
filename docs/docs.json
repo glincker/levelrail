@@ -937,6 +937,7 @@
               "performance",
               "performance-budget",
               "benchmarks",
+              "benchmark-runbook",
               "control-plane-health",
               "changelog",
               "upgrade-history"
