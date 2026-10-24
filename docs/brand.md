@@ -61,6 +61,36 @@ Pick the line that fits where you are posting.
 | dev.to cover | [1000x420](/assets/brand/social/devto-cover-1000x420.jpg) |
 | Square (Instagram, Discord) | [1080x1080](/assets/brand/social/square-1080x1080.jpg) |
 
+## Badges
+
+Two badges, each in four styles. Use the matched gradient pair on a README so each reader gets the version that fits their theme.
+
+| Badge | Say it with | Files (under `docs/assets/brand`) |
+| --- | --- | --- |
+| Deploy to Levelrail | A button that sends a visitor to their own server with your app prefilled. See [Deploy button](/deploy-button). | `deploy-button-split.svg`, `deploy-button-gradient-light.svg`, `deploy-button-gradient-dark.svg`, `deploy-button-outline-light.svg` |
+| Deployed with Levelrail | A footer badge for a site or project that runs on Levelrail. | `deployed-with-split.svg`, `deployed-with-gradient-light.svg`, `deployed-with-gradient-dark.svg`, `deployed-with-outline-light.svg` |
+
+- **Small size:** add `-small` before `.svg` for a 32 px tall version (for example `deployed-with-split-small.svg`).
+- **PNG fallback:** `png/<name>@2x.png` (80 px tall) for places that do not render SVG, such as some email clients and note apps.
+- **Which one:** the split works on any background. The gradient pair is for light and dark pages. The teal outline is the quietest.
+- **Rules:** do not recolor, stretch, crop or rotate a badge, and keep it at least 32 px tall with some space around it.
+- **Alt text:** use the badge text, for example `Deployed with Levelrail`. Link it to `https://levelrail.com`.
+
+```md
+[![Deployed with Levelrail](https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deployed-with-split.svg)](https://levelrail.com)
+```
+
+```html
+<a href="https://levelrail.com">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deployed-with-gradient-dark.svg">
+    <img src="https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deployed-with-gradient-light.svg" alt="Deployed with Levelrail" height="40">
+  </picture>
+</a>
+```
+
+The images load from the jsDelivr CDN, which serves them from this repository.
+
 ## One line to use
 
 > Levelrail is a self-hosted deploy platform in a single Go binary: push to git, get HTTPS, live logs, metrics and one-click rollback.

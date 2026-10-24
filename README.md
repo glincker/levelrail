@@ -289,6 +289,14 @@ Step by step walkthroughs, each tested against a real install:
 | [Scale to zero on a small VPS](https://github.com/glincker/levelrail/discussions/1242) | Run many projects on one box |
 | [Levelrail vs Coolify, Dokploy, CapRover, Dokku and Kamal](https://github.com/glincker/levelrail/discussions/1235) | Where each one fits |
 
+## Add a Deploy button to your project
+
+Maintain an open-source app? Let people run it on their own server in a few clicks.
+
+[![Deploy to Levelrail](docs/assets/brand/deploy-button-split.svg)](docs/deploy-button.md)
+
+Copy-paste snippets and the four badge styles: [Deploy button](docs/deploy-button.md) and the [Brand kit](docs/brand.md).
+
 ## For AI agents and crawlers
 
 - **Agent skill:** [`skills/levelrail/SKILL.md`](skills/levelrail/SKILL.md) teaches a coding agent to deploy, wait, diagnose and roll back safely.
