@@ -77,21 +77,28 @@ func TestIsBinlogCoordinate(t *testing.T) {
 	}
 }
 
-func TestBinlogSQLCmd_PicksFilterPerTool(t *testing.T) {
+func TestBinlogSQLCmd_PassesVariablePartsAsArgs(t *testing.T) {
 	cmd := binlogSQLCmd([]string{"mysql-bin.000002", "mysql-bin.000003"}, 157,
 		time.Date(2026, 10, 22, 19, 1, 1, 0, time.FixedZone("x", 3600)), "src-db", "dst-db")
-	script := cmd[len(cmd)-1]
-	for _, want := range []string{
-		"--start-position=157",
-		`--stop-datetime="2026-10-22 18:01:01"`,
-		`--rewrite-db="src-db->dst-db"`,
-		"mysql-bin.000002 mysql-bin.000003",
-		`*mariadb-binlog) F="src-db"`,
-		`*) F="dst-db"`,
-	} {
-		if !strings.Contains(script, want) {
-			t.Errorf("script missing %q:\n%s", want, script)
+	want := []string{"bash", "-c", binlogSQLScript, "bash", "src-db", "dst-db", "157", "2026-10-22 18:01:01", "mysql-bin.000002", "mysql-bin.000003"}
+	if strings.Join(cmd, "\x00") != strings.Join(want, "\x00") {
+		t.Fatalf("cmd = %q, want %q", cmd, want)
+	}
+	for _, frag := range []string{`*mariadb-binlog) F=$SRC`, `*) F=$DST`, `--rewrite-db="$SRC->$DST"`} {
+		if !strings.Contains(binlogSQLScript, frag) {
+			t.Errorf("script missing %q", frag)
 		}
+	}
+}
+
+func TestBinlogSQLCmd_HostileNamesStayOutOfScript(t *testing.T) {
+	hostile := "x$(touch /tmp/pwned)`id`\";touch /tmp/pwned2;\""
+	cmd := binlogSQLCmd([]string{"mysql-bin.000001"}, 4, time.Unix(0, 0), "src", hostile)
+	if cmd[2] != binlogSQLScript || strings.Contains(cmd[2], "pwned") {
+		t.Fatalf("hostile name leaked into the script text: %q", cmd[2])
+	}
+	if cmd[5] != hostile {
+		t.Fatalf("hostile name should be a plain arg, got %q", cmd[5])
 	}
 }
 

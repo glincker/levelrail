@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -131,6 +132,25 @@ func TestHandleTriggerPITRRestore_MySQLRequiresRestoreAs(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases/main/pitr-restore", body))
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("restoring over the source: status = %d, want 400", rec.Code)
+	}
+}
+
+func TestHandleTriggerPITRRestore_MySQLRejectsUnsafeRestoreAs(t *testing.T) {
+	for _, name := range []string{"x$(id)", "a`id`", "Copy", "a;b", "a b", "-lead", "has_underscore", strings.Repeat("a", 64)} {
+		runner := newFakeMySQLPITRRunner()
+		rt, db := newMySQLPITRRouter(t, runner)
+		cookie := loginTestSession(t, rt, db)
+		seedPITRDatabase(t, db, store.EngineMySQL, true)
+
+		payload, err := json.Marshal(map[string]string{"base_backup_id": "bbh_1", "target_time": "2026-08-14T03:00:00Z", "restore_as": name})
+		if err != nil {
+			t.Fatal(err)
+		}
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases/main/pitr-restore", string(payload)))
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("restore_as %q: status = %d, want 400", name, rec.Code)
+		}
 	}
 }
 

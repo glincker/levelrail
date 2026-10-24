@@ -35,6 +35,10 @@ func (rt *Router) handleTriggerMySQLPITRRestore(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusBadRequest, "restore_as is required: a point-in-time restore of "+db.Engine+" creates a new database")
 		return
 	}
+	if !validDatabaseName(req.RestoreAs) {
+		writeError(w, http.StatusBadRequest, "restore_as must be 1-63 characters: lowercase letters, digits and hyphens, starting with a letter")
+		return
+	}
 	if req.RestoreAs == name {
 		writeError(w, http.StatusBadRequest, "restore_as must differ from the source database's own name")
 		return
