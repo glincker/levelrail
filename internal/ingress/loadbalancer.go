@@ -6,12 +6,13 @@ package ingress
 
 // Selection policy names accepted by LBRoute.Policy.
 const (
-	LBPolicyRoundRobin = "round_robin"
-	LBPolicyLeastConn  = "least_conn"
-	LBPolicyIPHash     = "ip_hash"
-	LBPolicyURIHash    = "uri_hash"
-	LBPolicyCookie     = "cookie"
-	LBPolicyWeighted   = "weighted_round_robin"
+	LBPolicyRoundRobin   = "round_robin"
+	LBPolicyLeastConn    = "least_conn"
+	LBPolicyIPHash       = "ip_hash"
+	LBPolicyClientIPHash = "client_ip_hash"
+	LBPolicyURIHash      = "uri_hash"
+	LBPolicyCookie       = "cookie"
+	LBPolicyWeighted     = "weighted_round_robin"
 )
 
 // SelectionPolicy is Caddy's load_balancing.selection_policy.

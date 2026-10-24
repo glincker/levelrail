@@ -58,6 +58,12 @@ func newLBReplica(t *testing.T, name string) *lbReplica {
 // its listen address. Readiness is a TCP dial so no request is counted.
 func startLiveLB(t *testing.T, lb *LBRoute, reps ...*lbReplica) string {
 	t.Helper()
+	return startLiveLBHardened(t, lb, nil, reps...)
+}
+
+// startLiveLBHardened is startLiveLB with optional edge hardening such as trusted proxies.
+func startLiveLBHardened(t *testing.T, lb *LBRoute, h *Hardening, reps ...*lbReplica) string {
+	t.Helper()
 	skipUnderLoad(t)
 	lb.Upstreams = nil
 	for _, r := range reps {
@@ -65,7 +71,7 @@ func startLiveLB(t *testing.T, lb *LBRoute, reps ...*lbReplica) string {
 	}
 	addr := fmt.Sprintf("127.0.0.1:%d", freePort(t))
 	cfg, err := BuildRoutesConfig(RoutesOptions{
-		ServerName: "lb-live", ListenAddr: addr, StorageDir: t.TempDir(),
+		ServerName: "lb-live", ListenAddr: addr, StorageDir: t.TempDir(), Hardening: h,
 		Routes: []ProxyRoute{{Hosts: []string{"127.0.0.1"}, LB: lb}},
 	})
 	if err != nil {
@@ -172,6 +178,55 @@ func TestDriver_LoadBalancer_URIHashStable(t *testing.T) {
 	}
 	if a.hits.Load() == 0 || b.hits.Load() == 0 {
 		t.Fatalf("16 distinct paths all hashed to one replica: a=%d b=%d", a.hits.Load(), b.hits.Load())
+	}
+}
+
+func TestDriver_LoadBalancer_ClientIPHashTrustedProxies(t *testing.T) {
+	forwarded := func(addr, xff string) string {
+		req, _ := http.NewRequest(http.MethodGet, "http://"+addr+"/", nil)
+		req.Header.Set("X-Forwarded-For", xff)
+		resp, err := lbClient.Do(req)
+		if err != nil {
+			t.Fatalf("GET: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+		b, _ := io.ReadAll(resp.Body)
+		return string(b)
+	}
+	trusted := DefaultHardening()
+	trusted.TrustedProxies = []string{"127.0.0.1/32"}
+	cases := []struct {
+		name     string
+		hardened *Hardening
+		spread   bool
+	}{
+		{"trusted peer spreads clients", &trusted, true},
+		{"untrusted peer ignores header", nil, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			a, b := newLBReplica(t, "a"), newLBReplica(t, "b")
+			addr := startLiveLBHardened(t, &LBRoute{Policy: LBPolicyClientIPHash}, tc.hardened, a, b)
+			owner := map[string]string{}
+			seen := map[string]bool{}
+			for round := 0; round < 3; round++ {
+				for i := 0; i < 24; i++ {
+					ip := fmt.Sprintf("198.51.100.%d", i+1)
+					body := forwarded(addr, ip)
+					if prev, ok := owner[ip]; ok && prev != body {
+						t.Fatalf("client %s moved from %s to %s", ip, prev, body)
+					}
+					owner[ip] = body
+					seen[body] = true
+				}
+			}
+			if tc.spread && (!seen["a"] || !seen["b"]) {
+				t.Fatalf("clients reached %v, want both replicas", seen)
+			}
+			if !tc.spread && len(seen) != 1 {
+				t.Fatalf("header should be ignored, but clients reached %v", seen)
+			}
+		})
 	}
 }
 

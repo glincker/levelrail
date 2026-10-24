@@ -11,7 +11,13 @@ import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export type LoadBalancerAlgorithm =
-  'round_robin' | 'least_conn' | 'ip_hash' | 'uri_hash' | 'cookie' | 'weighted'
+  | 'round_robin'
+  | 'least_conn'
+  | 'ip_hash'
+  | 'client_ip_hash'
+  | 'uri_hash'
+  | 'cookie'
+  | 'weighted'
 
 export type LoadBalancerExportFormat =
   'terraform' | 'cdk' | 'cloudformation' | 'caddy' | 'caddy-json'

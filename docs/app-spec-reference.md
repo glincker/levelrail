@@ -212,7 +212,7 @@ All fields are optional. Durations are Go duration strings such as `500ms`, `5s`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `algorithm` | string | `round_robin` (default), `least_conn`, `ip_hash`, `uri_hash`, `cookie` or `weighted`. |
+| `algorithm` | string | `round_robin` (default), `least_conn`, `ip_hash`, `client_ip_hash`, `uri_hash`, `cookie` or `weighted`. |
 | `cookie_name` | string | Sticky cookie name. Only with `algorithm: cookie`, default `lb`. |
 | `weights` | list of integer | 1 to 100 per replica, indexed by replica number. Only with `algorithm: weighted`. |
 | `active_health` | object | `path` (required, starts with `/`), `interval`, `timeout` (shorter than `interval`), `passes`, `fails`, `expect_status`. |

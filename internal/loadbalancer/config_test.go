@@ -14,6 +14,8 @@ func TestConfigValidate(t *testing.T) {
 	}{
 		{name: "nil is valid", cfg: nil},
 		{name: "empty is valid", cfg: &Config{}},
+		{name: "client ip hash is valid", cfg: &Config{Algorithm: AlgoClientIPHash}},
+		{name: "cookie name on client ip hash", cfg: &Config{Algorithm: AlgoClientIPHash, CookieName: "x"}, wantErr: "cookie_name"},
 		{name: "unknown algorithm", cfg: &Config{Algorithm: "random"}, wantErr: "algorithm"},
 		{name: "cookie name on wrong algorithm", cfg: &Config{CookieName: "x"}, wantErr: "cookie_name"},
 		{name: "weights on wrong algorithm", cfg: &Config{Weights: []int{1}}, wantErr: "weights only"},

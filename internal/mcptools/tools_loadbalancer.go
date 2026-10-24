@@ -10,7 +10,7 @@ import (
 
 type setLoadBalancerInput struct {
 	Name   string                       `json:"name" jsonschema:"the app's name"`
-	Config apiclient.LoadBalancerConfig `json:"config" jsonschema:"the complete load balancer config, replacing any existing one. algorithm is one of round_robin, least_conn, ip_hash, uri_hash, cookie, weighted; durations are strings like 5s"`
+	Config apiclient.LoadBalancerConfig `json:"config" jsonschema:"the complete load balancer config, replacing any existing one. algorithm is one of round_robin, least_conn, ip_hash, client_ip_hash, uri_hash, cookie, weighted; durations like 5s"`
 }
 
 type exportLoadBalancerInput struct {

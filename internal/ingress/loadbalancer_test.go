@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 )
 
 func TestNewLBReverseProxyHandler(t *testing.T) {
@@ -37,6 +39,11 @@ func TestNewLBReverseProxyHandler(t *testing.T) {
 			name: "weighted",
 			lb:   LBRoute{Upstreams: []string{"a:1", "b:1"}, Policy: LBPolicyWeighted, Weights: []int{3, 1}},
 			want: `{"handler":"reverse_proxy","upstreams":[{"dial":"a:1"},{"dial":"b:1"}],"load_balancing":{"selection_policy":{"policy":"weighted_round_robin","weights":[3,1]}}}`,
+		},
+		{
+			name: "client ip hash",
+			lb:   LBRoute{Upstreams: []string{"a:1", "b:1"}, Policy: LBPolicyClientIPHash},
+			want: `{"handler":"reverse_proxy","upstreams":[{"dial":"a:1"},{"dial":"b:1"}],"load_balancing":{"selection_policy":{"policy":"client_ip_hash"}}}`,
 		},
 		{
 			name: "cookie sticky",
@@ -166,5 +173,25 @@ func TestDriver_LoadBalancer_RoundRobinAndFailover(t *testing.T) {
 		if resp.StatusCode != http.StatusOK || string(body) != "b" {
 			t.Fatalf("after backend a died: status=%d body=%q, want 200 from b", resp.StatusCode, body)
 		}
+	}
+}
+
+func TestNewLBRoutePolicyMapping(t *testing.T) {
+	ups := []loadbalancer.Upstream{{Dial: "a:1"}, {Dial: "b:1"}}
+	tests := []struct {
+		algo string
+		want string
+	}{
+		{loadbalancer.AlgoIPHash, LBPolicyIPHash},
+		{loadbalancer.AlgoClientIPHash, LBPolicyClientIPHash},
+		{loadbalancer.AlgoURIHash, LBPolicyURIHash},
+	}
+	for _, tt := range tests {
+		t.Run(tt.algo, func(t *testing.T) {
+			lb := NewLBRoute(loadbalancer.Config{Algorithm: tt.algo}, ups, nil)
+			if lb == nil || lb.Policy != tt.want {
+				t.Fatalf("policy = %+v, want %s", lb, tt.want)
+			}
+		})
 	}
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ALGORITHM_OPTIONS,
   configFromForm,
   formFromConfig,
   summarizePool,
@@ -109,5 +110,12 @@ describe('summarizePool', () => {
     expect(summarizePool([{ healthy: true }, { healthy: false }])).toBe(
       '1 of 2 healthy',
     )
+  })
+})
+
+describe('ALGORITHM_OPTIONS', () => {
+  it('offers client_ip_hash next to ip_hash', () => {
+    const values = ALGORITHM_OPTIONS.map((o) => o.value)
+    expect(values.indexOf('client_ip_hash')).toBe(values.indexOf('ip_hash') + 1)
   })
 })

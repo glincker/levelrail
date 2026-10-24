@@ -36,7 +36,8 @@ func exportCases() map[string]ExportInput {
 			Upstreams: []string{"10.0.1.1:9000", "10.0.1.2:9000"},
 			Config:    loadbalancer.Config{Algorithm: loadbalancer.AlgoWeighted, Weights: []int{9, 1}, SlowStart: "30s"},
 		},
-		"iphash": {Service: "ws", Port: 4000, Config: loadbalancer.Config{Algorithm: loadbalancer.AlgoIPHash}},
+		"clientiphash": {Service: "edge", Port: 4100, Config: loadbalancer.Config{Algorithm: loadbalancer.AlgoClientIPHash}},
+		"iphash":       {Service: "ws", Port: 4000, Config: loadbalancer.Config{Algorithm: loadbalancer.AlgoIPHash}},
 	}
 }
 

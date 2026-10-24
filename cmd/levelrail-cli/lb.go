@@ -277,7 +277,7 @@ func parseWeights(s string) ([]int, error) {
 
 func runLBSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "lb set", "print the resulting config as JSON to stdout and nothing else", stderr)
-	algorithm := fs.String("algorithm", "", "round_robin, least_conn, ip_hash, uri_hash, cookie or weighted")
+	algorithm := fs.String("algorithm", "", "round_robin, least_conn, ip_hash, client_ip_hash, uri_hash, cookie or weighted")
 	cookie := fs.String("cookie-name", "", "sticky session cookie name (algorithm cookie)")
 	weights := fs.String("weights", "", "comma separated weight per replica, e.g. 3,1 (algorithm weighted)")
 	healthPath := fs.String("health-path", "", "active health check path, e.g. /healthz")
