@@ -297,6 +297,13 @@ Endpoints for:
 | DELETE | /api/v1/settings/traffic-export/sinks/{id} | AbilityRoot | handleDeleteTrafficExportSink |
 | POST | /api/v1/settings/traffic-export/sinks/{id}/test | AbilityRoot | handleTestTrafficExportSink |
 | GET | /api/v1/settings/traffic-export/status | AbilityRead | handleTrafficExportStatus |
+| GET | /api/v1/settings/runtime | AbilityRead | handleListRuntimeSettings |
+| GET | /api/v1/settings/runtime/onboarding | AbilityRead | handleGetRuntimeOnboarding |
+| GET | /api/v1/settings/runtime/{key} | AbilityRead | handleGetRuntimeSetting |
+| PUT | /api/v1/settings/runtime/{key} | AbilityRoot | handleSetRuntimeSetting |
+| DELETE | /api/v1/settings/runtime/{key} | AbilityRoot | handleResetRuntimeSetting |
+| POST | /api/v1/settings/runtime/apply | AbilityRoot | handleApplyRuntimeSettings |
+| POST | /api/v1/settings/runtime/onboarding/ack | AbilityRoot | handleAckRuntimeOnboarding |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -310,13 +317,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/settings/runtime | AbilityRead | handleListRuntimeSettings |
-| GET | /api/v1/settings/runtime/onboarding | AbilityRead | handleGetRuntimeOnboarding |
-| GET | /api/v1/settings/runtime/{key} | AbilityRead | handleGetRuntimeSetting |
-| PUT | /api/v1/settings/runtime/{key} | AbilityRoot | handleSetRuntimeSetting |
-| DELETE | /api/v1/settings/runtime/{key} | AbilityRoot | handleResetRuntimeSetting |
-| POST | /api/v1/settings/runtime/apply | AbilityRoot | handleApplyRuntimeSettings |
-| POST | /api/v1/settings/runtime/onboarding/ack | AbilityRoot | handleAckRuntimeOnboarding |
 
 </Accordion>
 
