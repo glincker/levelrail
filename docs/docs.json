@@ -387,6 +387,7 @@
               "feature-flags",
               "log-archive",
               "janitor",
+              "cleanup-center",
               "search"
             ],
             "icon": "/assets/icons/flask.svg"

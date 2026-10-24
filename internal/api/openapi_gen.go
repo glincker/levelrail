@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1720 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1726 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -952,6 +952,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/cdn/overview", Ability: "AbilityRead", Group: "Other", Handler: "handleCDNOverview", Description: ""},
 	{Method: "GET", Path: "/api/v1/changelog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetChangelog", Description: "\"What's new\" dashboard panel: recent entries parsed from the repo's own CHANGELOG.md, AbilityRead like updates above."},
 	{Method: "POST", Path: "/api/v1/ci/oidc-exchange", Ability: "Public", Group: "Other", Handler: "handleCIOIDCExchange", Description: ""},
+	{Method: "GET", Path: "/api/v1/cleanup", Ability: "AbilityRead", Group: "Other", Handler: "handleGetCleanup", Description: ""},
+	{Method: "GET", Path: "/api/v1/cleanup/runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListCleanupRuns", Description: ""},
+	{Method: "PUT", Path: "/api/v1/cleanup/{id}/mode", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetCleanupMode", Description: ""},
+	{Method: "POST", Path: "/api/v1/cleanup/{id}/preview", Ability: "AbilityRoot", Group: "Other", Handler: "handlePreviewCleanup", Description: "A preview reads row counts only, but it is the same decision surface as a run, so it shares the Root gate."},
+	{Method: "POST", Path: "/api/v1/cleanup/{id}/run", Ability: "AbilityRoot", Group: "Other", Handler: "handleRunCleanup", Description: "A run deletes data permanently."},
 	{Method: "GET", Path: "/api/v1/compliance/access-reviews", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAccessReviews", Description: ""},
 	{Method: "POST", Path: "/api/v1/compliance/access-reviews", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateAccessReview", Description: ""},
 	{Method: "GET", Path: "/api/v1/compliance/access-reviews/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetAccessReview", Description: ""},

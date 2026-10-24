@@ -39,7 +39,7 @@ func TestRuntimeSettings_ListAndGet(t *testing.T) {
 		t.Fatalf("list = %d %s", rec.Code, rec.Body.String())
 	}
 	var list runtimeSettingsList
-	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil || len(list.Settings) != 8 || list.Restart.PendingRestart {
+	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil || len(list.Settings) != len(runtimesettings.Definitions()) || list.Restart.PendingRestart {
 		t.Fatalf("list body = %+v, %v", list, err)
 	}
 

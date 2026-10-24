@@ -59,13 +59,15 @@ type Secrets interface {
 
 // Deps wires a Service.
 type Deps struct {
-	Store      Store
-	Secrets    Secrets
-	Config     Config
-	Brand      string
-	Logger     *slog.Logger
-	HTTPClient *http.Client
-	Now        func() time.Time
+	Store   Store
+	Secrets Secrets
+	Config  Config
+	// RetentionDays, when set, supplies the live delivery retention in days (0 keeps everything) instead of Config.Retention.
+	RetentionDays func(ctx context.Context) int
+	Brand         string
+	Logger        *slog.Logger
+	HTTPClient    *http.Client
+	Now           func() time.Time
 }
 
 // Event is one thing that happened, as handed to Emit.
@@ -138,7 +140,15 @@ func (s *Service) Run(ctx context.Context) {
 		case <-tick.C:
 			s.deliverDue(ctx)
 		case <-prune.C:
-			cutoff := store.FormatAuditTime(s.d.Now().Add(-s.d.Config.Retention))
+			retention := s.d.Config.Retention
+			if s.d.RetentionDays != nil {
+				days := s.d.RetentionDays(ctx)
+				if days <= 0 {
+					continue
+				}
+				retention = time.Duration(days) * 24 * time.Hour
+			}
+			cutoff := store.FormatAuditTime(s.d.Now().Add(-retention))
 			if _, err := s.d.Store.DeleteEventDeliveriesOlderThan(ctx, cutoff); err != nil {
 				s.d.Logger.Warn("eventhook: prune deliveries", slog.String("error", err.Error()))
 			}
