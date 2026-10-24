@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	webhookNoteDuplicate = "duplicate delivery"
-	webhookNoteDeployed  = "deployed"
-	webhookSHALen        = 12
+	webhookNoteDuplicate    = "duplicate delivery"
+	webhookNoteDeployed     = "deployed"
+	webhookNoteReplayedBody = "replayed body"
+	webhookSHALen           = 12
 )
 
 // webhookOutcome lets the push path report the attempt it queued to the
