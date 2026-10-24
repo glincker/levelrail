@@ -462,6 +462,7 @@ Checked by `ValidateLabels` (`internal/spec/labels.go`):
 - No two volumes on the same service may share a name or the same `path`.
 - Each volume's `hostPath` (if a bind mount) must be an absolute path.
 - `hostPath` is rejected under protected system paths: `/`, `/etc`, `/root`, `/boot`, `/sys`, `/proc`, `/var/lib/docker`, `/var/run/docker.sock`, or `/var/run`. `/var/run/docker.sock` is excluded by design (it's a full container-escape-to-host-root vector; this feature doesn't grant that capability).
+- `hostPath` is also rejected when it is or sits inside a credential directory (`.ssh`, `.gnupg`, `.aws`, `.kube`, `.docker`), is a bare home directory such as `/home/deploy`, or is under `/var/log` or `/usr/local/etc`. Set `APP_BIND_ALLOWED_ROOTS` (colon-separated absolute directories, for example `/srv/apps:/mnt/nas`) on the control plane to allow bind mounts only inside those directories.
 - `readOnly: true` on a volume with `name` set (not `hostPath`) is rejected (no meaning for a named Docker volume).
 
 ### Additional guard: strict YAML parsing
