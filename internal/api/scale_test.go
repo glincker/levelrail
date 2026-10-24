@@ -159,6 +159,9 @@ func TestScale_ControlPlane(t *testing.T) {
 			var slowest scaleEndpoint
 			var slowestP95 time.Duration
 			for _, ep := range scaleEndpoints() {
+				if only := os.Getenv("LR_SCALE_ONLY"); only != "" && ep.name != only {
+					continue
+				}
 				if _, code := scaleGet(h, tok, ep.path); code != http.StatusOK {
 					t.Logf("N=%d %-15s status %d, skipped", n, ep.name, code)
 					continue
@@ -258,7 +261,7 @@ func scaleProfile(t *testing.T, h http.Handler, tok string, ep scaleEndpoint, di
 	if err := pprof.StartCPUProfile(cpu); err != nil {
 		t.Fatal(err)
 	}
-	scaleRun(h, tok, ep.path, 400, 1)
+	scaleRun(h, tok, ep.path, 400, 8)
 	pprof.StopCPUProfile()
 	runtime.GC()
 	heap, err := os.Create(filepath.Join(dir, "heap.pprof")) //nolint:gosec // dev-supplied profile dir
