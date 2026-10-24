@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.3](https://github.com/glincker/levelrail/compare/v0.8.2...v0.8.3) (2026-10-23)
+
+
+### Features
+
+* email failover, spend caps, traffic export and ingress rate limits ([#1363](https://github.com/glincker/levelrail/issues/1363)) ([11f20b0](https://github.com/glincker/levelrail/commit/11f20b00f626eca91b0bc1cca3bac47770c235db))
+
 ## [0.8.2](https://github.com/glincker/levelrail/compare/v0.8.1...v0.8.2) (2026-10-22)
 
 
