@@ -34,21 +34,21 @@ Unknown parameters are ignored and listed in a notice on the reader's form. The 
 
 ## Badge
 
-Two SVG badges live in this repository: [light](https://github.com/GLINCKER/levelrail/blob/main/docs/assets/brand/deploy-button.svg) (yellow `#eef35f` with dark text) and [dark](https://github.com/GLINCKER/levelrail/blob/main/docs/assets/brand/deploy-button-dark.svg) (`#050709` with yellow text). They use only vector shapes and a system font stack.
+Two SVG badges live in this repository under `docs/assets/brand`: `deploy-button.svg` (yellow `#eef35f` with dark text) and `deploy-button-dark.svg` (dark with light text).
 
-The snippets below point at `https://levelrail.com/badge/deploy.svg`. That hosted path does not exist yet: the files need to be published from the marketing site's `public` folder. Until it is live, copy the SVG into your own repository and reference it with a relative path.
+The snippets load the badge from the jsDelivr CDN, which serves the file straight from this public repository, so README views never hit the Levelrail site. The `@main` part follows the main branch; pin a release tag instead (for example `@v0.8.4`) if you want a badge that never changes. Only clicking the button reaches `levelrail.com/deploy`.
 
 ## Markdown snippet
 
 ```md
-[![Deploy to Levelrail](https://levelrail.com/badge/deploy.svg)](https://levelrail.com/deploy?image=ghcr.io%2Fyou%2Fapp%3A1.2&port=3000&health=%2Fhealthz&env=DATABASE_URL)
+[![Deploy to Levelrail](https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button.svg)](https://levelrail.com/deploy?image=ghcr.io%2Fyou%2Fapp%3A1.2&port=3000&health=%2Fhealthz&env=DATABASE_URL)
 ```
 
 ## HTML snippet
 
 ```html
 <a href="https://levelrail.com/deploy?image=ghcr.io%2Fyou%2Fapp%3A1.2&amp;port=3000&amp;health=%2Fhealthz&amp;env=DATABASE_URL">
-  <img src="https://levelrail.com/badge/deploy.svg" alt="Deploy to Levelrail" height="40">
+  <img src="https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button.svg" alt="Deploy to Levelrail" height="40">
 </a>
 ```
 

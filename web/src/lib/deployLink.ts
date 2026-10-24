@@ -183,8 +183,9 @@ export function stringifySearch(
 
 /** Public page that forwards a deploy link to the visitor's own server. */
 export const DEPLOY_BUTTON_PAGE = 'https://levelrail.com/deploy'
-/** Hosted badge image; see docs/deploy-button.md for its status. */
-export const DEPLOY_BUTTON_BADGE = 'https://levelrail.com/badge/deploy.svg'
+/** Badge served by the jsDelivr CDN from this repository, so README views do not reach the site. */
+export const DEPLOY_BUTTON_BADGE =
+  'https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button.svg'
 
 export interface DeployButtonInput {
   image: string

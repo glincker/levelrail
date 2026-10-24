@@ -253,7 +253,7 @@ describe('buildDeployButtonUrl', () => {
   it('wraps the url in a markdown badge', () => {
     const md = deployButtonMarkdown('https://levelrail.com/deploy?image=nginx')
     expect(md).toBe(
-      '[![Deploy to Levelrail](https://levelrail.com/badge/deploy.svg)](https://levelrail.com/deploy?image=nginx)',
+      '[![Deploy to Levelrail](https://cdn.jsdelivr.net/gh/glincker/levelrail@main/docs/assets/brand/deploy-button.svg)](https://levelrail.com/deploy?image=nginx)',
     )
   })
 })
