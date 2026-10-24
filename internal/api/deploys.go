@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploytrace"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -513,5 +515,28 @@ func (rt *Router) handleDeployHistory(w http.ResponseWriter, r *http.Request) {
 	if cond := rt.crossNodeIngressAppCondition(r.Context(), *svc); cond != nil {
 		conditions = append(conditions, *cond)
 	}
-	writeJSON(w, http.StatusOK, conditions)
+	writeJSON(w, http.StatusOK, rt.markRestartRollingOut(r.Context(), *svc, conditions))
+}
+
+// markRestartRollingOut replaces a stored Ready=True while the newest attempt
+// is a restart that is not serving yet: that Ready belongs to the old container.
+func (rt *Router) markRestartRollingOut(ctx context.Context, svc store.DesiredService, conditions []reconcile.Condition) []reconcile.Condition {
+	if rt.deployAttempts == nil || svc.Suspended {
+		return conditions
+	}
+	attempts, err := rt.deployAttempts.ListDeployAttempts(ctx, svc.Name)
+	if err != nil || len(attempts) == 0 {
+		return conditions
+	}
+	newest := attempts[0]
+	if newest.Source != store.DeployAttemptSourceRestart || newest.Status != store.DeployAttemptStatusSucceeded || newest.RolloutState == store.RolloutStateServing {
+		return conditions
+	}
+	out := slices.Clone(conditions)
+	for i, c := range out {
+		if c.Type == reconcile.ConditionTypeReady && c.Status == reconcile.ConditionTrue {
+			out[i] = reconcile.Condition{Type: c.Type, Status: reconcile.ConditionFalse, Reason: "RollingOut", Message: "restart in progress: the new container has not passed readiness yet", LastTransitionTime: newest.StartedAt}
+		}
+	}
+	return out
 }

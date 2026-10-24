@@ -2228,3 +2228,50 @@ func TestHandleStopApp_PlainWriteToken_Forbidden(t *testing.T) {
 		"tok_write_stop", "write-scoped-token-stop", //nolint:gosec // fake fixture, not a real credential
 		"a plain write token must not be able to stop an app")
 }
+
+// While a restart rolls out, the stored Ready=AlreadyRunning is from the old
+// container, so status must not claim it; once serving, the stored one shows.
+func TestHandleDeployHistory_RestartInFlightIsNotReady(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	old := time.Now().Add(-time.Hour)
+	if err := db.UpsertConditions(ctx, applicationControllerName("web"), []reconcile.Condition{{Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue, Reason: "AlreadyRunning", LastTransitionTime: old}}); err != nil {
+		t.Fatalf("UpsertConditions: %v", err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/restart", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("restart status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	readyReason := func() (reconcile.ConditionStatus, string) {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/deploys", ""))
+		var conds []reconcile.Condition
+		if err := json.Unmarshal(rec.Body.Bytes(), &conds); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		for _, c := range conds {
+			if c.Type == reconcile.ConditionTypeReady {
+				return c.Status, c.Reason
+			}
+		}
+		t.Fatalf("no Ready condition in %s", rec.Body.String())
+		return "", ""
+	}
+	if st, reason := readyReason(); st == reconcile.ConditionTrue || reason != "RollingOut" {
+		t.Errorf("during restart Ready = %s/%s, want not True and RollingOut", st, reason)
+	}
+
+	if err := db.RecordRollout(ctx, "web", "levelrail/web:1", store.RolloutStateServing, "sha256:x"); err != nil {
+		t.Fatalf("RecordRollout: %v", err)
+	}
+	if st, reason := readyReason(); st != reconcile.ConditionTrue || reason != "AlreadyRunning" {
+		t.Errorf("after serving Ready = %s/%s, want True/AlreadyRunning", st, reason)
+	}
+}
