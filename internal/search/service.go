@@ -49,6 +49,9 @@ type Service struct {
 	mu         sync.Mutex
 	lastRun    time.Time
 	dirtySince atomic.Int64
+	// indexGen changes whenever search_docs is written, which drops cached candidates.
+	indexGen atomic.Uint64
+	cache    candCache
 }
 
 // New builds a Service over db and providers.
@@ -90,7 +93,9 @@ func (s *Service) reconcileLocked(ctx context.Context, only *Kind) error {
 			errs = append(errs, fmt.Errorf("search: provider %s: %w", p.Kind(), err))
 			continue
 		}
-		if err := replaceKind(ctx, s.db, p.Kind(), docs); err != nil {
+		err = replaceKind(ctx, s.db, p.Kind(), docs)
+		s.indexGen.Add(1)
+		if err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -213,14 +218,9 @@ func (s *Service) ranked(ctx context.Context, c Caller, req Request) ([]scored, 
 
 	var hits []scored
 	if kind != KindSaved {
-		cands, err := fetchCandidates(ctx, s.db, q, kind, matchStrict)
+		cands, err := s.candidates(ctx, q, kind)
 		if err != nil {
 			return nil, nil, err
-		}
-		if len(cands) == 0 && len(q.Text) > 0 {
-			if cands, err = fetchCandidates(ctx, s.db, q, kind, matchLoose); err != nil {
-				return nil, nil, err
-			}
 		}
 		for _, cd := range cands {
 			if c.Authz.Allowed(cd.doc.Prefix, cd.doc.Name, cd.doc.Ability) {
