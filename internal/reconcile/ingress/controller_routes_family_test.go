@@ -30,8 +30,9 @@ func failed(image string) store.DeployAttempt {
 func onlyUpstream(t *testing.T, applier *fakeApplier) string {
 	t.Helper()
 	rp := proxyHandler(t, applier)
-	if len(rp.Upstreams) != 1 {
-		t.Fatalf("upstreams = %+v, want exactly 1", rp.Upstreams)
+	// A held previous release rides along as a standby, so only the primary counts.
+	if len(rp.Upstreams) == 0 || len(rp.Upstreams) > 2 {
+		t.Fatalf("upstreams = %+v, want a primary and at most one standby", rp.Upstreams)
 	}
 	return rp.Upstreams[0].Dial
 }

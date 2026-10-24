@@ -960,6 +960,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		if lb == nil {
 			lb = c.canaryRoute(ctx, dial, canaries[svc.Name], readyByService)
 		}
+		if lb == nil && c.isLocalNode(svc.NodeID) {
+			if _, balanced := lbConfigs[svc.Name]; !balanced {
+				lb = c.failoverRoute(ctx, svc, dial)
+			}
+		}
 		for _, host := range activeHosts {
 			claimedHosts[host] = svc.Name
 			c.holds.Routed(host, now)

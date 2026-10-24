@@ -13,6 +13,8 @@ const (
 	LBPolicyURIHash      = "uri_hash"
 	LBPolicyCookie       = "cookie"
 	LBPolicyWeighted     = "weighted_round_robin"
+	// LBPolicyFirst sends to the first healthy upstream (primary, then standby).
+	LBPolicyFirst = "first"
 )
 
 // SelectionPolicy is Caddy's load_balancing.selection_policy.
