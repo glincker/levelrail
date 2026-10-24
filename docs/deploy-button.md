@@ -43,7 +43,7 @@ Four SVG badges live in this repository under `docs/assets/brand`:
 | `deploy-button-gradient-dark.svg` | Dark fill, 2px cyan-to-yellow gradient border | Dark backgrounds |
 | `deploy-button-outline-light.svg` | Pale fill, 2px teal border | Light backgrounds, a quieter look |
 
-The two gradient badges are a matched light and dark pair for the HTML snippet below.
+The two gradient badges are a matched light and dark pair for the HTML snippet below. Each also comes in a 32 px small size (`-small.svg`) and a 2x PNG fallback; see the [Brand kit](/brand#badges).
 
 The snippets load the badge from the jsDelivr CDN, which serves the file straight from this public repository, so README views never hit the Levelrail site. The `@main` part follows the main branch; pin a release tag instead (for example `@v0.8.4`) if you want a badge that never changes. Only clicking the button reaches `levelrail.com/deploy`.
 
