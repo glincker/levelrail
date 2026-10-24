@@ -102,6 +102,8 @@ func (p NetworkPolicy) control(_, address string, _ syscall.RawConn) error {
 type ClientOptions struct {
 	Policy   NetworkPolicy
 	Insecure bool
+	// Team scopes a Vercel source to one team id or slug, other platforms reject it.
+	Team string
 }
 
 // newHTTPClient builds a client that checks every dialed IP (including

@@ -38,6 +38,8 @@ type platformImportRequest struct {
 	Collision     string   `json:"collision,omitempty"`
 	// DBVersions picks the engine version for source databases that report none.
 	DBVersions map[string]string `json:"db_versions,omitempty"`
+	// TeamID scopes a Vercel import to one team (team_... or slug).
+	TeamID string `json:"team_id,omitempty"`
 	// SSH is the login of a docker-ssh source: read-only access to its Docker socket.
 	SSH *sshConnection `json:"ssh,omitempty"`
 }
@@ -107,6 +109,10 @@ func (rt *Router) openImportSource(w http.ResponseWriter, req platformImportRequ
 		writeError(w, http.StatusBadRequest, "collision must be suffix or skip")
 		return nil, false
 	}
+	if req.TeamID != "" && platform != platformimport.Vercel {
+		writeError(w, http.StatusBadRequest, "team_id is only supported for the vercel platform")
+		return nil, false
+	}
 	if platform == platformimport.DockerSSH {
 		return rt.openDockerSSHSource(w, req)
 	}
@@ -121,7 +127,7 @@ func (rt *Router) openImportSource(w http.ResponseWriter, req platformImportRequ
 	if u, perr := url.Parse(req.URL); perr == nil && (policy.AllowPrivate || policy.AllowLoopback) {
 		rt.logger.Warn("api: platform import: private network opt-in used", slog.String("platform", req.Platform), slog.String("host", u.Hostname()), slog.Bool("allow_private", policy.AllowPrivate), slog.Bool("allow_loopback", policy.AllowLoopback))
 	}
-	src, err := platformimport.NewSource(platform, req.URL, req.Token, platformimport.ClientOptions{Policy: policy, Insecure: req.InsecureTLS})
+	src, err := platformimport.NewSource(platform, req.URL, req.Token, platformimport.ClientOptions{Policy: policy, Insecure: req.InsecureTLS, Team: req.TeamID})
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return nil, false

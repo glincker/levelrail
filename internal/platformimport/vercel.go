@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -37,13 +38,33 @@ func NewVercel(baseURL, token string, o ClientOptions) (*VercelSource, error) {
 		return nil, err
 	}
 	r.headers["Authorization"] = "Bearer " + token
-	return &VercelSource{r: r}, nil
+	src := &VercelSource{r: r}
+	if o.Team != "" {
+		team, err := ValidateVercelTeam(o.Team)
+		if err != nil {
+			return nil, err
+		}
+		src.WithTeam(team)
+	}
+	return src, nil
 }
 
 // WithTeam scopes the source to one team id (team_...).
 func (s *VercelSource) WithTeam(id string) *VercelSource {
 	s.TeamID = strings.TrimSpace(id)
 	return s
+}
+
+// vercelTeamPattern accepts a team id (team_...) or a team slug.
+var vercelTeamPattern = regexp.MustCompile(`^(team_[A-Za-z0-9]{4,64}|[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)$`)
+
+// ValidateVercelTeam trims and checks a team id or slug before it reaches a query string.
+func ValidateVercelTeam(s string) (string, error) {
+	s = strings.TrimSpace(s)
+	if !vercelTeamPattern.MatchString(s) {
+		return "", fmt.Errorf("team_id must be a Vercel team id (team_...) or a team slug")
+	}
+	return s, nil
 }
 
 type vercelPagination struct {

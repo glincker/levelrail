@@ -104,6 +104,7 @@ The token is sent to this control plane in the request body, used in memory for 
 | `--dry-run` | Report only, create nothing |
 | `--only a,b` | Import only these source ids or names |
 | `--db-version postgres=16,redis=7.4` | Engine version for source databases that report none (Heroku), checked against the version catalog |
+| `--team team_...` | Vercel only: team id or slug, default is the personal account |
 | `--collision suffix\|skip` | When a name is taken: rename with a numeric suffix (default) or skip |
 | `--insecure-tls` | Skip TLS verification of the source (self-signed certificates) |
 | `--allow-private`, `--allow-loopback` | Allow a private-network or loopback source, see below |
@@ -253,6 +254,14 @@ A database whose engine or version cannot be determined is reported as unsupport
 - **Does not map.** Other add-ons are listed as warnings to set up by hand. Source code and buildpack builds are not imported: point the app at an image or repository. Release phase commands are not run.
 - **Database version.** Heroku reports no engine version. Pass `--db-version postgres=16,redis=7.4` to choose one; otherwise the newest version in the catalog is used and the report warns that you must check compatibility before restoring data.
 - **Procfile and app.json.** The config translator can turn these into settings for the imported app once it is available.
+
+### Vercel
+
+`levelrail import platform vercel` reads the public Vercel REST API, so `--url` is optional. Create the token at vercel.com/account/tokens. For a team, pass `--team` with the team id (`team_...`) from the team's Settings page, or the team slug; without it only your personal account is read. Only read-only GET requests are sent.
+
+- **Maps.** Projects, their environment variable keys, custom domains and the linked git repository.
+- **Env values.** Sensitive variables are not readable through the API, so only their keys are imported and you set the values by hand.
+- **Does not map.** Vercel Blob, KV, Postgres and other storage, Edge Config, and source code or builds: point the app at an image or repository. Cron jobs are not read from the API: run `levelrail-cli import config` on a checkout to turn `vercel.json` into app settings.
 
 ### Compose files and Dokku
 

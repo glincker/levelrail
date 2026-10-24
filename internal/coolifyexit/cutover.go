@@ -86,6 +86,8 @@ func SourceName(p platformimport.Platform) string {
 		return "CapRover"
 	case platformimport.Heroku:
 		return "Heroku"
+	case platformimport.Vercel:
+		return "Vercel"
 	case platformimport.DockerSSH, platformimport.Docker:
 		return "the old server"
 	}

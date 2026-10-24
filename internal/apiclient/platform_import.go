@@ -18,6 +18,8 @@ type PlatformImportRequest struct {
 	Collision     string   `json:"collision,omitempty"`
 	// DBVersions picks the engine version for source databases that report none.
 	DBVersions map[string]string `json:"db_versions,omitempty"`
+	// TeamID scopes a Vercel import to one team (team_... or slug).
+	TeamID string `json:"team_id,omitempty"`
 }
 
 // PlatformImportItem is one row of a platform import report.

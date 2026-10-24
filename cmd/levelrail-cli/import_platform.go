@@ -16,9 +16,9 @@ import (
 const envImportSourceToken = "APP_IMPORT_SOURCE_TOKEN" //nolint:gosec // env var name, not a credential
 
 type importPlatformFlags struct {
-	url, token, only, collision, apiURL, profile, dbVersion string
-	tokenStdin, dryRun, jsonOut                             bool
-	insecure, allowPrivate, allowLoopback                   bool
+	url, token, only, collision, apiURL, profile, dbVersion, team string
+	tokenStdin, dryRun, jsonOut                                   bool
+	insecure, allowPrivate, allowLoopback                         bool
 }
 
 func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -45,6 +45,7 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 	fs.StringVar(&f.only, "only", "", "comma-separated source ids or names to import")
 	fs.StringVar(&f.collision, "collision", "suffix", "name collision handling: suffix or skip")
 	fs.StringVar(&f.dbVersion, "db-version", "", "engine version for source databases that report none, e.g. postgres=16,redis=7.4")
+	fs.StringVar(&f.team, "team", "", "Vercel team id (team_...) or slug, default is the personal account")
 	fs.BoolVar(&f.insecure, "insecure-tls", false, "skip TLS verification of the source")
 	fs.BoolVar(&f.allowPrivate, "allow-private", false, "allow a private-network source (also needs the control plane env opt-in)")
 	fs.BoolVar(&f.allowLoopback, "allow-loopback", false, "allow a loopback source (also needs the control plane env opt-in)")
@@ -76,6 +77,16 @@ func runImportPlatform(prog string, args []string, stdin io.Reader, stdout, stde
 		return exitUsage
 	}
 	req.DBVersions = dbv
+	if f.team != "" {
+		if platform != "vercel" {
+			_, _ = fmt.Fprintf(stderr, "%s: --team is only for vercel\n", prog)
+			return exitUsage
+		}
+		if req.TeamID, err = platformimport.ValidateVercelTeam(f.team); err != nil {
+			_, _ = fmt.Fprintf(stderr, "%s: --team: %v\n", prog, err)
+			return exitUsage
+		}
+	}
 	for _, o := range strings.Split(f.only, ",") {
 		if o = strings.TrimSpace(o); o != "" {
 			req.Only = append(req.Only, o)
@@ -179,6 +190,7 @@ Flags:
   --only string         comma-separated source ids or names to import
   --collision string    suffix (default) or skip when a name is taken
   --db-version string   engine version for databases the source reports none for (postgres=16,redis=7.4)
+  --team string         Vercel only: team id (team_...) or slug, default is the personal account
   --insecure-tls        skip TLS verification of the source
   --allow-private       allow a private-network source (control plane also needs APP_IMPORT_ALLOW_PRIVATE_NETWORKS=true)
   --allow-loopback      allow a loopback source (control plane also needs APP_IMPORT_ALLOW_LOOPBACK=true)

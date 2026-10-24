@@ -8,6 +8,9 @@ func NewSource(platform Platform, baseURL, token string, o ClientOptions) (Sourc
 	if token == "" {
 		return nil, fmt.Errorf("a token is required")
 	}
+	if o.Team != "" && platform != Vercel {
+		return nil, fmt.Errorf("team_id is only supported for the vercel platform")
+	}
 	switch platform {
 	case Coolify:
 		return NewCoolify(baseURL, token, o)

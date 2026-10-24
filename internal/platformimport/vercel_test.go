@@ -146,3 +146,20 @@ func TestVercelPlatformWiring(t *testing.T) {
 		t.Errorf("error text: %v", err)
 	}
 }
+
+func TestNewVercelTeamOption(t *testing.T) {
+	opts := testOpts
+	opts.Team = "team_acme"
+	src, err := NewVercel("http://127.0.0.1:1", "tok", opts)
+	if err != nil || src.TeamID != "team_acme" {
+		t.Fatalf("src=%+v err=%v", src, err)
+	}
+	opts.Team = "x&y"
+	if _, err := NewVercel("http://127.0.0.1:1", "tok", opts); err == nil {
+		t.Error("malformed team must be rejected")
+	}
+	opts.Team = "team_acme"
+	if _, err := NewSource(Coolify, "http://127.0.0.1:1", "tok", opts); err == nil {
+		t.Error("team on another platform must be rejected")
+	}
+}

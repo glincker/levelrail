@@ -9,7 +9,7 @@ import (
 
 func exitReportPlatform(p platformimport.Platform) bool {
 	switch p {
-	case platformimport.Coolify, platformimport.Dokploy, platformimport.CapRover, platformimport.Heroku, platformimport.DockerSSH:
+	case platformimport.Coolify, platformimport.Dokploy, platformimport.CapRover, platformimport.Heroku, platformimport.Vercel, platformimport.DockerSSH:
 		return true
 	}
 	return false
@@ -34,7 +34,7 @@ func (rt *Router) handleCoolifyExitReport(w http.ResponseWriter, r *http.Request
 	}
 	defer req.wipeSecrets()
 	if !exitReportPlatform(platformimport.Platform(req.Platform)) {
-		writeError(w, http.StatusBadRequest, "the exit report reads coolify, dokploy, caprover, heroku or docker-ssh")
+		writeError(w, http.StatusBadRequest, "the exit report reads coolify, dokploy, caprover, heroku, vercel or docker-ssh")
 		return
 	}
 	disc, err := src.Discover(r.Context())
@@ -58,7 +58,7 @@ func (rt *Router) handleAppImportExitReport(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if !exitReportPlatform(live.disc.Platform) {
-		writeError(w, http.StatusBadRequest, "the exit report reads coolify, dokploy, caprover, heroku or docker-ssh")
+		writeError(w, http.StatusBadRequest, "the exit report reads coolify, dokploy, caprover, heroku, vercel or docker-ssh")
 		return
 	}
 	rt.writeCoolifyExitReport(w, r, live.req, live.disc)

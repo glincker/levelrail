@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/GLINCKER/levelrail/internal/platformimport/fakevercel"
 )
 
 const importFixtureValue = "src-token-fixture"
@@ -122,6 +123,44 @@ func TestPlatformImportRejectsUnsafeRequests(t *testing.T) {
 		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/imports/platform/discover", c.body))
 		if rec.Code != c.want {
 			t.Errorf("%s: status %d, want %d: %s", c.name, rec.Code, c.want, rec.Body.String())
+		}
+	}
+}
+
+func TestPlatformImportVercelTeamScopesEveryCall(t *testing.T) {
+	t.Setenv(platformimport.AllowLoopbackEnv, "true")
+	fake := fakevercel.New()
+	srv := httptest.NewServer(fake.Handler())
+	defer srv.Close()
+	rt, db := newTestRouterWithBuilderAndSecrets(t, &fakeBuilder{}, nil, &fakeSecretSetter{})
+	cookie := loginTestSession(t, rt, db)
+	body := func(platform, team string) string {
+		return `{"platform":"` + platform + `","url":"` + srv.URL + `","token":"` + fakevercel.Token + `","allow_loopback":true,"team_id":"` + team + `"}`
+	}
+	post := func(b string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/imports/platform/discover", b))
+		return rec
+	}
+	if rec := post(body("vercel", fakevercel.TeamID)); rec.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+	}
+	qs := fake.Queries()
+	if len(qs) == 0 {
+		t.Fatal("no vercel requests")
+	}
+	for _, q := range qs {
+		if !strings.Contains(q, "teamId="+fakevercel.TeamID) {
+			t.Errorf("query without teamId: %s", q)
+		}
+	}
+	for name, b := range map[string]string{
+		"team on dokploy": body("dokploy", fakevercel.TeamID),
+		"team on compose": `{"platform":"compose","snapshot":"x","team_id":"team_acme"}`,
+		"malformed team":  body("vercel", "team id&x=1"),
+	} {
+		if rec := post(b); rec.Code != http.StatusBadRequest {
+			t.Errorf("%s: status %d, want 400: %s", name, rec.Code, rec.Body.String())
 		}
 	}
 }
