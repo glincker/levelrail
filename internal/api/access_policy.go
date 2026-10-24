@@ -121,7 +121,7 @@ func policyClientAddr(r *http.Request) netip.Addr {
 	if err != nil {
 		return netip.Addr{}
 	}
-	return accesspolicy.ClientAddr(peer, r.Header.Get("X-Forwarded-For"), peerTrusted)
+	return accesspolicy.ClientAddr(peer, strings.Join(r.Header.Values("X-Forwarded-For"), ","), peerTrusted)
 }
 
 // mfaExempt lists what a user without a second factor may still reach when
