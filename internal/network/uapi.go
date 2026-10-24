@@ -47,6 +47,9 @@ import (
 // is skipped rather than written as 32 zero bytes: writing zeros would
 // tell the device to discard its identity, which is the opposite of
 // "this field is not being changed."
+// isUAPIControl reports characters that would end the line or start a new key.
+func isUAPIControl(r rune) bool { return r < 0x20 || r == 0x7f || r == '=' }
+
 func EncodeUAPI(cfg DeviceConfig, current []Key) string {
 	var b strings.Builder
 
@@ -70,7 +73,7 @@ func EncodeUAPI(cfg DeviceConfig, current []Key) string {
 
 	for _, p := range cfg.Peers {
 		fmt.Fprintf(&b, "public_key=%s\n", p.PublicKey.Hex())
-		if p.Endpoint != "" {
+		if p.Endpoint != "" && !strings.ContainsFunc(p.Endpoint, isUAPIControl) {
 			fmt.Fprintf(&b, "endpoint=%s\n", p.Endpoint)
 		}
 		// Always written, including as 0, unlike private_key above: 0 is

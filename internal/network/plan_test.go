@@ -3,6 +3,7 @@ package network
 import (
 	"errors"
 	"net/netip"
+	"strings"
 	"testing"
 	"time"
 )
@@ -360,5 +361,33 @@ func TestParseEndpoint(t *testing.T) {
 				t.Errorf("ParseEndpoint(%q) = %q, want %q", tc.input, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestParseEndpoint_RejectsHostsThatCarryUAPILines(t *testing.T) {
+	for _, in := range []string{
+		"x\npublic_key=ab\nendpoint=evil:51820",
+		"x\r\ny:51820",
+		"host name:51820",
+		"a=b:51820",
+		"ho;st:51820",
+		"-lead.example.com:51820",
+	} {
+		if got, err := ParseEndpoint(in); err == nil {
+			t.Errorf("ParseEndpoint(%q) = %q, want an error", in, got)
+		}
+	}
+	for _, in := range []string{"node-1.example.com:51820", "10.0.0.5:51820", "[fd00::1]:51820"} {
+		if _, err := ParseEndpoint(in); err != nil {
+			t.Errorf("ParseEndpoint(%q) = %v, want nil", in, err)
+		}
+	}
+}
+
+func TestEncodeUAPI_DropsEndpointWithControlCharacters(t *testing.T) {
+	cfg := DeviceConfig{Peers: []PeerConfig{{NodeID: "n1", Endpoint: "x\npublic_key=ab\nendpoint=evil:1"}}}
+	out := EncodeUAPI(cfg, nil)
+	if strings.Contains(out, "evil") || strings.Contains(out, "endpoint=") {
+		t.Fatalf("hostile endpoint reached the UAPI text:\n%s", out)
 	}
 }

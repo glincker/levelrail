@@ -65,3 +65,11 @@ func TestKindFromImage(t *testing.T) {
 		t.Error("postgres detected as a proxy")
 	}
 }
+
+func TestBuildTarget_RejectsDomainsThatCarryConfig(t *testing.T) {
+	for _, d := range []string{"a.example.com\nserver {", "a.example.com;", "a`b.example.com", "a{b}.example.com"} {
+		if _, err := BuildTarget(Target{Domain: d, Kind: Nginx, ListenAddr: "127.0.0.1:8080"}); err == nil {
+			t.Errorf("BuildTarget(%q) = nil error, want rejected", d)
+		}
+	}
+}
