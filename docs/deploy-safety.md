@@ -320,6 +320,13 @@ Global windows are managed through `PUT /api/v1/settings/deploy-freeze`
 Held deploys are checked every `APP_DEPLOY_HELD_RELEASE_INTERVAL`
 (default `30s`).
 
+## Stop grace
+
+When the reconciler stops an old container it sends `SIGTERM` and waits up to
+`APP_RECONCILE_STOP_GRACE` (default `10s`) before Docker sends `SIGKILL`. Raise it
+for apps that need longer to drain, for example `APP_RECONCILE_STOP_GRACE=45s`.
+An invalid or non-positive value logs a warning and keeps the default.
+
 ## Holding the previous release
 
 After a successful blue-green or rolling cutover the most recent previous

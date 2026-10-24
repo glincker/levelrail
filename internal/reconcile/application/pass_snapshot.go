@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"sync"
@@ -17,8 +18,33 @@ const EnvSnapshotMaxAge = "APP_RECONCILE_SNAPSHOT_MAX_AGE"
 
 const defaultSnapshotMaxAge = 10 * time.Second
 
-// stopGrace is how long a container gets to exit before Docker kills it.
-const stopGrace = 10 * time.Second
+// EnvStopGrace sets how long a container gets to exit before Docker kills it.
+const EnvStopGrace = "APP_RECONCILE_STOP_GRACE"
+
+const defaultStopGrace = 10 * time.Second
+
+// StopGraceFromEnv reads EnvStopGrace. Unset keeps the default; an invalid or
+// non-positive value falls back to it with a warning.
+func StopGraceFromEnv(getenv func(string) string) time.Duration {
+	if getenv == nil {
+		getenv = os.Getenv
+	}
+	raw := getenv(EnvStopGrace)
+	if raw == "" {
+		return defaultStopGrace
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil || d <= 0 {
+		slog.Warn("reconcile: invalid stop grace, using default", slog.String("env", EnvStopGrace), slog.String("value", raw), slog.String("default", defaultStopGrace.String()))
+		return defaultStopGrace
+	}
+	return d
+}
+
+// WithStopGrace sets the stop grace for old containers; d <= 0 keeps the default.
+func WithStopGrace(d time.Duration) Option {
+	return func(ctrl *Controller) { ctrl.stopGrace = d }
+}
 
 // SnapshotMaxAgeFromEnv reads EnvSnapshotMaxAge.
 func SnapshotMaxAgeFromEnv(getenv func(string) string) time.Duration {
@@ -176,7 +202,11 @@ func (c *Controller) startContainer(ctx context.Context, id string) error {
 
 func (c *Controller) stopContainer(ctx context.Context, id string) error {
 	defer c.invalidateSnapshot()
-	return c.runtime.Stop(ctx, id, stopGrace)
+	grace := c.stopGrace
+	if grace <= 0 {
+		grace = defaultStopGrace
+	}
+	return c.runtime.Stop(ctx, id, grace)
 }
 
 func (c *Controller) removeContainer(ctx context.Context, id string) error {
