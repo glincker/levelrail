@@ -167,9 +167,11 @@ func TestAuthLibSessionsPlainUsernameRegistration(t *testing.T) {
 func TestAuthLibSessionsUnknownUserTimingMatchesWrongPassword(t *testing.T) {
 	e := newGoldenEnv(t)
 	seedStandard(t, e)
-	median := func(email string) time.Duration {
+	// Fastest of several runs: scheduler noise only ever adds time, and a
+	// skipped dummy hash would be ~100x cheaper, so the minimum is the stable signal.
+	fastest := func(email string) time.Duration {
 		var ds []time.Duration
-		for i := 0; i < 3; i++ {
+		for i := 0; i < 7; i++ {
 			start := time.Now()
 			e.do(t, call{step: "t", method: "POST", path: "/api/v1/auth/login", body: loginBody(email, "nope-nope-1")})
 			ds = append(ds, time.Since(start))
@@ -178,10 +180,10 @@ func TestAuthLibSessionsUnknownUserTimingMatchesWrongPassword(t *testing.T) {
 			}
 		}
 		sort.Slice(ds, func(i, j int) bool { return ds[i] < ds[j] })
-		return ds[1]
+		return ds[0]
 	}
-	wrong := median(goldenRootEmail)
-	unknown := median("ghost@example.test")
+	wrong := fastest(goldenRootEmail)
+	unknown := fastest("ghost@example.test")
 	if unknown < wrong/4 {
 		t.Errorf("unknown user took %v vs wrong password %v: the dummy hash path is too cheap", unknown, wrong)
 	}

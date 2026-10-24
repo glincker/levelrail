@@ -1,0 +1,24 @@
+{
+  "match": [
+    {
+      "host": [
+        "example.com"
+      ]
+    }
+  ],
+  "handle": [
+    {
+      "handler": "reverse_proxy",
+      "upstreams": [
+        {
+          "dial": "localhost:4100"
+        }
+      ],
+      "load_balancing": {
+        "selection_policy": {
+          "policy": "client_ip_hash"
+        }
+      }
+    }
+  ]
+}

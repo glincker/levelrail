@@ -4231,6 +4231,79 @@ func (c *Client) UpdateDashboardURL(ctx context.Context, req DashboardURLResourc
 	return out, err
 }
 
+// RuntimeSettingResource mirrors one entry of /api/v1/settings/runtime. Value and
+// Default are typed by the setting's kind (bool, string, []string or number).
+type RuntimeSettingResource struct {
+	Key            string `json:"key"`
+	Category       string `json:"category"`
+	Kind           string `json:"kind"`
+	Title          string `json:"title"`
+	Description    string `json:"description"`
+	Default        any    `json:"default"`
+	Value          any    `json:"value"`
+	Source         string `json:"source"`
+	Env            string `json:"env"`
+	Apply          string `json:"apply"`
+	Risk           string `json:"risk"`
+	Onboarding     bool   `json:"onboarding"`
+	PendingRestart bool   `json:"pending_restart"`
+	UpdatedAt      string `json:"updated_at"`
+	UpdatedBy      string `json:"updated_by"`
+}
+
+// RuntimeSettingsRestart reports whether the control plane can restart itself and has a restart pending.
+type RuntimeSettingsRestart struct {
+	Supported      bool `json:"supported"`
+	PendingRestart bool `json:"pending_restart"`
+}
+
+// RuntimeSettingsListResource mirrors the body of GET /api/v1/settings/runtime.
+type RuntimeSettingsListResource struct {
+	Settings []RuntimeSettingResource `json:"settings"`
+	Restart  RuntimeSettingsRestart   `json:"restart"`
+}
+
+// RuntimeSettingWrite is the PUT body. ConfirmWeakening is only set for settings whose risk is weakens_security.
+type RuntimeSettingWrite struct {
+	Value            any  `json:"value"`
+	ConfirmWeakening bool `json:"confirm_weakening,omitempty"`
+}
+
+// GetRuntimeSettings calls GET /api/v1/settings/runtime.
+func (c *Client) GetRuntimeSettings(ctx context.Context) (RuntimeSettingsListResource, error) {
+	var out RuntimeSettingsListResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/runtime", nil, &out)
+	return out, err
+}
+
+// GetRuntimeSetting calls GET /api/v1/settings/runtime/{key}.
+func (c *Client) GetRuntimeSetting(ctx context.Context, key string) (RuntimeSettingResource, error) {
+	var out RuntimeSettingResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/runtime/"+url.PathEscape(key), nil, &out)
+	return out, err
+}
+
+// PutRuntimeSetting calls PUT /api/v1/settings/runtime/{key}.
+func (c *Client) PutRuntimeSetting(ctx context.Context, key string, req RuntimeSettingWrite) (RuntimeSettingResource, error) {
+	var out RuntimeSettingResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/runtime/"+url.PathEscape(key), req, &out)
+	return out, err
+}
+
+// DeleteRuntimeSetting calls DELETE /api/v1/settings/runtime/{key}, dropping the saved value.
+func (c *Client) DeleteRuntimeSetting(ctx context.Context, key string) (RuntimeSettingResource, error) {
+	var out RuntimeSettingResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/runtime/"+url.PathEscape(key), nil, &out)
+	return out, err
+}
+
+// ApplyRuntimeSettings calls POST /api/v1/settings/runtime/apply.
+func (c *Client) ApplyRuntimeSettings(ctx context.Context) (map[string]any, error) {
+	out := map[string]any{}
+	err := c.do(ctx, http.MethodPost, "/api/v1/settings/runtime/apply", nil, &out)
+	return out, err
+}
+
 // GetSetupStatus calls GET /api/v1/auth/setup-status.
 func (c *Client) GetSetupStatus(ctx context.Context) (SetupStatusResource, error) {
 	var out SetupStatusResource
@@ -4495,3 +4568,143 @@ func (c *Client) DiscardMajorUpgradeSnapshot(ctx context.Context, name, id strin
 
 // BaseURL returns the control plane origin this client talks to.
 func (c *Client) BaseURL() string { return c.baseURL }
+
+// CleanupUsage is the measured reclaimable data for one cleanup target.
+type CleanupUsage struct {
+	Rows   int64  `json:"rows"`
+	Bytes  int64  `json:"bytes"`
+	Oldest string `json:"oldest,omitempty"`
+}
+
+// CleanupRunResource is one entry in the cleanup run history.
+type CleanupRunResource struct {
+	ID         int64  `json:"id"`
+	Target     string `json:"target"`
+	StartedAt  string `json:"started_at"`
+	FinishedAt string `json:"finished_at,omitempty"`
+	Days       int    `json:"days"`
+	DryRun     bool   `json:"dry_run"`
+	Rows       int64  `json:"rows"`
+	Bytes      int64  `json:"bytes"`
+	Trigger    string `json:"trigger"`
+	Actor      string `json:"actor,omitempty"`
+	Error      string `json:"error,omitempty"`
+}
+
+// CleanupTargetResource is one cleanup target as listed by GET /api/v1/cleanup.
+type CleanupTargetResource struct {
+	ID          string              `json:"id"`
+	Category    string              `json:"category"`
+	Title       string              `json:"title"`
+	Description string              `json:"description"`
+	PolicyKey   string              `json:"policy_key"`
+	Days        int                 `json:"days"`
+	Source      string              `json:"source,omitempty"`
+	Mode        string              `json:"mode"`
+	Origin      string              `json:"origin"`
+	Destructive bool                `json:"destructive"`
+	Floor       int                 `json:"floor"`
+	Usage       CleanupUsage        `json:"usage"`
+	LastRun     *CleanupRunResource `json:"last_run,omitempty"`
+	NextRun     string              `json:"next_run,omitempty"`
+}
+
+// CleanupScheduler reports whether the cleanup scheduler runs and how often.
+type CleanupScheduler struct {
+	Enabled  bool   `json:"enabled"`
+	Interval string `json:"interval"`
+}
+
+// CleanupListResource is the body of GET /api/v1/cleanup.
+type CleanupListResource struct {
+	Targets   []CleanupTargetResource `json:"targets"`
+	Scheduler CleanupScheduler        `json:"scheduler"`
+}
+
+// CleanupImpact is the body of POST /api/v1/cleanup/{id}/preview.
+type CleanupImpact struct {
+	Rows  int64 `json:"rows"`
+	Bytes int64 `json:"bytes"`
+}
+
+// CleanupRunResult is the body of POST /api/v1/cleanup/{id}/run.
+type CleanupRunResult struct {
+	Target        string `json:"target"`
+	Days          int    `json:"days"`
+	DryRun        bool   `json:"dry_run"`
+	Rows          int64  `json:"rows"`
+	Bytes         int64  `json:"bytes"`
+	MoreRemaining bool   `json:"more_remaining,omitempty"`
+	Error         string `json:"error,omitempty"`
+}
+
+// CleanupRunsPage is the body of GET /api/v1/cleanup/runs.
+type CleanupRunsPage struct {
+	Runs       []CleanupRunResource `json:"runs"`
+	NextCursor string               `json:"next_cursor,omitempty"`
+}
+
+// CleanupRunsQuery filters ListCleanupRuns. Empty fields are not sent.
+type CleanupRunsQuery struct {
+	Target string
+	Since  string
+}
+
+type cleanupDaysRequest struct {
+	Days *int `json:"days,omitempty"`
+}
+
+type cleanupRunRequest struct {
+	Days   *int `json:"days,omitempty"`
+	DryRun bool `json:"dry_run,omitempty"`
+}
+
+type cleanupModeRequest struct {
+	Mode string `json:"mode"`
+}
+
+// GetCleanup calls GET /api/v1/cleanup.
+func (c *Client) GetCleanup(ctx context.Context) (CleanupListResource, error) {
+	var out CleanupListResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/cleanup", nil, &out)
+	return out, err
+}
+
+// PreviewCleanup calls POST /api/v1/cleanup/{id}/preview. A nil days uses the target's policy.
+func (c *Client) PreviewCleanup(ctx context.Context, id string, days *int) (CleanupImpact, error) {
+	var out CleanupImpact
+	err := c.do(ctx, http.MethodPost, "/api/v1/cleanup/"+url.PathEscape(id)+"/preview", cleanupDaysRequest{Days: days}, &out)
+	return out, err
+}
+
+// RunCleanup calls POST /api/v1/cleanup/{id}/run. A dry run records what would be deleted and writes nothing.
+func (c *Client) RunCleanup(ctx context.Context, id string, days *int, dryRun bool) (CleanupRunResult, error) {
+	var out CleanupRunResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/cleanup/"+url.PathEscape(id)+"/run", cleanupRunRequest{Days: days, DryRun: dryRun}, &out)
+	return out, err
+}
+
+// SetCleanupMode calls PUT /api/v1/cleanup/{id}/mode with off, preview or on.
+func (c *Client) SetCleanupMode(ctx context.Context, id, mode string) (CleanupTargetResource, error) {
+	var out CleanupTargetResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/cleanup/"+url.PathEscape(id)+"/mode", cleanupModeRequest{Mode: mode}, &out)
+	return out, err
+}
+
+// ListCleanupRuns calls GET /api/v1/cleanup/runs with the filters that are set.
+func (c *Client) ListCleanupRuns(ctx context.Context, q CleanupRunsQuery) (CleanupRunsPage, error) {
+	v := url.Values{}
+	if q.Target != "" {
+		v.Set("target", q.Target)
+	}
+	if q.Since != "" {
+		v.Set("since", q.Since)
+	}
+	path := "/api/v1/cleanup/runs"
+	if enc := v.Encode(); enc != "" {
+		path += "?" + enc
+	}
+	var out CleanupRunsPage
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}

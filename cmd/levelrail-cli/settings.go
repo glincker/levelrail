@@ -38,6 +38,8 @@ func runSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runSettingsBetaFeatures(prog, args[1:], stdout, stderr, lookupEnv)
 	case "profile":
 		return runSettingsProfile(prog, args[1:], stdout, stderr, lookupEnv)
+	case "runtime":
+		return runSettingsRuntime(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown settings subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, settingsUsage(prog))
@@ -68,6 +70,7 @@ func settingsUsage(prog string) string {
   %[1]s settings deploy-freeze show [flags]             show the fleet-wide deploy freeze windows
   %[1]s settings deploy-freeze set --cron EXPR --duration D [flags]   replace them with one window
   %[1]s settings deploy-freeze clear [flags]              clear the fleet-wide freeze windows
+  %[1]s settings runtime list|get|set|reset|apply [flags]   runtime-tunable security and networking settings (saved over env over default)
 
 Instance-wide configuration, gated at AbilityRoot server-side on every
 write. <provider> for "settings oauth set" is one of "google", "github",

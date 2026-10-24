@@ -355,3 +355,12 @@ func slug(s string) string {
 	}
 	return out
 }
+
+// PackageAppName proposes an app name for one workspace package: the
+// repository name plus the package directory's last segment.
+func PackageAppName(repoURL, dir string) string {
+	return slug(repoName(repoURL) + "-" + path.Base(dir))
+}
+
+// MaxAppNameLen is the longest name PackageAppName returns.
+const MaxAppNameLen = maxNameLen

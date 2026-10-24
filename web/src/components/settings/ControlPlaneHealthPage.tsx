@@ -1,9 +1,10 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowsClockwiseIcon,
   CheckCircleIcon,
   GaugeIcon,
+  StackIcon,
   WarningCircleIcon,
   WrenchIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -68,14 +69,19 @@ function Metric({
   label,
   value,
   hint,
+  icon,
 }: {
   label: string
   value: string
   hint?: string
+  icon?: ReactNode
 }) {
   return (
     <div className="space-y-1">
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+        {icon}
+        {label}
+      </p>
       <p className="text-lg font-medium tabular-nums">{value}</p>
       {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </div>
@@ -105,6 +111,20 @@ function MetricsGrid({ h }: { h: CPHealth }) {
         label={t('dbQueue')}
         value={String(h.db.wait_count)}
         hint={t('dbQueueHint', { ms: Math.round(h.db.wait_ms) })}
+      />
+      <Metric
+        label={t('readQueue')}
+        value={h.db.read_pool_enabled ? String(h.db.read_wait_count) : '-'}
+        hint={
+          h.db.read_pool_enabled
+            ? t('readQueueHint', {
+                ms: Math.round(h.db.read_wait_ms),
+                inUse: h.db.read_in_use,
+                size: h.db.read_pool_size,
+              })
+            : t('readPoolDisabled')
+        }
+        icon={<StackIcon aria-hidden className="size-3.5" />}
       />
       <Metric
         label={t('wal')}

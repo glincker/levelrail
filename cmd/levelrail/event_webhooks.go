@@ -8,6 +8,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/eventhook"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -18,6 +19,9 @@ func setupEventWebhooks(ctx context.Context, logger *slog.Logger, b *brand.Brand
 	deps := eventhook.Deps{
 		Store:  db,
 		Config: eventhook.ConfigFromEnv(os.LookupEnv),
+		RetentionDays: func(c context.Context) int {
+			return router.RuntimeSettings().Int(c, runtimesettings.KeyEventWebhookDays)
+		},
 		Brand:  b.ShortName,
 		Logger: logger,
 	}

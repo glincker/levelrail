@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/netip"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -255,8 +256,15 @@ func ParseEndpoint(s string) (string, error) {
 	if strings.Trim(host, "0123456789.") == "" {
 		return "", fmt.Errorf("network: parse endpoint %q: %q is not a valid IP address", s, host)
 	}
+	if !hostnameRE.MatchString(host) {
+		return "", fmt.Errorf("network: parse endpoint %q: host must be an IP address or a DNS name", s)
+	}
 	return host + ":" + port, nil
 }
+
+// hostnameRE is a conservative DNS name; it keeps control characters out of the
+// WireGuard UAPI text this value is later written into.
+var hostnameRE = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9._-]{0,251}[A-Za-z0-9])?$`)
 
 // splitHostPort splits "host:port" and "[v6]:port" without net.SplitHostPort's
 // dependency on package net, which this package otherwise has no need of

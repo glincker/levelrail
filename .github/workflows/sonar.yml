@@ -1,0 +1,63 @@
+name: sonar
+
+# Advisory SonarCloud analysis. Never on a PR, never in `CI required`.
+# The scan step is continue-on-error so a failed analysis never paints a commit red.
+# Every step skips with a notice when SONAR_TOKEN is not set.
+on:
+  push:
+    branches: [main, 'release/**']
+    paths-ignore:
+      - '**/*.md'
+      - 'adr/**'
+      - 'LICENSE'
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+# A newer push to the same branch supersedes a scan still in flight.
+concurrency:
+  group: sonar-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: SonarCloud scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # Release branch pushes are frequent; the full -short test run only
+      # happens on main, the weekly schedule and manual dispatch.
+      WITH_COVERAGE: ${{ !startsWith(github.ref, 'refs/heads/release/') }}
+    steps:
+      - name: Token check
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::notice::SONAR_TOKEN is not set, skipping the SonarCloud scan"
+          fi
+
+      # Full history: Sonar blame and new-code detection need it.
+      - name: Checkout
+        if: env.SONAR_TOKEN != ''
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go (cached)
+        if: env.SONAR_TOKEN != '' && env.WITH_COVERAGE == 'true'
+        uses: ./.github/actions/setup-go-cached
+        with:
+          cache-prefix: go-test-all
+
+      - name: Go coverage (internal/, -short)
+        if: env.SONAR_TOKEN != '' && env.WITH_COVERAGE == 'true'
+        continue-on-error: true
+        run: go test -short -timeout=25m -coverprofile=coverage.out ./internal/...
+
+      - name: SonarCloud scan
+        continue-on-error: true
+        if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0

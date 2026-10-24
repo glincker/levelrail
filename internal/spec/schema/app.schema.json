@@ -197,7 +197,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "algorithm": { "enum": ["round_robin", "least_conn", "ip_hash", "uri_hash", "cookie", "weighted"] },
+        "algorithm": { "enum": ["round_robin", "least_conn", "ip_hash", "client_ip_hash", "uri_hash", "cookie", "weighted"] },
         "cookie_name": { "type": "string", "minLength": 1 },
         "weights": {
           "type": "array",

@@ -34,7 +34,7 @@ func (f *lbFake) handler(t *testing.T) http.Handler {
 		case r.Method == http.MethodDelete:
 			w.WriteHeader(http.StatusNoContent)
 		case strings.HasSuffix(r.URL.Path, "/status"):
-			_, _ = w.Write([]byte(`{"service":"web","algorithm":"round_robin","ready":true,"reason":"Balancing","message":"ok","upstreams":[{"id":"web#0","dial":"127.0.0.1:1","state":"healthy","weight":1,"active_connections":4}]}`))
+			_, _ = w.Write([]byte(`{"service":"web","algorithm":"round_robin","ready":true,"reason":"Balancing","message":"ok","upstreams":[{"id":"web#0","dial":"127.0.0.1:1","state":"healthy","weight":1,"active_connections":4,"traffic":{"window_seconds":300,"requests_per_sec":12.5,"error_rate":0.025,"p50_ms":11,"p95_ms":240,"rps_series":[1,2]}}]}`))
 		case strings.HasSuffix(r.URL.Path, "/export"):
 			_ = json.NewEncoder(w).Encode(apiclient.LoadBalancerArtifact{Format: r.URL.Query().Get("format"), Filename: "web-lb.tf", Body: "resource \"aws_lb\" {}\n", Warnings: []string{"heads up"}})
 		default:
@@ -55,7 +55,7 @@ func TestRun_LB_ShowStatusClear(t *testing.T) {
 		}
 	}
 	out, _ = runCLIExpectOK(t, []string{"lb", "status", "web", "--api-url", srv.URL})
-	if !strings.Contains(out, "127.0.0.1:1") || !strings.Contains(out, "healthy") || !strings.Contains(out, "active=4") {
+	if !strings.Contains(out, "127.0.0.1:1") || !strings.Contains(out, "healthy") || !strings.Contains(out, "active=4") || !strings.Contains(out, "rps=12.50 err=2.5% p50=11ms p95=240ms") {
 		t.Errorf("status output = %s", out)
 	}
 	out, _ = runCLIExpectOK(t, []string{"lb", "clear", "web", "--api-url", srv.URL})

@@ -4,7 +4,7 @@ description: How to measure throughput, latency, ingress overhead and failover b
 "og:url": "https://docs.levelrail.com/benchmarks"
 ---
 
-This page describes the harness and publishes the few numbers measured so far. Anything not in a dated, hardware-labeled row is marked not yet measured. [Performance](/performance) covers the idle footprint instead.
+This page describes the harness and publishes the few numbers measured so far. To produce a new row on a Linux server, follow the [benchmark runbook](/benchmark-runbook). Anything not in a dated, hardware-labeled row is marked not yet measured. [Performance](/performance) covers the idle footprint instead.
 
 ## What it measures
 

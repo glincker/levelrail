@@ -158,7 +158,8 @@ var Tree = map[string]*Node{
 		"status": nil, "setup": nil, "enable": nil, "disable": nil, "recovery-codes": nil,
 	}}}},
 	"profile": {Subs: map[string]*Node{"list": nil}},
-	"tokens":  {Subs: map[string]*Node{"create": nil, "list": nil, "revoke": nil}},
+	"tokens":  {Subs: map[string]*Node{"create": nil, "list": nil, "revoke": nil, "cleanup": nil}},
+	"cleanup": {Subs: map[string]*Node{"list": nil, "preview": nil, "run": nil, "mode": nil, "runs": nil}},
 	"plugins": {Subs: map[string]*Node{"list": nil, "show": nil, "inspect": nil, "install": nil, "upgrade": nil, "restart": nil, "uninstall": nil, "approve": nil, "enable": nil, "disable": nil, "remove": nil, "test": nil, "dns-provider": nil, "run": nil, "trust": {Subs: map[string]*Node{"add": nil, "list": nil, "remove": nil}}, "marketplace": {Subs: map[string]*Node{"search": nil, "info": nil, "install": nil, "update": nil, "refresh": nil, "sources": {Subs: map[string]*Node{"list": nil, "add": nil, "remove": nil}}}}}},
 	"mobile":  {Subs: map[string]*Node{"pair": nil, "devices": {Subs: map[string]*Node{"list": nil, "revoke": nil}}}},
 	"domains": {Subs: map[string]*Node{
@@ -378,7 +379,7 @@ var Tree = map[string]*Node{
 	"cdn":            {Subs: map[string]*Node{"overview": nil}},
 	"event-webhooks": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "deliveries": nil, "replay": nil, "enable": nil, "disable": nil, "rotate-secret": nil, "delete": nil}},
 	"export":         {Subs: map[string]*Node{"destinations": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "status": nil, "enable": nil, "disable": nil, "delete": nil}}, "audit": nil}},
-	"import":         {Subs: map[string]*Node{"platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
+	"import":         {Subs: map[string]*Node{"repo": {Subs: map[string]*Node{"plan": nil, "apply": nil}}, "platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
 	"completion":     {Subs: map[string]*Node{"bash": nil, "zsh": nil, "fish": nil}},
 	"settings": {Subs: map[string]*Node{
 		"oauth":         {Subs: map[string]*Node{"list": nil, "set": nil}},
@@ -386,6 +387,7 @@ var Tree = map[string]*Node{
 		"edge":          {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},
 		"ingress":       {Subs: map[string]*Node{"get": nil, "set": nil, "https": {Subs: map[string]*Node{"status": nil, "enable": nil}}}},
 		"dashboard-url": {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},
+		"runtime":       {Subs: map[string]*Node{"list": nil, "get": nil, "set": nil, "reset": nil, "apply": nil}},
 		"ai-assistant": {Subs: map[string]*Node{"get": nil, "use": nil, "usage": nil,
 			"providers": {Subs: map[string]*Node{"list": nil, "set": nil, "test": nil, "remove": nil, "models": nil}},
 			"fallback":  {Subs: map[string]*Node{"set": nil}}}},

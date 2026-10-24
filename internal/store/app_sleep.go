@@ -148,7 +148,7 @@ func (db *DB) GetAppSleep(ctx context.Context, serviceName string) (AppSleep, er
 
 // ListAppSleep returns every app with sleeping enabled.
 func (db *DB) ListAppSleep(ctx context.Context) ([]AppSleep, error) {
-	rows, err := db.QueryContext(ctx, `SELECT service_name, `+appSleepColumns+` FROM app_sleep WHERE idle_minutes > 0 ORDER BY service_name`)
+	rows, err := db.reader().QueryContext(ctx, `SELECT service_name, `+appSleepColumns+` FROM app_sleep WHERE idle_minutes > 0 ORDER BY service_name`)
 	if err != nil {
 		return nil, fmt.Errorf("store: list app sleep: %w", err)
 	}

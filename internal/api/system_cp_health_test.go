@@ -13,7 +13,9 @@ import (
 
 type fakeCPDB struct{ checkpoints, optimizes, resets int }
 
-func (f *fakeCPDB) Metrics() store.DBMetrics { return store.DBMetrics{WALBytes: 200 << 20, P95MS: 1} }
+func (f *fakeCPDB) Metrics() store.DBMetrics {
+	return store.DBMetrics{WALBytes: 200 << 20, P95MS: 1, ReadPoolEnabled: true, ReadPoolSize: 4, ReadWaitCount: 9}
+}
 func (f *fakeCPDB) CheckpointWAL(context.Context, bool) error {
 	f.checkpoints++
 	return nil
@@ -31,6 +33,11 @@ func TestCPHealthFixAndFindings(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/control-plane-health", ""))
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"wal_size"`) {
 		t.Fatalf("GET = %d %s", rec.Code, rec.Body.String())
+	}
+	for _, want := range []string{`"read_pool_enabled":true`, `"read_pool_size":4`, `"read_wait_count":9`, `"wait_count":0`} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Fatalf("response lacks %s: %s", want, rec.Body.String())
+		}
 	}
 
 	rec = httptest.NewRecorder()

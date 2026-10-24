@@ -1,0 +1,44 @@
+[Unit]
+Description=Levelrail hosted read-only demo
+Documentation=https://docs.levelrail.com/hosted-demo
+After=network.target
+
+[Service]
+Type=simple
+User=levelrail-demo
+Group=levelrail-demo
+EnvironmentFile=/etc/levelrail-demo/env
+ExecStart=/opt/levelrail-demo/bin/levelrail demo serve
+Restart=on-failure
+RestartSec=3
+
+# Loopback only: the reverse proxy on the same host is the sole way in or out.
+IPAddressDeny=any
+IPAddressAllow=localhost
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+AmbientCapabilities=
+UMask=0077
+ReadWritePaths=/var/lib/levelrail-demo
+InaccessiblePaths=-/var/run/docker.sock -/run/docker.sock
+
+MemoryMax=384M
+CPUQuota=50%
+TasksMax=256
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

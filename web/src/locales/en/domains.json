@@ -1027,5 +1027,25 @@
     },
     "noApps": "Deploy an app first, then point a domain at it.",
     "noAppsAction": "New app"
+  },
+  "editor": {
+    "title": "Domains",
+    "description": "Domains routed to this app through the ingress layer. Platform-wide ACME and primary domain settings live under <link>Domains</link>.",
+    "dnsHintLink": "DNS record types explained",
+    "dnsHint": "Point an A record at this server's IP address (or a CNAME at its hostname), then a TLS certificate is issued automatically once it resolves.",
+    "empty": "No domains configured.",
+    "inputLabel": "Domain",
+    "inputPlaceholder": "app.example.com",
+    "remove": "Remove domain",
+    "tlsLabel": "TLS certificate:",
+    "provisioning": "Provisioning",
+    "add": "Add domain",
+    "save": "Save domains",
+    "saving": "Saving...",
+    "saved": "Domains saved.",
+    "errors": {
+      "required": "Domain is required",
+      "invalid": "Enter a valid domain, e.g. app.example.com"
+    }
   }
 }

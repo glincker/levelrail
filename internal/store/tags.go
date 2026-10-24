@@ -169,7 +169,7 @@ func (db *DB) ListTagsForApps(ctx context.Context, appNames []string) (map[strin
 	query.WriteString(`)
 		ORDER BY at.app_name, t.name
 	`)
-	rows, err := db.QueryContext(ctx, query.String(), args...)
+	rows, err := db.reader().QueryContext(ctx, query.String(), args...)
 	if err != nil {
 		return nil, fmt.Errorf("store: batch list tags for apps: %w", err)
 	}

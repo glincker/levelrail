@@ -113,6 +113,7 @@ func deployCatalogTemplateLive(t *testing.T, runtime docker.Runtime, templateID,
 		}
 		ctrl := application.New(svc.Name, svcStore, runtime, application.WithSecretResolver(manager), application.WithReadyBudget(3*time.Minute))
 		result, err := reconcileUntilAppReady(ctx, ctrl, 4*time.Minute)
+		skipIfRegistryThrottled(t, err)
 		if err != nil {
 			t.Fatalf("Reconcile(%q) error = %v, result = %+v", svc.Name, err, result)
 		}

@@ -10,6 +10,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -93,5 +94,19 @@ func runLoadBalancerTelemetry(ctx context.Context, reg *loadbalancer.Registry, s
 				logger.Warn("load balancer telemetry sample failed", slog.String("error", err.Error()))
 			}
 		}
+	}
+}
+
+// lbTrafficSource exposes the ingress per-replica counters to the balancer
+// registry, so the status route and telemetry loop share one collection point.
+func lbTrafficSource() loadbalancer.TrafficSource {
+	return func() map[string]loadbalancer.TrafficTotals {
+		totals := ingress.DefaultRequestStats().UpstreamTotals()
+		out := make(map[string]loadbalancer.TrafficTotals, len(totals))
+		for dial, st := range totals {
+			// Connect failures surface as 502/503/504, so the larger count avoids double counting.
+			out[dial] = loadbalancer.TrafficTotals{Requests: st.Requests, Errors: max(st.Errors5xx, st.UpstreamErrors), Latency: st.Latency[:]}
+		}
+		return out
 	}
 }

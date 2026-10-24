@@ -212,7 +212,7 @@ All fields are optional. Durations are Go duration strings such as `500ms`, `5s`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `algorithm` | string | `round_robin` (default), `least_conn`, `ip_hash`, `uri_hash`, `cookie` or `weighted`. |
+| `algorithm` | string | `round_robin` (default), `least_conn`, `ip_hash`, `client_ip_hash`, `uri_hash`, `cookie` or `weighted`. |
 | `cookie_name` | string | Sticky cookie name. Only with `algorithm: cookie`, default `lb`. |
 | `weights` | list of integer | 1 to 100 per replica, indexed by replica number. Only with `algorithm: weighted`. |
 | `active_health` | object | `path` (required, starts with `/`), `interval`, `timeout` (shorter than `interval`), `passes`, `fails`, `expect_status`. |
@@ -462,6 +462,7 @@ Checked by `ValidateLabels` (`internal/spec/labels.go`):
 - No two volumes on the same service may share a name or the same `path`.
 - Each volume's `hostPath` (if a bind mount) must be an absolute path.
 - `hostPath` is rejected under protected system paths: `/`, `/etc`, `/root`, `/boot`, `/sys`, `/proc`, `/var/lib/docker`, `/var/run/docker.sock`, or `/var/run`. `/var/run/docker.sock` is excluded by design (it's a full container-escape-to-host-root vector; this feature doesn't grant that capability).
+- `hostPath` is also rejected when it is or sits inside a credential directory (`.ssh`, `.gnupg`, `.aws`, `.kube`, `.docker`), is a bare home directory such as `/home/deploy`, or is under `/var/log` or `/usr/local/etc`. Set `APP_BIND_ALLOWED_ROOTS` (colon-separated absolute directories, for example `/srv/apps:/mnt/nas`) on the control plane to allow bind mounts only inside those directories.
 - `readOnly: true` on a volume with `name` set (not `hostPath`) is rejected (no meaning for a named Docker volume).
 
 ### Additional guard: strict YAML parsing

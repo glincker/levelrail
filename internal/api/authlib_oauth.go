@@ -17,6 +17,7 @@ type AuthLibOAuth interface {
 	ResolveOAuthUser(ctx context.Context, provider, providerUserID, newUserRoleID string) (userID string, created bool, err error)
 	LinkOAuthIdentity(ctx context.Context, legacyUserID, provider, providerUserID string) error
 	InvalidateProvider(name string)
+	OAuthRedirectURI(r *http.Request, provider string) (string, error)
 }
 
 func (rt *Router) authLibOAuthActive() bool {

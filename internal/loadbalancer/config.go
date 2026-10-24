@@ -11,17 +11,18 @@ import (
 
 // Algorithms selectable in Config.Algorithm.
 const (
-	AlgoRoundRobin = "round_robin"
-	AlgoLeastConn  = "least_conn"
-	AlgoIPHash     = "ip_hash"
-	AlgoURIHash    = "uri_hash"
-	AlgoCookie     = "cookie"
-	AlgoWeighted   = "weighted"
+	AlgoRoundRobin   = "round_robin"
+	AlgoLeastConn    = "least_conn"
+	AlgoIPHash       = "ip_hash"
+	AlgoClientIPHash = "client_ip_hash"
+	AlgoURIHash      = "uri_hash"
+	AlgoCookie       = "cookie"
+	AlgoWeighted     = "weighted"
 )
 
 // Algorithms lists every valid algorithm in display order.
 func Algorithms() []string {
-	return []string{AlgoRoundRobin, AlgoLeastConn, AlgoIPHash, AlgoURIHash, AlgoCookie, AlgoWeighted}
+	return []string{AlgoRoundRobin, AlgoLeastConn, AlgoIPHash, AlgoClientIPHash, AlgoURIHash, AlgoCookie, AlgoWeighted}
 }
 
 // MaxWeight caps a per-upstream weight.

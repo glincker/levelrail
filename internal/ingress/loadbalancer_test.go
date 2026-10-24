@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 )
 
 func TestNewLBReverseProxyHandler(t *testing.T) {
@@ -19,9 +21,14 @@ func TestNewLBReverseProxyHandler(t *testing.T) {
 		want string
 	}{
 		{
-			name: "round robin default has no load_balancing block",
+			name: "empty policy renders explicit round robin",
 			lb:   LBRoute{Upstreams: []string{"127.0.0.1:1", "127.0.0.1:2"}},
-			want: `{"handler":"reverse_proxy","upstreams":[{"dial":"127.0.0.1:1"},{"dial":"127.0.0.1:2"}]}`,
+			want: `{"handler":"reverse_proxy","upstreams":[{"dial":"127.0.0.1:1"},{"dial":"127.0.0.1:2"}],"load_balancing":{"selection_policy":{"policy":"round_robin"}}}`,
+		},
+		{
+			name: "explicit round robin",
+			lb:   LBRoute{Upstreams: []string{"a:1", "b:1"}, Policy: LBPolicyRoundRobin},
+			want: `{"handler":"reverse_proxy","upstreams":[{"dial":"a:1"},{"dial":"b:1"}],"load_balancing":{"selection_policy":{"policy":"round_robin"}}}`,
 		},
 		{
 			name: "least conn with retries",
@@ -32,6 +39,11 @@ func TestNewLBReverseProxyHandler(t *testing.T) {
 			name: "weighted",
 			lb:   LBRoute{Upstreams: []string{"a:1", "b:1"}, Policy: LBPolicyWeighted, Weights: []int{3, 1}},
 			want: `{"handler":"reverse_proxy","upstreams":[{"dial":"a:1"},{"dial":"b:1"}],"load_balancing":{"selection_policy":{"policy":"weighted_round_robin","weights":[3,1]}}}`,
+		},
+		{
+			name: "client ip hash",
+			lb:   LBRoute{Upstreams: []string{"a:1", "b:1"}, Policy: LBPolicyClientIPHash},
+			want: `{"handler":"reverse_proxy","upstreams":[{"dial":"a:1"},{"dial":"b:1"}],"load_balancing":{"selection_policy":{"policy":"client_ip_hash"}}}`,
 		},
 		{
 			name: "cookie sticky",
@@ -48,7 +60,7 @@ func TestNewLBReverseProxyHandler(t *testing.T) {
 				ResponseHeaderTimeout: "10s",
 				StreamCloseDelay:      "15s",
 			},
-			want: `{"handler":"reverse_proxy","upstreams":[{"dial":"a:1"}],"health_checks":{"active":{"uri":"/healthz","interval":"5s","timeout":"2s","passes":2,"fails":3},"passive":{"fail_duration":"30s","max_fails":3}},"transport":{"protocol":"http","tls":{"insecure_skip_verify":true},"response_header_timeout":"10s"},"stream_close_delay":"15s"}`,
+			want: `{"handler":"reverse_proxy","upstreams":[{"dial":"a:1"}],"load_balancing":{"selection_policy":{"policy":"round_robin"}},"health_checks":{"active":{"uri":"/healthz","interval":"5s","timeout":"2s","passes":2,"fails":3},"passive":{"fail_duration":"30s","max_fails":3}},"transport":{"protocol":"http","tls":{"insecure_skip_verify":true},"response_header_timeout":"10s"},"stream_close_delay":"15s"}`,
 		},
 	}
 	for _, tt := range tests {
@@ -136,9 +148,15 @@ func TestDriver_LoadBalancer_RoundRobinAndFailover(t *testing.T) {
 	}
 	defer func() { _ = d.Stop(ctx) }()
 
-	seen := map[string]bool{}
-	for i := 0; i < 6; i++ {
-		seen[getBodyWithRetry(t, "http://"+addr+"/")] = true
+	// Sequential requests must strictly alternate, whichever replica starts.
+	prev := getBodyWithRetry(t, "http://"+addr+"/")
+	seen := map[string]bool{prev: true}
+	for i := 0; i < 7; i++ {
+		cur := getBodyWithRetry(t, "http://"+addr+"/")
+		if cur == prev {
+			t.Fatalf("request %d hit %q twice in a row, want strict alternation", i+1, cur)
+		}
+		seen[cur], prev = true, cur
 	}
 	if !seen["a"] || !seen["b"] {
 		t.Fatalf("round robin served %v, want both backends", seen)
@@ -155,5 +173,25 @@ func TestDriver_LoadBalancer_RoundRobinAndFailover(t *testing.T) {
 		if resp.StatusCode != http.StatusOK || string(body) != "b" {
 			t.Fatalf("after backend a died: status=%d body=%q, want 200 from b", resp.StatusCode, body)
 		}
+	}
+}
+
+func TestNewLBRoutePolicyMapping(t *testing.T) {
+	ups := []loadbalancer.Upstream{{Dial: "a:1"}, {Dial: "b:1"}}
+	tests := []struct {
+		algo string
+		want string
+	}{
+		{loadbalancer.AlgoIPHash, LBPolicyIPHash},
+		{loadbalancer.AlgoClientIPHash, LBPolicyClientIPHash},
+		{loadbalancer.AlgoURIHash, LBPolicyURIHash},
+	}
+	for _, tt := range tests {
+		t.Run(tt.algo, func(t *testing.T) {
+			lb := NewLBRoute(loadbalancer.Config{Algorithm: tt.algo}, ups, nil)
+			if lb == nil || lb.Policy != tt.want {
+				t.Fatalf("policy = %+v, want %s", lb, tt.want)
+			}
+		})
 	}
 }

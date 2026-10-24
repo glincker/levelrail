@@ -29,15 +29,20 @@ type CPHealth struct {
 		CPUs       int     `json:"cpus"`
 	} `json:"runtime"`
 	DB struct {
-		Queries     int64   `json:"queries"`
-		SlowQueries int64   `json:"slow_queries"`
-		P50MS       float64 `json:"p50_ms"`
-		P95MS       float64 `json:"p95_ms"`
-		P99MS       float64 `json:"p99_ms"`
-		WaitCount   int64   `json:"wait_count"`
-		WaitMS      float64 `json:"wait_ms"`
-		WALBytes    int64   `json:"wal_bytes"`
-		DBBytes     int64   `json:"db_bytes"`
+		Queries         int64   `json:"queries"`
+		SlowQueries     int64   `json:"slow_queries"`
+		P50MS           float64 `json:"p50_ms"`
+		P95MS           float64 `json:"p95_ms"`
+		P99MS           float64 `json:"p99_ms"`
+		WaitCount       int64   `json:"wait_count"`
+		WaitMS          float64 `json:"wait_ms"`
+		ReadPoolEnabled bool    `json:"read_pool_enabled"`
+		ReadPoolSize    int     `json:"read_pool_size"`
+		ReadInUse       int     `json:"read_in_use"`
+		ReadWaitCount   int64   `json:"read_wait_count"`
+		ReadWaitMS      float64 `json:"read_wait_ms"`
+		WALBytes        int64   `json:"wal_bytes"`
+		DBBytes         int64   `json:"db_bytes"`
 	} `json:"db"`
 	Reconcile struct {
 		Passes      int64   `json:"passes"`

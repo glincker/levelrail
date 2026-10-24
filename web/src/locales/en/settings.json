@@ -434,6 +434,10 @@
         "title": "Security",
         "description": "Sessions and login protection."
       },
+      "security-runtime": {
+        "title": "Security and runtime",
+        "description": "Webhook replay protection, bind mount limits and other protections, on by default."
+      },
       "security-center": {
         "title": "Security center",
         "description": "Security score, every session and device, and token policy."
@@ -634,9 +638,9 @@
         "title": "Containers",
         "description": "Every container on this node, managed by this platform or not."
       },
-      "janitor": {
-        "title": "Automatic cleanup",
-        "description": "Reclaim disk from unused images, cache, volumes and old attempts."
+      "cleanup": {
+        "title": "Cleanup",
+        "description": "Retention, previews and run history for stored data, plus disk and Docker cleanup."
       },
       "domains": {
         "title": "Domains",
@@ -1007,6 +1011,9 @@
       "dbLatencyHint": "p50 {{p50}} ms, p99 {{p99}} ms",
       "dbQueue": "Writes that waited",
       "dbQueueHint": "{{ms}} ms waiting in total",
+      "readQueue": "Reads that waited",
+      "readQueueHint": "{{ms}} ms waiting in total, {{inUse}} of {{size}} connections busy",
+      "readPoolDisabled": "Read pool off, reads use the writer",
       "wal": "Write ahead log",
       "walHint": "Database file {{size}} MiB",
       "reconcile": "Last reconcile pass",
@@ -1606,6 +1613,22 @@
       "title_one": "{{count}} root token never expires",
       "title_other": "{{count}} root tokens never expire",
       "body": "A leaked root token can change anything on this instance. Revoke it and mint a narrower one with an expiry."
+    },
+    "revoked": {
+      "title": "Revoked tokens",
+      "autoDelete": "Delete revoked tokens after",
+      "schedule": "Removal runs with the scheduled cleanup, which must be on and not in preview mode.",
+      "janitorLink": "Cleanup settings",
+      "cleanNow": "Clean up now",
+      "empty": "No revoked tokens. Tokens you revoke show up here until they are removed.",
+      "revokedAt": "Revoked",
+      "confirmTitle": "Remove revoked tokens?",
+      "confirmBody_one": "{{count}} revoked token will be removed for good.",
+      "confirmBody_other": "{{count}} revoked tokens will be removed for good.",
+      "confirmConsequence": "Active tokens are not touched. Audit history keeps the names of who used them.",
+      "confirmAction": "Remove revoked tokens",
+      "cleaned_one": "Removed {{count}} revoked token.",
+      "cleaned_other": "Removed {{count}} revoked tokens."
     }
   },
   "usersPage": {

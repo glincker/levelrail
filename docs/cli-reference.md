@@ -765,8 +765,9 @@ List configured credentials profiles and their API URLs.
 levelrail-cli tokens create --name NAME (--abilities LIST | --preset observer|deployer|operator) [--agent NAME] [--agent-description TEXT] [flags]
 levelrail-cli tokens list [flags]
 levelrail-cli tokens revoke <id> [flags]
+levelrail-cli tokens cleanup [--older-than-days N] [--yes] [flags]
 ```
-Every `tokens` subcommand requires a username and password (prompted if omitted), because these routes are session only server side and a bearer token cannot call them. `create` mints a new API token; `--agent` labels it as issued to an AI agent so audit entries record the agent name. `list` never shows a secret.
+Every `tokens` subcommand requires a username and password (prompted if omitted), because these routes are session only server side and a bearer token cannot call them. `create` mints a new API token; `--agent` labels it as issued to an AI agent so audit entries record the agent name. `list` never shows a secret. `cleanup` permanently removes revoked tokens that were revoked more than `--older-than-days` days ago (default 90 when the flag is omitted; `0` removes every revoked token and needs `--yes`) and prints how many it removed; unlike the other subcommands it takes a root API token (`--token` or the stored one) instead of a password, and it never touches an active token. The dashboard setting **Delete revoked API tokens after** (Settings, API tokens) does the same on a schedule.
 
 ## Domains
 
@@ -1161,6 +1162,17 @@ levelrail-cli janitor run [--dry-run] [--if-needed]
 levelrail-cli janitor policy [--enabled=BOOL] [--dry-run=BOOL] [--interval-minutes N] [--disk-free-budget-percent N] [--build-cache-budget-mb N] [--build-cache-max-age-hours N] [--volume-quarantine-days N] [--delete-orphan-volumes=BOOL] [--attempt-retention-days N] [--attempt-keep-per-app N] [--disabled-stages a,b]
 ```
 Disk cleanup with preview and quarantine. See [Automatic cleanup](/janitor).
+
+## Cleanup center
+
+```
+levelrail-cli cleanup list [flags]
+levelrail-cli cleanup preview ID [--days N] [flags]
+levelrail-cli cleanup run ID [--days N] [--dry-run] [--yes] [flags]
+levelrail-cli cleanup mode ID off|preview|on [flags]
+levelrail-cli cleanup runs [--target ID] [--since DATE] [--format table|json|csv] [flags]
+```
+`list` shows every cleanup target with its usage, retention, mode and last run. `preview` reports the rows and bytes a run would delete and deletes nothing. `run` deletes data for one target: without `--dry-run` it prints the preview row count first and refuses unless `--yes` is given; `--dry-run` only records what would be deleted, prints `would delete N rows (dry run)` and is audited like any other run. `--days` must be at least 1 and overrides the target's retention for that call only; retention itself is the runtime setting (see `settings runtime`). `mode` sets a target to `off`, `preview` (scheduled runs only record) or `on`. `runs` lists the run history, newest first, and `--format csv` prints it as CSV for a SIEM or spreadsheet. Viewing needs a read token; `preview`, `run` and `mode` need a root API token.
 
 ## Search
 
@@ -1802,6 +1814,11 @@ levelrail-cli settings edge fix [flags]
 levelrail-cli settings dashboard-url get [flags]
 levelrail-cli settings dashboard-url set --url URL [flags]
 levelrail-cli settings dashboard-url fix [flags]
+levelrail-cli settings runtime list [flags]
+levelrail-cli settings runtime get KEY [flags]
+levelrail-cli settings runtime set KEY VALUE [--confirm-weakening] [flags]
+levelrail-cli settings runtime reset KEY [flags]
+levelrail-cli settings runtime apply [flags]
 levelrail-cli settings updates get [flags]
 levelrail-cli settings updates set --channel CHANNEL [--auto-update] [flags]
 levelrail-cli settings deploy-freeze show [flags]

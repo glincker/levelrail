@@ -59,7 +59,7 @@ function wrap(node: ReactNode) {
 
 describe('RepoPreviewCard', () => {
   it('shows identity, languages, commit, chips and the README excerpt', () => {
-    wrap(<RepoPreviewCard preview={preview} branch="main" onBranch={vi.fn()} />)
+    wrap(<RepoPreviewCard preview={preview} branch="main" />)
     expect(screen.getByText('shop')).toBeInTheDocument()
     expect(screen.getByText('Private')).toBeInTheDocument()
     expect(screen.getByText('A small storefront')).toBeInTheDocument()
@@ -69,7 +69,7 @@ describe('RepoPreviewCard', () => {
     expect(screen.getByText('fix: cart total')).toBeInTheDocument()
     expect(screen.getByText('MIT')).toBeInTheDocument()
     expect(screen.getByText('Shop is a tiny storefront.')).toBeInTheDocument()
-    expect(screen.getByLabelText('Branch')).toBeInTheDocument()
+    expect(screen.getByText('main')).toBeInTheDocument()
   })
 })
 
@@ -133,6 +133,7 @@ describe('RepoSimpleForm', () => {
         analysis={nextAnalysis}
         branch="main"
         initialName="shop"
+        deployOnPush
         takenNames={new Set(taken)}
         deploying={false}
         failure={null}
@@ -154,7 +155,7 @@ describe('RepoSimpleForm', () => {
     )
     expect(
       screen.getByText(
-        'Builds with Railpack from main and deploys to a free address',
+        /Builds with Railpack from main and deploys to a free address/,
       ),
     ).toBeInTheDocument()
   })

@@ -22,7 +22,7 @@ Every audit sink sends the same record, whether it goes to a webhook, a bucket, 
 | `remote_addr` | string | Client address |
 | `client_kind` | string | Surface: `cli`, `dashboard`, `mcp`, `api` or `system` |
 | `agent_name`, `agent_client` | string | Agent label and MCP client, when present |
-| `action` | string | Stable event name such as `login_code.redeemed`, when the row is a lifecycle event |
+| `action` | string | Stable event name such as `login_code.redeemed`, when the row is a lifecycle event, or `sensitive_read` for a read of env, secrets, logs, Loki queries or an export (path only, never the content) |
 | `on_behalf_of` | string | `user:<id>` an AI turn acted for, when present |
 | `chain_seq` | integer | Position in the tamper evidence chain, absent on rows written before the chain existed |
 | `chain_prev` | string | Hash of the previous row |

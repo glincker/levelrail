@@ -669,6 +669,7 @@
             "round_robin",
             "least_conn",
             "ip_hash",
+            "client_ip_hash",
             "uri_hash",
             "cookie",
             "weighted"

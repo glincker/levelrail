@@ -34,7 +34,9 @@ APP_DEMO_MODE=1 APP_DATA_DIR=/var/lib/demo-data levelrail demo serve
 - `DOCKER_HOST`, `APP_AGENT_ADDR`, `APP_INGRESS_HTTP_ADDR` and `APP_INGRESS_HTTPS_ADDR` are all unset.
 - `APP_HTTP_ADDR`, if set, is a loopback address. The default is `127.0.0.1:8080`.
 
-Put your own reverse proxy or tunnel in front of the loopback port.
+Put your own reverse proxy or tunnel in front of the loopback port. For a Caddy based public host see [Host a public read-only demo](/hosted-demo).
+
+Set `APP_DEMO_RESET_INTERVAL` (a duration such as `30m`, at least one minute) if your host re-seeds more often than daily; the banner then shows the matching next reset time.
 
 ## What visitors can do
 

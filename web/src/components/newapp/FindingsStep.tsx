@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { lazy, Suspense, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -31,6 +31,10 @@ import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
 import { DatabaseFinding, EnvFinding, Finding } from './FindingParts'
 import { DetectionSummary } from './DetectionSummary'
 import { MonorepoPackages } from './MonorepoPackages'
+
+const ImportPlanPreview = lazy(() =>
+  import('./ImportPlanPreview').then((m) => ({ default: m.ImportPlanPreview })),
+)
 
 const BUILD_TYPES: GitSourceBuildType[] = ['railpack', 'dockerfile', 'static']
 
@@ -85,6 +89,12 @@ export function FindingsStep({
           detection={analysis.detection}
           hideWarnings={analysis.warnings.map((w) => w.code)}
         />
+      ) : null}
+
+      {analysis.monorepo && packages.length > 0 ? (
+        <Suspense fallback={null}>
+          <ImportPlanPreview source={source} />
+        </Suspense>
       ) : null}
 
       {analysis.monorepo && packages.length > 0 ? (

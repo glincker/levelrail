@@ -25,6 +25,12 @@ export const ALGORITHM_OPTIONS: {
     description: 'The same client address always reaches the same replica.',
   },
   {
+    value: 'client_ip_hash',
+    label: 'Client IP hash',
+    description:
+      'Hashes the client IP after trusted-proxy handling, so clients behind a CDN spread across replicas.',
+  },
+  {
     value: 'uri_hash',
     label: 'URI hash',
     description:

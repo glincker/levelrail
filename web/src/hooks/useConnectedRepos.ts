@@ -6,8 +6,12 @@ import {
   fromGitRepoItem,
   type NormalizedRepoOption,
 } from '../lib/gitRepoOptions'
-import type { GitProviderName } from '../types/gitProviders'
-import type { GitRepoItem, GitRepoProvider } from '../types/gitRepos'
+import type { GitProviderName, GitProviderStatus } from '../types/gitProviders'
+import type {
+  GitRepoConnectionFacet,
+  GitRepoItem,
+  GitRepoProvider,
+} from '../types/gitRepos'
 
 // A merged list is paged on the server; the new-app list pulls pages until
 // this many pages are loaded, then leaves the rest to search.
@@ -16,6 +20,10 @@ const MAX_PAGES = 10
 export interface ConnectedRepos {
   repos: NormalizedRepoOption[]
   connectedProviders: GitProviderName[]
+  /** Capability and health of every provider, connected or not. */
+  providers: GitProviderStatus[]
+  /** Every account the merged list was built from. */
+  connections: GitRepoConnectionFacet[]
   isLoading: boolean
   /** False until the provider list itself has loaded. */
   providersReady: boolean
@@ -54,6 +62,8 @@ export function useConnectedRepos(): ConnectedRepos {
   return {
     repos,
     connectedProviders: connected,
+    providers: providers.data ?? [],
+    connections: first?.connections ?? [],
     providersReady: !providers.isLoading,
     isLoading:
       providers.isLoading ||

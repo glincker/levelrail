@@ -88,6 +88,10 @@ func TestServeHTTP_WrongTokenRejected(t *testing.T) {
 }
 
 func TestRun_HTTPTransportRefusesToStartWithoutToken(t *testing.T) {
+	// A developer's own CLI login would otherwise supply a token and start a real server.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", home)
 	lookupEnv := func(string) (string, bool) { return "", false }
 	err := run("levelrail-mcp", []string{"--transport", "http"}, lookupEnv, discardLogger())
 	if err == nil {

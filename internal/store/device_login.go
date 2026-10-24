@@ -113,7 +113,7 @@ func (db *DB) DismissAttentionItem(ctx context.Context, userID, itemKey string, 
 
 // ListAttentionDismissals returns the item keys a user dismissed.
 func (db *DB) ListAttentionDismissals(ctx context.Context, userID string) (map[string]bool, error) {
-	rows, err := db.QueryContext(ctx, `SELECT item_key FROM attention_dismissals WHERE user_id = ?`, userID)
+	rows, err := db.reader().QueryContext(ctx, `SELECT item_key FROM attention_dismissals WHERE user_id = ?`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("store: list attention dismissals: %w", err)
 	}

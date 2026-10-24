@@ -146,7 +146,7 @@ func (db *DB) getPendingInviteByEmail(ctx context.Context, email string) (*Invit
 // still shows up so an operator can see and revoke it, expiry itself is
 // a display-time computation over ExpiresAt, not a filter here.
 func (db *DB) ListPendingInvites(ctx context.Context) ([]Invite, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT `+inviteColumns+` FROM invites
 		WHERE accepted_at IS NULL AND revoked_at IS NULL
 		ORDER BY created_at

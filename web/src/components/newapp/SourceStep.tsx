@@ -5,16 +5,16 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Link } from '@tanstack/react-router'
 import { useConnectedRepos } from '../../hooks/useConnectedRepos'
+import { useRefreshGitRepos } from '../../queries/gitRepos'
 import { sourceFromRepo, type NewAppEdits } from '../../lib/newApp'
 import type { ImportAnalysis } from '../../queries/importAnalyze'
 import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
 import { ImportPlanPreview } from '../ImportPlanPreview'
 import type { ImportPlan, ImportPlanRequest } from '../../queries/imports'
-import { NewStaticSiteDrop } from '../dropdeploy/NewStaticSiteDrop'
-import { DeployFromComputer } from './DeployFromComputer'
 import { FeaturedTemplates } from './FeaturedTemplates'
 import { GitProviderCards } from './GitProviderCards'
-import { OtherWays } from './OtherWays'
+import { MoreWays } from './MoreWays'
+import { SectionHeading } from './SectionHeading'
 import { RepoList } from './RepoList'
 
 const RepoImportFlow = lazy(() =>
@@ -50,9 +50,11 @@ export function SourceStep({
   ) => void
 }) {
   const { t } = useTranslation('newApp')
+  const accounts = useConnectedRepos()
   const { repos, connectedProviders, isLoading, hasError, providersReady } =
-    useConnectedRepos()
+    accounts
   const hasProvider = connectedProviders.length > 0
+  const refresh = useRefreshGitRepos('')
   const [otherPlan, setOtherPlan] = useState<{
     plan: ImportPlan
     request: ImportPlanRequest
@@ -86,79 +88,88 @@ export function SourceStep({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {error ? (
         <Alert variant="destructive">
           <AlertDescription>
             {PRIVATE_HINT.test(error) ? t('source.privateRepo') : error}
           </AlertDescription>
-          {PRIVATE_HINT.test(error) ? (
-            <Button
-              size="sm"
-              className="mt-2"
-              render={<Link to="/settings/github-app" />}
-              nativeButton={false}
-            >
-              {t('source.privateRepoConnect')}
-            </Button>
-          ) : null}
+          <Button
+            size="sm"
+            className="mt-2"
+            render={
+              <Link
+                to={
+                  PRIVATE_HINT.test(error)
+                    ? '/settings/github-app'
+                    : '/settings/git-connections'
+                }
+              />
+            }
+            nativeButton={false}
+          >
+            {PRIVATE_HINT.test(error)
+              ? t('source.privateRepoConnect')
+              : t('source.errorManage')}
+          </Button>
         </Alert>
       ) : null}
 
-      <section aria-labelledby="new-app-git" className="space-y-4">
-        <div>
-          <h2
-            id="new-app-git"
-            className="text-base font-medium text-foreground"
-          >
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
+        <section aria-labelledby="new-app-git" className="min-w-0 space-y-3">
+          <SectionHeading id="new-app-git">
             {t('source.git.title')}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {t('source.git.description')}
-          </p>
-        </div>
-        <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-          <RepoImportFlow
-            deploying={deploying}
-            failure={failure}
-            onDeploy={onImport}
-            onFallback={onSource}
-            renderPicker={(onPick) =>
-              !providersReady ? (
-                <div className="space-y-2" aria-busy="true">
-                  <Skeleton className="h-14 w-full" />
-                  <Skeleton className="h-14 w-full" />
-                </div>
-              ) : hasProvider ? (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-foreground">
-                    {t('source.git.pickTitle')}
-                  </p>
+          </SectionHeading>
+          <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+            <RepoImportFlow
+              accounts={accounts}
+              deploying={deploying}
+              failure={failure}
+              onDeploy={onImport}
+              onFallback={onSource}
+              renderPicker={(ctx) =>
+                ctx.hasSelection ? null : !providersReady ? (
+                  <div
+                    className="space-y-1.5"
+                    role="status"
+                    aria-busy="true"
+                    aria-label={t('source.repos.loading')}
+                  >
+                    <Skeleton className="h-11 w-full" />
+                    <Skeleton className="h-11 w-full" />
+                  </div>
+                ) : hasProvider || ctx.urlCandidate ? (
                   <RepoList
                     repos={repos}
                     loading={isLoading}
+                    query={ctx.query}
+                    urlCandidate={ctx.urlCandidate}
+                    hasError={hasError}
+                    refreshing={refresh.isPending}
                     onPick={(repo) => {
-                      if (!busy) onPick(sourceFromRepo(repo))
+                      if (!busy) ctx.onPick(sourceFromRepo(repo))
+                    }}
+                    onUseUrl={(u) => {
+                      if (!busy) ctx.onUseUrl(u)
+                    }}
+                    onRefresh={() => {
+                      refresh.mutate()
                     }}
                   />
-                  {hasError ? (
-                    <p className="text-xs text-muted-foreground">
-                      {t('source.repos.partial')}
-                    </p>
-                  ) : null}
-                </div>
-              ) : (
-                <GitProviderCards />
-              )
-            }
-          />
-        </Suspense>
-      </section>
+                ) : (
+                  <GitProviderCards />
+                )
+              }
+            />
+          </Suspense>
+        </section>
 
-      <FeaturedTemplates />
-      <OtherWays onPlan={onPlan} />
-      <NewStaticSiteDrop />
-      <DeployFromComputer />
+        <div className="min-w-0 space-y-4 xl:sticky xl:top-4">
+          <FeaturedTemplates />
+        </div>
+      </div>
+
+      <MoreWays onPlan={onPlan} />
     </div>
   )
 }

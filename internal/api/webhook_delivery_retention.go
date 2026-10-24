@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 // defaultWebhookDeliveryRetention is how long a webhook_deliveries row
@@ -17,18 +18,23 @@ import (
 // troubleshooting, not a compliance trail.
 const defaultWebhookDeliveryRetention = 30 * 24 * time.Hour
 
-func (rt *Router) effectiveWebhookDeliveryRetention() time.Duration {
+// effectiveWebhookDeliveryRetention is zero when the operator keeps deliveries forever.
+func (rt *Router) effectiveWebhookDeliveryRetention(ctx context.Context) time.Duration {
 	if rt.webhookDeliveryRetention > 0 {
 		return rt.webhookDeliveryRetention
 	}
-	return defaultWebhookDeliveryRetention
+	return time.Duration(rt.runtimeSettings.Int(ctx, runtimesettings.KeyWebhookDeliveryDays)) * 24 * time.Hour
 }
 
 // PurgeOldWebhookDeliveries deletes every webhook_deliveries row older
 // than effectiveWebhookDeliveryRetention, returning how many rows were
 // removed.
 func (rt *Router) PurgeOldWebhookDeliveries(ctx context.Context) (int64, error) {
-	cutoff := time.Now().UTC().Add(-rt.effectiveWebhookDeliveryRetention())
+	window := rt.effectiveWebhookDeliveryRetention(ctx)
+	if window == 0 {
+		return 0, nil
+	}
+	cutoff := time.Now().UTC().Add(-window)
 	return rt.webhookDeliveries.DeleteWebhookDeliveriesOlderThan(ctx, cutoff)
 }
 

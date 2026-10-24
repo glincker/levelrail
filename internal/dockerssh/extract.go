@@ -85,6 +85,12 @@ func ExtractArchive(r io.Reader, dst string, lim Limits) (ExtractStats, error) {
 		if err := parentsAreDirs(root, target); err != nil {
 			return st, fmt.Errorf("archive entry %q: %w", hdr.Name, err)
 		}
+		// MkdirAll and chmod follow a symlink leaf; regular files remove it first instead.
+		if hdr.Typeflag == tar.TypeDir {
+			if fi, lerr := os.Lstat(target); lerr == nil && fi.Mode()&os.ModeSymlink != 0 {
+				return st, fmt.Errorf("archive entry %q would be written through a symlink", hdr.Name)
+			}
+		}
 		switch hdr.Typeflag {
 		case tar.TypeDir:
 			if err := os.MkdirAll(target, 0o700); err != nil { //nolint:gosec // mode is tightened to the archive's below
@@ -101,7 +107,7 @@ func ExtractArchive(r io.Reader, dst string, lim Limits) (ExtractStats, error) {
 			}
 			st.Files++
 		case tar.TypeSymlink:
-			if !symlinkStaysInside(rel, hdr.Linkname) {
+			if !symlinkStaysInside(rel, hdr.Linkname) || !linkResolvesInside(root, target, hdr.Linkname) {
 				st.skip(rel, "symlink target is absolute or leaves the volume")
 				continue
 			}
@@ -149,6 +155,45 @@ func symlinkStaysInside(rel, link string) bool {
 	}
 	joined := path.Clean(path.Join(path.Dir(rel), link))
 	return joined != ".." && !strings.HasPrefix(joined, "../") && !path.IsAbs(joined)
+}
+
+// linkResolvesInside walks link through symlinks already on disk, because a
+// lexical clean cannot see that "d/l/.." leaves the root once d/l is a link.
+func linkResolvesInside(root, target, link string) bool {
+	realRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return false
+	}
+	cur, err := filepath.EvalSymlinks(filepath.Dir(target))
+	if err != nil || !within(realRoot, cur) {
+		return false
+	}
+	for _, seg := range strings.Split(link, "/") {
+		switch seg {
+		case "", ".":
+			continue
+		case "..":
+			cur = filepath.Dir(cur)
+		default:
+			cur = filepath.Join(cur, seg)
+			if fi, lerr := os.Lstat(cur); lerr == nil && fi.Mode()&os.ModeSymlink != 0 {
+				resolved, rerr := filepath.EvalSymlinks(cur)
+				if rerr != nil {
+					return false
+				}
+				cur = resolved
+			}
+		}
+		if !within(realRoot, cur) {
+			return false
+		}
+	}
+	return true
+}
+
+func within(root, p string) bool {
+	rel, err := filepath.Rel(root, p)
+	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
 // parentsAreDirs refuses to write below any component that is a symlink or

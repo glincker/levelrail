@@ -165,7 +165,7 @@ func (s *bootState) startAlerting() {
 	}()
 	go func() {
 		prune := func(c context.Context) error {
-			_, err := pruneEmailDeliveries(c, db, emailLogRetention(), time.Now())
+			_, err := pruneEmailDeliveries(c, db, emailLogRetention(c, apiRouter.RuntimeSettings()), time.Now())
 			return err
 		}
 		if err := footprint.Every(ctx, "email delivery log prune", time.Hour, logger, prune); err != nil && !errors.Is(err, context.Canceled) {
@@ -176,7 +176,7 @@ func (s *bootState) startAlerting() {
 	go runCostBudgets(ctx, apiRouter)
 	go runAutoscaler(ctx, apiRouter, autoscale.IntervalFromEnv(autoscale.OSEnv))
 	alertingEngine.SetChanges(withLogSignatures(changes.New(db, db, db, logger), alertingFederator), alertDashboardLink())
-	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))
+	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger, apiRouter.RuntimeSettings()), alertingDB, db, logger))
 	go func() {
 		if err := apiRouter.RunStatusPageSampler(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("status page sampler stopped", slog.String("error", err.Error()))

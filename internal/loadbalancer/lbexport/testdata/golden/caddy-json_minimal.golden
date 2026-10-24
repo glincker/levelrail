@@ -13,7 +13,12 @@
         {
           "dial": "localhost:3000"
         }
-      ]
+      ],
+      "load_balancing": {
+        "selection_policy": {
+          "policy": "round_robin"
+        }
+      }
     }
   ]
 }

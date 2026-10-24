@@ -346,6 +346,7 @@
               "templates-and-registry",
               "private-registries",
               "template-catalog",
+              "deploy-button",
               "templates-status",
               "templates"
             ],
@@ -387,6 +388,7 @@
               "feature-flags",
               "log-archive",
               "janitor",
+              "cleanup-center",
               "search"
             ],
             "icon": "/assets/icons/flask.svg"
@@ -937,6 +939,7 @@
               "performance",
               "performance-budget",
               "benchmarks",
+              "benchmark-runbook",
               "control-plane-health",
               "changelog",
               "upgrade-history"
@@ -970,6 +973,7 @@
               "pricing",
               "demo",
               "run-a-read-only-demo",
+              "hosted-demo",
               "case-studies",
               "get-involved",
               "developers",

@@ -57,7 +57,7 @@ func lbUsage(prog string) string {
   %[1]s lb show <app> [flags]                          show an app's load balancer config
   %[1]s lb set <app> [--algorithm ...] [flags]         create or change the load balancer (only the flags you pass change)
   %[1]s lb clear <app> [flags]                         remove the load balancer, back to a single upstream
-  %[1]s lb status <app> [flags]                        live upstream table: health, active requests, last check
+  %[1]s lb status <app> [flags]                        live upstream table: health, active requests, req/s, error rate, p50/p95
   %[1]s lb check <app> [flags]                         probe every upstream once, right now
   %[1]s lb history <app> [--limit N] [flags]           recent checks and state changes per upstream
   %[1]s lb upstream <app> <id> --state S [flags]       set an upstream active, draining or disabled
@@ -161,6 +161,9 @@ func runLBStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		_, _ = fmt.Fprintf(stdout, "%s: %s (%s), algorithm %s\n", st.Service, st.Reason, st.Message, st.Algorithm)
 		for _, u := range st.Upstreams {
 			line := fmt.Sprintf("  %-28s %-10s weight=%d active=%d fails=%d", u.Dial, u.State, u.Weight, u.ActiveConns, u.Fails)
+			if tr := u.Traffic; tr != nil {
+				line += fmt.Sprintf("  rps=%.2f err=%.1f%% p50=%.0fms p95=%.0fms", tr.RequestsPerSec, tr.ErrorRate*100, tr.P50Ms, tr.P95Ms)
+			}
 			if u.Reason != "" {
 				line += "  " + u.Reason
 			}
@@ -274,7 +277,7 @@ func parseWeights(s string) ([]int, error) {
 
 func runLBSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "lb set", "print the resulting config as JSON to stdout and nothing else", stderr)
-	algorithm := fs.String("algorithm", "", "round_robin, least_conn, ip_hash, uri_hash, cookie or weighted")
+	algorithm := fs.String("algorithm", "", "round_robin, least_conn, ip_hash, client_ip_hash, uri_hash, cookie or weighted")
 	cookie := fs.String("cookie-name", "", "sticky session cookie name (algorithm cookie)")
 	weights := fs.String("weights", "", "comma separated weight per replica, e.g. 3,1 (algorithm weighted)")
 	healthPath := fs.String("health-path", "", "active health check path, e.g. /healthz")

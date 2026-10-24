@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/proxyroutes"
 )
 
 // Kind is a reverse proxy family we can generate configuration for.
@@ -100,6 +102,9 @@ func BuildTarget(t Target) (Plan, error) {
 	domain = strings.ToLower(strings.TrimSpace(domain))
 	if domain == "" || strings.ContainsAny(domain, " /:") || !strings.Contains(domain, ".") {
 		return Plan{}, fmt.Errorf("domain must be a hostname such as console.example.com")
+	}
+	if _, err := proxyroutes.ValidateDomain(domain); err != nil {
+		return Plan{}, fmt.Errorf("domain must be a hostname such as console.example.com: %w", err)
 	}
 	host, port, err := net.SplitHostPort(listenAddr)
 	if err != nil || port == "" {

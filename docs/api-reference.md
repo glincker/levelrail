@@ -297,6 +297,14 @@ Endpoints for:
 | DELETE | /api/v1/settings/traffic-export/sinks/{id} | AbilityRoot | handleDeleteTrafficExportSink |
 | POST | /api/v1/settings/traffic-export/sinks/{id}/test | AbilityRoot | handleTestTrafficExportSink |
 | GET | /api/v1/settings/traffic-export/status | AbilityRead | handleTrafficExportStatus |
+| GET | /api/v1/settings/runtime | AbilityRead | handleListRuntimeSettings |
+| GET | /api/v1/settings/runtime/onboarding | AbilityRead | handleGetRuntimeOnboarding |
+| GET | /api/v1/settings/runtime/{key} | AbilityRead | handleGetRuntimeSetting |
+| PUT | /api/v1/settings/runtime/{key} | AbilityRoot | handleSetRuntimeSetting |
+| DELETE | /api/v1/settings/runtime/{key} | AbilityRoot | handleResetRuntimeSetting |
+| POST | /api/v1/settings/runtime/apply | AbilityRoot | handleApplyRuntimeSettings |
+| POST | /api/v1/settings/runtime/onboarding/ack | AbilityRoot | handleAckRuntimeOnboarding |
+| POST | /api/v1/auth/tokens/cleanup | AbilityRoot | handleCleanupTokens |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -1936,6 +1944,13 @@ Routes that do not fit an existing group.
 | POST | /api/v1/costs/budgets/{id}/dry-run | AbilityRead | handleCostBudgetDryRun |
 | POST | /api/v1/migrations/verify | AbilityRoot | handleMigrationVerify |
 | GET | /api/v1/migrations/verify/latest | AbilityRead | handleLatestMigrationVerify |
+| POST | /api/v1/imports/repo/plan | AbilityWrite | handleImportRepoPlan |
+| POST | /api/v1/imports/repo/apply | AbilityWrite | handleImportRepoApply |
+| GET | /api/v1/cleanup | AbilityRead | handleGetCleanup |
+| GET | /api/v1/cleanup/runs | AbilityRead | handleListCleanupRuns |
+| POST | /api/v1/cleanup/{id}/preview | AbilityRoot | handlePreviewCleanup |
+| POST | /api/v1/cleanup/{id}/run | AbilityRoot | handleRunCleanup |
+| PUT | /api/v1/cleanup/{id}/mode | AbilityRoot | handleSetCleanupMode |
 
 ## See also
 

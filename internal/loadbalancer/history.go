@@ -13,16 +13,19 @@ type HistoryConfig struct {
 	SeriesStep   time.Duration
 	SeriesWindow time.Duration
 	MaxAge       time.Duration
+	// TrafficWindow is how far back per-upstream traffic rates look.
+	TrafficWindow time.Duration
 }
 
 // HistoryConfigFromEnv reads the history bounds, falling back to defaults.
 func HistoryConfigFromEnv() HistoryConfig {
 	return HistoryConfig{
-		Checks:       envInt("APP_LB_HISTORY_CHECKS", 60),
-		Transitions:  envInt("APP_LB_HISTORY_TRANSITIONS", 50),
-		SeriesStep:   envDuration("APP_LB_HISTORY_STEP", 15*time.Second),
-		SeriesWindow: envDuration("APP_LB_HISTORY_WINDOW", 30*time.Minute),
-		MaxAge:       envDuration("APP_LB_HISTORY_MAX_AGE", 24*time.Hour),
+		Checks:        envInt("APP_LB_HISTORY_CHECKS", 60),
+		Transitions:   envInt("APP_LB_HISTORY_TRANSITIONS", 50),
+		SeriesStep:    envDuration("APP_LB_HISTORY_STEP", 15*time.Second),
+		SeriesWindow:  envDuration("APP_LB_HISTORY_WINDOW", 30*time.Minute),
+		MaxAge:        envDuration("APP_LB_HISTORY_MAX_AGE", 24*time.Hour),
+		TrafficWindow: envDuration("APP_LB_TRAFFIC_WINDOW", 5*time.Minute),
 	}
 }
 
@@ -146,6 +149,7 @@ func (r *Registry) RecordStatus(st *Status) {
 		u.LastChangedAt = &changed
 	}
 	r.hist[st.Service] = next
+	r.recordTraffic(st, now)
 }
 
 func (r *Registry) recordUpstream(h *upstreamHist, u *UpstreamStatus, now time.Time) {

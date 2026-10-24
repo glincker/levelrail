@@ -76,7 +76,7 @@ func TestDeriveBlockingAndNext(t *testing.T) {
 	}
 
 	g = Derive(Input{
-		SecuredAdmin: true, EmailConfigured: true, DashboardURL: "https://d.example.com", Apps: 1,
+		SecuredAdmin: true, SecurityReviewed: true, EmailConfigured: true, DashboardURL: "https://d.example.com", Apps: 1,
 		Domains: []DomainTLS{{Name: "a.example.com", CertHealthy: true}}, ACMEEnabled: true,
 		BackupTargets: 1, ControlPlaneBackups: 1,
 	})
@@ -96,21 +96,21 @@ func TestDeriveReadyPercent(t *testing.T) {
 		wantComplete bool
 	}{
 		{"fresh", Input{}, 0, false},
-		{"proxy mode drops tls from the denominator", Input{BehindProxy: true, SecuredAdmin: true}, 11, false},
+		{"proxy mode drops tls from the denominator", Input{BehindProxy: true, SecuredAdmin: true}, 10, false},
 		{"all required done, optional todo", Input{
-			SecuredAdmin: true, EmailConfigured: true, DashboardURL: "https://d.example.com", Apps: 1, ACMEEnabled: true,
+			SecuredAdmin: true, SecurityReviewed: true, EmailConfigured: true, DashboardURL: "https://d.example.com", Apps: 1, ACMEEnabled: true,
 			Domains:       []DomainTLS{{Name: "a.example.com", CertHealthy: true}},
 			BackupTargets: 1, ControlPlaneBackups: 1, VerifiedBackups: 1, Channels: 1, AlertRules: 1,
 		}, 100, false},
 		{"everything resolved", Input{
-			SecuredAdmin: true, SignInApprover: true, DashboardURL: "https://d.example.com", Apps: 1, ACMEEnabled: true,
+			SecuredAdmin: true, SecurityReviewed: true, SignInApprover: true, DashboardURL: "https://d.example.com", Apps: 1, ACMEEnabled: true,
 			Domains:       []DomainTLS{{Name: "a.example.com", CertHealthy: true}},
 			BackupTargets: 1, ControlPlaneBackups: 1, VerifiedBackups: 1, Channels: 1, AlertRules: 1,
 			GitConnected: true, DNSProviderConnected: true, Users: 2, AutomaticUpgrades: true,
 		}, 100, true},
 		{"skipped required step does not count as ready", Input{
 			SecuredAdmin: true, Overrides: map[StepID]string{StepFirstApp: OverrideSkipped},
-		}, 10, false},
+		}, 9, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

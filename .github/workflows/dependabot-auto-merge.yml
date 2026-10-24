@@ -8,6 +8,10 @@ on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
 
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
@@ -24,8 +28,10 @@ jobs:
 
       - name: Classify security relevance
         id: classify
+        env:
+          DEP_NAMES: ${{ steps.meta.outputs.dependency-names }}
         run: |
-          names="${{ steps.meta.outputs.dependency-names }}"
+          names="$DEP_NAMES"
           security_relevant=false
           for pattern in \
             "filippo.io/" \
@@ -70,7 +76,7 @@ jobs:
            steps.classify.outputs.security-relevant == 'true')
         run: |
           gh pr edit "$PR_URL" --add-label "needs-review"
-          if [ "${{ steps.meta.outputs.update-type }}" = "version-update:semver-major" ]; then
+          if [ "$UPDATE_TYPE" = "version-update:semver-major" ]; then
             reason="a major version bump; breaking changes are expected and CI passing doesn't guarantee nothing else broke"
           else
             reason="a security-relevant dependency (TLS/ACME, crypto, agent transport, secrets, WireGuard, or the Docker/Moby container client)"
@@ -79,3 +85,4 @@ jobs:
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}

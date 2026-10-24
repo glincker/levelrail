@@ -259,7 +259,7 @@ func (e *Engine) attempts(ctx context.Context, p Policy, dry bool, now time.Time
 	}
 	sort.Strings(names)
 	for _, n := range names {
-		res.Items = append(res.Items, Item{Name: n, Detail: fmt.Sprintf("%d old failed or superseded attempts", perApp[n]), SizeBytes: 0, Action: act})
+		res.Items = append(res.Items, Item{Name: n, Detail: fmt.Sprintf("%d old failed or superseded attempts", perApp[n]), Count: perApp[n], Action: act})
 	}
 	return res
 }

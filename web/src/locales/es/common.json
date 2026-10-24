@@ -560,5 +560,15 @@
     "show": "Mostrar valor",
     "hide": "Ocultar valor",
     "existing": "Definido. Déjalo en blanco para conservar el valor actual."
+  },
+  "lbTraffic": {
+    "title": "Tráfico",
+    "empty": "Sin datos de tráfico todavía",
+    "emptyHint": "Las tasas aparecen cuando pasan solicitudes por el ingress.",
+    "rps": "{{value}} sol/s",
+    "errors": "{{value}} de errores",
+    "p50": "p50 {{value}} ms",
+    "p95": "p95 {{value}} ms",
+    "sparkline": "Solicitudes por segundo en los últimos {{minutes}} minutos para {{dial}}"
   }
 }

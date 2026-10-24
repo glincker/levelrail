@@ -27,7 +27,11 @@ const (
 	demoDefaultAddr  = "127.0.0.1:8080"
 	demoSessionTTL   = 2 * time.Hour
 	demoResetHourUTC = 4
-	demoRobotsTxt    = "User-agent: *\nDisallow: /\n"
+	// demoEnvResetInterval overrides the daily reset time with a fixed cadence,
+	// so the banner matches a host that re-seeds more often.
+	demoEnvResetInterval = "APP_DEMO_RESET_INTERVAL"
+	demoMinResetInterval = time.Minute
+	demoRobotsTxt        = "User-agent: *\nDisallow: /\n"
 )
 
 // runDemo dispatches `demo seed` and `demo serve`. The demo is a separate
@@ -223,7 +227,15 @@ func demoStaticHeaders(next http.Handler) http.Handler {
 }
 
 func nextDemoReset() time.Time {
-	now := time.Now().UTC()
+	return nextDemoResetAt(time.Now().UTC(), os.Getenv(demoEnvResetInterval))
+}
+
+// nextDemoResetAt returns the next reset after now: the next multiple of the
+// configured interval (UTC aligned), or the daily default when it is unset or invalid.
+func nextDemoResetAt(now time.Time, interval string) time.Time {
+	if d, err := time.ParseDuration(interval); err == nil && d >= demoMinResetInterval {
+		return now.Truncate(d).Add(d)
+	}
 	next := time.Date(now.Year(), now.Month(), now.Day(), demoResetHourUTC, 0, 0, 0, time.UTC)
 	if !next.After(now) {
 		next = next.AddDate(0, 0, 1)

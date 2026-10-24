@@ -35,6 +35,8 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerImageRoutes(mux)
 	rt.registerIaCRoutes(mux)
 	rt.registerDockerGuardRoutes(mux)
+	rt.registerCleanupRoutes(mux)
+	rt.registerRuntimeSettingsRoutes(mux)
 	rt.registerDockerIntegrationRoutes(mux)
 	rt.registerPluginRoutes(mux)
 	rt.registerFixitRoutes(mux)

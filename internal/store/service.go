@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -1355,7 +1356,7 @@ func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredServi
 
 // ListDesiredServices returns every saved service, ordered by name.
 func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT `+desiredServiceColumns+`
 		FROM desired_services
 		ORDER BY name
@@ -1390,7 +1391,7 @@ func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error)
 // doc comment) is a valid argument, matching every other node_id
 // comparison in this package.
 func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]DesiredService, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT `+desiredServiceColumns+`
 		FROM desired_services
 		WHERE node_id = ?
@@ -1423,7 +1424,7 @@ func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]D
 // (internal/api/project_stop_start.go) and internal/api's bulk-restart
 // endpoint to find every app in a project without listing every service.
 func (db *DB) ListDesiredServicesByProject(ctx context.Context, projectID string) ([]DesiredService, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT `+desiredServiceColumns+`
 		FROM desired_services
 		WHERE project_id = ?
@@ -1458,7 +1459,7 @@ func (db *DB) ListDesiredServicesByProject(ctx context.Context, projectID string
 // in-memory the way promote.go's own findPromotionCandidates still does
 // for its narrower single-app lookup.
 func (db *DB) ListDesiredServicesByEnvironment(ctx context.Context, environmentID string) ([]DesiredService, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := db.reader().QueryContext(ctx, `
 		SELECT `+desiredServiceColumns+`
 		FROM desired_services
 		WHERE environment_id = ?
@@ -1569,10 +1570,10 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		svc.DatabaseAttachment = &DatabaseAttachment{DatabaseName: dbAttachmentName, EnvVar: dbAttachmentEnvVar, Field: dbAttachmentField}
 	}
 
-	if err := json.Unmarshal([]byte(domainsJSON), &svc.Domains); err != nil {
+	if err := decodeJSONCol(domainsJSON, &svc.Domains); err != nil {
 		return nil, fmt.Errorf("unmarshal domains: %w", err)
 	}
-	if err := json.Unmarshal([]byte(envJSON), &svc.Env); err != nil {
+	if err := decodeJSONCol(envJSON, &svc.Env); err != nil {
 		return nil, fmt.Errorf("unmarshal env: %w", err)
 	}
 	secretEnv, err := unmarshalSecretEnv(secretEnvJSON)
@@ -1580,10 +1581,10 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		return nil, fmt.Errorf("unmarshal secret_env: %w", err)
 	}
 	svc.SecretEnv = secretEnv
-	if err := json.Unmarshal([]byte(databaseEnvJSON), &svc.DatabaseEnv); err != nil {
+	if err := decodeJSONCol(databaseEnvJSON, &svc.DatabaseEnv); err != nil {
 		return nil, fmt.Errorf("unmarshal database_env: %w", err)
 	}
-	if err := json.Unmarshal([]byte(vaultEnvJSON), &svc.VaultEnv); err != nil {
+	if err := decodeJSONCol(vaultEnvJSON, &svc.VaultEnv); err != nil {
 		return nil, fmt.Errorf("unmarshal vault_env: %w", err)
 	}
 	if resourcesJSON != "null" {
@@ -1606,28 +1607,28 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 			return nil, fmt.Errorf("unmarshal egress_policy: %w", err)
 		}
 	}
-	if err := json.Unmarshal([]byte(labels), &svc.Labels); err != nil {
+	if err := decodeJSONCol(labels, &svc.Labels); err != nil {
 		return nil, fmt.Errorf("unmarshal labels: %w", err)
 	}
-	if err := json.Unmarshal([]byte(volumes), &svc.Volumes); err != nil {
+	if err := decodeJSONCol(volumes, &svc.Volumes); err != nil {
 		return nil, fmt.Errorf("unmarshal volumes: %w", err)
 	}
-	if err := json.Unmarshal([]byte(command), &svc.Command); err != nil {
+	if err := decodeJSONCol(command, &svc.Command); err != nil {
 		return nil, fmt.Errorf("unmarshal command: %w", err)
 	}
-	if err := json.Unmarshal([]byte(bindMounts), &svc.BindMounts); err != nil {
+	if err := decodeJSONCol(bindMounts, &svc.BindMounts); err != nil {
 		return nil, fmt.Errorf("unmarshal bind_mounts: %w", err)
 	}
-	if err := json.Unmarshal([]byte(entrypoint), &svc.Entrypoint); err != nil {
+	if err := decodeJSONCol(entrypoint, &svc.Entrypoint); err != nil {
 		return nil, fmt.Errorf("unmarshal entrypoint: %w", err)
 	}
-	if err := json.Unmarshal([]byte(dependsOnJSON), &svc.DependsOn); err != nil {
+	if err := decodeJSONCol(dependsOnJSON, &svc.DependsOn); err != nil {
 		return nil, fmt.Errorf("unmarshal depends_on: %w", err)
 	}
-	if err := json.Unmarshal([]byte(dependsOnHealthyJSON), &svc.DependsOnHealthy); err != nil {
+	if err := decodeJSONCol(dependsOnHealthyJSON, &svc.DependsOnHealthy); err != nil {
 		return nil, fmt.Errorf("unmarshal depends_on_healthy: %w", err)
 	}
-	if err := json.Unmarshal([]byte(previewEnvOverridesJSON), &svc.PreviewEnvOverrides); err != nil {
+	if err := decodeJSONCol(previewEnvOverridesJSON, &svc.PreviewEnvOverrides); err != nil {
 		return nil, fmt.Errorf("unmarshal preview_env_overrides: %w", err)
 	}
 	if logDrainJSON.Valid {
@@ -1730,4 +1731,25 @@ func hostPortToNull(v *int) sql.NullInt64 {
 		return sql.NullInt64{}
 	}
 	return sql.NullInt64{Int64: int64(*v), Valid: true}
+}
+
+// decodeJSONCol is json.Unmarshal with the empty-literal cases answered
+// without reflection: "[]" and "{}" still yield non-nil empty values, so the
+// result is identical, but the common empty column costs no decoder allocs.
+func decodeJSONCol[T any](raw string, dst *T) error {
+	switch raw {
+	case "null":
+		return nil
+	case "[]":
+		if v := reflect.ValueOf(dst).Elem(); v.Kind() == reflect.Slice {
+			v.Set(reflect.MakeSlice(v.Type(), 0, 0))
+			return nil
+		}
+	case "{}":
+		if v := reflect.ValueOf(dst).Elem(); v.Kind() == reflect.Map {
+			v.Set(reflect.MakeMap(v.Type()))
+			return nil
+		}
+	}
+	return json.Unmarshal([]byte(raw), dst)
 }

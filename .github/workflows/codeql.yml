@@ -1,26 +1,19 @@
 name: codeql
 
-# Not a required check, so it runs after merge instead of on every PR:
-# pushes to main that touch Go or web sources, plus a weekly full scan.
-# Alerts land in the Security tab either way; a PR that needs a scan
-# before merge can use workflow_dispatch on its branch.
+# Not a required check. The Go scan costs about 14 minutes, so it runs
+# weekly, on release tags and on demand, not on every push to main. Alerts
+# land in the Security tab; a PR that needs a scan can use workflow_dispatch.
 on:
   push:
-    branches: [main]
-    paths:
-      - '**/*.go'
-      - 'go.mod'
-      - 'go.sum'
-      - 'kit/go.mod'
-      - 'kit/go.sum'
-      - 'web/**'
+    tags:
+      - 'v*'
   schedule:
     - cron: "0 8 * * 3"
   workflow_dispatch:
 
 concurrency:
   group: codeql-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   analyze-go:

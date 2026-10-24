@@ -14,6 +14,7 @@
 - Sign-in: password, passkeys (WebAuthn), TOTP two-factor, OAuth with 20 providers (Google, GitHub, Microsoft, GitLab and more) and generic OpenID Connect.
 - SAML 2.0 single sign-on and SCIM 2.0 provisioning exist but are beta and off by default behind the `saml-scim` feature toggle. [SAML and SCIM](https://docs.levelrail.com/sso-saml)
 - Authorization: IAM Allow and Deny policies, roles, teams, scoped API tokens. Audit log with a verifiable hash chain and CSV export. [Identity and access](https://docs.levelrail.com/identity-and-access)
+- [Security overview](https://docs.levelrail.com/security): secrets, sessions, node trust, deploy safety, audit log, limitations
 - Template catalog: 300+ one-click services. [Catalog](https://docs.levelrail.com/template-catalog)
 
 ## For agents

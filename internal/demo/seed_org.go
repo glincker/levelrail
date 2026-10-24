@@ -37,7 +37,7 @@ func (s *seeder) users() error {
 	}
 	h := string(hash)
 	visitor := store.User{
-		ID: VisitorUserID, Email: VisitorUsername, DisplayName: "Demo Visitor",
+		ID: VisitorUserID, Email: VisitorUsername, DisplayName: "Alex Rivera",
 		PasswordHash: &h, Abilities: []string{"read"}, CreatedAt: s.at(historyDays, 0),
 	}
 	// Teammates carry no password hash: they exist only so team and audit pages read as real.

@@ -176,7 +176,12 @@ export function NewAppWizard() {
   const current = STEPS.indexOf(step)
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5">
+    <div
+      className={cn(
+        'mx-auto w-full space-y-5',
+        step === 'source' ? 'max-w-none' : 'max-w-3xl',
+      )}
+    >
       {step !== 'source' ? (
         <ol
           className="flex flex-wrap gap-2 text-sm"

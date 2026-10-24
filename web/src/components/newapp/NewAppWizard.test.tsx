@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { NewAppWizard } from './NewAppWizard'
 import { jsonResponse, nextAnalysis } from '../../test/newAppFixtures'
 import { NewAppI18n } from '../../test/newAppI18n'
@@ -186,6 +186,11 @@ function urlOf(input: RequestInfo | URL): string {
   return input instanceof URL ? input.href : input.url
 }
 
+// Warm the lazy chunk so its first-use compile is not charged to a findBy.
+beforeAll(async () => {
+  await import('./import/RepoImportFlow')
+})
+
 afterEach(() => {
   vi.restoreAllMocks()
   navigate.mockReset()
@@ -256,7 +261,7 @@ describe('NewAppWizard', () => {
       '/settings/bitbucket-app',
       '/settings/gitea-app',
     ])
-    expect(screen.getByLabelText('Repository URL')).toBeInTheDocument()
+    expect(screen.getByLabelText('Repository')).toBeInTheDocument()
   })
 
   it('filters the repository list by search', async () => {
@@ -264,10 +269,7 @@ describe('NewAppWizard', () => {
     mockApi()
     renderWizard()
     await screen.findByRole('button', { name: /acme\/shop/ })
-    await user.type(
-      screen.getByLabelText('Search repositories or languages'),
-      'mdx',
-    )
+    await user.type(screen.getByLabelText('Repository'), 'mdx')
     expect(screen.queryByRole('button', { name: /acme\/shop/ })).toBeNull()
     expect(
       screen.getByRole('button', { name: /acme\/docs/ }),
@@ -284,7 +286,7 @@ describe('NewAppWizard', () => {
     })
     renderWizard()
     await user.type(
-      await screen.findByLabelText('Repository URL'),
+      await screen.findByLabelText('Repository'),
       'https://github.com/acme/private',
     )
     expect(
@@ -292,7 +294,7 @@ describe('NewAppWizard', () => {
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Continue' }))
     expect(await screen.findByText('denied')).toBeInTheDocument()
-    expect(screen.getByLabelText('Repository URL')).toHaveValue(
+    expect(screen.getByLabelText('Repository')).toHaveValue(
       'https://github.com/acme/private',
     )
   })
@@ -330,7 +332,7 @@ describe('NewAppWizard', () => {
     })
     renderWizard()
     await user.type(
-      await screen.findByLabelText('Repository URL'),
+      await screen.findByLabelText('Repository'),
       'https://github.com/acme/shop',
     )
     await user.click(await screen.findByRole('button', { name: 'Continue' }))

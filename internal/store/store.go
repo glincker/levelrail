@@ -20,6 +20,9 @@ import (
 type DB struct {
 	*sql.DB
 	m *dbMetrics
+	// ro is the read-only pool for dashboard-style SELECTs; nil means reads
+	// share the single writer connection (in-memory databases, pool disabled).
+	ro *sql.DB
 }
 
 // Open opens (creating if needed) the SQLite database at path, applies
@@ -56,6 +59,8 @@ func Open(ctx context.Context, path string, opts ...OpenOption) (*DB, error) {
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("store: migrate %s: %w", path, err)
 	}
+
+	db.ro = openReadPool(ctx, path)
 
 	return db, nil
 }

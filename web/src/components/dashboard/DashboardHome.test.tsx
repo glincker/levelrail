@@ -7,7 +7,7 @@ import {
   within,
 } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { DashboardHome } from './DashboardHome'
@@ -130,6 +130,14 @@ const SERIES = {
   },
   points: [],
 }
+
+// Warm the lazy chunks so their first-use compile is not charged to a findBy.
+beforeAll(async () => {
+  await Promise.all([
+    import('./UsageDetailsBody'),
+    import('../RecentAlertsCard'),
+  ])
+})
 
 afterEach(() => {
   vi.unstubAllGlobals()
