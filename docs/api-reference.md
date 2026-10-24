@@ -1943,6 +1943,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/costs/budgets/{id}/dry-run | AbilityRead | handleCostBudgetDryRun |
 | POST | /api/v1/migrations/verify | AbilityRoot | handleMigrationVerify |
 | GET | /api/v1/migrations/verify/latest | AbilityRead | handleLatestMigrationVerify |
+| POST | /api/v1/imports/repo/plan | AbilityWrite | handleImportRepoPlan |
 
 ## See also
 

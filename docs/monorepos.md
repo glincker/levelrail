@@ -51,6 +51,19 @@ levelrail-cli apps git-source affected web --files services/api/index.js,pnpm-lo
 
 `POST /api/v1/apps/{name}/git-source/detect` returns a `packages` array (`name`, `dir`, `tool`, `dockerfile`, `depends_on`, `watch_paths`). `POST /api/v1/apps/{name}/git-source/affected` takes `{ "files": [...] }` and returns whether this app deploys and which packages are affected.
 
+## Import plan
+
+Before creating anything, ask for a plan: one proposed app per workspace package, with a name checked against your existing apps (a taken or duplicate name gets a `-2` style suffix and a warning), the build context directory, the detected port or none, the build kind (`dockerfile`, `buildpack` or `static`), watch paths, `depends_on` and warnings (`no_dockerfile`, `no_port`, `duplicate_port`, `duplicate_name`, `name_taken`, `package_cap`). It is read only and creates nothing.
+
+```bash
+levelrail-cli import repo plan https://github.com/acme/mono --branch main --dir apps
+levelrail-cli import repo plan https://github.com/acme/mono --json
+```
+
+`POST /api/v1/imports/repo/plan` takes `repo_url`, optional `branch` and `base_directory` (only packages under it are planned) and an optional one-shot `token` for a private repository that is never stored or returned. It needs the write ability. In the New app wizard the same plan appears as a **Preview the plan** panel above the package list.
+
+The number of packages listed is capped by `APP_WIZARD_MAX_PACKAGES` (default 60); the plan reports how many were found. `APP_WIZARD_PLAN_CONCURRENCY` (default 4) bounds how many packages are analyzed at once against the git host.
+
 ## Try it
 
 `test/fixtures/monorepo` is a pnpm workspace with two tiny services and a Dockerfile each.

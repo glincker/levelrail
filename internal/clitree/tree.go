@@ -378,7 +378,7 @@ var Tree = map[string]*Node{
 	"cdn":            {Subs: map[string]*Node{"overview": nil}},
 	"event-webhooks": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "deliveries": nil, "replay": nil, "enable": nil, "disable": nil, "rotate-secret": nil, "delete": nil}},
 	"export":         {Subs: map[string]*Node{"destinations": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "status": nil, "enable": nil, "disable": nil, "delete": nil}}, "audit": nil}},
-	"import":         {Subs: map[string]*Node{"platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
+	"import":         {Subs: map[string]*Node{"repo": {Subs: map[string]*Node{"plan": nil}}, "platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
 	"completion":     {Subs: map[string]*Node{"bash": nil, "zsh": nil, "fish": nil}},
 	"settings": {Subs: map[string]*Node{
 		"oauth":         {Subs: map[string]*Node{"list": nil, "set": nil}},

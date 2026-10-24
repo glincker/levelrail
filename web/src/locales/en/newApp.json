@@ -251,6 +251,42 @@
     "createSelected_zero": "Create an app for each selected package",
     "envNote": "Required environment variables are not asked here. Add them on each app, then redeploy."
   },
+  "plan": {
+    "title": "Import plan",
+    "hint": "See the app each package would become before you create anything: name, port, build kind and what to double-check.",
+    "review": "Preview the plan",
+    "loading": "Reading every package from the repository...",
+    "error": "Could not build the plan: {{message}}",
+    "retry": "Try again",
+    "empty": "No workspace packages were found, so there is nothing to plan. Configure this repository as a single app below.",
+    "summary_one": "{{count}} package, {{flagged}} with warnings. Nothing is created by this preview.",
+    "summary_other": "{{count}} packages, {{flagged}} with warnings. Nothing is created by this preview.",
+    "none": "None",
+    "columns": {
+      "name": "Name",
+      "directory": "Directory",
+      "port": "Port",
+      "build": "Build",
+      "dependsOn": "Depends on",
+      "warnings": "Warnings"
+    },
+    "kinds": {
+      "dockerfile": "Dockerfile",
+      "buildpack": "Buildpack",
+      "static": "Static site"
+    },
+    "warnings": {
+      "package_cap": "{{found}} packages found, only the first {{cap}} are listed. Raise APP_WIZARD_MAX_PACKAGES on the server to see more.",
+      "no_workspace": "No workspace packages were found.",
+      "tree_truncated": "The repository file listing was cut short, so some packages may be missing.",
+      "no_dockerfile": "No Dockerfile here, the build is auto-detected.",
+      "no_port": "No listening port detected, set it before creating.",
+      "duplicate_port": "Another package proposes the same port. Fine in separate containers.",
+      "duplicate_name": "Another package maps to the same name, a suffix was added.",
+      "name_taken": "An app with this name already exists, a suffix was added.",
+      "detect_failed": "This package could not be analyzed."
+    }
+  },
   "fields": {
     "basics": "Basics",
     "name": "Name",

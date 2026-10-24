@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1718 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1719 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1147,6 +1147,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/imports/platform/databases/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDatabaseDataCopy", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/platform/databases/{name}/copy", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCopyDatabaseData", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/platform/discover", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDiscoverPlatformImport", Description: ""},
+	{Method: "POST", Path: "/api/v1/imports/repo/plan", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportRepoPlan", Description: ""},
 	{Method: "GET", Path: "/api/v1/inbox", Ability: "AbilityRead", Group: "Other", Handler: "handleListInbox", Description: ""},
 	{Method: "POST", Path: "/api/v1/inbox/archive", Ability: "AbilityWrite", Group: "Other", Handler: "handleInboxArchive", Description: ""},
 	{Method: "POST", Path: "/api/v1/inbox/clear", Ability: "AbilityWrite", Group: "Other", Handler: "handleInboxClear", Description: ""},

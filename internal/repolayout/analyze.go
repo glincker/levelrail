@@ -50,6 +50,8 @@ type Result struct {
 	Suggestions       []Suggestion `json:"suggestions"`
 	Truncated         bool         `json:"truncated"`
 	Packages          []Package    `json:"packages"`
+	// PackagesTotal is the member count before the package cap, 0 when no workspace.
+	PackagesTotal int `json:"packages_total,omitempty"`
 	// StaticBuild is set when the repository root is a static-site
 	// framework, to prefill the build command and publish directory.
 	StaticBuild *StaticBuildSuggestion `json:"static_build,omitempty"`
@@ -92,7 +94,7 @@ func Analyze(paths []string, read Reader) Result {
 
 	tools := workspaceTools(present, read)
 	res.Tools = tools
-	res.Packages = findPackages(files, present, read)
+	res.Packages, res.PackagesTotal = findPackagesTotal(files, present, read)
 
 	var dockerfiles []string
 	for _, f := range files {
