@@ -21,6 +21,7 @@ var knownEventTypes = []string{
 	"users.create", "users.update", "users.delete",
 	"tokens.create", "tokens.delete",
 	"settings.update",
+	"cleanup.run", "cleanup.failed",
 }
 
 // TypeForRequest names the event for one audited mutation: the audit action

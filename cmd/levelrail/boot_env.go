@@ -449,34 +449,6 @@ func previewSweepInterval(logger *slog.Logger) time.Duration {
 	return d
 }
 
-// Returns 0 when unset or invalid so api applies its default.
-func auditLogRetention(logger *slog.Logger) time.Duration {
-	raw := os.Getenv("APP_AUDIT_LOG_RETENTION_DAYS")
-	if raw == "" {
-		return 0
-	}
-	days, err := strconv.ParseInt(raw, 10, 64)
-	if err != nil {
-		logger.Warn("invalid APP_AUDIT_LOG_RETENTION_DAYS, using the default", slog.String("value", raw), slog.String("error", err.Error()))
-		return 0
-	}
-	return time.Duration(days) * 24 * time.Hour
-}
-
-// Returns 0 when unset or invalid so api applies its default.
-func webhookDeliveryRetention(logger *slog.Logger) time.Duration {
-	raw := os.Getenv("APP_WEBHOOK_DELIVERY_RETENTION_DAYS")
-	if raw == "" {
-		return 0
-	}
-	days, err := strconv.ParseInt(raw, 10, 64)
-	if err != nil {
-		logger.Warn("invalid APP_WEBHOOK_DELIVERY_RETENTION_DAYS, using the default", slog.String("value", raw), slog.String("error", err.Error()))
-		return 0
-	}
-	return time.Duration(days) * 24 * time.Hour
-}
-
 // positiveIntEnv returns the env var as a positive int, or 0 (the api
 // package's signal to use its own default) when unset or invalid.
 func positiveIntEnv(logger *slog.Logger, name string) int {

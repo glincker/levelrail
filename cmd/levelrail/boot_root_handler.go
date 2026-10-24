@@ -196,8 +196,6 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithPreviewStuckAfter(previewStuckAfter(logger)),
 		api.WithStaticOrphanGrace(staticOrphanGrace(logger)),
 		api.WithInviteTTL(inviteTTL(logger)),
-		api.WithAuditLogRetention(auditLogRetention(logger)),
-		api.WithWebhookDeliveryRetention(webhookDeliveryRetention(logger)),
 		api.WithWebhookFailedDeliveryLimits(
 			positiveIntEnv(logger, "APP_WEBHOOK_FAILED_DELIVERY_KEEP"),
 			positiveIntEnv(logger, "APP_WEBHOOK_FAILED_BODY_BYTES"),

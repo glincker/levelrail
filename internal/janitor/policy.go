@@ -99,6 +99,9 @@ func (p Policy) stageOn(s Stage) bool {
 	return true
 }
 
+// StageEnabled reports whether the policy lets s run.
+func (p Policy) StageEnabled(s Stage) bool { return p.stageOn(s) }
+
 // PolicyStore persists the policy as JSON.
 type PolicyStore interface {
 	GetJanitorPolicy(ctx context.Context) (string, bool, error)
