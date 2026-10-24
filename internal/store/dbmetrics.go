@@ -47,6 +47,12 @@ type DBMetrics struct {
 	WALBytes        int64       `json:"wal_bytes"`
 	DBBytes         int64       `json:"db_bytes"`
 	RecentSlow      []SlowQuery `json:"recent_slow"`
+	// Read pool figures. ReadPoolSize is 0 when reads share the writer connection.
+	ReadPoolEnabled bool    `json:"read_pool_enabled"`
+	ReadPoolSize    int     `json:"read_pool_size"`
+	ReadInUse       int     `json:"read_in_use"`
+	ReadWaitCount   int64   `json:"read_wait_count"`
+	ReadWaitMS      float64 `json:"read_wait_ms"`
 }
 
 type dbMetrics struct {
@@ -120,6 +126,12 @@ func (db *DB) Metrics() DBMetrics {
 	out := DBMetrics{}
 	st := db.Stats()
 	out.InUse, out.WaitCount, out.WaitMS = st.InUse, st.WaitCount, float64(st.WaitDuration)/float64(time.Millisecond)
+	if db.ro != nil {
+		rs := db.ro.Stats()
+		out.ReadPoolEnabled, out.ReadPoolSize = true, rs.MaxOpenConnections
+		out.ReadInUse, out.ReadWaitCount = rs.InUse, rs.WaitCount
+		out.ReadWaitMS = float64(rs.WaitDuration) / float64(time.Millisecond)
+	}
 	m := db.m
 	if m == nil {
 		return out

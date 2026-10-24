@@ -86,3 +86,30 @@ func TestReadPool_CloseClosesBoth(t *testing.T) {
 		t.Fatal("read pool should be closed")
 	}
 }
+
+func TestMetrics_ReadPoolFields(t *testing.T) {
+	tests := []struct {
+		name        string
+		dropPool    bool
+		wantEnabled bool
+		wantSize    int
+	}{
+		{"pool nil", true, false, 0},
+		{"pool enabled", false, true, readPoolSize()},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db := openFileDB(t)
+			if tc.dropPool {
+				db.ro = nil
+			}
+			m := db.Metrics()
+			if m.ReadPoolEnabled != tc.wantEnabled || m.ReadPoolSize != tc.wantSize {
+				t.Fatalf("enabled=%v size=%d, want %v %d", m.ReadPoolEnabled, m.ReadPoolSize, tc.wantEnabled, tc.wantSize)
+			}
+			if !tc.wantEnabled && (m.ReadInUse != 0 || m.ReadWaitCount != 0 || m.ReadWaitMS != 0) {
+				t.Fatalf("disabled pool reported usage: %+v", m)
+			}
+		})
+	}
+}

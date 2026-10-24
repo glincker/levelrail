@@ -9,7 +9,7 @@ The control plane watches its own saturation so a busy instance tells you before
 ## What is measured
 
 - Process: goroutines, heap in use, last GC pause.
-- Database: query latency p50, p95 and p99, writes that waited for the single SQLite connection (the write queue), write ahead log size, and a slow query log.
+- Database: query latency p50, p95 and p99, writes that waited for the single SQLite connection (the write queue), reads that waited for a free read connection (the read queue, with the pool size and how many connections are busy; shown as "read pool off" when `APP_DB_READ_CONNS` is 0 or the database is in memory, because reads then use the writer), write ahead log size, and a slow query log.
 - Reconcile loop: last pass duration, p50 and p95, the slowest controller, and seconds since the last pass finished (event lag).
 - Live streams: open log, deploy and event streams against the cap.
 - Footprint: resident memory, OS threads, CPU, the metrics database size, the soft memory limit, and every background loop with its interval, last run and share of a core. See [Performance budget](/performance-budget).

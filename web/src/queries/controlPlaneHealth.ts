@@ -124,6 +124,11 @@ export interface CPHealth {
     in_use: number
     wait_count: number
     wait_ms: number
+    read_pool_enabled: boolean
+    read_pool_size: number
+    read_in_use: number
+    read_wait_count: number
+    read_wait_ms: number
     wal_bytes: number
     db_bytes: number
     recent_slow: CPHealthSlowQuery[]
