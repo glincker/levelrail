@@ -280,9 +280,33 @@ Seven jobs also never skip because of an upstream failure: `Plan Go work`, `Buil
 | --- | --- | --- |
 | `secret-scan.yml` (gitleaks) | Every PR, commits in the change only | A token leaked in a markdown file is still a leak. Uses the pinned release binary, no Go build |
 | `pr-hygiene.yml` | Every PR | Labels, size, description and commit rules in one job |
-| `codeql.yml` | No | Not a required check. Runs on pushes to `main` that touch Go or web sources, weekly, and on manual dispatch |
+| `codeql.yml` | No | Not a required check. Runs weekly, on release tags and on manual dispatch (a push to `main` cost about 17 runner-minutes, so it no longer triggers one) |
 | `dependabot-auto-merge.yml` | Dependabot PRs only (listed as skipped elsewhere) | |
-| SonarCloud | Every PR | A GitHub App, not an Actions job: it runs on the vendor's infrastructure, uses no Actions minutes, and is not a merge blocker |
+| `pr-security.yml` | PRs touching workflows or dependency manifests | zizmor (advisory) and dependency review (fails only on a newly added high or critical advisory). Neither is in `CI required` |
+| SonarCloud | No | `sonar.yml` runs on `main` and `release/**` pushes, weekly and on dispatch. Advisory, see [Quality and security scans](#quality-and-security-scans) |
+
+## Quality and security scans
+
+All of these are advisory: `continue-on-error`, never in the `needs` of
+`CI required`, and a missing secret skips the step with a notice instead of
+failing.
+
+| Scan | Workflow | When | Output |
+| --- | --- | --- | --- |
+| SonarCloud | `sonar.yml` | Push to `main` and `release/**`, Mondays, dispatch. Never on a PR | SonarCloud dashboard. Needs `SONAR_TOKEN`. Go coverage (`go test -short ./internal/...`) is imported everywhere except release branch pushes |
+| Codecov | `ci.yml`, `Coverage gate` | Push to `main` only (`ci.yml` has no `release/**` push trigger, the guard also covers it) | Informational statuses, no PR comment. Needs `CODECOV_TOKEN`. Config in `codecov.yml` |
+| govulncheck | `security-scheduled.yml` | Mondays, release tags, dispatch | Reachable findings in the job summary, SARIF to code scanning |
+| OpenSSF Scorecard | `security-scheduled.yml` | Mondays, dispatch | SARIF to code scanning |
+| OSV-Scanner | `security-scheduled.yml` | Mondays, dispatch | SARIF to code scanning (Go and npm lockfiles) |
+| CodeQL | `codeql.yml` | Wednesdays, release tags, dispatch | Security tab |
+| zizmor | `pr-security.yml` | PRs touching `.github/` | Job log. actionlint stays in `Lint` and is the gate |
+| Dependency review | `pr-security.yml` | PRs touching a lockfile or `go.mod` | Fails on a new high or critical advisory only |
+| gitleaks | `secret-scan.yml` | Every PR and `main` push | The one scanner that blocks |
+
+SonarCloud's automatic analysis (the GitHub App mode) must be switched off
+in the project settings, because SonarCloud rejects a CI scan while it is on.
+Web coverage is not uploaded yet: vitest has no coverage provider in
+`web/package.json`.
 
 ## First-hour smoke test
 
@@ -402,7 +426,9 @@ passes `CI required` the same way a skipped area does.
 ## Concurrency and merge queue
 
 A new push to a PR cancels that PR's previous CI run (`ci.yml`, `secret-scan.yml`,
-`pr-hygiene.yml`). The group key includes the event name and, outside pull
+`pr-hygiene.yml`, `pr-security.yml`). `sonar.yml`, `security-scheduled.yml` and
+`codeql.yml` cancel a superseded run of the same ref, and `dependabot-auto-merge.yml`
+of the same PR. The group key includes the event name and, outside pull
 requests, the commit SHA, so `merge_group` and `main` runs never share a
 group with a PR and are never cancelled; `nightly.yml` has no group.
 
@@ -439,19 +465,35 @@ scripts/ci-go-plan.sh <base-sha> <head-sha>
 
 ## Measured timings
 
-Baseline: the last 60 `ci.yml` runs (48 of them on pull requests). Median
-wall time per job, from the run and step timestamps.
+Measured 2026-10-24 from the last 60 runs of each workflow (`gh api`).
+Runs per week extrapolates from that window, so bursty workflows read high.
+Failed and cancelled counts are out of 60.
 
-| Job | Median | p90 |
-| --- | --- | --- |
-| Whole PR run | 491 s | 622 s |
-| `Test (api-1..4)` (internal/api shards) | about 390 s | about 450 s |
-| `Test (e2e)` / `e2e-fleet` / `e2e-reconcile` | 382 s / 468 s / 475 s | 412 s / 490 s / 525 s |
-| `Test (rest)` / `Test (docker)` | 223 s / 182 s | 283 s / 217 s |
-| `Build, vet` (planner table tests about 128 s of it) | 221 s | 266 s |
-| `Lint` | 183 s | 237 s |
-| `Web (tsc, eslint)` (`vitest related` has rare outliers) | 152 s | 375 s |
-| `Plan Go work`, `Coverage gate`, `CI required` | 49 s, 12 s, 3 s | |
+| Workflow | Events | Median / p90 | Runs per week | Failed / cancelled |
+| --- | --- | --- | --- | --- |
+| `ci.yml` | PR 51, push 9 | 421 s / 840 s | about 240 (1.8 day window) | 13 / 23 |
+| `codeql.yml` (go 764 s, js 213 s) | push 58, schedule 2 | 634 s / 1218 s | 32 | 0 / 3 |
+| `release.yml` | tag push, dispatch | 426 s / 971 s | 20 | 26 / 0 (most before the tag-only trigger) |
+| `nightly.yml` | schedule | 2631 s / 4521 s | 7 | 54 / 1 |
+| `secret-scan`, `pr-hygiene`, `glinr-bot` | PR | 15 s, 20 s, 36 s | 340 to 500 | 0 / 0, 1, 20 |
+| `release-pacing`, `release-please`, `flake-report` | schedule, push, workflow_run | 7 s to 37 s | 37 to 171 | 2 / 0 |
+| Housekeeping (`stale`, `lock-closed`, `backup-tags`, `branch-cleanup`, `labels`) | schedule, PR | under 15 s | under 10, except `branch-cleanup` on every PR close | 0 / 0 |
+
+Where the runner minutes go, per `ci.yml` run (about 44 runner-minutes, from
+the jobs of 30 runs):
+
+| Job | Median | p90 | Runner-min per run |
+| --- | --- | --- | --- |
+| `Web tests (k/4)` (full vitest, on 2 of 3 recent runs because `ci.yml` itself changed) | 347 s | 384 s | 14.1 |
+| `Test (api-1..4)` | 378 s | 495 s | 7.9 |
+| `Test (rest)`, `Build, vet`, `Lint` | 490 s, 452 s, 346 s | 552 s, 464 s, 388 s | 2.8, 2.5, 1.9 |
+| `Test (e2e)`, `e2e-reconcile`, `e2e-fleet`, `docker` | 370 s, 305 s, 518 s, 349 s | 771 s, 492 s, 584 s, 492 s | 2.4, 1.8, 1.1, 1.9 |
+| `Web (tsc, eslint)` | 184 s | 242 s | 2.2 |
+
+Other sinks: `codeql.yml` cost 17.6 runner-minutes on every push to `main`
+(14 for the Go job), about 4.5 pushes a day. `release.yml` costs about 35
+runner-minutes per tag, mostly the four image builds. Flaky lanes are
+`Test (e2e-reconcile-2)` (4 of 5 runs failed) and the `api` shards (8 of 40).
 
 The first job starts 2 to 57 s after the run is created. Go build and
 module caches hit on PR runs. The tsc build-info cache never hits, because
