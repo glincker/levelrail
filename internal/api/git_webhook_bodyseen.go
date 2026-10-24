@@ -3,24 +3,9 @@ package api
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"os"
 	"sync"
 	"time"
 )
-
-const (
-	envWebhookReplayWindow     = "APP_WEBHOOK_REPLAY_WINDOW"
-	defaultWebhookReplayWindow = 10 * time.Minute
-)
-
-// webhookReplayWindow is how long an identical signed body is remembered,
-// APP_WEBHOOK_REPLAY_WINDOW as a Go duration when set.
-func webhookReplayWindow() time.Duration {
-	if d, err := time.ParseDuration(os.Getenv(envWebhookReplayWindow)); err == nil && d > 0 {
-		return d
-	}
-	return defaultWebhookReplayWindow
-}
 
 // webhookBodySeen remembers recent signed bodies so a captured request
 // cannot be replayed with a changed or missing delivery header, which the

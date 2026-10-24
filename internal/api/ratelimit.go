@@ -174,7 +174,7 @@ func isTrustedPeer(host string, trusted []netip.Prefix) bool {
 		return false
 	}
 	addr = addr.Unmap()
-	if addr.IsLoopback() {
+	if addr.IsLoopback() && loopbackTrusted() {
 		return true
 	}
 	for _, p := range trusted {

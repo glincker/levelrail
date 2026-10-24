@@ -495,7 +495,7 @@ func (rt *Router) pinnedOriginUsable(ctx context.Context, pinned session) bool {
 // plain AbilityRead request never reaches the auditWorthy branch at
 // all, so it never pays for that lookup.
 func (rt *Router) callAudited(w http.ResponseWriter, r *http.Request, required, actorType, actorID, tokenName string, next http.HandlerFunc) {
-	if !auditWorthy(required) && !sensitiveReadRoute(r) {
+	if !auditWorthy(required) && !rt.sensitiveReadAudited(r) {
 		next(w, r)
 		return
 	}

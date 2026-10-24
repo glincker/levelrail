@@ -49,12 +49,13 @@ func TestWebhookBodyKeyScopes(t *testing.T) {
 }
 
 func TestWebhookReplayWindowEnv(t *testing.T) {
-	t.Setenv(envWebhookReplayWindow, "")
-	if got := webhookReplayWindow(); got != defaultWebhookReplayWindow {
-		t.Errorf("default = %v, want %v", got, defaultWebhookReplayWindow)
+	rt := &Router{}
+	t.Setenv("APP_WEBHOOK_REPLAY_WINDOW", "")
+	if got := rt.webhookReplayWindow(t.Context()); got != 10*time.Minute {
+		t.Errorf("default = %v, want 10m", got)
 	}
-	t.Setenv(envWebhookReplayWindow, "45s")
-	if got := webhookReplayWindow(); got != 45*time.Second {
+	t.Setenv("APP_WEBHOOK_REPLAY_WINDOW", "45s")
+	if got := rt.webhookReplayWindow(t.Context()); got != 45*time.Second {
 		t.Errorf("env = %v, want 45s", got)
 	}
 }

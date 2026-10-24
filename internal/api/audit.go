@@ -156,7 +156,7 @@ func (rt *Router) recordAudit(ctx context.Context, r *http.Request, required, ac
 		CreatedAt:  store.FormatAuditTime(time.Now()),
 		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
 	}
-	if required == AbilityRead && sensitiveReadRoute(r) {
+	if required == AbilityRead && rt.sensitiveReadAudited(r) {
 		entry.Action = AuditActionSensitiveRead
 	}
 	if actorType == "token" {
