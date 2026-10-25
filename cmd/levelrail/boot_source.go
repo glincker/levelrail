@@ -340,7 +340,12 @@ func appControllersFor(ctx context.Context, deps dynamicSourceDeps, services []s
 			continue
 		}
 		svcOpts := append(appOpts[:len(appOpts):len(appOpts)], application.WithPassSnapshot(snap, nodeID), application.WithImageIDCache(deps.imageIDs, nodeID), application.WithNodeRecovering(nodeRecentlyRecovered(ctx, deps, svc.NodeID)))
-		controllers = append(controllers, application.New(svc.Name, deps.db, svcRuntime, svcOpts...))
+		appCtl := reconcile.Controller(application.New(svc.Name, deps.db, svcRuntime, svcOpts...))
+		if svc.NodeID != "" {
+			// Only a placed app can have attempts queued for an offline node.
+			appCtl = application.WithPendingAttemptResolution(appCtl, svc.Name, deps.db)
+		}
+		controllers = append(controllers, appCtl)
 		if !svc.Suspended {
 			n := targets[nodeID]
 			if n == nil {
