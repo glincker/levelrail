@@ -1990,6 +1990,9 @@ Routes that do not fit an existing group.
 | POST | /api/v1/assets/buckets/{id}/uploads/confirm | AbilityWrite | handleConfirmAssetUpload |
 | PUT | /api/v1/assets/buckets/{id}/objects | AbilityWrite | handleUploadAsset |
 | DELETE | /api/v1/assets/buckets/{id}/objects | AbilityWrite | handleDeleteAsset |
+| GET | /api/v1/stack-templates | AbilityRead | handleListStackTemplates |
+| GET | /api/v1/stack-templates/{id} | AbilityRead | handleGetStackTemplate |
+| POST | /api/v1/stack-templates/{id}/render | AbilityWrite | handleRenderStackTemplate |
 
 ## See also
 

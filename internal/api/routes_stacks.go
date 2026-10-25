@@ -25,5 +25,8 @@ func (rt *Router) registerStackRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/stacks/{name}/oidc-trusts", rt.requireAbilityForResource(AbilityRoot, stackResourceFromPath, rt.handleCreateStackTrust))
 	mux.HandleFunc("GET /api/v1/stacks/{name}/oidc-trusts", rt.requireAbilityForResource(AbilityRoot, stackResourceFromPath, rt.handleListStackTrusts))
 	mux.HandleFunc("DELETE /api/v1/stacks/{name}/oidc-trusts/{id}", rt.requireAbilityForResource(AbilityRoot, stackResourceFromPath, rt.handleDeleteStackTrust))
+	mux.HandleFunc("GET /api/v1/stack-templates", rt.requireAbility(AbilityRead, rt.handleListStackTemplates))
+	mux.HandleFunc("GET /api/v1/stack-templates/{id}", rt.requireAbility(AbilityRead, rt.handleGetStackTemplate))
+	mux.HandleFunc("POST /api/v1/stack-templates/{id}/render", rt.requireAbility(AbilityWrite, rt.handleRenderStackTemplate))
 	mux.HandleFunc("POST /api/v1/ci/stack-oidc-exchange", rt.handleStackOIDCExchange)
 }

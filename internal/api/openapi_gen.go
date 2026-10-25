@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1765 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1768 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1464,6 +1464,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/sso/scim/tokens/{id}/rotate", Ability: "AbilityRoot", Group: "Other", Handler: "handleRotateSCIMToken", Description: ""},
 	{Method: "GET", Path: "/api/v1/sso/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetSSOSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/sso/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutSSOSettings", Description: ""},
+	{Method: "GET", Path: "/api/v1/stack-templates", Ability: "AbilityRead", Group: "Other", Handler: "handleListStackTemplates", Description: ""},
+	{Method: "GET", Path: "/api/v1/stack-templates/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetStackTemplate", Description: ""},
+	{Method: "POST", Path: "/api/v1/stack-templates/{id}/render", Ability: "AbilityWrite", Group: "Other", Handler: "handleRenderStackTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/stacks", Ability: "AbilityRead", Group: "Other", Handler: "handleListStacks", Description: ""},
 	{Method: "POST", Path: "/api/v1/stacks", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateStack", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/stacks/{name}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteStack", Description: ""},
