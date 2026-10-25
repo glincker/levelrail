@@ -23,3 +23,23 @@ func PricePerGBMonth(preset string, lookup func(string) (string, bool)) float64 
 	}
 	return defaultPricePerGBMonth[preset]
 }
+
+// EgressPricePrefix is the env prefix for overriding a preset's internet egress USD per GB, for example APP_STORAGE_EGRESS_PRICE_PER_GB_AWS.
+const EgressPricePrefix = "APP_STORAGE_EGRESS_PRICE_PER_GB_"
+
+// B2's free allowance (three times the stored size) is not modeled here, so its entry is the post-allowance rate.
+var defaultEgressPricePerGB = map[string]float64{
+	PresetAWS: 0.09, PresetR2: 0, PresetB2: 0.01, PresetWasabi: 0, PresetGCS: 0.12, PresetGarage: 0, PresetMinIO: 0,
+}
+
+// EgressPricePerGB is the list price of internet egress used for cost estimates; unknown presets cost nothing.
+func EgressPricePerGB(preset string, lookup func(string) (string, bool)) float64 {
+	if lookup != nil {
+		if v, ok := lookup(EgressPricePrefix + strings.ToUpper(preset)); ok {
+			if f, err := strconv.ParseFloat(strings.TrimSpace(v), 64); err == nil && f >= 0 {
+				return f
+			}
+		}
+	}
+	return defaultEgressPricePerGB[preset]
+}
