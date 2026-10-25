@@ -296,7 +296,9 @@ func toIaCStack(s store.StackRecord) iac.Stack {
 // stackCaller identifies who acts. isCI is true for tokens minted by the CI exchange.
 type stackCaller struct {
 	kind, id, name string
-	isCI           bool
+	// userID is the session user or the token's owner, empty when unknown.
+	userID string
+	isCI   bool
 }
 
 func (rt *Router) stackCaller(r *http.Request) stackCaller {
@@ -304,7 +306,18 @@ func (rt *Router) stackCaller(r *http.Request) stackCaller {
 	if !ok {
 		return stackCaller{kind: "unknown", id: "unknown", name: "unknown"}
 	}
-	return stackCaller{kind: t, id: id, name: name, isCI: t == store.PrincipalTypeToken && strings.HasPrefix(name, stackCIPrefix)}
+	c := stackCaller{kind: t, id: id, name: name, isCI: t == store.PrincipalTypeToken && strings.HasPrefix(name, stackCIPrefix)}
+	switch t {
+	case store.PrincipalTypeUser:
+		c.userID = id
+	case store.PrincipalTypeToken:
+		if token, ok := bearerToken(r); ok {
+			if rec, err := rt.lookupBearerToken(r.Context(), token); err == nil && rec.ID == id {
+				c.userID = rec.OwnerUserID
+			}
+		}
+	}
+	return c
 }
 
 func (c stackCaller) tokenID() string {

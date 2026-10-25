@@ -18,7 +18,53 @@ func approvalFixture(t *testing.T) (*Router, *store.DB, *http.Cookie, string) {
 	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPatch, "/api/v1/stacks/shop-prod", `{"require_approval":true}`), nil); code != http.StatusOK {
 		t.Fatalf("enable approval: %d", code)
 	}
-	return rt, db, cookie, seedMatrixToken(t, db, "approver", []string{AbilityRoot})
+	return rt, db, cookie, seedApproverToken(t, db, "approver", []string{AbilityRoot})
+}
+
+// seedApproverToken is a root-capable token owned by a second admin user, the
+// shape of a real approver (ownerless tokens cannot approve).
+func seedApproverToken(t *testing.T, db *store.DB, id string, abilities []string) string {
+	t.Helper()
+	u := storeUserWithAbilitiesForTest(t, db, id+"@example.test", []string{AbilityRoot})
+	plain := "owned-secret-" + id
+	if err := db.SaveAPIToken(t.Context(), store.APIToken{
+		ID: id, Name: id, TokenHash: hashToken(plain), Abilities: abilities, OwnerUserID: u.ID,
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+	return plain
+}
+
+func TestApprovalSelfApprovalDeniedAfterRename(t *testing.T) {
+	rt, _, cookie, _ := approvalFixture(t)
+	stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.0.0"), nil)
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPatch, "/api/v1/auth/profile", `{"display_name":"Someone Else"}`), nil); code != http.StatusOK {
+		t.Fatalf("rename = %d", code)
+	}
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/shop-prod/revisions/1/approve", ""), nil); code != http.StatusForbidden {
+		t.Fatalf("approve after rename = %d", code)
+	}
+}
+
+func TestApprovalSelfApprovalDeniedWithOwnMintedToken(t *testing.T) {
+	rt, _, cookie, _ := approvalFixture(t)
+	stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.0.0"), nil)
+	var minted createTokenResponse
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/auth/tokens", `{"name":"my-approver","abilities":["root"]}`), &minted); code != http.StatusCreated || minted.Token == "" {
+		t.Fatalf("mint = %d", code)
+	}
+	if code := tokenPost(t, rt, minted.Token, "/api/v1/stacks/shop-prod/revisions/1/approve", "", nil); code != http.StatusForbidden {
+		t.Fatalf("approve with own token = %d", code)
+	}
+}
+
+func TestApprovalOwnerlessApproverDenied(t *testing.T) {
+	rt, db, cookie, _ := approvalFixture(t)
+	stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.0.0"), nil)
+	tok := seedMatrixToken(t, db, "ownerless", []string{AbilityRoot})
+	if code := tokenPost(t, rt, tok, "/api/v1/stacks/shop-prod/revisions/1/approve", "", nil); code != http.StatusForbidden {
+		t.Fatalf("ownerless approve = %d", code)
+	}
 }
 
 func tokenPost(t *testing.T, rt *Router, tok, path, body string, out any) int {

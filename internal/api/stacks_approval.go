@@ -131,7 +131,7 @@ func (rt *Router) requestStackApproval(w http.ResponseWriter, r *http.Request, s
 	planJSON, _ := json.Marshal(plan)
 	rev, err := ss.AppendStackRevision(ctx, store.NewStackRevision{
 		StackID: stack.ID, Status: store.StackRevPendingApproval, PlanHash: plan.Hash, PlanJSON: planJSON, RenderedDocs: rendered,
-		RollbackOf: run.rollbackOf, IdempotencyKey: req.IdempotencyKey, Actor: caller.name, TokenID: caller.tokenID(),
+		RollbackOf: run.rollbackOf, IdempotencyKey: req.IdempotencyKey, Actor: caller.name, TokenID: caller.tokenID(), RequesterUserID: caller.userID,
 		GitRepo: req.GitRepo, GitRef: req.GitRef, GitSHA: req.GitSHA, CIRunURL: req.CIRunURL, Secrets: req.Secrets,
 	}, time.Now())
 	if err != nil {
@@ -175,7 +175,7 @@ func (rt *Router) startStackRevision(ctx context.Context, w http.ResponseWriter,
 	planJSON, _ := json.Marshal(plan)
 	rev, err := ss.AppendStackRevision(ctx, store.NewStackRevision{
 		StackID: stack.ID, Status: store.StackRevApplying, PlanHash: plan.Hash, PlanJSON: planJSON, RenderedDocs: rendered,
-		RollbackOf: run.rollbackOf, IdempotencyKey: req.IdempotencyKey, Actor: caller.name, TokenID: caller.tokenID(),
+		RollbackOf: run.rollbackOf, IdempotencyKey: req.IdempotencyKey, Actor: caller.name, TokenID: caller.tokenID(), RequesterUserID: caller.userID,
 		GitRepo: req.GitRepo, GitRef: req.GitRef, GitSHA: req.GitSHA, CIRunURL: req.CIRunURL, Secrets: req.Secrets,
 	}, time.Now())
 	if err != nil {
@@ -252,7 +252,7 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 	if !rt.checkApprovable(r.Context(), w, ss, s, rev) {
 		return
 	}
-	if caller.name == rev.Actor || (caller.tokenID() != "" && caller.tokenID() == rev.TokenID) {
+	if !distinctApprover(caller, rev) {
 		writeError(w, http.StatusForbidden, "the requester cannot approve their own revision; another administrator must approve it")
 		return
 	}
@@ -279,6 +279,18 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 		run.warnings = []string{rollbackWarning}
 	}
 	rt.runStack(w, r, ss, run)
+}
+
+// distinctApprover compares stable user ids, never display or token names, and
+// refuses when either side has no known user (an ownerless token or an old row).
+func distinctApprover(caller stackCaller, rev store.StackRevisionRecord) bool {
+	if caller.userID == "" || rev.RequesterUserID == "" {
+		return false
+	}
+	if caller.userID == rev.RequesterUserID {
+		return false
+	}
+	return caller.tokenID() == "" || caller.tokenID() != rev.TokenID
 }
 
 func (rt *Router) handleStackReject(w http.ResponseWriter, r *http.Request) {

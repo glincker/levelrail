@@ -86,32 +86,35 @@ type StackRevisionRecord struct {
 	IdempotencyKey string
 	Actor          string
 	TokenID        string
-	GitRepo        string
-	GitRef         string
-	GitSHA         string
-	CIRunURL       string
-	CreatedAt      time.Time
-	FinishedAt     *time.Time
-	ResultJSON     []byte
+	// RequesterUserID is the session user or token owner; Actor is display only.
+	RequesterUserID string
+	GitRepo         string
+	GitRef          string
+	GitSHA          string
+	CIRunURL        string
+	CreatedAt       time.Time
+	FinishedAt      *time.Time
+	ResultJSON      []byte
 	// Replayed is set when AppendStackRevision matched an earlier idempotency key.
 	Replayed bool
 }
 
 // NewStackRevision is the input to AppendStackRevision.
 type NewStackRevision struct {
-	StackID        string
-	Status         string
-	PlanHash       string
-	PlanJSON       []byte
-	RenderedDocs   []byte
-	RollbackOf     int
-	IdempotencyKey string
-	Actor          string
-	TokenID        string
-	GitRepo        string
-	GitRef         string
-	GitSHA         string
-	CIRunURL       string
+	StackID         string
+	Status          string
+	PlanHash        string
+	PlanJSON        []byte
+	RenderedDocs    []byte
+	RollbackOf      int
+	IdempotencyKey  string
+	Actor           string
+	TokenID         string
+	RequesterUserID string
+	GitRepo         string
+	GitRef          string
+	GitSHA          string
+	CIRunURL        string
 	// Secrets maps secret names to values; none may appear in RenderedDocs or PlanJSON.
 	Secrets map[string]string
 }
@@ -344,7 +347,7 @@ func leakedStackSecret(secrets map[string]string, docs ...[]byte) (string, bool)
 	return "", false
 }
 
-const stackRevCols = `stack_id, number, status, plan_hash, plan_json, rendered_docs_gz, rollback_of, idempotency_key, actor, token_id, git_repo, git_ref, git_sha, ci_run_url, created_at, finished_at, result_json`
+const stackRevCols = `stack_id, number, status, plan_hash, plan_json, rendered_docs_gz, rollback_of, idempotency_key, actor, token_id, git_repo, git_ref, git_sha, ci_run_url, created_at, finished_at, result_json, requester_user_id`
 
 func scanStackRevision(r rowScanner, withDocs bool) (StackRevisionRecord, error) {
 	var v StackRevisionRecord
@@ -352,7 +355,7 @@ func scanStackRevision(r rowScanner, withDocs bool) (StackRevisionRecord, error)
 	var created string
 	var finished sql.NullString
 	if err := r.Scan(&v.StackID, &v.Number, &v.Status, &v.PlanHash, &v.PlanJSON, &gz, &v.RollbackOf, &v.IdempotencyKey,
-		&v.Actor, &v.TokenID, &v.GitRepo, &v.GitRef, &v.GitSHA, &v.CIRunURL, &created, &finished, &v.ResultJSON); err != nil {
+		&v.Actor, &v.TokenID, &v.GitRepo, &v.GitRef, &v.GitSHA, &v.CIRunURL, &created, &finished, &v.ResultJSON, &v.RequesterUserID); err != nil {
 		return StackRevisionRecord{}, err
 	}
 	v.CreatedAt, _ = time.Parse(time.RFC3339Nano, created)
@@ -417,9 +420,9 @@ func (db *DB) AppendStackRevision(ctx context.Context, in NewStackRevision, now 
 	if in.RollbackOf < 0 || in.RollbackOf >= number {
 		return StackRevisionRecord{}, errors.New("store: append revision: rollback_of must name an earlier revision")
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO stack_revisions (`+stackRevCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`,
+	if _, err := tx.ExecContext(ctx, `INSERT INTO stack_revisions (`+stackRevCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?)`,
 		in.StackID, number, in.Status, in.PlanHash, in.PlanJSON, gz, in.RollbackOf, in.IdempotencyKey, in.Actor, in.TokenID,
-		in.GitRepo, in.GitRef, in.GitSHA, in.CIRunURL, stackTime(now)); err != nil {
+		in.GitRepo, in.GitRef, in.GitSHA, in.CIRunURL, stackTime(now), in.RequesterUserID); err != nil {
 		return StackRevisionRecord{}, fmt.Errorf("store: append revision: insert: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -428,8 +431,8 @@ func (db *DB) AppendStackRevision(ctx context.Context, in NewStackRevision, now 
 	return StackRevisionRecord{
 		StackID: in.StackID, Number: number, Status: in.Status, PlanHash: in.PlanHash, PlanJSON: in.PlanJSON,
 		RenderedDocs: in.RenderedDocs, RollbackOf: in.RollbackOf, IdempotencyKey: in.IdempotencyKey, Actor: in.Actor,
-		TokenID: in.TokenID, GitRepo: in.GitRepo, GitRef: in.GitRef, GitSHA: in.GitSHA, CIRunURL: in.CIRunURL,
-		CreatedAt: now.UTC(),
+		TokenID: in.TokenID, RequesterUserID: in.RequesterUserID, GitRepo: in.GitRepo, GitRef: in.GitRef, GitSHA: in.GitSHA,
+		CIRunURL: in.CIRunURL, CreatedAt: now.UTC(),
 	}, nil
 }
 
