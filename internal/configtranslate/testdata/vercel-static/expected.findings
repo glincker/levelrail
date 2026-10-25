@@ -1,0 +1,4 @@
+warn vercel.route.pattern /gone/:id(\d+)
+warn vercel.route.condition /ab
+warn vercel.rewrite.proxy /api/(.*)
+blocker vercel.cron.static crons

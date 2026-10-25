@@ -3,7 +3,10 @@ package application
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"net"
+	"strconv"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -60,7 +63,9 @@ func runnableProbe(p *store.ServiceProbe, port int) *store.ServiceProbe {
 	return p
 }
 
-func probeTarget(state *docker.ContainerState, p store.ServiceProbe) (probe.Target, error) {
+// probeTarget resolves what a probe dials. A port probe on a remote node
+// dials its mesh address: the control plane's loopback is the wrong host.
+func (c *Controller) probeTarget(ctx context.Context, state *docker.ContainerState, p store.ServiceProbe, nodeID string) (probe.Target, error) {
 	if !p.NeedsPort() {
 		return probe.Target{ContainerID: state.ID}, nil
 	}
@@ -68,7 +73,28 @@ func probeTarget(state *docker.ContainerState, p store.ServiceProbe) (probe.Targ
 	if err != nil {
 		return probe.Target{}, err
 	}
-	return probe.Target{Addr: addr}, nil
+	if c.meshPaths == nil || nodeID == "" {
+		return probe.Target{Addr: addr}, nil
+	}
+	path, err := c.meshPaths.Path(ctx, nodeID)
+	if err != nil {
+		return probe.Target{}, fmt.Errorf("resolve mesh path to node %s: %w", nodeID, err)
+	}
+	// No mesh for this node: the agent shares the control plane's network.
+	if path.Local || path.NoMesh {
+		return probe.Target{Addr: addr}, nil
+	}
+	if !path.Usable {
+		return probe.Target{}, fmt.Errorf("node %s is not reachable over the mesh: %s", nodeID, path.Reason)
+	}
+	bound := state.Ports[0].HostIP
+	if ip := net.ParseIP(bound); ip != nil && ip.IsLoopback() {
+		return probe.Target{}, fmt.Errorf("port is published on loopback of node %s, waiting for the mesh bind", nodeID)
+	}
+	if bound != "" && bound != "0.0.0.0" && bound != path.Address {
+		return probe.Target{Addr: net.JoinHostPort(bound, strconv.Itoa(state.Ports[0].HostPort))}, nil
+	}
+	return probe.Target{Addr: net.JoinHostPort(path.Address, strconv.Itoa(state.Ports[0].HostPort))}, nil
 }
 
 // runtimeExecutor adapts docker.Runtime's streaming Exec to probe.Executor.

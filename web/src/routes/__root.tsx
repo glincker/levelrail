@@ -70,7 +70,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       getStoredUsername() === null &&
       !PUBLIC_ROUTE_PATHS.includes(location.pathname)
     ) {
-      redirect({ to: '/login', throw: true })
+      // Keep the full target so a deep link such as /deploy?repo=... survives sign-in.
+      redirect({
+        to: '/login',
+        search: location.pathname === '/' ? {} : { redirect: location.href },
+        throw: true,
+      })
     }
   },
   // Primes brand (GET /api/v1/brand) once per navigation to a route this

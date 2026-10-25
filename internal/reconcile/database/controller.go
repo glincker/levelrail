@@ -269,6 +269,9 @@ type Controller struct {
 	provRec              *dbprovision.Recorder
 	prov                 *dbprovision.Tracker
 	probe                func(ctx context.Context, addr string) error
+	recreates            recreateGuard
+	agentVersion         AgentVersionLookup
+	now                  func() time.Time
 }
 
 // Option configures optional Controller behavior.
@@ -597,16 +600,32 @@ func (c *Controller) Teardown(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("database/%s: inspect %q: %w", c.dbName, target, err)
 	}
-	if state == nil {
-		return nil
-	}
-	if state.Running {
-		if err := c.runtime.Stop(ctx, state.ID, defaultStopTimeout); err != nil {
-			return fmt.Errorf("database/%s: stop %q: %w", c.dbName, target, err)
+	if state != nil {
+		if state.Running {
+			if err := c.runtime.Stop(ctx, state.ID, defaultStopTimeout); err != nil {
+				return fmt.Errorf("database/%s: stop %q: %w", c.dbName, target, err)
+			}
+		}
+		if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+			return fmt.Errorf("database/%s: remove %q: %w", c.dbName, target, err)
 		}
 	}
-	if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
-		return fmt.Errorf("database/%s: remove %q: %w", c.dbName, target, err)
+	return c.removeCertsHelpers(ctx)
+}
+
+// removeCertsHelpers drops certs helper containers a dropped connection or crash left behind.
+func (c *Controller) removeCertsHelpers(ctx context.Context) error {
+	helpers, err := c.runtime.ListByPrefix(ctx, "dbcerts-")
+	if err != nil {
+		return fmt.Errorf("database/%s: list certs helpers: %w", c.dbName, err)
+	}
+	for _, h := range helpers {
+		if h.Labels[certsHelperLabelKey] != certsVolumeName(c.dbName) {
+			continue
+		}
+		if err := c.runtime.Remove(ctx, h.ID, true); err != nil {
+			return fmt.Errorf("database/%s: remove certs helper %q: %w", c.dbName, h.Name, err)
+		}
 	}
 	return nil
 }
@@ -739,6 +758,11 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		}
 	}
 
+	// An agent older than the labels field reports none, so a label mismatch
+	// there is unknowable: adopt the container rather than recreate it.
+	outdated := state != nil && c.agentOutdated(ctx, desired.NodeID)
+	labelsKnown := state != nil && !state.LabelsUnknown && !outdated
+
 	justDeployed := false
 	switch {
 	case state == nil:
@@ -769,32 +793,32 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		}
 		justDeployed = true
 
-	case state.Image != image:
+	case !docker.SameImageRef(state.Image, image):
 		// Sequential replace, never concurrent: see containerName's doc
 		// comment for why a database controller cannot use
 		// application.Controller's create-alongside-then-remove-old
 		// blue-green pattern.
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
-			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			return replaceFailure(c.dbName, err)
 		}
 		justDeployed = true
 
-	case tlsMaterial != nil && state.Labels[tlsCertLabelKey] != tlsCertLabelValue:
+	case labelsKnown && tlsMaterial != nil && state.Labels[tlsCertLabelKey] != tlsCertLabelValue:
 		if err := c.provisionCerts(ctx, c.dbName, tlsMaterial); err != nil {
 			return notReady("TLSProvisionFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
-			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			return replaceFailure(c.dbName, err)
 		}
 		justDeployed = true
 
-	case tlsMaterial == nil && c.tlsDisabled && state.Labels[tlsCertLabelKey] == tlsCertLabelValue:
+	case labelsKnown && tlsMaterial == nil && c.tlsDisabled && state.Labels[tlsCertLabelKey] == tlsCertLabelValue:
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
-			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			return replaceFailure(c.dbName, err)
 		}
 		justDeployed = true
 
-	case pitrEnabledFromLabel(state.Labels) != pitrActive:
+	case labelsKnown && pitrEnabledFromLabel(state.Labels) != pitrActive:
 		// Toggling PITREnabled: pitrLabelKey's own doc comment explains
 		// why a label, not a live command/env diff, is what detects this.
 		// Same sequential replace as an image change: the container needs
@@ -802,19 +826,19 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		// rebuilt with (or without) archive_mode, neither of which can be
 		// applied to a running container in place.
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
-			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			return replaceFailure(c.dbName, err)
 		}
 		justDeployed = true
 
-	case spec.Labels[engineConfigLabelKey] != "" && state.Labels[engineConfigLabelKey] != spec.Labels[engineConfigLabelKey]:
+	case labelsKnown && spec.Labels[engineConfigLabelKey] != "" && state.Labels[engineConfigLabelKey] != spec.Labels[engineConfigLabelKey]:
 		// Start command or env layout changed (boot script, memory flag):
 		// neither can be applied to a running container in place.
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
-			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			return replaceFailure(c.dbName, err)
 		}
 		justDeployed = true
 
-	case state.Running && !portsMatch(state.Ports, spec.Ports):
+	case !outdated && state.Running && !portsMatch(state.Ports, spec.Ports):
 		// Docker bakes a container's published ports into its create-time
 		// HostConfig; toggling public access or changing the assigned
 		// port can't be applied to a running container in place, so this
@@ -827,7 +851,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		// crashed (see this package's own test for the corresponding
 		// live-Docker proof of the running-container path).
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
-			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			return replaceFailure(c.dbName, err)
 		}
 		justDeployed = true
 
@@ -860,9 +884,9 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	}
 
 	if justDeployed {
-		return ready("Deployed"), nil
+		return withAgentNote(ready("Deployed"), outdated), nil
 	}
-	return ready("AlreadyRunning"), nil
+	return withAgentNote(ready("AlreadyRunning"), outdated), nil
 }
 
 // ensureWALArchiveWritable chowns postgresWALArchivePath to the
@@ -927,6 +951,12 @@ func (c *Controller) createAndStart(ctx context.Context, spec docker.ContainerSp
 // create begins) so the data volume is never mounted by two containers
 // at once.
 func (c *Controller) replaceContainer(ctx context.Context, old *docker.ContainerState, spec docker.ContainerSpec) error {
+	if err := c.requireVolume(ctx, dataVolumeName(c.dbName), spec); err != nil {
+		return err
+	}
+	if err := c.recreates.allow(c.clock()); err != nil {
+		return err
+	}
 	if old.Running {
 		if err := c.runtime.Stop(ctx, old.ID, defaultStopTimeout); err != nil {
 			return fmt.Errorf("stop %q before replace: %w", old.Name, err)

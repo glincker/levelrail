@@ -12,6 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/exposure"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -106,9 +107,11 @@ type databaseTLSResource struct {
 }
 
 type databaseNetworkResponse struct {
-	Database  string                      `json:"database"`
-	Running   bool                        `json:"running"`
-	Internal  databaseInternalAddress     `json:"internal"`
+	Database string                  `json:"database"`
+	Running  bool                    `json:"running"`
+	Internal databaseInternalAddress `json:"internal"`
+	// Mesh is where apps on other nodes reach a remote database; absent when it runs beside the control plane.
+	Mesh      *databaseInternalAddress    `json:"mesh,omitempty"`
 	Networks  []databaseNetworkAttachment `json:"networks"`
 	Published *databasePublishedResource  `json:"published,omitempty"`
 	Clients   []databaseClientResource    `json:"clients"`
@@ -283,6 +286,7 @@ func (rt *Router) handleGetDatabaseNetwork(w http.ResponseWriter, r *http.Reques
 	if ref, err := rt.dbAccess.EnvironmentOfDatabase(ctx, d.Name); err == nil && ref != nil {
 		resp.Scope.Environment = ref.Name
 	}
+	resp.Mesh = rt.databaseMeshAddress(ctx, d)
 	rt.fillNetworks(&resp, state, d)
 	finding, chain := rt.databaseFinding(ctx, d)
 	rt.fillPublished(&resp, d, finding)
@@ -379,4 +383,16 @@ func (rt *Router) fillTLS(ctx context.Context, resp *databaseNetworkResponse, d 
 	}
 	resp.TLS.State = cur
 	resp.TLS.Drift = (cur == dbaccess.TLSRequired) != s.RequireTLS
+}
+
+// databaseMeshAddress is the name and port apps get for a database on another node.
+func (rt *Router) databaseMeshAddress(ctx context.Context, d *store.DesiredDatabase) *databaseInternalAddress {
+	if d.NodeID == "" || d.NodeID == rt.localNodeID || rt.meshZone == "" || rt.multiNode == nil {
+		return nil
+	}
+	port, err := rt.multiNode.store.EnsureDatabaseMeshPort(ctx, d.Name, rt.multiNode.portMin, rt.multiNode.portMax)
+	if err != nil || port == 0 {
+		return nil
+	}
+	return &databaseInternalAddress{Host: application.DatabaseHost(d.Name, rt.meshZone), Port: port}
 }

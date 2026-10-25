@@ -46,7 +46,7 @@ func printFailedDeploysTable(out io.Writer, failed []failedDeployResource) {
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "APP\tDEPLOY ID\tIMAGE\tLAST GOOD IMAGE\tSTARTED\tERROR")
 	for _, f := range failed {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", f.ServiceName, f.ID, f.Image, dashIfEmpty(f.LastGoodImage), f.StartedAt.Format(time.RFC3339), dashIfEmpty(f.Error))
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", f.ServiceName, f.ID, f.Image, dashIfEmpty(f.LastGoodImage), f.StartedAt.Format(time.RFC3339), dashIfEmpty(attemptErrorText(f.DeployAttemptResource)))
 	}
 	_ = tw.Flush()
 }

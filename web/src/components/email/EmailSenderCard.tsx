@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
+import { FormErrorSummary } from '@/components/ui/form-error-summary'
 import { useAppForm } from '../../hooks/useAppForm'
 import { useUnsavedGuard } from '../../hooks/useUnsavedGuard'
 import { useEmailProviders } from '../../queries/emailProviders'
@@ -121,6 +122,35 @@ export function EmailSenderCard({
           className="space-y-2"
         >
           <h2 className="text-sm font-semibold">{t('emailSender.title')}</h2>
+          <FormErrorSummary
+            form={form}
+            fields={{
+              fromName: {
+                label: t('emailDelivery.sender.fromName'),
+                id: 'from-name',
+              },
+              fromAddress: {
+                label: t('emailDelivery.sender.fromAddress'),
+                id: 'email-from-address',
+              },
+              replyTo: {
+                label: t('emailDelivery.sender.replyTo'),
+                id: 'reply-to',
+              },
+              envelopeFrom: {
+                label: t('emailDelivery.sender.envelopeFrom'),
+                id: 'envelope-from',
+              },
+              sendsPerMinute: {
+                label: t('emailDelivery.limits.perMinute'),
+                id: 'sends-per-minute',
+              },
+              sendsPerDay: {
+                label: t('emailDelivery.limits.perDay'),
+                id: 'sends-per-day',
+              },
+            }}
+          />
           <div className="grid gap-x-3 gap-y-2 sm:grid-cols-2 xl:grid-cols-3">
             <EmailField
               id="from-name"

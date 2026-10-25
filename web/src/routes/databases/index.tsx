@@ -14,6 +14,8 @@ import {
 export const Route = createFileRoute('/databases/')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(databaseListQueryOptions()),
+  validateSearch: (search: Record<string, unknown>): { create?: string } =>
+    search.create === '1' || search.create === 1 ? { create: '1' } : {},
   component: DatabaseListPage,
   pendingComponent: DatabasesPending,
   errorComponent: DatabaseListError,

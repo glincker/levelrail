@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -23,6 +24,9 @@ const (
 	// ImageSourceNone means neither the registry nor the local cache knew the tag.
 	ImageSourceNone ImageSource = "none"
 )
+
+// ErrImageNotFound means the registry has no such tag and no copy is cached.
+var ErrImageNotFound = errors.New("image not found")
 
 // ResolvedImage is a floating reference turned into content.
 type ResolvedImage struct {
@@ -108,6 +112,14 @@ func (c *Client) ResolveImage(ctx context.Context, ref string, auth *RegistryAut
 	if regErr == nil {
 		regErr = fmt.Errorf("registry returned no digest")
 	}
+	if requireFresh && engineLacksDistribution(regErr) {
+		// Podman has no /distribution endpoint, so a fresh resolve is the engine's own pull.
+		d, perr := c.pullForDigest(ctx, named, ref, auth)
+		if perr != nil {
+			return ResolvedImage{}, fmt.Errorf("docker: resolve image %q from registry: %w", ref, perr)
+		}
+		return ResolvedImage{Ref: PinImageRef(ref, d), Digest: d, Source: ImageSourceRegistry}, nil
+	}
 	if requireFresh {
 		return ResolvedImage{}, fmt.Errorf("docker: resolve image %q from registry: %w", ref, regErr)
 	}
@@ -115,6 +127,9 @@ func (c *Client) ResolveImage(ctx context.Context, ref string, auth *RegistryAut
 	local, err := c.cli.ImageInspect(ctx, ref)
 	if err != nil {
 		if cerrdefs.IsNotFound(err) {
+			if registrySaysMissing(regErr) {
+				return ResolvedImage{}, fmt.Errorf("docker: %w: %q is not in its registry and not cached locally: %w", ErrImageNotFound, ref, regErr)
+			}
 			return ResolvedImage{Ref: ref, Source: ImageSourceNone, RegistryErr: regErr}, nil
 		}
 		return ResolvedImage{}, fmt.Errorf("docker: resolve image %q: inspect local: %w", ref, err)
@@ -123,6 +138,56 @@ func (c *Client) ResolveImage(ctx context.Context, ref string, auth *RegistryAut
 		return ResolvedImage{Ref: PinImageRef(ref, d), Digest: d, Source: ImageSourceCache, RegistryErr: regErr}, nil
 	}
 	return ResolvedImage{Ref: ref, LocalID: local.ID, Source: ImageSourceCache, RegistryErr: regErr}, nil
+}
+
+// engineLacksDistribution is true when the engine answered that the
+// distribution endpoint does not exist, as Podman does.
+func engineLacksDistribution(err error) bool {
+	m := strings.ToLower(err.Error())
+	if strings.Contains(m, "not supported") || strings.Contains(m, "page not found") {
+		return true
+	}
+	// Podman 5 answers a bare text/plain "Not Found" for every /distribution path.
+	return bareNotFound(m)
+}
+
+// bareNotFound is true for the daemon's contentless 404 text.
+func bareNotFound(lowerMsg string) bool {
+	m := strings.TrimSpace(strings.TrimPrefix(lowerMsg, "error response from daemon:"))
+	return m == "not found"
+}
+
+// pullForDigest pulls ref through the engine and returns the digest it landed with.
+func (c *Client) pullForDigest(ctx context.Context, named reference.Named, ref string, auth *RegistryAuth) (string, error) {
+	if err := c.ensureImage(ctx, ref, auth, true, nil); err != nil {
+		if cerrdefs.IsNotFound(err) || registrySaysMissing(err) {
+			return "", fmt.Errorf("%w: %q: %w", ErrImageNotFound, ref, err)
+		}
+		return "", err
+	}
+	local, err := c.cli.ImageInspect(ctx, ref)
+	if err != nil {
+		return "", fmt.Errorf("inspect pulled image: %w", err)
+	}
+	d := repoDigestFor(named, local.RepoDigests)
+	if d == "" {
+		return "", errors.New("the engine reported no repo digest for the pulled image")
+	}
+	return d, nil
+}
+
+// registrySaysMissing reports a definitive "no such tag" answer, as opposed
+// to an unreachable registry or an engine that lacks the distribution
+// endpoint (Podman answers 404 "not supported"), which a node can still pull from.
+func registrySaysMissing(err error) bool {
+	m := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(strings.ToLower(err.Error()), "error response from daemon:")))
+	if strings.Contains(m, "not supported") || strings.Contains(m, "page not found") || bareNotFound(m) {
+		return false
+	}
+	if cerrdefs.IsNotFound(err) {
+		return true
+	}
+	return strings.Contains(m, "manifest unknown") || strings.Contains(m, "not found")
 }
 
 // repoDigestFor picks the digest of the repo digest entry matching named.

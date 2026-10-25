@@ -18,6 +18,33 @@ type GateRecorder interface {
 	MarkRolloutFailureReason(ctx context.Context, serviceName, image, reason string) error
 }
 
+// CutoverChecker tells whether a recent deploy of an image still lacks its
+// cutover event. *store.DB satisfies it.
+type CutoverChecker interface {
+	DeployMissingCutover(ctx context.Context, serviceName, image string, since time.Time) (bool, error)
+}
+
+// recordAdoptedCutover covers a deploy whose target was already running (an
+// instant rollback to the live or held release): no container is created,
+// so without this the post-deploy watch never arms. Reading the store keeps
+// it restart safe and tolerates the attempt row landing after the first pass.
+func (c *Controller) recordAdoptedCutover(ctx context.Context, container string, desired *store.DesiredService) {
+	checker, ok := c.gateRecorder.(CutoverChecker)
+	if !ok {
+		return
+	}
+	window := c.safetyFor(ctx, desired).WatchWindow
+	if window <= 0 {
+		return
+	}
+	missing, err := checker.DeployMissingCutover(ctx, c.serviceName, desired.Image, time.Now().Add(-window))
+	if err != nil || !missing {
+		return
+	}
+	c.recordGate(ctx, desired, container, deploysafety.PhaseCutover, deploysafety.StatusPassed, "",
+		"traffic is on the release that was already running")
+}
+
 // DeploySafetySource returns an app's gate overrides. *store.DB satisfies it.
 type DeploySafetySource interface {
 	GetDeploySafetySettings(ctx context.Context, serviceName string) (store.DeploySafetySettings, error)
@@ -103,7 +130,7 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 		passes   = cfg.SuccessThreshold
 	)
 	if readiness != nil {
-		t, err := probeTarget(state, *readiness)
+		t, err := c.probeTarget(ctx, state, *readiness, desired.NodeID)
 		if err != nil {
 			return &gateError{reason: deploysafety.ReasonExitedDuringWindow, message: fmt.Sprintf("stability gate: %v", err)}
 		}
@@ -225,4 +252,13 @@ func gateFailureMessage(name, reason string, obs deploysafety.GateObservation, c
 	default:
 		return fmt.Sprintf("container %s did not reach %d consecutive readiness passes within its budget (last streak %d)", name, cfg.SuccessThreshold, obs.ConsecutivePasses)
 	}
+}
+
+// stabilityGateForNew runs the stability gate only for a freshly created
+// container, never for a restart of an existing one.
+func (c *Controller) stabilityGateForNew(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService, created bool) error {
+	if !created {
+		return nil
+	}
+	return c.stabilityGate(ctx, state, desired)
 }

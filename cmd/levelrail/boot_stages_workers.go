@@ -77,8 +77,9 @@ func (s *bootState) startTelemetry() {
 	}
 
 	logCollector := telemetry.NewLogCollector(client, telemetryDB, logBroadcaster, logger)
+	logCollector.SetNodeSource(&multiNodeLogSource{local: client, registry: agentRegistry})
 	go func() {
-		if err := logCollector.Run(ctx, logTargetsResyncInterval, logTargets(db, client)); err != nil && !errors.Is(err, context.Canceled) {
+		if err := logCollector.Run(ctx, logTargetsResyncInterval, logTargets(db, client, agentRegistry, meshCfg, logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("telemetry log collector stopped", slog.String("error", err.Error()))
 		}
 	}()
@@ -277,6 +278,16 @@ func (s *bootState) startSchedulers() {
 	go func() {
 		if err := appScheduleScheduler.Run(ctx, appScheduleSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("scheduled deploy scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	oneShotRunner := &scheduledeploy.OneShotRunner{
+		Store: db, Freeze: db, Exec: apiRouter, Notify: apiRouter, Logger: logger,
+		Grace: scheduledDeployGrace(logger), StaleRun: scheduledDeployStaleRun(logger),
+	}
+	go func() {
+		if err := oneShotRunner.Run(ctx, appScheduleSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("one-shot scheduled deploy runner stopped", slog.String("error", err.Error()))
 		}
 	}()
 

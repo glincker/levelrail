@@ -90,6 +90,8 @@ const (
 	// Same one-minute value as the backup scheduler, for the same cron granularity reason.
 	defaultAppScheduleSchedulerInterval = 1 * time.Minute
 	defaultAppScheduleOneShotCatchUp    = 24 * time.Hour
+	defaultScheduledDeployGrace         = 5 * time.Minute
+	defaultScheduledDeployStaleRun      = 30 * time.Minute
 
 	// An hour: a days-scale TTL needs no minute-granularity checks.
 	defaultPreviewSweepInterval = 1 * time.Hour
@@ -124,6 +126,9 @@ func main() {
 	}
 	logger := slog.New(secretmask.Handler(slog.NewTextHandler(os.Stdout, nil)))
 
+	if len(os.Args) > 1 && hostCommands[os.Args[1]] {
+		adoptInstalledDataDir(systemdUnitDir)
+	}
 	if len(os.Args) > 1 && runReleaseCommand(os.Args[1], os.Args[2:]) {
 		return
 	}

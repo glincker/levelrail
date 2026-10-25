@@ -48,7 +48,7 @@ graph LR
 <Tabs>
 <Tab title="Dashboard">
 
-Open the Nodes page and click **Add node**. The dialog shows the `docker` and `binary` commands with copy buttons, plus the expiry time.
+Open the Nodes page and click **Add node**. The dialog pre-fills the advertise address the agent certificate covers, pre-selects the mesh when it is on, and offers Docker, Podman and binary tabs with copy buttons, plus the expiry time. Rootful Podman needs `sudo systemctl enable --now podman.socket` once on the new machine.
 
 </Tab>
 <Tab title="CLI">
@@ -268,6 +268,16 @@ A connected agent sends a `Heartbeat` frame up its Session stream at a regular i
 | Frozen process (for example `SIGSTOP`) | The TCP and TLS connection can stay open indefinitely. The HTTP/2 PING keepalive is the backstop: the transport notices the peer stopped responding, ends the connection, and the hard-disconnect path follows. |
 
 The keepalive is configured with `APP_NODE_KEEPALIVE_TIME` and `APP_NODE_KEEPALIVE_TIMEOUT` (default 10s/10s on the control plane; the agent mirrors this with env vars of the same name).
+
+### What an offline node means for its apps
+
+While a node's agent is down, its containers keep running, because the node's own Docker owns them. What stops is everything that goes through the agent: the control plane cannot manage the node, and when the mesh runs inside the agent (the default with `APP_MESH_ENABLED=1`), the ingress path from the control plane to the node's apps is down too, so those apps are not reachable through ingress.
+
+The app's `Ready` condition says so instead of keeping the last value: it turns `False` with reason `NodeOffline`, and the message names the node and how long it has been offline. `apps status` and `deploys wait` show it. When the agent reconnects the condition returns to its real state without recreating any container.
+
+Changes to an app on an offline node are refused instead of silently queued. Deploy, rollback, restart, start and stop return `409` with code `node_offline`, the node name, how long it has been unseen, and the fix: bring the node back, or move the app with `apps move` or `nodes drain`. No deploy attempt is recorded and desired state is not touched. To record the change anyway and let the node apply it when it returns, send `queue_while_offline: true` (deploy and rollback body) or `?queue_while_offline=true` (restart, start, stop); the CLI flag is `--queue-while-offline`. The attempt then shows as `pending`, never `succeeded`.
+
+Observed recovery in a live two-node test: about 35 seconds after the agent restarts, and about 60 seconds after a control plane restart.
 
 ### The control plane's local node
 

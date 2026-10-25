@@ -6,6 +6,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"regexp"
+	"strings"
+	"sync"
 
 	"github.com/GLINCKER/levelrail/internal/exposure"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -27,14 +30,42 @@ type Controller struct {
 	store  RestrictionStore
 	syncer Syncer
 	logger *slog.Logger
+
+	podman func(context.Context) bool
 }
 
+// Option tunes a Controller.
+type Option func(*Controller)
+
+// WithPodmanCheck tells the controller whether the engine is Podman, whose
+// netavark uses nftables so the iptables based check cannot apply.
+func WithPodmanCheck(f func(context.Context) bool) Option {
+	return func(c *Controller) { c.podman = f }
+}
+
+// seenCauses is process wide on purpose: it holds across controller rebuilds and
+// retriggered passes, so one permanent cause logs once per process lifetime.
+var seenCauses sync.Map
+
+var variablePart = regexp.MustCompile(`[0-9]+|"[^"]*"|\(.*\)`)
+
+// normalizeCause strips numbers, quoted values and parentheses so two passes
+// of the same condition share one key.
+func normalizeCause(msg string) string { return variablePart.ReplaceAllString(msg, "#") }
+
+// resetSeenCauses clears the process-wide set (tests only).
+func resetSeenCauses() { seenCauses = sync.Map{} }
+
 // New builds a Controller.
-func New(s RestrictionStore, syncer Syncer, logger *slog.Logger) *Controller {
+func New(s RestrictionStore, syncer Syncer, logger *slog.Logger, opts ...Option) *Controller {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Controller{store: s, syncer: syncer, logger: logger}
+	c := &Controller{store: s, syncer: syncer, logger: logger}
+	for _, o := range opts {
+		o(c)
+	}
+	return c
 }
 
 // Name implements reconcile.Controller.
@@ -53,7 +84,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 	res := c.syncer.Sync(ctx, want)
 	if len(res.Errors) > 0 {
-		c.logger.WarnContext(ctx, "exposure: sync reported errors", slog.Int("errors", len(res.Errors)), slog.String("first", res.Errors[0]))
+		c.logSyncErrors(ctx, res.Errors)
 		if len(want) == 0 {
 			return reconcile.Result{Conditions: []reconcile.Condition{{
 				Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: "ChainUnreadable", Message: res.Errors[0],
@@ -71,4 +102,20 @@ func notReady(reason, msg string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
 		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
 	}}}
+}
+
+// logSyncErrors logs each distinct cause once at WARN (INFO under Podman for
+// the iptables cause), then at DEBUG for every later pass.
+func (c *Controller) logSyncErrors(ctx context.Context, errs []string) {
+	first := errs[0]
+	_, seen := seenCauses.LoadOrStore(normalizeCause(first), struct{}{})
+	if seen {
+		c.logger.DebugContext(ctx, "exposure: sync reported errors", slog.Int("errors", len(errs)), slog.String("first", first))
+		return
+	}
+	if c.podman != nil && c.podman(ctx) && strings.Contains(first, "iptables is not installed") {
+		c.logger.InfoContext(ctx, "exposure: iptables based exposure check skipped, this engine uses nftables")
+		return
+	}
+	c.logger.WarnContext(ctx, "exposure: sync reported errors", slog.Int("errors", len(errs)), slog.String("first", first))
 }

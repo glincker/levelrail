@@ -1,0 +1,51 @@
+{
+  "repo": {
+    "valid": [
+      "https://github.com/you/app",
+      "https://github.com/you/app.git",
+      "https://gitlab.example.com:8443/group/sub/app.git",
+      "ssh://git@github.com/you/app.git",
+      "ssh://git@git.example.com:2222/you/app",
+      "git@github.com:you/app.git"
+    ],
+    "invalid": [
+      "",
+      "http://github.com/you/app",
+      "https://user:pass@github.com/you/app",
+      "https://ghp_token@github.com/you/app",
+      "ssh://git:secret@github.com/you/app",
+      "file:///etc/passwd",
+      "javascript:alert(1)",
+      "data:text/plain,hi",
+      "ext::sh -c id",
+      "ftp://example.com/repo",
+      "https://github.com",
+      "https://github.com/you/../app",
+      "https://github.com/you/%2e%2e/app",
+      "https://github.com/you/app?x=1",
+      "https://github.com/you/app#frag",
+      "https://github.com/you/my app",
+      "https://exa mple.com/you/app",
+      "https://github.com/you\\app",
+      "https://:443/you/app",
+      "github.com/you/app",
+      "-oProxyCommand=id@host:path"
+    ]
+  },
+  "branch": {
+    "valid": ["main", "release/v0.8", "feat/x-1", "v1.2.3"],
+    "invalid": ["", "-rf", "a..b", "a//b", "main/", "x.lock", "has space", "a;b", "$(id)", "/main"]
+  },
+  "name": {
+    "valid": ["app", "my-app", "a1", "a"],
+    "invalid": ["", "My-App", "-app", "app-", "my_app", "my app", "a.b"]
+  },
+  "template": {
+    "valid": ["postgres", "uptime-kuma", "n8n"],
+    "invalid": ["", "Postgres", "-x", "a/b", "a b", "../x"]
+  },
+  "port": {
+    "valid": ["1", "80", "3000", "65535"],
+    "invalid": ["", "0", "65536", "-1", "80.5", "abc", "99999", "080000"]
+  }
+}

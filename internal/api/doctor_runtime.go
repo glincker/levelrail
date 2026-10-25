@@ -4,12 +4,16 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
-const containerRuntimeDocsPath = "/security#rootless-and-podman"
+// runtimeGOOS is a seam so tests can grade support for any platform.
+var runtimeGOOS = runtime.GOOS
+
+const containerRuntimeDocsPath = "/container-runtimes"
 
 // runtimeReporter is the Docker client behind DockerPinger, narrowed the
 // same consumer-defined way engineVersioner is above (updates_preflight.go):
@@ -18,40 +22,71 @@ type runtimeReporter interface {
 	Runtime() docker.RuntimeInfo
 }
 
-// doctorCheckContainerRuntime reports which container engine and
-// privilege mode this control plane is likely talking to. It prefers the
-// live client's own resolved RuntimeInfo (rt.dockerPinger, reflecting any
-// APP_CONTAINER_RUNTIME_SOCKET override actually in effect) and falls
-// back to a fresh environment-only detection when no Docker client is
-// configured, so the check still reports something before Docker is
-// reachable. Rootless and Podman are flagged warn, not fail: this
-// platform's own support for them is best-effort (see docs/security.md),
-// not a broken state.
+// runtimeIdentifier is the Docker client's /version and /info lookup.
+type runtimeIdentifier interface {
+	EngineIdentity(ctx context.Context) (docker.EngineIdentity, error)
+}
+
+// doctorCheckContainerRuntime reports which container engine, privilege
+// mode and support level this control plane has. It prefers the live
+// client's resolved RuntimeInfo (reflecting any APP_CONTAINER_RUNTIME_SOCKET
+// override) and falls back to environment-only detection, then refines the
+// kind from the engine's own answer. Anything short of rootful Docker on
+// Linux is warn, never fail: it is best-effort, not broken (docs/security.md).
 func (rt *Router) doctorCheckContainerRuntime(ctx context.Context) doctorCheckResource {
 	const code, name = "container_runtime", "Container runtime"
 
-	info := docker.DetectRuntimeSocket(os.LookupEnv)
-	if reporter, ok := rt.dockerPinger.(runtimeReporter); ok {
-		info = reporter.Runtime()
-	}
-	if v, ok := rt.dockerPinger.(engineVersioner); ok {
-		if version, err := v.ServerVersion(ctx); err == nil && strings.Contains(strings.ToLower(version), "podman") {
-			info.Kind = docker.RuntimeKindPodman
-		}
-	}
+	info := rt.detectRuntimeInfo(ctx)
 
 	mode := "rootful"
 	if info.Rootless {
 		mode = "rootless"
 	}
+	level, reason := docker.SupportFor(info, runtimeGOOS)
 	detail := fmt.Sprintf("%s (%s), socket resolved from %s: %s", info.Kind, mode, info.Source, info.Host)
-
-	if info.Kind != docker.RuntimeKindPodman && !info.Rootless {
-		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: detail}
+	res := doctorCheckResource{
+		Code: code, Name: name, Status: doctorStatusOK,
+		EngineKind: string(info.Kind), SupportLevel: string(level),
+		Message: fmt.Sprintf("%s; support level %s (%s)", detail, level, reason),
 	}
-	return doctorCheckResource{
-		Code: code, Name: name, Status: doctorStatusWarn,
-		Message:  detail + "; rootless/Podman support is best-effort, verify bind-mount ownership and UID mapping before relying on it",
-		DocsPath: containerRuntimeDocsPath,
+	if level == docker.SupportSupported {
+		return res
+	}
+	res.Status = doctorStatusWarn
+	res.DocsPath = containerRuntimeDocsPath
+	if info.Kind == docker.RuntimeKindPodman || info.Kind == docker.RuntimeKindUnknown {
+		res.Message += "; image and compose deploys are expected to work, source builds (Dockerfile, Railpack) need BuildKit inside dockerd and are not verified here"
+	}
+	res.Message += "; if this is the wrong engine, set APP_CONTAINER_RUNTIME_SOCKET to its socket (for Podman, enable podman.socket first). See the container runtimes guide"
+	return res
+}
+
+// detectRuntimeInfo resolves the engine the way the container_runtime check does.
+func (rt *Router) detectRuntimeInfo(ctx context.Context) docker.RuntimeInfo {
+	info := docker.DetectRuntimeSocket(os.LookupEnv)
+	if reporter, ok := rt.dockerPinger.(runtimeReporter); ok {
+		info = reporter.Runtime()
+	}
+	if idr, ok := rt.dockerPinger.(runtimeIdentifier); ok {
+		if id, err := idr.EngineIdentity(ctx); err == nil {
+			info.Kind = docker.RefineKind(info.Kind, id)
+		}
+	} else if v, ok := rt.dockerPinger.(engineVersioner); ok {
+		if version, err := v.ServerVersion(ctx); err == nil && strings.Contains(strings.ToLower(version), "podman") {
+			info.Kind = docker.RuntimeKindPodman
+		}
+	}
+	return info
+}
+
+// relabelEngine swaps the leading "Docker" of a row name for the detected
+// engine, so Podman hosts do not read "Docker daemon".
+func (rt *Router) relabelEngine(f func(ctx context.Context) doctorCheckResource) func(ctx context.Context) doctorCheckResource {
+	return func(ctx context.Context) doctorCheckResource {
+		res := f(ctx)
+		if rest, ok := strings.CutPrefix(res.Name, "Docker "); ok && rt.detectRuntimeInfo(ctx).Kind == docker.RuntimeKindPodman {
+			res.Name = "Podman " + rest
+		}
+		return res
 	}
 }

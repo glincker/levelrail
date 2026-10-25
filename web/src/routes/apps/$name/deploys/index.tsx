@@ -5,6 +5,7 @@ import { GearSixIcon } from '@phosphor-icons/react/dist/ssr'
 import { deployAttemptsQueryOptions } from '../../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../../hooks/useDeployProgress'
 import { DeployAttemptsList } from '../../../../components/DeployAttemptsList'
+import { ScheduledDeploysList } from '../../../../components/deploy/ScheduledDeploysList'
 import { BuildLimitsCard } from '../../../../components/BuildLimitsCard'
 import { BuildTrendCard } from '../../../../components/BuildTrendCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -53,6 +54,7 @@ function DeploysSection() {
           setTab('existing-image')
         }}
       />
+      <ScheduledDeploysList appName={name} />
       <BuildTrendCard appName={name} />
       <BuildLimitsCard appName={name} />
       <Card>

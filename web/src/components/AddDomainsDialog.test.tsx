@@ -78,7 +78,11 @@ describe('AddDomainsDialog', () => {
     expect(box).not.toHaveAttribute('aria-invalid', 'true')
     await user.tab()
     expect(box).toHaveAttribute('aria-invalid', 'true')
-    expect(box.getAttribute('aria-describedby')).toContain('add-domains-errors')
+    expect(box.getAttribute('aria-describedby')).toContain(
+      screen
+        .getByText('Not a valid hostname')
+        .closest('[data-slot=field-error]')?.id ?? 'missing',
+    )
     expect(screen.getByText('nope')).toBeInTheDocument()
     expect(screen.getByText('Not a valid hostname')).toBeInTheDocument()
     expect(screen.getByText('Duplicate')).toBeInTheDocument()

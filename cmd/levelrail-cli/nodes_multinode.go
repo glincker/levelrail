@@ -52,8 +52,7 @@ func runNodesAdd(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 			_, _ = fmt.Fprintln(stdout, "no control plane address is known: pass --control-plane host:port to get a ready command")
 			return
 		}
-		_, _ = fmt.Fprintf(stdout, "Run this on the new server (single use, expires %s):\n\n%s\n\n", created.ExpiresAt.Format(time.RFC3339), created.JoinCommands.Docker)
-		_, _ = fmt.Fprintf(stdout, "Or, with the agent binary installed:\n\n%s\n\n", created.JoinCommands.Binary)
+		printJoinCommands(stdout, created)
 		_, _ = fmt.Fprintln(stdout, "Then watch it appear with: nodes list, or re-run with --preflight to wait and check it")
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
@@ -355,7 +354,7 @@ Flags:
 func addWithPreflight(client *apiclient.Client, name string, created apiclient.CreateNodeJoinTokenResponse, timeout, interval time.Duration, of outputFlags, jsonOut bool, stdout, stderr io.Writer) int {
 	human := of.Format == "" || of.Format == "table" || of.Format == "text"
 	if human && !jsonOut && created.JoinCommands != nil {
-		_, _ = fmt.Fprintf(stdout, "Run this on the new server (single use, expires %s):\n\n%s\n\n", created.ExpiresAt.Format(time.RFC3339), created.JoinCommands.Docker)
+		printJoinCommands(stdout, created)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -371,4 +370,15 @@ func addWithPreflight(client *apiclient.Client, name string, created apiclient.C
 		return exitAPIError
 	}
 	return exitOK
+}
+
+// printJoinCommands prints the Docker, Podman and binary variants so a Podman
+// host is not handed a Docker-only command.
+func printJoinCommands(out io.Writer, created apiclient.CreateNodeJoinTokenResponse) {
+	c := created.JoinCommands
+	_, _ = fmt.Fprintf(out, "Run this on the new server with Docker (single use, expires %s):\n\n%s\n\n", created.ExpiresAt.Format(time.RFC3339), c.Docker)
+	if c.Podman != "" {
+		_, _ = fmt.Fprintf(out, "With Podman (rootful; first run: sudo systemctl enable --now podman.socket):\n\n%s\n\n", c.Podman)
+	}
+	_, _ = fmt.Fprintf(out, "Or, with the agent binary installed (it auto-detects Docker or Podman):\n\n%s\n\n", c.Binary)
 }

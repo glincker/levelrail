@@ -35,6 +35,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
@@ -219,43 +220,45 @@ const (
 // from ServiceStore on every Reconcile, never cached) to a running
 // container.
 type Controller struct {
-	serviceName       string
-	conditions        ConditionReader
-	store             ServiceStore
-	runtime           docker.Runtime
-	snap              *PassSnapshot // nil is valid: every listing goes to the runtime, see WithPassSnapshot
-	snapNode          string
-	imageIDs          *ImageIDCache // nil is valid: every check asks the runtime, see WithImageIDCache
-	imageNode         string
-	httpClient        *http.Client
-	probeLimits       probe.Limits
-	readyBudget       time.Duration
-	secretResolver    SecretResolver // nil is valid: a service with no secret-backed env vars never needs one
-	deployRecorder    DeployRecorder // nil is valid: deploy frequency just isn't recorded
-	meshDNSAddr       string         // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
-	meshDB            *MeshDatabaseConfig
-	meshZone          string                  // empty is valid: resolveDatabaseField falls back to the database's container name, see WithMeshZone
-	nodeGPU           NodeGPUChecker          // nil is valid: no GPU placement check, see WithNodeGPU
-	storageTargets    StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
-	projectEnv        ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
-	orgEnv            OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
-	environmentEnv    EnvironmentEnvLister    // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
-	appIntegrations   AppIntegrationStore     // nil is valid: attached-integration env vars are just skipped, see WithAppIntegrations
-	bucketBindings    BucketBindingStore      // nil is valid: bound buckets are just skipped, see WithBucketBindings
-	networkPrefix     string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
-	registryCreds     RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
-	databaseScope     DatabaseScopeStore      // nil is valid: every referenced database is attached, see WithDatabaseScope
-	databases         DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
-	vaultSettings     VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
-	vaultResolver     VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
-	hookRuns          HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
-	traceStore        TraceStore              // nil is valid: no deploy trace is written, see WithTraceStore
-	probeAttempts     ProbeAttemptRecorder    // nil is valid: individual probe attempts just aren't persisted, see WithProbeAttemptRecorder
-	hookTimeout       time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
-	wakeWindow        WakeWindowReader        // nil is valid: no short probe interval after a wake, see WithWakeProbe
-	wakeProbeInterval time.Duration
-	liveness          *LivenessTracker // per-container liveness failure counts, in memory only, see LivenessTracker
-	instanceID        string           // empty means no instance-ownership check, see WithInstanceID
+	serviceName string
+	conditions  ConditionReader
+	store       ServiceStore
+	runtime     docker.Runtime
+	snap        *PassSnapshot // nil is valid: every listing goes to the runtime, see WithPassSnapshot
+	snapNode    string
+	imageIDs    *ImageIDCache // nil is valid: every check asks the runtime, see WithImageIDCache
+	imageNode   string
+	httpClient  *http.Client
+	// probeUnreachableLogged keeps an unreachable-node warning to one per outage.
+	probeUnreachableLogged atomic.Bool
+	probeLimits            probe.Limits
+	readyBudget            time.Duration
+	secretResolver         SecretResolver // nil is valid: a service with no secret-backed env vars never needs one
+	deployRecorder         DeployRecorder // nil is valid: deploy frequency just isn't recorded
+	meshDNSAddr            string         // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	meshDB                 *MeshDatabaseConfig
+	meshZone               string                  // empty is valid: resolveDatabaseField falls back to the database's container name, see WithMeshZone
+	nodeGPU                NodeGPUChecker          // nil is valid: no GPU placement check, see WithNodeGPU
+	storageTargets         StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
+	projectEnv             ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
+	orgEnv                 OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
+	environmentEnv         EnvironmentEnvLister    // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
+	appIntegrations        AppIntegrationStore     // nil is valid: attached-integration env vars are just skipped, see WithAppIntegrations
+	bucketBindings         BucketBindingStore      // nil is valid: bound buckets are just skipped, see WithBucketBindings
+	networkPrefix          string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
+	registryCreds          RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
+	databaseScope          DatabaseScopeStore      // nil is valid: every referenced database is attached, see WithDatabaseScope
+	databases              DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
+	vaultSettings          VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
+	vaultResolver          VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
+	hookRuns               HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
+	traceStore             TraceStore              // nil is valid: no deploy trace is written, see WithTraceStore
+	probeAttempts          ProbeAttemptRecorder    // nil is valid: individual probe attempts just aren't persisted, see WithProbeAttemptRecorder
+	hookTimeout            time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
+	wakeWindow             WakeWindowReader        // nil is valid: no short probe interval after a wake, see WithWakeProbe
+	wakeProbeInterval      time.Duration
+	liveness               *LivenessTracker // per-container liveness failure counts, in memory only, see LivenessTracker
+	instanceID             string           // empty means no instance-ownership check, see WithInstanceID
 	// egressReadyBudget/egressReadyPollInterval override
 	// defaultEgressReadyBudget/defaultEgressReadyPollInterval (egress.go);
 	// zero means "use the default", see effectiveEgressReadyBudget and
@@ -267,13 +270,16 @@ type Controller struct {
 
 	rollouts            RolloutRecorder       // nil is valid: rollout state just isn't recorded
 	servingImageID      string                // image ID of the last replica proven ready this pass
+	stopGrace           time.Duration         // 0 uses defaultStopGrace
 	previousReleaseHold time.Duration         // 0 removes the previous release at cutover
 	applied             AppliedConfigRecorder // nil is valid: pending changes just aren't tracked
 	lastHeldUntil       time.Time
 	unconfirmedMu       sync.Mutex
 	unconfirmed         map[string]*store.AppliedConfig // created but not yet proven ready, by container name
 	pinnedPortRetry     time.Duration                   // see WithPinnedPortRetry
+	reviveWatch         time.Duration                   // see WithReviveWatch
 	handoffFailed       map[string]time.Time            // target name to the time its next pinned-port handoff may run
+	retained            RetainedDeploys                 // nil means no service is a retained deploy URL
 	restartBackoff      *RestartBackoff                 // nil disables crash restart backoff, see WithRestartBackoff
 	meshPaths           meshpath.Resolver               // nil is valid: remote ports stay on loopback, see WithMeshPaths
 	gateDefaults        *deploysafety.Effective         // nil: one readiness pass is enough, see WithStabilityGate
@@ -284,6 +290,7 @@ type Controller struct {
 	pinner              RollbackPinner
 	exitRecorder        ExitRecorder  // nil is valid: exits are only reported, not captured
 	startupWatch        time.Duration // see WithStartupWatch
+	nodeRecovering      bool          // see WithNodeRecovering
 }
 
 // Option configures optional Controller behavior.
@@ -492,6 +499,22 @@ func WithLivenessTracker(t *LivenessTracker) Option {
 	}
 }
 
+// RetainedDeploys bounds the retries of retained deploy-URL services (a past
+// deploy kept at its own hostname). *deployurls.Guard satisfies it.
+type RetainedDeploys interface {
+	// NoteUnready records a readiness failure; stopped is true once the
+	// service was suspended because it failed too many times in a row.
+	NoteUnready(ctx context.Context, service string) (retained, stopped bool, err error)
+	NoteReady(service string)
+	IsRetained(ctx context.Context, service string) bool
+}
+
+// WithRetainedDeploys makes retained deploy services stop retrying after
+// repeated readiness failures instead of looping with the crash backoff.
+func WithRetainedDeploys(r RetainedDeploys) Option {
+	return func(ctrl *Controller) { ctrl.retained = r }
+}
+
 // WithRestartBackoff shares one crash restart backoff across every
 // controller a caller builds, for the same reason as WithLivenessTracker.
 func WithRestartBackoff(b *RestartBackoff) Option {
@@ -548,7 +571,23 @@ func ControllerName(serviceName string) string { return "application/" + service
 
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
-	desired, err := c.store.GetDesiredService(ctx, c.serviceName)
+	started, err := c.store.GetDesiredService(ctx, c.serviceName)
+	result, rerr := c.reconcileDesired(ctx, started, err)
+	if err != nil || started == nil {
+		return result, rerr
+	}
+	// A deploy or restart that landed mid-pass owns the next verdict. Publishing
+	// this one would stamp the old release's outcome on the new attempt; the
+	// nudge that deploy sent already queues the next pass.
+	if now, gerr := c.store.GetDesiredService(ctx, c.serviceName); gerr == nil && now != nil &&
+		desiredChanged(started, now) {
+		return reconcile.Result{}, nil
+	}
+	return result, rerr
+}
+
+// reconcileDesired runs one pass against the desired state Reconcile read.
+func (c *Controller) reconcileDesired(ctx context.Context, desired *store.DesiredService, err error) (reconcile.Result, error) {
 	if errors.Is(err, store.ErrServiceNotFound) {
 		// Not a failure: a controller can be registered for a service
 		// before its first deploy has ever written desired state.
@@ -574,6 +613,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			return notReady("SuspendFailed", err), fmt.Errorf("application/%s: suspend: remove containers: %w", c.serviceName, err)
 		}
 		result := unknownResult("Suspended")
+		if c.retained != nil && c.retained.IsRetained(ctx, c.serviceName) {
+			result = unknownResult(reasonRetainedDeployStopped)
+		}
 		result.Conditions = append(result.Conditions, c.reconcileEgressWith(ctx, c.filterEgressSidecars(all), nil, desired))
 		return result, nil
 	}
@@ -624,6 +666,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 
 	c.servingImageID = ""
+	// Revive before the desired release's readiness wait: a dead serving
+	// release must not stay down for the whole wait of a failing deploy.
+	c.reviveIfDead(ctx, targets, desired, true)
 	var result reconcile.Result
 	switch strategy {
 	case strategyBlueGreen:
@@ -642,7 +687,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return notReady("StrategyUnrecognized", fmt.Errorf("unrecognized deploy strategy %q", strategy)), nil
 	}
 	if isReady(result) {
+		// Recover first so RecordRollout then supersedes the older serving rows.
+		c.recoverRestart(ctx, desired)
 		c.recordRollout(ctx, desired, store.RolloutStateServing, c.servingImageID)
+	} else {
+		c.reviveLastReady(ctx, targets, desired)
 	}
 	return c.appendEgressCondition(ctx, result, targets, desired), err
 }
@@ -686,6 +735,7 @@ func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, d
 	for i, target := range targets {
 		deployed, err := c.ensureReplicaRunning(ctx, target, i, desired)
 		if err != nil {
+			c.pruneSupersededPrevious(ctx, targets)
 			return notReady(deployed.reason, err), fmt.Errorf("application/%s: %w", c.serviceName, err)
 		}
 		anyDeployed = anyDeployed || deployed.justDeployed
@@ -844,6 +894,7 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 // every strategy's reconcile* method ends with.
 func (c *Controller) finishReconcile(ctx context.Context, targets []string, desired *store.DesiredService, justDeployed bool) (reconcile.Result, error) {
 	if !justDeployed {
+		c.recordAdoptedCutover(ctx, targets[0], desired)
 		return c.steadyStateResult(ctx, targets, desired)
 	}
 
@@ -962,14 +1013,15 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			return replicaOutcome{reason: reason}, relErr
 		}
 		if err := c.createAndStart(ctx, target, desired); err != nil {
-			c.traceAbort(ctx, desired, target, createFailureReason(err), err)
-			return replicaOutcome{reason: createFailureReason(err)}, c.abortHandoff(ctx, target, released, err)
+			reason, err := c.createFailure(err)
+			c.traceAbort(ctx, desired, target, reason, err)
+			return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
 		}
 		justDeployed = true
 		created = true
 	case !state.Running:
 		if wait, restarts := c.restartBackoff.remaining(target, time.Now()); wait > 0 {
-			return replicaOutcome{reason: reasonCrashLoopBackOff}, fmt.Errorf("%q keeps exiting (%d restarts), next restart in %s", target, restarts, wait.Round(time.Second))
+			return replicaOutcome{reason: reasonCrashLoopBackOff}, errors.New(deploysafety.CrashLoopMessage(target, restarts, wait))
 		}
 		c.restartBackoff.recordRestart(target, time.Now())
 		// The container's own network can go missing between reconcile
@@ -1068,6 +1120,9 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	if err := c.waitReady(ctx, state, desired); err != nil {
+		if errors.Is(err, errSuperseded) {
+			return replicaOutcome{reason: reasonSuperseded}, c.abortSuperseded(ctx, target, released)
+		}
 		reason := readinessReason(err, deploysafety.ReasonReadinessFailed)
 		var crash *readinessCrashError
 		if errors.As(err, &crash) {
@@ -1077,10 +1132,24 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		c.traceAbort(ctx, desired, target, reason, err)
 		c.recordRolloutFailure(ctx, desired, err)
 		c.markGateFailure(ctx, desired, reason)
-		return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
+		abortErr := c.abortHandoff(ctx, target, released, err)
+		if c.retained != nil {
+			if _, stopped, nerr := c.retained.NoteUnready(ctx, c.serviceName); nerr != nil {
+				slog.Warn("reconcile: retained deploy failure bookkeeping failed", slog.String("service", c.serviceName), slog.String("error", nerr.Error()))
+			} else if stopped {
+				reason = reasonRetainedDeployStopped
+				abortErr = fmt.Errorf("%w (retained deploy URL stopped after repeated readiness failures, resume it to retry)", abortErr)
+			}
+		}
+		return replicaOutcome{reason: reason}, abortErr
+	}
+	if c.retained != nil {
+		c.retained.NoteReady(c.serviceName)
 	}
 	c.recordGate(ctx, desired, target, deploysafety.PhaseReadiness, deploysafety.StatusPassed, "", "first readiness check passed")
-	if err := c.stabilityGate(ctx, state, desired); err != nil {
+	// A crash restart of the same container already proved itself once, so it
+	// only needs readiness, not another stability window of downtime.
+	if err := c.stabilityGateForNew(ctx, state, desired, created); err != nil {
 		reason := readinessReason(err, deploysafety.ReasonGateTimeout)
 		c.traceAbort(ctx, desired, target, reason, err)
 		c.recordRolloutFailure(ctx, desired, err)
@@ -2117,7 +2186,7 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 		return c.watchStartup(ctx, state.Name, desired)
 	}
 
-	target, err := probeTarget(state, *readiness)
+	target, err := c.probeTarget(ctx, state, *readiness, desired.NodeID)
 	if err != nil {
 		// No published port here almost always means the container
 		// already died (Docker clears bindings once it stops).
@@ -2141,24 +2210,75 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 	// fakes don't, and gracefully just don't get the fast-fail below).
 	inspector, ok := c.runtime.(docker.ExitStateInspector)
 	if !ok {
-		if err := <-readyErr; err != nil {
-			return fmt.Errorf("readiness probe: %w", err)
-		}
-		return nil
+		return c.awaitReady(ctx, desired, state.Name, readyErr, nil)
 	}
 
 	crashErr := make(chan error, 1)
 	go watchForCrash(probeCtx, inspector, state.Name, cfg.Interval, crashErr)
 
-	select {
-	case err := <-readyErr:
-		if err != nil {
-			return fmt.Errorf("readiness probe: %w", err)
+	return c.awaitReady(ctx, desired, state.Name, readyErr, crashErr)
+}
+
+// awaitReady waits for the readiness or crash verdict. On an unpinned port it
+// also revives the last ready release if it dies meanwhile, so the wait of a
+// failing deploy does not extend an outage. crashErr may be nil.
+func (c *Controller) awaitReady(ctx context.Context, desired *store.DesiredService, candidate string, readyErr, crashErr <-chan error) error {
+	// The ticker also re-reads desired state, so a rollback or new deploy
+	// ends the wait instead of waiting out the full readiness budget.
+	t := time.NewTicker(c.effectiveReviveWatch())
+	defer t.Stop()
+	for {
+		select {
+		case err := <-readyErr:
+			if err != nil {
+				return fmt.Errorf("readiness probe: %w", err)
+			}
+			return nil
+		case err := <-crashErr:
+			return err
+		case <-t.C:
+			if c.desiredSuperseded(ctx, desired) {
+				return errSuperseded
+			}
+			if desired.HostPort == nil {
+				c.reviveIfDead(ctx, []string{candidate}, desired, false)
+			}
 		}
-		return nil
-	case err := <-crashErr:
-		return err
 	}
+}
+
+// errSuperseded ends a readiness wait whose desired state changed under it.
+// It is not a failure of the old release: nothing is recorded against it.
+var errSuperseded = errors.New("desired state changed during the readiness wait")
+
+// desiredSuperseded reports whether the stored desired state now differs from
+// what this pass began with in a way that makes the pass's work moot. A store
+// error keeps waiting: the next tick or the pass end decides.
+func (c *Controller) desiredSuperseded(ctx context.Context, began *store.DesiredService) bool {
+	now, err := c.store.GetDesiredService(ctx, c.serviceName)
+	if err != nil || now == nil {
+		return false
+	}
+	return desiredChanged(began, now)
+}
+
+func desiredChanged(a, b *store.DesiredService) bool {
+	return a.Image != b.Image || a.RestartNonce != b.RestartNonce || a.Replicas != b.Replicas || a.Suspended != b.Suspended
+}
+
+// abortSuperseded stops the candidate without recording a failure or arming
+// the handoff retry delay, and puts back any release freed for it. The normal
+// stale logic removes the stopped container on the next pass.
+func (c *Controller) abortSuperseded(ctx context.Context, target string, released []docker.ContainerState) error {
+	if state, err := c.runtime.InspectByName(ctx, target); err == nil && state != nil && state.Running {
+		_ = c.stopContainer(ctx, state.ID)
+	}
+	if len(released) > 0 {
+		if err := c.restoreReleased(ctx, released); err != nil {
+			return fmt.Errorf("%w (and the previous release could not be restored: %w)", errSuperseded, err)
+		}
+	}
+	return errSuperseded
 }
 
 // verifyRunningReady re-checks the readiness of a replica Docker already
@@ -2175,10 +2295,16 @@ func (c *Controller) verifyRunningReady(ctx context.Context, state *docker.Conta
 		return nil
 	}
 
-	target, err := probeTarget(state, *readiness)
+	target, err := c.probeTarget(ctx, state, *readiness, desired.NodeID)
 	if err != nil {
-		return fmt.Errorf("readiness recheck: %w", err)
+		// Not evaluated, not failed: an unreachable node must never flip a
+		// serving app unhealthy.
+		if c.probeUnreachableLogged.CompareAndSwap(false, true) {
+			slog.Warn("reconcile: readiness recheck skipped, probe target unreachable", slog.String("service", c.serviceName), slog.String("error", err.Error()))
+		}
+		return nil
 	}
+	c.probeUnreachableLogged.Store(false)
 
 	probeErr := c.prober().Check(ctx, target, readiness.ProbeConfig())
 	if probeErr == nil {

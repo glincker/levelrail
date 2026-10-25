@@ -24,6 +24,7 @@ import { InfoTip, RelativeTime } from './kit'
 import { ApprovePreviewDialog } from './ApprovePreviewDialog'
 import { ExtendPreviewButton } from './ExtendPreviewButton'
 import { PreviewLogsLink } from './PreviewLogsLink'
+import { PrCommentCommandsSetting } from './PrCommentCommandsSetting'
 import { PreviewPrEnvEditor } from './PreviewPrEnvEditor'
 import { useGitSource } from '../queries/gitSources'
 import {
@@ -331,6 +332,8 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
             />
           </div>
         ) : null}
+
+        <PrCommentCommandsSetting appName={app.name} />
 
         {enabled ? (
           previews.isLoading ? (

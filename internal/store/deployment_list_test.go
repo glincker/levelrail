@@ -18,7 +18,7 @@ func seedDeployments(t *testing.T, db *DB, now time.Time) {
 	atts := []DeployAttempt{
 		{ID: "dep_1", ServiceName: "web", Image: "web:aaa", CommitSHA: "aaa111", Source: DeployAttemptSourceWebhook, Status: DeployAttemptStatusSucceeded, StartedAt: now.Add(-6 * time.Hour), CommitMessage: "add login", Branch: "main"},
 		{ID: "dep_2", ServiceName: "web", Image: "web:bbb", CommitSHA: "bbb222", Source: DeployAttemptSourceWebhook, Status: DeployAttemptStatusSucceeded, StartedAt: now.Add(-5 * time.Hour), CommitMessage: "break things"},
-		{ID: "dep_3", ServiceName: "web", Image: "web:aaa", Source: DeployAttemptSourceImage, Status: DeployAttemptStatusSucceeded, StartedAt: now.Add(-4 * time.Hour)},
+		{ID: "dep_3", ServiceName: "web", Image: "web:aaa", Source: DeployAttemptSourceImage, Reason: "RollbackTo: dep_1", Status: DeployAttemptStatusSucceeded, StartedAt: now.Add(-4 * time.Hour)},
 		{ID: "dep_4", ServiceName: "api", Image: "api:ccc", CommitSHA: "ccc333", Source: DeployAttemptSourceManual, Status: DeployAttemptStatusFailed, StartedAt: now.Add(-3 * time.Hour)},
 		{ID: "dep_5", ServiceName: "api", Image: "api:ddd", Source: DeployAttemptSourceManual, Status: DeployAttemptStatusRunning, StartedAt: now.Add(-time.Hour)},
 		{ID: "dep_6", ServiceName: "web-pr-7", Image: "web-pr-7:eee", Source: DeployAttemptSourceWebhook, Status: DeployAttemptStatusHeld, StartedAt: now.Add(-30 * time.Minute)},
@@ -249,5 +249,24 @@ func TestListDeploymentsProjectFilter(t *testing.T) {
 	g := ids(got)
 	if len(g) != 2 || g[0] != "dep_5" || g[1] != "dep_4" {
 		t.Fatalf("ids = %v, want [dep_5 dep_4]", g)
+	}
+}
+
+func TestListDeploymentsManualOlderTagIsNotRollback(t *testing.T) {
+	now := time.Now().UTC()
+	db := openTestDB(t)
+	seedDeployments(t, db, now)
+	ctx := context.Background()
+	if err := db.SaveDeployAttempt(ctx, DeployAttempt{ID: "dep_7", ServiceName: "web", Image: "web:bbb", Source: DeployAttemptSourceImage, Status: DeployAttemptStatusSucceeded, StartedAt: now.Add(-time.Hour)}); err != nil {
+		t.Fatal(err)
+	}
+	got, _, err := db.ListDeployments(ctx, DeploymentFilter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, d := range got {
+		if d.Attempt.ID == "dep_7" && (d.Trigger != DeploymentTriggerManual || d.RollbackOf != "") {
+			t.Errorf("dep_7 trigger=%q rollback_of=%q, want manual", d.Trigger, d.RollbackOf)
+		}
 	}
 }

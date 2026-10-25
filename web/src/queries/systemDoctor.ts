@@ -27,6 +27,10 @@ export interface DoctorCheck {
   /** Typed fix for a failing check, when the server has one. */
   fix_id?: string
   fix_kind?: 'auto' | 'guided' | 'manual'
+  /** container_runtime only: docker, podman, docker-desktop, colima, orbstack, rancher-desktop or unknown. */
+  engine_kind?: string
+  /** container_runtime only: supported, best-effort or unverified. */
+  support_level?: string
 }
 
 /** One server-sent message from /api/v1/system/doctor/stream. */

@@ -38,6 +38,14 @@ func TestParseNetworkPool(t *testing.T) {
 	}
 }
 
+func TestPoolAllocateAvoidsPodmanDefault(t *testing.T) {
+	p, _, _ := ParseNetworkPool("")
+	got, ok := p.Allocate(nil)
+	if !ok || got.String() != "10.89.0.0/24" {
+		t.Fatalf("got %v %v, want 10.89.0.0/24", got, ok)
+	}
+}
+
 func TestPoolAllocate(t *testing.T) {
 	p, _, _ := ParseNetworkPool("10.99.0.0/22")
 	tests := []struct {

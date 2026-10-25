@@ -31,6 +31,15 @@ const maintenanceState = { on: false }
 vi.mock('../../hooks/useAppInMaintenance', () => ({
   useAppInMaintenance: () => maintenanceState.on,
 }))
+const gitState: { source: { repo_url: string; branch: string } | undefined } = {
+  source: undefined,
+}
+vi.mock('../../queries/gitSources', () => ({
+  useGitSource: () => ({ data: gitState.source }),
+}))
+vi.mock('../newapp/DeployLinkDialog', () => ({
+  DeployLinkDialog: ({ repo }: { repo: string }) => <p>link for {repo}</p>,
+}))
 vi.mock('../PromoteAppDialog', () => ({ PromoteAppDialog: () => null }))
 vi.mock('../CloneAppDialog', () => ({ CloneAppDialog: () => null }))
 vi.mock('../DeleteAppDialog', () => ({ DeleteAppDialog: () => null }))
@@ -71,5 +80,27 @@ describe('AppActionBar', () => {
     await userEvent.click(await screen.findByText('Wake now'))
     expect(wakeMutate).toHaveBeenCalled()
     sleepState.asleep = false
+  })
+
+  it('offers the Deploy button link only for git-sourced apps', async () => {
+    render(<AppActionBar app={app} onDeploy={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: 'More actions' }))
+    await screen.findByText('Delete...')
+    expect(
+      screen.queryByText(/deployLinkDialog\.action|Deploy button link/),
+    ).toBeNull()
+  })
+
+  it('opens the Deploy button link dialog with the app repo', async () => {
+    gitState.source = { repo_url: 'https://github.com/you/web', branch: 'main' }
+    render(<AppActionBar app={app} onDeploy={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: 'More actions' }))
+    await userEvent.click(
+      await screen.findByText(/deployLinkDialog\.action|Deploy button link/),
+    )
+    expect(
+      await screen.findByText('link for https://github.com/you/web'),
+    ).toBeInTheDocument()
+    gitState.source = undefined
   })
 })

@@ -116,3 +116,61 @@ func TestIdempotent_RunsHandlerOnceForRepeatedKey(t *testing.T) {
 		t.Errorf("keyless calls: runs = %d, want 3", runs)
 	}
 }
+
+func TestIdempotent_FailedRequestIsNotReplayed(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	runs := 0
+	h := rt.idempotent(func(w http.ResponseWriter, _ *http.Request) {
+		runs++
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"error":"image pull failed"}`))
+	})
+	for i := 0; i < 2; i++ {
+		req := authedRequest(t, cookie, http.MethodPost, "/x", `{}`)
+		req.Header.Set(headerIdempotencyKey, "failed")
+		rec := httptest.NewRecorder()
+		h(rec, req)
+		if rec.Header().Get(headerIdempotentReplayed) != "" {
+			t.Fatalf("attempt %d replayed a failed response", i)
+		}
+	}
+	if runs != 2 {
+		t.Errorf("handler ran %d times, want 2 (a failure must be retried)", runs)
+	}
+}
+
+// A refusal that depends on mutable state is never replayed: after the state
+// changes the same request under the same key must execute.
+func TestIdempotent_StateDependentRefusalsAreNotReplayed(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	for _, refusal := range []int{
+		http.StatusLocked, http.StatusConflict, http.StatusPreconditionFailed, http.StatusPreconditionRequired,
+		http.StatusUnprocessableEntity, http.StatusTooManyRequests, http.StatusServiceUnavailable,
+	} {
+		frozen := true
+		h := rt.idempotent(func(w http.ResponseWriter, _ *http.Request) {
+			if frozen {
+				w.WriteHeader(refusal)
+				return
+			}
+			w.WriteHeader(http.StatusAccepted)
+		})
+		send := func() *httptest.ResponseRecorder {
+			req := authedRequest(t, cookie, http.MethodPost, "/x", `{}`)
+			req.Header.Set(headerIdempotencyKey, "refused-"+http.StatusText(refusal))
+			rec := httptest.NewRecorder()
+			h(rec, req)
+			return rec
+		}
+		if got := send(); got.Code != refusal {
+			t.Fatalf("%d: first = %d", refusal, got.Code)
+		}
+		frozen = false
+		got := send()
+		if got.Code != http.StatusAccepted || got.Header().Get(headerIdempotentReplayed) != "" {
+			t.Errorf("%d: retry after the state changed = %d replayed %q, want an executed 202", refusal, got.Code, got.Header().Get(headerIdempotentReplayed))
+		}
+	}
+}

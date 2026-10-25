@@ -414,8 +414,8 @@ func validateAppResource(a appResource) error {
 	if a.Image == "" {
 		return errors.New("image is required")
 	}
-	if a.Port <= 0 {
-		return errors.New("port must be a positive integer")
+	if a.Port <= 0 || a.Port > 65535 {
+		return errors.New("port must be between 1 and 65535")
 	}
 	if a.HostPort != nil && (*a.HostPort < 1 || *a.HostPort > 65535) {
 		return errors.New("host_port must be between 1 and 65535")
@@ -522,6 +522,11 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := validateAppResource(req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	// Create only: apps that predate this rule keep updating under their old names.
+	if err := spec.ValidateServiceName(req.Name); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1102,12 +1107,36 @@ func (rt *Router) handleSetAppProject(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
+	// A stopped app has no container to recreate, so the nonce bump would
+	// be accepted and then do nothing.
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: restart app failed", err, slog.String("name", name))
+		return
+	} else if svc.Suspended {
+		writeError(w, http.StatusConflict, "app is stopped, so there is nothing to restart; start it first (apps start, or Start in the dashboard)")
+		return
+	} else if rt.refuseOfflineNode(r.Context(), w, *svc, queueWhileOffline(r)) {
+		return
+	}
+
 	if err := rt.apps.RestartService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
 		rt.internalError(w, "api: restart app failed", err, slog.String("name", name))
 		return
+	}
+	// Own attempt row, like a rollback: the rollout outcome lands on it
+	// instead of the deploy being restarted.
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
+		if rt.offlineNodeFor(r.Context(), *svc) != nil {
+			rt.recordPendingAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceRestart)
+		} else {
+			rt.recordInstantDeployAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceRestart)
+		}
 	}
 
 	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventRestart, Title: "Restarted"})
@@ -1122,6 +1151,9 @@ func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil && rt.refuseOfflineNode(r.Context(), w, *svc, queueWhileOffline(r)) {
+		return
+	}
 	if err := rt.apps.UpdateServiceSuspended(r.Context(), name, true); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -1140,12 +1172,28 @@ func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
+	wasStopped := false
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
+		if rt.refuseOfflineNode(r.Context(), w, *svc, queueWhileOffline(r)) {
+			return
+		}
+		wasStopped = svc.Suspended
+	}
 	if err := rt.apps.UpdateServiceSuspended(r.Context(), name, false); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
 		rt.internalError(w, "api: start app failed", err, slog.String("name", name))
 		return
+	}
+
+	// Own attempt, so a waiter follows this start and not the last serving deploy.
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); wasStopped && err == nil {
+		if rt.offlineNodeFor(r.Context(), *svc) != nil {
+			rt.recordPendingAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceStart)
+		} else {
+			rt.recordInstantDeployAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceStart)
+		}
 	}
 
 	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventResume, Title: "Started"})

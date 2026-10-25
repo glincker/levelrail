@@ -15,6 +15,7 @@ export const DEPLOY_MARKER_COLOR: Record<DeployAttemptStatus, string> = {
   superseded: chartPalette.muted,
   queued: chartPalette.muted,
   canceled: chartPalette.muted,
+  pending: chartPalette.warning,
 }
 
 // A burst of restarts collapses into one marker per 1/RESTART_BUCKETS of the

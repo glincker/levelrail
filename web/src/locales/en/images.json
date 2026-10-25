@@ -39,6 +39,7 @@
     "git_push": "Git push remote",
     "clone": "Clone",
     "schedule": "Scheduled",
+    "pr_comment": "PR comment",
     "other": "Deploy"
   },
   "cleanup": {

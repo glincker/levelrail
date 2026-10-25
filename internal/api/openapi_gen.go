@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1726 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1732 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -355,6 +355,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppSchedule", Description: "Scheduled deploys (app_schedule.go): a per-app cron schedule that redeploys the latest commit on a branch, checked by internal/scheduledeploy.Scheduler. Same GET=Read/PUT=WriteSensitive split as git-source just above."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppSchedule", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/schedule/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppScheduleHistory", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/scheduled-deploys", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListScheduledDeploys", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/scheduled-deploys", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateScheduledDeploy", Description: "One-shot scheduled deploys by id (scheduled_deploys.go): create and cancel need the deploy ability, reads need read."},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/scheduled-deploys/{id}", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCancelScheduledDeploy", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/scheduled-deploys/{id}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetScheduledDeploy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/secret-rotation", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListSecretRotation", Description: "Rotation policies hold schedule and progress only, never a value."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/secret-scan", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetSecretScan", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/secret-scan", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutSecretScan", Description: ""},
@@ -449,7 +453,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/auth/login-code/redeem", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRedeemLoginCode", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/login-code/request", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRequestLoginCode", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/login-options", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleLoginOptions", Description: "Sign in with a code and new-device approval (login_code.go, login_approval.go). Request, redeem and poll are public and bound to a browser cookie; the rest act only on the caller's own account."},
-	{Method: "POST", Path: "/api/v1/auth/logout", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleLogout", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/logout", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleLogout", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/my-access", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMyAccess", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/my-activity", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMyActivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/my-credentials", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMyCredentials", Description: ""},
@@ -474,7 +478,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/auth/saml/{id}/acs", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSAMLACS", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/saml/{id}/login", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSAMLLogin", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/saml/{id}/metadata", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSAMLMetadata", Description: ""},
-	{Method: "GET", Path: "/api/v1/auth/session", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetSession", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/session", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleAuthSession", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/session-links", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMintSessionLink", Description: "Session links (session_links.go): a short-lived, single-use, URL-embeddable token for browser automation to skip manual login. Minting is root-equivalent since the resulting session inherits the minting caller's own abilities; consuming is necessarily unauthenticated, gated by possession of the token itself, same shape as reset-password below."},
 	{Method: "POST", Path: "/api/v1/auth/session-links/consume", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleConsumeSessionLink", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/session-links/{token}/consume", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleConsumeSessionLinkGET", Description: ""},
@@ -1152,6 +1156,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/imports/platform/databases", Ability: "AbilityRead", Group: "Other", Handler: "handleListDatabaseDataCopies", Description: ""},
 	{Method: "GET", Path: "/api/v1/imports/platform/databases/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDatabaseDataCopy", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/platform/databases/{name}/copy", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCopyDatabaseData", Description: ""},
+	{Method: "POST", Path: "/api/v1/imports/platform/databases/{name}/hosted/preflight", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleHostedPreflight", Description: ""},
+	{Method: "POST", Path: "/api/v1/imports/platform/databases/{name}/hosted/run", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleHostedRun", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/platform/discover", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDiscoverPlatformImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/repo/apply", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportRepoApply", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/repo/plan", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportRepoPlan", Description: ""},

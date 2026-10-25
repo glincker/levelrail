@@ -31,8 +31,11 @@ type Source struct {
 	// DownloadBase is the asset prefix, the tag is appended by the fetcher.
 	DownloadBase string
 	// Asset is the release asset for this OS and arch.
-	Asset  string
-	Client *http.Client
+	Asset string
+	// Channel is "stable" (stable only), "beta" (prereleases count too) or ""
+	// (stable, else the newest prerelease), the same rules as install-cli.sh.
+	Channel string
+	Client  *http.Client
 	// AllowHTTP permits plain http bases, for tests against a local server.
 	AllowHTTP bool
 }
@@ -51,8 +54,8 @@ type rawRelease struct {
 	} `json:"assets"`
 }
 
-// Latest returns the highest stable tag that ships s.Asset, falling back to
-// the highest prerelease when there is no stable one (install-cli.sh's rule).
+// Latest returns the highest tag on s.Channel that ships s.Asset; the default
+// channel falls back to a prerelease when there is no stable one.
 // An empty tag with a nil error means nothing suitable is published.
 func (s Source) Latest(ctx context.Context) (string, error) {
 	u, err := url.Parse(s.APIBase)
@@ -81,16 +84,30 @@ func (s Source) Latest(ctx context.Context) (string, error) {
 	if err := json.NewDecoder(io.LimitReader(resp.Body, metadataBytes)).Decode(&rrs); err != nil {
 		return "", fmt.Errorf("decode releases: %w", err)
 	}
-	if tag := s.pick(rrs, false); tag != "" {
-		return tag, nil
+	switch s.Channel {
+	case ChannelStable:
+		return s.pick(rrs, false, false), nil
+	case ChannelBeta:
+		return s.pick(rrs, true, true), nil
+	case "":
+		if tag := s.pick(rrs, false, false); tag != "" {
+			return tag, nil
+		}
+		return s.pick(rrs, true, true), nil
 	}
-	return s.pick(rrs, true), nil
+	return "", fmt.Errorf("channel must be %s or %s, got %q", ChannelStable, ChannelBeta, s.Channel)
 }
 
-func (s Source) pick(rrs []rawRelease, prerelease bool) string {
+// Channel names accepted by Source.Channel.
+const (
+	ChannelStable = "stable"
+	ChannelBeta   = "beta"
+)
+
+func (s Source) pick(rrs []rawRelease, prerelease, either bool) string {
 	best := ""
 	for _, rr := range rrs {
-		if rr.Prerelease != prerelease || rr.Draft || !upgrade.IsProductTag(rr.TagName) || !hasAsset(rr, s.Asset) {
+		if (!either && rr.Prerelease != prerelease) || rr.Draft || !upgrade.IsProductTag(rr.TagName) || !hasAsset(rr, s.Asset) {
 			continue
 		}
 		if _, ok := semver.Compare(rr.TagName, rr.TagName); !ok {

@@ -128,6 +128,16 @@ func TestRollbackTo_UsesPinAndRestoresConfig(t *testing.T) {
 		t.Errorf("after rollback image=%q env=%v pull=%q, want the pin, the old env and no forced pull", svc.Image, svc.Env, svc.PullPolicy)
 	}
 
+	attempts, _ := db.ListDeployAttempts(ctx, "web")
+	evs, _ := db.ListGateEvents(ctx, attempts[0].ID)
+	found := false
+	for _, e := range evs {
+		found = found || e.Reason == deploysafety.ReasonOperatorRollback
+	}
+	if !found {
+		t.Errorf("no OperatorRollback event on the rollback attempt: %+v", evs)
+	}
+
 	rec = serve(rt, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/rollback-targets", ""))
 	var targets map[string][]rollbackTargetResource
 	if err := json.Unmarshal(rec.Body.Bytes(), &targets); err != nil {

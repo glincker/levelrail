@@ -90,7 +90,8 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Deploy trace](/deploy-trace): The step-by-step pipeline every deploy records, with or without a build, and how to read it in the dashboard, the CLI and the log stream.
 - [Build performance](/build-performance): Cap build time and parallel builds, and read the per-app build duration trend and cache hit rate.
 - [build-center](/build-center)
-- [Scheduled deploys](/scheduled-deploys): Redeploy the latest commit on a branch on a recurring cron schedule, with freeze-window and restart-safe catch-up semantics.
+- [Scheduled deploys](/scheduled-deploys): Redeploy the latest commit on a branch on a recurring cron schedule, or schedule a one-shot image or git ref deploy, with freeze-window and restart-safe catch-up semantics.
+- [Pull request comment commands](/pr-comment-commands): Redeploy, roll back or check an app from a GitHub pull request comment, limited to users with write access, off by default, with the same freeze, approval and policy checks as the dashboard.
 - [Scheduled jobs](/scheduled-jobs): Run commands on a cron schedule against your app, in a fresh container with the app's env, secrets and volumes, with run history, logs, retries and alerts.
 - [Scheduled and background functions](/scheduled-functions): Call a path on your app on a cron schedule, wake it if it sleeps, and let long calls finish in the background with retries, overlap control and run history.
 - [Image auto-update](/image-auto-update): Redeploy an image-based app automatically when its tag points at a new digest, with the same freeze and protection gates as a manual deploy.

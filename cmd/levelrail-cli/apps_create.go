@@ -61,6 +61,10 @@ type createFlags struct {
 
 	// vaultSecrets back --vault-secret; applied after planning, like secrets.
 	vaultSecrets map[string]appVaultEnvRef
+
+	// readiness, liveness and readyTimeout back the --readiness-* / --liveness-* / --ready-timeout health flags.
+	readiness, liveness probeFlags
+	readyTimeout        string
 }
 
 // createPlan is the validated request set runAppsCreate sends. Build is nil for an existing image; CreateBody and Build are zero for a static --file service.
@@ -179,6 +183,9 @@ func planFromFile(f createFlags, fileSpec *spec.Spec, detected detectedGit) (cre
 
 	key, err := selectService(fileSpec, f.service)
 	if err != nil {
+		return createPlan{}, err
+	}
+	if err := checkUnappliedSections(fileSpec, key, "levelrail", f.file); err != nil {
 		return createPlan{}, err
 	}
 	svc := fileSpec.Services[key]
@@ -692,6 +699,9 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	if f.strategy != "" {
 		plan.CreateBody.Strategy = f.strategy
 	}
+	if err := applyCreateHealth(f, &plan.CreateBody, plan.DeploySpec != nil); err != nil {
+		return reportError(stdout, stderr, f.jsonOut, err)
+	}
 	if len(f.secrets) > 0 {
 		plan.CreateBody.Secrets = f.secrets
 	}
@@ -853,6 +863,7 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.attachDatabase, "attach-database", "", "name of an existing managed database to attach after create (injects a connection env var, see --attach-database-env-var/--attach-database-field)")
 	fs.StringVar(&f.attachDatabaseEnvVar, "attach-database-env-var", "", "env var name the attached database's value is injected as (default: DATABASE_URL); only meaningful with --attach-database")
 	fs.StringVar(&f.attachDatabaseField, "attach-database-field", "", "which field to inject: url, host, port, username, password, or database (default: url); only meaningful with --attach-database")
+	registerCreateHealthFlags(fs, &f)
 	f.secrets = make(map[string]string)
 	fs.Var(stringMapFlag(f.secrets), "secret", "secret env var value as KEY=VALUE, repeatable; stored via envelope-encrypted secret storage as part of this same create call (any path above), same value-on-the-command-line convention \"apps secrets set\" already uses")
 	f.vaultSecrets = make(map[string]appVaultEnvRef)
@@ -991,4 +1002,64 @@ Common flags:
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+// registerCreateHealthFlags adds the probe flags of "apps health set" under a readiness/liveness prefix, so both commands parse through probeFlags.toProbe.
+func registerCreateHealthFlags(fs *flag.FlagSet, f *createFlags) {
+	for _, p := range []struct {
+		which string
+		pf    *probeFlags
+	}{{"readiness", &f.readiness}, {"liveness", &f.liveness}} {
+		pf := p.pf
+		pf.which = p.which
+		fs.StringVar(&pf.path, p.which+"-path", "", "HTTP path for the "+p.which+" probe, e.g. /healthz")
+		fs.StringVar(&pf.exec, p.which+"-exec", "", "command for the "+p.which+" probe, run through /bin/sh -c; exit 0 means healthy")
+		fs.StringVar(&pf.preset, p.which+"-preset", "", "fill the "+p.which+" probe from a named preset ("+healthPresetNames+")")
+		fs.StringVar(&pf.interval, p.which+"-interval", "", p.which+" probe interval, e.g. 5s")
+		fs.StringVar(&pf.timeout, p.which+"-timeout", "", p.which+" probe per-attempt timeout, e.g. 2s")
+		fs.StringVar(&pf.expectedStatus, p.which+"-expected-status", "", p.which+" probe accepted status codes, e.g. 200-399")
+	}
+	fs.IntVar(&f.liveness.failures, "liveness-failures", 0, "consecutive liveness failures before a restart")
+	fs.StringVar(&f.readyTimeout, "ready-timeout", "", "how long a deploy waits for readiness, e.g. 90s")
+}
+
+func (p probeFlags) isSet() bool {
+	return p.path != "" || p.exec != "" || p.preset != "" || p.interval != "" || p.timeout != "" || p.expectedStatus != "" || p.failures != 0
+}
+
+// applyCreateHealth overlays the health flags on the planned body; a flag probe replaces the same probe from --file.
+func applyCreateHealth(f createFlags, body *appResource, static bool) error {
+	if !f.readiness.isSet() && !f.liveness.isSet() && f.readyTimeout == "" {
+		return nil
+	}
+	if static {
+		return newValidationError("health flags are not supported for a static site, which has no running container")
+	}
+	health := serviceHealth{}
+	if body.Health != nil {
+		health = *body.Health
+	}
+	for _, pf := range []probeFlags{f.readiness, f.liveness} {
+		if !pf.isSet() {
+			continue
+		}
+		p, err := pf.toProbe()
+		if err != nil {
+			return newValidationError("%s probe: %v", pf.which, err)
+		}
+		if pf.which == "readiness" {
+			health.Readiness = &p
+		} else {
+			health.Liveness = &p
+		}
+	}
+	if f.readyTimeout != "" {
+		d, err := parseDurationOrZero(f.readyTimeout)
+		if err != nil {
+			return newValidationError("--ready-timeout: %v", err)
+		}
+		health.ReadyTimeout = d.Nanoseconds()
+	}
+	body.Health = &health
+	return nil
 }

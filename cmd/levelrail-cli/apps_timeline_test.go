@@ -87,6 +87,24 @@ func TestRun_AppsStatusShowsPendingAndHold(t *testing.T) {
 	}
 }
 
+func TestRun_AppsStatusRestartInFlightDoesNotAskForApply(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case servePendingChanges(w, r, true):
+		case strings.HasSuffix(r.URL.Path, "/deploys"):
+			_, _ = w.Write([]byte(`[{"Type":"Ready","Status":"False","Reason":"RollingOut"}]`))
+		default:
+			_, _ = w.Write([]byte(`{"name":"web"}`))
+		}
+	}))
+	defer srv.Close()
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "status", "web", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "being applied by the restart in progress") || strings.Contains(stdout, "apps apply web") {
+		t.Errorf("stdout = %s", stdout)
+	}
+}
+
 func TestRun_AppsDomainsAddAndConflict(t *testing.T) {
 	var patchBody map[string]any
 	status := http.StatusOK

@@ -21,8 +21,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { useCreateNodeJoinToken } from '../queries/nodes'
+import { useMeshSettings } from '../queries/meshSettings'
 import { useBrand } from '../hooks/useBrand'
 import type { NodeJoinTokenResponse } from '../types/nodeDetail'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CommandBlock } from './nodes/CommandBlock'
 import { LazyNodeOnboardingPanel } from './nodes/LazyNodeOnboarding'
 import {
@@ -32,6 +34,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+
+type JoinRuntime = 'docker' | 'podman' | 'binary'
 
 const NODE_NAME_PATTERN = /^[a-z][a-z0-9-]*$/
 const LABEL_PATTERN = /^[A-Za-z0-9]([A-Za-z0-9._-]{0,61}[A-Za-z0-9])?$/
@@ -85,15 +89,27 @@ export function ManualEnrollFields({
   const [created, setCreated] = useState<NodeJoinTokenResponse | null>(null)
   const [nodeName, setNodeName] = useState('')
   const [mesh, setMesh] = useState(false)
+  const [meshTouched, setMeshTouched] = useState(false)
+  const [addrTouched, setAddrTouched] = useState(false)
+  const [runtime, setRuntime] = useState<JoinRuntime>('docker')
   const [provider, setProvider] = useState<string>(AUTO_PROVIDER)
   const [region, setRegion] = useState('')
   const [zone, setZone] = useState('')
-  // The dashboard's own hostname is usually reachable from the new node;
-  // 9443 is the control plane's fixed agent gRPC port.
+  // Until the server reports the advertise address (the only name the agent
+  // certificate covers), fall back to the dashboard hostname on the agent port.
   const [controlPlaneAddr, setControlPlaneAddr] = useState(
     () => `${window.location.hostname}:9443`,
   )
   const createJoinToken = useCreateNodeJoinToken()
+  const meshSettings = useMeshSettings()
+  const advertisedAddr = meshSettings.data?.agent_addr
+  const meshConfigured = meshSettings.data?.configured
+
+  // Derived, not synced: the user's edit wins, else the server's value.
+  const effectiveAddr = addrTouched
+    ? controlPlaneAddr
+    : (advertisedAddr ?? controlPlaneAddr)
+  const effectiveMesh = meshTouched ? mesh : (meshConfigured ?? false)
 
   const trimmedName = nodeName.trim()
   const nameInvalid = trimmedName !== '' && !NODE_NAME_PATTERN.test(trimmedName)
@@ -101,12 +117,12 @@ export function ManualEnrollFields({
   const zoneInvalid = labelInvalid(zone.trim())
 
   function generate() {
-    const addr = controlPlaneAddr.trim()
+    const addr = effectiveAddr.trim()
     createJoinToken.mutate(
       {
         control_plane_addr: addr || undefined,
         node_name: trimmedName || undefined,
-        mesh: mesh || undefined,
+        mesh: effectiveMesh || undefined,
         provider: provider === AUTO_PROVIDER ? undefined : provider,
         region: region.trim() || undefined,
         zone: zone.trim() || undefined,
@@ -118,7 +134,7 @@ export function ManualEnrollFields({
   if (created) {
     const commands = created.join_commands
     const fallbackCommand = [
-      `APP_CONTROL_PLANE_ADDR=${controlPlaneAddr.trim()}`,
+      `APP_CONTROL_PLANE_ADDR=${effectiveAddr.trim()}`,
       `APP_JOIN_TOKEN=${created.token}`,
       created.ca_fingerprint
         ? `APP_CA_FINGERPRINT=${created.ca_fingerprint}`
@@ -145,20 +161,51 @@ export function ManualEnrollFields({
         </div>
 
         {commands ? (
-          <>
-            <CommandBlock
-              id="node-join-docker"
-              label={t('join.dockerLabel')}
-              hint={t('join.dockerHint')}
-              value={commands.docker}
-            />
-            <CommandBlock
-              id="node-join-binary"
-              label={t('join.binaryLabel')}
-              hint={t('join.binaryHint')}
-              value={commands.binary}
-            />
-          </>
+          <Tabs
+            value={runtime}
+            onValueChange={(v) => setRuntime(v as JoinRuntime)}
+          >
+            <TabsList>
+              <TabsTrigger value="docker">
+                {t('join.runtime.docker')}
+              </TabsTrigger>
+              <TabsTrigger value="podman">
+                {t('join.runtime.podman')}
+              </TabsTrigger>
+              <TabsTrigger value="binary">
+                {t('join.runtime.binary')}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="docker">
+              <CommandBlock
+                id="node-join-docker"
+                label={t('join.dockerLabel')}
+                hint={t('join.dockerHint')}
+                value={commands.docker}
+              />
+            </TabsContent>
+            <TabsContent value="podman">
+              <CommandBlock
+                id="node-join-podman"
+                label={t('join.podmanLabel')}
+                hint={t('join.podmanHint')}
+                value={commands.podman ?? commands.docker}
+              />
+              <CommandBlock
+                id="node-join-podman-socket"
+                label={t('join.podmanSocketLabel')}
+                value="sudo systemctl enable --now podman.socket"
+              />
+            </TabsContent>
+            <TabsContent value="binary">
+              <CommandBlock
+                id="node-join-binary"
+                label={t('join.binaryLabel')}
+                hint={t('join.binaryHint')}
+                value={commands.binary}
+              />
+            </TabsContent>
+          </Tabs>
         ) : (
           <CommandBlock
             id="node-join-fallback"
@@ -215,8 +262,11 @@ export function ManualEnrollFields({
         </FieldLabel>
         <Input
           id="node-control-plane-addr"
-          value={controlPlaneAddr}
-          onChange={(e) => setControlPlaneAddr(e.target.value)}
+          value={effectiveAddr}
+          onChange={(e) => {
+            setAddrTouched(true)
+            setControlPlaneAddr(e.target.value)
+          }}
           className="font-mono text-xs"
         />
         <FieldDescription>{t('join.addrHint')}</FieldDescription>
@@ -300,8 +350,11 @@ export function ManualEnrollFields({
       <div className="space-y-1">
         <label className="flex items-center gap-2 text-sm">
           <Checkbox
-            checked={mesh}
-            onCheckedChange={(checked) => setMesh(checked === true)}
+            checked={effectiveMesh}
+            onCheckedChange={(checked) => {
+              setMeshTouched(true)
+              setMesh(checked === true)
+            }}
           />
           {t('join.meshLabel')}
         </label>

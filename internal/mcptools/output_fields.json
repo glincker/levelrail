@@ -435,6 +435,8 @@
   "deploy_paths_ignore",
   "has_token",
   "post_pr_comments",
+  "pr_comment_commands",
+  "pr_comment_commands_forks",
   "preview_enabled",
   "repo_url",
   "report_status",

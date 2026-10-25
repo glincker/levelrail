@@ -84,6 +84,10 @@ func betterThan(a, b Evaluation) bool {
 	case a.Headroom != nil && b.Headroom != nil && *a.Headroom != *b.Headroom:
 		return *a.Headroom > *b.Headroom
 	case (a.Headroom == nil) != (b.Headroom == nil):
+		// Unknown capacity must not lose to a busy node: an empty one wins.
+		if (a.Load == 0) != (b.Load == 0) {
+			return a.Load == 0
+		}
 		return a.Headroom != nil
 	case a.Load != b.Load:
 		return a.Load < b.Load

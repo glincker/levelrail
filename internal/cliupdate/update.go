@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/selfupgrade"
@@ -28,6 +29,9 @@ const smokeTimeout = 10 * time.Second
 // ErrNotWritable means the executable's directory cannot take a staged file.
 var ErrNotWritable = errors.New("cannot write next to the running executable")
 
+// ErrManagedPath means a package manager owns the executable.
+var ErrManagedPath = errors.New("the running executable is managed by a package manager")
+
 // Options configures one update run.
 type Options struct {
 	Source Source
@@ -35,6 +39,8 @@ type Options struct {
 	Current string
 	Target  string
 	DryRun  bool
+	// Force skips the package-manager path refusal.
+	Force bool
 	// ExePath is the resolved path of the running executable.
 	ExePath string
 	// TUFCacheDir keeps Sigstore trust metadata between runs.
@@ -54,6 +60,7 @@ type Result struct {
 	Asset        string `json:"asset"`
 	Path         string `json:"path"`
 	Verification string `json:"verification,omitempty"`
+	Backup       string `json:"backup,omitempty"`
 }
 
 // ExecutablePath returns the running binary with symlinks resolved, so the
@@ -102,6 +109,9 @@ func Update(ctx context.Context, o Options) (Result, error) {
 		res.Action = ActionUpToDate
 		return res, nil
 	}
+	if hint := ManagedPathHint(o.ExePath); hint != "" && !o.Force {
+		return res, fmt.Errorf("%w: %s. Pass --force to replace it anyway", ErrManagedPath, hint)
+	}
 	if o.DryRun {
 		res.Action = ActionWouldApply
 		return res, nil
@@ -111,8 +121,8 @@ func Update(ctx context.Context, o Options) (Result, error) {
 			return res, err
 		}
 	}
-	detail, err := apply(ctx, o, target)
-	res.Verification = detail
+	detail, backup, err := apply(ctx, o, target)
+	res.Verification, res.Backup = detail, backup
 	if err != nil {
 		return res, err
 	}
@@ -120,10 +130,10 @@ func Update(ctx context.Context, o Options) (Result, error) {
 	return res, nil
 }
 
-func apply(ctx context.Context, o Options, target string) (string, error) {
+func apply(ctx context.Context, o Options, target string) (detail, backup string, err error) {
 	stage, err := stageFile(o.ExePath)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	renamed := false
 	defer func() {
@@ -134,14 +144,14 @@ func apply(ctx context.Context, o Options, target string) (string, error) {
 
 	work, err := os.MkdirTemp("", "cli-update-")
 	if err != nil {
-		return "", fmt.Errorf("create download directory: %w", err)
+		return "", "", fmt.Errorf("create download directory: %w", err)
 	}
 	defer func() { _ = os.RemoveAll(work) }()
 
 	fetched, err := selfupgrade.Fetcher{BaseURL: o.Source.DownloadBase, Client: o.Source.Client, AllowHTTP: o.Source.AllowHTTP}.
 		Fetch(ctx, target, o.Source.Asset, work)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	verify := o.Verify
 	if verify == nil {
@@ -152,25 +162,29 @@ func apply(ctx context.Context, o Options, target string) (string, error) {
 			TUFCacheDir:    o.TUFCacheDir,
 		}.Verify
 	}
-	detail, err := verify(ctx, fetched.ChecksumsPath, fetched.BundlePath)
+	detail, err = verify(ctx, fetched.ChecksumsPath, fetched.BundlePath)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if err := copyInto(stage, fetched.BinaryPath); err != nil {
-		return detail, err
+		return detail, "", err
 	}
 	// Hash the staged copy, not the download, so the bytes that get renamed are the bytes checked.
 	if err := selfupgrade.VerifyChecksum(stage, fetched.ChecksumsPath, o.Source.Asset); err != nil {
-		return detail, err
+		return detail, "", err
 	}
 	if err := smoke(ctx, stage, target); err != nil {
-		return detail, err
+		return detail, "", err
+	}
+	backup = o.ExePath + ".bak"
+	if err := copyInto(backup, o.ExePath, 0o755); err != nil {
+		return detail, "", fmt.Errorf("keep a backup of the current binary: %w", err)
 	}
 	if err := os.Rename(stage, o.ExePath); err != nil {
-		return detail, fmt.Errorf("replace %s: %w", o.ExePath, err)
+		return detail, "", fmt.Errorf("replace %s: %w", o.ExePath, err)
 	}
 	renamed = true
-	return detail, nil
+	return detail, backup, nil
 }
 
 // stageFile creates the temp file beside the executable, which doubles as the
@@ -182,7 +196,7 @@ func stageFile(exe string) (string, error) {
 	}
 	f, err := os.CreateTemp(filepath.Dir(exe), "."+filepath.Base(exe)+".update-*")
 	if err != nil {
-		return "", fmt.Errorf("%w (%s): %w. Install the CLI somewhere you own, or re-run with sudo, or update it through the package manager that installed it", ErrNotWritable, filepath.Dir(exe), err)
+		return "", fmt.Errorf("%w (%s): %w. Re-run with sudo (sudo levelrail-cli update --yes), or reinstall somewhere you own: curl -fsSL https://levelrail.com/install-cli.sh | LEVELRAIL_CLI_INSTALL_DIR=$HOME/.local/bin sh", ErrNotWritable, filepath.Dir(exe), err)
 	}
 	name := f.Name()
 	if err := f.Chmod(mode); err != nil {
@@ -197,13 +211,17 @@ func stageFile(exe string) (string, error) {
 	return name, nil
 }
 
-func copyInto(dst, src string) error {
+func copyInto(dst, src string, mode ...fs.FileMode) error {
 	in, err := os.Open(src) //nolint:gosec // src is inside the update's own temp directory
 	if err != nil {
 		return fmt.Errorf("open download: %w", err)
 	}
 	defer func() { _ = in.Close() }()
-	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_TRUNC, 0) //nolint:gosec // dst was just created by stageFile
+	flags, perm := os.O_WRONLY|os.O_TRUNC, fs.FileMode(0)
+	if len(mode) > 0 {
+		flags, perm = os.O_WRONLY|os.O_TRUNC|os.O_CREATE, mode[0]
+	}
+	out, err := os.OpenFile(dst, flags, perm) //nolint:gosec // dst is the update's own staged or backup file
 	if err != nil {
 		return fmt.Errorf("open staged file: %w", err)
 	}
@@ -244,4 +262,19 @@ func smoke(ctx context.Context, path, want string) error {
 		return fmt.Errorf("%w: wanted %s, got %s", selfupgrade.ErrVersionMismatch, want, report.CLI.Version)
 	}
 	return nil
+}
+
+// ManagedPathHint returns the right update command when path sits under a
+// package manager's tree, or "" when the CLI is self-managed.
+func ManagedPathHint(path string) string {
+	p := filepath.ToSlash(path)
+	switch {
+	case strings.Contains(p, "/Cellar/") || strings.HasPrefix(p, "/opt/homebrew/") || strings.HasPrefix(p, "/home/linuxbrew/"):
+		return "installed by Homebrew, run: brew upgrade levelrail-cli"
+	case strings.HasPrefix(p, "/nix/store/"):
+		return "installed by Nix, update it through your Nix configuration"
+	case strings.HasPrefix(p, "/usr/bin/") || strings.HasPrefix(p, "/bin/"):
+		return "installed by the system package manager, update it with apt, dnf or apk"
+	}
+	return ""
 }

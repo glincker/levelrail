@@ -623,6 +623,9 @@ type Router struct {
 	githubActions                AppGitHubActionsStore                                 // always set, per-app GitHub Actions report settings
 	ciTrusts                     CIOIDCTrustStore                                      // always set, CI OIDC trusts
 	ciVerifier                   CIIDTokenVerifier                                     // nil uses the GitHub Actions OIDC verifier
+	scheduledDeploys             ScheduledDeployStore                                  // always set, same shape as appSchedules
+	prCommentCommands            PRCommentCommandStore                                 // always set, comment ids already handled
+	prCommands                   *prCommentState                                       // nil unless WithPRCommentCommands: the feature is then off
 	appSchedules                 AppScheduleStore                                      // always set, same "core Store interface" shape as gitSources above
 	resolveBranchSHA             resolveBranchSHAFunc                                  // remote branch head resolver for TriggerScheduledDeploy; always non-nil, defaulted to resolveRemoteBranchSHA in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape listBranches above already uses
 	previewEnvironments          PreviewEnvironmentStore                               // always set, same "core Store interface" shape as gitSources above: listing/tearing down a preview needs no extra secrets configuration, deploying a new one reuses gitSourceSecrets/gitSourceFetch/builder already above
@@ -932,6 +935,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		serviceVolumeRestoreHistory: s,
 		gitSources:                  s,
 		appSchedules:                s,
+		scheduledDeploys:            s,
+		prCommentCommands:           s,
 		githubActions:               s,
 		ciTrusts:                    s,
 		imageAutoUpdates:            s,

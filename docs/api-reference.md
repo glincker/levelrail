@@ -136,9 +136,8 @@ Endpoints for:
 | POST | /api/v1/auth/login | Public | handleLogin |
 | POST | /api/v1/auth/register | Public (setup token) | handleRegister |
 | GET | /api/v1/auth/setup-status | Public | handleSetupStatus |
-| POST | /api/v1/auth/logout | Session | handleLogout |
+| POST | /api/v1/auth/logout | Public | handleLogout |
 | PUT | /api/v1/auth/password | Session | handleChangePassword |
-| GET | /api/v1/auth/session | Session | handleGetSession |
 | POST | /api/v1/auth/sessions/revoke-others | Session | handleRevokeOtherSessions |
 | POST | /api/v1/auth/users | AbilityRoot | handleCreateUser |
 | GET | /api/v1/users | AbilityRead | handleListUsers |
@@ -305,6 +304,7 @@ Endpoints for:
 | POST | /api/v1/settings/runtime/apply | AbilityRoot | handleApplyRuntimeSettings |
 | POST | /api/v1/settings/runtime/onboarding/ack | AbilityRoot | handleAckRuntimeOnboarding |
 | POST | /api/v1/auth/tokens/cleanup | AbilityRoot | handleCleanupTokens |
+| GET | /api/v1/auth/session | Public | handleAuthSession |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -652,6 +652,10 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/abuse | AbilityRead | handleGetAppAbuse |
 | PUT | /api/v1/apps/{name}/abuse | AbilityWriteSensitive | handlePutAppAbuse |
 | POST | /api/v1/apps/{name}/abuse/dry-run | AbilityReadSensitive | handleAbuseDryRun |
+| POST | /api/v1/apps/{name}/scheduled-deploys | AbilityDeploy | handleCreateScheduledDeploy |
+| GET | /api/v1/apps/{name}/scheduled-deploys | AbilityRead | handleListScheduledDeploys |
+| GET | /api/v1/apps/{name}/scheduled-deploys/{id} | AbilityRead | handleGetScheduledDeploy |
+| DELETE | /api/v1/apps/{name}/scheduled-deploys/{id} | AbilityDeploy | handleCancelScheduledDeploy |
 
 </Accordion>
 
@@ -1951,6 +1955,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/cleanup/{id}/preview | AbilityRoot | handlePreviewCleanup |
 | POST | /api/v1/cleanup/{id}/run | AbilityRoot | handleRunCleanup |
 | PUT | /api/v1/cleanup/{id}/mode | AbilityRoot | handleSetCleanupMode |
+| POST | /api/v1/imports/platform/databases/{name}/hosted/preflight | AbilityWriteSensitive | handleHostedPreflight |
+| POST | /api/v1/imports/platform/databases/{name}/hosted/run | AbilityWriteSensitive | handleHostedRun |
 
 ## See also
 

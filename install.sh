@@ -100,6 +100,10 @@
 #   LEVELRAIL_COEXIST        1 is the same as --coexist
 #   LEVELRAIL_COEXIST_HTTP_PORT / LEVELRAIL_COEXIST_HTTPS_PORT  ingress ports
 #                            coexist mode uses (default: 8088 / 8443)
+#   LEVELRAIL_RUNTIME        auto (default), docker, podman or existing, same as
+#                            --runtime. Podman is never installed for you.
+#   LEVELRAIL_PODMAN_SOCKET  Podman API socket written as APP_CONTAINER_RUNTIME_SOCKET
+#                            (default: unix:///run/podman/podman.sock)
 #   APP_PUBLIC_HOST          written to the drop-in when set
 #   LEVELRAIL_SOCKET_ACTIVATION  systemd owns the ingress sockets, so a
 #                            restart or upgrade of the control plane queues
@@ -150,6 +154,11 @@ SERVER_PROFILE="${LEVELRAIL_PROFILE:-}"
 PROFILE_PINNED=0
 [ -z "$SERVER_PROFILE" ] || PROFILE_PINNED=1
 LOW_RAM_MB="${LEVELRAIL_LOW_RAM_MB:-2048}"
+RUNTIME_CHOICE="${LEVELRAIL_RUNTIME:-auto}"
+RUNTIME_PINNED=0
+[ "$RUNTIME_CHOICE" = "auto" ] || RUNTIME_PINNED=1
+RUNTIME=""
+PODMAN_SOCKET="${LEVELRAIL_PODMAN_SOCKET:-unix:///run/podman/podman.sock}"
 DROPIN_DIR="/etc/systemd/system/${SERVICE_NAME}.service.d"
 DROPIN_PATH="${DROPIN_DIR}/10-install.conf"
 PROXY_DOCS_URL="https://docs.levelrail.com/behind-an-existing-proxy"
@@ -186,6 +195,7 @@ usage() {
 Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall] [--force] [--purge]
                   [--coexist|--no-coexist] [--yes] [--no-cosign] [--http-port N]
                   [--https-port N] [--domain HOST] [--profile minimal|standard|suite]
+                  [--runtime auto|docker|podman|existing]
   install    (default) preflight checks, then install or repair
   check      (also --check) read-only readiness report and recommended mode
   upgrade    replace the binary with a newer release and restart
@@ -200,6 +210,10 @@ Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall] [--for
   --yes      accepted for scripts, the installer never prompts
   --no-cosign  do not install cosign (checksum-only verification)
   --profile  minimal, standard (default) or suite: which optional subsystems start
+  --runtime  auto (default): use a working Docker, else an existing Podman, else
+             install Docker. docker: Docker, installed if missing. podman: an
+             existing Podman (never installed here), best-effort. existing:
+             Docker or Podman already on the host, install nothing.
 Environment (full list in the header of this file):
   LEVELRAIL_VERSION=vX.Y.Z   install this release instead of the newest
   LEVELRAIL_CHANNEL=beta     follow pre-releases
@@ -216,7 +230,7 @@ while [ "$#" -gt 0 ]; do
 	arg="$1"
 	shift
 	case "$arg" in
-	--http-port | --https-port | --domain | --profile)
+	--http-port | --https-port | --domain | --profile | --runtime)
 		[ "$#" -gt 0 ] || fatal "$arg needs a value"
 		arg="$arg=$1"
 		shift
@@ -243,6 +257,10 @@ while [ "$#" -gt 0 ]; do
 		HTTPS_PORT_PINNED=1
 		;;
 	--domain=*) DOMAIN_HINT="${arg#*=}" ;;
+	--runtime=*)
+		RUNTIME_CHOICE="${arg#*=}"
+		RUNTIME_PINNED=1
+		;;
 	--profile=*)
 		SERVER_PROFILE="${arg#*=}"
 		PROFILE_PINNED=1
@@ -255,6 +273,10 @@ while [ "$#" -gt 0 ]; do
 	esac
 done
 [ "$PURGE" -eq 0 ] || [ "$MODE" = "uninstall" ] || fatal "--purge only applies to uninstall"
+case "$RUNTIME_CHOICE" in
+auto | docker | podman | existing) ;;
+*) fatal "--runtime must be auto, docker, podman or existing, got: $RUNTIME_CHOICE" ;;
+esac
 case "$VERIFY_MODE" in
 auto | require | off) ;;
 *) fatal "APP_INSTALL_VERIFY must be auto, require or off, got: $VERIFY_MODE" ;;
@@ -483,6 +505,21 @@ load_settings() {
 		minimal | standard | suite) SERVER_PROFILE="$v" ;;
 		esac
 	fi
+	# An earlier Podman install keeps its runtime across upgrades.
+	v="$(setting APP_CONTAINER_RUNTIME_SOCKET)"
+	case "$v" in
+	*podman*)
+		case "$v" in
+		*[!A-Za-z0-9/._:-]*) ;;
+		*)
+			if [ "$RUNTIME_PINNED" -eq 0 ]; then
+				RUNTIME="podman"
+				[ -n "${LEVELRAIL_PODMAN_SOCKET:-}" ] || PODMAN_SOCKET="$v"
+			fi
+			;;
+		esac
+		;;
+	esac
 	if [ "$DASHBOARD_BIND" = "127.0.0.1" ] && [ "$HTTP_PORT" != "80" ] && [ "$HTTPS_PORT" != "443" ]; then
 		COEXIST_ACTIVE=1
 	fi
@@ -563,6 +600,80 @@ first_existing_dir() {
 	printf '%s' "$d"
 }
 
+# docker_works is true for a Docker engine that answers, not a podman-docker shim.
+docker_works() {
+	command -v docker >/dev/null 2>&1 || return 1
+	if docker --version 2>&1 | grep -qi podman; then return 1; fi
+	docker info >/dev/null 2>&1
+}
+
+podman_works() {
+	command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1
+}
+
+podman_rootless() {
+	[ "$(podman info --format '{{.Host.Security.Rootless}}' 2>/dev/null)" = "true" ]
+}
+
+podman_version() {
+	podman --version 2>/dev/null | sed -E 's/^[^0-9]*([0-9][0-9.]*).*/\1/'
+}
+
+PODMAN_INSTALL_HINT="apt install podman (Debian, Ubuntu) or dnf install podman (Fedora, RHEL family)"
+
+# resolve_runtime picks docker or podman. It never installs Podman, and it
+# only falls back to installing Docker when the choice allows it.
+resolve_runtime() {
+	[ -z "$RUNTIME" ] || [ "$RUNTIME_PINNED" -eq 1 ] || return 0
+	case "$RUNTIME_CHOICE" in
+	docker) RUNTIME="docker" ;;
+	podman) RUNTIME="podman" ;;
+	existing | auto)
+		if docker_works; then
+			RUNTIME="docker"
+		elif podman_works; then
+			RUNTIME="podman"
+		elif [ "$RUNTIME_CHOICE" = "existing" ]; then
+			RUNTIME="none"
+		else
+			RUNTIME="docker"
+		fi
+		;;
+	esac
+}
+
+# runtime_rows reports the detected runtime and how well it is supported.
+runtime_rows() {
+	docs="https://docs.levelrail.com/container-runtimes"
+	case "$RUNTIME" in
+	podman)
+		if ! command -v podman >/dev/null 2>&1; then
+			row runtime FAIL "podman not found. The installer never installs Podman: ${PODMAN_INSTALL_HINT}, or use --runtime docker"
+			return 0
+		fi
+		mode="rootful"
+		if podman_rootless; then mode="rootless"; fi
+		row runtime warn "Podman $(podman_version) (${mode}): best-effort, source builds need BuildKit inside dockerd, see ${docs}"
+		if [ "$mode" = "rootless" ]; then
+			row podman-mode warn "rootless Podman cannot publish ports below 1024, and its socket is per user: systemctl --user enable --now podman.socket && loginctl enable-linger <user>"
+		fi
+		log "  Image and compose deploys are expected to work; Dockerfile and Railpack source builds are not verified on Podman yet."
+		;;
+	none)
+		row runtime FAIL "--runtime existing found no working Docker or Podman. Start one, or use --runtime docker to install Docker"
+		;;
+	*)
+		if ! command -v docker >/dev/null 2>&1; then
+			row runtime ok "Docker will be installed via get.docker.com: supported"
+		elif docker_rootless; then
+			row runtime warn "Docker $(docker_major) (rootless): best-effort, source builds need BuildKit inside dockerd and ports below 1024 need a sysctl, see ${docs}"
+		else
+			row runtime ok "Docker $(docker_major) (rootful): supported"
+		fi
+		;;
+	esac
+}
+
 # docker_rootless is true when the daemon reports rootless mode.
 docker_rootless() {
 	docker info --format '{{.SecurityOptions}}' 2>/dev/null | grep -q 'name=rootless'
@@ -607,7 +718,7 @@ firewall_blocks() {
 # preflight_environment adds the checks that are about the surroundings:
 # Docker isolation and exposure, the firewall, and the DNS of --domain.
 preflight_environment() {
-	if command -v docker >/dev/null 2>&1; then
+	if [ "$RUNTIME" = "docker" ] && command -v docker >/dev/null 2>&1; then
 		if docker_rootless; then
 			row docker-mode warn "rootless Docker cannot publish ports 80/443 until net.ipv4.ip_unprivileged_port_start=80 is set"
 		fi
@@ -667,7 +778,11 @@ preflight() {
 
 	if command -v curl >/dev/null 2>&1; then row curl ok "found"; else row curl FAIL "curl is required: apt-get install -y curl or dnf install -y curl"; fi
 
-	if command -v docker >/dev/null 2>&1; then
+	resolve_runtime
+	runtime_rows
+	if [ "$RUNTIME" != "docker" ]; then
+		:
+	elif command -v docker >/dev/null 2>&1; then
 		major="$(docker_major)"
 		case "$major" in
 		'' | *[!0-9]*) row docker warn "installed, version unknown" ;;
@@ -722,6 +837,27 @@ preflight() {
 		warn "${PREFLIGHT_FAILS} preflight check(s) failed, continuing because of --force"
 	fi
 	[ -n "$GOARCH" ] || fatal "cannot continue on an unsupported architecture"
+}
+
+# ensure_podman wires the Docker-compatible API socket of an existing Podman.
+# Rootless sockets are per user, so only the rootful one is enabled here.
+ensure_podman() {
+	command -v podman >/dev/null 2>&1 || fatal "podman not found. The installer never installs Podman: ${PODMAN_INSTALL_HINT}, or use --runtime docker"
+	if podman_rootless; then
+		fatal "podman runs rootless for this user. Run as that user: systemctl --user enable --now podman.socket && loginctl enable-linger \$USER, then point APP_CONTAINER_RUNTIME_SOCKET at the user socket"
+	fi
+	systemctl enable --now podman.socket
+	if [ ! -S "${PODMAN_SOCKET#unix://}" ]; then
+		warn "${PODMAN_SOCKET} is not there yet. Check: systemctl status podman.socket"
+	fi
+}
+
+ensure_runtime() {
+	case "$RUNTIME" in
+	podman) ensure_podman ;;
+	none) fatal "--runtime existing found no working Docker or Podman" ;;
+	*) ensure_docker ;;
+	esac
 }
 
 ensure_docker() {
@@ -1054,11 +1190,13 @@ render_unit() {
 		socket_deps="Requires=${HTTP_SOCKET_UNIT} ${HTTPS_SOCKET_UNIT}
 After=${HTTP_SOCKET_UNIT} ${HTTPS_SOCKET_UNIT}"
 	fi
+	runtime_unit="docker.service"
+	[ "$RUNTIME" != "podman" ] || runtime_unit="podman.socket"
 	cat <<EOF
 [Unit]
 Description=Levelrail control plane
-After=network-online.target docker.service
-Requires=docker.service
+After=network-online.target ${runtime_unit}
+Requires=${runtime_unit}
 Wants=network-online.target
 ${socket_deps}
 
@@ -1099,6 +1237,7 @@ write_dropin() {
 			"Environment=APP_INGRESS_HTTPS_ADDR=:${HTTPS_PORT}"
 		[ -z "$PUBLIC_HOST" ] || printf 'Environment=APP_PUBLIC_HOST=%s\n' "$PUBLIC_HOST"
 		[ -z "$SERVER_PROFILE" ] || printf 'Environment=APP_SERVER_PROFILE=%s\n' "$SERVER_PROFILE"
+		[ "$RUNTIME" != "podman" ] || printf 'Environment=APP_CONTAINER_RUNTIME_SOCKET=%s\n' "$PODMAN_SOCKET"
 	} >"$DROPIN_PATH"
 }
 
@@ -1107,7 +1246,7 @@ write_dropin() {
 ensure_dropin() {
 	if [ -f "$DROPIN_PATH" ] && [ "$HTTP_PORT_PINNED" -eq 0 ] && [ "$HTTPS_PORT_PINNED" -eq 0 ] &&
 		[ "$DASHBOARD_PORT_PINNED" -eq 0 ] && [ "$PUBLIC_HOST_PINNED" -eq 0 ] && [ "$COEXIST" -eq 0 ] &&
-		[ "$PROFILE_PINNED" -eq 0 ] && [ "$SETTINGS_CHANGED" -eq 0 ]; then
+		[ "$PROFILE_PINNED" -eq 0 ] && [ "$SETTINGS_CHANGED" -eq 0 ] && [ "$RUNTIME_PINNED" -eq 0 ]; then
 		return 0
 	fi
 	write_dropin
@@ -1395,6 +1534,9 @@ Create the first admin account with this one-time setup token:
   ${token}
 The links above pre-fill it. Print it again any time with:
   sudo APP_DATA_DIR=${DATA_DIR} ${BIN_PATH} setup-token
+Or create the admin from a terminal (the password is read from APP_ADMIN_PASSWORD or a prompt):
+  APP_SETUP_TOKEN=${token} levelrail-cli setup admin --api-url ${DASHBOARD_SCHEME}://127.0.0.1:${DASHBOARD_PORT}
+After enabling HTTPS, run: levelrail-cli settings dashboard-url set --url https://<your-domain>
 
 EOF
 	fi
@@ -1523,7 +1665,7 @@ do_install() {
 	[ -n "$SOCKET_ACTIVATION" ] || SOCKET_ACTIVATION=1
 	load_settings
 	preflight
-	ensure_docker
+	ensure_runtime
 	install_binary
 	write_brand
 	ensure_dropin

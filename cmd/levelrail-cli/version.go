@@ -28,6 +28,9 @@ type versionReport struct {
 
 // runVersion prints the CLI's own build info offline; only --server touches the network.
 func runVersion(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) > 0 && args[0] == "--check" {
+		return runUpdate(prog, args, stdout, stderr, lookupEnv)
+	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "version", "print version info as JSON to stdout and nothing else", stderr)
 	serverFlag := fs.Bool("server", false, "also query the control plane for its running version and latest release")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, versionUsage(prog)) }
@@ -106,6 +109,7 @@ it matches this CLI, and whether a newer release has been published to
 github.com/glincker/levelrail. Fails if the server cannot be reached.
 
 Flags:
+  --check                  shortcut for "update --check" (must come first; takes its flags)
   --server                 also query the control plane (opt-in)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string         control plane base URL (default: %[3]s env var, then %[4]s)

@@ -60,10 +60,12 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Installing](https://docs.levelrail.com/installing): install the control plane and node agent on a Linux server.
 - [Troubleshooting](https://docs.levelrail.com/troubleshooting): fixes for the most common deploy, login, and node problems.
 - [Importing apps](https://docs.levelrail.com/importing-apps): import a repo URL, docker run command, image, compose file, or Dockerfile with a deployment plan preview.
+- [Deploy button](https://docs.levelrail.com/deploy-button): add a Deploy to Levelrail button to a README that opens the reader's own instance with an image, git repository or template prefilled.
 - [Deploying apps](https://docs.levelrail.com/deploying-apps): app.yaml, build strategies, rolling/blue-green/recreate deploys, and rollback.
 - [Deploy safety](https://docs.levelrail.com/deploy-safety): digest-truthful deploys, stale-deploy guards, freeze windows, and the post-cutover hold on the previous release.
 - [Deploy failures](https://docs.levelrail.com/deploy-failures): the structured failure object every failed or blocked deploy carries, and what each code means.
-- [Scheduled deploys](https://docs.levelrail.com/scheduled-deploys): redeploy the latest commit on a branch on a recurring cron schedule.
+- [Scheduled deploys](https://docs.levelrail.com/scheduled-deploys): redeploy the latest commit on a branch on a cron schedule, or schedule a one-shot image or git ref deploy.
+- [Pull request comment commands](https://docs.levelrail.com/pr-comment-commands): redeploy, roll back or check an app from a GitHub pull request comment, write access only, off by default.
 - [Deployments page](https://docs.levelrail.com/deployments-page): the cross-app live deploy list, with filters, a details drawer, and redeploy/rollback actions.
 - [Deploy timeline](https://docs.levelrail.com/deploy-timeline): every deploy across apps on one live time axis, with zoom, filters and a CLI view.
 - [Deploy event timeline](https://docs.levelrail.com/deploy-event-timeline): one deploy as an ordered story from trigger to cutover, watch signals and traffic impact, live, replayable and comparable.

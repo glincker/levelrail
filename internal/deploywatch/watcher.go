@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/changes"
 	"log/slog"
 	"time"
 
@@ -30,10 +31,10 @@ type WatchStore interface {
 	ListRollbackPins(ctx context.Context, serviceName string) ([]store.RollbackPin, error)
 }
 
-// RestartCounter counts container restarts per resource since a time.
+// RestartCounter counts restarts of the named containers since a time.
 // alerting.RestartTracker satisfies it.
 type RestartCounter interface {
-	CountSince(resourceID string, since time.Time) int
+	CountContainersSince(names []string, since time.Time) int
 }
 
 // Notifier tells operators a live release was rolled back or needs one.
@@ -155,7 +156,7 @@ func (w *Watcher) watchOne(ctx context.Context, service, attemptID string, now t
 	if err != nil {
 		return err
 	}
-	if attempt.Image != svc.Image || svc.Suspended {
+	if !docker.SameImageRef(attempt.Image, svc.Image) || svc.Suspended {
 		return nil
 	}
 	overrides, err := w.Store.GetDeploySafetySettings(ctx, service)
@@ -194,18 +195,23 @@ func (w *Watcher) watchOne(ctx context.Context, service, attemptID string, now t
 func (w *Watcher) observe(ctx context.Context, svc *store.DesiredService, attemptID string, cfg deploysafety.Effective, since, now time.Time) (deploysafety.WatchObservation, error) {
 	obs := deploysafety.WatchObservation{SinceCutover: now.Sub(since)}
 	resourceID := "service:" + svc.Name
+	replicas := svc.Replicas
+	if replicas <= 0 {
+		replicas = store.DefaultReplicas
+	}
+	names := make([]string, replicas)
+	for i := range names {
+		names[i] = application.ReplicaContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce, i)
+	}
+	// Restarts are counted per container of this release: a failed release
+	// still held beside it restarts under the same service name.
 	if w.Restarts != nil {
-		obs.Restarts = w.Restarts.CountSince(resourceID, since)
+		obs.Restarts = w.Restarts.CountContainersSince(names, since)
 	}
 	if w.Inspectors != nil {
 		inspector, err := w.Inspectors(svc.NodeID)
 		if err == nil && inspector != nil {
-			replicas := svc.Replicas
-			if replicas <= 0 {
-				replicas = store.DefaultReplicas
-			}
-			for i := 0; i < replicas; i++ {
-				name := application.ReplicaContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce, i)
+			for _, name := range names {
 				es, err := inspector.InspectExitState(ctx, name)
 				if err != nil || es == nil {
 					continue
@@ -256,6 +262,16 @@ func (w *Watcher) record(ctx context.Context, attempt *store.DeployAttempt, phas
 
 func (w *Watcher) trip(ctx context.Context, svc *store.DesiredService, attempt *store.DeployAttempt, cfg deploysafety.Effective, reason, message string) {
 	w.record(ctx, attempt, deploysafety.PhaseWatch, deploysafety.StatusFailed, reason, message)
+	// An operator who rolled back chose this release: record the crash and
+	// keep the row as it is, so the choice stays visible whatever the
+	// auto-rollback setting is.
+	if w.operatorChose(ctx, attempt) {
+		msg := "this release was chosen by an operator rollback, so it was not rolled back automatically"
+		w.record(ctx, attempt, deploysafety.PhaseRollback, deploysafety.StatusInfo, deploysafety.ReasonOperatorRollback, msg)
+		w.logger().Warn("deploywatch: operator rollback release tripped the watch", slog.String("service", svc.Name), slog.String("attempt_id", attempt.ID), slog.String("reason", reason))
+		w.notify(ctx, svc.Name, svc.Image, fmt.Sprintf("%s: %s; %s", reason, message, msg))
+		return
+	}
 	changed, err := w.Store.FailDeployAttemptWithReason(ctx, attempt.ID, reason, message)
 	if err == nil && !changed {
 		err = w.Store.SetDeployAttemptReason(ctx, attempt.ID, reason)
@@ -313,6 +329,23 @@ func (w *Watcher) trip(ctx context.Context, svc *store.DesiredService, attempt *
 	w.notify(ctx, svc.Name, svc.Image, fmt.Sprintf("%s: %s; rolled back automatically to deploy %s", reason, message, target.ID))
 }
 
+// operatorChose reports whether attempt is an explicit operator rollback.
+func (w *Watcher) operatorChose(ctx context.Context, attempt *store.DeployAttempt) bool {
+	if attempt.Source == store.DeployAttemptSourceAutoRollback {
+		return false
+	}
+	attempts, err := w.Store.ListDeployAttempts(ctx, attempt.ServiceName)
+	if err != nil {
+		return false
+	}
+	for i := range attempts {
+		if attempts[i].ID == attempt.ID {
+			return changes.IsRollbackAttempt(*attempt, attempts[i+1:])
+		}
+	}
+	return false
+}
+
 // rollbackTarget is the newest still-succeeded pinned release other than
 // attempt, else the newest earlier succeeded deploy of a different image.
 // Tripped releases are failed, so rollbacks never ping-pong.
@@ -338,7 +371,7 @@ func (w *Watcher) rollbackTarget(ctx context.Context, svc *store.DesiredService,
 	}
 	for i := range attempts {
 		a := attempts[i]
-		if a.ID == attempt.ID || a.Status != store.DeployAttemptStatusSucceeded || a.Image == "" || a.Image == attempt.Image {
+		if a.ID == attempt.ID || a.Status != store.DeployAttemptStatusSucceeded || a.Image == "" || docker.SameImageRef(a.Image, attempt.Image) {
 			continue
 		}
 		return &a, nil, nil

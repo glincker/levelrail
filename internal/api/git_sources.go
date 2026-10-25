@@ -133,6 +133,10 @@ type gitSourceResource struct {
 	// read-only-here, set-via-preview-settings shape as PreviewEnabled
 	// above.
 	PostPRComments bool `json:"post_pr_comments"`
+	// PRCommentCommands and PRCommentCommandsForks mirror the store fields,
+	// set via the same preview-settings route. Off by default.
+	PRCommentCommands      bool `json:"pr_comment_commands"`
+	PRCommentCommandsForks bool `json:"pr_comment_commands_forks"`
 	// DeployPaths, DeployPathsIgnore and ReportStatus mirror the store
 	// fields of the same names, set via PUT .../git-source/deploy-settings.
 	DeployPaths       []string  `json:"deploy_paths"`
@@ -176,29 +180,31 @@ func (rt *Router) gitSourceWebhookURL(ctx context.Context, name string) string {
 
 func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gitSourceResource {
 	return gitSourceResource{
-		ServiceName:        g.ServiceName,
-		RepoURL:            g.RepoURL,
-		Branch:             g.Branch,
-		BuildType:          g.BuildType,
-		BuildPath:          g.BuildPath,
-		BaseDirectory:      g.BaseDirectory,
-		BuildCommand:       g.BuildCommand,
-		PublishDir:         g.PublishDir,
-		ResolvedBuild:      resolveGitSourceBuild(g.BuildType, g.BaseDirectory, g.BuildPath, g.BuildCommand, g.PublishDir),
-		AdditionalServices: g.AdditionalServices,
-		Services:           g.Services,
-		Databases:          g.Databases,
-		TriggerMode:        effectiveGitSourceTriggerMode(g.TriggerMode),
-		HasToken:           hasToken,
-		WebhookURL:         webhookURL,
-		PreviewEnabled:     g.PreviewEnabled,
-		PostPRComments:     g.PostPRComments,
-		DeployPaths:        nonNilPaths(g.DeployPaths),
-		DeployPathsIgnore:  nonNilPaths(g.DeployPathsIgnore),
-		ReportStatus:       g.ReportStatus,
-		ConnectionID:       g.ConnectionID,
-		CreatedAt:          g.CreatedAt,
-		UpdatedAt:          g.UpdatedAt,
+		ServiceName:            g.ServiceName,
+		RepoURL:                g.RepoURL,
+		Branch:                 g.Branch,
+		BuildType:              g.BuildType,
+		BuildPath:              g.BuildPath,
+		BaseDirectory:          g.BaseDirectory,
+		BuildCommand:           g.BuildCommand,
+		PublishDir:             g.PublishDir,
+		ResolvedBuild:          resolveGitSourceBuild(g.BuildType, g.BaseDirectory, g.BuildPath, g.BuildCommand, g.PublishDir),
+		AdditionalServices:     g.AdditionalServices,
+		Services:               g.Services,
+		Databases:              g.Databases,
+		TriggerMode:            effectiveGitSourceTriggerMode(g.TriggerMode),
+		HasToken:               hasToken,
+		WebhookURL:             webhookURL,
+		PreviewEnabled:         g.PreviewEnabled,
+		PostPRComments:         g.PostPRComments,
+		PRCommentCommands:      g.PRCommentCommands,
+		PRCommentCommandsForks: g.PRCommentCommandsForks,
+		DeployPaths:            nonNilPaths(g.DeployPaths),
+		DeployPathsIgnore:      nonNilPaths(g.DeployPathsIgnore),
+		ReportStatus:           g.ReportStatus,
+		ConnectionID:           g.ConnectionID,
+		CreatedAt:              g.CreatedAt,
+		UpdatedAt:              g.UpdatedAt,
 	}
 }
 

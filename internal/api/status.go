@@ -40,6 +40,8 @@ type systemStatusResponse struct {
 	// "no DockerPinger configured" case): the raw daemon-unreachable text
 	// an operator needs to actually fix the problem, not just "false".
 	DockerError string `json:"docker_error,omitempty"`
+	// EngineKind names the container engine (docker, podman, ...) so the CLI does not say Docker under Podman.
+	EngineKind string `json:"engine_kind,omitempty"`
 	// DockerDiskUsage is Docker's own storage accounting (images,
 	// containers, volumes, build cache), omitted entirely when no
 	// DockerDiskUsager is configured (WithDockerDiskUsager) or the
@@ -99,6 +101,7 @@ func (rt *Router) handleSystemStatus(w http.ResponseWriter, r *http.Request) {
 			resp.DockerError = err.Error()
 		} else {
 			resp.DockerConnected = true
+			resp.EngineKind = string(rt.detectRuntimeInfo(r.Context()).Kind)
 		}
 	}
 

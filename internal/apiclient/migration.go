@@ -49,8 +49,18 @@ type DataCopyStatus struct {
 	Checked        int              `json:"checked"`
 	Mismatched     int              `json:"mismatched"`
 	Tables         []DataCopyTable  `json:"tables,omitempty"`
+	Objects        *DataCopyObjects `json:"objects,omitempty"`
+	Findings       []HostedCheck    `json:"findings,omitempty"`
 	StartedAt      string           `json:"started_at,omitempty"`
 	FinishedAt     string           `json:"finished_at,omitempty"`
+}
+
+// DataCopyObjects counts the non-table objects that arrived in a hosted move.
+type DataCopyObjects struct {
+	Sequences  int `json:"sequences"`
+	Views      int `json:"views"`
+	Functions  int `json:"functions"`
+	Extensions int `json:"extensions"`
 }
 
 // CutoverCheck is one named check with what to do about it.
@@ -109,6 +119,50 @@ type VolumeGuideResponse struct {
 func (c *Client) StartDatabaseDataCopy(ctx context.Context, name string, src DataCopySource) (DataCopyStatus, error) {
 	var out DataCopyStatus
 	err := c.do(ctx, http.MethodPost, "/api/v1/imports/platform/databases/"+url.PathEscape(name)+"/copy", src, &out)
+	return out, err
+}
+
+// HostedImportRequest is the body of the hosted Postgres routes. URL is a
+// credential, send it only over the API and never print it.
+type HostedImportRequest struct {
+	URL          string `json:"url"`
+	WritesFrozen bool   `json:"writes_frozen"`
+	AllowLarge   bool   `json:"allow_large"`
+	// CreateMissingRoles asks the server to create policy roles absent from the target.
+	CreateMissingRoles bool `json:"create_missing_roles,omitempty"`
+}
+
+// HostedCheck is one preflight finding with its fix.
+type HostedCheck struct {
+	ID         string `json:"id"`
+	Severity   string `json:"severity"`
+	Message    string `json:"message"`
+	NextAction string `json:"next_action,omitempty"`
+}
+
+// HostedPreflight is the findings for a hosted Postgres move. Source is redacted.
+type HostedPreflight struct {
+	Database        string        `json:"database"`
+	Source          string        `json:"source"`
+	Blocked         bool          `json:"blocked"`
+	TargetVersion   string        `json:"target_version"`
+	RequiredBytes   int64         `json:"required_bytes"`
+	EstimateSeconds int           `json:"estimate_seconds"`
+	Checks          []HostedCheck `json:"checks"`
+}
+
+// PreflightHostedImport calls POST /api/v1/imports/platform/databases/{name}/hosted/preflight.
+func (c *Client) PreflightHostedImport(ctx context.Context, name string, req HostedImportRequest) (HostedPreflight, error) {
+	var out HostedPreflight
+	err := c.do(ctx, http.MethodPost, "/api/v1/imports/platform/databases/"+url.PathEscape(name)+"/hosted/preflight", req, &out)
+	return out, err
+}
+
+// StartHostedImport calls POST /api/v1/imports/platform/databases/{name}/hosted/run.
+// Read progress with GetDatabaseDataCopy.
+func (c *Client) StartHostedImport(ctx context.Context, name string, req HostedImportRequest) (DataCopyStatus, error) {
+	var out DataCopyStatus
+	err := c.do(ctx, http.MethodPost, "/api/v1/imports/platform/databases/"+url.PathEscape(name)+"/hosted/run", req, &out)
 	return out, err
 }
 

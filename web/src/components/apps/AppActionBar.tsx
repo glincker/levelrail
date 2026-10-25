@@ -4,6 +4,7 @@ import {
   ArrowClockwiseIcon,
   CopyIcon,
   DotsThreeIcon,
+  LinkIcon,
   PauseIcon,
   PlayIcon,
   RocketLaunchIcon,
@@ -24,6 +25,8 @@ import {
 import type { DeployTab } from '../overview/DeploySheet'
 import type { AppDetail } from '../../types/appDetail'
 import { useAppAsleep, useAppSleepActions } from '../../queries/appSleep'
+import { useGitSource } from '../../queries/gitSources'
+import { DeployLinkDialog } from '../newapp/DeployLinkDialog'
 
 // One primary action, Restart beside it, everything else behind the overflow
 // menu so Delete never carries the same visual weight as Deploy.
@@ -41,6 +44,9 @@ export function AppActionBar({
   const [promoteOpen, setPromoteOpen] = useState(false)
   const [cloneOpen, setCloneOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [linkOpen, setLinkOpen] = useState(false)
+  const gitSource = useGitSource(app.name).data
+  const { t: tn } = useTranslation('newApp')
   const { t: tm } = useTranslation('maintenance')
   const inMaintenance = useAppInMaintenance(app.name)
   const deployButton = (
@@ -127,6 +133,18 @@ export function AppActionBar({
               setCloneOpen(true)
             },
           },
+          ...(gitSource
+            ? [
+                {
+                  id: 'deploy-link',
+                  label: tn('deployLinkDialog.action'),
+                  icon: <LinkIcon />,
+                  onSelect: () => {
+                    setLinkOpen(true)
+                  },
+                },
+              ]
+            : []),
           {
             id: 'delete',
             label: t('appActions.delete', { defaultValue: 'Delete...' }),
@@ -155,6 +173,15 @@ export function AppActionBar({
           hideTrigger: true,
         }}
       />
+      {linkOpen && gitSource ? (
+        <DeployLinkDialog
+          open
+          onOpenChange={setLinkOpen}
+          repo={gitSource.repo_url}
+          branch={gitSource.branch}
+          name={app.name}
+        />
+      ) : null}
       <DeleteAppDialog
         name={app.name}
         control={{

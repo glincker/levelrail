@@ -349,6 +349,8 @@ type DeployTriggerRequest struct {
 	Rollback       bool   `json:"rollback,omitempty"`
 	OverrideFreeze bool   `json:"override_freeze,omitempty"`
 	OverrideReason string `json:"override_reason,omitempty"`
+	// QueueWhileOffline records the change as pending when the app's node is offline.
+	QueueWhileOffline bool `json:"queue_while_offline,omitempty"`
 }
 
 // DeployTriggerResult mirrors internal/api's deployTriggerResult
@@ -1855,6 +1857,10 @@ type GitSourceResource struct {
 	// via SetPreviewPostPRComments (preview-settings, same route as
 	// PreviewEnabled).
 	PostPRComments bool `json:"post_pr_comments"`
+	// PRCommentCommands and PRCommentCommandsForks mirror the store fields,
+	// set via SetPRCommentCommands.
+	PRCommentCommands      bool `json:"pr_comment_commands"`
+	PRCommentCommandsForks bool `json:"pr_comment_commands_forks"`
 	// DeployPaths, DeployPathsIgnore and ReportStatus mirror the store
 	// fields of the same names, set via SetGitDeploySettings.
 	DeployPaths       []string `json:"deploy_paths"`
@@ -1990,6 +1996,29 @@ type SetAppScheduleRequest struct {
 	Branch   string `json:"branch"`
 	Timezone string `json:"timezone,omitempty"`
 	Enabled  *bool  `json:"enabled,omitempty"`
+}
+
+// ScheduledDeployRequest mirrors internal/api's createScheduledDeployRequest.
+type ScheduledDeployRequest struct {
+	RunAt string `json:"run_at"`
+	Image string `json:"image,omitempty"`
+	Ref   string `json:"ref,omitempty"`
+}
+
+// ScheduledDeploy mirrors internal/api's scheduledDeployResource.
+type ScheduledDeploy struct {
+	ID          string     `json:"id"`
+	ServiceName string     `json:"service_name"`
+	Kind        string     `json:"kind"`
+	Image       string     `json:"image,omitempty"`
+	Ref         string     `json:"ref,omitempty"`
+	RunAt       time.Time  `json:"run_at"`
+	Status      string     `json:"status"`
+	Reason      string     `json:"reason,omitempty"`
+	ApprovalID  string     `json:"approval_id,omitempty"`
+	CreatedBy   string     `json:"created_by,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	FinishedAt  *time.Time `json:"finished_at,omitempty"`
 }
 
 // AppScheduleHistoryEntry mirrors internal/api's appScheduleHistoryResource
@@ -2863,14 +2892,20 @@ type PreviewEphemeralDatabaseResource struct {
 type SetPreviewSettingsRequest struct {
 	Enabled        *bool `json:"enabled,omitempty"`
 	PostPRComments *bool `json:"post_pr_comments,omitempty"`
+	// PRCommentCommands and PRCommentCommandsForks gate /levelrail pull
+	// request comment commands.
+	PRCommentCommands      *bool `json:"pr_comment_commands,omitempty"`
+	PRCommentCommandsForks *bool `json:"pr_comment_commands_forks,omitempty"`
 }
 
 // PreviewSettingsResource mirrors internal/api's previewSettingsResource:
 // the resulting state of both preview-settings toggles after a
 // SetPreviewSettingsRequest is applied.
 type PreviewSettingsResource struct {
-	Enabled        bool `json:"enabled"`
-	PostPRComments bool `json:"post_pr_comments"`
+	Enabled                bool `json:"enabled"`
+	PostPRComments         bool `json:"post_pr_comments"`
+	PRCommentCommands      bool `json:"pr_comment_commands"`
+	PRCommentCommandsForks bool `json:"pr_comment_commands_forks"`
 }
 
 // SweepPreviewEnvironmentsResult mirrors internal/api's
@@ -3040,6 +3075,10 @@ type NodeResource struct {
 	Agent *NodeAgentResource `json:"agent,omitempty"`
 	// Failure is set while the node has a live failure state.
 	Failure *NodeFailureSummary `json:"failure,omitempty"`
+	// PlacedApps, PlacedDatabases and Labels are set by the single-node fetch.
+	PlacedApps      []string          `json:"placed_apps,omitempty"`
+	PlacedDatabases []string          `json:"placed_databases,omitempty"`
+	Labels          map[string]string `json:"labels,omitempty"`
 }
 
 // NodeAlertStatusResource mirrors internal/api's nodeAlertStatusResource
@@ -3142,6 +3181,7 @@ type SystemStatusResource struct {
 	DataDirFreeBytes    int64  `json:"data_dir_free_bytes,omitempty"`
 	DockerConnected     bool   `json:"docker_connected"`
 	DockerError         string `json:"docker_error,omitempty"`
+	EngineKind          string `json:"engine_kind,omitempty"`
 }
 
 // DoctorCheckResource mirrors internal/api's doctorCheckResource: one
@@ -3861,9 +3901,10 @@ type CancelSupersededResource struct {
 
 // RollbackToRequest is the optional body of POST .../deploys/{id}/rollback.
 type RollbackToRequest struct {
-	Confirm        bool   `json:"confirm,omitempty"`
-	OverrideFreeze bool   `json:"override_freeze,omitempty"`
-	OverrideReason string `json:"override_reason,omitempty"`
+	QueueWhileOffline bool   `json:"queue_while_offline,omitempty"`
+	Confirm           bool   `json:"confirm,omitempty"`
+	OverrideFreeze    bool   `json:"override_freeze,omitempty"`
+	OverrideReason    string `json:"override_reason,omitempty"`
 }
 
 // FreezeWindowResource mirrors internal/api's freezeWindowResource.

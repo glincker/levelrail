@@ -186,6 +186,13 @@ func (e *Engine) Nudge() {
 	}
 }
 
+// NudgeController closes name's breaker and requests an immediate pass, for a
+// change (such as a new probe) that makes retrying a failing controller worthwhile now.
+func (e *Engine) NudgeController(name string) {
+	e.guard.Reset(name)
+	e.Nudge()
+}
+
 // SetStore attaches persistence for reconcile status. Call it once before
 // Run, if at all; not safe to call concurrently with reconciles in flight.
 func (e *Engine) SetStore(s Store) {

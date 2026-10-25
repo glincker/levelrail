@@ -11,3 +11,13 @@ func ReplicaContainerName(serviceName, image, restartNonce string, index int) st
 func OwnsContainer(serviceName, name string) bool {
 	return ownsContainer(serviceName, name)
 }
+
+// ReleaseKey returns the image-hash segment of one of serviceName's
+// container names, shared by every replica of a release, or "" when name
+// is not owned by serviceName.
+func ReleaseKey(serviceName, name string) string {
+	if !ownsContainer(serviceName, name) {
+		return ""
+	}
+	return name[len(serviceName)+1 : len(serviceName)+1+hashLen]
+}

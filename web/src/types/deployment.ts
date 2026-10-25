@@ -21,6 +21,7 @@ export const DEPLOYMENT_TRIGGERS = [
   'api',
   'preview',
   'schedule',
+  'restart',
   'pipeline',
 ] as const
 

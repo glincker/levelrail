@@ -22,11 +22,13 @@ type Step = 'connect' | 'review' | 'done'
 const platforms: {
   id: ImportPlatform
   label: string
-  tokenKey: 'tokenApi' | 'tokenKey' | 'tokenPassword'
+  tokenKey: 'tokenApi' | 'tokenKey' | 'tokenPassword' | 'tokenAccess'
 }[] = [
   { id: 'coolify', label: 'Coolify', tokenKey: 'tokenApi' },
   { id: 'dokploy', label: 'Dokploy', tokenKey: 'tokenKey' },
   { id: 'caprover', label: 'CapRover', tokenKey: 'tokenPassword' },
+  { id: 'heroku', label: 'Heroku', tokenKey: 'tokenKey' },
+  { id: 'vercel', label: 'Vercel', tokenKey: 'tokenAccess' },
 ]
 
 // Three steps: connect (source URL and credential), review (the dry-run
@@ -42,6 +44,7 @@ export function PlatformImportCard() {
   const [platform, setPlatform] = useState<ImportPlatform>('coolify')
   const [url, setUrl] = useState('')
   const [token, setToken] = useState('')
+  const [teamId, setTeamId] = useState('')
   const [insecure, setInsecure] = useState(false)
   const [allowPrivate, setAllowPrivate] = useState(false)
   const [skipTaken, setSkipTaken] = useState(false)
@@ -61,6 +64,7 @@ export function PlatformImportCard() {
       insecure_tls: insecure || undefined,
       allow_private: allowPrivate || undefined,
       collision: skipTaken ? 'skip' : 'suffix',
+      team_id: platform === 'vercel' ? teamId.trim() || undefined : undefined,
     }
   }
 
@@ -233,8 +237,14 @@ export function PlatformImportCard() {
             <Input
               id="import-url"
               type="url"
-              required
-              placeholder="https://coolify.example.com"
+              required={platform !== 'heroku' && platform !== 'vercel'}
+              placeholder={
+                platform === 'heroku'
+                  ? t('platformImport.herokuUrlPlaceholder')
+                  : platform === 'vercel'
+                    ? t('platformImport.vercelUrlPlaceholder')
+                    : 'https://coolify.example.com'
+              }
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
@@ -250,6 +260,18 @@ export function PlatformImportCard() {
               onChange={(e) => setToken(e.target.value)}
             />
           </div>
+          {platform === 'vercel' && (
+            <div className="space-y-1.5">
+              <Label htmlFor="import-team">{t('platformImport.teamId')}</Label>
+              <Input
+                id="import-team"
+                autoComplete="off"
+                placeholder={t('platformImport.teamIdPlaceholder')}
+                value={teamId}
+                onChange={(e) => setTeamId(e.target.value)}
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <Label className="flex items-center gap-2 font-normal">
               <Checkbox

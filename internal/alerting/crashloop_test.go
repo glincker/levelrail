@@ -158,6 +158,9 @@ func TestResolveResourceID(t *testing.T) {
 	}{
 		{name: "exact match", containerName: "web-abc12345", wantID: "service:web", wantOK: true},
 		{name: "different service that happens to prefix-match", containerName: "web-worker-abc12345", wantID: "service:web-worker", wantOK: true},
+		{name: "replica suffix", containerName: "web-abc12345-r1", wantID: "service:web", wantOK: true},
+		{name: "replica suffix on prefixed service", containerName: "web-worker-abc12345-r12", wantID: "service:web-worker", wantOK: true},
+		{name: "bad replica suffix", containerName: "web-abc12345-rx", wantOK: false},
 		{name: "unrelated name", containerName: "totally-unrelated", wantOK: false},
 		{name: "right prefix, wrong suffix length", containerName: "web-abc", wantOK: false},
 		{name: "right prefix, non-hex suffix", containerName: "web-zzzzzzzz", wantOK: false},
@@ -513,3 +516,22 @@ func TestMaybeAutoRollback_Rearm_NewDeployAfterRollback_FiresAgain(t *testing.T)
 type fakeAutoRollbackNudger struct{ calls int }
 
 func (f *fakeAutoRollbackNudger) Nudge() { f.calls++ }
+
+// A held, failing previous release keeps restarting under the same service;
+// only the watched release's own containers may count against it.
+func TestRestartTracker_CountContainersSince_IgnoresOtherReleases(t *testing.T) {
+	tr := NewRestartTracker()
+	base := time.Now()
+	for _, name := range []string{"web-aaaaaaaa", "web-bbbbbbbb"} {
+		tr.Observe("service:web", name, base)
+	}
+	tr.Observe("service:web", "web-bbbbbbbb", base.Add(time.Minute))
+	tr.Observe("service:web", "web-bbbbbbbb", base.Add(2*time.Minute))
+
+	if got := tr.CountContainersSince([]string{"web-aaaaaaaa"}, base.Add(-time.Hour)); got != 0 {
+		t.Errorf("CountContainersSince(healthy release) = %d, want 0", got)
+	}
+	if got := tr.CountContainersSince([]string{"web-bbbbbbbb"}, base.Add(-time.Hour)); got != 2 {
+		t.Errorf("CountContainersSince(crashing release) = %d, want 2", got)
+	}
+}

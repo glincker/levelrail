@@ -46,6 +46,11 @@ type PlanOptions struct {
 	TakenApps    map[string]bool
 	// ExistingDatabases maps a database name to "engine:version".
 	ExistingDatabases map[string]string
+	// DBVersions is the engine version the user chose per engine, and
+	// LatestDBVersions the newest catalog version per engine. Both fill in
+	// databases whose source reports no version.
+	DBVersions       map[string]string
+	LatestDBVersions map[string]string
 }
 
 // HealthPlan is an HTTP readiness probe.
@@ -354,6 +359,9 @@ func splitEnv(plan *AppPlan, env []Env, attention func(string, string)) {
 
 func (p *Plan) planDatabase(db Database, o PlanOptions, taken map[string]bool) {
 	item := Item{Kind: "database", SourceID: db.SourceID, SourceName: db.Name}
+	if db.Version == "" {
+		db.Version, item.Reasons = chooseDBVersion(db, o)
+	}
 	if db.Engine == "" || db.Version == "" {
 		item.Status = StatusUnsupported
 		item.Reasons = []string{"could not determine the engine or version"}

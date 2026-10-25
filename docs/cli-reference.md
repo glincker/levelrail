@@ -41,9 +41,11 @@ levelrail-cli update --check          # current version, latest release, update 
 levelrail-cli update --dry-run        # show what would change, download nothing
 levelrail-cli update --yes            # replace this binary with the latest release
 levelrail-cli update --version v0.8.2 --yes   # pin a tag, also works as a downgrade
+levelrail-cli update --check --exit-code      # exit 10 when an update is available, for scripts
+levelrail-cli update --channel beta --yes     # include prereleases
 ```
 
-`update --check` always exits 0 when the check itself worked, even when you are out of date, and honors `--json` and `--output`. `update` downloads the asset for your OS and architecture, verifies its checksum and the release's Sigstore signature, runs the new binary once to confirm its version, then atomically replaces the running file. If the signature or checksum cannot be verified, or the directory is not writable (a package manager path, or a root-owned `/usr/local/bin`: update it that way or re-run with `sudo`), nothing is changed. In CI mode or without a terminal it needs `--yes`. Windows is not supported in place: re-run `install-cli.ps1`.
+`self-update` is an alias of `update`, and `version --check` is a shortcut for `update --check`. `update --check` exits 0 when the check itself worked, even when you are out of date, unless you add `--exit-code`: then it exits 10 when an update is available. It honors `--json` and `--output`. `--channel stable|beta` (or `LEVELRAIL_CHANNEL`) works like `install-cli.sh`: `stable` only considers stable releases, `beta` also considers prereleases, and with neither the newest stable release wins, falling back to a prerelease only when no stable one ships your binary. The previous binary is kept next to the new one as `levelrail-cli.bak`; to roll back run `mv levelrail-cli.bak levelrail-cli` in that directory. When a package manager owns the binary (Homebrew, Nix, `/usr/bin`) the command refuses and names the right upgrade command; `--force` overrides that. On a non-writable directory it prints the `sudo` and `install-cli.sh` commands to use. `update` downloads the asset for your OS and architecture, verifies its checksum and the release's Sigstore signature, runs the new binary once to confirm its version, then atomically replaces the running file. If the signature or checksum cannot be verified, or the directory is not writable (a package manager path, or a root-owned `/usr/local/bin`: update it that way or re-run with `sudo`), nothing is changed. In CI mode or without a terminal it needs `--yes`. Windows is not supported in place: re-run `install-cli.ps1`.
 
 Interactive runs print one line to stderr when a newer release exists, at most once per interval. It never runs in CI mode, with `--json` output, or for `help`, `version` and `update`, and it is cut off after a short wait so it cannot slow a command.
 
@@ -52,6 +54,7 @@ Interactive runs print one line to stderr when a newer release exists, at most o
 | `LEVELRAIL_NO_UPDATE_CHECK` | `1` turns the hint off | unset |
 | `LEVELRAIL_UPDATE_CHECK_DAYS` | days between hints, `0` disables | `7` |
 | `LEVELRAIL_UPDATE_HINT_WAIT_MS` | longest the hint may wait after a command ends | `750` |
+| `LEVELRAIL_CHANNEL` | `stable` or `beta`, same as `--channel` | unset |
 | `LEVELRAIL_RELEASE_API_URL` | releases API base | `https://api.github.com` |
 | `LEVELRAIL_RELEASE_BASE_URL` | asset download base, https only | the release repo's GitHub releases |
 ## Scripting: `--json` and exit codes
@@ -78,6 +81,7 @@ Exit codes are stable and shared by every command:
 | 5 | Deploy failed: `apps wait` reached a failed deploy |
 | 6 | Deploy timeout: `apps wait` or `apps deploys wait` gave up before the deploy converged |
 | 7 | `apps deploys wait` ended on a deploy that failed, was canceled, superseded or blocked |
+| 10 | `update --check --exit-code` found a newer CLI release (the check itself worked) |
 
 Codes 3 and 4 are broad on purpose so existing scripts keep working; the JSON error object carries the finer distinction.
 
@@ -197,7 +201,7 @@ levelrail-cli apps clone <name> <new-name> [flags]
 levelrail-cli apps delete <name> [flags]
 ```
 
-- `apps create` registers an existing image or triggers a real build from a git repository; `--file` reads an [app spec](/app-spec-reference), `--interactive` runs a step-by-step wizard. Required flags missing outside `--interactive` fail with an error instead of prompting.
+- `apps create` registers an existing image or triggers a real build from a git repository; `--file` reads an [app spec](/app-spec-reference), `--interactive` runs a step-by-step wizard. Required flags missing outside `--interactive` fail with an error instead of prompting. Flags-only creates can set health with `--readiness-path|exec|preset|interval|timeout|expected-status`, the same `--liveness-*` set plus `--liveness-failures`, and `--ready-timeout`; they follow the same rules as `apps health set`.
 - `apps status` shows an app's current reconcile conditions; `apps overview` shows CPU, memory, traffic and errors for every app (or the names given) in one request; `apps network` shows the live traffic path (container port, host port, running).
 - `apps validate` parses and validates an app.yaml or a Docker Compose file locally, with no API call and no deploy. It prints the detected format, service count, and every non-blocking `notices` entry a real deploy would also surface.
 - `apps delete` removes an app and stops its containers; if the node is unreachable the delete is reported as pending and retried.
@@ -221,6 +225,7 @@ levelrail-cli apps scale <name> [--replicas N] [--strategy rolling|recreate|blue
 levelrail-cli apps group <name> [flags]
 levelrail-cli apps hook-runs <name> [flags]
 levelrail-cli apps images <name> [flags]
+levelrail-cli apps set <name> --pr-comment-commands on|off [--pr-comment-commands-forks on|off] [flags]
 levelrail-cli apps set-node <name> <node-id> [--with-volumes] [flags]
 levelrail-cli apps clear-node <name> [--with-volumes] [flags]
 levelrail-cli apps moves list <name> [flags]
@@ -235,6 +240,7 @@ levelrail-cli apps moves get <name> <id> [flags]
 - `apps apply` restarts an app so saved env, secret and config changes reach the running container; it does nothing when nothing is pending.
 - `apps scale` changes the replica count and/or the deploy strategy.
 - `apps hook-runs` shows the most recent outcome of an app's pre and post deploy hooks; `apps images` lists the locally present image tags under the app's current image repo.
+- `apps set` changes app settings. `--pr-comment-commands on|off` lets write-access users run `/levelrail` commands from pull request comments (see [Pull request comment commands](/pr-comment-commands)).
 - `apps set-node` and `apps clear-node` move an app to another node, or back to the control plane's own local node. With `--with-volumes` the named volumes move too, and `apps moves` shows the history of those moves.
 
 ### Deploy history, approvals and automation
@@ -262,6 +268,9 @@ levelrail-cli apps schedule set <app> --cron EXPR --branch NAME [flags]
 levelrail-cli apps schedule set <app> --run-at 2h --branch NAME [flags]
 levelrail-cli apps schedule get <app> [flags]
 levelrail-cli apps schedule history <app> [flags]
+levelrail-cli apps schedule list <app> [--status S] [flags]
+levelrail-cli apps schedule cancel <app> <id> [flags]
+levelrail-cli apps deploy <app> --at WHEN (--image IMAGE | --latest --branch NAME) [flags]
 levelrail-cli apps cancel-superseded enable|disable|status <app-name> [flags]
 levelrail-cli apps auto-rollback enable|disable|status <app-name> [flags]
 levelrail-cli apps autoscale show|set|clear|history <app-name> [flags]
@@ -285,8 +294,9 @@ levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
 - `apps deploys gate` (alias `deploy status`) prints a release's gate timeline: readiness passes, stable window, cutover, drain, rollback pin and post-deploy watch. `--watch` follows it until the release clears its watch, fails, is rolled back or is replaced. Exit 0 healthy or in progress, 7 failed or rolled back. `apps deploy-safety` shows and overrides the per-app thresholds (`set web --stable-window 20s --auto-rollback false`, `default` clears one) and lists pinned rollback targets. See [Deploy safety](/deploy-safety#readiness-gate).
 - `apps timeline` shows what happened to an app, newest first: deploys, rollbacks, restarts, env, secret and config changes (key names only, never values), scaling, stop and start.
 - `apps diagnose` explains a failed deploy or crashloop and can apply a suggested fix with `--apply-fix N`. `apps preflight` runs pre-deploy checks (DNS, ports, disk, image, env).
+- `apps deploy`, `apps rollback`, `apps restart`, `apps start` and `apps stop` exit non-zero with code `node_offline` when the app's node is offline, naming the node and the fix (bring it back, or `apps move` / `nodes drain`). `--queue-while-offline` records the change as a `pending` attempt that the node applies when it returns.
 - `apps freeze` manages deploy freeze windows: a window starts at every match of a 5 field cron expression, evaluated in `--timezone` (default UTC), and lasts `--duration`. While one is active, webhook, pipeline and released deploys are held and run when the window ends; a manual deploy needs `apps deploy --override-freeze --override-reason TEXT`. `set` replaces the app's windows with the one given. Fleet-wide windows are under `settings deploy-freeze`.
-- `apps schedule` configures a recurring redeploy of a branch's latest commit on a cron schedule.
+- `apps schedule` configures a recurring redeploy of a branch's latest commit on a cron schedule. `apps deploy --at` schedules a one-shot image or git ref deploy, and `apps schedule list` and `apps schedule cancel` manage those (see [Scheduled deploys](/scheduled-deploys#one-shot-scheduled-deploys)).
 - `apps cancel-superseded` lets a newer queued deploy replace older queued ones of the same branch. Only queued deploys are replaced; a deploy that already started building is never canceled automatically.
 - `jobs` manages an app's scheduled jobs: fresh-container or exec cron jobs with run history, logs, retries and catch-up (see [Scheduled jobs](/scheduled-jobs)). `apps scheduled-tasks` is the older exec-only form of the same resource.
 - `functions` runs a handler repo (built with Railpack) or an image as a function: it sleeps when idle, and a request to a sleeping one waits through the cold start. `functions init node|python|go` writes a ten line starter, `functions list` shows state, calls and p95 duration (see [Functions](/functions)).
@@ -651,6 +661,7 @@ levelrail-cli databases query <name> --sql "select ..." [--explain] [--write --c
 levelrail-cli databases connect --name <n> --engine <e> --host <h> [--password-stdin] [--test] [flags]
 levelrail-cli databases adopt --container <c> [--node <id>] [--list] [--password-stdin] [flags]
 levelrail-cli databases probe <name> [flags]
+levelrail-cli databases import-hosted <name> (--from-env VAR | --from-stdin) [--writes-frozen] [--allow-large] [--create-missing-roles] [--dry-run] [--json] [flags]
 levelrail-cli databases resource-recommendation <name> [flags]
 levelrail-cli databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]
 levelrail-cli databases set-project <name> <project-id> [flags]
@@ -667,6 +678,7 @@ levelrail-cli databases major-upgrade-discard <name> <id> [flags]
 ```
 
 - `status` shows a database's current reconcile conditions (useful when it exists but is not running yet).
+- `import-hosted` copies a hosted Postgres (such as Heroku) into an existing managed Postgres database. The source URL is read from the environment variable named by `--from-env` or from the first line of stdin, never from an argument. `--dry-run` runs the preflight only and prints blockers, warnings and info with the fix for each. Without `--writes-frozen` a real run refuses. Exit code 1 means the preflight is blocked or the move failed. See [Migration reference](/migration-reference#move-a-hosted-postgres-heroku).
 - `delete` stops and removes a database but keeps its data volume; `--force` is needed if apps use it.
 - `slow-queries` lists a Postgres or MySQL database's slow query log.
 - `schema` lists a SQL database's tables with row estimates and sizes; `query` runs one statement through the control plane, read-only by default. See [Database viewer](/database-viewer). `db` is a short alias for `databases`.
@@ -1486,6 +1498,16 @@ Prints a "Deploy with" link and the README Markdown for it, after validating the
 levelrail-cli deploy-link --image traefik/whoami:latest --name whoami --port 80 --health /health
 ```
 
+```
+levelrail-cli deploy-link --repo URL [--branch B] [--name N] [--port P] [--profile P] [--api-url URL] [--open] [flags]
+levelrail-cli deploy-link --template ID [--name N] [--port P] [--profile P] [--api-url URL] [--open] [flags]
+```
+Prints a link to the current profile's instance (`/deploy?repo=...`) plus README Markdown and HTML button snippets. The repo must be an https or ssh git URL without a username or password. `--open` opens the link in the browser. Nothing deploys from the link. See [Deploy button](/deploy-button#git-repositories-and-templates).
+
+```
+levelrail-cli deploy-link --repo https://github.com/you/app --branch main --name app --open
+```
+
 ## AI assistant
 
 Experimental: requires `APP_EXPERIMENTAL=ai-chat`, and a provider key saved with `settings ai-assistant providers set` and a model chosen with `settings ai-assistant use`. The assistant is read and suggest only: a tool call that would change state pauses for an explicit confirmation. See [In-app AI assistant chat](/ai-assistant-chat).
@@ -1767,6 +1789,7 @@ levelrail-cli import -f compose.yaml|Dockerfile [flags]
 levelrail-cli import --docker-run "docker run -p 80:80 nginx:1" [flags]
 levelrail-cli import platform coolify|dokploy|caprover --url URL [flags]
 levelrail-cli import cutover plan|run|status|rollback|confirm-dns --session ID --app NAME [flags]
+levelrail-cli import config [dir] [--out FILE] [--strict] [--json]
 levelrail-cli import takeover plan|run|status|rollback [flags]
 ```
 
@@ -1777,6 +1800,8 @@ levelrail-cli import takeover plan|run|status|rollback [flags]
 `import platform` reads apps, databases and settings from another platform (read only) and creates them here. Use `--dry-run` first. Databases and volumes are created empty; data is not migrated. Re-running skips what was already imported. The source token is read from `APP_IMPORT_SOURCE_TOKEN`, `--token-stdin` or `--token` (which lands in shell history). Other flags: `--only`, `--collision suffix|skip`, `--insecure-tls`, `--allow-private`, `--allow-loopback`. See [migrating from Coolify, Dokploy or CapRover](/migrating-from-coolify-dokploy-and-caprover).
 
 `import cutover` moves one staged app's traffic in a reversible flow. `plan` prints the readiness checklist, `run --dry-run` exercises everything except the switch, `run --confirm NAME` switches and verifies (rolling back on its own if verification fails), `status` shows the timeline, and `rollback` restores the previous DNS value and stops the staged app. Other flags: `--run ID`, `--accept-warnings`, `--no-wait`, `--wait DURATION`, `--json`. See [guided cutover](/migrating-from-coolify-dokploy-and-caprover#guided-cutover-of-one-staged-app).
+
+`import config` reads `Procfile`, `app.json` and `vercel.json` from a directory (default: the current one) and prints a proposed `app.yaml`. Findings go to stderr, blockers first, each with a fix. It is offline and read-only, needs no token and creates nothing. `--out FILE` writes the spec to a file, `--json` prints `{detected, spec, findings, nextSteps}`; the human output ends with NEXT STEPS, the exact `apps create --file ... --service ... --secret KEY=VALUE` and `databases create` commands. A Heroku plus Vercel directory merges into one service and keeps the Vercel cron jobs, with a warn finding. `apps create --file` refuses a spec with `databases:` or `from:` env references instead of dropping them, and `--strict` exits 2 when any finding is a blocker (otherwise it exits 0). `LEVELRAIL_IMPORT_WEB_PORT` (default 8080) and `LEVELRAIL_IMPORT_NODE_PORT` (default 3000) set the proposed ports.
 
 `import takeover` moves this server's ports 80 and 443 from the old platform's proxy to the built-in ingress. `plan` and `run --dry-run` print the preflight and steps and change nothing, `run --confirm takeover` does it and waits through the restart, `status` shows the latest run and `rollback` restores the previous addresses and starts the old proxy again. Other flags: `--accept-unmanaged`, `--run ID`, `--reason TEXT`, `--no-wait`, `--wait DURATION`, `--json`. Root only. See [Migrate on the same server](/migrate-same-server).
 

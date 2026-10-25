@@ -320,11 +320,18 @@ Global windows are managed through `PUT /api/v1/settings/deploy-freeze`
 Held deploys are checked every `APP_DEPLOY_HELD_RELEASE_INTERVAL`
 (default `30s`).
 
+## Stop grace
+
+When the reconciler stops an old container it sends `SIGTERM` and waits up to
+`APP_RECONCILE_STOP_GRACE` (default `10s`) before Docker sends `SIGKILL`. Raise it
+for apps that need longer to drain, for example `APP_RECONCILE_STOP_GRACE=45s`.
+An invalid or non-positive value logs a warning and keeps the default.
+
 ## Holding the previous release
 
 After a successful blue-green or rolling cutover the most recent previous
 release's running containers are kept for `APP_DEPLOY_PREVIOUS_RELEASE_HOLD`
-(default `3m`, `0` disables). The window is measured from the newest
+(default `3m`, `0` disables). That value is a floor: the release is kept for the longest of it, the app's drain timeout (default `15s`) and, when auto-rollback is on, the watch window (default `5m`), so a watch-triggered rollback still finds it running. With defaults and auto-rollback enabled, expect the hold to outlast 3 minutes. The window is measured from the newest
 release's first container, so scaling up does not extend it. Only one
 previous release is ever held: as soon as a newer previous release exists,
 older running releases are removed, so deploying five times in a minute

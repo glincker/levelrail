@@ -44,6 +44,9 @@ const certsHelperImage = "alpine:3.20"
 // (where the database's own container later mounts the same volume):
 // this constant only matters to provisionCerts and the tar command it
 // runs, not to any consumer of the finished volume.
+// certsHelperLabelKey ties a helper to the volume it serves so Teardown can find leftovers.
+const certsHelperLabelKey = "levelrail.certs-volume"
+
 const certsHelperMountPath = "/vol"
 
 func certsVolumeName(dbName string) string { return "db-" + dbName + "-certs" }
@@ -92,6 +95,7 @@ func createCertsHelper(ctx context.Context, rt docker.Runtime, volName string) (
 		Name:    "dbcerts-" + suffix,
 		Image:   certsHelperImage,
 		Command: []string{"sleep", "300"},
+		Labels:  map[string]string{certsHelperLabelKey: volName},
 		Volumes: []docker.VolumeMount{{Name: volName, ContainerPath: certsHelperMountPath}},
 	})
 	if err != nil {

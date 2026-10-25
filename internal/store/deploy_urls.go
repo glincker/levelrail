@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -63,4 +65,18 @@ func (db *DB) ListDeployURLs(ctx context.Context, appName string) ([]DeployURL, 
 		out = append(out, u)
 	}
 	return out, rows.Err()
+}
+
+// DeployURLApp returns the app that owns the retained service serviceName, and
+// false when serviceName is not a retained deploy service.
+func (db *DB) DeployURLApp(ctx context.Context, serviceName string) (string, bool, error) {
+	var app string
+	err := db.QueryRowContext(ctx, `SELECT app_name FROM deploy_urls WHERE service_name = ?`, serviceName).Scan(&app)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, fmt.Errorf("store: deploy url app for %q: %w", serviceName, err)
+	}
+	return app, true, nil
 }

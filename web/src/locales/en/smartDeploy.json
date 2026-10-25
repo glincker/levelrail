@@ -164,5 +164,42 @@
       "volumes": "Volumes",
       "labels": "Labels"
     }
+  },
+  "schedule": {
+    "toggle": "Schedule for later",
+    "whenLabel": "Deploy at",
+    "zone": "Times are in your timezone: {{zone}}",
+    "required": "Pick a date and time.",
+    "invalid": "That date and time is not valid.",
+    "past": "Pick a time in the future.",
+    "submit": "Schedule deploy",
+    "submitting": "Scheduling",
+    "toast": {
+      "created": "Deploy scheduled.",
+      "failed": "Could not schedule the deploy.",
+      "canceled": "Scheduled deploy canceled.",
+      "cancelFailed": "Could not cancel the scheduled deploy."
+    },
+    "list": {
+      "title": "Scheduled deploys",
+      "description": "One-time deploys waiting to run. They respect deploy freezes, gates and approvals like any deploy.",
+      "empty": "Nothing scheduled.",
+      "image": "Image {{image}}",
+      "ref": "Latest commit on {{ref}}",
+      "runsAt": "Runs {{when}}",
+      "cancel": "Cancel",
+      "canceling": "Canceling",
+      "loadFailed": "Could not load scheduled deploys.",
+      "status": {
+        "pending": "Pending",
+        "running": "Starting",
+        "fired": "Started",
+        "pending_approval": "Waiting for approval",
+        "skipped_freeze": "Skipped, deploy freeze",
+        "missed": "Missed",
+        "canceled": "Canceled",
+        "failed": "Failed"
+      }
+    }
   }
 }

@@ -104,6 +104,9 @@ func TestTimelineRecordsEventsWithKeyNamesOnly(t *testing.T) {
 		t.Fatalf("scale title = %q", kinds["scale"].Title)
 	}
 	for _, it := range tl.Items {
+		if it.Ref != nil {
+			continue
+		}
 		if it.Actor == "" || it.Status != "info" {
 			t.Fatalf("event item %+v", it)
 		}
@@ -393,5 +396,27 @@ func TestCreateAppRecordsDigestAndLocalImageReason(t *testing.T) {
 				t.Fatalf("reason = %q", attempts[0].Reason)
 			}
 		})
+	}
+}
+
+func TestPendingChangesDatabaseLinkIsPendingAndApplyRestarts(t *testing.T) {
+	rt, db, cookie := newTimelineRouter(t)
+	snapshotFor(t, db, nil)
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres}); err != nil {
+		t.Fatal(err)
+	}
+	if code := tlJSON(t, rt, cookie, http.MethodPost, "/api/v1/apps/web/connections", `{"database":"main"}`, nil); code != http.StatusOK {
+		t.Fatalf("link = %d", code)
+	}
+	p := pending(t, rt, cookie)
+	if !p.Pending || len(p.Changes) == 0 {
+		t.Fatalf("a new database link must be pending: %+v", p)
+	}
+	if code := tlJSON(t, rt, cookie, http.MethodPost, "/api/v1/apps/web/apply-pending", "", nil); code != http.StatusAccepted {
+		t.Fatalf("apply = %d", code)
+	}
+	svc, _ := db.GetDesiredService(context.Background(), "web")
+	if svc.RestartNonce == "" || svc.EnvDirty {
+		t.Fatalf("apply did not restart: nonce=%q dirty=%v", svc.RestartNonce, svc.EnvDirty)
 	}
 }

@@ -1102,7 +1102,7 @@ func (db *DB) SetServiceDatabaseEnvVar(ctx context.Context, name, envVar string,
 	}
 
 	if _, err := tx.ExecContext(ctx, `
-		UPDATE desired_services SET database_env = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+		UPDATE desired_services SET database_env = ?, env_dirty = 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
 	`, string(updated), name); err != nil {
 		return fmt.Errorf("store: set database env var for service %q: %w", name, err)
 	}

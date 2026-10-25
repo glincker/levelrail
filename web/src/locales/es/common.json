@@ -28,7 +28,9 @@
     "settingsLinkHint": "Las opciones de compilación, ejecución, seguridad y automatización de esta aplicación están en un solo lugar.",
     "settingsLinkCta": "Abrir ajustes de despliegue",
     "rerunOf": "Reintento de {{id}}",
-    "rerunOfLabel": "Abrir los registros de {{id}}, el despliegue que este repitió"
+    "rerunOfLabel": "Abrir los registros de {{id}}, el despliegue que este repitió",
+    "current": "Actual",
+    "rollbackBadge": "Reversión"
   },
   "actions": {
     "copy": "Copiar",
@@ -570,5 +572,14 @@
     "p50": "p50 {{value}} ms",
     "p95": "p95 {{value}} ms",
     "sparkline": "Solicitudes por segundo en los últimos {{minutes}} minutos para {{dial}}"
+  },
+  "formErrorSummary": {
+    "title_one": "{{count}} campo necesita atención",
+    "title_other": "{{count}} campos necesitan atención",
+    "name": "Nombre",
+    "engine": "Motor",
+    "version": "Versión",
+    "envKey": "Nombre de variable, fila {{row}}",
+    "envValue": "Valor de variable, fila {{row}}"
   }
 }

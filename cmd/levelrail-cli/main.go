@@ -210,7 +210,7 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runReadiness(prog, args[1:], stdout, stderr, lookupEnv)
 	case "version":
 		return runVersion(prog, args[1:], stdout, stderr, lookupEnv)
-	case "update":
+	case "update", "self-update":
 		return runUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "changelog":
 		return runChangelog(prog, args[1:], stdout, stderr, lookupEnv)
@@ -463,7 +463,7 @@ Usage:
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
   %[1]s proxy setup|install|status|apply|verify|disable [flags] let this server manage its routes in that proxy (Traefik)
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
-  %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README Markdown for an image
+  %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README button for an image, git repo or template
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
   %[1]s archive ls|create|restore|verify|download|delete|policy [flags]   archive cold audit, deploy and pipeline rows into bundles and bring them back
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database
@@ -495,7 +495,8 @@ Usage:
   %[1]s mobile pair|devices [flags]   pair a phone with the mobile app and manage paired phones
   %[1]s plugins list|show|inspect|install|upgrade|approve|enable|disable|restart|uninstall|run|trust [flags]   signed plugins (needs the plugins experimental feature)
   %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
-  %[1]s import platform coolify|dokploy|caprover --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
+  %[1]s import platform coolify|dokploy|caprover|heroku|vercel|render --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
+  %[1]s import config [dir] [--out FILE] [--strict] [--json]   offline: propose an app.yaml from Procfile, app.json and vercel.json, see "%[1]s import config -h"
   %[1]s import takeover plan|run|status|rollback [flags]   move this server's ports 80 and 443 from the old proxy to the built-in ingress, see "%[1]s import takeover -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant

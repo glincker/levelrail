@@ -80,7 +80,10 @@
       "auto_rollback": "an automatic rollback",
       "git_push": "a git push to the server",
       "poll": "a poll, because a webhook was missed",
-      "upload": "a directory uploaded from the CLI"
+      "upload": "a directory uploaded from the CLI",
+      "restart": "a restart",
+      "start": "starting a stopped app",
+      "pr_comment": "a pull request comment"
     }
   },
   "imageAutoUpdate": {

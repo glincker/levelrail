@@ -160,7 +160,9 @@ export function DeployAttemptRow({
     )
   }
 
-  const live = attempt.rollout_state === 'serving'
+  // The server marks exactly one deploy live; rollout_state stays 'serving' on
+  // superseded rows, so it cannot decide this.
+  const live = attempt.live === true
   const held = attempt.publish_state === 'held'
   const lockToastError = (error: Error) =>
     toast.add({
@@ -308,7 +310,12 @@ export function DeployAttemptRow({
           </Link>
           {live ? (
             <Badge variant="success" className="shrink-0">
-              Current
+              {t('deployHistory.current')}
+            </Badge>
+          ) : null}
+          {attempt.trigger === 'rollback' ? (
+            <Badge variant="muted" className="shrink-0">
+              {t('deployHistory.rollbackBadge')}
             </Badge>
           ) : null}
           {stageLabel ? (

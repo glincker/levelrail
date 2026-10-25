@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSearch } from '@tanstack/react-router'
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -13,7 +14,9 @@ const DatabaseFlow = lazy(() =>
 
 export function CreateDatabaseDialog() {
   const { t } = useTranslation('databases')
-  const [open, setOpen] = useState(false)
+  // /databases/new redirects here with ?create=1 so the link opens the flow.
+  const { create } = useSearch({ strict: false })
+  const [open, setOpen] = useState(create === '1')
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button type="button" />}>

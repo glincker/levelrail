@@ -10,6 +10,7 @@ import (
 // JoinCommands are ready-to-paste commands that enroll a server.
 type JoinCommands struct {
 	Docker string `json:"docker"`
+	Podman string `json:"podman"`
 	Binary string `json:"binary"`
 }
 

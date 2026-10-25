@@ -1,5 +1,6 @@
 import { toast } from '@/components/ui/toast'
 import {
+  AUTO_NODE_VALUE,
   LOCAL_NODE_VALUE,
   NO_PROJECT_VALUE,
 } from '../components/PlacementFields'
@@ -25,7 +26,7 @@ export function resolveSubmittedNodeId(
   showAdvanced: boolean,
   nodeId: string,
 ): string | undefined {
-  if (!showAdvanced) return undefined
+  if (!showAdvanced || nodeId === AUTO_NODE_VALUE) return undefined
   return nodeId === LOCAL_NODE_VALUE ? '' : nodeId
 }
 

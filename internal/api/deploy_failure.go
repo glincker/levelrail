@@ -78,7 +78,12 @@ func (rt *Router) classifyAttempt(ctx context.Context, a store.DeployAttempt, co
 	if attemptFailedDuringBuild(&a) {
 		in.LogLines = rt.diagnoseBuildLogs(ctx, a.ServiceName, a.ID)
 	} else if in.Status == store.DeployAttemptStatusFailed || in.Condition != nil {
-		in.LogLines = rt.diagnoseRecentLogs(ctx, a.ServiceName)
+		in.LogLines = rt.releaseLogLines(ctx, a)
+		// The stored stream mixes in the previous release's lines; the exit
+		// capture holds only the failing container's output.
+		if lines := rt.attemptExitLines(ctx, a); len(lines) > 0 {
+			in.LogLines = lines
+		}
 	}
 	if newest {
 		if c := rt.diagnoseCrashloop(ctx, a.ServiceName); c != nil {
@@ -90,6 +95,21 @@ func (rt *Router) classifyAttempt(ctx context.Context, a store.DeployAttempt, co
 		return nil, false
 	}
 	return &f, true
+}
+
+func (rt *Router) attemptExitLines(ctx context.Context, a store.DeployAttempt) []string {
+	if rt.deployExits == nil {
+		return nil
+	}
+	e, err := rt.deployExits.GetDeployExit(ctx, a.ServiceName, a.ID)
+	if err != nil || e == nil {
+		return nil
+	}
+	lines := make([]string, 0, len(e.LogTail))
+	for _, l := range e.LogTail {
+		lines = append(lines, l.Message)
+	}
+	return lines
 }
 
 // handleGetDeploy handles GET /api/v1/apps/{name}/deploys/{deployId}: one

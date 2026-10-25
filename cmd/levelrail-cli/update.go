@@ -21,6 +21,7 @@ import (
 const (
 	envReleaseAPIURL    = "LEVELRAIL_RELEASE_API_URL"
 	envReleaseBaseURL   = "LEVELRAIL_RELEASE_BASE_URL"
+	envChannel          = "LEVELRAIL_CHANNEL"
 	envInsecureMirror   = "LEVELRAIL_INSECURE_MIRROR"
 	envNoUpdateCheck    = "LEVELRAIL_NO_UPDATE_CHECK"
 	envUpdateCheckDays  = "LEVELRAIL_UPDATE_CHECK_DAYS"
@@ -52,6 +53,9 @@ func runUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	check := fs.Bool("check", false, "only report whether a newer release exists, change nothing")
 	target := fs.String("version", "", "release tag to install, also allows a downgrade (default: latest)")
 	dryRun := fs.Bool("dry-run", false, "show what would change without downloading or replacing anything")
+	channel := fs.String("channel", "", "release channel: stable or beta (default: $"+envChannel+", else stable with a prerelease fallback)")
+	exitCode := fs.Bool("exit-code", false, "with --check, exit 10 when an update is available")
+	force := fs.Bool("force", false, "replace the binary even when a package manager owns it")
 	yes := fs.Bool("yes", false, "do not ask for confirmation")
 	jsonOut := fs.Bool("json", false, "print the result as JSON to stdout and nothing else")
 	outputFlag, queryFlag := bindOutputQueryFlags(fs)
@@ -75,6 +79,9 @@ func runUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	if err != nil {
 		return reportError(stdout, stderr, *jsonOut, err)
 	}
+	if *channel != "" {
+		src.Channel = *channel
+	}
 	current := localVersionInfo().Version
 
 	if *check {
@@ -83,7 +90,11 @@ func runUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			return reportError(stdout, stderr, *jsonOut, fmt.Errorf("check for updates: %w", err))
 		}
 		report := updateCheckReport{Current: current, Latest: latest, UpdateAvailable: cliupdate.Newer(current, latest)}
-		return renderUpdate(stdout, stderr, format, *queryFlag, report, func() { printUpdateCheck(stdout, prog, report) })
+		code := renderUpdate(stdout, stderr, format, *queryFlag, report, func() { printUpdateCheck(stdout, prog, report) })
+		if code == exitOK && *exitCode && report.UpdateAvailable {
+			return exitUpdateAvail
+		}
+		return code
 	}
 
 	exe, err := updateExePath()
@@ -91,7 +102,7 @@ func runUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return reportError(stdout, stderr, *jsonOut, err)
 	}
 	opts := cliupdate.Options{
-		Source: src, Current: current, Target: *target, DryRun: *dryRun, ExePath: exe,
+		Source: src, Current: current, Target: *target, DryRun: *dryRun, Force: *force, ExePath: exe,
 		Verify: updateVerify,
 	}
 	if dir, derr := configDir(prog); derr == nil {
@@ -133,6 +144,7 @@ func updateSource(lookupEnv func(string) (string, bool)) (cliupdate.Source, erro
 	}
 	insecure, _ := lookupEnv(envInsecureMirror)
 	return cliupdate.Source{
+		Channel:      env(envChannel, ""),
 		Repo:         repo,
 		APIBase:      env(envReleaseAPIURL, defaultReleaseAPIURL),
 		DownloadBase: env(envReleaseBaseURL, "https://github.com/"+repo+"/releases/download"),
@@ -179,6 +191,9 @@ func printUpdateResult(out io.Writer, r cliupdate.Result) {
 		_, _ = fmt.Fprintf(out, "would replace %s: %s to %s (asset %s). Nothing was changed.\n", r.Path, r.Current, r.Target, r.Asset)
 	default:
 		_, _ = fmt.Fprintf(out, "updated %s: %s to %s\nverified: %s\n", r.Path, r.Current, r.Target, r.Verification)
+		if r.Backup != "" {
+			_, _ = fmt.Fprintf(out, "previous binary kept at %s. Roll back with: mv %s %s\n", r.Backup, r.Backup, r.Path)
+		}
 	}
 }
 
@@ -194,7 +209,7 @@ func updateIntervalDays(lookupEnv func(string) (string, bool)) int {
 
 func updateUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s update --check [flags]
+  %[1]s update --check [--exit-code] [flags]   (self-update is an alias)
   %[1]s update [--version TAG] [--dry-run] [--yes] [flags]
 
 --check reports the current version, the latest release and whether an update
@@ -212,6 +227,9 @@ Flags:
   --check                  only report whether a newer release exists
   --version string         release tag to install, also allows a downgrade (default: latest)
   --dry-run                show what would change without downloading or replacing anything
+  --channel string         stable or beta (default: $LEVELRAIL_CHANNEL, else stable with a prerelease fallback)
+  --exit-code              with --check, exit 10 when an update is available (0 when current)
+  --force                  replace the binary even when a package manager owns it
   --yes                    do not ask for confirmation (required in CI mode or without a terminal)
   --json                   print the result as JSON to stdout, nothing else
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)

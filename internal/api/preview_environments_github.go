@@ -26,7 +26,16 @@ const githubStatusDescriptionMax = 140
 // saveWebhookDelivery (git_webhook.go) already establishes for a
 // different non-critical side effect of the same webhook path.
 func (rt *Router) previewGitHubTarget(ctx context.Context, appName string, gs store.GitSource) (instanceURL, token, owner, repo string, ok bool) {
-	if !gs.PostPRComments || rt.githubAppSecrets == nil {
+	if !gs.PostPRComments {
+		return "", "", "", "", false
+	}
+	return rt.githubTargetFor(ctx, appName, gs)
+}
+
+// githubTargetFor is previewGitHubTarget without the PostPRComments opt-in,
+// for callers that carry their own opt-in (PR comment commands).
+func (rt *Router) githubTargetFor(ctx context.Context, appName string, gs store.GitSource) (instanceURL, token, owner, repo string, ok bool) {
+	if rt.githubAppSecrets == nil {
 		return "", "", "", "", false
 	}
 	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)

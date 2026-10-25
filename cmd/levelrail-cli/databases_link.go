@@ -13,7 +13,7 @@ func runDatabasesLink(prog string, args []string, stdout, stderr io.Writer, look
 	fs.StringVar(&envVar, "env-var", "", "env var name to inject (default depends on the engine, DATABASE_URL for most)")
 	fs.StringVar(&field, "field", "", "database field to resolve (default \"url\")")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s databases link <name> <app> [flags]\n\nConnects <app> to the database: its connection env var is injected the\nnext time the app's container is created, and follows credential rotation\nthen. An app can link many databases. Restart the app to pick it up now.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s databases link <name> <app> [flags]\n\nConnects <app> to the database: its connection env var is injected the\nnext time the app's container is created, and follows credential rotation\nthen. An app can link many databases. The app shows it as a pending change; apps apply restarts it now.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -31,6 +31,7 @@ func runDatabasesLink(prog string, args []string, stdout, stderr io.Writer, look
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
 		_, _ = fmt.Fprintf(stdout, "linked %s to %s as %s (%s)\n", pos[1], pos[0], result.EnvVar, result.Field)
+		_, _ = fmt.Fprintf(stdout, "pending: %s picks it up on its next restart; apply now with %s apps apply %s\n", pos[1], prog, pos[1])
 	})
 }
 

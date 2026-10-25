@@ -158,6 +158,10 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return http.StatusOK, "ping event acknowledged\n"
 	}
 
+	if webhook.IsIssueCommentEvent(header) {
+		return rt.handleIssueCommentWebhook(ctx, name, gs, body)
+	}
+
 	ev, err := webhook.ParsePushEventForProvider(body, header.Get(webhook.HeaderBitbucketEventKey))
 	if err != nil {
 		rt.logger.Warn("api: git push webhook: malformed payload", slog.String("error", err.Error()), slog.String("name", name))

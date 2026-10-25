@@ -246,6 +246,9 @@ const (
 	// DeployAttemptStatusCanceled is a deploy stopped by an operator before
 	// it wrote desired state.
 	DeployAttemptStatusCanceled = "canceled"
+	// DeployAttemptStatusPending is a change accepted for an offline node on
+	// the operator's say-so; the node applies it when it reconnects.
+	DeployAttemptStatusPending = "pending"
 )
 
 // Deploy attempt trigger sources, one per real call site: the
@@ -270,6 +273,13 @@ const (
 	DeployAttemptSourceCompose      = "compose"
 	DeployAttemptSourcePromote      = "promote"
 	DeployAttemptSourceAutoRollback = "auto_rollback"
+	// DeployAttemptSourceRestart marks a restart of the running release:
+	// same image, fresh container. It has its own row so a failed restart
+	// never rewrites the deploy it re-ran.
+	DeployAttemptSourceRestart = "restart"
+	// DeployAttemptSourceStart marks starting a stopped app: it gives a
+	// waiter an attempt that turns healthy only once the new container serves.
+	DeployAttemptSourceStart = "start"
 	// DeployAttemptSourceClone marks the first deploy of an app created
 	// by cloning a whole environment (internal/api/environment_clone.go's
 	// handleCloneEnvironment): a fresh app, same shape as the plain
@@ -286,6 +296,8 @@ const (
 	DeployAttemptSourcePoll = "poll"
 	// DeployAttemptSourceUpload marks a build from a directory uploaded by the CLI instead of a git checkout.
 	DeployAttemptSourceUpload = "upload"
+	// DeployAttemptSourcePRComment marks a deploy or rollback a write-access user ran with a /levelrail pull request comment.
+	DeployAttemptSourcePRComment = "pr_comment"
 )
 
 // deployAttemptIDPrefix mirrors internal/api/tokens.go's "tok_" prefix

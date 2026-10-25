@@ -1,3 +1,4 @@
+import { NodeOfflineBanner } from '../../components/NodeOfflineBanner'
 import { StuckPanel } from '../../components/StuckPanel'
 import { DelayedFallback } from '../../components/ui/delayed-fallback'
 import { Suspense, useState } from 'react'
@@ -127,6 +128,7 @@ function AppDetailLayout() {
   const banners = (
     <>
       {app.is_trial ? <TrialAppBanner app={app} /> : null}
+      <NodeOfflineBanner conditions={conditions} nodeName={app.node_name} />
       <PendingDeployApprovalBanner appName={app.name} />
       <PublishLockBanner appName={app.name} />
       <AppMaintenanceBanner appName={app.name} />

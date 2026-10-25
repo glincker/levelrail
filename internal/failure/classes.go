@@ -25,6 +25,7 @@ const (
 	CodeScanGateBlocked    = "scan_gate_blocked"
 	CodeRollbackTargetGone = "rollback_target_gone"
 	CodeDockerUnreachable  = "docker_unreachable"
+	CodeBuildEngineNoBuild = "build_engine_unsupported"
 	CodeGitHostUnreachable = "git_host_unreachable"
 	CodeSourceNotCached    = "source_not_cached"
 	CodeUnknown            = "unknown"
@@ -107,6 +108,12 @@ var classes = []class{
 		cause:    "The control plane could not reach the Docker daemon on the target node.",
 		fix:      "Confirm the Docker daemon is running and reachable on the node, then retry the deploy.",
 		patterns: []string{"cannot connect to the docker daemon", "the docker daemon is not running", "dial unix /var/run/docker.sock"},
+	},
+	{
+		code: CodeBuildEngineNoBuild, buildOnly: true,
+		cause:    "This container engine (Podman) has no BuildKit. Deploy a prebuilt image, or run Docker for source builds. See /container-runtimes.",
+		fix:      "Deploy a prebuilt image from a registry, or run the build node on Docker. Source builds (Dockerfile and Railpack) need BuildKit, which Podman does not provide. See /container-runtimes.",
+		patterns: []string{"unable to upgrade to h2c", "buildkit is not available", "no buildkit"},
 	},
 	{
 		code: CodeBuildOOM, buildOnly: true,

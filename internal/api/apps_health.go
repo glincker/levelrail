@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -82,6 +83,11 @@ func (rt *Router) saveAppHealth(w http.ResponseWriter, r *http.Request, name str
 		rt.internalError(w, "api: set app health failed", err, slog.String("name", name))
 		return
 	}
-	rt.nudgeReconciler()
+	// A changed probe on an app stuck failing its old one must retry now, not at the breaker's pace.
+	if n, ok := rt.reconcileNudger.(interface{ NudgeController(string) }); ok {
+		n.NudgeController(application.ControllerName(name))
+	} else {
+		rt.nudgeReconciler()
+	}
 	writeJSON(w, http.StatusOK, appHealthResource{Name: name, Health: health})
 }

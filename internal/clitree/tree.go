@@ -109,6 +109,7 @@ var Tree = map[string]*Node{
 		"clear-environment": nil,
 		"set-project":       nil,
 		"clear-project":     nil,
+		"set":               nil,
 		"set-node":          nil,
 		"clear-node":        nil,
 		"previews": {Subs: map[string]*Node{
@@ -149,7 +150,7 @@ var Tree = map[string]*Node{
 	"jobs":       {Subs: map[string]*Node{"list": nil, "get": nil, "create": nil, "update": nil, "run": nil, "history": nil, "logs": nil, "enable": nil, "disable": nil, "pause": nil, "resume": nil, "delete": nil, "next": nil}},
 	"functions":  {Subs: map[string]*Node{"deploy": nil, "list": nil, "invoke": nil, "invocations": nil, "dev": nil, "runtimes": nil, "init": nil, "delete": nil, "kv": {Subs: map[string]*Node{"enable": nil, "rotate": nil, "list": nil, "get": nil, "put": nil, "delete": nil}}, "triggers": {Subs: map[string]*Node{"list": nil, "webhook": nil, "enqueue": nil, "dead-letters": nil, "retry": nil, "discard": nil}}}},
 	"models":     {Subs: map[string]*Node{"list": nil, "get": nil, "deploy": nil, "logs": nil, "delete": nil, "restart": nil, "rotate-key": nil, "metrics": nil, "fit": nil, "residency": nil, "swap-group": nil, "wake": nil, "sleep": nil, "gpus": nil, "preflight": nil, "catalog": nil, "benchmark": nil, "cache": {Subs: map[string]*Node{"list": nil, "prune": nil}}, "keys": {Subs: map[string]*Node{"list": nil, "create": nil, "revoke": nil, "rotate": nil}}, "endpoint": {Subs: map[string]*Node{"add": nil, "test": nil, "routing": nil, "credential": nil}}, "usage": nil}},
-	"databases":  {Subs: map[string]*Node{"rotate-password": nil, "move-env": nil, "connect": nil, "tunnel": nil, "link": nil, "links": nil, "adopt": nil, "probe": nil, "create": nil, "list": nil, "get": nil, "status": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "logs": nil, "slow-queries": nil, "query": nil, "schema": nil, "set-project": nil, "clear-project": nil, "set-node": nil, "clear-node": nil, "set-resources": nil, "set-version": nil, "major-upgrade": nil, "major-upgrades": nil, "major-upgrade-rollback": nil, "major-upgrade-discard": nil, "upgrades": nil, "upgrade-policy": nil, "upgrade-now": nil, "versions": nil, "catalog": {Subs: map[string]*Node{"status": nil, "refresh": nil, "set": nil}}, "public-access": {Subs: map[string]*Node{"set": nil, "clear": nil}}, "users": {Subs: map[string]*Node{"list": nil, "create": nil, "rotate": nil, "disable": nil, "enable": nil, "delete": nil}}, "access": {Subs: map[string]*Node{"temp": nil, "list": nil, "revoke": nil, "who": nil, "grant": nil}}, "network": {Subs: map[string]*Node{"show": nil, "allow": nil, "deny": nil, "make-private": nil, "scope": nil, "tls": nil}}}},
+	"databases":  {Subs: map[string]*Node{"rotate-password": nil, "move-env": nil, "connect": nil, "tunnel": nil, "link": nil, "links": nil, "adopt": nil, "probe": nil, "import-hosted": nil, "create": nil, "list": nil, "get": nil, "status": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "logs": nil, "slow-queries": nil, "query": nil, "schema": nil, "set-project": nil, "clear-project": nil, "set-node": nil, "clear-node": nil, "set-resources": nil, "set-version": nil, "major-upgrade": nil, "major-upgrades": nil, "major-upgrade-rollback": nil, "major-upgrade-discard": nil, "upgrades": nil, "upgrade-policy": nil, "upgrade-now": nil, "versions": nil, "catalog": {Subs: map[string]*Node{"status": nil, "refresh": nil, "set": nil}}, "public-access": {Subs: map[string]*Node{"set": nil, "clear": nil}}, "users": {Subs: map[string]*Node{"list": nil, "create": nil, "rotate": nil, "disable": nil, "enable": nil, "delete": nil}}, "access": {Subs: map[string]*Node{"temp": nil, "list": nil, "revoke": nil, "who": nil, "grant": nil}}, "network": {Subs: map[string]*Node{"show": nil, "allow": nil, "deny": nil, "make-private": nil, "scope": nil, "tls": nil}}}},
 	"images":     {Subs: map[string]*Node{"list": nil, "layers": nil, "gc": nil, "verify": nil, "policy": nil, "lint": nil, "health": nil, "status": nil}},
 	"builds":     {Subs: map[string]*Node{"list": nil, "show": nil, "cancel": nil, "retry": nil, "cache": nil, "prune": nil}},
 	"dashboards": {Subs: map[string]*Node{"list": nil, "show": nil, "create": nil, "export": nil, "import": nil, "delete": nil}},
@@ -295,6 +296,7 @@ var Tree = map[string]*Node{
 	"version":                  nil,
 	"changelog":                nil,
 	"update":                   nil,
+	"self-update":              nil,
 	"upgrade":                  {Subs: map[string]*Node{"schedule": {Subs: map[string]*Node{"show": nil, "cancel": nil}}, "auto": {Subs: map[string]*Node{"get": nil, "set": nil}}, "backup-now": nil, "status": nil, "retry": nil, "rollback": nil}},
 	"readiness":                nil,
 	"ai-control":               {Subs: map[string]*Node{"status": nil, "set": nil, "revoke-agents": nil}},
@@ -379,7 +381,7 @@ var Tree = map[string]*Node{
 	"cdn":            {Subs: map[string]*Node{"overview": nil}},
 	"event-webhooks": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "deliveries": nil, "replay": nil, "enable": nil, "disable": nil, "rotate-secret": nil, "delete": nil}},
 	"export":         {Subs: map[string]*Node{"destinations": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "status": nil, "enable": nil, "disable": nil, "delete": nil}}, "audit": nil}},
-	"import":         {Subs: map[string]*Node{"repo": {Subs: map[string]*Node{"plan": nil, "apply": nil}}, "platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
+	"import":         {Subs: map[string]*Node{"config": nil, "repo": {Subs: map[string]*Node{"plan": nil, "apply": nil}}, "platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
 	"completion":     {Subs: map[string]*Node{"bash": nil, "zsh": nil, "fish": nil}},
 	"settings": {Subs: map[string]*Node{
 		"oauth":         {Subs: map[string]*Node{"list": nil, "set": nil}},

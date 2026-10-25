@@ -59,3 +59,33 @@ func TestRun_AuthSessionLink_Help(t *testing.T) {
 		t.Errorf("stderr = %q, want usage text", stderr)
 	}
 }
+
+// A relative link (no primary domain configured) is not openable from a
+// terminal, so the CLI anchors it to the API URL it just talked to.
+func TestRun_AuthSessionLink_RelativeURLIsAnchored(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(sessionLinkResource{Token: "sl_x", URL: "/login?session_link=sl_x"})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"auth", "session-link", "--api-url", srv.URL})
+	if want := srv.URL + "/login?session_link=sl_x"; !strings.Contains(stdout, want) {
+		t.Errorf("stdout = %q, want %q", stdout, want)
+	}
+}
+
+func TestSessionLinkForClient(t *testing.T) {
+	tests := []struct{ name, link, base, want string }{
+		{"relative", "/login?session_link=t", "https://lr.example.com", "https://lr.example.com/login?session_link=t"},
+		{"localhost on remote profile", "http://localhost:8080/login?session_link=t", "https://lr.example.com", "https://lr.example.com/login?session_link=t"},
+		{"local profile keeps link", "http://localhost:8080/login?session_link=t", "http://127.0.0.1:8080", "http://localhost:8080/login?session_link=t"},
+		{"real domain kept", "https://app.example.com/login?session_link=t", "https://lr.example.com", "https://app.example.com/login?session_link=t"},
+	}
+	for _, tc := range tests {
+		if got := sessionLinkForClient(tc.link, tc.base); got != tc.want {
+			t.Errorf("%s: got %q want %q", tc.name, got, tc.want)
+		}
+	}
+}

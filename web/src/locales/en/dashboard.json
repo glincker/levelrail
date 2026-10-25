@@ -159,7 +159,11 @@
     "doctorTitle_one": "Doctor found {{count}} problem",
     "doctorTitle_other": "Doctor found {{count}} problems",
     "doctorDetail": "Each one has a fix or a next step.",
-    "doctorAction": "Open Doctor"
+    "doctorAction": "Open Doctor",
+    "nodesTitle_one": "{{count}} node is offline",
+    "nodesTitle_other": "{{count}} nodes are offline",
+    "nodesDetail": "Apps on an offline node keep running but cannot be changed, and their ingress through the mesh is down.",
+    "nodesAction": "View nodes"
   },
   "nextSteps": {
     "title": "Recommended next steps",
@@ -187,7 +191,8 @@
       "held": "Held",
       "superseded": "Superseded",
       "queued": "Queued",
-      "canceled": "Canceled"
+      "canceled": "Canceled",
+      "pending": "Waiting for node"
     }
   },
   "quickStart": {

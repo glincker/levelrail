@@ -272,11 +272,22 @@ func (c *Controller) previousReleaseUpstreams(ctx context.Context, rt docker.Run
 		c.logger.WarnContext(ctx, "ingress: listing previous release containers failed", slog.String("service", svc.Name), slog.String("error", err.Error()))
 		return nil
 	}
-	sort.Slice(states, func(i, j int) bool { return states[i].Name < states[j].Name })
+	// Only the held release (last ready one) keeps serving, not every old one.
+	older := make([]docker.ContainerState, 0, len(states))
+	for _, st := range states {
+		if !current[st.Name] {
+			older = append(older, st)
+		}
+	}
+	ranked := c.rankReleases(ctx, svc.Name, "", older)
 	var out []loadbalancer.UpstreamObservation
-	for _, s := range states {
-		st := s
-		if current[st.Name] || !application.OwnsContainer(svc.Name, st.Name) {
+	if len(ranked) == 0 {
+		return nil
+	}
+	held := application.ReleaseKey(svc.Name, ranked[0].Name)
+	sort.Slice(ranked, func(i, j int) bool { return ranked[i].Name < ranked[j].Name })
+	for _, st := range ranked {
+		if application.ReleaseKey(svc.Name, st.Name) != held {
 			continue
 		}
 		dial, running, _ := upstreamDial(&st, host, host != localUpstreamHost)

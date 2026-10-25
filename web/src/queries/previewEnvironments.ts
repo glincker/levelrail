@@ -97,11 +97,18 @@ export function useTeardownPreviewEnvironment(appName: string) {
 export interface PreviewSettings {
   enabled: boolean
   post_pr_comments: boolean
+  pr_comment_commands: boolean
+  pr_comment_commands_forks: boolean
 }
 
 async function putPreviewSettings(
   appName: string,
-  body: { enabled?: boolean; post_pr_comments?: boolean },
+  body: {
+    enabled?: boolean
+    post_pr_comments?: boolean
+    pr_comment_commands?: boolean
+    pr_comment_commands_forks?: boolean
+  },
 ): Promise<PreviewSettings> {
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/preview-settings`,
@@ -174,6 +181,35 @@ export function useSetPreviewPostPRComments(appName: string) {
         (current) =>
           current
             ? { ...current, post_pr_comments: result.post_pr_comments }
+            : current,
+      )
+    },
+  })
+}
+
+export type PrCommentSetting =
+  'pr_comment_commands' | 'pr_comment_commands_forks'
+
+// setPrCommentSetting touches only one pull request comment command toggle.
+export function useSetPrCommentSetting(appName: string) {
+  const queryClient = useQueryClient()
+  return useMutation<
+    PreviewSettings,
+    ApiError,
+    { key: PrCommentSetting; value: boolean }
+  >({
+    mutationFn: ({ key, value }) =>
+      putPreviewSettings(appName, { [key]: value }),
+    onSuccess: (result) => {
+      queryClient.setQueryData<GitSourceResource | undefined>(
+        gitSourceKeys.detail(appName),
+        (current) =>
+          current
+            ? {
+                ...current,
+                pr_comment_commands: result.pr_comment_commands,
+                pr_comment_commands_forks: result.pr_comment_commands_forks,
+              }
             : current,
       )
     },

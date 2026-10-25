@@ -738,6 +738,14 @@ func (c *Client) RestartApp(ctx context.Context, name string) (AppResource, erro
 	return out, err
 }
 
+// AppActionQueued calls POST /api/v1/apps/{name}/{action} (restart, start or
+// stop) with queue_while_offline set, so an offline node records it as pending.
+func (c *Client) AppActionQueued(ctx context.Context, name, action string) (AppResource, error) {
+	var out AppResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/"+action+"?queue_while_offline=true", nil, &out)
+	return out, err
+}
+
 // StopApp calls POST /api/v1/apps/{name}/stop: marks the service
 // suspended, so the reconciler stops (and leaves stopped) its container
 // on the next pass, without touching desired state otherwise.
@@ -2099,6 +2107,31 @@ func (c *Client) ListAppScheduleHistory(ctx context.Context, name string, limit 
 	return out, err
 }
 
+// CreateScheduledDeploy calls POST /api/v1/apps/{name}/scheduled-deploys.
+func (c *Client) CreateScheduledDeploy(ctx context.Context, name string, req ScheduledDeployRequest) (ScheduledDeploy, error) {
+	var out ScheduledDeploy
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/scheduled-deploys", req, &out)
+	return out, err
+}
+
+// ListScheduledDeploys calls GET /api/v1/apps/{name}/scheduled-deploys; status is an optional comma list.
+func (c *Client) ListScheduledDeploys(ctx context.Context, name, status string) ([]ScheduledDeploy, error) {
+	path := "/api/v1/apps/" + PathEscape(name) + "/scheduled-deploys"
+	if status != "" {
+		path += "?status=" + url.QueryEscape(status)
+	}
+	var out []ScheduledDeploy
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// CancelScheduledDeploy calls DELETE /api/v1/apps/{name}/scheduled-deploys/{id}.
+func (c *Client) CancelScheduledDeploy(ctx context.Context, name, id string) (ScheduledDeploy, error) {
+	var out ScheduledDeploy
+	err := c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/scheduled-deploys/"+PathEscape(id), nil, &out)
+	return out, err
+}
+
 // SetGitDeploySettings calls PUT /api/v1/apps/{name}/git-source/deploy-settings.
 func (c *Client) SetGitDeploySettings(ctx context.Context, name string, req SetGitDeploySettingsRequest) (GitDeploySettings, error) {
 	var out GitDeploySettings
@@ -3069,6 +3102,15 @@ func (c *Client) SetPreviewEnabled(ctx context.Context, appName string, enabled 
 func (c *Client) SetPreviewPostPRComments(ctx context.Context, appName string, enabled bool) (PreviewSettingsResource, error) {
 	var out PreviewSettingsResource
 	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/preview-settings", SetPreviewSettingsRequest{PostPRComments: &enabled}, &out)
+	return out, err
+}
+
+// SetPRCommentCommands calls PUT /api/v1/apps/{name}/preview-settings with
+// only the pull request comment command toggles; a nil pointer leaves that
+// toggle unchanged.
+func (c *Client) SetPRCommentCommands(ctx context.Context, appName string, commands, forks *bool) (PreviewSettingsResource, error) {
+	var out PreviewSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/preview-settings", SetPreviewSettingsRequest{PRCommentCommands: commands, PRCommentCommandsForks: forks}, &out)
 	return out, err
 }
 

@@ -80,6 +80,8 @@ Print a new setup token on the server:
 sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token
 ```
 
+The last line is the token itself. To create the first admin from a terminal instead of the browser, set `APP_SETUP_TOKEN` to it, set `APP_ADMIN_PASSWORD` (or answer the prompt), then run `levelrail-cli setup admin --api-url http://<server-ip>:8080`. It is refused once an admin exists.
+
 The dashboard port is in the systemd unit: `systemctl cat levelrail | grep APP_HTTP_ADDR`.
 
 If HTTPS fails on the first-run screen (for example, the `sslip.io` name does not reach this server yet), fix the cause and click **Re-check**. You can also run `levelrail-cli settings ingress https status` from a terminal.

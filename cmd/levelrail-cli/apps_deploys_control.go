@@ -82,7 +82,7 @@ func runAppsDeploysRollbackTo(prog string, args []string, stdout, stderr io.Writ
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	result, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (deployTriggerResult, error) {
-		req := apiclient.RollbackToRequest{Confirm: confirm, OverrideFreeze: extra.overrideFreeze, OverrideReason: extra.overrideReason}
+		req := apiclient.RollbackToRequest{Confirm: confirm, OverrideFreeze: extra.overrideFreeze, OverrideReason: extra.overrideReason, QueueWhileOffline: extra.queueOffline}
 		if lock {
 			return client.RollbackAndLockDeploy(context.Background(), name, deployID, req)
 		}

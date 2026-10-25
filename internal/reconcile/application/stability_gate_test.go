@@ -322,3 +322,28 @@ func TestSafetyFor_PerAppOverride(t *testing.T) {
 		t.Errorf("SuccessThreshold = %d, want the per-app 5", got.SuccessThreshold)
 	}
 }
+
+// A release that already proved itself and only crashed comes back after
+// readiness, not after another stability window.
+func TestStabilityGate_CrashRestartSkipsWindow(t *testing.T) {
+	srv := alwaysHealthy()
+	defer srv.Close()
+	rt := newFakeRuntime(serverPort(t, srv))
+	desired := gateDesired()
+	target := ContainerName("web", desired.Image, "")
+	rt.seed(target, false)
+	rt.setExitState(target, &docker.ExitState{Running: true})
+	rec := &fakeGateRecorder{}
+
+	c := New("web", &fakeStore{svc: desired}, rt, gateOptions(rec, 3, 2*time.Second, 0)...)
+	start := time.Now()
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if elapsed := time.Since(start); elapsed >= time.Second {
+		t.Errorf("crash restart took %v, it must not wait for the stability window", elapsed)
+	}
+	if rec.has(deploysafety.PhaseStability, deploysafety.StatusStarted) {
+		t.Errorf("stability gate ran on a crash restart: %+v", rec.events)
+	}
+}

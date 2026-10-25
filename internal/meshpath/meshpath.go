@@ -25,6 +25,9 @@ type Path struct {
 	Usable bool
 	// Address is the node's mesh IP, set only when Usable.
 	Address string
+	// NoMesh is true when the node has no mesh to reach it over (mesh off, or
+	// the node never joined), so callers may use its ordinary address.
+	NoMesh bool
 	// Reason says why the path is not usable, with the next action.
 	Reason string
 }
@@ -77,14 +80,14 @@ func (t *Tracker) Path(ctx context.Context, nodeID string) (Path, error) {
 		return Path{Local: true}, nil
 	}
 	if t.mesh == nil {
-		return Path{Reason: "mesh networking is off on this control plane: set APP_MESH_ENABLED=1 and restart it"}, nil
+		return Path{NoMesh: true, Reason: "mesh networking is off on this control plane: set APP_MESH_ENABLED=1 and restart it"}, nil
 	}
 	node, err := t.nodes.GetNode(ctx, nodeID)
 	if err != nil {
 		return Path{}, fmt.Errorf("meshpath: load node %q: %w", nodeID, err)
 	}
 	if node.MeshAddress == "" || node.MeshPublicKey == "" {
-		return Path{Reason: "the node has not joined the mesh yet: check `levelrail-cli nodes mesh`"}, nil
+		return Path{NoMesh: true, Reason: "the node has not joined the mesh yet: check `levelrail-cli nodes mesh`"}, nil
 	}
 	addr, err := netip.ParseAddr(node.MeshAddress)
 	if err != nil {

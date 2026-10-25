@@ -399,7 +399,7 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	purge, ok := rt.requireDeleteDataConfirm(w, r, name, existing.NodeID)
+	purge, ok := rt.requireDeleteDataConfirm(w, r, name, existing.NodeID, true)
 	if !ok {
 		return
 	}

@@ -32,6 +32,7 @@ func TestValidateAppResource(t *testing.T) {
 		{name: "missing name", app: appResource{Image: "levelrail/web:abc123", Port: 3000}, wantErr: true},
 		{name: "missing image", app: appResource{Name: "web", Port: 3000}, wantErr: true},
 		{name: "zero port", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 0}, wantErr: true},
+		{name: "port above range", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 99999}, wantErr: true},
 		{name: "negative port", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: -1}, wantErr: true},
 		{name: "empty strategy falls through to store default", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Strategy: ""}, wantErr: false},
 		{name: "recreate strategy valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Strategy: "recreate"}, wantErr: false},
@@ -2056,6 +2057,86 @@ func TestHandleRestartApp_Success(t *testing.T) {
 	}
 }
 
+// A restart gets its own attempt row so a failed rollout flips that row,
+// never the original deploy it re-runs.
+func TestHandleRestartApp_RecordsOwnAttemptAndSparesOriginalDeploy(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	orig := "dep_original"
+	started := time.Now().Add(-time.Hour)
+	if err := db.SaveDeployAttempt(ctx, store.DeployAttempt{ID: orig, ServiceName: "web", Image: "levelrail/web:1", Source: store.DeployAttemptSourceImage, Status: store.DeployAttemptStatusRunning, StartedAt: started}); err != nil {
+		t.Fatalf("seed attempt: %v", err)
+	}
+	if err := db.FinishDeployAttempt(ctx, orig, store.DeployAttemptStatusSucceeded, started.Add(time.Minute), ""); err != nil {
+		t.Fatalf("finish attempt: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/restart", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	if err := db.RecordRolloutFailure(ctx, "web", "levelrail/web:1", "ReadinessFailed"); err != nil {
+		t.Fatalf("RecordRolloutFailure() error = %v", err)
+	}
+	got, err := db.GetDeployAttempt(ctx, orig)
+	if err != nil {
+		t.Fatalf("GetDeployAttempt() error = %v", err)
+	}
+	if got.Status != store.DeployAttemptStatusSucceeded {
+		t.Errorf("original deploy status = %q, want %q", got.Status, store.DeployAttemptStatusSucceeded)
+	}
+	attempts, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	var restart *store.DeployAttempt
+	for i := range attempts {
+		if attempts[i].Source == store.DeployAttemptSourceRestart {
+			restart = &attempts[i]
+		}
+	}
+	if restart == nil {
+		t.Fatalf("no restart attempt recorded, attempts = %+v", attempts)
+	}
+	if restart.Status != store.DeployAttemptStatusFailed {
+		t.Errorf("restart attempt status = %q, want %q", restart.Status, store.DeployAttemptStatusFailed)
+	}
+}
+
+func TestHandleRestartApp_StoppedApp_Conflict(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := db.UpdateServiceSuspended(ctx, "web", true); err != nil {
+		t.Fatalf("suspend: %v", err)
+	}
+	before, _ := db.GetDesiredService(ctx, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/restart", ""))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "is stopped") {
+		t.Errorf("body = %s, want a hint naming the start command", rec.Body.String())
+	}
+	after, _ := db.GetDesiredService(ctx, "web")
+	if after.RestartNonce != before.RestartNonce {
+		t.Errorf("RestartNonce changed for a stopped app: %q", after.RestartNonce)
+	}
+}
+
 func TestHandleRestartApp_UnknownApp_NotFound(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -2140,6 +2221,80 @@ func TestHandleStartApp_Success(t *testing.T) {
 	}
 }
 
+// A start gets its own attempt so "deploys wait" has something real to follow:
+// the previous serving attempt must not read as the start's result.
+func TestHandleStartApp_RecordsAttemptWaitCanFollow(t *testing.T) {
+	tests := []struct {
+		name        string
+		suspended   bool
+		wantAttempt bool
+	}{
+		{"stopped app gets a start attempt", true, true},
+		{"running app gets none", false, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			ctx := context.Background()
+			if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+				t.Fatalf("seed app: %v", err)
+			}
+			prev := "dep_prev"
+			started := time.Now().Add(-time.Hour)
+			if err := db.SaveDeployAttempt(ctx, store.DeployAttempt{ID: prev, ServiceName: "web", Image: "levelrail/web:1", Source: store.DeployAttemptSourceImage, Status: store.DeployAttemptStatusRunning, StartedAt: started}); err != nil {
+				t.Fatalf("seed attempt: %v", err)
+			}
+			if err := db.FinishDeployAttempt(ctx, prev, store.DeployAttemptStatusSucceeded, started.Add(time.Minute), ""); err != nil {
+				t.Fatalf("finish attempt: %v", err)
+			}
+			if err := db.SetDeployAttemptRollout(ctx, prev, store.RolloutStateServing); err != nil {
+				t.Fatalf("serve previous: %v", err)
+			}
+			if err := db.UpdateServiceSuspended(ctx, "web", tt.suspended); err != nil {
+				t.Fatalf("seed suspended: %v", err)
+			}
+
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/start", ""))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+			}
+
+			attempts, err := db.ListDeployAttempts(ctx, "web")
+			if err != nil {
+				t.Fatalf("ListDeployAttempts() error = %v", err)
+			}
+			if !tt.wantAttempt {
+				if len(attempts) != 1 {
+					t.Fatalf("attempts = %d, want only the seeded one", len(attempts))
+				}
+				return
+			}
+			if len(attempts) != 2 || attempts[0].Source != store.DeployAttemptSourceStart {
+				t.Fatalf("attempts = %+v, want a newest start attempt", attempts)
+			}
+			get := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(get, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/deploys/latest", ""))
+			var res struct{ ID, Outcome string }
+			if err := json.Unmarshal(get.Body.Bytes(), &res); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if res.ID != attempts[0].ID || res.Outcome != OutcomeInProgress {
+				t.Errorf("latest = %+v, want the start attempt in_progress until the rollout serves", res)
+			}
+			if err := db.SetDeployAttemptRollout(ctx, attempts[0].ID, store.RolloutStateServing); err != nil {
+				t.Fatalf("serve start: %v", err)
+			}
+			get = httptest.NewRecorder()
+			rt.Handler().ServeHTTP(get, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/deploys/latest", ""))
+			if err := json.Unmarshal(get.Body.Bytes(), &res); err != nil || res.Outcome != OutcomeHealthy {
+				t.Errorf("after serving: %+v (%v), want healthy", res, err)
+			}
+		})
+	}
+}
+
 // TestHandleStopApp_PlainWriteToken_Forbidden checks the same
 // AbilityDeploy boundary as restart (see router.go's registration of
 // this route).
@@ -2147,4 +2302,140 @@ func TestHandleStopApp_PlainWriteToken_Forbidden(t *testing.T) {
 	assertPlainWriteTokenForbidden(t, http.MethodPost, "/api/v1/apps/web/stop", "",
 		"tok_write_stop", "write-scoped-token-stop", //nolint:gosec // fake fixture, not a real credential
 		"a plain write token must not be able to stop an app")
+}
+
+// While a restart rolls out, the stored Ready=AlreadyRunning is from the old
+// container, so status must not claim it; once serving, the stored one shows.
+func TestHandleDeployHistory_RestartInFlightIsNotReady(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	old := time.Now().Add(-time.Hour)
+	if err := db.UpsertConditions(ctx, applicationControllerName("web"), []reconcile.Condition{{Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue, Reason: "AlreadyRunning", LastTransitionTime: old}}); err != nil {
+		t.Fatalf("UpsertConditions: %v", err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/restart", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("restart status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	readyReason := func() (reconcile.ConditionStatus, string) {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/deploys", ""))
+		var conds []reconcile.Condition
+		if err := json.Unmarshal(rec.Body.Bytes(), &conds); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		for _, c := range conds {
+			if c.Type == reconcile.ConditionTypeReady {
+				return c.Status, c.Reason
+			}
+		}
+		t.Fatalf("no Ready condition in %s", rec.Body.String())
+		return "", ""
+	}
+	if st, reason := readyReason(); st == reconcile.ConditionTrue || reason != "RollingOut" {
+		t.Errorf("during restart Ready = %s/%s, want not True and RollingOut", st, reason)
+	}
+
+	if err := db.RecordRollout(ctx, "web", "levelrail/web:1", store.RolloutStateServing, "sha256:x"); err != nil {
+		t.Fatalf("RecordRollout: %v", err)
+	}
+	if st, reason := readyReason(); st != reconcile.ConditionTrue || reason != "AlreadyRunning" {
+		t.Errorf("after serving Ready = %s/%s, want True/AlreadyRunning", st, reason)
+	}
+}
+
+// A same-image redeploy recreates the container only when needed: a failed
+// latest attempt, a crashlooping condition or changed env. A healthy,
+// unchanged app keeps today's behavior.
+func TestHandleTriggerDeploy_RestartNonce(t *testing.T) {
+	failedAttempt := func(t *testing.T, db *store.DB) {
+		if err := db.SaveDeployAttempt(context.Background(), store.DeployAttempt{ID: "dep_failed", ServiceName: "web", Image: "levelrail/web:1", Status: store.DeployAttemptStatusFailed, StartedAt: time.Now()}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	crashloop := func(t *testing.T, db *store.DB) {
+		conds := []reconcile.Condition{{Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: "CrashLoopBackOff"}}
+		if err := db.UpsertConditions(context.Background(), applicationControllerName("web"), conds); err != nil {
+			t.Fatal(err)
+		}
+	}
+	tests := []struct {
+		name      string
+		envDirty  bool
+		seed      func(*testing.T, *store.DB)
+		image     string
+		wantNonce bool
+	}{
+		{"healthy unchanged keeps container", false, nil, "levelrail/web:1", false},
+		{"failed latest attempt recreates", false, failedAttempt, "levelrail/web:1", true},
+		{"crashloop condition recreates", false, crashloop, "levelrail/web:1", true},
+		{"env changed recreates", true, nil, "levelrail/web:1", true},
+		{"new image keeps nonce", true, nil, "levelrail/web:2", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, db, cookie := newEnvDirtyAppTestRouter(t)
+			if !tc.envDirty {
+				if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if tc.seed != nil {
+				tc.seed(t, db)
+			}
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"`+tc.image+`"}`))
+			if rec.Code != http.StatusAccepted {
+				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+			}
+			got, err := db.GetDesiredService(context.Background(), "web")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if (got.RestartNonce != "") != tc.wantNonce {
+				t.Errorf("RestartNonce = %q, want set = %v", got.RestartNonce, tc.wantNonce)
+			}
+		})
+	}
+}
+
+func TestRecreateSignals(t *testing.T) {
+	tests := []struct {
+		name string
+		sig  recreateSignals
+		want bool
+	}{
+		{"healthy unchanged", recreateSignals{}, false},
+		{"exited container", recreateSignals{containerStopped: true}, true},
+		{"failed latest attempt", recreateSignals{latestFailed: true}, true},
+		{"post deploy crashloop", recreateSignals{failingReason: "PostDeployCrashloop"}, true},
+		{"readiness failed", recreateSignals{failingReason: "ReadinessFailed"}, true},
+		{"unrelated reason", recreateSignals{failingReason: "Progressing"}, false},
+		{"env changed", recreateSignals{envChanged: true}, true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.sig.needed(); got != tc.want {
+				t.Errorf("needed() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestHandleCreateApp_RejectsNonDNSLabelName(t *testing.T) {
+	for _, name := range []string{"Bad_Name", "-x", "has space", strings.Repeat("a", 64)} {
+		if err := spec.ValidateServiceName(name); err == nil {
+			t.Fatalf("%q must be rejected", name)
+		}
+	}
+	if err := spec.ValidateServiceName("web-2"); err != nil {
+		t.Fatal(err)
+	}
 }

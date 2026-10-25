@@ -1,4 +1,8 @@
 {
+  "nodeSelect": {
+    "auto": "Automatic (least loaded)",
+    "autoHint": "Automatic puts it on the least loaded eligible node. Pick a node to pin it there."
+  },
   "draft": {
     "message": "You have an unsaved draft from {{time}}.",
     "continue": "Continue where you left off",
@@ -34,7 +38,9 @@
     "settingsLinkHint": "Build, run, safety and automation options for this app live in one place.",
     "settingsLinkCta": "Open deploy settings",
     "rerunOf": "Retry of {{id}}",
-    "rerunOfLabel": "Open the logs of {{id}}, the deploy this one re-ran"
+    "rerunOfLabel": "Open the logs of {{id}}, the deploy this one re-ran",
+    "current": "Current",
+    "rollbackBadge": "Rollback"
   },
   "actions": {
     "copy": "Copy",
@@ -97,6 +103,7 @@
     "title": "Apps",
     "tableLabel": "Apps",
     "colName": "Name",
+    "colNode": "Node",
     "colTraffic": "Traffic 1h",
     "colP95": "p95",
     "colErrors": "Errors",
@@ -913,5 +920,14 @@
     "p50": "p50 {{value}} ms",
     "p95": "p95 {{value}} ms",
     "sparkline": "Requests per second over the last {{minutes}} minutes for {{dial}}"
+  },
+  "formErrorSummary": {
+    "title_one": "{{count}} field needs attention",
+    "title_other": "{{count}} fields need attention",
+    "name": "Name",
+    "engine": "Engine",
+    "version": "Version",
+    "envKey": "Variable name, row {{row}}",
+    "envValue": "Variable value, row {{row}}"
   }
 }

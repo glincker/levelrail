@@ -112,7 +112,7 @@ func (rt *Router) idempotent(next http.HandlerFunc) http.HandlerFunc {
 
 		rw := &recordingWriter{ResponseWriter: w}
 		next(rw, r)
-		if rw.status == 0 || rw.over || rw.status >= 500 || rw.status == http.StatusTooManyRequests {
+		if rw.over || !idempotencyCacheable(rw.status) {
 			return
 		}
 		put := store.IdempotencyRecord{
@@ -123,6 +123,14 @@ func (rt *Router) idempotent(next http.HandlerFunc) http.HandlerFunc {
 			rt.logger.Warn("api: idempotency store failed", slog.String("error", err.Error()))
 		}
 	}
+}
+
+// idempotencyCacheable allows successes and permanent absences only. Refusals
+// that depend on mutable state (423 freeze, 409 conflict, 412/428
+// preconditions, 422 failed actions, 429, 5xx) must run again once the state
+// changes, or a retry would silently do nothing.
+func idempotencyCacheable(status int) bool {
+	return (status >= 200 && status < 300) || status == http.StatusNotFound || status == http.StatusGone
 }
 
 // pruneIdempotency runs on the audit sweeper tick, so it adds no ticker of its own.

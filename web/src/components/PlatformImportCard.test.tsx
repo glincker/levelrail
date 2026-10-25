@@ -90,6 +90,30 @@ describe('PlatformImportCard', () => {
     )
   })
 
+  it('shows the team field only for Vercel and sends it', async () => {
+    const calls: Record<string, unknown>[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init: RequestInit) => {
+        calls.push(JSON.parse(init.body as string) as Record<string, unknown>)
+        return Promise.resolve(jsonResponse(discoverReport))
+      }),
+    )
+    renderCard()
+    expect(screen.queryByLabelText('Team ID (optional)')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Vercel' }))
+    fireEvent.change(screen.getByLabelText('Access token'), {
+      target: { value: 'tok-fixture' },
+    })
+    fireEvent.change(screen.getByLabelText('Team ID (optional)'), {
+      target: { value: ' team_acme ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Discover' }))
+    await screen.findByText('Review what will be imported')
+    expect(calls[0]?.team_id).toBe('team_acme')
+    expect(calls[0]?.platform).toBe('vercel')
+  })
+
   it('discovers, lets the operator deselect, applies only the selection, and clears the token', async () => {
     const calls: { url: string; body: Record<string, unknown> }[] = []
     vi.stubGlobal(

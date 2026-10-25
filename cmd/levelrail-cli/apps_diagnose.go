@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
@@ -28,6 +29,9 @@ func runAppsDiagnose(prog string, args []string, stdout, stderr io.Writer, looku
 		return exitCode
 	}
 
+	if redeploy && applyFix == 0 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--redeploy needs --apply-fix N"))
+	}
 	ctx := context.Background()
 	diagnosis, err := client.DiagnoseApp(ctx, name, deployFlag)
 	if err != nil {
@@ -35,26 +39,84 @@ func runAppsDiagnose(prog string, args []string, stdout, stderr io.Writer, looku
 	}
 
 	if applyFix > 0 {
-		return applyDiagnosisFix(ctx, client, name, diagnosis, applyFix, inputs, redeploy, stdout, stderr, jsonOut)
+		return applyDiagnosisFix(ctx, client, prog, name, diagnosis, applyFix, inputs, redeploy, stdout, stderr, jsonOut)
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, diagnosis, func() { printDiagnosisHuman(stdout, diagnosis) })
 }
 
-func applyDiagnosisFix(ctx context.Context, client *Client, name string, d diagnosisResource, n int, inputs map[string]string, redeploy bool, stdout, stderr io.Writer, jsonOut bool) int {
+func applyDiagnosisFix(ctx context.Context, client *Client, prog, name string, d diagnosisResource, n int, inputs map[string]string, redeploy bool, stdout, stderr io.Writer, jsonOut bool) int {
 	fix, found := apiclient.FindDiagnosisFix(d, n)
 	if !found {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("no fix number %d in this diagnosis", n))
+		return reportError(stdout, stderr, jsonOut, newValidationError("no fix number %d in this diagnosis", n))
 	}
-	fields, err := client.ApplyDiagnosisFix(ctx, name, fix, inputs, redeploy)
+	if err := checkFixInputs(prog, name, n, fix, inputs); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
+	fields, err := client.ApplyDiagnosisFix(ctx, name, fix, inputs, false)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("apply fix %d to %q: %w", n, name, err))
 	}
+	deployID := ""
+	redeployed := redeploy && fix.Redeploy
+	if redeployed {
+		id, err := redeployAfterFix(ctx, client, name)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("fix %d was applied to %q but the redeploy failed: %w", n, name, err))
+		}
+		deployID = id
+	}
 	if jsonOut {
-		return writeScheduledTaskResult(stdout, stderr, outputFlags{Format: "json"}, map[string]any{"applied": n, "fields": fields, "redeployed": redeploy && fix.Redeploy}, func() {})
+		return writeScheduledTaskResult(stdout, stderr, outputFlags{Format: "json"}, map[string]any{"applied": n, "fields": fields, "redeployed": redeployed, "deploy_id": deployID}, func() {})
 	}
 	_, _ = fmt.Fprintf(stdout, "applied fix %d to %s: %v\n", n, name, fields)
-	if fix.Redeploy && !redeploy {
+	switch {
+	case redeployed:
+		_, _ = fmt.Fprintf(stdout, "redeployed %s, deploy %s (watch: %s deploys wait %s)\n", name, deployID, prog, name)
+	case fix.Redeploy:
 		_, _ = fmt.Fprintf(stdout, "run a deploy for the change to take effect, or rerun with --redeploy\n")
+	case redeploy:
+		_, _ = fmt.Fprintf(stdout, "this fix needs no redeploy\n")
 	}
 	return exitOK
+}
+
+// checkFixInputs refuses before any write when a value the fix needs is
+// missing, and prints the command that supplies it.
+func checkFixInputs(prog, name string, n int, fix apiclient.DiagnosisFix, inputs map[string]string) error {
+	var missing []string
+	for _, ch := range fix.Changes {
+		if ch.NeedsInput && inputs[ch.Field] == "" {
+			missing = append(missing, ch.Field)
+		}
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	var pairs []string
+	for _, f := range missing {
+		pairs = append(pairs, strings.TrimPrefix(f, "env.")+"=VALUE")
+	}
+	return newValidationError("fix %d needs a value for %s, so it cannot be applied automatically and nothing was changed.\nSet it with: %s env set %s %s --apply\nor rerun with: --input %s=VALUE",
+		n, strings.Join(missing, ", "), prog, name, strings.Join(pairs, " "), missing[0])
+}
+
+// redeployAfterFix deploys the app's current image so the saved change
+// reaches a fresh container, and returns the new deploy id.
+func redeployAfterFix(ctx context.Context, client *Client, name string) (string, error) {
+	app, err := client.GetApp(ctx, name)
+	if err != nil {
+		return "", err
+	}
+	res, err := client.DeployApp(ctx, name, app.Image, false)
+	if err != nil {
+		return "", err
+	}
+	if res.PendingApproval != nil {
+		return "", fmt.Errorf("the deploy needs approval (%s) before it starts", res.PendingApproval.ID)
+	}
+	latest, err := client.GetDeploy(ctx, name, "latest")
+	if err != nil {
+		return "", err
+	}
+	return latest.ID, nil
 }

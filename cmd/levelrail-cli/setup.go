@@ -39,6 +39,9 @@ func runSetup(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return exitOK
 	}
 	sub := args[0]
+	if sub == "admin" {
+		return runSetupAdmin(prog, args[1:], stdout, stderr, lookupEnv)
+	}
 	switch sub {
 	case "status", "next", "skip", "undo", "reset":
 	default:
@@ -144,6 +147,7 @@ func setupUsage(prog string) string {
   %[1]s setup skip <step> [flags]  mark a step as skipped (undo with "setup undo")
   %[1]s setup undo <step> [flags]  clear a skip or manual override
   %[1]s setup reset [flags]        clear every override and show the guide again
+  %[1]s setup admin [--username U] [--api-url URL] [--profile NAME]  create the first admin on a fresh server (token from "setup-token" on the host)
 
 Flags:
   --token string      API token (default: %[2]s env var, then the credentials file)

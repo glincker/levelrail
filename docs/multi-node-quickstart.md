@@ -56,7 +56,7 @@ That run did not cover:
 
 ## If the control plane dies
 
-A container placed on a remote node keeps running and serving, because the agent owns it through its own Docker connection. The agent takes no destructive action on disconnect and retries with exponential backoff until the control plane returns. That node's services are skipped for reconcile passes until then. [Resilience](/resilience) has the measured numbers, and [Resilience summary](/resilience-summary) has the overview.
+A container placed on a remote node keeps running, because the agent owns it through its own Docker connection. The agent takes no destructive action on disconnect and retries with exponential backoff until the control plane returns. That node's services are skipped for reconcile passes until then and report `Ready=False` with reason `NodeOffline`. When the mesh runs inside the agent, ingress cannot reach them either, so they stop serving through the control plane until the agent returns (about 35 seconds after an agent restart). [Resilience](/resilience) has the measured numbers, and [Resilience summary](/resilience-summary) has the overview.
 
 ## Troubleshooting
 

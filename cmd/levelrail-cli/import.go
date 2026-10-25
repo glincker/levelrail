@@ -59,6 +59,8 @@ func runImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			return runImportPlatform(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
 		case "apps":
 			return runImportApps(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
+		case "config":
+			return runImportConfig(prog, args[1:], stdout, stderr, lookupEnv)
 		case "repo":
 			return runImportRepo(prog, args[1:], stdout, stderr, lookupEnv)
 		case "cutover":
@@ -372,6 +374,7 @@ func importUsage(prog string) string {
   %[1]s import <repo-url|image> [flags]
   %[1]s import -f compose.yaml|Dockerfile [flags]
   %[1]s import --docker-run "docker run -p 80:80 nginx:1" [flags]
+  %[1]s import config [dir] [--out FILE] [--strict]            offline preview of Procfile, app.json and vercel.json as an app spec
   %[1]s import repo plan <repo-url> [--branch B] [--dir D]   proposed app per monorepo package, nothing created
   %[1]s import repo apply <repo-url> [flags]                 create one app per monorepo package
 

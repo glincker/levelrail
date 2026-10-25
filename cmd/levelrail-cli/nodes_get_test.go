@@ -97,3 +97,24 @@ func assertUsageErrorMissingID(t *testing.T, verb string) {
 		t.Errorf("stderr = %q, want a missing-id usage error", stderr.String())
 	}
 }
+
+func TestRun_NodesGet_ShowsPlacedWorkloadsAndLabels(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/nodes/node-b" {
+			t.Errorf("path = %q, want the name passed through", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(nodeResource{
+			ID: "nd_9", Name: "node-b", Status: "online", Address: "10.77.0.3",
+			PlacedApps: []string{"m1-web"}, PlacedDatabases: []string{"m1-db"}, Labels: map[string]string{"disk": "ssd"},
+		})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"nodes", "get", "node-b", "--api-url", srv.URL})
+	for _, want := range []string{"m1-web", "m1-db", "disk=ssd", "10.77.0.3"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("stdout missing %q: %s", want, stdout)
+		}
+	}
+}

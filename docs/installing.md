@@ -41,7 +41,7 @@ Confirm these before you provision a server.
 | Item | Requirement |
 | --- | --- |
 | OS | Linux, `amd64` or `arm64`, with systemd. Tested in CI on Ubuntu 24.04 and Debian 12; other distros should work but are untested. Windows and non-Linux nodes are not supported. |
-| Docker | 24 or newer. `install.sh` installs it via `get.docker.com` if it is missing. |
+| Docker | 24 or newer. `install.sh` installs it via `get.docker.com` if it is missing. An existing Podman is accepted as best-effort with `--runtime podman`, see [Container runtimes](/container-runtimes). |
 | Access | Root, plus `curl`. |
 | Ports (control-plane node) | `80/tcp` and `443/tcp` inbound from the internet. Port 80 is required for Let's Encrypt HTTP-01. Optionally `443/udp` for HTTP/3. |
 | Ports (agent-only nodes) | None. The agent dials out and the control plane never initiates a connection. See [Multi-node](/multi-node). |
@@ -72,6 +72,8 @@ The script:
 - Prints the dashboard URL, the one-time **setup token** for the first admin, and a reminder to back up `<data dir>/master.key`.
 
 Pass `--profile minimal|standard|suite` to choose how much starts (default `standard`); see [Server profiles](/profiles).
+
+Pass `--runtime auto|docker|podman|existing` (or set `LEVELRAIL_RUNTIME`) to choose the container runtime (default `auto`); see [Container runtimes](/container-runtimes).
 
 <Accordion title="If the install fails">
 
@@ -514,6 +516,8 @@ levelrail-cli status    # check Docker reachability and system config
 </Tabs>
 
 ## Upgrading
+
+To update only the CLI on your laptop, run `levelrail-cli update` (or `self-update`). `update --check --exit-code` exits 10 when a newer release exists, and the old binary stays beside the new one as `levelrail-cli.bak` for rollback. See [Updating the CLI](/cli-reference#updating).
 
 Pick the path that matches how you installed. The self-update (next section) is the safest, because it restores the database as well as the binary on failure.
 

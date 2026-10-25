@@ -8,6 +8,7 @@ import {
   type ResponsiveColumn,
 } from '@/components/ui/responsive-table'
 import type { AppListEntry } from '../../types/appDetail'
+import { PlacementLabel } from '../PlacementLabel'
 import { AppRowActions } from '../AppRowActions'
 import { StatusLabel } from '../AppRow'
 import { AppLogo, AppMetaChips } from './AppMetaChips'
@@ -67,6 +68,20 @@ export function AppsTable({
               <AppMetaChips app={app} />
             </span>
           </span>
+        ),
+      },
+      {
+        id: 'node',
+        header: t('appsList.colNode'),
+        priority: 2,
+        width: 'w-32',
+        cell: (app) => (
+          <PlacementLabel
+            nodeId={app.node_id}
+            nodeName={app.node_name}
+            nodeIsLocal={app.node_is_local}
+            className="text-sm"
+          />
         ),
       },
       {

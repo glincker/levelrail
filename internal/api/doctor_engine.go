@@ -62,11 +62,11 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		return doctorCheckDef{ID: id, Group: group, Run: f}
 	}
 	return []doctorCheckDef{
-		one("docker", doctorGroupRuntime, rt.doctorCheckDocker),
+		one("docker", doctorGroupRuntime, rt.relabelEngine(rt.doctorCheckDocker)),
 		one("install_state", doctorGroupRuntime, rt.doctorCheckInstallState),
 		one("container_runtime", doctorGroupRuntime, rt.doctorCheckContainerRuntime),
-		one("docker_guard", doctorGroupRuntime, rt.doctorCheckDockerGuard),
-		one("docker_privilege", doctorGroupRuntime, rt.doctorCheckDockerPrivilege),
+		one("docker_guard", doctorGroupRuntime, rt.relabelEngine(rt.doctorCheckDockerGuard)),
+		one("docker_privilege", doctorGroupRuntime, rt.relabelEngine(rt.doctorCheckDockerPrivilege)),
 		one("container_hardening", doctorGroupRuntime, rt.doctorCheckHardeningNow),
 		one("network_pool", doctorGroupRuntime, rt.doctorCheckNetworkPool),
 		one("docker_orphans", doctorGroupRuntime, rt.doctorCheckOrphans),

@@ -463,7 +463,7 @@ func TestPlanFromFlags(t *testing.T) {
 			},
 		},
 		{
-			name:  "file mode from ref env vars are never sent as a literal",
+			name:  "file mode from ref env vars fail loudly instead of being dropped",
 			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
 			fileSpec: &spec.Spec{Services: map[string]spec.Service{
 				"web": {
@@ -471,11 +471,16 @@ func TestPlanFromFlags(t *testing.T) {
 					Env: map[string]spec.EnvVar{"DATABASE_URL": {From: "postgres.main.url"}},
 				},
 			}},
-			wantPlan: func(t *testing.T, p createPlan) {
-				if _, ok := p.CreateBody.Env["DATABASE_URL"]; ok {
-					t.Errorf("CreateBody.Env = %v, must not carry an empty literal for a { from: ... } var", p.CreateBody.Env)
-				}
+			wantErr: "databases: not applied by apps create",
+		},
+		{
+			name:  "file mode databases section fails loudly",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
+			fileSpec: &spec.Spec{
+				Databases: map[string]spec.Database{"main": {Engine: "postgres"}},
+				Services:  map[string]spec.Service{"web": {Build: spec.Build{Type: spec.BuildDockerfile}, Port: 3000}},
 			},
+			wantErr: "databases.main (postgres)",
 		},
 		{
 			name:  "file mode missing port and no --port flag",
@@ -1166,5 +1171,34 @@ func TestAttachPlanVolumes_HostPathRejected(t *testing.T) {
 	}
 	if called {
 		t.Error("attachPlanVolumes() made an HTTP call for a rejected hostPath volume")
+	}
+}
+
+func TestApplyCreateHealth(t *testing.T) {
+	var f createFlags
+	f.readiness.which, f.liveness.which = "readiness", "liveness"
+	var body appResource
+	if err := applyCreateHealth(f, &body, false); err != nil || body.Health != nil {
+		t.Fatalf("no flags: err=%v health=%v, want untouched", err, body.Health)
+	}
+	f.readiness.path, f.liveness.preset, f.readyTimeout = "/ready", "healthz", "90s"
+	if err := applyCreateHealth(f, &body, false); err != nil {
+		t.Fatal(err)
+	}
+	if body.Health.Readiness == nil || body.Health.Readiness.Path != "/ready" {
+		t.Errorf("readiness = %+v", body.Health.Readiness)
+	}
+	if body.Health.Liveness == nil || body.Health.Liveness.Path != "/healthz" || body.Health.Liveness.Failures != 3 {
+		t.Errorf("liveness = %+v, want healthz preset with 3 failures", body.Health.Liveness)
+	}
+	if body.Health.ReadyTimeout != int64(90*time.Second) {
+		t.Errorf("ReadyTimeout = %d", body.Health.ReadyTimeout)
+	}
+	if err := applyCreateHealth(f, &body, true); err == nil {
+		t.Error("static site accepted health flags")
+	}
+	f.readiness.path, f.readiness.preset = "", "nope"
+	if err := applyCreateHealth(f, &body, false); err == nil {
+		t.Error("unknown preset accepted")
 	}
 }

@@ -17,7 +17,7 @@
     "nameHint": "Lowercase letters, digits and dashes, starting with a letter. Leave empty to let the agent report its hostname.",
     "nameInvalid": "Use lowercase letters, digits and dashes, starting with a letter.",
     "addrLabel": "Control plane address",
-    "addrHint": "Host and port the new machine can reach this control plane on, port 9443 by default. Pre-filled from this browser's address, change it for NAT or a separate public address.",
+    "addrHint": "Host and port the new machine can reach this control plane on, port 9443 by default. Pre-filled with the advertise address the agent certificate covers (APP_AGENT_ADVERTISE_HOST). A different name fails the TLS check.",
     "meshLabel": "Join the mesh",
     "meshHint": "Connect the node to the WireGuard mesh so apps and databases can reach each other across machines. Needs mesh networking enabled on the control plane.",
     "generate": "Generate join token",
@@ -27,6 +27,14 @@
     "singleUse": "Single use. This token will not be shown again and expires at {{time}}.",
     "dockerLabel": "Run with Docker",
     "dockerHint": "Recommended. Runs the agent as a container on the new machine.",
+    "runtime": {
+      "docker": "Docker",
+      "podman": "Podman",
+      "binary": "Agent binary"
+    },
+    "podmanLabel": "Run with Podman",
+    "podmanHint": "Rootful Podman. The agent mounts /run/podman/podman.sock, so the socket must be enabled first (command below).",
+    "podmanSocketLabel": "Podman prerequisite (run once on the new machine)",
     "binaryLabel": "Or run the agent binary",
     "binaryHint": "For a machine without Docker run access for the agent container, or when you manage the service yourself.",
     "tokenLabel": "Join token",
@@ -703,6 +711,12 @@
     }
   },
   "detail": {
+    "placed": {
+      "title": "Running on this node",
+      "apps": "Apps",
+      "databases": "Databases",
+      "none": "Nothing is placed on this node yet."
+    },
     "back": "Back to nodes",
     "retry": "Try again",
     "banner": {
@@ -805,5 +819,11 @@
     "risksTitle": "Replicas in one failure domain",
     "loadFailed": "Could not load the domain overview.",
     "retry": "Try again"
+  },
+  "offlineApp": {
+    "title": "Node {{node}} is offline, unseen for {{since}}",
+    "titleUnknown": "Node {{node}} is offline",
+    "body": "Containers keep running on it, but ingress through the mesh is down and this app cannot be changed until the node returns.",
+    "view": "View node"
   }
 }

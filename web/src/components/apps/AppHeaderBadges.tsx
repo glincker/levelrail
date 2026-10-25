@@ -42,7 +42,7 @@ export function AppHeaderBadges({
   app,
   attentionCount = 0,
 }: {
-  app: Pick<AppDetail, 'name' | 'node_id'>
+  app: Pick<AppDetail, 'name' | 'node_id' | 'node_name'>
   attentionCount?: number
 }) {
   const { t } = useTranslation('appAccess')
@@ -94,9 +94,14 @@ export function AppHeaderBadges({
         </Link>
       ) : null}
       {app.node_id ? (
-        <Chip label={app.node_id} icon={<HardDrivesIcon aria-hidden="true" />}>
-          {app.node_id}
-        </Chip>
+        <Link to="/nodes/$id" params={{ id: app.node_id }}>
+          <Chip
+            label={app.node_name ?? app.node_id}
+            icon={<HardDrivesIcon aria-hidden="true" />}
+          >
+            {app.node_name ?? app.node_id}
+          </Chip>
+        </Link>
       ) : null}
       {lastOk?.finished_at ? (
         <Link to="/apps/$name/deploys" params={{ name: app.name }}>

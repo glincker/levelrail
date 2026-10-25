@@ -2245,3 +2245,41 @@ func TestDragonflyCommand(t *testing.T) {
 		}
 	}
 }
+
+// An agent older than the labels field reports no labels: a running TLS
+// container is adopted, while real labels that disagree still recreate it.
+func TestController_Reconcile_TLS_LabelsAbsentAdoptsRunningContainer(t *testing.T) {
+	certPEM, keyPEM, err := GenerateSelfSignedCert("db-cache")
+	if err != nil {
+		t.Fatalf("GenerateSelfSignedCert() error = %v", err)
+	}
+	tests := []struct {
+		name    string
+		labels  map[string]string
+		wantNew bool
+	}{
+		{name: "no labels at all keeps the container", labels: nil, wantNew: false},
+		{name: "labels present without the tls marker recreates", labels: map[string]string{"other": "x"}, wantNew: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := newFakeRuntime()
+			desired := &store.DesiredDatabase{Name: "cache", Engine: store.EngineRedis, Version: "7"}
+			c := New("cache", &fakeStore{db: desired}, rt, WithTLS(&TLSMaterial{CertPEM: certPEM, KeyPEM: keyPEM}))
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatalf("first Reconcile() error = %v", err)
+			}
+			before := rt.createCalls
+			rt.mu.Lock()
+			rt.containers[containerName("cache")].Labels = tt.labels
+			rt.containers[containerName("cache")].LabelsUnknown = len(tt.labels) == 0
+			rt.mu.Unlock()
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatalf("second Reconcile() error = %v", err)
+			}
+			if (rt.createCalls > before) != tt.wantNew {
+				t.Errorf("createCalls %d -> %d, recreated want %v", before, rt.createCalls, tt.wantNew)
+			}
+		})
+	}
+}

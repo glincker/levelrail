@@ -111,6 +111,22 @@ func (c *Controller) recordRollout(ctx context.Context, desired *store.DesiredSe
 	}
 }
 
+// restartRecoverer is the optional store hook that heals a restart row
+// marked failed by an earlier slow pass once the container is ready.
+type restartRecoverer interface {
+	RecoverRestartRollout(ctx context.Context, serviceName, image string) error
+}
+
+func (c *Controller) recoverRestart(ctx context.Context, desired *store.DesiredService) {
+	r, ok := c.rollouts.(restartRecoverer)
+	if !ok {
+		return
+	}
+	if err := r.RecoverRestartRollout(ctx, c.serviceName, desired.Image); err != nil {
+		slog.Warn("reconcile: restart recovery write failed", slog.String("service", c.serviceName), slog.String("error", err.Error()))
+	}
+}
+
 // recordRolloutFailure corrects a deploy attempt's status once its
 // container is confirmed to have never passed readiness (F-002): the
 // attempt was recorded succeeded synchronously at trigger time, before
@@ -196,4 +212,57 @@ func (c *Controller) heldFilterFor(all []docker.ContainerState, targets []string
 		heldUntil = cutover.Add(hold)
 	}
 	return due, heldUntil
+}
+
+// supersededPrevious returns stale containers that are not part of the newest
+// running previous release. While a desired release never becomes ready that
+// release keeps serving, and older ones can only leak.
+func (c *Controller) supersededPrevious(all []docker.ContainerState, targets []string) []docker.ContainerState {
+	stale := c.filterStale(all, targets)
+	lastCreated := map[string]time.Time{}
+	newest := ""
+	for _, cs := range stale {
+		rel := releaseOf(cs.Name)
+		if cs.Created.After(lastCreated[rel]) {
+			lastCreated[rel] = cs.Created
+		}
+	}
+	// Keep the newest running release; with none running keep the newest
+	// stopped one so reviveLastReady still has something to restart.
+	pick := func(runningOnly bool) string {
+		best := ""
+		for _, cs := range stale {
+			rel := releaseOf(cs.Name)
+			if runningOnly && !cs.Running {
+				continue
+			}
+			if best == "" || lastCreated[rel].After(lastCreated[best]) || (lastCreated[rel].Equal(lastCreated[best]) && rel > best) {
+				best = rel
+			}
+		}
+		return best
+	}
+	newest = pick(true)
+	if newest == "" {
+		newest = pick(false)
+	}
+	var out []docker.ContainerState
+	for _, cs := range stale {
+		if newest != "" && releaseOf(cs.Name) == newest {
+			continue
+		}
+		out = append(out, cs)
+	}
+	return out
+}
+
+// pruneSupersededPrevious is the best-effort, level-triggered cleanup run when
+// the desired release is not ready: it never touches the targets or the newest
+// running previous release.
+func (c *Controller) pruneSupersededPrevious(ctx context.Context, targets []string) {
+	all, err := c.listPrefix(ctx, c.serviceName+"-")
+	if err != nil {
+		return
+	}
+	_ = c.removeContainers(ctx, c.supersededPrevious(all, targets))
 }

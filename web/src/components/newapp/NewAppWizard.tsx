@@ -54,19 +54,29 @@ interface Failure {
   appCreated: boolean
 }
 
+export interface WizardInitial {
+  source: GitRepoSourceValue
+  name?: string
+  port?: number
+}
+
 /**
  * The suggestion-driven "New app" flow: where it is from, what we found,
  * review and deploy. The analysis is read-only; nothing exists until the
  * final Deploy.
  */
-export function NewAppWizard() {
+export function NewAppWizard({ initial }: { initial?: WizardInitial } = {}) {
   const { t } = useTranslation('newApp')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [draft] = useState(loadImportDraft)
+  // A link-provided source starts fresh; a stale draft must not win over it.
+  const [draft] = useState(() => (initial ? null : loadImportDraft()))
+  const linkEdits = useRef(
+    initial ? { name: initial.name, port: initial.port } : null,
+  )
   const [step, setStep] = useState<StepId>('source')
   const [source, setSource] = useState<GitRepoSourceValue | null>(
-    draft && draft.step !== 'source' ? draft.source : null,
+    draft && draft.step !== 'source' ? draft.source : (initial?.source ?? null),
   )
   const [analysis, setAnalysis] = useState<ImportAnalysis | null>(null)
   const [edits, setEdits] = useState<NewAppEdits | null>(null)
@@ -139,13 +149,27 @@ export function NewAppWizard() {
       {
         onSuccess: (result) => {
           setAnalysis(result)
-          setEdits({ ...editsFromAnalysis(result), env: keepEnv })
+          const fromLink = linkEdits.current
+          linkEdits.current = null
+          setEdits({
+            ...editsFromAnalysis(result),
+            env: keepEnv,
+            ...(fromLink?.name ? { name: fromLink.name } : {}),
+            ...(fromLink?.port ? { port: fromLink.port } : {}),
+          })
           setStep(resumeStep.current ?? 'findings')
           resumeStep.current = null
         },
       },
     )
   }
+
+  useEffect(() => {
+    if (!initial) return
+    runAnalysis(initial.source, {}, {})
+    // start once on mount, the user already pressed the button on /deploy
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!draft || draft.step === 'source') return
