@@ -8,6 +8,7 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -358,7 +359,9 @@ func (rt *Router) codeLoginSettings(ctx context.Context) (store.CodeLoginSetting
 }
 
 // envDurationOrOff reads a Go duration; an explicit zero or negative value
-// means off, a missing or unparsable one means def.
+// means off, a missing one means def. An unparsable one (off, false,
+// disabled) also means off, with a warning: a shortcut the operator tried to
+// disable must never fall back to its default.
 func envDurationOrOff(name string, def time.Duration) time.Duration {
 	raw := strings.TrimSpace(os.Getenv(name))
 	if raw == "" {
@@ -366,7 +369,8 @@ func envDurationOrOff(name string, def time.Duration) time.Duration {
 	}
 	d, err := time.ParseDuration(raw)
 	if err != nil {
-		return def
+		slog.Warn("api: unparsable duration setting, treating it as off", slog.String("env", name), slog.String("value", raw))
+		return 0
 	}
 	return max(d, 0)
 }

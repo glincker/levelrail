@@ -39,11 +39,12 @@ func TestSignInApprove_TokenCannotEscalateToSession(t *testing.T) {
 		abilities []string
 		want      bool
 		// wantApprove differs from want only for root, which may decide a
-		// waiting browser but never reveal a code.
+		// waiting browser for the setup admin inside the first-login window
+		// (see TestRootTokenDecidesOwnApprovals) but never reveal a code.
 		wantApprove bool
 	}{
 		{"write:sensitive token", []string{AbilityWriteSensitive}, false, false},
-		{"root token", []string{AbilityRoot}, false, true},
+		{"root token, not the setup admin", []string{AbilityRoot}, false, false},
 		{"device login token", authengine.EngineAbilities(), false, false},
 		{"signin:approve token", []string{AbilitySignInApprove}, true, true},
 	}

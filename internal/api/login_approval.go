@@ -86,7 +86,7 @@ func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user s
 		return nil, nil
 	}
 	ctx := r.Context()
-	if rt.firstLoginTrusted(ctx, user, token, method) {
+	if rt.firstLoginTrusted(ctx, r, user, token, method) {
 		rt.auditSignIn(ctx, r, anonymousSignIn(user.ID), store.AuditActionFirstLoginTrust, approvalAuditPrefix+"first_login#"+clientKindFromUserAgent(r.UserAgent()), http.StatusOK)
 		rt.trustDevice(w, r, user.ID)
 		return nil, nil
@@ -106,6 +106,7 @@ func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user s
 		return nil, fmt.Errorf("revoke unapproved session: %w", err)
 	}
 	if a, ok := rt.pendingApprovalForBrowser(r, user.ID); ok {
+		rt.auditSignIn(ctx, r, anonymousSignIn(user.ID), store.AuditActionNewDeviceRequest, approvalAuditPrefix+a.ID+"#retry", http.StatusAccepted)
 		return &approvalHold{approval: a}, nil
 	}
 	if ok, retry := rt.codeLogin.approvals.allow(user.ID); !ok {
@@ -133,19 +134,27 @@ func (rt *Router) pendingApprovalForBrowser(r *http.Request, userID string) (sto
 	return a, true
 }
 
-// firstLoginTrusted is the bounded trust on first use for a fresh install: the
-// setup admin's first password sign-in skips approval only inside the window
-// after creation, with no trusted browser yet and no session beyond the one
-// setup opened. Any doubt falls back to the normal approval flow.
-func (rt *Router) firstLoginTrusted(ctx context.Context, user store.User, token, method string) bool {
+// inFirstLoginWindow reports whether user is the setup admin, still inside the
+// window after creation in which first-run shortcuts may apply.
+func (rt *Router) inFirstLoginWindow(user store.User) bool {
 	window := rt.codeLogin.firstLoginWindow
-	if window <= 0 || method != signInMethodPassword || !user.IsFirstUser || user.CreatedAt.IsZero() {
+	if window <= 0 || !user.IsFirstUser || user.CreatedAt.IsZero() {
+		return false
+	}
+	age := time.Since(user.CreatedAt)
+	return age >= 0 && age <= window
+}
+
+// firstLoginTrusted is the bounded trust on first use for a fresh install: the
+// setup admin's first password sign-in skips approval once, inside the window,
+// with no trusted browser and no session other than the one setup opened, and
+// only from that setup device (its session cookie or registering address).
+// Any doubt falls back to the normal approval flow.
+func (rt *Router) firstLoginTrusted(ctx context.Context, r *http.Request, user store.User, token, method string) bool {
+	if method != signInMethodPassword || user.FirstLoginTrustUsed || !rt.inFirstLoginWindow(user) {
 		return false
 	}
 	now := time.Now()
-	if age := now.Sub(user.CreatedAt); age < 0 || age > window {
-		return false
-	}
 	devices, err := rt.loginCodes.ListTrustedDevices(ctx, user.ID, now)
 	if err != nil || len(devices) > 0 {
 		return false
@@ -154,18 +163,36 @@ func (rt *Router) firstLoginTrusted(ctx context.Context, user store.User, token,
 	if err != nil {
 		return false
 	}
-	setupOnly := user.CreatedAt.Add(rt.codeLogin.firstLoginSetupGrace)
-	others := 0
+	setupLive := false
 	for _, v := range views {
 		if v.Current {
 			continue
 		}
-		others++
-		if others > 1 || v.CreatedAt.After(setupOnly) {
+		if user.SetupSessionID == "" || v.ID != user.SetupSessionID || v.CreatedAt.After(user.CreatedAt.Add(rt.codeLogin.firstLoginSetupGrace)) {
 			return false
 		}
+		setupLive = true
 	}
-	return true
+	if setupLive && !rt.fromSetupDevice(ctx, r, user) {
+		return false
+	}
+	won, err := rt.auth.ClaimFirstLoginTrust(ctx, user.ID)
+	if err != nil {
+		rt.logger.Warn("api: claim first login trust failed", slog.String("user_id", user.ID), slog.String("error", err.Error()))
+		return false
+	}
+	return won
+}
+
+// fromSetupDevice reports whether the request carries the setup session or
+// comes from the address that registered the account.
+func (rt *Router) fromSetupDevice(ctx context.Context, r *http.Request, user store.User) bool {
+	if c, err := r.Cookie(sessionCookieName); err == nil && c.Value != "" {
+		if sid, ok := rt.libSessions.SessionIDFor(ctx, c.Value); ok && sid == user.SetupSessionID {
+			return true
+		}
+	}
+	return user.SetupIP != "" && clientIP(r) == user.SetupIP
 }
 
 // pauseForDeviceApproval is holdForApproval for the JSON sign-in routes.
@@ -285,7 +312,9 @@ func (rt *Router) handlePollLoginApproval(w http.ResponseWriter, r *http.Request
 		rt.internalError(w, "api: login approval: establish session failed", err, slog.String("user_id", a.UserID))
 		return
 	}
-	rt.trustDevice(w, r, user.ID)
+	if !strings.HasPrefix(a.DecidedBy, rootApproverPrefix) {
+		rt.trustDevice(w, r, user.ID)
+	}
 	writeJSON(w, http.StatusOK, loginApprovalPollResponse{Status: approvalPollApproved, Email: user.Email, DisplayName: user.DisplayName})
 }
 
@@ -346,7 +375,11 @@ func (rt *Router) decideLoginApproval(w http.ResponseWriter, r *http.Request, ap
 			auditPath += "#mismatch"
 		}
 	}
-	decided, err := rt.loginCodes.DecideLoginApproval(ctx, id, owner, approve, actor.kind+":"+actor.id, time.Now())
+	decidedBy := actor.kind + ":" + actor.id
+	if rootOnly {
+		decidedBy = rootApproverPrefix + actor.id
+	}
+	decided, err := rt.loginCodes.DecideLoginApproval(ctx, id, owner, approve, decidedBy, time.Now())
 	if err != nil {
 		rt.internalError(w, "api: decide login approval failed", err)
 		return

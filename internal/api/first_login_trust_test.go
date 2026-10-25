@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -49,6 +50,23 @@ func (h *codeHarness) wantThrough(rec *httptest.ResponseRecorder) {
 	}
 }
 
+// setupSession opens the session the setup admin registered with and records
+// it, from setupTestIP, the way libRegister does.
+func (h *codeHarness) setupSession() *http.Cookie {
+	h.t.Helper()
+	c := sessionCookieForTest(h.t, h.rt, h.user.ID)
+	sid, ok := h.rt.libSessions.SessionIDFor(context.Background(), c.Value)
+	if !ok {
+		h.t.Fatal("setup session is not live")
+	}
+	if err := h.db.SetUserSetupSession(context.Background(), h.user.ID, sid, setupTestIP); err != nil {
+		h.t.Fatal(err)
+	}
+	return c
+}
+
+const setupTestIP = "192.0.2.10"
+
 func TestFirstLoginTrust(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -72,7 +90,11 @@ func TestFirstLoginTrust(t *testing.T) {
 				t.Setenv(k, v)
 			}
 			h := newFirstUserHarnessAged(t, tt.age)
-			for range tt.setupSess {
+			for i := range tt.setupSess {
+				if i == 0 {
+					h.setupSession()
+					continue
+				}
 				sessionCookieForTest(t, h.rt, h.user.ID)
 			}
 			rec := h.passwordLogin()
@@ -93,7 +115,7 @@ func TestFirstLoginTrust(t *testing.T) {
 
 func TestFirstLoginTrustIsOneShot(t *testing.T) {
 	h := newFirstUserHarness(t)
-	setup := sessionCookieForTest(t, h.rt, h.user.ID)
+	setup := h.setupSession()
 	first := h.passwordLogin()
 	h.wantThrough(first)
 	if responseCookie(first, trustedCookie) == nil {
@@ -117,10 +139,10 @@ func TestFirstLoginTrustNeverForLaterUsers(t *testing.T) {
 
 func TestFirstLoginTrustNeedsPasswordMethod(t *testing.T) {
 	h := newFirstUserHarness(t)
-	if h.rt.firstLoginTrusted(context.Background(), h.user, "", signInMethodPasskey) {
+	if h.rt.firstLoginTrusted(context.Background(), httptest.NewRequest(http.MethodPost, "/", nil), h.user, "", signInMethodPasskey) {
 		t.Fatal("only a password sign-in may be trusted on first use")
 	}
-	if h.rt.firstLoginTrusted(context.Background(), h.user, "", signInMethodOAuth) {
+	if h.rt.firstLoginTrusted(context.Background(), httptest.NewRequest(http.MethodPost, "/", nil), h.user, "", signInMethodOAuth) {
 		t.Fatal("only a password sign-in may be trusted on first use")
 	}
 }
@@ -154,7 +176,7 @@ func TestRootTokenDecidesOwnApprovals(t *testing.T) {
 		}, false, http.StatusForbidden, false},
 		{"root token of another user", func(*codeHarness) *store.APIToken {
 			return &store.APIToken{ID: "tok_other", OwnerUserID: "someone_else", Abilities: []string{AbilityRoot}}
-		}, approveBody, false, http.StatusNotFound, false},
+		}, approveBody, false, http.StatusForbidden, false},
 		{"root token without an owner", func(*codeHarness) *store.APIToken {
 			return &store.APIToken{ID: "tok_sys", Abilities: []string{AbilityRoot}}
 		}, approveBody, false, http.StatusForbidden, false},
@@ -171,7 +193,7 @@ func TestRootTokenDecidesOwnApprovals(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := newFirstUserHarness(t)
-			sessionCookieForTest(t, h.rt, h.user.ID)
+			h.setupSession()
 			sessionCookieForTest(t, h.rt, h.user.ID)
 			id, binding := h.pendingApproval(h.passwordLogin())
 			body := `{}`
@@ -236,8 +258,11 @@ func TestPendingApprovalDedupe(t *testing.T) {
 	if again != nil {
 		t.Fatal("a reused request must not rotate the binding cookie")
 	}
-	if got := len(h.auditActions()); got != len(before) {
-		t.Fatalf("a reused request must not write new audit rows: %v", h.auditActions())
+	if got := h.auditActions(); len(got) != len(before)+1 || got[len(got)-1] != store.AuditActionNewDeviceRequest {
+		t.Fatalf("a reused request must write exactly one retry audit row: %v", got)
+	}
+	if n := h.auditPathCount(approvalAuditPrefix + id1 + "#retry"); n != 1 {
+		t.Fatalf("retry audit rows for %s = %d, want 1", id1, n)
 	}
 	list, err := h.db.ListPendingLoginApprovalsForUser(context.Background(), h.user.ID, time.Now())
 	if err != nil || len(list) != 1 {
@@ -262,4 +287,183 @@ func TestPendingApprovalDedupeIgnoresOtherUsersAndSettledRequests(t *testing.T) 
 	if next == id {
 		t.Fatal("a denied request must not be handed out again")
 	}
+}
+
+func (h *codeHarness) auditPathCount(path string) int {
+	h.t.Helper()
+	var n int
+	if err := h.db.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM audit_log WHERE path = ?`, path).Scan(&n); err != nil {
+		h.t.Fatal(err)
+	}
+	return n
+}
+
+// pendingSetupApproval is a fresh install with a setup session and one waiting browser.
+func pendingSetupApproval(t *testing.T, age time.Duration) (*codeHarness, string, *http.Cookie) {
+	t.Helper()
+	h := newFirstUserHarnessAged(t, age)
+	h.setupSession()
+	sessionCookieForTest(t, h.rt, h.user.ID)
+	id, binding := h.pendingApproval(h.passwordLogin())
+	return h, id, binding
+}
+
+func (h *codeHarness) rootApprove(id string) *httptest.ResponseRecorder {
+	h.t.Helper()
+	a, err := h.db.GetLoginApproval(context.Background(), id)
+	if err != nil {
+		h.t.Fatal(err)
+	}
+	tok := &store.APIToken{ID: "tok_root", OwnerUserID: h.user.ID, Abilities: []string{AbilityRoot}}
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login-approvals/x/approve", strings.NewReader(`{"match":`+strconv.Itoa(approvalMatch(a.BrowserHash))+`}`))
+	req = req.WithContext(withTokenIdentity(req.Context(), tok))
+	req.SetPathValue("id", id)
+	rec := httptest.NewRecorder()
+	h.rt.handleApproveLoginApproval(rec, req)
+	return rec
+}
+
+func TestRootTokenApprovalClosesWithTheFirstLoginWindow(t *testing.T) {
+	h, id, binding := pendingSetupApproval(t, 40*time.Minute)
+	if rec := h.rootApprove(id); rec.Code != http.StatusForbidden {
+		t.Fatalf("root approve after the window = %d (%s), want 403", rec.Code, rec.Body.String())
+	}
+	if out, _ := h.poll(binding); out.Status != approvalPollPending {
+		t.Fatalf("poll = %q, want pending", out.Status)
+	}
+}
+
+func TestRootTokenApprovalRefusedWhenWindowOff(t *testing.T) {
+	t.Setenv(envFirstLoginTrustWindow, "off")
+	h, id, _ := pendingSetupApproval(t, 0)
+	if rec := h.rootApprove(id); rec.Code != http.StatusForbidden {
+		t.Fatalf("root approve with the window off = %d, want 403", rec.Code)
+	}
+}
+
+func TestRootApprovedSignInEarnsNoTrustedDevice(t *testing.T) {
+	h, id, binding := pendingSetupApproval(t, 0)
+	if rec := h.rootApprove(id); rec.Code != http.StatusNoContent {
+		t.Fatalf("root approve inside the window = %d (%s)", rec.Code, rec.Body.String())
+	}
+	out, rec := h.poll(binding)
+	if out.Status != approvalPollApproved || responseCookie(rec, sessionCookieName) == nil {
+		t.Fatalf("poll = %q, want approved with a session", out.Status)
+	}
+	if responseCookie(rec, trustedCookie) != nil {
+		t.Fatal("a root-approved sign-in must not be handed the 30-day trusted device")
+	}
+	devices, err := h.db.ListTrustedDevices(context.Background(), h.user.ID, time.Now())
+	if err != nil || len(devices) != 0 {
+		t.Fatalf("trusted devices = %d, %v; want none", len(devices), err)
+	}
+}
+
+func TestResetRetiresRootApprovedSignIn(t *testing.T) {
+	h, id, binding := pendingSetupApproval(t, 0)
+	if rec := h.rootApprove(id); rec.Code != http.StatusNoContent {
+		t.Fatalf("root approve = %d", rec.Code)
+	}
+	h.rt.resetSignInTrust(context.Background(), nil, h.user.ID, "password_changed")
+	if out, _ := h.poll(binding); out.Status == approvalPollApproved {
+		t.Fatal("an approval a root token gave must not survive a credential reset")
+	}
+}
+
+func TestFirstLoginTrustNeedsTheSetupDevice(t *testing.T) {
+	tests := []struct {
+		name        string
+		remote      string
+		useSetup    bool
+		wantThrough bool
+	}{
+		{name: "same address as the registering browser", remote: "192.0.2.10:4000", wantThrough: true},
+		{name: "other address, no setup cookie", remote: "198.51.100.77:4000"},
+		{name: "other address carrying the setup session", remote: "198.51.100.77:4000", useSetup: true, wantThrough: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := newFirstUserHarness(t)
+			setup := h.setupSession()
+			var cookies []*http.Cookie
+			if tt.useSetup {
+				cookies = append(cookies, setup)
+			}
+			rec := h.send(http.MethodPost, "/api/v1/auth/login", `{"username":"`+codeTestEmail+`","password":"`+codeTestPassword+`"}`, tt.remote, cookies...)
+			if tt.wantThrough {
+				h.wantThrough(rec)
+				return
+			}
+			h.pendingApproval(rec)
+		})
+	}
+}
+
+func TestFirstLoginTrustRefusesUnrecordedSession(t *testing.T) {
+	h := newFirstUserHarness(t)
+	sessionCookieForTest(t, h.rt, h.user.ID)
+	h.pendingApproval(h.passwordLogin())
+}
+
+func TestConcurrentFirstLoginsTrustOnlyOne(t *testing.T) {
+	h := newFirstUserHarness(t)
+	const n = 6
+	var wg sync.WaitGroup
+	recs := make([]*httptest.ResponseRecorder, n)
+	for i := range n {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			recs[i] = h.passwordLogin()
+		}()
+	}
+	wg.Wait()
+	through := 0
+	for _, rec := range recs {
+		if rec.Code == http.StatusOK && responseCookie(rec, sessionCookieName) != nil && !strings.Contains(rec.Body.String(), "approval_required") {
+			through++
+		}
+	}
+	trusted := 0
+	for _, a := range h.auditActions() {
+		if a == store.AuditActionFirstLoginTrust {
+			trusted++
+		}
+	}
+	if trusted != 1 {
+		t.Fatalf("first-login trust granted %d times, want exactly 1 (through=%d)", trusted, through)
+	}
+}
+
+func TestFirstLoginTrustCannotReopenAfterRevoke(t *testing.T) {
+	h := newFirstUserHarness(t)
+	h.setupSession()
+	h.wantThrough(h.passwordLogin())
+	if _, err := h.db.RevokeAllTrustedDevices(context.Background(), h.user.ID, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	// Back to the exact precondition of the first grant: no trusted device, only the setup session.
+	if rec, err := h.db.ClaimFirstLoginTrust(context.Background(), h.user.ID); err != nil || rec {
+		t.Fatalf("the flag must already be spent: %v, %v", rec, err)
+	}
+	h.pendingApproval(h.passwordLogin())
+}
+
+func TestEnvDurationOrOffTreatsGarbageAsOff(t *testing.T) {
+	for _, raw := range []string{"off", "false", "disabled", "0", "-5m", "30 minutes"} {
+		t.Run(raw, func(t *testing.T) {
+			t.Setenv(envFirstLoginTrustWindow, raw)
+			if got := envDurationOrOff(envFirstLoginTrustWindow, defaultFirstLoginTrustWindow); got != 0 {
+				t.Fatalf("%q = %v, want off", raw, got)
+			}
+		})
+	}
+	t.Setenv(envFirstLoginTrustWindow, "")
+	if got := envDurationOrOff(envFirstLoginTrustWindow, defaultFirstLoginTrustWindow); got != defaultFirstLoginTrustWindow {
+		t.Fatalf("unset = %v, want the default", got)
+	}
+	t.Setenv(envFirstLoginTrustWindow, "off")
+	h := newFirstUserHarness(t)
+	h.setupSession()
+	h.pendingApproval(h.passwordLogin())
 }
