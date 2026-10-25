@@ -269,6 +269,14 @@ A connected agent sends a `Heartbeat` frame up its Session stream at a regular i
 
 The keepalive is configured with `APP_NODE_KEEPALIVE_TIME` and `APP_NODE_KEEPALIVE_TIMEOUT` (default 10s/10s on the control plane; the agent mirrors this with env vars of the same name).
 
+### What an offline node means for its apps
+
+While a node's agent is down, its containers keep running, because the node's own Docker owns them. What stops is everything that goes through the agent: the control plane cannot manage the node, and when the mesh runs inside the agent (the default with `APP_MESH_ENABLED=1`), the ingress path from the control plane to the node's apps is down too, so those apps are not reachable through ingress.
+
+The app's `Ready` condition says so instead of keeping the last value: it turns `False` with reason `NodeOffline`, and the message names the node and how long it has been offline. `apps status` and `deploys wait` show it. When the agent reconnects the condition returns to its real state without recreating any container.
+
+Observed recovery in a live two-node test: about 35 seconds after the agent restarts, and about 60 seconds after a control plane restart.
+
 ### The control plane's local node
 
 On the Network page the control plane's own server is always the first card, **This server (control plane)**, whether or not the mesh is on. Apps and databases with an empty placement, or placed on the control plane's own node ID, belong to it. The **Unplaced** card only appears for resources placed on a node ID the control plane does not know.

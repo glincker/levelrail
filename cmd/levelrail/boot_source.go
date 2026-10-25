@@ -297,6 +297,18 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	return appOpts
 }
 
+// nodeOfflineControllerFor keeps an unreachable node's app from showing a stale Ready.
+func nodeOfflineControllerFor(ctx context.Context, deps dynamicSourceDeps, svc store.DesiredService) reconcile.Controller {
+	name, since := svc.NodeID, time.Time{}
+	if n, err := deps.db.GetNode(ctx, svc.NodeID); err == nil && n != nil {
+		name = n.Name
+		if n.LastSeenAt != nil {
+			since = *n.LastSeenAt
+		}
+	}
+	return application.NewNodeOfflineController(svc.Name, name, since)
+}
+
 // appControllersFor builds one application.Controller per service,
 // skipping (with a warning) any whose node isn't currently reachable.
 func appControllersFor(ctx context.Context, deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
@@ -310,6 +322,7 @@ func appControllersFor(ctx context.Context, deps dynamicSourceDeps, services []s
 		if err != nil {
 			deps.logger.Warn("skipping service for this reconcile pass: node transport unavailable",
 				slog.String("service", svc.Name), slog.String("node_id", svc.NodeID), slog.String("error", err.Error()))
+			controllers = append(controllers, nodeOfflineControllerFor(ctx, deps, svc))
 			continue
 		}
 		svcOpts := append(appOpts[:len(appOpts):len(appOpts)], application.WithPassSnapshot(snap, nodeID), application.WithImageIDCache(deps.imageIDs, nodeID))
