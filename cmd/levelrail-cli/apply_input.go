@@ -36,6 +36,13 @@ var (
 // readIaCFiles expands each -f value: a file, a directory searched
 // recursively for YAML files, or "-" for stdin.
 func readIaCFiles(paths []string) ([]apiclient.IaCFile, error) {
+	return readIaCFilesNamed(paths, false)
+}
+
+// readIaCFilesNamed reads like readIaCFiles. With relative set, each file is
+// named by its path under the -f root (the base name for a plain file), so
+// stored names do not carry a workstation or CI directory.
+func readIaCFilesNamed(paths []string, relative bool) ([]apiclient.IaCFile, error) {
 	var out []apiclient.IaCFile
 	for _, p := range paths {
 		if p == "-" {
@@ -54,6 +61,9 @@ func readIaCFiles(paths []string) ([]apiclient.IaCFile, error) {
 			f, err := readOneIaCFile(p)
 			if err != nil {
 				return nil, err
+			}
+			if relative {
+				f.Name = filepath.Base(p)
 			}
 			out = append(out, f)
 			continue
@@ -76,6 +86,11 @@ func readIaCFiles(paths []string) ([]apiclient.IaCFile, error) {
 			f, err := readOneIaCFile(path)
 			if err != nil {
 				return nil, err
+			}
+			if relative {
+				if rel, err := filepath.Rel(p, path); err == nil {
+					f.Name = filepath.ToSlash(rel)
+				}
 			}
 			out = append(out, f)
 		}

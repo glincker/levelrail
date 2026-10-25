@@ -22,6 +22,10 @@ func actionMark(a iac.Action) string {
 }
 
 func fieldLine(fc iac.FieldChange) string {
+	if fc.Old == "" && fc.New == "" && fc.Op != iac.OpKeep {
+		// Revision diffs withhold env, label and command values.
+		return fmt.Sprintf("%s %s: (%s)", fieldMark(fc.Op), fc.Path, fieldVerb(fc.Op))
+	}
 	switch fc.Op {
 	case iac.OpAdd:
 		return fmt.Sprintf("+ %s: %s", fc.Path, fc.New)
@@ -31,6 +35,26 @@ func fieldLine(fc iac.FieldChange) string {
 		return fmt.Sprintf("= %s (kept, not in the files)", fc.Path)
 	}
 	return fmt.Sprintf("~ %s: %s -> %s", fc.Path, fc.Old, fc.New)
+}
+
+func fieldMark(op string) string {
+	switch op {
+	case iac.OpAdd:
+		return "+"
+	case iac.OpRemove:
+		return "-"
+	}
+	return "~"
+}
+
+func fieldVerb(op string) string {
+	switch op {
+	case iac.OpAdd:
+		return "added"
+	case iac.OpRemove:
+		return "removed"
+	}
+	return "changed"
 }
 
 func printPlan(w io.Writer, p iac.Plan) {

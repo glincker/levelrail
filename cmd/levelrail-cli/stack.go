@@ -469,7 +469,7 @@ func buildStackRequest(name string, f *stackManifestFlags, lookupEnv func(string
 	if len(f.files) == 0 {
 		return apiclient.StackRequest{}, newValidationError("pass at least one -f file, directory or -")
 	}
-	all, err := readIaCFiles(f.files)
+	all, err := readIaCFilesNamed(f.files, true)
 	if err != nil {
 		return apiclient.StackRequest{}, err
 	}

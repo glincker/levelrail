@@ -58,6 +58,20 @@ type StackInfo struct {
 	LatestStatus    string          `json:"latest_status,omitempty"`
 	Lock            *StackLock      `json:"lock,omitempty"`
 	Resources       []StackResource `json:"resources,omitempty"`
+	Drift           StackDrift      `json:"drift"`
+}
+
+// StackDrift is the latest drift check of a stack; field paths only.
+type StackDrift struct {
+	Status    string           `json:"status"`
+	CheckedAt string           `json:"checked_at,omitempty"`
+	Summary   []StackDriftItem `json:"summary,omitempty"`
+}
+
+// StackDriftItem names one drifted resource.
+type StackDriftItem struct {
+	Kind string `json:"kind"`
+	Name string `json:"name"`
 }
 
 // StackRevision is the summary of one revision.
@@ -75,6 +89,8 @@ type StackRevision struct {
 	CIRunURL       string `json:"ci_run_url,omitempty"`
 	CreatedAt      string `json:"created_at"`
 	FinishedAt     string `json:"finished_at,omitempty"`
+	// Rejected marks a failed revision that a reviewer turned down.
+	Rejected bool `json:"rejected,omitempty"`
 }
 
 // StackRevisionDetail adds the stored documents, plan and result.

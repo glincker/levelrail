@@ -298,3 +298,61 @@ func TestStripStackDocs_LeavesPlainFilesUntouched(t *testing.T) {
 		t.Fatalf("out=%+v doc=%+v err=%v", out, doc, err)
 	}
 }
+
+func TestStackRender_DriftApprovalRejectedAndHiddenDiffValues(t *testing.T) {
+	var b strings.Builder
+	drifted := apiclient.StackInfo{Name: "shop", LatestRevision: 2, LatestStatus: "pending_approval"}
+	drifted.Drift.Status = "drifted"
+	drifted.Drift.CheckedAt = "2026-10-25T10:00:00Z"
+	drifted.Drift.Summary = []apiclient.StackDriftItem{{Kind: "App", Name: "web"}}
+	fresh := apiclient.StackInfo{Name: "new", LatestRevision: 1, LatestStatus: "applied"}
+	checked := apiclient.StackInfo{Name: "ok", LatestRevision: 1, LatestStatus: "applied"}
+	checked.Drift.Status = "none"
+	checked.Drift.CheckedAt = "2026-10-25T10:00:00Z"
+	printStackList(&b, []apiclient.StackInfo{drifted, fresh, checked})
+	for _, want := range []string{"DRIFT", "drifted 1", "unchecked", "none", "awaiting approval"} {
+		if !strings.Contains(b.String(), want) {
+			t.Errorf("list lacks %q:\n%s", want, b.String())
+		}
+	}
+	b.Reset()
+	printStack(&b, drifted)
+	if !strings.Contains(b.String(), "Drift     drifted 1") || !strings.Contains(b.String(), "2026-10-25 10:00") {
+		t.Errorf("show lacks drift:\n%s", b.String())
+	}
+	b.Reset()
+	printStackHistory(&b, apiclient.StackHistory{Stack: "shop", Revisions: []apiclient.StackRevision{{Number: 3, Status: "failed", Rejected: true}, {Number: 2, Status: "failed"}}})
+	if !strings.Contains(b.String(), "rejected") || strings.Count(b.String(), "failed") != 1 {
+		t.Errorf("history:\n%s", b.String())
+	}
+	b.Reset()
+	printStackDiff(&b, apiclient.StackDiff{Stack: "shop", Revision: 2, Against: "1", Changes: []apiclient.StackDiffChange{{Kind: "App", Name: "web", Action: "changed", Fields: []apiclient.StackFieldChange{
+		{Path: "env", Op: iac.OpChange}, {Path: "labels", Op: iac.OpAdd}, {Path: "command", Op: iac.OpRemove}, {Path: "image", Op: iac.OpChange, Old: "a", New: "b"},
+	}}}})
+	for _, want := range []string{"~ env: (changed)", "+ labels: (added)", "- command: (removed)", "~ image: a -> b"} {
+		if !strings.Contains(b.String(), want) {
+			t.Errorf("diff lacks %q:\n%s", want, b.String())
+		}
+	}
+}
+
+func TestStackPlan_SendsFileNamesRelativeToTheRoot(t *testing.T) {
+	f := &stackFake{t: t, plan: pendingPlan()}
+	srv := httptest.NewServer(f.handler())
+	defer srv.Close()
+	dir := stackTestDir(t)
+	if code, _, _ := runIaC([]string{"stack", "plan", "shop", "-f", dir, "--api-url", srv.URL}, nil); code != exitOK {
+		t.Fatalf("exit %d", code)
+	}
+	for _, file := range f.requests["/api/v1/stacks/shop/plan"].Files {
+		if strings.Contains(file.Name, dir) || filepath.IsAbs(file.Name) {
+			t.Errorf("file name %q is not relative to the root", file.Name)
+		}
+	}
+	if code, _, _ := runIaC([]string{"stack", "plan", "shop", "-f", filepath.Join(dir, "apps.yaml"), "--api-url", srv.URL}, nil); code != exitOK {
+		t.Fatalf("exit %d", code)
+	}
+	if got := f.requests["/api/v1/stacks/shop/plan"].Files[0].Name; got != "apps.yaml" {
+		t.Errorf("single file name = %q", got)
+	}
+}

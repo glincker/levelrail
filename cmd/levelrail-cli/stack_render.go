@@ -42,7 +42,7 @@ func printStackList(w io.Writer, list []apiclient.StackInfo) {
 		return
 	}
 	tw := newStackTable(w)
-	_, _ = fmt.Fprintln(tw, "NAME\tPROJECT\tREVISION\tSTATUS\tPINNED\tLOCKED")
+	_, _ = fmt.Fprintln(tw, "NAME\tPROJECT\tREVISION\tSTATUS\tDRIFT\tPINNED\tLOCKED")
 	for _, s := range list {
 		pin, lock := "-", "-"
 		if s.PinnedRevision > 0 {
@@ -51,9 +51,28 @@ func printStackList(w io.Writer, list []apiclient.StackInfo) {
 		if s.Lock != nil {
 			lock = "yes"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\t%s\t%s\n", s.Name, stackDash(s.Project), s.LatestRevision, stackDash(s.LatestStatus), pin, lock)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\t%s\t%s\t%s\n", s.Name, stackDash(s.Project), s.LatestRevision, stackStatusText(s), stackDriftText(s.Drift), pin, lock)
 	}
 	_ = tw.Flush()
+}
+
+// stackStatusText is the latest revision status, spelled out when it waits for a reviewer.
+func stackStatusText(s apiclient.StackInfo) string {
+	if s.LatestStatus == string(iac.RevisionPendingApproval) {
+		return "awaiting approval"
+	}
+	return stackDash(s.LatestStatus)
+}
+
+// stackDriftText reads "unchecked" until the drift checker has run once.
+func stackDriftText(d apiclient.StackDrift) string {
+	switch {
+	case d.CheckedAt == "":
+		return "unchecked"
+	case d.Status == "drifted":
+		return fmt.Sprintf("drifted %d", len(d.Summary))
+	}
+	return "none"
 }
 
 func printStackSettings(w io.Writer, s apiclient.StackInfo) {
@@ -64,9 +83,14 @@ func printStack(w io.Writer, s apiclient.StackInfo) {
 	_, _ = fmt.Fprintf(w, "Stack     %s\nProject   %s\nCreated   %s by %s\n", s.Name, stackDash(s.Project), stackTime(s.CreatedAt), stackDash(s.CreatedBy))
 	status := ""
 	if s.LatestStatus != "" {
-		status = " (" + s.LatestStatus + ")"
+		status = " (" + stackStatusText(s) + ")"
 	}
 	_, _ = fmt.Fprintf(w, "Revision  %d%s\n", s.LatestRevision, status)
+	drift := stackDriftText(s.Drift)
+	if s.Drift.CheckedAt != "" {
+		drift += " (checked " + stackTime(s.Drift.CheckedAt) + ")"
+	}
+	_, _ = fmt.Fprintf(w, "Drift     %s\n", drift)
 	if s.PinnedRevision > 0 {
 		_, _ = fmt.Fprintf(w, "Pinned    revision %d\n", s.PinnedRevision)
 	}
@@ -202,13 +226,21 @@ func printStackHistory(w io.Writer, h apiclient.StackHistory) {
 		if r.Number == h.PinnedRevision {
 			note = strings.TrimSpace(note + " pinned")
 		}
-		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\n", r.Number, r.Status, stackDash(r.Actor), stackTime(r.CreatedAt), stackDash(stackShortSHA(r.GitSHA)), stackDash(note))
+		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\n", r.Number, revisionStatusText(r), stackDash(r.Actor), stackTime(r.CreatedAt), stackDash(stackShortSHA(r.GitSHA)), stackDash(note))
 	}
 	_ = tw.Flush()
 }
 
+// revisionStatusText shows a reviewer's rejection, which the store keeps as failed.
+func revisionStatusText(r apiclient.StackRevision) string {
+	if r.Rejected {
+		return "rejected"
+	}
+	return r.Status
+}
+
 func printStackRevision(w io.Writer, stack string, d apiclient.StackRevisionDetail) {
-	_, _ = fmt.Fprintf(w, "Stack     %s\nRevision  %d (%s)\nActor     %s\nStarted   %s\nFinished  %s\n", stack, d.Number, d.Status, stackDash(d.Actor), stackTime(d.CreatedAt), stackTime(d.FinishedAt))
+	_, _ = fmt.Fprintf(w, "Stack     %s\nRevision  %d (%s)\nActor     %s\nStarted   %s\nFinished  %s\n", stack, d.Number, revisionStatusText(d.StackRevision), stackDash(d.Actor), stackTime(d.CreatedAt), stackTime(d.FinishedAt))
 	if d.RollbackOf > 0 {
 		_, _ = fmt.Fprintf(w, "Restores  revision %d\n", d.RollbackOf)
 	}
