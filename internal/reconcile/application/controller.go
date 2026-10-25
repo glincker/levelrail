@@ -279,10 +279,13 @@ type Controller struct {
 	pinnedPortRetry     time.Duration                   // see WithPinnedPortRetry
 	reviveWatch         time.Duration                   // see WithReviveWatch
 	handoffFailed       map[string]time.Time            // target name to the time its next pinned-port handoff may run
-	retained            RetainedDeploys                 // nil means no service is a retained deploy URL
-	restartBackoff      *RestartBackoff                 // nil disables crash restart backoff, see WithRestartBackoff
-	meshPaths           meshpath.Resolver               // nil is valid: remote ports stay on loopback, see WithMeshPaths
-	gateDefaults        *deploysafety.Effective         // nil: one readiness pass is enough, see WithStabilityGate
+	pendingReady        *PendingReadiness               // nil keeps the blocking readiness wait, see WithReadinessRequeue
+	readinessRequeue    time.Duration
+	deferReadiness      bool                    // this run uses pendingReady: set per run from the strategy
+	retained            RetainedDeploys         // nil means no service is a retained deploy URL
+	restartBackoff      *RestartBackoff         // nil disables crash restart backoff, see WithRestartBackoff
+	meshPaths           meshpath.Resolver       // nil is valid: remote ports stay on loopback, see WithMeshPaths
+	gateDefaults        *deploysafety.Effective // nil: one readiness pass is enough, see WithStabilityGate
 	gateSource          DeploySafetySource
 	gateRecorder        GateRecorder
 	gateTick            time.Duration
@@ -673,6 +676,8 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 	}
 
 	c.servingImageID = ""
+	// Rolling retires per step and recreate skips converged targets, so both keep the blocking wait.
+	c.deferReadiness = c.pendingReady != nil && strategy == strategyBlueGreen
 	// Revive before the desired release's readiness wait: a dead serving
 	// release must not stay down for the whole wait of a failing deploy.
 	c.reviveIfDead(ctx, targets, desired, true)
@@ -738,12 +743,18 @@ func (c *Controller) Teardown(ctx context.Context) error {
 // torn down, so a bad deploy never has a moment where nothing healthy is
 // serving.
 func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, desired *store.DesiredService) (reconcile.Result, error) {
+	if c.deferReadiness {
+		c.abortSupersededPending(ctx, targets)
+	}
 	anyDeployed := false
 	for i, target := range targets {
 		deployed, err := c.ensureReplicaRunning(ctx, target, i, desired)
 		if err != nil {
 			c.pruneSupersededPrevious(ctx, targets)
 			return notReady(deployed.reason, err), fmt.Errorf("application/%s: %w", c.serviceName, err)
+		}
+		if deployed.pending {
+			return c.pendingResult(target), nil
 		}
 		anyDeployed = anyDeployed || deployed.justDeployed
 	}
@@ -957,6 +968,7 @@ func (c *Controller) finishReconcile(ctx context.Context, targets []string, desi
 // constructs a reconcile.Result.
 type replicaOutcome struct {
 	justDeployed bool
+	pending      bool // started but not ready yet, see WithReadinessRequeue
 	reason       string
 	imageID      string
 }
@@ -997,6 +1009,12 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		state = nil
 	}
 
+	if c.defersReadiness(desired) && state != nil && !state.Running {
+		if out, ok, err := c.stoppedCandidate(ctx, target, state, desired); ok {
+			return out, err
+		}
+	}
+
 	var released []docker.ContainerState
 	justDeployed := false
 	// created is narrower than justDeployed: true only when this pass
@@ -1018,6 +1036,12 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 				reason = reasonPinnedPortWait
 			}
 			return replicaOutcome{reason: reason}, relErr
+		}
+		if c.pendingReady != nil {
+			// A pending candidate replaced under us still owes its stopped previous release.
+			if prior, ok := c.pendingReady.take(c.serviceName, target); ok {
+				released = append(released, c.locateReleased(ctx, prior.released)...)
+			}
 		}
 		if err := c.createAndStart(ctx, target, desired); err != nil {
 			reason, err := c.createFailure(err)
@@ -1066,7 +1090,19 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 
 	if !justDeployed {
 		c.restartBackoff.observeRunning(target, time.Now())
+		defers := c.defersReadiness(desired)
+		if defers {
+			if p, started, ok := c.trackedCandidate(ctx, target, state); ok {
+				return c.resumeCandidate(ctx, target, state, desired, p, started)
+			}
+		}
 		if err := c.verifyRunningReady(ctx, state, desired); err != nil {
+			var crash *readinessCrashError
+			if defers && !errors.As(err, &crash) {
+				if started, ok := c.adoptable(ctx, target, state, desired); ok {
+					return c.deferCandidate(target, state, pendingCandidate{created: true, firstSeen: started}), nil
+				}
+			}
 			return replicaOutcome{reason: readinessReason(err, "RunningNotReady")}, err
 		}
 		// Re-ensured every steady-state pass, not just at create/restart:
@@ -1126,7 +1162,25 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		}
 	}
 
-	if err := c.waitReady(ctx, state, desired); err != nil {
+	var readyErr error
+	if c.defersReadiness(desired) {
+		c.noteImplicitReadiness(ctx, state.Name, desired, c.deployReadinessProbeFor(desired))
+		now := time.Now()
+		pending, err := c.probeCandidate(ctx, state, desired, c.startedAt(ctx, state, now))
+		if pending {
+			return c.deferCandidate(target, state, pendingCandidate{created: created, released: releasedIDs(released), firstSeen: now}), nil
+		}
+		readyErr = err
+	} else {
+		readyErr = c.waitReady(ctx, state, desired)
+	}
+	return c.readinessVerdict(ctx, target, state, desired, created, released, readyErr)
+}
+
+// readinessVerdict finishes a candidate once its readiness wait has an
+// answer, whether the wait blocked or was spread over requeued runs.
+func (c *Controller) readinessVerdict(ctx context.Context, target string, state *docker.ContainerState, desired *store.DesiredService, created bool, released []docker.ContainerState, readyErr error) (replicaOutcome, error) {
+	if err := readyErr; err != nil {
 		if errors.Is(err, errSuperseded) {
 			return replicaOutcome{reason: reasonSuperseded}, c.abortSuperseded(ctx, target, released)
 		}

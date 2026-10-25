@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -98,6 +99,67 @@ func TestKeyedPool_NeverReadyAppDoesNotStarveHealthyApps(t *testing.T) {
 			})
 			if converged("bad") {
 				t.Fatal("never-ready app reported converged")
+			}
+		})
+	}
+}
+
+// With the readiness requeue, as many never-ready apps as there are workers
+// still leave every worker free: a blocking wait would hold all of them.
+func TestKeyedPool_RequeuedNeverReadyAppsHoldNoWorker(t *testing.T) {
+	ok := alwaysHealthy()
+	defer ok.Close()
+	bad := neverHealthy()
+	defer bad.Close()
+
+	for _, workers := range []int{2, 4} {
+		t.Run(fmt.Sprintf("workers=%d", workers), func(t *testing.T) {
+			tr := NewPendingReadiness()
+			var ctrls []reconcile.Controller
+			bads := make([]string, workers)
+			for i := range bads {
+				bads[i] = fmt.Sprintf("bad%d", i)
+				ctrls = append(ctrls, New(bads[i], &fakeStore{svc: probedService(bads[i], time.Minute)}, newFakeRuntime(serverPort(t, bad)),
+					WithReadyBudget(time.Minute), WithReadinessRequeue(tr, 20*time.Millisecond)))
+			}
+			names := make([]string, 20)
+			for i := range names {
+				names[i] = fmt.Sprintf("h%02d", i)
+				ctrls = append(ctrls, New(names[i], &fakeStore{svc: probedService(names[i], 0)}, newFakeRuntime(serverPort(t, ok)),
+					WithReadyBudget(5*time.Second), WithReadinessRequeue(tr, 20*time.Millisecond)))
+			}
+
+			e := reconcile.NewEngine(nil)
+			e.SetWorkers(workers, time.Hour)
+			e.SetKeyed(IsServiceControllerName)
+			e.SetSource(func(context.Context) ([]reconcile.Controller, error) { return ctrls, nil })
+			ctx, cancel := context.WithCancel(context.Background())
+			done := make(chan error, 1)
+			go func() { done <- e.Run(ctx, nil, time.Hour) }()
+			defer func() {
+				cancel()
+				<-done
+			}()
+
+			converged := func(name string) bool {
+				res, err := e.LastResult(ControllerName(name))
+				return err == nil && len(res.Conditions) > 0 && res.Conditions[0].Status == reconcile.ConditionTrue
+			}
+			deadline := time.Now().Add(5 * time.Second)
+			for slices.ContainsFunc(names, func(n string) bool { return !converged(n) }) {
+				if time.Now().After(deadline) {
+					t.Fatal("healthy apps did not converge while one never-ready app per worker was pending")
+				}
+				time.Sleep(5 * time.Millisecond)
+			}
+			for _, b := range bads {
+				res, err := e.LastResult(ControllerName(b))
+				if err != nil || len(res.Conditions) == 0 || res.Conditions[0].Reason != reasonReadinessPending {
+					t.Fatalf("%s = %+v, %v, want ReadinessPending with no error", b, res, err)
+				}
+			}
+			if st := e.Guard().Status(); st.OpenBreakers != 0 {
+				t.Fatalf("open breakers = %d, want a pending readiness not counted as a failure", st.OpenBreakers)
 			}
 		})
 	}

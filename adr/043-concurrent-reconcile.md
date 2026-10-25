@@ -75,45 +75,67 @@ the limit records `context.DeadlineExceeded` as its error, counts against its
 breaker and is retried on the next pass. The limit only applies with more than
 one worker, so the default path is unchanged.
 
-Readiness waits still block the worker for their own duration. Moving them off
-the worker (return `RequeueAfter` instead of waiting) is a later slice, designed
-below; with N workers, N apps stuck at once can still delay the rest, which is
-why the recommended value is 4 or more.
+With more than one worker, a blue-green readiness wait no longer blocks the
+worker (below). Rolling and recreate waits, and the stability window, still
+block for their own duration, so N such apps stuck at once can still delay the
+rest, which is why the recommended value is 4 or more.
 
-### Readiness as a requeue (designed, not yet built)
+### Readiness as a requeue
 
 The wait in the app controller is not a plain sleep: while it runs, a pinned
 port deploy holds the previous release stopped, the controller revives the last
 ready release if it dies, re-reads desired state to abort a superseded deploy,
-and the pre-deploy hook and stability gate run around it. A requeue version
-must keep every one of those, so it lands as its own change with this shape:
+and the pre-deploy hook and stability gate run around it. The requeue keeps
+each of those:
 
 - After starting a candidate, a run probes once. Not ready and inside the
-  budget: it returns `RequeueAfter` set to the probe interval with a
-  `ReadinessPending` condition and no error, so the breaker does not count it.
-- The budget deadline is derived from observed state (the candidate's
-  `StartedAt` plus the effective ready timeout), not from memory, so a control
-  plane restart mid-wait resumes the same wait instead of starting over.
-- The previous release held stopped for a pinned port is found again from the
-  service's own containers on each run, for the same reason. A timeout, crash
-  or superseded desired state takes the existing abort paths unchanged.
-- The pre-deploy hook runs only for a container this run created, and the
-  stability gate runs once readiness passes, so neither repeats on a requeue.
-  Rolling deploys keep one pending replica at a time.
-- A readiness requeue uses a fixed delay with no streak doubling, and with the
-  pool it re-adds only its own key after the delay instead of nudging a full
-  pass. The key stays serialized by the queue, so there is still one run in
-  flight per app.
-- It is enabled only with more than one worker at first, so the default of 1
-  keeps the blocking wait byte for byte.
+  budget: it returns a `ReadinessPending` condition, no error (the breaker does
+  not count it) and `RequeueAfter` with `KeyOnly` set.
+- `KeyOnly` makes the engine re-add only that key after the delay, with no
+  streak doubling and no full pass. The key stays serialized by the queue, and
+  a timer for a key that left the live set is dropped.
+- The delay is fixed, `APP_RECONCILE_READINESS_REQUEUE` (default 2s).
+- The deadline is the candidate's `StartedAt` (falling back to `Created`) plus
+  the effective ready timeout, so a requeue never extends the budget.
+- Controllers are rebuilt every pass, so a process-wide tracker remembers each
+  pending candidate by container ID, whether this deploy created it, and the
+  IDs of the previous release stopped for a pinned port. Every run re-reads
+  those from the service's live containers: a replaced candidate drops its
+  record and a vanished or restarted previous release is skipped.
+- After a control plane restart the tracker is empty. A running, unready
+  target that started before this process, is inside its budget and still has
+  another release of the service beside it is adopted as pending, so the wait
+  resumes at the same deadline. An adopted candidate runs the stability gate
+  (the safer guess) and has no remembered previous release: if it fails, the
+  normal revive-last-ready step restarts the stopped one by deploy history.
+- Pinned port: the previous release stays stopped while pending (revive skips
+  while the candidate holds the port) and is restarted if the candidate fails.
+  Unpinned: the end-of-pass revive covers a serving release that died.
+- A candidate that exits between runs takes the readiness failure path, the
+  same as a crash inside the blocking wait, instead of a crash restart.
+- A newer desired state: at the start of the next run, any pending candidate
+  the new targets no longer name is stopped and its previous release restored
+  before a new candidate takes the port, the same as `abortSuperseded`.
+- The pre-deploy hook runs only in the run that created the container; the
+  stability gate runs once, in the run where readiness passes. Blue-green
+  stops at the first pending replica, so one replica is pending at a time.
+- It is enabled only with more than one worker, so the default of 1 keeps the
+  blocking wait byte for byte.
 
-The engine side is already covered: a never-ready controller that requeues
-instead of blocking leaves 20 healthy apps converging at 1, 2 and 4 workers,
-never runs twice at once and does not hot-loop (`starvation_test.go`). With the
-wait still blocking, the app controller test runs one never-ready app and 20
-healthy apps through the real engine and asserts every healthy app, including
-ones created mid-wait, converges within the bound at 2 and 4 workers; at 1
-worker the same test reproduces the stall.
+What stays blocking, deliberately:
+
+- Rolling: each ready step retires one old replica inside the same pass, and
+  spreading that over requeues changes the overlap bound it promises.
+- Recreate: its converged check skips targets that are already running, so a
+  pending candidate would be reported converged without a readiness pass.
+- A release with nothing to probe keeps its short startup watch, and the
+  stability window itself still runs on the worker once readiness passes.
+
+`starvation_test.go` covers the engine side (key-only requeue reruns only its
+key, never twice at once). `keyed_pool_starvation_test.go` runs as many real
+never-ready controllers as workers (2 and 4) next to 20 healthy apps: every
+healthy app converges, the bad ones report `ReadinessPending` with no error and
+no breaker opens. `readiness_requeue_test.go` covers each sub-case above.
 
 ### Deleted apps
 

@@ -278,6 +278,9 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
 	}
 	appOpts = append(appOpts, deps.deployGate.appOptions(deps.db)...)
+	if reconcile.WorkersFromEnv(os.Getenv) > 1 {
+		appOpts = append(appOpts, application.WithReadinessRequeue(pendingReadiness(), application.ReadinessRequeueFromEnv(os.Getenv)))
+	}
 	if deps.retainedDeploys != nil {
 		appOpts = append(appOpts, application.WithRetainedDeploys(deps.retainedDeploys))
 	}
@@ -386,6 +389,17 @@ func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databas
 		controllers = append(controllers, database.New(desired.Name, deps.db, dbRuntime, dbOpts...))
 	}
 	return controllers
+}
+
+var (
+	pendingReadinessOnce sync.Once
+	pendingReadinessInst *application.PendingReadiness
+)
+
+// pendingReadiness is shared so a candidate's readiness wait survives the per-pass controller rebuild.
+func pendingReadiness() *application.PendingReadiness {
+	pendingReadinessOnce.Do(func() { pendingReadinessInst = application.NewPendingReadiness() })
+	return pendingReadinessInst
 }
 
 var (
