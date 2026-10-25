@@ -142,6 +142,9 @@ type appResource struct {
 	// when NodeID points at a node that no longer exists.
 	NodeName    string `json:"node_name,omitempty"`
 	NodeIsLocal bool   `json:"node_is_local,omitempty"`
+	// NodeOffline is response-only: true while the hosting node is offline, so
+	// clients need not join against the nodes list.
+	NodeOffline bool `json:"node_offline,omitempty"`
 	// AutoPlaced is response-only, set only by handleCreateApp: true when
 	// node_id was omitted from the create request and simple spread
 	// scheduling (autoPlaceNode, scheduling.go) picked a non-local node

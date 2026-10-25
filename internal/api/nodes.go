@@ -739,6 +739,10 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if host := rt.advertiseHost(); req.Mesh && meshAdvertiseHostNeedsIP(host) {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf(meshAdvertiseHostMessage, host))
+		return
+	}
 	rec, err := rt.mintNodeJoinToken(r.Context(), rt.effectiveJoinTokenTTL())
 	if err != nil {
 		rt.internalError(w, "api: create node join token failed", err)
