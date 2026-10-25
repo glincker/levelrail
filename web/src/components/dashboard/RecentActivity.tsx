@@ -40,6 +40,7 @@ const STATUS_VIEW: Record<
   superseded: { tone: 'neutral', icon: <RocketLaunchIcon /> },
   queued: { tone: 'neutral', icon: <PauseCircleIcon /> },
   canceled: { tone: 'neutral', icon: <XCircleIcon /> },
+  pending: { tone: 'warning', icon: <PauseCircleIcon /> },
 }
 
 function Row({ row, last }: { row: DeployRow; last: boolean }) {

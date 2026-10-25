@@ -16,6 +16,7 @@ const ATTEMPT_STATUS: Record<DeployAttemptStatus, TimelineStatus> = {
   superseded: 'info',
   queued: 'pending',
   canceled: 'info',
+  pending: 'pending',
 }
 
 const SOURCE_ACTOR: Record<DeployAttemptSource, string> = {

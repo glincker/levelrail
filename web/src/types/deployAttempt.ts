@@ -21,6 +21,7 @@ export type DeployAttemptStatus =
   | 'superseded'
   | 'queued'
   | 'canceled'
+  | 'pending'
 
 // Mirrors internal/store.DeployAttemptSource* on the wire: 'webhook' for
 // an unattended git-push build, 'manual' for a dashboard-triggered

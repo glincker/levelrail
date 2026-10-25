@@ -191,7 +191,8 @@
       "held": "Held",
       "superseded": "Superseded",
       "queued": "Queued",
-      "canceled": "Canceled"
+      "canceled": "Canceled",
+      "pending": "Waiting for node"
     }
   },
   "quickStart": {

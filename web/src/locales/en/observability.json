@@ -44,7 +44,8 @@
     "held": "Held (frozen)",
     "superseded": "Superseded",
     "queued": "Queued",
-    "canceled": "Canceled"
+    "canceled": "Canceled",
+    "pending": "Waiting for node"
   },
   "deployDetails": {
     "title": "{{status}} deploy",

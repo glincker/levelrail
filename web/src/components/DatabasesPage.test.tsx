@@ -31,6 +31,11 @@ vi.mock('./DatabasesTable', () => ({
   DatabasesTable: () => <div data-testid="databases-table" />,
 }))
 
+// The real dialog reads route search params, which needs a router.
+vi.mock('./CreateDatabaseDialog', () => ({
+  CreateDatabaseDialog: () => <button type="button">New database</button>,
+}))
+
 describe('DatabasesPage', () => {
   it('shows the hero banner with one create action and no empty-state card', () => {
     render(
