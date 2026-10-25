@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/attention"
@@ -12,9 +13,12 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// stackDriftTokenTTL bounds the read token one drift pass uses, in case the
-// revoke after the pass is lost to a crash.
-const stackDriftTokenTTL = 15 * time.Minute
+// The shared drift token lives a day and rotates in its last hour; the TTL
+// bounds a token orphaned by a crash.
+const (
+	stackDriftTokenTTL   = 24 * time.Hour
+	stackDriftTokenRenew = time.Hour
+)
 
 // stackDriftReader is the optional store surface behind the drift payload.
 type stackDriftReader interface {
@@ -56,14 +60,45 @@ func stackDriftOf(ctx context.Context, ss StackStore, stackID string) stackDrift
 	return out
 }
 
-// StackDriftLive gives the drift checker read access to live state through
-// the full handler chain, on a short-lived read-only system token that is
-// revoked when the pass ends.
-func (rt *Router) StackDriftLive(ctx context.Context) (iac.Doer, func(), error) {
+// stackDriftToken is the one in-process read token every drift pass shares, so
+// the token table does not grow by a row per pass.
+type stackDriftToken struct {
+	mu      sync.Mutex
+	raw     string
+	id      string
+	expires time.Time
+}
+
+// driftToken returns a live token, rotating it (and revoking the old one) when less
+// than stackDriftTokenRenew of its life is left.
+func (rt *Router) driftToken(ctx context.Context) (string, error) {
+	d := &rt.stackDrift
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.raw != "" && time.Until(d.expires) > stackDriftTokenRenew {
+		return d.raw, nil
+	}
+	if d.id != "" {
+		if err := rt.tokens.RevokeAPIToken(context.WithoutCancel(ctx), d.id); err != nil {
+			rt.logger.Warn("api: stack drift: revoke read token failed", slog.String("error", err.Error()))
+		}
+		d.raw, d.id = "", ""
+	}
 	expires := time.Now().Add(stackDriftTokenTTL)
 	raw, rec, err := MintAgentAPIToken(ctx, rt.tokens, "stack-drift", []string{AbilityRead}, &expires, agentIdentity{}, "")
 	if err != nil {
-		return nil, nil, fmt.Errorf("api: stack drift: mint read token: %w", err)
+		return "", fmt.Errorf("api: stack drift: mint read token: %w", err)
+	}
+	d.raw, d.id, d.expires = raw, rec.ID, expires
+	return raw, nil
+}
+
+// StackDriftLive gives the drift checker read access to live state through
+// the full handler chain, on a shared read-only system token.
+func (rt *Router) StackDriftLive(ctx context.Context) (iac.Doer, func(), error) {
+	raw, err := rt.driftToken(ctx)
+	if err != nil {
+		return nil, nil, err
 	}
 	rt.iac.once.Do(func() { rt.iac.h = rt.Handler() })
 	orig, err := http.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
@@ -72,12 +107,7 @@ func (rt *Router) StackDriftLive(ctx context.Context) (iac.Doer, func(), error) 
 	}
 	orig.Header.Set("Authorization", "Bearer "+raw)
 	orig.RemoteAddr = "127.0.0.1:0"
-	release := func() {
-		if err := rt.tokens.RevokeAPIToken(context.WithoutCancel(ctx), rec.ID); err != nil {
-			rt.logger.Warn("api: stack drift: revoke read token failed", slog.String("error", err.Error()))
-		}
-	}
-	return &loopbackDoer{h: rt.iac.h, orig: orig}, release, nil
+	return &loopbackDoer{h: rt.iac.h, orig: orig}, func() {}, nil
 }
 
 // stackDriftAttentionItems raises one item per drifted stack. The drift policy

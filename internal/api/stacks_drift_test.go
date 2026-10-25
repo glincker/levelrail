@@ -57,10 +57,25 @@ func TestStackDrift_PayloadAndAttentionAfterLiveChange(t *testing.T) {
 	if got := rt.stackDriftAttentionItems(req, nil); len(got) != 0 {
 		t.Fatalf("caller without read sees %d items", len(got))
 	}
+}
+
+func TestStackDrift_ReusesOneSystemTokenAcrossPasses(t *testing.T) {
+	rt, db, cookie := stackFixture(t)
+	if code, _ := stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.2.3"), nil); code != http.StatusOK {
+		t.Fatalf("apply = %d", code)
+	}
+	c := &stackdrift.Checker{Store: db, Live: rt.StackDriftLive, ProjectName: rt.StackProjectName, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))}
+	for range 4 {
+		c.CheckAll(t.Context())
+	}
 	toks, _ := db.ListAPITokens(t.Context())
+	rows := 0
 	for _, tok := range toks {
-		if tok.Name == "stack-drift" && tok.RevokedAt == nil {
-			t.Fatal("drift read token left active")
+		if tok.Name == "stack-drift" {
+			rows++
 		}
+	}
+	if rows != 1 {
+		t.Fatalf("stack-drift token rows = %d, want 1", rows)
 	}
 }
