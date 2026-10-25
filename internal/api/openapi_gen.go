@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1752 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1765 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -933,6 +933,19 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/archives/{id}/restore", Ability: "AbilityRoot", Group: "Other", Handler: "handleRestoreArchive", Description: ""},
 	{Method: "GET", Path: "/api/v1/archives/{id}/rows", Ability: "AbilityRoot", Group: "Other", Handler: "handleBrowseArchive", Description: ""},
 	{Method: "POST", Path: "/api/v1/archives/{id}/verify", Ability: "AbilityRoot", Group: "Other", Handler: "handleVerifyArchive", Description: ""},
+	{Method: "GET", Path: "/api/v1/assets/buckets", Ability: "AbilityRead", Group: "Other", Handler: "handleListAssetBuckets", Description: ""},
+	{Method: "POST", Path: "/api/v1/assets/buckets", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateAssetBucket", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/assets/buckets/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteAssetBucket", Description: ""},
+	{Method: "GET", Path: "/api/v1/assets/buckets/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetAssetBucket", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/assets/buckets/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleUpdateAssetBucket", Description: ""},
+	{Method: "GET", Path: "/api/v1/assets/buckets/{id}/assets", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleListAssets", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/assets/buckets/{id}/objects", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteAsset", Description: ""},
+	{Method: "PUT", Path: "/api/v1/assets/buckets/{id}/objects", Ability: "AbilityWrite", Group: "Other", Handler: "handleUploadAsset", Description: ""},
+	{Method: "POST", Path: "/api/v1/assets/buckets/{id}/probe", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleProbeAssetBucket", Description: ""},
+	{Method: "POST", Path: "/api/v1/assets/buckets/{id}/uploads", Ability: "AbilityWrite", Group: "Other", Handler: "handleRequestAssetUpload", Description: ""},
+	{Method: "POST", Path: "/api/v1/assets/buckets/{id}/uploads/confirm", Ability: "AbilityWrite", Group: "Other", Handler: "handleConfirmAssetUpload", Description: ""},
+	{Method: "GET", Path: "/api/v1/assets/buckets/{id}/urls", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleAssetURLs", Description: ""},
+	{Method: "GET", Path: "/api/v1/assets/buckets/{id}/usage", Ability: "AbilityRead", Group: "Other", Handler: "handleAssetUsage", Description: ""},
 	{Method: "POST", Path: "/api/v1/attention/dismiss", Ability: "Session", Group: "Other", Handler: "handleAttentionDismiss", Description: ""},
 	{Method: "GET", Path: "/api/v1/attention/feed", Ability: "AbilityRead", Group: "Other", Handler: "handleAttentionFeed", Description: ""},
 	{Method: "GET", Path: "/api/v1/benchmarks", Ability: "AbilityRead", Group: "Other", Handler: "handleListBenchmarks", Description: ""},

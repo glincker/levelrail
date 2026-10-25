@@ -172,10 +172,13 @@ func loadMatrixRoutes(t *testing.T) []matrixRoute {
 // concretePath fills a route pattern's path parameters. The resource
 // name segment for /apps, /databases and /models becomes name so a
 // resource-scoped Deny can target it.
-func concretePath(pattern, name string) string {
+func concretePath(pattern, name string) string { return concretePathFor(pattern, "{name}", name) }
+
+// concretePathFor is concretePath for a resource addressed by a different first path parameter, such as {id}.
+func concretePathFor(pattern, param, name string) string {
 	first := true
 	return matrixParamRe.ReplaceAllStringFunc(pattern, func(p string) string {
-		if p == "{name}" && first {
+		if p == param && first {
 			first = false
 			return name
 		}
@@ -283,10 +286,12 @@ var resourceKinds = []struct {
 	pathPrefix string
 	iamPrefix  string
 	label      string
+	param      string
 }{
-	{"/api/v1/apps/{name}", "app:", "app"},
-	{"/api/v1/databases/{name}", "database:", "database"},
-	{"/api/v1/models/{name}", "model:", "model"},
+	{"/api/v1/apps/{name}", "app:", "app", "{name}"},
+	{"/api/v1/databases/{name}", "database:", "database", "{name}"},
+	{"/api/v1/models/{name}", "model:", "model", "{name}"},
+	{"/api/v1/assets/buckets/{id}", "asset_bucket:", "asset_bucket", "{id}"},
 }
 
 func TestAuthzMatrix_ResourceDenyReturns403(t *testing.T) {
@@ -314,7 +319,7 @@ func TestAuthzMatrix_ResourceDenyReturns403(t *testing.T) {
 					continue
 				}
 				checked++
-				victim := concretePath(r.pattern, "victim")
+				victim := concretePathFor(r.pattern, k.param, "victim")
 				for name, mutate := range map[string]func(*http.Request){
 					"session": func(req *http.Request) { req.AddCookie(cookie) },
 					"token":   bearer(tokPlain),

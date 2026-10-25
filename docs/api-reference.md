@@ -1977,6 +1977,19 @@ Routes that do not fit an existing group.
 | GET | /api/v1/stacks/{name}/oidc-trusts | AbilityRoot | handleListStackTrusts |
 | DELETE | /api/v1/stacks/{name}/oidc-trusts/{id} | AbilityRoot | handleDeleteStackTrust |
 | POST | /api/v1/ci/stack-oidc-exchange | Public | handleStackOIDCExchange |
+| GET | /api/v1/assets/buckets | AbilityRead | handleListAssetBuckets |
+| POST | /api/v1/assets/buckets | AbilityWriteSensitive | handleCreateAssetBucket |
+| GET | /api/v1/assets/buckets/{id} | AbilityRead | handleGetAssetBucket |
+| PATCH | /api/v1/assets/buckets/{id} | AbilityWriteSensitive | handleUpdateAssetBucket |
+| DELETE | /api/v1/assets/buckets/{id} | AbilityWriteSensitive | handleDeleteAssetBucket |
+| POST | /api/v1/assets/buckets/{id}/probe | AbilityWriteSensitive | handleProbeAssetBucket |
+| GET | /api/v1/assets/buckets/{id}/usage | AbilityRead | handleAssetUsage |
+| GET | /api/v1/assets/buckets/{id}/assets | AbilityReadSensitive | handleListAssets |
+| GET | /api/v1/assets/buckets/{id}/urls | AbilityReadSensitive | handleAssetURLs |
+| POST | /api/v1/assets/buckets/{id}/uploads | AbilityWrite | handleRequestAssetUpload |
+| POST | /api/v1/assets/buckets/{id}/uploads/confirm | AbilityWrite | handleConfirmAssetUpload |
+| PUT | /api/v1/assets/buckets/{id}/objects | AbilityWrite | handleUploadAsset |
+| DELETE | /api/v1/assets/buckets/{id}/objects | AbilityWrite | handleDeleteAsset |
 
 ## See also
 

@@ -16,6 +16,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerAuthEngineStatusRoute(mux)
 	rt.registerPlatformRoutes(mux)
 	rt.registerStorageRoutes(mux)
+	rt.registerAssetRoutes(mux)
 	rt.registerBackupCoverageRoutes(mux)
 	rt.registerPipelineRoutes(mux)
 	rt.registerSearchRoutes(mux)
