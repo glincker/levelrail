@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -338,8 +339,11 @@ func leakedStackSecret(secrets map[string]string, docs ...[]byte) (string, bool)
 		if v == "" {
 			continue
 		}
+		// Rendered docs and plans are JSON, so also look for the escaped form.
+		esc, _ := json.Marshal(v)
+		esc = esc[1 : len(esc)-1]
 		for _, d := range docs {
-			if bytes.Contains(d, []byte(v)) {
+			if bytes.Contains(d, []byte(v)) || bytes.Contains(d, esc) {
 				return n, true
 			}
 		}
