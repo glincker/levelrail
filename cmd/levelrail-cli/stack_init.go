@@ -122,6 +122,11 @@ func stackInit(prog string, args []string, stdout, stderr io.Writer) int {
 	if stackName == "" {
 		stackName = tpl.Name
 	}
-	_, _ = fmt.Fprintf(stdout, "wrote %d files to %s\nnext: read %s/SECRETS.md, then '%s stack plan %s -f %s'\n", len(names), target, target, prog, stackName, target)
+	project := vars["name"]
+	if project == "" {
+		project = tpl.Name
+	}
+	// A first apply needs the project to exist already, so say so up front.
+	_, _ = fmt.Fprintf(stdout, "wrote %d files to %s\nnext: read %s/SECRETS.md, create the project once ('%s apps projects create --name %s'), then '%s stack plan %s -f %s'\n", len(names), target, target, prog, project, prog, stackName, target)
 	return exitOK
 }

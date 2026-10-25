@@ -4,8 +4,9 @@ version: 1
 kind: App
 metadata: { name: qa-roll-@SUFFIX@ }
 spec:
+  project: qa-@SUFFIX@
   service:
-    build: { type: image, image: "${{ env.QA_IMAGE }}" }
+    build: { type: image, image: "@IMAGE@" }
     port: 80
     strategy: blue-green
     health:
