@@ -26,7 +26,7 @@ var selfhosted1Templates = []Template{
 	{
 		ID:                     "victoriametrics",
 		Name:                   "VictoriaMetrics",
-		Slogan:                 "A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs.",
+		Slogan:                 "A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs. Has no authentication, so point Prometheus-style senders at victoriametrics:8428 from other services in this project, or attach a domain only behind Basic Auth. Not published on the host.",
 		Category:               "Monitoring",
 		DocumentationURL:       "https://docs.victoriametrics.com",
 		RecommendedMemoryBytes: 536870912,
