@@ -298,3 +298,26 @@ func (db *DB) LatestDeployAttemptFor(ctx context.Context, serviceName, image str
 	}
 	return a, nil
 }
+
+// DeployMissingCutover reports whether the newest succeeded or failed
+// attempt for (serviceName, image) started at or after since and has no
+// passed cutover event yet.
+func (db *DB) DeployMissingCutover(ctx context.Context, serviceName, image string, since time.Time) (bool, error) {
+	var missing int
+	err := db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM (
+			SELECT id, started_at FROM deploy_attempts
+			WHERE service_name = ? AND image = ? AND status IN (?, ?)
+			ORDER BY started_at DESC LIMIT 1
+		) a
+		WHERE a.started_at >= ? AND NOT EXISTS (
+			SELECT 1 FROM deploy_gate_events g
+			WHERE g.deploy_attempt_id = a.id AND g.phase = ? AND g.status = ?
+		)
+	`, serviceName, image, DeployAttemptStatusSucceeded, DeployAttemptStatusFailed,
+		since.UTC().Format(time.RFC3339Nano), "cutover", "passed").Scan(&missing)
+	if err != nil {
+		return false, fmt.Errorf("store: check cutover for %q: %w", serviceName, err)
+	}
+	return missing > 0, nil
+}

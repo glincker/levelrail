@@ -2,65 +2,88 @@ package application
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-func (f *fakeGateRecorder) count(phase, status string) int {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	n := 0
-	for _, e := range f.events {
-		if e.Phase == phase && e.Status == status {
-			n++
-		}
+func saveFinishedAttempt(t *testing.T, db *store.DB, id, image string, started time.Time) {
+	t.Helper()
+	ctx := context.Background()
+	svc := store.DesiredService{Name: "web", Image: image, Port: 80}
+	if err := db.SaveDeployAttempt(ctx, store.DeployAttempt{ID: id, ServiceName: "web", Image: image, Status: store.DeployAttemptStatusRunning, StartedAt: started, Snapshot: store.NewDeployAttemptSnapshot(svc)}); err != nil {
+		t.Fatal(err)
 	}
-	return n
+	if err := db.FinishDeployAttempt(ctx, id, store.DeployAttemptStatusSucceeded, started, ""); err != nil {
+		t.Fatal(err)
+	}
 }
 
-// The post-deploy watch arms from the cutover gate event, so an instant
-// rollback onto a held running release must record one too.
-func TestCutoverRecordedForRollbackToHeldRelease(t *testing.T) {
+// The post-deploy watch arms from the cutover gate event, so a rollback that
+// lands on an already running container must record one for its own attempt.
+func TestRollbackOntoRunningReleaseRecordsCutover(t *testing.T) {
 	tests := []struct {
-		name         string
-		secondImage  string
-		wantCutovers int
+		name       string
+		rollbackTo string
+		heldV1     bool
 	}{
-		{"rollback to the held previous release", "img:v1", 2},
-		{"same release reconciled again", "img:v2", 1},
+		{"swap to the held previous release", "img:v1", true},
+		{"rollback to the release already live", "img:v2", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			db, err := store.Open(ctx, filepath.Join(t.TempDir(), "state.db"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = db.Close() })
 			srv := alwaysHealthy()
 			defer srv.Close()
 			rt := newFakeRuntime(serverPort(t, srv))
 			desired := gateDesired()
 			desired.Strategy = strategyBlueGreen
-			rt.setExitState(ContainerName("web", desired.Image, ""), &docker.ExitState{Running: true})
-			rec := &fakeGateRecorder{}
-			opts := append(gateOptions(rec, 1, 0, 0), WithPreviousReleaseHold(time.Hour))
+			rt.setExitState(ContainerName("web", "img:v2", ""), &docker.ExitState{Running: true})
+			now := time.Now()
+			saveFinishedAttempt(t, db, "dep_v1", "img:v1", now.Add(-time.Hour))
+			saveFinishedAttempt(t, db, "dep_v2", "img:v2", now.Add(-time.Minute))
+			cfg := deploysafety.Effective{SuccessThreshold: 1, WatchWindow: time.Hour}
+			opts := []Option{WithStabilityGate(cfg, nil), WithGateRecorder(db), WithGateTick(10 * time.Millisecond), WithReadyBudget(2 * time.Second), WithPreviousReleaseHold(time.Hour)}
 			c := New("web", &fakeStore{svc: desired}, rt, opts...)
+			if _, err := c.Reconcile(ctx); err != nil {
+				t.Fatalf("deploy Reconcile() error = %v", err)
+			}
+			if tt.heldV1 {
+				rt.seed(ContainerName("web", "img:v1", ""), true)
+				rt.mu.Lock()
+				rt.containers[ContainerName("web", "img:v1", "")].Created = now.Add(-time.Minute)
+				rt.containers[ContainerName("web", "img:v2", "")].Created = now
+				rt.mu.Unlock()
+			}
 
-			ctx := context.Background()
-			if _, err := c.Reconcile(ctx); err != nil {
-				t.Fatalf("first Reconcile() error = %v", err)
+			saveFinishedAttempt(t, db, "dep_rb", tt.rollbackTo, time.Now())
+			desired.Image = tt.rollbackTo
+			for range 2 {
+				if _, err := c.Reconcile(ctx); err != nil {
+					t.Fatalf("rollback Reconcile() error = %v", err)
+				}
 			}
-			// The previous release is still up as the held rollback target;
-			// the fake stamps no creation time, which the hold keys on.
-			rt.seed(ContainerName("web", "img:v1", ""), true)
-			rt.mu.Lock()
-			rt.containers[ContainerName("web", "img:v1", "")].Created = time.Now().Add(-time.Minute)
-			rt.containers[ContainerName("web", "img:v2", "")].Created = time.Now()
-			rt.mu.Unlock()
-			desired.Image = tt.secondImage
-			if _, err := c.Reconcile(ctx); err != nil {
-				t.Fatalf("second Reconcile() error = %v", err)
+			events, err := db.ListGateEvents(ctx, "dep_rb")
+			if err != nil {
+				t.Fatal(err)
 			}
-			if got := rec.count(deploysafety.PhaseCutover, deploysafety.StatusPassed); got != tt.wantCutovers {
-				t.Errorf("cutover events = %d, want %d: %+v", got, tt.wantCutovers, rec.events)
+			cutovers := 0
+			for _, e := range events {
+				if e.Phase == deploysafety.PhaseCutover && e.Status == deploysafety.StatusPassed {
+					cutovers++
+				}
+			}
+			if cutovers != 1 {
+				t.Errorf("cutover events on the rollback attempt = %d, want 1: %+v", cutovers, events)
 			}
 		})
 	}
