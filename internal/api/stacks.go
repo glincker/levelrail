@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -228,7 +229,9 @@ type stackApplyResponse struct {
 	Result   *iac.ApplyResult      `json:"result,omitempty"`
 	Issues   []iac.Issue           `json:"issues,omitempty"`
 	Replayed bool                  `json:"replayed,omitempty"`
-	Warnings []string              `json:"warnings,omitempty"`
+	// Noop answers 200 when nothing changed: Revision is the existing latest one.
+	Noop     bool     `json:"noop,omitempty"`
+	Warnings []string `json:"warnings,omitempty"`
 	// PendingApproval answers 202: the plan is stored and nothing was applied.
 	PendingApproval bool      `json:"pending_approval,omitempty"`
 	ExpiresAt       string    `json:"expires_at,omitempty"`
@@ -747,6 +750,14 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		}
 	}
 
+	if run.pending == nil {
+		if cur, same := rt.stackNoop(ctx, ss, run, res, opts, project, rt.iacDoer(r)); same {
+			s := summarizeRevision(cur)
+			writeJSON(w, http.StatusOK, stackApplyResponse{Stack: stack.Name, Revision: &s, Noop: true, Warnings: run.warnings})
+			return
+		}
+	}
+
 	if stack.RequireApproval && run.pending == nil {
 		rt.requestStackApproval(w, r, ss, run, res, opts)
 		return
@@ -1068,4 +1079,40 @@ func revisionRejected(raw []byte) bool {
 		Error string `json:"error"`
 	}
 	return len(raw) > 0 && json.Unmarshal(raw, &r) == nil && r.Error == "rejected"
+}
+
+// stackNoop reports whether the request changes nothing: the rendered documents
+// equal the latest applied revision's and the live plan is empty. It reads only,
+// so a no-op takes no lease and writes no revision or ledger row.
+func (rt *Router) stackNoop(ctx context.Context, ss StackStore, run stackRun, res []*iac.Resource, opts iac.Options, project string, doer iac.Doer) (store.StackRevisionRecord, bool) {
+	req, stack := run.req, run.stack
+	if len(req.Secrets) > 0 {
+		return store.StackRevisionRecord{}, false
+	}
+	revs, err := ss.ListStackRevisions(ctx, stack.ID, 1)
+	if err != nil || len(revs) == 0 || revs[0].Status != store.StackRevApplied {
+		return store.StackRevisionRecord{}, false
+	}
+	latest, err := ss.GetStackRevision(ctx, stack.ID, revs[0].Number)
+	if err != nil {
+		return store.StackRevisionRecord{}, false
+	}
+	rendered, err := json.Marshal(renderStackFiles(req.Files, req.Vars))
+	if err != nil || !bytes.Equal(rendered, latest.RenderedDocs) {
+		return store.StackRevisionRecord{}, false
+	}
+	lctx, err := rt.stackLedgerContext(ctx, ss, stack.ID, stack.Name, project, res, req)
+	if err != nil {
+		return store.StackRevisionRecord{}, false
+	}
+	st, err := iac.Load(lctx, doer, res, opts)
+	if err != nil {
+		return store.StackRevisionRecord{}, false
+	}
+	plan := iac.PlanFor(st, res, opts)
+	sum := plan.Summary
+	if sum.Create+sum.Update+sum.Delete+sum.Error > 0 || len(iac.LedgerConflicts(plan)) > 0 {
+		return store.StackRevisionRecord{}, false
+	}
+	return latest, true
 }

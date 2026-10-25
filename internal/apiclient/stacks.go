@@ -126,6 +126,7 @@ type StackApplyResponse struct {
 	Result   *iac.ApplyResult `json:"result,omitempty"`
 	Issues   []iac.Issue      `json:"issues,omitempty"`
 	Replayed bool             `json:"replayed,omitempty"`
+	Noop     bool             `json:"noop,omitempty"`
 	Warnings []string         `json:"warnings,omitempty"`
 	// PendingApproval is true on a 202: the revision is stored and nothing ran.
 	PendingApproval bool      `json:"pending_approval,omitempty"`

@@ -356,3 +356,11 @@ func TestStackPlan_SendsFileNamesRelativeToTheRoot(t *testing.T) {
 		t.Errorf("single file name = %q", got)
 	}
 }
+
+func TestPrintStackRun_NoopSaysStillAtRevision(t *testing.T) {
+	var buf strings.Builder
+	printStackRun(&buf, apiclient.StackApplyResponse{Stack: "shop", Noop: true, Revision: &apiclient.StackRevision{Number: 7, Status: "applied"}}, "applied")
+	if got := buf.String(); !strings.Contains(got, "no changes, still at revision 7") || strings.Contains(got, "revision 7 applied") {
+		t.Fatalf("output = %q", got)
+	}
+}

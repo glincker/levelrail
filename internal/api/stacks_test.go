@@ -413,3 +413,60 @@ func TestSummarizeRevisionMarksRejected(t *testing.T) {
 		}
 	}
 }
+
+func stackRevisionCount(t *testing.T, rt *Router, cookie *http.Cookie) int {
+	t.Helper()
+	var hist struct {
+		Revisions []stackRevisionSummary `json:"revisions"`
+	}
+	iacCall(t, rt, authedRequest(t, cookie, http.MethodGet, "/api/v1/stacks/shop-prod/revisions", ""), &hist)
+	return len(hist.Revisions)
+}
+
+func TestStackNoopApplyCreatesNoRevision(t *testing.T) {
+	rt, _, cookie := stackFixture(t)
+	docs := stackTestDocs("ghcr.io/acme/web:1.0.0")
+	_, first := stackApply(t, rt, cookie, docs, nil)
+	code, again := stackApply(t, rt, cookie, docs, map[string]any{"git_sha": "def456"})
+	if code != http.StatusOK || !again.Noop || again.Revision == nil || again.Revision.Number != first.Revision.Number || again.Result != nil {
+		t.Fatalf("noop apply = %d %+v %+v", code, again, again.Revision)
+	}
+	if n := stackRevisionCount(t, rt, cookie); n != 1 {
+		t.Fatalf("revisions = %d, want 1", n)
+	}
+	// A real change still lands as a new revision.
+	if _, next := stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.0.1"), nil); next.Noop || next.Revision == nil || next.Revision.Number != 2 {
+		t.Fatalf("changed apply = %+v", next)
+	}
+}
+
+func TestStackNoopRollbackToCurrentCreatesNoRevision(t *testing.T) {
+	rt, _, cookie := stackFixture(t)
+	stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.0.0"), nil)
+	var out stackApplyResponse
+	code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/shop-prod/revisions/1/rollback", ""), &out)
+	if code != http.StatusOK || !out.Noop || out.Revision == nil || out.Revision.Number != 1 {
+		t.Fatalf("noop rollback = %d %+v", code, out)
+	}
+	if n := stackRevisionCount(t, rt, cookie); n != 1 {
+		t.Fatalf("revisions = %d, want 1", n)
+	}
+}
+
+func TestStackDriftedApplyIsNotNoop(t *testing.T) {
+	rt, db, cookie := stackFixture(t)
+	docs := stackTestDocs("ghcr.io/acme/web:1.0.0")
+	stackApply(t, rt, cookie, docs, nil)
+	svc, err := db.GetDesiredService(t.Context(), "web")
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc.Image = "ghcr.io/acme/web:hand"
+	if err := db.SaveDesiredService(t.Context(), *svc); err != nil {
+		t.Fatal(err)
+	}
+	_, out := stackApply(t, rt, cookie, docs, nil)
+	if out.Noop || out.Revision == nil || out.Revision.Number != 2 {
+		t.Fatalf("drifted apply must repair: %+v", out)
+	}
+}

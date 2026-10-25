@@ -188,6 +188,10 @@ func printStackRun(w io.Writer, r apiclient.StackApplyResponse, verb string) {
 		_, _ = fmt.Fprintf(w, "stack %s: no revision was created\n", r.Stack)
 		return
 	}
+	if r.Noop {
+		_, _ = fmt.Fprintf(w, "Stack %s: no changes, still at revision %d\n", r.Stack, r.Revision.Number)
+		return
+	}
 	if r.Replayed {
 		_, _ = fmt.Fprintf(w, "Stack %s: this request was already handled, showing revision %d (%s)\n", r.Stack, r.Revision.Number, r.Revision.Status)
 	} else {

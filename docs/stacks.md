@@ -84,6 +84,8 @@ A revision stores the plan, the rendered documents (after `${{ env.NAME }}` valu
 
 Revisions never contain secret values. Only secret names are stored.
 
+An apply or rollback that changes nothing does not create a revision. When the rendered documents equal the latest applied revision and live state already matches, the API answers 200 with `noop: true` and the existing latest revision, and the CLI prints "no changes, still at revision N". A merge that only edits text outside the declared resources therefore leaves history alone.
+
 If an apply stops partway, the revision is marked `partial` and keeps the result of each item. The next apply picks up where it stopped. There are no transactions across resources, so a partial apply can leave the stack between two states until the next apply succeeds.
 
 ## Rollback
