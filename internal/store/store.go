@@ -35,6 +35,7 @@ func Open(ctx context.Context, path string, opts ...OpenOption) (*DB, error) {
 		o(&cfg)
 	}
 	restrictDBFile(path)
+	seedFromTemplate(ctx, path, opts)
 	dsn := dsn(path)
 
 	sqlDB, err := sql.Open("sqlite", dsn)
