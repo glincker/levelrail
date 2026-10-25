@@ -397,3 +397,19 @@ func seedCIToken(t *testing.T, db *store.DB, name string, abilities []string) st
 	}
 	return plain
 }
+
+func TestSummarizeRevisionMarksRejected(t *testing.T) {
+	rej := summarizeRevision(store.StackRevisionRecord{Number: 3, Status: store.StackRevFailed, ResultJSON: []byte(`{"error":"rejected","rejected_by":"qa2"}`)})
+	if !rej.Rejected || rej.Status != store.StackRevFailed {
+		t.Fatalf("rejected summary = %+v", rej)
+	}
+	for _, v := range []store.StackRevisionRecord{
+		{Status: store.StackRevFailed, ResultJSON: []byte(`{"error":"boom"}`)},
+		{Status: store.StackRevFailed},
+		{Status: store.StackRevApplied, ResultJSON: []byte(`{"error":"rejected"}`)},
+	} {
+		if summarizeRevision(v).Rejected {
+			t.Errorf("wrongly marked rejected: %+v", v)
+		}
+	}
+}

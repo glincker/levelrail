@@ -80,6 +80,8 @@ export interface StackRevisionSummary {
   ci_run_url?: string
   created_at: string
   finished_at?: string
+  // A failed revision a reviewer turned down.
+  rejected?: boolean
   // Not sent today; when present it wins over the client-side estimate.
   expires_at?: string
 }

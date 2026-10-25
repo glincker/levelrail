@@ -209,6 +209,8 @@ type stackRevisionSummary struct {
 	FinishedAt     string `json:"finished_at,omitempty"`
 	// ExpiresAt is when a pending_approval revision stops being approvable.
 	ExpiresAt string `json:"expires_at,omitempty"`
+	// Rejected marks a pending revision a reviewer turned down; its status stays failed.
+	Rejected bool `json:"rejected,omitempty"`
 }
 
 type stackPlanResponse struct {
@@ -273,6 +275,7 @@ func summarizeRevision(v store.StackRevisionRecord) stackRevisionSummary {
 	if v.Status == store.StackRevPendingApproval {
 		out.ExpiresAt = fmtStackTime(approvalExpiry(v))
 	}
+	out.Rejected = v.Status == store.StackRevFailed && revisionRejected(v.ResultJSON)
 	return out
 }
 
@@ -1057,4 +1060,12 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.auditStack(r, auditStackDestroy, map[string]any{"stack": s.Name, "mode": string(mode), "destroyed": len(resp.Destroyed), "forgotten": len(resp.Forgotten)})
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// revisionRejected reads the reject marker approval writes into result_json.
+func revisionRejected(raw []byte) bool {
+	var r struct {
+		Error string `json:"error"`
+	}
+	return len(raw) > 0 && json.Unmarshal(raw, &r) == nil && r.Error == "rejected"
 }

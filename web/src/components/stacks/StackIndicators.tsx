@@ -58,7 +58,15 @@ export function RevisionStatus({
   const { t } = useTranslation('stacks')
   return (
     <span className="flex flex-wrap items-center gap-1.5">
-      <RevisionStatusBadge status={revision.status} />
+      {revision.rejected ? (
+        <StatusBadge
+          tone="danger"
+          icon={XCircleIcon}
+          label={t('status.rejected')}
+        />
+      ) : (
+        <RevisionStatusBadge status={revision.status} />
+      )}
       {revision.status === 'pending_approval' ? (
         <span className="text-xs text-muted-foreground">
           {t('approval.expires', {

@@ -21,6 +21,7 @@
     "partial": "Partial",
     "failed": "Failed",
     "superseded": "Superseded",
+    "rejected": "Rejected",
     "none": "No revisions"
   },
   "flags": {
