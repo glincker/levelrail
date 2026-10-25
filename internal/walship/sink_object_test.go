@@ -15,6 +15,17 @@ import (
 	"github.com/GLINCKER/levelrail/internal/objectstore/objectstoretest"
 )
 
+type clientBucket struct{ *objectstore.Client }
+
+func (b clientBucket) List(ctx context.Context, prefix, token string, limit int32) (ListPage, error) {
+	pg, err := b.Client.List(ctx, prefix, token, limit)
+	out := ListPage{Next: pg.Next}
+	for _, o := range pg.Objects {
+		out.Keys = append(out.Keys, o.Key)
+	}
+	return out, err
+}
+
 func newObjectSink(t *testing.T) (*ObjectSink, *objectstoretest.Server) {
 	t.Helper()
 	srv := objectstoretest.New("wal")
@@ -27,7 +38,7 @@ func newObjectSink(t *testing.T) (*ObjectSink, *objectstoretest.Server) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &ObjectSink{Bucket: cl, Prefix: "wal/inst-1/", Recipients: []age.Recipient{id.Recipient()}, Identities: []age.Identity{id}, Timeout: 10 * time.Second}, srv
+	return &ObjectSink{Bucket: clientBucket{cl}, Prefix: "wal/inst-1/", Recipients: []age.Recipient{id.Recipient()}, Identities: []age.Identity{id}, Timeout: 10 * time.Second}, srv
 }
 
 func TestObjectSinkRoundTripIsCiphertext(t *testing.T) {

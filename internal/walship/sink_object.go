@@ -11,15 +11,20 @@ import (
 	"time"
 
 	"filippo.io/age"
-
-	"github.com/GLINCKER/levelrail/internal/objectstore"
 )
 
-// Bucket is the slice of objectstore.Client the sink needs.
+// ListPage is one page of keys; local so walship stays off objectstore's
+// import graph and its large fan-in.
+type ListPage struct {
+	Keys []string
+	Next string
+}
+
+// Bucket is the slice of an object-store client the sink needs.
 type Bucket interface {
 	Put(ctx context.Context, key string, body io.ReadSeeker, contentType, contentEncoding string) error
 	Get(ctx context.Context, key string) (io.ReadCloser, int64, error)
-	List(ctx context.Context, prefix, token string, limit int32) (objectstore.ListPage, error)
+	List(ctx context.Context, prefix, token string, limit int32) (ListPage, error)
 }
 
 const (
@@ -126,8 +131,8 @@ func (o *ObjectSink) List(prefix string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		for _, obj := range page.Objects {
-			out = append(out, strings.TrimPrefix(obj.Key, o.Prefix))
+		for _, k := range page.Keys {
+			out = append(out, strings.TrimPrefix(k, o.Prefix))
 		}
 		if page.Next == "" {
 			break

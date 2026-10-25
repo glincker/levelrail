@@ -13,7 +13,7 @@ internal/deploysafety 31
 internal/deploytrace 30
 internal/docker 146
 internal/dockerguard 48
-internal/envredact 53
+internal/envredact 55
 internal/extdb 30
 internal/footprint 140
 internal/frameworks 43

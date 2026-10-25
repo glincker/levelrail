@@ -119,13 +119,16 @@ func TestKeyedPool_KeyTimeoutFreesWorker(t *testing.T) {
 	waitFor(t, 2*time.Second, "app c ran after both workers hit the time limit", func() bool {
 		return late.calls.Load() == 1
 	})
+	// The first worker to time out frees itself and runs c while the other is
+	// still recording its error, so wait on each recorded outcome.
 	for _, s := range stuck {
+		waitFor(t, 5*time.Second, s.name+" timed out and recorded", func() bool {
+			_, err := e.LastResult(s.name)
+			return errors.Is(err, context.DeadlineExceeded)
+		})
 		if s.cancelled.Load() != 1 {
 			t.Errorf("%s: cancelled %d times, want 1", s.name, s.cancelled.Load())
 		}
-	}
-	if _, err := e.LastResult("app/a"); !errors.Is(err, context.DeadlineExceeded) {
-		t.Errorf("app/a last error = %v, want deadline exceeded", err)
 	}
 }
 
