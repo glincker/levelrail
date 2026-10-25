@@ -143,6 +143,31 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		}
 		resp.Result = emptyResult()
 
+	case *agentpb.AgentRequest_RemoveVolume:
+		remover, ok := rt.(docker.VolumeRemover)
+		if !ok {
+			resp.Error = ErrVolumeRemoveUnsupported.Error()
+			return resp
+		}
+		if err := remover.RemoveVolume(ctx, op.RemoveVolume.GetName()); err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = &agentpb.AgentResponse_Empty{Empty: &agentpb.Empty{}}
+
+	case *agentpb.AgentRequest_Logs:
+		reader, ok := rt.(docker.LogReader)
+		if !ok {
+			resp.Error = ErrLogsUnsupported.Error()
+			return resp
+		}
+		lines, err := readLogBatch(ctx, reader, op.Logs.GetContainerId(), op.Logs.GetSinceUnixNano())
+		if err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = &agentpb.AgentResponse_Logs{Logs: &agentpb.LogsResponse{Lines: lines}}
+
 	case *agentpb.AgentRequest_Stats:
 		inspector, ok := rt.(docker.StatsInspector)
 		if !ok {

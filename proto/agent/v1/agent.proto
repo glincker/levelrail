@@ -303,6 +303,11 @@ message AgentRequest {
     // MeshStatus asks for the node's own WireGuard view of its peers, for
     // node-pair connectivity diagnostics.
     MeshStatusRequest mesh_status = 23;
+    // Logs reads a bounded batch of a container's buffered output since a
+    // cursor; the control plane polls it to collect remote logs.
+    LogsRequest logs = 24;
+    // RemoveVolume deletes a named volume, used only for an explicit delete-data request.
+    RemoveVolumeRequest remove_volume = 25;
   }
 }
 
@@ -333,7 +338,28 @@ message AgentResponse {
     MeshStatusResponse mesh_status = 14;
     // ArchiveStat acknowledges a copy-out ExecRequest with the path stat.
     ArchiveStat archive_stat = 15;
+    LogsResponse logs = 16;
   }
+}
+
+message LogsRequest {
+  string container_id = 1;
+  // Zero returns everything still buffered; otherwise lines at or after it.
+  int64 since_unix_nano = 2;
+}
+
+message LogLine {
+  string stream = 1;
+  int64 timestamp_unix_nano = 2;
+  string message = 3;
+}
+
+message LogsResponse {
+  repeated LogLine lines = 1;
+}
+
+message RemoveVolumeRequest {
+  string name = 1;
 }
 
 message Empty {}

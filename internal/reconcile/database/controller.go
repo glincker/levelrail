@@ -599,16 +599,32 @@ func (c *Controller) Teardown(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("database/%s: inspect %q: %w", c.dbName, target, err)
 	}
-	if state == nil {
-		return nil
-	}
-	if state.Running {
-		if err := c.runtime.Stop(ctx, state.ID, defaultStopTimeout); err != nil {
-			return fmt.Errorf("database/%s: stop %q: %w", c.dbName, target, err)
+	if state != nil {
+		if state.Running {
+			if err := c.runtime.Stop(ctx, state.ID, defaultStopTimeout); err != nil {
+				return fmt.Errorf("database/%s: stop %q: %w", c.dbName, target, err)
+			}
+		}
+		if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+			return fmt.Errorf("database/%s: remove %q: %w", c.dbName, target, err)
 		}
 	}
-	if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
-		return fmt.Errorf("database/%s: remove %q: %w", c.dbName, target, err)
+	return c.removeCertsHelpers(ctx)
+}
+
+// removeCertsHelpers drops certs helper containers a dropped connection or crash left behind.
+func (c *Controller) removeCertsHelpers(ctx context.Context) error {
+	helpers, err := c.runtime.ListByPrefix(ctx, "dbcerts-")
+	if err != nil {
+		return fmt.Errorf("database/%s: list certs helpers: %w", c.dbName, err)
+	}
+	for _, h := range helpers {
+		if h.Labels[certsHelperLabelKey] != certsVolumeName(c.dbName) {
+			continue
+		}
+		if err := c.runtime.Remove(ctx, h.ID, true); err != nil {
+			return fmt.Errorf("database/%s: remove certs helper %q: %w", c.dbName, h.Name, err)
+		}
 	}
 	return nil
 }

@@ -268,7 +268,7 @@ func (rt *Router) appDeleteDataPlan(w http.ResponseWriter, r *http.Request, name
 		rt.internalError(w, "api: delete app: load failed", err, slog.String("name", name))
 		return false, nil, false
 	}
-	purge, ok = rt.requireDeleteDataConfirm(w, r, name, svc.NodeID)
+	purge, ok = rt.requireDeleteDataConfirm(w, r, name, svc.NodeID, false)
 	if !ok {
 		return false, nil, false
 	}
@@ -282,11 +282,11 @@ func (rt *Router) appDeleteDataPlan(w http.ResponseWriter, r *http.Request, name
 // delete: the typed confirmation must equal the resource name, the caller
 // must hold write:sensitive, and the resource must live on this node because
 // only the local Docker daemon is managed here. It writes the error itself.
-func (rt *Router) requireDeleteDataConfirm(w http.ResponseWriter, r *http.Request, name, nodeID string) (purge, ok bool) {
+func (rt *Router) requireDeleteDataConfirm(w http.ResponseWriter, r *http.Request, name, nodeID string, remoteOK bool) (purge, ok bool) {
 	if r.URL.Query().Get("delete_data") != "true" {
 		return false, true
 	}
-	if !rt.isLocalNode(nodeID) {
+	if !remoteOK && !rt.isLocalNode(nodeID) {
 		writeError(w, http.StatusBadRequest, "delete_data only works for resources on the control plane's own node; delete without it and remove the volume on that node")
 		return false, false
 	}

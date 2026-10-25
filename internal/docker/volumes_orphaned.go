@@ -115,6 +115,11 @@ func (c *Client) ListNamedVolumes(ctx context.Context) ([]NamedVolume, error) {
 // (internal/api's handleCleanupOrphanedVolumes) has already done its own
 // desired-state cross-reference and is asking for one specific,
 // operator-confirmed volume, not "whatever currently looks unused."
+// VolumeRemover is the optional capability to delete a named volume.
+type VolumeRemover interface {
+	RemoveVolume(ctx context.Context, name string) error
+}
+
 func (c *Client) RemoveVolume(ctx context.Context, name string) error {
 	if err := c.cli.VolumeRemove(ctx, name, false); err != nil {
 		return fmt.Errorf("docker: remove volume %q: %w", name, err)
