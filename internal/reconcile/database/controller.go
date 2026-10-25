@@ -269,6 +269,8 @@ type Controller struct {
 	provRec              *dbprovision.Recorder
 	prov                 *dbprovision.Tracker
 	probe                func(ctx context.Context, addr string) error
+	recreates            recreateGuard
+	now                  func() time.Time
 }
 
 // Option configures optional Controller behavior.
@@ -769,13 +771,13 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		}
 		justDeployed = true
 
-	case state.Image != image:
+	case !sameImageRef(state.Image, image):
 		// Sequential replace, never concurrent: see containerName's doc
 		// comment for why a database controller cannot use
 		// application.Controller's create-alongside-then-remove-old
 		// blue-green pattern.
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
-			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			return replaceFailure(c.dbName, err)
 		}
 		justDeployed = true
 
@@ -784,13 +786,13 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 			return notReady("TLSProvisionFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
-			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			return replaceFailure(c.dbName, err)
 		}
 		justDeployed = true
 
 	case tlsMaterial == nil && c.tlsDisabled && state.Labels[tlsCertLabelKey] == tlsCertLabelValue:
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
-			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			return replaceFailure(c.dbName, err)
 		}
 		justDeployed = true
 
@@ -802,7 +804,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		// rebuilt with (or without) archive_mode, neither of which can be
 		// applied to a running container in place.
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
-			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			return replaceFailure(c.dbName, err)
 		}
 		justDeployed = true
 
@@ -810,7 +812,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		// Start command or env layout changed (boot script, memory flag):
 		// neither can be applied to a running container in place.
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
-			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			return replaceFailure(c.dbName, err)
 		}
 		justDeployed = true
 
@@ -827,7 +829,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		// crashed (see this package's own test for the corresponding
 		// live-Docker proof of the running-container path).
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
-			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			return replaceFailure(c.dbName, err)
 		}
 		justDeployed = true
 
@@ -927,6 +929,9 @@ func (c *Controller) createAndStart(ctx context.Context, spec docker.ContainerSp
 // create begins) so the data volume is never mounted by two containers
 // at once.
 func (c *Controller) replaceContainer(ctx context.Context, old *docker.ContainerState, spec docker.ContainerSpec) error {
+	if err := c.recreates.allow(c.clock()); err != nil {
+		return err
+	}
 	if old.Running {
 		if err := c.runtime.Stop(ctx, old.ID, defaultStopTimeout); err != nil {
 			return fmt.Errorf("stop %q before replace: %w", old.Name, err)
