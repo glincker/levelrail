@@ -3,6 +3,7 @@ import {
   ArrowCircleUpIcon,
   BroomIcon,
   BuildingsIcon,
+  StackSimpleIcon,
   ChartBarIcon,
   ChartLineIcon,
   ClockCounterClockwiseIcon,
@@ -90,6 +91,12 @@ export const settingsNavSections: SettingsNavSection[] = [
         to: '/settings/environments',
         icon: StackIcon,
         feature: 'global-environments',
+      },
+      {
+        id: 'stacks',
+        to: '/settings/stacks',
+        icon: StackSimpleIcon,
+        feature: 'iac',
       },
       {
         id: 'import-platform',

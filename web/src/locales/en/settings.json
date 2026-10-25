@@ -502,6 +502,10 @@
         "title": "Environments",
         "description": "Dev, test, UAT and production environments, and which are protected."
       },
+      "stacks": {
+        "title": "Stacks",
+        "description": "Resource sets with revision history, rollback and pinning."
+      },
       "github-app": {
         "title": "GitHub App",
         "description": "Private-repository access for git-based deploys."

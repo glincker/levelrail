@@ -1,0 +1,150 @@
+{
+  "title": "Stacks",
+  "description": "Declarative resource sets with a revision history you can diff, pin and roll back.",
+  "empty": {
+    "title": "No stacks yet",
+    "description": "Apply a manifest to a stack from the CLI and it appears here with its revisions."
+  },
+  "loadFailed": "Could not load stacks.",
+  "columns": {
+    "name": "Stack",
+    "project": "Project",
+    "revision": "Latest",
+    "status": "Status",
+    "flags": "Flags",
+    "created": "Created"
+  },
+  "status": {
+    "pending_approval": "Pending approval",
+    "applying": "Applying",
+    "applied": "Applied",
+    "partial": "Partial",
+    "failed": "Failed",
+    "superseded": "Superseded",
+    "none": "No revisions"
+  },
+  "flags": {
+    "locked": "Locked",
+    "lockedTip": "Held by {{holder}} on revision {{revision}}",
+    "pinned": "Pinned to r{{revision}}",
+    "driftLock": "Drift locks",
+    "driftWarn": "Drift warns",
+    "approval": "Needs approval",
+    "prune": "Prune allowed"
+  },
+  "detail": {
+    "back": "All stacks",
+    "revisionShort": "r{{number}}",
+    "inProject": "Project {{project}}",
+    "createdBy": "Created by {{name}}",
+    "lockedBanner": "Locked by {{holder}} for revision {{revision}} until {{until}}.",
+    "pinnedBanner": "Pinned to revision {{revision}}. New applies are refused until it is unpinned.",
+    "resources": "{{count}} managed resources",
+    "loadFailed": "Could not load this stack."
+  },
+  "actions": {
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "unlock": "Unlock",
+    "delete": "Delete",
+    "rollback": "Roll back",
+    "view": "View",
+    "diff": "Diff",
+    "viewRev": "View revision {{number}}",
+    "diffRev": "Diff revision {{number}}",
+    "rollbackRev": "Roll back to revision {{number}}",
+    "pinRev": "Pin revision {{number}}",
+    "unpinRev": "Unpin revision {{number}}",
+    "pinned": "Pinned to revision {{revision}}",
+    "unpinned": "Stack unpinned",
+    "unlocked": "Stack unlocked",
+    "failed": "Action failed"
+  },
+  "history": {
+    "title": "Revisions",
+    "empty": "No revisions yet.",
+    "columns": {
+      "number": "Rev",
+      "status": "Status",
+      "actor": "By",
+      "source": "Source",
+      "when": "When"
+    },
+    "rollbackOf": "Rollback of r{{number}}",
+    "pinnedMark": "Pinned",
+    "ariaLabel": "Stack revisions"
+  },
+  "revision": {
+    "title": "Revision {{number}}",
+    "files": "Rendered files",
+    "noFiles": "No files stored for this revision.",
+    "plan": "Plan",
+    "result": "Result",
+    "noPlan": "No plan was recorded.",
+    "noResult": "No result yet.",
+    "summary": "{{create}} create, {{update}} update, {{delete}} delete, {{noop}} unchanged, {{error}} errors",
+    "hash": "Plan hash {{hash}}",
+    "close": "Close",
+    "git": "Commit {{sha}}",
+    "ciRun": "CI run",
+    "loadFailed": "Could not load this revision."
+  },
+  "diff": {
+    "title": "Changes",
+    "against": "Compare r{{number}} with",
+    "live": "Live state",
+    "revisionOption": "Revision {{number}}",
+    "empty": "No differences.",
+    "loadFailed": "Could not compute the diff.",
+    "action": {
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete",
+      "noop": "Unchanged",
+      "error": "Error"
+    },
+    "was": "was",
+    "now": "now"
+  },
+  "rollback": {
+    "title": "Roll back to revision {{number}}?",
+    "description": "This applies the files of revision {{number}} to {{name}} as a new revision.",
+    "secretsNote": "Secrets are not rolled back. Current secret values stay as they are.",
+    "dataNote": "Data is not rolled back. Databases and volumes keep their current contents.",
+    "confirm": "Roll back",
+    "pending": "Rolling back",
+    "done": "Rolled back to revision {{number}}",
+    "doneStatus": "New revision {{number}} finished as {{status}}",
+    "failed": "Roll back failed"
+  },
+  "delete": {
+    "title": "Delete stack {{name}}?",
+    "description": "Choose what happens to the resources the stack manages.",
+    "forget": "Forget the stack",
+    "forgetHint": "Remove the stack and its history. Resources keep running unmanaged.",
+    "destroy": "Destroy resources",
+    "destroyHint": "Delete the apps and databases the stack manages, then the stack.",
+    "confirm": "Delete stack",
+    "pending": "Deleting",
+    "done": "Stack {{name}} deleted",
+    "failed": "Delete failed"
+  },
+  "settings": {
+    "title": "Stack settings",
+    "allowPrune": "Allow prune",
+    "allowPruneHint": "Let an apply delete resources that left the manifest.",
+    "requireApproval": "Require approval",
+    "requireApprovalHint": "Applies wait for a person to approve them.",
+    "driftPolicy": "Drift policy",
+    "driftWarn": "Warn",
+    "driftLock": "Lock",
+    "driftHint": "Lock stops applies while live state differs from the stack.",
+    "rootOnly": "Only an admin can change these.",
+    "saved": "Stack settings saved",
+    "failed": "Could not save settings"
+  },
+  "badge": {
+    "managedBy": "Managed by stack {{name}}",
+    "short": "Stack {{name}}"
+  }
+}
