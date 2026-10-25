@@ -253,3 +253,40 @@ func TestApprovalRevisionSummaryCarriesExpiry(t *testing.T) {
 		t.Fatalf("expiry offset = %v", got)
 	}
 }
+
+func TestApprovalOwnerlessRequesterTokenApprovableByAnotherUser(t *testing.T) {
+	rt, db, _, approver := approvalFixture(t)
+	bot := seedMatrixToken(t, db, "deploy-bot", []string{AbilityRoot})
+	if code := tokenPost(t, rt, bot, "/api/v1/stacks/shop-prod/apply", stackBody(t, stackTestDocs("ghcr.io/acme/web:1.0.0"), nil), nil); code != http.StatusAccepted {
+		t.Fatalf("bot apply = %d", code)
+	}
+	if code := tokenPost(t, rt, bot, "/api/v1/stacks/shop-prod/revisions/1/approve", "", nil); code != http.StatusForbidden {
+		t.Fatalf("bot self approve = %d", code)
+	}
+	if code := tokenPost(t, rt, approver, "/api/v1/stacks/shop-prod/revisions/1/approve", "", nil); code != http.StatusOK {
+		t.Fatalf("approve = %d", code)
+	}
+}
+
+func TestApprovalRowWithoutRequesterIDUsesTokenOwner(t *testing.T) {
+	rt, db, _, _ := approvalFixture(t)
+	owner := storeUserWithAbilitiesForTest(t, db, "owner@example.test", []string{AbilityRoot})
+	mk := func(id string) string {
+		plain := "owned-secret-" + id
+		if err := db.SaveAPIToken(t.Context(), store.APIToken{ID: id, Name: id, TokenHash: hashToken(plain), Abilities: []string{AbilityRoot}, OwnerUserID: owner.ID}); err != nil {
+			t.Fatal(err)
+		}
+		return plain
+	}
+	req, appr := mk("req-tok"), mk("appr-tok")
+	if code := tokenPost(t, rt, req, "/api/v1/stacks/shop-prod/apply", stackBody(t, stackTestDocs("ghcr.io/acme/web:1.0.0"), nil), nil); code != http.StatusAccepted {
+		t.Fatalf("apply = %d", code)
+	}
+	// Rows written before the requester column existed carry only the token id.
+	if _, err := db.ExecContext(t.Context(), `UPDATE stack_revisions SET requester_user_id = ''`); err != nil {
+		t.Fatal(err)
+	}
+	if code := tokenPost(t, rt, appr, "/api/v1/stacks/shop-prod/revisions/1/approve", "", nil); code != http.StatusForbidden {
+		t.Fatalf("same owner approve = %d", code)
+	}
+}

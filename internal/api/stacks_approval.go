@@ -252,6 +252,9 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 	if !rt.checkApprovable(r.Context(), w, ss, s, rev) {
 		return
 	}
+	if rev.RequesterUserID == "" && rev.TokenID != "" {
+		rev.RequesterUserID = rt.tokenOwnerOf(r.Context(), rev.TokenID)
+	}
 	if !distinctApprover(caller, rev) {
 		writeError(w, http.StatusForbidden, "the requester cannot approve their own revision; another administrator must approve it")
 		return
@@ -281,16 +284,30 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 	rt.runStack(w, r, ss, run)
 }
 
-// distinctApprover compares stable user ids, never display or token names, and
-// refuses when either side has no known user (an ownerless token or an old row).
+// distinctApprover compares stable user ids, never display or token names. The
+// approver must be a known user; a requester is known by user or, for an
+// ownerless CI token, by that token alone. Anything else is refused.
 func distinctApprover(caller stackCaller, rev store.StackRevisionRecord) bool {
-	if caller.userID == "" || rev.RequesterUserID == "" {
+	if caller.userID == "" || (rev.RequesterUserID == "" && rev.TokenID == "") {
 		return false
 	}
 	if caller.userID == rev.RequesterUserID {
 		return false
 	}
 	return caller.tokenID() == "" || caller.tokenID() != rev.TokenID
+}
+
+// tokenOwnerOf returns the owner of a stored token id, or "" for an ownerless
+// or missing token.
+func (rt *Router) tokenOwnerOf(ctx context.Context, tokenID string) string {
+	if rt.tokens == nil {
+		return ""
+	}
+	rec, err := rt.tokens.GetAPITokenByID(ctx, tokenID)
+	if err != nil {
+		return ""
+	}
+	return rec.OwnerUserID
 }
 
 func (rt *Router) handleStackReject(w http.ResponseWriter, r *http.Request) {
