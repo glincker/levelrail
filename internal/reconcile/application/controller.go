@@ -661,6 +661,9 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 	}
 	if isReady(result) {
 		c.recordRollout(ctx, desired, store.RolloutStateServing, c.servingImageID)
+		c.recoverRestart(ctx, desired)
+	} else {
+		c.reviveLastReady(ctx, targets, desired)
 	}
 	return c.appendEgressCondition(ctx, result, targets, desired), err
 }

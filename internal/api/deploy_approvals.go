@@ -409,7 +409,7 @@ func (rt *Router) approvalFreezeNote(ctx context.Context, a store.DeployApproval
 		return "", nil
 	}
 	if a.FreezeOverride == "" {
-		return "", &deployApprovalDecisionError{http.StatusLocked, (&deploy.FrozenError{Status: status}).Error() + "; this request did not override the freeze, reject it and request again with override_freeze and override_reason"}
+		return "", &deployApprovalDecisionError{http.StatusLocked, (&deploy.FrozenError{Status: status}).Error() + "; this request did not override the freeze, reject it and request again with override_freeze and override_reason (CLI: --override-freeze --override-reason)"}
 	}
 	return a.FreezeOverride, nil
 }

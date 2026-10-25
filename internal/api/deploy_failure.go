@@ -78,7 +78,7 @@ func (rt *Router) classifyAttempt(ctx context.Context, a store.DeployAttempt, co
 	if attemptFailedDuringBuild(&a) {
 		in.LogLines = rt.diagnoseBuildLogs(ctx, a.ServiceName, a.ID)
 	} else if in.Status == store.DeployAttemptStatusFailed || in.Condition != nil {
-		in.LogLines = rt.diagnoseRecentLogs(ctx, a.ServiceName)
+		in.LogLines = rt.releaseLogLines(ctx, a)
 		// The stored stream mixes in the previous release's lines; the exit
 		// capture holds only the failing container's output.
 		if lines := rt.attemptExitLines(ctx, a); len(lines) > 0 {

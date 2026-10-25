@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/changes"
 	"log/slog"
 	"time"
 
@@ -280,6 +281,14 @@ func (w *Watcher) trip(ctx context.Context, svc *store.DesiredService, attempt *
 		w.notify(ctx, svc.Name, svc.Image, fmt.Sprintf("%s: %s; this release is already an automatic rollback, leaving it for an operator", reason, message))
 		return
 	}
+	// An operator who rolled back chose this release; walking to another
+	// one would silently override that choice.
+	if w.operatorChose(ctx, attempt) {
+		msg := "this release was chosen by an operator rollback, so it was not rolled back automatically"
+		w.record(ctx, attempt, deploysafety.PhaseRollback, deploysafety.StatusInfo, deploysafety.ReasonOperatorRollback, msg)
+		w.notify(ctx, svc.Name, svc.Image, fmt.Sprintf("%s: %s; %s", reason, message, msg))
+		return
+	}
 	target, pin, err := w.rollbackTarget(ctx, svc, attempt)
 	if err != nil {
 		w.logger().Error("deploywatch: find rollback target failed", slog.String("service", svc.Name), slog.String("error", err.Error()))
@@ -316,6 +325,23 @@ func (w *Watcher) trip(ctx context.Context, svc *store.DesiredService, attempt *
 		fmt.Sprintf("rolled back to deploy %s (%s) with its config; it goes through the same readiness gate", target.ID, ref))
 	w.audit(ctx, svc.Name, attempt.ID, target.ID, rollbackDetail)
 	w.notify(ctx, svc.Name, svc.Image, fmt.Sprintf("%s: %s; rolled back automatically to deploy %s", reason, message, target.ID))
+}
+
+// operatorChose reports whether attempt is an explicit operator rollback.
+func (w *Watcher) operatorChose(ctx context.Context, attempt *store.DeployAttempt) bool {
+	if attempt.Source == store.DeployAttemptSourceAutoRollback {
+		return false
+	}
+	attempts, err := w.Store.ListDeployAttempts(ctx, attempt.ServiceName)
+	if err != nil {
+		return false
+	}
+	for i := range attempts {
+		if attempts[i].ID == attempt.ID {
+			return changes.IsRollbackAttempt(*attempt, attempts[i+1:])
+		}
+	}
+	return false
 }
 
 // rollbackTarget is the newest still-succeeded pinned release other than

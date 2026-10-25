@@ -49,6 +49,7 @@ const (
 	ReasonWatchStopped             = "WatchStopped"
 	ReasonAutoRolledBack           = "AutoRolledBack"
 	ReasonNoRollbackTarget         = "NoRollbackTarget"
+	ReasonOperatorRollback         = "OperatorRollback"
 )
 
 // GateFailureReasons is every reason that means a release never took traffic.

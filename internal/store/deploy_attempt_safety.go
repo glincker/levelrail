@@ -106,6 +106,24 @@ func (db *DB) RecordRolloutFailure(ctx context.Context, serviceName, image, reas
 	return nil
 }
 
+// RecoverRestartRollout flips the service's newest attempt back to
+// succeeded when it is a restart of image that was marked failed but the
+// container has since come up ready. Other sources stay failed, and a
+// newer attempt of any kind is never touched. Safe to call every pass.
+func (db *DB) RecoverRestartRollout(ctx context.Context, serviceName, image string) error {
+	_, err := db.ExecContext(ctx, `
+		UPDATE deploy_attempts SET status = ?, rollout_state = ?, error = '', reason = ''
+		WHERE id = (
+			SELECT id FROM deploy_attempts WHERE service_name = ?
+			ORDER BY started_at DESC LIMIT 1
+		) AND image = ? AND source = ? AND status = ?
+	`, DeployAttemptStatusSucceeded, RolloutStateServing, serviceName, image, DeployAttemptSourceRestart, DeployAttemptStatusFailed)
+	if err != nil {
+		return fmt.Errorf("store: recover restart rollout for %q: %w", serviceName, err)
+	}
+	return nil
+}
+
 // ListHeldDeployAttempts returns every held attempt, oldest first.
 func (db *DB) ListHeldDeployAttempts(ctx context.Context) ([]DeployAttempt, error) {
 	rows, err := db.QueryContext(ctx, `

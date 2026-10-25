@@ -75,3 +75,17 @@ func TestRun_AuthSessionLink_RelativeURLIsAnchored(t *testing.T) {
 		t.Errorf("stdout = %q, want %q", stdout, want)
 	}
 }
+
+func TestSessionLinkForClient(t *testing.T) {
+	tests := []struct{ name, link, base, want string }{
+		{"relative", "/login?session_link=t", "https://lr.example.com", "https://lr.example.com/login?session_link=t"},
+		{"localhost on remote profile", "http://localhost:8080/login?session_link=t", "https://lr.example.com", "https://lr.example.com/login?session_link=t"},
+		{"local profile keeps link", "http://localhost:8080/login?session_link=t", "http://127.0.0.1:8080", "http://localhost:8080/login?session_link=t"},
+		{"real domain kept", "https://app.example.com/login?session_link=t", "https://lr.example.com", "https://app.example.com/login?session_link=t"},
+	}
+	for _, tc := range tests {
+		if got := sessionLinkForClient(tc.link, tc.base); got != tc.want {
+			t.Errorf("%s: got %q want %q", tc.name, got, tc.want)
+		}
+	}
+}
