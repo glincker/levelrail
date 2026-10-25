@@ -207,6 +207,8 @@ type stackRevisionSummary struct {
 	CIRunURL       string `json:"ci_run_url,omitempty"`
 	CreatedAt      string `json:"created_at"`
 	FinishedAt     string `json:"finished_at,omitempty"`
+	// ExpiresAt is when a pending_approval revision stops being approvable.
+	ExpiresAt string `json:"expires_at,omitempty"`
 }
 
 type stackPlanResponse struct {
@@ -267,6 +269,9 @@ func summarizeRevision(v store.StackRevisionRecord) stackRevisionSummary {
 	}
 	if v.FinishedAt != nil {
 		out.FinishedAt = fmtStackTime(*v.FinishedAt)
+	}
+	if v.Status == store.StackRevPendingApproval {
+		out.ExpiresAt = fmtStackTime(approvalExpiry(v))
 	}
 	return out
 }

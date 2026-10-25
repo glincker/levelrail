@@ -235,3 +235,21 @@ func TestApprovalRollbackAlsoRequiresApproval(t *testing.T) {
 		t.Fatalf("rollback = %d %+v", code, out)
 	}
 }
+
+func TestApprovalRevisionSummaryCarriesExpiry(t *testing.T) {
+	t.Setenv("APP_STACK_APPROVAL_TTL", "2h")
+	rt, _, cookie, _ := approvalFixture(t)
+	stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.0.0"), nil)
+	var hist struct {
+		Revisions []stackRevisionSummary `json:"revisions"`
+	}
+	iacCall(t, rt, authedRequest(t, cookie, http.MethodGet, "/api/v1/stacks/shop-prod/revisions", ""), &hist)
+	if len(hist.Revisions) != 1 || hist.Revisions[0].ExpiresAt == "" {
+		t.Fatalf("history = %+v", hist.Revisions)
+	}
+	created, _ := time.Parse(time.RFC3339Nano, hist.Revisions[0].CreatedAt)
+	expires, _ := time.Parse(time.RFC3339Nano, hist.Revisions[0].ExpiresAt)
+	if got := expires.Sub(created); got != 2*time.Hour {
+		t.Fatalf("expiry offset = %v", got)
+	}
+}
