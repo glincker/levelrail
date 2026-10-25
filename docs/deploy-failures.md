@@ -109,6 +109,9 @@ The host ran out of disk, or the build disk preflight found less free space than
 ### docker_unreachable
 The control plane could not reach the Docker daemon on the target node. Retryable once the daemon is back.
 
+### build_engine_unsupported
+The container engine has no BuildKit (Podman), so Dockerfile and Railpack source builds cannot run. Deploy a prebuilt image, or run Docker for source builds. See [container runtimes](/container-runtimes).
+
 ### git_host_unreachable
 The git host could not be reached and the commit is not in the source cache. Retryable: redeploy a known commit, roll back, or use **Deploy from cache**. See [Deploying through git host outages](/git-host-outages).
 

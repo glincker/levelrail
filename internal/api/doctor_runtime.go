@@ -36,19 +36,7 @@ type runtimeIdentifier interface {
 func (rt *Router) doctorCheckContainerRuntime(ctx context.Context) doctorCheckResource {
 	const code, name = "container_runtime", "Container runtime"
 
-	info := docker.DetectRuntimeSocket(os.LookupEnv)
-	if reporter, ok := rt.dockerPinger.(runtimeReporter); ok {
-		info = reporter.Runtime()
-	}
-	if idr, ok := rt.dockerPinger.(runtimeIdentifier); ok {
-		if id, err := idr.EngineIdentity(ctx); err == nil {
-			info.Kind = docker.RefineKind(info.Kind, id)
-		}
-	} else if v, ok := rt.dockerPinger.(engineVersioner); ok {
-		if version, err := v.ServerVersion(ctx); err == nil && strings.Contains(strings.ToLower(version), "podman") {
-			info.Kind = docker.RuntimeKindPodman
-		}
-	}
+	info := rt.detectRuntimeInfo(ctx)
 
 	mode := "rootful"
 	if info.Rootless {
@@ -71,4 +59,34 @@ func (rt *Router) doctorCheckContainerRuntime(ctx context.Context) doctorCheckRe
 	}
 	res.Message += "; if this is the wrong engine, set APP_CONTAINER_RUNTIME_SOCKET to its socket (for Podman, enable podman.socket first). See the container runtimes guide"
 	return res
+}
+
+// detectRuntimeInfo resolves the engine the way the container_runtime check does.
+func (rt *Router) detectRuntimeInfo(ctx context.Context) docker.RuntimeInfo {
+	info := docker.DetectRuntimeSocket(os.LookupEnv)
+	if reporter, ok := rt.dockerPinger.(runtimeReporter); ok {
+		info = reporter.Runtime()
+	}
+	if idr, ok := rt.dockerPinger.(runtimeIdentifier); ok {
+		if id, err := idr.EngineIdentity(ctx); err == nil {
+			info.Kind = docker.RefineKind(info.Kind, id)
+		}
+	} else if v, ok := rt.dockerPinger.(engineVersioner); ok {
+		if version, err := v.ServerVersion(ctx); err == nil && strings.Contains(strings.ToLower(version), "podman") {
+			info.Kind = docker.RuntimeKindPodman
+		}
+	}
+	return info
+}
+
+// relabelEngine swaps the leading "Docker" of a row name for the detected
+// engine, so Podman hosts do not read "Docker daemon".
+func (rt *Router) relabelEngine(f func(ctx context.Context) doctorCheckResource) func(ctx context.Context) doctorCheckResource {
+	return func(ctx context.Context) doctorCheckResource {
+		res := f(ctx)
+		if rest, ok := strings.CutPrefix(res.Name, "Docker "); ok && rt.detectRuntimeInfo(ctx).Kind == docker.RuntimeKindPodman {
+			res.Name = "Podman " + rest
+		}
+		return res
+	}
 }

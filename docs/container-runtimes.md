@@ -59,6 +59,14 @@ echo "unix://$XDG_RUNTIME_DIR/podman/podman.sock"
 
 Linger keeps the user's services running after logout. Point `APP_CONTAINER_RUNTIME_SOCKET` at that socket path. Rootless Podman cannot publish ports 80 and 443 unless you lower `net.ipv4.ip_unprivileged_port_start`.
 
+## Podman notes
+
+- Source builds (Dockerfile and Railpack) need BuildKit, which Podman does not have. A source deploy on Podman fails with the class `build_engine_unsupported`. Deploy a prebuilt image, or run Docker on the build node.
+- Podman answers 404 for the engine's registry digest lookup. Levelrail treats that as "unknown", not "missing", and lets the node pull the image itself, so short names such as `nginx:1.27-alpine` work.
+- App networks are carved from `APP_NETWORK_POOL` (default `10.88.0.0/14`). The block `10.88.0.0/16` is skipped because Podman's default network uses it.
+- Compose `ports` are not published on the host as written. A service port is published on a random loopback port for ingress, so do not rely on the host port you wrote in the compose file. See [Compose apps](/compose-apps).
+- The exposure controller needs the iptables DOCKER-USER chain. On Podman with netavark and nftables that chain is absent, so the controller reports it once and exposure rules are not applied.
+
 ## Verify
 
 ```bash

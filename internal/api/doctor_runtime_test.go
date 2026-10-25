@@ -128,3 +128,18 @@ func TestDoctorCheckContainerRuntime(t *testing.T) {
 		})
 	}
 }
+
+func TestRelabelEngineUsesPodmanName(t *testing.T) {
+	prev := runtimeGOOS
+	runtimeGOOS = "linux"
+	t.Cleanup(func() { runtimeGOOS = prev })
+	check := func(context.Context) doctorCheckResource { return doctorCheckResource{Name: "Docker daemon"} }
+	podman := &Router{dockerPinger: fakeRuntimeReporter{info: docker.RuntimeInfo{Kind: docker.RuntimeKindPodman}}}
+	if got := podman.relabelEngine(check)(context.Background()).Name; got != "Podman daemon" {
+		t.Errorf("podman name = %q", got)
+	}
+	dock := &Router{dockerPinger: fakeRuntimeReporter{info: docker.RuntimeInfo{Kind: docker.RuntimeKindDocker}}}
+	if got := dock.relabelEngine(check)(context.Background()).Name; got != "Docker daemon" {
+		t.Errorf("docker name = %q", got)
+	}
+}

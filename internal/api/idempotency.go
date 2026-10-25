@@ -112,7 +112,8 @@ func (rt *Router) idempotent(next http.HandlerFunc) http.HandlerFunc {
 
 		rw := &recordingWriter{ResponseWriter: w}
 		next(rw, r)
-		if rw.status == 0 || rw.over || rw.status >= 500 || rw.status == http.StatusTooManyRequests {
+		// A 422 is a failed action (deploy, pull) the caller fixes and retries under the same key.
+		if rw.status == 0 || rw.over || rw.status >= 500 || rw.status == http.StatusTooManyRequests || rw.status == http.StatusUnprocessableEntity {
 			return
 		}
 		put := store.IdempotencyRecord{
