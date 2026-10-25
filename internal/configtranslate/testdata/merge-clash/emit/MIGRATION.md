@@ -5,7 +5,7 @@ Generated from config files (heroku, vercel). Review the documents in a pull req
 ## What the files do not do
 
 - Apply runs prebuilt images only. An app with no image on the source is named after the `--image-repo` you gave, and nothing builds it: push that image from your CI first.
-- Secret values, volumes, scheduled jobs and database contents are not carried over by the documents.
+- Secret values, volumes and database contents are not carried over by the documents.
 - [heroku.web.port] Procfile web: Heroku injects $PORT, here the service listens on a fixed port and PORT is set to match Fix: Change port and the PORT env value together if your app expects another port.
 - [heroku.health.none] app.json web: no healthcheck is defined, so deploys are not readiness gated Fix: Add health.readiness with a cheap path such as /health.
 - [heroku.process.port] Procfile worker: the spec requires a port on every non-static service, nothing needs to listen on it Fix: Leave it as is, or add an exec health probe.
@@ -20,7 +20,6 @@ Generated from config files (heroku, vercel). Review the documents in a pull req
 ## App web-vercel
 
 - builds from source (type railpack): build and push the image named in apps.yaml from your CI, or create the app with apps create --repo and --image-repo
-- scheduled job api-tick (0 * * * *): `curl -fsS http://127.0.0.1:3000/api/tick`; jobs are not supported by apply yet, add it in the app's Jobs tab
 
 ## App worker
 

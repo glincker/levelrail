@@ -5,7 +5,7 @@ Generated from config files (heroku). Review the documents in a pull request, th
 ## What the files do not do
 
 - Apply runs prebuilt images only. An app with no image on the source is named after the `--image-repo` you gave, and nothing builds it: push that image from your CI first.
-- Secret values, volumes, scheduled jobs and database contents are not carried over by the documents.
+- Secret values, volumes and database contents are not carried over by the documents.
 - [heroku.buildpack.unsupported] app.json https://github.com/example/custom-buildpack: no equivalent: buildpack https://github.com/example/custom-buildpack is not a Railpack provider Fix: Write a Dockerfile that does what the buildpack did and use build.type dockerfile.
 - [heroku.process.port] Procfile clock: the spec requires a port on every non-static service, nothing needs to listen on it Fix: Leave it as is, or add an exec health probe.
 - [heroku.process.custom] Procfile clock: process type clock becomes its own always-on service Fix: If it is a scheduler loop, move the work to jobs with a cron schedule.

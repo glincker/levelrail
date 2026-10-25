@@ -26,9 +26,9 @@ spec:
     port: 80
     replicas: 2
     env:
-      DATABASE_URL: {secretRef: DATABASE_URL}
+      DATABASE_URL: {from: {database: postgresql-round-1, field: url}}
       NODE_ENV: production
-      REDIS_URL: {secretRef: REDIS_URL}
+      REDIS_URL: {from: {database: redis-deep-2, field: url}}
       SENDGRID_URL: {secretRef: SENDGRID_URL}
       SESSION_SECRET: {secretRef: SESSION_SECRET}
 ---
@@ -46,8 +46,8 @@ spec:
     port: 80
     replicas: 1
     env:
-      DATABASE_URL: {secretRef: DATABASE_URL}
+      DATABASE_URL: {from: {database: postgresql-round-1, field: url}}
       NODE_ENV: production
-      REDIS_URL: {secretRef: REDIS_URL}
+      REDIS_URL: {from: {database: redis-deep-2, field: url}}
       SENDGRID_URL: {secretRef: SENDGRID_URL}
       SESSION_SECRET: {secretRef: SESSION_SECRET}

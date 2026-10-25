@@ -29,6 +29,12 @@ spec:
       type: image
       image: registry.example.com/acme/web-vercel:latest
     port: 3000
+    jobs:
+      - name: api-tick
+        schedule: 0 * * * *
+        command: [curl, -fsS, 'http://127.0.0.1:3000/api/tick']
+        mode: exec
+        timezone: UTC
 ---
 version: 1
 kind: App

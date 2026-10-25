@@ -5,7 +5,7 @@ Generated from config files (heroku). Review the documents in a pull request, th
 ## What the files do not do
 
 - Apply runs prebuilt images only. An app with no image on the source is named after the `--image-repo` you gave, and nothing builds it: push that image from your CI first.
-- Secret values, volumes, scheduled jobs and database contents are not carried over by the documents.
+- Secret values, volumes and database contents are not carried over by the documents.
 - [heroku.web.port] Procfile web: Heroku injects $PORT, here the service listens on a fixed port and PORT is set to match Fix: Change port and the PORT env value together if your app expects another port.
 - [heroku.health.none] app.json web: no healthcheck is defined, so deploys are not readiness gated Fix: Add health.readiness with a cheap path such as /health.
 

@@ -62,14 +62,60 @@ func (p *Plan) EmitInput() EmitInput {
 			app.Notes = append(app.Notes, fmt.Sprintf("volume %s mounted at %s is not in the documents: volumes are not supported by apply yet", dst, v.ContainerPath))
 		}
 		for _, c := range a.Crons {
-			app.Notes = append(app.Notes, fmt.Sprintf("scheduled job %s (%s) is not in the documents: %s", c.Name, c.Schedule, cronCommand(c.Command)))
+			if commandMayHoldSecret(c.Command) {
+				app.Notes = append(app.Notes, fmt.Sprintf("scheduled job %s (%s) is not in the documents: its command may hold a credential, add it in the app's Jobs tab", c.Name, c.Schedule))
+				continue
+			}
+			app.Jobs = append(app.Jobs, EmitJob{Name: c.Name, Schedule: c.Schedule, Command: []string{"sh", "-c", c.Command}, Mode: "exec"})
 		}
+		app.Connections = matchConnections(names, a.Env, p.Databases)
 		in.Apps = append(in.Apps, app)
 	}
 	for _, d := range p.Databases {
 		in.Databases = append(in.Databases, EmitDatabase{Name: d.Name, Engine: d.Engine, Version: d.Version})
 	}
 	return in
+}
+
+// engineFamilies groups engines a connection variable prefix can mean.
+var engineFamilies = map[string][]string{
+	"postgres": {"postgres", "postgresql"}, "postgresql": {"postgres", "postgresql"},
+	"mysql": {"mysql", "mariadb"}, "redis": {"redis", "valkey", "keydb", "dragonfly"},
+	"mongo": {"mongodb", "mongo"}, "mongodb": {"mongodb", "mongo"},
+	"database": {"postgres", "postgresql", "mysql", "mariadb"}, "db": {"postgres", "postgresql", "mysql", "mariadb"},
+}
+
+// matchConnections points each connection-named variable at the one emitted
+// database of its engine. An ambiguous or missing match stays a secret name.
+func matchConnections(secretNames map[string]bool, env map[string]string, dbs []DatabasePlan) map[string]EmitConnection {
+	candidates := sortedMapKeys(secretNames)
+	for k := range env {
+		if !secretNames[k] {
+			candidates = append(candidates, k)
+		}
+	}
+	out := map[string]EmitConnection{}
+	for _, k := range candidates {
+		m := connectionKeyRe.FindStringSubmatch(k)
+		if m == nil {
+			continue
+		}
+		var hit []string
+		for _, d := range dbs {
+			for _, e := range engineFamilies[strings.ToLower(m[1])] {
+				if d.Engine == e {
+					hit = append(hit, d.Name)
+				}
+			}
+		}
+		if len(hit) == 1 {
+			out[k] = EmitConnection{Database: hit[0], Field: "url"}
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 func secretHint(name string, unread []string) string {
@@ -85,11 +131,21 @@ func secretHint(name string, unread []string) string {
 	return hint
 }
 
-func cronCommand(cmd string) string {
-	if envredact.SensitiveValue("COMMAND", cmd) {
-		return "command omitted, it may hold a credential"
+var credentialFlagRe = regexp.MustCompile(`(?i)(authorization:|bearer\s|\s-u\s+\S+:|--password|--token|://[^/\s:@]+:[^@\s]+@)`)
+
+// commandMayHoldSecret errs toward keeping a cron command out of git: the
+// emitted files are meant for a pull request.
+func commandMayHoldSecret(cmd string) bool {
+	if envredact.SensitiveValue("COMMAND", cmd) || credentialFlagRe.MatchString(cmd) {
+		return true
 	}
-	return "`" + cmd + "`"
+	for _, tok := range strings.Fields(cmd) {
+		k, v, ok := strings.Cut(strings.Trim(tok, `'"`), "=")
+		if envredact.SensitiveValue("COMMAND", tok) || ok && v != "" && (envredact.SensitiveName(k) || envredact.SensitiveValue(k, v)) {
+			return true
+		}
+	}
+	return false
 }
 
 func sortedMapKeys(m map[string]bool) []string {

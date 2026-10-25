@@ -5,7 +5,7 @@ Generated from config files (vercel). Review the documents in a pull request, th
 ## What the files do not do
 
 - Apply runs prebuilt images only. An app with no image on the source is named after the `--image-repo` you gave, and nothing builds it: push that image from your CI first.
-- Secret values, volumes, scheduled jobs and database contents are not carried over by the documents.
+- Secret values, volumes and database contents are not carried over by the documents.
 - [vercel.route.pattern] vercel.json /gone/:id(\d+): pattern uses regex features the static router lacks, redirect skipped Fix: Rewrite it as literal paths, :name segments or a trailing /*.
 - [vercel.route.condition] vercel.json /ab: has and missing conditions have no equivalent, redirect skipped Fix: Handle the condition in the app or drop the rule.
 - [vercel.rewrite.proxy] vercel.json /api/(.*): no equivalent: rewrite to an external URL (proxy), rule skipped Fix: Proxy in the app, or point clients at the target directly.

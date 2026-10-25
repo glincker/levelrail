@@ -38,7 +38,7 @@ func (r Result) EmitInput(o EmitOptions) (platformimport.EmitInput, error) {
 		if len(want) > 0 && !want[name] {
 			continue
 		}
-		in.Apps = append(in.Apps, emitService(name, r.Fragment.Services[name], generated))
+		in.Apps = append(in.Apps, emitService(name, r.Fragment.Services[name], generated, r.Fragment.Databases))
 	}
 	for _, name := range sortedKeys(r.Fragment.Databases) {
 		db := r.Fragment.Databases[name]
@@ -75,7 +75,7 @@ func formatNames(fs []Format) string {
 	return strings.Join(names, ", ")
 }
 
-func emitService(name string, svc Service, generated map[string]bool) platformimport.EmitApp {
+func emitService(name string, svc Service, generated map[string]bool, dbs map[string]Database) platformimport.EmitApp {
 	app := platformimport.EmitApp{Name: name, Port: svc.Port, Replicas: svc.Replicas, Command: svc.Command, Env: map[string]string{}}
 	if svc.Resources != nil {
 		app.Memory = svc.Resources.Memory
@@ -90,6 +90,13 @@ func emitService(name string, svc Service, generated map[string]bool) platformim
 		e := svc.Env[k]
 		switch {
 		case e.From != "":
+			if db, field, ok := fromRef(e.From, dbs); ok {
+				if app.Connections == nil {
+					app.Connections = map[string]platformimport.EmitConnection{}
+				}
+				app.Connections[k] = platformimport.EmitConnection{Database: db, Field: field}
+				continue
+			}
 			app.Secrets = append(app.Secrets, platformimport.EmitSecret{Name: k, Hint: "connection string of " + fromHint(e.From) + ", set it once the database exists or run databases link"})
 		case e.Secret:
 			hint := "required secret, set it before the first deploy"
@@ -108,7 +115,7 @@ func emitService(name string, svc Service, generated map[string]bool) platformim
 		app.Notes = append(app.Notes, "builds from source (type "+svc.Build.Type+"): build and push the image named in apps.yaml from your CI, or create the app with apps create --repo and --image-repo")
 	}
 	for _, j := range svc.Jobs {
-		app.Notes = append(app.Notes, fmt.Sprintf("scheduled job %s (%s): `%s`; jobs are not supported by apply yet, add it in the app's Jobs tab", j.Name, j.Schedule, strings.Join(j.Command, " ")))
+		app.Jobs = append(app.Jobs, platformimport.EmitJob{Name: j.Name, Schedule: j.Schedule, Command: j.Command, Mode: j.Mode, Timezone: j.Timezone})
 	}
 	if len(svc.Routes) > 0 {
 		app.Notes = append(app.Notes, fmt.Sprintf("%d route rule(s) (redirects and rewrites) are not in the App document", len(svc.Routes)))
@@ -118,6 +125,18 @@ func emitService(name string, svc Service, generated map[string]bool) platformim
 	}
 	sort.Strings(app.Notes)
 	return app
+}
+
+// fromRef resolves "postgres.main.url" against the emitted databases, so a
+// reference only becomes a from: when its database is in the same stack.
+func fromRef(from string, dbs map[string]Database) (db, field string, ok bool) {
+	parts := strings.Split(from, ".")
+	if len(parts) < 2 {
+		return "", "", false
+	}
+	db, field = parts[len(parts)-2], parts[len(parts)-1]
+	_, ok = dbs[db]
+	return db, field, ok
 }
 
 // fromHint turns "postgres.main.url" into "postgres database main".

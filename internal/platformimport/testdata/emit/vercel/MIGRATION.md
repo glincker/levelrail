@@ -5,7 +5,7 @@ Generated from vercel. Review the documents in a pull request, then run `levelra
 ## What the files do not do
 
 - Apply runs prebuilt images only. An app with no image on the source is named after the `--image-repo` you gave, and nothing builds it: push that image from your CI first.
-- Secret values, volumes, scheduled jobs and database contents are not carried over by the documents.
+- Secret values, volumes and database contents are not carried over by the documents.
 - crons of project web are not read from the API, they come from vercel.json when the repository is imported
 - project web: value not readable, set it manually: API_KEY, DB_PASS
 - project web: env vars differ by target (production, preview, development), the production value was used: FEATURE (development+production), PREVIEW_ONLY (preview)

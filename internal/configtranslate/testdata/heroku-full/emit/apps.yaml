@@ -15,8 +15,8 @@ spec:
       - -c
       - bundle exec clockwork clock.rb
     env:
-      CACHE_URL: {secretRef: CACHE_URL}
-      DATABASE_URL: {secretRef: DATABASE_URL}
+      CACHE_URL: {from: {database: cache, field: url}}
+      DATABASE_URL: {from: {database: main, field: url}}
       LOG_LEVEL: info
       RAILS_ENV: production
       SECRET_KEY_BASE: {secretRef: SECRET_KEY_BASE}
@@ -46,8 +46,8 @@ spec:
       preDeploy: bundle exec rake db:migrate
       postDeploy: bundle exec rake db:seed
     env:
-      CACHE_URL: {secretRef: CACHE_URL}
-      DATABASE_URL: {secretRef: DATABASE_URL}
+      CACHE_URL: {from: {database: cache, field: url}}
+      DATABASE_URL: {from: {database: main, field: url}}
       LOG_LEVEL: info
       PORT: "8080"
       RAILS_ENV: production
@@ -72,8 +72,8 @@ spec:
       - -c
       - bundle exec sidekiq
     env:
-      CACHE_URL: {secretRef: CACHE_URL}
-      DATABASE_URL: {secretRef: DATABASE_URL}
+      CACHE_URL: {from: {database: cache, field: url}}
+      DATABASE_URL: {from: {database: main, field: url}}
       LOG_LEVEL: info
       RAILS_ENV: production
       SECRET_KEY_BASE: {secretRef: SECRET_KEY_BASE}

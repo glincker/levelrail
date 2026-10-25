@@ -142,6 +142,34 @@ func TestEmitNeverWritesSecretValues(t *testing.T) {
 	}
 }
 
+func TestEmitJobsAndAmbiguousConnections(t *testing.T) {
+	p := &Plan{
+		Apps: []AppPlan{{Name: "web", Image: "ghcr.io/acme/web:1", Port: 3000, Replicas: 1,
+			Secrets: map[string]string{"DATABASE_URL": "x", "REDIS_URL": "y"},
+			Crons: []CronPlan{{Name: "nightly", Schedule: "0 3 * * *", Command: "node nightly.js"},
+				{Name: "leaky", Schedule: "0 4 * * *", Command: "curl -H 'Authorization: Bearer abcdefghijklmnop1234' https://x"}}}},
+		Databases: []DatabasePlan{{Name: "a", Engine: "postgres"}, {Name: "b", Engine: "postgres"}, {Name: "cache", Engine: "redis"}},
+	}
+	files, err := EmitStack(p.EmitInput(), EmitOptions{Stack: "s", Project: "p"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	validateEmitted(t, files)
+	all := map[string]string{}
+	for _, f := range files {
+		all[f.Name] = string(f.Content)
+	}
+	apps := all[EmitAppsFile]
+	for _, want := range []string{"DATABASE_URL: {secretRef: DATABASE_URL}", "REDIS_URL: {from: {database: cache, field: url}}", "name: nightly", "command: [sh, -c, node nightly.js]"} {
+		if !strings.Contains(apps, want) {
+			t.Errorf("apps.yaml lacks %q:\n%s", want, apps)
+		}
+	}
+	if strings.Contains(apps, "leaky") || strings.Contains(apps, "abcdefghijklmnop1234") || !strings.Contains(all[EmitNotesFile], "leaky") {
+		t.Errorf("a job whose command looks like a credential must stay a note:\n%s\n%s", apps, all[EmitNotesFile])
+	}
+}
+
 func TestEmitNeedsImageRepoForBuiltApps(t *testing.T) {
 	d := emitCases(t)["heroku"]
 	in := BuildPlan(d, PlanOptions{}).EmitInput()

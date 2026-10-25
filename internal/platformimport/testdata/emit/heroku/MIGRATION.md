@@ -5,7 +5,7 @@ Generated from heroku. Review the documents in a pull request, then run `levelra
 ## What the files do not do
 
 - Apply runs prebuilt images only. An app with no image on the source is named after the `--image-repo` you gave, and nothing builds it: push that image from your CI first.
-- Secret values, volumes, scheduled jobs and database contents are not carried over by the documents.
+- Secret values, volumes and database contents are not carried over by the documents.
 - Databases are created empty. Copy the data in with the data copy step (dashboard: Settings, Import from another platform; CLI: migrate db-copy), which verifies row counts.
 - heroku-postgresql add-on postgresql-round-1 on app shop uses plan heroku-postgresql:standard-0: pick a matching size here, data is not migrated
 - heroku-redis add-on redis-deep-2 on app shop uses plan heroku-redis:premium-0: pick a matching size here, data is not migrated

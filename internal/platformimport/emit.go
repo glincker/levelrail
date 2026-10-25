@@ -49,8 +49,27 @@ type EmitApp struct {
 	Command    []string
 	PreDeploy  string
 	PostDeploy string
+	// Connections maps an env var to the emitted database it reads from.
+	Connections map[string]EmitConnection
+	Jobs        []EmitJob
 	// Notes are follow-ups for MIGRATION.md that the documents cannot express.
 	Notes []string
+}
+
+// EmitConnection is a { from: { database, field } } env reference.
+type EmitConnection struct {
+	Database string
+	Field    string
+}
+
+// EmitJob is one scheduled job of an App document.
+type EmitJob struct {
+	Name     string
+	Schedule string
+	Command  []string
+	// Mode is "exec" to run in the app's running container; empty means a fresh one.
+	Mode     string
+	Timezone string
 }
 
 // EmitDatabase is one kind: Database document.
@@ -126,6 +145,15 @@ type emitSvc struct {
 	Health    *emitHealth          `yaml:"health,omitempty"`
 	Hooks     *emitHooks           `yaml:"hooks,omitempty"`
 	Env       map[string]emitValue `yaml:"env,omitempty"`
+	Jobs      []emitJob            `yaml:"jobs,omitempty"`
+}
+
+type emitJob struct {
+	Name     string   `yaml:"name"`
+	Schedule string   `yaml:"schedule"`
+	Command  []string `yaml:"command,flow"`
+	Mode     string   `yaml:"mode,omitempty"`
+	Timezone string   `yaml:"timezone,omitempty"`
 }
 
 type emitBuild struct {
@@ -151,13 +179,22 @@ type emitHooks struct {
 	PostDeploy string `yaml:"postDeploy,omitempty"`
 }
 
-// emitValue is a literal env value or a secretRef by the same name.
+// emitValue is a literal env value, a secretRef by the same name, or a
+// database reference.
 type emitValue struct {
 	literal   string
 	secretRef string
+	from      *EmitConnection
 }
 
 func (v emitValue) MarshalYAML() (any, error) {
+	if v.from != nil {
+		ref := &yaml.Node{Kind: yaml.MappingNode, Style: yaml.FlowStyle, Content: []*yaml.Node{
+			{Kind: yaml.ScalarNode, Value: "database"}, {Kind: yaml.ScalarNode, Value: v.from.Database},
+			{Kind: yaml.ScalarNode, Value: "field"}, {Kind: yaml.ScalarNode, Value: v.from.Field},
+		}}
+		return &yaml.Node{Kind: yaml.MappingNode, Style: yaml.FlowStyle, Content: []*yaml.Node{{Kind: yaml.ScalarNode, Value: "from"}, ref}}, nil
+	}
 	if v.secretRef != "" {
 		return &yaml.Node{Kind: yaml.MappingNode, Style: yaml.FlowStyle, Content: []*yaml.Node{
 			{Kind: yaml.ScalarNode, Value: "secretRef"}, {Kind: yaml.ScalarNode, Value: v.secretRef},
@@ -269,9 +306,17 @@ func emitAppDoc(a *EmitApp, o EmitOptions) (emitDoc, []EmitSecret, error) {
 	env := map[string]emitValue{}
 	secrets := map[string]string{}
 	for _, s := range a.Secrets {
-		secrets[s.Name] = s.Hint
+		if _, linked := a.Connections[s.Name]; !linked {
+			secrets[s.Name] = s.Hint
+		}
+	}
+	for k, c := range a.Connections {
+		env[k] = emitValue{from: &EmitConnection{Database: c.Database, Field: c.Field}}
 	}
 	for k, v := range a.Env {
+		if _, linked := a.Connections[k]; linked {
+			continue
+		}
 		if envredact.SensitiveName(k) || envredact.SensitiveValue(k, v) {
 			if _, ok := secrets[k]; !ok {
 				secrets[k] = "looked like a secret on the source, so it is a reference here"
@@ -293,6 +338,10 @@ func emitAppDoc(a *EmitApp, o EmitOptions) (emitDoc, []EmitSecret, error) {
 	if len(env) > 0 {
 		svc.Env = env
 	}
+	for _, j := range a.Jobs {
+		svc.Jobs = append(svc.Jobs, emitJob(j))
+	}
+	sort.SliceStable(svc.Jobs, func(i, j int) bool { return svc.Jobs[i].Name < svc.Jobs[j].Name })
 	spec := emitAppSpec{Project: o.Project, Environment: o.Environment, Service: svc}
 	return emitDoc{Version: 1, Kind: "App", Metadata: emitMeta{Name: a.Name}, Spec: spec}, out, nil
 }
@@ -359,9 +408,13 @@ func renderSecrets(source string, o EmitOptions, apps []EmitApp, dbs []EmitDatab
 	}
 	if len(dbs) > 0 {
 		b.WriteString("\n## Database connections\n\n")
-		b.WriteString("The documents cannot yet hand a database's connection string to an app (`databases:` sections and `from: postgres.main.url` references arrive with a later schema change). Until then each connection variable above is a secret name placeholder. Create the databases from `databases.yaml`, read each connection string, and supply it as the secret named above, or run `levelrail-cli databases link NAME APP` so the platform injects it.\n\n")
+		b.WriteString("Apps read these databases through `from:` references in `apps.yaml`; the platform fills in each value when the container starts, so there is nothing to set here. A connection variable listed above as a secret could not be matched to one database: point it at one with `{from: {database: NAME, field: url}}`, or supply its value.\n\n")
 		for _, d := range dbs {
-			fmt.Fprintf(&b, "- `%s` (%s)\n", d.Name, d.Engine)
+			fmt.Fprintf(&b, "- `%s` (%s)", d.Name, d.Engine)
+			if users := connectionUsers(apps, d.Name); len(users) > 0 {
+				fmt.Fprintf(&b, ": %s", strings.Join(users, ", "))
+			}
+			b.WriteString("\n")
 		}
 	}
 	return b.String()
@@ -373,7 +426,7 @@ func renderNotes(source string, o EmitOptions, apps []EmitApp, general []string)
 	fmt.Fprintf(&b, "Generated from %s. Review the documents in a pull request, then run `levelrail-cli stack plan %s -f .` before the first apply.\n", source, o.Stack)
 	b.WriteString("\n## What the files do not do\n\n")
 	b.WriteString("- Apply runs prebuilt images only. An app with no image on the source is named after the `--image-repo` you gave, and nothing builds it: push that image from your CI first.\n")
-	b.WriteString("- Secret values, volumes, scheduled jobs and database contents are not carried over by the documents.\n")
+	b.WriteString("- Secret values, volumes and database contents are not carried over by the documents.\n")
 	for _, n := range general {
 		fmt.Fprintf(&b, "- %s\n", n)
 	}
@@ -387,4 +440,25 @@ func renderNotes(source string, o EmitOptions, apps []EmitApp, general []string)
 		}
 	}
 	return b.String()
+}
+
+func connectionUsers(apps []EmitApp, db string) []string {
+	var out []string
+	for _, a := range apps {
+		for _, env := range sortedKeysOf(a.Connections) {
+			if a.Connections[env].Database == db {
+				out = append(out, a.Name+" `"+env+"`")
+			}
+		}
+	}
+	return out
+}
+
+func sortedKeysOf[V any](m map[string]V) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }

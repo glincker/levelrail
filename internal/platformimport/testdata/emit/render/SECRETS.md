@@ -17,7 +17,7 @@ Use `NAME` to set a value for every app that references it, or `app/NAME` for on
 
 ## Database connections
 
-The documents cannot yet hand a database's connection string to an app (`databases:` sections and `from: postgres.main.url` references arrive with a later schema change). Until then each connection variable above is a secret name placeholder. Create the databases from `databases.yaml`, read each connection string, and supply it as the secret named above, or run `levelrail-cli databases link NAME APP` so the platform injects it.
+Apps read these databases through `from:` references in `apps.yaml`; the platform fills in each value when the container starts, so there is nothing to set here. A connection variable listed above as a secret could not be matched to one database: point it at one with `{from: {database: NAME, field: url}}`, or supply its value.
 
 - `cache` (redis)
 - `main-db` (postgres)
