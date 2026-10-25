@@ -67,7 +67,7 @@ func ensureSetupToken(ctx context.Context, logger *slog.Logger, db *store.DB) {
 func runSetupToken(ctx context.Context, stdout io.Writer, openStore func(context.Context) (*store.DB, error)) error {
 	dbPath := filepath.Join(dataDirFromEnv(), storeFilename)
 	if _, err := os.Stat(dbPath); err != nil {
-		return fmt.Errorf("no control plane database at %s; set APP_DATA_DIR to the control plane's data directory: %w", dbPath, err)
+		return fmt.Errorf("no control plane database at %s; set APP_DATA_DIR to the control plane's data directory (tried %s; the installer uses %s): %w", dbPath, dataDirFromEnv(), installedDataDir, err)
 	}
 	db, err := openStore(ctx)
 	if err != nil {

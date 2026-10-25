@@ -9,7 +9,7 @@ func (rt *Router) registerAuthRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/auth/login", rt.handleLogin)
 	mux.HandleFunc("POST /api/v1/auth/register", rt.handleRegister)
 	mux.HandleFunc("GET /api/v1/auth/setup-status", rt.handleSetupStatus)
-	mux.HandleFunc("POST /api/v1/auth/logout", rt.requireAuth(rt.handleLogout))
+	mux.HandleFunc("POST /api/v1/auth/logout", rt.requireSessionOrPinned(rt.handleLogout))
 	mux.HandleFunc("PUT /api/v1/auth/password", rt.requireAuth(rt.handleChangePassword))
 	mux.HandleFunc("GET /api/v1/auth/session", rt.handleAuthSession)
 	mux.HandleFunc("GET /api/v1/auth/whoami", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleWhoami))

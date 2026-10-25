@@ -126,6 +126,9 @@ func main() {
 	}
 	logger := slog.New(secretmask.Handler(slog.NewTextHandler(os.Stdout, nil)))
 
+	if len(os.Args) > 1 && hostCommands[os.Args[1]] {
+		adoptInstalledDataDir(systemdUnitDir)
+	}
 	if len(os.Args) > 1 && runReleaseCommand(os.Args[1], os.Args[2:]) {
 		return
 	}

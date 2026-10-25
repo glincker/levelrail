@@ -573,6 +573,18 @@ func (rt *Router) callerPrincipal(r *http.Request) (principalType, principalID s
 // resolves to a live session. Factored out of requireAuth so
 // requireAbility can check it without duplicating the cookie-lookup
 // dance.
+// requireSessionOrPinned is requireAuth for routes that only act on the
+// caller's own session cookie, so a session-link (pinned) session may use it.
+func (rt *Router) requireSessionOrPinned(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if _, pinned := rt.currentPinnedSession(r); !pinned && !rt.hasValidSession(r) {
+			writeError(w, http.StatusUnauthorized, "authentication required")
+			return
+		}
+		next(w, r)
+	}
+}
+
 func (rt *Router) hasValidSession(r *http.Request) bool {
 	_, ok := rt.currentSessionUserID(r)
 	return ok

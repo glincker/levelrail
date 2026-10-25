@@ -328,3 +328,45 @@ func TestSessionLink_ConsumedCookieAttributes(t *testing.T) {
 		})
 	}
 }
+
+func TestSessionLinkURL_FollowsRequestScheme(t *testing.T) {
+	cases := []struct {
+		name   string
+		tls    bool
+		prefix string
+	}{
+		{"plain http", false, "http://203.0.113.9:8080/login?session_link="},
+		{"direct tls", true, "https://203.0.113.9:8080/login?session_link="},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, _ := newTestRouter(t)
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/session-links", nil)
+			req.Host = "203.0.113.9:8080"
+			if tc.tls {
+				req.TLS = &tls.ConnectionState{}
+			}
+			if got := rt.sessionLinkURL(req, "tok"); got != tc.prefix+"tok" {
+				t.Errorf("sessionLinkURL() = %q, want %q", got, tc.prefix+"tok")
+			}
+		})
+	}
+}
+
+func TestSessionLink_PinnedSessionCanLogOut(t *testing.T) {
+	rt, db := newTestRouter(t)
+	plain := seedRootAPIToken(t, db, "tok_logout", []string{AbilityRoot})
+	minted, _ := mintSessionLink(t, rt, nil, plain)
+	cookie := sessionCookieFromRecorder(t, consumeSessionLinkRequest(t, rt, minted.Token))
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/auth/logout", ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("logout status = %d, want %d", rec.Code, http.StatusNoContent)
+	}
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps", ""))
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("after logout status = %d, want %d", rec.Code, http.StatusUnauthorized)
+	}
+}
