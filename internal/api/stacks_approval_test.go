@@ -230,8 +230,11 @@ func TestApprovalRollbackAlsoRequiresApproval(t *testing.T) {
 	rt, _, cookie, approver := approvalFixture(t)
 	stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.0.0"), nil)
 	tokenPost(t, rt, approver, "/api/v1/stacks/shop-prod/revisions/1/approve", "", nil)
+	// A changed second revision so the rollback target differs from the current one (equal docs answer a no-op).
+	stackApply(t, rt, cookie, stackTestDocs("ghcr.io/acme/web:1.1.0"), nil)
+	tokenPost(t, rt, approver, "/api/v1/stacks/shop-prod/revisions/2/approve", "", nil)
 	var out stackApplyResponse
-	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/shop-prod/revisions/1/rollback", ""), &out); code != http.StatusAccepted || out.Revision == nil || out.Revision.RollbackOf != 1 || out.Revision.Number != 2 {
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/stacks/shop-prod/revisions/1/rollback", ""), &out); code != http.StatusAccepted || out.Revision == nil || out.Revision.RollbackOf != 1 || out.Revision.Number != 3 {
 		t.Fatalf("rollback = %d %+v", code, out)
 	}
 }
