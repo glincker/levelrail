@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased (v0.8.6)
+
+
+### Features
+
+* stacks (experimental, behind `APP_EXPERIMENTAL=iac`): a stack keeps apps, databases, domains and other platform documents in git and applies them as numbered revisions, with `plan`, `apply`, `history`, `diff`, `rollback` (applied forward as a new revision), `pin`, `unpin`, `unlock` and `delete --mode forget|destroy`
+* stacks own the resources they create or adopt through a ledger across kinds; prune removes only owned resources, databases and projects are never pruned, and a mass-prune guard (`APP_STACK_PRUNE_MAX_COUNT`, `APP_STACK_PRUNE_MAX_PERCENT`) refuses large deletes unless the request sets `allow_mass_prune`
+* stack approvals: `require_approval` holds an apply as a `pending_approval` revision (202) until another root administrator approves or rejects it; approvals expire after `APP_STACK_APPROVAL_TTL` (default 24h) and take secrets again at approval time
+* stack drift checker: reads each stack's latest revision against live state every `APP_STACK_DRIFT_INTERVAL` (default 15m, `0` disables) and raises attention items; it never applies changes, and the `warn` and `lock` policies only record drift for now
+* stack-scoped API tokens with `stack` and `stack_verbs` (`plan` or `apply`), limited to that stack's endpoints and, during an apply, to its ledger and project
+* GitHub Action for stacks in `integrations/github-action/stack`: plan comments on pull requests, apply on merge, and exit code 2 for an apply that awaits approval
+
 ## [0.8.4](https://github.com/glincker/levelrail/compare/v0.8.3...v0.8.4) (2026-10-24)
 
 

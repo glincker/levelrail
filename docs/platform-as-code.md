@@ -348,6 +348,8 @@ Pass placeholder values with `--var` or name them with `--allow-env`; the runner
 
 Planning needs only a read token. Use a separate token with write ability for the apply job. The install step is yours to supply: download the `levelrail-cli` release binary for the runner, the way the bundled deploy action does. See [GitHub Actions](/github-actions) for token setup and that action.
 
+For numbered revisions, rollback, approvals and drift checks on the same files, see [Stacks and GitOps](/stacks). It is experimental and behind `APP_EXPERIMENTAL=iac`.
+
 ## Examples
 
 ### A single app
