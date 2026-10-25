@@ -85,8 +85,9 @@ The directory holds `stack.yaml`, `project.yaml`, `databases.yaml`, `apps.yaml`,
 
 - **Secrets**: `SECRETS.md` lists secret names only. The documents reference them with `secretRef`, and you pass the values at apply time with `--secret`. A secret the source generated (an `app.json` `generator`) is marked so you create a fresh random value.
 - **Images**: apply runs prebuilt images only. Apps that build from source get `--image-repo REGISTRY/NAMESPACE/APP:latest` and need that image pushed from your CI before the first apply.
-- **Databases**: they are created empty and the data is copied separately. Until the schema can reference a database, each connection variable (such as `DATABASE_URL`) is a secret name in `SECRETS.md`, set after the database exists or by `databases link`.
-- **Not in the documents**: volumes, scheduled jobs, routes and redirects are listed in `MIGRATION.md`.
+- **Databases**: they are created empty and the data is copied separately. A connection variable (such as `DATABASE_URL` or `REDIS_URL`) that matches exactly one emitted database of its engine is written as `{ from: { database: NAME, field: url } }`, so the platform injects the value and nothing is set by hand. A variable that matches none or several stays a secret name in `SECRETS.md`.
+- **Scheduled jobs**: source cron entries become `service.jobs`. A cron command that looks like it carries a credential is left out and listed in `MIGRATION.md` instead.
+- **Not in the documents**: volumes, routes and redirects are listed in `MIGRATION.md`.
 - **Name clashes**: if Heroku and Vercel config both define `web`, both are emitted, the second as `web-vercel`.
 
 ## Ownership and prune

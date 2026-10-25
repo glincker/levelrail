@@ -13,6 +13,7 @@
 * stack drift checker: reads each stack's latest revision against live state every `APP_STACK_DRIFT_INTERVAL` (default 15m, `0` disables) and raises attention items; it never applies changes, and the `warn` and `lock` policies only record drift for now
 * stack-scoped API tokens with `stack` and `stack_verbs` (`plan` or `apply`), limited to that stack's endpoints and, during an apply, to its ledger and project
 * GitHub Action for stacks in `integrations/github-action/stack`: plan comments on pull requests, apply on merge, and exit code 2 for an apply that awaits approval
+* stack App documents reference a database with `{ from: { database, field } }` (resolved by the control plane at container start, so plans and revisions hold only the reference) and declare `service.jobs`; `import --emit stack` now writes both instead of `SECRETS.md` placeholders and migration notes
 
 ## [0.8.4](https://github.com/glincker/levelrail/compare/v0.8.3...v0.8.4) (2026-10-24)
 
