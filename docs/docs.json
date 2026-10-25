@@ -178,6 +178,7 @@
               "build-performance",
               "build-center",
               "scheduled-deploys",
+              "pr-comment-commands",
               "scheduled-jobs",
               "scheduled-functions",
               "image-auto-update",

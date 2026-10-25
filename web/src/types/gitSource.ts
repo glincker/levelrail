@@ -174,6 +174,10 @@ export interface GitSourceResource {
   // read-only-here, set-via-preview-settings shape as preview_enabled
   // above (queries/previewEnvironments.ts's setPreviewPostPRComments).
   post_pr_comments: boolean
+  // pr_comment_commands and pr_comment_commands_forks mirror the store
+  // fields: /levelrail pull request comment commands, off by default.
+  pr_comment_commands?: boolean
+  pr_comment_commands_forks?: boolean
   // deploy_paths and deploy_paths_ignore filter which pushes deploy by the
   // files they changed; report_status posts deploy state back to the forge.
   // Set via PUT /api/v1/apps/{name}/git-source/deploy-settings.

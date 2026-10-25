@@ -293,6 +293,8 @@ const (
 	DeployAttemptSourcePoll = "poll"
 	// DeployAttemptSourceUpload marks a build from a directory uploaded by the CLI instead of a git checkout.
 	DeployAttemptSourceUpload = "upload"
+	// DeployAttemptSourcePRComment marks a deploy or rollback a write-access user ran with a /levelrail pull request comment.
+	DeployAttemptSourcePRComment = "pr_comment"
 )
 
 // deployAttemptIDPrefix mirrors internal/api/tokens.go's "tok_" prefix

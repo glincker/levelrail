@@ -109,6 +109,7 @@ var Tree = map[string]*Node{
 		"clear-environment": nil,
 		"set-project":       nil,
 		"clear-project":     nil,
+		"set":               nil,
 		"set-node":          nil,
 		"clear-node":        nil,
 		"previews": {Subs: map[string]*Node{

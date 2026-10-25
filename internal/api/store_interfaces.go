@@ -230,6 +230,7 @@ type Store interface {
 	GitSourceStore
 	AppScheduleStore
 	ScheduledDeployStore
+	PRCommentCommandStore
 	AppGitHubActionsStore
 	CIOIDCTrustStore
 	ImageAutoUpdateStore

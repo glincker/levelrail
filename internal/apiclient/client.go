@@ -3097,6 +3097,15 @@ func (c *Client) SetPreviewPostPRComments(ctx context.Context, appName string, e
 	return out, err
 }
 
+// SetPRCommentCommands calls PUT /api/v1/apps/{name}/preview-settings with
+// only the pull request comment command toggles; a nil pointer leaves that
+// toggle unchanged.
+func (c *Client) SetPRCommentCommands(ctx context.Context, appName string, commands, forks *bool) (PreviewSettingsResource, error) {
+	var out PreviewSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/preview-settings", SetPreviewSettingsRequest{PRCommentCommands: commands, PRCommentCommandsForks: forks}, &out)
+	return out, err
+}
+
 // GetAutoRollback calls GET /api/v1/apps/{name}/auto-rollback: whether
 // appName rolls itself back automatically the next time a crashloop
 // alert rule fires for it.

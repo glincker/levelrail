@@ -225,6 +225,7 @@ levelrail-cli apps scale <name> [--replicas N] [--strategy rolling|recreate|blue
 levelrail-cli apps group <name> [flags]
 levelrail-cli apps hook-runs <name> [flags]
 levelrail-cli apps images <name> [flags]
+levelrail-cli apps set <name> --pr-comment-commands on|off [--pr-comment-commands-forks on|off] [flags]
 levelrail-cli apps set-node <name> <node-id> [--with-volumes] [flags]
 levelrail-cli apps clear-node <name> [--with-volumes] [flags]
 levelrail-cli apps moves list <name> [flags]
@@ -239,6 +240,7 @@ levelrail-cli apps moves get <name> <id> [flags]
 - `apps apply` restarts an app so saved env, secret and config changes reach the running container; it does nothing when nothing is pending.
 - `apps scale` changes the replica count and/or the deploy strategy.
 - `apps hook-runs` shows the most recent outcome of an app's pre and post deploy hooks; `apps images` lists the locally present image tags under the app's current image repo.
+- `apps set` changes app settings. `--pr-comment-commands on|off` lets write-access users run `/levelrail` commands from pull request comments (see [Pull request comment commands](/pr-comment-commands)).
 - `apps set-node` and `apps clear-node` move an app to another node, or back to the control plane's own local node. With `--with-volumes` the named volumes move too, and `apps moves` shows the history of those moves.
 
 ### Deploy history, approvals and automation

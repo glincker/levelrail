@@ -95,6 +95,13 @@ type GitSource struct {
 	// "SaveGitSource never writes it" shape PreviewEnabled's own doc
 	// comment already establishes.
 	PostPRComments bool
+	// PRCommentCommands lets write-access commenters run /levelrail commands
+	// on pull requests (migrations/2990). Off by default; set only through
+	// SetGitSourcePRCommentCommands, never by SaveGitSource.
+	PRCommentCommands bool
+	// PRCommentCommandsForks additionally accepts commands on pull requests
+	// whose head is a fork. Off by default.
+	PRCommentCommandsForks bool
 	// DeployPaths and DeployPathsIgnore filter which pushes deploy by the
 	// files they changed (doublestar globs). Empty means every push
 	// deploys. ReportStatus posts deploy and preview state back to the
@@ -187,7 +194,7 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 // ErrGitSourceNotFound if none is.
 func (db *DB) GetGitSource(ctx context.Context, serviceName string) (*GitSource, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at, connection_id
+		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, pr_comment_commands, pr_comment_commands_forks, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at, connection_id
 		FROM service_git_sources WHERE service_name = ?
 	`, serviceName)
 	g, err := scanGitSource(row.Scan)
@@ -472,15 +479,18 @@ func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 		additionalJSON, svcJSON       string
 		dbJSON                        string
 		previewEnabled, postPRComment int
+		prCommands, prCommandsForks   int
 		reportStatus                  int
 		pathsJSON, pathsIgnoreJSON    string
 		createdAt, updatedAt          string
 	)
-	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &g.BuildCommand, &g.PublishDir, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt, &g.ConnectionID); err != nil {
+	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &g.BuildCommand, &g.PublishDir, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &prCommands, &prCommandsForks, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt, &g.ConnectionID); err != nil {
 		return nil, err
 	}
 	g.PreviewEnabled = previewEnabled != 0
 	g.PostPRComments = postPRComment != 0
+	g.PRCommentCommands = prCommands != 0
+	g.PRCommentCommandsForks = prCommandsForks != 0
 	g.ReportStatus = reportStatus != 0
 	if err := json.Unmarshal([]byte(pathsJSON), &g.DeployPaths); err != nil {
 		return nil, fmt.Errorf("unmarshal deploy_paths: %w", err)

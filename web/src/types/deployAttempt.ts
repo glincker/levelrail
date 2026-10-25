@@ -43,6 +43,7 @@ export type DeployAttemptSource =
   | 'git_push'
   | 'poll'
   | 'upload'
+  | 'pr_comment'
 
 export interface DeployAttempt {
   /** 'held' is a finished build the app's publish lock kept off the live site. */
