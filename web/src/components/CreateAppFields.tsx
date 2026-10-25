@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { FormErrorSummary } from '@/components/ui/form-error-summary'
 import { useCreateApp } from '../queries/apps'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
@@ -212,6 +213,10 @@ export function CreateAppFields({
   // entirely when the dialog closes (see CreateResourceWizard.tsx), so a
   // fresh open already gets a fresh useState(false) here.
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const form = useAppForm<CreateAppFormInput, CreateAppFormOutput>(
+    createAppSchema,
+    { defaultValues: initialValues() },
+  )
   const {
     control,
     register,
@@ -221,9 +226,7 @@ export function CreateAppFields({
     watch,
     setValue,
     getValues,
-  } = useAppForm<CreateAppFormInput, CreateAppFormOutput>(createAppSchema, {
-    defaultValues: initialValues(),
-  })
+  } = form
 
   useEffect(() => {
     if (!open) {
@@ -297,6 +300,19 @@ export function CreateAppFields({
       onDiscardDraft={discardDraft}
       onDismissDraftNotice={dismissDraftNotice}
     >
+      <FormErrorSummary
+        form={form}
+        fields={{
+          name: { label: t('fields.name'), id: 'app-name' },
+          image: { label: t('fields.image'), id: 'app-image' },
+          port: { label: t('fields.port'), id: 'app-port' },
+          healthCheckPath: {
+            label: t('fields.healthPath'),
+            id: 'app-health-path',
+          },
+          replicas: { label: t('fields.replicas'), id: 'app-replicas' },
+        }}
+      />
       <div className="space-y-4">
         <FieldSectionLabel>{t('fields.basics')}</FieldSectionLabel>
         <Field>

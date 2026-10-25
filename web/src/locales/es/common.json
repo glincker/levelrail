@@ -572,5 +572,14 @@
     "p50": "p50 {{value}} ms",
     "p95": "p95 {{value}} ms",
     "sparkline": "Solicitudes por segundo en los últimos {{minutes}} minutos para {{dial}}"
+  },
+  "formErrorSummary": {
+    "title_one": "{{count}} campo necesita atención",
+    "title_other": "{{count}} campos necesitan atención",
+    "name": "Nombre",
+    "engine": "Motor",
+    "version": "Versión",
+    "envKey": "Nombre de variable, fila {{row}}",
+    "envValue": "Valor de variable, fila {{row}}"
   }
 }

@@ -915,5 +915,14 @@
     "p50": "p50 {{value}} ms",
     "p95": "p95 {{value}} ms",
     "sparkline": "Requests per second over the last {{minutes}} minutes for {{dial}}"
+  },
+  "formErrorSummary": {
+    "title_one": "{{count}} field needs attention",
+    "title_other": "{{count}} fields need attention",
+    "name": "Name",
+    "engine": "Engine",
+    "version": "Version",
+    "envKey": "Variable name, row {{row}}",
+    "envValue": "Variable value, row {{row}}"
   }
 }

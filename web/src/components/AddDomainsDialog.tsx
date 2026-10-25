@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { FormErrorSummary } from '@/components/ui/form-error-summary'
 import { addDomainsIndependently, type BulkAddOutcome } from '../lib/domainBulk'
 import {
   analyzeDomainList,
@@ -347,6 +348,17 @@ function AddDomainsBody({
         <DialogDescription>{t('page.addDialog.description')}</DialogDescription>
       </DialogHeader>
 
+      <FormErrorSummary
+        form={form}
+        fields={{
+          app: { label: t('page.addDialog.app'), id: 'add-domains-app' },
+          domains: {
+            label: t('page.addDialog.domains'),
+            id: 'add-domains-list',
+          },
+        }}
+      />
+
       <Field data-invalid={Boolean(errors.app)}>
         <FieldLabel htmlFor="add-domains-app">
           {t('page.addDialog.app')}
@@ -357,11 +369,7 @@ function AddDomainsBody({
             setValue('app', value ?? '', { shouldValidate: isSubmitted })
           }}
         >
-          <SelectTrigger
-            id="add-domains-app"
-            className="w-full"
-            aria-invalid={Boolean(errors.app)}
-          >
+          <SelectTrigger id="add-domains-app" className="w-full">
             <SelectValue placeholder={t('page.addDialog.appPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
@@ -385,16 +393,12 @@ function AddDomainsBody({
           id="add-domains-list"
           className="min-h-28 font-mono"
           placeholder={t('page.addDialog.domainsPlaceholder')}
-          aria-invalid={invalid}
-          aria-describedby={
-            invalid ? 'add-domains-errors add-domains-hint' : 'add-domains-hint'
-          }
           {...register('domains')}
         />
         <FieldHint id="add-domains-hint">
           {t('page.addDialog.domainsHint')}
         </FieldHint>
-        <div id="add-domains-errors" aria-live="polite">
+        <div>
           {emptyError ? (
             <FieldError>{t('page.addDialog.errors.empty')}</FieldError>
           ) : null}

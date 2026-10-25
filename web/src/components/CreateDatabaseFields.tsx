@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils'
 import { TONE } from '@/components/kit/tone'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { Link, useNavigate } from '@tanstack/react-router'
@@ -31,6 +32,7 @@ import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
 import { useSystemStatusOptional } from '../queries/systemStatus'
+import { FormErrorSummary } from '@/components/ui/form-error-summary'
 import { useFormDraft } from '../hooks/useFormDraft'
 import { useAppForm } from '../hooks/useAppForm'
 import {
@@ -194,6 +196,11 @@ export function CreateDatabaseFields({
     node: LOCAL_NODE_VALUE,
     project: getProjectScope() || NO_PROJECT_VALUE,
   }
+  const { t: tc } = useTranslation('common')
+  const form = useAppForm<CreateDatabaseFormInput, CreateDatabaseFormOutput>(
+    createDatabaseSchema,
+    { defaultValues },
+  )
   const {
     control,
     register,
@@ -203,10 +210,7 @@ export function CreateDatabaseFields({
     watch,
     setValue,
     getValues,
-  } = useAppForm<CreateDatabaseFormInput, CreateDatabaseFormOutput>(
-    createDatabaseSchema,
-    { defaultValues },
-  )
+  } = form
   const watchedEngine = watch('engine')
   const watchedVersion = watch('version')
 
@@ -307,6 +311,20 @@ export function CreateDatabaseFields({
       onDiscardDraft={discardDraft}
       onDismissDraftNotice={dismissDraftNotice}
     >
+      <FormErrorSummary
+        form={form}
+        fields={{
+          name: { label: tc('formErrorSummary.name'), id: 'database-name' },
+          engine: {
+            label: tc('formErrorSummary.engine'),
+            id: 'database-engine',
+          },
+          version: {
+            label: tc('formErrorSummary.version'),
+            id: 'database-version',
+          },
+        }}
+      />
       {CREDENTIALED_ENGINES.has(watchedEngine) &&
       systemStatus.data?.secrets_configured === false ? (
         <div

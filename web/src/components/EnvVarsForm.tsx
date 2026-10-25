@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useFieldArray, useWatch, type Control } from 'react-hook-form'
 import { z } from 'zod'
 import {
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/card'
 import { Field, FieldError, FieldGroup } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { FormErrorSummary } from '@/components/ui/form-error-summary'
 import {
   Select,
   SelectContent,
@@ -152,17 +154,31 @@ export function EnvVarsForm({
     () => ({ vars: toFieldValues(values) }),
     [values],
   )
-  const { control, register, handleSubmit, formState, getValues, reset } =
-    useAppForm<EnvFormValues>(envSchema, {
-      values: syncedValues,
-      resetOptions: { keepDirtyValues: true },
-    })
+  const { t: tc } = useTranslation('common')
+  const form = useAppForm<EnvFormValues>(envSchema, {
+    values: syncedValues,
+    resetOptions: { keepDirtyValues: true },
+  })
+  const { control, register, handleSubmit, formState, getValues, reset } = form
   const unsavedGuard = useUnsavedGuard(formState.isDirty)
   const watchedVars = useWatch({ control, name: 'vars' })
   const { fields, append, remove, replace, update } = useFieldArray({
     control,
     name: 'vars',
   })
+
+  const summaryFields = Object.fromEntries(
+    fields.flatMap((_, index) => [
+      [
+        `vars.${index}.key`,
+        { label: tc('formErrorSummary.envKey', { row: index + 1 }) },
+      ],
+      [
+        `vars.${index}.value`,
+        { label: tc('formErrorSummary.envValue', { row: index + 1 }) },
+      ],
+    ]),
+  )
 
   const onSubmit = handleSubmit((formValues) => {
     const vars: Record<string, string> = {}
@@ -239,6 +255,7 @@ export function EnvVarsForm({
           }}
           className="space-y-3"
         >
+          <FormErrorSummary form={form} fields={summaryFields} />
           {fields.length === 0 ? (
             <p className="text-sm text-muted-foreground">{emptyMessage}</p>
           ) : (
