@@ -506,6 +506,10 @@
         "title": "Stacks",
         "description": "Resource sets with revision history, rollback and pinning."
       },
+      "stack-templates": {
+        "title": "Stack templates",
+        "description": "Starter stack bundles to render, preview and copy out."
+      },
       "github-app": {
         "title": "GitHub App",
         "description": "Private-repository access for git-based deploys."

@@ -195,5 +195,37 @@
     "reject": "Reject",
     "rejecting": "Rejecting",
     "rejected": "Revision {{number}} rejected"
+  },
+  "templates": {
+    "title": "Stack templates",
+    "description": "Starter bundles for common stacks. Fill in the variables, preview the files and copy the commands.",
+    "loadFailed": "Could not load stack templates.",
+    "empty": {
+      "title": "No stack templates",
+      "description": "This build ships without starter bundles."
+    },
+    "open": "Open template {{name}}",
+    "secretCount_one": "{{count}} secret",
+    "secretCount_other": "{{count}} secrets",
+    "drawerDescription": "Loading template.",
+    "var": {
+      "name": "Name",
+      "domain": "Domain",
+      "image": "Image"
+    },
+    "issues": "The rendered files have problems",
+    "files": "Rendered files",
+    "copyAll": "Copy all",
+    "copied": "Copied",
+    "downloadAll": "Download all",
+    "secrets": {
+      "title": "Secrets you must provide",
+      "hint": "Names only. Export each as an environment variable before you apply.",
+      "none": "This bundle needs no secrets."
+    },
+    "cli": {
+      "title": "Apply from the CLI",
+      "hint": "Writes the files to a new folder, then applies them as a stack. Applying from the dashboard is not available yet."
+    }
   }
 }

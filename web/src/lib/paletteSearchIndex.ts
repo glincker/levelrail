@@ -33,6 +33,7 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
   'nav-assistant': 'ai chat llm help assistant',
   'nav-console': 'terminal shell cli ssh exec',
   'nav-help': 'docs documentation support guide',
+  'settings-stack-templates': 'stack template bundle starter iac gitops',
   'settings-tokens': 'api token key secret pat access',
   'settings-security': 'secret secrets password 2fa mfa auth session',
   'settings-oauth': 'sso login auth oidc github google sign in',
