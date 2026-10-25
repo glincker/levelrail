@@ -6,58 +6,91 @@ description: Measured pass rate of the one-click template catalog from the local
 
 Measured by the catalog smoke script (scripts/catalog-smoke.sh): each template's compose file is brought up with `docker compose up --wait`, checked for running and healthy containers, then torn down with its volumes. Host ports are dropped so runs never collide. Regenerate with `scripts/catalog-smoke.sh -r` (all of the top 50) or pass `-i id1,id2` for a subset. A fail with an unhealthy container means the template's own healthcheck never passed on this host, so check that healthcheck and the image first.
 
-Last run: 2026-10-19. **48 of 50 passed (96%).** Templates that need operator configuration are skipped and listed in the run output, not counted.
+Last run: 2026-10-25. **81 of 83 passed (98%).** Templates that need operator configuration are skipped and listed in the run output, not counted.
 
 | Template | Result | Seconds | Note |
 | --- | --- | --- | --- |
 | `actual-budget` | pass | 11 |  |
 | `adminer` | pass | 33 |  |
+| `alertmanager` | pass | 11 |  |
+| `apprise-api` | pass | 10 |  |
 | `appsmith` | pass | 65 |  |
 | `authentik` | pass | 63 |  |
+| `bentopdf` | pass | 6 |  |
 | `bookstack` | pass | 23 |  |
+| `bytestash` | pass | 10 |  |
 | `changedetection` | pass | 17 |  |
+| `consul` | pass | 7 |  |
+| `couchdb` | pass | 7 |  |
+| `dashy` | pass | 11 |  |
 | `directus` | pass | 44 |  |
+| `docker-registry` | pass | 12 |  |
+| `etcd` | pass | 8 |  |
+| `excalidraw` | pass | 33 |  |
 | `filebrowser` | pass | 8 |  |
 | `firefly-iii` | pass | 28 |  |
+| `flatnotes` | pass | 9 |  |
 | `forgejo` | pass | 11 |  |
 | `ghost` | pass | 20 |  |
 | `gitea` | pass | 35 |  |
+| `goatcounter` | pass | 13 |  |
+| `gotenberg` | pass | 46 |  |
 | `gotify` | pass | 6 |  |
 | `grafana` | pass | 35 |  |
+| `heimdall` | pass | 10 |  |
 | `homepage` | pass | 10 |  |
+| `homer` | pass | 7 |  |
 | `immich` | pass | 47 |  |
+| `influxdb` | pass | 34 |  |
 | `it-tools` | pass | 33 |  |
 | `jellyfin` | pass | 46 |  |
+| `kavita` | pass | 17 |  |
 | `keycloak` | pass | 35 |  |
+| `librespeed` | pass | 13 |  |
 | `linkding` | pass | 16 |  |
 | `listmonk` | pass | 39 |  |
+| `lldap` | pass | 8 |  |
+| `mailpit` | pass | 12 |  |
 | `mattermost` | pull_failed | 0 | no linux/arm64 image for the pinned tag (host limit) |
 | `mealie` | pass | 16 |  |
 | `meilisearch` | pass | 33 |  |
+| `memcached` | pass | 12 |  |
 | `memos` | pass | 11 |  |
 | `metabase` | pass | 37 |  |
+| `metube` | pass | 13 |  |
 | `minio` | pass | 37 |  |
+| `mosquitto` | pass | 7 |  |
 | `n8n` | pass | 41 |  |
+| `nats` | pass | 8 |  |
 | `nextcloud` | pass | 40 |  |
 | `nocodb` | pass | 14 |  |
 | `ntfy` | pass | 32 |  |
 | `open-webui` | pass | 82 |  |
 | `outline` | pass | 47 |  |
+| `pairdrop` | pass | 14 |  |
 | `paperless-ngx` | pass | 19 |  |
 | `penpot` | pass | 52 |  |
 | `pgadmin` | pass | 16 |  |
+| `phpmyadmin` | pass | 18 |  |
 | `plausible` | pass | 41 |  |
+| `pocket-id` | pass | 8 |  |
 | `pocketbase` | pass | 13 |  |
 | `portainer` | pass | 4 |  |
 | `prometheus` | pass | 34 |  |
+| `readeck` | pass | 17 |  |
 | `rocketchat` | pass | 43 |  |
 | `searxng` | pass | 34 |  |
+| `silverbullet` | pass | 14 |  |
 | `sonarqube` | pass | 25 |  |
 | `strapi` | pass | 81 |  |
+| `syncthing` | pass | 34 |  |
+| `tautulli` | pass | 10 |  |
 | `typesense` | pass | 36 |  |
 | `umami` | pass | 43 |  |
 | `uptime-kuma` | pass | 16 |  |
 | `vaultwarden` | pass | 31 |  |
+| `verdaccio` | pass | 10 |  |
+| `wallos` | pass | 9 |  |
 | `woodpecker` | fail | 32 | agent needs a Docker socket backend, left for owner decision |
 | `wordpress` | pass | 13 |  |
 
