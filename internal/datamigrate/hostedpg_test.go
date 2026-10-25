@@ -185,9 +185,22 @@ func TestDumpFilter(t *testing.T) {
 	for _, c := range f.Findings() {
 		ids[c.ID] = true
 	}
-	for _, id := range []string{"extension_comment", "extension_schema", "provider_extensions"} {
+	for _, id := range []string{"extension_schema", "provider_extensions"} {
 		if !ids[id] {
 			t.Errorf("missing finding %s", id)
+		}
+	}
+}
+
+func TestDumpFilterQuietCommentsAndCleansRewrittenSchema(t *testing.T) {
+	f := &dumpFilter{}
+	b, _ := io.ReadAll(f.wrap(strings.NewReader("CREATE EXTENSION pg_trgm WITH SCHEMA heroku_ext;\nCOMMENT ON EXTENSION pg_trgm IS 'x';\n")))
+	if !strings.Contains(string(b), `DROP SCHEMA IF EXISTS "heroku_ext" RESTRICT`) {
+		t.Errorf("no cleanup of the emptied schema:\n%s", b)
+	}
+	for _, c := range f.Findings() {
+		if c.ID == "extension_comment" {
+			t.Error("extension_comment must not be reported")
 		}
 	}
 }

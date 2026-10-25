@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -57,6 +58,20 @@ type filterReader struct {
 	inCopy  bool
 	midLine bool
 	rewrite map[string]bool
+	tailed  bool
+}
+
+// dropEmptyRewrittenSchemas removes provider schemas whose extension moved to
+// public, so no empty schema is left behind. A schema still in use is kept.
+func (r *filterReader) dropEmptyRewrittenSchemas() {
+	names := make([]string, 0, len(r.rewrite))
+	for s := range r.rewrite {
+		names = append(names, s)
+	}
+	sort.Strings(names)
+	for _, s := range names {
+		fmt.Fprintf(&r.out, "\nDO $do$ BEGIN DROP SCHEMA IF EXISTS \"%s\" RESTRICT; EXCEPTION WHEN dependent_objects_still_exist THEN NULL; END $do$;\n", s)
+	}
 }
 
 func (r *filterReader) Read(p []byte) (int, error) {
@@ -75,6 +90,13 @@ func (r *filterReader) Read(p []byte) (int, error) {
 			r.err = err
 		default:
 			r.err = err
+		}
+	}
+	if errors.Is(r.err, io.EOF) && !r.tailed {
+		r.tailed = true
+		r.dropEmptyRewrittenSchemas()
+		if r.out.Len() > 0 {
+			return r.out.Read(p)
 		}
 	}
 	if r.out.Len() > 0 {
@@ -100,7 +122,7 @@ func (r *filterReader) line(l string) {
 	}
 	switch {
 	case strings.HasPrefix(l, "COMMENT ON EXTENSION "):
-		r.f.note("extension_comment", SeverityWarn, "Extension comments were skipped: only the extension owner may set them.", "")
+		// Dropped silently: nothing the user can act on.
 		return
 	case strings.HasPrefix(l, "CREATE EXTENSION "):
 		if m := createExtRe.FindStringSubmatch(l); m != nil {
