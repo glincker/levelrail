@@ -125,6 +125,19 @@ hand, fix git, unpin. The next plan shows the drift.
 - `lock`: writes to stack-owned fields from outside a stack apply get a 409
   ("managed by stack X, apply a change or unlock").
 
+Lock enforcement (v0.8.6): a guard in front of the router looks up the ledger
+owner of the resource a POST, PUT, PATCH or DELETE targets (apps, databases,
+domains, projects, environments). If the owner has policy `lock` and the
+request is not part of that stack's own apply, the answer is 409 with code
+`stack_locked`. Reads, and operations that change no declared field (start,
+stop, restart, exec, builds, backups, cache purge, dry-run and check calls),
+pass. Every other route on a locked resource is refused, including replicas
+(a PUT of the app, and `autoscale`), image deploys, env, secrets, domains and
+delete. A root caller may send `X-Levelrail-Override-Stack-Lock: <stack>`; the
+override is audited as `stack.lock_override` and is never honored for CI or
+stack-scoped tokens. If the ledger cannot be read the request is allowed and a
+warning is logged; forgetting or destroying the stack unlocks its resources.
+
 Additive maps (env, labels, tags, domains) keep showing live extras as `keep`.
 Operational actions (restart, redeploy the same image, logs, exec) never count
 as drift. When `autoscale` is declared, `replicas` is never drift. An

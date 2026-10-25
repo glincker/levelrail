@@ -121,7 +121,7 @@ Drift is a difference between live state and the files, usually from a hand edit
 A drift checker plans each stack's latest applied revision against live state every `APP_STACK_DRIFT_INTERVAL` (default 15m). Set it to `0` to turn the checker off. The checker only reads. It never applies a plan or changes a resource.
 
 - **warn** (default): a drifted stack is recorded and raises an attention item.
-- **lock**: recorded the same way. It does not refuse edits yet.
+- **lock**: recorded the same way, and manual changes to stack-owned apps, databases, domains, projects and environments get `409 stack_locked` naming the stack. Start, stop, restart, exec, builds, backups, cache purge and read-only checks still work. To change a locked resource, change the manifest and apply, or ask an admin. A root user can override one request with the header `X-Levelrail-Override-Stack-Lock: <stack>`; it is audited as `stack.lock_override` and CI or stack-scoped tokens cannot use it. If the ledger lookup fails, the request is allowed and a warning is logged. Forgetting or destroying a stack unlocks its resources.
 
 ## Tokens in CI
 

@@ -79,7 +79,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerMobileRoutes(mux)
 	rt.registerAccountSelfRoutes(mux)
 
-	var h http.Handler = mux
+	h := rt.stackLockMiddleware(mux)
 	h = rt.bodyLimitMiddleware(h)
 	h = rt.streamDrainMiddleware(h)
 	h = rt.accountEventMiddleware(h)
