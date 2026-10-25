@@ -299,4 +299,7 @@ func printStackDelete(w io.Writer, r apiclient.StackDeleteResult) {
 	for _, s := range r.Failed {
 		_, _ = fmt.Fprintln(w, "  FAILED    "+s)
 	}
+	if len(r.DataKept) > 0 {
+		_, _ = fmt.Fprintf(w, "data kept: %s (the database and its volume still exist; add --delete-data to remove them)\n", strings.Join(r.DataKept, ", "))
+	}
 }

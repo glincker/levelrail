@@ -71,7 +71,9 @@ func Build(docs []*Document, opts Options) ([]*Resource, []Issue) {
 	var out []*Resource
 	for _, d := range docs {
 		sink := &issueSink{d: d}
-		if r := buildOne(d, opts, sink); r != nil && len(sink.issues) == 0 {
+		r := buildOne(d, opts, sink)
+		checkPlaceholders(r, sink)
+		if r != nil && len(sink.issues) == 0 {
 			out = append(out, r)
 		}
 		issues = append(issues, sink.issues...)
@@ -81,6 +83,57 @@ func Build(docs []*Document, opts Options) ([]*Resource, []Issue) {
 		return nil, sortIssues(issues)
 	}
 	return out, nil
+}
+
+// checkPlaceholders rejects a ${{ ... }} left in a rendered field, so a typo or
+// an unsupported spot never reaches a live app as a literal string.
+func checkPlaceholders(r *Resource, s *issueSink) {
+	if r == nil || r.Kind == KindPipeline {
+		return
+	}
+	keys := make([]string, 0, len(r.Fields))
+	for k := range r.Fields {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		if m := findPlaceholder(r.Fields[k]); m != "" {
+			s.at("spec", "field %q still holds the unresolved placeholder %q; ${{ env.NAME }} is replaced from a var flag and ${{ secrets.NAME }} only works as a whole env var value", k, m)
+		}
+	}
+}
+
+var anyPlaceRe = regexp.MustCompile(`\$\{\{.*?\}\}`)
+
+func findPlaceholder(v any) string {
+	switch t := v.(type) {
+	case string:
+		return anyPlaceRe.FindString(t)
+	case map[string]any:
+		keys := make([]string, 0, len(t))
+		for k := range t {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			if m := findPlaceholder(t[k]); m != "" {
+				return m
+			}
+		}
+	case map[string]string:
+		for _, e := range t {
+			if m := anyPlaceRe.FindString(e); m != "" {
+				return m
+			}
+		}
+	case []any:
+		for _, e := range t {
+			if m := findPlaceholder(e); m != "" {
+				return m
+			}
+		}
+	}
+	return ""
 }
 
 func sortIssues(in []Issue) []Issue {
@@ -313,6 +366,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 			trimmed.Content = append(trimmed.Content, svcNode.Content[i], svcNode.Content[i+1])
 		}
 	}
+	substituteImage(&trimmed, s, opts)
 	var svc spec.Service
 	if err := trimmed.Decode(&svc); err != nil {
 		s.at("spec.service", "%v", err)
@@ -347,6 +401,21 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	}
 	f.Jobs = jobsFromSpec(svc.Jobs, s)
 	return &Resource{Kind: KindApp, Name: d.Name, Doc: d, Fields: toMap(f), SecretRefs: f.SecretEnv}
+}
+
+// substituteImage resolves ${{ env.NAME }} in build.image like env values.
+func substituteImage(svc *yaml.Node, s *issueSink, opts Options) {
+	img := mapValue(mapValue(svc, "build"), "image")
+	if img == nil || img.Kind != yaml.ScalarNode {
+		return
+	}
+	val, missing := substituteVars(img.Value, opts.Vars)
+	for _, m := range missing {
+		s.at("spec.service.build.image", "variable %s is not provided (pass it with a var flag)", m)
+	}
+	if len(missing) == 0 {
+		img.Value = val
+	}
 }
 
 func checkSupportedService(svc *spec.Service, s *issueSink) {

@@ -70,6 +70,12 @@ levelrail-cli stack unpin shop-prod
 
 `plan`, `show` and `diff` change nothing. `apply` writes a new revision when it changes something. `plan --exit-code` exits 2 when changes are pending. Run `levelrail-cli stack --help` for the full list, including `show-revision`, `reject`, `unlock` and `delete`.
 
+**First apply.** A new stack needs a project. If the files hold a `Project` document (a `stack init` bundle does), the first apply creates that project and then the stack, provided the caller could create a project directly (the write ability). CI and stack-scoped tokens never create projects. Otherwise, or when the project is missing and cannot be created, apply and plan both answer 422 naming the project and how to create it. A first apply whose plan has zero resources (for example when the project filter dropped every document) is refused with a message listing what was dropped; no stack is created.
+
+**Placeholders.** `${{ env.NAME }}` is replaced in env values and in `build.image`. Any `${{ ... }}` still present in a rendered field after that is rejected with a 422 naming the field.
+
+**Delete.** `stack delete --mode destroy` deletes the apps the stack owns and keeps its databases and their volumes; the output lists them as `data kept`. Add `--delete-data` (API: `delete_data=true` on `DELETE /api/v1/stacks/{name}?mode=destroy`) to also delete the databases the stack owns and their data. It needs root or `write:sensitive`, is never the default, and is recorded in the audit entry.
+
 ## Start from a template
 
 Five starter bundles ship inside the CLI. Copy one out, fill in the variables, review the plan, then apply:

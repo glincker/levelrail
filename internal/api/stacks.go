@@ -11,8 +11,10 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -262,6 +264,8 @@ type stackDeleteResponse struct {
 	Destroyed []string `json:"destroyed,omitempty"`
 	Forgotten []string `json:"forgotten,omitempty"`
 	Failed    []string `json:"failed,omitempty"`
+	// DataKept lists databases a destroy left alone because delete_data was not set.
+	DataKept []string `json:"data_kept,omitempty"`
 }
 
 func fmtStackTime(t time.Time) string { return t.UTC().Format(time.RFC3339) }
@@ -633,6 +637,14 @@ func (rt *Router) handleStackPlan(w http.ResponseWriter, r *http.Request) {
 			resp.Warnings = append(resp.Warnings, "the stack does not exist yet; prune stays off until an administrator allows it")
 			prune = false
 		}
+		p, create, ok := rt.resolveNewStack(w, r, req)
+		if !ok {
+			return
+		}
+		project = p
+		if create {
+			resp.Warnings = append(resp.Warnings, fmt.Sprintf("project %q does not exist yet; the first apply creates it, then the stack", project))
+		}
 	default:
 		rt.writeStackError(w, "plan", err)
 		return
@@ -641,6 +653,10 @@ func (rt *Router) handleStackPlan(w http.ResponseWriter, r *http.Request) {
 	if len(issues) > 0 {
 		resp.Issues = issues
 		writeJSON(w, http.StatusUnprocessableEntity, resp)
+		return
+	}
+	if !resp.StackExists && len(res) == 0 {
+		writeError(w, http.StatusUnprocessableEntity, emptyStackReason(req, project))
 		return
 	}
 	lctx, err := rt.stackLedgerContext(r.Context(), ss, stack.ID, name, project, res, req)
@@ -697,19 +713,38 @@ func (rt *Router) handleStackApply(w http.ResponseWriter, r *http.Request) {
 	rt.runStack(w, r, ss, stackRun{stack: stack, req: req, action: auditStackApply})
 }
 
-// createStackOnApply makes a first apply self-contained when the project exists.
+// createStackOnApply makes a first apply self-contained: it resolves the project
+// (creating it when the files declare it and the caller may), refuses an empty
+// plan, then creates the stack. Nothing is written before every check passes.
 func (rt *Router) createStackOnApply(w http.ResponseWriter, r *http.Request, ss StackStore, req stackRequest) (store.StackRecord, bool) {
 	name := r.PathValue("name")
-	proj, found := rt.projectByName(r.Context(), req.Project)
-	if req.Project == "" || !found {
-		writeError(w, http.StatusNotFound, fmt.Sprintf("stack %q does not exist; create it with POST /api/v1/stacks, or pass an existing project to create it on first apply", name))
-		return store.StackRecord{}, false
-	}
 	if err := iac.ValidateStackName(name); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err.Error())
 		return store.StackRecord{}, false
 	}
-	rec, err := rt.createStack(r, ss, stackCreateRequest{Name: name, Project: req.Project}, proj.ID)
+	project, create, ok := rt.resolveNewStack(w, r, req)
+	if !ok {
+		return store.StackRecord{}, false
+	}
+	res, _, issues := req.iac(name, project, false).build()
+	if len(issues) > 0 {
+		writeJSON(w, http.StatusUnprocessableEntity, stackApplyResponse{Stack: name, Issues: issues})
+		return store.StackRecord{}, false
+	}
+	if len(res) == 0 {
+		writeError(w, http.StatusUnprocessableEntity, emptyStackReason(req, project))
+		return store.StackRecord{}, false
+	}
+	proj, found := rt.projectByName(r.Context(), project)
+	if create {
+		if proj, ok = rt.createProjectForStack(w, r, project); !ok {
+			return store.StackRecord{}, false
+		}
+	} else if !found {
+		writeError(w, http.StatusUnprocessableEntity, missingProjectMessage(project))
+		return store.StackRecord{}, false
+	}
+	rec, err := rt.createStack(r, ss, stackCreateRequest{Name: name, Project: project}, proj.ID)
 	if errors.Is(err, store.ErrStackExists) {
 		rec, err = ss.GetStackByName(r.Context(), name)
 	}
@@ -1046,6 +1081,15 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusForbidden, "deleting a stack needs an administrator session or token and is never allowed from CI")
 		return
 	}
+	deleteData := r.URL.Query().Get("delete_data") == "true"
+	if deleteData && mode != iac.StackDestroy {
+		writeError(w, http.StatusBadRequest, "delete_data only applies with mode=destroy")
+		return
+	}
+	if deleteData && !rt.callerHasAbility(r, AbilityWriteSensitive) {
+		writeError(w, http.StatusForbidden, "deleting database data needs the root or write:sensitive ability")
+		return
+	}
 	s, ok := rt.loadStack(w, r, ss)
 	if !ok {
 		return
@@ -1063,17 +1107,33 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 	}
 	resp := stackDeleteResponse{Stack: s.Name, Mode: string(mode)}
 	doer := rt.iacDoer(r)
+	// Apps go before databases so the dependency check on a database sees them gone.
+	sort.SliceStable(ledger, func(i, j int) bool {
+		return ledger[i].Kind == string(iac.KindApp) && ledger[j].Kind != string(iac.KindApp)
+	})
+	dbsDeleted := 0
 	for _, e := range ledger {
 		label := e.Kind + "/" + e.Key
-		if mode != iac.StackDestroy || e.Kind != string(iac.KindApp) {
+		isDB := e.Kind == string(iac.KindDatabase)
+		if mode != iac.StackDestroy || (e.Kind != string(iac.KindApp) && (!isDB || !deleteData)) {
 			resp.Forgotten = append(resp.Forgotten, label)
+			if isDB && mode == iac.StackDestroy {
+				resp.DataKept = append(resp.DataKept, label)
+			}
 			continue
 		}
-		derr := doer.Do(r.Context(), http.MethodDelete, "/api/v1/apps/"+e.LiveID, nil, nil)
+		path := "/api/v1/apps/" + e.LiveID
+		if isDB {
+			path = "/api/v1/databases/" + e.LiveID + "?delete_data=true&confirm=" + url.QueryEscape(e.LiveID)
+		}
+		derr := doer.Do(r.Context(), http.MethodDelete, path, nil, nil)
 		var se *iac.StatusError
 		if derr != nil && (!errors.As(derr, &se) || se.Status != http.StatusNotFound) {
 			resp.Failed = append(resp.Failed, label+": "+derr.Error())
 			continue
+		}
+		if isDB {
+			dbsDeleted++
 		}
 		resp.Destroyed = append(resp.Destroyed, label)
 		_ = ss.DeleteStackResource(r.Context(), s.ID, e.Kind, e.Key)
@@ -1086,7 +1146,7 @@ func (rt *Router) handleDeleteStack(w http.ResponseWriter, r *http.Request) {
 		rt.writeStackError(w, "delete", err)
 		return
 	}
-	rt.auditStack(r, auditStackDestroy, map[string]any{"stack": s.Name, "mode": string(mode), "destroyed": len(resp.Destroyed), "forgotten": len(resp.Forgotten)})
+	rt.auditStack(r, auditStackDestroy, map[string]any{"stack": s.Name, "mode": string(mode), "destroyed": len(resp.Destroyed), "forgotten": len(resp.Forgotten), "delete_data": deleteData, "databases_deleted": dbsDeleted})
 	writeJSON(w, http.StatusOK, resp)
 }
 

@@ -266,7 +266,7 @@ type StackDeleteMode string
 const (
 	// StackForget releases the ledger and leaves every resource in place.
 	StackForget StackDeleteMode = "forget"
-	// StackDestroy deletes ledger resources except databases; never from CI.
+	// StackDestroy deletes ledger apps, and databases only with delete_data; never from CI.
 	StackDestroy StackDeleteMode = "destroy"
 )
 

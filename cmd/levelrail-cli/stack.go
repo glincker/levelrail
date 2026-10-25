@@ -296,13 +296,15 @@ func stackPin(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 
 func stackDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var mode *string
-	var yes *bool
-	c, code, ok := parseCLICall(prog, "stack delete", stackCmdUsage(prog, "delete", "<name> [--mode forget|destroy] [--yes]", `
+	var yes, deleteData *bool
+	c, code, ok := parseCLICall(prog, "stack delete", stackCmdUsage(prog, "delete", "<name> [--mode forget|destroy] [--delete-data] [--yes]", `
   --mode forget    stop managing the stack, keep every resource (default)
-  --mode destroy   also delete the resources the stack owns (root only)
+  --mode destroy   also delete the apps the stack owns (root only); databases and their data are kept
+  --delete-data    with --mode destroy, also delete the databases the stack owns and their volumes (root or write:sensitive, never recoverable)
   --yes            do not ask for confirmation
 `), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		mode = fs.String("mode", "forget", "forget or destroy")
+		deleteData = fs.Bool("delete-data", false, "with --mode destroy, also delete the databases the stack owns and their data")
 		yes = fs.Bool("yes", false, "do not ask for confirmation")
 	})
 	if !ok {
@@ -315,16 +317,22 @@ func stackDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	if *mode != "forget" && *mode != "destroy" {
 		return c.invalid("--mode must be forget or destroy")
 	}
+	if *deleteData && *mode != "destroy" {
+		return c.invalid("--delete-data needs --mode destroy")
+	}
 	if !*yes {
 		q := fmt.Sprintf("Forget stack %s (resources are kept)", pos[0])
 		if *mode == "destroy" {
-			q = fmt.Sprintf("DESTROY stack %s and delete every resource it owns", pos[0])
+			q = fmt.Sprintf("DESTROY stack %s and delete the apps it owns (databases and data are kept)", pos[0])
+		}
+		if *deleteData {
+			q = fmt.Sprintf("DESTROY stack %s, delete the apps it owns AND the databases with their data (cannot be undone)", pos[0])
 		}
 		if err := stackConfirm(stderr, q); err != nil {
 			return iacFail(c, err)
 		}
 	}
-	res, raw, err := c.client.DeleteStack(context.Background(), pos[0], *mode)
+	res, raw, err := c.client.DeleteStackData(context.Background(), pos[0], *mode, *deleteData)
 	if err != nil {
 		return iacFail(c, err)
 	}

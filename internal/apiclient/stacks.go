@@ -181,6 +181,7 @@ type StackDeleteResult struct {
 	Destroyed []string `json:"destroyed,omitempty"`
 	Forgotten []string `json:"forgotten,omitempty"`
 	Failed    []string `json:"failed,omitempty"`
+	DataKept  []string `json:"data_kept,omitempty"`
 }
 
 // StackCreateRequest is the body of POST /api/v1/stacks.
@@ -248,9 +249,21 @@ func (c *Client) UpdateStackSettings(ctx context.Context, name string, s StackSe
 
 // DeleteStack calls DELETE /api/v1/stacks/{name}?mode=.
 func (c *Client) DeleteStack(ctx context.Context, name, mode string) (StackDeleteResult, json.RawMessage, error) {
-	p := stackPath(name)
+	return c.DeleteStackData(ctx, name, mode, false)
+}
+
+// DeleteStackData is DeleteStack that can also delete the databases the stack owns.
+func (c *Client) DeleteStackData(ctx context.Context, name, mode string, deleteData bool) (StackDeleteResult, json.RawMessage, error) {
+	q := url.Values{}
 	if mode != "" {
-		p += "?mode=" + url.QueryEscape(mode)
+		q.Set("mode", mode)
+	}
+	if deleteData {
+		q.Set("delete_data", "true")
+	}
+	p := stackPath(name)
+	if len(q) > 0 {
+		p += "?" + q.Encode()
 	}
 	return stackCall[StackDeleteResult](ctx, c, http.MethodDelete, p, nil)
 }
