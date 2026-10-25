@@ -29,12 +29,14 @@ type AlertHistory interface {
 
 // BuiltinDeps are the collaborators of the built-in targets. A nil Alerts, Tokens or Janitor skips those targets.
 type BuiltinDeps struct {
-	Store    SweepStore
-	Alerts   AlertHistory
-	Tokens   TokenSource
-	Janitor  JanitorSource
-	Settings Settings
-	Now      func() time.Time
+	Store   SweepStore
+	Alerts  AlertHistory
+	Tokens  TokenSource
+	Janitor JanitorSource
+	// Retention enables the targets for history that had no sweeper before; nil skips them.
+	Retention RetentionStore
+	Settings  Settings
+	Now       func() time.Time
 }
 
 // Built-in target ids.
@@ -84,6 +86,11 @@ func RegisterBuiltins(r *Registry, d BuiltinDeps) {
 	}
 	if d.Tokens != nil {
 		r.Register(newTokenTarget(d))
+	}
+	if d.Retention != nil {
+		for _, t := range retentionTargets(d) {
+			r.Register(t)
+		}
 	}
 	if d.Janitor != nil {
 		for _, t := range janitorTargets(d.Janitor) {
