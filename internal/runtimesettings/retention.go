@@ -16,6 +16,13 @@ const (
 	KeyWebhookDeliveryDays  = "retention.webhook_delivery_days"
 	KeyEventWebhookDays     = "retention.event_webhook_days"
 	KeyAlertHistoryDays     = "retention.alert_history_days"
+	KeyAuthExpiredDays      = "retention.auth_expired_days"
+	KeyAIHistoryDays        = "retention.ai_history_days"
+	KeyRestoreHistoryDays   = "retention.restore_history_days"
+	KeyProbeAttemptDays     = "retention.probe_attempt_days"
+	KeyAppHistoryDays       = "retention.app_history_days"
+	KeyUsageCostDays        = "retention.usage_cost_days"
+	KeyStatusIncidentDays   = "retention.status_incident_days"
 	KeyCleanupInterval      = "cleanup.interval"
 	KeyCleanupEnabled       = "cleanup.enabled"
 	AuditLogFloorDays       = 90
@@ -119,6 +126,24 @@ func init() {
 		"Keep alert history for", "Days an alert history entry is kept. 0 keeps them forever.")
 	al.EnvConvert = DurationEnvToDays(true)
 	Register(al)
+	for _, n := range []struct{ key, env, def, title, desc string }{
+		{KeyAuthExpiredDays, "APP_RETENTION_AUTH_EXPIRED_DAYS", "30", "Delete expired sign-in records after",
+			"Days an expired session, device login code or magic link stays stored after it expired. 0 keeps them forever."},
+		{KeyAIHistoryDays, "APP_RETENTION_AI_HISTORY_DAYS", "90", "Keep AI assistant history for",
+			"Days an idle assistant chat and its usage metering are kept. A chat with newer messages is kept whole. 0 keeps them forever."},
+		{KeyRestoreHistoryDays, "APP_RETENTION_RESTORE_HISTORY_DAYS", "90", "Keep restore and drill history for",
+			"Days a finished restore, point-in-time restore or backup drill record is kept. 0 keeps them forever."},
+		{KeyProbeAttemptDays, "APP_RETENTION_PROBE_ATTEMPT_DAYS", "90", "Keep readiness probe attempts for",
+			"Days the per-attempt readiness probe detail of a deploy is kept. 0 keeps it forever."},
+		{KeyAppHistoryDays, "APP_RETENTION_APP_HISTORY_DAYS", "90", "Keep app events and schedule history for",
+			"Days app lifecycle events, scheduled deploy history and last canary outcomes are kept. 0 keeps them forever."},
+		{KeyUsageCostDays, "APP_RETENTION_USAGE_COST_DAYS", "90", "Keep daily cost snapshots for",
+			"Days a daily cost showback snapshot is kept. 0 keeps them forever."},
+		{KeyStatusIncidentDays, "APP_RETENTION_STATUS_INCIDENT_DAYS", "365", "Keep resolved status incidents for",
+			"Days a resolved incident or completed maintenance stays on the status page record. Open ones are never removed. 0 keeps them forever."},
+	} {
+		Register(retention(n.key, n.env, n.def, n.title, n.desc))
+	}
 	Register(Definition{
 		Key: KeyCleanupInterval, Category: CategoryRetention, Kind: KindDuration, Default: cleanupDefaultInterval,
 		Env: "APP_CLEANUP_INTERVAL", Apply: ApplyLive, CheckValue: MinDurationCheck(CleanupMinInterval),

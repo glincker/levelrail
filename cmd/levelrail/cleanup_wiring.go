@@ -17,7 +17,7 @@ import (
 // The scheduler stops with ctx and does nothing inside its startup delay or while cleanup.enabled is off.
 func setupCleanup(ctx context.Context, logger *slog.Logger, db *store.DB, alertingDB *alerting.DB, notifier keyreminder.Notifier, router *api.Router) {
 	settings := router.RuntimeSettings()
-	cleanup.RegisterBuiltins(cleanup.Default, cleanup.BuiltinDeps{Store: db, Alerts: alertingDB, Tokens: db, Janitor: db, Settings: settings})
+	cleanup.RegisterBuiltins(cleanup.Default, cleanup.BuiltinDeps{Store: db, Alerts: alertingDB, Tokens: db, Janitor: db, Retention: db, Settings: settings})
 	center := cleanup.New(cleanup.Config{
 		Registry: cleanup.Default,
 		Store:    db,
