@@ -99,9 +99,11 @@ func TestKeyedPool_SlowAppDoesNotDelayOthers(t *testing.T) {
 	if got := slow.calls.Load(); got != 1 {
 		t.Fatalf("slow app started %d times while in flight, want 1", got)
 	}
-	if s := e.Stats().Queue; s == nil || s.InFlight != 1 || s.Depth != 1 {
-		t.Fatalf("queue stats = %+v, want a in flight and a queued once", s)
-	}
+	// A fast run counts its call before its worker clears the in-flight slot.
+	waitFor(t, time.Second, "a in flight and queued once", func() bool {
+		s := e.Stats().Queue
+		return s != nil && s.InFlight == 1 && s.Depth == 1
+	})
 }
 
 func TestKeyedPool_KeyTimeoutFreesWorker(t *testing.T) {
