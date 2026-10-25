@@ -10,9 +10,11 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/GLINCKER/levelrail/internal/iac"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const (
@@ -113,6 +115,9 @@ func (rt *Router) handleIaCPlan(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if ss := rt.stackStore(); ss != nil && !rt.refuseStackSource(w, r, ss, req.Source) {
+		return
+	}
 	res, opts, issues := req.build()
 	if len(issues) > 0 {
 		writeJSON(w, http.StatusUnprocessableEntity, iacPlanResponse{Issues: issues})
@@ -137,7 +142,28 @@ func (rt *Router) handleIaCApply(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnprocessableEntity, iacApplyResponse{Issues: issues})
 		return
 	}
-	out, err := iac.Apply(r.Context(), rt.iacDoer(r), res, opts, req.ExpectedPlanHash)
+	expected := req.ExpectedPlanHash
+	if ss := rt.stackStore(); ss != nil {
+		if !rt.refuseStackSource(w, r, ss, req.Source) {
+			return
+		}
+		st, err := iac.Load(r.Context(), rt.iacDoer(r), res, opts)
+		if err != nil {
+			rt.internalError(w, "api: iac apply failed", err)
+			return
+		}
+		plan := iac.PlanFor(st, res, opts)
+		if expected != "" && expected != plan.Hash {
+			writeError(w, http.StatusConflict, iac.ErrPlanChanged.Error())
+			return
+		}
+		if !rt.refuseStackOwned(w, r, ss, res, plan) {
+			return
+		}
+		// Pin the checked plan so Apply cannot run a different one.
+		expected = plan.Hash
+	}
+	out, err := iac.Apply(r.Context(), rt.iacDoer(r), res, opts, expected)
 	if errors.Is(err, iac.ErrPlanChanged) {
 		writeError(w, http.StatusConflict, err.Error())
 		return
@@ -147,6 +173,66 @@ func (rt *Router) handleIaCApply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, iacApplyResponse{Result: &out})
+}
+
+// refuseStackSource keeps the legacy route off a stack's managed-by tag, so
+// its prune can never bypass the stack's ledger, approval and prune guards.
+func (rt *Router) refuseStackSource(w http.ResponseWriter, r *http.Request, ss StackStore, source string) bool {
+	if source == "" {
+		return true
+	}
+	for _, name := range []string{source, strings.ToLower(source)} {
+		_, err := ss.GetStackByName(r.Context(), name)
+		if err == nil {
+			writeError(w, http.StatusConflict, fmt.Sprintf("source %q is a stack; change its resources through /api/v1/stacks/%s/apply", source, name))
+			return false
+		}
+		if !errors.Is(err, store.ErrStackNotFound) {
+			rt.internalError(w, "api: iac stack lookup failed", err)
+			return false
+		}
+	}
+	return true
+}
+
+// refuseStackOwned refuses a legacy apply that would change or delete any
+// resource a stack ledger owns.
+func (rt *Router) refuseStackOwned(w http.ResponseWriter, r *http.Request, ss StackStore, res []*iac.Resource, plan iac.Plan) bool {
+	changed := map[string]bool{}
+	for _, c := range plan.Changes {
+		if c.Action == iac.ActionCreate || c.Action == iac.ActionUpdate || c.Action == iac.ActionDelete {
+			changed[c.Key()] = true
+		}
+	}
+	declared := map[string]bool{}
+	var refs []iac.LedgerRef
+	for _, x := range res {
+		declared[x.Key()] = true
+		if changed[x.Key()] {
+			refs = append(refs, iac.LedgerRefs([]*iac.Resource{x})...)
+		}
+	}
+	for _, c := range plan.Changes {
+		if c.Action == iac.ActionDelete && !declared[c.Key()] {
+			refs = append(refs, iac.LedgerRef{Kind: c.Kind, Key: c.Key()})
+		}
+	}
+	var owned []string
+	for _, ref := range refs {
+		_, found, err := ss.GetStackResourceOwner(r.Context(), string(ref.Kind), ref.Key)
+		if err != nil {
+			rt.internalError(w, "api: iac ledger lookup failed", err)
+			return false
+		}
+		if found {
+			owned = append(owned, ref.Key)
+		}
+	}
+	if len(owned) > 0 {
+		writeError(w, http.StatusConflict, fmt.Sprintf("these resources belong to a stack and change only through the stack API: %s", strings.Join(owned, ", ")))
+		return false
+	}
+	return true
 }
 
 func (rt *Router) handleIaCExport(w http.ResponseWriter, r *http.Request) {

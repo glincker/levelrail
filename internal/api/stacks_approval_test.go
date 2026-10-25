@@ -181,8 +181,8 @@ func TestApprovalStalePlanHashIs409(t *testing.T) {
 	if code := tokenPost(t, rt, approver, "/api/v1/stacks/shop-prod/revisions/1/approve", `{"expected_plan_hash":"stale"}`, nil); code != http.StatusConflict {
 		t.Fatalf("stale body hash = %d", code)
 	}
-	// Live state moves after the request: the same documents are applied directly.
-	direct := iacRequestBody(t, stackTestDocs("ghcr.io/acme/web:1.0.0"), map[string]any{"source": "shop-prod"})
+	// Live state moves after the request: the same documents are applied outside the stack.
+	direct := iacRequestBody(t, stackTestDocs("ghcr.io/acme/web:1.0.0"), map[string]any{"source": "out-of-band"})
 	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/apply", direct), nil); code != http.StatusOK {
 		t.Fatalf("direct apply = %d", code)
 	}
