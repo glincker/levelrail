@@ -44,6 +44,8 @@ Commands:
   show-revision <name> <n>              documents, plan and result of one revision
   diff <name> <n> [--against M|live]    compare a revision with another or with live state
   rollback <name> <n> [--yes]           apply the documents of revision n as a new revision
+  approve <name> <n> [--secret ...]     approve a pending revision (root, never the requester)
+  reject <name> <n> [--reason TEXT]     reject a pending revision (root)
   pin <name> <n>                        refuse applies except a rollback to revision n
   unpin <name>                          remove the pin
   unlock <name>                         release a stuck apply lease (root only)
@@ -82,6 +84,10 @@ func runStack(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return stackDiff(prog, rest, stdout, stderr, lookupEnv)
 	case "rollback":
 		return stackRollback(prog, rest, stdout, stderr, lookupEnv)
+	case "approve":
+		return stackApprove(prog, rest, stdout, stderr, lookupEnv)
+	case "reject":
+		return stackReject(prog, rest, stdout, stderr, lookupEnv)
 	case "pin":
 		return stackPin(prog, rest, stdout, stderr, lookupEnv)
 	case "unpin":
@@ -706,6 +712,9 @@ func finishStackRun(c cliCall, raw json.RawMessage, res apiclient.StackApplyResp
 		return iacExitError
 	}
 	switch iac.RevisionStatus(res.Revision.Status) {
+	case iac.RevisionPendingApproval:
+		_, _ = fmt.Fprintf(c.stderr, "revision %d awaits approval; nothing was applied\n", res.Revision.Number)
+		return iacExitPending
 	case iac.RevisionPartial, iac.RevisionFailed:
 		_, _ = fmt.Fprintf(c.stderr, "revision %d ended %s\n", res.Revision.Number, res.Revision.Status)
 		return iacExitError
@@ -753,6 +762,72 @@ Flags:`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagS
 		return iacFail(c, err)
 	}
 	return finishStackRun(c, raw, res, "rolled back")
+}
+
+func stackApprove(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	var mf *stackManifestFlags
+	var expected *string
+	c, code, ok := parseCLICall(prog, "stack approve", stackCmdUsage(prog, "approve", "<name> <n> [flags]", `
+Approves a revision that is awaiting approval and applies it. Needs root, and
+the requester cannot approve their own revision. Secrets are never stored with
+a pending revision, so pass them again here.
+
+Flags:
+  --secret NAME=ENVVAR     secret value read from a local environment variable; never printed or stored
+  --expected-plan-hash H   refuse (409) when the pending revision has another plan hash
+`), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
+		mf = bindStackManifestFlags(fs, false)
+		expected = fs.String("expected-plan-hash", "", "refuse when the pending revision has another plan hash")
+	})
+	if !ok {
+		return code
+	}
+	pos, code, ok := stackPositionals(c, prog, "approve", "<name> <n>", 2)
+	if !ok {
+		return code
+	}
+	n, err := parseRevision(pos[1])
+	if err != nil {
+		return c.fail(err)
+	}
+	secrets, err := resolveStackSecrets(mf.secrets, lookupEnv)
+	if err != nil {
+		return iacFail(c, err)
+	}
+	c = redactCall(c, secrets)
+	res, raw, err := c.client.ApproveStack(context.Background(), pos[0], n, apiclient.StackApproveRequest{Secrets: secrets, ExpectedPlanHash: *expected})
+	if err != nil {
+		return iacFail(c, err)
+	}
+	return finishStackRun(c, raw, res, "approved")
+}
+
+func stackReject(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	var reason *string
+	c, code, ok := parseCLICall(prog, "stack reject", stackCmdUsage(prog, "reject", "<name> <n> [--reason TEXT]", `
+Rejects a revision that is awaiting approval. It moves to failed and nothing is applied.
+
+Flags:
+  --reason TEXT   why, recorded with the revision and the audit log
+`), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
+		reason = fs.String("reason", "", "why the revision is rejected")
+	})
+	if !ok {
+		return code
+	}
+	pos, code, ok := stackPositionals(c, prog, "reject", "<name> <n>", 2)
+	if !ok {
+		return code
+	}
+	n, err := parseRevision(pos[1])
+	if err != nil {
+		return c.fail(err)
+	}
+	_, raw, err := c.client.RejectStack(context.Background(), pos[0], n, *reason)
+	if err != nil {
+		return iacFail(c, err)
+	}
+	return c.render(raw, func() { _, _ = fmt.Fprintf(c.stdout, "rejected revision %d of stack %s\n", n, pos[0]) })
 }
 
 func filesDigest(files []apiclient.IaCFile) string {

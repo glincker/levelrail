@@ -111,6 +111,24 @@ type StackApplyResponse struct {
 	Issues   []iac.Issue      `json:"issues,omitempty"`
 	Replayed bool             `json:"replayed,omitempty"`
 	Warnings []string         `json:"warnings,omitempty"`
+	// PendingApproval is true on a 202: the revision is stored and nothing ran.
+	PendingApproval bool      `json:"pending_approval,omitempty"`
+	ExpiresAt       string    `json:"expires_at,omitempty"`
+	Plan            *iac.Plan `json:"plan,omitempty"`
+}
+
+// StackApproveRequest is the body of an approval. Secrets are never stored with
+// a pending revision, so the approver supplies them here.
+type StackApproveRequest struct {
+	Secrets          map[string]string `json:"secrets,omitempty"`
+	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty"`
+}
+
+// StackRejectResponse is the result of rejecting a pending revision.
+type StackRejectResponse struct {
+	Stack    string        `json:"stack"`
+	Revision StackRevision `json:"revision"`
+	Reason   string        `json:"reason,omitempty"`
 }
 
 // StackFieldChange is one field of a revision diff.
@@ -256,6 +274,16 @@ func (c *Client) StackRevisionDiff(ctx context.Context, name string, n int, agai
 // RollbackStack calls POST /api/v1/stacks/{name}/revisions/{n}/rollback.
 func (c *Client) RollbackStack(ctx context.Context, name string, n int, req StackRequest) (StackApplyResponse, json.RawMessage, error) {
 	return stackCall[StackApplyResponse](ctx, c, http.MethodPost, stackPath(name, "revisions", fmt.Sprint(n), "rollback"), req)
+}
+
+// ApproveStack calls POST /api/v1/stacks/{name}/revisions/{n}/approve.
+func (c *Client) ApproveStack(ctx context.Context, name string, n int, req StackApproveRequest) (StackApplyResponse, json.RawMessage, error) {
+	return stackCall[StackApplyResponse](ctx, c, http.MethodPost, stackPath(name, "revisions", fmt.Sprint(n), "approve"), req)
+}
+
+// RejectStack calls POST /api/v1/stacks/{name}/revisions/{n}/reject.
+func (c *Client) RejectStack(ctx context.Context, name string, n int, reason string) (StackRejectResponse, json.RawMessage, error) {
+	return stackCall[StackRejectResponse](ctx, c, http.MethodPost, stackPath(name, "revisions", fmt.Sprint(n), "reject"), map[string]string{"reason": reason})
 }
 
 // PinStack calls PUT /api/v1/stacks/{name}/pin.

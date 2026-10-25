@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1746 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1748 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1461,7 +1461,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/stacks/{name}/plan", Ability: "AbilityRead", Group: "Other", Handler: "handleStackPlan", Description: ""},
 	{Method: "GET", Path: "/api/v1/stacks/{name}/revisions", Ability: "AbilityRead", Group: "Other", Handler: "handleStackRevisions", Description: ""},
 	{Method: "GET", Path: "/api/v1/stacks/{name}/revisions/{n}", Ability: "AbilityRead", Group: "Other", Handler: "handleStackRevision", Description: ""},
+	{Method: "POST", Path: "/api/v1/stacks/{name}/revisions/{n}/approve", Ability: "AbilityRoot", Group: "Other", Handler: "handleStackApprove", Description: ""},
 	{Method: "GET", Path: "/api/v1/stacks/{name}/revisions/{n}/diff", Ability: "AbilityRead", Group: "Other", Handler: "handleStackDiff", Description: ""},
+	{Method: "POST", Path: "/api/v1/stacks/{name}/revisions/{n}/reject", Ability: "AbilityRoot", Group: "Other", Handler: "handleStackReject", Description: ""},
 	{Method: "POST", Path: "/api/v1/stacks/{name}/revisions/{n}/rollback", Ability: "AbilityWrite", Group: "Other", Handler: "handleStackRollback", Description: ""},
 	{Method: "POST", Path: "/api/v1/stacks/{name}/unlock", Ability: "AbilityRoot", Group: "Other", Handler: "handleStackUnlock", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page", Ability: "AbilityRead", Group: "Other", Handler: "handleGetStatusPage", Description: ""},

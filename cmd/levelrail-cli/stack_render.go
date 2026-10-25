@@ -172,6 +172,9 @@ func printStackRun(w io.Writer, r apiclient.StackApplyResponse, verb string) {
 	if r.Revision.RollbackOf > 0 {
 		_, _ = fmt.Fprintf(w, "restores revision %d\n", r.Revision.RollbackOf)
 	}
+	if r.PendingApproval {
+		_, _ = fmt.Fprintf(w, "awaiting approval until %s; approve with: stack approve %s %d\n", r.ExpiresAt, r.Stack, r.Revision.Number)
+	}
 	if r.Result != nil {
 		_, _ = fmt.Fprintln(w)
 		printApplyResult(w, *r.Result)
@@ -192,6 +195,9 @@ func printStackHistory(w io.Writer, h apiclient.StackHistory) {
 		note := ""
 		if r.RollbackOf > 0 {
 			note = fmt.Sprintf("rollback of %d", r.RollbackOf)
+		}
+		if r.Status == string(iac.RevisionPendingApproval) {
+			note = strings.TrimSpace(note + " awaiting approval")
 		}
 		if r.Number == h.PinnedRevision {
 			note = strings.TrimSpace(note + " pinned")

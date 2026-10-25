@@ -1971,6 +1971,8 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/stacks/{name}/pin | AbilityWrite | handleStackPin |
 | DELETE | /api/v1/stacks/{name}/pin | AbilityWrite | handleStackUnpin |
 | POST | /api/v1/stacks/{name}/unlock | AbilityRoot | handleStackUnlock |
+| POST | /api/v1/stacks/{name}/revisions/{n}/approve | AbilityRoot | handleStackApprove |
+| POST | /api/v1/stacks/{name}/revisions/{n}/reject | AbilityRoot | handleStackReject |
 
 ## See also
 

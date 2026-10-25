@@ -175,6 +175,10 @@ type stackApplyResponse struct {
 	Issues   []iac.Issue           `json:"issues,omitempty"`
 	Replayed bool                  `json:"replayed,omitempty"`
 	Warnings []string              `json:"warnings,omitempty"`
+	// PendingApproval answers 202: the plan is stored and nothing was applied.
+	PendingApproval bool      `json:"pending_approval,omitempty"`
+	ExpiresAt       string    `json:"expires_at,omitempty"`
+	Plan            *iac.Plan `json:"plan,omitempty"`
 }
 
 type stackCreateRequest struct {
@@ -237,7 +241,7 @@ func (rt *Router) writeStackError(w http.ResponseWriter, what string, err error)
 	case errors.Is(err, store.ErrStackNotFound), errors.Is(err, store.ErrStackRevisionNotFound):
 		writeError(w, http.StatusNotFound, err.Error())
 	case errors.Is(err, store.ErrStackExists), errors.Is(err, iac.ErrStackLocked), errors.Is(err, iac.ErrStackPinned),
-		errors.Is(err, iac.ErrLedgerConflict), errors.Is(err, iac.ErrPlanChanged):
+		errors.Is(err, iac.ErrLedgerConflict), errors.Is(err, iac.ErrPlanChanged), errors.Is(err, store.ErrStackBadTransition):
 		writeError(w, http.StatusConflict, err.Error())
 	case errors.Is(err, iac.ErrPruneNotAllowed), errors.Is(err, store.ErrStackSecretLeak):
 		writeError(w, http.StatusUnprocessableEntity, err.Error())
@@ -378,6 +382,7 @@ func (rt *Router) loadStack(w http.ResponseWriter, r *http.Request, ss StackStor
 		rt.writeStackError(w, "get", err)
 		return s, false
 	}
+	rt.expireStackApprovals(r.Context(), ss, s)
 	return s, true
 }
 
@@ -586,6 +591,8 @@ type stackRun struct {
 	rollbackOf int
 	action     string
 	warnings   []string
+	// pending is the revision an approval is applying; nil for a fresh apply.
+	pending *store.StackRevisionRecord
 }
 
 func newHolder(c stackCaller) string {
@@ -649,10 +656,6 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		rt.writeStackError(w, run.action, err)
 		return
 	}
-	if stack.RequireApproval {
-		writeError(w, http.StatusConflict, "this stack requires approval before an apply; the approval flow is not available yet")
-		return
-	}
 	if req.Prune {
 		if err := stackOf(stack).PruneAllowed(true); err != nil {
 			rt.writeStackError(w, run.action, err)
@@ -673,8 +676,15 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		}
 	}
 
+	if stack.RequireApproval && run.pending == nil {
+		rt.requestStackApproval(w, r, ss, run, res, opts)
+		return
+	}
+
 	next := 1
-	if revs, err := ss.ListStackRevisions(ctx, stack.ID, 1); err == nil && len(revs) > 0 {
+	if run.pending != nil {
+		next = run.pending.Number
+	} else if revs, err := ss.ListStackRevisions(ctx, stack.ID, 1); err == nil && len(revs) > 0 {
 		next = revs[0].Number + 1
 	}
 	holder := newHolder(caller)
@@ -691,6 +701,12 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	if fresh, err := ss.GetStackByName(ctx, stack.Name); err == nil {
 		if perr := stackOf(fresh).CheckPin(run.rollbackOf); perr != nil {
 			rt.writeStackError(w, run.action, perr)
+			return
+		}
+	}
+
+	if run.pending != nil {
+		if !rt.pendingStillApprovable(ctx, w, ss, stack, run.pending.Number) {
 			return
 		}
 	}
@@ -720,15 +736,8 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		rt.writeStackError(w, run.action, iac.ErrPlanChanged)
 		return
 	}
-	rendered, _ := json.Marshal(renderStackFiles(req.Files, req.Vars))
-	planJSON, _ := json.Marshal(plan)
-	rev, err := ss.AppendStackRevision(ctx, store.NewStackRevision{
-		StackID: stack.ID, Status: store.StackRevApplying, PlanHash: plan.Hash, PlanJSON: planJSON, RenderedDocs: rendered,
-		RollbackOf: run.rollbackOf, IdempotencyKey: req.IdempotencyKey, Actor: caller.name, TokenID: caller.tokenID(),
-		GitRepo: req.GitRepo, GitRef: req.GitRef, GitSHA: req.GitSHA, CIRunURL: req.CIRunURL, Secrets: req.Secrets,
-	}, time.Now())
-	if err != nil {
-		rt.writeStackError(w, run.action, err)
+	rev, ok := rt.startStackRevision(ctx, w, ss, run, caller, plan)
+	if !ok {
 		return
 	}
 	if rev.Replayed {
