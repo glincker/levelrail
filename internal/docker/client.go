@@ -678,6 +678,15 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 	if spec.NetworkMode != "" {
 		hostConfig.NetworkMode = container.NetworkMode(spec.NetworkMode)
 	}
+	if spec.UsernsMode != "" {
+		hostConfig.UsernsMode = container.UsernsMode(spec.UsernsMode)
+	}
+	if len(spec.SecurityOpt) > 0 {
+		hostConfig.SecurityOpt = append(hostConfig.SecurityOpt, spec.SecurityOpt...)
+	}
+	for _, d := range spec.Devices {
+		hostConfig.Devices = append(hostConfig.Devices, toDeviceMapping(d))
+	}
 	if spec.RestartPolicy != "" {
 		hostConfig.RestartPolicy = container.RestartPolicy{Name: container.RestartPolicyMode(spec.RestartPolicy)}
 	}
@@ -686,6 +695,19 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 		hostConfig.Tmpfs = map[string]string{"/tmp": hardenedTmpfsOpts}
 	}
 	return hostConfig
+}
+
+// toDeviceMapping parses "host[:container[:perms]]"; perms default to rwm.
+func toDeviceMapping(d string) container.DeviceMapping {
+	parts := strings.SplitN(d, ":", 3)
+	m := container.DeviceMapping{PathOnHost: parts[0], PathInContainer: parts[0], CgroupPermissions: "rwm"}
+	if len(parts) > 1 && parts[1] != "" {
+		m.PathInContainer = parts[1]
+	}
+	if len(parts) > 2 && parts[2] != "" {
+		m.CgroupPermissions = parts[2]
+	}
+	return m
 }
 
 func toDeviceRequest(g GPURequest) container.DeviceRequest {

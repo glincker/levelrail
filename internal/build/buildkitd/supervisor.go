@@ -2,6 +2,7 @@ package buildkitd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -38,6 +39,10 @@ type Supervisor struct {
 	mu       sync.Mutex
 	inflight int
 	lastUse  time.Time
+
+	failures     int
+	retryAt      time.Time
+	upgradeSince time.Time
 }
 
 // New builds a supervisor and refuses an unpinned image.
@@ -72,12 +77,32 @@ func workersHealth(ctx context.Context, addr string, timeout time.Duration) erro
 func (s *Supervisor) Acquire(ctx context.Context) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.failures > 0 && s.now().Before(s.retryAt) {
+		return "", fmt.Errorf("%w: next attempt in %s", ErrBackoff, s.retryAt.Sub(s.now()).Round(time.Second))
+	}
 	if err := s.reconcile(ctx); err != nil {
+		if !errors.Is(err, ErrUpgradePending) {
+			s.noteFailure()
+		}
 		return "", err
 	}
+	s.failures = 0
 	s.inflight++
 	s.lastUse = s.now()
 	return s.cfg.SocketAddr(), nil
+}
+
+// noteFailure doubles the wait before the next start attempt up to BackoffMax.
+func (s *Supervisor) noteFailure() {
+	wait := s.cfg.RestartBackoff
+	for i := 0; i < s.failures && wait < s.cfg.BackoffMax; i++ {
+		wait *= 2
+	}
+	if s.cfg.BackoffMax > 0 && wait > s.cfg.BackoffMax {
+		wait = s.cfg.BackoffMax
+	}
+	s.failures++
+	s.retryAt = s.now().Add(wait)
 }
 
 // Release marks one build finished.
@@ -125,6 +150,15 @@ func (s *Supervisor) reconcile(ctx context.Context) error {
 		return fmt.Errorf("buildkitd: inspect: %w", err)
 	}
 	if st != nil && st.Image != s.cfg.Image {
+		if s.inflight > 0 {
+			if s.upgradeSince.IsZero() {
+				s.upgradeSince = s.now()
+			}
+			if s.now().Sub(s.upgradeSince) < s.cfg.UpgradeWait {
+				return ErrUpgradePending
+			}
+		}
+		s.upgradeSince = time.Time{}
 		slog.Info("buildkitd image changed, replacing", "from", st.Image, "to", s.cfg.Image)
 		if err := s.remove(ctx, st); err != nil {
 			return err
@@ -189,9 +223,21 @@ func (s *Supervisor) writeConfig() error {
 }
 
 // spec has no network and no published ports. The socket directory and the
-// generated config are bind mounted, state lives on a named volume.
+// generated config are bind mounted, state lives on a named volume. It is
+// never privileged: a user namespace plus the preflight's relaxations only.
 func (s *Supervisor) spec() docker.ContainerSpec {
+	userns := usernsRootful
+	if s.cfg.Rootless {
+		userns = usernsRootless
+	}
+	var devices []string
+	if s.cfg.Snapshotter == "fuse-overlayfs" {
+		devices = []string{fuseDevice}
+	}
 	return docker.ContainerSpec{
+		UsernsMode:  userns,
+		SecurityOpt: append([]string(nil), s.cfg.SecurityOpt...),
+		Devices:     devices,
 		Name:        ContainerName,
 		Image:       s.cfg.Image,
 		NetworkMode: "none",

@@ -201,3 +201,58 @@ func TestBuildkitdConfigFromEnv(t *testing.T) {
 		t.Fatal("rootful without APP_DATA_DIR must fail")
 	}
 }
+
+func TestBuildkitdSpecUsernsAndDevices(t *testing.T) {
+	for _, tc := range []struct {
+		rootless bool
+		snap     string
+		userns   string
+		devices  int
+	}{{false, "auto", "auto", 0}, {true, "fuse-overlayfs", "keep-id", 1}} {
+		rt := &fakeRT{}
+		s, _ := newSup(t, rt)
+		s.cfg.Rootless, s.cfg.Snapshotter = tc.rootless, tc.snap
+		if _, err := s.Acquire(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		sp := rt.created
+		if sp.UsernsMode != tc.userns || len(sp.Devices) != tc.devices || len(sp.SecurityOpt) != 0 {
+			t.Fatalf("rootless=%v spec %+v", tc.rootless, sp)
+		}
+	}
+}
+
+func TestBuildkitdRestartBackoff(t *testing.T) {
+	rt := &fakeRT{}
+	s, clock := newSup(t, rt)
+	s.cfg.RestartBackoff, s.cfg.BackoffMax = 10*time.Second, time.Minute
+	s.health = func(context.Context, string, time.Duration) error { return errors.New("down") }
+	if _, err := s.Acquire(context.Background()); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("first: %v", err)
+	}
+	if _, err := s.Acquire(context.Background()); !errors.Is(err, ErrBackoff) {
+		t.Fatalf("want backoff, got %v", err)
+	}
+	*clock = clock.Add(11 * time.Second)
+	s.health = func(context.Context, string, time.Duration) error { return nil }
+	if _, err := s.Acquire(context.Background()); err != nil {
+		t.Fatalf("after backoff: %v", err)
+	}
+}
+
+func TestBuildkitdUpgradeWaitsForInflight(t *testing.T) {
+	rt := &fakeRT{st: &docker.ContainerState{ID: "old", Image: "other@sha256:x", Running: true}}
+	s, clock := newSup(t, rt)
+	s.cfg.UpgradeWait = time.Minute
+	s.inflight = 1
+	if _, err := s.Acquire(context.Background()); !errors.Is(err, ErrUpgradePending) {
+		t.Fatalf("want pending, got %v", err)
+	}
+	if len(rt.calls) != 0 {
+		t.Fatalf("replaced while building: %v", rt.calls)
+	}
+	*clock = clock.Add(2 * time.Minute)
+	if _, err := s.Acquire(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+}

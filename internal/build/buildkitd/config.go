@@ -28,6 +28,15 @@ const (
 	defaultGCKeepDuration = 168 * time.Hour
 	defaultHealthTimeout  = 5 * time.Second
 	defaultIdleStop       = 30 * time.Minute
+	defaultRestartBackoff = 5 * time.Second
+	defaultBackoffMax     = 5 * time.Minute
+	defaultUpgradeWait    = 10 * time.Minute
+
+	// UsernsRootful keeps a rootful engine from mapping container root to
+	// host root; rootless uses keep-id so the socket owner matches the user.
+	usernsRootful  = "auto"
+	usernsRootless = "keep-id"
+	fuseDevice     = "/dev/fuse"
 
 	containerSocketDir = "/run/levelrail-buildkit"
 	socketName         = "buildkitd.sock"
@@ -39,6 +48,10 @@ var (
 	ErrImageNotPinned = errors.New("buildkitd: image must be pinned by sha256 digest (set APP_BUILDKIT_IMAGE)")
 	// ErrUnavailable means the daemon is not healthy after one restart.
 	ErrUnavailable = errors.New("buildkitd: buildkit_unavailable")
+	// ErrUpgradePending means an image upgrade waits for in-flight builds.
+	ErrUpgradePending = errors.New("buildkitd: upgrade waiting for in-flight builds")
+	// ErrBackoff means a recent start failed and the next try is not due yet.
+	ErrBackoff = errors.New("buildkitd: restart backing off")
 )
 
 // Config holds the supervisor settings, read from APP_BUILDKIT_* env.
@@ -51,6 +64,14 @@ type Config struct {
 	IdleStop      time.Duration
 	SocketDir     string
 	ConfigDir     string
+
+	Rootless       bool
+	RestartBackoff time.Duration
+	BackoffMax     time.Duration
+	UpgradeWait    time.Duration
+	// SecurityOpt holds relaxations the preflight proved necessary (ADR 046).
+	// Empty by default: none is applied on a guess.
+	SecurityOpt []string
 }
 
 // SocketAddr is the unix address a BuildKit client dials.
@@ -68,6 +89,11 @@ func ConfigFromEnv(get func(string) string, rootless bool) (Config, error) {
 		GCKeepFor:     defaultGCKeepDuration,
 		HealthTimeout: defaultHealthTimeout,
 		IdleStop:      defaultIdleStop,
+
+		Rootless:       rootless,
+		RestartBackoff: defaultRestartBackoff,
+		BackoffMax:     defaultBackoffMax,
+		UpgradeWait:    defaultUpgradeWait,
 	}
 	if DefaultDigest != "" {
 		cfg.Image += "@" + DefaultDigest
@@ -97,6 +123,9 @@ func ConfigFromEnv(get func(string) string, rootless bool) (Config, error) {
 		{"APP_BUILDKIT_GC_KEEP_DURATION", &cfg.GCKeepFor},
 		{"APP_BUILDKIT_HEALTH_TIMEOUT", &cfg.HealthTimeout},
 		{"APP_BUILDKIT_IDLE_STOP", &cfg.IdleStop},
+		{"APP_BUILDKIT_RESTART_BACKOFF", &cfg.RestartBackoff},
+		{"APP_BUILDKIT_RESTART_BACKOFF_MAX", &cfg.BackoffMax},
+		{"APP_BUILDKIT_UPGRADE_WAIT", &cfg.UpgradeWait},
 	}
 	for _, d := range durations {
 		v := get(d.key)
