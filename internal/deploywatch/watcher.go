@@ -262,6 +262,16 @@ func (w *Watcher) record(ctx context.Context, attempt *store.DeployAttempt, phas
 
 func (w *Watcher) trip(ctx context.Context, svc *store.DesiredService, attempt *store.DeployAttempt, cfg deploysafety.Effective, reason, message string) {
 	w.record(ctx, attempt, deploysafety.PhaseWatch, deploysafety.StatusFailed, reason, message)
+	// An operator who rolled back chose this release: record the crash and
+	// keep the row as it is, so the choice stays visible whatever the
+	// auto-rollback setting is.
+	if w.operatorChose(ctx, attempt) {
+		msg := "this release was chosen by an operator rollback, so it was not rolled back automatically"
+		w.record(ctx, attempt, deploysafety.PhaseRollback, deploysafety.StatusInfo, deploysafety.ReasonOperatorRollback, msg)
+		w.logger().Warn("deploywatch: operator rollback release tripped the watch", slog.String("service", svc.Name), slog.String("attempt_id", attempt.ID), slog.String("reason", reason))
+		w.notify(ctx, svc.Name, svc.Image, fmt.Sprintf("%s: %s; %s", reason, message, msg))
+		return
+	}
 	changed, err := w.Store.FailDeployAttemptWithReason(ctx, attempt.ID, reason, message)
 	if err == nil && !changed {
 		err = w.Store.SetDeployAttemptReason(ctx, attempt.ID, reason)
@@ -279,14 +289,6 @@ func (w *Watcher) trip(ctx context.Context, svc *store.DesiredService, attempt *
 	// something outside the app, and walking further back would hide it.
 	if attempt.Source == store.DeployAttemptSourceAutoRollback {
 		w.notify(ctx, svc.Name, svc.Image, fmt.Sprintf("%s: %s; this release is already an automatic rollback, leaving it for an operator", reason, message))
-		return
-	}
-	// An operator who rolled back chose this release; walking to another
-	// one would silently override that choice.
-	if w.operatorChose(ctx, attempt) {
-		msg := "this release was chosen by an operator rollback, so it was not rolled back automatically"
-		w.record(ctx, attempt, deploysafety.PhaseRollback, deploysafety.StatusInfo, deploysafety.ReasonOperatorRollback, msg)
-		w.notify(ctx, svc.Name, svc.Image, fmt.Sprintf("%s: %s; %s", reason, message, msg))
 		return
 	}
 	target, pin, err := w.rollbackTarget(ctx, svc, attempt)

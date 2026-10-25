@@ -349,4 +349,28 @@ func TestWatcher_RespectsOperatorRollback(t *testing.T) {
 	if len(f.notes.msgs) != 1 || !strings.Contains(f.notes.msgs[0], "operator rollback") {
 		t.Errorf("notifications = %v", f.notes.msgs)
 	}
+	if a, _ := f.db.GetDeployAttempt(ctx, "dep_v2"); a.Status != store.DeployAttemptStatusSucceeded || a.Reason != "RollbackTo: dep_v0" {
+		t.Errorf("operator rollback row = %q / %q, want it left succeeded with its reason", a.Status, a.Reason)
+	}
+}
+
+// The OperatorRollback event must not depend on the auto-rollback setting.
+func TestWatcher_OperatorRollbackEventWithAutoRollbackOff(t *testing.T) {
+	f := newWatchFixture(t, true)
+	ctx := context.Background()
+	off := false
+	if err := f.db.SaveDeploySafetySettings(ctx, store.DeploySafetySettings{ServiceName: "web", AutoRollback: &off}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.db.ExecContext(ctx, `UPDATE deploy_attempts SET reason = 'RollbackTo: dep_v0' WHERE id = 'dep_v2'`); err != nil {
+		t.Fatal(err)
+	}
+	f.watcher.Restarts = fakeRestarts(3)
+	f.watcher.Tick(ctx)
+	if !hasEvent(f.events(t), deploysafety.PhaseRollback, deploysafety.StatusInfo, deploysafety.ReasonOperatorRollback) {
+		t.Errorf("events = %+v, want an OperatorRollback event", f.events(t))
+	}
+	if a, _ := f.db.GetDeployAttempt(ctx, "dep_v2"); a.Status != store.DeployAttemptStatusSucceeded {
+		t.Errorf("status = %q, want succeeded", a.Status)
+	}
 }

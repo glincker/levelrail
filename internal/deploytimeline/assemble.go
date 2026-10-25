@@ -120,6 +120,9 @@ func gateCode(e store.DeployGateEvent) string {
 		if e.Reason == deploysafety.ReasonNoRollbackTarget {
 			return "rollback.no_target"
 		}
+		if e.Reason == deploysafety.ReasonOperatorRollback {
+			return "rollback.operator_kept"
+		}
 		return "rollback.auto"
 	}
 	return e.Phase + "." + e.Status
@@ -146,6 +149,8 @@ func gateTitle(e store.DeployGateEvent) string {
 		return "Automatic rollback"
 	case "rollback.no_target":
 		return "No rollback target available"
+	case "rollback.operator_kept":
+		return "Operator rollback kept"
 	}
 	return strings.TrimSpace(humanize(e.Phase) + " " + e.Status)
 }
