@@ -31,6 +31,27 @@ scripts/qa/droplet.sh down --yes
 
 `scripts/qa/droplet_test.sh` covers the pure helpers and the dry-run output with `doctl`, `ssh` and `rsync` stubbed on `PATH` (the stubs exit 99, so a leak to a real droplet fails the test).
 
+## Stack scenarios
+
+`stack-run.sh` makes QA and agent test environments stack-driven instead of imperative `apps create` calls. Each scenario is a YAML stack in `scripts/qa/stacks/`. To run apps on droplets from `droplet.sh`, pass the control plane IP as `--server`.
+
+| Scenario | What it declares | Assertion |
+| --- | --- | --- |
+| `hello-web` | One image app with a readiness probe | HTTP 200 and the body contains `QA_BODY_MATCH` |
+| `app-db` | An app plus Postgres, `DATABASE_URL` set with `from: {database, field: url}` | Same as `hello-web` |
+| `rollback-loop` | One blue-green app applied with two image tags | A 200ms request loop runs through `stack rollback`; non-200 responses are counted and must not exceed `QA_LOOP_MAX_BAD` |
+
+```bash
+scripts/dev-local.sh start                  # local Docker Desktop, login dev/dev
+scripts/qa/stack-run.sh hello-web --dry-run
+scripts/qa/stack-run.sh hello-web --server http://127.0.0.1:8080 --token "$TOKEN"
+scripts/qa/stack-run.sh rollback-loop --server http://203.0.113.10:8080 --token "$TOKEN" --keep
+```
+
+Each run renders the scenario with a unique suffix, runs `levelrail-cli stack apply`, waits for the deploy to converge (`apps deploys wait`, bounded by `QA_STACK_WAIT`), runs the assertion, destroys the stack (`stack delete --mode destroy`, skipped with `--keep`) and prints one line: `PASS|FAIL <scenario> <stack>`. Server and token default to `APP_API_URL` and `APP_API_TOKEN`. Stacks need `APP_EXPERIMENTAL=iac` on the control plane (the script sets it for the CLI). The app hostname is the zero-config `sslip.io` name, resolved to the server IP for the check; set `QA_APP_URL` to assert against a fixed URL instead. Other knobs are listed at the top of the script.
+
+`--dry-run` prints every `levelrail-cli` command instead of running it. `scripts/qa/stack-run_test.sh` covers the dry-run output with `levelrail-cli`, `curl` and `doctl` stubbed.
+
 ## Not covered offline
 
 Real droplet creation and ssh readiness, the rsync resume path, the join command parsing in `enroll` (it expects a line starting with `sudo ` in the `nodes add` output), and the service restart units. Check these on the first real run.

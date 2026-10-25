@@ -1,0 +1,10 @@
+# One image app with a readiness probe. @SUFFIX@ is replaced per run.
+version: 1
+kind: App
+metadata: { name: qa-hello-@SUFFIX@ }
+spec:
+  service:
+    build: { type: image, image: "${{ env.QA_IMAGE }}" }
+    port: 80
+    health:
+      readiness: { path: /, interval: 2s, timeout: 2s }
