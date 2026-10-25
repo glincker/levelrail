@@ -1,0 +1,66 @@
+name: Stack
+on:
+  pull_request:
+    paths: ['stacks/**']
+  push:
+    branches: [main]
+    paths: ['stacks/**']
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: glincker/levelrail/integrations/github-action/stack@main
+        with:
+          stack: staging
+          path: stacks/staging
+          mode: plan
+          api-url: ${{ secrets.LEVELRAIL_API_URL }}
+          token: ${{ secrets.LEVELRAIL_TOKEN }}
+          comment: 'true'
+
+  apply-staging:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: glincker/levelrail/integrations/github-action/stack@main
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        with:
+          stack: staging
+          path: stacks/staging
+          mode: apply
+          api-url: ${{ secrets.LEVELRAIL_API_URL }}
+          token: ${{ secrets.LEVELRAIL_TOKEN }}
+          secrets: |
+            DATABASE_URL=DATABASE_URL
+
+  apply-prod:
+    needs: apply-staging
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # Add required reviewers to the production environment: that is the approval gate.
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: glincker/levelrail/integrations/github-action/stack@main
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        with:
+          stack: production
+          path: stacks/production
+          mode: apply
+          api-url: ${{ secrets.LEVELRAIL_API_URL }}
+          token: ${{ secrets.LEVELRAIL_TOKEN }}
+          secrets: |
+            DATABASE_URL=DATABASE_URL
