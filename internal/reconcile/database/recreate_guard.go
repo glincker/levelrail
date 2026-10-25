@@ -93,6 +93,10 @@ func replaceFailure(dbName string, err error) (reconcile.Result, error) {
 		res.RequeueAfter = loop.wait
 		return res, nil
 	}
+	var missing *dataVolumeMissingError
+	if errors.As(err, &missing) {
+		return notReady(reasonDataVolumeMissing, err), fmt.Errorf("database/%s: %w", dbName, err)
+	}
 	return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", dbName, err)
 }
 

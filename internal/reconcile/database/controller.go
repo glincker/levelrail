@@ -270,6 +270,7 @@ type Controller struct {
 	prov                 *dbprovision.Tracker
 	probe                func(ctx context.Context, addr string) error
 	recreates            recreateGuard
+	agentVersion         AgentVersionLookup
 	now                  func() time.Time
 }
 
@@ -759,7 +760,8 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 
 	// An agent older than the labels field reports none, so a label mismatch
 	// there is unknowable: adopt the container rather than recreate it.
-	labelsKnown := state != nil && !state.LabelsUnknown
+	outdated := state != nil && c.agentOutdated(ctx, desired.NodeID)
+	labelsKnown := state != nil && !state.LabelsUnknown && !outdated
 
 	justDeployed := false
 	switch {
@@ -836,7 +838,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		}
 		justDeployed = true
 
-	case state.Running && !portsMatch(state.Ports, spec.Ports):
+	case !outdated && state.Running && !portsMatch(state.Ports, spec.Ports):
 		// Docker bakes a container's published ports into its create-time
 		// HostConfig; toggling public access or changing the assigned
 		// port can't be applied to a running container in place, so this
@@ -882,9 +884,9 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	}
 
 	if justDeployed {
-		return ready("Deployed"), nil
+		return withAgentNote(ready("Deployed"), outdated), nil
 	}
-	return ready("AlreadyRunning"), nil
+	return withAgentNote(ready("AlreadyRunning"), outdated), nil
 }
 
 // ensureWALArchiveWritable chowns postgresWALArchivePath to the
@@ -949,6 +951,9 @@ func (c *Controller) createAndStart(ctx context.Context, spec docker.ContainerSp
 // create begins) so the data volume is never mounted by two containers
 // at once.
 func (c *Controller) replaceContainer(ctx context.Context, old *docker.ContainerState, spec docker.ContainerSpec) error {
+	if err := c.requireVolume(ctx, dataVolumeName(c.dbName), spec); err != nil {
+		return err
+	}
 	if err := c.recreates.allow(c.clock()); err != nil {
 		return err
 	}

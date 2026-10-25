@@ -216,6 +216,34 @@ func (e *Engine) volumes(ctx context.Context, p Policy, dry, pressure bool, now 
 			}
 		}
 	}
+	if lister, ok := e.Docker.(anonymousVolumeLister); ok && (dry || !pressure) {
+		// Dangling anonymous volumes (left by image VOLUME directives when a
+		// container is recreated) are listed on a dry run and removed only
+		// when the operator enabled volume deletion; named volumes never.
+		dangling, err := lister.ListDanglingAnonymousVolumes(ctx)
+		if err != nil {
+			res.Status, res.Error = StatusFailed, err.Error()
+		} else if len(dangling) > 0 {
+			var total int64
+			for _, v := range dangling {
+				total += max(v.SizeBytes, 0)
+			}
+			item := Item{Name: fmt.Sprintf("%d anonymous volumes", len(dangling)), SizeBytes: total, Action: ActionKept,
+				Detail: "unused volumes from image VOLUME directives; deletion is off"}
+			switch {
+			case dry:
+				item.Action, item.Detail = ActionWouldRemove, "unused volumes from image VOLUME directives"
+			case p.DeleteOrphanVolumes:
+				pr, perr := e.Docker.PruneAnonymousVolumes(ctx)
+				if perr != nil {
+					res.Status, res.Error = StatusFailed, perr.Error()
+				}
+				res.ReclaimedBytes += u64(pr.ReclaimedBytes)
+				item = Item{Name: fmt.Sprintf("%d anonymous volumes", len(pr.Removed)), SizeBytes: u64(pr.ReclaimedBytes), Action: ActionRemoved}
+			}
+			res.Items = append(res.Items, item)
+		}
+	}
 	if pressure && !dry {
 		pr, err := e.Docker.PruneAnonymousVolumes(ctx)
 		if err != nil {
@@ -262,4 +290,9 @@ func (e *Engine) attempts(ctx context.Context, p Policy, dry bool, now time.Time
 		res.Items = append(res.Items, Item{Name: n, Detail: fmt.Sprintf("%d old failed or superseded attempts", perApp[n]), Count: perApp[n], Action: act})
 	}
 	return res
+}
+
+// anonymousVolumeLister is the optional read-only listing a local daemon offers.
+type anonymousVolumeLister interface {
+	ListDanglingAnonymousVolumes(ctx context.Context) ([]docker.AnonymousVolume, error)
 }

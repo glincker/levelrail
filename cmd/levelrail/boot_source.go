@@ -363,6 +363,7 @@ func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databas
 			dbOpts = append(dbOpts, database.WithMeshEndpoint(newMeshPathResolver(deps.meshCfg, deps.db), deps.db))
 		}
 		dbOpts = append(dbOpts, database.WithProvisionRecorder(provisionRecorder(deps.db)))
+		dbOpts = append(dbOpts, database.WithAgentVersion(agentVersionLookup(deps)))
 		controllers = append(controllers, database.New(desired.Name, deps.db, dbRuntime, dbOpts...))
 	}
 	return controllers
@@ -531,5 +532,21 @@ func runtimeIsPodman(rt docker.Runtime) func(context.Context) bool {
 			kind = docker.RefineKind(kind, id)
 		}
 		return kind == docker.RuntimeKindPodman
+	}
+}
+
+// agentVersionLookup reports the agent build of a database's node, so the
+// controller can hold back destructive drift decisions on an outdated agent.
+func agentVersionLookup(deps dynamicSourceDeps) database.AgentVersionLookup {
+	return func(ctx context.Context, nodeID string) (string, bool, error) {
+		id := runtimeNodeID(deps, nodeID)
+		if id == "" {
+			return "", false, nil
+		}
+		n, err := deps.db.GetNode(ctx, id)
+		if err != nil {
+			return "", true, err
+		}
+		return n.AgentVersion, true, nil
 	}
 }
