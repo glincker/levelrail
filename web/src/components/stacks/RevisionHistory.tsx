@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { RelativeTime } from '@/components/kit'
 import type { Stack, StackRevisionSummary } from '../../types/stacks'
-import { canApprove } from './approval'
+import { canApprove, canRollbackTo } from './approval'
 import { RevisionStatus } from './StackIndicators'
 
 export interface RevisionHistoryProps {
@@ -167,7 +167,7 @@ export function RevisionHistory({
               variant="ghost"
               size="icon-sm"
               aria-label={t('actions.rollbackRev', { number: r.number })}
-              disabled={r.number === stack.latest_revision}
+              disabled={!canRollbackTo(r, stack.latest_revision)}
               onClick={() => {
                 onRollback(r.number)
               }}

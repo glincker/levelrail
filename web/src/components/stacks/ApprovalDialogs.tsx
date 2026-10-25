@@ -6,6 +6,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Input } from '@/components/ui/input'
 import { SecretInput } from '@/components/ui/secret-input'
 import { toast } from '@/components/ui/toast'
+import { useAuthUsername } from '../../hooks/useAuthUsername'
 import { ApiError } from '../../lib/apiError'
 import { useApproveStack, useRejectStack } from '../../queries/stacks'
 import type { StackRevisionSummary } from '../../types/stacks'
@@ -14,6 +15,14 @@ interface SecretRow {
   id: number
   name: string
   value: string
+}
+
+// Keeps the last non-null value so a closing dialog keeps its title while
+// the exit animation runs.
+function useLastValue<T>(value: T | null): T | null {
+  const [last, setLast] = useState<T | null>(value)
+  if (value !== null && value !== last) setLast(value)
+  return value ?? last
 }
 
 export function ApproveDialog({
@@ -27,6 +36,9 @@ export function ApproveDialog({
 }>) {
   const { t } = useTranslation('stacks')
   const approve = useApproveStack(name)
+  const username = useAuthUsername()
+  const shown = useLastValue(revision)
+  const isRequester = shown !== null && !!username && shown.actor === username
   const [rows, setRows] = useState<SecretRow[]>([])
   const [nextId, setNextId] = useState(1)
   const [error, setError] = useState<string | null>(null)
@@ -90,9 +102,15 @@ export function ApproveDialog({
           onClose()
         }
       }}
-      title={t('approval.approveTitle', { number: revision?.number ?? 0 })}
-      description={t('approval.approveDescription', { name })}
+      title={t('approval.approveTitle', { number: shown?.number ?? 0 })}
+      description={t(
+        isRequester
+          ? 'approval.approveDescriptionOwn'
+          : 'approval.approveDescription',
+        { name },
+      )}
       consequences={[t('approval.secretsNote')]}
+      confirmDisabled={isRequester}
       confirmLabel={t('approval.approve')}
       pendingLabel={t('approval.approving')}
       pending={approve.isPending}
@@ -161,6 +179,7 @@ export function RejectDialog({
 }>) {
   const { t } = useTranslation('stacks')
   const reject = useRejectStack(name)
+  const shown = useLastValue(revision)
   const [reason, setReason] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -197,7 +216,7 @@ export function RejectDialog({
       onOpenChange={(open) => {
         if (!open) close()
       }}
-      title={t('approval.rejectTitle', { number: revision ?? 0 })}
+      title={t('approval.rejectTitle', { number: shown ?? 0 })}
       description={t('approval.rejectDescription', { name })}
       tone="destructive"
       confirmLabel={t('approval.reject')}

@@ -1,6 +1,6 @@
 // Wire types for /api/v1/stacks (internal/api/stacks*.go).
 
-import type { IacChange, IacSummary } from '../queries/iac'
+import type { IacAction, IacChange, IacSummary } from '../queries/iac'
 
 export type StackRevisionStatus =
   | 'pending_approval'
@@ -106,15 +106,19 @@ export interface StackPlanBody {
 export interface StackResultItem {
   kind?: string
   name?: string
+  scope?: string
   action?: string
   status?: string
   error?: string
 }
 
+// Mirrors iac.ApplyResult: counts plus per-item outcomes, no summary.
 export interface StackResultBody {
-  summary?: IacSummary
+  plan?: StackPlanBody
   results?: StackResultItem[]
-  [key: string]: unknown
+  applied?: number
+  failed?: number
+  skipped?: number
 }
 
 export interface StackRevisionDetail extends StackRevisionSummary {
@@ -125,12 +129,19 @@ export interface StackRevisionDetail extends StackRevisionSummary {
 
 export type StackDiffAgainst = number | 'live'
 
+// Revision-to-revision diffs use added/removed/changed, live diffs use plan actions.
+export type StackDiffAction = IacAction | 'added' | 'removed' | 'changed'
+
+export interface StackDiffChange extends Omit<IacChange, 'action'> {
+  action: StackDiffAction
+}
+
 export interface StackDiff {
   stack: string
   revision: number
   against: string | number
   plan_hash?: string
-  changes: IacChange[]
+  changes: StackDiffChange[]
 }
 
 export type StackDeleteMode = 'forget' | 'destroy'

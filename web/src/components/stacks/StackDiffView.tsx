@@ -4,11 +4,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { SkeletonLine } from '@/components/kit'
 import { stackDiffQueryOptions } from '../../queries/stacks'
-import type { IacAction, IacChange } from '../../queries/iac'
-import type { StackDiffAgainst } from '../../types/stacks'
+import type {
+  StackDiffAction,
+  StackDiffAgainst,
+  StackDiffChange,
+} from '../../types/stacks'
 
 const ACTION_VARIANT: Record<
-  IacAction,
+  StackDiffAction,
   'success' | 'info' | 'destructive' | 'muted' | 'warning'
 > = {
   create: 'success',
@@ -16,11 +19,14 @@ const ACTION_VARIANT: Record<
   delete: 'destructive',
   noop: 'muted',
   error: 'warning',
+  added: 'success',
+  removed: 'destructive',
+  changed: 'info',
 }
 
 export function ChangeList({
   changes,
-}: Readonly<{ changes: readonly IacChange[] }>) {
+}: Readonly<{ changes: readonly StackDiffChange[] }>) {
   const { t } = useTranslation('stacks')
   return (
     <ul className="divide-y divide-border rounded-lg border border-border">

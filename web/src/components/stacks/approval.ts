@@ -22,3 +22,17 @@ export function canApprove(
   if (!isRoot || rev.status !== 'pending_approval') return false
   return !currentUser || rev.actor !== currentUser
 }
+
+// Only revisions that actually ran are valid targets; pending, failed and
+// rejected ones never produced a known-good state.
+export function canRollbackTo(
+  rev: StackRevisionSummary,
+  latest: number,
+): boolean {
+  if (rev.number === latest || rev.rejected) return false
+  return (
+    rev.status === 'applied' ||
+    rev.status === 'superseded' ||
+    rev.status === 'partial'
+  )
+}

@@ -85,6 +85,9 @@
     "result": "Result",
     "noPlan": "No plan was recorded.",
     "noResult": "No result yet.",
+    "resultCounts": "{{applied}} applied, {{failed}} failed, {{skipped}} skipped",
+    "resultFailedItem": "{{kind}} {{name}}: {{reason}}",
+    "resultNoReason": "no reason given",
     "summary": "{{create}} create, {{update}} update, {{delete}} delete, {{noop}} unchanged, {{error}} errors",
     "hash": "Plan hash {{hash}}",
     "close": "Close",
@@ -104,7 +107,10 @@
       "update": "Update",
       "delete": "Delete",
       "noop": "Unchanged",
-      "error": "Error"
+      "error": "Error",
+      "added": "Added",
+      "removed": "Removed",
+      "changed": "Changed"
     },
     "was": "was",
     "now": "now"
@@ -171,6 +177,7 @@
     "expires": "Expires {{when}}",
     "approveTitle": "Approve revision {{number}}?",
     "approveDescription": "This applies the stored plan to {{name}}. Another admin requested it.",
+    "approveDescriptionOwn": "You requested this revision, so another admin has to approve it for {{name}}.",
     "secretsNote": "Secrets are never stored. Supply any the manifest needs now; they are sent once and not kept.",
     "secretName": "Secret name",
     "secretValue": "Secret value",

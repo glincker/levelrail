@@ -6,7 +6,7 @@ import { CodeBlock } from '@/components/ui/code-block'
 import { SkeletonLine } from '@/components/kit'
 import { stackRevisionQueryOptions } from '../../queries/stacks'
 import type { IacSummary } from '../../queries/iac'
-import type { StackDiffAgainst } from '../../types/stacks'
+import type { StackDiffAgainst, StackResultBody } from '../../types/stacks'
 import { RevisionStatus } from './StackIndicators'
 import { ChangeList, StackDiffView } from './StackDiffView'
 
@@ -16,6 +16,35 @@ function SummaryLine({ summary }: Readonly<{ summary: IacSummary }>) {
     <p className="text-sm text-muted-foreground">
       {t('revision.summary', { ...summary })}
     </p>
+  )
+}
+
+function ResultSummary({ result }: Readonly<{ result: StackResultBody }>) {
+  const { t } = useTranslation('stacks')
+  const failed = (result.results ?? []).filter((r) => r.status === 'failed')
+  return (
+    <div className="space-y-1">
+      <p className="text-sm text-muted-foreground">
+        {t('revision.resultCounts', {
+          applied: result.applied ?? 0,
+          failed: result.failed ?? 0,
+          skipped: result.skipped ?? 0,
+        })}
+      </p>
+      {failed.length > 0 ? (
+        <ul className="space-y-0.5 text-xs text-destructive">
+          {failed.map((r) => (
+            <li key={`${r.kind ?? ''}/${r.scope ?? ''}/${r.name ?? ''}`}>
+              {t('revision.resultFailedItem', {
+                kind: r.kind ?? '',
+                name: r.name ?? '',
+                reason: r.error ?? t('revision.resultNoReason'),
+              })}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   )
 }
 
@@ -99,8 +128,8 @@ export function RevisionView({
               <h4 className="text-xs font-medium uppercase text-muted-foreground">
                 {t('revision.result')}
               </h4>
-              {data.result?.summary ? (
-                <SummaryLine summary={data.result.summary} />
+              {data.result ? (
+                <ResultSummary result={data.result} />
               ) : (
                 <p className="text-sm text-muted-foreground">
                   {t('revision.noResult')}
