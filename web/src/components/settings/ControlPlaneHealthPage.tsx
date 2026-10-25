@@ -139,6 +139,19 @@ function MetricsGrid({ h }: { h: CPHealth }) {
           p95: h.reconcile.p95_ms.toFixed(0),
         })}
       />
+      {h.reconcile.queue && (
+        <Metric
+          label={t('reconcileQueue')}
+          value={t('reconcileQueueValue', {
+            inFlight: h.reconcile.queue.in_flight,
+            workers: h.reconcile.queue.workers,
+          })}
+          hint={t('reconcileQueueHint', {
+            depth: h.reconcile.queue.queue_depth,
+            wait: h.reconcile.queue.oldest_wait_seconds.toFixed(1),
+          })}
+        />
+      )}
       <Metric
         label={t('eventLag')}
         value={`${h.reconcile.lag_seconds.toFixed(0)} s`}

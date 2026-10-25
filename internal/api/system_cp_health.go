@@ -127,7 +127,16 @@ type cpReconcile struct {
 	LagSeconds  float64 `json:"lag_seconds"`
 	Pending     bool    `json:"pending"`
 
+	// Queue is set only while the concurrent worker pool runs.
+	Queue *cpQueue              `json:"queue,omitempty"`
 	Guard reconcile.GuardStatus `json:"guard"`
+}
+
+type cpQueue struct {
+	Workers           int     `json:"workers"`
+	Depth             int     `json:"queue_depth"`
+	InFlight          int     `json:"in_flight"`
+	OldestWaitSeconds float64 `json:"oldest_wait_seconds"`
 }
 
 type cpFootprint struct {
@@ -181,6 +190,9 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 		res.Reconcile = cpReconcile{
 			Passes: rs.Passes, Controllers: rs.Controllers, LastPassMS: durMS(rs.LastPass),
 			P50MS: durMS(rs.P50), P95MS: durMS(rs.P95), Slowest: rs.SlowestName, Pending: rs.Pending,
+		}
+		if q := rs.Queue; q != nil {
+			res.Reconcile.Queue = &cpQueue{Workers: q.Workers, Depth: q.Depth, InFlight: q.InFlight, OldestWaitSeconds: q.OldestWait.Seconds()}
 		}
 		if !rs.LastPassAt.IsZero() {
 			res.Reconcile.LagSeconds = now.Sub(rs.LastPassAt).Seconds()

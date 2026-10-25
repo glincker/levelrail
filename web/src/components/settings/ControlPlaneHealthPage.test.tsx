@@ -108,6 +108,30 @@ describe('ControlPlaneHealthPage', () => {
     ).toBeTruthy()
   })
 
+  it('shows the reconcile queue only when the worker pool runs', () => {
+    const h = health([])
+    state.health = h
+    const { unmount } = render(<ControlPlaneHealthPage />)
+    expect(screen.queryByText('Reconcile queue')).toBeNull()
+    unmount()
+    state.health = {
+      ...h,
+      reconcile: {
+        ...h.reconcile,
+        queue: {
+          workers: 4,
+          queue_depth: 3,
+          in_flight: 2,
+          oldest_wait_seconds: 1.5,
+        },
+      },
+    }
+    render(<ControlPlaneHealthPage />)
+    expect(screen.getByText('Reconcile queue')).toBeTruthy()
+    expect(screen.getByText('2 of 4 workers busy')).toBeTruthy()
+    expect(screen.getByText('3 waiting, oldest 1.5 s')).toBeTruthy()
+  })
+
   it('says reads use the writer when the pool is disabled', () => {
     const h = health([])
     state.health = {
