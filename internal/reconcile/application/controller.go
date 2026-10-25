@@ -1102,7 +1102,9 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
 	}
 	c.recordGate(ctx, desired, target, deploysafety.PhaseReadiness, deploysafety.StatusPassed, "", "first readiness check passed")
-	if err := c.stabilityGate(ctx, state, desired); err != nil {
+	// A crash restart of the same container already proved itself once, so it
+	// only needs readiness, not another stability window of downtime.
+	if err := c.stabilityGateForNew(ctx, state, desired, created); err != nil {
 		reason := readinessReason(err, deploysafety.ReasonGateTimeout)
 		c.traceAbort(ctx, desired, target, reason, err)
 		c.recordRolloutFailure(ctx, desired, err)

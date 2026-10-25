@@ -31,11 +31,6 @@ func (c *Controller) reviveLastReady(ctx context.Context, targets []string, desi
 		return
 	}
 	others := c.filterStale(all, targets)
-	for _, cs := range all {
-		if cs.Running && ownsContainer(c.serviceName, cs.Name) {
-			return
-		}
-	}
 	attempts, err := hist.ListDeployAttempts(ctx, c.serviceName)
 	if err != nil {
 		return
@@ -48,6 +43,13 @@ func (c *Controller) reviveLastReady(ctx context.Context, targets []string, desi
 		key := docker.CanonicalImageRef(a.Image)
 		if _, seen := rank[key]; !seen {
 			rank[key] = len(rank)
+		}
+	}
+	// A running desired release that never became ready is not serving, so it
+	// must not veto reviving the last ready one.
+	for _, cs := range all {
+		if _, known := rank[docker.CanonicalImageRef(cs.Image)]; known && cs.Running && ownsContainer(c.serviceName, cs.Name) {
+			return
 		}
 	}
 	var pick *docker.ContainerState

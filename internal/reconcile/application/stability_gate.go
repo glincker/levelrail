@@ -253,3 +253,12 @@ func gateFailureMessage(name, reason string, obs deploysafety.GateObservation, c
 		return fmt.Sprintf("container %s did not reach %d consecutive readiness passes within its budget (last streak %d)", name, cfg.SuccessThreshold, obs.ConsecutivePasses)
 	}
 }
+
+// stabilityGateForNew runs the stability gate only for a freshly created
+// container, never for a restart of an existing one.
+func (c *Controller) stabilityGateForNew(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService, created bool) error {
+	if !created {
+		return nil
+	}
+	return c.stabilityGate(ctx, state, desired)
+}

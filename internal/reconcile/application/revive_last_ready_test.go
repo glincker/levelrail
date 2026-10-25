@@ -92,3 +92,29 @@ func TestReviveLastReady_PodmanQualifiedImageNames(t *testing.T) {
 		t.Error("dead live container with a qualified image name was not revived")
 	}
 }
+
+// A desired release that is running but never became ready must not stop the
+// last ready release from coming back after its container was killed.
+func TestReviveLastReady_RunningUnreadyDesiredDoesNotVeto(t *testing.T) {
+	desired := &store.DesiredService{Name: "web", Image: "app:v3", Port: 80}
+	oldSvc := store.DesiredService{Name: "web", Image: "app:v2", Port: 80}
+	oldName := ContainerName("web", NameImage(oldSvc), "")
+	newName := ContainerName("web", NameImage(*desired), "")
+	rt := newFakeRuntime(8080)
+	rt.seed(oldName, false)
+	rt.containers[oldName].Image = "app:v2"
+	rt.seed(newName, true)
+	rt.containers[newName].Image = "app:v3"
+	st := &historyStore{
+		fakeStore: fakeStore{svc: desired},
+		attempts: []store.DeployAttempt{
+			{ID: "d3", Image: "app:v3", Status: store.DeployAttemptStatusFailed},
+			{ID: "d2", Image: "app:v2", Status: store.DeployAttemptStatusSucceeded},
+		},
+	}
+	c := New("web", st, rt, WithRestartBackoff(NewRestartBackoff(time.Hour, time.Hour, time.Hour)))
+	c.reviveLastReady(context.Background(), []string{newName}, desired)
+	if !rt.containers[oldName].Running {
+		t.Error("last ready release was not revived while the failing desired release runs")
+	}
+}
