@@ -174,6 +174,17 @@ func (c *stackTokenCall) wasCreated(key string) bool {
 
 type stackTokenCallKey struct{}
 
+// tokenStackScoped reports whether tokenID is bound to a stack, failing closed
+// on a lookup error. Handlers outside requireAbility use it to refuse them.
+func (rt *Router) tokenStackScoped(ctx context.Context, tokenID string) bool {
+	ts := rt.tokenStackScopes()
+	if ts == nil {
+		return false
+	}
+	sc, err := ts.GetAPITokenStackScope(ctx, tokenID)
+	return err != nil || sc != nil
+}
+
 // gateStackToken enforces the stack scope of tokenID, if any. It returns the
 // request to continue with, or false after writing the denial.
 func (rt *Router) gateStackToken(w http.ResponseWriter, r *http.Request, tokenID string) (*http.Request, bool) {
