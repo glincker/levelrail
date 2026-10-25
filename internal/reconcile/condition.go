@@ -36,4 +36,7 @@ type Result struct {
 	// RequeueAfter asks the engine for another pass of this controller
 	// sooner than the next resync; repeated requests back off.
 	RequeueAfter time.Duration
+	// KeyOnly makes RequeueAfter a fixed delay that re-runs only this
+	// controller on the keyed pool, without backoff or a full pass.
+	KeyOnly bool
 }

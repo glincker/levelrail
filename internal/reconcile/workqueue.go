@@ -58,6 +58,7 @@ type keyQueue struct {
 	pending  map[string]queued
 	order    []string
 	inflight map[string]context.CancelFunc
+	live     map[string]struct{} // names the last pass saw; nil until the first retain
 	closed   bool
 	alive    int
 
@@ -103,11 +104,24 @@ func (q *keyQueue) add(c Controller, now time.Time) {
 	q.cond.Signal()
 }
 
+// requeue is add for a run asking to be looked at again, skipped once the
+// name has left the live set so a deleted app's timer cannot revive it.
+func (q *keyQueue) requeue(c Controller, now time.Time) {
+	q.mu.Lock()
+	_, known := q.live[c.Name()]
+	gone := q.live != nil && !known
+	q.mu.Unlock()
+	if !gone {
+		q.add(c, now)
+	}
+}
+
 // retain drops queued names absent from live and cancels their in-flight run,
 // so a deleted app never keeps converging after its desired state is gone.
 func (q *keyQueue) retain(live map[string]struct{}) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
+	q.live = live
 	kept := q.order[:0]
 	for _, name := range q.order {
 		if _, ok := live[name]; ok {

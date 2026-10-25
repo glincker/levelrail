@@ -160,9 +160,22 @@ func (e *Engine) keyQueueFor(ctx context.Context) *keyQueue {
 }
 
 func (e *Engine) reconcileKeyed(ctx context.Context, c Controller) {
-	e.reconcileOne(ctx, c)
+	result := e.runOne(ctx, c, true)
 	if ctx.Err() == context.DeadlineExceeded {
 		e.logger.Warn("reconcile cut at the per-app time limit", slog.String("controller", c.Name()), slog.Duration("limit", e.keyTimeout))
+	}
+	if result.KeyOnly && result.RequeueAfter > 0 {
+		time.AfterFunc(result.RequeueAfter, func() { e.requeueKey(c) })
+	}
+}
+
+// requeueKey re-adds c alone; a stopped pool or a deleted app drops it.
+func (e *Engine) requeueKey(c Controller) {
+	e.qmu.Lock()
+	q := e.queue
+	e.qmu.Unlock()
+	if q != nil {
+		q.requeue(c, e.now())
 	}
 }
 
@@ -314,8 +327,13 @@ func (e *Engine) safeReconcile(ctx context.Context, c Controller) (result Result
 }
 
 func (e *Engine) reconcileOne(ctx context.Context, c Controller) {
+	e.runOne(ctx, c, false)
+}
+
+// runOne reconciles c once; keyed says a KeyOnly requeue is the caller's to schedule.
+func (e *Engine) runOne(ctx context.Context, c Controller, keyed bool) Result {
 	if !e.guard.Before(c.Name()) {
-		return
+		return Result{}
 	}
 	start := time.Now()
 	result, panicked, err := e.safeReconcile(ctx, c)
@@ -327,7 +345,11 @@ func (e *Engine) reconcileOne(ctx context.Context, c Controller) {
 	e.lastResult[c.Name()] = result
 	e.lastErr[c.Name()] = err
 	e.mu.Unlock()
-	e.scheduleRequeue(c.Name(), result.RequeueAfter)
+	if keyed && result.KeyOnly {
+		e.scheduleRequeue(c.Name(), 0)
+	} else {
+		e.scheduleRequeue(c.Name(), result.RequeueAfter)
+	}
 
 	// Persisting status is best-effort and secondary to the reconcile
 	// itself: a database hiccup must never stop the controller from
@@ -367,13 +389,14 @@ func (e *Engine) reconcileOne(ctx context.Context, c Controller) {
 
 	if err != nil {
 		e.logger.Error("reconcile failed", append(attrs, slog.String("error", err.Error()))...)
-		return
+		return result
 	}
 	if changed {
 		e.logger.Info("reconciled", attrs...)
-		return
+		return result
 	}
 	e.logger.Debug("reconciled", attrs...)
+	return result
 }
 
 // LastResult returns the most recent Result and error for a controller by

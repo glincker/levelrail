@@ -13,6 +13,7 @@ import (
 type requeueingApp struct {
 	name    string
 	after   time.Duration
+	keyOnly bool
 	runs    atomic.Int32
 	active  atomic.Int32
 	overlap atomic.Int32
@@ -28,6 +29,7 @@ func (r *requeueingApp) Reconcile(context.Context) (Result, error) {
 	return Result{
 		Conditions:   []Condition{{Type: "Ready", Status: ConditionFalse, Reason: "ReadinessPending"}},
 		RequeueAfter: r.after,
+		KeyOnly:      r.keyOnly,
 	}, nil
 }
 
@@ -129,6 +131,47 @@ func TestStarvation_BlockingNeverReadyAppWithPool(t *testing.T) {
 			}
 			if s := e.Stats().Queue; s == nil || s.InFlight > workers {
 				t.Errorf("queue stats = %+v, want at most %d in flight", s, workers)
+			}
+		})
+	}
+}
+
+// A KeyOnly requeue re-runs just that key at a fixed delay: no full pass, so
+// other apps are not reconciled again, and never two runs of it at once.
+func TestStarvation_KeyOnlyRequeueRerunsOnlyItsKey(t *testing.T) {
+	for _, workers := range []int{2, 4} {
+		t.Run(fmt.Sprintf("workers=%d", workers), func(t *testing.T) {
+			bad := &requeueingApp{name: "app/bad", after: 10 * time.Millisecond, keyOnly: true}
+			healthy := make([]*countingController, 5)
+			for i := range healthy {
+				healthy[i] = &countingController{name: fmt.Sprintf("app/h%02d", i)}
+			}
+			e := NewEngine(testLogger())
+			e.SetWorkers(workers, time.Hour)
+			e.SetKeyed(isApp)
+			e.SetSource(func(context.Context) ([]Controller, error) {
+				out := []Controller{bad}
+				for _, h := range healthy {
+					out = append(out, h)
+				}
+				return out, nil
+			})
+			ctx, cancel := context.WithCancel(context.Background())
+			done := make(chan error, 1)
+			go func() { done <- e.Run(ctx, nil, time.Hour) }()
+			defer func() {
+				cancel()
+				<-done
+			}()
+
+			waitFor(t, 2*time.Second, "pending app re-ran on its own", func() bool { return bad.runs.Load() >= 5 })
+			for _, h := range healthy {
+				if n := h.calls.Load(); n != 1 {
+					t.Errorf("%s ran %d times, want 1: a key-only requeue must not start a full pass", h.name, n)
+				}
+			}
+			if bad.overlap.Load() != 0 {
+				t.Error("pending app ran concurrently with itself")
 			}
 		})
 	}
