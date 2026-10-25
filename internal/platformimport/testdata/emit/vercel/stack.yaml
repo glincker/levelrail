@@ -1,0 +1,7 @@
+version: 1
+kind: Stack
+metadata:
+  name: vercel-import
+spec:
+  project: vercel-import
+  environment: production

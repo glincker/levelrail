@@ -1,0 +1,7 @@
+version: 1
+kind: Stack
+metadata:
+  name: shop
+spec:
+  project: shop
+  environment: production

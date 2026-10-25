@@ -1,0 +1,53 @@
+version: 1
+kind: App
+metadata:
+  name: bare
+spec:
+  project: heroku-import
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/bare:latest
+    port: 80
+    replicas: 1
+---
+version: 1
+kind: App
+metadata:
+  name: shop
+spec:
+  project: heroku-import
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/shop:latest
+    port: 80
+    replicas: 2
+    env:
+      DATABASE_URL: {secretRef: DATABASE_URL}
+      NODE_ENV: production
+      REDIS_URL: {secretRef: REDIS_URL}
+      SENDGRID_URL: {secretRef: SENDGRID_URL}
+      SESSION_SECRET: {secretRef: SESSION_SECRET}
+---
+version: 1
+kind: App
+metadata:
+  name: shop-worker
+spec:
+  project: heroku-import
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/shop-worker:latest
+    port: 80
+    replicas: 1
+    env:
+      DATABASE_URL: {secretRef: DATABASE_URL}
+      NODE_ENV: production
+      REDIS_URL: {secretRef: REDIS_URL}
+      SENDGRID_URL: {secretRef: SENDGRID_URL}
+      SESSION_SECRET: {secretRef: SESSION_SECRET}

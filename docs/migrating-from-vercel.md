@@ -100,6 +100,8 @@ Server-only variables are set as normal app env or secrets and read when the con
 7. Recreate cron jobs as scheduled tasks, and run each once with `apps scheduled-tasks run`.
 8. Enable previews with `apps previews enable <app>` if you rely on PR preview URLs.
 
+To review the move in a pull request instead of creating things directly, run `levelrail-cli import platform vercel --emit stack --out DIR` (or `import config --emit stack --out DIR` on a checkout with a `vercel.json`). It writes App, Database and Domain documents plus a `SECRETS.md` of env variable names (never values) and a `MIGRATION.md` for cron jobs, rewrites and anything else the documents cannot hold. See [Stacks and GitOps](/stacks#migrate-into-a-stack).
+
 ## 4. What has no equivalent
 
 Plan for these before you commit to moving.

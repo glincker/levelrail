@@ -1,0 +1,48 @@
+version: 1
+kind: App
+metadata:
+  name: web
+spec:
+  project: shop
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/web:latest
+    port: 8080
+    command:
+      - sh
+      - -c
+      - node server.js
+    env:
+      PORT: "8080"
+---
+version: 1
+kind: App
+metadata:
+  name: web-vercel
+spec:
+  project: shop
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/web-vercel:latest
+    port: 3000
+---
+version: 1
+kind: App
+metadata:
+  name: worker
+spec:
+  project: shop
+  environment: production
+  service:
+    build:
+      type: image
+      image: registry.example.com/acme/worker:latest
+    port: 8080
+    command:
+      - sh
+      - -c
+      - node worker.js

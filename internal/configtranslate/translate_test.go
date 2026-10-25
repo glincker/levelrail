@@ -21,7 +21,7 @@ func loadCase(t *testing.T, name string) map[string][]byte {
 	}
 	files := map[string][]byte{}
 	for _, e := range entries {
-		if strings.HasPrefix(e.Name(), "expected.") {
+		if e.IsDir() || strings.HasPrefix(e.Name(), "expected.") {
 			continue
 		}
 		b, err := os.ReadFile(filepath.Join(dir, e.Name())) //nolint:gosec // fixture path from testdata
@@ -56,6 +56,7 @@ func TestTranslateGolden(t *testing.T) {
 		{"heroku-minimal", []Format{FormatHeroku}, true},
 		{"vercel-next", []Format{FormatVercel}, true},
 		{"vercel-static", []Format{FormatVercel}, true},
+		{"merge-clash", []Format{FormatHeroku, FormatVercel}, true},
 		{"bad-json", []Format{FormatVercel}, false},
 	}
 	for _, tc := range cases {
@@ -173,7 +174,10 @@ func TestMergeClash(t *testing.T) {
 	files := map[string][]byte{"Procfile": []byte("web: x\n"), "vercel.json": []byte(`{"framework":"nextjs"}`)}
 	res := Translate(files)
 	if res.Fragment.Services["web"].Command == nil {
-		t.Error("first source (Heroku) should win the clash")
+		t.Error("the Heroku service keeps the plain name")
+	}
+	if _, ok := res.Fragment.Services["web-vercel"]; !ok {
+		t.Errorf("the Vercel service should be kept as web-vercel: %v", sortedKeys(res.Fragment.Services))
 	}
 	var seen bool
 	for _, f := range res.Findings {
@@ -199,25 +203,24 @@ func TestMergeClashKeepsVercelCrons(t *testing.T) {
 		"vercel.json": []byte(`{"framework":"nextjs","crons":[{"path":"/api/tick","schedule":"0 * * * *"}]}`),
 	}
 	res := Translate(files)
-	jobs := res.Fragment.Services["web"].Jobs
+	if n := len(res.Fragment.Services["web"].Jobs); n != 0 {
+		t.Fatalf("the Heroku service must not receive Vercel crons, got %d", n)
+	}
+	jobs := res.Fragment.Services["web-vercel"].Jobs
 	if len(jobs) != 1 || jobs[0].Name != "api-tick" {
-		t.Fatalf("jobs = %+v, want the Vercel cron attached to the Heroku web service", jobs)
+		t.Fatalf("jobs = %+v, want the Vercel cron to stay on web-vercel", jobs)
 	}
-	if got := strings.Join(jobs[0].Command, " "); !strings.Contains(got, "127.0.0.1:8080/api/tick") {
-		t.Errorf("cron command %q should target the Heroku port", got)
-	}
-	var msg string
-	for _, f := range res.Findings {
-		if f.Code == "merge.service-clash" {
-			msg = f.Message
-		}
-	}
-	if !strings.Contains(msg, "api-tick") {
-		t.Errorf("clash finding should name the moved cron, got %q", msg)
+	if got := strings.Join(jobs[0].Command, " "); !strings.Contains(got, "127.0.0.1:3000/api/tick") {
+		t.Errorf("cron command %q should target the Vercel service port", got)
 	}
 	y, _ := res.Fragment.YAML()
 	if _, err := spec.Parse(y); err != nil {
 		t.Errorf("merged proposal invalid: %v\n%s", err, y)
+	}
+	again := Translate(files)
+	y2, _ := again.Fragment.YAML()
+	if string(y) != string(y2) {
+		t.Error("merge is not deterministic")
 	}
 }
 

@@ -1,0 +1,13 @@
+version: 1
+kind: Domain
+metadata:
+  name: api.example.com
+spec:
+  app: api
+---
+version: 1
+kind: Domain
+metadata:
+  name: example.com
+spec:
+  app: api

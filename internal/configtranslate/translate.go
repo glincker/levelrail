@@ -100,7 +100,7 @@ func Translate(files map[string][]byte, opts ...Option) Result {
 			part, fs = translateVercel(files, o)
 		}
 		res.Findings = append(res.Findings, fs...)
-		res.Findings = append(res.Findings, res.Fragment.merge(part, o)...)
+		res.Findings = append(res.Findings, res.Fragment.merge(part)...)
 	}
 	res.Findings = append(res.Findings, sourceFindings(res.Fragment)...)
 	return res

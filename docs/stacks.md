@@ -70,6 +70,25 @@ levelrail-cli stack unpin shop-prod
 
 `plan`, `show` and `diff` change nothing. `apply` writes a new revision when it changes something. `plan --exit-code` exits 2 when changes are pending. Run `levelrail-cli stack --help` for the full list, including `show-revision`, `reject`, `unlock` and `delete`.
 
+## Migrate into a stack
+
+`levelrail-cli import config` and `levelrail-cli import platform` can write a stack instead of creating things, so a migration is a pull request you review before anything runs:
+
+```bash
+export APP_IMPORT_SOURCE_TOKEN=...   # a Heroku, Vercel or Render token, read only
+levelrail-cli import platform heroku --emit stack --out infra/stacks/shop \
+  --stack shop --image-repo ghcr.io/acme --db-version postgres=16
+levelrail-cli stack plan shop -f infra/stacks/shop
+```
+
+The directory holds `stack.yaml`, `project.yaml`, `databases.yaml`, `apps.yaml`, `domains.yaml`, a `SECRETS.md` checklist and a `MIGRATION.md`. The same command with `import config [dir]` turns a `Procfile`, `app.json` or `vercel.json` into the same layout.
+
+- **Secrets**: `SECRETS.md` lists secret names only. The documents reference them with `secretRef`, and you pass the values at apply time with `--secret`. A secret the source generated (an `app.json` `generator`) is marked so you create a fresh random value.
+- **Images**: apply runs prebuilt images only. Apps that build from source get `--image-repo REGISTRY/NAMESPACE/APP:latest` and need that image pushed from your CI before the first apply.
+- **Databases**: they are created empty and the data is copied separately. Until the schema can reference a database, each connection variable (such as `DATABASE_URL`) is a secret name in `SECRETS.md`, set after the database exists or by `databases link`.
+- **Not in the documents**: volumes, scheduled jobs, routes and redirects are listed in `MIGRATION.md`.
+- **Name clashes**: if Heroku and Vercel config both define `web`, both are emitted, the second as `web-vercel`.
+
 ## Ownership and prune
 
 A stack owns the resources it created, and the resources it adopted. Prune deletes only owned resources that the files no longer declare. A resource that exists outside every stack makes the apply fail unless the apply sets `adopt`.
