@@ -64,9 +64,11 @@ type appFields struct {
 	// Connections maps an env var to "database.field"; never a value.
 	Connections map[string]string    `json:"connections,omitempty"`
 	Jobs        map[string]jobFields `json:"jobs,omitempty"`
+	// Volumes maps a logical volume name to its mount path; named volumes only.
+	Volumes map[string]string `json:"volumes,omitempty"`
 }
 
-var additiveApp = map[string]bool{"domains": true, "env": true, "secretEnv": true, "labels": true, "tags": true, "connections": true}
+var additiveApp = map[string]bool{"domains": true, "env": true, "secretEnv": true, "labels": true, "tags": true, "connections": true, "volumes": true}
 
 func memoryString(b int64) string {
 	const mi = 1024 * 1024
@@ -218,6 +220,16 @@ func appFromWire(a wireApp, names idNames) appFields {
 	if a.HostPort != nil {
 		f.HostPort = *a.HostPort
 	}
+	for _, v := range a.Volumes {
+		n, _ := v["name"].(string)
+		path, _ := v["container_path"].(string)
+		if n != "" && path != "" {
+			if f.Volumes == nil {
+				f.Volumes = map[string]string{}
+			}
+			f.Volumes[n] = path
+		}
+	}
 	if len(a.DatabaseEnv) > 0 {
 		f.Connections = make(map[string]string, len(a.DatabaseEnv))
 		for k, ref := range a.DatabaseEnv {
@@ -241,9 +253,6 @@ func nonEmptyMap(m map[string]string) map[string]string {
 // or update can warn instead of silently dropping them.
 func unsupportedApp(a wireApp) []string {
 	var out []string
-	if len(a.Volumes) > 0 {
-		out = append(out, "volumes")
-	}
 	if len(a.BindMounts) > 0 {
 		out = append(out, "bind mounts")
 	}

@@ -43,8 +43,10 @@ and jobs have their own API under `/api/v1/apps/{name}/jobs`.
 
 ## Deferred
 
-- **Volumes**: the app API treats `volumes` as response only (set through app.yaml
-  deploys), so apply has no endpoint to create them. Still rejected.
+- **Volumes** (done, wave Q): `service.volumes` is applied by name through the existing
+  `PUT /api/v1/apps/{name}/volumes`. Named volumes only, kept when unlisted, detached
+  (never deleted) by prune. Still deferred: host-path volumes, size hints and deleting
+  a volume's data from apply.
 - **`vault` env references, egress policies, GPU, registry credentials**: no
   change, still rejected.
 - **References to other kinds** (an app's internal URL, a domain): no runtime

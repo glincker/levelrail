@@ -22,6 +22,9 @@ const (
 	// AppliedFieldDatabaseEnv hashes the database links: they resolve to env
 	// at container create, so a new link is pending until a restart.
 	AppliedFieldDatabaseEnv = "database_env"
+	// AppliedFieldVolumes hashes the named volume mounts, which are fixed at
+	// container create.
+	AppliedFieldVolumes = "volumes"
 	// AppliedFieldSecretKeys lists, comma-joined, which env keys were
 	// secret-backed; informational, never diffed as a setting.
 	AppliedFieldSecretKeys = "secret_keys"
@@ -59,6 +62,7 @@ func AppliedFields(svc DesiredService) map[string]string {
 		AppliedFieldHostPort:    hostPortField(svc.HostPort),
 		AppliedFieldBindAddr:    svc.BindAddress,
 		AppliedFieldDatabaseEnv: shortJSONHash(svc.DatabaseEnv),
+		AppliedFieldVolumes:     shortJSONHash(svc.Volumes),
 	}
 }
 

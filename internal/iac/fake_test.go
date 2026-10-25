@@ -226,6 +226,10 @@ func (f *fakeCP) appRoutes() {
 		f.secrets[m[1]][m[2]] = true
 		return nil, nil
 	})
+	f.route("PUT", `/api/v1/apps/([^/]+)/volumes`, func(m []string, b map[string]any) (any, error) {
+		f.apps[m[1]]["volumes"] = b["volumes"]
+		return nil, nil
+	})
 	f.route("POST", `/api/v1/apps/([^/]+)/restart`, func(_ []string, _ map[string]any) (any, error) { return nil, nil })
 	f.route("PUT", `/api/v1/apps/([^/]+)/project`, func(m []string, b map[string]any) (any, error) {
 		f.apps[m[1]]["project_id"] = b["project_id"]

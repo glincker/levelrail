@@ -400,6 +400,14 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 		s.at("spec.environment", "an environment needs a project")
 	}
 	f.Jobs = jobsFromSpec(svc.Jobs, s)
+	for _, v := range svc.Volumes {
+		if v.Name != "" {
+			if f.Volumes == nil {
+				f.Volumes = map[string]string{}
+			}
+			f.Volumes[v.Name] = v.Path
+		}
+	}
 	return &Resource{Kind: KindApp, Name: d.Name, Doc: d, Fields: toMap(f), SecretRefs: f.SecretEnv}
 }
 
@@ -423,8 +431,10 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 	if svc.Build.Type != spec.BuildImage {
 		s.at(p+"build.type", "apply manages apps that run a prebuilt image; use build.type image (git builds are configured with a git source)")
 	}
-	if len(svc.Volumes) > 0 {
-		s.at(p+"volumes", "volumes are not supported by apply yet")
+	for i, v := range svc.Volumes {
+		if v.Name == "" {
+			s.at(fmt.Sprintf("%svolumes[%d]", p, i), "apply supports named volumes only; host paths are never declared in the files")
+		}
 	}
 	if svc.Egress != nil {
 		s.at(p+"egress", "egress policies are not supported by apply yet")

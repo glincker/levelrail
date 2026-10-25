@@ -104,7 +104,7 @@ func (p *planner) planApp(r *Resource) {
 		return
 	}
 	liveMap := toMap(appFromWire(live.wire, idNames{p.st}))
-	for _, k := range []string{"project", "environment"} {
+	for _, k := range []string{"project", "environment", "volumes"} {
 		if _, want := f[k]; !want {
 			delete(liveMap, k)
 		}

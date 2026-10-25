@@ -16,6 +16,9 @@ spec:
       DATABASE_URL: {from: {database: main, field: url}}
       MODEL_API_KEY: {secretRef: MODEL_API_KEY}
       TOOL_WEBHOOK_SECRET: {secretRef: TOOL_WEBHOOK_SECRET}
+    volumes:
+      - name: data
+        path: /data
     jobs:
       - name: nightly-run
         schedule: "0 3 * * *"

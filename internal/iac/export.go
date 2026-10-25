@@ -68,6 +68,12 @@ type outService struct {
 	Labels      map[string]string `yaml:"labels,omitempty"`
 	Hooks       *hookFields       `yaml:"hooks,omitempty"`
 	Command     []string          `yaml:"command,omitempty"`
+	Volumes     []outVolume       `yaml:"volumes,omitempty"`
+}
+
+type outVolume struct {
+	Name string `yaml:"name"`
+	Path string `yaml:"path"`
 }
 
 type outAppSpec struct {
@@ -226,6 +232,9 @@ func (e *exporter) app(ctx context.Context, l loader, a wireApp) error {
 	}
 	if f.Strategy != spec.StrategyBlueGreen {
 		svc.Strategy = f.Strategy
+	}
+	for _, n := range sortedKeys(f.Volumes) {
+		svc.Volumes = append(svc.Volumes, outVolume{Name: n, Path: f.Volumes[n]})
 	}
 	env := e.envValues(f.Env)
 	for _, n := range f.SecretEnv {

@@ -8,6 +8,7 @@ An app with a nightly scheduled job, a Postgres database and secret references f
 - a Postgres 16 database `main`
 - an App on port 8080 with `DATABASE_URL` from the database
 - a job `nightly-run` at 03:00 that runs `node scripts/agent-run.js` in the app image
+- a named volume `data` mounted at `/data`, kept across redeploys
 
 ## Variables
 
