@@ -16,6 +16,7 @@ import {
   KeyIcon,
   PlugsConnectedIcon,
   CloudArrowUpIcon,
+  ImagesSquareIcon,
   WebhooksLogoIcon,
   GithubLogoIcon,
   UsersIcon,
@@ -202,6 +203,7 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'load-balancer',
   ),
   nav('nav-backups', 'Backups', <CloudArrowUpIcon />, '/backups'),
+  nav('nav-assets', 'Assets', <ImagesSquareIcon />, '/assets'),
   nav('nav-deployments', 'Deployments', <RocketLaunchIcon />, '/deployments'),
   nav(
     'nav-deploy-timeline',

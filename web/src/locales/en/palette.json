@@ -118,6 +118,7 @@
       "nav-databases": "Managed databases: create, connect and monitor them.",
       "action-create-database": "Provision a new managed database.",
       "nav-backups": "Backup schedules and restore points for your data.",
+      "nav-assets": "Upload files to your own bucket, copy URLs and see what it costs.",
       "nav-domains": "Domains, certificates and routing for your apps.",
       "nav-dns": "DNS zones and records.",
       "nav-firewall": "Control which ports and sources can reach your nodes.",

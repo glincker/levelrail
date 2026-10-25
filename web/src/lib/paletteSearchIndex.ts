@@ -7,6 +7,7 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
     'db database postgres postgresql mysql mariadb redis mongo sql data',
   'action-create-database': 'db database postgres mysql redis new provision',
   'nav-backups': 'backup restore snapshot db database dump recovery',
+  'nav-assets': 'assets cdn images bucket r2 s3 upload files media static',
   'settings-backup-targets': 'backup s3 bucket storage restore destination',
   'settings-storage': 's3 bucket object storage volume disk',
   'nav-domains': 'domain dns ssl tls cert certificate https hostname url',

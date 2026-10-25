@@ -26,6 +26,7 @@ import type logBudgets from '../locales/en/logBudgets.json'
 import type alertSetup from '../locales/en/alertSetup.json'
 import type environments from '../locales/en/environments.json'
 import type stacks from '../locales/en/stacks.json'
+import type assets from '../locales/en/assets.json'
 import type exposure from '../locales/en/exposure.json'
 import type appExposure from '../locales/en/appExposure.json'
 import type appAccess from '../locales/en/appAccess.json'
@@ -137,6 +138,7 @@ declare module 'i18next' {
       alertSetup: typeof alertSetup
       environments: typeof environments
       stacks: typeof stacks
+      assets: typeof assets
       exposure: typeof exposure
       appExposure: typeof appExposure
       appAccess: typeof appAccess
