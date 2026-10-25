@@ -111,6 +111,7 @@ Each of these sets how often a background loop wakes to check for work. Five-fie
 | `APP_SCHEDULED_TASK_SCHEDULER_INTERVAL` | `1m` | How often the scheduler checks for scheduled tasks that are due. Control plane. |
 | `APP_DEPLOY_APPROVAL_SWEEP_INTERVAL` | `5m` | How often pending deploy approvals are checked against their 24 hour expiry. See [Chat deploy approvals](/chat-deploy-approvals). Control plane. |
 | `APP_RESOURCE_RECOMMENDATION_LOOKBACK` | `168h` (7 days) | History window used when computing app resource recommendations. Control plane. |
+| `APP_RECONCILE_WORKERS` | `1` | How many apps may reconcile at once, so one slow or failing app does not delay the others. `1` keeps the sequential pass; `4` or `8` is recommended with many apps. Above 1, each app reconcile is cut after `APP_RECONCILE_KEY_TIMEOUT` (default `10m`) and retried. Control plane. |
 
 For the invalid-value behavior of the first three, see the note at the end of this page.
 
