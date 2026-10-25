@@ -1,8 +1,11 @@
 package exposure
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/exposure"
@@ -61,5 +64,20 @@ func TestReconcileStoreError(t *testing.T) {
 	_, err := New(fakeStore{err: errors.New("db down")}, &fakeSyncer{}, nil).Reconcile(context.Background())
 	if err == nil {
 		t.Fatal("want error")
+	}
+}
+
+func TestReconcileWarnsOncePerDistinctError(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&buf, nil))
+	syn := &fakeSyncer{res: exposure.SyncResult{Errors: []string{"iptables is not installed here"}}}
+	c := New(fakeStore{}, syn, logger)
+	for i := 0; i < 3; i++ {
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := strings.Count(buf.String(), "sync reported errors"); n != 1 {
+		t.Fatalf("logged %d times, want 1", n)
 	}
 }

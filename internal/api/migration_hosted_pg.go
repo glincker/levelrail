@@ -25,6 +25,8 @@ type hostedImportRequest struct {
 	URL          string `json:"url"`
 	WritesFrozen bool   `json:"writes_frozen"`
 	AllowLarge   bool   `json:"allow_large"`
+	// CreateMissingRoles creates policy roles absent from the target as NOLOGIN NOINHERIT.
+	CreateMissingRoles bool `json:"create_missing_roles"`
 }
 
 // hostedPreflightResponse carries only the redacted source and the findings.
@@ -60,7 +62,7 @@ func (rt *Router) hostedTarget(w http.ResponseWriter, r *http.Request, name stri
 	}
 	cfg, err := datamigrate.HostedConfigFromProcessEnv()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		rt.internalError(w, "api: hosted database import: read hosted config failed", err)
 		return nil, req, cfg, nil, false
 	}
 	if rt.execRuntime == nil {
@@ -80,7 +82,7 @@ func hostedPlanFor(db *store.DesiredDatabase, req hostedImportRequest) datamigra
 	// The target exists by design: the user creates it first, so the name
 	// collision check treats it as ours.
 	return datamigrate.HostedPlan{URL: datamigrate.SecretURL(req.URL), TargetName: db.Name, TargetVersion: db.Version,
-		TargetExists: true, OwnTarget: true, WritesFrozen: req.WritesFrozen, AllowLarge: req.AllowLarge}
+		TargetExists: true, OwnTarget: true, WritesFrozen: req.WritesFrozen, AllowLarge: req.AllowLarge, CreateMissingRoles: req.CreateMissingRoles}
 }
 
 // handleHostedPreflight handles POST /api/v1/imports/platform/databases/{name}/hosted/preflight.

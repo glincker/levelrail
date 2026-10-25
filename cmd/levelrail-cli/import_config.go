@@ -28,6 +28,8 @@ type importConfigOutput struct {
 	Detected []configtranslate.Format  `json:"detected"`
 	Spec     string                    `json:"spec"`
 	Findings []configtranslate.Finding `json:"findings"`
+	// NextSteps are the exact commands that deploy the proposal.
+	NextSteps []string `json:"nextSteps"`
 }
 
 // runImportConfig implements "import config": an offline, read-only preview
@@ -80,8 +82,13 @@ func runImportConfig(prog string, args []string, stdout, stderr io.Writer, looku
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("write %s: %w", out, err))
 		}
 	}
+	specFile := "app.yaml"
+	if out != "" {
+		specFile = out
+	}
+	steps := configtranslate.NextSteps(res.Fragment, prog, specFile)
 	if of.Format == outputJSON || of.Query != "" {
-		data := importConfigOutput{Detected: res.Detected, Spec: string(yamlBytes), Findings: res.Findings}
+		data := importConfigOutput{Detected: res.Detected, Spec: string(yamlBytes), Findings: res.Findings, NextSteps: steps}
 		if err := renderResult(stdout, of.Format, of.Query, data, func() {}); err != nil {
 			_, _ = fmt.Fprintln(stderr, err)
 			return exitCodeForError(err)
@@ -93,12 +100,23 @@ func runImportConfig(prog string, args []string, stdout, stderr io.Writer, looku
 			_, _ = fmt.Fprintf(stderr, "wrote %s\n", out)
 		}
 		printConfigFindings(stderr, res.Findings)
+		printNextSteps(stderr, steps)
 	}
 	if strict && hasBlocker(res.Findings) {
 		_, _ = fmt.Fprintln(stderr, "blocker findings present and --strict is set")
 		return exitValidation
 	}
 	return exitOK
+}
+
+func printNextSteps(w io.Writer, steps []string) {
+	if len(steps) == 0 {
+		return
+	}
+	_, _ = fmt.Fprintf(w, "\nNEXT STEPS\n")
+	for _, st := range steps {
+		_, _ = fmt.Fprintf(w, "  %s\n", st)
+	}
 }
 
 func hasBlocker(fs []configtranslate.Finding) bool {

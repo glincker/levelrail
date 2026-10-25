@@ -133,12 +133,16 @@ func (c *Client) ResolveImage(ctx context.Context, ref string, auth *RegistryAut
 }
 
 // registrySaysMissing reports a definitive "no such tag" answer, as opposed
-// to an unreachable registry, which a node may still be able to pull from.
+// to an unreachable registry or an engine that lacks the distribution
+// endpoint (Podman answers 404 "not supported"), which a node can still pull from.
 func registrySaysMissing(err error) bool {
+	m := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(strings.ToLower(err.Error()), "error response from daemon:")))
+	if strings.Contains(m, "not supported") || strings.Contains(m, "page not found") || m == "not found" {
+		return false
+	}
 	if cerrdefs.IsNotFound(err) {
 		return true
 	}
-	m := strings.ToLower(err.Error())
 	return strings.Contains(m, "manifest unknown") || strings.Contains(m, "not found")
 }
 

@@ -72,11 +72,15 @@ func (p NetworkPool) candidate(i int) netip.Prefix {
 	return netip.PrefixFrom(netip.AddrFrom4([4]byte{byte(v >> 24), byte(v >> 16), byte(v >> 8), byte(v)}), networkPoolSubnetBits) //nolint:gosec // byte conversion of masked octets
 }
 
+// podmanDefaultSubnet is netavark's default network. It is skipped even when
+// the engine does not list it, so the default pool never collides with Podman.
+var podmanDefaultSubnet = netip.MustParsePrefix("10.88.0.0/16")
+
 // Allocate returns the first /24 in the pool overlapping nothing in used.
 func (p NetworkPool) Allocate(used []netip.Prefix) (netip.Prefix, bool) {
 	for i := 0; i < p.Capacity(); i++ {
 		c := p.candidate(i)
-		if !overlapsAny(c, used) {
+		if !c.Overlaps(podmanDefaultSubnet) && !overlapsAny(c, used) {
 			return c, true
 		}
 	}

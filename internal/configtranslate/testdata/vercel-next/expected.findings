@@ -7,3 +7,4 @@ info vercel.function.memory
 warn vercel.routing.server rewrites/redirects/headers
 warn vercel.cron.http /api/cron/daily
 warn vercel.cron.http /api/cron/daily?full=1
+warn config.source.unknown web

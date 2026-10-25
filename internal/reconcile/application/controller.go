@@ -282,6 +282,7 @@ type Controller struct {
 	gateRecorder        GateRecorder
 	gateTick            time.Duration
 	drain               *DrainTracker
+	cutoverImage        string // image of the last recorded cutover, empty until this controller saw one
 	pinner              RollbackPinner
 	exitRecorder        ExitRecorder  // nil is valid: exits are only reported, not captured
 	startupWatch        time.Duration // see WithStartupWatch
@@ -549,7 +550,23 @@ func ControllerName(serviceName string) string { return "application/" + service
 
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
-	desired, err := c.store.GetDesiredService(ctx, c.serviceName)
+	started, err := c.store.GetDesiredService(ctx, c.serviceName)
+	result, rerr := c.reconcileDesired(ctx, started, err)
+	if err != nil || started == nil {
+		return result, rerr
+	}
+	// A deploy or restart that landed mid-pass owns the next verdict. Publishing
+	// this one would stamp the old release's outcome on the new attempt; the
+	// nudge that deploy sent already queues the next pass.
+	if now, gerr := c.store.GetDesiredService(ctx, c.serviceName); gerr == nil && now != nil &&
+		(now.Image != started.Image || now.RestartNonce != started.RestartNonce) {
+		return reconcile.Result{}, nil
+	}
+	return result, rerr
+}
+
+// reconcileDesired runs one pass against the desired state Reconcile read.
+func (c *Controller) reconcileDesired(ctx context.Context, desired *store.DesiredService, err error) (reconcile.Result, error) {
 	if errors.Is(err, store.ErrServiceNotFound) {
 		// Not a failure: a controller can be registered for a service
 		// before its first deploy has ever written desired state.
@@ -644,6 +661,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 	if isReady(result) {
 		c.recordRollout(ctx, desired, store.RolloutStateServing, c.servingImageID)
+		c.recoverRestart(ctx, desired)
+	} else {
+		c.reviveLastReady(ctx, targets, desired)
 	}
 	return c.appendEgressCondition(ctx, result, targets, desired), err
 }
@@ -845,8 +865,17 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 // every strategy's reconcile* method ends with.
 func (c *Controller) finishReconcile(ctx context.Context, targets []string, desired *store.DesiredService, justDeployed bool) (reconcile.Result, error) {
 	if !justDeployed {
+		// An instant rollback converges onto a held, already running
+		// release, so no container is created: record the cutover anyway or
+		// the post-deploy watch never arms for it.
+		if c.cutoverImage != "" && c.cutoverImage != desired.Image {
+			c.cutoverImage = desired.Image
+			c.recordGate(ctx, desired, targets[0], deploysafety.PhaseCutover, deploysafety.StatusPassed, "",
+				fmt.Sprintf("traffic moved to %d ready replica(s) of the held release", len(targets)))
+		}
 		return c.steadyStateResult(ctx, targets, desired)
 	}
+	c.cutoverImage = desired.Image
 
 	// Every target was just (re)started and proven ready, so its
 	// liveness history belongs to an instance that no longer exists.

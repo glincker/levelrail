@@ -479,7 +479,7 @@ func (rt *Router) recordResolvedDeployAttempt(ctx context.Context, svc store.Des
 		rt.logger.Error("api: record deploy attempt: finish failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 		return
 	}
-	if rt.deployNotifier != nil && source != store.DeployAttemptSourceRestart {
+	if rt.deployNotifier != nil && source != store.DeployAttemptSourceRestart && source != store.DeployAttemptSourceStart {
 		rt.deployNotifier.Dispatch(ctx, resourceIDForApp(serviceName), alerting.DeployOutcome{
 			AppName: serviceName, Image: image, Succeeded: true,
 			ReleaseNotes: rt.releaseNotesForDeploy(ctx, serviceName, source),

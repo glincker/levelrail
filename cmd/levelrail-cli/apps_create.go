@@ -185,6 +185,9 @@ func planFromFile(f createFlags, fileSpec *spec.Spec, detected detectedGit) (cre
 	if err != nil {
 		return createPlan{}, err
 	}
+	if err := checkUnappliedSections(fileSpec, key, "levelrail", f.file); err != nil {
+		return createPlan{}, err
+	}
 	svc := fileSpec.Services[key]
 	if err := checkRequiredSecrets(f, key, svc); err != nil {
 		return createPlan{}, err

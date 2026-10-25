@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 
 	"github.com/GLINCKER/levelrail/internal/exposure"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -27,6 +28,9 @@ type Controller struct {
 	store  RestrictionStore
 	syncer Syncer
 	logger *slog.Logger
+
+	mu       sync.Mutex
+	lastWarn string
 }
 
 // New builds a Controller.
@@ -53,7 +57,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 	res := c.syncer.Sync(ctx, want)
 	if len(res.Errors) > 0 {
-		c.logger.WarnContext(ctx, "exposure: sync reported errors", slog.Int("errors", len(res.Errors)), slog.String("first", res.Errors[0]))
+		if c.shouldWarn(res.Errors[0]) {
+			c.logger.WarnContext(ctx, "exposure: sync reported errors", slog.Int("errors", len(res.Errors)), slog.String("first", res.Errors[0]))
+		}
 		if len(want) == 0 {
 			return reconcile.Result{Conditions: []reconcile.Condition{{
 				Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: "ChainUnreadable", Message: res.Errors[0],
@@ -61,6 +67,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		}
 		return notReady("RestrictionSyncFailed", fmt.Sprintf("%d error(s), first: %s", len(res.Errors), res.Errors[0])), nil
 	}
+	c.shouldWarn("")
 	return reconcile.Result{Conditions: []reconcile.Condition{{
 		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue, Reason: fmt.Sprintf("Synced%dRestrictions", len(want)),
 		Message: fmt.Sprintf("%d restriction(s) in place (%d applied, %d removed this pass)", len(want), res.Applied, res.Removed),
@@ -71,4 +78,16 @@ func notReady(reason, msg string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
 		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
 	}}}
+}
+
+// shouldWarn is true only when the first error changes, so a permanent
+// condition (no iptables under Podman) logs once instead of every pass.
+func (c *Controller) shouldWarn(first string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if first == c.lastWarn {
+		return false
+	}
+	c.lastWarn = first
+	return first != ""
 }

@@ -66,7 +66,7 @@ func (rt *Router) freezeGate(w http.ResponseWriter, r *http.Request, name string
 		return "", true
 	}
 	if !o.Override {
-		writeError(w, http.StatusLocked, (&deploy.FrozenError{Status: status}).Error()+"; pass override_freeze with override_reason to deploy anyway")
+		writeError(w, http.StatusLocked, (&deploy.FrozenError{Status: status}).Error()+"; to deploy anyway pass override_freeze and override_reason (CLI: --override-freeze --override-reason)")
 		return "", false
 	}
 	reason := strings.TrimSpace(o.Reason)

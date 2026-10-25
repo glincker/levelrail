@@ -274,6 +274,9 @@ const (
 	// same image, fresh container. It has its own row so a failed restart
 	// never rewrites the deploy it re-ran.
 	DeployAttemptSourceRestart = "restart"
+	// DeployAttemptSourceStart marks starting a stopped app: it gives a
+	// waiter an attempt that turns healthy only once the new container serves.
+	DeployAttemptSourceStart = "start"
 	// DeployAttemptSourceClone marks the first deploy of an app created
 	// by cloning a whole environment (internal/api/environment_clone.go's
 	// handleCloneEnvironment): a fresh app, same shape as the plain

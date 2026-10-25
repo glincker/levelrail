@@ -25,13 +25,18 @@ type HostedPlan struct {
 	WritesFrozen bool `json:"writes_frozen"`
 	// AllowLarge overrides the size ceiling after reading the replication advice.
 	AllowLarge bool `json:"allow_large,omitempty"`
+	// CreateMissingRoles creates the roles named by row level security
+	// policies on the target (NOLOGIN NOINHERIT) before the restore.
+	CreateMissingRoles bool `json:"create_missing_roles,omitempty"`
 }
 
 // HostedPreflightInput is the gathered facts for HostedPreflight.
 type HostedPreflightInput struct {
-	Plan        HostedPlan
-	Source      HostedSource
-	Probe       HostedProbe
+	Plan   HostedPlan
+	Source HostedSource
+	Probe  HostedProbe
+	// Target is what the managed database already holds.
+	Target      TargetState
 	Config      HostedConfig
 	DiskMargin  float64
 	MBPerSecond float64
@@ -61,13 +66,22 @@ func HostedPreflight(in HostedPreflightInput) PreflightResult {
 		DB: DatabaseInfo{Name: in.Source.Source.Database, SizeBytes: in.Probe.SizeBytes, Tables: in.Probe.Tables,
 			Extensions: carried},
 		SourceMajor: in.Probe.Major, TargetName: in.Plan.TargetName, TargetVersion: version,
-		TargetExists: in.Plan.TargetExists, OwnTarget: in.Plan.OwnTarget,
+		TargetExists: in.Plan.TargetExists && (!in.Target.Known || in.Target.UserTables > 0), OwnTarget: in.Plan.OwnTarget,
 		FreeBytes: in.Probe.FreeBytes, DiskMargin: in.DiskMargin, MBPerSecond: in.MBPerSecond,
 	})
 	add := func(id, sev, msg, next string) {
 		res.Checks = append(res.Checks, PreflightCheck{ID: id, Severity: sev, Message: msg, NextAction: next})
 		if sev == SeverityBlock {
 			res.Blocked = true
+		}
+	}
+
+	if in.Plan.TargetExists && in.Target.Known && in.Target.UserTables == 0 {
+		// The target was created for this import and holds nothing yet.
+		for i := range res.Checks {
+			if res.Checks[i].ID == "collision" && res.Checks[i].Severity == SeverityOK {
+				res.Checks[i].Message = fmt.Sprintf("The target %q is empty.", in.Plan.TargetName)
+			}
 		}
 	}
 
@@ -103,9 +117,35 @@ func HostedPreflight(in HostedPreflightInput) PreflightResult {
 			"The data is copied; features that depend on these extensions will not work on the target.")
 	}
 	if len(in.Probe.PolicyRoles) > 0 {
-		add("policy_roles", SeverityBlock, "Row level security policies name role(s) that do not exist on the target: "+strings.Join(in.Probe.PolicyRoles, ", ")+".",
-			"Create these roles on the target database first, or drop the policies on the source. Hosted providers do not export their roles.")
+		hostedRoleCheck(in, add)
 	}
 	add("ownership", SeverityOK, "Owners and grants are not copied (hosted providers forbid superuser); every object is owned by the managed database user.", "")
 	return res
+}
+
+// hostedRoleCheck compares the roles named by policies with the target's own
+// roles. Missing ones block, or are announced as created when the plan asks.
+func hostedRoleCheck(in HostedPreflightInput, add func(id, sev, msg, next string)) {
+	if !in.Target.Known {
+		add("policy_roles", SeverityBlock, "Row level security policies name role(s), but the roles on the target could not be read: "+strings.Join(in.Probe.PolicyRoles, ", ")+".",
+			"Check that the target database is running, then run the preflight again.")
+		return
+	}
+	missing := MissingRoles(in.Probe.PolicyRoles, in.Target.Roles)
+	if len(missing) == 0 {
+		add("policy_roles", SeverityOK, "Every role named by row level security policies exists on the target.", "")
+		return
+	}
+	list := strings.Join(missing, ", ")
+	if in.Plan.CreateMissingRoles {
+		if _, err := CreateRolesCommand(missing); err != nil {
+			add("policy_roles", SeverityBlock, err.Error()+".", "Create the role by hand on the target, or drop the policy on the source.")
+			return
+		}
+		add("policy_roles", SeverityWarn, "Row level security policies name role(s) missing on the target, which will be created as NOLOGIN NOINHERIT before the restore: "+list+".",
+			"They have no password and no privileges beyond the policies; grant them what the app needs afterwards.")
+		return
+	}
+	add("policy_roles", SeverityBlock, "Row level security policies name role(s) that do not exist on the target: "+list+".",
+		"Pass create_missing_roles (CLI: --create-missing-roles) to create them as NOLOGIN, or create them on the target database first. Hosted providers do not export their roles.")
 }

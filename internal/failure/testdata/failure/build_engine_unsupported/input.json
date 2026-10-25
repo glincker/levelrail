@@ -1,0 +1,4 @@
+{
+  "Status": "failed",
+  "Error": "deploy: service \"web\": build: solve: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: unable to upgrade to h2c, received 404\""
+}

@@ -83,7 +83,8 @@ func ParseHostedProbe(out string) HostedProbe {
 func (i *Inspector) ProbeHosted(ctx context.Context, hs HostedSource) (HostedProbe, error) {
 	p, err := i.probeHosted(ctx, hs)
 	if err != nil {
-		return HostedProbe{}, errors.New(hs.Scrub(err.Error()))
+		i.logger().Debug("datamigrate: hosted probe failed", slog.String("error", hs.Scrub(err.Error())))
+		return HostedProbe{}, errors.New(hs.Scrub(tidyExecError(err).Error()))
 	}
 	return p, nil
 }

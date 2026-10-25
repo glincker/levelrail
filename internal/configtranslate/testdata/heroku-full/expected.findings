@@ -15,3 +15,6 @@ warn heroku.addon.manual sendgrid:starter
 info heroku.env.unset OPTIONAL_FLAG
 info heroku.env.generator SECRET_KEY_BASE
 info heroku.env.required STRIPE_KEY
+warn config.source.unknown clock
+warn config.source.unknown web
+warn config.source.unknown worker

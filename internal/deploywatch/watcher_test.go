@@ -329,3 +329,24 @@ func TestWatcher_IgnoresRestartsOfOtherReleaseContainers(t *testing.T) {
 		t.Fatalf("own restarts should trip: %+v", f.events(t))
 	}
 }
+
+// A crashloop on a release the operator rolled back to must not walk to
+// another release behind the operator's back.
+func TestWatcher_RespectsOperatorRollback(t *testing.T) {
+	f := newWatchFixture(t, true)
+	ctx := context.Background()
+	if _, err := f.db.ExecContext(ctx, `UPDATE deploy_attempts SET reason = 'RollbackTo: dep_v0' WHERE id = 'dep_v2'`); err != nil {
+		t.Fatal(err)
+	}
+	f.watcher.Restarts = fakeRestarts(3)
+	f.watcher.Tick(ctx)
+	if svc, _ := f.db.GetDesiredService(ctx, "web"); svc.Image != "app:v2" {
+		t.Errorf("image = %q, an operator rollback must stay", svc.Image)
+	}
+	if !hasEvent(f.events(t), deploysafety.PhaseRollback, deploysafety.StatusInfo, deploysafety.ReasonOperatorRollback) {
+		t.Errorf("events = %+v, want an OperatorRollback event", f.events(t))
+	}
+	if len(f.notes.msgs) != 1 || !strings.Contains(f.notes.msgs[0], "operator rollback") {
+		t.Errorf("notifications = %v", f.notes.msgs)
+	}
+}

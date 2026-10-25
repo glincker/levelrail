@@ -21,7 +21,7 @@ const hostedFrozenRefusal = "writes to the source are not frozen: put the old ap
 func runDatabasesImportHosted(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var f dataFlags
 	var fromEnv string
-	var fromStdin, frozen, large, dryRun, wait bool
+	var fromStdin, frozen, large, dryRun, wait, createRoles bool
 	fs := flag.NewFlagSet(prog+" databases import-hosted", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	f.register(fs)
@@ -29,6 +29,7 @@ func runDatabasesImportHosted(prog string, args []string, stdin io.Reader, stdou
 	fs.BoolVar(&fromStdin, "from-stdin", false, "read the source postgres:// URL from the first line of stdin")
 	fs.BoolVar(&frozen, "writes-frozen", false, "confirm the old app is in maintenance mode and nothing writes to the source")
 	fs.BoolVar(&large, "allow-large", false, "accept the downtime of a dump and restore above the size ceiling")
+	fs.BoolVar(&createRoles, "create-missing-roles", false, "create roles named by row level security policies on the target as NOLOGIN NOINHERIT")
 	fs.BoolVar(&dryRun, "dry-run", false, "run the preflight only and change nothing")
 	fs.BoolVar(&wait, "wait", true, "wait for the move and its verification to finish")
 	positional, code, ok := parseInterspersed(fs, args)
@@ -55,7 +56,7 @@ func runDatabasesImportHosted(prog string, args []string, stdin io.Reader, stdou
 		return reportError(stdout, stderr, f.jsonOut, newValidationError("%s\nfor Heroku: heroku maintenance:on -a APP", hostedFrozenRefusal))
 	}
 
-	req := apiclient.HostedImportRequest{URL: raw, WritesFrozen: frozen, AllowLarge: large}
+	req := apiclient.HostedImportRequest{URL: raw, WritesFrozen: frozen, AllowLarge: large, CreateMissingRoles: createRoles}
 	client := apiClientFromFlags(prog, f.apiURL, "", f.profile, lookupEnv)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
@@ -143,7 +144,7 @@ func printHostedPreflight(w io.Writer, pre apiclient.HostedPreflight) {
 
 func importHostedUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s databases import-hosted <database> (--from-env VAR | --from-stdin) [--writes-frozen] [--allow-large] [--dry-run] [--json] [flags]
+  %[1]s databases import-hosted <database> (--from-env VAR | --from-stdin) [--writes-frozen] [--allow-large] [--create-missing-roles] [--dry-run] [--json] [flags]
 
 Copies a hosted Postgres (for example Heroku) into an existing managed postgres database.
 Create the target first with "%[1]s databases create", then import. The source URL is never

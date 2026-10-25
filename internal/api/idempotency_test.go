@@ -116,3 +116,26 @@ func TestIdempotent_RunsHandlerOnceForRepeatedKey(t *testing.T) {
 		t.Errorf("keyless calls: runs = %d, want 3", runs)
 	}
 }
+
+func TestIdempotent_FailedRequestIsNotReplayed(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	runs := 0
+	h := rt.idempotent(func(w http.ResponseWriter, _ *http.Request) {
+		runs++
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"error":"image pull failed"}`))
+	})
+	for i := 0; i < 2; i++ {
+		req := authedRequest(t, cookie, http.MethodPost, "/x", `{}`)
+		req.Header.Set(headerIdempotencyKey, "failed")
+		rec := httptest.NewRecorder()
+		h(rec, req)
+		if rec.Header().Get(headerIdempotentReplayed) != "" {
+			t.Fatalf("attempt %d replayed a failed response", i)
+		}
+	}
+	if runs != 2 {
+		t.Errorf("handler ran %d times, want 2 (a failure must be retried)", runs)
+	}
+}

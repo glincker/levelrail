@@ -111,6 +111,22 @@ func (c *Controller) recordRollout(ctx context.Context, desired *store.DesiredSe
 	}
 }
 
+// restartRecoverer is the optional store hook that heals a restart row
+// marked failed by an earlier slow pass once the container is ready.
+type restartRecoverer interface {
+	RecoverRestartRollout(ctx context.Context, serviceName, image string) error
+}
+
+func (c *Controller) recoverRestart(ctx context.Context, desired *store.DesiredService) {
+	r, ok := c.rollouts.(restartRecoverer)
+	if !ok {
+		return
+	}
+	if err := r.RecoverRestartRollout(ctx, c.serviceName, desired.Image); err != nil {
+		slog.Warn("reconcile: restart recovery write failed", slog.String("service", c.serviceName), slog.String("error", err.Error()))
+	}
+}
+
 // recordRolloutFailure corrects a deploy attempt's status once its
 // container is confirmed to have never passed readiness (F-002): the
 // attempt was recorded succeeded synchronously at trigger time, before

@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,6 +16,11 @@ const (
 
 func newFakeDaemonClient(t *testing.T, distStatus int, localStatus int, localBody string) *Client {
 	t.Helper()
+	return newFakeDaemonClientDist(t, distStatus, `{"message":"registry unreachable"}`, localStatus, localBody)
+}
+
+func newFakeDaemonClientDist(t *testing.T, distStatus int, distErrBody string, localStatus int, localBody string) *Client {
+	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
@@ -26,7 +32,7 @@ func newFakeDaemonClient(t *testing.T, distStatus int, localStatus int, localBod
 			if distStatus == http.StatusOK {
 				_, _ = w.Write([]byte(`{"Descriptor":{"mediaType":"application/vnd.oci.image.index.v1+json","digest":"` + testIndexDigest + `","size":1}}`))
 			} else {
-				_, _ = w.Write([]byte(`{"message":"registry unreachable"}`))
+				_, _ = w.Write([]byte(distErrBody))
 			}
 		case strings.Contains(r.URL.Path, "/images/") && strings.HasSuffix(r.URL.Path, "/json"):
 			w.WriteHeader(localStatus)
@@ -89,6 +95,24 @@ func TestResolveImage(t *testing.T) {
 				t.Fatal("fallback must carry the registry error")
 			}
 		})
+	}
+}
+
+// Podman has no /distribution endpoint: its 404 must not read as "tag missing".
+func TestResolveImageEngineWithoutDistributionEndpoint(t *testing.T) {
+	for _, body := range []string{`{"cause":"","message":"Path /v1.40/distribution/nginx:1.27-alpine/json is not supported","response":0}`, `{"message":"page not found"}`} {
+		c := newFakeDaemonClientDist(t, 404, body, 404, `{"message":"No such image"}`)
+		got, err := c.ResolveImage(context.Background(), "nginx:1.27-alpine", nil, false)
+		if err != nil {
+			t.Fatalf("body %q: %v", body, err)
+		}
+		if got.Source != ImageSourceNone || got.Ref != "nginx:1.27-alpine" {
+			t.Fatalf("body %q: got %+v", body, got)
+		}
+	}
+	c := newFakeDaemonClientDist(t, 404, `{"message":"manifest unknown"}`, 404, `{"message":"No such image"}`)
+	if _, err := c.ResolveImage(context.Background(), "nginx:nosuchtag", nil, false); !errors.Is(err, ErrImageNotFound) {
+		t.Fatalf("registry manifest unknown must still be ErrImageNotFound, got %v", err)
 	}
 }
 
