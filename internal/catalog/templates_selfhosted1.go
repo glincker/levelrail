@@ -197,7 +197,7 @@ var selfhosted1Templates = []Template{
     image: 2fauth/2fauth:8.0.2
     ports: ["8000:8000"]
     environment:
-      APP_KEY: base64:$SERVICE_REALBASE64_32_APPKEY
+      APP_KEY: $SERVICE_PASSWORD_32_APPKEY
       APP_URL: ${SERVICE_FQDN_2FAUTH:-http://localhost:8000}
       SITE_OWNER: admin@example.com
       DB_CONNECTION: sqlite

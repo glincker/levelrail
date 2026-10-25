@@ -50,7 +50,7 @@ var infrastructureTemplates = []Template{
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:15672/"]
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:15672/ || wget -q -O /dev/null http://127.0.0.1:15672/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3

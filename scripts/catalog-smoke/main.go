@@ -184,7 +184,7 @@ func render(tpl catalog.Template) (string, string) {
 // noInContainerProbe lists images with no shell, curl or wget. The platform probes
 // them over HTTP from outside, which docker compose cannot, so the harness only
 // checks that they stay running.
-var noInContainerProbe = map[string]bool{"portainer": true, "keycloak": true, "typesense": true}
+var noInContainerProbe = map[string]bool{"portainer": true, "keycloak": true, "typesense": true, "shiori": true, "vikunja": true, "loki": true}
 
 // dropHostPorts removes services.*.ports so a smoke run never collides with local ports.
 func dropHostPorts(body string, dropHealth bool) (string, error) {
@@ -203,7 +203,8 @@ func dropHostPorts(body string, dropHealth bool) (string, error) {
 				continue
 			}
 			delete(svc, "ports")
-			if dropHealth {
+			// Only HTTP probes are dropped: a database healthcheck still gates depends_on.
+			if hc, ok := svc["healthcheck"].(map[string]any); ok && dropHealth && strings.Contains(fmt.Sprint(hc["test"]), "http") {
 				delete(svc, "healthcheck")
 			}
 			vols, _ := svc["volumes"].([]any)
@@ -278,7 +279,7 @@ func report(args []string) error {
 		}
 	}
 	var b strings.Builder
-	b.WriteString("---\ntitle: \"Template status\"\ndescription: Measured pass rate of the one-click template catalog from the local smoke run\n---\n\n")
+	b.WriteString("---\ntitle: \"Template status\"\ndescription: Measured pass rate of the one-click template catalog from the local smoke run\n\"og:url\": \"https://docs.levelrail.com/templates-status\"\n---\n\n")
 	b.WriteString("Measured by the catalog smoke script (scripts/catalog-smoke.sh): each template's compose file is brought up with `docker compose up --wait`, checked for running and healthy containers, then torn down with its volumes. Host ports are dropped so runs never collide. Regenerate with `scripts/catalog-smoke.sh -r` (all of the top 50) or pass `-i id1,id2` for a subset. A fail with an unhealthy container means the template's own healthcheck never passed on this host, so check that healthcheck and the image first.\n\n")
 	rate := 0.0
 	if len(rows) > 0 {

@@ -105,14 +105,14 @@ var selfhosted4Templates = []Template{
       KOPIA_PASSWORD: $SERVICE_PASSWORD_REPO
       KOPIA_SERVER_USERNAME: admin
       KOPIA_SERVER_PASSWORD: $SERVICE_PASSWORD_ADMIN
-    command: ["/bin/sh", "-c", "kopia repository connect filesystem --path=/app/repository || kopia repository create filesystem --path=/app/repository; exec kopia server start --insecure --tls-generate-cert --address=0.0.0.0:51515 --server-username=$KOPIA_SERVER_USERNAME --server-password=$KOPIA_SERVER_PASSWORD"]
+    entrypoint: ["/bin/sh", "-c", "kopia repository connect filesystem --path=/app/repository || kopia repository create filesystem --path=/app/repository; exec kopia server start --insecure --tls-generate-cert --address=0.0.0.0:51515 --server-username=admin --server-password=$SERVICE_PASSWORD_ADMIN"]
     volumes:
       - kopia_repository:/app/repository
       - kopia_config:/app/config
       - kopia_cache:/app/cache
       - kopia_logs:/app/logs
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsSk -o /dev/null https://127.0.0.1:51515/ || exit 1"]
+      test: ["CMD-SHELL", "curl -fsSk -u admin:$SERVICE_PASSWORD_ADMIN -o /dev/null https://127.0.0.1:51515/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

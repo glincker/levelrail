@@ -17,11 +17,11 @@ var catalogDevtoolsInfraTemplates = []Template{
     ports: ["6379"]
     environment:
       VALKEY_PASSWORD: $SERVICE_PASSWORD_VALKEY
-    command: ["/bin/sh", "-c", "exec valkey-server --requirepass \"$VALKEY_PASSWORD\" --appendonly yes"]
+    command: ["/bin/sh", "-c", "exec valkey-server --requirepass \"$SERVICE_PASSWORD_VALKEY\" --appendonly yes"]
     volumes:
       - valkey_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "valkey-cli -a \"$VALKEY_PASSWORD\" ping | grep -q PONG || exit 1"]
+      test: ["CMD-SHELL", "valkey-cli -a \"$SERVICE_PASSWORD_VALKEY\" ping | grep -q PONG || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 10
