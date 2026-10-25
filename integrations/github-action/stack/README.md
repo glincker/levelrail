@@ -12,7 +12,7 @@ Stacks are gated by `APP_EXPERIMENTAL=iac`. The action sets it for the CLI; the 
 | `path` | yes | | Manifest file or directory. `kind: Stack` documents are stripped by the CLI and supply the default project and prune. |
 | `mode` | no | `plan` | `plan` or `apply`. |
 | `api-url` | yes | | Control plane base URL. |
-| `token` | no | | API token with write access. Store it as a secret. Not needed with `oidc: true`. |
+| `token` | no | | Stack-scoped API token: plan-only for pull requests, apply for deploy jobs. Store it as a secret. Not needed with `oidc: true`. |
 | `oidc` | no | `false` | `true` swaps the job's GitHub identity for a short-lived token bound to this stack. Needs `id-token: write`. See below. |
 | `oidc-audience` | no | `api-url` | Audience of the identity token. Must equal the dashboard URL in Levelrail Settings. |
 | `project` | no | | Needed when the stack does not exist yet. |
@@ -117,3 +117,5 @@ jobs:
 Approvals need a root token, stored as a production environment secret (`LEVELRAIL_ROOT_TOKEN`) and released only to the approve job. Do not reuse the CI write token for approvals: it cannot approve.
 
 Fork pull requests get a read-only `GITHUB_TOKEN` and no secrets, so plan and comment do not run for them. The comment step only warns if posting fails.
+
+**Pull request jobs can be edited by the pull request.** A collaborator who can push a branch can change the workflow in that branch and read every secret the PR job gets. Give the PR plan job only a plan-only stack token (`stack_verbs: [plan]`) as a repository secret, and keep each apply token (`stack_verbs: [apply]`) as a secret of the `staging` or `production` environment, with required reviewers on `production`. Never use `pull_request_target` with secrets: it runs with the base repository's secrets on code the pull request controls.

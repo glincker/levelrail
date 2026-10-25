@@ -33,7 +33,9 @@ jobs:
           path: stacks/staging
           mode: plan
           api-url: ${{ secrets.LEVELRAIL_API_URL }}
-          token: ${{ secrets.LEVELRAIL_TOKEN }}
+          # Plan-only stack token (stack: staging, stack_verbs: [plan]) as a repository secret.
+          # Anyone who can push a branch can read it from an edited workflow, so it must not apply.
+          token: ${{ secrets.LEVELRAIL_PLAN_TOKEN }}
           comment: 'true'
           secrets: |
             DATABASE_URL=DATABASE_URL
@@ -52,7 +54,9 @@ jobs:
           path: stacks/staging
           mode: apply
           api-url: ${{ secrets.LEVELRAIL_API_URL }}
-          token: ${{ secrets.LEVELRAIL_TOKEN }}
+          # Apply stack token for this stack, stored as a secret of this job's environment
+          # (not the repository), so pull request jobs never receive it.
+          token: ${{ secrets.LEVELRAIL_APPLY_TOKEN }}
           secrets: |
             DATABASE_URL=DATABASE_URL
 
@@ -74,7 +78,9 @@ jobs:
           path: stacks/production
           mode: apply
           api-url: ${{ secrets.LEVELRAIL_API_URL }}
-          token: ${{ secrets.LEVELRAIL_TOKEN }}
+          # Apply stack token for this stack, stored as a secret of this job's environment
+          # (not the repository), so pull request jobs never receive it.
+          token: ${{ secrets.LEVELRAIL_APPLY_TOKEN }}
           secrets: |
             DATABASE_URL=DATABASE_URL
 
