@@ -227,7 +227,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		controllers = append(controllers, firewallreconcile.New(deps.db, firewall.New(deps.firewallRulePrefix), firewallreconcile.WithRequiredPorts(platformRequiredPorts()), firewallreconcile.WithLogger(deps.logger)))
 
 		// Exposure restrictions re-assert DOCKER-USER rules after a reboot or Docker restart.
-		controllers = append(controllers, exposurereconcile.New(deps.db, newExposureManager(deps.firewallRulePrefix), deps.logger))
+		controllers = append(controllers, exposurereconcile.New(deps.db, newExposureManager(deps.firewallRulePrefix), deps.logger, exposurereconcile.WithPodmanCheck(runtimeIsPodman(deps.runtime))))
 
 		if deps.meshCfg != nil {
 			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger), meshreconcile.WithHiddenApps(privateNetworkHiddenApps(deps.db))))
@@ -494,4 +494,22 @@ func replicaTargets(svc store.DesiredService) []string {
 		names[i] = application.ReplicaContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce, i)
 	}
 	return names
+}
+
+// runtimeIsPodman reports whether the live engine identifies as Podman.
+func runtimeIsPodman(rt docker.Runtime) func(context.Context) bool {
+	return func(ctx context.Context) bool {
+		c, ok := rt.(interface {
+			Runtime() docker.RuntimeInfo
+			EngineIdentity(context.Context) (docker.EngineIdentity, error)
+		})
+		if !ok {
+			return false
+		}
+		kind := c.Runtime().Kind
+		if id, err := c.EngineIdentity(ctx); err == nil {
+			kind = docker.RefineKind(kind, id)
+		}
+		return kind == docker.RuntimeKindPodman
+	}
 }

@@ -25,6 +25,14 @@ var egressHostLike = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-
 // is checked here instead.
 var nameLike = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
+// ValidateServiceName checks a service name against the key rules plus the 63 character DNS label limit.
+func ValidateServiceName(name string) error {
+	if len(name) > 63 || !nameLike.MatchString(name) {
+		return fmt.Errorf("name %q must be lowercase letters, digits and hyphens, start with a letter and be at most 63 characters", name)
+	}
+	return nil
+}
+
 // Validate checks rules the JSON Schema can't express: values whose
 // validity depends on another field, or on the rest of the document, not
 // just their own shape. Parse always runs this after schema validation

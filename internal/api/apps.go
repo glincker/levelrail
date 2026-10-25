@@ -414,8 +414,8 @@ func validateAppResource(a appResource) error {
 	if a.Image == "" {
 		return errors.New("image is required")
 	}
-	if a.Port <= 0 {
-		return errors.New("port must be a positive integer")
+	if a.Port <= 0 || a.Port > 65535 {
+		return errors.New("port must be between 1 and 65535")
 	}
 	if a.HostPort != nil && (*a.HostPort < 1 || *a.HostPort > 65535) {
 		return errors.New("host_port must be between 1 and 65535")
@@ -522,6 +522,11 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := validateAppResource(req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	// Create only: apps that predate this rule keep updating under their old names.
+	if err := spec.ValidateServiceName(req.Name); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}

@@ -389,7 +389,7 @@ func printDeployAttemptsHuman(out io.Writer, attempts []deployAttemptResource) {
 			reason = a.WaitReason
 		}
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			a.ID, unpinnedImage(a.Image), shortDigest(a.ImageDigest, a.DigestReason), a.Source, a.Status, dashIfEmpty(a.RolloutState), dashIfEmpty(reason), framework, a.StartedAt.Format(time.RFC3339), finished, dashIfEmpty(a.Trigger), dashIfEmpty(a.Branch), dashIfEmpty(a.Author), a.Error)
+			a.ID, unpinnedImage(a.Image), shortDigest(a.ImageDigest, a.DigestReason), a.Source, a.Status, dashIfEmpty(a.RolloutState), dashIfEmpty(reason), framework, a.StartedAt.Format(time.RFC3339), finished, dashIfEmpty(a.Trigger), dashIfEmpty(a.Branch), dashIfEmpty(a.Author), attemptErrorText(a))
 	}
 	_ = tw.Flush()
 }
@@ -683,12 +683,30 @@ func printDatabasesTable(out io.Writer, dbs []databaseResource) {
 	_ = tw.Flush()
 }
 
+// attemptErrorText prefers the classified failure cause over the raw error, which can be gRPC text.
+func attemptErrorText(a deployAttemptResource) string {
+	if a.Failure != nil && a.Failure.Cause != "" {
+		return a.Failure.Cause
+	}
+	return a.Error
+}
+
+// engineLabel names the engine for the status line; unknown keeps the old wording.
+func engineLabel(kind string) string {
+	switch kind {
+	case "", "docker", "unknown":
+		return "docker"
+	}
+	return kind
+}
+
 // Docker is printed first: it is the one prerequisite everything else depends on.
 func printSystemStatusHuman(out io.Writer, s systemStatusResource) {
+	label := engineLabel(s.EngineKind) + ":"
 	if s.DockerConnected {
-		_, _ = fmt.Fprintln(out, "docker:              connected")
+		_, _ = fmt.Fprintf(out, "%-20s connected\n", label)
 	} else if s.DockerError != "" {
-		_, _ = fmt.Fprintf(out, "docker:              UNREACHABLE (%s)\n", s.DockerError)
+		_, _ = fmt.Fprintf(out, "%-20s UNREACHABLE (%s)\n", label, s.DockerError)
 	} else {
 		_, _ = fmt.Fprintln(out, "docker:              unknown (no Docker reachability check configured)")
 	}

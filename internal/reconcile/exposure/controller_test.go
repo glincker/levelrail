@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"strings"
 	"testing"
@@ -68,6 +69,7 @@ func TestReconcileStoreError(t *testing.T) {
 }
 
 func TestReconcileWarnsOncePerDistinctError(t *testing.T) {
+	resetSeenCauses()
 	var buf bytes.Buffer
 	logger := slog.New(slog.NewTextHandler(&buf, nil))
 	syn := &fakeSyncer{res: exposure.SyncResult{Errors: []string{"iptables is not installed here"}}}
@@ -79,5 +81,37 @@ func TestReconcileWarnsOncePerDistinctError(t *testing.T) {
 	}
 	if n := strings.Count(buf.String(), "sync reported errors"); n != 1 {
 		t.Fatalf("logged %d times, want 1", n)
+	}
+}
+
+func TestReconcileDedupesAcrossInstancesAndVaryingValues(t *testing.T) {
+	resetSeenCauses()
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&buf, nil))
+	for i := 0; i < 4; i++ {
+		syn := &fakeSyncer{res: exposure.SyncResult{Errors: []string{fmt.Sprintf("could not read the chain: exit %d (pid %d)", i, 100+i)}}}
+		if _, err := New(fakeStore{}, syn, logger).Reconcile(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := strings.Count(buf.String(), "level=WARN"); n != 1 {
+		t.Fatalf("warned %d times, want 1", n)
+	}
+}
+
+func TestReconcilePodmanIptablesIsInfoOnce(t *testing.T) {
+	resetSeenCauses()
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&buf, nil))
+	syn := &fakeSyncer{res: exposure.SyncResult{Errors: []string{"iptables is not installed here (Docker may be using its nftables mode)"}}}
+	c := New(fakeStore{}, syn, logger, WithPodmanCheck(func(context.Context) bool { return true }))
+	for i := 0; i < 3; i++ {
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	out := buf.String()
+	if strings.Contains(out, "level=WARN") || strings.Count(out, "level=INFO") != 1 {
+		t.Fatalf("want exactly one INFO and no WARN, got:\n%s", out)
 	}
 }

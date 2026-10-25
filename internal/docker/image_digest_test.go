@@ -133,3 +133,39 @@ func TestPinAndUnpinImageRef(t *testing.T) {
 		t.Fatalf("digest of unpinned = %q", got)
 	}
 }
+
+// On an engine without /distribution, --pull (requireFresh) pulls through the engine instead of failing.
+func TestResolveImageRequireFreshPullsOnEngineWithoutDistribution(t *testing.T) {
+	pulled := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/_ping"):
+			w.Header().Set("Api-Version", "1.47")
+		case strings.Contains(r.URL.Path, "/distribution/"):
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"message":"Path /distribution/x/json is not supported"}`))
+		case strings.HasSuffix(r.URL.Path, "/images/create"):
+			pulled = true
+			_, _ = w.Write([]byte(`{"status":"Pull complete"}` + "\n"))
+		case strings.Contains(r.URL.Path, "/images/") && strings.HasSuffix(r.URL.Path, "/json"):
+			_, _ = w.Write([]byte(`{"Id":"sha256:cfg","RepoDigests":["docker.io/library/nginx@` + testCacheDigest + `"]}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("DOCKER_HOST", "tcp://"+strings.TrimPrefix(srv.URL, "http://"))
+	c, err := NewClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = c.Close() })
+	got, err := c.ResolveImage(context.Background(), "nginx:1.27-alpine", nil, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !pulled || got.Digest != testCacheDigest || got.Source != ImageSourceRegistry {
+		t.Fatalf("pulled=%v got %+v", pulled, got)
+	}
+}

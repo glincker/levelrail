@@ -54,7 +54,7 @@ func TestReviveLastReady(t *testing.T) {
 			if got := rt.containers[oldName].Running; got != true && tc.wantRestart {
 				t.Errorf("last ready release not restarted")
 			}
-			if rt.containers[failedName].Running {
+			if cs := rt.containers[failedName]; cs != nil && cs.Running {
 				t.Errorf("a failed release must never be revived")
 			}
 			// Half-succeeded: a second pass inside the backoff must not restart again.

@@ -112,6 +112,14 @@ func (c *Client) ResolveImage(ctx context.Context, ref string, auth *RegistryAut
 	if regErr == nil {
 		regErr = fmt.Errorf("registry returned no digest")
 	}
+	if requireFresh && engineLacksDistribution(regErr) {
+		// Podman has no /distribution endpoint, so a fresh resolve is the engine's own pull.
+		d, perr := c.pullForDigest(ctx, named, ref, auth)
+		if perr != nil {
+			return ResolvedImage{}, fmt.Errorf("docker: resolve image %q from registry: %w", ref, perr)
+		}
+		return ResolvedImage{Ref: PinImageRef(ref, d), Digest: d, Source: ImageSourceRegistry}, nil
+	}
 	if requireFresh {
 		return ResolvedImage{}, fmt.Errorf("docker: resolve image %q from registry: %w", ref, regErr)
 	}
@@ -130,6 +138,32 @@ func (c *Client) ResolveImage(ctx context.Context, ref string, auth *RegistryAut
 		return ResolvedImage{Ref: PinImageRef(ref, d), Digest: d, Source: ImageSourceCache, RegistryErr: regErr}, nil
 	}
 	return ResolvedImage{Ref: ref, LocalID: local.ID, Source: ImageSourceCache, RegistryErr: regErr}, nil
+}
+
+// engineLacksDistribution is true when the engine answered that the
+// distribution endpoint does not exist, as Podman does.
+func engineLacksDistribution(err error) bool {
+	m := strings.ToLower(err.Error())
+	return strings.Contains(m, "not supported") || strings.Contains(m, "page not found")
+}
+
+// pullForDigest pulls ref through the engine and returns the digest it landed with.
+func (c *Client) pullForDigest(ctx context.Context, named reference.Named, ref string, auth *RegistryAuth) (string, error) {
+	if err := c.ensureImage(ctx, ref, auth, true, nil); err != nil {
+		if cerrdefs.IsNotFound(err) || registrySaysMissing(err) {
+			return "", fmt.Errorf("%w: %q: %w", ErrImageNotFound, ref, err)
+		}
+		return "", err
+	}
+	local, err := c.cli.ImageInspect(ctx, ref)
+	if err != nil {
+		return "", fmt.Errorf("inspect pulled image: %w", err)
+	}
+	d := repoDigestFor(named, local.RepoDigests)
+	if d == "" {
+		return "", errors.New("the engine reported no repo digest for the pulled image")
+	}
+	return d, nil
 }
 
 // registrySaysMissing reports a definitive "no such tag" answer, as opposed

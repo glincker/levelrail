@@ -32,6 +32,7 @@ func TestValidateAppResource(t *testing.T) {
 		{name: "missing name", app: appResource{Image: "levelrail/web:abc123", Port: 3000}, wantErr: true},
 		{name: "missing image", app: appResource{Name: "web", Port: 3000}, wantErr: true},
 		{name: "zero port", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 0}, wantErr: true},
+		{name: "port above range", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 99999}, wantErr: true},
 		{name: "negative port", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: -1}, wantErr: true},
 		{name: "empty strategy falls through to store default", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Strategy: ""}, wantErr: false},
 		{name: "recreate strategy valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Strategy: "recreate"}, wantErr: false},
@@ -2425,5 +2426,16 @@ func TestRecreateSignals(t *testing.T) {
 				t.Errorf("needed() = %v, want %v", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestHandleCreateApp_RejectsNonDNSLabelName(t *testing.T) {
+	for _, name := range []string{"Bad_Name", "-x", "has space", strings.Repeat("a", 64)} {
+		if err := spec.ValidateServiceName(name); err == nil {
+			t.Fatalf("%q must be rejected", name)
+		}
+	}
+	if err := spec.ValidateServiceName("web-2"); err != nil {
+		t.Fatal(err)
 	}
 }

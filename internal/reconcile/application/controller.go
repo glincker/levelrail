@@ -706,6 +706,7 @@ func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, d
 	for i, target := range targets {
 		deployed, err := c.ensureReplicaRunning(ctx, target, i, desired)
 		if err != nil {
+			c.pruneSupersededPrevious(ctx, targets)
 			return notReady(deployed.reason, err), fmt.Errorf("application/%s: %w", c.serviceName, err)
 		}
 		anyDeployed = anyDeployed || deployed.justDeployed

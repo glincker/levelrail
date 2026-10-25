@@ -3165,6 +3165,7 @@ type SystemStatusResource struct {
 	DataDirFreeBytes    int64  `json:"data_dir_free_bytes,omitempty"`
 	DockerConnected     bool   `json:"docker_connected"`
 	DockerError         string `json:"docker_error,omitempty"`
+	EngineKind          string `json:"engine_kind,omitempty"`
 }
 
 // DoctorCheckResource mirrors internal/api's doctorCheckResource: one
