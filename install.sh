@@ -1534,6 +1534,9 @@ Create the first admin account with this one-time setup token:
   ${token}
 The links above pre-fill it. Print it again any time with:
   sudo APP_DATA_DIR=${DATA_DIR} ${BIN_PATH} setup-token
+Or create the admin from a terminal (the password is read from APP_ADMIN_PASSWORD or a prompt):
+  APP_SETUP_TOKEN=${token} levelrail-cli setup admin --api-url ${DASHBOARD_SCHEME}://127.0.0.1:${DASHBOARD_PORT}
+After enabling HTTPS, run: levelrail-cli settings dashboard-url set --url https://<your-domain>
 
 EOF
 	fi

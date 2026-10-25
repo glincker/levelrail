@@ -88,7 +88,7 @@ func runSetupToken(ctx context.Context, stdout io.Writer, openStore func(context
 	if host == "" {
 		host = "<server-ip>"
 	}
-	_, _ = fmt.Fprintf(stdout, "setup token: %s\nopen: http://%s%s\n", token, net.JoinHostPort(host, dashboardPort()), setupURLPath(token))
+	_, _ = fmt.Fprintf(stdout, "open: http://%s%s\n%s\n", net.JoinHostPort(host, dashboardPort()), setupURLPath(token), token)
 	return nil
 }
 
