@@ -380,3 +380,26 @@ func TestStackTokenBodyPeekKeepsBody(t *testing.T) {
 		t.Fatalf("body after peek = %v, %v", v, err)
 	}
 }
+
+func TestStackTokenPlanDoesNotRevealOtherProjectsApps(t *testing.T) {
+	rt, db, _, tok, _ := stackTokenFixture(t, []string{store.StackVerbPlan}, []string{AbilityRead})
+	if err := db.SaveDesiredService(t.Context(), store.DesiredService{Name: "taken", Image: "nginx:1", Port: 80, ProjectID: "p-blog"}); err != nil {
+		t.Fatal(err)
+	}
+	planApp := func(name string) (int, string) {
+		docs := strings.ReplaceAll(iacTestDocs, "{name: web}", "{name: "+name+"}")
+		var out stackPlanResponse
+		code := iacCall(t, rt, bearerRequest(http.MethodPost, "/api/v1/stacks/shop-prod/plan", stackBody(t, docs, nil), tok), &out)
+		for _, c := range out.Plan.Changes {
+			if c.Kind == iac.KindApp {
+				return code, string(c.Action) + "|" + c.Reason
+			}
+		}
+		return code, "missing"
+	}
+	foreignCode, foreign := planApp("taken")
+	ghostCode, ghost := planApp("ghost")
+	if foreignCode != ghostCode || foreign != ghost {
+		t.Fatalf("existing foreign app %d %q differs from missing app %d %q", foreignCode, foreign, ghostCode, ghost)
+	}
+}

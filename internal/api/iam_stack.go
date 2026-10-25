@@ -231,11 +231,32 @@ func (rt *Router) gateStackToken(w http.ResponseWriter, r *http.Request, tokenID
 		return r, false
 	}
 	if !ok {
+		if msg := hiddenStackRead(r); msg != "" {
+			// Same answer as a name that does not exist, so a plan cannot probe other projects.
+			writeError(w, http.StatusNotFound, msg)
+			return r, false
+		}
 		rt.logger.Info("api: stack token denied", slog.String("pattern", r.Pattern), slog.String("token_id", tokenID), slog.String("stack", stack.Name))
 		writeError(w, http.StatusForbidden, msgStackTokenDenied)
 		return r, false
 	}
 	return r, true
+}
+
+// hiddenStackRead returns the 404 message for a denied loader read of an app or
+// database, or "" when the denial should stay a 403.
+func hiddenStackRead(r *http.Request) string {
+	if _, inCall := r.Context().Value(stackTokenCallKey{}).(*stackTokenCall); !inCall || r.Method != http.MethodGet {
+		return ""
+	}
+	_, path, _ := strings.Cut(r.Pattern, " ")
+	switch stackReadPatterns[path] {
+	case "app":
+		return "app not found"
+	case "database":
+		return "database not found"
+	}
+	return ""
 }
 
 // stackRouteVerbs lists the only stack routes a stack token can reach and the
