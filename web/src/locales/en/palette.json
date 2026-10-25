@@ -11,7 +11,7 @@
     "Domain actions": "Domain actions",
     "Actions": "Actions",
     "App actions": "App actions",
-    "Navigate": "Navigate",
+    "Navigate": "Pages",
     "Settings": "Settings",
     "Apps": "Apps",
     "Databases": "Databases",
@@ -26,7 +26,9 @@
     "DNS records": "DNS records",
     "recentSearches": "Recent searches",
     "savedSearches": "Saved searches",
-    "filters": "Filters"
+    "filters": "Filters",
+    "starter": "Try next",
+    "related": "Related"
   },
   "kind": {
     "app": "Apps",
@@ -83,5 +85,72 @@
     "close": "close"
   },
   "keyboardShortcuts": "Keyboard shortcuts",
-  "keyboardShortcutsKeywords": "quick navigation hold l go to"
+  "keyboardShortcutsKeywords": "quick navigation hold l go to",
+  "preview": {
+    "label": "Preview",
+    "none": "Nothing highlighted.",
+    "open": "Open",
+    "deploy": "Deploy",
+    "needsDatabase": "Needs a database",
+    "hasVolume": "Uses a volume",
+    "kind": {
+      "page": "Page",
+      "app": "App",
+      "template": "Template",
+      "action": "Action"
+    },
+    "generic": {
+      "page": "Opens this page.",
+      "app": "Opens the app overview. Tab jumps to its logs.",
+      "template": "Deploys this template as a new app.",
+      "action": "Runs this action."
+    },
+    "starter": {
+      "action-create-app": "Start here: create your first app from a repo or an image.",
+      "action-import": "Bring existing apps over from another platform.",
+      "action-templates": "Pick a ready-made service and deploy it in a few clicks.",
+      "nav-deployments": "See what shipped recently and what is running now.",
+      "action-apps": "Check status, logs and quick actions for your apps.",
+      "nav-backups": "Make sure your data can be restored."
+    },
+    "page": {
+      "nav-dashboard": "Overview of your apps, nodes and recent activity.",
+      "nav-databases": "Managed databases: create, connect and monitor them.",
+      "action-create-database": "Provision a new managed database.",
+      "nav-backups": "Backup schedules and restore points for your data.",
+      "nav-domains": "Domains, certificates and routing for your apps.",
+      "nav-dns": "DNS zones and records.",
+      "nav-firewall": "Control which ports and sources can reach your nodes.",
+      "nav-private-networks": "Private networks that link nodes and apps.",
+      "nav-loadbalancers": "Spread traffic across replicas and nodes.",
+      "nav-deployments": "Deploy history across all apps.",
+      "nav-deploy-timeline": "A timeline of releases and what changed.",
+      "nav-builds": "Build queue, logs and cache for container images.",
+      "nav-functions": "Small functions that run without a long-lived app.",
+      "nav-projects": "Group apps and environments by project.",
+      "nav-pipelines": "Promote a release through stages.",
+      "nav-usage": "Resource usage and cost per app.",
+      "nav-costs": "Explore spend over time.",
+      "nav-approvals": "Deploys waiting for sign-off.",
+      "nav-help": "Docs, shortcuts and support.",
+      "settings-hub": "All instance settings in one place.",
+      "settings-account": "Your profile and password.",
+      "settings-security": "Sessions, two-factor sign-in and secrets policy.",
+      "settings-tokens": "Create and revoke API tokens.",
+      "settings-registry-credentials": "Credentials for private container registries, used to pull images.",
+      "settings-backup-targets": "Where backups are stored.",
+      "settings-storage": "Object storage destinations.",
+      "settings-git-connections": "Connect GitHub, GitLab and other git hosts.",
+      "settings-notification-channels": "Slack, Discord, email and webhook alerts.",
+      "settings-users": "People who can sign in and their roles.",
+      "settings-audit-log": "Who changed what, and when.",
+      "settings-updates": "Check for and apply platform updates.",
+      "action-status": "Health of the platform and your apps.",
+      "action-create-app": "Create a new app from a repo, an image or a template.",
+      "action-new-app": "Create a new app from a repo, an image or a template.",
+      "action-templates": "Browse the template catalog.",
+      "action-import": "Import apps from another platform.",
+      "action-toggle-theme": "Switch between light, dark and system themes."
+    }
+  }
 }
