@@ -51,6 +51,9 @@ type nodeResource struct {
 	CertFingerprint string     `json:"cert_fingerprint,omitempty"`
 	JoinedAt        *time.Time `json:"joined_at,omitempty"`
 	LastSeenAt      *time.Time `json:"last_seen_at,omitempty"`
+	// OfflineSince is the last heartbeat of a node that is offline now, the
+	// moment it stopped being reachable. Omitted while the node is not offline.
+	OfflineSince *time.Time `json:"offline_since,omitempty"`
 	// Schedulable is the cordon state: false means the node
 	// refuses new placements (handleSetAppNode, handleDrainNode) while
 	// whatever's already running there keeps running, see
@@ -149,6 +152,10 @@ func toNodeResource(n store.Node) nodeResource {
 		c := n.CreatedAt
 		joined = &c
 	}
+	var offlineSince *time.Time
+	if n.Status == store.NodeStatusOffline {
+		offlineSince = n.LastSeenAt
+	}
 	return nodeResource{
 		ID:                    n.ID,
 		Name:                  n.Name,
@@ -157,6 +164,7 @@ func toNodeResource(n store.Node) nodeResource {
 		CertFingerprint:       n.CertFingerprint,
 		JoinedAt:              joined,
 		LastSeenAt:            n.LastSeenAt,
+		OfflineSince:          offlineSince,
 		Schedulable:           n.Schedulable,
 		AcceptsAppWorkloads:   n.AcceptsAppWorkloads,
 		AcceptsBuildWorkloads: n.AcceptsBuildWorkloads,
