@@ -186,6 +186,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	case "export":
 		return runExport(prog, args[1:], stdout, stderr, lookupEnv)
+	case "assets":
+		return runAssets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "stack":
 		return runStack(prog, args[1:], stdout, stderr, lookupEnv)
 	case "compliance":

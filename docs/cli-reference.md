@@ -1102,6 +1102,23 @@ levelrail-cli storage delete <id>
 ```
 S3 compatible storage destinations. `providers` lists the presets (`aws`, `r2`, `b2`, `minio`, `wasabi`, `custom`). `add` also takes `--account-id` (r2), `--region` (aws, b2, wasabi), `--endpoint` (minio, custom), `--virtual-hosted` and `--skip-verify`. `test` writes, reads back and deletes a probe object.
 
+## Assets
+
+```
+levelrail-cli assets buckets list [--project P]
+levelrail-cli assets buckets create <name> --target ID [--prefix P] [--public --confirm-name NAME] [--serving direct|cdn] [--public-base-url URL] [--cdn-base-url URL]
+levelrail-cli assets buckets show <bucket>
+levelrail-cli assets buckets set <bucket> [--public --confirm-name NAME | --private] [--serving direct|cdn] [--referrer-allow H,H] [--quota-bytes N]
+levelrail-cli assets buckets probe <bucket> [--origin URL] [--fix-cors]
+levelrail-cli assets buckets delete <bucket> [--yes]
+levelrail-cli assets usage <bucket> [--egress-gb N]
+levelrail-cli assets ls <bucket> [--prefix P] [--cursor C] [--limit N]
+levelrail-cli assets upload <bucket> <file> [--key K] [--content-type T]
+levelrail-cli assets url <bucket> <key> [--expires D]
+levelrail-cli assets rm <bucket> <key>
+```
+Files served from an S3 compatible storage destination. A `<bucket>` is the bucket name or its id. Buckets start private and Direct; making one public needs the bucket name typed back (`--confirm-name`, or an interactive prompt), never assumed. `upload` sends small files through the control plane and large ones straight to the provider with a presigned URL (the cutoff comes from `LEVELRAIL_ASSETS_DIRECT_MAX_BYTES`, and a 413 also switches routes), then prints the origin and CDN URLs. `buckets probe` checks access, browser upload CORS and public exposure; `--fix-cors` applies the CORS rule. `usage` prices the stored size with list prices and labels the result as an estimate with the price table date. `buckets delete` removes only the connection; objects stay at the provider. All commands take `--json` and `--output`.
+
 ## Data export
 
 See [Data export](/data-export).
