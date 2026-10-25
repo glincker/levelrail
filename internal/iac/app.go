@@ -61,9 +61,12 @@ type appFields struct {
 	Project     string            `json:"project,omitempty"`
 	Environment string            `json:"environment,omitempty"`
 	Tags        []string          `json:"tags,omitempty"`
+	// Connections maps an env var to "database.field"; never a value.
+	Connections map[string]string    `json:"connections,omitempty"`
+	Jobs        map[string]jobFields `json:"jobs,omitempty"`
 }
 
-var additiveApp = map[string]bool{"domains": true, "env": true, "secretEnv": true, "labels": true, "tags": true}
+var additiveApp = map[string]bool{"domains": true, "env": true, "secretEnv": true, "labels": true, "tags": true, "connections": true}
 
 func memoryString(b int64) string {
 	const mi = 1024 * 1024
@@ -214,6 +217,12 @@ func appFromWire(a wireApp, names idNames) appFields {
 	}
 	if a.HostPort != nil {
 		f.HostPort = *a.HostPort
+	}
+	if len(a.DatabaseEnv) > 0 {
+		f.Connections = make(map[string]string, len(a.DatabaseEnv))
+		for k, ref := range a.DatabaseEnv {
+			f.Connections[k] = ref.Database + "." + ref.Field
+		}
 	}
 	if a.Hooks != nil && (a.Hooks.PreDeploy != "" || a.Hooks.PostDeploy != "") {
 		f.Hooks = &hookFields{PreDeploy: a.Hooks.PreDeploy, PostDeploy: a.Hooks.PostDeploy}

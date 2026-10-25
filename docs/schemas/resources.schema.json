@@ -462,6 +462,38 @@
             "secretRef"
           ],
           "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "from": {
+              "additionalProperties": false,
+              "properties": {
+                "database": {
+                  "pattern": "^[a-z][a-z0-9-]*$",
+                  "type": "string"
+                },
+                "field": {
+                  "enum": [
+                    "url",
+                    "host",
+                    "port",
+                    "username",
+                    "password",
+                    "database"
+                  ]
+                }
+              },
+              "required": [
+                "database"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "from"
+          ],
+          "type": "object"
         }
       ]
     },

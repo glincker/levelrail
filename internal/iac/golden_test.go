@@ -24,6 +24,7 @@ type liveState struct {
 	Lbs       map[string]map[string]any            `json:"lbs"`
 	Pipelines map[string]map[string]map[string]any `json:"pipelines"`
 	Alerts    map[string]map[string]map[string]any `json:"alerts"`
+	Jobs      map[string]map[string]map[string]any `json:"jobs"`
 }
 
 func loadLive(f *fakeCP, raw []byte) error {
@@ -47,6 +48,9 @@ func loadLive(f *fakeCP, raw []byte) error {
 	}
 	if l.Alerts != nil {
 		f.alerts = l.Alerts
+	}
+	if l.Jobs != nil {
+		f.jobs = l.Jobs
 	}
 	return nil
 }

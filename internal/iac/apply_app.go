@@ -132,7 +132,11 @@ func (x *executor) afterApp(ctx context.Context, r *Resource, want appFields, li
 			return fmt.Errorf("set secret %s: %w", name, err)
 		}
 	}
-	if !x.opts.NoDeploy && live != nil && (len(envDirty) > 0 && envDirty[0] || len(setSecrets) > 0) {
+	connsChanged, err := x.syncConnections(ctx, r.Name, want.Connections, live, prune)
+	if err != nil {
+		return err
+	}
+	if !x.opts.NoDeploy && live != nil && (len(envDirty) > 0 && envDirty[0] || len(setSecrets) > 0 || connsChanged) {
 		return x.do(ctx, http.MethodPost, app+"/restart", nil, nil)
 	}
 	return nil

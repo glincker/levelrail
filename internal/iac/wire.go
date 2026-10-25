@@ -96,6 +96,12 @@ type wireApp struct {
 	BindMounts    []map[string]any          `json:"bind_mounts,omitempty"`
 	Egress        map[string]any            `json:"egress,omitempty"`
 	EnvDirty      bool                      `json:"env_dirty"`
+	DatabaseEnv   map[string]wireDBRef      `json:"database_env,omitempty"`
+}
+
+type wireDBRef struct {
+	Database string `json:"database"`
+	Field    string `json:"field"`
 }
 
 type wireSecretKey struct {

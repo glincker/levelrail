@@ -13,6 +13,8 @@ type liveApp struct {
 	wire    wireApp
 	raw     map[string]any
 	secrets map[string]bool
+	// jobs is nil until read; it is read only for apps that declare jobs.
+	jobs map[string]wireJob
 }
 
 // State is the live control plane data a plan needs, read through the API
@@ -299,10 +301,13 @@ func (l loader) scopedOne(ctx context.Context, r *Resource, loadEnvs func(string
 			return l.envMap(ctx, "/api/v1/environments/"+esc(e.ID)+"/env", r.Key(), l.st.envEnv, envKey(r.Scope, r.Name))
 		}
 	case KindApp:
-		for _, p := range []string{stringField(r.Fields, "project")} {
-			if p != "" {
-				return loadEnvs(p)
+		if _, declared := r.Fields["jobs"]; declared {
+			if err := l.jobsOf(ctx, r.Name); err != nil {
+				return err
 			}
+		}
+		if p := stringField(r.Fields, "project"); p != "" {
+			return loadEnvs(p)
 		}
 	case KindLoadBalancer:
 		return l.lb(ctx, r.Name)
@@ -341,6 +346,24 @@ func (l loader) lb(ctx context.Context, app string) error {
 		return l.st.note(resourceKey(KindLoadBalancer, "", app), fmt.Errorf("read load balancer of %s: %w", app, err))
 	}
 	l.st.lbs[app] = lb
+	return nil
+}
+
+func (l loader) jobsOf(ctx context.Context, app string) error {
+	la, ok := l.st.apps[app]
+	if !ok || la.jobs != nil {
+		return nil
+	}
+	var list []wireJob
+	if err := l.get(ctx, "/api/v1/apps/"+esc(app)+"/jobs", &list); err != nil {
+		return l.st.note("jobs/"+app, fmt.Errorf("list jobs of %s: %w", app, err))
+	}
+	la.jobs = make(map[string]wireJob, len(list))
+	for _, j := range list {
+		if j.Name != "" {
+			la.jobs[j.Name] = j
+		}
+	}
 	return nil
 }
 

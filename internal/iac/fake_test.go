@@ -29,6 +29,7 @@ type fakeCP struct {
 	lbs       map[string]map[string]any
 	pipelines map[string]map[string]map[string]any
 	alerts    map[string]map[string]map[string]any
+	jobs      map[string]map[string]map[string]any
 	channels  []map[string]any
 	deny      func(method, path string) bool
 	lbOff     bool
@@ -40,7 +41,7 @@ type fakeCP struct {
 func newFake() *fakeCP {
 	f := &fakeCP{projects: map[string]map[string]any{}, envs: map[string]map[string]any{}, envVars: map[string]map[string]any{}, tags: map[string]map[string]any{},
 		dbs: map[string]map[string]any{}, apps: map[string]map[string]any{}, secrets: map[string]map[string]bool{}, lbs: map[string]map[string]any{},
-		pipelines: map[string]map[string]map[string]any{}, alerts: map[string]map[string]map[string]any{}}
+		pipelines: map[string]map[string]map[string]any{}, alerts: map[string]map[string]map[string]any{}, jobs: map[string]map[string]map[string]any{}}
 	f.channels = []map[string]any{{"id": "ch1", "name": "ops"}}
 	f.routes = f.buildRoutes()
 	return f
@@ -200,7 +201,7 @@ func (f *fakeCP) appRoutes() {
 		if !ok {
 			return nil, errNotFound
 		}
-		for _, keep := range []string{"project_id", "environment_id", "tags", "vault_env", "volumes", "secret_env"} {
+		for _, keep := range []string{"project_id", "environment_id", "tags", "vault_env", "volumes", "secret_env", "database_env"} {
 			if _, sent := b[keep]; !sent && old[keep] != nil {
 				b[keep] = old[keep]
 			}
@@ -297,7 +298,57 @@ func (f *fakeCP) extraRoutes() {
 		f.alerts[m[1]][b["name"].(string)] = b
 		return b, nil
 	})
+	f.jobRoutes()
 	f.route("GET", `/api/v1/notification-channels`, func(_ []string, _ map[string]any) (any, error) { return f.channels, nil })
+}
+
+func (f *fakeCP) jobRoutes() {
+	f.route("GET", `/api/v1/apps/([^/]+)/jobs`, func(m []string, _ map[string]any) (any, error) { return list(f.jobs[m[1]]), nil })
+	f.route("POST", `/api/v1/apps/([^/]+)/jobs`, func(m []string, b map[string]any) (any, error) {
+		if f.jobs[m[1]] == nil {
+			f.jobs[m[1]] = map[string]map[string]any{}
+		}
+		b["id"], b["source"] = f.id("j"), "api"
+		f.jobs[m[1]][b["name"].(string)] = b
+		return b, nil
+	})
+	f.route("PUT", `/api/v1/apps/([^/]+)/jobs/([^/]+)`, func(m []string, b map[string]any) (any, error) {
+		for n, j := range f.jobs[m[1]] {
+			if j["id"] == m[2] {
+				b["id"], b["source"] = m[2], j["source"]
+				delete(f.jobs[m[1]], n)
+				f.jobs[m[1]][b["name"].(string)] = b
+				return b, nil
+			}
+		}
+		return nil, errNotFound
+	})
+	f.route("DELETE", `/api/v1/apps/([^/]+)/jobs/([^/]+)`, func(m []string, _ map[string]any) (any, error) {
+		for n, j := range f.jobs[m[1]] {
+			if j["id"] == m[2] {
+				delete(f.jobs[m[1]], n)
+			}
+		}
+		return nil, nil
+	})
+	f.route("POST", `/api/v1/apps/([^/]+)/connections`, func(m []string, b map[string]any) (any, error) {
+		if _, ok := f.dbs[fmt.Sprint(b["database"])]; !ok {
+			return nil, &StatusError{Status: http.StatusBadRequest, Message: "unknown database"}
+		}
+		de, _ := f.apps[m[1]]["database_env"].(map[string]any)
+		if de == nil {
+			de = map[string]any{}
+		}
+		de[fmt.Sprint(b["env_var"])] = map[string]any{"database": b["database"], "field": b["field"]}
+		f.apps[m[1]]["database_env"] = de
+		return nil, nil
+	})
+	f.route("DELETE", `/api/v1/apps/([^/]+)/connections/([^/]+)`, func(m []string, _ map[string]any) (any, error) {
+		if de, ok := f.apps[m[1]]["database_env"].(map[string]any); ok {
+			delete(de, m[2])
+		}
+		return nil, nil
+	})
 }
 
 func (f *fakeCP) writeCount() int { return len(f.writes) }

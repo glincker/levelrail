@@ -60,7 +60,18 @@ func (p *planner) planApp(r *Resource) {
 	if !p.checkAppRefs(r, f) {
 		return
 	}
+	deps, ok := p.checkConnRefs(r, f)
+	if !ok {
+		return
+	}
+	jobs := desiredJobs(f)
+	delete(f, "jobs")
+	conns := desiredConns(f)
 	live, exists := p.st.apps[r.Name]
+	if _, denied := p.st.denied["jobs/"+r.Name]; denied && jobs != nil {
+		p.fail(r, "the jobs of app %s cannot be read: %v", r.Name, p.st.denied["jobs/"+r.Name])
+		return
+	}
 	var setSecrets []string
 	for _, n := range r.SecretRefs {
 		_, supplied := p.secretValue(r.Name, n)
@@ -71,9 +82,25 @@ func (p *planner) planApp(r *Resource) {
 			r.Warnings = append(r.Warnings, fmt.Sprintf("secret %s has no value yet; the app cannot use it until one is set", n))
 		}
 	}
+	managed := p.st.managed[r.Name]
+	prune := p.opts.Prune && managed
+	var liveRef *liveApp
+	if exists {
+		liveRef = live
+	}
+	jobChanges, jobKept, jobOps := p.planJobs(r, jobs, liveRef, prune)
+	r.Warnings = append(r.Warnings, connWarnings(conns, liveRef)...)
 	if !exists {
-		it := p.add(r, ActionCreate, addAll(f, additiveApp), nil, nil)
-		it.exec = func(ctx context.Context, x *executor) error { return x.createApp(ctx, r, f, setSecrets) }
+		fields := append(addAll(f, additiveApp), jobChanges...)
+		sort.SliceStable(fields, func(i, j int) bool { return fields[i].Path < fields[j].Path })
+		it := p.add(r, ActionCreate, fields, nil, nil)
+		it.DependsOn = deps
+		it.exec = func(ctx context.Context, x *executor) error {
+			if err := x.createApp(ctx, r, f, setSecrets); err != nil {
+				return err
+			}
+			return x.syncJobs(ctx, r.Name, jobOps)
+		}
 		return
 	}
 	liveMap := toMap(appFromWire(live.wire, idNames{p.st}))
@@ -87,8 +114,9 @@ func (p *planner) planApp(r *Resource) {
 			liveMap["image"] = want
 		}
 	}
-	managed := p.st.managed[r.Name]
-	changes, kept := diffFields(f, liveMap, additiveApp, p.opts.Prune && managed)
+	changes, kept := diffFields(f, liveMap, additiveApp, prune)
+	changes = append(changes, jobChanges...)
+	kept = append(kept, jobKept...)
 	if u := unsupportedApp(live.wire); len(u) > 0 {
 		r.Warnings = append(r.Warnings, "live settings apply does not manage are kept: "+strings.Join(u, ", "))
 	}
@@ -96,13 +124,18 @@ func (p *planner) planApp(r *Resource) {
 		changes = append(changes, FieldChange{Path: "secrets." + n, Op: OpChange, New: hiddenValue})
 	}
 	if len(changes) == 0 {
-		p.add(r, ActionNoop, nil, kept, nil)
+		p.add(r, ActionNoop, nil, kept, nil).DependsOn = deps
 		return
 	}
 	sort.SliceStable(changes, func(i, j int) bool { return changes[i].Path < changes[j].Path })
 	it := p.add(r, ActionUpdate, changes, kept, nil)
-	prune := p.opts.Prune && managed
-	it.exec = func(ctx context.Context, x *executor) error { return x.updateApp(ctx, r, f, live, prune, setSecrets) }
+	it.DependsOn = deps
+	it.exec = func(ctx context.Context, x *executor) error {
+		if err := x.updateApp(ctx, r, f, live, prune, setSecrets); err != nil {
+			return err
+		}
+		return x.syncJobs(ctx, r.Name, jobOps)
+	}
 }
 
 func (p *planner) checkAppRefs(r *Resource, f map[string]any) bool {

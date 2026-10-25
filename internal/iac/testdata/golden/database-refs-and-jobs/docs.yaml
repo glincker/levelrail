@@ -1,0 +1,42 @@
+version: 1
+kind: Database
+metadata: {name: main}
+spec:
+  engine: postgres
+  version: "16"
+---
+version: 1
+kind: App
+metadata: {name: web}
+spec:
+  service:
+    build: {type: image, image: "ghcr.io/acme/web:1.2.3"}
+    port: 3000
+    health:
+      readiness: {path: /healthz}
+    env:
+      LOG_LEVEL: info
+      DATABASE_URL: {from: {database: main, field: url}}
+      DB_PASSWORD: {from: {database: main, field: password}}
+      CACHE_HOST: {from: cache.host}
+    jobs:
+      - name: nightly
+        schedule: "0 3 * * *"
+        command: [node, scripts/nightly.js]
+        timeout: 10m
+      - name: cleanup
+        schedule: "*/30 * * * *"
+        command: [node, scripts/cleanup.js]
+      - name: from-spec
+        schedule: "0 1 * * *"
+        command: [node, other.js]
+---
+version: 1
+kind: App
+metadata: {name: worker}
+spec:
+  service:
+    build: {type: image, image: "ghcr.io/acme/worker:1"}
+    port: 8080
+    env:
+      DATABASE_URL: {from: {database: main}}

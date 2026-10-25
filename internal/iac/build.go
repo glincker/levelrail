@@ -304,7 +304,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	}
 	decodeSpec(d, &sp, s)
 	svcNode := mapValue(d.SpecNode, "service")
-	env, secrets := appEnv(svcNode, s, opts)
+	env, secrets, conns := appEnv(svcNode, s, opts)
 
 	trimmed := *svcNode
 	trimmed.Content = nil
@@ -330,7 +330,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	f := appFields{Image: svc.Build.Image, Port: svc.Port, HostPort: svc.HostPort, BindAddress: svc.EffectiveBindAddress(),
 		Replicas: svc.EffectiveReplicas(), Strategy: svc.EffectiveStrategy(), Domains: sortedUnique(svc.Domains), Env: nonEmptyMap(env),
 		SecretEnv: sortedUnique(secrets), Labels: nonEmptyMap(svc.Labels), Command: svc.Command, Project: sp.Project, Environment: sp.Environment,
-		Tags: sortedUnique(sp.Tags)}
+		Tags: sortedUnique(sp.Tags), Connections: nonEmptyMap(conns)}
 	if opts.Source != "" {
 		f.Tags = sortedUnique(append(f.Tags, tagManagedPre+opts.Source))
 	}
@@ -345,6 +345,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	if f.Environment != "" && f.Project == "" {
 		s.at("spec.environment", "an environment needs a project")
 	}
+	f.Jobs = jobsFromSpec(svc.Jobs, s)
 	return &Resource{Kind: KindApp, Name: d.Name, Doc: d, Fields: toMap(f), SecretRefs: f.SecretEnv}
 }
 
@@ -359,9 +360,6 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 	if svc.Egress != nil {
 		s.at(p+"egress", "egress policies are not supported by apply yet")
 	}
-	if len(svc.Jobs) > 0 {
-		s.at(p+"jobs", "scheduled jobs are not supported by apply yet; declare them in app.yaml or the app's Jobs tab")
-	}
 	if svc.LoadBalancer != nil {
 		s.at(p+"loadbalancer", "declare a LoadBalancer document instead")
 	}
@@ -373,12 +371,13 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 	}
 }
 
-func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, []string) {
+func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, []string, map[string]string) {
 	envNode := mapValue(svcNode, "env")
 	if envNode == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 	literal := map[string]string{}
+	conns := map[string]string{}
 	var secrets []string
 	for i := 0; i+1 < len(envNode.Content); i += 2 {
 		k, vn := envNode.Content[i].Value, envNode.Content[i+1]
@@ -397,10 +396,16 @@ func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, 
 				literal[k] = v
 			}
 		case yaml.MappingNode:
+			if from := mapValue(vn, "from"); from != nil {
+				if ref, ok := parseFromRef(from, path+".from", s); ok {
+					conns[k] = ref
+				}
+				continue
+			}
 			secrets = mappingEnv(k, vn, path, secrets, s)
 		}
 	}
-	return literal, secrets
+	return literal, secrets, conns
 }
 
 func mappingEnv(k string, vn *yaml.Node, path string, secrets []string, s *issueSink) []string {
@@ -410,8 +415,8 @@ func mappingEnv(k string, vn *yaml.Node, path string, secrets []string, s *issue
 	if n := mapValue(vn, "secret"); n != nil && n.Value == "true" {
 		return append(secrets, k)
 	}
-	if mapValue(vn, "from") != nil || mapValue(vn, "vault") != nil {
-		s.at(path, "from and vault references are not supported by apply yet")
+	if mapValue(vn, "vault") != nil {
+		s.at(path, "vault references are not supported by apply yet")
 	}
 	return secrets
 }
