@@ -3,8 +3,10 @@ package ingress
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
@@ -63,4 +65,60 @@ func (c *Controller) inspectLocal(ctx context.Context, name string) (*docker.Con
 		return state, nil
 	}
 	return c.runtime.InspectByName(ctx, name)
+}
+
+// attemptMemo shares each service's deploy attempts across one Reconcile.
+type attemptMemo struct {
+	mu        sync.Mutex
+	byService map[string][]store.DeployAttempt
+}
+
+// deployAttempts returns serviceName's attempts, newest first. ok is false
+// when the store cannot list them or the listing failed.
+func (c *Controller) deployAttempts(ctx context.Context, serviceName string) ([]store.DeployAttempt, bool) {
+	l, ok := c.store.(attemptLister)
+	if !ok {
+		return nil, false
+	}
+	memo := c.attempts.Load()
+	if memo != nil {
+		memo.mu.Lock()
+		defer memo.mu.Unlock()
+		if attempts, seen := memo.byService[serviceName]; seen {
+			return attempts, true
+		}
+	}
+	attempts, err := l.ListDeployAttempts(ctx, serviceName)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: list deploy attempts failed",
+			slog.String("service", serviceName), slog.String("error", err.Error()))
+		return nil, false
+	}
+	if memo != nil {
+		memo.byService[serviceName] = attempts
+	}
+	return attempts, true
+}
+
+// readyForNewestAttempt trusts a Ready condition only when it was written after
+// the newest attempt started: an older one can belong to the release that
+// served before a rollback. A zero time means the store does not record it.
+func (c *Controller) readyForNewestAttempt(ctx context.Context, serviceName string, readyAt time.Time) bool {
+	if readyAt.IsZero() {
+		return true
+	}
+	attempts, ok := c.deployAttempts(ctx, serviceName)
+	if !ok || len(attempts) == 0 {
+		return true
+	}
+	return readyAt.After(attempts[0].StartedAt)
+}
+
+// warmingImageID is the content a not yet ready target runs, so a held
+// release with the same content can serve while it warms up.
+func warmingImageID(svc store.DesiredService, state *docker.ContainerState) string {
+	if state != nil && state.ImageID != "" {
+		return state.ImageID
+	}
+	return svc.LocalImageID()
 }

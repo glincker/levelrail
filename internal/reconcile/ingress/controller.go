@@ -292,6 +292,8 @@ type Controller struct {
 	listing atomic.Pointer[containerListing]
 	// inspected holds the local service containers read in one call at the start of a Reconcile.
 	inspected atomic.Pointer[docker.InspectSet]
+	// attempts memoizes each service's deploy attempts for a single Reconcile.
+	attempts atomic.Pointer[attemptMemo]
 
 	serverName     string
 	requestStats   bool
@@ -723,6 +725,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	c.issues.reset()
 	c.listing.Store(&containerListing{})
 	defer c.listing.Store(nil)
+	c.attempts.Store(&attemptMemo{byService: map[string][]store.DeployAttempt{}})
+	defer c.attempts.Store(nil)
 	services, err := c.store.ListDesiredServices(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list desired services: %w", err)
@@ -797,7 +801,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancer admin states: %w", err)
 	}
-	readyByService, err := c.applicationReadyByService(ctx, services)
+	readyByService, readyAt, err := c.applicationReadyByService(ctx, services)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: get application readiness: %w", err)
 	}
@@ -938,7 +942,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 				remoteBlocks = append(remoteBlocks, remoteBlock{Service: svc.Name, NodeID: svc.NodeID, Hosts: activeHosts, Why: why})
 			}
 		} else {
-			dial, ok = c.dialForService(ctx, svc, readyByService[svc.Name])
+			dial, ok = c.dialForService(ctx, svc, readyByService[svc.Name] && c.readyForNewestAttempt(ctx, svc.Name, readyAt[svc.Name]))
 		}
 		if !ok {
 			// No backend to bypass to: the gated hosts still get the page.
@@ -1375,7 +1379,7 @@ func (c *Controller) dialForService(ctx context.Context, svc store.DesiredServic
 		return dial, true
 	}
 
-	if dial, ok := c.dialPreviousRelease(ctx, svc.Name, target); ok {
+	if dial, ok := c.dialPreviousRelease(ctx, svc.Name, target, warmingImageID(svc, state)); ok {
 		c.lastDial.Store(svc.Name, dial)
 		return dial, true
 	}
@@ -1393,13 +1397,18 @@ func (c *Controller) dialForService(ctx context.Context, svc store.DesiredServic
 // release meanwhile. A container the newest deploy just created never
 // qualifies, so restarts and same-tag redeploys still wait for Ready.
 func (c *Controller) passedReadiness(ctx context.Context, serviceName string, state *docker.ContainerState) bool {
-	l, ok := c.store.(attemptLister)
-	if !ok || state == nil || state.Image == "" || state.Created.IsZero() {
+	if state == nil || state.Image == "" || state.Created.IsZero() {
 		return false
 	}
-	attempts, err := l.ListDeployAttempts(ctx, serviceName)
-	if err != nil || len(attempts) == 0 || !state.Created.Before(attempts[0].StartedAt) {
+	attempts, ok := c.deployAttempts(ctx, serviceName)
+	if !ok || len(attempts) == 0 || !state.Created.Before(attempts[0].StartedAt) {
 		return false
+	}
+	// A rollback can restart a held container in place: same Created, fresh process.
+	if insp, ok := c.runtime.(docker.ExitStateInspector); ok {
+		if es, err := insp.InspectExitState(ctx, state.Name); err == nil && es != nil && !es.StartedAt.IsZero() && !es.StartedAt.Before(attempts[0].StartedAt) {
+			return false
+		}
 	}
 	for _, a := range attempts {
 		if a.Status == store.DeployAttemptStatusSucceeded && docker.SameImageRef(a.Image, state.Image) {
@@ -1495,8 +1504,8 @@ func dialAddr(state *docker.ContainerState) (string, bool) {
 
 // dialPreviousRelease finds another running, ported container for
 // serviceName besides exclude, to keep serving while exclude isn't ready.
-func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName, exclude string) (string, bool) {
-	prev, err := c.previousReleases(ctx, serviceName, exclude)
+func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName, exclude, preferImageID string) (string, bool) {
+	prev, err := c.previousReleasesPreferring(ctx, serviceName, exclude, preferImageID)
 	if err != nil {
 		if dial, ok := c.lastDial.Load(serviceName); ok {
 			return dial.(string), true //nolint:errcheck,forcetypeassert // only strings are stored
@@ -1512,19 +1521,29 @@ func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName, exclu
 // previousReleases returns serviceName's running, ported containers other
 // than exclude, best fallback first: last ready release, then newest.
 func (c *Controller) previousReleases(ctx context.Context, serviceName, exclude string) ([]docker.ContainerState, error) {
+	return c.previousReleasesPreferring(ctx, serviceName, exclude, "")
+}
+
+// previousReleasesPreferring is previousReleases with a held release running
+// preferImageID ranked first, so a warming rollback's content keeps serving.
+func (c *Controller) previousReleasesPreferring(ctx context.Context, serviceName, exclude, preferImageID string) ([]docker.ContainerState, error) {
 	containers, err := c.listLocal(ctx, serviceName+"-")
 	if err != nil {
 		c.logger.WarnContext(ctx, "ingress: list previous release containers failed",
 			slog.String("service", serviceName), slog.String("error", err.Error()))
 		return nil, err
 	}
-	return c.rankReleases(ctx, serviceName, exclude, containers), nil
+	return c.rankReleasesPreferring(ctx, serviceName, exclude, preferImageID, containers), nil
 }
 
 // rankReleases filters to fallback candidates and orders them. The
 // "name-" prefix also matches sibling services (per-deploy preview
 // services), which must never take over the primary route.
 func (c *Controller) rankReleases(ctx context.Context, serviceName, exclude string, containers []docker.ContainerState) []docker.ContainerState {
+	return c.rankReleasesPreferring(ctx, serviceName, exclude, "", containers)
+}
+
+func (c *Controller) rankReleasesPreferring(ctx context.Context, serviceName, exclude, preferImageID string, containers []docker.ContainerState) []docker.ContainerState {
 	var out []docker.ContainerState
 	for _, cs := range containers {
 		if cs.Name == exclude || !cs.Running || len(cs.Ports) == 0 || !application.OwnsContainer(serviceName, cs.Name) {
@@ -1536,11 +1555,17 @@ func (c *Controller) rankReleases(ctx context.Context, serviceName, exclude stri
 		return out
 	}
 	readyRank := c.readyImageRanks(ctx, serviceName)
+	excludeRelease := application.ReleaseKey(serviceName, exclude)
 	rank := func(cs docker.ContainerState) int {
-		if r, ok := readyRank[docker.CanonicalImageRef(cs.Image)]; ok && cs.Image != "" {
-			return r
+		r, ready := readyRank[docker.CanonicalImageRef(cs.Image)]
+		if !ready || cs.Image == "" {
+			return len(readyRank) + 2
 		}
-		return len(readyRank) + 1
+		// Same content that already passed readiness, from another release than the warming target.
+		if preferImageID != "" && cs.ImageID == preferImageID && application.ReleaseKey(serviceName, cs.Name) != excludeRelease {
+			return 0
+		}
+		return r + 1
 	}
 	sort.SliceStable(out, func(i, j int) bool {
 		if ri, rj := rank(out[i]), rank(out[j]); ri != rj {
@@ -1564,14 +1589,8 @@ type attemptLister interface {
 // (0 is the latest success).
 func (c *Controller) readyImageRanks(ctx context.Context, serviceName string) map[string]int {
 	ranks := map[string]int{}
-	l, ok := c.store.(attemptLister)
+	attempts, ok := c.deployAttempts(ctx, serviceName)
 	if !ok {
-		return ranks
-	}
-	attempts, err := l.ListDeployAttempts(ctx, serviceName)
-	if err != nil {
-		c.logger.WarnContext(ctx, "ingress: list deploy attempts failed, ranking fallbacks by creation time",
-			slog.String("service", serviceName), slog.String("error", err.Error()))
 		return ranks
 	}
 	for _, a := range attempts {
@@ -1588,25 +1607,26 @@ func (c *Controller) readyImageRanks(ctx context.Context, serviceName string) ma
 
 // applicationReadyByService batches the application controller's Ready
 // condition per service, once per pass rather than once per dial.
-func (c *Controller) applicationReadyByService(ctx context.Context, services []store.DesiredService) (map[string]bool, error) {
+func (c *Controller) applicationReadyByService(ctx context.Context, services []store.DesiredService) (ready map[string]bool, readyAt map[string]time.Time, err error) {
 	names := make([]string, len(services))
 	for i, svc := range services {
 		names[i] = application.ControllerName(svc.Name)
 	}
 	conditions, err := c.store.GetConditionsForControllers(ctx, names)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	ready := make(map[string]bool, len(services))
+	ready = make(map[string]bool, len(services))
+	readyAt = make(map[string]time.Time, len(services))
 	for _, svc := range services {
 		for _, cond := range conditions[application.ControllerName(svc.Name)] {
 			if cond.Type == reconcile.ConditionTypeReady && cond.Status == reconcile.ConditionTrue {
-				ready[svc.Name] = true
+				ready[svc.Name], readyAt[svc.Name] = true, cond.LastTransitionTime
 				break
 			}
 		}
 	}
-	return ready, nil
+	return ready, readyAt, nil
 }
 
 // domainBasicAuthByDomain returns every store.DomainBasicAuth row keyed

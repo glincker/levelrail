@@ -49,6 +49,12 @@ Two orders lose requests, and the ingress tests check both stay out of the cutov
 
 A rollback to a release that is still held reuses it only when its container is the same one that served before. A rollback that has to start a fresh container goes through the full readiness gate, so traffic stays on the current release until the restored one is ready. That takes the readiness time plus the stable window.
 
+Rollbacks follow the same three steps:
+
+- A held container that was stopped and is started again for the rollback counts as a new process. It passes readiness before it takes traffic, even though the container itself is older than the rollback.
+- When the restored release gets a new container (for example a rollback by digest), a held container that runs the same image serves while the new one warms up.
+- When the rollback lands on a held release that is still running, the release it replaces keeps answering in-flight requests for the drain timeout, as after a deploy.
+
 ## Frequently asked questions
 
 <AccordionGroup>
