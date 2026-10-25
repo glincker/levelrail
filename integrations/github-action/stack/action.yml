@@ -92,6 +92,8 @@ runs:
         install_dir="${RUNNER_TEMP:-/tmp}/levelrail-cli-bin"
         if [ "$REQUESTED_VERSION" != "latest" ]; then
           export LEVELRAIL_VERSION="$REQUESTED_VERSION"
+        else
+          echo "::warning::version is latest, pin it to the release your server runs"
         fi
         LEVELRAIL_CLI_INSTALL_DIR="$install_dir" sh "${GITHUB_ACTION_PATH}/../../../install-cli.sh"
         echo "$install_dir" >> "$GITHUB_PATH"

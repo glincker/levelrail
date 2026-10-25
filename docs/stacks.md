@@ -74,7 +74,7 @@ levelrail-cli stack unpin shop-prod
 
 A stack owns the resources it created, and the resources it adopted. Prune deletes only owned resources that the files no longer declare. A resource that exists outside every stack makes the apply fail unless the apply sets `adopt`.
 
-Prune is never turned on by a pull request. A `spec.prune` field in the `Stack` document or a `--prune` flag only asks for it. The apply is refused unless an administrator set `allow_prune` on the stack, so editing the files in git cannot widen what an apply deletes.
+Prune is never turned on by a pull request. A `spec.prune` field in the `Stack` document or a `--prune` flag only asks for it (the CLI ORs the two, so `spec.prune: true` in git wins over a workflow input of `prune: false`; review that field in pull requests). The apply is refused unless an administrator set `allow_prune` on the stack, so editing the files in git cannot widen what an apply deletes.
 
 Domains listed inline on an `App` are part of that app, not separate owned resources. The stack does not record them in its ownership list, so two stacks are kept apart for them only by the rule that a host can belong to one app at a time. Declare a `Domain` document when you want a host to be owned, planned and pruned on its own.
 
