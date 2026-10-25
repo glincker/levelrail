@@ -1,0 +1,40 @@
+version: 1
+kind: Project
+metadata: {name: shop}
+---
+version: 1
+kind: Tag
+metadata: {name: frontend}
+---
+version: 1
+kind: App
+metadata: {name: web}
+spec:
+  project: shop
+  service:
+    build: {type: image, image: "ghcr.io/acme/web:2.0.0"}
+    port: 3000
+    env:
+      API_KEY: {secretRef: API_KEY}
+---
+version: 1
+kind: Pipeline
+metadata: {name: ci}
+spec:
+  app: web
+  yaml: |
+    version: 1
+    jobs:
+      test:
+        image: golang:1.22
+        steps:
+          - run: go test ./...
+---
+version: 1
+kind: App
+metadata: {name: api}
+spec:
+  project: shop
+  service:
+    build: {type: image, image: "ghcr.io/acme/api:1.0.0"}
+    port: 8080

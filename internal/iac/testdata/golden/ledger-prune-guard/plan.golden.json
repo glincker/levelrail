@@ -1,0 +1,33 @@
+{
+  "source": "shop-prod",
+  "prune": true,
+  "changes": [
+    {
+      "kind": "App",
+      "name": "a1",
+      "action": "noop",
+      "file": "docs.yaml",
+      "line": 1
+    },
+    {
+      "kind": "App",
+      "name": "a2",
+      "action": "error",
+      "reason": "mass prune guard: this prune would delete 2 of the 3 resources stack shop-prod owns (limits: 10 items, 50%); pass allow_mass_prune to confirm"
+    },
+    {
+      "kind": "App",
+      "name": "a3",
+      "action": "error",
+      "reason": "mass prune guard: this prune would delete 2 of the 3 resources stack shop-prod owns (limits: 10 items, 50%); pass allow_mass_prune to confirm"
+    }
+  ],
+  "summary": {
+    "create": 0,
+    "update": 0,
+    "delete": 0,
+    "noop": 1,
+    "error": 2
+  },
+  "hash": "6566504eb10ee6e6"
+}

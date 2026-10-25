@@ -2,6 +2,7 @@ package iac
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -595,5 +596,378 @@ func TestPruneRemovesLastSecretReference(t *testing.T) {
 	applyAll(t, f, stripped, Options{Source: "git", Prune: true})
 	if refs, _ := f.apps["web"]["secret_env"].([]any); len(refs) != 0 {
 		t.Fatalf("prune left secret references behind: %v", f.apps["web"]["secret_env"])
+	}
+}
+
+// ledgerDB stands in for the stack_resources table: key to owning entry.
+type ledgerDB map[string]LedgerEntry
+
+func (db ledgerDB) view(stack string, res []*Resource) *Ledger {
+	var own []LedgerEntry
+	for _, e := range db {
+		if e.StackID == stack {
+			own = append(own, e)
+		}
+	}
+	l := NewLedger(stack, stack, "shop", own)
+	l.Guard = PruneGuard{MaxPercent: 100, MaxCount: 100}
+	for _, ref := range LedgerRefs(res) {
+		if e, ok := db[ref.Key]; ok && e.StackID != stack {
+			l.Foreign[ref.Key] = e.StackID
+		}
+	}
+	return l
+}
+
+// record mirrors the store: a claim on another stack's key is refused.
+func (db ledgerDB) record(t *testing.T, stack string, res []*Resource, out ApplyResult) {
+	t.Helper()
+	u := LedgerChanges(stack, 1, res, out)
+	for _, e := range u.Release {
+		if db[e.Key].StackID == stack {
+			delete(db, e.Key)
+		}
+	}
+	for _, e := range u.Claim {
+		if cur, ok := db[e.Key]; ok && cur.StackID != stack {
+			t.Fatalf("stack %s claimed %s owned by %s", stack, e.Key, cur.StackID)
+		}
+		db[e.Key] = e
+	}
+}
+
+type stackCall struct {
+	stack          string
+	src            string
+	opts           Options
+	adopt, mass    bool
+	guard          *PruneGuard
+	continueOnFail bool
+}
+
+func (db ledgerDB) ctx(t *testing.T, c stackCall) ([]*Resource, context.Context) {
+	t.Helper()
+	c.opts.Source = c.stack
+	res := mustBuild(t, c.src, c.opts)
+	l := db.view(c.stack, res)
+	l.Adopt, l.AllowMassPrune = c.adopt, c.mass
+	if c.guard != nil {
+		l.Guard = *c.guard
+	}
+	return res, WithLedger(context.Background(), l)
+}
+
+func (db ledgerDB) plan(t *testing.T, f *fakeCP, c stackCall) Plan {
+	t.Helper()
+	c.opts.Source = c.stack
+	res, ctx := db.ctx(t, c)
+	st, err := Load(ctx, f, res, c.opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return PlanFor(st, res, c.opts)
+}
+
+func (db ledgerDB) apply(t *testing.T, f *fakeCP, c stackCall) ApplyResult {
+	t.Helper()
+	c.opts.Source = c.stack
+	c.opts.ContinueOnError = c.continueOnFail
+	res, ctx := db.ctx(t, c)
+	out, err := Apply(ctx, f, res, c.opts, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.record(t, c.stack, res, out)
+	return out
+}
+
+func ledgerFake() *fakeCP {
+	f := newFake()
+	f.route("DELETE", `/api/v1/environments/([^/]+)`, func(m []string, _ map[string]any) (any, error) { delete(f.envs, m[1]); return nil, nil })
+	f.route("DELETE", `/api/v1/tags/([^/]+)`, func(m []string, _ map[string]any) (any, error) { delete(f.tags, m[1]); return nil, nil })
+	f.route("DELETE", `/api/v1/apps/([^/]+)/pipelines/([^/]+)`, func(m []string, _ map[string]any) (any, error) {
+		delete(f.pipelines[m[1]], m[2])
+		return nil, nil
+	})
+	f.route("DELETE", `/api/v1/apps/([^/]+)/alerts/([^/]+)`, func(m []string, _ map[string]any) (any, error) {
+		for n, a := range f.alerts[m[1]] {
+			if a["id"] == m[2] {
+				delete(f.alerts[m[1]], n)
+			}
+		}
+		return nil, nil
+	})
+	return f
+}
+
+func appDoc(name, image string) string {
+	return "version: 1\nkind: App\nmetadata: {name: " + name + "}\nspec:\n  project: shop\n  service:\n    build: {type: image, image: \"" + image + "\"}\n    port: 80\n"
+}
+
+const shopProject = "version: 1\nkind: Project\nmetadata: {name: shop}\n---\n"
+
+func errorsByKey(p Plan) map[string]string {
+	out := map[string]string{}
+	for _, c := range p.Changes {
+		if c.Action == ActionError {
+			out[c.Key()] = c.Reason
+		}
+	}
+	return out
+}
+
+func writesSince(f *fakeCP, n int) []string { return append([]string(nil), f.writes[n:]...) }
+
+func TestLedgerStackCannotOverwriteAnotherStacksResource(t *testing.T) {
+	f, db := ledgerFake(), ledgerDB{}
+	db.apply(t, f, stackCall{stack: "a", src: shopProject + appDoc("web", "img:a")})
+	if db["App/web"].StackID != "a" || db["Project/shop"].StackID != "a" {
+		t.Fatalf("ledger after a = %+v", db)
+	}
+
+	// Same name from stack b, with and without adopt: always a conflict.
+	for _, adopt := range []bool{false, true} {
+		before := len(f.writes)
+		c := stackCall{stack: "b", src: appDoc("web", "img:b"), adopt: adopt}
+		p := db.plan(t, f, c)
+		if !strings.HasPrefix(errorsByKey(p)["App/web"], ledgerConflictPrefix) || len(LedgerConflicts(p)) != 1 {
+			t.Fatalf("adopt=%v: plan = %+v", adopt, p.Changes)
+		}
+		out := db.apply(t, f, c)
+		if out.Applied != 0 || len(writesSince(f, before)) != 0 {
+			t.Fatalf("adopt=%v: b wrote to a's app: %v", adopt, writesSince(f, before))
+		}
+	}
+	if f.apps["web"]["image"] != "img:a" || db["App/web"].StackID != "a" {
+		t.Fatalf("a's app changed: %v %+v", f.apps["web"], db["App/web"])
+	}
+
+	// Child resources on a's app are a's business too.
+	children := "version: 1\nkind: Domain\nmetadata: {name: evil.example.com}\nspec: {app: web}\n---\n" +
+		"version: 1\nkind: LoadBalancer\nmetadata: {name: web}\nspec: {algorithm: least_conn}\n"
+	p := db.plan(t, f, stackCall{stack: "b", src: children})
+	if errs := errorsByKey(p); len(errs) != 2 || !strings.Contains(errs["Domain/evil.example.com"], "owned by stack a") {
+		t.Fatalf("children on a foreign app = %+v", p.Changes)
+	}
+}
+
+func TestLedgerStackCannotPruneAnotherStacksResource(t *testing.T) {
+	f, db := ledgerFake(), ledgerDB{}
+	db.apply(t, f, stackCall{stack: "a", src: shopProject + appDoc("web", "img:a")})
+	db.apply(t, f, stackCall{stack: "b", src: appDoc("api", "img:b") + "---\n" + appDoc("worker", "img:b")})
+	// a's app also carries b's managed-by tag: the tag alone grants nothing.
+	f.apps["web"]["tags"] = append(stringAny(f.apps["web"]["tags"]), tagManagedPre+"b")
+
+	before := len(f.writes)
+	out := db.apply(t, f, stackCall{stack: "b", src: appDoc("api", "img:b"), opts: Options{Prune: true}, mass: true})
+	var deletes []string
+	for _, r := range out.Results {
+		if r.Action == ActionDelete {
+			deletes = append(deletes, r.Key())
+		}
+	}
+	if len(deletes) != 1 || deletes[0] != "App/worker" {
+		t.Fatalf("b pruned %v", deletes)
+	}
+	for _, w := range writesSince(f, before) {
+		if strings.Contains(w, "/apps/web") || strings.Contains(w, "/projects/") {
+			t.Fatalf("b touched a's resources: %v", w)
+		}
+	}
+	if _, ok := f.apps["web"]; !ok {
+		t.Fatal("a's app was pruned by b")
+	}
+	if _, ok := db["App/worker"]; ok {
+		t.Fatal("pruned app still in b's ledger")
+	}
+}
+
+func TestLedgerUnmanagedCollisionIsConflictNotOverwrite(t *testing.T) {
+	f, db := ledgerFake(), ledgerDB{}
+	applyAll(t, f, shopProject+appDoc("web", "img:hand"), Options{})
+	// Even the legacy managed-by tag for this name does not make it owned.
+	f.apps["web"]["tags"] = append(stringAny(f.apps["web"]["tags"]), tagManagedPre+"a")
+	c := stackCall{stack: "a", src: appDoc("web", "img:stack")}
+	p := db.plan(t, f, c)
+	if r := errorsByKey(p)["App/web"]; !strings.Contains(r, "no stack owns it") {
+		t.Fatalf("unmanaged collision = %+v", p.Changes)
+	}
+	before := len(f.writes)
+	db.apply(t, f, c)
+	if len(writesSince(f, before)) != 0 || f.apps["web"]["image"] != "img:hand" {
+		t.Fatalf("collision overwrote the app: %v", writesSince(f, before))
+	}
+	if _, ok := db["App/web"]; ok {
+		t.Fatal("refused apply claimed the app")
+	}
+
+	c.adopt = true
+	p = db.plan(t, f, c)
+	if p.Summary.Error != 0 || p.Summary.Update != 1 || !strings.Contains(strings.Join(p.Changes[0].Warnings, ";"), "adopts it into stack a") {
+		t.Fatalf("adopt plan = %+v", p.Changes)
+	}
+	db.apply(t, f, c)
+	if db["App/web"].StackID != "a" || f.apps["web"]["image"] != "img:stack" {
+		t.Fatalf("adopt did not claim: %+v", db)
+	}
+}
+
+func TestLedgerScopeProjectIsClaimedOthersAreNot(t *testing.T) {
+	f, db := ledgerFake(), ledgerDB{}
+	applyAll(t, f, shopProject+"version: 1\nkind: Project\nmetadata: {name: other}\n", Options{})
+	src := shopProject + "version: 1\nkind: Project\nmetadata: {name: other}\n"
+	p := db.plan(t, f, stackCall{stack: "a", src: src})
+	errs := errorsByKey(p)
+	if _, bad := errs["Project/shop"]; bad || !strings.HasPrefix(errs["Project/other"], ledgerConflictPrefix) {
+		t.Fatalf("scope claim = %+v", p.Changes)
+	}
+}
+
+func TestLedgerPruneAcrossKindsNeverDatabases(t *testing.T) {
+	f, db := ledgerFake(), ledgerDB{}
+	secrets := map[string]string{"API_KEY": "k-very-secret", "DB_PASSWORD": "p-very-secret"}
+	out := db.apply(t, f, stackCall{stack: "a", src: fixture, opts: Options{Secrets: secrets}})
+	if !out.OK() {
+		t.Fatalf("first apply = %+v", out.Results)
+	}
+	for _, k := range []string{"Project/shop", "Environment/shop/production", "Tag/frontend", "Database/main-db", "App/web", "Domain/www.example.com", "LoadBalancer/web", "Pipeline/web/ci", "AlertRule/web/high-cpu"} {
+		if db[k].StackID != "a" {
+			t.Fatalf("%s not ledgered: %+v", k, db)
+		}
+	}
+	if db["Domain/www.example.com"].LiveID != "web" {
+		t.Fatalf("domain live id = %+v", db["Domain/www.example.com"])
+	}
+
+	// Only the project is left in the files; drop the database as well.
+	before := len(f.writes)
+	c := stackCall{stack: "a", src: "version: 1\nkind: Project\nmetadata: {name: shop}\n", opts: Options{Prune: true}, mass: true}
+	p := db.plan(t, f, c)
+	raw, _ := json.Marshal(p)
+	for _, v := range secrets {
+		if strings.Contains(string(raw), v) {
+			t.Fatal("secret value in plan output")
+		}
+	}
+	got := map[string]Action{}
+	for _, ch := range p.Changes {
+		got[ch.Key()] = ch.Action
+	}
+	want := map[string]Action{"Project/shop": ActionNoop, "Database/main-db": ActionNoop, "Environment/shop/production": ActionDelete, "Tag/frontend": ActionDelete,
+		"App/web": ActionDelete, "Domain/www.example.com": ActionDelete, "LoadBalancer/web": ActionDelete, "Pipeline/web/ci": ActionDelete, "AlertRule/web/high-cpu": ActionDelete}
+	for k, a := range want {
+		if got[k] != a {
+			t.Fatalf("%s = %q, want %q; plan %+v", k, got[k], a, p.Changes)
+		}
+	}
+	out = db.apply(t, f, c)
+	if !out.OK() {
+		t.Fatalf("prune apply = %+v", out.Results)
+	}
+	for _, w := range writesSince(f, before) {
+		if strings.Contains(w, "/databases") || strings.HasPrefix(w, "DELETE /api/v1/projects") {
+			t.Fatalf("prune touched a database or project: %s", w)
+		}
+	}
+	if _, ok := f.dbs["main-db"]; !ok {
+		t.Fatal("database was deleted")
+	}
+	if len(f.apps) != 0 || len(f.envs) != 0 || len(f.alerts["web"]) != 0 {
+		t.Fatalf("leftovers: apps %v envs %v", f.apps, f.envs)
+	}
+	if db["Database/main-db"].StackID != "a" || len(db) != 2 {
+		t.Fatalf("ledger after prune = %+v", db)
+	}
+}
+
+func TestLedgerMassPruneGuard(t *testing.T) {
+	f, db := ledgerFake(), ledgerDB{}
+	all := shopProject + appDoc("a1", "x") + "---\n" + appDoc("a2", "x") + "---\n" + appDoc("a3", "x")
+	db.apply(t, f, stackCall{stack: "s", src: all})
+	keep := shopProject + appDoc("a1", "x")
+	guard := PruneGuard{MaxPercent: 40, MaxCount: 10}
+
+	c := stackCall{stack: "s", src: keep, opts: Options{Prune: true}, guard: &guard, continueOnFail: true}
+	p := db.plan(t, f, c)
+	if !MassPruneBlocked(p) || p.Summary.Delete != 0 || p.Summary.Error != 2 {
+		t.Fatalf("guard plan = %+v", p.Summary)
+	}
+	before := len(f.writes)
+	db.apply(t, f, c)
+	if len(writesSince(f, before)) != 0 || len(f.apps) != 3 {
+		t.Fatalf("guarded prune deleted with ContinueOnError: %v", writesSince(f, before))
+	}
+
+	countGuard := PruneGuard{MaxPercent: 100, MaxCount: 1}
+	if p := db.plan(t, f, stackCall{stack: "s", src: keep, opts: Options{Prune: true}, guard: &countGuard}); !MassPruneBlocked(p) {
+		t.Fatalf("count guard did not trip: %+v", p.Changes)
+	}
+
+	c.mass = true
+	db.apply(t, f, c)
+	if len(f.apps) != 1 {
+		t.Fatalf("confirmed prune left %v", f.apps)
+	}
+}
+
+func TestLedgerGoneResourceIsReleased(t *testing.T) {
+	f, db := ledgerFake(), ledgerDB{}
+	db.apply(t, f, stackCall{stack: "s", src: shopProject + appDoc("web", "x")})
+	delete(f.apps, "web")
+	before := len(f.writes)
+	db.apply(t, f, stackCall{stack: "s", src: shopProject, opts: Options{Prune: true}})
+	if len(writesSince(f, before)) != 0 {
+		t.Fatalf("released a gone app with a write: %v", writesSince(f, before))
+	}
+	if _, ok := db["App/web"]; ok {
+		t.Fatal("gone app stayed in the ledger")
+	}
+}
+
+func TestLedgerChangesClaimNothingFromARefusedPlan(t *testing.T) {
+	f, db := ledgerFake(), ledgerDB{}
+	applyAll(t, f, shopProject+appDoc("web", "x"), Options{})
+	// The tag is new and would be created, but the app collides: nothing is claimed.
+	src := "version: 1\nkind: Tag\nmetadata: {name: fresh}\n---\n" + appDoc("web", "y")
+	db.apply(t, f, stackCall{stack: "s", src: src})
+	if len(db) != 0 {
+		t.Fatalf("refused apply claimed %+v", db)
+	}
+}
+
+func TestLegacySourcePathIgnoresLedger(t *testing.T) {
+	f := ledgerFake()
+	applyAll(t, f, shopProject+appDoc("web", "x"), Options{Source: "git"})
+	p := planFor(t, f, shopProject+appDoc("web", "y"), Options{Source: "git", Prune: true})
+	if p.Summary.Error != 0 || p.Summary.Update != 1 {
+		t.Fatalf("legacy plan without a ledger = %+v", p.Changes)
+	}
+}
+
+func TestPruneGuardFromEnv(t *testing.T) {
+	t.Setenv("APP_STACK_PRUNE_MAX_PERCENT", "")
+	t.Setenv("APP_STACK_PRUNE_MAX_COUNT", "")
+	if g := PruneGuardFromEnv(); g.MaxPercent != defaultPruneMaxPercent || g.MaxCount != defaultPruneMaxCount {
+		t.Fatalf("defaults = %+v", g)
+	}
+	t.Setenv("APP_STACK_PRUNE_MAX_PERCENT", "25")
+	t.Setenv("APP_STACK_PRUNE_MAX_COUNT", "0")
+	if g := PruneGuardFromEnv(); g.MaxPercent != 25 || g.MaxCount != 0 {
+		t.Fatalf("env = %+v", g)
+	}
+	t.Setenv("APP_STACK_PRUNE_MAX_PERCENT", "300")
+	if g := PruneGuardFromEnv(); g.MaxPercent != defaultPruneMaxPercent {
+		t.Fatalf("out of range percent accepted: %+v", g)
+	}
+}
+
+func TestSplitLedgerKeyRejectsMalformed(t *testing.T) {
+	for _, e := range []LedgerEntry{{Kind: KindApp, Key: "App/"}, {Kind: KindApp, Key: "Tag/web"}, {Kind: KindPipeline, Key: "Pipeline/web"}, {Kind: KindApp, Key: "App/a/b"}} {
+		if _, _, _, ok := splitLedgerKey(e); ok {
+			t.Fatalf("%+v accepted", e)
+		}
+	}
+	if k, s, n, ok := splitLedgerKey(LedgerEntry{Kind: KindEnvironment, Key: "Environment/shop/prod"}); !ok || k != KindEnvironment || s != "shop" || n != "prod" {
+		t.Fatal("environment key not split")
 	}
 }

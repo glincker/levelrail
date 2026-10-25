@@ -44,6 +44,10 @@ func (p *planner) secretValue(app, name string) (string, bool) {
 }
 
 func (p *planner) planApp(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	if p.deniedItem(r, r.Key()) {
 		return
 	}
@@ -114,6 +118,10 @@ func (p *planner) checkAppRefs(r *Resource, f map[string]any) bool {
 }
 
 func (p *planner) planPrune() {
+	if p.st.ledger != nil {
+		p.planLedgerPrune()
+		return
+	}
 	if p.opts.Source == "" {
 		return
 	}

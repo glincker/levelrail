@@ -1,0 +1,12 @@
+{
+  "projects": {"p1": {"id": "p1", "name": "shop"}},
+  "envs": {"e1": {"id": "e1", "project_id": "p1", "name": "staging", "protected": false}},
+  "tags": {"t1": {"id": "t1", "name": "frontend"}, "t2": {"id": "t2", "name": "managed-by:shop-prod"}},
+  "dbs": {"main-db": {"name": "main-db", "engine": "postgres", "version": "16", "project_id": "p1"}},
+  "apps": {
+    "web": {"name": "web", "image": "ghcr.io/acme/web:1", "port": 80, "bind_address": "private", "strategy": "blue-green", "replicas": 1, "project_id": "p1", "domains": ["www.example.com"], "tags": ["managed-by:shop-prod"], "env_dirty": false},
+    "tagged-only": {"name": "tagged-only", "image": "ghcr.io/acme/x:1", "port": 80, "bind_address": "private", "strategy": "blue-green", "replicas": 1, "project_id": "p1", "tags": ["managed-by:shop-prod"], "env_dirty": false}
+  },
+  "pipelines": {"web": {"ci": {"name": "ci", "source": "ui", "enabled": true, "yaml": "version: 1\n"}}},
+  "alerts": {"web": {"high-cpu": {"id": "a9", "name": "high-cpu", "kind": "threshold", "enabled": true}}}
+}

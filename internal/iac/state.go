@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 )
 
 type liveApp struct {
@@ -33,6 +34,9 @@ type State struct {
 	envEnv       map[string]map[string]string
 	managed      map[string]bool
 	denied       map[string]error
+	envsLoaded   map[string]bool
+	// ledger, when set, decides ownership and prune instead of the tag.
+	ledger *Ledger
 }
 
 type idNames struct{ st *State }
@@ -58,7 +62,7 @@ func newState() *State {
 		projects: map[string]wireProject{}, projectsByID: map[string]wireProject{}, envs: map[string]wireEnvironment{}, envsByID: map[string]wireEnvironment{},
 		tags: map[string]wireTag{}, databases: map[string]wireDatabase{}, apps: map[string]*liveApp{}, lbs: map[string]wireLB{},
 		pipelines: map[string]map[string]wirePipeline{}, alerts: map[string]map[string]wireAlert{}, channels: map[string]string{},
-		projectEnv: map[string]map[string]string{}, envEnv: map[string]map[string]string{}, managed: map[string]bool{}, denied: map[string]error{},
+		projectEnv: map[string]map[string]string{}, envEnv: map[string]map[string]string{}, managed: map[string]bool{}, denied: map[string]error{}, envsLoaded: map[string]bool{},
 	}
 }
 
@@ -79,12 +83,23 @@ func (st *State) note(key string, err error) error {
 // Load reads the live state the resources and prune scope need.
 func Load(ctx context.Context, d Doer, res []*Resource, opts Options) (*State, error) {
 	st := newState()
+	st.ledger = ledgerFrom(ctx)
 	l := loader{d: d, st: st}
 	if err := l.base(ctx, res); err != nil {
 		return nil, err
 	}
 	appNames := referencedApps(res)
-	if opts.Prune && opts.Source != "" {
+	switch {
+	case st.ledger != nil:
+		for _, e := range st.ledger.Owned {
+			if e.Kind == KindApp {
+				st.managed[strings.TrimPrefix(e.Key, string(KindApp)+"/")] = true
+			}
+		}
+		if opts.Prune {
+			st.ledger.ledgerApps(res, appNames)
+		}
+	case opts.Prune && opts.Source != "":
 		if err := l.managedApps(ctx, opts.Source, appNames); err != nil {
 			return nil, err
 		}
@@ -96,6 +111,11 @@ func Load(ctx context.Context, d Doer, res []*Resource, opts Options) (*State, e
 	}
 	if err := l.scoped(ctx, res); err != nil {
 		return nil, err
+	}
+	if st.ledger != nil && opts.Prune {
+		if err := l.loadLedger(ctx, st.ledger, res); err != nil {
+			return nil, err
+		}
 	}
 	for _, name := range st.ManagedApps() {
 		if err := l.lb(ctx, name); err != nil {
@@ -229,24 +249,25 @@ func (l loader) app(ctx context.Context, name string) error {
 	return nil
 }
 
-func (l loader) scoped(ctx context.Context, res []*Resource) error {
-	loadedProjects := map[string]bool{}
-	loadEnvs := func(project string) error {
-		p, ok := l.st.projects[project]
-		if !ok || loadedProjects[project] {
-			return nil
-		}
-		loadedProjects[project] = true
-		var envs []wireEnvironment
-		if err := l.fetch(ctx, "environments/"+project, "list environments of "+project, "/api/v1/projects/"+esc(p.ID)+"/environments", &envs); err != nil {
-			return err
-		}
-		for _, e := range envs {
-			l.st.envs[envKey(project, e.Name)] = e
-			l.st.envsByID[e.ID] = e
-		}
+func (l loader) envsOf(ctx context.Context, project string) error {
+	p, ok := l.st.projects[project]
+	if !ok || l.st.envsLoaded[project] {
 		return nil
 	}
+	l.st.envsLoaded[project] = true
+	var envs []wireEnvironment
+	if err := l.fetch(ctx, "environments/"+project, "list environments of "+project, "/api/v1/projects/"+esc(p.ID)+"/environments", &envs); err != nil {
+		return err
+	}
+	for _, e := range envs {
+		l.st.envs[envKey(project, e.Name)] = e
+		l.st.envsByID[e.ID] = e
+	}
+	return nil
+}
+
+func (l loader) scoped(ctx context.Context, res []*Resource) error {
+	loadEnvs := func(project string) error { return l.envsOf(ctx, project) }
 	for _, r := range res {
 		if err := l.scopedOne(ctx, r, loadEnvs); err != nil {
 			return err
@@ -357,7 +378,8 @@ func (l loader) alertsOf(ctx context.Context, app string) error {
 	return nil
 }
 
-// ManagedApps lists the apps carrying this source's managed-by tag.
+// ManagedApps lists the apps this apply owns: the ledger's apps for a stack,
+// otherwise those carrying the source's managed-by tag.
 func (st *State) ManagedApps() []string {
 	out := make([]string, 0, len(st.managed))
 	for n := range st.managed {

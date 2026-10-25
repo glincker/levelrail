@@ -55,6 +55,10 @@ func mergeEnv(live, desired map[string]string) map[string]string {
 }
 
 func (p *planner) planProject(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	if p.deniedItem(r, "projects") || p.deniedItem(r, "projects/"+r.Name) {
 		return
 	}
@@ -82,6 +86,10 @@ func (p *planner) planProject(r *Resource) {
 }
 
 func (p *planner) planEnvironment(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	if p.deniedItem(r, "environments/"+r.Scope) || p.deniedItem(r, r.Key()) {
 		return
 	}
@@ -132,6 +140,10 @@ func (p *planner) planEnvironment(r *Resource) {
 }
 
 func (p *planner) planTag(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	if p.deniedItem(r, "tags") {
 		return
 	}
@@ -146,6 +158,10 @@ func (p *planner) planTag(r *Resource) {
 }
 
 func (p *planner) planDatabase(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	if p.deniedItem(r, "databases") {
 		return
 	}
@@ -184,6 +200,10 @@ func (p *planner) planDatabase(r *Resource) {
 }
 
 func (p *planner) planDomain(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	app := stringField(r.Fields, "app")
 	if p.deniedItem(r, resourceKey(KindApp, "", app)) {
 		return
@@ -213,6 +233,10 @@ func (p *planner) planDomain(r *Resource) {
 }
 
 func (p *planner) planLB(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	if p.deniedItem(r, r.Key()) || p.deniedItem(r, resourceKey(KindApp, "", r.Name)) {
 		return
 	}
@@ -242,6 +266,10 @@ func (p *planner) planLB(r *Resource) {
 }
 
 func (p *planner) planPipeline(r *Resource) {
+	if p.ledgerGate(r) {
+		return
+	}
+	defer p.ledgerNote(r)
 	if p.deniedItem(r, "pipelines/"+r.Scope) {
 		return
 	}

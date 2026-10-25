@@ -222,7 +222,12 @@ func (rt *Router) handleStackDiff(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusUnprocessableEntity, iacPlanResponse{Issues: issues})
 			return
 		}
-		st, err := iac.Load(r.Context(), rt.iacDoer(r), res, opts)
+		lctx, err := rt.stackLedgerContext(r.Context(), ss, s.ID, s.Name, project, res, stackRequest{})
+		if err != nil {
+			rt.writeStackError(w, "diff", err)
+			return
+		}
+		st, err := iac.Load(lctx, rt.iacDoer(r), res, opts)
 		if err != nil {
 			rt.internalError(w, "api: stack diff failed", err)
 			return

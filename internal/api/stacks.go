@@ -100,6 +100,8 @@ type stackRequest struct {
 	Secrets          map[string]string `json:"secrets,omitempty"`
 	Project          string            `json:"project,omitempty"`
 	Prune            bool              `json:"prune,omitempty"`
+	AllowMassPrune   bool              `json:"allow_mass_prune,omitempty"`
+	Adopt            bool              `json:"adopt,omitempty"`
 	NoDeploy         bool              `json:"no_deploy,omitempty"`
 	ContinueOnError  bool              `json:"continue_on_error,omitempty"`
 	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty"`
@@ -560,7 +562,12 @@ func (rt *Router) handleStackPlan(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnprocessableEntity, resp)
 		return
 	}
-	st, err := iac.Load(r.Context(), rt.iacDoer(r), res, opts)
+	lctx, err := rt.stackLedgerContext(r.Context(), ss, stack.ID, name, project, res, req)
+	if err != nil {
+		rt.writeStackError(w, "plan", err)
+		return
+	}
+	st, err := iac.Load(lctx, rt.iacDoer(r), res, opts)
 	if err != nil {
 		rt.internalError(w, "api: stack plan failed", err)
 		return
@@ -663,15 +670,6 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 			return
 		}
 	}
-	for _, d := range res {
-		if d.Kind != iac.KindApp {
-			continue
-		}
-		if owner, owned, err := ss.GetStackResourceOwner(ctx, string(d.Kind), d.Key()); err == nil && owned && owner.StackID != stack.ID {
-			rt.writeStackError(w, run.action, fmt.Errorf("%w: %s", iac.ErrLedgerConflict, d.Key()))
-			return
-		}
-	}
 
 	next := 1
 	if revs, err := ss.ListStackRevisions(ctx, stack.ID, 1); err == nil && len(revs) > 0 {
@@ -695,13 +693,27 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		}
 	}
 
+	// The ledger is read under the lease so ownership cannot move mid-apply.
+	lctx, err := rt.stackLedgerContext(ctx, ss, stack.ID, stack.Name, project, res, req)
+	if err != nil {
+		rt.writeStackError(w, run.action, err)
+		return
+	}
 	doer := rt.iacDoer(r)
-	st, err := iac.Load(ctx, doer, res, opts)
+	st, err := iac.Load(lctx, doer, res, opts)
 	if err != nil {
 		rt.internalError(w, "api: stack apply load failed", err)
 		return
 	}
 	plan := iac.PlanFor(st, res, opts)
+	if keys := iac.LedgerConflicts(plan); len(keys) > 0 {
+		rt.writeStackError(w, run.action, fmt.Errorf("%w: %s", iac.ErrLedgerConflict, strings.Join(keys, ", ")))
+		return
+	}
+	if iac.MassPruneBlocked(plan) {
+		rt.writeStackError(w, run.action, fmt.Errorf("%w: it exceeds the mass-prune guard (APP_STACK_PRUNE_MAX_PERCENT, APP_STACK_PRUNE_MAX_COUNT); plan to review, then pass allow_mass_prune", iac.ErrPruneNotAllowed))
+		return
+	}
 	if req.ExpectedPlanHash != "" && req.ExpectedPlanHash != plan.Hash {
 		rt.writeStackError(w, run.action, iac.ErrPlanChanged)
 		return
@@ -723,7 +735,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		return
 	}
 
-	applyCtx := iac.WithStackScope(ctx, iac.StackScope{StackID: stack.ID, StackName: stack.Name, Revision: rev.Number})
+	applyCtx := iac.WithStackScope(lctx, iac.StackScope{StackID: stack.ID, StackName: stack.Name, Revision: rev.Number})
 	out, aerr := iac.Apply(applyCtx, doer, res, opts, plan.Hash)
 	status := store.StackRevFailed
 	var resultJSON []byte
@@ -742,7 +754,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	}
 	warnings := run.warnings
 	if aerr == nil {
-		warnings = append(warnings, rt.recordStackLedger(fin, ss, stack.ID, rev.Number, out)...)
+		warnings = append(warnings, rt.recordStackLedger(fin, ss, stack.ID, rev.Number, res, out)...)
 	}
 	rt.auditStack(r, run.action, map[string]any{
 		"stack": stack.Name, "revision": rev.Number, "plan_hash": plan.Hash, "git_sha": req.GitSHA, "status": status, "rollback_of": run.rollbackOf,
@@ -772,25 +784,60 @@ func (rt *Router) findStackRevisionByKey(ctx context.Context, ss StackStore, sta
 	return store.StackRevisionRecord{}, false
 }
 
-// recordStackLedger claims apps this apply created or confirmed and releases
-// deleted ones. Ownership still rides on the managed-by tag; the ledger is
-// its server-side mirror.
-func (rt *Router) recordStackLedger(ctx context.Context, ss StackStore, stackID string, rev int, out iac.ApplyResult) []string {
-	var warnings []string
-	for _, it := range out.Results {
-		if it.Kind != iac.KindApp {
-			continue
+// stackLedgerContext attaches the stack's ownership view: its own ledger rows
+// plus the owner of every declared key another stack holds. Lookups fail closed.
+func (rt *Router) stackLedgerContext(ctx context.Context, ss StackStore, stackID, stackName, project string, res []*iac.Resource, req stackRequest) (context.Context, error) {
+	var owned []iac.LedgerEntry
+	if stackID != "" {
+		rows, err := ss.ListStackLedger(ctx, stackID)
+		if err != nil {
+			return nil, err
 		}
-		switch {
-		case it.Action == iac.ActionDelete && it.Status == iac.StatusApplied:
-			if err := ss.DeleteStackResource(ctx, stackID, string(it.Kind), it.Key()); err != nil {
-				warnings = append(warnings, "ledger release failed for "+it.Key())
+		for _, e := range rows {
+			owned = append(owned, iac.LedgerEntry{StackID: e.StackID, Kind: iac.Kind(e.Kind), Key: e.Key, LiveID: e.LiveID, SinceRevision: e.SinceRevision})
+		}
+	}
+	l := iac.NewLedger(stackID, stackName, project, owned)
+	l.Adopt, l.AllowMassPrune = req.Adopt, req.AllowMassPrune
+	for _, ref := range iac.LedgerRefs(res) {
+		owner, found, err := ss.GetStackResourceOwner(ctx, string(ref.Kind), ref.Key)
+		if err != nil {
+			return nil, err
+		}
+		if found && owner.StackID != stackID {
+			l.Foreign[ref.Key] = owner.StackID
+		}
+	}
+	if len(l.Foreign) > 0 {
+		if all, err := ss.ListStacks(ctx); err == nil {
+			names := make(map[string]string, len(all))
+			for _, s := range all {
+				names[s.ID] = s.Name
 			}
-		case it.Action != iac.ActionDelete && it.Action != iac.ActionError && (it.Status == iac.StatusApplied || it.Status == iac.StatusNoop):
-			err := ss.UpsertStackResource(ctx, store.StackLedgerEntry{StackID: stackID, Kind: string(it.Kind), Key: it.Key(), LiveID: it.Name, SinceRevision: rev})
-			if err != nil {
-				warnings = append(warnings, mapStackStoreError(err).Error())
+			for k, id := range l.Foreign {
+				if n, ok := names[id]; ok {
+					l.Foreign[k] = n
+				}
 			}
+		}
+	}
+	return iac.WithLedger(ctx, l), nil
+}
+
+// recordStackLedger claims every declared resource this apply created or
+// confirmed, of any kind, and releases what it pruned.
+func (rt *Router) recordStackLedger(ctx context.Context, ss StackStore, stackID string, rev int, res []*iac.Resource, out iac.ApplyResult) []string {
+	var warnings []string
+	u := iac.LedgerChanges(stackID, rev, res, out)
+	for _, e := range u.Release {
+		if err := ss.DeleteStackResource(ctx, stackID, string(e.Kind), e.Key); err != nil {
+			warnings = append(warnings, "ledger release failed for "+e.Key)
+		}
+	}
+	for _, e := range u.Claim {
+		err := ss.UpsertStackResource(ctx, store.StackLedgerEntry{StackID: stackID, Kind: string(e.Kind), Key: e.Key, LiveID: e.LiveID, SinceRevision: rev})
+		if err != nil {
+			warnings = append(warnings, mapStackStoreError(err).Error())
 		}
 	}
 	return warnings

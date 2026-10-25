@@ -1,0 +1,72 @@
+{
+  "source": "shop-prod",
+  "prune": true,
+  "changes": [
+    {
+      "kind": "Project",
+      "name": "shop",
+      "action": "noop",
+      "file": "docs.yaml",
+      "line": 1
+    },
+    {
+      "kind": "Database",
+      "name": "main-db",
+      "action": "noop",
+      "reason": "absent from the files, but a database is never pruned; it stays owned by stack shop-prod until the stack forgets it"
+    },
+    {
+      "kind": "AlertRule",
+      "name": "high-cpu",
+      "scope": "web",
+      "action": "delete",
+      "reason": "owned by stack shop-prod and absent from the files"
+    },
+    {
+      "kind": "Pipeline",
+      "name": "ci",
+      "scope": "web",
+      "action": "delete",
+      "reason": "owned by stack shop-prod and absent from the files"
+    },
+    {
+      "kind": "Domain",
+      "name": "www.example.com",
+      "action": "delete",
+      "reason": "owned by stack shop-prod and absent from the files"
+    },
+    {
+      "kind": "App",
+      "name": "gone",
+      "action": "delete",
+      "reason": "owned by stack shop-prod but already gone; released from the ledger"
+    },
+    {
+      "kind": "App",
+      "name": "web",
+      "action": "delete",
+      "reason": "owned by stack shop-prod and absent from the files"
+    },
+    {
+      "kind": "Tag",
+      "name": "frontend",
+      "action": "delete",
+      "reason": "owned by stack shop-prod and absent from the files"
+    },
+    {
+      "kind": "Environment",
+      "name": "staging",
+      "scope": "shop",
+      "action": "delete",
+      "reason": "owned by stack shop-prod and absent from the files"
+    }
+  ],
+  "summary": {
+    "create": 0,
+    "update": 0,
+    "delete": 7,
+    "noop": 2,
+    "error": 0
+  },
+  "hash": "526a729dcce5bcf7"
+}

@@ -56,6 +56,32 @@ type goldenOptions struct {
 	Source  string            `json:"source"`
 	Prune   bool              `json:"prune"`
 	Secrets map[string]string `json:"secrets"`
+	Ledger  *goldenLedger     `json:"ledger"`
+}
+
+// goldenLedger runs the case as a stack apply with this ownership view.
+type goldenLedger struct {
+	Stack          string            `json:"stack"`
+	ScopeProject   string            `json:"scopeProject"`
+	Owned          []LedgerEntry     `json:"owned"`
+	Foreign        map[string]string `json:"foreign"`
+	Adopt          bool              `json:"adopt"`
+	AllowMassPrune bool              `json:"allowMassPrune"`
+	MaxPercent     int               `json:"maxPercent"`
+	MaxCount       int               `json:"maxCount"`
+}
+
+func (g *goldenLedger) context() context.Context {
+	if g == nil {
+		return context.Background()
+	}
+	l := NewLedger(g.Stack, g.Stack, g.ScopeProject, g.Owned)
+	for k, v := range g.Foreign {
+		l.Foreign[k] = v
+	}
+	l.Adopt, l.AllowMassPrune = g.Adopt, g.AllowMassPrune
+	l.Guard = PruneGuard{MaxPercent: g.MaxPercent, MaxCount: g.MaxCount}
+	return WithLedger(context.Background(), l)
 }
 
 // TestGoldenPlans pins the plan for each fixture under testdata/golden. The
@@ -109,7 +135,7 @@ func runGolden(t *testing.T, dir string) {
 	if len(issues) > 0 {
 		t.Fatalf("build issues: %v", issues)
 	}
-	st, err := Load(context.Background(), f, res, opts)
+	st, err := Load(gopts.Ledger.context(), f, res, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
