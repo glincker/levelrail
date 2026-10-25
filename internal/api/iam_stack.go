@@ -296,6 +296,8 @@ var stackReadPatterns = map[string]string{
 
 // stackWritePatterns are the mutations an apply makes. Secrets, exec, reveal,
 // moves and every other app or database route are absent and so denied.
+// Pipeline create and update are absent too: steps run commands with the
+// app's secrets, so only a human principal may write them.
 var stackWritePatterns = map[string]string{
 	"POST /api/v1/apps":                            "app-create",
 	"PUT /api/v1/apps/{name}":                      "app",
@@ -306,8 +308,6 @@ var stackWritePatterns = map[string]string{
 	"DELETE /api/v1/apps/{name}/tags/{id}":         "app",
 	"PUT /api/v1/apps/{name}/loadbalancer":         "app",
 	"DELETE /api/v1/apps/{name}/loadbalancer":      "app",
-	"POST /api/v1/apps/{name}/pipelines":           "app",
-	"PUT /api/v1/apps/{name}/pipelines/{pname}":    "app",
 	"DELETE /api/v1/apps/{name}/pipelines/{pname}": "app",
 	"POST /api/v1/apps/{name}/alerts":              "app",
 	"PUT /api/v1/apps/{name}/alerts/{id}":          "app",

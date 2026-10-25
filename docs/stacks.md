@@ -130,7 +130,7 @@ Create one token per job through the tokens API, setting the stack and the verbs
 - A **plan** token, with `stack` set to the stack and `stack_verbs` set to `plan`.
 - An **apply** token, with `stack` set to the stack and `stack_verbs` set to `apply`.
 
-A stack-scoped token can reach only that stack's endpoints. During an apply it can also reach resources in the stack's ledger and project. Manifests that use `--secret`, create new projects, or change environment protection need a human token instead. Approvals need a root token, so a CI token cannot approve.
+A stack-scoped token can reach only that stack's endpoints. During an apply it can also reach resources in the stack's ledger and project. Manifests that use `--secret`, create new projects, or change environment protection need a human token instead. A stack token also cannot create or update a `Pipeline`, because pipeline steps run commands with the app's secrets; apply those with a human token. An apply token can still change an app's image, so treat it like deploy access to the stack's apps. Approvals need a root token, so a CI token cannot approve.
 
 Store each token as a CI secret, and give the apply token only to the protected branch and environment that deploys.
 
