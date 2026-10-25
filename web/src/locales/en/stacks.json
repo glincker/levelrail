@@ -150,6 +150,10 @@
     "managedBy": "Managed by stack {{name}}",
     "short": "Stack {{name}}"
   },
+  "managedNotice": {
+    "warn": "Managed by stack {{name}}. Manual changes may be reverted or reported as drift.",
+    "lock": "Managed by stack {{name}}, which locks its resources. Manual changes may be refused or reverted."
+  },
   "drift": {
     "badge": "Drifted ({{count}})",
     "title": "Drift: {{count}} resources differ from the stack",

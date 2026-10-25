@@ -16,6 +16,7 @@ import {
 import { AppQuickActions } from './apps/AppQuickActions'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useAppRowMetrics } from './apps/useAppRowMetrics'
+import { ManagedByStackTag } from './stacks/ManagedByStackNotice'
 
 // Shared column grid for the sticky header (routes/apps/index.tsx) and
 // every row. Traffic columns only exist from lg up.
@@ -60,6 +61,7 @@ export function AppRow({
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <StatusLabel status={app.status} />
           <AppMetaChips app={app} />
+          <ManagedByStackTag stack={app.managed_by_stack} />
         </span>
       </span>
 

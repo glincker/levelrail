@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import type { DatabaseListEntry } from '../types/databaseDetail'
 import { logoIdForImage } from '../lib/imageLogo'
 import { StatusLabel } from './AppRow'
+import { ManagedByStackTag } from './stacks/ManagedByStackNotice'
 import { PlacementLabel } from './PlacementLabel'
 import { TemplateLogo } from './TemplateLogo'
 
@@ -82,6 +83,7 @@ export function DatabaseRow({ database }: { database: DatabaseListEntry }) {
               {t('external.badge')}
             </Badge>
           ) : null}
+          <ManagedByStackTag stack={database.managed_by_stack} />
           <span className="min-w-0 truncate font-mono text-xs text-muted-foreground lg:hidden">
             {engineLabel(database)}
           </span>

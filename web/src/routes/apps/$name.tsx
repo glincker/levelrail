@@ -15,6 +15,7 @@ import { AppActionBar } from '../../components/apps/AppActionBar'
 import { AppTabStrip } from '../../components/apps/AppTabStrip'
 import { AppPaletteActions } from '../../components/apps/AppPaletteActions'
 import { parseAppAction, type AppPaletteAction } from '../../lib/paletteAction'
+import { ManagedByStackBanner } from '../../components/stacks/ManagedByStackNotice'
 import { AppHeaderBadges } from '../../components/apps/AppHeaderBadges'
 import {
   DeploySheet,
@@ -133,6 +134,7 @@ function AppDetailLayout() {
       <PublishLockBanner appName={app.name} />
       <AppMaintenanceBanner appName={app.name} />
       <FixReturnBanner appName={app.name} image={app.image} />
+      <ManagedByStackBanner stack={app.managed_by_stack} />
     </>
   )
   const content = (

@@ -81,6 +81,8 @@ export interface LogDrain {
 // never-empty/zero value), so both are required here too, not optional.
 export interface AppDetail {
   name: string
+  // Name of the stack managing this app, absent when none or iac is off.
+  managed_by_stack?: string
   image: string
   /** The content image is pinned to; absent for a legacy unpinned tag. */
   image_digest?: string

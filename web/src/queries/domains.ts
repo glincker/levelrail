@@ -35,6 +35,8 @@ export const domainKeys = {
 // page never writes them, see DomainRow.tsx's own doc comment for why.
 export interface Domain {
   domain: string
+  // Name of the stack managing this domain, absent when none.
+  managed_by_stack?: string
   service_name: string
   waf_enabled: boolean
   has_redirect: boolean
