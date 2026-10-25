@@ -309,6 +309,20 @@ func nodeOfflineControllerFor(ctx context.Context, deps dynamicSourceDeps, svc s
 	return application.NewNodeOfflineController(svc.Name, name, since)
 }
 
+// nodeRecentlyRecovered is true when the node went back online within
+// APP_NODE_RECOVERY_WINDOW (default 2m).
+func nodeRecentlyRecovered(ctx context.Context, deps dynamicSourceDeps, nodeID string) bool {
+	if nodeID == "" {
+		return false
+	}
+	window := 2 * time.Minute
+	if d, err := time.ParseDuration(os.Getenv("APP_NODE_RECOVERY_WINDOW")); err == nil && d > 0 {
+		window = d
+	}
+	events, err := deps.db.ListNodeStatusEvents(ctx, nodeID, 1)
+	return err == nil && len(events) == 1 && events[0].ToStatus == store.NodeStatusOnline && time.Since(events[0].CreatedAt) < window
+}
+
 // appControllersFor builds one application.Controller per service,
 // skipping (with a warning) any whose node isn't currently reachable.
 func appControllersFor(ctx context.Context, deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
@@ -325,7 +339,7 @@ func appControllersFor(ctx context.Context, deps dynamicSourceDeps, services []s
 			controllers = append(controllers, nodeOfflineControllerFor(ctx, deps, svc))
 			continue
 		}
-		svcOpts := append(appOpts[:len(appOpts):len(appOpts)], application.WithPassSnapshot(snap, nodeID), application.WithImageIDCache(deps.imageIDs, nodeID))
+		svcOpts := append(appOpts[:len(appOpts):len(appOpts)], application.WithPassSnapshot(snap, nodeID), application.WithImageIDCache(deps.imageIDs, nodeID), application.WithNodeRecovering(nodeRecentlyRecovered(ctx, deps, svc.NodeID)))
 		controllers = append(controllers, application.New(svc.Name, deps.db, svcRuntime, svcOpts...))
 		if !svc.Suspended {
 			n := targets[nodeID]

@@ -24,6 +24,9 @@ export function summarizeAppStatus(
   if (conditions.some((c) => c.Reason === 'Suspended')) {
     return { label: 'Stopped', variant: 'muted' }
   }
+  if (isNodeOfflineStatus(conditions)) {
+    return { label: 'Node offline', variant: 'destructive' }
+  }
   if (conditions.some((c) => c.Status === 'False')) {
     return { label: 'Attention needed', variant: 'destructive' }
   }
@@ -35,6 +38,13 @@ export function summarizeAppStatus(
     return { label: 'Healthy', variant: 'success' }
   }
   return { label: 'Reconciling', variant: 'muted' }
+}
+
+// The control plane marks an app whose node has no live agent with Ready=False/NodeOffline.
+export function isNodeOfflineStatus(conditions: ReconcileCondition[]): boolean {
+  return conditions.some(
+    (c) => c.Status === 'False' && c.Reason === 'NodeOffline',
+  )
 }
 
 // An Unknown condition reporting that an optional per-service feature

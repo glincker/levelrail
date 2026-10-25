@@ -246,6 +246,9 @@ const (
 	// DeployAttemptStatusCanceled is a deploy stopped by an operator before
 	// it wrote desired state.
 	DeployAttemptStatusCanceled = "canceled"
+	// DeployAttemptStatusPending is a change accepted for an offline node on
+	// the operator's say-so; the node applies it when it reconnects.
+	DeployAttemptStatusPending = "pending"
 )
 
 // Deploy attempt trigger sources, one per real call site: the

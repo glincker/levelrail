@@ -349,6 +349,8 @@ type DeployTriggerRequest struct {
 	Rollback       bool   `json:"rollback,omitempty"`
 	OverrideFreeze bool   `json:"override_freeze,omitempty"`
 	OverrideReason string `json:"override_reason,omitempty"`
+	// QueueWhileOffline records the change as pending when the app's node is offline.
+	QueueWhileOffline bool `json:"queue_while_offline,omitempty"`
 }
 
 // DeployTriggerResult mirrors internal/api's deployTriggerResult
@@ -3899,9 +3901,10 @@ type CancelSupersededResource struct {
 
 // RollbackToRequest is the optional body of POST .../deploys/{id}/rollback.
 type RollbackToRequest struct {
-	Confirm        bool   `json:"confirm,omitempty"`
-	OverrideFreeze bool   `json:"override_freeze,omitempty"`
-	OverrideReason string `json:"override_reason,omitempty"`
+	QueueWhileOffline bool   `json:"queue_while_offline,omitempty"`
+	Confirm           bool   `json:"confirm,omitempty"`
+	OverrideFreeze    bool   `json:"override_freeze,omitempty"`
+	OverrideReason    string `json:"override_reason,omitempty"`
 }
 
 // FreezeWindowResource mirrors internal/api's freezeWindowResource.

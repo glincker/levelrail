@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { Tone } from '@/components/kit'
 import { useIsRoot } from './useIsRoot'
 import { httpsStatusQueryOptions } from '../queries/httpsStatus'
+import { nodeListQueryOptions } from '../queries/nodes'
 import { systemDoctorQueryOptions } from '../queries/systemDoctor'
 
 export interface DashboardNotice {
@@ -10,7 +11,7 @@ export interface DashboardNotice {
   tone: Tone
   title: string
   detail: string
-  to: '/domains' | '/settings/system-status'
+  to: '/domains' | '/settings/system-status' | '/nodes'
   action: string
 }
 
@@ -28,6 +29,8 @@ export function useDashboardNotices(): DashboardNotice[] {
     retry: false,
     staleTime: 60_000,
   })
+  const nodes = useQuery({ ...nodeListQueryOptions(), retry: false })
+  const offlineNodes = (nodes.data ?? []).filter((n) => n.status === 'offline')
   const plainHttp =
     https.data?.state === 'off' && Boolean(https.data.suggested_domain)
   const problems = (doctor.data?.checks ?? []).filter(
@@ -55,6 +58,16 @@ export function useDashboardNotices(): DashboardNotice[] {
       detail: t('banners.doctorDetail'),
       to: '/settings/system-status',
       action: t('banners.doctorAction'),
+    })
+  }
+  if (offlineNodes.length > 0) {
+    out.push({
+      id: 'nodes-offline',
+      tone: 'danger',
+      title: t('banners.nodesTitle', { count: offlineNodes.length }),
+      detail: t('banners.nodesDetail'),
+      to: '/nodes',
+      action: t('banners.nodesAction'),
     })
   }
   return out

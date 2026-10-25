@@ -738,6 +738,14 @@ func (c *Client) RestartApp(ctx context.Context, name string) (AppResource, erro
 	return out, err
 }
 
+// AppActionQueued calls POST /api/v1/apps/{name}/{action} (restart, start or
+// stop) with queue_while_offline set, so an offline node records it as pending.
+func (c *Client) AppActionQueued(ctx context.Context, name, action string) (AppResource, error) {
+	var out AppResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/"+action+"?queue_while_offline=true", nil, &out)
+	return out, err
+}
+
 // StopApp calls POST /api/v1/apps/{name}/stop: marks the service
 // suspended, so the reconciler stops (and leaves stopped) its container
 // on the next pass, without touching desired state otherwise.

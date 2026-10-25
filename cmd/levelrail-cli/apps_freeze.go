@@ -16,16 +16,18 @@ type deployExtraFlags struct {
 	pull           bool
 	overrideFreeze bool
 	overrideReason string
+	queueOffline   bool
 }
 
 func (d *deployExtraFlags) register(fs *flag.FlagSet) {
 	fs.BoolVar(&d.pull, "pull", false, "re-resolve the tag against its registry and fail instead of using a cached image; without --image, redeploys the current tag")
 	fs.BoolVar(&d.overrideFreeze, "override-freeze", false, "deploy even though a deploy freeze window is active (requires --override-reason)")
+	fs.BoolVar(&d.queueOffline, "queue-while-offline", false, "if the app's node is offline, record the change as pending and apply it when the node returns (default: refuse)")
 	fs.StringVar(&d.overrideReason, "override-reason", "", "why this deploy overrides the freeze, recorded on the deploy")
 }
 
 func (d deployExtraFlags) request(image string, confirm bool) apiclient.DeployTriggerRequest {
-	return apiclient.DeployTriggerRequest{Image: image, Confirm: confirm, Pull: d.pull, OverrideFreeze: d.overrideFreeze, OverrideReason: d.overrideReason}
+	return apiclient.DeployTriggerRequest{Image: image, Confirm: confirm, Pull: d.pull, OverrideFreeze: d.overrideFreeze, OverrideReason: d.overrideReason, QueueWhileOffline: d.queueOffline}
 }
 
 // unpinnedImage drops a trailing "@digest" for display and re-resolution.

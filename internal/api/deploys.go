@@ -44,6 +44,9 @@ type deployTriggerRequest struct {
 	Rollback bool `json:"rollback,omitempty"`
 	// RerunOf is the deploy attempt of this app that this deploy retries.
 	RerunOf string `json:"rerun_of,omitempty"`
+	// QueueWhileOffline accepts the change for an offline node as a pending
+	// attempt instead of refusing it.
+	QueueWhileOffline bool `json:"queue_while_offline,omitempty"`
 	freezeOverride
 	policyOverride
 }
@@ -132,6 +135,9 @@ func validateImageReference(image string) error {
 // the attempt as a rollback to that deploy.
 func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing store.DesiredService, req deployTriggerRequest, rollbackTo string) {
 	name := existing.Name
+	if rt.refuseOfflineNode(r.Context(), w, existing, req.QueueWhileOffline) {
+		return
+	}
 	note, ok := rt.freezeGate(w, r, name, req.freezeOverride)
 	if !ok {
 		return
@@ -180,6 +186,18 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 			return
 		}
 		writeJSON(w, http.StatusAccepted, deployTriggerResult{PendingApproval: &approval})
+		return
+	}
+
+	if req.QueueWhileOffline && rt.offlineNodeFor(r.Context(), existing) != nil {
+		updated, err := rt.setDesiredImage(r.Context(), existing, req.Image)
+		if err != nil {
+			rt.internalError(w, "api: queue deploy for offline node failed", err, slog.String("name", name))
+			return
+		}
+		rt.recordPendingAttempt(r.Context(), updated, req.Image, store.DeployAttemptSourceImage)
+		res := toAppResource(updated)
+		writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res})
 		return
 	}
 

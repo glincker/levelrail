@@ -819,5 +819,11 @@
     "risksTitle": "Replicas in one failure domain",
     "loadFailed": "Could not load the domain overview.",
     "retry": "Try again"
+  },
+  "offlineApp": {
+    "title": "Node {{node}} is offline, unseen for {{since}}",
+    "titleUnknown": "Node {{node}} is offline",
+    "body": "Containers keep running on it, but ingress through the mesh is down and this app cannot be changed until the node returns.",
+    "view": "View node"
   }
 }

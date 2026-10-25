@@ -290,6 +290,7 @@ type Controller struct {
 	pinner              RollbackPinner
 	exitRecorder        ExitRecorder  // nil is valid: exits are only reported, not captured
 	startupWatch        time.Duration // see WithStartupWatch
+	nodeRecovering      bool          // see WithNodeRecovering
 }
 
 // Option configures optional Controller behavior.
@@ -1012,8 +1013,9 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			return replicaOutcome{reason: reason}, relErr
 		}
 		if err := c.createAndStart(ctx, target, desired); err != nil {
-			c.traceAbort(ctx, desired, target, createFailureReason(err), err)
-			return replicaOutcome{reason: createFailureReason(err)}, c.abortHandoff(ctx, target, released, err)
+			reason, err := c.createFailure(err)
+			c.traceAbort(ctx, desired, target, reason, err)
+			return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
 		}
 		justDeployed = true
 		created = true
