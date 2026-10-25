@@ -276,6 +276,7 @@ type Controller struct {
 	pinnedPortRetry     time.Duration                   // see WithPinnedPortRetry
 	reviveWatch         time.Duration                   // see WithReviveWatch
 	handoffFailed       map[string]time.Time            // target name to the time its next pinned-port handoff may run
+	retained            RetainedDeploys                 // nil means no service is a retained deploy URL
 	restartBackoff      *RestartBackoff                 // nil disables crash restart backoff, see WithRestartBackoff
 	meshPaths           meshpath.Resolver               // nil is valid: remote ports stay on loopback, see WithMeshPaths
 	gateDefaults        *deploysafety.Effective         // nil: one readiness pass is enough, see WithStabilityGate
@@ -494,6 +495,22 @@ func WithLivenessTracker(t *LivenessTracker) Option {
 	}
 }
 
+// RetainedDeploys bounds the retries of retained deploy-URL services (a past
+// deploy kept at its own hostname). *deployurls.Guard satisfies it.
+type RetainedDeploys interface {
+	// NoteUnready records a readiness failure; stopped is true once the
+	// service was suspended because it failed too many times in a row.
+	NoteUnready(ctx context.Context, service string) (retained, stopped bool, err error)
+	NoteReady(service string)
+	IsRetained(ctx context.Context, service string) bool
+}
+
+// WithRetainedDeploys makes retained deploy services stop retrying after
+// repeated readiness failures instead of looping with the crash backoff.
+func WithRetainedDeploys(r RetainedDeploys) Option {
+	return func(ctrl *Controller) { ctrl.retained = r }
+}
+
 // WithRestartBackoff shares one crash restart backoff across every
 // controller a caller builds, for the same reason as WithLivenessTracker.
 func WithRestartBackoff(b *RestartBackoff) Option {
@@ -559,7 +576,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	// this one would stamp the old release's outcome on the new attempt; the
 	// nudge that deploy sent already queues the next pass.
 	if now, gerr := c.store.GetDesiredService(ctx, c.serviceName); gerr == nil && now != nil &&
-		(now.Image != started.Image || now.RestartNonce != started.RestartNonce) {
+		desiredChanged(started, now) {
 		return reconcile.Result{}, nil
 	}
 	return result, rerr
@@ -592,6 +609,9 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 			return notReady("SuspendFailed", err), fmt.Errorf("application/%s: suspend: remove containers: %w", c.serviceName, err)
 		}
 		result := unknownResult("Suspended")
+		if c.retained != nil && c.retained.IsRetained(ctx, c.serviceName) {
+			result = unknownResult(reasonRetainedDeployStopped)
+		}
 		result.Conditions = append(result.Conditions, c.reconcileEgressWith(ctx, c.filterEgressSidecars(all), nil, desired))
 		return result, nil
 	}
@@ -1095,6 +1115,9 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	if err := c.waitReady(ctx, state, desired); err != nil {
+		if errors.Is(err, errSuperseded) {
+			return replicaOutcome{reason: reasonSuperseded}, c.abortSuperseded(ctx, target, released)
+		}
 		reason := readinessReason(err, deploysafety.ReasonReadinessFailed)
 		var crash *readinessCrashError
 		if errors.As(err, &crash) {
@@ -1104,7 +1127,19 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		c.traceAbort(ctx, desired, target, reason, err)
 		c.recordRolloutFailure(ctx, desired, err)
 		c.markGateFailure(ctx, desired, reason)
-		return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
+		abortErr := c.abortHandoff(ctx, target, released, err)
+		if c.retained != nil {
+			if _, stopped, nerr := c.retained.NoteUnready(ctx, c.serviceName); nerr != nil {
+				slog.Warn("reconcile: retained deploy failure bookkeeping failed", slog.String("service", c.serviceName), slog.String("error", nerr.Error()))
+			} else if stopped {
+				reason = reasonRetainedDeployStopped
+				abortErr = fmt.Errorf("%w (retained deploy URL stopped after repeated readiness failures, resume it to retry)", abortErr)
+			}
+		}
+		return replicaOutcome{reason: reason}, abortErr
+	}
+	if c.retained != nil {
+		c.retained.NoteReady(c.serviceName)
 	}
 	c.recordGate(ctx, desired, target, deploysafety.PhaseReadiness, deploysafety.StatusPassed, "", "first readiness check passed")
 	// A crash restart of the same container already proved itself once, so it
@@ -2183,12 +2218,10 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 // also revives the last ready release if it dies meanwhile, so the wait of a
 // failing deploy does not extend an outage. crashErr may be nil.
 func (c *Controller) awaitReady(ctx context.Context, desired *store.DesiredService, candidate string, readyErr, crashErr <-chan error) error {
-	var tick <-chan time.Time
-	if desired.HostPort == nil {
-		t := time.NewTicker(c.effectiveReviveWatch())
-		defer t.Stop()
-		tick = t.C
-	}
+	// The ticker also re-reads desired state, so a rollback or new deploy
+	// ends the wait instead of waiting out the full readiness budget.
+	t := time.NewTicker(c.effectiveReviveWatch())
+	defer t.Stop()
 	for {
 		select {
 		case err := <-readyErr:
@@ -2198,10 +2231,49 @@ func (c *Controller) awaitReady(ctx context.Context, desired *store.DesiredServi
 			return nil
 		case err := <-crashErr:
 			return err
-		case <-tick:
-			c.reviveIfDead(ctx, []string{candidate}, desired, false)
+		case <-t.C:
+			if c.desiredSuperseded(ctx, desired) {
+				return errSuperseded
+			}
+			if desired.HostPort == nil {
+				c.reviveIfDead(ctx, []string{candidate}, desired, false)
+			}
 		}
 	}
+}
+
+// errSuperseded ends a readiness wait whose desired state changed under it.
+// It is not a failure of the old release: nothing is recorded against it.
+var errSuperseded = errors.New("desired state changed during the readiness wait")
+
+// desiredSuperseded reports whether the stored desired state now differs from
+// what this pass began with in a way that makes the pass's work moot. A store
+// error keeps waiting: the next tick or the pass end decides.
+func (c *Controller) desiredSuperseded(ctx context.Context, began *store.DesiredService) bool {
+	now, err := c.store.GetDesiredService(ctx, c.serviceName)
+	if err != nil || now == nil {
+		return false
+	}
+	return desiredChanged(began, now)
+}
+
+func desiredChanged(a, b *store.DesiredService) bool {
+	return a.Image != b.Image || a.RestartNonce != b.RestartNonce || a.Replicas != b.Replicas || a.Suspended != b.Suspended
+}
+
+// abortSuperseded stops the candidate without recording a failure or arming
+// the handoff retry delay, and puts back any release freed for it. The normal
+// stale logic removes the stopped container on the next pass.
+func (c *Controller) abortSuperseded(ctx context.Context, target string, released []docker.ContainerState) error {
+	if state, err := c.runtime.InspectByName(ctx, target); err == nil && state != nil && state.Running {
+		_ = c.stopContainer(ctx, state.ID)
+	}
+	if len(released) > 0 {
+		if err := c.restoreReleased(ctx, released); err != nil {
+			return fmt.Errorf("%w (and the previous release could not be restored: %w)", errSuperseded, err)
+		}
+	}
+	return errSuperseded
 }
 
 // verifyRunningReady re-checks the readiness of a replica Docker already

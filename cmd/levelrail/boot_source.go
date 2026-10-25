@@ -12,6 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/appsleep"
 	"github.com/GLINCKER/levelrail/internal/canary"
 	"github.com/GLINCKER/levelrail/internal/dbprovision"
+	"github.com/GLINCKER/levelrail/internal/deployurls"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
@@ -73,6 +74,8 @@ type dynamicSourceDeps struct {
 	imageIDs        *application.ImageIDCache
 	// restartBackoff is shared for the same reason as livenessTracker.
 	restartBackoff *application.RestartBackoff
+	// retainedDeploys outlives the per-pass controllers so its failure counts survive them.
+	retainedDeploys *deployurls.Guard
 	// publicHost is APP_PUBLIC_HOST, threaded to the ingress controller
 	// for the zero-config fallback domain feature; see
 	// ingressreconcile.WithPublicHost's own doc comment.
@@ -275,8 +278,12 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
 	}
 	appOpts = append(appOpts, deps.deployGate.appOptions(deps.db)...)
+	if deps.retainedDeploys != nil {
+		appOpts = append(appOpts, application.WithRetainedDeploys(deps.retainedDeploys))
+	}
 	if deps.secretsManager != nil {
-		appOpts = append(appOpts, application.WithSecretResolver(deps.secretsManager))
+		// A retained deploy URL runs its app's config, so it reads the app's secrets.
+		appOpts = append(appOpts, application.WithSecretResolver(deployurls.ParentSecrets{Inner: deps.secretsManager, Apps: deps.db}))
 	}
 	if deps.meshDNSAddr != "" {
 		appOpts = append(appOpts, application.WithMeshDNSAddr(deps.meshDNSAddr))

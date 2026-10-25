@@ -12,6 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/deployurls"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/footprint"
@@ -382,6 +383,7 @@ func (s *bootState) startReconciler() {
 		livenessTracker:              application.NewLivenessTracker(),
 		imageIDs:                     application.NewImageIDCache(reconcile.FullResyncFromEnv(os.Getenv)),
 		restartBackoff:               newRestartBackoff(logger),
+		retainedDeploys:              &deployurls.Guard{Store: db, Max: deployurls.MaxUnreadyFromEnv(os.Getenv)},
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),
 		ingressHTTPAddr:              ingressHTTPAddr(),
