@@ -25,6 +25,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # Plan must get the same secrets as apply: secret names are part of the plan hash.
       # Pull requests need STAGING_DATABASE_URL as a repository secret. Fork PRs get none.
+      # Pin the action to a release tag or commit SHA instead of a branch.
       - uses: glincker/levelrail/integrations/github-action/stack@main
         env:
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
@@ -32,6 +33,7 @@ jobs:
           stack: staging
           path: stacks/staging
           mode: plan
+          version: v0.8.6 # the version your server runs, never latest
           api-url: ${{ secrets.LEVELRAIL_API_URL }}
           # Plan-only stack token (stack: staging, stack_verbs: [plan]) as a repository secret.
           # Anyone who can push a branch can read it from an edited workflow, so it must not apply.
@@ -46,6 +48,7 @@ jobs:
     environment: staging
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # Pin the action to a release tag or commit SHA instead of a branch.
       - uses: glincker/levelrail/integrations/github-action/stack@main
         env:
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
@@ -53,6 +56,7 @@ jobs:
           stack: staging
           path: stacks/staging
           mode: apply
+          version: v0.8.6 # the version your server runs, never latest
           api-url: ${{ secrets.LEVELRAIL_API_URL }}
           # Apply stack token for this stack, stored as a secret of this job's environment
           # (not the repository), so pull request jobs never receive it.
@@ -70,6 +74,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # A stack with require_approval ends this job as status pending_approval (success).
       # Approve it with the approve-prod job below.
+      # Pin the action to a release tag or commit SHA instead of a branch.
       - uses: glincker/levelrail/integrations/github-action/stack@main
         env:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
@@ -77,6 +82,7 @@ jobs:
           stack: production
           path: stacks/production
           mode: apply
+          version: v0.8.6 # the version your server runs, never latest
           api-url: ${{ secrets.LEVELRAIL_API_URL }}
           # Apply stack token for this stack, stored as a secret of this job's environment
           # (not the repository), so pull request jobs never receive it.

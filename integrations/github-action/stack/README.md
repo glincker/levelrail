@@ -16,11 +16,11 @@ Stacks are gated by `APP_EXPERIMENTAL=iac`. The action sets it for the CLI; the 
 | `oidc` | no | `false` | `true` swaps the job's GitHub identity for a short-lived token bound to this stack. Needs `id-token: write`. See below. |
 | `oidc-audience` | no | `api-url` | Audience of the identity token. Must equal the dashboard URL in Levelrail Settings. |
 | `project` | no | | Needed when the stack does not exist yet. |
-| `prune` | no | `false` | Delete resources the files no longer declare. |
+| `prune` | no | `false` | Ask to delete resources the files no longer declare. A `spec.prune: true` in the Stack document asks the same, but neither turns prune on: the stack's `allow_prune` setting, which only an administrator changes, decides, and the server refuses the apply otherwise. |
 | `vars` | no | | Newline list of `NAME=VALUE` placeholders. |
 | `secrets` | no | | Newline list of `NAME=ENVVAR`. Set each `ENVVAR` in the `env:` of the action step. Values are masked and never printed. **Pass the same list to plan and apply.** See below. |
 | `expected-plan-hash` | no | | Apply only. Refuse (409) when the plan no longer has this hash. |
-| `version` | no | `latest` | `levelrail-cli` release tag. Pin it to the version your server runs. |
+| `version` | no | `latest` | `levelrail-cli` release tag. Pin it to the version your server runs and do not rely on `latest` in workflows. |
 | `comment` | no | `false` | `true` posts one sticky PR comment per stack (plan mode). |
 | `github-token` | no | `github.token` | Used only for the comment. |
 
@@ -116,6 +116,6 @@ jobs:
 
 Approvals need a root token, stored as a production environment secret (`LEVELRAIL_ROOT_TOKEN`) and released only to the approve job. Do not reuse the CI write token for approvals: it cannot approve.
 
-Fork pull requests get a read-only `GITHUB_TOKEN` and no secrets, so plan and comment do not run for them. The comment step only warns if posting fails.
+Fork pull requests get a read-only `GITHUB_TOKEN` and no secrets, so plan and comment do not run for them. The comment step only warns if posting fails. It updates only a comment posted by `github-actions[bot]` that carries its marker, so a comment planted by someone else is ignored.
 
 **Pull request jobs can be edited by the pull request.** A collaborator who can push a branch can change the workflow in that branch and read every secret the PR job gets. Give the PR plan job only a plan-only stack token (`stack_verbs: [plan]`) as a repository secret, and keep each apply token (`stack_verbs: [apply]`) as a secret of the `staging` or `production` environment, with required reviewers on `production`. Never use `pull_request_target` with secrets: it runs with the base repository's secrets on code the pull request controls.
