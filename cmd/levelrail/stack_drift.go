@@ -22,5 +22,6 @@ func startStackDrift(ctx context.Context, logger *slog.Logger, db *store.DB, rt 
 		Logger:      logger,
 		StartDelay:  time.Minute,
 	}
+	rt.RevokeStaleStackDriftTokens(ctx)
 	go c.Run(ctx, interval)
 }

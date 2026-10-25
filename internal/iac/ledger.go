@@ -87,8 +87,20 @@ func LedgerRefs(res []*Resource) []LedgerRef {
 		if app := parentApp(r); app != "" {
 			addRef(KindApp, resourceKey(KindApp, "", app))
 		}
+		for _, h := range inlineDomains(r) {
+			addRef(KindDomain, resourceKey(KindDomain, "", h))
+		}
 	}
 	return out
+}
+
+// inlineDomains lists the hosts an App declares in its own domains field.
+// They are owned as Domain refs so two stacks cannot both claim a host.
+func inlineDomains(r *Resource) []string {
+	if r.Kind != KindApp {
+		return nil
+	}
+	return sortedUnique(stringList(r.Fields["domains"]))
 }
 
 // ledgerConflictPrefix marks plan items refused by ownership so the stack API
@@ -202,6 +214,12 @@ func (p *planner) ledgerGate(r *Resource) bool {
 		p.conflict(r, "%s is owned by stack %s; change it there or release it first", key, owner)
 		return true
 	}
+	for _, h := range inlineDomains(r) {
+		if owner, ok := l.Foreign[resourceKey(KindDomain, "", h)]; ok {
+			p.conflict(r, "domain %s is owned by stack %s; change it there or release it first", h, owner)
+			return true
+		}
+	}
 	if app := parentApp(r); app != "" {
 		if owner, ok := l.Foreign[resourceKey(KindApp, "", app)]; ok {
 			p.conflict(r, "app %s is owned by stack %s; a %s on it belongs in that stack", app, owner, r.Kind)
@@ -264,6 +282,9 @@ func (l *Ledger) pruneTargets(res []*Resource) []LedgerEntry {
 	declared := map[string]bool{}
 	for _, r := range res {
 		declared[r.Key()] = true
+		for _, h := range inlineDomains(r) {
+			declared[resourceKey(KindDomain, "", h)] = true
+		}
 	}
 	var out []LedgerEntry
 	for _, e := range l.Owned {
@@ -335,6 +356,13 @@ func (p *planner) planLedgerPrune() {
 		if kind == KindDatabase || kind == KindProject {
 			p.add(r, ActionNoop, nil, nil, nil).Reason = fmt.Sprintf("absent from the files, but a %s is never pruned; it stays owned by stack %s until the stack forgets it", strings.ToLower(string(kind)), l.StackName)
 			continue
+		}
+		if kind == KindDomain {
+			// The host may have moved with its app to another stack since it was claimed.
+			if owner, moved := l.Foreign[resourceKey(KindApp, "", e.LiveID)]; moved {
+				p.conflict(r, "domain %s now belongs to app %s of stack %s; it is not pruned from stack %s", name, e.LiveID, owner, l.StackName)
+				continue
+			}
 		}
 		if p.deniedItem(r, pruneReadKey(kind, scope, name, e.LiveID)) {
 			continue
@@ -472,6 +500,9 @@ func LedgerChanges(stackID string, rev int, res []*Resource, out ApplyResult) Le
 				e.LiveID = stringField(r.Fields, "app")
 			}
 			u.Claim = append(u.Claim, e)
+			for _, h := range inlineDomains(r) {
+				u.Claim = append(u.Claim, LedgerEntry{StackID: stackID, Kind: KindDomain, Key: resourceKey(KindDomain, "", h), LiveID: r.Name, SinceRevision: rev})
+			}
 		}
 	}
 	return u

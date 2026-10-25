@@ -364,3 +364,30 @@ func TestPrintStackRun_NoopSaysStillAtRevision(t *testing.T) {
 		t.Fatalf("output = %q", got)
 	}
 }
+
+func TestStackPlan_ExplicitPruneFlagBeatsStackDocument(t *testing.T) {
+	dir := stackTestDir(t)
+	cases := []struct {
+		name string
+		args []string
+		want bool
+	}{
+		{"document only", nil, true},
+		{"prune=false", []string{"--prune=false"}, false},
+		{"prune=true", []string{"--prune"}, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := &stackFake{t: t, plan: pendingPlan()}
+			srv := httptest.NewServer(f.handler())
+			defer srv.Close()
+			args := append([]string{"stack", "plan", "shop", "-f", dir, "--api-url", srv.URL}, tc.args...)
+			if code, out, _ := runIaC(args, nil); code != exitOK {
+				t.Fatalf("exit = %d\n%s", code, out)
+			}
+			if got := f.requests["/api/v1/stacks/shop/plan"].Prune; got != tc.want {
+				t.Errorf("Prune = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

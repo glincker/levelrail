@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -13,12 +14,36 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// The shared drift token lives a day and rotates in its last hour; the TTL
-// bounds a token orphaned by a crash.
+// The shared drift token lives APP_STACK_DRIFT_TOKEN_TTL (default 2h) and
+// rotates in its last quarter; the TTL bounds a token orphaned by a crash.
 const (
-	stackDriftTokenTTL   = 24 * time.Hour
-	stackDriftTokenRenew = time.Hour
+	envStackDriftTTL          = "APP_STACK_DRIFT_TOKEN_TTL"
+	defaultStackDriftTokenTTL = 2 * time.Hour
+	stackDriftTokenName       = "stack-drift"
 )
+
+func stackDriftTokenLife() (ttl, renew time.Duration) {
+	ttl = envDuration(envStackDriftTTL, defaultStackDriftTokenTTL)
+	return ttl, ttl / 4
+}
+
+// RevokeStaleStackDriftTokens revokes system-minted drift tokens left by an
+// earlier process; call it once at startup, before the first drift pass.
+func (rt *Router) RevokeStaleStackDriftTokens(ctx context.Context) {
+	toks, err := rt.tokens.ListAPITokens(ctx)
+	if err != nil {
+		rt.logger.Warn("api: stack drift: list stale tokens failed", slog.String("error", err.Error()))
+		return
+	}
+	for _, t := range toks {
+		if t.Name != stackDriftTokenName || t.RevokedAt != nil || t.OwnerUserID != "" || t.AgentName != "" {
+			continue
+		}
+		if err := rt.tokens.RevokeAPIToken(ctx, t.ID); err != nil && !errors.Is(err, store.ErrAPITokenNotFound) {
+			rt.logger.Warn("api: stack drift: revoke stale token failed", slog.String("error", err.Error()))
+		}
+	}
+}
 
 // stackDriftReader is the optional store surface behind the drift payload.
 type stackDriftReader interface {
@@ -70,12 +95,13 @@ type stackDriftToken struct {
 }
 
 // driftToken returns a live token, rotating it (and revoking the old one) when less
-// than stackDriftTokenRenew of its life is left.
+// than the renew window of its life is left.
 func (rt *Router) driftToken(ctx context.Context) (string, error) {
 	d := &rt.stackDrift
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	if d.raw != "" && time.Until(d.expires) > stackDriftTokenRenew {
+	ttl, renew := stackDriftTokenLife()
+	if d.raw != "" && time.Until(d.expires) > renew {
 		return d.raw, nil
 	}
 	if d.id != "" {
@@ -84,8 +110,8 @@ func (rt *Router) driftToken(ctx context.Context) (string, error) {
 		}
 		d.raw, d.id = "", ""
 	}
-	expires := time.Now().Add(stackDriftTokenTTL)
-	raw, rec, err := MintAgentAPIToken(ctx, rt.tokens, "stack-drift", []string{AbilityRead}, &expires, agentIdentity{}, "")
+	expires := time.Now().Add(ttl)
+	raw, rec, err := MintAgentAPIToken(ctx, rt.tokens, stackDriftTokenName, []string{AbilityRead}, &expires, agentIdentity{}, "")
 	if err != nil {
 		return "", fmt.Errorf("api: stack drift: mint read token: %w", err)
 	}
@@ -136,6 +162,10 @@ func (rt *Router) stackDriftAttentionItems(r *http.Request, abilities []string) 
 	for _, d := range drifts {
 		name, known := names[d.StackID]
 		if d.Status != store.StackDriftDrifted || !known {
+			continue
+		}
+		// Read on the feed is not read on this stack: a name alone leaks its existence.
+		if !rt.stillAuthorized(r.Context(), r, AbilityRead, "stack:"+name) {
 			continue
 		}
 		detail := fmt.Sprintf("%d resource(s) differ from revision %d, last checked %s", len(d.Summary), d.Revision, d.CheckedAt.UTC().Format(time.RFC3339))

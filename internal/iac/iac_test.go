@@ -616,6 +616,14 @@ func (db ledgerDB) view(stack string, res []*Resource) *Ledger {
 			l.Foreign[ref.Key] = e.StackID
 		}
 	}
+	for _, e := range own {
+		if e.Kind != KindDomain {
+			continue
+		}
+		if o, ok := db["App/"+e.LiveID]; ok && o.StackID != stack {
+			l.Foreign["App/"+e.LiveID] = o.StackID
+		}
+	}
 	return l
 }
 
@@ -1032,5 +1040,53 @@ func TestSameDeclaredImage(t *testing.T) {
 		if got := sameDeclaredImage(tc.declared, tc.live); got != tc.want {
 			t.Errorf("sameDeclaredImage(%q, %q) = %v, want %v", tc.declared, tc.live, got, tc.want)
 		}
+	}
+}
+
+func inlineDomainApp(name string) string {
+	return strings.Replace(appDoc(name, "img:a"), "    port: 80", "    port: 80\n    domains: [a.example.com]", 1)
+}
+
+func TestLedgerInlineDomainsAreOwned(t *testing.T) {
+	f, db := ledgerFake(), ledgerDB{}
+	db.apply(t, f, stackCall{stack: "a", src: shopProject + inlineDomainApp("web")})
+	if e := db["Domain/a.example.com"]; e.StackID != "a" || e.LiveID != "web" {
+		t.Fatalf("inline domain not claimed: %+v", db)
+	}
+
+	// Another stack declaring the same host inline is refused before any write.
+	before := len(f.writes)
+	p := db.plan(t, f, stackCall{stack: "b", src: shopProject + inlineDomainApp("other")})
+	if r := errorsByKey(p)["App/other"]; !strings.Contains(r, "domain a.example.com is owned by stack a") {
+		t.Fatalf("plan = %+v", p.Changes)
+	}
+	if len(writesSince(f, before)) != 0 {
+		t.Fatal("planning wrote")
+	}
+
+	// Still declared inline: prune leaves it alone.
+	p = db.plan(t, f, stackCall{stack: "a", src: shopProject + inlineDomainApp("web"), opts: Options{Prune: true}})
+	for _, c := range p.Changes {
+		if c.Action == ActionDelete {
+			t.Fatalf("declared inline domain pruned: %+v", c)
+		}
+	}
+}
+
+func TestLedgerPruneRefusesDomainOfAppNowInAnotherStack(t *testing.T) {
+	f, db := ledgerFake(), ledgerDB{}
+	db.apply(t, f, stackCall{stack: "a", src: shopProject + inlineDomainApp("web")})
+	// The app moves to stack b (released by a, adopted by b).
+	db["App/web"] = LedgerEntry{StackID: "b", Kind: KindApp, Key: "App/web", LiveID: "web"}
+
+	before := len(f.writes)
+	c := stackCall{stack: "a", src: shopProject, opts: Options{Prune: true}, mass: true}
+	p := db.plan(t, f, c)
+	if r := errorsByKey(p)["Domain/a.example.com"]; !strings.HasPrefix(r, ledgerConflictPrefix) || !strings.Contains(r, "stack b") {
+		t.Fatalf("plan = %+v", p.Changes)
+	}
+	db.apply(t, f, c)
+	if len(writesSince(f, before)) != 0 {
+		t.Fatalf("a pruned a domain of b's app: %v", writesSince(f, before))
 	}
 }

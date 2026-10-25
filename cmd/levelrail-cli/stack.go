@@ -401,6 +401,7 @@ type stackManifestFlags struct {
 	files    stringListFlag
 	project  *string
 	prune    *bool
+	pruneSet bool
 	vars     stringMapFlag
 	varFiles stringListFlag
 	allowEnv stringListFlag
@@ -412,13 +413,36 @@ func bindStackManifestFlags(fs *flag.FlagSet, withFiles bool) *stackManifestFlag
 	if withFiles {
 		fs.Var(&f.files, "f", "resource file, directory or - for stdin (repeatable)")
 		f.project = fs.String("project", "", "project of the stack (default: the Stack document)")
-		f.prune = fs.Bool("prune", false, "delete resources the files no longer declare (default: the Stack document)")
+		f.prune = new(bool)
+		fs.Var(&trackedBool{val: f.prune, set: &f.pruneSet}, "prune", "delete resources the files no longer declare (default: the Stack document)")
 		fs.Var(f.vars, "var", "NAME=VALUE for a ${{ env.NAME }} placeholder")
 		fs.Var(&f.varFiles, "var-file", "file of KEY=VALUE lines for placeholders (repeatable)")
 		fs.Var(&f.allowEnv, "allow-env", "NAME[,NAME] or PREFIX* that placeholders may read from the environment")
 	}
 	fs.Var(f.secrets, "secret", "NAME=ENVVAR, read the secret value from a local environment variable (also env:VAR or file:PATH)")
 	return f
+}
+
+// trackedBool is a bool flag that records whether it was given at all.
+type trackedBool struct {
+	val *bool
+	set *bool
+}
+
+func (b *trackedBool) IsBoolFlag() bool { return true }
+func (b *trackedBool) String() string {
+	if b == nil || b.val == nil {
+		return "false"
+	}
+	return strconv.FormatBool(*b.val)
+}
+func (b *trackedBool) Set(v string) error {
+	p, err := strconv.ParseBool(v)
+	if err != nil {
+		return err
+	}
+	*b.val, *b.set = p, true
+	return nil
 }
 
 var stackDocSplit = regexp.MustCompile(`(?m)^---[ \t]*$`)
@@ -488,7 +512,10 @@ func buildStackRequest(name string, f *stackManifestFlags, lookupEnv func(string
 		if req.Project == "" {
 			req.Project = doc.Spec.Project
 		}
-		req.Prune = req.Prune || doc.Spec.Prune
+		// An explicit --prune or --prune=false beats a document that may come from a PR.
+		if !f.pruneSet {
+			req.Prune = doc.Spec.Prune
+		}
 	}
 	if req.Vars, err = resolveVars(files, varSources{vars: f.vars, varFiles: f.varFiles, allowEnv: f.allowEnv}, lookupEnv); err != nil {
 		return apiclient.StackRequest{}, err

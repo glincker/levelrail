@@ -914,6 +914,23 @@ func (rt *Router) stackLedgerContext(ctx context.Context, ss StackStore, stackID
 			l.Foreign[ref.Key] = owner.StackID
 		}
 	}
+	// A pruned domain is checked against the app it was claimed on.
+	for _, e := range owned {
+		if e.Kind != iac.KindDomain || e.LiveID == "" {
+			continue
+		}
+		appKey := "App/" + e.LiveID
+		if _, seen := l.Foreign[appKey]; seen {
+			continue
+		}
+		owner, found, err := ss.GetStackResourceOwner(ctx, string(iac.KindApp), appKey)
+		if err != nil {
+			return nil, err
+		}
+		if found && owner.StackID != stackID {
+			l.Foreign[appKey] = owner.StackID
+		}
+	}
 	if len(l.Foreign) > 0 {
 		if all, err := ss.ListStacks(ctx); err == nil {
 			names := make(map[string]string, len(all))

@@ -112,7 +112,7 @@ func TestStackRevisionsIncrementAndRollbackCreatesNewRevision(t *testing.T) {
 		keys[e.Key] = true
 	}
 	// Every declared kind is ledgered, not only apps.
-	if got.LatestRevision != 3 || len(got.Resources) != 3 || !keys["App/web"] || !keys["Project/shop"] || !keys["Tag/frontend"] {
+	if got.LatestRevision != 3 || len(got.Resources) != 4 || !keys["App/web"] || !keys["Domain/app.example.com"] || !keys["Project/shop"] || !keys["Tag/frontend"] {
 		t.Fatalf("stack = %+v", got)
 	}
 }
@@ -314,7 +314,7 @@ func TestStackDeleteForgetKeepsAppsAndDestroyRefusesCI(t *testing.T) {
 	}
 
 	var out stackDeleteResponse
-	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodDelete, "/api/v1/stacks/shop-prod", ""), &out); code != http.StatusOK || len(out.Forgotten) != 3 {
+	if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodDelete, "/api/v1/stacks/shop-prod", ""), &out); code != http.StatusOK || len(out.Forgotten) != 4 {
 		t.Fatalf("forget = %d %+v", code, out)
 	}
 	if _, err := db.GetDesiredService(t.Context(), "web"); err != nil {

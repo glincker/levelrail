@@ -74,9 +74,9 @@ levelrail-cli stack unpin shop-prod
 
 A stack owns the resources it created, and the resources it adopted. Prune deletes only owned resources that the files no longer declare. A resource that exists outside every stack makes the apply fail unless the apply sets `adopt`.
 
-Prune is never turned on by a pull request. A `spec.prune` field in the `Stack` document or a `--prune` flag only asks for it (the CLI ORs the two, so `spec.prune: true` in git wins over a workflow input of `prune: false`; review that field in pull requests). The apply is refused unless an administrator set `allow_prune` on the stack, so editing the files in git cannot widen what an apply deletes.
+Prune is never turned on by a pull request. A `spec.prune` field in the `Stack` document or a `--prune` flag only asks for it (an explicit `--prune` or `--prune=false` on the command line always wins over `spec.prune`, so a pull request cannot turn prune on over a workflow input of `prune: false`). The apply is refused unless an administrator set `allow_prune` on the stack, so editing the files in git cannot widen what an apply deletes.
 
-Domains listed inline on an `App` are part of that app, not separate owned resources. The stack does not record them in its ownership list, so two stacks are kept apart for them only by the rule that a host can belong to one app at a time. Declare a `Domain` document when you want a host to be owned, planned and pruned on its own.
+Domains listed inline on an `App` are owned too, as `Domain/<host>` entries in the ledger. A second stack that declares the same host is refused with a ledger conflict. Removing a host from the files prunes it like any other owned resource, and a prune is refused when the app that carried the host now belongs to another stack. A host that was only ever declared inline before this was recorded becomes owned the next time the stack applies.
 
 Databases and projects are never pruned, because they hold data or other stacks' members.
 
@@ -124,9 +124,9 @@ A pin freezes a stack. While it is set, an apply is refused unless it is a rollb
 
 Drift is a difference between live state and the files, usually from a hand edit in the dashboard or the CLI.
 
-A drift checker plans each stack's latest applied revision against live state every `APP_STACK_DRIFT_INTERVAL` (default 15m). Set it to `0` to turn the checker off. The checker only reads. It never applies a plan or changes a resource.
+A drift checker plans each stack's latest applied revision against live state every `APP_STACK_DRIFT_INTERVAL` (default 15m). Set it to `0` to turn the checker off. It reads live state with a read-only system token that lives `APP_STACK_DRIFT_TOKEN_TTL` (default 2h) and is rotated in the last quarter of that time; stale ones left by an earlier process are revoked at startup. The checker only reads. It never applies a plan or changes a resource.
 
-- **warn** (default): a drifted stack is recorded and raises an attention item.
+- **warn** (default): a drifted stack is recorded and raises an attention item, shown only to people who can read that stack.
 - **lock**: recorded the same way, and manual changes to stack-owned apps, databases, domains, projects and environments get `409 stack_locked` naming the stack. Start, stop, restart, exec, builds, backups, cache purge and read-only checks still work. To change a locked resource, change the manifest and apply, or ask an admin. A root user can override one request with the header `X-Levelrail-Override-Stack-Lock: <stack>`; it is audited as `stack.lock_override` and CI or stack-scoped tokens cannot use it. If the ledger lookup fails, the request is allowed and a warning is logged. Forgetting or destroying a stack unlocks its resources.
 
 ## Tokens in CI
