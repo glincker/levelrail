@@ -304,6 +304,7 @@ Endpoints for:
 | POST | /api/v1/settings/runtime/apply | AbilityRoot | handleApplyRuntimeSettings |
 | POST | /api/v1/settings/runtime/onboarding/ack | AbilityRoot | handleAckRuntimeOnboarding |
 | POST | /api/v1/auth/tokens/cleanup | AbilityRoot | handleCleanupTokens |
+| GET | /api/v1/auth/session | Public | handleAuthSession |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |

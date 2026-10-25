@@ -11,15 +11,7 @@ func (rt *Router) registerAuthRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/auth/setup-status", rt.handleSetupStatus)
 	mux.HandleFunc("POST /api/v1/auth/logout", rt.requireAuth(rt.handleLogout))
 	mux.HandleFunc("PUT /api/v1/auth/password", rt.requireAuth(rt.handleChangePassword))
-	// Pinned (token-minted) sessions have no user row and cannot pass requireAuth.
-	userSession := rt.requireAuth(rt.handleGetSession)
-	mux.HandleFunc("GET /api/v1/auth/session", func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := rt.currentPinnedSession(r); ok {
-			rt.handleGetSession(w, r)
-			return
-		}
-		userSession(w, r)
-	})
+	mux.HandleFunc("GET /api/v1/auth/session", rt.handleAuthSession)
 	mux.HandleFunc("GET /api/v1/auth/whoami", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleWhoami))
 	mux.HandleFunc("PATCH /api/v1/auth/profile", rt.requireAuth(rt.handleUpdateProfile))
 	mux.HandleFunc("GET /api/v1/auth/my-access", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleMyAccess))
@@ -187,4 +179,14 @@ func (rt *Router) registerAuthRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/auth/tokens/{id}", rt.requireAuth(rt.handleRevokeToken))
 	// Removing revoked tokens is irreversible bookkeeping on the token set, so AbilityRoot.
 	mux.HandleFunc("POST /api/v1/auth/tokens/cleanup", rt.requireAbility(AbilityRoot, rt.handleCleanupTokens))
+}
+
+// handleAuthSession answers GET /api/v1/auth/session. Pinned (token-minted)
+// sessions have no user row and cannot pass requireAuth, so they skip it.
+func (rt *Router) handleAuthSession(w http.ResponseWriter, r *http.Request) {
+	if _, ok := rt.currentPinnedSession(r); ok {
+		rt.handleGetSession(w, r)
+		return
+	}
+	rt.requireAuth(rt.handleGetSession)(w, r)
 }

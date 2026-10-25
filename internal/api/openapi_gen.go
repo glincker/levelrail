@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1727 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1728 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -474,6 +474,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/auth/saml/{id}/acs", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSAMLACS", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/saml/{id}/login", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSAMLLogin", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/saml/{id}/metadata", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSAMLMetadata", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/session", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleAuthSession", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/session-links", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMintSessionLink", Description: "Session links (session_links.go): a short-lived, single-use, URL-embeddable token for browser automation to skip manual login. Minting is root-equivalent since the resulting session inherits the minting caller's own abilities; consuming is necessarily unauthenticated, gated by possession of the token itself, same shape as reset-password below."},
 	{Method: "POST", Path: "/api/v1/auth/session-links/consume", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleConsumeSessionLink", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/session-links/{token}/consume", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleConsumeSessionLinkGET", Description: ""},

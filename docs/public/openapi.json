@@ -45517,6 +45517,47 @@
         ]
       }
     },
+    "/api/v1/auth/session": {
+      "get": {
+        "description": "No authentication required.",
+        "operationId": "handleAuthSession",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "Auth Session",
+        "tags": [
+          "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
+        ]
+      }
+    },
     "/api/v1/auth/session-links": {
       "post": {
         "description": "Session links (session_links.go): a short-lived, single-use, URL-embeddable token for browser automation to skip manual login. Minting is root-equivalent since the resulting session inherits the minting caller's own abilities; consuming is necessarily unauthenticated, gated by possession of the token itself, same shape as reset-password below.\n\nRequires the `root` ability.",

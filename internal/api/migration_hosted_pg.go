@@ -62,7 +62,7 @@ func (rt *Router) hostedTarget(w http.ResponseWriter, r *http.Request, name stri
 	}
 	cfg, err := datamigrate.HostedConfigFromProcessEnv()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		rt.internalError(w, "api: hosted database import: read hosted config failed", err)
 		return nil, req, cfg, nil, false
 	}
 	if rt.execRuntime == nil {
