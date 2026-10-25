@@ -2220,6 +2220,80 @@ func TestHandleStartApp_Success(t *testing.T) {
 	}
 }
 
+// A start gets its own attempt so "deploys wait" has something real to follow:
+// the previous serving attempt must not read as the start's result.
+func TestHandleStartApp_RecordsAttemptWaitCanFollow(t *testing.T) {
+	tests := []struct {
+		name        string
+		suspended   bool
+		wantAttempt bool
+	}{
+		{"stopped app gets a start attempt", true, true},
+		{"running app gets none", false, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			ctx := context.Background()
+			if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+				t.Fatalf("seed app: %v", err)
+			}
+			prev := "dep_prev"
+			started := time.Now().Add(-time.Hour)
+			if err := db.SaveDeployAttempt(ctx, store.DeployAttempt{ID: prev, ServiceName: "web", Image: "levelrail/web:1", Source: store.DeployAttemptSourceImage, Status: store.DeployAttemptStatusRunning, StartedAt: started}); err != nil {
+				t.Fatalf("seed attempt: %v", err)
+			}
+			if err := db.FinishDeployAttempt(ctx, prev, store.DeployAttemptStatusSucceeded, started.Add(time.Minute), ""); err != nil {
+				t.Fatalf("finish attempt: %v", err)
+			}
+			if err := db.SetDeployAttemptRollout(ctx, prev, store.RolloutStateServing); err != nil {
+				t.Fatalf("serve previous: %v", err)
+			}
+			if err := db.UpdateServiceSuspended(ctx, "web", tt.suspended); err != nil {
+				t.Fatalf("seed suspended: %v", err)
+			}
+
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/start", ""))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+			}
+
+			attempts, err := db.ListDeployAttempts(ctx, "web")
+			if err != nil {
+				t.Fatalf("ListDeployAttempts() error = %v", err)
+			}
+			if !tt.wantAttempt {
+				if len(attempts) != 1 {
+					t.Fatalf("attempts = %d, want only the seeded one", len(attempts))
+				}
+				return
+			}
+			if len(attempts) != 2 || attempts[0].Source != store.DeployAttemptSourceStart {
+				t.Fatalf("attempts = %+v, want a newest start attempt", attempts)
+			}
+			get := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(get, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/deploys/latest", ""))
+			var res struct{ ID, Outcome string }
+			if err := json.Unmarshal(get.Body.Bytes(), &res); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if res.ID != attempts[0].ID || res.Outcome != OutcomeInProgress {
+				t.Errorf("latest = %+v, want the start attempt in_progress until the rollout serves", res)
+			}
+			if err := db.SetDeployAttemptRollout(ctx, attempts[0].ID, store.RolloutStateServing); err != nil {
+				t.Fatalf("serve start: %v", err)
+			}
+			get = httptest.NewRecorder()
+			rt.Handler().ServeHTTP(get, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/deploys/latest", ""))
+			if err := json.Unmarshal(get.Body.Bytes(), &res); err != nil || res.Outcome != OutcomeHealthy {
+				t.Errorf("after serving: %+v (%v), want healthy", res, err)
+			}
+		})
+	}
+}
+
 // TestHandleStopApp_PlainWriteToken_Forbidden checks the same
 // AbilityDeploy boundary as restart (see router.go's registration of
 // this route).

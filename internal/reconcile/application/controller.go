@@ -550,7 +550,23 @@ func ControllerName(serviceName string) string { return "application/" + service
 
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
-	desired, err := c.store.GetDesiredService(ctx, c.serviceName)
+	started, err := c.store.GetDesiredService(ctx, c.serviceName)
+	result, rerr := c.reconcileDesired(ctx, started, err)
+	if err != nil || started == nil {
+		return result, rerr
+	}
+	// A deploy or restart that landed mid-pass owns the next verdict. Publishing
+	// this one would stamp the old release's outcome on the new attempt; the
+	// nudge that deploy sent already queues the next pass.
+	if now, gerr := c.store.GetDesiredService(ctx, c.serviceName); gerr == nil && now != nil &&
+		(now.Image != started.Image || now.RestartNonce != started.RestartNonce) {
+		return reconcile.Result{}, nil
+	}
+	return result, rerr
+}
+
+// reconcileDesired runs one pass against the desired state Reconcile read.
+func (c *Controller) reconcileDesired(ctx context.Context, desired *store.DesiredService, err error) (reconcile.Result, error) {
 	if errors.Is(err, store.ErrServiceNotFound) {
 		// Not a failure: a controller can be registered for a service
 		// before its first deploy has ever written desired state.

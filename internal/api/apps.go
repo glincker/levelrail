@@ -1158,12 +1158,21 @@ func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
+	wasStopped := false
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
+		wasStopped = svc.Suspended
+	}
 	if err := rt.apps.UpdateServiceSuspended(r.Context(), name, false); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
 		rt.internalError(w, "api: start app failed", err, slog.String("name", name))
 		return
+	}
+
+	// Own attempt, so a waiter follows this start and not the last serving deploy.
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); wasStopped && err == nil {
+		rt.recordInstantDeployAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceStart)
 	}
 
 	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventResume, Title: "Started"})
