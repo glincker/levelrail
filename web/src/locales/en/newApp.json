@@ -607,5 +607,43 @@
     "snippet": "Markdown snippet",
     "copy": "Copy Markdown",
     "copied": "Copied"
+  },
+  "deployPage": {
+    "title": "Deploy from a link",
+    "description": "Review what the link filled in, then continue. Nothing is created until you press Deploy.",
+    "banner": "Prefilled from a link, review before deploying",
+    "bannerBody": "Check the repository, branch and name below. Nothing is created until you confirm on the final step.",
+    "ignoredTitle": "Some link parameters were ignored",
+    "ignoredBody": "These were missing, unknown or invalid: {{params}}. Env values and secrets are never read from a link.",
+    "repo": "Repository",
+    "branch": "Branch",
+    "branchDefault": "Default branch",
+    "name": "Suggested name",
+    "port": "Port",
+    "template": "Template",
+    "templateName": "{{name}}",
+    "reviewRepo": "Analyze and review",
+    "reviewTemplate": "Open template",
+    "empty": "This link did not include a valid repository or template, so start a new app yourself.",
+    "startNew": "Start a new app"
+  },
+  "deployLinkDialog": {
+    "action": "Get a Deploy button link",
+    "title": "Deploy button link",
+    "description": "Put this in a README. It opens this dashboard with the repository prefilled; the reader still reviews and confirms. No secrets are included.",
+    "repo": "Repository URL",
+    "branch": "Branch (optional)",
+    "name": "App name (optional)",
+    "link": "Link",
+    "markdown": "Markdown",
+    "html": "HTML",
+    "copy": "Copy",
+    "copied": "Copied",
+    "alt": "Deploy to {{brand}}",
+    "errors": {
+      "repo": "Enter an https or ssh git URL without a username or password.",
+      "branch": "Use a plain branch or tag name.",
+      "name": "Use lowercase letters, digits and hyphens."
+    }
   }
 }

@@ -82,12 +82,39 @@ https://levelrail.com/deploy?name=notes&port=3000&source=https%3A%2F%2Fgithub.co
 
 On your own server, open **Apps, New app** and use the "Add a Deploy to Levelrail button to your README" section below the wizard. It builds the link from an image, name, port, health path and env variable names, applies the same validation as above, and copies the Markdown.
 
+## Git repositories and templates
+
+To prefill from a git repository instead of an image, link to your own dashboard's `/deploy` route. The reader signs in first (the link survives the sign-in), then sees a banner "Prefilled from a link, review before deploying" and the values that were read. Pressing Analyze and review starts the usual new-app flow with the repository filled in. Nothing is created until the final Deploy.
+
+```text
+https://<their-server>/deploy?repo=https%3A%2F%2Fgithub.com%2Fyou%2Fapp.git&branch=main&name=app&port=3000
+```
+
+| Parameter | Meaning | Limits |
+| --- | --- | --- |
+| `repo` | Git URL | `https://` or `ssh://` or `user@host:path`. Credentials (`user:pass@`, tokens in the URL), `file`, `javascript`, `data`, `ext` and plain `http` are rejected |
+| `branch` | Branch or tag | Plain ref name, up to 200 characters. Needs `repo` |
+| `name` | App name | Same rules as above |
+| `template` | Catalog template id, instead of `repo` | Must exist in the catalog on that server |
+| `port` | Port the app listens on | Integer 1 to 65535 |
+
+Anything else, including `env` values or secrets, is ignored and listed in a warning.
+
+Generate the link and snippets with the CLI, which uses the current profile's instance:
+
+```bash
+levelrail-cli deploy-link --repo https://github.com/you/app --branch main --open
+```
+
+It prints the link, Markdown and HTML snippets that use the static badge `docs/assets/deploy-to-levelrail.svg` from this repository's default branch. In the dashboard, the same output is behind **Get a Deploy button link** on the new-app page and in the **More actions** menu of any app deployed from git. The CLI and the dashboard share their validation rules.
+
 ## Security
 
 - The button never carries secrets. Environment variable values are not read from a link, even if someone puts one there; only names are accepted.
 - Secrets are entered by the reader on their own server, in password fields, and stored as secrets there.
 - The public page does not contact any Levelrail server. It only redirects the browser to the address the reader typed.
 - Nothing is deployed from a link alone. The reader reviews the form and must press Deploy.
+- Prefilled values are shown as plain text, repository URLs cannot carry credentials, and only https and ssh git URLs are accepted.
 - Only deploy links you trust: a link can pick any public image, so check the image and source host shown on the form.
 
 See also [Templates and registry](/templates-and-registry) and [Deploying apps](/deploying-apps).

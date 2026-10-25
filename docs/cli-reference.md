@@ -1492,6 +1492,16 @@ Prints a "Deploy with" link and the README Markdown for it, after validating the
 levelrail-cli deploy-link --image traefik/whoami:latest --name whoami --port 80 --health /health
 ```
 
+```
+levelrail-cli deploy-link --repo URL [--branch B] [--name N] [--port P] [--profile P] [--api-url URL] [--open] [flags]
+levelrail-cli deploy-link --template ID [--name N] [--port P] [--profile P] [--api-url URL] [--open] [flags]
+```
+Prints a link to the current profile's instance (`/deploy?repo=...`) plus README Markdown and HTML button snippets. The repo must be an https or ssh git URL without a username or password. `--open` opens the link in the browser. Nothing deploys from the link. See [Deploy button](/deploy-button#git-repositories-and-templates).
+
+```
+levelrail-cli deploy-link --repo https://github.com/you/app --branch main --name app --open
+```
+
 ## AI assistant
 
 Experimental: requires `APP_EXPERIMENTAL=ai-chat`, and a provider key saved with `settings ai-assistant providers set` and a model chosen with `settings ai-assistant use`. The assistant is read and suggest only: a tool call that would change state pauses for an explicit confirmation. See [In-app AI assistant chat](/ai-assistant-chat).
