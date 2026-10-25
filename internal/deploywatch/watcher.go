@@ -156,7 +156,7 @@ func (w *Watcher) watchOne(ctx context.Context, service, attemptID string, now t
 	if err != nil {
 		return err
 	}
-	if attempt.Image != svc.Image || svc.Suspended {
+	if !docker.SameImageRef(attempt.Image, svc.Image) || svc.Suspended {
 		return nil
 	}
 	overrides, err := w.Store.GetDeploySafetySettings(ctx, service)
@@ -371,7 +371,7 @@ func (w *Watcher) rollbackTarget(ctx context.Context, svc *store.DesiredService,
 	}
 	for i := range attempts {
 		a := attempts[i]
-		if a.ID == attempt.ID || a.Status != store.DeployAttemptStatusSucceeded || a.Image == "" || a.Image == attempt.Image {
+		if a.ID == attempt.ID || a.Status != store.DeployAttemptStatusSucceeded || a.Image == "" || docker.SameImageRef(a.Image, attempt.Image) {
 			continue
 		}
 		return &a, nil, nil

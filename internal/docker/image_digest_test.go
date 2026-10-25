@@ -169,3 +169,53 @@ func TestResolveImageRequireFreshPullsOnEngineWithoutDistribution(t *testing.T) 
 		t.Fatalf("pulled=%v got %+v", pulled, got)
 	}
 }
+
+// Podman 5 answers every /distribution path with a bare text/plain 404 "Not Found".
+func TestResolveImageRequireFreshPodmanBareNotFound(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		pullCode  int
+		pullBody  string
+		wantFound bool
+	}{
+		{"pulls", http.StatusOK, `{"status":"Pull complete"}` + "\n", true},
+		{"missing tag", http.StatusNotFound, `{"message":"initializing source docker://traefik/whoami:nope: reading manifest nope: manifest unknown"}`, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch {
+				case strings.HasSuffix(r.URL.Path, "/_ping"):
+					w.Header().Set("Api-Version", "1.41")
+				case strings.Contains(r.URL.Path, "/distribution/"):
+					w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+					w.WriteHeader(http.StatusNotFound)
+					_, _ = w.Write([]byte("Not Found\n"))
+				case strings.HasSuffix(r.URL.Path, "/images/create"):
+					w.WriteHeader(tc.pullCode)
+					_, _ = w.Write([]byte(tc.pullBody))
+				case strings.Contains(r.URL.Path, "/images/") && strings.HasSuffix(r.URL.Path, "/json"):
+					_, _ = w.Write([]byte(`{"Id":"sha256:cfg","RepoDigests":["docker.io/traefik/whoami@` + testCacheDigest + `"]}`))
+				default:
+					w.WriteHeader(http.StatusNotFound)
+				}
+			}))
+			t.Cleanup(srv.Close)
+			t.Setenv("DOCKER_HOST", "tcp://"+strings.TrimPrefix(srv.URL, "http://"))
+			c, err := NewClient()
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = c.Close() })
+			got, err := c.ResolveImage(context.Background(), "traefik/whoami:v1.10.1", nil, true)
+			if tc.wantFound {
+				if err != nil || got.Digest != testCacheDigest {
+					t.Fatalf("got %+v err %v", got, err)
+				}
+				return
+			}
+			if !errors.Is(err, ErrImageNotFound) {
+				t.Fatalf("missing tag must be ErrImageNotFound, got %v", err)
+			}
+		})
+	}
+}

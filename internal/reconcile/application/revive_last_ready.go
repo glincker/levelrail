@@ -42,21 +42,22 @@ func (c *Controller) reviveLastReady(ctx context.Context, targets []string, desi
 	}
 	rank := map[string]int{}
 	for _, a := range attempts {
-		if a.Status != store.DeployAttemptStatusSucceeded || a.Image == "" || a.Image == desired.Image {
+		if a.Status != store.DeployAttemptStatusSucceeded || a.Image == "" || docker.SameImageRef(a.Image, desired.Image) {
 			continue
 		}
-		if _, seen := rank[a.Image]; !seen {
-			rank[a.Image] = len(rank)
+		key := docker.CanonicalImageRef(a.Image)
+		if _, seen := rank[key]; !seen {
+			rank[key] = len(rank)
 		}
 	}
 	var pick *docker.ContainerState
 	for i := range others {
 		cs := &others[i]
-		r, known := rank[cs.Image]
+		r, known := rank[docker.CanonicalImageRef(cs.Image)]
 		if !known || cs.Running {
 			continue
 		}
-		if pick == nil || r < rank[pick.Image] {
+		if pick == nil || r < rank[docker.CanonicalImageRef(pick.Image)] {
 			pick = cs
 		}
 	}

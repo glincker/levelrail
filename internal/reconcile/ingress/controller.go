@@ -1402,7 +1402,7 @@ func (c *Controller) passedReadiness(ctx context.Context, serviceName string, st
 		return false
 	}
 	for _, a := range attempts {
-		if a.Status == store.DeployAttemptStatusSucceeded && a.Image == state.Image {
+		if a.Status == store.DeployAttemptStatusSucceeded && docker.SameImageRef(a.Image, state.Image) {
 			return true
 		}
 	}
@@ -1537,7 +1537,7 @@ func (c *Controller) rankReleases(ctx context.Context, serviceName, exclude stri
 	}
 	readyRank := c.readyImageRanks(ctx, serviceName)
 	rank := func(cs docker.ContainerState) int {
-		if r, ok := readyRank[cs.Image]; ok && cs.Image != "" {
+		if r, ok := readyRank[docker.CanonicalImageRef(cs.Image)]; ok && cs.Image != "" {
 			return r
 		}
 		return len(readyRank) + 1
@@ -1578,8 +1578,9 @@ func (c *Controller) readyImageRanks(ctx context.Context, serviceName string) ma
 		if a.Status != store.DeployAttemptStatusSucceeded || a.Image == "" {
 			continue
 		}
-		if _, seen := ranks[a.Image]; !seen {
-			ranks[a.Image] = len(ranks)
+		key := docker.CanonicalImageRef(a.Image)
+		if _, seen := ranks[key]; !seen {
+			ranks[key] = len(ranks)
 		}
 	}
 	return ranks

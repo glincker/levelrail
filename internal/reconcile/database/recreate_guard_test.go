@@ -69,8 +69,8 @@ func TestSameImageRef(t *testing.T) {
 		{"postgres:16", "postgres:16", true},
 	}
 	for _, tc := range cases {
-		if got := sameImageRef(tc.observed, tc.desired); got != tc.want {
-			t.Errorf("sameImageRef(%q, %q) = %v, want %v", tc.observed, tc.desired, got, tc.want)
+		if got := docker.SameImageRef(tc.observed, tc.desired); got != tc.want {
+			t.Errorf("SameImageRef(%q, %q) = %v, want %v", tc.observed, tc.desired, got, tc.want)
 		}
 	}
 }

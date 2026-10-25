@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -49,7 +50,7 @@ func (c *Controller) failoverRoute(ctx context.Context, svc store.DesiredService
 	prevDial, ok := "", false
 	for i := range prev {
 		// Same image means a sibling replica, not a previous release.
-		if prev[i].Image == cur.Image {
+		if docker.SameImageRef(prev[i].Image, cur.Image) {
 			continue
 		}
 		if d, found := dialAddr(&prev[i]); found && d != dial {

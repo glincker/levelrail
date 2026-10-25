@@ -237,3 +237,35 @@ func TestController_FreshContainerOfProvenImageWaitsForReady(t *testing.T) {
 		t.Errorf("dial = %s, want the serving release 127.0.0.1:34561", got)
 	}
 }
+
+// Podman reports containers with docker.io/ qualified names while attempts keep the short ref.
+func TestController_DialPreviousRelease_PodmanQualifiedImageNames(t *testing.T) {
+	desired := store.DesiredService{Name: "web", Image: "traefik/whoami:v3", Port: 80, Domains: []string{"web.example.com"}}
+	base := time.Now().Add(-time.Hour)
+	rt := newFakeRuntime()
+	seedRelease(rt, "web", "traefik/whoami:v3", 34563, base.Add(3*time.Minute))
+	seedRelease(rt, "web", "traefik/whoami:v2", 34562, base.Add(2*time.Minute))
+	seedRelease(rt, "web", "traefik/whoami:v1", 34561, base)
+	for _, tag := range []string{"v3", "v2", "v1"} {
+		rt.containers[application.ContainerName("web", "traefik/whoami:"+tag, "")].Image = "docker.io/traefik/whoami:" + tag
+	}
+	applier := &fakeApplier{}
+	st := &fakeStore{
+		services:         []store.DesiredService{desired},
+		notReadyServices: map[string]bool{"web": true},
+		attempts:         map[string][]store.DeployAttempt{"web": {failed("traefik/whoami:v3"), failed("traefik/whoami:v2"), succeeded("traefik/whoami:v1")}},
+	}
+	c := New(st, rt, applier, WithLogger(discardLogger()))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if got := onlyUpstream(t, applier); got != "127.0.0.1:34561" {
+		t.Errorf("dial = %s, want last ready release 127.0.0.1:34561", got)
+	}
+	state := &docker.ContainerState{Image: "docker.io/traefik/whoami:v1", Created: base}
+	st.attempts["web"] = []store.DeployAttempt{{Image: "traefik/whoami:v3", Status: store.DeployAttemptStatusFailed, StartedAt: time.Now()}, succeeded("traefik/whoami:v1")}
+	if !c.passedReadiness(context.Background(), "web", state) {
+		t.Error("passedReadiness must match a qualified image against the short attempt ref")
+	}
+}

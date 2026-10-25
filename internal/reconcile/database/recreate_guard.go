@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -83,27 +82,6 @@ func (g *recreateGuard) allow(now time.Time) error {
 	}
 	g.times = append(g.times, now)
 	return nil
-}
-
-// sameImageRef compares an image reference as the runtime reports it with the
-// one the spec asked for. Podman reports docker.io/library/postgres:16 for a
-// container created from postgres:16.
-func sameImageRef(observed, desired string) bool {
-	return canonicalImageRef(observed) == canonicalImageRef(desired)
-}
-
-func canonicalImageRef(ref string) string {
-	ref = strings.TrimSpace(ref)
-	for _, host := range []string{"docker.io/", "index.docker.io/", "registry-1.docker.io/"} {
-		if rest, ok := strings.CutPrefix(ref, host); ok {
-			ref = rest
-			break
-		}
-	}
-	if rest, ok := strings.CutPrefix(ref, "library/"); ok && !strings.Contains(rest, "/") {
-		ref = rest
-	}
-	return ref
 }
 
 // replaceFailure maps a replace error to the condition result; a loop guard

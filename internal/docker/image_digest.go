@@ -144,7 +144,17 @@ func (c *Client) ResolveImage(ctx context.Context, ref string, auth *RegistryAut
 // distribution endpoint does not exist, as Podman does.
 func engineLacksDistribution(err error) bool {
 	m := strings.ToLower(err.Error())
-	return strings.Contains(m, "not supported") || strings.Contains(m, "page not found")
+	if strings.Contains(m, "not supported") || strings.Contains(m, "page not found") {
+		return true
+	}
+	// Podman 5 answers a bare text/plain "Not Found" for every /distribution path.
+	return bareNotFound(m)
+}
+
+// bareNotFound is true for the daemon's contentless 404 text.
+func bareNotFound(lowerMsg string) bool {
+	m := strings.TrimSpace(strings.TrimPrefix(lowerMsg, "error response from daemon:"))
+	return m == "not found"
 }
 
 // pullForDigest pulls ref through the engine and returns the digest it landed with.
@@ -171,7 +181,7 @@ func (c *Client) pullForDigest(ctx context.Context, named reference.Named, ref s
 // endpoint (Podman answers 404 "not supported"), which a node can still pull from.
 func registrySaysMissing(err error) bool {
 	m := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(strings.ToLower(err.Error()), "error response from daemon:")))
-	if strings.Contains(m, "not supported") || strings.Contains(m, "page not found") || m == "not found" {
+	if strings.Contains(m, "not supported") || strings.Contains(m, "page not found") || bareNotFound(m) {
 		return false
 	}
 	if cerrdefs.IsNotFound(err) {

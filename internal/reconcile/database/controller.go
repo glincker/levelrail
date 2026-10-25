@@ -771,7 +771,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		}
 		justDeployed = true
 
-	case !sameImageRef(state.Image, image):
+	case !docker.SameImageRef(state.Image, image):
 		// Sequential replace, never concurrent: see containerName's doc
 		// comment for why a database controller cannot use
 		// application.Controller's create-alongside-then-remove-old

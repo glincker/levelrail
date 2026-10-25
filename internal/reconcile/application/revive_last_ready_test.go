@@ -69,3 +69,26 @@ func TestReviveLastReady(t *testing.T) {
 		})
 	}
 }
+
+// Podman reports docker.io/ qualified image names; attempts keep the short ref.
+func TestReviveLastReady_PodmanQualifiedImageNames(t *testing.T) {
+	desired := &store.DesiredService{Name: "web", Image: "traefik/whoami:v2", Port: 80}
+	oldSvc := store.DesiredService{Name: "web", Image: "traefik/whoami:v1", Port: 80}
+	oldName := ContainerName("web", NameImage(oldSvc), "")
+	rt := newFakeRuntime(8080)
+	rt.createErr = errors.New("boom")
+	rt.seed(oldName, false)
+	rt.containers[oldName].Image = "docker.io/traefik/whoami:v1"
+	st := &historyStore{
+		fakeStore: fakeStore{svc: desired},
+		attempts: []store.DeployAttempt{
+			{ID: "d2", Image: "traefik/whoami:v2", Status: store.DeployAttemptStatusFailed},
+			{ID: "d1", Image: "traefik/whoami:v1", Status: store.DeployAttemptStatusSucceeded},
+		},
+	}
+	c := New("web", st, rt, WithRestartBackoff(NewRestartBackoff(time.Hour, time.Hour, time.Hour)))
+	_, _ = c.Reconcile(context.Background())
+	if !rt.containers[oldName].Running {
+		t.Error("dead live container with a qualified image name was not revived")
+	}
+}
