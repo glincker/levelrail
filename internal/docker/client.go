@@ -57,8 +57,12 @@ type Client struct {
 	// pool, when set, makes EnsureNetwork assign explicit subnets.
 	pool  *NetworkPool
 	alloc poolAllocator
-	stop  chan struct{}
-	close sync.Once
+	// identMu guards the cached engine-identity probe isPodman fills in.
+	identMu     sync.Mutex
+	identKnown  bool
+	identPodman bool
+	stop        chan struct{}
+	close       sync.Once
 }
 
 // ClientOption configures optional Client behavior at construction time.
@@ -92,7 +96,7 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	runtime := DetectRuntimeSocket(os.LookupEnv)
 	hardening, herr := HardeningFromEnv(runtime)
 	logHardeningEnv(herr)
-	c := &Client{hardening: hardening, runtime: runtime, pool: poolFromEnv(os.LookupEnv)}
+	c := &Client{hardening: hardening, runtime: runtime, pool: poolFromEnv(os.LookupEnv, runtime.Kind)}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -852,6 +856,9 @@ func (c *Client) Stop(ctx context.Context, id string, timeout time.Duration) err
 
 // Remove implements Runtime.
 func (c *Client) Remove(ctx context.Context, id string, force bool) error {
+	if force && c.isPodman(ctx) {
+		return c.removePodman(ctx, id)
+	}
 	if err := c.cli.ContainerRemove(ctx, id, container.RemoveOptions{Force: force}); err != nil {
 		if strings.Contains(err.Error(), "already in progress") && c.waitContainerGone(ctx, id) {
 			return nil

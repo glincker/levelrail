@@ -82,9 +82,22 @@ func (m *Manager) ReadChain(ctx context.Context) Chain {
 	}
 	out, err := m.run(ctx, "iptables", "-w", "-S", dockerUserChain)
 	if err != nil {
+		if isMissingChain(out) {
+			return Chain{NoChain: true, Reason: noChainReason}
+		}
 		return Chain{Reason: "could not read the DOCKER-USER chain: " + oneLine(out, err)}
 	}
 	return ParseChain(string(out))
+}
+
+// noChainReason keeps the "uses nftables" wording the exposure controller
+// matches on to log this once at info level.
+const noChainReason = "the DOCKER-USER chain does not exist here: this engine uses nftables (for example Podman with netavark), so iptables allow-lists cannot be applied"
+
+// isMissingChain recognises iptables and iptables-nft saying the chain is absent.
+func isMissingChain(out []byte) bool {
+	s := strings.ToLower(string(out))
+	return strings.Contains(s, "no chain/target/match") || strings.Contains(s, "no such chain")
 }
 
 func oneLine(out []byte, err error) string {
@@ -322,6 +335,10 @@ func (m *Manager) Sync(ctx context.Context, want []Restriction) SyncResult {
 	var res SyncResult
 	chain := m.ReadChain(ctx)
 	if !chain.Readable {
+		// Nothing to enforce means a missing chain is not worth reporting.
+		if chain.NoChain && len(want) == 0 {
+			return res
+		}
 		res.Errors = append(res.Errors, chain.Reason)
 		return res
 	}
