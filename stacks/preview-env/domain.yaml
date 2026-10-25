@@ -1,0 +1,6 @@
+version: 1
+kind: Domain
+metadata:
+  name: {{domain}}
+spec:
+  app: {{name}}

@@ -5,6 +5,7 @@
 
 ### Features
 
+* stacks: `stack templates` and `stack init <template>` copy one of five starter bundles (web app with Postgres, worker with Redis, static site, scheduled agent app, per-PR preview) into a directory with name, domain and image filled in, and refuse a non-empty directory without `--force`
 * headless first run: the setup admin's first password sign-in skips new-device approval within `APP_FIRST_LOGIN_TRUST_WINDOW` (default 30m) when no other session or trusted browser exists, an unscoped root token can approve or deny a waiting browser from the CLI during that window only (no trusted browser is granted), the trust is one-shot, bound to the setup device and spent atomically, an unparsable window value now turns it off, and a retried sign-in from the same browser returns its open approval instead of a new one
 * headless first run: the setup admin's first password sign-in skips new-device approval within `APP_FIRST_LOGIN_TRUST_WINDOW` (default 30m) when no other session or trusted browser exists, an unscoped root token can approve or deny a waiting browser from the CLI, and a retried sign-in from the same browser returns its open approval instead of a new one
 * stacks (experimental, behind `APP_EXPERIMENTAL=iac`): a stack keeps apps, databases, domains and other platform documents in git and applies them as numbered revisions, with `plan`, `apply`, `history`, `diff`, `rollback` (applied forward as a new revision), `pin`, `unpin`, `unlock` and `delete --mode forget|destroy`

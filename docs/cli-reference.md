@@ -1797,6 +1797,15 @@ levelrail-cli migrate caprover --url URL --token TOKEN [flags]
 
 One way migration from a live instance. By default it writes `app.yaml` files plus a migration report into `--out-dir` (default `./migrated`); `--apply` creates the apps directly on a target instance instead, using `--target-token`, `--target-api-url` and `--target-profile`. `--include-secret-values` also fetches real env var values. For Coolify, `--token` is an API bearer token (with the `read:sensitive` ability if you want secret values); for Dokploy it is an API key; for CapRover it is the login password.
 
+## Stack templates {#stack-templates}
+
+```
+levelrail-cli stack templates
+levelrail-cli stack init <template> [--dir DIR] [--set key=value]... [--force]
+```
+
+`stack templates` lists the bundled starter stacks: `web-app-postgres`, `worker-queue`, `static-site-cdn`, `agent-app` and `preview-env`. `stack init` copies one into `DIR` (default `./<name>`) and fills in the variables `name`, `domain` and `image`. It refuses a non-empty directory unless `--force` is set, and writes secret names only (`SECRETS.md`), never values. Both run offline. See [Stacks and GitOps](/stacks#start-from-a-template).
+
 ## Import
 
 ```

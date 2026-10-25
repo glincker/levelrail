@@ -70,6 +70,26 @@ levelrail-cli stack unpin shop-prod
 
 `plan`, `show` and `diff` change nothing. `apply` writes a new revision when it changes something. `plan --exit-code` exits 2 when changes are pending. Run `levelrail-cli stack --help` for the full list, including `show-revision`, `reject`, `unlock` and `delete`.
 
+## Start from a template
+
+Five starter bundles ship inside the CLI. Copy one out, fill in the variables, review the plan, then apply:
+
+```bash
+levelrail-cli stack templates
+levelrail-cli stack init web-app-postgres --dir infra/stacks/shop --set name=shop --set domain=shop.example.com
+levelrail-cli stack plan shop -f infra/stacks/shop
+```
+
+| Template | What it creates |
+| --- | --- |
+| `web-app-postgres` | an app, a Postgres database injected as `DATABASE_URL`, and a domain |
+| `worker-queue` | an app, a worker app and a Redis database |
+| `static-site-cdn` | an nginx image app and a domain |
+| `agent-app` | an app with a nightly scheduled job, a database and secret references |
+| `preview-env` | a small app and database for one pull request, named per PR |
+
+Each bundle holds `stack.yaml`, the platform documents, a `README.md` and a `SECRETS.md` that lists secret names only. The variables are `name` (stack, project and app name), `domain` and `image`, set with `--set key=value`. `init` refuses a directory that is not empty unless you pass `--force`, and it never contacts the control plane. Bundles use prebuilt images and no volumes, so push your image before the first apply.
+
 ## Migrate into a stack
 
 `levelrail-cli import config` and `levelrail-cli import platform` can write a stack instead of creating things, so a migration is a pull request you review before anything runs:

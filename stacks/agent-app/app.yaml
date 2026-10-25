@@ -1,0 +1,23 @@
+version: 1
+kind: App
+metadata:
+  name: {{name}}
+spec:
+  project: {{name}}
+  service:
+    build:
+      type: image
+      image: {{image}}
+    port: 8080
+    replicas: 1
+    health:
+      readiness: {path: /healthz}
+    env:
+      DATABASE_URL: {from: {database: main, field: url}}
+      MODEL_API_KEY: {secretRef: MODEL_API_KEY}
+      TOOL_WEBHOOK_SECRET: {secretRef: TOOL_WEBHOOK_SECRET}
+    jobs:
+      - name: nightly-run
+        schedule: "0 3 * * *"
+        command: [node, scripts/agent-run.js]
+        timeout: 30m

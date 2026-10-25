@@ -35,6 +35,8 @@ Stacks keep a named set of resources in git, plan each change, apply it as a
 numbered revision and roll back to any earlier one. Needs APP_EXPERIMENTAL=iac.
 
 Commands:
+  templates                             list the bundled starter stacks
+  init <template> [--dir D] [--set k=v] copy a starter stack into a directory
   list                                  list stacks
   show <name>                           one stack with its owned resources
   create <name> --project P             create an empty stack
@@ -67,6 +69,10 @@ func runStack(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 	}
 	rest := args[1:]
 	switch args[0] {
+	case "templates":
+		return stackTemplates(prog, rest, stdout, stderr)
+	case "init":
+		return stackInit(prog, rest, stdout, stderr)
 	case "list":
 		return stackList(prog, rest, stdout, stderr, lookupEnv)
 	case "show":
