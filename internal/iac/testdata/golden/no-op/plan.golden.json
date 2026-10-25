@@ -1,0 +1,41 @@
+{
+  "changes": [
+    {
+      "kind": "Project",
+      "name": "shop",
+      "action": "noop",
+      "file": "docs.yaml",
+      "line": 1
+    },
+    {
+      "kind": "Environment",
+      "name": "production",
+      "scope": "shop",
+      "action": "noop",
+      "file": "docs.yaml",
+      "line": 8
+    },
+    {
+      "kind": "Tag",
+      "name": "frontend",
+      "action": "noop",
+      "file": "docs.yaml",
+      "line": 13
+    },
+    {
+      "kind": "Database",
+      "name": "main-db",
+      "action": "noop",
+      "file": "docs.yaml",
+      "line": 17
+    }
+  ],
+  "summary": {
+    "create": 0,
+    "update": 0,
+    "delete": 0,
+    "noop": 4,
+    "error": 0
+  },
+  "hash": "e519090e63db27c6"
+}

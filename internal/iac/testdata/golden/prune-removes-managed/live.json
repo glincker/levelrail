@@ -1,0 +1,29 @@
+{
+  "projects": {
+    "p1": {
+      "id": "p1",
+      "name": "shop"
+    }
+  },
+  "tags": {
+    "t1": {
+      "id": "t1",
+      "name": "managed-by:git"
+    }
+  },
+  "apps": {
+    "stray": {
+      "name": "stray",
+      "image": "ghcr.io/acme/old:0.1",
+      "port": 8080,
+      "bind_address": "private",
+      "strategy": "blue-green",
+      "replicas": 1,
+      "project_id": "p1",
+      "tags": [
+        "managed-by:git"
+      ],
+      "env_dirty": false
+    }
+  }
+}

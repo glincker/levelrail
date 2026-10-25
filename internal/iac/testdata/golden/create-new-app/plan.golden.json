@@ -1,0 +1,93 @@
+{
+  "changes": [
+    {
+      "kind": "Project",
+      "name": "shop",
+      "action": "create",
+      "fields": [
+        {
+          "path": "env.REGION",
+          "op": "add",
+          "new": "(hidden)"
+        }
+      ],
+      "file": "docs.yaml",
+      "line": 1
+    },
+    {
+      "kind": "App",
+      "name": "web",
+      "action": "create",
+      "fields": [
+        {
+          "path": "bindAddress",
+          "op": "add",
+          "new": "private"
+        },
+        {
+          "path": "domains[app.example.com]",
+          "op": "add",
+          "new": "app.example.com"
+        },
+        {
+          "path": "env.LOG_LEVEL",
+          "op": "add",
+          "new": "(hidden)"
+        },
+        {
+          "path": "image",
+          "op": "add",
+          "new": "ghcr.io/acme/web:1.2.3"
+        },
+        {
+          "path": "port",
+          "op": "add",
+          "new": "3000"
+        },
+        {
+          "path": "project",
+          "op": "add",
+          "new": "shop"
+        },
+        {
+          "path": "replicas",
+          "op": "add",
+          "new": "2"
+        },
+        {
+          "path": "resources.cpu",
+          "op": "add",
+          "new": "0.5"
+        },
+        {
+          "path": "resources.memory",
+          "op": "add",
+          "new": "512Mi"
+        },
+        {
+          "path": "secretEnv[API_KEY]",
+          "op": "add",
+          "new": "API_KEY"
+        },
+        {
+          "path": "strategy",
+          "op": "add",
+          "new": "blue-green"
+        }
+      ],
+      "warnings": [
+        "secret API_KEY has no value yet; the app cannot use it until one is set"
+      ],
+      "file": "docs.yaml",
+      "line": 8
+    }
+  ],
+  "summary": {
+    "create": 2,
+    "update": 0,
+    "delete": 0,
+    "noop": 0,
+    "error": 0
+  },
+  "hash": "9c3945bfb39bce7c"
+}
