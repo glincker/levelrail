@@ -157,6 +157,13 @@
     "managedBy": "Managed by stack {{name}}",
     "short": "Stack {{name}}"
   },
+  "appPanel": {
+    "title": "Managed by stack",
+    "revision": "Revision {{number}}",
+    "lock": "Lock mode",
+    "hint": "Edit this in git; changes made here may be overwritten or blocked.",
+    "docs": "Stacks docs"
+  },
   "managedNotice": {
     "warn": "Managed by stack {{name}}. Manual changes may be reverted or reported as drift.",
     "lock": "Managed by stack {{name}}, which locks its resources. Manual changes may be refused or reverted."
