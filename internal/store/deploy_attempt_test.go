@@ -745,3 +745,26 @@ func TestRecoverRestartRollout(t *testing.T) {
 		t.Errorf("newer deploy status = %q, must stay failed", got)
 	}
 }
+
+func TestRecordRollout_NewServingAttemptSupersedesOlderServing(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	now := time.Now().UTC()
+	for i, img := range []string{"web:a", "web:b"} {
+		id := "dep_" + img
+		if err := db.SaveDeployAttempt(ctx, DeployAttempt{ID: id, ServiceName: "web", Image: img, Status: DeployAttemptStatusRunning, StartedAt: now.Add(time.Duration(i) * time.Minute)}); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.FinishDeployAttempt(ctx, id, DeployAttemptStatusSucceeded, now, ""); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.RecordRollout(ctx, "web", img, RolloutStateServing, "sha"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a, _ := db.GetDeployAttempt(ctx, "dep_web:a")
+	b, _ := db.GetDeployAttempt(ctx, "dep_web:b")
+	if a.RolloutState != RolloutStateSuperseded || b.RolloutState != RolloutStateServing {
+		t.Errorf("rollout a=%q b=%q, want superseded and serving", a.RolloutState, b.RolloutState)
+	}
+}

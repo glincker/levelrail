@@ -78,7 +78,7 @@ export interface DeployAttempt {
   live?: boolean
   /** Server classification, e.g. "rollback" for a redeploy of an earlier image. */
   trigger?: string
-  rollout_state?: 'serving' | 'mismatch'
+  rollout_state?: 'serving' | 'mismatch' | 'superseded'
   running_image_id?: string
   sequence?: number
   /** Why the attempt was held, superseded, or allowed through a freeze. */

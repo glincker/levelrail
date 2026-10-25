@@ -151,6 +151,9 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		}
 		note = strings.TrimSpace(note + " " + policyNote)
 	}
+	if rollbackTo == "" && req.Rollback {
+		rollbackTo = req.Image
+	}
 	if rollbackTo != "" {
 		note = strings.TrimSpace(note + " RollbackTo: " + rollbackTo)
 	}

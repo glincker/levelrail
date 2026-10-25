@@ -22,7 +22,7 @@ func TestListDeployAttempts_OnlyNewestSucceededIsLive(t *testing.T) {
 	seed := []store.DeployAttempt{
 		{ID: "d1", Image: "img:1", StartedAt: base},
 		{ID: "d2", Image: "img:2", StartedAt: base.Add(time.Minute)},
-		{ID: "d3", Image: "img:1", StartedAt: base.Add(2 * time.Minute)},
+		{ID: "d3", Image: "img:1", StartedAt: base.Add(2 * time.Minute), Reason: "RollbackTo: d1"},
 		{ID: "d4", Image: "img:2", StartedAt: base.Add(3 * time.Minute)},
 	}
 	for _, a := range seed {
@@ -45,10 +45,10 @@ func TestListDeployAttempts_OnlyNewestSucceededIsLive(t *testing.T) {
 	if !live["d4"] || live["d2"] || live["d1"] || live["d3"] {
 		t.Errorf("live = %v, want only d4", live)
 	}
-	if trig["d3"] != store.DeploymentTriggerRollback || trig["d4"] != store.DeploymentTriggerRollback {
-		t.Errorf("triggers = %v, want d3 and d4 rollback", trig)
+	if trig["d3"] != store.DeploymentTriggerRollback {
+		t.Errorf("triggers = %v, want d3 rollback", trig)
 	}
-	if trig["d2"] == store.DeploymentTriggerRollback || trig["d1"] == store.DeploymentTriggerRollback {
-		t.Errorf("triggers = %v, d1 and d2 are not rollbacks", trig)
+	if trig["d4"] != store.DeploymentTriggerManual || trig["d2"] == store.DeploymentTriggerRollback || trig["d1"] == store.DeploymentTriggerRollback {
+		t.Errorf("triggers = %v, a manual deploy of an older tag is not a rollback", trig)
 	}
 }

@@ -659,8 +659,9 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 		return notReady("StrategyUnrecognized", fmt.Errorf("unrecognized deploy strategy %q", strategy)), nil
 	}
 	if isReady(result) {
-		c.recordRollout(ctx, desired, store.RolloutStateServing, c.servingImageID)
+		// Recover first so RecordRollout then supersedes the older serving rows.
 		c.recoverRestart(ctx, desired)
+		c.recordRollout(ctx, desired, store.RolloutStateServing, c.servingImageID)
 	} else {
 		c.reviveLastReady(ctx, targets, desired)
 	}

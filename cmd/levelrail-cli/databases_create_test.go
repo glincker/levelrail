@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"reflect"
 	"strings"
 	"testing"
@@ -140,5 +141,13 @@ func TestPlanDatabaseCreate_ExistingVolume(t *testing.T) {
 		if err == nil && plan.ExistingVolume != tt.choice {
 			t.Errorf("choice %q: ExistingVolume = %q", tt.choice, plan.ExistingVolume)
 		}
+	}
+}
+
+func TestRunDatabasesCreate_PositionalNameGetsHint(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := runDatabasesCreate("levelrail-cli-test", []string{"v2-fresh"}, &stdout, &stderr, envMap(), strings.NewReader(""))
+	if got != exitValidation || !strings.Contains(stderr.String(), "--name v2-fresh") {
+		t.Fatalf("exit = %d stderr = %q, want a --name hint", got, stderr.String())
 	}
 }

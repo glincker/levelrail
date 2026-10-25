@@ -133,6 +133,10 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 		return runDatabasesCreateWizard(stdin, stdout, stderr, credentialFlags{Token: tokenFlag, APIURL: apiURLFlag, Profile: profileFlag}, of, lookupEnv, prog)
 	}
 
+	if fs.NArg() > 0 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("unexpected argument %q: the name is a flag, e.g. %s databases create --name %s --engine postgres --version 16", fs.Arg(0), prog, fs.Arg(0)))
+	}
+
 	var nodeIDSet bool
 	fs.Visit(func(fl *flag.Flag) {
 		if fl.Name == "node-id" {

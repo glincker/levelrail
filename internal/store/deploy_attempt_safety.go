@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -33,6 +34,8 @@ const (
 	RolloutStateServing  = "serving"
 	RolloutStateMismatch = "mismatch"
 	RolloutStateFailed   = "failed"
+	// RolloutStateSuperseded marks a once-serving attempt that a newer one replaced.
+	RolloutStateSuperseded = "superseded"
 )
 
 // Reasons recorded on held and superseded attempts.
@@ -66,6 +69,11 @@ func (db *DB) SetDeployAttemptRollout(ctx context.Context, id, state string) err
 	if n, err := res.RowsAffected(); err == nil && n == 0 {
 		return ErrDeployAttemptNotFound
 	}
+	if state == RolloutStateServing {
+		if err := db.supersedeServingBefore(ctx, id); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -83,6 +91,33 @@ func (db *DB) RecordRollout(ctx context.Context, serviceName, image, state, runn
 	`, state, runningImageID, serviceName, image, DeployAttemptStatusSucceeded, state, runningImageID)
 	if err != nil {
 		return fmt.Errorf("store: record rollout for %q: %w", serviceName, err)
+	}
+	if state != RolloutStateServing {
+		return nil
+	}
+	var id string
+	err = db.QueryRowContext(ctx, `
+		SELECT id FROM deploy_attempts WHERE service_name = ? AND image = ? AND status = ?
+		ORDER BY started_at DESC LIMIT 1`, serviceName, image, DeployAttemptStatusSucceeded).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("store: record rollout for %q: %w", serviceName, err)
+	}
+	return db.supersedeServingBefore(ctx, id)
+}
+
+// supersedeServingBefore marks every other serving attempt of the same app
+// superseded once id serves, so only the live release claims to serve.
+func (db *DB) supersedeServingBefore(ctx context.Context, id string) error {
+	_, err := db.ExecContext(ctx, `
+		UPDATE deploy_attempts SET rollout_state = ?
+		WHERE rollout_state = ? AND id <> ?
+		AND service_name = (SELECT service_name FROM deploy_attempts WHERE id = ?)`,
+		RolloutStateSuperseded, RolloutStateServing, id, id)
+	if err != nil {
+		return fmt.Errorf("store: supersede serving attempts before %q: %w", id, err)
 	}
 	return nil
 }
