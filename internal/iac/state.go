@@ -334,6 +334,10 @@ func (l loader) lb(ctx context.Context, app string) error {
 	}
 	var lb wireLB
 	if err := l.get(ctx, "/api/v1/apps/"+esc(app)+"/loadbalancer", &lb); err != nil {
+		if IsFeatureOff(err) {
+			// Feature off means no load balancer can exist, so there is nothing to read.
+			return nil
+		}
 		return l.st.note(resourceKey(KindLoadBalancer, "", app), fmt.Errorf("read load balancer of %s: %w", app, err))
 	}
 	l.st.lbs[app] = lb

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -36,6 +37,13 @@ func IsDenied(err error) bool {
 func IsNotFound(err error) bool {
 	var se *StatusError
 	return errors.As(err, &se) && se.Status == http.StatusNotFound
+}
+
+// IsFeatureOff reports whether err is the 404 a gated endpoint answers while
+// its beta feature is disabled.
+func IsFeatureOff(err error) bool {
+	var se *StatusError
+	return errors.As(err, &se) && se.Status == http.StatusNotFound && strings.Contains(se.Message, "feature is off by default")
 }
 
 func esc(s string) string { return url.PathEscape(s) }

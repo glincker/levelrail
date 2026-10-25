@@ -31,6 +31,7 @@ type fakeCP struct {
 	alerts    map[string]map[string]map[string]any
 	channels  []map[string]any
 	deny      func(method, path string) bool
+	lbOff     bool
 	writes    []string
 	routes    []fakeRoute
 }
@@ -253,6 +254,9 @@ func stringAny(v any) []any {
 
 func (f *fakeCP) extraRoutes() {
 	f.route("GET", `/api/v1/apps/([^/]+)/loadbalancer`, func(m []string, _ map[string]any) (any, error) {
+		if f.lbOff {
+			return nil, &StatusError{Status: http.StatusNotFound, Message: "the load-balancer feature is off by default; turn it on in Settings, Beta features (or set APP_EXPERIMENTAL=load-balancer on the server)"}
+		}
 		if c, ok := f.lbs[m[1]]; ok {
 			return map[string]any{"configured": true, "config": c}, nil
 		}

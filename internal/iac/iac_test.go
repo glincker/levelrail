@@ -971,3 +971,22 @@ func TestSplitLedgerKeyRejectsMalformed(t *testing.T) {
 		t.Fatal("environment key not split")
 	}
 }
+
+func TestPlanWorksWhenLoadBalancerFeatureIsOff(t *testing.T) {
+	f := newFake()
+	src := strings.Replace(fixture, "version: 1\nkind: LoadBalancer\nmetadata: {name: web}\nspec: {algorithm: least_conn}\n---\n", "", 1)
+	opts := Options{Source: "git", Secrets: map[string]string{"API_KEY": "k1", "web/DB_PASSWORD": "p1"}}
+	f.lbOff = true
+	if out := applyAll(t, f, src, opts); !out.OK() {
+		t.Fatalf("first apply = %+v", out)
+	}
+	again := planFor(t, f, src, Options{Source: "git"})
+	for _, c := range again.Changes {
+		if c.Action != ActionNoop {
+			t.Errorf("not idempotent with the feature off: %s %s", c.Action, c.Key())
+		}
+	}
+	if o := applyAll(t, f, src, Options{Source: "git"}); !o.OK() {
+		t.Fatalf("second apply = %+v", o)
+	}
+}
