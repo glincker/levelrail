@@ -51,6 +51,7 @@ Commands:
   unlock <name>                         release a stuck apply lease (root only)
   delete <name> [--mode forget|destroy] stop managing a stack, or also delete its resources
   settings <name> [flags]               show or change --allow-prune, --drift, --require-approval (root only)
+  trust add|list|remove <name> ...      OIDC trusts so CI needs no stored token (root only)
 
 Run '%[1]s stack <command> --help' for the flags of a command.
 `, prog)
@@ -98,6 +99,8 @@ func runStack(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return stackDelete(prog, rest, stdout, stderr, lookupEnv)
 	case "settings":
 		return stackSettings(prog, rest, stdout, stderr, lookupEnv)
+	case "trust":
+		return runStackTrust(prog, rest, stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "%s stack: unknown command %q\n\n%s", prog, args[0], stackUsage(prog))
 	return exitUsage

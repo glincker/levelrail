@@ -12,7 +12,9 @@ Stacks are gated by `APP_EXPERIMENTAL=iac`. The action sets it for the CLI; the 
 | `path` | yes | | Manifest file or directory. `kind: Stack` documents are stripped by the CLI and supply the default project and prune. |
 | `mode` | no | `plan` | `plan` or `apply`. |
 | `api-url` | yes | | Control plane base URL. |
-| `token` | yes | | API token with write access. Store it as a secret. |
+| `token` | no | | API token with write access. Store it as a secret. Not needed with `oidc: true`. |
+| `oidc` | no | `false` | `true` swaps the job's GitHub identity for a short-lived token bound to this stack. Needs `id-token: write`. See below. |
+| `oidc-audience` | no | `api-url` | Audience of the identity token. Must equal the dashboard URL in Levelrail Settings. |
 | `project` | no | | Needed when the stack does not exist yet. |
 | `prune` | no | `false` | Delete resources the files no longer declare. |
 | `vars` | no | | Newline list of `NAME=VALUE` placeholders. |
@@ -73,7 +75,44 @@ See [example-workflow.yml](example-workflow.yml).
 
 Use the minimum: `contents: read` at the workflow level, and `pull-requests: write` only on the job that posts the comment. The apply job does not need it.
 
-Stack-scoped OIDC tokens are not available yet, so the action cannot swap the job identity for a token. Create a write token in Levelrail and store it as a repository or environment secret (`LEVELRAIL_TOKEN`). Prefer environment secrets so the production token is only released to the approved production job. Rotate it if it leaks.
+Either use OIDC (below) or create a write token in Levelrail and store it as a repository or environment secret (`LEVELRAIL_TOKEN`). Prefer environment secrets so the production token is only released to the approved production job. Rotate it if it leaks.
+
+### OIDC, no stored secret
+
+With `oidc: true` the action asks GitHub for the job's identity token (audience: your dashboard URL), posts it to `POST /api/v1/ci/stack-oidc-exchange` and gets back a token that lives `APP_STACK_OIDC_TTL` (default 15 minutes), is bound to this one stack and holds only the verbs the matching trust allows. The token is masked with `::add-mask::` and is never written to the environment or the logs. The job needs `id-token: write`.
+
+A root user registers what each workflow may do, once per stack:
+
+```
+levelrail-cli stack trust add shop-prod --repo acme/shop --ref 'refs/pull/*/merge' --verbs plan
+levelrail-cli stack trust add shop-prod --repo acme/shop --ref refs/heads/main --environment production --verbs plan,apply
+```
+
+Rules the server enforces, and fails closed on (HTTP 403, same answer for every miss):
+
+- `repository` is an exact `owner/name`. `ref_pattern` is an exact ref or has at most one `*` per `/` segment (`refs/pull/*/merge`, `refs/tags/v*`). No regex.
+- An `apply` trust needs an exact branch or tag ref (no `*`, never a pull request) and an `environment`. Plan trusts may be broader.
+- A token never gets more than the trust's verbs, and never destroy, unlock, settings, approve or pin.
+- If two trusts match one workflow identity, the exchange is refused. Make the patterns disjoint.
+
+```yaml
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: glincker/levelrail/integrations/github-action/stack@main
+        with:
+          stack: shop-prod
+          path: stacks/shop
+          mode: apply
+          api-url: https://levelrail.example.com
+          oidc: 'true'
+```
 
 Approvals need a root token, stored as a production environment secret (`LEVELRAIL_ROOT_TOKEN`) and released only to the approve job. Do not reuse the CI write token for approvals: it cannot approve.
 

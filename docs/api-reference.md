@@ -1973,6 +1973,10 @@ Routes that do not fit an existing group.
 | POST | /api/v1/stacks/{name}/unlock | AbilityRoot | handleStackUnlock |
 | POST | /api/v1/stacks/{name}/revisions/{n}/approve | AbilityRoot | handleStackApprove |
 | POST | /api/v1/stacks/{name}/revisions/{n}/reject | AbilityRoot | handleStackReject |
+| POST | /api/v1/stacks/{name}/oidc-trusts | AbilityRoot | handleCreateStackTrust |
+| GET | /api/v1/stacks/{name}/oidc-trusts | AbilityRoot | handleListStackTrusts |
+| DELETE | /api/v1/stacks/{name}/oidc-trusts/{id} | AbilityRoot | handleDeleteStackTrust |
+| POST | /api/v1/ci/stack-oidc-exchange | Public | handleStackOIDCExchange |
 
 ## See also
 

@@ -380,7 +380,7 @@ var Tree = map[string]*Node{
 	"policy":         {Subs: map[string]*Node{"list": nil, "set": nil, "check": nil}},
 	"cdn":            {Subs: map[string]*Node{"overview": nil}},
 	"event-webhooks": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "deliveries": nil, "replay": nil, "enable": nil, "disable": nil, "rotate-secret": nil, "delete": nil}},
-	"stack":          {Subs: map[string]*Node{"list": nil, "show": nil, "create": nil, "plan": nil, "apply": nil, "history": nil, "show-revision": nil, "diff": nil, "rollback": nil, "approve": nil, "reject": nil, "pin": nil, "unpin": nil, "unlock": nil, "delete": nil, "settings": nil}},
+	"stack":          {Subs: map[string]*Node{"list": nil, "show": nil, "create": nil, "plan": nil, "apply": nil, "history": nil, "show-revision": nil, "diff": nil, "rollback": nil, "approve": nil, "reject": nil, "pin": nil, "unpin": nil, "unlock": nil, "delete": nil, "settings": nil, "trust": {Subs: map[string]*Node{"add": nil, "list": nil, "remove": nil}}}},
 	"export":         {Subs: map[string]*Node{"destinations": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "status": nil, "enable": nil, "disable": nil, "delete": nil}}, "audit": nil}},
 	"import":         {Subs: map[string]*Node{"config": nil, "repo": {Subs: map[string]*Node{"plan": nil, "apply": nil}}, "platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}, "takeover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil}}}},
 	"completion":     {Subs: map[string]*Node{"bash": nil, "zsh": nil, "fish": nil}},

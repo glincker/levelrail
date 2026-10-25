@@ -19,8 +19,17 @@ inputs:
     description: 'Levelrail control plane base URL'
     required: true
   token:
-    description: 'Levelrail API token with write access. Store it as a repository or environment secret.'
-    required: true
+    description: 'Levelrail API token with write access. Store it as a repository or environment secret. Not needed with oidc: "true".'
+    required: false
+    default: ''
+  oidc:
+    description: 'Set to "true" to swap the GitHub OIDC identity of this job for a short-lived token bound to this stack, instead of a stored token. Needs permissions id-token: write and a stack trust that matches this repository, ref and environment.'
+    required: false
+    default: 'false'
+  oidc-audience:
+    description: 'Audience of the GitHub identity token. Must equal the dashboard URL set in Levelrail Settings. Defaults to api-url.'
+    required: false
+    default: ''
   project:
     description: 'Project of the stack. Needed when the stack does not exist yet.'
     required: false
@@ -87,6 +96,45 @@ runs:
         LEVELRAIL_CLI_INSTALL_DIR="$install_dir" sh "${GITHUB_ACTION_PATH}/../../../install-cli.sh"
         echo "$install_dir" >> "$GITHUB_PATH"
 
+    - name: Exchange OIDC identity
+      id: oidc
+      if: ${{ inputs.oidc == 'true' }}
+      shell: bash
+      env:
+        LR_API_URL: ${{ inputs.api-url }}
+        LR_AUDIENCE: ${{ inputs.oidc-audience }}
+        LR_STACK: ${{ inputs.stack }}
+      run: |
+        set -euo pipefail
+        if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] || [ -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]; then
+          echo "::error::oidc needs the job permission id-token: write"
+          exit 1
+        fi
+        api="${LR_API_URL%/}"
+        audience="${LR_AUDIENCE:-$api}"
+        # The request token only lets this job ask GitHub for its own identity.
+        [ -z "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ] || echo "::add-mask::$ACTIONS_ID_TOKEN_REQUEST_TOKEN"
+        enc=$(jq -rn --arg a "$audience" '$a | @uri')
+        jwt=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${enc}" | jq -r '.value // ""')
+        if [ -z "$jwt" ]; then
+          echo "::error::GitHub did not return an identity token"
+          exit 1
+        fi
+        echo "::add-mask::$jwt"
+        body=$(jq -n --arg stack "$LR_STACK" --arg id_token "$jwt" '{stack: $stack, id_token: $id_token}')
+        resp="${RUNNER_TEMP:-/tmp}/lr-stack-oidc.json"
+        code=$(curl -sS -o "$resp" -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d "$body" "$api/api/v1/ci/stack-oidc-exchange")
+        if [ "$code" != "200" ]; then
+          echo "::error::OIDC exchange refused with HTTP $code: $(jq -r '.error // "no detail"' "$resp" 2>/dev/null || echo "no detail")"
+          rm -f "$resp"
+          exit 1
+        fi
+        token=$(jq -r '.token // ""' "$resp")
+        rm -f "$resp"
+        [ -n "$token" ] || { echo "::error::exchange returned no token"; exit 1; }
+        echo "::add-mask::$token"
+        echo "token=$token" >> "$GITHUB_OUTPUT"
+
     - name: Plan
       id: plan
       if: ${{ inputs.mode == 'plan' }}
@@ -94,7 +142,7 @@ runs:
       env:
         APP_EXPERIMENTAL: iac
         LEVELRAIL_API_URL: ${{ inputs.api-url }}
-        LEVELRAIL_TOKEN: ${{ inputs.token }}
+        LEVELRAIL_TOKEN: ${{ steps.oidc.outputs.token || inputs.token }}
         LR_STACK: ${{ inputs.stack }}
         LR_PATH: ${{ inputs.path }}
         LR_PROJECT: ${{ inputs.project }}
@@ -194,7 +242,7 @@ runs:
       env:
         APP_EXPERIMENTAL: iac
         LEVELRAIL_API_URL: ${{ inputs.api-url }}
-        LEVELRAIL_TOKEN: ${{ inputs.token }}
+        LEVELRAIL_TOKEN: ${{ steps.oidc.outputs.token || inputs.token }}
         LR_STACK: ${{ inputs.stack }}
         LR_PATH: ${{ inputs.path }}
         LR_PROJECT: ${{ inputs.project }}

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1748 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1752 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -956,6 +956,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/cdn/overview", Ability: "AbilityRead", Group: "Other", Handler: "handleCDNOverview", Description: ""},
 	{Method: "GET", Path: "/api/v1/changelog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetChangelog", Description: "\"What's new\" dashboard panel: recent entries parsed from the repo's own CHANGELOG.md, AbilityRead like updates above."},
 	{Method: "POST", Path: "/api/v1/ci/oidc-exchange", Ability: "Public", Group: "Other", Handler: "handleCIOIDCExchange", Description: ""},
+	{Method: "POST", Path: "/api/v1/ci/stack-oidc-exchange", Ability: "Public", Group: "Other", Handler: "handleStackOIDCExchange", Description: ""},
 	{Method: "GET", Path: "/api/v1/cleanup", Ability: "AbilityRead", Group: "Other", Handler: "handleGetCleanup", Description: ""},
 	{Method: "GET", Path: "/api/v1/cleanup/runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListCleanupRuns", Description: ""},
 	{Method: "PUT", Path: "/api/v1/cleanup/{id}/mode", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetCleanupMode", Description: ""},
@@ -1456,6 +1457,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/stacks/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetStack", Description: ""},
 	{Method: "PATCH", Path: "/api/v1/stacks/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateStackSettings", Description: ""},
 	{Method: "POST", Path: "/api/v1/stacks/{name}/apply", Ability: "AbilityWrite", Group: "Other", Handler: "handleStackApply", Description: ""},
+	{Method: "GET", Path: "/api/v1/stacks/{name}/oidc-trusts", Ability: "AbilityRoot", Group: "Other", Handler: "handleListStackTrusts", Description: ""},
+	{Method: "POST", Path: "/api/v1/stacks/{name}/oidc-trusts", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateStackTrust", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/stacks/{name}/oidc-trusts/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteStackTrust", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/stacks/{name}/pin", Ability: "AbilityWrite", Group: "Other", Handler: "handleStackUnpin", Description: ""},
 	{Method: "PUT", Path: "/api/v1/stacks/{name}/pin", Ability: "AbilityWrite", Group: "Other", Handler: "handleStackPin", Description: ""},
 	{Method: "POST", Path: "/api/v1/stacks/{name}/plan", Ability: "AbilityRead", Group: "Other", Handler: "handleStackPlan", Description: ""},
