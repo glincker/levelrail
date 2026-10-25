@@ -62,6 +62,7 @@ type StackStore interface {
 	GetStackResourceOwner(ctx context.Context, kind, key string) (store.StackLedgerEntry, bool, error)
 	GetStackLock(ctx context.Context, stackID string) (store.StackLockRecord, bool, error)
 	AcquireStackLock(ctx context.Context, stackID, holder string, revision int, ttl time.Duration, now time.Time) (store.StackLockRecord, error)
+	RenewStackLock(ctx context.Context, stackID, holder string, ttl time.Duration, now time.Time) (store.StackLockRecord, error)
 	ReleaseStackLock(ctx context.Context, stackID, holder string) error
 	ForceReleaseStackLock(ctx context.Context, stackID string) error
 }
@@ -77,6 +78,55 @@ func (rt *Router) stackStore() StackStore {
 }
 
 func stackResourceFromPath(r *http.Request) string { return "stack:" + r.PathValue("name") }
+
+// stackLockRenewEvery is how often an apply renews its lease: the TTL divided
+// by APP_STACK_LOCK_RENEW_FRACTION (default 3), so one missed tick is survivable.
+func stackLockRenewEvery(ttl time.Duration) time.Duration {
+	fraction := 3
+	if n, err := strconv.Atoi(os.Getenv("APP_STACK_LOCK_RENEW_FRACTION")); err == nil && n >= 2 {
+		fraction = n
+	}
+	return ttl / time.Duration(fraction)
+}
+
+// errStackLeaseLost cancels an apply whose lease another holder took over.
+var errStackLeaseLost = errors.New("the stack lease was lost during apply; another apply may hold it now")
+
+// keepStackLease renews the lease until stop is called and cancels the
+// returned context when a renewal finds the lease gone.
+func keepStackLease(ctx context.Context, ss StackStore, stackID, holder string, ttl time.Duration) (context.Context, func() bool) {
+	lctx, cancel := context.WithCancelCause(ctx)
+	done := make(chan struct{})
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		t := time.NewTicker(stackLockRenewEvery(ttl))
+		defer t.Stop()
+		for {
+			select {
+			case <-done:
+				return
+			case <-lctx.Done():
+				return
+			case <-t.C:
+				if _, err := ss.RenewStackLock(context.WithoutCancel(ctx), stackID, holder, ttl, time.Now()); errors.Is(err, store.ErrStackLockLost) {
+					cancel(errStackLeaseLost)
+					return
+				}
+			}
+		}
+	}()
+	return lctx, func() bool {
+		close(done)
+		<-finished
+		lost := errors.Is(context.Cause(lctx), errStackLeaseLost)
+		cancel(nil)
+		return lost
+	}
+}
+
+// stackBeforeApply is a test seam that runs right before iac.Apply.
+var stackBeforeApply func()
 
 func stackLockTTL() time.Duration {
 	if d, err := time.ParseDuration(os.Getenv("APP_STACK_LOCK_TTL")); err == nil && d > 0 {
@@ -759,11 +809,20 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		return
 	}
 
-	applyCtx := iac.WithStackScope(lctx, iac.StackScope{StackID: stack.ID, StackName: stack.Name, Revision: rev.Number})
+	leaseCtx, stopLease := keepStackLease(lctx, ss, stack.ID, holder, stackLockTTL())
+	if stackBeforeApply != nil {
+		stackBeforeApply()
+	}
+	applyCtx := iac.WithStackScope(leaseCtx, iac.StackScope{StackID: stack.ID, StackName: stack.Name, Revision: rev.Number})
 	out, aerr := iac.Apply(applyCtx, doer, res, opts, plan.Hash)
+	leaseLost := stopLease()
 	status := store.StackRevFailed
 	var resultJSON []byte
-	if aerr == nil {
+	if leaseLost {
+		// Ownership may have moved under another holder: record nothing in the ledger.
+		resultJSON, _ = json.Marshal(map[string]any{"error": errStackLeaseLost.Error(), "result": out})
+		aerr = errStackLeaseLost
+	} else if aerr == nil {
 		resultJSON, _ = json.Marshal(out)
 		switch {
 		case out.OK():
@@ -784,6 +843,10 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 		"stack": stack.Name, "revision": rev.Number, "plan_hash": plan.Hash, "git_sha": req.GitSHA, "status": status, "rollback_of": run.rollbackOf,
 		"counts": map[string]int{"create": plan.Summary.Create, "update": plan.Summary.Update, "delete": plan.Summary.Delete, "noop": plan.Summary.Noop, "error": plan.Summary.Error},
 	})
+	if leaseLost {
+		writeError(w, http.StatusConflict, errStackLeaseLost.Error()+"; the revision was marked failed, re-plan and apply again")
+		return
+	}
 	if aerr != nil {
 		rt.internalError(w, "api: stack apply failed", aerr)
 		return

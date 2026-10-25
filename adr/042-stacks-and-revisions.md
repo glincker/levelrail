@@ -98,7 +98,8 @@ the hardening wave.
 ### 4. Locks are a lease
 
 Apply, rollback and prune require holding the stack lease (holder, revision,
-expiry). Lease length comes from `APP_STACK_LOCK_TTL`. The plan hash is
+expiry). Lease length comes from `APP_STACK_LOCK_TTL`; an apply renews it every
+TTL divided by `APP_STACK_LOCK_RENEW_FRACTION` (default 3) and fails if it is lost. The plan hash is
 re-checked under the lease, which closes the race left by the current
 check-then-run order. An expired lease may be taken over. A stale lease can be
 force-released with `unlock`, which is a human action.
