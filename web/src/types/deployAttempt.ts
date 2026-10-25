@@ -41,6 +41,7 @@ export type DeployAttemptSource =
   | 'auto_rollback'
   | 'restart'
   | 'start'
+  | 'stop'
   | 'git_push'
   | 'poll'
   | 'upload'

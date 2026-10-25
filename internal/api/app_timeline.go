@@ -189,6 +189,9 @@ func attemptTimelineItem(a store.DeployAttempt, rollback bool) timelineItem {
 	if a.Source == store.DeployAttemptSourceStart {
 		verb = "Start on"
 	}
+	if a.Source == store.DeployAttemptSourceStop {
+		verb = "Stop on"
+	}
 	image := displayImage(a.Image)
 	item := timelineItem{
 		ID: timelineDeployPrefix + a.ID, At: a.StartedAt.UTC(), Kind: kind,
@@ -217,7 +220,7 @@ func attemptActor(source string) string {
 		return "webhook"
 	case store.DeployAttemptSourceAutoRollback:
 		return "auto-rollback"
-	case store.DeployAttemptSourceManual, store.DeployAttemptSourceImage, store.DeployAttemptSourceRestart, store.DeployAttemptSourceStart, "":
+	case store.DeployAttemptSourceManual, store.DeployAttemptSourceImage, store.DeployAttemptSourceRestart, store.DeployAttemptSourceStart, store.DeployAttemptSourceStop, "":
 		return "manual"
 	default:
 		return source

@@ -262,6 +262,8 @@ func triggerEvent(in Inputs) (Event, TriggerInfo) {
 		e.Code, e.Title = "trigger.restart", "Restart requested"
 	case store.DeployAttemptSourceStart:
 		e.Code, e.Title = "trigger.start", "Start requested"
+	case store.DeployAttemptSourceStop:
+		e.Code, e.Title = "trigger.stop", "Stop requested"
 	case store.DeployAttemptSourceAutoRollback:
 		e.Code, e.Title = "trigger.auto_rollback", "Automatic rollback started"
 	default:

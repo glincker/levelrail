@@ -1161,6 +1161,10 @@ func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: stop app failed", err, slog.String("name", name))
 		return
 	}
+	// A stop on a reachable node needs no row; a queued one does, so history matches intent.
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil && rt.offlineNodeFor(r.Context(), *svc) != nil {
+		rt.recordPendingAttempt(r.Context(), *svc, svc.Image, store.DeployAttemptSourceStop)
+	}
 
 	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventSuspend, Title: "Stopped"})
 	rt.reloadAndWriteApp(w, r, name, "stop app")

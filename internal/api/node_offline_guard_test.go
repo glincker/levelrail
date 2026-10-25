@@ -96,3 +96,19 @@ func TestOnlineNodeDeployUnaffected(t *testing.T) {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestOfflineNodeStopQueueOverrideRecordsPending(t *testing.T) {
+	rt, db, cookie := seedOfflineNodeApp(t)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/stop?queue_while_offline=true", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	attempts, err := db.ListDeployAttempts(context.Background(), "web")
+	if err != nil || len(attempts) != 1 {
+		t.Fatalf("attempts = %v, err = %v", attempts, err)
+	}
+	if attempts[0].Status != store.DeployAttemptStatusPending || attempts[0].Source != store.DeployAttemptSourceStop {
+		t.Errorf("attempt = %+v, want pending stop", attempts[0])
+	}
+}
