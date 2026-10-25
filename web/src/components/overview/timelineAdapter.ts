@@ -28,6 +28,7 @@ const SOURCE_ACTOR: Record<DeployAttemptSource, string> = {
   schedule: 'schedule',
   auto_rollback: 'auto rollback',
   restart: 'restart',
+  start: 'start',
   git_push: 'git push',
   poll: 'poll',
   upload: 'cli upload',

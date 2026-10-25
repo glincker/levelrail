@@ -78,4 +78,5 @@ export const DEPLOY_ATTEMPT_SOURCE_LABEL: Record<DeployAttemptSource, string> =
     poll: 'Poll, webhook not received',
     upload: 'Uploaded',
     restart: 'Restart',
+    start: 'Start',
   }
