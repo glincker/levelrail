@@ -395,6 +395,7 @@ func (s *bootState) startReconciler() {
 		previewNotifier:              previewManager,
 	}
 	engine.SetSource(dynamicSource(sourceDeps))
+	engine.SetKeyed(application.IsServiceControllerName)
 	scheduledTaskRunner.Specs = newJobSpecBuilder(sourceDeps)
 	scheduledTaskRunner.Resolver = func(nodeID string) (docker.Runtime, error) {
 		return resolveNodeTransport(client, agentRegistry, runtimeNodeID(sourceDeps, nodeID))

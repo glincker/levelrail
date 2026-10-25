@@ -569,6 +569,13 @@ func (c *Controller) Name() string { return ControllerName(c.serviceName) }
 // ControllerName is Name's naming convention, usable without a *Controller.
 func ControllerName(serviceName string) string { return "application/" + serviceName }
 
+// IsServiceControllerName reports whether name is one service's controller
+// (or its node-offline stand-in), as opposed to a fleet-wide application controller.
+func IsServiceControllerName(name string) bool {
+	svc, ok := strings.CutPrefix(name, "application/")
+	return ok && svc != "" && svc != "delete-finalizer" && svc != "network-cleanup" && !strings.Contains(svc, "/")
+}
+
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	started, err := c.store.GetDesiredService(ctx, c.serviceName)
