@@ -26,6 +26,7 @@ import (
 type Client struct {
 	bk     *bkclient.Client
 	docker *dockerclient.Client
+	engine engineVersioner
 	cache  CacheConfig
 }
 
