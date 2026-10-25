@@ -7,6 +7,7 @@ import { SleepHistoryCard } from '../../../components/SleepHistoryCard'
 import { OverviewPage } from '../../../components/overview/OverviewPage'
 import { RecommendedNextCard } from '../../../components/overview/RecommendedNextCard'
 import { ManagedByStackPanel } from '../../../components/apps/ManagedByStackPanel'
+import { PendingChangesNotice } from '../../../components/apps/PendingChangesNotice'
 import { PanelHost } from '../../../components/plugins/PanelHost'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -26,6 +27,7 @@ function OverviewSection() {
   return (
     <div className="space-y-6">
       <ManagedByStackPanel stack={app.managed_by_stack} />
+      <PendingChangesNotice appName={name} />
       <FailureContextCard appName={name} />
       <RecommendedNextCard app={app} latest={attempts[0]} />
       <OverviewPage app={app} conditions={conditions} attempts={attempts} />

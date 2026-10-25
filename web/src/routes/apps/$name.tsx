@@ -134,7 +134,9 @@ function AppDetailLayout() {
       <PublishLockBanner appName={app.name} />
       <AppMaintenanceBanner appName={app.name} />
       <FixReturnBanner appName={app.name} image={app.image} />
-      <ManagedByStackBanner stack={app.managed_by_stack} />
+      {isOverview ? null : (
+        <ManagedByStackBanner stack={app.managed_by_stack} />
+      )}
     </>
   )
   const content = (
