@@ -188,7 +188,9 @@ var catalogBatch6Templates = []Template{
   marimo:
     image: ghcr.io/marimo-team/marimo:latest-sql
     ports: ["8080:8080"]
-    command: ["marimo", "edit", "--token-password", "$SERVICE_PASSWORD_MARIMO", "--port", "8080", "--host", "0.0.0.0"]
+    environment:
+      MARIMO_TOKEN_PASSWORD: $SERVICE_PASSWORD_MARIMO
+    command: ["/bin/sh", "-c", "exec marimo edit --token-password \"$MARIMO_TOKEN_PASSWORD\" --port 8080 --host 0.0.0.0"]
     volumes:
       - marimo_data:/app
     healthcheck:
@@ -368,11 +370,13 @@ var catalogBatch6Templates = []Template{
       retries: 10
   redis:
     image: redis:7-alpine
-    command: redis-server --requirepass $SERVICE_PASSWORD_REDIS
+    environment:
+      REDIS_PASSWORD: $SERVICE_PASSWORD_REDIS
+    command: ["/bin/sh", "-c", "exec redis-server --requirepass \"$REDIS_PASSWORD\""]
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a $$SERVICE_PASSWORD_REDIS ping || exit 1"]
+      test: ["CMD-SHELL", "redis-cli -a \"$REDIS_PASSWORD\" ping | grep -q PONG || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

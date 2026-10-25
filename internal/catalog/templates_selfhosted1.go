@@ -243,7 +243,9 @@ var selfhosted1Templates = []Template{
 		Compose: `services:
   copyparty:
     image: copyparty/ac:1.20.24
-    command: ["-a", "admin:$SERVICE_PASSWORD_ADMIN", "-v", "/w::rw,admin"]
+    environment:
+      ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+    entrypoint: ["/bin/sh", "-c", "exec python3 -m copyparty -a \"admin:$ADMIN_PASSWORD\" -v /w::rw,admin"]
     ports: ["3923:3923"]
     volumes:
       - copyparty_files:/w

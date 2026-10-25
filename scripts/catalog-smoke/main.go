@@ -203,6 +203,7 @@ func dropHostPorts(body string, dropHealth bool) (string, error) {
 				continue
 			}
 			delete(svc, "ports")
+			escapeContainerVars(svc)
 			// Only HTTP probes are dropped: a database healthcheck still gates depends_on.
 			if hc, ok := svc["healthcheck"].(map[string]any); ok && dropHealth && strings.Contains(fmt.Sprint(hc["test"]), "http") {
 				delete(svc, "healthcheck")
@@ -225,6 +226,44 @@ func dropHostPorts(body string, dropHealth bool) (string, error) {
 		return "", err
 	}
 	return string(out), nil
+}
+
+// escapeContainerVars rewrites $KEY to $$KEY in command, entrypoint and healthcheck
+// for keys the service declares in environment. The platform leaves those to the
+// container shell, but docker compose would expand them from the host (blank).
+func escapeContainerVars(svc map[string]any) {
+	env, _ := svc["environment"].(map[string]any)
+	if len(env) == 0 {
+		return
+	}
+	names := make([]string, 0, len(env))
+	for k := range env {
+		names = append(names, regexp.QuoteMeta(k))
+	}
+	re := regexp.MustCompile(`(^|[^$])\$(\{(?:` + strings.Join(names, "|") + `)\}|(?:` + strings.Join(names, "|") + `)\b)`)
+	esc := func(s string) string { return re.ReplaceAllString(s, "${1}$$$$${2}") }
+	var walk func(v any) any
+	walk = func(v any) any {
+		switch t := v.(type) {
+		case string:
+			return esc(t)
+		case []any:
+			for i := range t {
+				t[i] = walk(t[i])
+			}
+		}
+		return v
+	}
+	for _, k := range []string{"command", "entrypoint"} {
+		if v, ok := svc[k]; ok {
+			svc[k] = walk(v)
+		}
+	}
+	if hc, ok := svc["healthcheck"].(map[string]any); ok {
+		if v, ok := hc["test"]; ok {
+			hc["test"] = walk(v)
+		}
+	}
 }
 
 // namedVolume returns the volume name when v mounts a named volume, since
