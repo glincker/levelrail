@@ -104,3 +104,11 @@ func TestContainerSpecFromPB_NilDoesNotPanic(t *testing.T) {
 		t.Errorf("containerSpecFromPB(nil) = %+v, want zero value", got)
 	}
 }
+
+func TestContainerStateLabelsSurviveTheWire(t *testing.T) {
+	in := &docker.ContainerState{ID: "c1", Name: "db", Running: true, Labels: map[string]string{"levelrail.tls-cert": "ecdsa"}}
+	got := containerStateFromPB(containerStateToPB(in))
+	if got.Labels["levelrail.tls-cert"] != "ecdsa" {
+		t.Errorf("labels = %v, want them carried so a reconnect adopts the container", got.Labels)
+	}
+}

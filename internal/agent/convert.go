@@ -192,6 +192,7 @@ func containerStateToPB(s *docker.ContainerState) *agentpb.ContainerState {
 		Image:   s.Image,
 		Running: s.Running,
 		Ports:   portBindingsToPB(s.Ports),
+		Labels:  s.Labels,
 	}
 }
 
@@ -205,6 +206,7 @@ func containerStateFromPB(s *agentpb.ContainerState) *docker.ContainerState {
 		Image:   s.Image,
 		Running: s.Running,
 		Ports:   portBindingsFromPB(s.Ports),
+		Labels:  s.Labels,
 	}
 }
 

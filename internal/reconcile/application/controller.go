@@ -2181,7 +2181,7 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 		return c.watchStartup(ctx, state.Name, desired)
 	}
 
-	target, err := probeTarget(state, *readiness)
+	target, err := c.probeTarget(ctx, state, *readiness, desired.NodeID)
 	if err != nil {
 		// No published port here almost always means the container
 		// already died (Docker clears bindings once it stops).
@@ -2290,7 +2290,7 @@ func (c *Controller) verifyRunningReady(ctx context.Context, state *docker.Conta
 		return nil
 	}
 
-	target, err := probeTarget(state, *readiness)
+	target, err := c.probeTarget(ctx, state, *readiness, desired.NodeID)
 	if err != nil {
 		return fmt.Errorf("readiness recheck: %w", err)
 	}

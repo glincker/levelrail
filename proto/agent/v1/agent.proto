@@ -462,6 +462,8 @@ message ContainerState {
   string image = 3;
   bool running = 4;
   repeated PortBinding ports = 5;
+  // labels let reconcilers adopt a container by its labels after a reconnect.
+  map<string, string> labels = 6;
 }
 
 message ImageInfo {

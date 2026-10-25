@@ -130,7 +130,7 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 		passes   = cfg.SuccessThreshold
 	)
 	if readiness != nil {
-		t, err := probeTarget(state, *readiness)
+		t, err := c.probeTarget(ctx, state, *readiness, desired.NodeID)
 		if err != nil {
 			return &gateError{reason: deploysafety.ReasonExitedDuringWindow, message: fmt.Sprintf("stability gate: %v", err)}
 		}
