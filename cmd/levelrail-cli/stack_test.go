@@ -121,6 +121,41 @@ func TestStackPlan_StripsStackDocAndUsesItsDefaults(t *testing.T) {
 	}
 }
 
+func TestStackPlan_SendsSecretsLikeApply(t *testing.T) {
+	const secret = "hunter2-secret"
+	env := map[string]string{"DBPW": secret}
+
+	f := &stackFake{t: t, plan: pendingPlan(), status: "applied"}
+	srv := httptest.NewServer(f.handler())
+	defer srv.Close()
+	dir := stackTestDir(t)
+	planArgs := []string{"stack", "plan", "shop", "-f", dir, "--secret", "DB_PASSWORD=DBPW", "--api-url", srv.URL}
+	code, out, errOut := runIaC(planArgs, env)
+	if code != exitOK {
+		t.Fatalf("plan exit = %d\n%s%s", code, out, errOut)
+	}
+	planReq := f.requests["/api/v1/stacks/shop/plan"]
+	if planReq.Secrets["DB_PASSWORD"] != secret {
+		t.Fatalf("plan did not send the secret: %+v", planReq.Secrets)
+	}
+	if strings.Contains(out+errOut, secret) {
+		t.Errorf("plan printed the secret value:\n%s%s", out, errOut)
+	}
+
+	applyArgs := []string{"stack", "apply", "shop", "-f", dir, "--secret", "DB_PASSWORD=DBPW", "--api-url", srv.URL, "--yes"}
+	code, out, errOut = runIaC(applyArgs, env)
+	if code != exitOK {
+		t.Fatalf("apply exit = %d\n%s%s", code, out, errOut)
+	}
+	applyReq := f.requests["/api/v1/stacks/shop/apply"]
+	if planReq.Secrets["DB_PASSWORD"] != applyReq.Secrets["DB_PASSWORD"] || len(planReq.Files) != len(applyReq.Files) || planReq.Project != applyReq.Project {
+		t.Errorf("plan and apply inputs differ:\nplan:  %+v\napply: %+v", planReq, applyReq)
+	}
+	if strings.Contains(out+errOut, secret) {
+		t.Errorf("apply printed the secret value:\n%s%s", out, errOut)
+	}
+}
+
 func TestStackApply_SendsSecretsGitAndRedacts(t *testing.T) {
 	f := &stackFake{t: t, plan: pendingPlan(), status: "applied"}
 	srv := httptest.NewServer(f.handler())

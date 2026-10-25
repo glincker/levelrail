@@ -553,6 +553,7 @@ Flags:
   --var NAME=VALUE     value for a ${{ env.NAME }} placeholder (repeatable)
   --var-file PATH      KEY=VALUE lines for placeholders (repeatable)
   --allow-env NAMES    names (or PREFIX*) placeholders may read from your environment
+  --secret NAME=ENVVAR secret value read from a local environment variable; never printed
   --exit-code          exit 2 when changes are pending
 `), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		mf = bindStackManifestFlags(fs, true)
@@ -569,6 +570,13 @@ Flags:
 	if err != nil {
 		return iacFail(c, err)
 	}
+	// Secrets join the plan hash, so plan must send them the way apply does.
+	secrets, err := resolveStackSecrets(mf.secrets, lookupEnv)
+	if err != nil {
+		return iacFail(c, err)
+	}
+	c = redactCall(c, secrets)
+	req.Secrets = secrets
 	res, raw, err := c.client.PlanStack(context.Background(), pos[0], req)
 	if err != nil {
 		return iacFail(c, err)
