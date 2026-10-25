@@ -36,7 +36,7 @@ func featureForPath(p string) (experimental.Feature, bool) {
 		return experimental.AIModels, true
 	case p == "/api/v1/loadbalancers", lbAppPath.MatchString(p):
 		return experimental.LoadBalancer, true
-	case p == "/api/v1/apply" || strings.HasPrefix(p, "/api/v1/apply/"), p == "/api/v1/export":
+	case p == "/api/v1/apply" || strings.HasPrefix(p, "/api/v1/apply/"), p == "/api/v1/export", p == "/api/v1/stacks" || strings.HasPrefix(p, "/api/v1/stacks/"):
 		return experimental.IaC, true
 	case p == "/api/v1/settings/cloudflare-tunnel":
 		return experimental.CloudflareTunnel, true

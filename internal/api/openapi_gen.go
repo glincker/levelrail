@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1732 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1746 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1450,6 +1450,20 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/sso/scim/tokens/{id}/rotate", Ability: "AbilityRoot", Group: "Other", Handler: "handleRotateSCIMToken", Description: ""},
 	{Method: "GET", Path: "/api/v1/sso/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetSSOSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/sso/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutSSOSettings", Description: ""},
+	{Method: "GET", Path: "/api/v1/stacks", Ability: "AbilityRead", Group: "Other", Handler: "handleListStacks", Description: ""},
+	{Method: "POST", Path: "/api/v1/stacks", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateStack", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/stacks/{name}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteStack", Description: ""},
+	{Method: "GET", Path: "/api/v1/stacks/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetStack", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/stacks/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateStackSettings", Description: ""},
+	{Method: "POST", Path: "/api/v1/stacks/{name}/apply", Ability: "AbilityWrite", Group: "Other", Handler: "handleStackApply", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/stacks/{name}/pin", Ability: "AbilityWrite", Group: "Other", Handler: "handleStackUnpin", Description: ""},
+	{Method: "PUT", Path: "/api/v1/stacks/{name}/pin", Ability: "AbilityWrite", Group: "Other", Handler: "handleStackPin", Description: ""},
+	{Method: "POST", Path: "/api/v1/stacks/{name}/plan", Ability: "AbilityRead", Group: "Other", Handler: "handleStackPlan", Description: ""},
+	{Method: "GET", Path: "/api/v1/stacks/{name}/revisions", Ability: "AbilityRead", Group: "Other", Handler: "handleStackRevisions", Description: ""},
+	{Method: "GET", Path: "/api/v1/stacks/{name}/revisions/{n}", Ability: "AbilityRead", Group: "Other", Handler: "handleStackRevision", Description: ""},
+	{Method: "GET", Path: "/api/v1/stacks/{name}/revisions/{n}/diff", Ability: "AbilityRead", Group: "Other", Handler: "handleStackDiff", Description: ""},
+	{Method: "POST", Path: "/api/v1/stacks/{name}/revisions/{n}/rollback", Ability: "AbilityWrite", Group: "Other", Handler: "handleStackRollback", Description: ""},
+	{Method: "POST", Path: "/api/v1/stacks/{name}/unlock", Ability: "AbilityRoot", Group: "Other", Handler: "handleStackUnlock", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page", Ability: "AbilityRead", Group: "Other", Handler: "handleGetStatusPage", Description: ""},
 	{Method: "PUT", Path: "/api/v1/status-page", Ability: "AbilityWrite", Group: "Other", Handler: "handlePutStatusPage", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page/components", Ability: "AbilityRead", Group: "Other", Handler: "handleListStatusComponents", Description: ""},

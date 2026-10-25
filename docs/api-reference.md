@@ -1957,6 +1957,20 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/cleanup/{id}/mode | AbilityRoot | handleSetCleanupMode |
 | POST | /api/v1/imports/platform/databases/{name}/hosted/preflight | AbilityWriteSensitive | handleHostedPreflight |
 | POST | /api/v1/imports/platform/databases/{name}/hosted/run | AbilityWriteSensitive | handleHostedRun |
+| GET | /api/v1/stacks | AbilityRead | handleListStacks |
+| POST | /api/v1/stacks | AbilityWrite | handleCreateStack |
+| GET | /api/v1/stacks/{name} | AbilityRead | handleGetStack |
+| PATCH | /api/v1/stacks/{name} | AbilityRoot | handleUpdateStackSettings |
+| DELETE | /api/v1/stacks/{name} | AbilityWrite | handleDeleteStack |
+| POST | /api/v1/stacks/{name}/plan | AbilityRead | handleStackPlan |
+| POST | /api/v1/stacks/{name}/apply | AbilityWrite | handleStackApply |
+| GET | /api/v1/stacks/{name}/revisions | AbilityRead | handleStackRevisions |
+| GET | /api/v1/stacks/{name}/revisions/{n} | AbilityRead | handleStackRevision |
+| GET | /api/v1/stacks/{name}/revisions/{n}/diff | AbilityRead | handleStackDiff |
+| POST | /api/v1/stacks/{name}/revisions/{n}/rollback | AbilityWrite | handleStackRollback |
+| PUT | /api/v1/stacks/{name}/pin | AbilityWrite | handleStackPin |
+| DELETE | /api/v1/stacks/{name}/pin | AbilityWrite | handleStackUnpin |
+| POST | /api/v1/stacks/{name}/unlock | AbilityRoot | handleStackUnlock |
 
 ## See also
 

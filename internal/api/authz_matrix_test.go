@@ -117,6 +117,7 @@ var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/models/preflight":                              "queries the public Hugging Face Hub with a caller-supplied token, persists nothing",
 	"POST /api/v1/models/fit":                                    "estimates VRAM fit from submitted specs and node facts, persists nothing",
 	"POST /api/v1/apply/plan":                                    "computes a plan from live reads, persists nothing",
+	"POST /api/v1/stacks/{name}/plan":                            "computes a stack plan from live reads, persists nothing",
 	"POST /api/v1/prometheus/read":                               "Prometheus remote read is a POST but only queries, gated by AbilityRead",
 	"POST /api/v1/iam/resources/match":                           "counts what resource patterns select, persists nothing",
 	"POST /api/v1/iam/policies/validate":                         "validates a submitted policy document, persists nothing",
