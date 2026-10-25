@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,6 +38,34 @@ func TestStackInitWritesAndRefusesNonEmpty(t *testing.T) {
 	}
 	if code := stackInit("levelrail-cli", append(args, "--force"), &out, &errb); code != exitOK {
 		t.Fatalf("force: code %d: %s", code, errb.String())
+	}
+}
+
+func TestStackTemplatesAndInitJSON(t *testing.T) {
+	var out, errb bytes.Buffer
+	if code := stackTemplates("levelrail-cli", []string{"--json"}, &out, &errb); code != exitOK {
+		t.Fatalf("code %d: %s", code, errb.String())
+	}
+	var rows []map[string]string
+	if err := json.Unmarshal(out.Bytes(), &rows); err != nil || len(rows) == 0 || rows[0]["name"] == "" {
+		t.Fatalf("templates json: %v %q", err, out.String())
+	}
+	out.Reset()
+	dir := filepath.Join(t.TempDir(), "shop")
+	args := []string{"web-app-postgres", "--dir", dir, "--set", "name=shop", "--json"}
+	if code := stackInit("levelrail-cli", args, &out, &errb); code != exitOK {
+		t.Fatalf("code %d: %s", code, errb.String())
+	}
+	var res struct {
+		Template string   `json:"template"`
+		Files    []string `json:"files"`
+		Next     []string `json:"next"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &res); err != nil || res.Template != "web-app-postgres" || len(res.Files) == 0 || len(res.Next) == 0 {
+		t.Fatalf("init json: %v %q", err, out.String())
+	}
+	if strings.Contains(out.String(), "projects create") {
+		t.Fatalf("stale project step: %s", out.String())
 	}
 }
 

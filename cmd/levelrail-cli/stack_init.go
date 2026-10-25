@@ -15,12 +15,12 @@ import (
 )
 
 func stackTemplatesUsage(prog string) string {
-	return fmt.Sprintf("Usage:\n  %s stack templates\n\nLists the bundled starter stacks. Copy one out with '%s stack init <template>'.\n", prog, prog)
+	return fmt.Sprintf("Usage:\n  %s stack templates [--json] [--output FMT] [--query EXPR]\n\nLists the bundled starter stacks. Copy one out with '%s stack init <template>'.\n", prog, prog)
 }
 
 func stackInitUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s stack init <template> [--dir DIR] [--set key=value]... [--force]
+  %[1]s stack init <template> [--dir DIR] [--set key=value]... [--force] [--json] [--output FMT]
 
 Copies a bundled starter stack into DIR (default ./<name>) with variables filled in.
 Variables: name (stack, project and app name), domain, image. Run '%[1]s stack templates' to list them.
@@ -29,19 +29,35 @@ A non-empty DIR is refused unless --force is set. Nothing is sent to the control
 }
 
 func stackTemplates(prog string, args []string, stdout, stderr io.Writer) int {
-	if len(args) > 0 {
+	fs := flag.NewFlagSet(prog+" stack templates", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, stackTemplatesUsage(prog)) }
+	jsonP := fs.Bool("json", false, "print the result as JSON and nothing else")
+	outP, queryP := bindOutputQueryFlags(fs)
+	_, of, code, ok := parseSessionFlags(fs, args, jsonP, outP, queryP, prog, stderr)
+	if !ok {
+		return code
+	}
+	if fs.NArg() > 0 {
 		_, _ = fmt.Fprint(stderr, stackTemplatesUsage(prog))
-		if args[0] == "-h" || args[0] == "--help" {
-			return exitOK
-		}
 		return exitUsage
 	}
-	tw := tabwriter.NewWriter(stdout, 0, 4, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "TEMPLATE\tDESCRIPTION")
-	for _, t := range stacktemplates.List() {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\n", t.Name, t.Description)
+	list := stacktemplates.List()
+	rows := make([]map[string]string, 0, len(list))
+	for _, t := range list {
+		rows = append(rows, map[string]string{"name": t.Name, "description": t.Description, "image": t.Image})
 	}
-	_ = tw.Flush()
+	if err := renderResult(stdout, of.Format, of.Query, rows, func() {
+		tw := tabwriter.NewWriter(stdout, 0, 4, 2, ' ', 0)
+		_, _ = fmt.Fprintln(tw, "TEMPLATE\tDESCRIPTION")
+		for _, t := range list {
+			_, _ = fmt.Fprintf(tw, "%s\t%s\n", t.Name, t.Description)
+		}
+		_ = tw.Flush()
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
 	return exitOK
 }
 
@@ -53,6 +69,8 @@ func stackInit(prog string, args []string, stdout, stderr io.Writer) int {
 	dir := fs.String("dir", "", "target directory (default ./<name>)")
 	force := fs.Bool("force", false, "write into a non-empty directory")
 	fs.Var(&sets, "set", "variable as key=value (repeatable)")
+	jsonP := fs.Bool("json", false, "print the result as JSON and nothing else")
+	outP, queryP := bindOutputQueryFlags(fs)
 	// Accept the template before or after the flags.
 	var pos []string
 	for len(args) > 0 {
@@ -68,6 +86,11 @@ func stackInit(prog string, args []string, stdout, stderr io.Writer) int {
 		}
 		pos = append(pos, rest[0])
 		args = rest[1:]
+	}
+	format, ferr := resolveOutputFormat(*jsonP, *outP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
 	}
 	if len(pos) != 1 {
 		_, _ = fmt.Fprint(stderr, stackInitUsage(prog))
@@ -122,11 +145,18 @@ func stackInit(prog string, args []string, stdout, stderr io.Writer) int {
 	if stackName == "" {
 		stackName = tpl.Name
 	}
-	project := vars["name"]
-	if project == "" {
-		project = tpl.Name
+	// Apply creates the project itself when the bundle declares it.
+	nextSteps := []string{
+		fmt.Sprintf("read %s/SECRETS.md and set the secrets it lists", target),
+		fmt.Sprintf("%s stack plan %s -f %s", prog, stackName, target),
+		fmt.Sprintf("%s stack apply %s -f %s", prog, stackName, target),
 	}
-	// A first apply needs the project to exist already, so say so up front.
-	_, _ = fmt.Fprintf(stdout, "wrote %d files to %s\nnext: read %s/SECRETS.md, create the project once ('%s apps projects create --name %s'), then '%s stack plan %s -f %s'\n", len(names), target, target, prog, project, prog, stackName, target)
+	result := map[string]any{"template": tpl.Name, "dir": target, "files": names, "next": nextSteps}
+	if err := renderResult(stdout, format, *queryP, result, func() {
+		_, _ = fmt.Fprintf(stdout, "wrote %d files to %s\nnext: read %s/SECRETS.md, set the secrets it lists, then '%s stack plan %s -f %s' and '%s stack apply %s -f %s'\n", len(names), target, target, prog, stackName, target, prog, stackName, target)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
 	return exitOK
 }

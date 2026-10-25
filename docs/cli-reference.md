@@ -1800,8 +1800,8 @@ One way migration from a live instance. By default it writes `app.yaml` files pl
 ## Stack templates {#stack-templates}
 
 ```
-levelrail-cli stack templates
-levelrail-cli stack init <template> [--dir DIR] [--set key=value]... [--force]
+levelrail-cli stack templates [--json]
+levelrail-cli stack init <template> [--dir DIR] [--set key=value]... [--force] [--json]
 ```
 
 `stack templates` lists the bundled starter stacks: `web-app-postgres`, `worker-queue`, `static-site-cdn`, `agent-app` and `preview-env`. `stack init` copies one into `DIR` (default `./<name>`) and fills in the variables `name`, `domain` and `image`. It refuses a non-empty directory unless `--force` is set, and writes secret names only (`SECRETS.md`), never values. Both run offline. See [Stacks and GitOps](/stacks#start-from-a-template).
