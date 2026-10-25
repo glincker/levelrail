@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/deploylink"
 )
 
 const envBrandDocsURL = "APP_BRAND_DOCS_URL"
@@ -99,6 +101,13 @@ func runDeployLink(prog string, args []string, stdout, stderr io.Writer, lookupE
 	fs.StringVar(&p.Health, "health", "", "health check path, must start with a single slash")
 	fs.StringVar(&server, "server", "", "also print the direct URL for this server, e.g. https://levelrail.example.com")
 	fs.StringVar(&launcher, "launcher", "", "launcher page URL (default: "+envBrandDocsURL+" env var plus /deploy.html)")
+	var repo, branch, template, profileFlag, apiURLFlag string
+	fs.StringVar(&repo, "repo", "", "git repository to prefill, https or ssh URL (instead of --image)")
+	fs.StringVar(&branch, "branch", "", "git branch for --repo")
+	fs.StringVar(&template, "template", "", "catalog template id to prefill (instead of --image)")
+	fs.StringVar(&profileFlag, "profile", "", "credentials profile whose instance the link opens (default \""+defaultProfile+"\")")
+	fs.StringVar(&apiURLFlag, "api-url", "", "instance URL for --repo or --template links (overrides the profile)")
+	openP := fs.Bool("open", false, "open the --repo or --template link in the browser")
 	jsonOutP := fs.Bool("json", false, "print the links as JSON to stdout and nothing else")
 	outputFlagP, queryFlagP := bindOutputQueryFlags(fs)
 	fs.Usage = func() {
@@ -108,6 +117,17 @@ func runDeployLink(prog string, args []string, stdout, stderr io.Writer, lookupE
 	_, of, exitCode, ok := parseSessionFlags(fs, args, jsonOutP, outputFlagP, queryFlagP, prog, stderr)
 	if !ok {
 		return exitCode
+	}
+	if repo != "" || template != "" {
+		if p.Image != "" || envList != "" || p.Health != "" || launcher != "" {
+			_, _ = fmt.Fprintf(stderr, "%s: --repo and --template cannot be combined with --image, --env, --health or --launcher\n", prog)
+			return exitUsage
+		}
+		instance := server
+		if instance == "" {
+			instance = resolveAPIURL(apiURLFlag, lookupEnv, prog, resolveProfile(profileFlag, lookupEnv))
+		}
+		return runDeployLinkRepo(prog, deploylink.Params{Repo: repo, Branch: branch, Template: template, Name: p.Name, Port: p.Port}, instance, *openP, stdout, stderr, of)
 	}
 	if envList != "" {
 		for _, k := range strings.Split(envList, ",") {
@@ -176,6 +196,12 @@ func runDeployLink(prog string, args []string, stdout, stderr io.Writer, lookupE
 func deployLinkUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s deploy-link --image REF --name NAME --port PORT [--env K1,K2] [--health /path] [--server URL] [--launcher URL]
+  %[1]s deploy-link --repo URL [--branch B] [--name N] [--port P] [--profile P] [--api-url URL] [--open]
+  %[1]s deploy-link --template ID [--name N] [--port P] [--profile P] [--api-url URL] [--open]
+
+With --repo or --template the link opens the current profile's instance at
+/deploy, and the output includes README Markdown and HTML button snippets.
+Repo URLs must be https or ssh without credentials.
 
 Prints a "Deploy with" link and the README Markdown for it. A visitor who
 clicks it enters their own server once and lands on its create-app form with

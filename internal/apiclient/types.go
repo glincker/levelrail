@@ -1992,6 +1992,29 @@ type SetAppScheduleRequest struct {
 	Enabled  *bool  `json:"enabled,omitempty"`
 }
 
+// ScheduledDeployRequest mirrors internal/api's createScheduledDeployRequest.
+type ScheduledDeployRequest struct {
+	RunAt string `json:"run_at"`
+	Image string `json:"image,omitempty"`
+	Ref   string `json:"ref,omitempty"`
+}
+
+// ScheduledDeploy mirrors internal/api's scheduledDeployResource.
+type ScheduledDeploy struct {
+	ID          string     `json:"id"`
+	ServiceName string     `json:"service_name"`
+	Kind        string     `json:"kind"`
+	Image       string     `json:"image,omitempty"`
+	Ref         string     `json:"ref,omitempty"`
+	RunAt       time.Time  `json:"run_at"`
+	Status      string     `json:"status"`
+	Reason      string     `json:"reason,omitempty"`
+	ApprovalID  string     `json:"approval_id,omitempty"`
+	CreatedBy   string     `json:"created_by,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	FinishedAt  *time.Time `json:"finished_at,omitempty"`
+}
+
 // AppScheduleHistoryEntry mirrors internal/api's appScheduleHistoryResource
 // (GET /api/v1/apps/{name}/schedule/history).
 type AppScheduleHistoryEntry struct {

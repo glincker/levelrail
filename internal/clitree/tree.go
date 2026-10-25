@@ -295,6 +295,7 @@ var Tree = map[string]*Node{
 	"version":                  nil,
 	"changelog":                nil,
 	"update":                   nil,
+	"self-update":              nil,
 	"upgrade":                  {Subs: map[string]*Node{"schedule": {Subs: map[string]*Node{"show": nil, "cancel": nil}}, "auto": {Subs: map[string]*Node{"get": nil, "set": nil}}, "backup-now": nil, "status": nil, "retry": nil, "rollback": nil}},
 	"readiness":                nil,
 	"ai-control":               {Subs: map[string]*Node{"status": nil, "set": nil, "revoke-agents": nil}},

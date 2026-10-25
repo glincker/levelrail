@@ -210,7 +210,7 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runReadiness(prog, args[1:], stdout, stderr, lookupEnv)
 	case "version":
 		return runVersion(prog, args[1:], stdout, stderr, lookupEnv)
-	case "update":
+	case "update", "self-update":
 		return runUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "changelog":
 		return runChangelog(prog, args[1:], stdout, stderr, lookupEnv)
@@ -463,7 +463,7 @@ Usage:
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
   %[1]s proxy setup|install|status|apply|verify|disable [flags] let this server manage its routes in that proxy (Traefik)
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
-  %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README Markdown for an image
+  %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README button for an image, git repo or template
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
   %[1]s archive ls|create|restore|verify|download|delete|policy [flags]   archive cold audit, deploy and pipeline rows into bundles and bring them back
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database

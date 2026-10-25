@@ -517,6 +517,8 @@ levelrail-cli status    # check Docker reachability and system config
 
 ## Upgrading
 
+To update only the CLI on your laptop, run `levelrail-cli update` (or `self-update`). `update --check --exit-code` exits 10 when a newer release exists, and the old binary stays beside the new one as `levelrail-cli.bak` for rollback. See [Updating the CLI](/cli-reference#updating).
+
 Pick the path that matches how you installed. The self-update (next section) is the safest, because it restores the database as well as the binary on failure.
 
 ### Check first, then upgrade

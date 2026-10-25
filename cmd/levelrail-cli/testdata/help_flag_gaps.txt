@@ -17,6 +17,7 @@ apps_canary.go runAppsCanaryVerb --stages
 apps_canary.go runAppsCanaryVerb --weight
 apps_database.go runAppsDatabaseSet --env-var
 apps_database.go runAppsDatabaseSet --field
+apps_deploy.go runAppsDeployOrRollback --at
 apps_deploy.go runAppsDeployOrRollback --branch
 apps_deploy.go runAppsDeployOrRollback --commit
 apps_deploy.go runAppsDeployOrRollback --confirm
