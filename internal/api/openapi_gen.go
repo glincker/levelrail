@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1727 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1731 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -355,6 +355,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppSchedule", Description: "Scheduled deploys (app_schedule.go): a per-app cron schedule that redeploys the latest commit on a branch, checked by internal/scheduledeploy.Scheduler. Same GET=Read/PUT=WriteSensitive split as git-source just above."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppSchedule", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/schedule/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppScheduleHistory", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/scheduled-deploys", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListScheduledDeploys", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/scheduled-deploys", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateScheduledDeploy", Description: "One-shot scheduled deploys by id (scheduled_deploys.go): create and cancel need the deploy ability, reads need read."},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/scheduled-deploys/{id}", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCancelScheduledDeploy", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/scheduled-deploys/{id}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetScheduledDeploy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/secret-rotation", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListSecretRotation", Description: "Rotation policies hold schedule and progress only, never a value."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/secret-scan", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetSecretScan", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/secret-scan", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutSecretScan", Description: ""},

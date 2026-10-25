@@ -22,6 +22,9 @@ func TestParseRunAt(t *testing.T) {
 		{"2026-12-01T03:00:00Z", time.Date(2026, 12, 1, 3, 0, 0, 0, time.UTC), false},
 		{"2h", time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC), false},
 		{"30m", time.Date(2026, 9, 1, 10, 30, 0, 0, time.UTC), false},
+		{"in 2h", time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC), false},
+		{"  in 30m ", time.Date(2026, 9, 1, 10, 30, 0, 0, time.UTC), false},
+		{"in ", time.Time{}, true},
 		{"-5m", time.Time{}, true},
 		{"tomorrow", time.Time{}, true},
 	}

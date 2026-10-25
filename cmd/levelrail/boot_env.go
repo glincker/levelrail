@@ -128,6 +128,31 @@ func appScheduleOneShotCatchUp(logger *slog.Logger) time.Duration {
 	return d
 }
 
+// scheduledDeployGrace is how late a one-shot scheduled deploy may still run
+// after its run_at (APP_SCHEDULED_DEPLOY_GRACE, default 5m); later is marked missed.
+func scheduledDeployGrace(logger *slog.Logger) time.Duration {
+	return envDurationOrDefault(logger, "APP_SCHEDULED_DEPLOY_GRACE", defaultScheduledDeployGrace)
+}
+
+// scheduledDeployStaleRun is how long a claimed scheduled deploy may sit in
+// running before it is closed as interrupted (APP_SCHEDULED_DEPLOY_STALE_RUN, default 30m).
+func scheduledDeployStaleRun(logger *slog.Logger) time.Duration {
+	return envDurationOrDefault(logger, "APP_SCHEDULED_DEPLOY_STALE_RUN", defaultScheduledDeployStaleRun)
+}
+
+func envDurationOrDefault(logger *slog.Logger, key string, def time.Duration) time.Duration {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return def
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil || d < 0 {
+		logger.Warn("invalid duration env, using the default", slog.String("key", key), slog.String("value", raw))
+		return def
+	}
+	return d
+}
+
 func appScheduleSchedulerInterval(logger *slog.Logger) time.Duration {
 	raw := os.Getenv("APP_SCHEDULE_DEPLOY_SCHEDULER_INTERVAL")
 	if raw == "" {

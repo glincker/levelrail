@@ -14,6 +14,17 @@ import { useFreezeBlocksDeploy } from '../../queries/deployFreeze'
 import { useProtectedEnvironment } from '../../queries/environments'
 import { useImageTagsOptional } from '../../queries/images'
 import type { AppDetail } from '../../types/appDetail'
+import { toast } from '@/components/ui/toast'
+import {
+  defaultScheduleWhen,
+  validateScheduleAt,
+  type ScheduleAtError,
+} from '../../lib/scheduleAt'
+import { useCreateScheduledDeploy } from '../../queries/scheduledDeploys'
+import {
+  ScheduleDeployField,
+  type ScheduleDeployValue,
+} from './ScheduleDeployField'
 import { PendingChangesCard } from './PendingChangesCard'
 import { ProtectedDeployNotice } from './ProtectedDeployNotice'
 import { useDeployActions } from './useDeployActions'
@@ -50,8 +61,17 @@ export function ImageDeployPanel({
   const protectedEnv = useProtectedEnvironment(app)
   const frozenWithoutReason = useFreezeBlocksDeploy(app.name, safety)
   const actions = useDeployActions({ appName: app.name, onDone: onClose })
+  const createScheduled = useCreateScheduledDeploy(app.name)
+  const [schedule, setSchedule] = useState<ScheduleDeployValue>(() => ({
+    enabled: false,
+    when: defaultScheduleWhen(Date.now()),
+  }))
+  const [scheduleError, setScheduleError] = useState<ScheduleAtError | null>(
+    null,
+  )
   const suggestions = (tags.data ?? []).slice(0, MAX_TAG_SUGGESTIONS)
-  const needsAck = protectedEnv?.protected === true && !ack
+  const scheduling = schedule.enabled
+  const needsAck = protectedEnv?.protected === true && !ack && !scheduling
 
   const submit = () => {
     const value = image.trim()
@@ -60,6 +80,31 @@ export function ImageDeployPanel({
       return
     }
     setError('')
+    if (scheduling) {
+      const { error: atError, iso } = validateScheduleAt(
+        schedule.when,
+        Date.now(),
+      )
+      setScheduleError(atError)
+      if (atError) return
+      createScheduled.mutate(
+        { run_at: iso, image: value },
+        {
+          onSuccess: () => {
+            toast.add({ title: t('schedule.toast.created'), type: 'success' })
+            onClose()
+          },
+          onError: (e) => {
+            toast.add({
+              title: t('schedule.toast.failed'),
+              description: e.message,
+              type: 'error',
+            })
+          },
+        },
+      )
+      return
+    }
     actions.deployImage(value, { confirm: ack, pull: safety.pull })
   }
 
@@ -136,7 +181,16 @@ export function ImageDeployPanel({
         </CollapsiblePanel>
       </Collapsible>
 
-      {protectedEnv?.protected ? (
+      <ScheduleDeployField
+        value={schedule}
+        error={scheduleError}
+        onChange={(next) => {
+          setSchedule(next)
+          setScheduleError(null)
+        }}
+      />
+
+      {protectedEnv?.protected && !scheduling ? (
         <ProtectedDeployNotice
           environmentName={protectedEnv.name}
           acknowledged={ack}
@@ -147,9 +201,20 @@ export function ImageDeployPanel({
       <Button
         type="submit"
         className="w-full"
-        disabled={actions.pending || needsAck || frozenWithoutReason}
+        disabled={
+          actions.pending ||
+          createScheduled.isPending ||
+          needsAck ||
+          (frozenWithoutReason && !scheduling)
+        }
       >
-        {actions.imagePending ? t('image.deploying') : t('image.deploy')}
+        {scheduling
+          ? createScheduled.isPending
+            ? t('schedule.submitting')
+            : t('schedule.submit')
+          : actions.imagePending
+            ? t('image.deploying')
+            : t('image.deploy')}
       </Button>
       <Button
         type="button"

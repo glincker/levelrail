@@ -214,6 +214,8 @@ type confirmedDeployOptions struct {
 	reason string
 	// rerunOf is the validated attempt this deploy retries, empty if none.
 	rerunOf string
+	// source overrides the attempt trigger; empty keeps the image default.
+	source string
 }
 
 func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.DesiredService, image string, opts confirmedDeployOptions) (store.DesiredService, error) {
@@ -221,6 +223,9 @@ func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.Des
 	recreate := rt.redeployNeedsRecreate(ctx, existing)
 	trigger := rt.imageTrigger(ctx, existing, opts.pull, opts.reason)
 	trigger.RerunOf = opts.rerunOf
+	if opts.source != "" {
+		trigger.Source = opts.source
+	}
 	updated, err := trigger.Deploy(ctx, existing, image)
 	if err != nil {
 		return store.DesiredService{}, err

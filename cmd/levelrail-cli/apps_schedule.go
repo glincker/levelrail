@@ -25,6 +25,10 @@ func runAppsSchedule(prog string, args []string, stdout, stderr io.Writer, looku
 		return runAppsScheduleSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "get":
 		return runAppsScheduleGet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "list":
+		return runAppsScheduleList(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cancel":
+		return runAppsScheduleCancel(prog, args[1:], stdout, stderr, lookupEnv)
 	case "history":
 		return runAppsScheduleHistory(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -40,6 +44,8 @@ func appsScheduleUsage(prog string) string {
   %[1]s apps schedule set <app> --run-at WHEN --branch NAME [flags] configure a one-time redeploy
   %[1]s apps schedule get <app> [flags]                             show the configured schedule
   %[1]s apps schedule history <app> [flags]                         show recent schedule evaluations
+  %[1]s apps schedule list <app> [--status S] [flags]               list one-shot scheduled deploys (see "apps deploy --at")
+  %[1]s apps schedule cancel <app> <id> [flags]                     cancel a pending one-shot scheduled deploy
 
 Run "%[1]s apps schedule <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -196,6 +202,7 @@ func runAppsScheduleHistory(prog string, args []string, stdout, stderr io.Writer
 // a timestamp and the caller can print it back.
 func parseRunAt(raw string, now time.Time) (time.Time, error) {
 	raw = strings.TrimSpace(raw)
+	raw = strings.TrimSpace(strings.TrimPrefix(raw, "in "))
 	if at, err := time.Parse(time.RFC3339, raw); err == nil {
 		return at, nil
 	}

@@ -280,6 +280,16 @@ func (s *bootState) startSchedulers() {
 		}
 	}()
 
+	oneShotRunner := &scheduledeploy.OneShotRunner{
+		Store: db, Freeze: db, Exec: apiRouter, Notify: apiRouter, Logger: logger,
+		Grace: scheduledDeployGrace(logger), StaleRun: scheduledDeployStaleRun(logger),
+	}
+	go func() {
+		if err := oneShotRunner.Run(ctx, appScheduleSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("one-shot scheduled deploy runner stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	sleepCfg := appsleep.ConfigFromEnv(os.Getenv)
 	portWake := &appsleep.PortWakeManager{
 		Store: db, Apps: db, Nudger: engine, Events: db, Logger: logger, Cfg: sleepCfg, Ready: apiRouter.AppReadyAfter,

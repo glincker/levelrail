@@ -229,6 +229,7 @@ type Store interface {
 	EdgeFirewallStore
 	GitSourceStore
 	AppScheduleStore
+	ScheduledDeployStore
 	AppGitHubActionsStore
 	CIOIDCTrustStore
 	ImageAutoUpdateStore

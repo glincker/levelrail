@@ -42,7 +42,7 @@ func runAppsDeploy(prog string, args []string, stdout, stderr io.Writer, lookupE
 // two commands over one underlying mechanism.
 func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader, cfg deployOrRollbackConfig) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, cfg.cmdLabel, "print the updated app as JSON to stdout and nothing else", stderr)
-	var image, idemKey string
+	var image, idemKey, at string
 	var confirm, diff bool
 	var extra deployExtraFlags
 	fs.StringVar(&image, "image", "", cfg.imageHelp)
@@ -52,6 +52,7 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	extra.register(fs)
 	var src sourceDeployFlags
 	if cfg.fromSource {
+		fs.StringVar(&at, "at", "", "schedule the deploy once instead of running it now: an RFC 3339 time or \"in 2h\"; use with --image, or --latest --branch NAME")
 		fs.StringVar(&src.commit, "commit", "", "deploy this commit of the connected git source (builds it, no --image needed)")
 		fs.BoolVar(&src.latest, "latest", false, "deploy the newest commit of the connected branch")
 		fs.StringVar(&src.branch, "branch", "", "with --latest: branch to take the newest commit from (default: the connected branch)")
@@ -74,6 +75,19 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
+
+	if at != "" {
+		if diff || src.fromCache || src.commit != "" || (image != "") == src.latest {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--at needs exactly one of --image or --latest --branch NAME"))
+		}
+		if src.latest && src.branch == "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--at with --latest needs --branch NAME"))
+		}
+		if idemKey == "" {
+			idemKey = idempotencyKey(lookupEnv, time.Now(), "schedule", name, image+src.branch+at)
+		}
+		return scheduleDeployAt(prog, client, name, at, image, src.branch, idemKey, stdout, stderr, jsonOut, of)
+	}
 
 	if diff {
 		return showPendingDeployDiff(ctx, client, name, image, stdout, stderr, jsonOut, of)
@@ -179,6 +193,8 @@ Flags:
                              image; without --image, redeploys the app's current tag at its newest digest
   --diff                     show what this deploy would change (config, env keys, image) against the last
                              successful deploy, then exit without deploying
+  --at string                schedule the deploy once instead of running it now: an RFC 3339 time or "in 2h".
+                             Use with --image, or with --latest --branch NAME (see "apps schedule list")
   --override-freeze          deploy even though a deploy freeze window is active
   --override-reason string   required with --override-freeze, recorded on the deploy
   --idempotency-key string   override the derived Idempotency-Key (default: from app, image and CI run id)

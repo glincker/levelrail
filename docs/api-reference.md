@@ -651,6 +651,10 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/abuse | AbilityRead | handleGetAppAbuse |
 | PUT | /api/v1/apps/{name}/abuse | AbilityWriteSensitive | handlePutAppAbuse |
 | POST | /api/v1/apps/{name}/abuse/dry-run | AbilityReadSensitive | handleAbuseDryRun |
+| POST | /api/v1/apps/{name}/scheduled-deploys | AbilityDeploy | handleCreateScheduledDeploy |
+| GET | /api/v1/apps/{name}/scheduled-deploys | AbilityRead | handleListScheduledDeploys |
+| GET | /api/v1/apps/{name}/scheduled-deploys/{id} | AbilityRead | handleGetScheduledDeploy |
+| DELETE | /api/v1/apps/{name}/scheduled-deploys/{id} | AbilityDeploy | handleCancelScheduledDeploy |
 
 </Accordion>
 

@@ -2099,6 +2099,31 @@ func (c *Client) ListAppScheduleHistory(ctx context.Context, name string, limit 
 	return out, err
 }
 
+// CreateScheduledDeploy calls POST /api/v1/apps/{name}/scheduled-deploys.
+func (c *Client) CreateScheduledDeploy(ctx context.Context, name string, req ScheduledDeployRequest) (ScheduledDeploy, error) {
+	var out ScheduledDeploy
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/scheduled-deploys", req, &out)
+	return out, err
+}
+
+// ListScheduledDeploys calls GET /api/v1/apps/{name}/scheduled-deploys; status is an optional comma list.
+func (c *Client) ListScheduledDeploys(ctx context.Context, name, status string) ([]ScheduledDeploy, error) {
+	path := "/api/v1/apps/" + PathEscape(name) + "/scheduled-deploys"
+	if status != "" {
+		path += "?status=" + url.QueryEscape(status)
+	}
+	var out []ScheduledDeploy
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// CancelScheduledDeploy calls DELETE /api/v1/apps/{name}/scheduled-deploys/{id}.
+func (c *Client) CancelScheduledDeploy(ctx context.Context, name, id string) (ScheduledDeploy, error) {
+	var out ScheduledDeploy
+	err := c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/scheduled-deploys/"+PathEscape(id), nil, &out)
+	return out, err
+}
+
 // SetGitDeploySettings calls PUT /api/v1/apps/{name}/git-source/deploy-settings.
 func (c *Client) SetGitDeploySettings(ctx context.Context, name string, req SetGitDeploySettingsRequest) (GitDeploySettings, error) {
 	var out GitDeploySettings
