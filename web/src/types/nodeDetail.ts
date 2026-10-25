@@ -64,6 +64,9 @@ export interface NodeResource {
   // Machine-readable reason a status needs action, e.g. a pending node
   // whose agent never connected after its join token was spent.
   status_reason?: 'enrolled_never_connected'
+  // Single-node fetch only: names of the apps and databases placed here.
+  placed_apps?: string[]
+  placed_databases?: string[]
   // Present only when the node reported an NVIDIA GPU.
   gpu?: NodeGpuResource
   // Absent from control planes that predate ADR 021.
@@ -117,6 +120,7 @@ export interface NodeJoinTokenResponse {
 
 export interface NodeJoinCommands {
   docker: string
+  podman?: string
   binary: string
 }
 

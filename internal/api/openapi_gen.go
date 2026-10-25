@@ -453,7 +453,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/auth/login-code/redeem", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRedeemLoginCode", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/login-code/request", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRequestLoginCode", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/login-options", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleLoginOptions", Description: "Sign in with a code and new-device approval (login_code.go, login_approval.go). Request, redeem and poll are public and bound to a browser cookie; the rest act only on the caller's own account."},
-	{Method: "POST", Path: "/api/v1/auth/logout", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleLogout", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/logout", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleLogout", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/my-access", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMyAccess", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/my-activity", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMyActivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/my-credentials", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMyCredentials", Description: ""},

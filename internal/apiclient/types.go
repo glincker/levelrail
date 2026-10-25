@@ -3073,6 +3073,10 @@ type NodeResource struct {
 	Agent *NodeAgentResource `json:"agent,omitempty"`
 	// Failure is set while the node has a live failure state.
 	Failure *NodeFailureSummary `json:"failure,omitempty"`
+	// PlacedApps, PlacedDatabases and Labels are set by the single-node fetch.
+	PlacedApps      []string          `json:"placed_apps,omitempty"`
+	PlacedDatabases []string          `json:"placed_databases,omitempty"`
+	Labels          map[string]string `json:"labels,omitempty"`
 }
 
 // NodeAlertStatusResource mirrors internal/api's nodeAlertStatusResource

@@ -45,18 +45,21 @@ func (rt *Router) SetMeshStartError(err error) {
 type meshSettingsResource struct {
 	// Configured is the choice that applies on next start; Effective is
 	// whether the mesh is running in this process now.
-	Configured      bool            `json:"configured"`
-	Effective       bool            `json:"effective"`
-	Source          string          `json:"source"`
-	EnvVar          string          `json:"env_var"`
-	RestartRequired bool            `json:"restart_required"`
-	RestartHint     string          `json:"restart_hint,omitempty"`
-	RemoteNodes     int             `json:"remote_nodes"`
-	Checks          []network.Check `json:"checks"`
-	CanEnable       bool            `json:"can_enable"`
-	StartError      string          `json:"start_error,omitempty"`
-	UpdatedBy       string          `json:"updated_by,omitempty"`
-	UpdatedAt       *time.Time      `json:"updated_at,omitempty"`
+	Configured      bool   `json:"configured"`
+	Effective       bool   `json:"effective"`
+	Source          string `json:"source"`
+	EnvVar          string `json:"env_var"`
+	RestartRequired bool   `json:"restart_required"`
+	RestartHint     string `json:"restart_hint,omitempty"`
+	RemoteNodes     int    `json:"remote_nodes"`
+	// AgentAddr is the host:port new agents dial (the advertise host plus the
+	// agent port); it must match the agent certificate SAN. Empty when unset.
+	AgentAddr  string          `json:"agent_addr,omitempty"`
+	Checks     []network.Check `json:"checks"`
+	CanEnable  bool            `json:"can_enable"`
+	StartError string          `json:"start_error,omitempty"`
+	UpdatedBy  string          `json:"updated_by,omitempty"`
+	UpdatedAt  *time.Time      `json:"updated_at,omitempty"`
 }
 
 type updateMeshSettingsRequest struct {
@@ -107,6 +110,7 @@ func (rt *Router) buildMeshSettings(ctx context.Context) (meshSettingsResource, 
 		Configured: configured, Effective: running, Source: source, EnvVar: network.EnvMeshEnabled,
 		RestartRequired: configured != running,
 		RemoteNodes:     remote,
+		AgentAddr:       rt.defaultControlPlaneAddr(),
 		Checks:          checks,
 		CanEnable:       len(network.Blocking(checks)) == 0,
 		UpdatedBy:       saved.UpdatedBy,

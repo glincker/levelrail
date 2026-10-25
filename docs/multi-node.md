@@ -48,7 +48,7 @@ graph LR
 <Tabs>
 <Tab title="Dashboard">
 
-Open the Nodes page and click **Add node**. The dialog shows the `docker` and `binary` commands with copy buttons, plus the expiry time.
+Open the Nodes page and click **Add node**. The dialog pre-fills the advertise address the agent certificate covers, pre-selects the mesh when it is on, and offers Docker, Podman and binary tabs with copy buttons, plus the expiry time. Rootful Podman needs `sudo systemctl enable --now podman.socket` once on the new machine.
 
 </Tab>
 <Tab title="CLI">

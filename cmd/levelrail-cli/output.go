@@ -848,6 +848,16 @@ func printNodeHuman(out io.Writer, n nodeResource) {
 	_, _ = fmt.Fprintf(out, "accepts build workloads: %t\n", n.AcceptsBuildWorkloads)
 	_, _ = fmt.Fprintf(out, "created at:              %s\n", n.CreatedAt.Format(time.RFC3339))
 	printNodeCertHuman(out, n)
+	if len(n.Labels) > 0 {
+		keys := make([]string, 0, len(n.Labels))
+		for k := range n.Labels {
+			keys = append(keys, k+"="+n.Labels[k])
+		}
+		sort.Strings(keys)
+		_, _ = fmt.Fprintf(out, "labels:                  %s\n", strings.Join(keys, ", "))
+	}
+	_, _ = fmt.Fprintf(out, "apps:                    %s\n", listOrNone(n.PlacedApps))
+	_, _ = fmt.Fprintf(out, "databases:               %s\n", listOrNone(n.PlacedDatabases))
 	if n.AlertStatus != nil {
 		_, _ = fmt.Fprintf(out, "alert status:\n")
 		_, _ = fmt.Fprintf(out, "  patch status:          %s\n", n.AlertStatus.PatchStatus)

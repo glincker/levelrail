@@ -16,7 +16,7 @@ func runNodesGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return exitCode
 	}
 
-	id, ok := requireOneArg(fs, stderr, prog, "nodes get", "node id")
+	id, ok := requireOneArg(fs, stderr, prog, "nodes get", "node id or name")
 	if !ok {
 		return exitUsage
 	}
@@ -37,9 +37,9 @@ func runNodesGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 
 func nodesGetUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s nodes get <id> [flags]
+  %[1]s nodes get <id|name> [flags]
 
-Shows one node's current state.
+Shows one node's current state: address, labels and the apps and databases placed on it.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

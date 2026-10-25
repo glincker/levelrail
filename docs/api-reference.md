@@ -136,7 +136,7 @@ Endpoints for:
 | POST | /api/v1/auth/login | Public | handleLogin |
 | POST | /api/v1/auth/register | Public (setup token) | handleRegister |
 | GET | /api/v1/auth/setup-status | Public | handleSetupStatus |
-| POST | /api/v1/auth/logout | Session | handleLogout |
+| POST | /api/v1/auth/logout | Public | handleLogout |
 | PUT | /api/v1/auth/password | Session | handleChangePassword |
 | POST | /api/v1/auth/sessions/revoke-others | Session | handleRevokeOtherSessions |
 | POST | /api/v1/auth/users | AbilityRoot | handleCreateUser |

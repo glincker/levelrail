@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { initReactI18next } from 'react-i18next'
@@ -32,12 +32,22 @@ vi.mock('../hooks/useBrand', () => ({
   }),
 }))
 
+function urlOf(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input
+  return input instanceof URL ? input.href : input.url
+}
+
+let meshSettingsBody: unknown = { configured: false }
+
 function mockTokenResponse(body: unknown) {
-  const fetchMock = vi.fn<typeof fetch>(() =>
+  const fetchMock = vi.fn<typeof fetch>((input) =>
     Promise.resolve({
       ok: true,
       status: 201,
-      json: () => Promise.resolve(body),
+      json: () =>
+        Promise.resolve(
+          urlOf(input).includes('/mesh/settings') ? meshSettingsBody : body,
+        ),
     } as unknown as Response),
   )
   vi.stubGlobal('fetch', fetchMock)
@@ -74,9 +84,16 @@ function renderFields() {
   )
 }
 
+function joinTokenCall(fetchMock: ReturnType<typeof mockTokenResponse>) {
+  return fetchMock.mock.calls.find((c) =>
+    urlOf(c[0]).includes('join-tokens'),
+  )?.[1]
+}
+
 describe('ManualEnrollFields', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+    meshSettingsBody = { configured: false }
   })
 
   it('sends the name and mesh options and shows the server commands', async () => {
@@ -85,6 +102,7 @@ describe('ManualEnrollFields', () => {
       expires_at: '2026-10-10T12:00:00Z',
       join_commands: {
         docker: 'docker run agent --token tok_abc',
+        podman: 'sudo podman run agent --token tok_abc',
         binary: './agent --token tok_abc',
       },
     })
@@ -98,11 +116,29 @@ describe('ManualEnrollFields', () => {
     expect(
       await screen.findByText('docker run agent --token tok_abc'),
     ).toBeVisible()
-    expect(screen.getByText('./agent --token tok_abc')).toBeVisible()
-    const init = fetchMock.mock.calls[0]?.[1]
+    fireEvent.click(screen.getByRole('tab', { name: 'Podman' }))
+    expect(
+      await screen.findByText('sudo podman run agent --token tok_abc'),
+    ).toBeVisible()
+    expect(screen.getByText(/podman.socket/)).toBeVisible()
+    fireEvent.click(screen.getByRole('tab', { name: 'Agent binary' }))
+    expect(await screen.findByText('./agent --token tok_abc')).toBeVisible()
+    const init = fetchMock.mock.calls.find((c) =>
+      urlOf(c[0]).includes('join-tokens'),
+    )?.[1]
     expect(JSON.parse(init?.body as string)).toMatchObject({
       node_name: 'w2',
       mesh: true,
+    })
+  })
+
+  it('prefills the advertised address and preselects the mesh when it is on', async () => {
+    meshSettingsBody = { configured: true, agent_addr: '203.0.113.5:9443' }
+    mockTokenResponse({ token: 't', expires_at: '2026-10-10T12:00:00Z' })
+    renderFields()
+    expect(await screen.findByDisplayValue('203.0.113.5:9443')).toBeVisible()
+    await waitFor(() => {
+      expect(screen.getByRole('checkbox')).toBeChecked()
     })
   })
 
@@ -136,7 +172,7 @@ describe('ManualEnrollFields', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Generate join token' }))
 
     expect(await screen.findByText('docker run agent')).toBeVisible()
-    const init = fetchMock.mock.calls[0]?.[1]
+    const init = joinTokenCall(fetchMock)
     expect(JSON.parse(init?.body as string)).toMatchObject({
       node_name: 'edge-1',
       provider: 'hetzner',
@@ -155,9 +191,10 @@ describe('ManualEnrollFields', () => {
     expect(screen.queryByLabelText('Region (optional)')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Generate join token' }))
     await screen.findByText(/APP_JOIN_TOKEN=tok_abc/)
-    const body = JSON.parse(
-      fetchMock.mock.calls[0]?.[1]?.body as string,
-    ) as Record<string, unknown>
+    const body = JSON.parse(joinTokenCall(fetchMock)?.body as string) as Record<
+      string,
+      unknown
+    >
     expect(body).not.toHaveProperty('provider')
     expect(body).not.toHaveProperty('zone')
   })

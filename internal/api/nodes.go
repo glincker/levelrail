@@ -91,6 +91,10 @@ type nodeResource struct {
 	Agent *nodeAgentResource `json:"agent,omitempty"`
 	// Failure is set while the node has a live failure state (node_failure.go).
 	Failure *nodeFailureSummary `json:"failure,omitempty"`
+	// PlacedApps, PlacedDatabases and Labels are single-node fetch only.
+	PlacedApps      []string          `json:"placed_apps,omitempty"`
+	PlacedDatabases []string          `json:"placed_databases,omitempty"`
+	Labels          map[string]string `json:"labels,omitempty"`
 }
 
 // nodeAlertStatusResource is alerting.NodeAlertStatus's wire shape: each
@@ -134,13 +138,24 @@ func nodeStatusReason(n store.Node, now time.Time, staleAfter time.Duration) str
 }
 
 func toNodeResource(n store.Node) nodeResource {
+	// Enrollment never stamps address or joined time, so show the mesh address
+	// and the row's creation time (the enrollment moment) rather than blanks.
+	address := n.Address
+	if address == "" {
+		address = n.MeshAddress
+	}
+	joined := n.JoinedAt
+	if joined == nil && n.Status != store.NodeStatusPending && !n.CreatedAt.IsZero() {
+		c := n.CreatedAt
+		joined = &c
+	}
 	return nodeResource{
 		ID:                    n.ID,
 		Name:                  n.Name,
-		Address:               n.Address,
+		Address:               address,
 		Status:                string(n.Status),
 		CertFingerprint:       n.CertFingerprint,
-		JoinedAt:              n.JoinedAt,
+		JoinedAt:              joined,
 		LastSeenAt:            n.LastSeenAt,
 		Schedulable:           n.Schedulable,
 		AcceptsAppWorkloads:   n.AcceptsAppWorkloads,
@@ -264,6 +279,10 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	n, err := rt.nodes.GetNode(r.Context(), id)
 	if errors.Is(err, store.ErrNodeNotFound) {
+		// The CLI and operators know nodes by name, so accept it here too.
+		n, err = rt.nodeByName(r.Context(), id)
+	}
+	if errors.Is(err, store.ErrNodeNotFound) {
 		writeError(w, http.StatusNotFound, "node not found")
 		return
 	}
@@ -273,6 +292,7 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := toNodeResource(*n)
+	rt.fillNodeWorkloads(r.Context(), &res)
 	res.IsLocal = n.ID == rt.localNodeID
 	res.StatusReason = nodeStatusReason(*n, time.Now(), nodePendingStaleAfter())
 	res.GPU = rt.nodeGPUResources(r.Context())[n.ID]
@@ -771,4 +791,38 @@ func randomNodeJoinTokenID() (string, error) {
 		return "", fmt.Errorf("api: generate node join token id: %w", err)
 	}
 	return "njt_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// nodeByName finds a node by its unique name.
+func (rt *Router) nodeByName(ctx context.Context, name string) (*store.Node, error) {
+	all, err := rt.nodes.ListNodes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range all {
+		if all[i].Name == name {
+			return &all[i], nil
+		}
+	}
+	return nil, store.ErrNodeNotFound
+}
+
+// fillNodeWorkloads adds the placed apps and databases and the labels to a
+// single-node response; a failed lookup leaves the field empty.
+func (rt *Router) fillNodeWorkloads(ctx context.Context, res *nodeResource) {
+	if svcs, err := rt.apps.ListDesiredServicesByNode(ctx, res.ID); err == nil {
+		for _, s := range svcs {
+			res.PlacedApps = append(res.PlacedApps, s.Name)
+		}
+	}
+	if dbs, err := rt.databases.ListDesiredDatabasesByNode(ctx, res.ID); err == nil {
+		for _, d := range dbs {
+			res.PlacedDatabases = append(res.PlacedDatabases, d.Name)
+		}
+	}
+	if rt.multiNode != nil {
+		if labels, err := rt.multiNode.store.GetNodeLabels(ctx, res.ID); err == nil && len(labels) > 0 {
+			res.Labels = labels
+		}
+	}
 }

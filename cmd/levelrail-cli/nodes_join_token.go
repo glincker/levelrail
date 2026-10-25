@@ -29,6 +29,10 @@ func runNodesJoinToken(prog string, args []string, stdout, stderr io.Writer, loo
 		if created.CAFingerprint != "" {
 			_, _ = fmt.Fprintf(stdout, "control plane CA fingerprint (set APP_CA_FINGERPRINT on the agent): %s\n", created.CAFingerprint)
 		}
+		if created.JoinCommands != nil {
+			_, _ = fmt.Fprintln(stdout)
+			printJoinCommands(stdout, created)
+		}
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)

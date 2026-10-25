@@ -44481,7 +44481,7 @@
     },
     "/api/v1/auth/logout": {
       "post": {
-        "description": "Requires a signed-in dashboard session.",
+        "description": "No authentication required.",
         "operationId": "handleLogout",
         "requestBody": {
           "content": {
@@ -44502,16 +44502,6 @@
               }
             },
             "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Not signed in."
           },
           "4XX": {
             "content": {
@@ -44534,16 +44524,11 @@
             "description": "Error response."
           }
         },
-        "security": [
-          {
-            "sessionAuth": []
-          }
-        ],
+        "security": [],
         "summary": "Logout",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
-        ],
-        "x-required-ability": "session"
+        ]
       }
     },
     "/api/v1/auth/my-access": {

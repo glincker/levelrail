@@ -82,6 +82,8 @@ func validJoinDomain(req createNodeJoinTokenRequest) (joinDomain, error) {
 // joinCommands are ready-to-paste commands that enroll a server with one token.
 type joinCommands struct {
 	Docker string `json:"docker"`
+	// Podman runs the agent container against the rootful podman.socket.
+	Podman string `json:"podman"`
 	Binary string `json:"binary"`
 }
 
@@ -123,8 +125,20 @@ func (rt *Router) buildJoinCommands(addr, token, caFingerprint, nodeName string,
 	}
 	docker = append(docker, sshProvisionAgentImage(agent))
 
+	// The agent auto-detects /run/podman/podman.sock, so no socket env is needed.
+	podman := []string{"sudo podman run -d --restart unless-stopped --name " + agent, "--user 0:0 --network host",
+		"--security-opt label=disable", "-v /run/podman/podman.sock:/run/podman/podman.sock", "-v " + dataDir + ":" + dataDir}
+	if mesh {
+		podman = append(podman, "--cap-add NET_ADMIN --device /dev/net/tun")
+	}
+	for _, e := range env {
+		podman = append(podman, "-e "+e)
+	}
+	podman = append(podman, sshProvisionAgentImage(agent))
+
 	return joinCommands{
 		Docker: strings.Join(docker, " "),
+		Podman: strings.Join(podman, " "),
 		Binary: "sudo " + strings.Join(env, " ") + " " + agent,
 	}
 }

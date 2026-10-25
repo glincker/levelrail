@@ -25,6 +25,8 @@ export interface MeshSettings {
   restart_required: boolean
   restart_hint?: string
   remote_nodes: number
+  // host:port new agents dial; matches the agent certificate.
+  agent_addr?: string
   checks: MeshCheck[]
   can_enable: boolean
   start_error?: string
