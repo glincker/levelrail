@@ -68,3 +68,18 @@ func TestContainerDNSAddr_Live_Port53ResolvesGateway(t *testing.T) {
 		t.Errorf("containerDNSAddr() = %q, want %q (BridgeGatewayIP's own answer)", got, wantGateway)
 	}
 }
+
+func TestMeshHubHostNeedsIP(t *testing.T) {
+	for host, want := range map[string]bool{
+		"":               false,
+		"localhost":      false,
+		"10.77.0.10":     false,
+		"2001:db8::1":    false,
+		"cp.example.com": true,
+		"lrqa-cp":        true,
+	} {
+		if got := meshHubHostNeedsIP(host); got != want {
+			t.Errorf("meshHubHostNeedsIP(%q) = %v, want %v", host, got, want)
+		}
+	}
+}

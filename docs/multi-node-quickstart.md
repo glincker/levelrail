@@ -22,7 +22,7 @@ Pick one of two paths:
 </Step>
 <Step title="Set the advertise host before enrolling">
 
-Set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP the remote agent will dial. It defaults to `127.0.0.1`. With a mismatch, enrollment succeeds but the node's session then fails TLS hostname verification on every attempt, and the node stays `pending`. Details are in [multi-node](/multi-node#enrolling-a-second-node).
+Set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP the remote agent will dial (an IP address when the mesh is on). It defaults to `127.0.0.1`. With a mismatch, enrollment succeeds but the node's session then fails TLS hostname verification on every attempt, and the node stays `pending`. Details are in [multi-node](/multi-node#enrolling-a-second-node).
 
 </Step>
 <Step title="Enroll and confirm">
