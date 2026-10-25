@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,8 +14,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	kitids "github.com/GLINCKER/levelrail/kit/ids"
 )
 
 // Stack store errors. internal/iac imports this package, so the contract
@@ -161,7 +161,7 @@ func (db *DB) CreateStack(ctx context.Context, s StackRecord, now time.Time) (St
 	if strings.TrimSpace(s.Name) == "" || s.ProjectID == "" {
 		return StackRecord{}, errors.New("store: create stack: name and project are required")
 	}
-	suffix, err := kitids.Hex(8)
+	suffix, err := stackIDSuffix()
 	if err != nil {
 		return StackRecord{}, fmt.Errorf("store: create stack: id: %w", err)
 	}
@@ -701,4 +701,14 @@ func (db *DB) ForceReleaseStackLock(ctx context.Context, stackID string) error {
 		return fmt.Errorf("store: force release stack lock: %w", err)
 	}
 	return nil
+}
+
+// stackIDSuffix returns 8 random bytes as hex. It is local so the store
+// package does not pull kit/ids into every importer's dependency set.
+func stackIDSuffix() (string, error) {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
