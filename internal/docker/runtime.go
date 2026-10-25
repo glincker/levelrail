@@ -93,6 +93,9 @@ type ContainerState struct {
 	// alone isn't enough on a Docker daemon shared by more than one
 	// control-plane instance.
 	Labels map[string]string
+	// LabelsUnknown is set by a remote transport that received no labels,
+	// which an agent older than the labels field cannot tell from none.
+	LabelsUnknown bool
 	// Networks lists the Docker networks the container is attached to with
 	// its address on each. Only the local Docker client reports it.
 	Networks []ContainerNetwork

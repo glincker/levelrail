@@ -741,6 +741,10 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		}
 	}
 
+	// An agent older than the labels field reports none, so a label mismatch
+	// there is unknowable: adopt the container rather than recreate it.
+	labelsKnown := state != nil && !state.LabelsUnknown
+
 	justDeployed := false
 	switch {
 	case state == nil:
@@ -781,7 +785,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		}
 		justDeployed = true
 
-	case tlsMaterial != nil && state.Labels[tlsCertLabelKey] != tlsCertLabelValue:
+	case labelsKnown && tlsMaterial != nil && state.Labels[tlsCertLabelKey] != tlsCertLabelValue:
 		if err := c.provisionCerts(ctx, c.dbName, tlsMaterial); err != nil {
 			return notReady("TLSProvisionFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
@@ -790,13 +794,13 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		}
 		justDeployed = true
 
-	case tlsMaterial == nil && c.tlsDisabled && state.Labels[tlsCertLabelKey] == tlsCertLabelValue:
+	case labelsKnown && tlsMaterial == nil && c.tlsDisabled && state.Labels[tlsCertLabelKey] == tlsCertLabelValue:
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
 			return replaceFailure(c.dbName, err)
 		}
 		justDeployed = true
 
-	case pitrEnabledFromLabel(state.Labels) != pitrActive:
+	case labelsKnown && pitrEnabledFromLabel(state.Labels) != pitrActive:
 		// Toggling PITREnabled: pitrLabelKey's own doc comment explains
 		// why a label, not a live command/env diff, is what detects this.
 		// Same sequential replace as an image change: the container needs
@@ -808,7 +812,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		}
 		justDeployed = true
 
-	case spec.Labels[engineConfigLabelKey] != "" && state.Labels[engineConfigLabelKey] != spec.Labels[engineConfigLabelKey]:
+	case labelsKnown && spec.Labels[engineConfigLabelKey] != "" && state.Labels[engineConfigLabelKey] != spec.Labels[engineConfigLabelKey]:
 		// Start command or env layout changed (boot script, memory flag):
 		// neither can be applied to a running container in place.
 		if err := c.replaceContainer(ctx, state, spec); err != nil {

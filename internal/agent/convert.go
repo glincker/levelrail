@@ -201,12 +201,13 @@ func containerStateFromPB(s *agentpb.ContainerState) *docker.ContainerState {
 		return nil
 	}
 	return &docker.ContainerState{
-		ID:      s.Id,
-		Name:    s.Name,
-		Image:   s.Image,
-		Running: s.Running,
-		Ports:   portBindingsFromPB(s.Ports),
-		Labels:  s.Labels,
+		ID:            s.Id,
+		Name:          s.Name,
+		Image:         s.Image,
+		Running:       s.Running,
+		Ports:         portBindingsFromPB(s.Ports),
+		Labels:        s.Labels,
+		LabelsUnknown: len(s.Labels) == 0,
 	}
 }
 

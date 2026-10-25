@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
@@ -40,6 +41,37 @@ func TestProbeTarget_RemoteNodeDialsMeshAddress(t *testing.T) {
 			}
 			if got.Addr != tt.wantAddr {
 				t.Errorf("addr = %q, want %q", got.Addr, tt.wantAddr)
+			}
+		})
+	}
+}
+
+// A mesh outage makes probes unreachable, which is not evidence the app is
+// unhealthy: nothing may be stopped, restarted or flipped unhealthy.
+func TestRemoteProbeUnreachable_NeverRestartsOrFlipsCondition(t *testing.T) {
+	down := &fakeMeshPaths{path: meshpath.Path{Reason: "mesh down"}}
+	tests := []struct {
+		name   string
+		health *store.ServiceHealth
+	}{
+		{name: "liveness", health: &store.ServiceHealth{Liveness: &store.ServiceProbe{Path: "/livez", Interval: livenessProbeInterval, Failures: 1}}},
+		{name: "readiness recheck", health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/ready"}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := newFakeRuntime(18102)
+			desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, NodeID: "node-2", Health: tt.health}
+			rt.seed(ContainerName("web", desired.Image, ""), true)
+			c := New("web", &fakeStore{svc: desired}, rt, WithMeshPaths(down))
+			for i := 0; i < 3; i++ {
+				result, _ := c.Reconcile(context.Background())
+				if cond := conditionOf(t, result); cond.Status != "True" {
+					t.Fatalf("pass %d condition = %+v, want Status=True", i, cond)
+				}
+				time.Sleep(livenessProbeInterval + time.Millisecond)
+			}
+			if rt.stopCalls != 0 || rt.removeCalls != 0 || rt.startCalls != 0 {
+				t.Errorf("stop/remove/start = %d/%d/%d, want none", rt.stopCalls, rt.removeCalls, rt.startCalls)
 			}
 		})
 	}
