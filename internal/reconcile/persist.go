@@ -2,7 +2,6 @@ package reconcile
 
 import (
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -11,20 +10,6 @@ import (
 // EnvFullResync is how long an unchanged status may go without being written
 // again. Zero or invalid falls back to the default.
 const EnvFullResync = "APP_RECONCILE_FULL_RESYNC"
-
-// EnvParallelism caps how many per-app controllers reconcile at once. 1 keeps
-// the old sequential pass.
-const EnvParallelism = "APP_RECONCILE_PARALLELISM"
-
-const defaultParallelism = 4
-
-// ParallelismFromEnv reads EnvParallelism.
-func ParallelismFromEnv(getenv func(string) string) int {
-	if n, err := strconv.Atoi(getenv(EnvParallelism)); err == nil && n > 0 {
-		return n
-	}
-	return defaultParallelism
-}
 
 const defaultFullResync = 5 * time.Minute
 

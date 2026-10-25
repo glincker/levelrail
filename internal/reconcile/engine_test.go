@@ -314,38 +314,3 @@ func TestEngine_ReconcileAll_SourceErrorSkipsDynamicPassButNotFixed(t *testing.T
 		t.Errorf("fixed controller: got %d calls, want 1: a Source error must not block the fixed set", got)
 	}
 }
-
-type blockingController struct {
-	name    string
-	release chan struct{}
-}
-
-func (b *blockingController) Name() string { return b.name }
-func (b *blockingController) Reconcile(ctx context.Context) (Result, error) {
-	select {
-	case <-b.release:
-	case <-ctx.Done():
-	}
-	return Result{}, nil
-}
-
-// An app stuck in a long readiness wait must not delay other apps.
-func TestEngine_ReconcileAll_SlowAppDoesNotBlockOthers(t *testing.T) {
-	slow := &blockingController{name: "slow", release: make(chan struct{})}
-	fast := &countingController{name: "fast"}
-	e := NewEngine(testLogger())
-	e.SetSource(func(context.Context) ([]Controller, error) { return []Controller{slow, fast}, nil })
-	done := make(chan struct{})
-	go func() { e.ReconcileAll(context.Background()); close(done) }()
-	deadline := time.After(2 * time.Second)
-	for fast.calls.Load() == 0 {
-		select {
-		case <-deadline:
-			close(slow.release)
-			t.Fatal("fast app waited for the slow app")
-		case <-time.After(5 * time.Millisecond):
-		}
-	}
-	close(slow.release)
-	<-done
-}
