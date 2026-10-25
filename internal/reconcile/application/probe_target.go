@@ -80,7 +80,8 @@ func (c *Controller) probeTarget(ctx context.Context, state *docker.ContainerSta
 	if err != nil {
 		return probe.Target{}, fmt.Errorf("resolve mesh path to node %s: %w", nodeID, err)
 	}
-	if path.Local {
+	// No mesh for this node: the agent shares the control plane's network.
+	if path.Local || path.NoMesh {
 		return probe.Target{Addr: addr}, nil
 	}
 	if !path.Usable {
